@@ -8,7 +8,7 @@
 // widget flies the shared globe via mapViewStore.flyToPoint). Dormant-safe — a failed or
 // malformed response resolves to an inline error, never a throw.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { parseGeolocateResponse } from "./response";
 import type { GeolocateMethod, GeolocateResponse, ResolvedCandidate } from "./types";
 
@@ -31,6 +31,28 @@ export interface UseGeolocate {
   reset: () => void;
 }
 
+/** Shared empty list, so "no result yet" never allocates a new array identity.
+ *  Treat as immutable — it is handed to every caller. */
+const NO_CANDIDATES: ResolvedCandidate[] = [];
+
+/**
+ * The candidate list for a result, with a REFERENTIALLY STABLE empty case.
+ *
+ * `result?.candidates ?? []` allocated a fresh array on every render, and until a
+ * photo is uploaded (i.e. every first visit) `result` is null forever. The Locate
+ * widget reports its export payload to WidgetFrame from an effect keyed on
+ * `candidates`, so a new identity each render meant:
+ *   effect -> report() -> setReport -> re-render -> new [] -> effect -> ...
+ * an infinite update loop. That saturated React's update queue and starved the
+ * Suspense retry that mounts the lazily-imported <WorldMap>, so the centre stage
+ * rendered BLANK in production with no console error and no failed request.
+ *
+ * Stability is the contract here, not an optimisation. See the unit test.
+ */
+export function candidatesOf(result: GeolocateResponse | null): ResolvedCandidate[] {
+  return result?.candidates ?? NO_CANDIDATES;
+}
+
 export function useGeolocate(): UseGeolocate {
   const [file, setFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
@@ -40,7 +62,9 @@ export function useGeolocate(): UseGeolocate {
   const [result, setResult] = useState<GeolocateResponse | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
-  const candidates = result?.candidates ?? [];
+  // Referentially stable across renders — see candidatesOf. Do not inline this
+  // back to `result?.candidates ?? []`; that is the infinite-render regression.
+  const candidates = useMemo(() => candidatesOf(result), [result]);
 
   const pickFile = useCallback((f: File | null) => {
     if (!f) return;

@@ -26,6 +26,20 @@ const nextConfig: NextConfig = {
         os: false,
         crypto: false,
       };
+      // satellite.js's barrel also re-exports dist/wasm/**, whose runtime pulls
+      // `#wasm-multi-thread` -> wasm-build/pthreads-release/index.js. That file
+      // uses TOP-LEVEL AWAIT, which makes every module that statically imports
+      // satellite.js an async module. The async-ness propagates up the graph to
+      // components/WorldMap.tsx, so its `next/dynamic` chunk resolves to a
+      // component that never finishes mounting: the centre stage stayed blank
+      // with NO console error and NO failed request. We only ever use the
+      // classic synchronous SGP4 path (twoline2satrec + propagate), so cut the
+      // WASM entry points out of the browser bundle completely.
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "#wasm-multi-thread": false,
+        "#wasm-single-thread": false,
+      };
     }
     return config;
   },

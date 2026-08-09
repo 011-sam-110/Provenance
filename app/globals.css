@@ -1189,6 +1189,11 @@ a { color: var(--tn-accent); }
 .tn-cw-stage{position:absolute;top:10px;left:calc(var(--tn-lw) + 20px);
   right:calc(var(--tn-rw) + 20px);bottom:calc(var(--tn-bh) + 20px);z-index:0;
   border-radius:12px;overflow:hidden;box-shadow:0 6px 22px rgba(20,28,38,.16)}
+/* Centre-stage loading state. The map is lazily imported (ssr:false), so without
+   this the stage is an unexplained blank rectangle while it mounts. */
+.tn-stage-loading{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;background:var(--tn-surface-solid);color:var(--tn-text-muted);
+  font-size:13px;letter-spacing:.02em}
 .tn-cw-col{position:absolute;top:10px;bottom:10px;z-index:15;overflow:hidden;display:flex}
 .tn-cw-col-left{left:10px}
 .tn-cw-col-right{right:10px}
