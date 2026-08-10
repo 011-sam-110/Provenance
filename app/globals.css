@@ -215,6 +215,29 @@ a { color: var(--tn-accent); }
 .tn-layer-count { font-size: 13px; font-weight: 650; color: var(--tn-text); min-width: 42px; text-align: right; }
 .tn-layer-planned { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center; }
 .tn-soon { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tn-text-faint); border: 1px solid var(--tn-border); border-radius: 6px; padding: 2px 6px; }
+/* "needs a key": a key-gated layer this deployment cannot fetch. Deliberately grey
+   rather than red — it is a configuration fact, not a fault. Without it an empty
+   gated layer is indistinguishable from a dead upstream or a quiet one. */
+/* The per-layer trust card in the signal dossier (components/LayerExplainerCard).
+   Every one of the 35 layers has one — the "what it cannot tell you" block is the
+   whole point, so it is styled to be read, not tucked away as fine print. */
+.tn-explain { margin-top: 14px; border-top: 1px solid var(--tn-border); padding-top: 10px; }
+.tn-explain-h { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tn-accent); margin: 0 0 6px; }
+.tn-explain-what { font-size: 13px; line-height: 1.45; color: var(--tn-text); margin: 0 0 8px; }
+.tn-explain-rows { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0 0 10px; font-size: 12px; }
+.tn-explain-rows dt { color: var(--tn-text-faint); white-space: nowrap; }
+.tn-explain-rows dd { margin: 0; color: var(--tn-text-muted); line-height: 1.4; }
+.tn-explain-conf { font-weight: 600; border: 1px solid var(--tn-border); border-radius: 999px; padding: 1px 8px; font-size: 11px; white-space: nowrap; }
+.tn-conf-measured { color: var(--tn-live); }
+.tn-conf-official { color: var(--tn-accent-strong); }
+.tn-conf-reported { color: var(--tn-text-muted); }
+.tn-conf-modelled { color: var(--tn-lagging); }
+.tn-conf-derived  { color: var(--tn-stale); }
+.tn-explain-lims-h { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--tn-text-faint); margin-bottom: 4px; }
+.tn-explain-lims ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.tn-explain-lims li { font-size: 12px; line-height: 1.45; color: var(--tn-text-muted); }
+
+.tn-layer-locked { font-size: 9px; font-weight: 500; letter-spacing: 0.02em; color: var(--tn-text-faint); border: 1px solid var(--tn-border); border-radius: 6px; padding: 1px 5px; margin-left: 6px; white-space: nowrap; cursor: help; }
 
 .tn-fresh { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--tn-text-faint); margin-top: 1px; }
 .tn-fresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tn-unknown); }
@@ -1132,7 +1155,17 @@ a { color: var(--tn-accent); }
 .tn-cw-title{font-weight:700;color:var(--tn-text)}.tn-cw-count{font-size:11px;color:var(--tn-text-faint)}.tn-cw-sp{flex:1}
 .tn-cw-badge{font-size:10px;font-weight:800;color:#fff;border-radius:8px;padding:0 5px;background:#8a97a6}
 .tn-cw-badge.tn-sev-critical{background:#d9534f}.tn-cw-badge.tn-sev-warn{background:#d9882f}.tn-cw-badge.tn-sev-info{background:#4a78c9}
-.tn-cw-fresh{font-size:10px;color:#3f8f5c}.tn-cw-menu,.tn-cw-expand{border:0;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:14px}
+/* The widget-header freshness chip. It used to be unconditionally green because every
+   widget hardcoded the string "live"; now the state class carries the colour, and the
+   two-class selectors below beat this base rule regardless of source order. */
+.tn-cw-fresh{font-size:10px;color:var(--tn-text-faint);white-space:nowrap;cursor:help}
+.tn-cw-fresh.tn-fresh-live{color:var(--tn-live)}
+.tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging)}
+.tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale)}
+.tn-cw-fresh.tn-fresh-down{color:var(--tn-down)}
+.tn-cw-fresh.tn-fresh-empty{color:var(--tn-text-faint)}
+.tn-cw-fresh.tn-fresh-off,.tn-cw-fresh.tn-fresh-unknown{color:var(--tn-text-faint);font-style:italic}
+.tn-cw-menu,.tn-cw-expand{border:0;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:14px}
 .tn-cw-menu:hover,.tn-cw-expand:hover{color:var(--tn-text)}
 .tn-cw-menu-pop{display:flex;flex-direction:column;border-bottom:1px solid var(--tn-border);background:var(--tn-surface-solid)}
 .tn-cw-menu-pop button{text-align:left;border:0;background:none;padding:7px 10px;font-size:12px;cursor:pointer;color:var(--tn-text)}
@@ -2279,7 +2312,15 @@ a { color: var(--tn-accent); }
 .tn-cw-help-pop {
   display: flex; flex-direction: column; gap: 6px; padding: 9px 11px;
   border-bottom: 1px solid var(--tn-border); background: var(--tn-surface-solid); color: var(--tn-text);
+  /* The trust card lives in here too, and a layer with four limitations is taller
+     than a 260px widget. Scroll the popover rather than let it overrun the frame. */
+  max-height: min(60vh, 420px); overflow-y: auto;
 }
+/* Compact the trust card when it appears inside the small ? popover rather than the dossier. */
+.tn-cw-help-pop .tn-explain { margin-top: 2px; padding-top: 8px; }
+.tn-cw-help-pop .tn-explain-what { font-size: 11.5px; }
+.tn-cw-help-pop .tn-explain-rows { font-size: 11px; }
+.tn-cw-help-pop .tn-explain-lims li { font-size: 11px; }
 .tn-cw-help-head { display: flex; align-items: center; gap: 8px; }
 .tn-cw-help-title { font-size: 12px; font-weight: 700; flex: 1; }
 .tn-cw-help-x { border: 0; background: none; cursor: pointer; color: var(--tn-text-faint); font-size: 12px; line-height: 1; padding: 2px; }
@@ -2324,3 +2365,68 @@ a { color: var(--tn-accent); }
 .tn-tour-btn:disabled { opacity: .4; cursor: default; }
 .tn-tour-btn.is-primary { background: var(--tn-accent); color: #fff; border-color: transparent; }
 .tn-tour-btn.is-primary:hover { background: var(--tn-accent-strong); }
+
+/* ════════════════════════════════════════════════════════════════════════
+   Mobile console — the widget columns STACK instead of overlapping.
+   ════════════════════════════════════════════════════════════════════════
+   The old responsive block above (line ~469) still targets `.tn-rail` and
+   `.tn-dossier`, which the console rebuild removed from the markup, so on a phone
+   NOTHING was responsive: the two 300px columns landed at left:10px and right:10px
+   on a 390px screen (a 230px overlap, measured) and the centre stage computed to
+   `left:320px; right:320px` — a 0px-wide map. This block is the console's own
+   responsive layer.
+
+   Column width now rides --tn-lw / --tn-rw rather than an inline style.width in
+   ConsoleWorkspace: an inline width outranks every stylesheet rule, so the fixed
+   300px could not be dropped by a media query. Same story for the bottom dock's cap.
+   ════════════════════════════════════════════════════════════════════════ */
+.tn-cw-col-left  { width: var(--tn-lw); }
+.tn-cw-col-right { width: var(--tn-rw); }
+
+/* 900px, not 768px: below ~900 the stage between two default columns is under
+   260px wide, which is not a map. Portrait tablets land here too. */
+@media (max-width: 900px) {
+  /* 100vh is TALLER than the visible area on iOS/Android (browser chrome overlays
+     it), so the bottom of the console sat under the URL bar. dvh tracks the real one. */
+  .tn-shell-main, .tn-shell { width: 100%; height: 100dvh; }
+
+  /* The shell stops being an absolute-positioning canvas and becomes one vertical
+     scroller. DOM order is already stage → left → right → bottom, so a plain flex
+     column reads correctly with no `order` juggling. */
+  .tn-cw-shell {
+    display: flex; flex-direction: column; gap: 10px; padding: 10px;
+    overflow-x: hidden; overflow-y: auto;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+  }
+  .tn-cw-stage, .tn-cw-col, .tn-cw-bottom {
+    position: relative; inset: auto;
+    width: auto; max-width: 100%; max-height: none;
+    flex: 0 0 auto; overflow: visible;
+  }
+  /* The map keeps a real, usable height instead of the 0px the insets computed to. */
+  .tn-cw-stage { height: clamp(240px, 46dvh, 420px); overflow: hidden; }
+  /* One scroller, not four nested ones — the segments flow into the page scroll. */
+  .tn-cw-col > .tn-seg, .tn-cw-bottom > .tn-seg { overflow: visible; max-height: none; }
+  /* Grips are pointer-drag affordances; there is nothing to drag once stacked. */
+  .tn-grip { display: none; }
+
+  /* Widget header on a narrow card: the title yields first so the controls stay on
+     the card, and the icon buttons get a real touch target. */
+  .tn-cw-head { gap: 4px; }
+  .tn-cw-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tn-cw-menu, .tn-cw-expand, .tn-cw-bell {
+    min-width: 26px; min-height: 26px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* Status bar: wordmark and the right-hand cluster stay on one line. */
+  .tn-topbar { gap: 10px; padding: 0 10px; }
+  .tn-topbar-left { overflow: hidden; }
+  .tn-topbar-right { flex: 0 0 auto; }
+  .tn-wordmark { white-space: nowrap; }
+}
+
+/* Landscape phones: trade map height back for widget rows. */
+@media (max-width: 900px) and (max-height: 520px) {
+  .tn-cw-stage { height: clamp(170px, 58dvh, 300px); }
+}
