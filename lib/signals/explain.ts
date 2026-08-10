@@ -312,6 +312,19 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "faa-airports",
+    whatItShows: "A US airport the FAA currently reports as closed, under a ground stop, running a ground-delay programme, or delayed.",
+    method: "Read straight from the FAA's own National Airspace System status feed. The cause is the FAA's, quoted verbatim from the NOTAM.",
+    confidence: "official",
+    coverage: "The United States only. There is no equivalent open feed for most of the world, so an empty map outside the US is coverage, not calm.",
+    limitations: [
+      "Most entries in the FAA's own \"Airport Closures\" list are PARTIAL restrictions — LAX and LAS appear there because they are closed to unscheduled general aviation while every airline flight operates normally. We label those \"Partial restriction\", not \"closed\"; the raw NOTAM is shown so you can check the call.",
+      "It reports the airspace programme, not your flight. A ground stop at an airport does not mean every flight there is cancelled, and no ground stop does not mean your flight is on time.",
+      "An airport whose 3-letter code we cannot resolve to coordinates is dropped rather than placed approximately.",
+      "The feed reports current programmes only; there is no history and no forecast here.",
+    ],
+  },
+  {
     id: "grid-load",
     whatItShows: "Electricity demand and generation for a European bidding zone.",
     method: "Published by ENTSO-E's Transparency Platform from transmission-system-operator submissions.",
