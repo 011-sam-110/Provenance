@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
+import { markCoverage } from "@/lib/signals/coverage";
 
 // Humanitarian disasters — ReliefWeb (UN OCHA). The authoritative register of
 // active humanitarian emergencies (conflict, flood, drought, epidemic, cyclone,
@@ -12,6 +13,9 @@ import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 
 const ENDPOINT = "https://api.reliefweb.int/v2/disasters";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+
+/** Page size asked of ReliefWeb, sorted newest-changed first. */
+export const RELIEFWEB_PAGE_LIMIT = 100;
 
 export const RELIEFWEB_ATTRIBUTION = "Humanitarian data © ReliefWeb (UN OCHA)";
 
@@ -61,10 +65,18 @@ function statusMagnitude(status: string): number {
   }
 }
 
-/** Pure: ReliefWeb /v2/disasters payload → SignalFeature[] (one per located disaster). */
-export function normalizeReliefWeb(json: { data?: RwDisaster[] }): SignalFeature[] {
+/**
+ * Pure: ReliefWeb /v2/disasters payload → SignalFeature[] (one per located
+ * disaster). The query is paged at `limit`; a full page means there are more
+ * current emergencies than the map is showing, and the payload says so.
+ */
+export function normalizeReliefWeb(
+  json: { data?: RwDisaster[] },
+  limit = RELIEFWEB_PAGE_LIMIT,
+): SignalFeature[] {
+  const rows = json.data ?? [];
   const out: SignalFeature[] = [];
-  for (const d of json.data ?? []) {
+  for (const d of rows) {
     const f = d.fields;
     if (!f) continue;
     const pc = f.primary_country;
@@ -104,7 +116,11 @@ export function normalizeReliefWeb(json: { data?: RwDisaster[] }): SignalFeature
       },
     });
   }
-  return out;
+  return markCoverage(out, {
+    noun: "emergencies",
+    rule: "the most recently updated",
+    upstream: { limit, count: rows.length },
+  });
 }
 
 export const RELIEFWEB_SOURCE: SignalSource = {
@@ -119,7 +135,7 @@ export const RELIEFWEB_SOURCE: SignalSource = {
     if (!appname) return []; // dormant until an approved appname is set
     try {
       const url =
-        `${ENDPOINT}?appname=${encodeURIComponent(appname)}&profile=full&limit=100` +
+        `${ENDPOINT}?appname=${encodeURIComponent(appname)}&profile=full&limit=${RELIEFWEB_PAGE_LIMIT}` +
         `&filter[field]=status&filter[value][]=current&filter[value][]=alert` +
         `&sort[]=date.changed:desc`;
       const res = await fetch(url, {

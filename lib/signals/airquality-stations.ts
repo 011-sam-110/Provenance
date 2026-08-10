@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap } from "@/lib/signals/coverage";
 
 // Air quality — real station measurements (OpenAQ v3). This is the measured
 // counterpart to the modelled CAMS/Open-Meteo air-quality layer: actual PM2.5
@@ -38,8 +39,9 @@ export function pm25Band(v: number): { label: string; color: string } {
 
 /** Pure: OpenAQ latest-PM2.5 payload → SignalFeature[], dropping invalid/error readings. */
 export function normalizeAirStations(json: { results?: AqLatest[] }): SignalFeature[] {
+  const results = json.results ?? [];
   const out: SignalFeature[] = [];
-  for (const r of json.results ?? []) {
+  for (const r of results) {
     const lat = r.coordinates?.latitude;
     const lon = r.coordinates?.longitude;
     if (typeof lat !== "number" || typeof lon !== "number") continue;
@@ -67,7 +69,15 @@ export function normalizeAirStations(json: { results?: AqLatest[] }): SignalFeat
       },
     });
   }
-  return out.slice(0, OPENAQ_CAP);
+  // The truncation happens UPSTREAM: the request asks for one 1,000-row page out of
+  // OpenAQ's ~25k PM2.5 stations. A full page means the real station count is
+  // higher and we cannot see how much higher — so `available` is a lower bound and
+  // the payload says "1,000 of 1,000+", never a bare "1,000 stations".
+  return applyCap(out, OPENAQ_CAP, {
+    noun: "stations",
+    rule: "the first page OpenAQ returned — not a ranking",
+    upstream: { limit: OPENAQ_CAP, count: results.length },
+  });
 }
 
 export const AIR_QUALITY_STATIONS_SOURCE: SignalSource = {

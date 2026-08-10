@@ -18,6 +18,7 @@ import { useScope } from "@/lib/shell/scope";
 import { projectSignal } from "@/lib/console/signals/signalCard";
 import { signalHelp } from "@/lib/console/help";
 import { useSignalFeed } from "@/lib/console/signals/useSignalFeed";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
 import { MetricBar } from "@/components/MetricBar";
 import { makeSignalDetail } from "./signals.detail";
 
@@ -42,29 +43,45 @@ function iconFor(source: SignalSource): string {
   return GROUP_ICON[source.group] ?? "📡";
 }
 
-function freshLabel(refreshMs: number): string {
-  if (refreshMs <= 90_000) return "live";
-  return `${Math.round(refreshMs / 60_000)}m`;
-}
+// NOTE: there used to be a freshLabel(refreshMs) here that turned the CONFIGURED
+// cadence into a header word — so a layer whose upstream had been dead for hours
+// still advertised "live", and so did one that had never succeeded once. The chip
+// now derives its own state from an observation of what actually happened; see
+// lib/console/freshChip.ts and components/console/FreshChip.tsx.
 
-/** Compact "5m" / "2h" / "3d" since an ISO timestamp; "" when undated/unparsable. */
+/**
+ * Compact "5m" / "2h" / "3d" since an ISO timestamp, and "in 4h" / "in 3d" for one
+ * in the FUTURE. "" when undated or unparsable.
+ *
+ * The Math.max(0, …) this replaces meant every forward-dated row rendered "· 0s":
+ * the whole rocket-launch layer showed a zero countdown whether the launch was
+ * tomorrow or in three months. Clamping a negative interval hides the sign; a
+ * schedule layer needs it shown.
+ */
 function relativeTime(ts: string | undefined, now: number): string {
   if (!ts) return "";
   const t = Date.parse(ts);
   if (Number.isNaN(t)) return "";
-  const s = Math.max(0, Math.round((now - t) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.round(m / 60);
-  if (h < 48) return `${h}h`;
-  return `${Math.round(h / 24)}d`;
+  const deltaS = Math.round((now - t) / 1000);
+  const s = Math.abs(deltaS);
+  const span =
+    s < 60 ? `${s}s`
+    : s < 3600 ? `${Math.round(s / 60)}m`
+    : s < 172_800 ? `${Math.round(s / 3600)}h`
+    : `${Math.round(s / 86_400)}d`;
+  return deltaS < 0 ? `in ${span}` : span;
 }
 
 function makeSignalBody(source: SignalSource) {
   function SignalBody({ config }: WidgetBodyProps) {
     const scope = useScope();
-    const { features, status } = useSignalFeed(source.id, source.refreshMs);
+    const { features, status, updatedAt, ok, coverage } = useSignalFeed(source.id, source.refreshMs);
+    // A key-gated layer with no key is DORMANT, not quiet. Without this the chip
+    // read "none now" and the tooltip said "Connected, but there is nothing to
+    // report right now — that is a real answer, not a failure" for layers that
+    // this deployment cannot fetch at all. That is the honesty machinery lying in
+    // the one place it must not, and the `dormant` state existed unwired.
+    const capability = useCapabilityStatus(source.id);
 
     const projected = useMemo(
       () =>
@@ -73,14 +90,29 @@ function makeSignalBody(source: SignalSource) {
           scope,
           { alertMin: typeof config.alertMin === "number" ? config.alertMin : undefined },
           source.metric,
+          coverage,
         ),
-      [features, scope, config],
+      [features, scope, config, coverage],
     );
 
     const report = useWidgetReport();
     useEffect(() => {
-      report({ alerts: projected.alerts, count: projected.shown, freshLabel: freshLabel(source.refreshMs) });
-    }, [projected, report]);
+      report({
+        alerts: projected.alerts,
+        count: projected.shown,
+        // The chip describes the FEED, so it counts what the upstream returned
+        // (features.length), not what survived the user's scope filter
+        // (projected.shown). Otherwise zooming into a quiet country would report
+        // the source as empty. The body already says "Nothing in <scope>".
+        fresh: {
+          lastOk: updatedAt,
+          ok,
+          count: features.length,
+          refreshMs: source.refreshMs,
+          dormant: capability?.state === "locked",
+        },
+      });
+    }, [projected, report, updatedAt, ok, features.length, capability?.state]);
 
     if (status === "loading" && projected.shown === 0) {
       return <p className="tn-w-empty">Loading {source.label}…</p>;
@@ -88,13 +120,27 @@ function makeSignalBody(source: SignalSource) {
     if (status === "error" && projected.shown === 0) {
       return <p className="tn-w-empty">{source.label} unavailable.</p>;
     }
+    if (capability?.state === "locked") {
+      return (
+        <p className="tn-w-empty">
+          {source.label} needs {capability.missingEnv.join(" + ")}, which this deployment does not have.
+          {capability.degrades ? ` ${capability.degrades}` : ""}
+        </p>
+      );
+    }
     if (projected.shown === 0) {
       return <p className="tn-w-empty">Nothing in {scope.label}.</p>;
     }
 
     const now = Date.now();
     return (
-      <ul className="tn-w-list">
+      <>
+        {/* A render cap is not a measurement. When the adapter truncated, say so
+            and say how the survivors were chosen — otherwise "1,500 fires" reads
+            as all the fires there are. The note sits on the FEED, not the scoped
+            row count, so it stays true whatever scope is active. */}
+        {projected.capNote && <p className="tn-w-capnote">{projected.capNote}</p>}
+        <ul className="tn-w-list">
         {projected.rows.map((r) => {
           const rel = relativeTime(r.ts, now);
           return (
@@ -109,7 +155,8 @@ function makeSignalBody(source: SignalSource) {
             </li>
           );
         })}
-      </ul>
+        </ul>
+      </>
     );
   }
   return SignalBody;

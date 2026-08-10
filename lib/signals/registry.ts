@@ -53,6 +53,8 @@ import { WEATHER_SOURCE } from "@/lib/signals/weather";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
 import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
+import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
+import { FAA_SOURCE } from "@/lib/signals/faa";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
 import { DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { FOOD_SECURITY_SOURCE } from "@/lib/signals/food-security";
@@ -92,6 +94,8 @@ export const SIGNALS: SignalSource[] = [
   AIRPORTS_SOURCE,
   PORTS_SOURCE,
   INTERNET_OUTAGES_SOURCE, // IODA national internet-shutdown detection (keyless, country-aggregated)
+  CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
+  FAA_SOURCE, // FAA national airspace status (keyless); US only, and the layer says so
   // Intel (GDELT geolocated news coverage)
   CONFLICT_SOURCE,
   PROTESTS_SOURCE,

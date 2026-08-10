@@ -31,5 +31,26 @@ export const PANEL_REGISTRY: Record<PanelKey, {
   risk:       { component: RiskPanel,        title: "Strategic Risk",      category: "intelligence", defaultGrid: { x: 0, y: 18, w: 12, h: 3 } },
 };
 
-/** Panels PanelHost mounts directly in SP1a (the persistent chrome). */
-export const PERSISTENT_PANELS: PanelKey[] = ["layerRail", "freshness", "news"];
+/**
+ * Panels PanelHost mounts directly as persistent chrome.
+ *
+ * Was `["layerRail", "freshness", "news"]`. The two tickers are `position: fixed;
+ * bottom: 0` footers from the pre-console shell; the widget console pins its own
+ * bottom dock at `bottom: 10px`, so mounting them now would lay a footer over it.
+ * Both are also genuinely superseded — headlines/news have their own widgets, and
+ * per-source freshness is on every widget frame (components/console/FreshChip).
+ * The layer rail is NOT superseded: nothing else lists all 36 layers with their map
+ * toggles, per-layer freshness dot and "needs a key" badge. So it, alone, stays.
+ */
+export const PERSISTENT_PANELS: PanelKey[] = ["layerRail"];
+
+/**
+ * The persistent-chrome panels a host should mount for one variant's placements,
+ * in PERSISTENT_PANELS order. Pure — the host is then a `.map()` over the result.
+ */
+export function persistentPanelsFor(
+  placements: readonly { panel: string; visible: boolean }[],
+): PanelKey[] {
+  const visible = new Set(placements.filter((p) => p.visible).map((p) => p.panel));
+  return PERSISTENT_PANELS.filter((k) => visible.has(k));
+}

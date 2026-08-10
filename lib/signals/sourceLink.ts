@@ -55,6 +55,10 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   airports: { label: "OurAirports", url: "https://ourairports.com/" },
   ports: { label: "Wikipedia", url: "https://en.wikipedia.org/wiki/List_of_busiest_ports_by_cargo_tonnage" },
   "internet-outages": { label: "IODA", url: "https://ioda.inetintel.cc.gatech.edu/" },
+  // Each feature deep-links to the vendor's own incident via `link`; this is the
+  // fallback when a vendor reports a degraded indicator with no open incident post.
+  "cloud-status": { label: "Vendor status pages", url: "https://www.githubstatus.com/" },
+  "faa-airports": { label: "FAA NAS status", url: "https://nasstatus.faa.gov/" },
   conflict: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   protests: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   acled: { label: "ACLED", url: "https://acleddata.com/" },

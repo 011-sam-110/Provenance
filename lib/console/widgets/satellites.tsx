@@ -19,9 +19,17 @@ function SatellitesBody({ config }: WidgetBodyProps) {
     [sats],
   );
 
+  // Satellites are the one honest "live": positions are propagated in-browser by
+  // SGP4 every tick, so there is no fetch that can go stale. `local` says exactly
+  // that, and the chip's tooltip explains it rather than asserting freshness we
+  // cannot observe.
   const report = useWidgetReport();
   useEffect(() => {
-    report({ alerts: [], count: sats.length, freshLabel: "live" });
+    report({
+      alerts: [],
+      count: sats.length,
+      fresh: { lastOk: Date.now(), ok: true, count: sats.length, refreshMs: 10_000, local: true },
+    });
   }, [sats.length, report]);
 
   if (sats.length === 0) return <p className="tn-w-empty">Loading satellites…</p>;
@@ -51,7 +59,7 @@ export const SATELLITES_WIDGET = {
   component: SatellitesBody,
   detail: SatellitesDetail,
   help: {
-    what: "Satellites overhead, propagated locally from public orbital elements and listed by altitude — the ISS, Starlink and more, in near-real time.",
+    what: "Satellites overhead, listed by altitude — the ISS and other bright objects. Positions are computed in your browser from public orbital elements, not observed.",
     source: "CelesTrak TLE sets, propagated with satellite.js (keyless)",
   },
   capabilities: { filter: true, sort: true },

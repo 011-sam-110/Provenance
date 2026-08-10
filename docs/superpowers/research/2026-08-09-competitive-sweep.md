@@ -190,3 +190,50 @@ Raw agent reports, screenshots and probe JSON:
 `%LOCALAPPDATA%\Temp\claude\C--Users-sampo\701044da-206e-4471-bf49-9c0a856a14ce\scratchpad\recon\`
 (`worldmonitor/`, `osiris/`, `ours/`, `wm-src/`, `osiris-src/`, `wm-issues/`,
 `design/INVENTORY.md`, `ORCHESTRATOR-NOTES.md`). Temp — copy anything worth keeping.
+
+---
+
+# ADDENDUM — 2026-08-10 re-audit. Several conclusions above are now WRONG.
+
+An independent three-agent re-audit (live visual + repo/docs) found both rivals had
+moved hard since the sweep. **Read this section before acting on anything above.**
+
+## Assumptions from the sweep that no longer hold
+
+| Sweep said | Actually, on 2026-08-10 |
+|---|---|
+| "The market leader has publicly declined mobile" (#354) | #354 was closed **COMPLETED**, not not_planned. worldmonitor ships a proper tabbed mobile shell, and so does osiris (390×844, no horizontal overflow, bottom tab bar). **Mobile is no longer uncontested ground.** |
+| "Neither competitor has a legend" | worldmonitor now has a legend, a CII colour ramp (0/31/51/66/81/100) and a categorised MAP LAYERS GUIDE that even states the time filter's true scope. |
+| "Numbers ON the markers" is an opening | Theirs already print M5.6 on quakes, 40 kts on storms, 24 NM² areas and named naval formations. |
+| "Neither competitor does i18n / RTL" (8 requests) | worldmonitor ships 24+ languages **with Arabic RTL**. |
+| "Their alerts are word-frequency spikes labelled HIGH" | Replaced by entity-grounded "Intelligence Findings" with evidence and a recommended action, plus a 7-day severity histogram with a trend verdict. |
+| "11 government camera networks — zero hits in their tree" | osiris now ships ~30 country CCTV adapters: **17,384 cameras, 39 named agency feeds, 82 countries**, viewable URL on 100% of records. Our ~19k across 11 feeds / 7 countries is no longer a breadth lead. |
+| Their explainability card: 8 of 20 layers | Now **11 of 36**. Still the hole we exploit, but they are filling it. |
+
+## What they shipped that we do not have at all
+- **worldmonitor**: a 213-endpoint public REST API (OpenAPI 3.1, 936 KB), a 60-tool MCP
+  server with a keyless sandbox, a **515 KB public data-source catalogue** recording each
+  upstream's license posture and attribution (a direct hardening of our own wedge), a
+  machine-readable health contract at `/api/health?compact=1` (258 checks, a real staleness
+  taxonomy), SEC EDGAR corporate intelligence, global tender data, a China desk, and
+  prediction-market forecasting with Brier scoring. 687 commits in a month.
+- **osiris**: a real public **docs site** — 55 keyless endpoints, in-page request runner,
+  cURL/JS/Python tabs — plus live per-sub-layer counts on every toggle, self-documenting
+  400s (`{"error":"Invalid type. Allowed: aircraft, vessel, …"}`), and machine-readable
+  key-gate disclosure with a `hint` telling you exactly which token to set and where.
+- **osiris also independently built our keyless-AI-digest idea** and labels it
+  `HEURISTIC ANALYST` — the same honest-generator design we shipped this round.
+
+## Where we are still genuinely ahead
+Both rivals have concrete honesty defects that we do not:
+- osiris renders **"LIVE SAT-LINK / ACTIVE / RECORDING"** over a single JPEG fetched once
+  and unchanged five minutes later.
+- osiris's flagship country-risk index is 20 hardcoded countries whose severity label is
+  not a function of its own score (Israel 100 = HIGH, Syria 82.0 = CRITICAL).
+- worldmonitor's explainability card is still absent on 25 of 36 layers.
+- Ours: 37 of 37 layers documented with a build-failing test, per-widget freshness derived
+  from observed last-success, render caps disclosed as caps, and a capability report that
+  separates keyless / configured / locked / upgradable.
+
+**Strategic read: the honesty wedge survives; the feature-breadth lead does not.** Treat
+"we have more cameras" and "they have no mobile / no legend / no i18n" as retired claims.

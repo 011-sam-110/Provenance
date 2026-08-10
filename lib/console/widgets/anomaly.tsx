@@ -23,7 +23,10 @@ import type { InsetPoint } from "@/lib/map/inset";
 const ANOMALY_IDS = ["earthquakes", "gdacs", "tropical-cyclones", "floods", "wildfires", "space-weather", "instability", "internet-outages"];
 
 /** Subscribe to the fixed curated set (unrolled → hook order is stable) and rank. */
-function useAnomalyRows(now: number, cap: number): { rows: AnomalyRow[]; updatedAt: number | null; loading: boolean } {
+function useAnomalyRows(
+  now: number,
+  cap: number,
+): { rows: AnomalyRow[]; updatedAt: number | null; loading: boolean; okCount: number; total: number } {
   const quakes = useSignalFeatures("earthquakes", true);
   const gdacs = useSignalFeatures("gdacs", true);
   const cyclones = useSignalFeatures("tropical-cyclones", true);
@@ -50,9 +53,13 @@ function useAnomalyRows(now: number, cap: number): { rows: AnomalyRow[]; updated
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, cap, now, ...feeds.map((f) => f.updatedAt)]);
 
-  const updatedAt = Math.max(0, ...feeds.map((f) => f.updatedAt ?? 0)) || null;
+  // OLDEST, not newest: this widget ranks anomalies ACROSS eight layers, so the
+  // trustworthy age of the ranking is the age of its most out-of-date input. Taking
+  // the max would let one fast feed vouch for seven frozen ones.
+  const succeeded = feeds.filter((f) => f.updatedAt != null);
+  const updatedAt = succeeded.length ? Math.min(...succeeded.map((f) => f.updatedAt as number)) : null;
   const loading = feeds.some((f) => f.status === "loading") && updatedAt == null;
-  return { rows, updatedAt, loading };
+  return { rows, updatedAt, loading, okCount: succeeded.length, total: feeds.length };
 }
 
 function AnomalyList({ rows, now }: { rows: AnomalyRow[]; now: number }) {
@@ -81,9 +88,21 @@ function AnomalyList({ rows, now }: { rows: AnomalyRow[]; now: number }) {
 
 function AnomalyBody(_p: WidgetBodyProps) {
   const now = useNow(30_000);
-  const { rows, loading } = useAnomalyRows(now, 12);
+  const { rows, loading, updatedAt, okCount, total } = useAnomalyRows(now, 12);
   const report = useWidgetReport();
-  useEffect(() => { report({ alerts: [], count: rows.length, freshLabel: "live" }); }, [rows.length, report]);
+  useEffect(() => {
+    report({
+      alerts: [],
+      count: rows.length,
+      fresh: {
+        lastOk: updatedAt,
+        ok: okCount > 0,
+        count: rows.length,
+        refreshMs: 5 * 60_000,
+        coverage: { ok: okCount, total },
+      },
+    });
+  }, [rows.length, report, updatedAt, okCount, total]);
 
   if (loading && rows.length === 0) return <p className="tn-w-empty">Scanning layers…</p>;
   if (rows.length === 0) return <p className="tn-w-empty">All quiet — nothing abnormal across the monitored layers.</p>;
@@ -147,4 +166,8 @@ registerWidget({
   defaultConfig: {},
   component: AnomalyBody,
   detail: AnomalyDetail,
+  help: {
+    what: "The items scoring above the routine floor across eight monitored layers, ranked into one triage list so the answer to \"what should I look at right now?\" is a single panel.",
+    source: `Composited by us from ${ANOMALY_IDS.length} keyless signal layers — severity comes from each layer's own metric`,
+  },
 });

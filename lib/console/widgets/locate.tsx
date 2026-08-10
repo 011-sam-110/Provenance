@@ -162,7 +162,9 @@ export const LOCATE_WIDGET = {
   detail: LocateDetail,
   help: {
     what: "Drop or link a photo and it estimates where on Earth it was taken, then flies the globe to the ranked candidates. Every hit is labelled an estimate with the model's own confidence.",
-    source: "Picarta image-geolocation model, via /api/geolocate",
+    // NOT Picarta — the old note named a vendor we have never called. /api/geolocate
+    // runs a GeoCLIP sidecar when one is configured and falls back to a vision LLM.
+    source: "GeoCLIP geo-embedding model, or a vision-LLM fallback, via /api/geolocate",
   },
 };
 registerWidget(LOCATE_WIDGET);

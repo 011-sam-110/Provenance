@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 
 // gpsjam.org — daily GPS/GNSS interference, aggregated from ADS-B Exchange flight
 // telemetry into H3 hexagons. Keyless. NOTE: the site migrated from GeoJSON to a
@@ -62,7 +63,12 @@ export function parseGpsjamCsv(
     out.push({ hex, good, bad, ratio });
   }
   out.sort((a, b) => b.ratio - a.ratio);
-  return out.slice(0, cap);
+  // `available` counts the cells that CLEAR the interference threshold, not all
+  // ~46k cells in the grid — the threshold defines the layer, the cap truncates it.
+  return applyCap(out, cap, {
+    noun: "interference cells",
+    rule: "the worst by interference ratio",
+  });
 }
 
 /** The slice of h3-js this adapter needs — injected so the mapping stays pure. */
@@ -110,7 +116,10 @@ export function gpsjamCellsToFeatures(cells: GpsjamCell[], h3: H3Lib, day?: stri
       },
     });
   }
-  return out;
+  // The cap was applied to the CELLS; carry that record onto the features they
+  // became, so a dropped invalid H3 index shrinks `returned` without erasing the
+  // fact that jammed cells beyond the cap are not on the globe at all.
+  return carryCoverage(cells, out);
 }
 
 /** UTC YYYY-MM-DD `offset` days before `from` (server-side; not a workflow script). */

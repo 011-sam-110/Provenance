@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/launches.json";
 import { normalizeLaunches, launchStatusColor, LAUNCHES_SOURCE } from "@/lib/signals/launches";
+import { countdown } from "@/lib/console/signals/schedule";
 
 test("normalizes LL2 launches to pad points, skipping pad-less ones", () => {
   const out = normalizeLaunches(fixture as never);
@@ -30,4 +31,38 @@ test("status colour ramp: go=green, tbd=violet", () => {
 
 test("registers as a schedule so it renders the countdown agenda, not the event view", () => {
   expect(LAUNCHES_SOURCE.kind).toBe("schedule");
+});
+
+// --- countdown -----------------------------------------------------------------
+// A schedule layer's `ts` is the SCHEDULED time, i.e. in the FUTURE. Every row's
+// countdown must therefore be derived with countdown(ts, now) — an "age since ts"
+// formatter clamps a future stamp to zero, which is what produced the "· 0s" seen
+// on every launch row in production. These lock the adapter half of that contract:
+// if `ts` ever stops carrying LL2's `net`, the countdown silently dies again.
+
+const NOW = Date.parse("2026-06-27T06:00:00Z"); // 3h before the fixture's first launch
+
+test("REGRESSION: every launch yields a real remaining-time string, never 0", () => {
+  const out = normalizeLaunches(fixture as never);
+  const labels = out.map((f) => countdown(f.ts, NOW).label);
+  expect(labels).toEqual(["T- 3h 0m", "T- 1d 8h", "T- 2d 18h"]);
+  expect(labels.some((l) => /\b0s\b/.test(l))).toBe(false);
+  expect(labels).not.toContain("Unscheduled");
+});
+
+test("REGRESSION: launch timestamps are in the future and carry a positive delta", () => {
+  const out = normalizeLaunches(fixture as never);
+  expect(out.every((f) => typeof f.ts === "string")).toBe(true);
+  expect(out.every((f) => Date.parse(f.ts as string) > NOW)).toBe(true);
+  const deltas = out.map((f) => countdown(f.ts, NOW).ms);
+  expect(deltas.every((ms) => ms != null && ms > 0)).toBe(true);
+  expect(deltas[0]).toBe(3 * 3_600_000);
+});
+
+test("countdown states escalate as a launch approaches, and survive the window", () => {
+  const [pegasus] = normalizeLaunches(fixture as never); // 2026-06-27T09:00:00Z
+  expect(countdown(pegasus.ts, Date.parse("2026-06-27T06:00:00Z")).state).toBe("soon");
+  expect(countdown(pegasus.ts, Date.parse("2026-06-27T08:50:00Z")).label).toBe("T- 10m");
+  expect(countdown(pegasus.ts, Date.parse("2026-06-27T09:30:00Z")).label).toBe("in progress");
+  expect(countdown(pegasus.ts, Date.parse("2026-06-27T13:00:00Z")).label).toBe("launched");
 });

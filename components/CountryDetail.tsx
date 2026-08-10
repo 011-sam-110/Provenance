@@ -4,7 +4,7 @@
 // The country layer is a base reference (borders + names + a click target), but the
 // dossier is the traveler / security-desk / analyst entry point for a place. It now
 // shows three LIVE, sourced sections beneath the identity facts:
-//   • Travel advisory — an aggregate 0–5 government-advisory score (travel-advisory.info)
+//   • Travel advisory — the UK FCDO's own advice for the country (gov.uk, keyless)
 //     with a clickable deep link. Dormant-safe: a labelled placeholder on any miss.
 //   • Instability index — the composite Country Instability Index we already compute,
 //     honestly flagged as a derived estimate, with every contributing source linked.
@@ -65,9 +65,19 @@ function StatusSlot({ title, note, chip, chipColor }: { title: string; note: str
 }
 
 // ── Travel advisory ─────────────────────────────────────────────────────────
-/** LIVE aggregate travel-advisory slot for the clicked country (keyless). */
+/**
+ * LIVE travel-advisory slot for the clicked country (keyless, UK FCDO).
+ *
+ * This is ONE government's advice to ITS OWN nationals, not a neutral world risk
+ * index, and the card says so. It replaced an aggregator that had gone offline —
+ * so the "no data" state now carries the server's reason, because "the FCDO does
+ * not cover this territory" and "the lookup failed" are different facts and the
+ * old code rendered them identically.
+ */
 function TravelAdvisorySlot({ iso2 }: { iso2?: string }) {
-  const [state, setState] = useState<{ kind: "loading" | "none" | "ok"; view?: AdvisoryView }>({ kind: "loading" });
+  const [state, setState] = useState<{ kind: "loading" | "none" | "ok"; view?: AdvisoryView; reason?: string }>({
+    kind: "loading",
+  });
 
   useEffect(() => {
     if (!iso2) {
@@ -81,7 +91,7 @@ function TravelAdvisorySlot({ iso2 }: { iso2?: string }) {
       .then((d) => {
         if (!alive) return;
         const v = (d?.advisory as AdvisoryView | null) ?? null;
-        setState(v ? { kind: "ok", view: v } : { kind: "none" });
+        setState(v ? { kind: "ok", view: v } : { kind: "none", reason: d?.reason as string | undefined });
       })
       .catch(() => alive && setState({ kind: "none" }));
     return () => {
@@ -92,7 +102,14 @@ function TravelAdvisorySlot({ iso2 }: { iso2?: string }) {
   if (state.kind === "loading")
     return <StatusSlot title="Travel advisory" note="Checking government advisories…" chip="Loading" chipColor="var(--tn-text-faint)" />;
   if (state.kind === "none")
-    return <StatusSlot title="Travel advisory" note="No aggregate advisory available right now." chip="No data" chipColor="var(--tn-text-faint)" />;
+    return (
+      <StatusSlot
+        title="Travel advisory"
+        note={state.reason ?? "No travel advice available for this country right now."}
+        chip="No data"
+        chipColor="var(--tn-text-faint)"
+      />
+    );
 
   const v = state.view!;
   return (
@@ -112,10 +129,10 @@ function TravelAdvisorySlot({ iso2 }: { iso2?: string }) {
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 10, color: "var(--tn-text-faint)" }}>
-          Aggregate score{v.updated ? ` · updated ${v.updated}` : ""} — not one government&apos;s figure
+          {v.issuer}{v.updated ? ` · updated ${v.updated}` : ""} — advice to UK nationals, not a neutral risk index
         </span>
         <a href={v.source} target="_blank" rel="noreferrer noopener" style={SRC_LINK_STYLE}>
-          travel-advisory.info ↗
+          gov.uk ↗
         </a>
       </div>
     </div>

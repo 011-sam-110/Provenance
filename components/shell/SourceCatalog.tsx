@@ -43,6 +43,7 @@ import { useVariant, useLayout } from "@/lib/variants/store";
 import { toggleTileDock } from "@/lib/widgets/dock";
 import { sourceKey, rollupKey } from "@/lib/widgets/registry";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
 
 interface LayerMeta {
   name: string;
@@ -55,7 +56,9 @@ interface LayerMeta {
 
 const LAYER_META: Record<LayerKey, LayerMeta> = {
   cameras: { name: "Cameras", group: "Ground", accent: "#0e7d97", source: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC", fresh: "cameras" },
-  planes: { name: "Planes", group: "Air", accent: "#d97706", source: "adsb.lol — live ADS-B", fresh: "planes" },
+  // OpenSky, not adsb.lol: app/api/planes imports fetchAircraft from lib/sources/opensky.
+  // adsb.lol backs the separate military-air SIGNAL layer only.
+  planes: { name: "Planes", group: "Air", accent: "#d97706", source: "OpenSky Network — global ADS-B snapshot", fresh: "planes" },
   satellites: { name: "Satellites", group: "Space", accent: "#7c3aed", source: "CelesTrak TLE · SGP4 (local)", fresh: "satellites" },
   ships: { name: "Ships", group: "Sea", accent: "#0d9488", source: "AIS vessels", planned: true },
   webcams: { name: "Webcams", group: "Ground", accent: "#ec4899", source: "Windy.com — global webcams", fresh: "webcams" },
@@ -260,6 +263,36 @@ function SignalFreshNote({ id, refreshMs }: { id: string; refreshMs: number }) {
   );
 }
 
+/**
+ * "Locked — needs a key" for a layer this deployment cannot fetch.
+ *
+ * Without it, a key-gated layer renders zero and is indistinguishable from a dead
+ * upstream or a genuinely quiet feed — the visitor concludes the product is
+ * broken. The badge is deliberately grey, not red: a locked layer is a
+ * configuration fact, not a fault.
+ */
+function LockedBadge({ id }: { id: string }) {
+  const status = useCapabilityStatus(id);
+  if (!status) return null;
+  // "upgradable" is deliberately NOT badged here: the layer works keylessly and a
+  // key would only improve it, so a badge in the layer list would read as a fault.
+  // Saying a working feature is dead is the same error as saying a dead one is live.
+  if (status.state !== "locked") return null;
+  const title = [
+    `Locked — this deployment has no ${status.missingEnv.join(" + ")}.`,
+    status.degrades,
+    status.obtain,
+    "Holding a key is not the same as the upstream accepting it — the freshness dot above says whether data is actually arriving.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <span className="tn-layer-locked" title={title}>
+      🔑 needs a key
+    </span>
+  );
+}
+
 function SignalRow({
   id,
   label,
@@ -288,7 +321,10 @@ function SignalRow({
           style={{ background: color, boxShadow: on ? `0 0 7px ${color}88` : "none" }}
         />
         <div className="tn-layer-main">
-          <span className="tn-layer-name">{label}</span>
+          <span className="tn-layer-name">
+            {label}
+            <LockedBadge id={id} />
+          </span>
           <span className="tn-layer-source">{attribution}</span>
           {on ? <SignalFreshNote id={id} refreshMs={refreshMs} /> : null}
         </div>
@@ -376,7 +412,11 @@ function GlobalSignals({
 }
 
 export default function SourceCatalog() {
-  const [railOpen, setRailOpen] = useState(true);
+  // Mounts CLOSED, as the "≡ Sources" launcher. In the old shell the rail owned the
+  // left edge; in the widget console that edge is a widget column, and a 304px panel
+  // opening over it on every page load would hide the seeded widgets on desktop and
+  // eat two-thirds of a phone screen. One click opens it — see ConsoleWorkspace.
+  const [railOpen, setRailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const m = useMetrics();
   const t = useT();

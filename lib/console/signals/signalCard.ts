@@ -10,6 +10,13 @@
 import type { SignalFeature, SignalMetric } from "@/lib/signals/types";
 import { withinScope, type Scope } from "@/lib/shell/scope";
 import type { Alert, AlertSeverity } from "@/lib/console/alerts";
+import {
+  coverageCountLabel,
+  coverageNote,
+  groupDigits,
+  readCoverage,
+  type SignalCoverage,
+} from "@/lib/signals/coverage";
 
 export interface RowMetric {
   /** Raw scalar (drives the bar fill). */
@@ -57,6 +64,19 @@ export interface SignalProjection {
   /** Features inside the active scope (the widget's headline count). */
   shown: number;
   alerts: Alert[];
+  /**
+   * The adapter's truncation record, when it published one. `undefined` means the
+   * source declared nothing — NOT that the feed is complete.
+   */
+  coverage?: SignalCoverage;
+  /**
+   * The headline count as text. Identical to `String(total)` for an uncapped feed;
+   * for a capped one it carries the denominator the cap cut from ("1,500 of
+   * 41,203"), so the widget cannot print a cap as if it were a measurement.
+   */
+  totalLabel: string;
+  /** One plain sentence naming what was hidden and how survivors were chosen. */
+  capNote?: string;
 }
 
 export interface SignalCardConfig {
@@ -105,14 +125,20 @@ function tsMillis(ts: string | undefined): number {
  *   any feature carries one, otherwise by recency (desc; undated last).
  * - Alerts surface declared-severe features (always) plus, when `alertMin` is
  *   set, features at/above that magnitude — deduped, ranked, capped at 4.
+ * - `totalLabel` / `capNote` carry the source's RENDER-CAP record, so a capped
+ *   feed cannot present its ceiling as a count. Pass `coverage` from the
+ *   `/api/signals/<id>` payload on the client (the server-side side-channel does
+ *   not survive JSON); server-side callers can omit it and it is read off the array.
  */
 export function projectSignal(
   features: SignalFeature[],
   scope: Scope,
   config: SignalCardConfig,
   metric?: SignalMetric,
+  coverage?: SignalCoverage,
 ): SignalProjection {
   const total = features.length;
+  const cov = coverage ?? readCoverage(features);
   const scoped = features.filter((f) => withinScope(f.lat, f.lon, scope));
 
   const rows: SignalRow[] = scoped.map((f) => ({
@@ -157,5 +183,13 @@ export function projectSignal(
     .slice(0, MAX_ALERTS);
 
   const limit = config.limit ?? DEFAULT_LIMIT;
-  return { rows: rows.slice(0, limit), total, shown: scoped.length, alerts };
+  return {
+    rows: rows.slice(0, limit),
+    total,
+    shown: scoped.length,
+    alerts,
+    ...(cov ? { coverage: cov } : {}),
+    totalLabel: cov ? coverageCountLabel(cov, total) : groupDigits(total),
+    ...(coverageNote(cov) ? { capNote: coverageNote(cov) } : {}),
+  };
 }

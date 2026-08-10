@@ -106,7 +106,12 @@ export function GET(req: Request): ImageResponse {
   const title = clamp(searchParams.get("t") || BRAND.headline, 88) || BRAND.name;
   const subtitle = clamp(searchParams.get("s") || BRAND.pitch, 64);
   const accent = safeAccent(searchParams.get("c"));
-  let host = "worldmonitor.app";
+  // Our host, not a competitor's. This literal was `worldmonitor.app`, which would
+  // have branded every social share card with a rival's domain any time
+  // `new URL(siteUrl())` threw. tests/unit/naming-guard.test.ts caught it on the
+  // merge — that guard exists because this exact string had already leaked into
+  // CSV filenames and outbound alerts once before.
+  let host = "traffic-nerd-v2.vercel.app";
   try {
     host = new URL(siteUrl()).host;
   } catch {

@@ -21,7 +21,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EVENT_SOURCES } from "@/lib/events/sources";
-import { useEventFeeds } from "@/lib/widgets/useEventFeeds";
+import { useEventFeeds, EVENT_POLL_MS } from "@/lib/widgets/useEventFeeds";
 import { projectEventFeed, type FeedInput, type FeedSort } from "@/lib/widgets/eventFeed";
 import { useScope } from "@/lib/shell/scope";
 import { useTimeWindow, windowMsFor } from "@/lib/shell/timeWindow";
@@ -92,7 +92,7 @@ function EventsBody({ instanceId, config }: WidgetBodyProps) {
   const scope = useScope();
   const win = useTimeWindow();
   const now = useNow(60_000);
-  const { bySource, status } = useEventFeeds();
+  const { bySource, status, updatedAt, okCount, total } = useEventFeeds();
   const assets = useAssets();
 
   const inputs: FeedInput[] = useMemo(
@@ -217,10 +217,20 @@ function EventsBody({ instanceId, config }: WidgetBodyProps) {
     report({
       alerts: runAlertRule(eventAlerts, lite, config),
       count: filtered.length,
-      freshLabel: "5m",
+      // Was the string "5m" — the configured cadence, not an observation. Events
+      // fan out over several upstreams, so a partial outage is the common failure:
+      // `ok` is false only when EVERY source failed, and the count is the raw
+      // feature total across sources (not the scope/time-filtered row count).
+      fresh: {
+        lastOk: updatedAt,
+        ok: okCount > 0,
+        count: Object.values(bySource).reduce((n, f) => n + f.length, 0),
+        refreshMs: EVENT_POLL_MS,
+        coverage: { ok: okCount, total },
+      },
       export: { rows: exportRows, geo: exportGeo, name: "events" },
     });
-  }, [lite, filtered.length, report, config, exportRows, exportGeo]);
+  }, [lite, filtered.length, report, config, exportRows, exportGeo, updatedAt, okCount, bySource]);
 
   if (status === "loading" && filtered.length === 0 && hidden === 0) {
     return <p className="tn-w-empty">Loading events…</p>;
@@ -309,9 +319,12 @@ export const EVENTS_WIDGET = {
   defaultConfig: { minTier: "S1", sort: "severity", evGroupBy: "region" },
   component: EventsBody,
   detail: EventsDetail,
+  // Three sources, named. The old note advertised "floods, outbreaks" and "partner
+  // hazard feeds"; EVENT_SOURCES has exactly USGS quakes, GDACS alerts and NHC
+  // cyclones, and nothing here has ever carried an outbreak.
   help: {
-    what: "Major disasters and events — earthquakes, storms, floods, outbreaks — ranked by severity and clustered by region, with anything near a watched asset escalated to the top.",
-    source: "GDACS + USGS + partner hazard feeds (keyless)",
+    what: "Earthquakes, GDACS disaster alerts and active cyclones, tiered by severity and grouped by region — with anything whose modelled impact radius reaches one of your assets escalated to the top.",
+    source: "USGS + GDACS + NOAA NHC (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };

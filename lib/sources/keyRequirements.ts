@@ -1,0 +1,225 @@
+// Which capabilities need a credential, and are we holding it?
+//
+// WHY THIS EXISTS. Six of our layers are key-gated. Without a key they resolve to
+// [] — which is the right dormant-safe behaviour, but on screen it is
+// indistinguishable from a dead upstream, a broken adapter, or a genuinely quiet
+// feed. A visitor sees an empty layer and concludes the product is broken. Both
+// competitors get this exact complaint filed against them (worldmonitor #5829,
+// #6149), and we had no answer either.
+//
+// So: one declarative table of what each capability requires, a pure resolver
+// against an env bag, and /api/status to publish it. The table is deliberately
+// separate from the adapters rather than a field on SignalSource, because
+// (a) it is the ONE place to see the whole gating picture, and (b) several of the
+// gated capabilities are not signal layers at all (webcams, equities, the brief).
+//
+// SECURITY. Nothing here ever reads or exposes a VALUE. `configured` is a boolean
+// derived from presence-and-non-emptiness, and only variable NAMES are published.
+// Publishing the names is fine and useful — they are documented in docs/API_KEYS.md
+// and are what a self-hoster needs to know.
+
+/**
+ * Whether a credential is REQUIRED for the capability to work at all, or merely
+ * improves it.
+ *
+ * This distinction was missing and /api/status lied because of it: it reported the
+ * Markets equities and macro sections as "locked — stays dormant" while both were
+ * rendering six and four rows from a keyless Yahoo fallback. Telling a user a
+ * working feature is dead is the same class of error as telling them a dead one is
+ * live.
+ */
+export type KeyKind = "required" | "enhancement";
+
+/** What a gated capability needs, and what the user loses while it is missing. */
+export interface KeyRequirement {
+  /** "required" = dead without it. "enhancement" = works keylessly, better with it. */
+  kind: KeyKind;
+  /** Signal id, or a synthetic id for a non-signal capability (see NON_SIGNAL_IDS). */
+  id: string;
+  label: string;
+  /** Env var NAMES. All of them must be present for the capability to work. */
+  env: string[];
+  /** Plain-English consequence of the key being absent. Shown in the UI. */
+  degrades: string;
+  /** Where a self-hoster gets one. Free unless stated. */
+  obtain: string;
+}
+
+export const KEY_REQUIREMENTS: KeyRequirement[] = [
+  {
+    kind: "required",
+    id: "acled",
+    label: "ACLED conflict events",
+    env: ["ACLED_EMAIL", "ACLED_PASSWORD"],
+    degrades:
+      "The conflict-event layer is empty, and the Country Instability Index loses its 0.40-weight conflict factor, capping every score at roughly 49/100.",
+    obtain: "Free for non-commercial use — register at acleddata.com and request API read access.",
+  },
+  {
+    kind: "required",
+    id: "ais",
+    label: "Ship traffic (AIS)",
+    env: ["AISSTREAM_API_KEY"],
+    degrades: "No live vessel positions at chokepoints and ports.",
+    obtain: "Free — aisstream.io.",
+  },
+  {
+    kind: "required",
+    id: "air-quality-stations",
+    label: "Air-quality monitoring stations",
+    env: ["OPENAQ_API_KEY"],
+    degrades: "No station-level air quality; the modelled air-quality layer still works.",
+    obtain: "Free — openaq.org.",
+  },
+  {
+    kind: "required",
+    id: "fire-active",
+    label: "NASA FIRMS active fires",
+    env: ["FIRMS_MAP_KEY"],
+    degrades: "No satellite thermal-anomaly detections; the EONET wildfire layer still works.",
+    obtain: "Free — firms.modaps.eosdis.nasa.gov/api/map_key.",
+  },
+  {
+    kind: "required",
+    id: "grid-load",
+    label: "European grid load",
+    env: ["ENTSOE_API_TOKEN"],
+    degrades: "No electricity demand or generation for the European grid.",
+    obtain: "Free — register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days).",
+  },
+  {
+    kind: "required",
+    id: "reliefweb",
+    label: "ReliefWeb situation reports",
+    env: ["RELIEFWEB_APPNAME"],
+    degrades: "No UN OCHA humanitarian situation reports.",
+    obtain: "Free, no signup — ReliefWeb only wants an identifying app-name string.",
+  },
+  {
+    kind: "required",
+    id: "food-security",
+    label: "WFP food insecurity",
+    env: ["HUNGERMAP_API_KEY"],
+    degrades:
+      "The food-insecurity layer shows a single labelled notice instead of data, and the Country Instability Index loses its food factor.",
+    obtain:
+      "WFP withdrew the keyless HungerMap feed in 2026 (v1 now 401s, and every mirror we could find refuses). There is no public self-service signup; access has to be requested from WFP.",
+  },
+  // --- capabilities that are not signal layers ------------------------------
+  {
+    kind: "required",
+    id: "webcams",
+    label: "Windy global webcams",
+    env: ["WINDY_WEBCAMS_API_KEY"],
+    degrades: "The 70k-webcam layer is empty. Our 11 government camera networks are keyless and unaffected.",
+    obtain: "Free tier — api.windy.com/webcams.",
+  },
+  {
+    kind: "enhancement",
+    id: "markets-equities",
+    label: "Real-time equities",
+    env: ["FINNHUB_API_KEY"],
+    degrades:
+      "Equities still render, keylessly, from Yahoo Finance delayed quotes. The key upgrades them to real time.",
+    obtain: "Free tier — finnhub.io.",
+  },
+  {
+    kind: "enhancement",
+    id: "markets-macro",
+    label: "US macro series (FRED)",
+    env: ["FRED_API_KEY"],
+    degrades:
+      "Treasury yields and VIX still render, keylessly, from Yahoo. The key adds the full FRED series set (CPI and the rest).",
+    obtain: "Free — fred.stlouisfed.org/docs/api/api_key.html.",
+  },
+  {
+    // Found by the env-scan guard in tests/unit/sources-status.test.ts, which is
+    // exactly what that guard is for: FREELLMAPI_VISION_MODEL gates a real user-
+    // facing fallback and was in nobody's table.
+    kind: "enhancement",
+    id: "geolocate-vision",
+    label: "Photo geolocation — vision fallback",
+    env: ["FREELLMAPI_BASE_URL", "FREELLMAPI_KEY", "FREELLMAPI_VISION_MODEL"],
+    degrades:
+      "The /locate tool still runs on EXIF and landmark matching. Without these it cannot fall back to a vision model for a photo that carries no metadata, so it answers 'no location could be estimated' more often.",
+    obtain: "Any OpenAI-compatible gateway with a vision model.",
+  },
+  {
+    kind: "enhancement",
+    id: "ai-brief",
+    label: "AI-written brief and news synthesis",
+    env: ["FREELLMAPI_BASE_URL", "FREELLMAPI_KEY"],
+    degrades:
+      "The brief falls back to the keyless heuristic version. The numbers are identical either way — only the prose is missing.",
+    obtain: "Any OpenAI-compatible gateway.",
+  },
+];
+
+/** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
+export const NON_SIGNAL_IDS = new Set([
+  "webcams",
+  "markets-equities",
+  "markets-macro",
+  "ai-brief",
+  "geolocate-vision",
+]);
+
+const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));
+
+export function keyRequirementFor(id: string): KeyRequirement | undefined {
+  return BY_ID.get(id);
+}
+
+/** A capability with no entry in the table is keyless — that is the default and the norm. */
+export function isKeyless(id: string): boolean {
+  return !BY_ID.has(id);
+}
+
+/** Present AND non-blank. An empty string in .env is the classic "I thought I set that". */
+export function hasEnv(env: Record<string, string | undefined>, name: string): boolean {
+  const v = env[name];
+  return typeof v === "string" && v.trim().length > 0;
+}
+
+/** Env var NAMES that a capability needs but we do not hold. Empty = ready to go. */
+export function missingEnvFor(id: string, env: Record<string, string | undefined>): string[] {
+  const req = BY_ID.get(id);
+  if (!req) return [];
+  return req.env.filter((name) => !hasEnv(env, name));
+}
+
+/**
+ * - keyless    — needs no credential at all. The default and the norm.
+ * - configured — required credential, and we hold it. NOT a promise that the
+ *                upstream accepts it: ACLED answers 403 to a token that passes
+ *                its own OAuth flow. Liveness is the freshness chip's job; this
+ *                field is about configuration only, and the UI must not conflate
+ *                the two.
+ * - locked     — required credential, and we do not hold it. Genuinely unavailable.
+ * - upgradable — OPTIONAL credential we do not hold. The feature works keylessly;
+ *                a key would make it better. Reporting this as "locked" was a lie.
+ * - enhanced   — optional credential, and we hold it.
+ */
+export type CapabilityState = "keyless" | "configured" | "locked" | "upgradable" | "enhanced";
+
+/** True for a state in which the capability delivers something usable right now. */
+export function isUsable(state: CapabilityState): boolean {
+  return state !== "locked";
+}
+
+export function capabilityState(id: string, env: Record<string, string | undefined>): CapabilityState {
+  const req = BY_ID.get(id);
+  if (!req) return "keyless";
+  const held = missingEnvFor(id, env).length === 0;
+  if (req.kind === "enhancement") return held ? "enhanced" : "upgradable";
+  return held ? "configured" : "locked";
+}
+
+/** What a locked capability's badge says. Null when nothing is missing. */
+export function lockedReason(id: string, env: Record<string, string | undefined>): string | null {
+  const req = BY_ID.get(id);
+  if (!req) return null;
+  const missing = missingEnvFor(id, env);
+  if (missing.length === 0) return null;
+  return `Needs ${missing.join(" + ")}. ${req.degrades} ${req.obtain}`;
+}

@@ -38,6 +38,13 @@ import {
   type MapLoadStatus,
 } from "@/lib/map/resilience";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
+import {
+  COUNTRY_HIT_LAYER,
+  PIN_HIT_LAYERS,
+  isCountryScopedSignal,
+  resolveMapClickTarget,
+  type MapClickHit,
+} from "@/lib/map/hitTest";
 import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/geo/country";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { CAMERA_CLUSTER, WEBCAM_CLUSTER, expandCluster } from "@/lib/map/cluster";
@@ -113,7 +120,7 @@ const SIGNAL_FILL_OUTLINE = "signal-fill-outline";
 // Clickable countries — bundled Natural Earth polygons (borders + click hit-area)
 // plus our own centroid name labels (raster basemaps only; Light labels itself).
 const COUNTRY_SRC = "country-polys";
-const COUNTRY_FILL_LAYER = "country-fill"; // ~transparent hit-area, brightens on hover
+const COUNTRY_FILL_LAYER = COUNTRY_HIT_LAYER; // ~transparent hit-area, brightens on hover
 const COUNTRY_BORDER_LAYER = "country-borders";
 const COUNTRY_LABEL_SRC = "country-label-pts";
 const COUNTRY_LABEL_LAYER = "country-labels";
@@ -145,14 +152,24 @@ function toPinFC(pins: MapPin[], activeId: string | null): GeoJSON.FeatureCollec
 // and Topographic rasters don't. Our name labels show only on the rasters.
 const isRasterBasemap = (b: BasemapKey): boolean => b !== "positron";
 
-// Pin/signal layers a country click must defer to (a click on a pin should open
-// the pin, not the country beneath it). Filtered to existing layers at call time.
-const COUNTRY_CLICK_GUARD_LAYERS = [
-  "camera-markers", "camera-dots", "camera-clusters",
-  "webcam-markers", "webcam-dots", "webcam-clusters",
-  "plane-markers", "satellite-core",
-  "signal-dots", "signal-icons", "signal-line-paths", "signal-fill-areas",
-];
+// Every layer that takes part in the pin-vs-country arbitration (see
+// lib/map/hitTest). Filtered to existing layers at call time — a layer id that is
+// not in the current style makes queryRenderedFeatures throw.
+const CLICK_ARBITRATION_LAYERS = [...PIN_HIT_LAYERS, COUNTRY_HIT_LAYER];
+
+/**
+ * Distil everything rendered under `point` into the pure hit-test's input.
+ * MapLibre only reports layers that are actually visible, so a toggled-off layer
+ * drops out on its own.
+ */
+function hitsAt(map: maplibregl.Map, point: maplibregl.MapLayerMouseEvent["point"]): MapClickHit[] {
+  const layers = CLICK_ARBITRATION_LAYERS.filter((id) => map.getLayer(id));
+  if (!layers.length) return [];
+  return map.queryRenderedFeatures(point, { layers }).map((f) => {
+    const signalId = (f.properties as { signalId?: unknown } | undefined)?.signalId;
+    return { layer: f.layer.id, signalId: typeof signalId === "string" ? signalId : undefined };
+  });
+}
 
 // Start zoomed out so the spinning globe is the hero. The palette / rail fly inward.
 const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
@@ -987,7 +1004,23 @@ export default function WorldMap() {
 
     // Points, lines and areas all resolve to the SAME signal dossier by id.
     const signalClick = (e: maplibregl.MapLayerMouseEvent) => {
-      const id = (e.features?.[0]?.properties as { id?: string })?.id;
+      const feats = e.features ?? [];
+      // A country-scoped pin (the instability index) sits on the country centroid
+      // and stands for the country, so anything stacked on it takes priority.
+      const f =
+        feats.find((x) => !isCountryScopedSignal((x.properties as { signalId?: string })?.signalId)) ??
+        feats[0];
+      if (!f) return;
+      // …and when it IS the topmost thing here, the COUNTRY dossier owns the click
+      // (it renders the full index — see CountryDetail's InstabilitySlot). Only
+      // consult the arbiter for that case; every other pin is unconditional.
+      if (
+        isCountryScopedSignal((f.properties as { signalId?: string })?.signalId) &&
+        resolveMapClickTarget(hitsAt(map, e.point)) === "country"
+      ) {
+        return;
+      }
+      const id = (f.properties as { id?: string })?.id;
       const sig = signalsRef.current.find((s) => s.id === id);
       if (sig) overlay.open(sig);
     };
@@ -996,13 +1029,13 @@ export default function WorldMap() {
     map.on("click", SIGNAL_LINE_LAYER, signalClick);
     map.on("click", SIGNAL_FILL_LAYER, signalClick);
 
-    // Countries — click opens the country dossier, but only when no pin/signal is
-    // under the cursor (the fill covers the whole globe, so a pin must win). Hover
-    // washes the country via feature-state. Both survive basemap swaps (the source
-    // id is resolved at event time; addAppLayers re-creates the source).
+    // Countries — the fill covers every landmass and sits UNDER every pin layer,
+    // so this fires for pin clicks too. lib/map/hitTest is the single arbiter both
+    // this and signalClick consult, so exactly one dossier opens. Hover washes the
+    // country via feature-state. Both survive basemap swaps (the source id is
+    // resolved at event time; addAppLayers re-creates the source).
     map.on("click", COUNTRY_FILL_LAYER, (e) => {
-      const guard = COUNTRY_CLICK_GUARD_LAYERS.filter((id) => map.getLayer(id));
-      if (guard.length && map.queryRenderedFeatures(e.point, { layers: guard }).length) return;
+      if (resolveMapClickTarget(hitsAt(map, e.point)) !== "country") return;
       const f = e.features?.[0];
       if (!f) return;
       overlay.open(buildCountryObject(f.properties as CountryProps, e.lngLat.lat, e.lngLat.lng));

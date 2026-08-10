@@ -13,7 +13,11 @@ function NewsBody({ instanceId, config }: WidgetBodyProps) {
   const embed = resolveEmbed(active);
   const favorites = NEWS_PROVIDERS.filter((p) => p.favorite).slice(0, 4);
   const [picker, setPicker] = useState(false);
-  useEffect(() => { report({ alerts: [], freshLabel: "live" }); }, [report]);
+  // No `fresh` observation here on purpose: this widget embeds a third-party live
+  // video player, and we have no way to observe whether the stream is actually
+  // playing. "live stream" names the medium; it does not assert a freshness we
+  // cannot measure — which is exactly what the old "live" did.
+  useEffect(() => { report({ alerts: [], freshLabel: "live stream" }); }, [report]);
 
   const choose = (id: string) => { import("@/lib/console/store").then((m) => m.shellLayoutStore.configure(instanceId, { providerId: id })); };
   const videoRef = useRef<HTMLVideoElement>(null);

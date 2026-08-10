@@ -74,8 +74,13 @@ describe("relativeAge", () => {
     expect(relativeAge("2026-07-10T10:00:00Z", now)).toBe("2h");
     expect(relativeAge("2026-07-07T12:00:00Z", now)).toBe("3d");
   });
-  it("clamps future timestamps to 0s", () => {
-    expect(relativeAge("2026-07-10T12:00:30Z", now)).toBe("0s");
+  // Future stamps used to clamp to "0s", which is why every rocket launch in the
+  // schedule read "· 0s" whether it was tomorrow or in three months. A forward-
+  // looking layer needs the sign shown, not hidden.
+  it("counts DOWN to a future timestamp instead of clamping it to 0s", () => {
+    expect(relativeAge("2026-07-10T12:00:30Z", now)).toBe("in 30s");
+    expect(relativeAge("2026-07-10T16:00:00Z", now)).toBe("in 4h");
+    expect(relativeAge("2026-07-13T12:00:00Z", now)).toBe("in 3d");
   });
 });
 

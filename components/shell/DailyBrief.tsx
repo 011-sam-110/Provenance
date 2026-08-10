@@ -48,7 +48,14 @@ export default function DailyBrief({ docked = false }: { docked?: boolean } = {}
 
   return (
     <div className={`tn-brief${docked ? " tn-docked" : ""}`}>
-      <span className="tn-brief-label">AI daily brief · grounded in the Instability Index</span>
+      {/* The brief now has a keyless path: without a model key the same numbers are
+          assembled by plain arithmetic. Labelling that "AI" would be a lie about how
+          it was produced, so the label follows `generatedBy` rather than being fixed. */}
+      <span className="tn-brief-label">
+        {data.generatedBy === "model"
+          ? "AI daily brief · grounded in the Instability Index"
+          : "World brief · computed from the Instability Index, no AI"}
+      </span>
       <p className="tn-brief-text">{data.brief}</p>
     </div>
   );

@@ -12,7 +12,13 @@ import type { SignalFeature, SignalMetric, SignalSource } from "@/lib/signals/ty
 // a single point per event. Category ids: wildfires, volcanoes, severeStorms,
 // floods (verified against /api/v3/categories).
 
-const ENDPOINT = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30";
+// NO `days` WINDOW HERE, deliberately. `days=N` filters on the newest GEOMETRY
+// date, and an open volcanic event is often observed months apart — so
+// `status=open&days=30` returned 32 open volcano events upstream and ZERO to us,
+// for as long as the layer has existed. The staleness rule belongs per category
+// (see maxAgeDays), because "last seen eight weeks ago" means something different
+// for a volcano than for a wildfire.
+const ENDPOINT = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 export const EONET_ATTRIBUTION = "Natural-event data © NASA EONET";
@@ -41,10 +47,21 @@ export interface EonetCategoryMeta {
   /** Real per-feature scalar for the monitor bar. Only severe storms carry one
    *  (wind in kts); wildfires/volcanoes/floods have no numeric scalar → dot only. */
   metric?: SignalMetric;
+  /**
+   * Drop an open event whose newest observation is older than this, in days.
+   * Omit to keep every open event however long ago it was last observed.
+   *
+   * EONET closes an event when the source says it is over, so "open" already
+   * means "not declared finished". The window here is only about whether a
+   * long-unobserved event is still worth a pin: a wildfire last seen two months
+   * ago is almost certainly out, whereas a volcano is still a volcano.
+   */
+  maxAgeDays?: number;
 }
 
 export const CATEGORIES: Record<string, EonetCategoryMeta> = {
-  wildfires: { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316" },
+  wildfires: { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316", maxAgeDays: 30 },
+  // No window: an open volcanic event is routinely observed months apart.
   volcanoes: { signalId: "volcanoes", category: "volcanoes", label: "Volcanoes", color: "#dc2626" },
   severeStorms: {
     signalId: "severeStorms",
@@ -54,8 +71,9 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     // EONET severe-storm geometries carry sustained wind in knots. Tropical-storm
     // floor (~35 kt) → Cat-5 (~140 kt) fills the bar across the real intensity range.
     metric: { field: "windKt", domain: [35, 140], unit: " kts" },
+    maxAgeDays: 14, // a storm nobody has observed in a fortnight is over
   },
-  floods: { signalId: "floods", category: "floods", label: "Floods", color: "#0ea5e9" },
+  floods: { signalId: "floods", category: "floods", label: "Floods", color: "#0ea5e9", maxAgeDays: 60 },
 };
 
 /** Extract a representative [lon, lat] from a Point or (defensively) a Polygon. */
@@ -88,12 +106,23 @@ export function representativePoint(geom: EonetGeometry | undefined): [number, n
  * Pure: EONET events → SignalFeature[] for ONE category. Takes the latest
  * geometry of each matching event, skips events with no usable point.
  */
-export function eonetToFeatures(events: EonetEvent[], meta: EonetCategoryMeta): SignalFeature[] {
+export function eonetToFeatures(
+  events: EonetEvent[],
+  meta: EonetCategoryMeta,
+  now: number = Date.now(),
+): SignalFeature[] {
   const out: SignalFeature[] = [];
   for (const e of events ?? []) {
     if (!(e.categories ?? []).some((c) => c.id === meta.category)) continue;
     const geoms = e.geometry ?? [];
     const last = geoms[geoms.length - 1];
+    // Per-category staleness, applied here rather than in the upstream query — see
+    // ENDPOINT. An unparsable date is KEPT: dropping an event because we could not
+    // read its timestamp would hide it for a reason that has nothing to do with it.
+    if (meta.maxAgeDays != null && last?.date) {
+      const t = Date.parse(last.date);
+      if (Number.isFinite(t) && now - t > meta.maxAgeDays * 86_400_000) continue;
+    }
     const pt = representativePoint(last);
     if (!pt) continue;
     const [lon, lat] = pt;

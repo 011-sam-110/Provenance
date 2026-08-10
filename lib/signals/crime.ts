@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap } from "@/lib/signals/coverage";
 
 // UK street-level crime — keyless data.police.uk. The richest open, geocoded crime
 // feed available without a key (England, Wales & Northern Ireland; Police Scotland
@@ -95,6 +96,21 @@ export function normalizeCrime(rows: CrimeRow[]): SignalFeature[] {
   return out;
 }
 
+/**
+ * Pure: trim the merged multi-city set to the render cap, recording what that hid.
+ *
+ * The merged list is in CITY-QUERY order (London first), not ranked — a monthly
+ * crime count has no severity scalar to rank by — so the cap is a positional cut,
+ * and the recorded rule says so. Six city centres routinely merge to well over
+ * 1,500 records, which is exactly why "1,500 crimes" must not read as a total.
+ */
+export function capCrime(features: SignalFeature[], cap = CRIME_CAP): SignalFeature[] {
+  return applyCap(features, cap, {
+    noun: "crime records",
+    rule: "the first found in city order (London, Manchester, Birmingham, Leeds, Liverpool, Bristol) — not a ranking",
+  });
+}
+
 export const UK_CRIME_SOURCE: SignalSource = {
   id: "crime",
   label: "UK street crime",
@@ -120,7 +136,7 @@ export const UK_CRIME_SOURCE: SignalSource = {
         }),
       );
       const merged = perCity.flat();
-      return normalizeCrime(merged).slice(0, CRIME_CAP);
+      return capCrime(normalizeCrime(merged));
     } catch {
       return [];
     }

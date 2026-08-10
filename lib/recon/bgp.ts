@@ -1,16 +1,38 @@
-// BGP / ASN routing via BGPView (`api.bgpview.io`, JSON). Keyless. The route hits
-// /ip/<ip> (announcing prefixes + origin ASN) or /asn/<number> (holder + RIR);
-// these PURE mappers turn one BGPView JSON response into one typed result.
-// No fetch, no React → fast unit tests. Robust to status!=="ok" / missing / empty.
+// BGP / ASN routing via RIPEstat (`stat.ripe.net`, JSON). Keyless, no signup.
+//
+// This used to call api.bgpview.io, which has SHUT DOWN — it no longer resolves
+// at all, so the BGP recon tool had been silently returning `{ok:false}` for
+// every lookup. RIPEstat is the RIPE NCC's own public data API, is not going
+// anywhere, and covers both target kinds:
+//   IP  → network-info (origin ASNs + covering prefix) + prefix-overview (holder)
+//          + reverse-dns-ip (PTR)
+//   ASN → as-overview (holder, announced, allocating registry block)
+//          + announced-prefixes (the prefix list)
+//
+// These are PURE mappers over already-fetched JSON: no fetch, no React, so the
+// upstream→domain shape is unit-tested against captured fixtures. Every mapper is
+// robust to status!=="ok", a missing `data`, and empty arrays.
+//
+// NOTE ON A SHAPE CHANGE. BGPView returned announcing prefixes for an IP and
+// nothing for an ASN. RIPEstat is the other way round: an ASN has thousands of
+// announced prefixes (Cloudflare's AS13335 has ~5,300) and an IP has exactly one
+// covering prefix. So `prefixes` is now populated for BOTH kinds, and the ASN
+// list is capped — see MAX_PREFIXES.
+
+/** Announced prefixes shown for an ASN. Cloudflare alone announces ~5,300; the
+ *  widget lists them, so the cap is about the UI, not the upstream. The result
+ *  carries `prefixCount` so the total is still reported honestly. */
+export const MAX_PREFIXES = 50;
 
 /** One announcing prefix, flattened to the fields the widget shows. */
 export interface BgpPrefix {
   prefix: string;
-  /** Origin ASN number, or null when BGPView omits it. */
+  /** Origin ASN number, or null when the upstream omits it. */
   asn: number | null;
-  /** Human holder — the origin ASN's name (falls back to its description). */
+  /** Human holder — the origin ASN's registered name. */
   holder: string;
-  /** Prefix registration country (ISO-2), "" when unknown. */
+  /** Prefix registration country (ISO-2), "" when unknown. RIPEstat does not
+   *  publish a per-prefix country on these calls, so this is usually "". */
   country: string;
 }
 
@@ -21,64 +43,63 @@ export interface BgpResult {
   /** IP lookups: the queried IP + its PTR record. */
   ip?: string;
   ptr?: string;
-  /** Summary ASN/name/country — from the first prefix (IP) or the ASN itself. */
+  /** Summary ASN / holder name / country. */
   asn?: number;
   name?: string;
   country?: string;
-  /** ASN lookups: short description, homepage, allocating RIR. */
+  /** ASN lookups: the allocating registry block description, and whether the
+   *  ASN is currently visible in the global routing table. */
   description?: string;
   website?: string;
   rir?: string;
-  /** Announcing prefixes (IP lookups); always [] for ASN lookups. */
+  announced?: boolean;
+  /** Announcing prefixes, capped at MAX_PREFIXES. */
   prefixes: BgpPrefix[];
+  /** TOTAL announced prefixes upstream reported, before the cap. */
+  prefixCount?: number;
 }
 
-/** BGPView origin-ASN reference nested inside a prefix. */
-interface BgpAsnRef {
-  asn?: number;
-  name?: string;
-  description?: string;
-  country_code?: string;
-}
+// --- RIPEstat response envelopes --------------------------------------------
 
-/** BGPView prefix object (from /ip/<ip> → data.prefixes[]). */
-interface BgpPrefixRaw {
-  prefix?: string;
-  ip?: string;
-  cidr?: number;
-  asn?: BgpAsnRef;
-  name?: string;
-  description?: string;
-  country_code?: string;
-}
-
-/** BGPView /ip/<ip> response envelope. */
-export interface BgpIpResponse {
+interface RipeEnvelope<T> {
   status?: string;
-  data?: {
-    ip?: string;
-    ptr_record?: string | null;
-    prefixes?: BgpPrefixRaw[];
-    rir_allocation?: { rir_name?: string; country_code?: string; prefix?: string; date_allocated?: string };
-    iana_assignment?: { assignment_status?: string };
-  };
+  data?: T;
 }
 
-/** BGPView /asn/<number> response envelope. */
-export interface BgpAsnResponse {
-  status?: string;
-  data?: {
-    asn?: number;
-    name?: string;
-    description_short?: string;
-    description_full?: string[];
-    country_code?: string;
-    website?: string;
-    email_contacts?: string[];
-    abuse_contacts?: string[];
-    rir_allocation?: { rir_name?: string; date_allocated?: string };
-    traffic_estimation?: unknown;
-  };
+export type RipeNetworkInfo = RipeEnvelope<{ asns?: string[]; prefix?: string }>;
+
+export type RipePrefixOverview = RipeEnvelope<{
+  resource?: string;
+  announced?: boolean;
+  is_less_specific?: boolean;
+  asns?: { asn?: number; holder?: string }[];
+  block?: { resource?: string; desc?: string; name?: string };
+}>;
+
+export type RipeReverseDns = RipeEnvelope<{ result?: string[] | null; error?: string }>;
+
+export type RipeAsOverview = RipeEnvelope<{
+  resource?: string;
+  holder?: string;
+  announced?: boolean;
+  block?: { resource?: string; desc?: string; name?: string };
+}>;
+
+export type RipeAnnouncedPrefixes = RipeEnvelope<{ prefixes?: { prefix?: string }[] }>;
+
+/** What the IP route gathers before mapping. Any part may be missing. */
+export interface IpLookup {
+  ip: string;
+  networkInfo?: RipeNetworkInfo | null;
+  prefixOverview?: RipePrefixOverview | null;
+  reverseDns?: RipeReverseDns | null;
+}
+
+/** What the ASN route gathers before mapping. Any part may be missing. */
+export interface AsnLookup {
+  asn: number;
+  overview?: RipeAsOverview | null;
+  announced?: RipeAnnouncedPrefixes | null;
 }
 
 /** Trimmed string, or "" for anything non-string (null/number/undefined). */
@@ -86,65 +107,104 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/** RIPEstat only means it when status === "ok"; anything else has no usable data. */
+function payload<T>(env: RipeEnvelope<T> | null | undefined): T | undefined {
+  if (!env || env.status !== "ok") return undefined;
+  const d = env.data;
+  return d && typeof d === "object" ? d : undefined;
+}
+
 /** Honest empty result — what every failure/dormant path resolves to. */
 function emptyResult(kind: "ip" | "asn"): BgpResult {
   return { ok: false, kind, prefixes: [] };
 }
 
-/** Pure: one BGPView /ip response → prefixes + a lifted origin-ASN summary. */
-export function parseBgpIp(json: BgpIpResponse | null | undefined): BgpResult {
-  const data = json && json.status === "ok" ? json.data : undefined;
-  if (!data || typeof data !== "object") return emptyResult("ip");
+/**
+ * Pure: the three RIPEstat IP calls → the covering prefix, its origin ASN and
+ * the PTR record.
+ *
+ * Partial data is normal and is kept: reverse DNS frequently has no record, and
+ * an unannounced address has network-info but no prefix-overview holder. The
+ * result is `ok` as long as we learned anything at all beyond the input.
+ */
+export function parseBgpIp(lookup: IpLookup): BgpResult {
+  const ip = str(lookup?.ip);
+  if (!ip) return emptyResult("ip");
 
-  const rawPrefixes: BgpPrefixRaw[] = Array.isArray(data.prefixes) ? data.prefixes : [];
-  const prefixes: BgpPrefix[] = [];
-  for (const p of rawPrefixes) {
-    const prefix = str(p?.prefix);
-    if (!prefix) continue;
-    const origin = p?.asn;
-    prefixes.push({
-      prefix,
-      asn: typeof origin?.asn === "number" ? origin.asn : null,
-      holder: str(origin?.name) || str(origin?.description),
-      country: str(p?.country_code),
-    });
-  }
+  const net = payload(lookup.networkInfo);
+  const overview = payload(lookup.prefixOverview);
+  const rdns = payload(lookup.reverseDns);
 
-  const ip = str(data.ip);
-  const result: BgpResult = { ok: Boolean(ip) || prefixes.length > 0, kind: "ip", prefixes };
-  if (ip) result.ip = ip;
-  const ptr = str(data.ptr_record);
+  const prefixStr = str(net?.prefix) || str(overview?.resource);
+  const originFromOverview = Array.isArray(overview?.asns) ? overview.asns[0] : undefined;
+  const originAsnRaw = Array.isArray(net?.asns) ? net.asns[0] : undefined;
+  const originAsn =
+    typeof originFromOverview?.asn === "number"
+      ? originFromOverview.asn
+      : Number.isFinite(Number(originAsnRaw))
+        ? Number(originAsnRaw)
+        : null;
+  const holder = str(originFromOverview?.holder);
+
+  const prefixes: BgpPrefix[] = prefixStr
+    ? [{ prefix: prefixStr, asn: originAsn, holder, country: "" }]
+    : [];
+
+  const result: BgpResult = {
+    ok: prefixes.length > 0 || Boolean(holder),
+    kind: "ip",
+    ip,
+    prefixes,
+    prefixCount: prefixes.length,
+  };
+
+  const ptr = Array.isArray(rdns?.result) ? str(rdns.result[0]) : "";
   if (ptr) result.ptr = ptr;
+  if (originAsn != null) result.asn = originAsn;
+  if (holder) result.name = holder;
+  if (typeof overview?.announced === "boolean") result.announced = overview.announced;
+  const block = str(overview?.block?.desc);
+  if (block) result.rir = block;
 
-  // Top-level summary lifts from the FIRST prefix's origin ASN when present.
-  const first = rawPrefixes[0]?.asn;
-  if (first) {
-    if (typeof first.asn === "number") result.asn = first.asn;
-    const name = str(first.name);
-    if (name) result.name = name;
-    const country = str(first.country_code);
-    if (country) result.country = country;
-  }
   return result;
 }
 
-/** Pure: one BGPView /asn response → holder identity + allocating RIR. */
-export function parseBgpAsn(json: BgpAsnResponse | null | undefined): BgpResult {
-  const data = json && json.status === "ok" ? json.data : undefined;
-  if (!data || typeof data !== "object") return emptyResult("asn");
+/**
+ * Pure: the two RIPEstat ASN calls → holder identity, routing visibility and a
+ * capped prefix list.
+ *
+ * `announced: false` is a real and interesting answer — an allocated ASN that
+ * nobody is currently routing — so it is reported rather than treated as a
+ * failure.
+ */
+export function parseBgpAsn(lookup: AsnLookup): BgpResult {
+  const asn = Number(lookup?.asn);
+  if (!Number.isFinite(asn)) return emptyResult("asn");
 
-  const asn = typeof data.asn === "number" ? data.asn : undefined;
-  const name = str(data.name);
-  const result: BgpResult = { ok: asn !== undefined || Boolean(name), kind: "asn", prefixes: [] };
-  if (asn !== undefined) result.asn = asn;
-  if (name) result.name = name;
-  const description = str(data.description_short);
-  if (description) result.description = description;
-  const country = str(data.country_code);
-  if (country) result.country = country;
-  const website = str(data.website);
-  if (website) result.website = website;
-  const rir = str(data.rir_allocation?.rir_name);
-  if (rir) result.rir = rir;
+  const overview = payload(lookup.overview);
+  const announcedData = payload(lookup.announced);
+  const holder = str(overview?.holder);
+
+  const all = Array.isArray(announcedData?.prefixes) ? announcedData.prefixes : [];
+  const prefixes: BgpPrefix[] = [];
+  for (const p of all) {
+    const prefix = str(p?.prefix);
+    if (!prefix) continue;
+    if (prefixes.length >= MAX_PREFIXES) break;
+    prefixes.push({ prefix, asn, holder, country: "" });
+  }
+  const total = all.filter((p) => str(p?.prefix)).length;
+
+  const result: BgpResult = {
+    ok: Boolean(holder) || total > 0,
+    kind: "asn",
+    asn,
+    prefixes,
+    prefixCount: total,
+  };
+  if (holder) result.name = holder;
+  if (typeof overview?.announced === "boolean") result.announced = overview.announced;
+  const block = str(overview?.block?.desc);
+  if (block) result.rir = block; // e.g. "Assigned by ARIN"
   return result;
 }
