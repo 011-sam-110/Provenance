@@ -52,6 +52,10 @@ describe("key requirements table", () => {
       "NEXT_RUNTIME",
       "VERCEL_URL",
       "VERCEL_ENV",
+      // Deployment identity, not a capability credential: these only decide which
+      // absolute origin the OG cards and metadataBase resolve against.
+      "NEXT_PUBLIC_SITE_URL",
+      "VERCEL_PROJECT_PRODUCTION_URL",
       // Photo geolocation is a local sidecar, not a hosted capability with a key.
       "GEOLOCATE_BACKEND",
       "GEOLOCATE_GEOCLIP_URL",

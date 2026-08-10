@@ -42,6 +42,6 @@ export function siteUrl(): string {
       : "https://traffic-nerd-v2.vercel.app");
   const trimmed = raw.replace(/\/+$/, "");
   // Guarantee a scheme so `new URL(siteUrl())` (used as metadataBase) never throws on
-  // a bare host like "worldmonitor.app" set via NEXT_PUBLIC_SITE_URL.
+  // a bare host like "opendata.example" set via NEXT_PUBLIC_SITE_URL.
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
