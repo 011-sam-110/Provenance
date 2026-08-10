@@ -7,7 +7,19 @@ import { useShellLayout } from "@/lib/console/store";
 import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
 
-const WorldMap = dynamic(() => import("@/components/WorldMap"), { ssr: false });
+// The map is the product's centre stage, so give it a real loading state. It used
+// to fall back to `null`, which meant any failure to mount rendered a silent grey
+// rectangle — indistinguishable from a working-but-slow map. That is precisely how
+// an infinite-render regression (see lib/geolocate/useGeolocate.ts) shipped to
+// production unnoticed: the stage was blank with no error and no failed request.
+const WorldMap = dynamic(() => import("@/components/WorldMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="tn-stage-loading" role="status" aria-live="polite">
+      Loading map…
+    </div>
+  ),
+});
 
 export default function StageHost({ stage }: { stage: StageId }) {
   const { focusedWidgetId, widgets } = useShellLayout();
