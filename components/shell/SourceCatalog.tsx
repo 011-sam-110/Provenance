@@ -56,7 +56,9 @@ interface LayerMeta {
 
 const LAYER_META: Record<LayerKey, LayerMeta> = {
   cameras: { name: "Cameras", group: "Ground", accent: "#0e7d97", source: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC", fresh: "cameras" },
-  planes: { name: "Planes", group: "Air", accent: "#d97706", source: "adsb.lol — live ADS-B", fresh: "planes" },
+  // OpenSky, not adsb.lol: app/api/planes imports fetchAircraft from lib/sources/opensky.
+  // adsb.lol backs the separate military-air SIGNAL layer only.
+  planes: { name: "Planes", group: "Air", accent: "#d97706", source: "OpenSky Network — global ADS-B snapshot", fresh: "planes" },
   satellites: { name: "Satellites", group: "Space", accent: "#7c3aed", source: "CelesTrak TLE · SGP4 (local)", fresh: "satellites" },
   ships: { name: "Ships", group: "Sea", accent: "#0d9488", source: "AIS vessels", planned: true },
   webcams: { name: "Webcams", group: "Ground", accent: "#ec4899", source: "Windy.com — global webcams", fresh: "webcams" },
