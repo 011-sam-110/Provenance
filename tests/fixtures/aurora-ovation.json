@@ -1,15 +1,16 @@
 {
+  "_note": "SYNTHETIC grid — hand-built to exercise the mapping mechanics (threshold, 8x4 downsample bucket, longitude wrap, cap, ordering). It is NOT a sample of the real feed: for that see aurora-ovation-live.json, a verbatim excerpt whose global peak is 22%. Cells [10,60,18] and [11,61,25] deliberately share one bucket.",
   "Observation Time": "2026-06-27T05:02:00Z",
   "Forecast Time": "2026-06-27T05:45:00Z",
   "Data Format": "[Longitude, Latitude, Aurora]",
   "coordinates": [
-    [0, -90, 5],
-    [10, 60, 80],
-    [200, 65, 90],
-    [20, 70, 40],
-    [359, -80, 55],
-    [120, 62, 70],
-    [130, 63, 60],
-    [140, 64, 52]
+    [0, -90, 2],
+    [10, 60, 18],
+    [11, 61, 25],
+    [200, 65, 40],
+    [20, 70, 12],
+    [359, -80, 9],
+    [120, 62, 30],
+    [130, 63, 22]
   ]
 }
