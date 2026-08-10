@@ -183,7 +183,7 @@ export async function postWebhook(url: string, hit: AlertHit): Promise<void> {
       body: JSON.stringify({
         text: `⚠ ${hit.tier} ${hit.type}: ${hit.title} — ${Math.round(hit.distanceKm)} km from ${hit.assetName}`,
         event: hit,
-        source: "World Monitor — Disasters & Events",
+        source: "OpenData — Disasters & Events",
       }),
     });
   } catch {

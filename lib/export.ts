@@ -41,10 +41,12 @@ export function toGeoJson(points: GeoPoint[]): string {
   return JSON.stringify({ type: "FeatureCollection", features }, null, 2);
 }
 
-/** A UTC-stamped filename base, e.g. "worldmonitor-markets-2026-07-08T04-59Z". */
+/** A UTC-stamped filename base, e.g. "opendata-markets-2026-07-08T04-59Z".
+ *  The prefix is OUR product name — it used to be a competitor's (see the naming
+ *  guard in CLAUDE.md) and it shipped on every CSV and GeoJSON a user downloaded. */
 export function exportFilename(kind: string, at: number): string {
   const iso = new Date(at).toISOString().slice(0, 16).replace(":", "-");
-  return `worldmonitor-${kind.replace(/[^a-z0-9-]+/gi, "-")}-${iso}Z`;
+  return `opendata-${kind.replace(/[^a-z0-9-]+/gi, "-")}-${iso}Z`;
 }
 
 /** Browser-only: trigger a download of `text` as `filename`. No-op on the server. */

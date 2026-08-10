@@ -37,7 +37,7 @@ describe("toGeoJson", () => {
 describe("exportFilename", () => {
   it("is UTC-stamped and filesystem-safe", () => {
     expect(exportFilename("markets", Date.parse("2026-07-08T04:59:12Z"))).toBe(
-      "worldmonitor-markets-2026-07-08T04-59Z",
+      "opendata-markets-2026-07-08T04-59Z",
     );
   });
 });
