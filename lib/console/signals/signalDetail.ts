@@ -125,19 +125,29 @@ export function sortFeatures(features: SignalFeature[], key: SortKey, dir: 1 | -
   return [...features].sort((a, b) => dir * cmp(a, b));
 }
 
-/** Human "time ago" for the When column: "12s" / "5m" / "2h" / "3d". "" when
- *  undated or unparseable (the caller renders a dash). Future stamps clamp to 0s. */
+/** Human "time ago" for the When column: "12s" / "5m" / "2h" / "3d", and
+ *  "in 4h" / "in 3d" for a stamp in the FUTURE. "" when undated or unparseable
+ *  (the caller renders a dash).
+ *
+ *  Future stamps used to clamp to "0s". That is wrong for any forward-looking
+ *  layer — every rocket launch in the schedule read "· 0s" regardless of whether
+ *  it was tomorrow or in three months. Clamping hid the sign instead of showing it. */
 export function relativeAge(ts: string | undefined, now: number): string {
   if (!ts) return "";
   const t = Date.parse(ts);
   if (!Number.isFinite(t)) return "";
-  const s = Math.max(0, Math.floor((now - t) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  return `${Math.floor(h / 24)}d`;
+  const deltaS = Math.floor((now - t) / 1000);
+  const future = deltaS < 0;
+  const s = Math.abs(deltaS);
+  const span = () => {
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    return `${Math.floor(h / 24)}d`;
+  };
+  return future ? `in ${span()}` : span();
 }
 
 export type FreshnessState = "live" | "lagging" | "stale" | "none";

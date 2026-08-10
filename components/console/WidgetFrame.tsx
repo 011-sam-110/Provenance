@@ -13,10 +13,21 @@ import {
   notificationsStore, useRule, useNotifications, dispatch, isDiscordConfigured, requestNotifyPermission,
 } from "@/lib/shell/notifications";
 import { useTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
+import FreshChip from "@/components/console/FreshChip";
+import LayerExplainerCard from "@/components/LayerExplainerCard";
+import type { FreshObservation } from "@/lib/console/freshChip";
 
 interface Report {
   alerts: Alert[];
   count?: number;
+  /** A REAL observation of when this widget's data last arrived. Preferred over
+   *  freshLabel: the chip derives its own state, colour, ageing text and tooltip,
+   *  so a feed that freezes visibly drifts live → "4m old" → "stale · 2h" with no
+   *  further reports from the widget. See lib/console/freshChip.ts. */
+  fresh?: FreshObservation;
+  /** Escape hatch for the handful of widgets whose header word is not about age —
+   *  "estimate" on a geolocation guess, "lookup" on an on-demand query. Ignored
+   *  when `fresh` is present. Do NOT use it to write "live". */
   freshLabel?: string;
   /** Optional export payload — a widget hands its visible rows/points here and the
    *  frame menu offers CSV / GeoJSON downloads. */
@@ -130,7 +141,9 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
         {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}
-        {report.freshLabel && <span className="tn-cw-fresh">{report.freshLabel}</span>}
+        {report.fresh
+          ? <FreshChip obs={report.fresh} />
+          : report.freshLabel && <span className="tn-cw-fresh">{report.freshLabel}</span>}
         <button ref={helpBtnRef} className={`tn-cw-help${helpOpen ? " is-on" : ""}`} aria-label={`What is ${type.title}?`}
           aria-haspopup="dialog" aria-expanded={helpOpen} title="What is this?"
           onClick={() => { setHelpOpen((o) => !o); setMenuOpen(false); setBellOpen(false); }}>?</button>
@@ -150,6 +163,10 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
           </div>
           <p className="tn-cw-help-what">{help.what}</p>
           {help.source && <p className="tn-cw-help-src"><span className="tn-cw-help-src-k">Source</span> {help.source}</p>}
+          {/* For the 35 generic signal widgets (type id `signal:<layer>`), the trust
+              card is inlined here as well as in the dossier, so "what can this NOT
+              tell me?" is answerable without first finding a pin to click. */}
+          <LayerExplainerCard signalId={instance.type.startsWith("signal:") ? instance.type.slice(7) : undefined} />
         </div>
       )}
 

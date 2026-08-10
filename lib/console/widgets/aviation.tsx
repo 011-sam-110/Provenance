@@ -6,6 +6,8 @@ import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { runAlertRule } from "@/lib/console/alerts";
 import { aviationAlerts, type PlaneLite } from "@/lib/console/widgets/aviation.rules";
 import { isBizjet } from "@/lib/planes/bizjet";
+import { useFreshness } from "@/lib/freshness";
+import { observeCoreSource } from "@/lib/console/freshChip";
 import AviationDetail from "./aviation.detail";
 
 /**
@@ -53,14 +55,18 @@ function AviationBody({ config }: WidgetBodyProps) {
     return r.slice(0, 200);
   }, [planes, sortKey]);
 
+  // OpenSky is a 12s cadence, so a frozen feed shows drift within seconds of it
+  // happening — the case the old hardcoded "live" hid completely.
+  const fresh = useFreshness().find((r) => r.id === "planes");
+
   const report = useWidgetReport();
   useEffect(() => {
     report({
       alerts: runAlertRule(aviationAlerts, lite, config),
       count: planes.length,
-      freshLabel: "live",
+      fresh: observeCoreSource(fresh),
     });
-  }, [lite, planes.length, report, config]);
+  }, [lite, planes.length, report, config, fresh]);
 
   return (
     <table className="tn-w-table">

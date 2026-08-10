@@ -42,29 +42,39 @@ function iconFor(source: SignalSource): string {
   return GROUP_ICON[source.group] ?? "📡";
 }
 
-function freshLabel(refreshMs: number): string {
-  if (refreshMs <= 90_000) return "live";
-  return `${Math.round(refreshMs / 60_000)}m`;
-}
+// NOTE: there used to be a freshLabel(refreshMs) here that turned the CONFIGURED
+// cadence into a header word — so a layer whose upstream had been dead for hours
+// still advertised "live", and so did one that had never succeeded once. The chip
+// now derives its own state from an observation of what actually happened; see
+// lib/console/freshChip.ts and components/console/FreshChip.tsx.
 
-/** Compact "5m" / "2h" / "3d" since an ISO timestamp; "" when undated/unparsable. */
+/**
+ * Compact "5m" / "2h" / "3d" since an ISO timestamp, and "in 4h" / "in 3d" for one
+ * in the FUTURE. "" when undated or unparsable.
+ *
+ * The Math.max(0, …) this replaces meant every forward-dated row rendered "· 0s":
+ * the whole rocket-launch layer showed a zero countdown whether the launch was
+ * tomorrow or in three months. Clamping a negative interval hides the sign; a
+ * schedule layer needs it shown.
+ */
 function relativeTime(ts: string | undefined, now: number): string {
   if (!ts) return "";
   const t = Date.parse(ts);
   if (Number.isNaN(t)) return "";
-  const s = Math.max(0, Math.round((now - t) / 1000));
-  if (s < 60) return `${s}s`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m`;
-  const h = Math.round(m / 60);
-  if (h < 48) return `${h}h`;
-  return `${Math.round(h / 24)}d`;
+  const deltaS = Math.round((now - t) / 1000);
+  const s = Math.abs(deltaS);
+  const span =
+    s < 60 ? `${s}s`
+    : s < 3600 ? `${Math.round(s / 60)}m`
+    : s < 172_800 ? `${Math.round(s / 3600)}h`
+    : `${Math.round(s / 86_400)}d`;
+  return deltaS < 0 ? `in ${span}` : span;
 }
 
 function makeSignalBody(source: SignalSource) {
   function SignalBody({ config }: WidgetBodyProps) {
     const scope = useScope();
-    const { features, status } = useSignalFeed(source.id, source.refreshMs);
+    const { features, status, updatedAt, ok } = useSignalFeed(source.id, source.refreshMs);
 
     const projected = useMemo(
       () =>
@@ -79,8 +89,16 @@ function makeSignalBody(source: SignalSource) {
 
     const report = useWidgetReport();
     useEffect(() => {
-      report({ alerts: projected.alerts, count: projected.shown, freshLabel: freshLabel(source.refreshMs) });
-    }, [projected, report]);
+      report({
+        alerts: projected.alerts,
+        count: projected.shown,
+        // The chip describes the FEED, so it counts what the upstream returned
+        // (features.length), not what survived the user's scope filter
+        // (projected.shown). Otherwise zooming into a quiet country would report
+        // the source as empty. The body already says "Nothing in <scope>".
+        fresh: { lastOk: updatedAt, ok, count: features.length, refreshMs: source.refreshMs },
+      });
+    }, [projected, report, updatedAt, ok, features.length]);
 
     if (status === "loading" && projected.shown === 0) {
       return <p className="tn-w-empty">Loading {source.label}…</p>;

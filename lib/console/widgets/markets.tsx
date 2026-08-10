@@ -17,8 +17,10 @@ import MarketsDetail from "./markets.detail";
 const EMPTY: MarketsPayload = { generatedAt: 0, sections: [] };
 const RANK: Record<AlertSeverity, number> = { info: 0, warn: 1, critical: 2 };
 
+const POLL_MS = 120_000;
+
 function MarketsBody({ config }: WidgetBodyProps) {
-  const { data, status } = useJsonPoll<MarketsPayload>("/api/markets", 120_000, EMPTY);
+  const { data, status, lastOk, ok } = useJsonPoll<MarketsPayload>("/api/markets", POLL_MS, EMPTY);
   const moveMin = typeof config.alertMin === "number" ? config.alertMin : 5;
   // Keep dormant (key-gated) sections too — show them as a "needs key" note
   // rather than hiding them, so the capability is discoverable (not invisible).
@@ -67,8 +69,16 @@ function MarketsBody({ config }: WidgetBodyProps) {
 
   const report = useWidgetReport();
   useEffect(() => {
-    report({ alerts, count: allRows.length, freshLabel: "live", export: { rows: exportRows, name: "markets" } });
-  }, [alerts, allRows.length, report, exportRows]);
+    report({
+      alerts,
+      count: allRows.length,
+      // sourceAt is the server's generatedAt — markets can be a cached payload that
+      // is much older than our last fetch of it, and a price chip has no business
+      // saying "live" about a stale quote.
+      fresh: { lastOk, ok, count: allRows.length, refreshMs: POLL_MS, sourceAt: data.generatedAt || null },
+      export: { rows: exportRows, name: "markets" },
+    });
+  }, [alerts, allRows.length, report, exportRows, lastOk, ok, data.generatedAt]);
 
   if (status === "loading" && allRows.length === 0) return <p className="tn-w-empty">Loading markets…</p>;
   if (allRows.length === 0) return <p className="tn-w-empty">Markets unavailable.</p>;

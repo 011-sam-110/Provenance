@@ -5,7 +5,8 @@
 // features in place and flips status to "error". Disabled (enabled=false) never
 // fetches, mirroring the hidden-layer-doesn't-fetch contract.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { isHidden, onVisible, shouldRefreshOnVisible } from "@/lib/shell/visibility";
 import type { SignalFeature } from "@/lib/signals/types";
 
 export type FeedStatus = "idle" | "loading" | "error";
@@ -22,6 +23,8 @@ export function useSignalFeatures(id: string, enabled: boolean, pollMs = DEFAULT
   const [features, setFeatures] = useState<SignalFeature[]>([]);
   const [status, setStatus] = useState<FeedStatus>("idle");
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  // The visibility handler outlives a render, so it reads the ref, not the state.
+  const lastOkRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -29,20 +32,33 @@ export function useSignalFeatures(id: string, enabled: boolean, pollMs = DEFAULT
     setStatus("loading");
     const load = () => {
       fetch(`/api/signals/${encodeURIComponent(id)}`)
-        .then((r) => r.json())
+        // A 5xx body still parses as JSON; without this an outage looked like a
+        // successful refresh and reset the freshness clock.
+        .then((r) => {
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
         .then((d) => {
           if (!alive) return;
           setFeatures((d.features as SignalFeature[]) ?? []);
           setStatus("idle");
-          setUpdatedAt(Date.now());
+          lastOkRef.current = Date.now();
+          setUpdatedAt(lastOkRef.current);
         })
         .catch(() => {
           if (alive) setStatus("error");
         });
     };
     load();
-    const t = setInterval(load, pollMs);
+    // Skip the tick in a hidden tab; catch up on return. See lib/shell/visibility.
+    const t = setInterval(() => {
+      if (!isHidden()) load();
+    }, pollMs);
+    const unwatch = onVisible(() => {
+      if (shouldRefreshOnVisible(lastOkRef.current, pollMs, Date.now())) load();
+    });
     return () => {
+      unwatch();
       alive = false;
       clearInterval(t);
     };

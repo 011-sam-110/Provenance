@@ -7,21 +7,29 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import type { SignalFeature } from "@/lib/signals/types";
+import { isHidden, onVisible, shouldRefreshOnVisible } from "@/lib/shell/visibility";
 
 export interface SignalFeed {
   features: SignalFeature[];
   status: "loading" | "idle" | "error";
+  /** Epoch ms of the last SUCCESSFUL load. Unchanged by a failed refresh, so it is
+   *  the real answer to "how old is what I'm looking at?". */
   updatedAt: number | null;
+  /** Did the most recent attempt succeed? Keeping last-good features on failure is
+   *  right, but without this flag the widget cannot tell that it is doing so. */
+  ok: boolean;
 }
 
 interface Entry {
   state: SignalFeed;
   listeners: Set<() => void>;
   timer: ReturnType<typeof setInterval> | null;
+  /** Detaches the visibilitychange listener when the last subscriber leaves. */
+  unwatch: (() => void) | null;
   refCount: number;
 }
 
-const EMPTY: SignalFeed = { features: [], status: "loading", updatedAt: null };
+const EMPTY: SignalFeed = { features: [], status: "loading", updatedAt: null, ok: true };
 const MIN_REFRESH_MS = 60_000;
 const DEFAULT_REFRESH_MS = 5 * 60_000;
 const feeds = new Map<string, Entry>();
@@ -29,7 +37,7 @@ const feeds = new Map<string, Entry>();
 function ensure(id: string): Entry {
   let e = feeds.get(id);
   if (!e) {
-    e = { state: EMPTY, listeners: new Set(), timer: null, refCount: 0 };
+    e = { state: EMPTY, listeners: new Set(), timer: null, unwatch: null, refCount: 0 };
     feeds.set(id, e);
   }
   return e;
@@ -41,18 +49,26 @@ function emit(e: Entry) {
 
 function load(id: string, e: Entry) {
   fetch(`/api/signals/${encodeURIComponent(id)}`)
-    .then((r) => r.json())
+    .then((r) => {
+      // A 5xx from our own route still parses as JSON, so without this an outage
+      // counted as a successful refresh and reset the freshness clock.
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
     .then((d) => {
       const features = (d?.features as SignalFeature[]) ?? [];
-      e.state = { features, status: "idle", updatedAt: Date.now() };
+      e.state = { features, status: "idle", updatedAt: Date.now(), ok: true };
       emit(e);
     })
     .catch(() => {
-      // Keep the last good features; only show "error" if we never had any.
+      // Keep the last good features; only show "error" if we never had any. Note
+      // updatedAt is deliberately NOT advanced — it means "last success", and the
+      // freshness chip reads it to age the widget honestly while we serve stale data.
       e.state = {
         features: e.state.features,
         status: e.state.updatedAt ? "idle" : "error",
         updatedAt: e.state.updatedAt,
+        ok: false,
       };
       emit(e);
     });
@@ -63,19 +79,28 @@ export function useSignalFeed(signalId: string, refreshMs = DEFAULT_REFRESH_MS):
   const subscribe = useMemo(
     () => (cb: () => void) => {
       const e = ensure(signalId);
+      const cadence = Math.max(MIN_REFRESH_MS, refreshMs);
       e.listeners.add(cb);
       e.refCount += 1;
       if (e.refCount === 1) {
         if (!e.state.updatedAt) e.state = { ...e.state, status: "loading" };
         load(signalId, e);
-        e.timer = setInterval(() => load(signalId, e), Math.max(MIN_REFRESH_MS, refreshMs));
+        // Skip the tick in a hidden tab, and catch up on return — see lib/shell/visibility.
+        e.timer = setInterval(() => {
+          if (!isHidden()) load(signalId, e);
+        }, cadence);
+        e.unwatch = onVisible(() => {
+          if (shouldRefreshOnVisible(e.state.updatedAt, cadence, Date.now())) load(signalId, e);
+        });
       }
       return () => {
         e.listeners.delete(cb);
         e.refCount -= 1;
-        if (e.refCount === 0 && e.timer) {
-          clearInterval(e.timer);
+        if (e.refCount === 0) {
+          if (e.timer) clearInterval(e.timer);
           e.timer = null;
+          e.unwatch?.();
+          e.unwatch = null;
         }
       };
     },

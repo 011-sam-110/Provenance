@@ -15,6 +15,8 @@
  */
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
+import { useFreshness } from "@/lib/freshness";
+import { observeCoreSource } from "@/lib/console/freshChip";
 import { CameraVideo } from "@/components/CameraVideo";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
@@ -33,14 +35,19 @@ function CamerasBody({ config }: WidgetBodyProps) {
     [cams],
   );
 
+  // Real freshness, not a hardcoded word: WorldMap's camera loader already records
+  // every success/failure into freshnessStore, so the chip ages honestly when the
+  // upstream stops answering.
+  const fresh = useFreshness().find((r) => r.id === "cameras");
+
   const report = useWidgetReport();
   useEffect(() => {
     report({
       alerts: runAlertRule(cameraAlerts, lite, config),
       count: cams.length,
-      freshLabel: "live",
+      fresh: observeCoreSource(fresh),
     });
-  }, [lite, report, config]);
+  }, [lite, report, config, fresh]);
 
   return (
     <div className="tn-cam-grid">

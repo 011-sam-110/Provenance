@@ -28,17 +28,26 @@ function rel(ts: number, now: number): string {
   return `${Math.round(h / 24)}d`;
 }
 
+const POLL_MS = 120_000;
+
 function HeadlinesBody() {
-  const { data, status } = useJsonPoll<NewsPayload>("/api/news", 120_000, EMPTY);
+  const { data, status, lastOk, ok } = useJsonPoll<NewsPayload>("/api/news", POLL_MS, EMPTY);
   const items = data.items ?? [];
   // Collapse same-event headlines into stories so the compact list shows one row
   // per event with a source-count when several outlets corroborate it.
   const stories = useMemo(() => clusterNews(items), [items]);
 
+  // Two clocks: `lastOk` is when WE last fetched successfully, `sourceAt` is when the
+  // server built that payload. A 5s-old fetch of an hour-old cache is a real situation
+  // and the tooltip now says so instead of both collapsing into the word "live".
   const report = useWidgetReport();
   useEffect(() => {
-    report({ alerts: [], count: stories.length, freshLabel: "live" });
-  }, [stories.length, report]);
+    report({
+      alerts: [],
+      count: stories.length,
+      fresh: { lastOk, ok, count: stories.length, refreshMs: POLL_MS, sourceAt: data.generatedAt || null },
+    });
+  }, [stories.length, report, lastOk, ok, data.generatedAt]);
 
   if (status === "loading" && items.length === 0) return <p className="tn-w-empty">Loading headlines…</p>;
   if (items.length === 0) return <p className="tn-w-empty">No headlines.</p>;

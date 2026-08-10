@@ -43,6 +43,7 @@ import { useVariant, useLayout } from "@/lib/variants/store";
 import { toggleTileDock } from "@/lib/widgets/dock";
 import { sourceKey, rollupKey } from "@/lib/widgets/registry";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
 
 interface LayerMeta {
   name: string;
@@ -260,6 +261,31 @@ function SignalFreshNote({ id, refreshMs }: { id: string; refreshMs: number }) {
   );
 }
 
+/**
+ * "Locked — needs a key" for a layer this deployment cannot fetch.
+ *
+ * Without it, a key-gated layer renders zero and is indistinguishable from a dead
+ * upstream or a genuinely quiet feed — the visitor concludes the product is
+ * broken. The badge is deliberately grey, not red: a locked layer is a
+ * configuration fact, not a fault.
+ */
+function LockedBadge({ id }: { id: string }) {
+  const status = useCapabilityStatus(id);
+  if (!status || status.state !== "locked") return null;
+  const title = [
+    `Locked — this deployment has no ${status.missingEnv.join(" + ")}.`,
+    status.degrades,
+    status.obtain,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    <span className="tn-layer-locked" title={title}>
+      🔑 needs a key
+    </span>
+  );
+}
+
 function SignalRow({
   id,
   label,
@@ -288,7 +314,10 @@ function SignalRow({
           style={{ background: color, boxShadow: on ? `0 0 7px ${color}88` : "none" }}
         />
         <div className="tn-layer-main">
-          <span className="tn-layer-name">{label}</span>
+          <span className="tn-layer-name">
+            {label}
+            <LockedBadge id={id} />
+          </span>
           <span className="tn-layer-source">{attribution}</span>
           {on ? <SignalFreshNote id={id} refreshMs={refreshMs} /> : null}
         </div>
