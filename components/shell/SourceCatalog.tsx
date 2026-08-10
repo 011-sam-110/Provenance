@@ -271,11 +271,16 @@ function SignalFreshNote({ id, refreshMs }: { id: string; refreshMs: number }) {
  */
 function LockedBadge({ id }: { id: string }) {
   const status = useCapabilityStatus(id);
-  if (!status || status.state !== "locked") return null;
+  if (!status) return null;
+  // "upgradable" is deliberately NOT badged here: the layer works keylessly and a
+  // key would only improve it, so a badge in the layer list would read as a fault.
+  // Saying a working feature is dead is the same error as saying a dead one is live.
+  if (status.state !== "locked") return null;
   const title = [
     `Locked — this deployment has no ${status.missingEnv.join(" + ")}.`,
     status.degrades,
     status.obtain,
+    "Holding a key is not the same as the upstream accepting it — the freshness dot above says whether data is actually arriving.",
   ]
     .filter(Boolean)
     .join(" ");

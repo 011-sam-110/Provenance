@@ -10,6 +10,8 @@ import {
 } from "@/lib/sources/keyRequirements";
 import { buildStatusReport } from "@/lib/sources/statusReport";
 import { SIGNALS } from "@/lib/signals/registry";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 
 const NOW = 1_700_000_000_000;
 
@@ -34,6 +36,59 @@ describe("key requirements table", () => {
     expect(isKeyless("earthquakes")).toBe(true);
     expect(isKeyless("acled")).toBe(false);
   });
+
+  // THE GUARD THAT WAS MISSING. /api/status reported food-security as "keyless"
+  // for a whole release because the adapter had been changed to require
+  // HUNGERMAP_API_KEY and nobody added it to the table. The old test only checked
+  // that listed ids were real — it could not see a gate that was never listed.
+  //
+  // So: walk the code for process.env reads and require every credential-looking
+  // name to appear in the table. Anything genuinely not a capability credential
+  // goes in NOT_A_CREDENTIAL, deliberately and visibly.
+  it("has an entry for every credential the code actually reads", () => {
+    const NOT_A_CREDENTIAL = new Set([
+      "NODE_ENV",
+      "TN_DIST_DIR",
+      "NEXT_RUNTIME",
+      "VERCEL_URL",
+      "VERCEL_ENV",
+      // Photo geolocation is a local sidecar, not a hosted capability with a key.
+      "GEOLOCATE_BACKEND",
+      "GEOLOCATE_GEOCLIP_URL",
+      // Alert delivery is configured by the USER in the browser, not by the deployment.
+      "DISCORD_WEBHOOK_URL",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_CHAT_ID",
+    ]);
+    const declared = new Set(KEY_REQUIREMENTS.flatMap((r) => r.env));
+
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/\.(ts|tsx)$/.test(name)) files.push(p);
+      }
+    };
+    walk("lib");
+    walk("app");
+
+    const undeclared = new Map<string, string>();
+    for (const file of files) {
+      const src = readFileSync(file, "utf8");
+      for (const m of src.matchAll(/process\.env\.([A-Z][A-Z0-9_]{2,})/g)) {
+        const name = m[1];
+        if (declared.has(name) || NOT_A_CREDENTIAL.has(name)) continue;
+        if (!undeclared.has(name)) undeclared.set(name, file);
+      }
+    }
+    const lines = [...undeclared].map(([n, f]) => `${n} (read in ${f})`);
+    const message =
+      "these env vars gate behaviour but are not in KEY_REQUIREMENTS, so /api/status " +
+      "will report the capability as keyless: " +
+      lines.join("; ");
+    expect(lines, message).toEqual([]);
+  });
 });
 
 describe("hasEnv", () => {
@@ -54,6 +109,24 @@ describe("capabilityState", () => {
 
   it("calls an ungated layer keyless rather than configured", () => {
     expect(capabilityState("earthquakes", {})).toBe("keyless");
+  });
+
+  // A key that merely IMPROVES a working keyless feature must never be reported
+  // as locked. /api/status told users the Markets equities section "stays
+  // dormant" without FINNHUB_API_KEY while it was rendering six rows from a
+  // keyless Yahoo fallback.
+  it("separates an optional upgrade from a hard gate", () => {
+    expect(capabilityState("markets-equities", {})).toBe("upgradable");
+    expect(capabilityState("markets-equities", { FINNHUB_API_KEY: "k" })).toBe("enhanced");
+    expect(capabilityState("acled", {})).toBe("locked");
+  });
+
+  // `configured` says we hold the credential. It does NOT say the upstream
+  // accepts it: ACLED answers 403 to a token that passes its own OAuth flow, and
+  // AISStream opens a socket then sends nothing. Liveness is the freshness chip's
+  // job and this field must not be read as a health check.
+  it("reports holding a credential, not that it works", () => {
+    expect(capabilityState("acled", { ACLED_EMAIL: "a", ACLED_PASSWORD: "b" })).toBe("configured");
   });
 });
 
@@ -81,7 +154,7 @@ describe("buildStatusReport", () => {
       layersKeyless: 1,
       layersConfigured: 1,
       layersLocked: 1,
-      layersAvailable: 2,
+      layersNotKeyBlocked: 2,
     });
     expect(rep.generatedAt).toBe(NOW);
   });
@@ -102,7 +175,7 @@ describe("buildStatusReport", () => {
   it("reports the non-layer capabilities too, and keeps them out of the layer totals", () => {
     const rep = buildStatusReport(reg, {}, NOW);
     expect(rep.capabilities.map((c) => c.id).sort()).toEqual(
-      ["ai-brief", "markets-equities", "markets-macro", "webcams"],
+      ["ai-brief", "geolocate-vision", "markets-equities", "markets-macro", "webcams"],
     );
     expect(rep.summary.layersRegistered).toBe(3);
   });
@@ -117,10 +190,13 @@ describe("buildStatusReport", () => {
   it("runs over the real registry without inventing or dropping a layer", () => {
     const rep = buildStatusReport(SIGNALS, {}, NOW);
     expect(rep.summary.layersRegistered).toBe(SIGNALS.length);
-    expect(rep.summary.layersKeyless + rep.summary.layersConfigured + rep.summary.layersLocked)
-      .toBe(SIGNALS.length);
-    // With no keys at all, every gated layer must show as locked — never as fine.
+    const states = new Set(rep.layers.map((l) => l.state));
+    for (const st of states) {
+      expect(["keyless", "configured", "locked", "upgradable", "enhanced"]).toContain(st);
+    }
+    // With no keys at all, every REQUIRED gate must show as locked — never as fine.
     expect(rep.summary.layersConfigured).toBe(0);
     expect(rep.summary.layersLocked).toBeGreaterThan(0);
+    expect(rep.summary.layersNotKeyBlocked).toBe(SIGNALS.length - rep.summary.layersLocked);
   });
 });
