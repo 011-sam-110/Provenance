@@ -414,18 +414,6 @@ async function unzipSingleEntry(buf: ArrayBuffer): Promise<string> {
   return new Response(stream).text();
 }
 
-async function fetchSlot(stamp: string): Promise<GdeltEvent[]> {
-  try {
-    const res = await fetch(`${BASE}/${stamp}.export.CSV.zip`, {
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) return []; // a slot can legitimately be missing
-    return parseGdeltExport(await unzipSingleEntry(await res.arrayBuffer()));
-  } catch {
-    return [];
-  }
-}
-
 /** Run `jobs` with bounded concurrency, preserving nothing but the merged output. */
 async function pooled<T>(jobs: (() => Promise<T[]>)[], limit: number): Promise<T[]> {
   const out: T[] = [];
@@ -450,18 +438,105 @@ interface WindowCache {
 let cache: WindowCache | null = null;
 let inflight: Promise<GdeltEvent[]> | null = null;
 
+/**
+ * What the last window attempt actually did, so production can be asked instead
+ * of guessed at. My first diagnosis of the empty-in-prod case was wrong precisely
+ * because the notice asserted "the bucket answered" when nothing had checked that.
+ * A diagnostic that states more than it measured is worse than none.
+ */
+export interface WindowDiag {
+  lastUpdateStatus: number | null;
+  lastUpdateError: string | null;
+  stampSource: "lastupdate" | "clock";
+  slotsRequested: number;
+  slotsOk: number;
+  slotsHttpError: number;
+  slotsThrew: number;
+  firstSlotError: string | null;
+  bytesRead: number;
+  rowsParsed: number;
+}
+
+let diag: WindowDiag | null = null;
+
+/** The last window attempt's diagnostics, or null before the first attempt. */
+export function windowDiag(): WindowDiag | null {
+  return diag;
+}
+
+/** One line naming where the pipeline stopped. Safe to show a user. */
+export function describeDiag(d: WindowDiag | null): string {
+  if (!d) return "The window has not been attempted yet in this process.";
+  const parts = [
+    d.lastUpdateError
+      ? `lastupdate.txt failed (${d.lastUpdateError})`
+      : `lastupdate.txt HTTP ${d.lastUpdateStatus}`,
+    `stamp from ${d.stampSource}`,
+    `${d.slotsOk}/${d.slotsRequested} slots decoded`,
+    `${d.slotsHttpError} HTTP errors`,
+    `${d.slotsThrew} threw`,
+    `${d.bytesRead} bytes`,
+    `${d.rowsParsed} rows parsed`,
+  ];
+  if (d.firstSlotError) parts.push(`first slot error: ${d.firstSlotError}`);
+  return parts.join(", ") + ".";
+}
+
 async function refresh(): Promise<GdeltEvent[]> {
+  const d: WindowDiag = {
+    lastUpdateStatus: null,
+    lastUpdateError: null,
+    stampSource: "clock",
+    slotsRequested: 0,
+    slotsOk: 0,
+    slotsHttpError: 0,
+    slotsThrew: 0,
+    firstSlotError: null,
+    bytesRead: 0,
+    rowsParsed: 0,
+  };
   let newest: string | undefined;
   try {
     const res = await fetch(`${BASE}/lastupdate.txt`, { signal: AbortSignal.timeout(15_000) });
-    if (res.ok) newest = parseLastUpdate(await res.text());
-  } catch {
-    // fall through to the clock
+    d.lastUpdateStatus = res.status;
+    if (res.ok) {
+      newest = parseLastUpdate(await res.text());
+      if (newest) d.stampSource = "lastupdate";
+    }
+  } catch (e) {
+    d.lastUpdateError = (e as Error)?.name ?? "error";
   }
   const stamp = newest ?? stampFromClock();
   const stamps = Array.from({ length: WINDOW_FILES }, (_, i) => shiftStamp(stamp, i));
-  const events = await pooled(stamps.map((s) => () => fetchSlot(s)), FETCH_CONCURRENCY);
-  // An empty result means every slot failed — GDELT always has events. Serve
+  d.slotsRequested = stamps.length;
+
+  const events = await pooled(
+    stamps.map((st) => async () => {
+      try {
+        const res = await fetch(`${BASE}/${st}.export.CSV.zip`, { signal: AbortSignal.timeout(20_000) });
+        if (!res.ok) {
+          d.slotsHttpError++;
+          d.firstSlotError ??= `HTTP ${res.status}`;
+          return [];
+        }
+        const buf = await res.arrayBuffer();
+        d.bytesRead += buf.byteLength;
+        const text = await unzipSingleEntry(buf);
+        const rows = parseGdeltExport(text);
+        d.rowsParsed += rows.length;
+        d.slotsOk++;
+        return rows;
+      } catch (e) {
+        d.slotsThrew++;
+        d.firstSlotError ??= `${(e as Error)?.name ?? "Error"}: ${((e as Error)?.message ?? "").slice(0, 90)}`;
+        return [];
+      }
+    }),
+    FETCH_CONCURRENCY,
+  );
+  diag = d;
+
+  // An empty result means every slot failed - GDELT always has events. Serve
   // last-good and DON'T cache the emptiness, or one bad minute blinds the layer
   // for the whole TTL.
   if (events.length === 0) return cache?.events ?? [];
@@ -525,7 +600,7 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
           return [
             dormantNotice(
               meta,
-              "GDELT's export bucket answered, but no event rows came back for the last four hours. That is unusual rather than impossible — treat this layer as unavailable, not as a quiet world.",
+              `No event rows came back for the last four hours, which GDELT does not normally do. ${describeDiag(windowDiag())}`,
             ),
           ];
         }
