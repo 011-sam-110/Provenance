@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BRAND } from "@/lib/brand";
 
 // PWA web app manifest (Next metadata route → /manifest.webmanifest, and Next
 // auto-injects the <link rel="manifest">). Calm LIGHT identity: light background,
@@ -6,10 +7,9 @@ import type { MetadataRoute } from "next";
 // app. Icons are the committed globe marks under public/icons (see scripts/gen-icons.mjs).
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "OpenData — live global intelligence",
-    short_name: "OpenData",
-    description:
-      "A calm live globe of the world's cameras, planes, satellites and global signals — hazards, conflict, infrastructure and markets.",
+    name: `${BRAND.name} · live global intelligence`,
+    short_name: BRAND.name,
+    description: BRAND.description,
     id: "/",
     start_url: "/",
     scope: "/",

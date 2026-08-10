@@ -18,6 +18,7 @@ import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { haversineKm } from "@/lib/geo/haversine";
 import { severityRank, type NormalizedEvent, type EventType, type SeverityTier } from "@/lib/events/model";
 import type { Asset } from "@/lib/events/assets";
+import { BRAND } from "@/lib/brand";
 
 export interface AlertRuleConfig {
   enabled: boolean;
@@ -183,7 +184,7 @@ export async function postWebhook(url: string, hit: AlertHit): Promise<void> {
       body: JSON.stringify({
         text: `⚠ ${hit.tier} ${hit.type}: ${hit.title} — ${Math.round(hit.distanceKm)} km from ${hit.assetName}`,
         event: hit,
-        source: "World Monitor — Disasters & Events",
+        source: `${BRAND.name} · Disasters & Events`,
       }),
     });
   } catch {

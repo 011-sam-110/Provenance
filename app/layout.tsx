@@ -1,15 +1,36 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { BRAND, siteUrl } from "@/lib/brand";
 import "./globals.css";
 
+const DEFAULT_TITLE = `${BRAND.name} · ${BRAND.tagline}`;
+
+// Site-wide metadata defaults. Per-view titles + OG cards are supplied by
+// app/page.tsx generateMetadata (it reads the shared deep-link params); these are
+// the fallbacks for the bare site. metadataBase makes the relative /api/og path
+// resolve to an absolute URL for crawlers.
 export const metadata: Metadata = {
-  title: "OpenData — live global situational-awareness map",
-  description:
-    "A live satellite globe of the world's cameras, aircraft, satellites and global signals — hazards, conflict, infrastructure, markets and news on one map.",
-  applicationName: "OpenData",
+  metadataBase: new URL(siteUrl()),
+  title: DEFAULT_TITLE,
+  description: BRAND.description,
+  applicationName: BRAND.name,
   // app/manifest.ts is auto-linked by Next; this is the explicit reference.
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "OpenData", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
+  openGraph: {
+    type: "website",
+    siteName: BRAND.name,
+    url: "/",
+    title: DEFAULT_TITLE,
+    description: BRAND.description,
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: `${BRAND.name} live map preview` }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: BRAND.description,
+    images: ["/api/og"],
+  },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
