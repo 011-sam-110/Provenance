@@ -129,7 +129,7 @@ export const MARKETS_WIDGET = {
   component: MarketsBody,
   detail: MarketsDetail,
   help: {
-    what: "Live prices for commodities, crypto, FX and major equities, flagging any big daily mover as an alert. Sparklines build up as it polls.",
+    what: "Delayed prices for crypto, commodities, FX, US equities and rates — a situational read, not a trading feed — flagging any big mover as an alert. Sparklines build from what this browser has seen.",
     source: "Yahoo Finance + CoinGecko + ECB (keyless); more with a key",
   },
 };

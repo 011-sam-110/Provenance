@@ -166,4 +166,8 @@ registerWidget({
   defaultConfig: {},
   component: AnomalyBody,
   detail: AnomalyDetail,
+  help: {
+    what: "The items scoring above the routine floor across eight monitored layers, ranked into one triage list so the answer to \"what should I look at right now?\" is a single panel.",
+    source: `Composited by us from ${ANOMALY_IDS.length} keyless signal layers — severity comes from each layer's own metric`,
+  },
 });

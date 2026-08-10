@@ -163,10 +163,14 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
           </div>
           <p className="tn-cw-help-what">{help.what}</p>
           {help.source && <p className="tn-cw-help-src"><span className="tn-cw-help-src-k">Source</span> {help.source}</p>}
-          {/* For the 35 generic signal widgets (type id `signal:<layer>`), the trust
-              card is inlined here as well as in the dossier, so "what can this NOT
-              tell me?" is answerable without first finding a pin to click. */}
-          <LayerExplainerCard signalId={instance.type.startsWith("signal:") ? instance.type.slice(7) : undefined} />
+          {/* The trust card, for EVERY widget — the 37 generic signal widgets resolve
+              theirs from the layer registry, the 15 bespoke ones from
+              lib/console/help.ts. Inlined here as well as in the dossier so "what
+              can this NOT tell me?" is answerable without first finding a pin to
+              click. An audit found this reaching only 2 of the 8 widgets on the
+              default board, which is worse than the competitor's 8-of-20 that the
+              whole feature exists to beat. */}
+          <LayerExplainerCard explainer={help.explainer} />
         </div>
       )}
 

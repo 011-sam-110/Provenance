@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { countMagnitude } from "@/lib/signals/aggregate";
+import { markCoverage } from "@/lib/signals/coverage";
 
 // ACLED — real-time armed-conflict & protest events with actor attribution and
 // fatality counts. The canonical "is the line moving today" source. Key-gated:
@@ -14,6 +15,9 @@ import { countMagnitude } from "@/lib/signals/aggregate";
 
 const TOKEN_URL = "https://acleddata.com/oauth/token";
 const READ_URL = "https://acleddata.com/api/acled/read";
+
+/** Page size asked of the ACLED read API. A full page means there are more events. */
+export const ACLED_PAGE_LIMIT = 2000;
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 export const ACLED_ATTRIBUTION = "Conflict data © ACLED (acleddata.com)";
@@ -56,10 +60,19 @@ function num(v: string | number | undefined): number {
   return Number.isFinite(n) ? n : Number.NaN;
 }
 
-/** Pure: ACLED read payload → SignalFeature[]. Skips rows with no/garbled coords. */
-export function normalizeAcled(json: { data?: AcledRow[] }): SignalFeature[] {
+/**
+ * Pure: ACLED read payload → SignalFeature[]. Skips rows with no/garbled coords.
+ * The read API is paged at `limit`; a saturated page means the map is showing a
+ * slice of the conflict record, so the payload publishes that rather than letting
+ * the count pass for a total.
+ */
+export function normalizeAcled(
+  json: { data?: AcledRow[] },
+  limit = ACLED_PAGE_LIMIT,
+): SignalFeature[] {
+  const rows = json.data ?? [];
   const out: SignalFeature[] = [];
-  for (const e of json.data ?? []) {
+  for (const e of rows) {
     const lat = num(e.latitude);
     const lon = num(e.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -92,7 +105,11 @@ export function normalizeAcled(json: { data?: AcledRow[] }): SignalFeature[] {
       },
     });
   }
-  return out;
+  return markCoverage(out, {
+    noun: "conflict events",
+    rule: "the first page the ACLED read API returned",
+    upstream: { limit, count: rows.length },
+  });
 }
 
 // --- token cache (module-scoped; refreshed on demand) -----------------------
@@ -141,7 +158,7 @@ export const ACLED_SOURCE: SignalSource = {
     const token = await getToken(email, password);
     if (!token) return [];
     try {
-      const res = await fetch(`${READ_URL}?limit=2000&_format=json`, {
+      const res = await fetch(`${READ_URL}?limit=${ACLED_PAGE_LIMIT}&_format=json`, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "User-Agent": UA },
         signal: AbortSignal.timeout(20_000),
       });

@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { markCoverage, withCoverage } from "@/lib/signals/coverage";
 
 // The Space Devs — Launch Library 2 "upcoming launches". Keyless JSON; the
 // canonical open feed of scheduled orbital + suborbital launches. Each launch is
@@ -13,8 +14,10 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 // (lldev.thespacedevs.com) when production rate-limits. Both responses share the
 // same schema. Shapes confirmed live 2026-06-27.
 
-const PROD = "https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=30&mode=normal";
-const DEV = "https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=30&mode=normal";
+/** Page size asked of LL2. The agenda is a PAGE of the schedule, not the schedule. */
+export const LAUNCHES_PAGE_LIMIT = 30;
+const PROD = `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
+const DEV = `https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — launches move on the scale of hours/days
 
 export const LAUNCHES_ATTRIBUTION = "Launch data © The Space Devs — Launch Library 2";
@@ -45,10 +48,20 @@ export function launchStatusColor(status: string | undefined): string {
   return "#a855f7"; // TBD / TBC / default — calm violet (Space group)
 }
 
-/** Pure: LL2 results[] → SignalFeature[] (one point per launch pad). */
-export function normalizeLaunches(json: { results?: LL2Launch[] }): SignalFeature[] {
+/**
+ * Pure: LL2 results[] → SignalFeature[] (one point per launch pad).
+ *
+ * LL2 paginates. Its `count` is the TOTAL upcoming launches, so when it is present
+ * we can publish an exact "N of M"; without it, a full page is treated as a lower
+ * bound. Either way the agenda never claims to be the whole manifest.
+ */
+export function normalizeLaunches(
+  json: { results?: LL2Launch[]; count?: number },
+  limit = LAUNCHES_PAGE_LIMIT,
+): SignalFeature[] {
+  const results = json.results ?? [];
   const out: SignalFeature[] = [];
-  for (const l of json.results ?? []) {
+  for (const l of results) {
     const pad = l.pad;
     // pad coords arrive as strings ("28.5618571"); guard null before coercion.
     const lat = pad?.latitude == null ? Number.NaN : Number(pad.latitude);
@@ -80,7 +93,24 @@ export function normalizeLaunches(json: { results?: LL2Launch[] }): SignalFeatur
       },
     });
   }
-  return out;
+  // LL2's own total, when it sent one, is an EXACT upstream count — better than a
+  // page-saturation guess, so prefer it.
+  const total = typeof json.count === "number" && Number.isFinite(json.count) ? json.count : null;
+  if (total != null && total > results.length) {
+    return withCoverage(out, {
+      available: total,
+      availableExact: true,
+      capped: true,
+      cap: limit,
+      noun: "upcoming launches",
+      rule: "the soonest — Launch Library 2 returns them in launch order",
+    });
+  }
+  return markCoverage(out, {
+    noun: "upcoming launches",
+    rule: "the soonest — Launch Library 2 returns them in launch order",
+    upstream: { limit, count: results.length },
+  });
 }
 
 // --- Hard-cached upstream fetch (prod → dev fallback) ----------------------
@@ -92,7 +122,7 @@ async function tryFetch(url: string): Promise<SignalFeature[] | null> {
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) return null; // 429 etc. → let the caller fall back
-  const json = (await res.json()) as { results?: LL2Launch[] };
+  const json = (await res.json()) as { results?: LL2Launch[]; count?: number };
   return normalizeLaunches(json);
 }
 

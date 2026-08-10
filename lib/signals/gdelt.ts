@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 
 // GDELT — geolocated conflict and protest events, from the raw 15-minute EVENT
 // EXPORT rather than an API endpoint.
@@ -299,12 +300,17 @@ export function normalizeGdeltEvents(
     }
   }
 
-  // 3. rank by coverage volume and cap
-  const ranked = [...places.values()]
-    .sort((a, b) => b.articles - a.articles || a.place.localeCompare(b.place))
-    .slice(0, cap);
+  // 3. rank by coverage volume and cap. `available` is the number of distinct
+  // PLACES this layer found in the window — a busy 4-hour window runs well past
+  // 300, so the cap must ride along in the payload or the map silently drops
+  // flashpoints that simply got less coverage than the 300th.
+  const ranked = applyCap(
+    [...places.values()].sort((a, b) => b.articles - a.articles || a.place.localeCompare(b.place)),
+    cap,
+    { noun: "places", rule: "the most covered by article volume" },
+  );
 
-  return ranked.map((b) => ({
+  return carryCoverage(ranked, ranked.map((b) => ({
     id: `gdelt:${meta.signalId}:${b.lat.toFixed(3)}:${b.lon.toFixed(3)}`,
     lat: b.lat,
     lon: b.lon,
@@ -326,7 +332,7 @@ export function normalizeGdeltEvents(
       tone: Math.round(b.top.avgTone * 10) / 10,
       window: `last ${(WINDOW_FILES * 15) / 60}h`,
     },
-  }));
+  })));
 }
 
 // --- upstream window fetch (shared by both layers) --------------------------

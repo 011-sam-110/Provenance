@@ -7,10 +7,15 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import type { SignalFeature } from "@/lib/signals/types";
+import type { SignalCoverage } from "@/lib/signals/coverage";
 import { isHidden, onVisible, shouldRefreshOnVisible } from "@/lib/shell/visibility";
 
 export interface SignalFeed {
   features: SignalFeature[];
+  /** The adapter's truncation record, when it published one. Dropped here for a
+   *  release: the cap was measured server-side and then thrown away on parse, so
+   *  the UI kept printing a render cap as if it were a count. */
+  coverage?: SignalCoverage;
   status: "loading" | "idle" | "error";
   /** Epoch ms of the last SUCCESSFUL load. Unchanged by a failed refresh, so it is
    *  the real answer to "how old is what I'm looking at?". */
@@ -57,7 +62,13 @@ function load(id: string, e: Entry) {
     })
     .then((d) => {
       const features = (d?.features as SignalFeature[]) ?? [];
-      e.state = { features, status: "idle", updatedAt: Date.now(), ok: true };
+      e.state = {
+        features,
+        coverage: (d?.coverage as SignalCoverage | undefined) ?? undefined,
+        status: "idle",
+        updatedAt: Date.now(),
+        ok: true,
+      };
       emit(e);
     })
     .catch(() => {
@@ -66,6 +77,7 @@ function load(id: string, e: Entry) {
       // freshness chip reads it to age the widget honestly while we serve stale data.
       e.state = {
         features: e.state.features,
+        coverage: e.state.coverage,
         status: e.state.updatedAt ? "idle" : "error",
         updatedAt: e.state.updatedAt,
         ok: false,

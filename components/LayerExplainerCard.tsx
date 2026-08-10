@@ -12,10 +12,22 @@
 // tests/unit/signals-explain.test.ts makes the empty case unreachable for us by
 // failing the build when a registered layer has no entry.
 
-import { confidenceLabel, explainerFor } from "@/lib/signals/explain";
+import { confidenceLabel, explainerFor, type LayerExplainer } from "@/lib/signals/explain";
 
-export default function LayerExplainerCard({ signalId }: { signalId?: string }) {
-  const e = signalId ? explainerFor(signalId) : undefined;
+/**
+ * Either resolve by signal id (the dossier, which only knows the layer) or hand in
+ * an already-resolved card (the widget frame, whose bespoke widgets are not signal
+ * layers and resolve through lib/console/help.ts). Same component either way, so
+ * the trust card looks and behaves identically wherever it appears.
+ */
+export default function LayerExplainerCard({
+  signalId,
+  explainer,
+}: {
+  signalId?: string;
+  explainer?: LayerExplainer;
+}) {
+  const e = explainer ?? (signalId ? explainerFor(signalId) : undefined);
   if (!e) return null;
 
   return (

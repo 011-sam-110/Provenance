@@ -197,22 +197,26 @@ function bodyFor(Comp: (p: { report: (n: number) => void }) => React.ReactNode) 
 
 const TOOLS: { id: string; title: string; icon: string; help: { what: string; source: string }; body: (p: { report: (n: number) => void }) => React.ReactNode }[] = [
   { id: "dns", title: "DNS records", icon: "🌐",
-    help: { what: "Type a domain to resolve its live DNS — A/AAAA/MX/TXT/NS — so you can see where it points and who handles its mail. Passive; nothing is sent to the target.", source: "Cloudflare DNS-over-HTTPS (keyless)" },
+    help: { what: "Type a domain to resolve its DNS — A/AAAA/MX/NS/TXT/CNAME/SOA/CAA — so you can see where it points and who handles its mail. Passive; nothing is sent to the target.", source: "Cloudflare DNS-over-HTTPS (keyless)" },
     body: DnsBody },
   { id: "whois", title: "WHOIS / RDAP", icon: "📄",
-    help: { what: "Registration details for a domain or IP — registrar, org and key dates — from the authoritative registries.", source: "rdap.org (regional internet registries), keyless" },
+    help: { what: "Registration details for a domain or IP — registrar, org and key dates — from the authoritative registries. Usually redacted down to a privacy proxy.", source: "rdap.org (regional internet registries), keyless" },
     body: WhoisBody },
   { id: "certs", title: "Certificates & subdomains", icon: "🔏",
-    help: { what: "Every TLS certificate ever issued for a domain, which quietly enumerates its subdomains.", source: "crt.sh Certificate Transparency logs (keyless)" },
+    help: { what: "Every publicly-trusted TLS certificate logged for a domain, which quietly enumerates its subdomains — including ones long decommissioned.", source: "crt.sh Certificate Transparency logs (keyless)" },
     body: CertsBody },
+  // Source corrected: api.bgpview.io SHUT DOWN and lib/recon/bgp.ts has been on
+  // RIPEstat since. The note said BGPView long after every lookup stopped working.
   { id: "bgp", title: "BGP / ASN", icon: "🛰",
-    help: { what: "The autonomous system and network that announces an IP or domain to the internet — who really hosts it.", source: "BGPView routing data (keyless)" },
+    help: { what: "The autonomous system that announces an IP or ASN to the internet — who routes it, which registry allocated it, and whether it's in the global table right now.", source: "RIPEstat (RIPE NCC public routing data), keyless" },
     body: BgpBody },
   { id: "ports", title: "Ports & services", icon: "🔌",
-    help: { what: "Internet-facing ports and services already observed for a host. Passive lookup only — no scan is performed from here.", source: "Shodan InternetDB (keyless, passive)" },
+    help: { what: "Ports and services Shodan has already recorded for a host. A passive lookup of somebody else's scan — no scan runs from here, and the record can be weeks old.", source: "Shodan InternetDB (keyless, passive)" },
     body: PortsBody },
+  // "public DNS blocklists" was never in the code: the keyless baseline is
+  // InternetDB, and every other provider is a KEYED slot shown as locked.
   { id: "threat", title: "Threat intel", icon: "🛡",
-    help: { what: "A quick reputation read on a host — known-bad tags and blocklist hits — to gauge whether it's flagged anywhere.", source: "Shodan InternetDB + public DNS blocklists (keyless)" },
+    help: { what: "A reputation read on a host — Shodan's known-bad tags and CVEs — plus which extra threat-intel providers are configured and which are locked.", source: "Shodan InternetDB (keyless) + 7 keyed provider slots: VirusTotal, AbuseIPDB, GreyNoise, OTX, Pulsedive, IPQualityScore, abuse.ch" },
     body: ThreatBody },
 ];
 

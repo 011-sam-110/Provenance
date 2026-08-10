@@ -319,9 +319,12 @@ export const EVENTS_WIDGET = {
   defaultConfig: { minTier: "S1", sort: "severity", evGroupBy: "region" },
   component: EventsBody,
   detail: EventsDetail,
+  // Three sources, named. The old note advertised "floods, outbreaks" and "partner
+  // hazard feeds"; EVENT_SOURCES has exactly USGS quakes, GDACS alerts and NHC
+  // cyclones, and nothing here has ever carried an outbreak.
   help: {
-    what: "Major disasters and events — earthquakes, storms, floods, outbreaks — ranked by severity and clustered by region, with anything near a watched asset escalated to the top.",
-    source: "GDACS + USGS + partner hazard feeds (keyless)",
+    what: "Earthquakes, GDACS disaster alerts and active cyclones, tiered by severity and grouped by region — with anything whose modelled impact radius reaches one of your assets escalated to the top.",
+    source: "USGS + GDACS + NOAA NHC (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };

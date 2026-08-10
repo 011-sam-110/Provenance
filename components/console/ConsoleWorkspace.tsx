@@ -9,6 +9,10 @@ import MapControls from "@/components/console/MapControls";
 import WorldClock from "@/components/console/WorldClock";
 import MapSearch from "@/components/console/MapSearch";
 import PinNavigator from "@/components/console/PinNavigator";
+import PanelHost from "@/components/shell/PanelHost";
+import CoveragePanel from "@/components/shell/CoveragePanel";
+import MarketsPanel from "@/components/shell/MarketsPanel";
+import WatchlistPanel from "@/components/shell/WatchlistPanel";
 
 // Full-bleed console: the map is a 100%×100% base layer and the three widget
 // segments FLOAT over it as translucent glass columns (the calm-glass identity the
@@ -83,6 +87,24 @@ export default function ConsoleWorkspace() {
                }} role="separator" aria-orientation="horizontal" />
         </>
       )}
+
+      {/* The variant's persistent chrome — the Source Catalog rail. It lives INSIDE
+          the shell so it inherits --tn-lw (the left column's width): closed, its
+          launcher parks at the map's top-left; open, `.tn-cw-shell:has(> .tn-rail)`
+          insets the console so the drawer pushes the widget columns rather than
+          covering them. See the block at the end of app/globals.css.
+
+          Nothing had mounted this since the console rebuild, which took the full
+          36-layer list, the per-layer map toggles, the per-layer freshness dot and
+          the "needs a key" badge out of the product entirely. */}
+      <PanelHost />
+
+      {/* The three slide-ins the rail's footer buttons open. Each reads its own
+          open-store and renders null while closed, so mounting them costs nothing —
+          but without them those buttons are dead controls. */}
+      <CoveragePanel />
+      <MarketsPanel />
+      <WatchlistPanel />
     </div>
   );
 }

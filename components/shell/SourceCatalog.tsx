@@ -410,7 +410,11 @@ function GlobalSignals({
 }
 
 export default function SourceCatalog() {
-  const [railOpen, setRailOpen] = useState(true);
+  // Mounts CLOSED, as the "≡ Sources" launcher. In the old shell the rail owned the
+  // left edge; in the widget console that edge is a widget column, and a 304px panel
+  // opening over it on every page load would hide the seeded widgets on desktop and
+  // eat two-thirds of a phone screen. One click opens it — see ConsoleWorkspace.
+  const [railOpen, setRailOpen] = useState(false);
   const [query, setQuery] = useState("");
   const m = useMetrics();
   const t = useT();

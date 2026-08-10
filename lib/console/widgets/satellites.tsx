@@ -59,7 +59,7 @@ export const SATELLITES_WIDGET = {
   component: SatellitesBody,
   detail: SatellitesDetail,
   help: {
-    what: "Satellites overhead, propagated locally from public orbital elements and listed by altitude — the ISS, Starlink and more, in near-real time.",
+    what: "Satellites overhead, listed by altitude — the ISS and other bright objects. Positions are computed in your browser from public orbital elements, not observed.",
     source: "CelesTrak TLE sets, propagated with satellite.js (keyless)",
   },
   capabilities: { filter: true, sort: true },

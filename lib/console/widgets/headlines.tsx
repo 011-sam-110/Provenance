@@ -91,7 +91,7 @@ export const HEADLINES_WIDGET = {
   detail: HeadlinesDetail,
   help: {
     what: "The latest world headlines, clustered so the same story from several outlets reads as one line. Each links out to the original.",
-    source: "BBC, Al Jazeera, NPR & Guardian world RSS (keyless)",
+    source: "BBC, Al Jazeera, NPR, Guardian, DW & France 24 world RSS + the Liveuamap Telegram channel (keyless)",
   },
 };
 registerWidget(HEADLINES_WIDGET);

@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap } from "@/lib/signals/coverage";
 
 // Real-time ship tracking — AISStream.io (free WebSocket). AISStream streams live
 // vessel positions; there is no REST snapshot, so the adapter opens the socket
@@ -119,7 +120,15 @@ export function normalizeAis(vessels: AisVessel[]): SignalFeature[] {
       },
     });
   }
-  return out.slice(0, AIS_CAP);
+  // TWO truncations, and the second is the one that matters: collectAis() closes
+  // the socket the moment it has AIS_CAP distinct vessels, so a saturated snapshot
+  // is a sample of the traffic in the collection window, not a count of the ships
+  // at the chokepoints. `available` is therefore a lower bound, and says so.
+  return applyCap(out, AIS_CAP, {
+    noun: "vessels",
+    rule: "the first seen in the ~4.5s collection window — not a ranking",
+    upstream: { limit: AIS_CAP, count: vessels.length },
+  });
 }
 
 /** Open the AISStream socket, accumulate latest PositionReport per vessel, then close. */

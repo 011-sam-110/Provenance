@@ -53,6 +53,12 @@ export default function BreakingBanner() {
     }
   };
 
+  // On a 360px-wide band the action button competes with the headline for room, so
+  // it shows an abbreviated glyph there (CSS swaps the two spans at <=720px). The
+  // accessible name is the full label in both cases — the spans are decorative.
+  const viewFull = alert.action.type === "fly" ? "View on map" : "Read article";
+  const viewAbbr = alert.action.type === "fly" ? "View" : "Read";
+
   return (
     <div className={`tn-alert tn-alert-${alert.kind}`} role="alert">
       <span className="tn-alert-tag">{alert.kind === "quake" ? "ALERT" : "BREAKING"}</span>
@@ -60,8 +66,9 @@ export default function BreakingBanner() {
         <span className="tn-alert-text">{alert.text}</span>
         <span className="tn-alert-detail">{alert.detail}</span>
       </div>
-      <button type="button" className="tn-alert-view" onClick={onView}>
-        {alert.action.type === "fly" ? "View on map" : "Read"}
+      <button type="button" className="tn-alert-view" onClick={onView} aria-label={viewFull}>
+        <span className="tn-alert-view-full" aria-hidden>{viewFull}</span>
+        <span className="tn-alert-view-abbr" aria-hidden>{viewAbbr}</span>
       </button>
       <button
         type="button"

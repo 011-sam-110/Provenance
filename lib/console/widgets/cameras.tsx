@@ -78,8 +78,8 @@ export const CAMERAS_WIDGET = {
   component: CamerasBody,
   detail: CamerasDetail,
   help: {
-    what: "A live thumbnail grid of the public traffic and street cameras currently on the map — a look at conditions on the ground, with any feed that drops offline flagged.",
-    source: "Public DOT / city camera networks (keyless)",
+    what: "A thumbnail grid of the public road cameras the map has loaded — a look at conditions on the ground, with any feed the operator marks unavailable flagged as offline.",
+    source: "11 public transport-agency camera feeds across 7 countries (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };

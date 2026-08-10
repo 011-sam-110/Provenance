@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { countMagnitude } from "@/lib/signals/aggregate";
+import { applyCap } from "@/lib/signals/coverage";
 
 // Active fire detections — NASA FIRMS (VIIRS S-NPP near-real-time). Satellite
 // thermal anomalies for the last 24h worldwide, each with a fire radiative power
@@ -44,7 +45,14 @@ function acqIso(date: string, time: string): string | undefined {
   return Number.isFinite(t) ? new Date(t).toISOString() : undefined;
 }
 
-/** Pure: FIRMS CSV → SignalFeature[], keeping the top `cap` by FRP. */
+/**
+ * Pure: FIRMS CSV → SignalFeature[], keeping the top `cap` by FRP.
+ *
+ * A whole-world VIIRS day runs to tens of thousands of pixels, so the returned
+ * array carries a coverage record (lib/signals/coverage.ts) saying how many
+ * detections the CSV actually held — otherwise "1,500 fires" reads as the number
+ * of fires burning rather than the number we chose to draw.
+ */
 export function normalizeFirms(csv: string, cap = FIRMS_CAP): SignalFeature[] {
   const lines = csv.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
@@ -89,7 +97,10 @@ export function normalizeFirms(csv: string, cap = FIRMS_CAP): SignalFeature[] {
     });
   }
   rows.sort((a, b) => (Number(b.props?.magnitude) || 0) - (Number(a.props?.magnitude) || 0));
-  return rows.slice(0, cap);
+  return applyCap(rows, cap, {
+    noun: "fire detections",
+    rule: "the most intense by fire radiative power",
+  });
 }
 
 export const FIRE_FIRMS_SOURCE: SignalSource = {

@@ -94,9 +94,13 @@ export const AVIATION_WIDGET = {
   defaultConfig: { sort: "alt" },
   component: AviationBody,
   detail: AviationDetail,
+  // NOTE: this used to promise "military types … are flagged". It never happened —
+  // the PlaneLite mapping above sets no isMilitary because OpenSky carries no
+  // military classification, so that alert can't fire on this widget. The ? note
+  // now says where military traffic actually lives.
   help: {
-    what: "Aircraft in the air right now, from open ADS-B. Military types and emergency squawks (7500/7600/7700) are flagged so the notable jets surface first.",
-    source: "OpenSky Network + adsb.fi (keyless ADS-B)",
+    what: "Aircraft airborne right now, from open ADS-B, listed by altitude. An emergency squawk (7500/7600/7700) raises a critical alert; military traffic is its own signal layer, not this one.",
+    source: "OpenSky Network global snapshot (keyless ADS-B)",
   },
   capabilities: { filter: true, sort: true },
 };

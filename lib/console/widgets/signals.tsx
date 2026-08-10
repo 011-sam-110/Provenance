@@ -75,7 +75,7 @@ function relativeTime(ts: string | undefined, now: number): string {
 function makeSignalBody(source: SignalSource) {
   function SignalBody({ config }: WidgetBodyProps) {
     const scope = useScope();
-    const { features, status, updatedAt, ok } = useSignalFeed(source.id, source.refreshMs);
+    const { features, status, updatedAt, ok, coverage } = useSignalFeed(source.id, source.refreshMs);
     // A key-gated layer with no key is DORMANT, not quiet. Without this the chip
     // read "none now" and the tooltip said "Connected, but there is nothing to
     // report right now — that is a real answer, not a failure" for layers that
@@ -90,8 +90,9 @@ function makeSignalBody(source: SignalSource) {
           scope,
           { alertMin: typeof config.alertMin === "number" ? config.alertMin : undefined },
           source.metric,
+          coverage,
         ),
-      [features, scope, config],
+      [features, scope, config, coverage],
     );
 
     const report = useWidgetReport();
@@ -133,7 +134,13 @@ function makeSignalBody(source: SignalSource) {
 
     const now = Date.now();
     return (
-      <ul className="tn-w-list">
+      <>
+        {/* A render cap is not a measurement. When the adapter truncated, say so
+            and say how the survivors were chosen — otherwise "1,500 fires" reads
+            as all the fires there are. The note sits on the FEED, not the scoped
+            row count, so it stays true whatever scope is active. */}
+        {projected.capNote && <p className="tn-w-capnote">{projected.capNote}</p>}
+        <ul className="tn-w-list">
         {projected.rows.map((r) => {
           const rel = relativeTime(r.ts, now);
           return (
@@ -148,7 +155,8 @@ function makeSignalBody(source: SignalSource) {
             </li>
           );
         })}
-      </ul>
+        </ul>
+      </>
     );
   }
   return SignalBody;

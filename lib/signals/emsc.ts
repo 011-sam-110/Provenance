@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { magnitudeColor } from "@/lib/signals/usgs";
+import { markCoverage } from "@/lib/signals/coverage";
 
 // Earthquakes — EMSC (European-Mediterranean Seismological Centre) real-time feed.
 // A keyless FDSN GeoJSON service that aggregates many national networks, often
@@ -9,6 +10,13 @@ import { magnitudeColor } from "@/lib/signals/usgs";
 
 const ENDPOINT = "https://www.seismicportal.eu/fdsnws/event/1/query";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+
+/**
+ * The `limit=` the FDSN query asks for. There is no local render cap here — the
+ * truncation is entirely upstream, so a response holding exactly this many events
+ * means the catalogue had at least this many and we cannot see past the page.
+ */
+export const EMSC_REQUEST_LIMIT = 500;
 
 export const EMSC_ATTRIBUTION = "Earthquake data © EMSC-CSEM (seismicportal.eu)";
 
@@ -29,10 +37,18 @@ interface EmscFeature {
   } | null;
 }
 
-/** Pure: EMSC FeatureCollection → SignalFeature[]. Skips null-geometry / bad-coord events. */
-export function normalizeEmsc(geojson: { features?: EmscFeature[] }): SignalFeature[] {
+/**
+ * Pure: EMSC FeatureCollection → SignalFeature[]. Skips null-geometry / bad-coord
+ * events. Records upstream coverage: the query is paged at `limit`, so a full page
+ * means "at least this many", never "this many".
+ */
+export function normalizeEmsc(
+  geojson: { features?: EmscFeature[] },
+  limit = EMSC_REQUEST_LIMIT,
+): SignalFeature[] {
+  const raw = geojson.features ?? [];
   const out: SignalFeature[] = [];
-  for (const f of geojson.features ?? []) {
+  for (const f of raw) {
     const p = f.properties ?? {};
     const c = f.geometry?.coordinates;
     // EMSC carries lat/lon in properties too; prefer geometry, fall back to props.
@@ -63,7 +79,11 @@ export function normalizeEmsc(geojson: { features?: EmscFeature[] }): SignalFeat
       },
     });
   }
-  return out;
+  return markCoverage(out, {
+    noun: "events",
+    rule: "the first page the EMSC FDSN service returned",
+    upstream: { limit, count: raw.length },
+  });
 }
 
 export const EMSC_SOURCE: SignalSource = {
@@ -76,7 +96,7 @@ export const EMSC_SOURCE: SignalSource = {
   metric: { field: "magnitude", domain: [2, 8] }, // Richter → magnitude bar
   async fetch() {
     try {
-      const res = await fetch(`${ENDPOINT}?limit=500&format=json`, {
+      const res = await fetch(`${ENDPOINT}?limit=${EMSC_REQUEST_LIMIT}&format=json`, {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });

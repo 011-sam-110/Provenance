@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 
 // NOAA SWPC OVATION aurora forecast — the modelled probability (%) of visible
 // aurora on a 1°×1° global grid for the next ~30 min. Keyless JSON:
@@ -110,7 +111,14 @@ export function normalizeAurora(json: OvationGrid, opts: AuroraOptions = {}): Si
 
   const forecast = json["Forecast Time"];
   const observed = json["Observation Time"];
-  const rows = downsampleAurora(json.coordinates ?? [], minProbability, lonStep, latStep).slice(0, cap);
+  // The cap is a storm backstop and normally does NOT bite (376 points on the
+  // 2026-08-10 run), but when it does the payload has to say so rather than
+  // quietly clipping the crest of the oval.
+  const rows = applyCap(
+    downsampleAurora(json.coordinates ?? [], minProbability, lonStep, latStep),
+    cap,
+    { noun: "grid cells", rule: "the highest visibility probability" },
+  );
 
   const out: SignalFeature[] = [];
   for (const [rawLon, lat, pct] of rows) {
@@ -135,7 +143,7 @@ export function normalizeAurora(json: OvationGrid, opts: AuroraOptions = {}): Si
       },
     });
   }
-  return out;
+  return carryCoverage(rows, out);
 }
 
 export const AURORA_SOURCE: SignalSource = {
