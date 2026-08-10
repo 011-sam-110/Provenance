@@ -195,3 +195,56 @@ test("the 15-minute window is addressed by stamp arithmetic, not guesswork", () 
   expect(shiftStamp("20260810003000", 4)).toBe("20260809233000"); // across midnight UTC
   expect(shiftStamp("20260301000000", 1)).toBe("20260228234500"); // across a month boundary
 });
+
+// ---------------------------------------------------------------------------
+// The extent bug. Slicing a ZIP member from its payload start to END OF FILE
+// hands the decoder the payload plus the data descriptor plus the central
+// directory. Node 24 tolerates it; Vercel's runtime rejects it with
+// "TypeError: Trailing junk found after the end of the compressed stream", and
+// all sixteen slots threw -> the layer served an empty world in production while
+// returning 300 conflict points locally. A real export measured 117 trailing
+// bytes past the payload.
+// ---------------------------------------------------------------------------
+import { describe as describeZ, it as itZ, expect as expectZ } from "vitest";
+import { zipMemberExtent } from "@/lib/signals/gdelt";
+
+function localHeader(opts: { name: string; extra: number; compressedSize: number; payload: number; trailing: Uint8Array }) {
+  const head = 30 + opts.name.length + opts.extra;
+  const buf = new Uint8Array(head + opts.payload + opts.trailing.length);
+  const view = new DataView(buf.buffer);
+  view.setUint32(0, 0x04034b50, true);
+  view.setUint32(18, opts.compressedSize, true);
+  view.setUint16(26, opts.name.length, true);
+  view.setUint16(28, opts.extra, true);
+  buf.set(new TextEncoder().encode(opts.name), 30);
+  buf.set(opts.trailing, head + opts.payload);
+  return buf.buffer;
+}
+
+describeZ("zipMemberExtent", () => {
+  itZ("stops at the declared compressed size, not at end of file", () => {
+    const trailing = new Uint8Array([0x50, 0x4b, 0x01, 0x02, 9, 9, 9, 9]); // central directory
+    const buf = localHeader({ name: "x.csv", extra: 4, compressedSize: 100, payload: 100, trailing });
+    const { start, end } = zipMemberExtent(buf);
+    expectZ(start).toBe(30 + 5 + 4);
+    expectZ(end).toBe(start + 100);
+    expectZ(end).toBeLessThan(buf.byteLength);
+  });
+
+  itZ("finds the data descriptor when the header declares no size (streamed archive)", () => {
+    const trailing = new Uint8Array([0x50, 0x4b, 0x07, 0x08, 1, 2, 3, 4]); // PK\x07\x08
+    const buf = localHeader({ name: "x.csv", extra: 0, compressedSize: 0, payload: 64, trailing });
+    const { start, end } = zipMemberExtent(buf);
+    expectZ(end).toBe(start + 64);
+  });
+
+  itZ("falls back to the central directory when there is no descriptor either", () => {
+    const trailing = new Uint8Array([0x50, 0x4b, 0x01, 0x02, 0, 0, 0, 0]);
+    const buf = localHeader({ name: "x.csv", extra: 0, compressedSize: 0, payload: 40, trailing });
+    expectZ(zipMemberExtent(buf).end).toBe(30 + 5 + 40);
+  });
+
+  itZ("refuses anything that is not a zip", () => {
+    expectZ(() => zipMemberExtent(new Uint8Array([1, 2, 3, 4, 5]).buffer)).toThrow(/not a zip/);
+  });
+});
