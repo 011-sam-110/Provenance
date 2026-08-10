@@ -10,12 +10,14 @@
 
 import { useState } from "react";
 import { useMetrics } from "@/lib/metrics";
+import { useLayers } from "@/lib/layers";
 import PresetPill from "@/components/shell/PresetPill";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 
 export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const m = useMetrics();
+  const layers = useLayers();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
@@ -24,8 +26,14 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
         {/* Canonical machine-readable pulse — visually hidden, kept for the e2e smoke
             test and screen readers. */}
         <span data-testid="stat-line" className="tn-sr-only">
-          {m.camerasTotal.toLocaleString()} cameras · {m.planes.toLocaleString()} planes ·{" "}
-          {m.satellites.toLocaleString()} satellites
+          {/* "off" is not "0". An audit read this line as "0 planes · 0 satellites"
+              and concluded two of three headline feeds were dead, while /api/planes
+              was serving 3,000 aircraft and the layer was simply not switched on.
+              Reporting a disabled layer as a zero count is the same error as a
+              frozen feed reporting "live". */}
+          {m.camerasTotal.toLocaleString()} cameras ·{" "}
+          {layers.planes ? `${m.planes.toLocaleString()} planes` : "planes off"} ·{" "}
+          {layers.satellites ? `${m.satellites.toLocaleString()} satellites` : "satellites off"}
         </span>
 
         {/* ── Brand ────────────────────────────────────────────────────────── */}

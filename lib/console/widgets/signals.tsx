@@ -18,6 +18,7 @@ import { useScope } from "@/lib/shell/scope";
 import { projectSignal } from "@/lib/console/signals/signalCard";
 import { signalHelp } from "@/lib/console/help";
 import { useSignalFeed } from "@/lib/console/signals/useSignalFeed";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
 import { MetricBar } from "@/components/MetricBar";
 import { makeSignalDetail } from "./signals.detail";
 
@@ -75,6 +76,12 @@ function makeSignalBody(source: SignalSource) {
   function SignalBody({ config }: WidgetBodyProps) {
     const scope = useScope();
     const { features, status, updatedAt, ok } = useSignalFeed(source.id, source.refreshMs);
+    // A key-gated layer with no key is DORMANT, not quiet. Without this the chip
+    // read "none now" and the tooltip said "Connected, but there is nothing to
+    // report right now — that is a real answer, not a failure" for layers that
+    // this deployment cannot fetch at all. That is the honesty machinery lying in
+    // the one place it must not, and the `dormant` state existed unwired.
+    const capability = useCapabilityStatus(source.id);
 
     const projected = useMemo(
       () =>
@@ -96,15 +103,29 @@ function makeSignalBody(source: SignalSource) {
         // (features.length), not what survived the user's scope filter
         // (projected.shown). Otherwise zooming into a quiet country would report
         // the source as empty. The body already says "Nothing in <scope>".
-        fresh: { lastOk: updatedAt, ok, count: features.length, refreshMs: source.refreshMs },
+        fresh: {
+          lastOk: updatedAt,
+          ok,
+          count: features.length,
+          refreshMs: source.refreshMs,
+          dormant: capability?.state === "locked",
+        },
       });
-    }, [projected, report, updatedAt, ok, features.length]);
+    }, [projected, report, updatedAt, ok, features.length, capability?.state]);
 
     if (status === "loading" && projected.shown === 0) {
       return <p className="tn-w-empty">Loading {source.label}…</p>;
     }
     if (status === "error" && projected.shown === 0) {
       return <p className="tn-w-empty">{source.label} unavailable.</p>;
+    }
+    if (capability?.state === "locked") {
+      return (
+        <p className="tn-w-empty">
+          {source.label} needs {capability.missingEnv.join(" + ")}, which this deployment does not have.
+          {capability.degrades ? ` ${capability.degrades}` : ""}
+        </p>
+      );
     }
     if (projected.shown === 0) {
       return <p className="tn-w-empty">Nothing in {scope.label}.</p>;
