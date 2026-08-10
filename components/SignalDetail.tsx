@@ -8,6 +8,7 @@
 import type { WorldObject } from "@/lib/world";
 import { humaniseKey } from "@/lib/text/humanise";
 import { resolveSignalSources, isCompositeSignal } from "@/lib/signals/sourceLink";
+import LayerExplainerCard from "@/components/LayerExplainerCard";
 
 /**
  * Curated [label, value] rows for the two cable ASSET kinds. Cables carry no
@@ -174,6 +175,9 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
           </div>
         </div>
       )}
+
+      {/* ── What this layer is, and what it CANNOT tell you (all 35 layers) ── */}
+      <LayerExplainerCard signalId={signalId} />
 
       {/* ── Attribution (mandatory credit line) ── */}
       {attribution && (
