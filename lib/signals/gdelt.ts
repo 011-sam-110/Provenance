@@ -368,13 +368,47 @@ function stampFromClock(now = Date.now()): string {
  * node:zlib — client components import the signals registry, which imports this
  * module, so a `node:` builtin here would break the browser bundle.
  */
+/**
+ * `deflate-raw` is the correct format for a ZIP member, and it only reached
+ * DecompressionStream in Node 20.18. On an older runtime the constructor throws
+ * `TypeError: Unsupported compression format` — and because fetchSlot catches
+ * everything, every slot yields nothing and the layer reports an empty world.
+ * That is what happened: 300 conflict points on a local Node 24 and ZERO in
+ * production, silently.
+ *
+ * A zlib-wrapped `deflate` fallback was tried and REJECTED: measured against a
+ * real export it returned 475,136 bytes where deflate-raw returns 476,658, and
+ * the shortfall persisted with a correct Adler-32 trailer. Losing 1.5 KB off the
+ * end of a CSV drops rows, which is a worse failure than not decoding at all.
+ *
+ * So there is one decode path, and the CAPABILITY is checked up front and
+ * reported. A layer that cannot run must say why — never return [] and let it
+ * read as "nothing is happening in the world".
+ */
+export function rawDeflateSupported(): boolean {
+  try {
+    new DecompressionStream("deflate-raw");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Why the window produced nothing, when it produced nothing. Null = fine. */
+export function windowBlocker(): string | null {
+  if (!rawDeflateSupported()) {
+    return "This runtime's DecompressionStream has no 'deflate-raw' support (added in Node 20.18), so GDELT's zipped export cannot be read here.";
+  }
+  return null;
+}
+
 async function unzipSingleEntry(buf: ArrayBuffer): Promise<string> {
   const view = new DataView(buf);
   if (view.getUint32(0, true) !== 0x04034b50) throw new Error("not a zip");
   const nameLen = view.getUint16(26, true);
   const extraLen = view.getUint16(28, true);
   const start = 30 + nameLen + extraLen;
-  const stream = new Blob([buf.slice(start)])
+  const stream = new Blob([new Uint8Array(buf, start)])
     .stream()
     .pipeThrough(new DecompressionStream("deflate-raw"));
   return new Response(stream).text();
@@ -447,6 +481,25 @@ export async function fetchGdeltWindow(): Promise<GdeltEvent[]> {
   return hit ? hit.events : inflight;
 }
 
+/**
+ * One labelled feature explaining why the layer is empty, placed at 0,0.
+ *
+ * Deliberately visible: the whole point is that a reader must be able to tell
+ * "we cannot fetch this" from "the world is quiet". It carries no magnitude, so
+ * it cannot draw a severity bar and cannot be mistaken for an event.
+ */
+export function dormantNotice(meta: { signalId: string; label: string }, reason: string) {
+  return {
+    id: `${meta.signalId}:unavailable`,
+    lat: 0,
+    lon: 0,
+    title: `${meta.label} — no data: this layer is unavailable`,
+    signalId: meta.signalId,
+    color: "#94a3b8",
+    props: { status: "unavailable", reason },
+  };
+}
+
 function makeSource(meta: GdeltLayerMeta): SignalSource {
   return {
     id: meta.signalId,
@@ -460,10 +513,25 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
     // couple of documents; a heavily-covered flashpoint runs to ~100+.
     metric: { field: "articles", domain: [1, 100], unit: " articles" },
     async fetch() {
+      // A capability the runtime lacks is not "nothing is happening in the world".
+      // This layer returned 300 points locally and 0 in production, silently,
+      // because the catch below treated an unsupported decoder exactly like a
+      // quiet news day. Say so instead — one labelled feature, never a bare [].
+      const blocked = windowBlocker();
+      if (blocked) return [dormantNotice(meta, blocked)];
       try {
-        return normalizeGdeltEvents(await fetchGdeltWindow(), meta);
-      } catch {
-        return []; // dormant-safe
+        const events = await fetchGdeltWindow();
+        if (events.length === 0) {
+          return [
+            dormantNotice(
+              meta,
+              "GDELT's export bucket answered, but no event rows came back for the last four hours. That is unusual rather than impossible — treat this layer as unavailable, not as a quiet world.",
+            ),
+          ];
+        }
+        return normalizeGdeltEvents(events, meta);
+      } catch (e) {
+        return [dormantNotice(meta, `The GDELT export could not be read: ${(e as Error)?.message ?? "unknown error"}.`)];
       }
     },
   };
