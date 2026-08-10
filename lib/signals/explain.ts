@@ -296,6 +296,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "Detects reachability from the outside. A national shutdown and a major cable fault look similar; the cause is not in the data.",
       "Small or short outages fall below the detection threshold.",
       "Throttling — the internet being slow rather than absent — is largely invisible to it.",
+      "IODA's own severity score is unitless and unbounded, and its practical scale moves: on 2026-08-10 one country scored 5.8e10 while the next-worst scored 2.9e4. We rank and band it on a log scale and show a 0–10 magnitude rather than the raw number, because the raw number is not comparable between countries or between weeks.",
     ],
   },
   {
