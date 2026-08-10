@@ -1,5 +1,4 @@
-/* ===========================================================================
-   TrafficNerd v2 — calm light console shell.
+/* ====================================================================   TrafficNerd v2 — calm light console shell.
    Light is the default identity; dark survives as an optional [data-theme]
    toggle. Real typography for text; monospace (.tn-num) reserved for numerics.
    =========================================================================== */
@@ -462,8 +461,7 @@ a { color: var(--tn-accent); }
 .tn-coverage-foot { margin: 14px 2px 2px; font-size: 10.5px; color: var(--tn-text-faint); line-height: 1.45; }
 @media (prefers-reduced-motion: reduce) { .tn-coverage { animation: none; } }
 
-/* ===========================================================================
-   Responsive / mobile shell (M6).
+/* ====================================================================   Responsive / mobile shell (M6).
    The globe stays the full-bleed hero; the left rail and right dossier become
    bottom sheets so the console is usable one-handed. Pure CSS over the existing
    stores/components — no component rebuild.
@@ -514,8 +512,7 @@ a { color: var(--tn-accent); }
   .tn-rail, .tn-dossier { animation: none; }
 }
 
-/* ===========================================================================
-   Markets slide-in (crypto, keyless · CoinGecko). Opt-in right-side panel,
+/* ====================================================================   Markets slide-in (crypto, keyless · CoinGecko). Opt-in right-side panel,
    reusing the dossier surface. Calm: up = green, down = red, no neon.
    =========================================================================== */
 .tn-markets {
@@ -570,8 +567,7 @@ a { color: var(--tn-accent); }
 @media (prefers-reduced-motion: reduce) { .tn-markets { animation: none; } }
 @media (max-width: 520px) { .tn-markets { left: 10px; width: auto; } }
 
-/* ===========================================================================
-   Bottom news ticker — a thin, calm, dismissible headline strip that sits just
+/* ====================================================================   Bottom news ticker — a thin, calm, dismissible headline strip that sits just
    above the freshness ticker. Gentle marquee, pauses on hover.
    =========================================================================== */
 .tn-news {
@@ -605,8 +601,7 @@ a { color: var(--tn-accent); }
 }
 @media (max-width: 600px) { .tn-news-label { display: none; } }
 
-/* ===========================================================================
-   Breaking-alert banner — one honest, dismissible alert under the top bar.
+/* ====================================================================   Breaking-alert banner — one honest, dismissible alert under the top bar.
    =========================================================================== */
 .tn-alert {
   position: fixed; top: calc(var(--tn-topbar-h) + 10px); left: 50%; transform: translateX(-50%);
@@ -640,8 +635,7 @@ a { color: var(--tn-accent); }
 @media (prefers-reduced-motion: reduce) { .tn-alert { animation: none; } }
 @media (max-width: 720px) { .tn-alert { width: calc(100vw - 20px); } .tn-alert-detail { display: none; } }
 
-/* =========================================================================
-   Batch D — platform/UX chrome: monitor presets, time-window filter, language
+/* ==================================================================   Batch D — platform/UX chrome: monitor presets, time-window filter, language
    switcher, and the saved-places (watchlist) slide-in. All reuse the calm-light
    tokens above; nothing introduces a new colour.
    ========================================================================= */
@@ -1129,8 +1123,7 @@ a { color: var(--tn-accent); }
   border: 1px solid var(--tn-border); box-shadow: var(--tn-shadow-sm);
 }
 
-/* ===========================================================================
-   WidgetFrame chrome — Task 6
+/* ====================================================================   WidgetFrame chrome — Task 6
    =========================================================================== */
 /* Translucent glass card — theme-aware surface + ink so widgets read in dark too
    (the body's .tn-w-* rows already use tokens; the frame chrome now matches). */
@@ -1171,15 +1164,13 @@ a { color: var(--tn-accent); }
 .tn-cw-resize-xy{position:absolute;right:0;bottom:0;width:12px;height:12px;cursor:nwse-resize;z-index:3}
 .tn-cw-resize-xy::after{content:"";position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-right:2px solid var(--tn-text-faint);border-bottom:2px solid var(--tn-text-faint)}
 
-/* ===========================================================================
-   StageHost + WorldClock + StageSwitch — Task 8
+/* ====================================================================   StageHost + WorldClock + StageSwitch — Task 8
    =========================================================================== */
 .tn-stage-switch{display:inline-flex;gap:2px;background:#fff;border:1px solid #d7dee6;border-radius:7px;padding:2px}
 .tn-stage-switch button{border:0;background:none;font-size:11px;font-weight:700;color:#5a6470;padding:2px 8px;border-radius:5px;cursor:pointer}
 .tn-stage-switch button.is-on{background:#27313b;color:#fff}
 
-/* ===========================================================================
-   ConsoleWorkspace + Segment — Task 7
+/* ====================================================================   ConsoleWorkspace + Segment — Task 7
    =========================================================================== */
 /* The map is a framed panel sized to the CENTRE box: it insets by the segment
    size-vars so it fills only the gap between the floating panels and reflows the
@@ -1194,6 +1185,19 @@ a { color: var(--tn-accent); }
 .tn-stage-loading{position:absolute;inset:0;display:flex;align-items:center;
   justify-content:center;background:var(--tn-surface-solid);color:var(--tn-text-muted);
   font-size:13px;letter-spacing:.02em}
+/* Basemap load notice — sits low-centre over the map, clear of the top breaking
+   banner and the bottom-right attribution/nav controls. */
+.tn-map-notice{position:absolute;left:50%;transform:translateX(-50%);bottom:116px;z-index:30;
+  display:flex;align-items:center;gap:10px;max-width:min(560px,calc(100% - 32px));
+  padding:8px 14px;border-radius:999px;border:1px solid var(--tn-border);
+  background:var(--tn-surface-solid);color:var(--tn-text);font-size:13px;
+  box-shadow:0 6px 22px rgba(20,28,38,.18)}
+.tn-map-notice button{border:1px solid var(--tn-border);background:transparent;
+  color:var(--tn-accent);font:inherit;padding:2px 10px;border-radius:999px;cursor:pointer}
+.tn-map-notice button:hover{background:var(--tn-surface)}
+.tn-map-notice button{white-space:nowrap}
+/* The world clock is hidden below 900px, so the notice can sit lower there. */
+@media (max-width: 900px){ .tn-map-notice{bottom:56px} }
 .tn-cw-col{position:absolute;top:10px;bottom:10px;z-index:15;overflow:hidden;display:flex}
 .tn-cw-col-left{left:10px}
 .tn-cw-col-right{right:10px}
@@ -1217,8 +1221,7 @@ a { color: var(--tn-accent); }
 .maplibregl-ctrl-bottom-right{right:12px;bottom:12px}
 .maplibregl-ctrl-bottom-left{bottom:12px;left:12px}
 
-/* ===========================================================================
-   Widget body — shared table primitives (Task 9 Aviation widget)
+/* ====================================================================   Widget body — shared table primitives (Task 9 Aviation widget)
    =========================================================================== */
 .tn-w-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
 .tn-w-table tr{border-bottom:1px solid var(--tn-border)}
@@ -1228,8 +1231,7 @@ a { color: var(--tn-accent); }
 .tn-w-num{font-family:var(--tn-mono);text-align:right;color:var(--tn-text-muted)}
 .tn-w-empty{padding:12px 8px;font-size:12px;color:var(--tn-text-muted);text-align:center}
 
-/* ===========================================================================
-   Widget body — list primitives (Task 10 Disasters & Events widget)
+/* ====================================================================   Widget body — list primitives (Task 10 Disasters & Events widget)
    =========================================================================== */
 .tn-w-list{list-style:none;margin:0;padding:0;font-size:12px}
 .tn-w-list li{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--tn-border);line-height:1.4}
@@ -1245,8 +1247,7 @@ a { color: var(--tn-accent); }
 .tn-w-bar-num{flex:none;font-family:var(--tn-mono);font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--tn-text);min-width:20px;text-align:right}
 .tn-w-dot{flex:none;width:8px;height:8px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 
-/* ===========================================================================
-   Widget body — camera grid (Task 11 Cameras widget)
+/* ====================================================================   Widget body — camera grid (Task 11 Cameras widget)
    =========================================================================== */
 .tn-cam-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding:6px}
 .tn-cam-cell{display:flex;flex-direction:column;gap:3px;background:var(--tn-surface-2);border:1px solid var(--tn-border);border-radius:8px;overflow:hidden}
@@ -1254,8 +1255,7 @@ a { color: var(--tn-accent); }
 
 .tn-cam-empty{font-size:11px;color:#9aa6b2;text-align:center;padding:14px}
 
-/* ===========================================================================
-   Widget body — Live Video News (Task 12)
+/* ====================================================================   Widget body — Live Video News (Task 12)
    NOTE: prefix is `tn-newsw` (news-WIDGET), NOT `tn-news` — the bottom news
    TICKER already owns `.tn-news` with position:fixed + backdrop-blur, so reusing
    it made this in-segment widget escape to a full-viewport blurred overlay.
@@ -1271,8 +1271,7 @@ a { color: var(--tn-accent); }
 .tn-newsw-picker button{text-align:left;border:0;background:none;padding:5px 9px;font-size:11px;cursor:pointer}
 .tn-newsw-cat{color:#9aa6b2;font-size:9px;float:right}.tn-newsw-custom{margin:6px 9px;padding:4px;font-size:11px;border:1px solid #e1e8ef;border-radius:5px}
 
-/* ===========================================================================
-   News-video FOCUS view (W6) — prefix `tn-nv`. Theme-token chrome (dark-capable,
+/* ====================================================================   News-video FOCUS view (W6) — prefix `tn-nv`. Theme-token chrome (dark-capable,
    unlike the light-hardcoded `.tn-newsw-*` docked widget). Media letterboxes use a
    dark literal (video looks correct in both themes, mirroring the docked screen).
    =========================================================================== */
@@ -1330,8 +1329,7 @@ a { color: var(--tn-accent); }
 .tn-nv-add button:disabled,.tn-nv-actions button:disabled{opacity:.5;cursor:default}
 .tn-nv-err{font-size:10px;color:#e5484d}
 
-/* ===========================================================================
-   Global capacity toast (Task 15) — calm bottom-centre pill, auto-dismisses
+/* ====================================================================   Global capacity toast (Task 15) — calm bottom-centre pill, auto-dismisses
    =========================================================================== */
 .tn-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:1200;max-width:90vw;background:#2b3640;color:#fff;font:13px/1.4 -apple-system,"Segoe UI",Roboto,sans-serif;padding:9px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(20,28,38,.28);animation:tn-toast-in .18s ease-out}
 @keyframes tn-toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
@@ -2018,8 +2016,7 @@ a { color: var(--tn-accent); }
 .tn-mk-actions button { background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--tn-text); cursor: pointer; }
 .tn-mk-actions button:disabled { opacity: .4; cursor: default; }
 
-/* ===========================================================================
-   Navbar / OpenData overhaul (M2) — central board pill · profile · settings drawer
+/* ====================================================================   Navbar / OpenData overhaul (M2) — central board pill · profile · settings drawer
    · floated map-view controls
    =========================================================================== */
 

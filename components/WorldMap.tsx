@@ -31,6 +31,12 @@ import { mapViewStore, useMapView, type RegionView, type PointView, type DiveVie
 import { cameraFeed } from "@/lib/cameras/classify";
 import { CAMERA_FEED_META, cameraRegionColor, WEBCAM_COLOR } from "@/lib/icons/svg";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
+import {
+  STYLE_LOAD_TIMEOUT_MS,
+  classifyMapError,
+  nextRecoveryStep,
+  type MapLoadStatus,
+} from "@/lib/map/resilience";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/geo/country";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
@@ -181,6 +187,12 @@ export default function WorldMap() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const thumbMgrRef = useRef<{ update(): void; destroy(): void } | null>(null);
   const readyRef = useRef(false);
+  // Basemap load resilience (lib/map/resilience.ts). The "Light" basemap is a REMOTE
+  // style URL, so one flaky fetch used to leave a permanent black rectangle with
+  // nothing on screen explaining it. These drive retry → fallback → an honest notice.
+  const styleAttemptsRef = useRef(0);
+  const styleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [loadStatus, setLoadStatus] = useState<MapLoadStatus>({ kind: "ok" });
   const rafRef = useRef(0);
   const interactUntilRef = useRef(0);
   const terrainRef = useRef(true);
@@ -1038,6 +1050,108 @@ export default function WorldMap() {
     }
   }, []);
 
+  // --- Basemap load resilience ---------------------------------------------
+  // `style.load` -> addAppLayers() -> readyRef=true is the ONLY signal that the
+  // basemap actually came up. If it never fires we get a black stage with no
+  // error, so arm a watchdog around every style load and recover from it.
+
+  const clearStyleWatchdog = useCallback(() => {
+    if (styleTimerRef.current) clearTimeout(styleTimerRef.current);
+    styleTimerRef.current = null;
+  }, []);
+
+  /**
+   * Switch basemap from a RECOVERY path.
+   *
+   * The normal basemap effect bails while `readyRef` is false — which is exactly
+   * the state we are in when a style has failed to load. Left to that effect, a
+   * fallback would update the store and the notice would claim "showing Satellite
+   * instead" while nothing had actually changed. So drive setStyle directly here
+   * when the effect would have skipped it, and let the effect handle the normal
+   * case so we never issue setStyle twice.
+   */
+  const applyBasemapNow = useCallback(
+    (key: BasemapKey) => {
+      const map = mapRef.current;
+      const effectWillHandleIt = readyRef.current;
+      mapViewStore.setBasemap(key); // keep the basemap switcher UI in sync
+      if (!map || effectWillHandleIt) return;
+      readyRef.current = false;
+      try {
+        map.setStyle(BASEMAPS[key].style, { diff: false });
+      } catch {
+        /* torn down mid-swap — the unmount cleanup handles it */
+      }
+      armStyleWatchdogRef.current();
+    },
+    [],
+  );
+
+  /** Decide and perform the next recovery step. Safe to call more than once. */
+  const runRecovery = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || readyRef.current) return; // a style is up — nothing to recover
+    clearStyleWatchdog();
+    const basemap = mapViewStore.get().basemap;
+    const step = nextRecoveryStep(styleAttemptsRef.current, basemap, BASEMAPS);
+    if (step.action === "retry") {
+      setLoadStatus({ kind: "retrying", attempt: styleAttemptsRef.current });
+      styleTimerRef.current = setTimeout(() => {
+        const m = mapRef.current;
+        if (!m || readyRef.current) return;
+        styleAttemptsRef.current += 1;
+        try {
+          m.setStyle(BASEMAPS[mapViewStore.get().basemap].style, { diff: false });
+        } catch {
+          /* torn down mid-retry — the unmount cleanup handles it */
+        }
+        armStyleWatchdogRef.current();
+      }, step.delayMs);
+    } else if (step.action === "fallback") {
+      // Switch to an INLINE style (one that cannot fail to fetch) and say so.
+      setLoadStatus({ kind: "fallback", from: basemap, to: step.to });
+      styleAttemptsRef.current = 0;
+      applyBasemapNow(step.to);
+    } else {
+      setLoadStatus({ kind: "lost" });
+    }
+  }, [clearStyleWatchdog]);
+
+  const armStyleWatchdog = useCallback(() => {
+    clearStyleWatchdog();
+    styleTimerRef.current = setTimeout(runRecovery, STYLE_LOAD_TIMEOUT_MS);
+  }, [clearStyleWatchdog, runRecovery]);
+
+  // The retry path re-arms the watchdog from inside runRecovery, which is defined
+  // first — go through a ref so neither callback has to depend on the other.
+  const armStyleWatchdogRef = useRef(armStyleWatchdog);
+  armStyleWatchdogRef.current = armStyleWatchdog;
+
+  /**
+   * Called after every style.load. addAppLayers() is what sets readyRef, so a
+   * rejection there means we have a style but no pins — still broken, so leave the
+   * watchdog running rather than declaring success.
+   */
+  const onStyleSettled = useCallback(() => {
+    if (!readyRef.current) return;
+    clearStyleWatchdog();
+    styleAttemptsRef.current = 0;
+    // Keep a "fallback" notice on screen — the user is looking at a different
+    // basemap than they asked for and deserves to know why. Clear the transient
+    // "retrying" state, which has served its purpose.
+    setLoadStatus((s) => (s.kind === "fallback" ? s : { kind: "ok" }));
+  }, [clearStyleWatchdog]);
+
+  /** Manual "Try again" from the notice. */
+  const retryBasemap = useCallback(
+    (key: BasemapKey) => {
+      styleAttemptsRef.current = 0;
+      setLoadStatus({ kind: "retrying", attempt: 0 });
+      applyBasemapNow(key);
+    },
+    [applyBasemapNow],
+  );
+
   // --- Init (once) ---------------------------------------------------------
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
@@ -1111,8 +1225,25 @@ export default function WorldMap() {
     map.on("sourcedata", onThumbSource);
 
     map.on("style.load", () => {
-      void addAppLayers(map);
+      void addAppLayers(map).then(onStyleSettled, onStyleSettled);
     });
+
+    // MapLibre reports a dead style CDN and a single missing tile through the SAME
+    // event, so classify before acting — raster basemaps 404 tiles routinely (poles,
+    // past maxzoom) and recovering on those would thrash the map. Only a failed
+    // style DOCUMENT, while we have no working style, triggers recovery — and it
+    // does so IMMEDIATELY rather than waiting out the watchdog, since we already
+    // know the load failed.
+    map.on("error", (e) => {
+      if (classifyMapError(e as unknown as { error?: { message?: string } }) !== "style") return;
+      runRecovery();
+    });
+
+    // A lost WebGL context cannot be recovered in place — say so rather than
+    // leaving a frozen canvas that looks like a hung app.
+    map.getCanvas().addEventListener("webglcontextlost", () => setLoadStatus({ kind: "lost" }));
+
+    armStyleWatchdog();
     // Engage/disengage 3D terrain as we cross the mercator threshold (see syncTerrain).
     map.on("zoom", () => syncTerrain(map));
 
@@ -1178,6 +1309,7 @@ export default function WorldMap() {
       map.off("sourcedata", onThumbSource);
       thumbMgr.destroy();
       thumbMgrRef.current = null;
+      clearStyleWatchdog(); // never let a pending retry fire at a removed map
       map.remove();
       mapRef.current = null;
       readyRef.current = false;
@@ -1202,8 +1334,11 @@ export default function WorldMap() {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
     readyRef.current = false;
+    styleAttemptsRef.current = 0;
     map.setStyle(BASEMAPS[basemap].style, { diff: false });
-  }, [basemap]);
+    // A user-chosen basemap can fail to load just like the first one did.
+    armStyleWatchdog();
+  }, [basemap, armStyleWatchdog]);
 
   // Terrain toggle.
   useEffect(() => {
@@ -1401,6 +1536,28 @@ export default function WorldMap() {
   return (
     <div className="world-map">
       <div ref={containerRef} className="map-canvas" />
+
+      {/* Basemap load notice. A basemap that fails to load used to leave a silent
+          black rectangle; say what happened and offer a way back. */}
+      {loadStatus.kind !== "ok" && (
+        <div className="tn-map-notice" role="status" aria-live="polite">
+          {loadStatus.kind === "retrying" && <span>Basemap is slow to load — retrying…</span>}
+          {loadStatus.kind === "fallback" && (
+            <>
+              <span>
+                Couldn&apos;t load the {BASEMAPS[loadStatus.from].label} basemap. Showing{" "}
+                {BASEMAPS[loadStatus.to].label} instead.
+              </span>
+              <button type="button" onClick={() => retryBasemap(loadStatus.from)}>
+                Try again
+              </button>
+            </>
+          )}
+          {loadStatus.kind === "lost" && (
+            <span>The map couldn&apos;t start in this browser. Reload the page to try again.</span>
+          )}
+        </div>
+      )}
 
       {/* Right-click "Add pin here" menu, positioned at the cursor over the map. */}
       {pinMenu && (
