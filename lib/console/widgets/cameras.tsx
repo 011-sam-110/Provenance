@@ -18,6 +18,7 @@ import { loadedCamerasStore } from "@/lib/cameras/loaded";
 import { useFreshness } from "@/lib/freshness";
 import { observeCoreSource } from "@/lib/console/freshChip";
 import { CameraVideo } from "@/components/CameraVideo";
+import { CameraImage } from "@/components/CameraImage";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { runAlertRule } from "@/lib/console/alerts";
@@ -54,13 +55,17 @@ function CamerasBody({ config }: WidgetBodyProps) {
       {cams.length === 0 && <p className="tn-cam-empty">No cameras loaded yet…</p>}
       {cams.slice(0, 6).map((c) => (
         <div key={c.id} className="tn-cam-cell">
-          <CameraVideo
-            id={c.id}
-            alt={c.name}
-            attribution=""
-            license=""
-            refreshSeconds={30}
-          />
+          {/* `live` decides the player, exactly as the focus view already did.
+              The grid used CameraVideo for EVERY camera, so every still-image
+              camera fired /api/hls and took a 403 back — the proxy's allowlist
+              covers only the two genuine HLS networks, and a TfL JamCam is an MP4
+              clip on a host that is not on it. Six failed requests per board load,
+              and six cells that showed nothing while the camera was fine. */}
+          {c.live ? (
+            <CameraVideo id={c.id} alt={c.name} attribution="" license="" refreshSeconds={30} />
+          ) : (
+            <CameraImage id={c.id} alt={c.name} attribution="" license="" refreshSeconds={30} />
+          )}
           <span className="tn-cam-label">{c.name}</span>
         </div>
       ))}
