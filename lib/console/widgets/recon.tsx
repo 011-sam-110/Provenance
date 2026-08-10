@@ -121,19 +121,29 @@ function CertsBody({ report }: { report: (n: number) => void }) {
     )}</ToolShell>;
 }
 
-interface BgpData { ok: boolean; reason?: string; kind: string; asn?: number; name?: string; description?: string; country?: string; website?: string; ptr?: string; prefixes: { prefix: string; asn?: number; holder?: string; country?: string }[] }
+// Mirrors BgpResult in lib/recon/bgp.ts. `announced` and `prefixCount` arrived with
+// the move off the shut-down BGPView onto RIPEstat; `description`/`website` did not
+// survive it (RIPEstat publishes neither) and are gone rather than left as dead keys.
+interface BgpData { ok: boolean; reason?: string; kind: string; asn?: number; name?: string; country?: string; rir?: string; ptr?: string; announced?: boolean; prefixCount?: number; prefixes: { prefix: string; asn?: number; holder?: string; country?: string }[] }
 function BgpBody({ report }: { report: (n: number) => void }) {
   const lk = useReconLookup<BgpData>("bgp");
   return <ToolShell tool="bgp" label="BGP" needs="IP or ASN" lookup={lk} report={report}>{(d) =>
     notOk(d) ? <Empty reason={d.reason} /> : (
       <div className="tn-recon-kv">
         {d.asn != null && kv("ASN", <span className="tn-recon-mono">AS{d.asn}</span>)}
-        {d.name && kv("name", d.name)}
-        {d.description && kv("holder", d.description)}
+        {d.name && kv("holder", d.name)}
         {d.country && kv("country", d.country)}
         {d.ptr && kv("PTR", <span className="tn-recon-mono">{d.ptr}</span>)}
-        {d.website && kv("website", d.website)}
-        {d.prefixes?.length > 0 && kv("prefixes", <span className="tn-recon-mono">{d.prefixes.slice(0, 8).map((p) => p.prefix).join(", ")}</span>)}
+        {/* Whether the global routing table currently carries it. An allocated
+            but unrouted ASN is a real answer, so false is shown, not hidden. */}
+        {d.announced != null && kv("routed", d.announced ? "yes — visible in the global table" : "no — allocated but not announced")}
+        {d.rir && kv("registry", d.rir)}
+        {d.prefixes?.length > 0 && kv(
+          d.prefixCount && d.prefixCount > d.prefixes.length
+            ? `prefixes (${d.prefixes.slice(0, 8).length} of ${d.prefixCount.toLocaleString()})`
+            : "prefixes",
+          <span className="tn-recon-mono">{d.prefixes.slice(0, 8).map((p) => p.prefix).join(", ")}</span>,
+        )}
       </div>
     )}</ToolShell>;
 }
