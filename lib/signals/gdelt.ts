@@ -402,13 +402,51 @@ export function windowBlocker(): string | null {
   return null;
 }
 
-async function unzipSingleEntry(buf: ArrayBuffer): Promise<string> {
+/**
+ * The compressed extent of a ZIP's first member.
+ *
+ * The local file header carries `compressedSize` at offset 18. When an archive is
+ * written in streaming mode that field is 0 and the real size lives in a data
+ * descriptor AFTER the payload, introduced by the signature PK - so in
+ * that case we scan for it.
+ *
+ * This is not pedantry. Slicing from the payload start to END OF FILE hands the
+ * decoder the payload plus the data descriptor plus the central directory plus
+ * the end-of-central-directory record. Node 24 tolerates that; Vercel's runtime
+ * does not, and rejected all sixteen files with
+ * "TypeError: Trailing junk found after the end of the compressed stream" - which
+ * is how this layer served 300 conflict points locally and an empty world in
+ * production. Production told us, because the previous deploy taught it to.
+ */
+export function zipMemberExtent(buf: ArrayBuffer): { start: number; end: number } {
   const view = new DataView(buf);
   if (view.getUint32(0, true) !== 0x04034b50) throw new Error("not a zip");
+  const compressedSize = view.getUint32(18, true);
   const nameLen = view.getUint16(26, true);
   const extraLen = view.getUint16(28, true);
   const start = 30 + nameLen + extraLen;
-  const stream = new Blob([new Uint8Array(buf, start)])
+  if (compressedSize > 0) return { start, end: start + compressedSize };
+
+  // Streaming archive: find the data descriptor that follows the payload.
+  const bytes = new Uint8Array(buf);
+  for (let i = start; i + 3 < bytes.length; i++) {
+    if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x07 && bytes[i + 3] === 0x08) {
+      return { start, end: i };
+    }
+  }
+  // No descriptor either: fall back to the central directory, then to the whole
+  // remainder. Both are worse than the header, which is why they are last.
+  for (let i = bytes.length - 4; i > start; i--) {
+    if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x01 && bytes[i + 3] === 0x02) {
+      return { start, end: i };
+    }
+  }
+  return { start, end: bytes.length };
+}
+
+async function unzipSingleEntry(buf: ArrayBuffer): Promise<string> {
+  const { start, end } = zipMemberExtent(buf);
+  const stream = new Blob([new Uint8Array(buf, start, end - start)])
     .stream()
     .pipeThrough(new DecompressionStream("deflate-raw"));
   return new Response(stream).text();
