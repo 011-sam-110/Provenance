@@ -18,13 +18,24 @@ export const dynamic = "force-dynamic";
  * `coverage` is present ONLY when the snapshot declared it. Its ABSENCE means "not
  * declared" (no successful upstream fetch yet), never "nothing was truncated".
  *
- * Response: { count: number, coverage?: SignalCoverage, planes: WorldObject[] }
+ * STALENESS HONESTY. fetchAircraftSnapshot runs every result through a staleness
+ * gate (lib/sources/opensky.ts: decideStaleness/gateSnapshot) before returning it,
+ * so this route never has to reason about age itself — it just forwards what the
+ * gate decided:
+ *   - fresh          → `staleness` absent, `planes` is the live set.
+ *   - stale-but-usable → `staleness: {stale: true, ageMs}`, `planes` still populated
+ *     — aircraft move, so any consumer showing these positions MUST show the age.
+ *   - too old, or never fetched → `planes: []`; `staleness: {reason, ageMs?}` when
+ *     there's a reason to give (never served as if the layer were simply quiet).
+ *
+ * Response: { count, coverage?, staleness?, planes }
  */
 export async function GET() {
-  const { planes, coverage } = await fetchAircraftSnapshot();
+  const { planes, coverage, staleness } = await fetchAircraftSnapshot();
   return Response.json({
     count: planes.length,
     ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
+    ...(staleness ? { staleness } : {}),
     planes,
   });
 }

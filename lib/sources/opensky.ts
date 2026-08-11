@@ -15,8 +15,14 @@
  * Data Cache (`unstable_cache`, revalidate = REVALIDATE_S) so upstream is hit at most
  * once per window for the ENTIRE deployment (stale-while-revalidate) and REVALIDATE_S
  * is set so a fully-saturated day still stays under the daily cap. On any failure
- * (429 / 5xx / null states / timeout) we serve the last-good snapshot — and because
- * that snapshot is GLOBAL, even a stale serve is still worldwide, never regional.
+ * (429 / 5xx / null states / timeout) fetchGlobalOnce THROWS rather than swallowing
+ * the failure, so the Data Cache keeps serving whatever it last cached successfully
+ * — a persisted last-good snapshot, not a module variable a fresh serverless
+ * instance would reset to empty (see fetchGlobalOnce below for why that distinction
+ * is the whole fix). Because that snapshot is GLOBAL, even a stale serve is still
+ * worldwide, never regional. A staleness gate (decideStaleness/gateSnapshot) then
+ * refuses to serve anything older than STALE_CEILING_MS — aircraft move, so an old
+ * enough "live" snapshot would be a fabrication, not just a late one.
  *
  * OpenSky omits type-code + registration (unlike adsb.lol); the dossier fetches those
  * on demand from /api/flight by callsign+hex, both of which OpenSky provides. squawk
@@ -230,6 +236,19 @@ export interface AircraftSnapshot {
    * and therefore know nothing about what upstream holds.
    */
   coverage?: SignalCoverage;
+  /**
+   * Epoch ms this snapshot's positions were actually fetched from OpenSky.
+   * Undefined only before this deployment's first-ever successful fetch — see
+   * `decideStaleness`, which treats that as "never-fetched", not "fresh".
+   */
+  fetchedAt?: number;
+  /**
+   * Present ONLY when this snapshot is being served with a disclosed age, or was
+   * withheld for being too old to serve honestly. Absent ⇒ fresh, no caveat
+   * needed. Aircraft move, so a served-stale position without its age would be a
+   * fabrication — see `decideStaleness`/`gateSnapshot` below.
+   */
+  staleness?: { stale: true; ageMs: number } | { reason: "too-old"; ageMs: number };
 }
 
 /** Pure: lift the coverage a capped array carries into a JSON-serializable snapshot. */
@@ -256,33 +275,41 @@ interface OpenSkyResponse {
   states: unknown[][] | null;
 }
 
-// Last-good worldwide snapshot (module state). Served on any refresh failure so the
-// map never blanks — and because it is GLOBAL, a stale serve is still worldwide.
-// It carries its own coverage, so a stale serve still discloses its truncation.
-let lastGood: AircraftSnapshot = { planes: [] };
-
 /**
- * Fetch one global snapshot and map it to capped WorldObjects. Never throws: on a
- * 429 (rate-limit), non-2xx, null `states` (degraded upstream), timeout, or parse
- * error it returns the last-good snapshot (or an empty, coverage-less one before the
- * first success), so the Data Cache never memoises a thrown error.
+ * Fetch one global snapshot and map it to capped WorldObjects, stamped with the
+ * moment it was fetched.
+ *
+ * THROWS — deliberately — on any failure: a 429 (rate-limit), non-2xx, null
+ * `states` (degraded upstream), a zero-aircraft parse, a timeout, or a parse
+ * error. This used to swallow every one of those into a "last-good" fallback
+ * held in a MODULE-LEVEL variable, which does not survive between serverless
+ * invocations: Vercel starts each cold lambda with fresh module state, so on a
+ * fresh instance that fallback was always `{planes: []}`. Once OpenSky's
+ * anonymous credit cap was hit on the deployment's IP, EVERY poll failed there —
+ * so `{planes: []}` is what got returned, and because fetchAircraftSnapshot's
+ * unstable_cache wrapper commits whatever this function returns, that empty
+ * result is what got WRITTEN into the Data Cache, overwriting any earlier good
+ * snapshot. That is the exact bug this fixes: one throttled poll from a fresh
+ * instance emptied the whole layer for the rest of the revalidate window —
+ * indefinitely, on an IP whose cap never lifts.
+ *
+ * Throwing instead means unstable_cache never commits a new value on failure —
+ * the PREVIOUS cached snapshot (in the Data Cache, which persists across
+ * invocations, unlike module state) keeps being served. That persisted snapshot
+ * is what fetchAircraftSnapshot's staleness gate then decides whether to serve,
+ * serve-with-disclosed-age, or withhold as too old — see `decideStaleness`.
  */
 async function fetchGlobalOnce(): Promise<AircraftSnapshot> {
-  try {
-    const res = await fetch(GLOBAL_URL, {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-    if (!res.ok) return lastGood;
-    const data = (await res.json()) as OpenSkyResponse;
-    if (!data.states) return lastGood;
-    const objects = capPlanes(parseStates(data.states).map(planeToWorldObject), MAX_PLANES);
-    const snapshot = toAircraftSnapshot(objects);
-    if (objects.length) lastGood = snapshot; // only overwrite last-good with a real snapshot
-    return snapshot;
-  } catch {
-    return lastGood;
-  }
+  const res = await fetch(GLOBAL_URL, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`OpenSky /states/all answered ${res.status}`);
+  const data = (await res.json()) as OpenSkyResponse;
+  if (!data.states) throw new Error("OpenSky /states/all returned degraded (null) states");
+  const objects = capPlanes(parseStates(data.states).map(planeToWorldObject), MAX_PLANES);
+  if (!objects.length) throw new Error("OpenSky /states/all parsed to zero positioned aircraft");
+  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now() };
 }
 
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
@@ -291,31 +318,119 @@ function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
   // withCoverage re-measures `returned` from the array it is given, so a record that
   // survived the round trip cannot claim a count the payload does not hold.
   if (snapshot?.coverage) withCoverage(planes, snapshot.coverage);
-  return snapshot?.coverage ? { planes, coverage: snapshot.coverage } : { planes };
+  return {
+    planes,
+    ...(snapshot?.coverage ? { coverage: snapshot.coverage } : {}),
+    ...(snapshot?.fetchedAt ? { fetchedAt: snapshot.fetchedAt } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Staleness gate — HONESTY BOUNDARY. Aircraft move, so a served-stale snapshot
+// without its age is a fabrication ("live" positions that are actually old), and
+// a snapshot old enough isn't merely late — showing it would be drawing ghosts,
+// not traffic. Pure and unit-tested apart from any network/cache code.
+// ---------------------------------------------------------------------------
+
+/**
+ * Below this age a snapshot is ordinary cache latency, not evidence anything
+ * failed: under healthy operation the Data Cache refreshes at least this often
+ * (REVALIDATE_S), so no caveat is warranted.
+ */
+export const FRESH_CEILING_MS = REVALIDATE_S * 1000; // 240_000 ms = 4 min
+
+/**
+ * Above this age, refuse to serve at all — prefer an honest empty layer over
+ * ghosts. A widebody cruises at up to ~900 km/h (~250 m/s); at 15 minutes that
+ * is up to ~225 km of possible drift, which is not "this aircraft, a little
+ * late" — it's a plotted point that can no longer be trusted as this aircraft's
+ * position. 15 min is also ~3.75 REVALIDATE_S windows, chosen so a few
+ * consecutive failed polls (rate-limit, timeout) are ridden out with a
+ * disclosed-stale serve before the layer gives up and goes empty — a
+ * deliberate ceiling, not a leftover default.
+ */
+export const STALE_CEILING_MS = 15 * 60 * 1000; // 900_000 ms = 15 min
+
+/** fresh -> serve; stale-but-usable -> serve WITH age; too old -> do not serve. */
+export type StalenessDecision =
+  | { serve: false; reason: "never-fetched" }
+  | { serve: false; reason: "too-old"; ageMs: number }
+  | { serve: true; stale: false }
+  | { serve: true; stale: true; ageMs: number };
+
+/**
+ * Pure staleness decision. `fetchedAt` null/undefined means this deployment has
+ * never completed a successful OpenSky fetch: that's "never-fetched", not
+ * "fresh" — there is nothing to serve either way, but the reason differs (cold
+ * start vs. upstream gone quiet for a long stretch), worth keeping distinct for
+ * debugging prod.
+ */
+export function decideStaleness(
+  fetchedAt: number | null | undefined,
+  now: number,
+  freshCeilingMs: number = FRESH_CEILING_MS,
+  staleCeilingMs: number = STALE_CEILING_MS,
+): StalenessDecision {
+  if (fetchedAt == null) return { serve: false, reason: "never-fetched" };
+  const ageMs = Math.max(0, now - fetchedAt);
+  if (ageMs <= freshCeilingMs) return { serve: true, stale: false };
+  if (ageMs <= staleCeilingMs) return { serve: true, stale: true, ageMs };
+  return { serve: false, reason: "too-old", ageMs };
 }
 
 /**
- * Live aircraft worldwide, with the coverage record for the render cap. Wrapped in
- * Next's Data Cache so upstream is polled at most once per REVALIDATE_S for the whole
- * deployment (stale-while-revalidate): every visitor is served the shared stored
- * snapshot rather than triggering their own live pull. Returns an empty, coverage-less
- * snapshot only before the first successful fetch (or outside the Next runtime, e.g.
- * unit tests, where it fetches directly).
+ * Apply the staleness gate to a snapshot. A too-old (or never-fetched) input
+ * comes back EMPTY and coverage-less — never the old positions — so a long
+ * upstream outage reads as "no data" to every downstream consumer, never as a
+ * frozen layer quietly claiming to be live.
+ */
+export function gateSnapshot(snapshot: AircraftSnapshot, now: number = Date.now()): AircraftSnapshot {
+  const decision = decideStaleness(snapshot.fetchedAt, now);
+  if (!decision.serve) {
+    return decision.reason === "too-old"
+      ? { planes: [], staleness: { reason: "too-old", ageMs: decision.ageMs } }
+      : { planes: [] };
+  }
+  return decision.stale ? { ...snapshot, staleness: { stale: true, ageMs: decision.ageMs } } : snapshot;
+}
+
+/**
+ * Live aircraft worldwide, with the coverage record for the render cap and a
+ * staleness verdict for the honesty gate. Wrapped in Next's Data Cache so
+ * upstream is polled at most once per REVALIDATE_S for the whole deployment; on
+ * a failed revalidation (see `fetchGlobalOnce`) the PREVIOUS cached snapshot
+ * keeps being served — that persistence lives in the Data Cache, not in this
+ * module's memory, so it survives across the independent serverless invocations
+ * that would otherwise reset a plain variable on every cold start. Every result
+ * — cache hit or fallback — passes through `gateSnapshot` before it leaves this
+ * function, so nothing older than STALE_CEILING_MS is ever returned.
  *
- * CACHE KEY: bumped to -v2 with the shape change. A v1 entry written by a previous
- * deployment is a bare WorldObject[]; deserialising that as a snapshot would leave
- * `planes` undefined and blank the map for a whole revalidate window.
+ * CACHE KEY: bumped to -v3, both for the shape change (added `fetchedAt`) and to
+ * guarantee a clean start after this fix — a v2 entry may currently hold the
+ * `{planes: []}` this exact bug wrote into production, and reusing that key
+ * would mean serving that poisoned entry until it happened to revalidate.
  */
 export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
+  let snapshot: AircraftSnapshot;
   try {
     const { unstable_cache } = await import("next/cache");
-    const snapshot = await unstable_cache(fetchGlobalOnce, ["planes-opensky-global-v2"], {
-      revalidate: REVALIDATE_S,
-    })();
-    return rehydrate(snapshot);
+    snapshot = rehydrate(
+      await unstable_cache(fetchGlobalOnce, ["planes-opensky-global-v3"], {
+        revalidate: REVALIDATE_S,
+      })(),
+    );
   } catch {
-    return fetchGlobalOnce();
+    // Either outside the Next runtime (unit tests — no Data Cache to speak of),
+    // or the Data Cache has never held a successful snapshot and this attempt
+    // failed too. One direct attempt; if that also fails, there is genuinely
+    // nothing to serve.
+    try {
+      snapshot = await fetchGlobalOnce();
+    } catch {
+      snapshot = { planes: [] };
+    }
   }
+  return gateSnapshot(snapshot);
 }
 
 /**
