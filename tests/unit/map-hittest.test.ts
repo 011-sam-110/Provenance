@@ -4,6 +4,7 @@ import {
   COUNTRY_SCOPED_SIGNALS,
   PIN_HIT_LAYERS,
   isCountryScopedSignal,
+  resolveLineHit,
   resolveMapClickTarget,
   type MapClickHit,
 } from "@/lib/map/hitTest";
@@ -125,5 +126,43 @@ describe("layer id tables", () => {
 
   it("keeps the country-scoped list non-empty (instability is the flagship)", () => {
     expect(COUNTRY_SCOPED_SIGNALS).toContain("instability");
+  });
+});
+
+describe("the widened cable hit target", () => {
+  // A submarine cable draws ~1px wide, so clicking one was luck and its (rich)
+  // dossier was effectively unreachable. A transparent ~16px line layer fixes the
+  // aiming problem and creates a stealing problem: "near the cable" must not
+  // start winning clicks that belong to something exact.
+  const CABLE = { id: "cable:apricot" };
+  const base = { lineHits: [CABLE], onDrawnLine: false, otherPin: false, overCountry: false };
+
+  it("claims a near-miss over open water — the case the whole thing exists for", () => {
+    expect(resolveLineHit(base)).toBe(CABLE);
+  });
+
+  it("claims nothing when no cable is near", () => {
+    expect(resolveLineHit({ ...base, lineHits: [] })).toBeNull();
+  });
+
+  it("takes the topmost cable when routes overlap", () => {
+    const other = { id: "cable:aag" };
+    expect(resolveLineHit({ ...base, lineHits: [CABLE, other] })).toBe(CABLE);
+  });
+
+  it("stands down for any other pin — a pin is exact, this target is not", () => {
+    expect(resolveLineHit({ ...base, otherPin: true })).toBeNull();
+    // Even on the drawn line: a camera pin sitting on a cable opens the camera.
+    expect(resolveLineHit({ ...base, onDrawnLine: true, otherPin: true })).toBeNull();
+  });
+
+  it("stands down over land, so coastal country clicks do not regress", () => {
+    expect(resolveLineHit({ ...base, overCountry: true })).toBeNull();
+  });
+
+  it("still wins over the country when the pointer is genuinely ON the line", () => {
+    // This is the pre-existing behaviour of the drawn line layer, unchanged —
+    // widening the target must not quietly take it away.
+    expect(resolveLineHit({ ...base, onDrawnLine: true, overCountry: true })).toBe(CABLE);
   });
 });

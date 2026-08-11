@@ -31,16 +31,59 @@ import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 // app/globals.css restacks the whole console vertically (map → left → right → bottom,
 // which is already the DOM order below) with no !important and no JS breakpoint.
 
+// Default column width — the reset target for a double-click / Home key. Matches
+// createDefaultLayout() in lib/console/types.
+const DEFAULT_SEG_SIZE = 300;
+/** How far one arrow-key press moves a column edge. */
+const GRIP_KEY_STEP = 24;
+
+// The column resize grip.
+//
+// It used to be a 7px transparent strip: no resting appearance, no keyboard path,
+// and nothing to aim at — you had to already know the edge was draggable and then
+// hit a target a third of WCAG's 24px minimum. It is now 14px wide with a visible
+// resting bar, a real focusable separator with arrow-key resizing, and a
+// double-click (or Home) reset, so a mis-drag costs one click to undo.
 function VGrip({ seg, dir, cls }: { seg: SegmentId; dir: 1 | -1; cls: string }) {
   const layout = useShellLayout();
+  const size = layout.segments[seg].size;
+  const label = `Resize the ${seg} column`;
   const onDown = (e: React.PointerEvent) => {
     e.preventDefault();
-    const startX = e.clientX, startSize = layout.segments[seg].size;
+    const startX = e.clientX, startSize = size;
     const move = (ev: PointerEvent) => shellLayoutStore.setSegment(seg, startSize + dir * (ev.clientX - startX));
     const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
   };
-  return <div className={`tn-grip ${cls}`} onPointerDown={onDown} role="separator" aria-orientation="vertical" />;
+  // Arrow keys nudge, Home resets. `dir` flips the mapping for the right-hand
+  // grip so ← always makes the map bigger on the left and smaller on the right —
+  // i.e. the key moves the EDGE you are holding, not an abstract number.
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      const step = (e.key === "ArrowRight" ? 1 : -1) * dir * GRIP_KEY_STEP;
+      shellLayoutStore.setSegment(seg, size + step);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      shellLayoutStore.setSegment(seg, DEFAULT_SEG_SIZE);
+    }
+  };
+  return (
+    <div
+      className={`tn-grip ${cls}`}
+      onPointerDown={onDown}
+      onDoubleClick={() => shellLayoutStore.setSegment(seg, DEFAULT_SEG_SIZE)}
+      onKeyDown={onKey}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={label}
+      aria-valuenow={Math.round(size)}
+      aria-valuemin={0}
+      aria-valuemax={900}
+      tabIndex={0}
+      title={`${label}. Drag it, or focus it and press the left/right arrow keys. Double-click to reset.`}
+    />
+  );
 }
 
 export default function ConsoleWorkspace() {
@@ -125,7 +168,22 @@ export default function ConsoleWorkspace() {
                  const move = (ev: PointerEvent) => shellLayoutStore.setSegment("bottom", start - (ev.clientY - startY));
                  const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
                  window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
-               }} role="separator" aria-orientation="horizontal" />
+               }}
+               onDoubleClick={() => shellLayoutStore.setSegment("bottom", 220)}
+               onKeyDown={(e) => {
+                 if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                   e.preventDefault();
+                   shellLayoutStore.setSegment("bottom", layout.segments.bottom.size + (e.key === "ArrowUp" ? 1 : -1) * GRIP_KEY_STEP);
+                 } else if (e.key === "Home") {
+                   e.preventDefault();
+                   shellLayoutStore.setSegment("bottom", 220);
+                 }
+               }}
+               role="separator" aria-orientation="horizontal"
+               aria-label="Resize the bottom dock"
+               aria-valuenow={Math.round(layout.segments.bottom.size)} aria-valuemin={0} aria-valuemax={900}
+               tabIndex={0}
+               title="Resize the bottom dock. Drag it, or focus it and press the up/down arrow keys. Double-click to reset." />
         </>
       )}
 

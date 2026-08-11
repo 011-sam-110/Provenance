@@ -39,9 +39,13 @@ import { CAMERA_REGIONS, CAMERA_FEED_META } from "@/lib/icons/svg";
 import { useT } from "@/lib/i18n/store";
 import MonitorBar from "@/components/shell/MonitorBar";
 import TimeWindowControl from "@/components/shell/TimeWindowControl";
-import { useVariant, useLayout } from "@/lib/variants/store";
-import { toggleTileDock } from "@/lib/widgets/dock";
-import { sourceKey, rollupKey } from "@/lib/widgets/registry";
+import { useShellLayout } from "@/lib/console/store";
+import {
+  isGroupWidgetOpen,
+  isSourceWidgetOpen,
+  toggleGroupWidget,
+  toggleSourceWidget,
+} from "@/lib/widgets/dock";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
 import { capabilityBadge } from "@/lib/console/widgets/signals";
@@ -206,13 +210,11 @@ function LayerRow({
   count,
   expandable,
   widgeted,
-  activeId,
 }: {
   layerKey: LayerKey;
   count: number | null;
   expandable?: boolean;
   widgeted: boolean;
-  activeId: string;
 }) {
   const layers = useLayers();
   const meta = LAYER_META[layerKey];
@@ -251,7 +253,7 @@ function LayerRow({
         </div>
       </button>
       <span className="tn-layer-count tn-num">{count == null ? "—" : count.toLocaleString()}</span>
-      <WidgetToggle on={widgeted} label={meta.name} onClick={() => toggleTileDock(activeId, sourceKey(layerKey))} />
+      <WidgetToggle on={widgeted} label={meta.name} onClick={() => toggleSourceWidget(layerKey, meta.name)} />
       <Toggle on={on} accent={meta.accent} label={`Toggle ${meta.name}`} onClick={() => layersStore.toggle(layerKey)} />
       {expandable && open && on ? <CameraFilters /> : null}
     </div>
@@ -339,7 +341,6 @@ function SignalRow({
   attribution,
   refreshMs,
   widgeted,
-  activeId,
 }: {
   id: string;
   label: string;
@@ -347,7 +348,6 @@ function SignalRow({
   attribution: string;
   refreshMs: number;
   widgeted: boolean;
-  activeId: string;
 }) {
   const on = useSignals()[id] === true;
   const count = useSignalCounts()[id];
@@ -369,7 +369,7 @@ function SignalRow({
         </div>
       </div>
       <span className="tn-layer-count tn-num">{countLabel}</span>
-      <WidgetToggle on={widgeted} label={label} onClick={() => toggleTileDock(activeId, sourceKey(id))} />
+      <WidgetToggle on={widgeted} label={label} onClick={() => toggleSourceWidget(id, label)} />
       <Toggle on={on} accent={color} label={`Toggle ${label}`} onClick={() => signalsStore.toggle(id)} />
     </div>
   );
@@ -378,13 +378,11 @@ function SignalRow({
 function GlobalSignals({
   match,
   forceOpen,
-  activeId,
-  widgetedIds,
+  openTypes,
 }: {
   match: (label: string) => boolean;
   forceOpen: boolean;
-  activeId: string;
-  widgetedIds: Set<string>;
+  openTypes: Set<string>;
 }) {
   const [open, setOpen] = useState(false);
   const groups = signalsByGroup();
@@ -419,9 +417,9 @@ function GlobalSignals({
                 <div className="tn-subhead tn-subhead-row">
                   <span>{g.group}</span>
                   <WidgetToggle
-                    on={widgetedIds.has(rollupKey(g.group))}
+                    on={isGroupWidgetOpen(g.group, openTypes)}
                     label={`${g.group} roll-up`}
-                    onClick={() => toggleTileDock(activeId, rollupKey(g.group))}
+                    onClick={() => toggleGroupWidget(g.group)}
                   />
                 </div>
                 {sources.map((s) => (
@@ -432,8 +430,7 @@ function GlobalSignals({
                     color={s.color}
                     attribution={s.attribution}
                     refreshMs={s.refreshMs}
-                    widgeted={widgetedIds.has(sourceKey(s.id))}
-                    activeId={activeId}
+                    widgeted={isSourceWidgetOpen(s.id, openTypes)}
                   />
                 ))}
               </div>
@@ -459,13 +456,12 @@ export default function SourceCatalog() {
   const [query, setQuery] = useState("");
   const m = useMetrics();
   const t = useT();
-  const { activeId } = useVariant();
-  const layout = useLayout(activeId);
-
-  const widgetedIds = new Set(layout.filter((p) => p.visible).map((p) => p.panel));
-  const widgetCount = layout.filter(
-    (p) => p.visible && (p.panel.startsWith("source:") || p.panel.startsWith("rollup:")),
-  ).length;
+  // The LIVE console layout — the one ConsoleWorkspace draws. Subscribing here is
+  // what makes a ▦ light up the instant its widget lands (and go out when the
+  // widget is closed from its own ⋯ menu).
+  const consoleLayout = useShellLayout();
+  const openTypes = new Set(consoleLayout.widgets.map((w) => w.type));
+  const widgetCount = consoleLayout.widgets.length;
 
   const q = query.trim().toLowerCase();
   const match = (label: string): boolean => q === "" || label.toLowerCase().includes(q);
@@ -494,7 +490,7 @@ export default function SourceCatalog() {
     <aside className="tn-rail" aria-label="Sources">
       <div className="tn-rail-header">
         <span className="tn-rail-title">Sources</span>
-        <span className="tn-cat-count" title="Sources and group roll-ups docked as widgets">
+        <span className="tn-cat-count" title="Widgets on your workspace right now">
           {widgetCount} ▦
         </span>
         <button type="button" className="tn-rail-collapse" onClick={() => setRailOpen(false)} aria-label="Collapse sources">
@@ -534,8 +530,7 @@ export default function SourceCatalog() {
             layerKey={k}
             count={count(k)}
             expandable={k === "cameras"}
-            widgeted={widgetedIds.has(sourceKey(k))}
-            activeId={activeId}
+            widgeted={isSourceWidgetOpen(k, openTypes)}
           />
         ))}
       </div>
@@ -545,7 +540,7 @@ export default function SourceCatalog() {
           <div className="tn-rail-divider" />
           <div className="tn-rail-section">
             {visiblePlanned.map((k) => (
-              <LayerRow key={k} layerKey={k} count={null} widgeted={false} activeId={activeId} />
+              <LayerRow key={k} layerKey={k} count={null} widgeted={false} />
             ))}
           </div>
         </>
@@ -562,7 +557,7 @@ export default function SourceCatalog() {
 
       <div className="tn-rail-divider" />
 
-      <GlobalSignals match={match} forceOpen={q !== ""} activeId={activeId} widgetedIds={widgetedIds} />
+      <GlobalSignals match={match} forceOpen={q !== ""} openTypes={openTypes} />
 
       <div className="tn-rail-divider" />
 
@@ -578,7 +573,7 @@ export default function SourceCatalog() {
         ★ {t("sectionSaved")}
       </button>
 
-      <p className="tn-rail-foot">Only sources you can see are fetched. ▦ docks any source as a live widget.</p>
+      <p className="tn-rail-foot">Only sources you can see are fetched. ＋ puts any source on your workspace as a live widget.</p>
     </aside>
   );
 }

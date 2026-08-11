@@ -1375,11 +1375,35 @@ a { color: var(--tn-accent); }
 .tn-cw-body{flex:1 1 auto;overflow:auto;min-height:0}
 .tn-cw-attn-feed{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
 .tn-cw-failed{padding:12px 10px;font-size:11px;color:var(--tn-text-faint)}
-.tn-cw-resize{height:6px;cursor:row-resize;background:linear-gradient(var(--tn-surface-2),transparent)}
-.tn-cw-resize-x{position:absolute;top:0;right:0;width:6px;height:100%;cursor:col-resize;z-index:2}
+/* Resize handles. Previously 6px, invisible until the pointer was already on
+   them — you had to know they existed AND hit them. Now 14–20px, with the
+   WIDGET's hover (not the handle's) as the reveal, so the affordance appears
+   while the pointer is still somewhere plausible. A resting grip line on the
+   corner means the widget looks resizable before anything is hovered at all. */
+.tn-cw-resize{height:14px;cursor:row-resize;background:linear-gradient(var(--tn-surface-2),transparent);position:relative}
+.tn-cw-resize::after{content:"";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:30px;height:2px;border-radius:2px;background:var(--tn-text-faint);opacity:0;transition:opacity .12s}
+.tn-cw:hover .tn-cw-resize::after{opacity:.45}
+.tn-cw-resize:hover::after{opacity:.9}
+.tn-cw-resize-x{position:absolute;top:0;right:0;width:14px;height:100%;cursor:col-resize;z-index:2}
+.tn-cw-resize-x::after{content:"";position:absolute;top:50%;right:5px;transform:translateY(-50%);width:2px;height:30px;border-radius:2px;background:var(--tn-text-faint);opacity:0;transition:opacity .12s}
+.tn-cw:hover .tn-cw-resize-x::after{opacity:.45}
 .tn-cw-resize-x:hover{background:rgba(120,140,160,.18)}
-.tn-cw-resize-xy{position:absolute;right:0;bottom:0;width:12px;height:12px;cursor:nwse-resize;z-index:3}
-.tn-cw-resize-xy::after{content:"";position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-right:2px solid var(--tn-text-faint);border-bottom:2px solid var(--tn-text-faint)}
+.tn-cw-resize-x:hover::after{opacity:.9}
+.tn-cw-resize-xy{position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;z-index:3}
+.tn-cw-resize-xy::after{content:"";position:absolute;right:3px;bottom:3px;width:8px;height:8px;border-right:2px solid var(--tn-text-faint);border-bottom:2px solid var(--tn-text-faint);opacity:.55}
+.tn-cw-resize-xy:hover::after{opacity:1;border-color:var(--tn-accent)}
+
+/* The header's drag affordance + the explicit move/size controls in the ⋯ menu. */
+.tn-cw-grip{color:var(--tn-text-faint);font-size:11px;line-height:1;cursor:grab;letter-spacing:-1px;opacity:.5;transition:opacity .12s}
+.tn-cw:hover .tn-cw-grip{opacity:1}
+.tn-cw-head:active .tn-cw-grip{cursor:grabbing}
+.tn-cw-menu-sec{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--tn-text-faint);padding:6px 10px 2px}
+.tn-cw-menu-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 4px}
+.tn-cw-menu-sep{height:1px;margin:4px 0;background:var(--tn-border)}
+.tn-cw-menu-pop .tn-cw-chip{flex:0 0 auto;padding:5px 9px;font-size:11px;font-weight:600;color:var(--tn-text);background:var(--tn-surface-2);border:1px solid var(--tn-border);border-radius:7px;cursor:pointer;text-align:center;min-height:26px}
+.tn-cw-menu-pop .tn-cw-chip:hover:not(:disabled){border-color:var(--tn-accent);color:var(--tn-accent)}
+.tn-cw-menu-pop .tn-cw-chip[data-on="true"]{background:var(--tn-accent);border-color:var(--tn-accent);color:#fff}
+.tn-cw-menu-pop .tn-cw-chip:disabled{opacity:.4;cursor:not-allowed}
 
 /* ====================================================================   StageHost + WorldClock + StageSwitch — Task 8
    =========================================================================== */
@@ -1427,12 +1451,24 @@ a { color: var(--tn-accent); }
 .tn-seg-empty{grid-column:1 / -1;font-size:11px;color:var(--tn-text-faint,#9aa6b2);text-align:center;margin:auto;padding:16px;background:var(--tn-surface);border-radius:10px}
 @media (max-width: 720px){ .tn-seg-slot{ grid-column: span 12 !important; } }
 /* Grips: absolute handles pinned to each panel's inner edge, off the size vars. */
-.tn-grip{position:absolute;z-index:16;background:transparent;border-radius:3px}
-.tn-grip:hover{background:rgba(120,140,160,.45)}
-.tn-grip-l,.tn-grip-r{top:10px;bottom:10px;width:7px;cursor:col-resize}
-.tn-grip-l{left:calc(10px + var(--tn-lw))}
-.tn-grip-r{right:calc(10px + var(--tn-rw))}
-.tn-grip-b{left:calc(20px + var(--tn-lw));right:calc(20px + var(--tn-rw));bottom:calc(10px + var(--tn-bh));height:7px;cursor:row-resize}
+/* Column / dock resize grips. Doubled from 7px to 14px (WCAG's target minimum is
+   24px; 14px plus the surrounding gutter is the most a splitter can take without
+   eating the map) and given a RESTING bar so the edge looks draggable before the
+   pointer arrives — the old grip was invisible until hovered, which meant you
+   had to guess it existed. Focusable, so ← → / ↑ ↓ resize without a pointer at
+   all; the ::after bar is the focus indicator. */
+.tn-grip{position:absolute;z-index:16;background:transparent;border-radius:4px;touch-action:none}
+.tn-grip::after{content:"";position:absolute;border-radius:3px;background:var(--tn-text-faint);opacity:.35;transition:opacity .12s,background .12s}
+.tn-grip:hover{background:rgba(120,140,160,.25)}
+.tn-grip:hover::after{opacity:.85}
+.tn-grip:focus-visible{outline:none;background:rgba(120,140,160,.25)}
+.tn-grip:focus-visible::after{opacity:1;background:var(--tn-accent)}
+.tn-grip-l,.tn-grip-r{top:10px;bottom:10px;width:14px;cursor:col-resize}
+.tn-grip-l::after,.tn-grip-r::after{top:50%;left:50%;transform:translate(-50%,-50%);width:3px;height:42px}
+.tn-grip-l{left:calc(6px + var(--tn-lw))}
+.tn-grip-r{right:calc(6px + var(--tn-rw))}
+.tn-grip-b{left:calc(20px + var(--tn-lw));right:calc(20px + var(--tn-rw));bottom:calc(6px + var(--tn-bh));height:14px;cursor:row-resize}
+.tn-grip-b::after{top:50%;left:50%;transform:translate(-50%,-50%);width:42px;height:3px}
 /* The map is now an inset panel, so its zoom + attribution controls sit at the
    inset container's own corners — no need to push them off the side panels. */
 .maplibregl-ctrl-bottom-right{right:12px;bottom:12px}
@@ -2509,6 +2545,21 @@ a { color: var(--tn-accent); }
   border: 0; background: none; cursor: pointer; color: var(--tn-text-faint); font-size: 11px; padding: 4px 7px; border-radius: 7px;
 }
 .tn-pinnav-clear:hover { color: var(--tn-down); background: var(--tn-surface-2); }
+
+/* ── Cable name tooltip ────────────────────────────────────────────────────────
+   Floats at the cursor while a submarine cable is hovered, paired with the
+   thickened highlight on the map. With ~700 crossing routes, the highlight alone
+   says "a cable" and this says WHICH — the difference between a click you can
+   aim and one you gamble on. pointer-events:none so it can never eat the click
+   it exists to enable; translated up-left of the cursor so it does not sit under
+   the pointer tip. */
+.tn-linetip {
+  position: absolute; z-index: 7; pointer-events: none; transform: translate(14px, -34px);
+  max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 4px 9px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  color: var(--tn-text); background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .22);
+}
 
 /* ── Right-click "Add pin here" menu ───────────────────────────────────────── */
 .tn-pinmenu {

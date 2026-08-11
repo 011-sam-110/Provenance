@@ -1,47 +1,67 @@
 "use client";
-// Bridge between a source/rollup widget key and the EXISTING SP1b workspace dock.
-// A source widget is "docked" iff it is a visible placement in the active variant's
-// layout — so we reuse variantStore.layoutForVariant / commitLayout (the persisted
-// `layoutOverrides` slot) rather than a second placement store. Adding a tile stacks
-// it full-width below the lowest existing tile and opens the dock; removing drops it.
+// Bridge between a Source Catalog row and the console workspace.
+//
+// A source is "on screen" iff the console layout (lib/console/store) holds at
+// least one widget of the type that shows it. That store is the one the app
+// actually renders — components/console/ConsoleWorkspace reads it, and the ⌘K
+// palette writes to it.
+//
+// This file used to write to variantStore's `layoutOverrides` slot instead, which
+// only components/shell/DockableWorkspace ever read — and nothing has mounted that
+// since the console rebuild. So every ＋ click in the rail committed a placement
+// with no reader: the rail's "N ▦" counter went up, the persisted variant grew a
+// panel, and the screen never changed. That is the bug this rewrite fixes; the
+// dead dock components have been removed so it cannot come back.
 
-import { variantStore } from "@/lib/variants/store";
-import { workspaceStore } from "@/lib/shell/workspace";
-import { widgetForKey } from "@/lib/widgets/registry";
-import type { PanelPlacement } from "@/lib/variants/types";
+import { shellLayoutStore } from "@/lib/console/store";
+import { widgetTypeForGroup, widgetTypeForSource } from "@/lib/console/sourceWidgets";
 
-/** Is this widget key a visible tile in the active variant's dock layout? */
-export function isTileDocked(activeId: string, key: string): boolean {
-  return variantStore.layoutForVariant(activeId).some((p) => p.panel === key && p.visible);
+function toast(message: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("tn-toast", { detail: message }));
 }
 
-/** Add a source/rollup widget tile to the active variant's layout + open the dock. */
-export function addTileToDock(activeId: string, key: string): void {
-  const cur = variantStore.layoutForVariant(activeId);
-  if (cur.some((p) => p.panel === key && p.visible)) {
-    workspaceStore.openWorkspace();
-    return;
+/** Every widget type currently on the console workspace. */
+export function openWidgetTypes(): Set<string> {
+  return new Set(shellLayoutStore.get().widgets.map((w) => w.type));
+}
+
+/** Add a widget of `type` unless one is already up. Reports the capacity cap. */
+function addOnce(type: string, label: string): void {
+  const open = shellLayoutStore.get().widgets.filter((w) => w.type === type);
+  if (open.length > 0) return;
+  const r = shellLayoutStore.add(type);
+  if (!r.ok) toast("50-widget limit — remove one to add another");
+  else toast(`${label} added to your workspace`);
+}
+
+/** Remove EVERY widget of `type` (the rail's toggle is "is this on screen at all"). */
+function removeAll(type: string): void {
+  for (const w of shellLayoutStore.get().widgets.filter((x) => x.type === type)) {
+    shellLayoutStore.remove(w.id);
   }
-  const w = widgetForKey(key);
-  const h = w?.kind === "rollup" ? 6 : 4;
-  const bottom = cur.reduce((m, p) => Math.max(m, p.grid.y + p.grid.h), 0);
-  const next: PanelPlacement[] = [
-    ...cur.filter((p) => p.panel !== key),
-    { panel: key, grid: { x: 0, y: bottom, w: 12, h, minW: 3, minH: 3 }, visible: true },
-  ];
-  variantStore.commitLayout(activeId, next);
-  workspaceStore.openWorkspace();
 }
 
-/** Remove a source/rollup widget tile from the active variant's layout. */
-export function removeTileFromDock(activeId: string, key: string): void {
-  const cur = variantStore.layoutForVariant(activeId);
-  if (!cur.some((p) => p.panel === key)) return;
-  variantStore.commitLayout(activeId, cur.filter((p) => p.panel !== key));
+/** Is this catalog source currently shown by a widget on the workspace? */
+export function isSourceWidgetOpen(sourceId: string, openTypes: Set<string>): boolean {
+  return openTypes.has(widgetTypeForSource(sourceId));
 }
 
-/** Toggle a widget tile in/out of the active variant's dock. */
-export function toggleTileDock(activeId: string, key: string): void {
-  if (isTileDocked(activeId, key)) removeTileFromDock(activeId, key);
-  else addTileToDock(activeId, key);
+/** Is this catalog group's roll-up currently on the workspace? */
+export function isGroupWidgetOpen(group: string, openTypes: Set<string>): boolean {
+  return openTypes.has(widgetTypeForGroup(group));
+}
+
+/** Toggle a source's widget on/off the workspace. */
+export function toggleSourceWidget(sourceId: string, label: string): void {
+  const type = widgetTypeForSource(sourceId);
+  if (openWidgetTypes().has(type)) removeAll(type);
+  else addOnce(type, label);
+}
+
+/** Toggle a category roll-up widget on/off the workspace. */
+export function toggleGroupWidget(group: string): void {
+  const type = widgetTypeForGroup(group);
+  if (openWidgetTypes().has(type)) removeAll(type);
+  else addOnce(type, `${group} roll-up`);
 }
