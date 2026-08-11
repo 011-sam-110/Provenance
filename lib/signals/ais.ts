@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
+import { recordCredentialRefusal } from "@/lib/sources/upstreamEvidence";
 
 // Real-time ship tracking — AISStream.io (free WebSocket). AISStream streams live
 // vessel positions; there is no REST snapshot, so the adapter opens the socket
@@ -10,6 +11,20 @@ import { applyCap } from "@/lib/signals/coverage";
 // Coverage is terrestrial-station AIS (~200 km offshore), so mid-ocean is patchy.
 
 const WS_URL = "wss://stream.aisstream.io/v0/stream";
+const WS_HOST = new URL(WS_URL).hostname;
+
+/**
+ * Pure: is this the text of an AISStream auth failure, as opposed to some other
+ * `{"error": ...}` frame (malformed subscription, throttling)? AISStream answers
+ * an invalid/rejected APIKey with exactly `{"error": "Api Key Is Not Valid"}` and
+ * closes the socket — confirmed against aisstream/issues#174. Matched loosely
+ * (case-insensitive, "api key" + a rejection word) rather than on the exact
+ * string so a wording tweak upstream does not silently stop being detected.
+ */
+export function isAisCredentialError(message: string | undefined | null): boolean {
+  if (!message) return false;
+  return /api\s*key/i.test(message) && /(not\s*valid|invalid|unauthoriz)/i.test(message);
+}
 
 /** A named strategic maritime chokepoint + its bounding box [[swLat,swLon],[neLat,neLon]]. */
 export interface Chokepoint {
@@ -159,10 +174,24 @@ async function collectAis(key: string, ms: number): Promise<AisVessel[]> {
       const txt = typeof e.data === "string" ? e.data : decoder.decode(e.data as ArrayBuffer);
       try {
         const m = JSON.parse(txt) as {
+          error?: string;
           MessageType?: string;
           MetaData?: { MMSI?: number; ShipName?: string; latitude?: number; longitude?: number; time_utc?: string };
           Message?: { PositionReport?: { Sog?: number; Cog?: number; TrueHeading?: number; NavigationalStatus?: number } };
         };
+        // upstreamEvidence.ts wraps fetch() to catch 401/402/403s, which structurally
+        // cannot see this — AIS speaks WebSocket. This is the one AISStream frame that
+        // genuinely means "our credential was rejected" (not a timeout, not a closed
+        // socket, not just zero PositionReports), so it is the only case that files a
+        // refusal. Status 401 stands in for "invalid credential" — there is no real
+        // HTTP status here, but the ledger's shape expects one and 401 is the honest
+        // read of "Api Key Is Not Valid".
+        if (typeof m.error === "string" && isAisCredentialError(m.error)) {
+          recordCredentialRefusal("ais", 401, WS_HOST);
+          clearTimeout(timer);
+          done();
+          return;
+        }
         const mmsi = m.MetaData?.MMSI;
         if (m.MessageType !== "PositionReport" || !mmsi) return;
         const md = m.MetaData!, pr = m.Message?.PositionReport ?? {};

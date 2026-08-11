@@ -136,8 +136,17 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
       <header className="tn-cw-head" draggable onDragStart={onDragStart}>
-        <span className="tn-cw-icon">{type.icon}</span>
-        <span className="tn-cw-title">{type.title}</span>
+        <span className="tn-cw-icon" aria-hidden="true">{type.icon}</span>
+        {/* Real heading (not a styled span) so a screen reader gets a stop for
+            every widget and can jump by heading. margin/fontSize are reset
+            inline because there is no global h1-h6 reset in globals.css and
+            the browser UA heading styles (margin ~1em, larger font-size) would
+            otherwise break this compact flex header — .tn-cw-title itself is
+            untouched so the visible styling (weight/color/ellipsis) is
+            unchanged. No aria-label goes on the .tn-cw frame: this h3 is
+            already the frame's accessible name source, and a label here too
+            would just duplicate it. */}
+        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }}>{type.title}</h3>
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
         {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}
