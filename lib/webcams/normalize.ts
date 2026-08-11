@@ -1,5 +1,6 @@
 import { WebcamSchema, type Webcam } from "@/lib/types";
 import { normalizeWindyWebcam, type WindyWebcam } from "@/lib/sources/windy";
+import { applyCap, readCoverage, type SignalCoverage } from "@/lib/signals/coverage";
 
 // Batch-resilient mapping for the Windy webcams layer.
 //
@@ -29,6 +30,16 @@ export interface WebcamMapping {
   repaired: number;
   /** Repeat webcamIds, expected because the region bboxes overlap. */
   duplicates: number;
+  /**
+   * Truncation-honesty record from lib/signals/coverage.ts (applyCap), lifted off
+   * the `webcams` array as a real field so it survives JSON round-trips. ALWAYS
+   * present — applyCap() runs unconditionally below, even over an empty or
+   * under-cap list, so this is never "not declared" the way SignalCoverage can be
+   * elsewhere; `coverage.capped` is simply false when the pool never reached the
+   * cap. See app/api/webcams/route.ts for why this is the SIGNAL "N of M" style
+   * and not the camera feeds/answered/stale style.
+   */
+  coverage: SignalCoverage;
 }
 
 function parsesAsUrl(value: string): boolean {
@@ -65,6 +76,17 @@ export function repairUrl(raw: string | null | undefined): string | undefined {
  * Deduplicates by webcamId (region bboxes overlap), repairs malformed URLs where
  * possible, and validates each webcam on its own so one reject cannot empty the
  * batch. Never throws.
+ *
+ * TRUNCATION HONESTY. This used to `break` out of the loop the instant `cap`
+ * valid webcams had accumulated, which made the true size of the candidate pool
+ * unmeasurable — rows past the cap were never even looked at, so unmappable/
+ * invalid/duplicate counts silently undercounted too. The loop below now walks
+ * every row and builds the FULL deduplicated, validated list; `applyCap()` at the
+ * end keeps the first `cap` of them and records what that hid
+ * (lib/signals/coverage.ts — the repo's existing truncation-disclosure contract,
+ * reused here rather than inventing a parallel one). `available` is therefore a
+ * real measurement of everything this batch of rows could validly produce, not a
+ * guess extrapolated from a partial scan.
  */
 export function toWebcams(rows: readonly WindyWebcam[], cap: number = MAX_WEBCAMS): WebcamMapping {
   const seen = new Set<number>();
@@ -75,8 +97,6 @@ export function toWebcams(rows: readonly WindyWebcam[], cap: number = MAX_WEBCAM
   let duplicates = 0;
 
   for (const row of rows) {
-    if (webcams.length >= cap) break;
-
     const webcamId = row?.webcamId;
     if (webcamId === undefined || webcamId === null) {
       unmappable++;
@@ -124,5 +144,13 @@ export function toWebcams(rows: readonly WindyWebcam[], cap: number = MAX_WEBCAM
     webcams.push(parsed.data);
   }
 
-  return { webcams, unmappable, invalid, repaired, duplicates };
+  const capped = applyCap(webcams, cap, {
+    noun: "webcams",
+    rule: "first valid webcam encountered across the region fan-out (not ranked)",
+  });
+  // applyCap() always attaches a coverage record (even when nothing was capped),
+  // so this read can never come back undefined — see the WebcamMapping doc comment.
+  const coverage = readCoverage(capped) as SignalCoverage;
+
+  return { webcams: capped, unmappable, invalid, repaired, duplicates, coverage };
 }

@@ -1,6 +1,7 @@
 import type { Webcam } from "@/lib/types";
 import { WINDY_REGIONS, type WindyListResponse, type WindyWebcam } from "@/lib/sources/windy";
 import { toWebcams, MAX_WEBCAMS, type WebcamMapping } from "@/lib/webcams/normalize";
+import { coverageCountLabel, type SignalCoverage } from "@/lib/signals/coverage";
 
 // Network fan-out for the Windy webcams layer.
 //
@@ -32,6 +33,14 @@ export interface WebcamSample {
   /** Distinct upstream HTTP statuses seen on failed pages (e.g. [401] = key rejected). */
   statuses: number[];
   mapping: WebcamMapping | null;
+  /**
+   * Truncation-honesty record (lib/signals/coverage.ts), lifted from `mapping` so
+   * the API route can publish it without reaching into WebcamMapping directly.
+   * Undefined only when `mapping` is null — dormant, or every region request
+   * failed before toWebcams() ever ran — matching the repo-wide rule that a
+   * missing record means "not declared", never "nothing was truncated".
+   */
+  coverage?: SignalCoverage;
 }
 
 /**
@@ -53,7 +62,11 @@ export function describeWebcamSample(sample: WebcamSample): string {
     }
     return "Windy returned no webcams for any region.";
   }
-  const parts = [`${sample.webcams.length} webcams from ${sample.pagesOk}/${sample.pagesOk + sample.pagesFailed} Windy region requests`];
+  // coverageCountLabel prints the bare count when the pool never reached
+  // MAX_WEBCAMS, and "2,000 of N" when it did — so this sentence tells the same
+  // truth the /api/webcams `coverage` field does, not a bare ceiling.
+  const countLabel = coverageCountLabel(sample.coverage, sample.webcams.length);
+  const parts = [`${countLabel} webcams from ${sample.pagesOk}/${sample.pagesOk + sample.pagesFailed} Windy region requests`];
   const m = sample.mapping;
   if (m && m.invalid > 0) parts.push(`${m.invalid} malformed upstream row${m.invalid === 1 ? "" : "s"} dropped`);
   if (m && m.repaired > 0) parts.push(`${m.repaired} link${m.repaired === 1 ? "" : "s"} repaired`);
@@ -142,5 +155,6 @@ export async function fetchWebcamSample(
     pagesFailed,
     statuses: [...statuses].sort((a, b) => a - b),
     mapping,
+    coverage: mapping.coverage,
   };
 }
