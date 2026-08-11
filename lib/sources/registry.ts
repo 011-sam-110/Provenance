@@ -15,6 +15,46 @@ import { findById, nearest } from "@/lib/sources/select";
 const TTL_MS = 5 * 60 * 1000;
 
 /**
+ * How long one upstream feed gets before its round is treated as a timeout.
+ * `refresh()` used to await every feed with no ceiling, so the single slowest
+ * source set the whole registry rebuild's latency — Castle Rock's ~100-request
+ * pagination (see lib/sources/castlerock.ts) has been observed taking ~40s cold.
+ * Every refresh() now has a hard ceiling of this value instead of "however long
+ * the slowest feed takes." A feed that blows the budget is treated exactly like
+ * any other failure by mergeResults: it keeps its last-good cameras and never
+ * silently empties its region (see mergeResults above). This only stops US
+ * WAITING on the feed — the underlying request has no AbortSignal wired through
+ * `CameraFeed.fetch()`, so it keeps running server-side until it settles on its
+ * own; that's a follow-up (threading an AbortSignal into each adapter), not
+ * something fixable from this file alone.
+ */
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
+/**
+ * Race `promise` against a `ms` timer, rejecting with a labelled timeout error
+ * if it hasn't settled in time. No network code here — pure apart from the
+ * timer — so it's unit-testable without mocking fetch. Handlers are attached
+ * directly to `promise` (not left dangling), so a late resolution/rejection
+ * after the timeout has already fired is still consumed instead of surfacing
+ * as an unhandled rejection.
+ */
+export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/**
  * One named thunk per feed. The name matters: a failed feed has to be
  * identifiable so its LAST-GOOD cameras can be kept (see mergeResults).
  */
@@ -93,7 +133,9 @@ export function mergeResults(
 }
 
 async function refresh(): Promise<Camera[]> {
-  const results = await Promise.allSettled(SOURCES.map((f) => f.fetch()));
+  const results = await Promise.allSettled(
+    SOURCES.map((f) => withTimeout(f.fetch(), UPSTREAM_TIMEOUT_MS, f.key)),
+  );
   const merged = mergeResults(results, lastGood);
   if (merged.cameras.length === 0) {
     // Cold start with every feed down — surface it rather than caching an empty
