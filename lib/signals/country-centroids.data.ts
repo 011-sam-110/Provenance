@@ -38,9 +38,18 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
   { iso2: "BH", iso3: "BHR", name: "Bahrain", lat: 26.0, lon: 50.55 },
   { iso2: "BI", iso3: "BDI", name: "Burundi", lat: -3.5, lon: 30.0 },
   { iso2: "BJ", iso3: "BEN", name: "Benin", lat: 9.5, lon: 2.25 },
+  // BL, and (further down, each in its alphabetical place) BQ/CW/MF/SX/SS/XK
+  // were missing from the original generated dataset (most added to ISO 3166-1
+  // in 2010-11, after the source snapshot). Confirmed missing 2026-08-11 and
+  // cross-checked against lib/geo/fcdoSlugs.data.ts, which already expects
+  // centroids for all seven (it hand-resolves them as FCDO-published
+  // territories) -- so their absence here was silently dropping a resolved FCDO
+  // slug's marker, exactly like the South Sudan gap this fix targets.
+  { iso2: "BL", iso3: "BLM", name: "Saint Barthélemy", lat: 17.9, lon: -62.8333 }, // Gustavia, verified against Wikipedia's infobox coordinates
   { iso2: "BM", iso3: "BMU", name: "Bermuda", lat: 32.3333, lon: -64.75 },
   { iso2: "BN", iso3: "BRN", name: "Brunei Darussalam", lat: 4.5, lon: 114.6667 },
   { iso2: "BO", iso3: "BOL", name: "Bolivia, Plurinational State of", lat: -17.0, lon: -65.0 },
+  { iso2: "BQ", iso3: "BES", name: "Bonaire, Sint Eustatius and Saba", lat: 12.1667, lon: -68.25 }, // one ISO row for 3 islands ~500km apart; centred on Bonaire (the largest), per common practice (mledoze/countries)
   { iso2: "BR", iso3: "BRA", name: "Brazil", lat: -10.0, lon: -55.0 },
   { iso2: "BS", iso3: "BHS", name: "Bahamas", lat: 24.25, lon: -76.0 },
   { iso2: "BT", iso3: "BTN", name: "Bhutan", lat: 27.5, lon: 90.5 },
@@ -63,6 +72,7 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
   { iso2: "CR", iso3: "CRI", name: "Costa Rica", lat: 10.0, lon: -84.0 },
   { iso2: "CU", iso3: "CUB", name: "Cuba", lat: 21.5, lon: -80.0 },
   { iso2: "CV", iso3: "CPV", name: "Cape Verde", lat: 16.0, lon: -24.0 },
+  { iso2: "CW", iso3: "CUW", name: "Curaçao", lat: 12.1833, lon: -68.9833 }, // Willemstad, verified against Wikipedia's infobox coordinates
   { iso2: "CX", iso3: "CXR", name: "Christmas Island", lat: -10.5, lon: 105.6667 },
   { iso2: "CY", iso3: "CYP", name: "Cyprus", lat: 35.0, lon: 33.0 },
   { iso2: "CZ", iso3: "CZE", name: "Czech Republic", lat: 49.75, lon: 15.5 },
@@ -150,6 +160,7 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
   { iso2: "MC", iso3: "MCO", name: "Monaco", lat: 43.7333, lon: 7.4 },
   { iso2: "MD", iso3: "MDA", name: "Moldova, Republic of", lat: 47.0, lon: 29.0 },
   { iso2: "ME", iso3: "MNE", name: "Montenegro", lat: 42.0, lon: 19.0 },
+  { iso2: "MF", iso3: "MAF", name: "Saint Martin (French part)", lat: 18.0833, lon: -63.05 }, // Marigot, verified against Wikipedia's infobox coordinates
   { iso2: "MG", iso3: "MDG", name: "Madagascar", lat: -20.0, lon: 47.0 },
   { iso2: "MH", iso3: "MHL", name: "Marshall Islands", lat: 9.0, lon: 168.0 },
   { iso2: "MK", iso3: "MKD", name: "Macedonia, the former Yugoslav Republic of", lat: 41.8333, lon: 22.0 },
@@ -216,8 +227,15 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
   { iso2: "SN", iso3: "SEN", name: "Senegal", lat: 14.0, lon: -14.0 },
   { iso2: "SO", iso3: "SOM", name: "Somalia", lat: 10.0, lon: 49.0 },
   { iso2: "SR", iso3: "SUR", name: "Suriname", lat: 4.0, lon: -56.0 },
+  // CONFIRMED gap: no South Sudan entry at all (grep -ci "south sudan" -> 0), so
+  // every South Sudan signal (conflict/displacement/food-insecurity) was silently
+  // dropped from every country-aggregated layer, including the flagship Country
+  // Instability Index -- see lib/signals/instability.ts. Coordinates 7°N 30°E are
+  // South Sudan's Wikipedia infobox geographic coordinates (UN member since 2011).
+  { iso2: "SS", iso3: "SSD", name: "South Sudan", lat: 7.0, lon: 30.0 },
   { iso2: "ST", iso3: "STP", name: "Sao Tome and Principe", lat: 1.0, lon: 7.0 },
   { iso2: "SV", iso3: "SLV", name: "El Salvador", lat: 13.8333, lon: -88.9167 },
+  { iso2: "SX", iso3: "SXM", name: "Sint Maarten (Dutch part)", lat: 18.0667, lon: -63.0667 }, // Philipsburg, verified against Wikipedia's infobox coordinates
   { iso2: "SY", iso3: "SYR", name: "Syrian Arab Republic", lat: 35.0, lon: 38.0 },
   { iso2: "SZ", iso3: "SWZ", name: "Swaziland", lat: -26.5, lon: 31.5 },
   { iso2: "TC", iso3: "TCA", name: "Turks and Caicos Islands", lat: 21.75, lon: -71.5833 },
@@ -251,6 +269,14 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
   { iso2: "VU", iso3: "VUT", name: "Vanuatu", lat: -16.0, lon: 167.0 },
   { iso2: "WF", iso3: "WLF", name: "Wallis and Futuna", lat: -13.3, lon: -176.2 },
   { iso2: "WS", iso3: "WSM", name: "Samoa", lat: -13.5833, lon: -172.3333 },
+  // XK/XKX are not formally assigned by ISO 3166/MA (Kosovo's status is contested),
+  // but XK is the widely-used exceptional reservation (EU, World Bank, SWIFT, and
+  // this repo's own lib/geo/fcdoSlugs.data.ts already treat it as a resolvable
+  // country code) and XKX is the de-facto ISO-3-shaped analogue used alongside it.
+  // Included so upstream feeds that emit XK are not silently dropped -- not a
+  // claim about recognition status either way. Coordinates verified against
+  // Wikipedia's Kosovo infobox (42°35'N 21°00'E).
+  { iso2: "XK", iso3: "XKX", name: "Kosovo", lat: 42.5833, lon: 21.0 },
   { iso2: "YE", iso3: "YEM", name: "Yemen", lat: 15.0, lon: 48.0 },
   { iso2: "YT", iso3: "MYT", name: "Mayotte", lat: -12.8333, lon: 45.1667 },
   { iso2: "ZA", iso3: "ZAF", name: "South Africa", lat: -29.0, lon: 24.0 },
@@ -260,10 +286,99 @@ export const COUNTRY_CENTROIDS: CountryCentroid[] = [
 
 const BY_ISO2 = new Map(COUNTRY_CENTROIDS.map((c) => [c.iso2, c]));
 const BY_ISO3 = new Map(COUNTRY_CENTROIDS.map((c) => [c.iso3, c]));
+const BY_NAME = new Map(COUNTRY_CENTROIDS.map((c) => [c.name.toLowerCase(), c]));
+
+/**
+ * Alternate country-name spellings real upstream feeds emit that do NOT match
+ * any `name` field above (this dataset mostly follows old-style ISO 3166 long
+ * forms, e.g. "Libyan Arab Jamahiriya", "Korea, Republic of", "Viet Nam" --
+ * upstreams routinely use the short/common form instead). A name mismatch
+ * drops a country just as silently as a missing row, so `centroidByName()`
+ * below checks this table before giving up. Keyed by lowercased alias -> iso3.
+ *
+ * Provenance matters here (see the file-level note on verifying coordinates --
+ * the same discipline applies to claiming a feed emits a spelling):
+ *   - libya / taiwan / west bank / gaza strip / palestine / "vietnam, republic
+ *     of" were confirmed against a real 300-feature prod sample of GDELT's
+ *     conflict layer on 2026-08-11 (see lib/signals/instability.ts,
+ *     GDELT_NAME_ALIAS) -- reused here, not re-derived.
+ *   - democratic republic of congo / republic of congo / syria / russia / iran
+ *     / tanzania / bolivia / venezuela / moldova / laos / south korea / north
+ *     korea / vietnam / myanmar were confirmed against ACLED's country-name
+ *     spellings (see lib/signals/instability.ts, NAME_TO_ISO3 alias) -- also
+ *     reused, not re-derived.
+ *   - the rest are official ISO short-name renames/successors gazetted by the
+ *     UN (Eswatini/Swaziland 2018, Czechia/Czech Republic, North
+ *     Macedonia/Macedonia 2019, Cabo Verde/Cape Verde 2013) or unambiguous
+ *     common-English names for entries whose ISO long form is awkward
+ *     (Brunei, Micronesia, DRC/Congo-Kinshasa, Congo-Brazzaville, USA, UK,
+ *     East Timor) -- not observed in a live feed by this pass, included
+ *     defensively because the mapping is factual rather than guessed.
+ */
+export const COUNTRY_NAME_ALIASES: Record<string, string> = {
+  libya: "LBY",
+  taiwan: "TWN",
+  "west bank": "PSE",
+  "gaza strip": "PSE",
+  palestine: "PSE",
+  "palestinian territories": "PSE",
+  "vietnam, republic of": "VNM",
+  "democratic republic of congo": "COD",
+  "democratic republic of the congo": "COD",
+  "dr congo": "COD",
+  "drc": "COD",
+  "congo-kinshasa": "COD",
+  "republic of congo": "COG",
+  "congo-brazzaville": "COG",
+  syria: "SYR",
+  russia: "RUS",
+  iran: "IRN",
+  tanzania: "TZA",
+  bolivia: "BOL",
+  venezuela: "VEN",
+  moldova: "MDA",
+  laos: "LAO",
+  "south korea": "KOR",
+  "korea, south": "KOR",
+  "north korea": "PRK",
+  "korea, north": "PRK",
+  vietnam: "VNM",
+  myanmar: "MMR",
+  burma: "MMR",
+  "ivory coast": "CIV",
+  czechia: "CZE",
+  "north macedonia": "MKD",
+  macedonia: "MKD",
+  eswatini: "SWZ",
+  "cabo verde": "CPV",
+  "east timor": "TLS",
+  brunei: "BRN",
+  micronesia: "FSM",
+  "united states": "USA",
+  usa: "USA",
+  "united kingdom": "GBR",
+  uk: "GBR",
+};
 
 /** Centroid for an ISO-3166 alpha-2 code (e.g. "US"), or undefined. */
 export function centroidByIso2(code: string): CountryCentroid | undefined {
   return BY_ISO2.get((code || "").toUpperCase());
+}
+
+/**
+ * Centroid for a country NAME, or undefined. Tries an exact (case-insensitive)
+ * match against this dataset's canonical `name` first, then falls back to
+ * `COUNTRY_NAME_ALIASES` for known upstream spellings that don't match the
+ * canonical form. This is the single place new alias mismatches should be
+ * added -- see the provenance note on `COUNTRY_NAME_ALIASES` above.
+ */
+export function centroidByName(name: string): CountryCentroid | undefined {
+  const n = (name ?? "").trim().toLowerCase();
+  if (!n) return undefined;
+  const exact = BY_NAME.get(n);
+  if (exact) return exact;
+  const alias = COUNTRY_NAME_ALIASES[n];
+  return alias ? BY_ISO3.get(alias) : undefined;
 }
 
 /** Centroid for an ISO-3166 alpha-3 code (e.g. "AFG"), or undefined. */
