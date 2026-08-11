@@ -13,7 +13,14 @@
   --tn-border-strong: rgba(15, 23, 42, 0.16);
   --tn-text: #1f2a37;
   --tn-text-muted: #54606d;
-  --tn-text-faint: #8b97a6;
+  /* WCAG: measured 2.93:1 at #8b97a6 on the widget surface — it was the single
+     biggest contrast defect in the product (≈60 of ~110 failing elements at every
+     viewport: widget counts, freshness text, group counts, chevrons, the ? and the
+     bell). #626e7d keeps the same blue-grey and the three-step ink hierarchy
+     (text 13.9:1 / muted 6.4:1 / faint 5.2:1) while clearing AA on every light
+     surface it lands on: 5.19:1 on --tn-surface, 4.75:1 on --tn-surface-2,
+     4.61:1 on --tn-chip-bg. */
+  --tn-text-faint: #626e7d;
   --tn-accent: #0e7d97;
   --tn-accent-strong: #0b6175;
   --tn-accent-soft: rgba(14, 125, 151, 0.10);
@@ -30,6 +37,21 @@
   --tn-paused: #b6c0cc;
   --tn-sat: #7c3aed;
   --tn-plane: #d97706;
+
+  /* Status INK — the same five states, tuned for TEXT on a light surface.
+     The five tokens above stay exactly as they are: they are signal FILLS (dots,
+     bars, marker colours, banner rules) and non-text UI only has to clear 3:1, so
+     the vivid palette is correct there and the map still reads the same.
+     As text they do not clear 4.5:1 on white — measured: --tn-live 3.25:1 (that is
+     the freshness chip), --tn-lagging 3.18:1, --tn-stale 3.56:1, --tn-unknown
+     2.56:1, and --tn-down 4.83:1 on white but 4.29:1 once the chip background is
+     under it. Each ink below clears 4.5:1 on --tn-surface, --tn-surface-2 AND
+     --tn-chip-bg, so a freshness chip is legible wherever it is mounted. */
+  --tn-live-ink: #147a37;
+  --tn-lagging-ink: #a85907;
+  --tn-stale-ink: #b4470a;
+  --tn-down-ink: #c81e1e;
+  --tn-unknown-ink: #626e7d;
 
   --tn-topbar-h: 50px;
   --tn-ticker-h: 32px;
@@ -55,7 +77,9 @@
   --tn-border-strong: rgba(255, 255, 255, 0.16);
   --tn-text: #e6ebf2;
   --tn-text-muted: #aab4c2;
-  --tn-text-faint: #6b7787;
+  /* Dark inverts the problem: #6b7787 measured 3.72:1 on --tn-surface-solid.
+     Lightening to #8e9bab gives 5.98:1 and keeps faint below muted. */
+  --tn-text-faint: #8e9bab;
   --tn-accent: #38bdf8;
   --tn-accent-strong: #7dd3fc;
   --tn-accent-soft: rgba(56, 189, 248, 0.14);
@@ -63,6 +87,16 @@
   --tn-toggle-off: rgba(255, 255, 255, 0.16);
   --tn-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
   --tn-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
+
+  /* On a dark surface the vivid status colours are already the accessible ones
+     (--tn-live 5.13:1, --tn-lagging 5.31:1, --tn-stale 4.75:1, --tn-unknown
+     6.60:1 on --tn-surface-solid), so dark maps the inks straight back onto them.
+     The exception is red: --tn-down measures 3.50:1 there, so dark lifts it. */
+  --tn-live-ink: #16a34a;
+  --tn-lagging-ink: #d97706;
+  --tn-stale-ink: #ea580c;
+  --tn-down-ink: #f87171;
+  --tn-unknown-ink: #94a3b8;
 }
 
 * { box-sizing: border-box; }
@@ -78,6 +112,29 @@ a { color: var(--tn-accent); }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
+
+/* ---- Skip link ----
+   Off-screen until focused, never display:none (that would make it unfocusable and
+   the whole thing pointless). `--tn-text` on `--tn-bg` rather than the brand accent:
+   the accent is a pale blue in the dark theme, and white-on-accent would fail
+   contrast there — these two tokens are guaranteed to be opposites in both themes.
+   The wrapper is a zero-size absolute box so it adds nothing to the shell's layout. */
+.tn-skip-nav { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 2000; }
+.tn-skip-link {
+  position: absolute; top: 0; left: 0; transform: translateY(-250%);
+  display: inline-block; white-space: nowrap;
+  padding: 10px 18px; border-radius: 0 0 12px 0;
+  background: var(--tn-text); color: var(--tn-bg);
+  font-family: var(--tn-sans); font-size: 13px; font-weight: 650; text-decoration: none;
+  box-shadow: var(--tn-shadow);
+}
+.tn-skip-link:focus { transform: translateY(0); outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+
+/* Focus ring for the skip link's landing site (the centre stage). inset box-shadow
+   rather than `outline` so it follows the stage's 12px radius. Only ever painted for
+   a keyboard-driven focus, so the resting design is unchanged. */
+.tn-cw-stage:focus { outline: none; }
+.tn-cw-stage:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--tn-accent), 0 6px 22px rgba(20, 28, 38, 0.16); }
 
 /* ---- Stage ---- */
 .tn-shell-main { width: 100vw; height: 100vh; overflow: hidden; }
@@ -103,7 +160,10 @@ a { color: var(--tn-accent); }
   color: var(--tn-text);
 }
 .tn-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-.tn-wordmark { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+/* The wordmark is the page's <h1> (components/shell/StatusBar.tsx). `margin: 0`
+   cancels the UA heading margin so promoting the span to a heading is a zero-pixel
+   change; font-size/weight were already pinned here. */
+.tn-wordmark { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
 .tn-wordmark-accent { color: var(--tn-accent); }
 .tn-tagline { font-size: 11.5px; color: var(--tn-text-faint); white-space: nowrap; }
 
@@ -120,9 +180,10 @@ a { color: var(--tn-accent); }
   border: 1px solid var(--tn-border);
 }
 .tn-health-dot { width: 7px; height: 7px; border-radius: 50%; }
-.tn-health-live { color: var(--tn-live); } .tn-health-live .tn-health-dot { background: var(--tn-live); box-shadow: 0 0 6px var(--tn-live); }
-.tn-health-degraded { color: var(--tn-lagging); } .tn-health-degraded .tn-health-dot { background: var(--tn-lagging); }
-.tn-health-down { color: var(--tn-down); } .tn-health-down .tn-health-dot { background: var(--tn-down); }
+/* Ink for the label, the vivid signal colour for the dot — see --tn-live-ink. */
+.tn-health-live { color: var(--tn-live-ink); } .tn-health-live .tn-health-dot { background: var(--tn-live); box-shadow: 0 0 6px var(--tn-live); }
+.tn-health-degraded { color: var(--tn-lagging-ink); } .tn-health-degraded .tn-health-dot { background: var(--tn-lagging); }
+.tn-health-down { color: var(--tn-down-ink); } .tn-health-down .tn-health-dot { background: var(--tn-down); }
 .tn-health-connecting { color: var(--tn-text-faint); } .tn-health-connecting .tn-health-dot { background: var(--tn-text-faint); }
 
 .tn-topbar-right { display: flex; align-items: center; gap: 8px; }
@@ -236,11 +297,11 @@ a { color: var(--tn-accent); }
 .tn-explain-rows dt { color: var(--tn-text-faint); white-space: nowrap; }
 .tn-explain-rows dd { margin: 0; color: var(--tn-text-muted); line-height: 1.4; }
 .tn-explain-conf { font-weight: 600; border: 1px solid var(--tn-border); border-radius: 999px; padding: 1px 8px; font-size: 11px; white-space: nowrap; }
-.tn-conf-measured { color: var(--tn-live); }
+.tn-conf-measured { color: var(--tn-live-ink); }
 .tn-conf-official { color: var(--tn-accent-strong); }
 .tn-conf-reported { color: var(--tn-text-muted); }
-.tn-conf-modelled { color: var(--tn-lagging); }
-.tn-conf-derived  { color: var(--tn-stale); }
+.tn-conf-modelled { color: var(--tn-lagging-ink); }
+.tn-conf-derived  { color: var(--tn-stale-ink); }
 .tn-explain-lims-h { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--tn-text-faint); margin-bottom: 4px; }
 .tn-explain-lims ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 .tn-explain-lims li { font-size: 12px; line-height: 1.45; color: var(--tn-text-muted); }
@@ -251,10 +312,10 @@ a { color: var(--tn-accent); }
 
 .tn-fresh { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; color: var(--tn-text-faint); margin-top: 1px; }
 .tn-fresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tn-unknown); }
-.tn-fresh-live { color: var(--tn-live); } .tn-fresh-live .tn-fresh-dot { background: var(--tn-live); }
-.tn-fresh-lagging { color: var(--tn-lagging); } .tn-fresh-lagging .tn-fresh-dot { background: var(--tn-lagging); }
-.tn-fresh-stale { color: var(--tn-stale); } .tn-fresh-stale .tn-fresh-dot { background: var(--tn-stale); }
-.tn-fresh-down { color: var(--tn-down); } .tn-fresh-down .tn-fresh-dot { background: var(--tn-down); }
+.tn-fresh-live { color: var(--tn-live-ink); } .tn-fresh-live .tn-fresh-dot { background: var(--tn-live); }
+.tn-fresh-lagging { color: var(--tn-lagging-ink); } .tn-fresh-lagging .tn-fresh-dot { background: var(--tn-lagging); }
+.tn-fresh-stale { color: var(--tn-stale-ink); } .tn-fresh-stale .tn-fresh-dot { background: var(--tn-stale); }
+.tn-fresh-down { color: var(--tn-down-ink); } .tn-fresh-down .tn-fresh-dot { background: var(--tn-down); }
 /* empty = fetched OK but nothing to show right now (e.g. no active storms): a calm, dimmed-live dot, not an error. */
 .tn-fresh-empty { color: var(--tn-text-faint); } .tn-fresh-empty .tn-fresh-dot { background: var(--tn-live); opacity: 0.45; }
 
@@ -580,9 +641,24 @@ a { color: var(--tn-accent); }
 .tn-markets-symbol { font-size: 10.5px; color: var(--tn-text-faint); font-family: var(--tn-mono); }
 .tn-markets-price { font-size: 13px; font-weight: 650; color: var(--tn-text); white-space: nowrap; }
 .tn-markets-change { font-size: 12px; font-weight: 650; min-width: 74px; text-align: right; white-space: nowrap; }
-.tn-markets-up { color: var(--tn-live); }
-.tn-markets-down { color: var(--tn-down); }
+.tn-markets-up { color: var(--tn-live-ink); }
+.tn-markets-down { color: var(--tn-down-ink); }
 .tn-markets-flat { color: var(--tn-text-faint); }
+/* The COMPACT markets widget does not use the three classes above: it paints each
+   delta with a literal inline hex (`lib/console/widgets/markets.tsx` renders
+   `style={{ color: r.changePct >= 0 ? "#16a34a" : "#dc2626" }}`), which measured
+   3.25:1 for every green delta on screen — 18 elements at 1440x900, all of them
+   numbers. React writes that object through verbatim, so the inline style attribute
+   is the only selector available until those two branches become classes; matching
+   it is deliberate and narrow. `!important` is required to outrank the inline
+   declaration. Red already passes (4.83:1) and is left alone.
+   The hex never appears in the DOM: React assigns through the CSSOM, and CSSOM
+   serialisation of a colour is spec-defined as `rgb(r, g, b)` — checked against the
+   served page, where the attribute reads `style="color: rgb(220, 38, 38);"`. Matching
+   on `color: ` (with the space) keeps this off the `background: rgb(22, 163, 74)`
+   severity-bar fills in the same list, which must keep the vivid colour. */
+.tn-w-list li > span[style*="color: rgb(22, 163, 74)"],
+.tn-w-list li > span[style*="color:#16a34a"] { color: var(--tn-live-ink) !important; }
 .tn-markets-rowsub { font-size: 10px; color: var(--tn-text-faint); white-space: nowrap; }
 /* multi-section markets */
 .tn-markets-section { margin-top: 16px; }
@@ -658,7 +734,8 @@ a { color: var(--tn-accent); }
 .tn-alert-text { font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-alert-detail { font-size: 11px; color: var(--tn-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-alert-view {
-  flex-shrink: 0; font: inherit; font-size: 12px; font-weight: 650; color: var(--tn-accent);
+  /* 4.18:1 on its own accent-soft fill before; --tn-accent-strong is 6.11:1 there. */
+  flex-shrink: 0; font: inherit; font-size: 12px; font-weight: 650; color: var(--tn-accent-strong);
   background: var(--tn-accent-soft); border: 1px solid var(--tn-border); border-radius: 8px;
   padding: 6px 11px; cursor: pointer; white-space: nowrap;
 }
@@ -1202,16 +1279,20 @@ a { color: var(--tn-accent); }
 .tn-cw{position:relative;display:flex;flex-direction:column;background:var(--tn-surface);backdrop-filter:blur(14px) saturate(1.05);-webkit-backdrop-filter:blur(14px) saturate(1.05);border:1px solid var(--tn-border);border-radius:10px;overflow:hidden;box-shadow:var(--tn-shadow-sm);color:var(--tn-text)}
 .tn-cw-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--tn-border);cursor:grab;font-size:12px}
 .tn-cw-title{font-weight:700;color:var(--tn-text)}.tn-cw-count{font-size:11px;color:var(--tn-text-faint)}.tn-cw-sp{flex:1}
-.tn-cw-badge{font-size:10px;font-weight:800;color:#fff;border-radius:8px;padding:0 5px;background:#8a97a6}
-.tn-cw-badge.tn-sev-critical{background:#d9534f}.tn-cw-badge.tn-sev-warn{background:#d9882f}.tn-cw-badge.tn-sev-info{background:#4a78c9}
+/* Severity badge — white 10px/800 text, so the FILL is what has to carry the 4.5:1.
+   Measured before: neutral #8a97a6 2.73:1, critical #d9534f 3.96:1, warn #d9882f
+   2.80:1, info #4a78c9 4.36:1 — all four failed, on a count that is pure data.
+   Same four hues, each dropped to the lightness where white clears AA. */
+.tn-cw-badge{font-size:10px;font-weight:800;color:#fff;border-radius:8px;padding:0 5px;background:#5f6b7a}
+.tn-cw-badge.tn-sev-critical{background:#b5322e}.tn-cw-badge.tn-sev-warn{background:#a35c0c}.tn-cw-badge.tn-sev-info{background:#2f5aa8}
 /* The widget-header freshness chip. It used to be unconditionally green because every
    widget hardcoded the string "live"; now the state class carries the colour, and the
    two-class selectors below beat this base rule regardless of source order. */
 .tn-cw-fresh{font-size:10px;color:var(--tn-text-faint);white-space:nowrap;cursor:help}
-.tn-cw-fresh.tn-fresh-live{color:var(--tn-live)}
-.tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging)}
-.tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale)}
-.tn-cw-fresh.tn-fresh-down{color:var(--tn-down)}
+.tn-cw-fresh.tn-fresh-live{color:var(--tn-live-ink)}
+.tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging-ink)}
+.tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale-ink)}
+.tn-cw-fresh.tn-fresh-down{color:var(--tn-down-ink)}
 .tn-cw-fresh.tn-fresh-empty{color:var(--tn-text-faint)}
 .tn-cw-fresh.tn-fresh-off,.tn-cw-fresh.tn-fresh-unknown{color:var(--tn-text-faint);font-style:italic}
 .tn-cw-menu,.tn-cw-expand{border:0;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:14px}
@@ -1335,7 +1416,8 @@ a { color: var(--tn-accent); }
 .tn-cam-cell{display:flex;flex-direction:column;gap:3px;background:var(--tn-surface-2);border:1px solid var(--tn-border);border-radius:8px;overflow:hidden}
 .tn-cam-label{font-size:10px;color:var(--tn-text-muted);padding:3px 6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.tn-cam-empty{font-size:11px;color:#9aa6b2;text-align:center;padding:14px}
+/* was a hardcoded #9aa6b2 — 2.45:1, the least legible empty-state in the console. */
+.tn-cam-empty{font-size:11px;color:var(--tn-text-muted);text-align:center;padding:14px}
 
 /* ====================================================================   Widget body — Live Video News (Task 12)
    NOTE: prefix is `tn-newsw` (news-WIDGET), NOT `tn-news` — the bottom news
@@ -1413,7 +1495,15 @@ a { color: var(--tn-accent); }
 
 /* ====================================================================   Global capacity toast (Task 15) — calm bottom-centre pill, auto-dismisses
    =========================================================================== */
-.tn-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:1200;max-width:90vw;background:#2b3640;color:#fff;font:13px/1.4 -apple-system,"Segoe UI",Roboto,sans-serif;padding:9px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(20,28,38,.28);animation:tn-toast-in .18s ease-out}
+/* The toast element is mounted permanently and left EMPTY when idle so it can work
+   as a live region (see ConsoleShell). `:empty` strips it back to an invisible,
+   zero-sized box — deliberately NOT display:none or visibility:hidden, either of
+   which would drop it out of the accessibility tree and stop it announcing. The
+   entrance animation moves onto `:not(:empty)`, where it fires the moment text is
+   inserted, so the pill still slides in exactly as before. */
+.tn-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:1200;max-width:90vw;background:#2b3640;color:#fff;font:13px/1.4 -apple-system,"Segoe UI",Roboto,sans-serif;padding:9px 16px;border-radius:999px;box-shadow:0 6px 24px rgba(20,28,38,.28)}
+.tn-toast:empty{padding:0;background:none;box-shadow:none;border:0}
+.tn-toast:not(:empty){animation:tn-toast-in .18s ease-out}
 @keyframes tn-toast-in{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 
 /* Focus window — a widget expanded onto the center stage */
@@ -1457,7 +1547,9 @@ a { color: var(--tn-accent); }
 .tn-ev-tabs { display: inline-flex; gap: 4px; }
 .tn-ev-tab { font: inherit; font-size: 11px; padding: 2px 9px; border: 1px solid var(--tn-border); border-radius: 999px; background: transparent; color: var(--tn-text-muted); cursor: pointer; }
 .tn-ev-tab:hover { border-color: var(--tn-border-strong); color: var(--tn-text); }
-.tn-ev-tab.is-active { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent); }
+/* Accent text on an accent-tinted chip measured 4.14:1; the strong accent is 6.11:1
+   on the same fill and keeps the teal. (Plain --tn-accent stays correct on white.) */
+.tn-ev-tab.is-active { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); }
 
 /* Compact widget shell. */
 .tn-ev { display: flex; flex-direction: column; gap: 6px; }
@@ -1668,9 +1760,9 @@ a { color: var(--tn-accent); }
 /* Honest feed-freshness badge — the provenance signal every pro user demanded. */
 .tn-sd-fresh { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--tn-chip-bg); }
 .tn-sd-fresh-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tn-unknown); }
-.tn-sd-fresh.is-live { color: var(--tn-live); } .tn-sd-fresh.is-live .tn-sd-fresh-dot { background: var(--tn-live); }
-.tn-sd-fresh.is-lagging { color: var(--tn-lagging); } .tn-sd-fresh.is-lagging .tn-sd-fresh-dot { background: var(--tn-lagging); }
-.tn-sd-fresh.is-stale { color: var(--tn-down); } .tn-sd-fresh.is-stale .tn-sd-fresh-dot { background: var(--tn-down); }
+.tn-sd-fresh.is-live { color: var(--tn-live-ink); } .tn-sd-fresh.is-live .tn-sd-fresh-dot { background: var(--tn-live); }
+.tn-sd-fresh.is-lagging { color: var(--tn-lagging-ink); } .tn-sd-fresh.is-lagging .tn-sd-fresh-dot { background: var(--tn-lagging); }
+.tn-sd-fresh.is-stale { color: var(--tn-down-ink); } .tn-sd-fresh.is-stale .tn-sd-fresh-dot { background: var(--tn-down); }
 .tn-sd-fresh.is-none { color: var(--tn-text-faint); }
 /* The location map gets its own full-width row (clickable dots ↔ rows). */
 .tn-sd-mappanel { display: flex; flex-direction: column; gap: 6px; }
@@ -1756,7 +1848,7 @@ a { color: var(--tn-accent); }
 .tn-fc-scale.is-active { opacity: 1; border-color: var(--tn-down); background: color-mix(in srgb, var(--tn-down) 10%, var(--tn-surface-2)); }
 .tn-fc-scale-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--tn-text-faint); }
 .tn-fc-scale-value { font-size: 16px; font-weight: 700; color: var(--tn-text); }
-.tn-fc-scale.is-active .tn-fc-scale-value { color: var(--tn-down); }
+.tn-fc-scale.is-active .tn-fc-scale-value { color: var(--tn-down-ink); }
 
 /* ── AIS chokepoint board — per-strait congestion cards + vessel table ── */
 .tn-ais-dormant { display: flex; flex-direction: column; gap: 4px; background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-left: 4px solid var(--tn-text-faint); border-radius: 10px; padding: 12px 14px; }
@@ -1785,7 +1877,16 @@ a { color: var(--tn-accent); }
 .tn-anom-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .tn-anom-title { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tn-anom-meta { font-size: 11px; color: var(--tn-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-anom-layer { font-weight: 700; }
+/* The layer label is painted with the LAYER's map colour via an inline style
+   (`lib/console/widgets/anomaly.tsx` → `style={{ color: r.color }}`). Those hues are
+   tuned to sit on satellite imagery, not on a white card: measured 2.12:1 (#f59e0b),
+   2.23:1 (#fb923c) and 2.77:1 (#f97316) here, on the row that names WHICH FEED an
+   anomaly came from — the most load-bearing word in the widget.
+   An author `!important` outranks a non-important inline declaration, which is the
+   only CSS-only handle on a colour chosen in JS. No signal is lost: the severity bar
+   immediately to its left is already filled with that same layer colour, so the hue
+   still identifies the layer and the WORD is now readable at 6.42:1. */
+.tn-anom-layer { font-weight: 700; color: var(--tn-text-muted) !important; }
 .tn-anom .tn-anom-list { gap: 1px; }
 
 /* ── OSINT recon tools (Tools preset) — shared target input + result renderers ── */
@@ -1803,11 +1904,11 @@ a { color: var(--tn-accent); }
 .tn-recon-k { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--tn-text-faint); }
 .tn-recon-v { color: var(--tn-text); overflow: hidden; text-overflow: ellipsis; }
 .tn-recon-stat { font-size: 11px; color: var(--tn-text-muted); margin-bottom: 4px; }
-.tn-recon-flagged { color: var(--tn-down); font-weight: 700; }
+.tn-recon-flagged { color: var(--tn-down-ink); font-weight: 700; }
 .tn-recon-ports { display: flex; flex-wrap: wrap; gap: 4px; }
 .tn-recon-port { font-family: var(--tn-mono); font-size: 11px; font-weight: 600; background: var(--tn-chip-bg); border-radius: 4px; padding: 2px 7px; color: var(--tn-text); }
 .tn-recon-vulns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.tn-recon-cve { font-family: var(--tn-mono); font-size: 10px; background: color-mix(in srgb, var(--tn-down) 14%, var(--tn-surface-2)); color: var(--tn-down); border-radius: 4px; padding: 2px 6px; }
+.tn-recon-cve { font-family: var(--tn-mono); font-size: 10px; background: color-mix(in srgb, var(--tn-down) 14%, var(--tn-surface-2)); color: var(--tn-down-ink); border-radius: 4px; padding: 2px 6px; }
 .tn-recon-providers { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; border-top: 1px solid var(--tn-border); padding-top: 8px; }
 .tn-recon-provider { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--tn-text); }
 .tn-recon-provider.is-locked { color: var(--tn-text-faint); }
@@ -2134,11 +2235,19 @@ a { color: var(--tn-accent); }
 
 /* ── Profile avatar + popover ─────────────────────────────────────────────── */
 .tn-profile { position: relative; display: inline-flex; }
-.tn-profile-avatar { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; color: #fff; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--tn-shadow-sm); }
+/* The fill is chosen in JS — `avatarColor()` in lib/shell/profile.ts returns
+   `hsl(<hash> 55% 45%)`, i.e. any hue on the wheel at one fixed lightness. White
+   initial-on-fill therefore ranges from 9.21:1 (blue) down to 2.26:1 (yellow-green);
+   the name measured on this machine landed at 3.31:1. CSS cannot recolour a value it
+   cannot read, so instead an inset scrim is painted over whatever hue arrives. An
+   inset box-shadow covers the background but sits UNDER the glyph, and at 45% it
+   takes the worst hue in the palette to 5.76:1 while leaving every hue identifiable. */
+.tn-profile-avatar { width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; color: #fff; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 999px rgba(15, 23, 42, .45), var(--tn-shadow-sm); }
 .tn-profile-avatar:hover { filter: brightness(1.07); }
 .tn-profile-menu { position: absolute; top: calc(100% + 8px); right: 0; width: 262px; z-index: 40; padding: 12px; background: var(--tn-surface-solid); border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow); display: flex; flex-direction: column; gap: 10px; }
 .tn-profile-id { display: flex; align-items: center; gap: 10px; }
-.tn-profile-id-avatar { width: 36px; height: 36px; border-radius: 50%; color: #fff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+/* Same JS-chosen fill as .tn-profile-avatar, so it needs the same scrim. */
+.tn-profile-id-avatar { width: 36px; height: 36px; border-radius: 50%; color: #fff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; box-shadow: inset 0 0 0 999px rgba(15, 23, 42, .45); }
 .tn-profile-id-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .tn-profile-id-name { font-size: 14px; font-weight: 650; color: var(--tn-text); overflow: hidden; text-overflow: ellipsis; }
 .tn-profile-id-sub { font-size: 11px; color: var(--tn-text-faint); }
@@ -2198,8 +2307,8 @@ a { color: var(--tn-accent); }
 .tn-settings-tg-test { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 9px; padding: 8px 12px; cursor: pointer; }
 .tn-settings-tg-test:hover:not(:disabled) { border-color: var(--tn-border-strong); }
 .tn-settings-tg-test:disabled { opacity: .5; cursor: not-allowed; }
-.tn-settings-tg-ok { font-size: 12px; font-weight: 600; color: var(--tn-live); }
-.tn-settings-tg-err { font-size: 12px; color: var(--tn-down); }
+.tn-settings-tg-ok { font-size: 12px; font-weight: 600; color: var(--tn-live-ink); }
+.tn-settings-tg-err { font-size: 12px; color: var(--tn-down-ink); }
 /* Notifications section — armed-widget list */
 .tn-settings-notify-list { display: flex; flex-direction: column; gap: 2px; border-top: 1px solid var(--tn-border); padding-top: 8px; }
 .tn-settings-notify-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; }
@@ -2221,11 +2330,13 @@ a { color: var(--tn-accent); }
 .tn-wc-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 3px 14px; min-width: 60px; position: relative; }
 .tn-wc-cell + .tn-wc-cell::before { content: ""; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: rgba(255, 255, 255, .12); }
 .tn-wc-glyph { font-size: 11px; line-height: 1.1; }
-.tn-wc-cell.is-day .tn-wc-glyph { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, .55); }
-.tn-wc-cell.is-night .tn-wc-glyph { color: #93c5fd; text-shadow: 0 0 8px rgba(147, 197, 253, .5); }
+.tn-wc-cell.is-day .tn-wc-glyph { color: #fcd34d; text-shadow: 0 0 8px rgba(251, 191, 36, .55); }
+.tn-wc-cell.is-night .tn-wc-glyph { color: #bfdbfe; text-shadow: 0 0 8px rgba(147, 197, 253, .5); }
 .tn-wc-time { font-size: 15px; font-weight: 700; letter-spacing: .5px; line-height: 1.2; }
 .tn-wc-cell.is-night .tn-wc-time { color: #d5deea; }
-.tn-wc-city { font-size: 9px; font-weight: 600; letter-spacing: .13em; color: rgba(255, 255, 255, .58); }
+/* 9px at 58% white was the thinnest ink on the ribbon (3.54:1 against the ribbon's
+   own gradient); 86% takes it to 5.63:1 and still reads as a caption under the time. */
+.tn-wc-city { font-size: 9px; font-weight: 600; letter-spacing: .13em; color: rgba(255, 255, 255, .86); }
 /* The clock is decorative chrome — drop it on tight viewports where the ribbon would
    crowd the map-view controls / breaking banner. */
 @media (max-width: 900px) { .tn-worldclock { display: none; } }
@@ -2249,7 +2360,7 @@ a { color: var(--tn-accent); }
 }
 .tn-track-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-track-label b { font-weight: 700; }
-.tn-track-lost { color: var(--tn-down); font-weight: 600; }
+.tn-track-lost { color: var(--tn-down-ink); font-weight: 600; }
 .tn-track-recenter {
   font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 8px;
   border: 1px solid var(--tn-border); background: var(--tn-surface-2); color: var(--tn-text); cursor: pointer;
@@ -2576,4 +2687,153 @@ a { color: var(--tn-accent); }
   .tn-cw-shell > .tn-rail-fab {
     top: auto; bottom: 12px; left: 12px; padding: 11px 15px; z-index: 26;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Touch & pointer targets
+   ════════════════════════════════════════════════════════════════════════
+   Measured on this branch before these rules (real hit-testing, not just
+   getBoundingClientRect — every control was probed with elementFromPoint
+   expanding out from its centre, so padding and overlays count exactly as a
+   thumb experiences them):
+
+     390x844   245 of 248 interactive elements under 44x44   (227 under 30)
+     360x800   245 of 248 under 44x44
+     1440x900  212 of 253 under 24x24
+
+   The population is dominated by four groups — 119 `.tn-ev-row` feed rows at
+   16.8px tall, 57 `a.tn-w-place` headline links at 16.8px, and 8 each of the four
+   widget-header icon buttons. The worst single control was `.tn-cw-help` at
+   16x16 (11.9x16 once the flex header squeezed it), and that button is the only
+   way into the source / confidence / limitations card the product is sold on.
+
+   Two techniques, chosen per control:
+
+   (a) REAL SIZE (padding / min-height) for anything in a vertical stack. A list
+       row cannot use an overlay: the overlay would sit on top of the row above or
+       below and swallow ITS taps, turning one small target into one big target and
+       one dead one. Rows therefore grow for real, and the `li` they sit in gives up
+       its own vertical padding (`:has()`) so the row's new box replaces that
+       padding instead of adding to it.
+
+   (b) HIT-AREA ONLY (a transparent, absolutely-positioned ::before) for controls
+       in a dense horizontal toolbar with free space around them — the widget
+       header at desktop widths, the top bar, and the fixed 54px breaking-banner
+       band. The painted chip, ring or avatar keeps its size, so the chrome stays
+       as calm as it is today, and only the tappable box grows.
+
+   The one place technique (b) alone cannot reach 44px is the widget header on a
+   phone: four buttons 4px apart cannot each own a 44px-wide box unless the boxes
+   themselves are 40px wide, so on mobile that cluster grows its LAYOUT box to 40px
+   and the overlays tile the 4px gaps exactly (no overlap, no stolen taps). The
+   help button's painted RING stays 20px via ::after, so the header still looks
+   like a row of quiet glyphs rather than a row of buttons.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ---- widget-header icon cluster ---------------------------------------------
+   First attempt here was overlay-only (16px boxes, 26x26 ::before). Re-measured at
+   1440x900 it delivered 22x26, not 26x26: the buttons sit 6px apart, so a 26px-wide
+   overlay reaches 13px past its own centre while the NEXT button's overlay starts
+   10px past that same centre and, being later in the DOM, wins the strip. Overlays
+   cannot manufacture width the row does not have. The fix is to give each button a
+   24px BOX (pitch 24+6=30, so the 26px overlays now tile without fighting) while the
+   only button with a visible outline keeps its small painted ring via ::after. */
+.tn-cw-help, .tn-cw-bell, .tn-cw-expand, .tn-cw-menu {
+  position: relative;
+  /* the header is a flex row: without this the 16px help button was squeezed to
+     11.9px and its ring painted as an ellipse */
+  flex: 0 0 auto;
+  min-width: 24px; min-height: 24px;
+}
+.tn-cw-help::before, .tn-cw-bell::before, .tn-cw-expand::before, .tn-cw-menu::before {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px; height: 26px;
+}
+/* The ? keeps an 18px painted ring inside its 24px box, so the header still reads as
+   a row of quiet glyphs and only the tappable box grew. */
+.tn-cw-help { width: 24px; height: 24px; box-shadow: none; }
+.tn-cw-help::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px; height: 18px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--tn-border);
+}
+.tn-cw-help:hover, .tn-cw-help.is-on { box-shadow: none; }
+.tn-cw-help:hover::after, .tn-cw-help.is-on::after { box-shadow: inset 0 0 0 1px var(--tn-accent); }
+
+/* ---- (a) vertical lists: the row itself becomes the target -------------------- */
+/* 26px measured back as 22-23px of real hit area: a row's own box is flush against
+   the row above and below, so the outermost pixel row resolves to the parent <li>,
+   not the control. 30px leaves the margin the probe actually needs. */
+.tn-ev-row, .tn-evd-rowbtn, a.tn-w-place, .tn-ev-group-h, .tn-anom-row {
+  min-height: 30px;
+}
+a.tn-w-place { display: flex; align-items: center; }
+/* Only rows that now carry their own height give up the li padding — a list of
+   non-interactive readouts (markets, aviation) keeps its breathing room. */
+.tn-w-list li:has(> .tn-ev-row), .tn-w-list li:has(> a.tn-w-place) { padding-top: 0; padding-bottom: 0; }
+
+/* ---- (a) small pill controls -------------------------------------------------- */
+.tn-ev-tab, .tn-ev-hidden { min-height: 26px; }
+.tn-ev-tab { padding: 2px 12px; }
+.tn-stage-switch button { min-height: 26px; min-width: 34px; }
+.tn-mapsearch-input { min-height: 26px; }
+
+@media (max-width: 900px) {
+  /* ---- (a) lists and pills: 44px for real -------------------------------- */
+  .tn-ev-row, .tn-evd-rowbtn, a.tn-w-place, .tn-ev-group-h, .tn-anom-row,
+  .tn-ev-tab, .tn-ev-hidden, .tn-mapsearch-item, .tn-rail-fab, .tn-cw-shell > .tn-rail-fab {
+    min-height: 44px;
+  }
+  .tn-anom-row { padding: 5px 6px; }
+
+  /* Search: the wrapper's own padding is traded for the input's height, so the
+     control reaches 44px without the box growing to 58px. */
+  .tn-mapsearch { padding: 0 12px; }
+  .tn-mapsearch-input { min-height: 44px; }
+
+  .tn-stage-switch button { min-height: 44px; min-width: 44px; }
+
+  /* ---- (a)+(b) widget header: 40px box, 44px hit, 20px painted ring ------- */
+  .tn-cw-help, .tn-cw-bell, .tn-cw-expand, .tn-cw-menu {
+    width: 40px; height: 40px; min-width: 40px; min-height: 40px;
+  }
+  /* pitch is 40 + the header's 4px gap = 44, so a 44px overlay tiles exactly:
+     every button owns a full 44x44 and none of them overlaps its neighbour */
+  .tn-cw-help::before, .tn-cw-bell::before, .tn-cw-expand::before, .tn-cw-menu::before {
+    width: 44px; height: 44px;
+  }
+  /* Ring stays small (it is drawn by ::after at every width); only the box grows. */
+  .tn-cw-help::after { width: 20px; height: 20px; }
+
+  /* ---- (b) top bar: painted chips stay 30-36px, hit boxes reach 44 -------- */
+  .tn-topbar-right { gap: 10px; }
+  .tn-icon-btn, .tn-profile-avatar, .tn-kofi { position: relative; }
+  .tn-icon-btn::before, .tn-profile-avatar::before, .tn-kofi::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px;
+  }
+  /* Ko-fi loses its label under 720px, so its own box also needs a floor. */
+  .tn-kofi { min-width: 44px; justify-content: center; }
+
+  /* ---- (b) breaking banner: a fixed 54px band, so the paint cannot grow ---- */
+  .tn-alert-view, .tn-alert-dismiss { position: relative; }
+  .tn-alert-view::before, .tn-alert-dismiss::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; min-width: 44px; height: 44px;
+  }
+
+  /* ---- MapLibre's own chrome (zoom / compass / attribution) ---------------
+     maplibre-gl.css declares `.maplibregl-ctrl-group button {29px}` and
+     `.maplibregl-ctrl-attrib-button {24px}` at the same specificity as a plain
+     class selector, and it is injected AFTER globals.css, so an equal-specificity
+     rule here loses on order — measured: still 29x29 after the first pass. Both
+     selectors below are doubled up on classes the same elements already carry, which
+     wins on specificity instead of relying on load order. */
+  .maplibregl-ctrl.maplibregl-ctrl-group button { width: 44px; height: 44px; }
+  .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
+  .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { width: 44px; height: 44px; }
 }
