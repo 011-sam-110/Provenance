@@ -1,4 +1,5 @@
 import { Webcam, WebcamArray, Source } from "@/lib/types";
+import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 
 // Windy.com Webcams API v3 — ~73k global webcams. UNLIKE the road-CCTV adapters
 // this one is KEYED: every request carries an `x-windy-api-key` header injected
@@ -122,7 +123,7 @@ const INCLUDE = "images,location,urls,categories";
 const LIMIT = 50; // free-tier hard cap
 const PAGES_PER_REGION = 2; // 2 × 50 = up to 100 webcams/region (offset 0,50)
 const REGION_CONCURRENCY = 6; // polite + bounded parallelism across page jobs
-const MAX_WEBCAMS = 2000; // safety cap on the merged global sample
+const MAX_WEBCAMS = 2000; // safety cap on the merged global sample — disclosed via lib/signals/coverage.ts, not silent
 
 // 73k webcams can't be loaded (and offset is free-tier-capped at 1000), so we
 // fan a small bbox query across world regions for a GLOBAL spread, then dedupe.
@@ -183,6 +184,20 @@ async function fetchPage(apiKey: string, bbox: [number, number, number, number],
  * Fetch a global sample of webcams (region bbox fan-out, deduped by id). Returns
  * [] — never throws — when no key is configured (the layer stays dormant). A
  * single failing region degrades gracefully (Promise.allSettled per page).
+ *
+ * TRUNCATION HONESTY: the MAX_WEBCAMS cap below used to trim the merged sample
+ * silently, so a caller printing `webcams.length` had no way to know it was a
+ * ceiling rather than a count of everything the region fan-out found. The
+ * returned array now carries a `lib/signals/coverage.ts` record (applyCap /
+ * carryCoverage — the repo's existing truncation-disclosure contract, reused
+ * here rather than inventing a parallel one) so `readCoverage(result)` reports
+ * the true deduped total and whether the cap actually bit.
+ *
+ * NOT YET WIRED IN: this function has no live caller today — /api/webcams goes
+ * through lib/webcams/fetch.ts's fetchWebcamSample + lib/webcams/normalize.ts's
+ * toWebcams instead, which apply their OWN MAX_WEBCAMS=2000 cap and do not read
+ * this coverage record. Those two files are outside this change's ownership;
+ * see the handoff note where this function is called from tests/consumers.
  */
 export async function fetchWebcams(apiKey: string | undefined = process.env.WINDY_WEBCAMS_API_KEY): Promise<Webcam[]> {
   if (!apiKey) {
@@ -199,20 +214,27 @@ export async function fetchWebcams(apiKey: string | undefined = process.env.WIND
     fetchPage(apiKey, job.bbox, job.offset).catch(() => [] as WindyWebcam[]),
   );
 
-  // Dedupe by webcamId (overlapping bboxes), normalize, cap, validate.
+  // Dedupe by webcamId (overlapping bboxes) WITHOUT stopping early, so the true
+  // pre-cap total is measured rather than guessed — then applyCap() keeps the
+  // first MAX_WEBCAMS and records what that hid.
   const seen = new Set<number>();
-  const merged: WindyWebcam[] = [];
+  const deduped: WindyWebcam[] = [];
   for (const page of pages) {
     for (const w of page) {
       if (w.webcamId === undefined || seen.has(w.webcamId)) continue;
       seen.add(w.webcamId);
-      merged.push(w);
-      if (merged.length >= MAX_WEBCAMS) break;
+      deduped.push(w);
     }
-    if (merged.length >= MAX_WEBCAMS) break;
   }
+  const capped = applyCap(deduped, MAX_WEBCAMS, {
+    noun: "webcams",
+    rule: "first seen across the region fan-out (not ranked)",
+  });
 
-  return WebcamArray.parse(normalizeWindy({ webcams: merged }));
+  const parsed = WebcamArray.parse(normalizeWindy({ webcams: capped }));
+  // normalizeWindy()/WebcamArray.parse() both build fresh arrays, which drop the
+  // side-channel coverage record — carry it onto the array we actually return.
+  return carryCoverage(capped, parsed);
 }
 
 /**

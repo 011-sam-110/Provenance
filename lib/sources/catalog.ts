@@ -27,7 +27,12 @@ export const CORE_IDS = ["cameras", "planes", "satellites", "webcams"] as const;
 const CORE_SOURCES: CatalogSource[] = [
   { id: "cameras",    kind: "core", label: "Cameras",    group: "Cameras",  color: "#0e7d97", attribution: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC", refreshMs: 300_000 },
   { id: "webcams",    kind: "core", label: "Webcams",    group: "Cameras",  color: "#ec4899", attribution: "Windy.com — global webcams", refreshMs: 600_000 },
-  { id: "planes",     kind: "core", label: "Planes",     group: "Aviation", color: "#d97706", attribution: "adsb.lol — live ADS-B", refreshMs: 12_000 },
+  // OpenSky, not adsb.lol: app/api/planes → lib/sources/opensky.ts pulls the global
+  // /states/all snapshot. adsb.lol backs only the separate military-air SIGNAL layer
+  // (lib/signals/military-air.ts) — same false-attribution bug already fixed for the
+  // Source Catalog rail's LAYER_META (components/shell/SourceCatalog.tsx:72-74), still
+  // live here because this is a different descriptor list.
+  { id: "planes",     kind: "core", label: "Planes",     group: "Aviation", color: "#d97706", attribution: "OpenSky Network — global ADS-B snapshot", refreshMs: 12_000 },
   { id: "satellites", kind: "core", label: "Satellites", group: "Space",    color: "#7c3aed", attribution: "CelesTrak TLE · SGP4 (local)", refreshMs: 1_000 },
 ];
 
