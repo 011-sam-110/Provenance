@@ -51,18 +51,52 @@ interface LayerMeta {
   accent: string;
   source: string;
   fresh?: FreshSourceId;
+  /** No CORE map layer of its own — rendered as a dimmed, toggle-less signpost row. */
   planned?: boolean;
+  /** Pill text for a `planned` row. Says WHERE the data actually is today. */
+  badge?: string;
 }
 
 const LAYER_META: Record<LayerKey, LayerMeta> = {
-  cameras: { name: "Cameras", group: "Ground", accent: "#0e7d97", source: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC", fresh: "cameras" },
+  // ELEVEN agency feeds run today — lib/sources/registry.ts:27-39 (SOURCES) — not the
+  // six this line used to name. The total is derived from CAMERA_REGIONS (one entry per
+  // feed, already imported here) rather than lib/sources/registry's CAMERA_FEED_COUNT,
+  // which would drag all 11 adapters + zod into the client bundle.
+  cameras: {
+    name: "Cameras",
+    group: "Ground",
+    accent: "#0e7d97",
+    source: `${CAMERA_REGIONS.length} agency feeds — TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC & more`,
+    fresh: "cameras",
+  },
   // OpenSky, not adsb.lol: app/api/planes imports fetchAircraft from lib/sources/opensky.
   // adsb.lol backs the separate military-air SIGNAL layer only.
   planes: { name: "Planes", group: "Air", accent: "#d97706", source: "OpenSky Network — global ADS-B snapshot", fresh: "planes" },
   satellites: { name: "Satellites", group: "Space", accent: "#7c3aed", source: "CelesTrak TLE · SGP4 (local)", fresh: "satellites" },
-  ships: { name: "Ships", group: "Sea", accent: "#0d9488", source: "AIS vessels", planned: true },
+  // NOT "soon": AIS shipped as a signal layer (lib/signals/ais.ts, registered at
+  // lib/signals/registry.ts:121) and is rendered by this very rail under Maritime.
+  // There is still no CORE ships map layer, so the row stays a signpost — but the
+  // rail may not tell a visitor that ships are coming while it is already showing them.
+  ships: {
+    name: "Ships",
+    group: "Sea",
+    accent: "#0d9488",
+    source: "Live in Global signals — Ships (AIS chokepoints)",
+    planned: true,
+    badge: "in signals",
+  },
   webcams: { name: "Webcams", group: "Ground", accent: "#ec4899", source: "Windy.com — global webcams", fresh: "webcams" },
-  weather: { name: "Weather", group: "Sky", accent: "#0284c7", source: "Radar & events", planned: true },
+  // Same correction, and the old string was wrong twice over: "events" ARE live
+  // (lib/signals/eonet.ts storms + floods, tropical-cyclones.ts, gdacs.ts) and "radar"
+  // is not built anywhere in the repo — the only radar in the tree is a PRD.
+  weather: {
+    name: "Weather",
+    group: "Sky",
+    accent: "#0284c7",
+    source: "Live in Global signals — storms, floods, cyclones & city weather",
+    planned: true,
+    badge: "in signals",
+  },
   countries: { name: "Borders & names", group: "Reference", accent: "#94a3b8", source: "Natural Earth — clickable countries" },
 };
 
@@ -192,7 +226,7 @@ function LayerRow({
           <span className="tn-layer-name">{meta.name}</span>
           <span className="tn-layer-source">{meta.source}</span>
         </div>
-        <span className="tn-soon">soon</span>
+        <span className="tn-soon">{meta.badge ?? "soon"}</span>
       </div>
     );
   }
@@ -455,7 +489,7 @@ export default function SourceCatalog() {
     <aside className="tn-rail" aria-label="Sources">
       <div className="tn-rail-header">
         <span className="tn-rail-title">Sources</span>
-        <span className="tn-cat-count" title="Sources docked as widgets">
+        <span className="tn-cat-count" title="Sources and group roll-ups docked as widgets">
           {widgetCount} ▦
         </span>
         <button type="button" className="tn-rail-collapse" onClick={() => setRailOpen(false)} aria-label="Collapse sources">
@@ -476,7 +510,13 @@ export default function SourceCatalog() {
 
       <div className="tn-presets" role="group" aria-label="Layer presets">
         {LAYER_PRESETS.map((p) => (
-          <button key={p.id} type="button" className="tn-preset-btn" onClick={() => layersStore.applyPreset(p.id)}>
+          <button
+            key={p.id}
+            type="button"
+            className="tn-preset-btn"
+            title={p.hint}
+            onClick={() => layersStore.applyPreset(p.id)}
+          >
             {p.label}
           </button>
         ))}

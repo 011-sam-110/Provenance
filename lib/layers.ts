@@ -11,8 +11,10 @@
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
-// Active layers have a live data source today; planned layers render as disabled
-// "coming soon" rows in the rail (leaving room without shipping a dead toggle).
+// Active layers have a live CORE map layer today. The two "planned" keys never got
+// one — but their data DID ship, as signal layers (lib/signals/ais.ts and
+// lib/signals/weather.ts, both in SIGNALS), so the rail renders them as dimmed,
+// toggle-less signposts pointing at Global signals, NOT as "coming soon".
 export type LayerKey = "cameras" | "satellites" | "planes" | "ships" | "webcams" | "weather" | "countries";
 export type LayerState = Record<LayerKey, boolean>;
 
@@ -37,17 +39,23 @@ const PERSIST_KEY = "tn.layers.v1";
 const PERSIST_VERSION = 1;
 
 export type PresetId = "all" | "none" | "cameras" | "air-space";
-export const LAYER_PRESETS: { id: PresetId; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "none", label: "None" },
-  { id: "cameras", label: "Cameras" },
-  { id: "air-space", label: "Air + space" },
+// Labels have to match presetState() below, which they did not: the "all" preset
+// switches cameras/planes/satellites and forces webcams OFF, and "none" deliberately
+// leaves the countries reference layer ON. A button labelled "All" that turns a
+// visible layer off is a false claim, so the label says what it does and `hint`
+// (rendered as the button's title) states the exception outright.
+export const LAYER_PRESETS: { id: PresetId; label: string; hint: string }[] = [
+  { id: "all", label: "Core", hint: "Cameras, planes and satellites on — webcams stay opt-in" },
+  { id: "none", label: "None", hint: "Every data layer off — borders and names stay on" },
+  { id: "cameras", label: "Cameras", hint: "Road cameras only" },
+  { id: "air-space", label: "Air + space", hint: "Planes and satellites only" },
 ];
 
 // Presets switch the core cameras/planes/satellites layers. Webcams is active
 // (a live toggle) but stays OUT of the presets on purpose: it is a keyed,
 // rate-limited global sample, so it stays opt-in rather than being pulled in by
-// a one-tap "All". Planned layers (ships/weather) have no data yet.
+// a one-tap preset. ships/weather have no core layer to switch (their data lives in
+// lib/signals), so a preset can never turn them on and they stay false throughout.
 export function presetState(id: PresetId): LayerState {
   const off: LayerState = { ...DEFAULT_STATE, cameras: false, satellites: false, planes: false };
   switch (id) {
