@@ -1,9 +1,16 @@
 // components/console/WidgetFrame.tsx
 "use client";
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
-import type { WidgetInstance } from "@/lib/console/types";
+import type { SegmentId, WidgetInstance } from "@/lib/console/types";
 import { shellLayoutStore } from "@/lib/console/store";
-import { spanFromPointer } from "@/lib/console/resize";
+import {
+  activePreset,
+  spanFromPointer,
+  HEIGHT_PRESETS,
+  HEIGHT_PRESET_TOLERANCE_PX,
+  WIDTH_PRESETS,
+} from "@/lib/console/resize";
+import { nudgeTarget, otherSegments, sendToTarget, SEGMENT_LABEL } from "@/lib/console/move";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -96,6 +103,25 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
     e.dataTransfer.setData("text/tn-widget", instance.id);
     e.dataTransfer.effectAllowed = "move";
   };
+
+  // ── Explicit move + size, so neither needs a drag ────────────────────────
+  // Dragging still works, but it was the ONLY way to move or size a card, and a
+  // draggable header with no grab affordance is a feature most people never find.
+  // These read the layout fresh at click time (the menu can outlive a re-order).
+  const layoutNow = () => shellLayoutStore.get();
+  const canNudge = (dir: -1 | 1) => nudgeTarget(layoutNow(), instance.id, dir) != null;
+  const nudge = (dir: -1 | 1) => {
+    const t = nudgeTarget(layoutNow(), instance.id, dir);
+    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
+  };
+  const sendTo = (seg: SegmentId) => {
+    const t = sendToTarget(layoutNow(), instance.id, seg);
+    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
+    setMenuOpen(false);
+  };
+  const destinations = otherSegments(layoutNow(), instance.id);
+  const activeWidth = activePreset(WIDTH_PRESETS, instance.width);
+  const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
   const onResizePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     const startY = e.clientY, startH = instance.height;
@@ -136,6 +162,13 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
       <header className="tn-cw-head" draggable onDragStart={onDragStart}>
+        {/* The grab affordance the drag never had. Purely a signpost — the whole
+            header is still the drag source — but without something that LOOKS
+            draggable, the drag may as well not exist. aria-hidden because the
+            same move is available as real buttons in the ⋯ menu, which is what a
+            keyboard or screen-reader user should get; a "drag me" control that
+            cannot be operated without a pointer is not worth announcing. */}
+        <span className="tn-cw-grip" aria-hidden="true" title="Drag to move, or use ⋯ → Move">⠿</span>
         <span className="tn-cw-icon" aria-hidden="true">{type.icon}</span>
         {/* Real heading (not a styled span) so a screen reader gets a stop for
             every widget and can jump by heading. margin/fontSize are reset
@@ -216,7 +249,64 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
       )}
 
       {menuOpen && (
-        <div className="tn-cw-menu-pop" role="menu">
+        // Not role="menu" any more. A menu's children are expected to be
+        // menuitems that fire and close; half of this panel is now stateful
+        // toggles (the size chips carry aria-pressed), and a pressed menuitem is
+        // a contradiction most screen readers announce badly. A labelled group of
+        // ordinary buttons describes what this actually is.
+        <div className="tn-cw-menu-pop" role="group" aria-label={`${type.title} options`}>
+          {/* MOVE — the drag, as buttons. One click, no aim, keyboard-reachable. */}
+          <div className="tn-cw-menu-sec">Move</div>
+          <div className="tn-cw-menu-row">
+            {destinations.map((seg) => (
+              <button
+                key={seg}
+                className="tn-cw-chip"
+                title={`Send this widget to the ${SEGMENT_LABEL[seg].toLowerCase()}`}
+                onClick={() => sendTo(seg)}
+              >
+                {seg === "left" ? "◧" : seg === "right" ? "◨" : "▤"} {SEGMENT_LABEL[seg]}
+              </button>
+            ))}
+          </div>
+          <div className="tn-cw-menu-row">
+            <button className="tn-cw-chip" disabled={!canNudge(-1)} title="Move one place earlier in this column" onClick={() => nudge(-1)}>▲ Up</button>
+            <button className="tn-cw-chip" disabled={!canNudge(1)} title="Move one place later in this column" onClick={() => nudge(1)}>▼ Down</button>
+          </div>
+
+          {/* SIZE — the same sizes the drag handles snap to, as named targets. */}
+          <div className="tn-cw-menu-sec">Width</div>
+          <div className="tn-cw-menu-row">
+            {WIDTH_PRESETS.map((p) => (
+              <button
+                key={p.label}
+                className="tn-cw-chip"
+                aria-pressed={activeWidth === p.value}
+                data-on={activeWidth === p.value}
+                title={p.hint}
+                onClick={() => shellLayoutStore.resizeWidth(instance.id, p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="tn-cw-menu-sec">Height</div>
+          <div className="tn-cw-menu-row">
+            {HEIGHT_PRESETS.map((p) => (
+              <button
+                key={p.label}
+                className="tn-cw-chip"
+                aria-pressed={activeHeight === p.value}
+                data-on={activeHeight === p.value}
+                title={p.hint}
+                onClick={() => shellLayoutStore.resizeWidget(instance.id, p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="tn-cw-menu-sep" />
           <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" })); setMenuOpen(false); }}>⧉ Duplicate</button>
           <button onClick={() => { shellLayoutStore.configure(instance.id, { alertStyle: alertStyle === "top" ? "feed" : "top" }); setMenuOpen(false); }}>
             ⚡ Alerts: {alertStyle === "top" ? "on top" : "in feed"}
@@ -253,9 +343,30 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
               <ReportCtx.Provider value={onReport}><Body instanceId={instance.id} config={cfg} /></ReportCtx.Provider>
             </WidgetErrorBoundary>
           </div>
-          <div className="tn-cw-resize" onPointerDown={onResizePointerDown} title="Drag to resize height" />
-          <div className="tn-cw-resize-x" onPointerDown={onResizeWidthPointerDown} title="Drag to resize width" />
-          <div className="tn-cw-resize-xy" onPointerDown={onResizeCornerPointerDown} title="Drag to resize" />
+          {/* Resize handles. They were 6px targets with no resting appearance, so
+              you had to already know they were there and then hit them — WCAG's
+              minimum target is 24px, and these are now 14–20px with the widget's
+              own hover as the reveal. Double-click resets to the widget's
+              registered default, which is the cheap undo a drag has never had.
+              The named sizes in ⋯ → Width/Height do the same job with no aim. */}
+          <div
+            className="tn-cw-resize"
+            onPointerDown={onResizePointerDown}
+            onDoubleClick={() => shellLayoutStore.resizeWidget(instance.id, type.defaultHeight)}
+            title="Drag to resize height · double-click to reset"
+          />
+          <div
+            className="tn-cw-resize-x"
+            onPointerDown={onResizeWidthPointerDown}
+            onDoubleClick={() => shellLayoutStore.resizeWidth(instance.id, 12)}
+            title="Drag to resize width · double-click for full width"
+          />
+          <div
+            className="tn-cw-resize-xy"
+            onPointerDown={onResizeCornerPointerDown}
+            onDoubleClick={() => { shellLayoutStore.resizeWidget(instance.id, type.defaultHeight); shellLayoutStore.resizeWidth(instance.id, 12); }}
+            title="Drag to resize · double-click to reset"
+          />
         </>
       )}
     </div>

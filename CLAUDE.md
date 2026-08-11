@@ -40,6 +40,9 @@ Deployed product = `origin/main`.
 - `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (11 feeds).
 - `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
 - `lib/console/*` — widget registry, presets (**6 boards** in `presets.ts`), store, share (`?c=` layout URL).
+  `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
+  `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
+  (the Source Catalog's ＋ used to, which is why it silently did nothing).
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
 
@@ -61,7 +64,8 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 6 | `BUILTIN_PRESETS` in `lib/console/presets.ts` |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Unit tests | 956 cases / 191 files | `npx vitest list` (collects without running — safe alongside other agents) |
+| Widget types | 69 registered (2026-08-11) | `listWidgetTypes()` after importing `lib/console/widgets` — asserted in `tests/unit/widget-explainers.test.ts` |
+| Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from OpenSky, not adsb.lol.** `lib/sources/opensky.ts` pulls one global

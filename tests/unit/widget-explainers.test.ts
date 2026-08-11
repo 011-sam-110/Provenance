@@ -6,11 +6,14 @@ import "@/lib/console/widgets";
 import { listWidgetTypes } from "@/lib/console/registry";
 import {
   allWidgetExplainers,
+  isGeneratedCardId,
   orphanedWidgetExplainerIds,
   resolveWidgetHelp,
   undocumentedWidgetTypeIds,
   widgetExplainerFor,
 } from "@/lib/console/help";
+import { catalogByGroup, CORE_IDS } from "@/lib/sources/catalog";
+import { genericCoreIds } from "@/lib/console/sourceWidgets";
 import { allExplainers } from "@/lib/signals/explain";
 import { SIGNALS } from "@/lib/signals/registry";
 import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
@@ -51,11 +54,44 @@ describe("coverage — no widget ships without a trust card", () => {
     expect(orphanedWidgetExplainerIds(ids)).toEqual([]);
   });
 
-  it("accounts for every registered widget exactly once — signal layer or bespoke entry", () => {
+  it("accounts for every registered widget exactly once — one of the three card families", () => {
+    // Three families, no overlap and no remainder: a signal layer, a card GENERATED
+    // from the source catalog (the roll-ups + generic leaves the Source Catalog's ＋
+    // creates — see lib/console/sourceCards.ts), or a hand-written bespoke entry.
     const signalTypes = ids.filter((id) => id.startsWith("signal:"));
     expect(signalTypes.length).toBe(SIGNALS.length);
     expect(allExplainers().length).toBe(SIGNALS.length);
-    expect(ids.length).toBe(SIGNALS.length + allWidgetExplainers().length);
+
+    const catalogTypes = ids.filter((id) => id.startsWith("rollup:") || id.startsWith("source:"));
+    // One roll-up per catalog category, plus a leaf for each core source that no
+    // bespoke widget already shows. Derived from the catalog, not restated here.
+    expect(catalogTypes.length).toBe(catalogByGroup().length + genericCoreIds(CORE_IDS).length);
+
+    const bespoke = ids.filter((id) => !isGeneratedCardId(id));
+    expect(bespoke.length).toBe(allWidgetExplainers().length);
+    expect(signalTypes.length + catalogTypes.length + bespoke.length).toBe(ids.length);
+  });
+
+  it("gives every generated catalog card the same real content a bespoke one needs", () => {
+    for (const id of ids.filter((x) => x.startsWith("rollup:") || x.startsWith("source:"))) {
+      const e = widgetExplainerFor(id)!;
+      expect(e, `${id} resolves no trust card`).toBeDefined();
+      expect(e.whatItShows.length, `${id}.whatItShows is too thin`).toBeGreaterThan(40);
+      expect(e.method.length, `${id}.method is too thin`).toBeGreaterThan(25);
+      expect(e.limitations.length, `${id} lists no limitation`).toBeGreaterThan(0);
+      for (const l of e.limitations) {
+        expect(l.length, `${id} has a throwaway limitation: "${l}"`).toBeGreaterThan(40);
+      }
+    }
+  });
+
+  it("admits a category roll-up sums counts that share no unit", () => {
+    // The one-big-number layout implies a measurement the sum is not. Softening
+    // this is how a dashboard starts lying politely.
+    const e = widgetExplainerFor(`rollup:${catalogByGroup()[0].group}`)!;
+    expect(e.confidence).toBe("derived");
+    expect(e.limitations.join(" ")).toMatch(/do not share a unit/i);
+    expect(e.limitations.join(" ")).toMatch(/total goes down without anything having happened/i);
   });
 
   it("never falls back to the generic 'A live monitor panel' line", () => {

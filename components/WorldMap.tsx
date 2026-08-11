@@ -42,6 +42,7 @@ import {
   COUNTRY_HIT_LAYER,
   PIN_HIT_LAYERS,
   isCountryScopedSignal,
+  resolveLineHit,
   resolveMapClickTarget,
   type MapClickHit,
 } from "@/lib/map/hitTest";
@@ -114,6 +115,13 @@ const SIGNAL_ICON_LAYER = "signal-icons"; // white hazard pictogram drawn over t
 const SIGNAL_LABEL = "signal-labels";
 const SIGNAL_LINE_SRC = "signal-lines";
 const SIGNAL_LINE_LAYER = "signal-line-paths";
+// The cable you are pointing at, redrawn thick and opaque. With ~700 routes
+// crossing each other, knowing a cable is under the cursor is not the same as
+// knowing WHICH one — this answers that before the click, not after it.
+const SIGNAL_LINE_HOVER = "signal-line-hover";
+// Transparent, much wider copy of the line layer, used only as a hit target.
+// See resolveLineHit in lib/map/hitTest.ts for what it is allowed to claim.
+const SIGNAL_LINE_HIT = "signal-line-hit";
 const SIGNAL_FILL_SRC = "signal-fills";
 const SIGNAL_FILL_LAYER = "signal-fill-areas";
 const SIGNAL_FILL_OUTLINE = "signal-fill-outline";
@@ -229,6 +237,10 @@ export default function WorldMap() {
   const [pts, setPts] = useState<Pt[]>([]);
   // Right-click "Add pin here" menu — screen position + the geo point under it.
   const [pinMenu, setPinMenu] = useState<{ x: number; y: number; lat: number; lon: number } | null>(null);
+  // The cable route under the cursor — name + where to float it. Paired with the
+  // SIGNAL_LINE_HOVER highlight so "which of these 697 lines am I about to open?"
+  // is answered before the click rather than by it.
+  const [lineHover, setLineHover] = useState<{ x: number; y: number; label: string } | null>(null);
 
   // Live-layer data is lifted into state from gating <…Feed> children so that a
   // hidden layer's hook (and its fetch/tick) is unmounted entirely — see the
@@ -816,8 +828,43 @@ export default function WorldMap() {
           layout: { "line-cap": "round", "line-join": "round" },
           paint: {
             "line-color": ["get", "color"],
-            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.6, 4, 1.1, 10, 2],
-            "line-opacity": 0.75,
+            // Nudged up from 0.6/1.1/2. At the old low-zoom width a cable was a
+            // sub-pixel ghost on a satellite basemap — visible enough to look
+            // like an artefact, not enough to look like a thing you can open.
+            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 0.9, 4, 1.6, 10, 2.6],
+            "line-opacity": 0.8,
+          },
+        });
+      }
+      // The hovered route, over the top: same geometry, thick and opaque. Filtered
+      // to nothing until a pointer resolves to a cable (setFilter in wireInteractions).
+      if (!map.getLayer(SIGNAL_LINE_HOVER)) {
+        map.addLayer({
+          id: SIGNAL_LINE_HOVER,
+          type: "line",
+          source: SIGNAL_LINE_SRC,
+          layout: { "line-cap": "round", "line-join": "round" },
+          filter: ["==", ["get", "id"], "__none__"],
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 2.6, 4, 3.4, 10, 5],
+            "line-opacity": 1,
+          },
+        });
+      }
+      // The hit target. `line-opacity: 0` still renders the geometry for
+      // queryRenderedFeatures, which is the whole trick — it must NOT be
+      // `visibility: none`, which would take it out of hit-testing too.
+      if (!map.getLayer(SIGNAL_LINE_HIT)) {
+        map.addLayer({
+          id: SIGNAL_LINE_HIT,
+          type: "line",
+          source: SIGNAL_LINE_SRC,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": "#000000",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 12, 6, 16, 12, 22],
+            "line-opacity": 0,
           },
         });
       }
@@ -1028,6 +1075,57 @@ export default function WorldMap() {
     map.on("click", SIGNAL_ICON_LAYER, signalClick);
     map.on("click", SIGNAL_LINE_LAYER, signalClick);
     map.on("click", SIGNAL_FILL_LAYER, signalClick);
+
+    // ── Cables: a hairline you can actually hit ────────────────────────────
+    // The four handlers above only fire when the pointer is ON the drawn
+    // geometry. For a 1px cable route that is a coin-flip even in the busiest
+    // ocean, so the layer's dossier — owners, ready-for-service date, length,
+    // every landing point — was effectively unreachable.
+    //
+    // SIGNAL_LINE_HIT is a transparent, much wider copy of the same source.
+    // resolveLineHit decides whether this wide target may claim the event, or
+    // whether a pin or the country underneath has the better claim; because
+    // both the click and the hover ask it, the cable that lights up under the
+    // cursor is always the one a click will open.
+    const lineFeatureAt = (point: maplibregl.MapLayerMouseEvent["point"]) => {
+      if (!map.getLayer(SIGNAL_LINE_HIT)) return null;
+      const lineHits = map.queryRenderedFeatures(point, { layers: [SIGNAL_LINE_HIT] });
+      if (lineHits.length === 0) return null;
+      const hits = hitsAt(map, point);
+      return resolveLineHit({
+        lineHits,
+        onDrawnLine: hits.some((h) => h.layer === SIGNAL_LINE_LAYER),
+        otherPin: hits.some((h) => h.layer !== SIGNAL_LINE_LAYER && h.layer !== COUNTRY_FILL_LAYER),
+        overCountry: hits.some((h) => h.layer === COUNTRY_FILL_LAYER),
+      });
+    };
+    const clearLineHover = () => {
+      if (map.getLayer(SIGNAL_LINE_HOVER)) map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], "__none__"]);
+      setLineHover(null);
+    };
+    map.on("mousemove", SIGNAL_LINE_HIT, (e) => {
+      const f = lineFeatureAt(e.point);
+      const props = f?.properties as { id?: string; label?: string } | undefined;
+      if (!f || !props?.id) {
+        clearLineHover();
+        return;
+      }
+      map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], props.id]);
+      map.getCanvas().style.cursor = "pointer";
+      setLineHover({ x: e.point.x, y: e.point.y, label: props.label ?? "Cable" });
+    });
+    map.on("mouseleave", SIGNAL_LINE_HIT, clearLineHover);
+    map.on("movestart", clearLineHover);
+    map.on("click", SIGNAL_LINE_HIT, (e) => {
+      // The drawn-line handler above already owns a click that landed on the
+      // geometry; this one exists for the near-misses it cannot see.
+      const hits = hitsAt(map, e.point);
+      if (hits.some((h) => h.layer === SIGNAL_LINE_LAYER)) return;
+      const f = lineFeatureAt(e.point);
+      const id = (f?.properties as { id?: string } | undefined)?.id;
+      const sig = id ? signalsRef.current.find((s) => s.id === id) : undefined;
+      if (sig) overlay.open(sig);
+    });
 
     // Countries — the fill covers every landmass and sits UNDER every pin layer,
     // so this fires for pin clicks too. lib/map/hitTest is the single arbiter both
@@ -1589,6 +1687,15 @@ export default function WorldMap() {
           {loadStatus.kind === "lost" && (
             <span>The map couldn&apos;t start in this browser. Reload the page to try again.</span>
           )}
+        </div>
+      )}
+
+      {/* The hovered cable's name, floating at the cursor. Presentational only —
+          the dossier it opens is the accessible surface, and a tooltip that
+          tracks a pointer has no keyboard equivalent to announce. */}
+      {lineHover && (
+        <div className="tn-linetip" style={{ left: lineHover.x, top: lineHover.y }} aria-hidden>
+          {lineHover.label}
         </div>
       )}
 

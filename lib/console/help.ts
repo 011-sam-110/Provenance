@@ -27,6 +27,8 @@
 //     fires, a routing source that shut down, a geolocation vendor we do not use).
 
 import { explainerFor, type Confidence, type LayerExplainer } from "@/lib/signals/explain";
+import { ROLLUP_WIDGET_PREFIX, SOURCE_WIDGET_PREFIX } from "@/lib/console/sourceWidgets";
+import { rollupExplainer, sourceExplainer } from "@/lib/console/sourceCards";
 
 /** What a widget declares for its ? popover. */
 export interface WidgetHelp {
@@ -340,17 +342,35 @@ export function allWidgetExplainers(): WidgetExplainer[] {
 /**
  * The trust card for a WIDGET TYPE id.
  *
- * `signal:<layer>` resolves through to the signal registry's explainer (37 layers,
- * guaranteed complete by tests/unit/signals-explain.test.ts); everything else comes
- * from WIDGET_EXPLAINERS above. Returns `undefined` rather than a "not documented
- * yet" placeholder — that placeholder is exactly how a trust card ends up blank on
- * most of a board, and the coverage test makes the undefined case unreachable for
- * anything actually registered.
+ * Three families, each guaranteed complete by its own test:
+ *   • `signal:<layer>`  → the signal registry's explainer (tests/unit/signals-explain)
+ *   • `rollup:<group>` / `source:<id>` → GENERATED from the source catalog, because
+ *     the widgets themselves are (lib/console/sourceCards.ts)
+ *   • everything else   → the hand-written WIDGET_EXPLAINERS above
+ *
+ * Returns `undefined` rather than a "not documented yet" placeholder — that
+ * placeholder is exactly how a trust card ends up blank on most of a board, and
+ * the coverage test makes the undefined case unreachable for anything registered.
  */
 export function widgetExplainerFor(typeId: string | undefined): LayerExplainer | undefined {
   if (!typeId) return undefined;
   if (typeId.startsWith("signal:")) return explainerFor(typeId.slice("signal:".length));
+  if (typeId.startsWith(ROLLUP_WIDGET_PREFIX)) {
+    return rollupExplainer(typeId.slice(ROLLUP_WIDGET_PREFIX.length), typeId);
+  }
+  if (typeId.startsWith(SOURCE_WIDGET_PREFIX)) {
+    return sourceExplainer(typeId.slice(SOURCE_WIDGET_PREFIX.length), typeId);
+  }
   return BY_TYPE_ID.get(typeId);
+}
+
+/** Widget type ids whose trust card is generated rather than hand-written. */
+export function isGeneratedCardId(typeId: string): boolean {
+  return (
+    typeId.startsWith("signal:") ||
+    typeId.startsWith(ROLLUP_WIDGET_PREFIX) ||
+    typeId.startsWith(SOURCE_WIDGET_PREFIX)
+  );
 }
 
 /** Registered widget type ids with no trust card. The build fails when non-empty. */

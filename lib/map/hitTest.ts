@@ -96,3 +96,48 @@ export function resolveMapClickTarget(hits: readonly MapClickHit[]): MapClickTar
   if (countryScopedPin) return "pin";
   return "none";
 }
+
+// ── Widened hit target for LINE layers (submarine cables) ────────────────────
+//
+// A cable route renders 0.6–2px wide. That is a fine way to DRAW 697 overlapping
+// routes and a hopeless thing to CLICK: the dossier behind it is rich (owners,
+// RFS date, length, every landing point) and effectively unreachable, so the
+// layer reads as decoration. The fix is the usual one — a transparent, much wider
+// line layer over the top, used only for hit-testing — and the only interesting
+// part is what that wider target is allowed to steal.
+//
+// It must not steal anything. Widening a target turns "I clicked the cable" into
+// "I clicked NEAR the cable", and near a coastline that would swallow country
+// clicks the map already answers correctly. So:
+//   • any other pin under the cursor wins outright — pins are exact, this is not;
+//   • the country under the cursor wins, UNLESS the pointer is genuinely on the
+//     drawn line, which is the pre-existing behaviour and stays untouched;
+//   • over open water, where there is no country to lose, the wide target is free
+//     to do its job.
+// Cables live in water, so the generous case is the common one and the borrowed
+// pixels are given straight back on land.
+
+export interface LineHitInput<T> {
+  /** Line features under the WIDE hit layer, topmost first. */
+  lineHits: readonly T[];
+  /** Is the cursor on the drawn (visible) line itself? */
+  onDrawnLine: boolean;
+  /** Is a non-line pin (camera, plane, signal dot…) under the cursor? */
+  otherPin: boolean;
+  /** Is a country polygon under the cursor? */
+  overCountry: boolean;
+}
+
+/**
+ * Which line feature a click/hover at this point resolves to, or null when
+ * something with a better claim owns it. Used for BOTH the click and the hover
+ * highlight, so the cable that lights up is always the one a click would open.
+ */
+export function resolveLineHit<T>(input: LineHitInput<T>): T | null {
+  const top = input.lineHits[0];
+  if (top === undefined) return null;
+  if (input.otherPin) return null;
+  if (input.onDrawnLine) return top;
+  if (input.overCountry) return null;
+  return top;
+}
