@@ -15,3 +15,9 @@ next-env.d.ts
 
 # Isolated verification builds (TN_DIST_DIR)
 .next-*/
+
+# Never let an ad-hoc credential probe land in the repo
+tok.json
+login_out.json
+me.json
+read*.json
