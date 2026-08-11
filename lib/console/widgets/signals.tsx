@@ -19,8 +19,93 @@ import { projectSignal } from "@/lib/console/signals/signalCard";
 import { signalHelp } from "@/lib/console/help";
 import { useSignalFeed } from "@/lib/console/signals/useSignalFeed";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import type { StatusEntry } from "@/lib/sources/statusReport";
 import { MetricBar } from "@/components/MetricBar";
 import { makeSignalDetail } from "./signals.detail";
+
+/**
+ * The "you can't have this right now" badge for one capability's status.
+ *
+ * PURE and exported so both places that need to say this — this widget's own
+ * empty-state message, and the rail row badge in components/shell/SourceCatalog.tsx
+ * (imported from here) — agree on the wording, and so every CapabilityState is
+ * handled in exactly one spot.
+ *
+ * `locked` and `refused` used to render IDENTICALLY: a key-gated layer with no
+ * key, and a key-gated layer whose credential an upstream actively rejected,
+ * both showed nothing at all. That erases the difference between "we never
+ * asked" and "we asked and were turned away" — precisely the class of lie this
+ * product exists not to tell. They get distinct icons, distinct short text, and
+ * a `long` sentence built from what was actually observed (never invented).
+ *
+ * `keyless`, `configured`, `upgradable` and `enhanced` earn no badge — all four
+ * describe a capability that is working or keyless, and badging a working
+ * feature would say a live thing is dead, the same class of error in reverse.
+ *
+ * The switch is exhaustive on purpose: adding a 7th CapabilityState to
+ * lib/sources/keyRequirements.ts without handling it here fails `tsc`, not
+ * silently renders blank. See tests/unit/capability-badge.test.ts.
+ */
+export interface CapabilityBadge {
+  kind: "locked" | "refused";
+  /** Compact glyph for a pill or an inline icon. */
+  icon: string;
+  /** Short label — plain, never a vague "unavailable". */
+  short: string;
+  /** Full sentence(s). Safe as a tooltip title or a widget-body paragraph. */
+  long: string;
+}
+
+export function capabilityBadge(
+  status: Pick<StatusEntry, "state" | "missingEnv" | "degrades" | "obtain" | "refusal"> | null | undefined,
+): CapabilityBadge | null {
+  if (!status) return null;
+  switch (status.state) {
+    case "locked": {
+      const need = status.missingEnv.length > 0 ? status.missingEnv.join(" + ") : "a key";
+      return {
+        kind: "locked",
+        icon: "🔑",
+        short: "needs a key",
+        long: [
+          `Locked — this deployment has no ${need}.`,
+          status.degrades,
+          status.obtain,
+          "Holding a key is not the same as the upstream accepting it — the freshness dot above says whether data is actually arriving.",
+        ]
+          .filter(Boolean)
+          .join(" "),
+      };
+    }
+    case "refused": {
+      const who = status.refusal?.host ?? "the upstream";
+      return {
+        kind: "refused",
+        icon: "⛔",
+        short: "credential refused",
+        long: [
+          // `refusal.observed` is the same sentence /api/status publishes, built
+          // from an actual 401/402/403 this process saw — never a guess, and
+          // never worded as "unavailable".
+          status.refusal?.observed ?? `${who} refused this deployment's credential.`,
+          status.degrades,
+          status.obtain,
+        ]
+          .filter(Boolean)
+          .join(" "),
+      };
+    }
+    case "keyless":
+    case "configured":
+    case "upgradable":
+    case "enhanced":
+      return null;
+    default: {
+      const exhaustive: never = status.state;
+      return exhaustive;
+    }
+  }
+}
 
 const GROUP_ICON: Record<string, string> = {
   Synthesis: "🧭",
@@ -82,6 +167,10 @@ function makeSignalBody(source: SignalSource) {
     // this deployment cannot fetch at all. That is the honesty machinery lying in
     // the one place it must not, and the `dormant` state existed unwired.
     const capability = useCapabilityStatus(source.id);
+    // Same decision the rail badge renders (capabilityBadge, above) — null for
+    // every state except locked/refused, so this stays silent for the 34 of 35
+    // states that need no explanation.
+    const badge = capabilityBadge(capability);
 
     const projected = useMemo(
       () =>
@@ -120,11 +209,13 @@ function makeSignalBody(source: SignalSource) {
     if (status === "error" && projected.shown === 0) {
       return <p className="tn-w-empty">{source.label} unavailable.</p>;
     }
-    if (capability?.state === "locked") {
+    if (badge) {
+      // `refused` reads as a rejection, never as the same vague "unavailable"
+      // a locked layer gets — the wording is built in capabilityBadge from
+      // what was actually observed (a real 401/402/403), not guessed.
       return (
-        <p className="tn-w-empty">
-          {source.label} needs {capability.missingEnv.join(" + ")}, which this deployment does not have.
-          {capability.degrades ? ` ${capability.degrades}` : ""}
+        <p className={`tn-w-empty tn-w-capstate tn-w-capstate-${badge.kind}`}>
+          <span aria-hidden>{badge.icon}</span> {source.label}: {badge.long}
         </p>
       );
     }

@@ -44,6 +44,7 @@ import { toggleTileDock } from "@/lib/widgets/dock";
 import { sourceKey, rollupKey } from "@/lib/widgets/registry";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import { capabilityBadge } from "@/lib/console/widgets/signals";
 
 interface LayerMeta {
   name: string;
@@ -298,31 +299,35 @@ function SignalFreshNote({ id, refreshMs }: { id: string; refreshMs: number }) {
 }
 
 /**
- * "Locked — needs a key" for a layer this deployment cannot fetch.
+ * "Locked — needs a key" or "credential refused" for a layer this deployment
+ * cannot use right now. The state → badge decision is the shared
+ * capabilityBadge() (lib/console/widgets/signals.tsx) so this rail row and the
+ * widget's own empty-state message never disagree about what a state means.
  *
- * Without it, a key-gated layer renders zero and is indistinguishable from a dead
- * upstream or a genuinely quiet feed — the visitor concludes the product is
- * broken. The badge is deliberately grey, not red: a locked layer is a
- * configuration fact, not a fault.
+ * Without it, a key-gated OR credential-refused layer renders zero and is
+ * indistinguishable from a dead upstream or a genuinely quiet feed — the
+ * visitor concludes the product is broken. Locked stays grey — a configuration
+ * fact, not a fault. Refused gets the same red the freshness chip uses for
+ * "down" elsewhere in this app: it is an observed rejection, not a config gap,
+ * and reads as a fault because it is one — the upstream's, not necessarily ours.
+ *
+ * "upgradable"/"keyless"/"configured"/"enhanced" are deliberately NOT badged:
+ * those layers work (or are keyless), so a badge in the layer list would read
+ * as a fault. Saying a working feature is dead is the same error as saying a
+ * dead one is live.
  */
 function LockedBadge({ id }: { id: string }) {
   const status = useCapabilityStatus(id);
-  if (!status) return null;
-  // "upgradable" is deliberately NOT badged here: the layer works keylessly and a
-  // key would only improve it, so a badge in the layer list would read as a fault.
-  // Saying a working feature is dead is the same error as saying a dead one is live.
-  if (status.state !== "locked") return null;
-  const title = [
-    `Locked — this deployment has no ${status.missingEnv.join(" + ")}.`,
-    status.degrades,
-    status.obtain,
-    "Holding a key is not the same as the upstream accepting it — the freshness dot above says whether data is actually arriving.",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const badge = capabilityBadge(status);
+  if (!badge) return null;
   return (
-    <span className="tn-layer-locked" title={title}>
-      🔑 needs a key
+    <span
+      className="tn-layer-locked"
+      data-state={badge.kind}
+      style={badge.kind === "refused" ? { color: "var(--tn-down-ink)", borderColor: "var(--tn-down)" } : undefined}
+      title={badge.long}
+    >
+      {badge.icon} {badge.short}
     </span>
   );
 }
