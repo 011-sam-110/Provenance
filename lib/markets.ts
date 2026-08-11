@@ -62,7 +62,18 @@ export interface MarketSection {
   source: string;
   /** True when the section is key-gated and the key isn't set; rows will be empty. */
   dormant?: boolean;
-  /** Shown when dormant — which env var unlocks it. */
+  /**
+   * True when `rows` are a LAST-GOOD snapshot carried over because this section
+   * failed to refresh — real numbers, but not current ones.
+   *
+   * Deliberately NOT `dormant`: dormant hides the rows and shows `note` instead,
+   * which is right for "no key, nothing to show" and wrong here, where we do have
+   * data and simply must not pass it off as live. Every renderer must surface
+   * `note` when this is set — a stale row that looks identical to a fresh one is
+   * the same lie as a frozen feed still saying "live".
+   */
+  stale?: boolean;
+  /** Shown when dormant OR stale — which env var unlocks it, or why it is stale. */
   note?: string;
   rows: MarketRow[];
 }

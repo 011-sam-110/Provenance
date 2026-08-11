@@ -125,6 +125,11 @@ export default function MarketsPanel({ docked = false }: { docked?: boolean } = 
             <span className="tn-markets-section-label">{section.label}</span>
             <span className="tn-markets-section-source">{section.source}</span>
           </div>
+          {/* A stale section keeps its rows but must say so, or carried-over numbers
+              read as live ones. See MarketSection.stale in lib/markets.ts. */}
+          {section.stale && section.note ? (
+            <p className="tn-markets-stale">{section.note}</p>
+          ) : null}
           {section.dormant ? (
             <p className="tn-markets-dormant">{section.note ?? "Add a key to enable."}</p>
           ) : section.rows.length === 0 ? (

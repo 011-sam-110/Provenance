@@ -11,14 +11,20 @@ import {
   type MarketSection,
   type YahooChart,
 } from "@/lib/markets";
+import { FRED_SERIES, fredObservationsUrl, parseFredValue } from "@/lib/markets/fred";
+import { SECTION_SPECS, foldSections } from "@/lib/markets/sections";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/markets — a calm, multi-section markets snapshot. Two sections are
 // always live and keyless (crypto · CoinGecko, FX · Frankfurter/ECB); two are
 // key-gated and render DORMANT until configured (equities · Finnhub, macro · FRED).
-// A ≥60s server cache shields the upstreams. Dormant-safe throughout: any failure
-// serves the last good snapshot or an empty section — never a 5xx, never fabricated.
+// Dormant-safe throughout: any failure serves the last-good snapshot for that
+// SECTION or an honestly-labelled empty section — never a 5xx, never fabricated,
+// and a stale section always says so rather than posing as fresh (see
+// resolveSection below). A deployment-wide Next Data Cache shields the upstreams
+// (see getSnapshot below) so a burst of visitors triggers at most one upstream
+// round-trip per revalidate window, not one per request.
 
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 const CACHE_TTL_MS = 60_000;
@@ -36,12 +42,6 @@ const EQUITIES = [
   { symbol: "AAPL", name: "Apple" },
   { symbol: "MSFT", name: "Microsoft" },
   { symbol: "NVDA", name: "Nvidia" },
-];
-const FRED_SERIES = [
-  { id: "DGS10", label: "10-Yr Treasury", unit: "%" },
-  { id: "DFF", label: "Fed Funds Rate", unit: "%" },
-  { id: "UNRATE", label: "US Unemployment", unit: "%" },
-  { id: "VIXCLS", label: "VIX (volatility)", unit: "" },
 ];
 
 // Keyless Yahoo v8 chart instruments. Commodities are always live; equities use
@@ -73,8 +73,6 @@ const YAHOO_MACRO: { y: string; symbol: string; name: string; unit: string }[] =
 ];
 const yahooUrl = (sym: string) =>
   `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`;
-
-let cache: MarketsPayload | null = null;
 
 async function getJson<T>(url: string, ms = 12_000): Promise<T | null> {
   try {
@@ -137,26 +135,81 @@ async function macroSection(): Promise<MarketSection> {
   }
   const series = await Promise.all(
     FRED_SERIES.map(async (s) => {
-      const json = await getJson<{ observations?: { date?: string; value?: string }[] }>(
-        `https://api.stlouisfed.org/fred/series/observations?series_id=${s.id}&api_key=${encodeURIComponent(key)}&file_type=json&sort_order=desc&limit=1`,
-      );
+      const json = await getJson<{ observations?: { date?: string; value?: string }[] }>(fredObservationsUrl(s, key));
       const obs = json?.observations?.[0];
-      const value = obs?.value && obs.value !== "." ? Number(obs.value) : null;
-      return { id: s.id, label: s.label, unit: s.unit, value, date: obs?.date };
+      return { id: s.id, label: s.label, unit: s.unit, value: parseFredValue(obs?.value), date: obs?.date };
     }),
   );
   return { key: "macro", label: "Macro / rates", source: "FRED (St. Louis Fed)", rows: parseMacro(series) };
 }
 
-export async function GET() {
-  if (cache && Date.now() - cache.generatedAt < CACHE_TTL_MS) {
-    return Response.json(cache);
+// --- per-section isolation --------------------------------------------------
+// Previously GET() ran Promise.all over all five section builders inside one
+// try/catch: a single rejection (a CoinGecko hiccup, a Yahoo 429) discarded every
+// section, not just the one that failed — the response served empty/stale rows
+// for sections that had nothing wrong with them, breaking the dormant-safe
+// contract ("a failure resolves to [] or last-good, never takes down the
+// response") for everyone else on the page. Promise.allSettled makes each
+// section's fate independent; resolveSection/foldSections (lib/markets/sections.ts,
+// pure + unit-tested there since a route.ts file may only export recognized route
+// handler names) decide, per section, what to serve when its builder rejects.
+
+// Per-section last-good, kept purely so a transient failure can fall back to real
+// data instead of an empty section. Module state: like OpenSky's own `lastGood`
+// (lib/sources/opensky.ts), this is NOT guaranteed to survive between separate
+// invocations of the cached callback below on Vercel's serverless platform — each
+// revalidation may land on a different, cold instance with empty state, in which
+// case a failing section just renders the honestly-empty branch instead. It costs
+// nothing and helps within a warm instance; a deployment-wide last-good would need
+// external storage (Vercel KV/Blob), which is out of scope here (no new dependency).
+const lastGoodSections: Partial<Record<string, MarketSection>> = {};
+
+async function buildSnapshot(): Promise<MarketsPayload> {
+  const results = await Promise.allSettled([
+    cryptoSection(),
+    commoditiesSection(),
+    fxSection(),
+    equitiesSection(),
+    macroSection(),
+  ]);
+  const sections = foldSections(SECTION_SPECS, results, lastGoodSections);
+  for (const s of sections) {
+    if (s.rows.length > 0) lastGoodSections[s.key] = s;
   }
+  return { generatedAt: Date.now(), sections };
+}
+
+// --- caching -------------------------------------------------------------
+// WHY next/cache, REPLACING the old module-level `cache` variable. On Vercel each
+// serverless invocation can land on a different, isolated instance, so a plain
+// module-level variable is NOT shared across requests deployment-wide — it only
+// ever helped the (occasional) case of two requests landing on the same
+// still-warm instance inside the same TTL window; most of the time every request
+// paid the full upstream round-trip anyway, worse than it looked in local dev
+// where one warm process serves every request.
+//
+// `unstable_cache` (Next's Data Cache) is a real, deployment-wide, persisted
+// cache: the wrapped fetch runs at most once per `revalidate` window for the
+// WHOLE deployment, and every visitor in that window is served the same stored
+// snapshot — exactly the pattern lib/sources/opensky.ts already uses for the
+// planes route in this repo. It is a clean fit here: the snapshot is small, plain
+// JSON (MarketSection[] has no functions/symbols to lose in the round trip), and
+// `generatedAt` is stamped inside buildSnapshot() at fetch time — not on every
+// request — so the client's "updated Xs ago" keeps growing correctly across a
+// cached window instead of resetting to "just now" on every hit.
+async function getSnapshot(): Promise<MarketsPayload> {
   try {
-    const sections = await Promise.all([cryptoSection(), commoditiesSection(), fxSection(), equitiesSection(), macroSection()]);
-    cache = { generatedAt: Date.now(), sections };
+    const { unstable_cache } = await import("next/cache");
+    return await unstable_cache(buildSnapshot, ["markets-snapshot-v1"], {
+      revalidate: CACHE_TTL_MS / 1000,
+    })();
   } catch {
-    cache = cache ?? { generatedAt: Date.now(), sections: [] };
+    // Outside the Next server runtime (e.g. an unusual host) — fetch directly
+    // rather than fail; still per-section isolated, just not deployment-shared.
+    return buildSnapshot();
   }
-  return Response.json(cache);
+}
+
+export async function GET() {
+  return Response.json(await getSnapshot());
 }

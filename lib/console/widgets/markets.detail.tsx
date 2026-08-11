@@ -378,6 +378,10 @@ export default function MarketsDetail({ instanceId, config }: WidgetDetailProps)
                   <span className="tn-mk-sec-label">{sec.label}</span>
                   <span className="tn-mk-sec-src">{sec.source}</span>
                 </div>
+                {/* Stale rows are real but not current — say so above them. */}
+                {sec.stale && sec.note ? (
+                  <p className="tn-mk-sec-note">⏳ {sec.note}</p>
+                ) : null}
                 {sec.dormant ? (
                   <p className="tn-mk-sec-note">🔒 {sec.note ?? "Needs an API key."}</p>
                 ) : (

@@ -88,6 +88,10 @@ function MarketsBody({ config }: WidgetBodyProps) {
       {sections.map((sec) => (
         <div key={sec.key}>
           <div className="tn-w-muted" style={{ margin: "6px 0 2px", fontWeight: 600 }}>{sec.label}</div>
+          {/* Stale rows are real but not current — say so above them. */}
+          {sec.stale && sec.note ? (
+            <p className="tn-w-empty" style={{ margin: "2px 0 4px" }}>⏳ {sec.note}</p>
+          ) : null}
           {sec.dormant ? (
             <p className="tn-w-empty" style={{ margin: "2px 0 4px" }}>🔒 {sec.note ?? "Needs an API key."}</p>
           ) : (
