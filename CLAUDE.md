@@ -11,10 +11,16 @@ Deployed product = `origin/main`.
 > OpenData to relicense. Read their repo for **facts only** (endpoint URLs, cadences).
 > `simplifaisoul/osiris` is **MIT** and may be copied **with** an attribution header.
 >
-> Known leftovers in code (not yet fixed, out of scope for docs work):
-> `lib/export.ts:47` names every CSV/GeoJSON download `worldmonitor-*`, and
-> `lib/events/alerting.ts:186` sends `"World Monitor — Disasters & Events"` as an alert
-> source. Both are user-visible. Fix them when touching those files.
+> The two known leftovers this section used to list (`lib/export.ts` naming downloads
+> `worldmonitor-*`, and `lib/events/alerting.ts` sending `"World Monitor — Disasters &
+> Events"` as an alert source) were **fixed in `18a9de8`**.
+>
+> Verified 2026-08-11: `grep -rn "worldmonitor\|World Monitor" lib/ app/ components/`
+> returns 4 hits and **all four are comments** naming the competitor as a fact — in
+> `i18n/catalog.ts`, `monitors.ts`, `sources/keyRequirements.ts` and `api/og/route.tsx`
+> (that last one documents the literal it replaced). Those are allowed. What is banned is
+> the name in a **user-visible string**, and there are none. Expect the grep to be noisy;
+> read each hit before "fixing" it.
 
 ## Build gate
 - Roadmap: `ROADMAP.md` (driven by the `/goal` milestone loop — one gated milestone per invocation)
@@ -64,9 +70,16 @@ Re-measure before putting a number in a README, a CV or a PR description.
   `{"count":0}` twice while OpenSky `/states/all` answered 200 with ~1 MB of state
   vectors from a home IP — consistent with the anonymous credit cap being hit on the
   deployment's IP and there being no last-good snapshot to serve. Worth a look.
-- **GDELT's `/api/v2/geo/geo` is 404ing**, so the `conflict` and `protests` layers return
-  an empty set. Dormant-safe behaviour is working (200 + `[]`, never a 5xx), but the
-  layers are dark. `api.gdeltproject.org/api/v2/doc/doc` answers 429, so the host is up.
+- **GDELT is FIXED and live again** (was 404ing on `/api/v2/geo/geo`). The layer now reads
+  the GCS event export instead. Prod check 2026-08-11: `/api/signals/conflict` returns
+  `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare
+  300. The last blocker was a zip member sliced to end-of-file (`4ffcf7a`), which made
+  production reject all 16 files while local decoded them fine.
+- **`/api/planes` still returns `{"count":0}` in prod** (re-checked 2026-08-11, after the
+  coverage work landed). The cap is now honest, but the layer is empty: OpenSky's
+  anonymous credit cap appears to be hit on the deployment's IP, and there is no last-good
+  snapshot to fall back on. The honest fix is a persisted last-good snapshot and/or
+  credentials — not a louder error. Still open.
 - Key-gated layers dormant in prod: ACLED, ReliefWeb, ENTSO-E grid, AIS. Live with keys:
   NASA FIRMS, OpenAQ stations. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
