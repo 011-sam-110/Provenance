@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude, toNum } from "@/lib/signals/aggregate";
+import { markCoverage } from "@/lib/signals/coverage";
 
 // Forced displacement by country — keyless UNHCR population statistics API. One
 // marker per country of asylum (ISO-3), summing the people it hosts or holds:
@@ -10,6 +11,16 @@ import { countMagnitude, toNum } from "@/lib/signals/aggregate";
 
 const ENDPOINT = "https://api.unhcr.org/population/v1/population/";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+
+/**
+ * The `limit=` this adapter asks UNHCR for. There is no local render cap — every
+ * country of asylum we can place is drawn — but the request is PAGED, so a full
+ * page means there are countries we never saw and the map's count is a lower
+ * bound rather than a total. Measured 2026-08-10: year 2025 returns 178 rows on
+ * `page 1` of `maxPages 1`, so the page is nowhere near saturated today; this
+ * records that fact instead of assuming it will hold.
+ */
+export const UNHCR_PAGE_LIMIT = 1000;
 
 export const UNHCR_ATTRIBUTION = "Displacement data © UNHCR Refugee Data Finder";
 
@@ -32,8 +43,17 @@ export function displacementColor(total: number): string {
   return "#fbbf24";
 }
 
-/** Pure: UNHCR rows → one SignalFeature per country of asylum (with a known centroid). */
-export function normalizeDisplacement(rows: UnRow[]): SignalFeature[] {
+/**
+ * Pure: UNHCR rows → one SignalFeature per country of asylum (with a known centroid).
+ *
+ * Publishes upstream coverage: `rows` is one PAGE of the population API, so a
+ * saturated page (`rows.length >= limit`) means the layer is a sample of the
+ * displacement picture and its count must not read as "every country".
+ */
+export function normalizeDisplacement(
+  rows: UnRow[],
+  limit = UNHCR_PAGE_LIMIT,
+): SignalFeature[] {
   const out: SignalFeature[] = [];
   for (const r of rows) {
     const iso3 = (r.coa_iso ?? "").toUpperCase();
@@ -68,7 +88,11 @@ export function normalizeDisplacement(rows: UnRow[]): SignalFeature[] {
       },
     });
   }
-  return out;
+  return markCoverage(out, {
+    noun: "countries of asylum",
+    rule: "the first page the UNHCR population API returned",
+    upstream: { limit, count: rows.length },
+  });
 }
 
 export const DISPLACEMENT_SOURCE: SignalSource = {
@@ -86,7 +110,7 @@ export const DISPLACEMENT_SOURCE: SignalSource = {
   async fetch() {
     try {
       const year = new Date().getUTCFullYear() - 1; // latest fully-published year
-      const url = `${ENDPOINT}?limit=1000&yearFrom=${year}&yearTo=${year}&coa_all=true`;
+      const url = `${ENDPOINT}?limit=${UNHCR_PAGE_LIMIT}&yearFrom=${year}&yearTo=${year}&coa_all=true`;
       const res = await fetch(url, {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(20_000),
@@ -98,7 +122,7 @@ export const DISPLACEMENT_SOURCE: SignalSource = {
       // The most recent year may not be published yet → fall back one more year.
       if (out.length === 0) {
         const prev = year - 1;
-        const res2 = await fetch(`${ENDPOINT}?limit=1000&yearFrom=${prev}&yearTo=${prev}&coa_all=true`, {
+        const res2 = await fetch(`${ENDPOINT}?limit=${UNHCR_PAGE_LIMIT}&yearFrom=${prev}&yearTo=${prev}&coa_all=true`, {
           headers: { "User-Agent": UA, Accept: "application/json" },
           signal: AbortSignal.timeout(20_000),
         });

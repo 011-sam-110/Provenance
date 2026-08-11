@@ -28,6 +28,12 @@
 import type { WorldObject } from "@/lib/world";
 import { classifyPlane } from "@/lib/planes/classify";
 import { PLANE_META } from "@/lib/icons/svg";
+import {
+  applyCap,
+  readCoverage,
+  withCoverage,
+  type SignalCoverage,
+} from "@/lib/signals/coverage";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -176,15 +182,60 @@ export function planeToWorldObject(p: Plane): WorldObject {
 // Data Cache 2 MB limit and the client payload reasonable.
 export const MAX_PLANES = 3000;
 
-/** Keep at most `cap` aircraft, preferring airborne over ground. Pure/testable. */
+/**
+ * Keep at most `cap` aircraft, preferring airborne over ground. Pure/testable.
+ *
+ * TRUNCATION HONESTY. `/states/all` is a whole-Earth snapshot — measured at 11,824
+ * state vectors (11,705 with a position) on 2026-08-10 — so this cap discards two
+ * thirds of it. Before the coverage record, `/api/planes` answered `{count: 3000}`
+ * and 3,000 was the CAP wearing the costume of a measurement. The returned array
+ * carries a coverage record (lib/signals/coverage.ts) declaring what upstream held,
+ * so the count can be published as "3,000 of 11,705" rather than "3,000".
+ *
+ * `available` is EXACT here: OpenSky's global endpoint takes no page/limit
+ * parameter, so the response is the whole tracked set and we counted it ourselves.
+ */
 export function capPlanes(objects: WorldObject[], cap: number): WorldObject[] {
-  if (objects.length <= cap) return objects;
-  const airborne: WorldObject[] = [];
-  const ground: WorldObject[] = [];
-  for (const o of objects) {
-    ((o.meta as { onGround?: boolean } | undefined)?.onGround ? ground : airborne).push(o);
+  // Sort only when the cap actually bites — an under-cap snapshot keeps upstream order.
+  let ordered = objects;
+  if (objects.length > cap) {
+    const airborne: WorldObject[] = [];
+    const ground: WorldObject[] = [];
+    for (const o of objects) {
+      ((o.meta as { onGround?: boolean } | undefined)?.onGround ? ground : airborne).push(o);
+    }
+    ordered = [...airborne, ...ground];
   }
-  return [...airborne, ...ground].slice(0, cap);
+  return applyCap(ordered, cap, {
+    noun: "aircraft",
+    rule: "airborne first, then on-ground, in the order OpenSky reported them — not a ranking",
+  });
+}
+
+/**
+ * The snapshot the planes route publishes: the capped aircraft PLUS the coverage
+ * record as a real JSON field.
+ *
+ * WHY A FIELD AND NOT JUST THE SIDE CHANNEL: coverage rides on the array as a
+ * symbol-keyed, non-enumerable property, and this payload goes through Next's Data
+ * Cache — i.e. through JSON. A symbol property does not survive that round trip, so
+ * every cache HIT (the common case: one upstream call per REVALIDATE_S serves the
+ * whole deployment) would arrive with the cap invisible again. The field survives.
+ */
+export interface AircraftSnapshot {
+  planes: WorldObject[];
+  /**
+   * Undefined ⇒ NOT DECLARED, never "nothing was truncated". It is absent only
+   * before the first successful upstream fetch, where we have no snapshot at all
+   * and therefore know nothing about what upstream holds.
+   */
+  coverage?: SignalCoverage;
+}
+
+/** Pure: lift the coverage a capped array carries into a JSON-serializable snapshot. */
+export function toAircraftSnapshot(planes: WorldObject[]): AircraftSnapshot {
+  const coverage = readCoverage(planes);
+  return coverage ? { planes, coverage } : { planes };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,15 +258,16 @@ interface OpenSkyResponse {
 
 // Last-good worldwide snapshot (module state). Served on any refresh failure so the
 // map never blanks — and because it is GLOBAL, a stale serve is still worldwide.
-let lastGood: WorldObject[] = [];
+// It carries its own coverage, so a stale serve still discloses its truncation.
+let lastGood: AircraftSnapshot = { planes: [] };
 
 /**
  * Fetch one global snapshot and map it to capped WorldObjects. Never throws: on a
  * 429 (rate-limit), non-2xx, null `states` (degraded upstream), timeout, or parse
- * error it returns the last-good snapshot (or [] before the first success), so the
- * Data Cache never memoises a thrown error.
+ * error it returns the last-good snapshot (or an empty, coverage-less one before the
+ * first success), so the Data Cache never memoises a thrown error.
  */
-async function fetchGlobalOnce(): Promise<WorldObject[]> {
+async function fetchGlobalOnce(): Promise<AircraftSnapshot> {
   try {
     const res = await fetch(GLOBAL_URL, {
       headers: { Accept: "application/json" },
@@ -225,27 +277,52 @@ async function fetchGlobalOnce(): Promise<WorldObject[]> {
     const data = (await res.json()) as OpenSkyResponse;
     if (!data.states) return lastGood;
     const objects = capPlanes(parseStates(data.states).map(planeToWorldObject), MAX_PLANES);
-    if (objects.length) lastGood = objects; // only overwrite last-good with a real snapshot
-    return objects;
+    const snapshot = toAircraftSnapshot(objects);
+    if (objects.length) lastGood = snapshot; // only overwrite last-good with a real snapshot
+    return snapshot;
   } catch {
     return lastGood;
   }
 }
 
+/** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
+function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
+  const planes = Array.isArray(snapshot?.planes) ? snapshot.planes : [];
+  // withCoverage re-measures `returned` from the array it is given, so a record that
+  // survived the round trip cannot claim a count the payload does not hold.
+  if (snapshot?.coverage) withCoverage(planes, snapshot.coverage);
+  return snapshot?.coverage ? { planes, coverage: snapshot.coverage } : { planes };
+}
+
 /**
- * Live aircraft worldwide as WorldObjects. Wrapped in Next's Data Cache so upstream
- * is polled at most once per REVALIDATE_S for the whole deployment (stale-while-
- * revalidate): every visitor is served the shared stored snapshot rather than
- * triggering their own live pull. Returns [] only before the first successful fetch
- * (or outside the Next runtime, e.g. unit tests, where it fetches directly).
+ * Live aircraft worldwide, with the coverage record for the render cap. Wrapped in
+ * Next's Data Cache so upstream is polled at most once per REVALIDATE_S for the whole
+ * deployment (stale-while-revalidate): every visitor is served the shared stored
+ * snapshot rather than triggering their own live pull. Returns an empty, coverage-less
+ * snapshot only before the first successful fetch (or outside the Next runtime, e.g.
+ * unit tests, where it fetches directly).
+ *
+ * CACHE KEY: bumped to -v2 with the shape change. A v1 entry written by a previous
+ * deployment is a bare WorldObject[]; deserialising that as a snapshot would leave
+ * `planes` undefined and blank the map for a whole revalidate window.
  */
-export async function fetchAircraft(): Promise<WorldObject[]> {
+export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
   try {
     const { unstable_cache } = await import("next/cache");
-    return await unstable_cache(fetchGlobalOnce, ["planes-opensky-global-v1"], {
+    const snapshot = await unstable_cache(fetchGlobalOnce, ["planes-opensky-global-v2"], {
       revalidate: REVALIDATE_S,
     })();
+    return rehydrate(snapshot);
   } catch {
     return fetchGlobalOnce();
   }
+}
+
+/**
+ * Live aircraft worldwide as WorldObjects. Back-compat wrapper over
+ * {@link fetchAircraftSnapshot} — the returned array still carries its coverage on
+ * the side channel, so `readCoverage()` works on it.
+ */
+export async function fetchAircraft(): Promise<WorldObject[]> {
+  return (await fetchAircraftSnapshot()).planes;
 }

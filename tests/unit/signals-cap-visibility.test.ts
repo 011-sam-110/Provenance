@@ -261,7 +261,7 @@ describe("launches (Launch Library 2)", () => {
 });
 
 describe("uncapped layers stay uncapped", () => {
-  test("USGS returns everything the summary feed held and declares nothing", () => {
+  test("USGS declares a measured-complete payload, not a bare count", () => {
     const out = normalizeUsgs({
       features: [
         {
@@ -272,8 +272,22 @@ describe("uncapped layers stay uncapped", () => {
       ],
     });
     expect(out).toHaveLength(1);
-    // No cap exists here, so no record — and the API must not invent "complete".
-    expect(readCoverage(out)).toBeUndefined();
+
+    // The summary feed takes no `limit=` and we apply no render cap, so "you are
+    // seeing all of it" is a measurement here, not an assertion — which is exactly
+    // the case markCoverage() exists to record. `available` is re-derived from the
+    // array by withCoverage(), so the record cannot overstate what the payload holds.
+    const c = readCoverage(out)!;
+    expect(c).toMatchObject({
+      returned: 1,
+      available: 1,
+      availableExact: true,
+      capped: false,
+      rule: "all earthquakes in the past 24 hours",
+    });
+    // Uncapped stays uncapped: no invented denominator, no truncation note.
+    expect(coverageCountLabel(c)).toBe("1");
+    expect(coverageNote(c)).toBeUndefined();
   });
 });
 

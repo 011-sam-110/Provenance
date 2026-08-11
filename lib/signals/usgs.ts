@@ -1,10 +1,14 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { markCoverage } from "@/lib/signals/coverage";
 
 // USGS earthquakes — past 24h, all magnitudes. Keyless GeoJSON FeatureCollection,
 // the canonical real-time seismic feed. Each feature's geometry is a Point whose
 // THIRD coordinate is depth in km (coordinates = [lon, lat, depthKm]). We surface
 // magnitude, depth, place and time, colour + size the marker by magnitude.
 // Endpoint shape confirmed live 2026-06-27.
+//
+// No local render cap — USGS already limits to events in the past 24h, a naturally
+// bounded window. Typical result: 30–50 global earthquakes/day.
 
 const ENDPOINT =
   "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
@@ -69,7 +73,11 @@ export function normalizeUsgs(geojson: { features?: UsgsFeature[] }): SignalFeat
       },
     });
   }
-  return out;
+  // USGS already limits to the past 24h, so this is a complete dataset without local truncation.
+  return markCoverage(out, {
+    noun: "events",
+    rule: "all earthquakes in the past 24 hours",
+  });
 }
 
 export const EARTHQUAKES_SOURCE: SignalSource = {
