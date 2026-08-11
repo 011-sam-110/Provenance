@@ -72,6 +72,21 @@ describe("classifyObservation", () => {
     expect(classifyObservation(obs({ dormant: true, ok: false, lastOk: null }), NOW)).toBe("off");
   });
 
+  // Round 4 folded a refused credential into "down" — directionally right (the
+  // fetch did fail) but wrong in substance: the upstream answered promptly and
+  // said no, it did not go dark. `refused` must be its own state, reachable even
+  // though `ok` is false (a refusal usually fails the underlying fetch too), and
+  // must stay distinct from `dormant` (no credential held at all).
+  it("separates refused (credential rejected) from down (broken) and from dormant (no key)", () => {
+    expect(classifyObservation(obs({ refused: true, ok: false, lastOk: null }), NOW)).toBe("refused");
+    // A refusal against otherwise-fine-looking data (ok: true, real lastOk) must
+    // still surface — "refused" is not only reachable via a failed fetch.
+    expect(classifyObservation(obs({ refused: true }), NOW)).toBe("refused");
+    // dormant still wins if both are somehow set — "we never even tried" trumps
+    // "we tried and were refused".
+    expect(classifyObservation(obs({ dormant: true, refused: true, ok: false, lastOk: null }), NOW)).toBe("off");
+  });
+
   it("does not call a countless widget empty", () => {
     expect(classifyObservation(obs({ count: undefined }), NOW)).toBe("live");
   });
@@ -102,6 +117,7 @@ describe("chipLabel", () => {
     expect(chipLabel("down", null)).toBe("down");
     expect(chipLabel("off", null)).toBe("dormant");
     expect(chipLabel("unknown", null)).toBe("connecting…");
+    expect(chipLabel("refused", null)).toBe("refused");
   });
 
   it("degrades gracefully when the age is unknown", () => {
@@ -127,6 +143,21 @@ describe("chipTitle", () => {
     expect(t).not.toContain("FAILED");
   });
 
+  it("explains refused as an observed rejection, not a broken or non-responding upstream", () => {
+    const t = chipTitle(obs({ refused: true, ok: false, lastOk: null }), NOW);
+    expect(t).toContain("Refused");
+    expect(t).toContain("rejected it");
+    // The generic FAILED line would contradict the specific reason just given.
+    expect(t).not.toContain("FAILED");
+  });
+
+  it("still reports last-good-data age and count alongside a refusal", () => {
+    const t = chipTitle(obs({ refused: true, lastOk: NOW - 5_000, count: 42 }), NOW);
+    expect(t).toContain("Refused");
+    expect(t).toContain("Last successful update 5s ago");
+    expect(t).toContain("42 rows");
+  });
+
   it("defends the empty state in words", () => {
     expect(chipTitle(obs({ count: 0 }), NOW)).toContain("not a failure");
   });
@@ -139,6 +170,13 @@ describe("freshChipView", () => {
     expect(v.label).toBe("stale · 10m");
     expect(v.ageMs).toBe(600_000);
     expect(v.title).toContain("Expected every 1m");
+  });
+
+  it("classifies and labels a refusal distinctly from down", () => {
+    const v = freshChipView(obs({ refused: true, ok: false, lastOk: null }), NOW);
+    expect(v.kind).toBe("refused");
+    expect(v.label).toBe("refused");
+    expect(v.title).toContain("Refused");
   });
 });
 

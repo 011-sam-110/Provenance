@@ -9,6 +9,14 @@
 //
 // The interesting logic — what counts as stale, what "empty" means, what the
 // tooltip says — is pure and unit-tested in lib/console/freshChip.ts.
+//
+// `view.kind` can now also be "refused" (a credential we hold was rejected by
+// the upstream — see FreshObservation.refused in lib/console/freshChip.ts).
+// No branch needed here: the className and label both come off `view`
+// generically, so `tn-fresh-refused` (styled in app/globals.css) and the
+// "refused" label just flow through like every other kind. A widget only
+// gets this state once it starts setting `refused: true` on the observation
+// it reports — nothing does yet.
 
 import { useNow } from "@/lib/shell/useNow";
 import { freshChipView, type FreshObservation } from "@/lib/console/freshChip";

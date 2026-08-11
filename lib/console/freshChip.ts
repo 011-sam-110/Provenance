@@ -19,6 +19,20 @@
 
 import type { FreshKind } from "@/lib/sources/freshKind";
 
+/**
+ * `refused` widens FreshKind LOCALLY rather than being added to the shared
+ * union in lib/sources/freshKind.ts. That union is also switched on
+ * exhaustively by the two other freshness pipelines (lib/freshness.ts /
+ * lib/signals/freshness.ts, consumed by components/shell/SourceWidget.tsx and
+ * lib/widgets/rollup.ts) — neither of those stores has a way to observe a
+ * credential refusal yet, and widening the shared type would either force
+ * silent `string`-typed fallbacks into their exhaustive switches or require
+ * touching files outside this module's ownership. This module is the only
+ * place that classifies a `FreshObservation`, so keeping the extra literal
+ * local costs nothing and the two pipelines can pick it up later.
+ */
+export type FreshChipKind = FreshKind | "refused";
+
 export interface FreshObservation {
   /** Epoch ms of the last SUCCESSFUL update, or null if there has never been one. */
   lastOk: number | null;
@@ -33,6 +47,14 @@ export interface FreshObservation {
   local?: boolean;
   /** Not being fetched at all: needs a key that is not configured. Dormant ≠ broken. */
   dormant?: boolean;
+  /** We hold a credential for this source, and the upstream rejected it
+   *  (401/402/403) — an OBSERVED refusal, not a guess. Distinct from `dormant`
+   *  (no credential held at all, so nothing was even attempted) and from a
+   *  generic `ok: false` (attempt failed for an unknown/unspecified reason —
+   *  the upstream may simply be unreachable). See the CapabilityState
+   *  "refused" in lib/sources/keyRequirements.ts, which this mirrors at the
+   *  freshness-chip layer. */
+  refused?: boolean;
   /** Newest timestamp inside the DATA (server generatedAt, newest item). Distinct from
    *  lastOk: we may have fetched 5s ago a payload the upstream built an hour ago. */
   sourceAt?: number | null;
@@ -58,15 +80,22 @@ export function freshAgeMs(o: FreshObservation | null | undefined, now: number):
 /**
  * Observation → state. Ordering matters:
  *   dormant  — we never even tried; nothing else can be said
+ *   refused  — we DID try, holding a credential, and the upstream turned it
+ *              down; checked before `down` for the same reason `dormant` is
+ *              checked before it — "the last attempt failed" is true of a
+ *              refusal too, but it is not the most honest thing to say. A
+ *              refused credential often also fails the underlying fetch
+ *              (`ok: false`), so this must not be reached only via `!o.ok`.
  *   down     — the last attempt failed, whatever its age
  *   local    — propagated in-browser, so age is meaningless
  *   unknown  — no success yet, but nothing has failed either
  *   stale    — checked before `empty`, because a feed that stopped answering
  *              hours ago must not be excused as "nothing happening right now"
  */
-export function classifyObservation(o: FreshObservation | null | undefined, now: number): FreshKind {
+export function classifyObservation(o: FreshObservation | null | undefined, now: number): FreshChipKind {
   if (!o) return "unknown";
   if (o.dormant) return "off";
+  if (o.refused) return "refused";
   if (!o.ok) return "down";
   if (o.local) return (o.count ?? 1) > 0 ? "live" : "empty";
   if (o.lastOk == null) return "unknown";
@@ -90,10 +119,11 @@ export function formatAgeShort(ms: number): string {
 }
 
 /** Short chip text. "live" stays bare — every other state carries its evidence. */
-export function chipLabel(kind: FreshKind, ageMs: number | null): string {
+export function chipLabel(kind: FreshChipKind, ageMs: number | null): string {
   switch (kind) {
     case "off": return "dormant";
     case "unknown": return "connecting…";
+    case "refused": return "refused";
     case "down": return "down";
     case "empty": return "none now";
     case "stale": return ageMs == null ? "stale" : `stale · ${formatAgeShort(ageMs)}`;
@@ -114,6 +144,14 @@ export function chipTitle(o: FreshObservation | null | undefined, now: number): 
     return "Dormant — this source needs an API key that is not configured, so nothing is being fetched. Not an error.";
   }
   const parts: string[] = [];
+  if (o.refused) {
+    // Deliberately not a short-circuit like `dormant`: unlike "we never even
+    // tried", a refusal can coexist with useful last-good data below (age,
+    // count, coverage), so those still get appended.
+    parts.push(
+      "Refused — this deployment holds a credential for this source, and the upstream rejected it (401/402/403). The upstream answered promptly; this is an observed rejection, not a broken or non-responding source.",
+    );
+  }
   if (o.local) {
     parts.push("Computed in your browser from orbital elements — no network fetch, so it cannot go stale.");
   } else if (o.lastOk == null) {
@@ -121,7 +159,9 @@ export function chipTitle(o: FreshObservation | null | undefined, now: number): 
   } else {
     parts.push(`Last successful update ${formatAgeShort(now - o.lastOk)} ago.`);
   }
-  if (!o.ok) parts.push("The most recent attempt FAILED — anything shown is the last good data.");
+  // Skip the generic FAILED line when `refused` already gave the specific,
+  // more honest reason — saying both would read as two different faults.
+  if (!o.ok && !o.refused) parts.push("The most recent attempt FAILED — anything shown is the last good data.");
   if (!o.local && o.refreshMs > 0) parts.push(`Expected every ${formatAgeShort(o.refreshMs)}.`);
   if (o.sourceAt != null) parts.push(`Newest item in the data is ${formatAgeShort(now - o.sourceAt)} old.`);
   if (o.coverage && o.coverage.total > 0) {
@@ -165,7 +205,7 @@ export function observeSignalSource(
 }
 
 export interface FreshChipView {
-  kind: FreshKind;
+  kind: FreshChipKind;
   label: string;
   title: string;
   ageMs: number | null;
