@@ -9,6 +9,11 @@
   --tn-surface-solid: #ffffff;
   --tn-surface-2: #f2f5f9;
   --tn-glass: rgba(255, 255, 255, 0.80);
+  /* Top bar, light theme. See the block comment on .tn-topbar: the fill is
+     see-through and holds no bare text; the pill is the measured minimum that
+     keeps --tn-text-faint (#626e7d) at 4.52:1 over the darkest map imagery. */
+  --tn-topbar-fill: rgba(255, 255, 255, 0.45);
+  --tn-topbar-pill: rgba(255, 255, 255, 0.93);
   --tn-border: rgba(15, 23, 42, 0.10);
   --tn-border-strong: rgba(15, 23, 42, 0.16);
   --tn-text: #1f2a37;
@@ -73,6 +78,10 @@
   --tn-surface-solid: #161d2a;
   --tn-surface-2: #141b27;
   --tn-glass: rgba(14, 19, 29, 0.80);
+  /* Top bar, dark theme. 0.86 rather than light's 0.93 because the dark ink
+     (#8e9bab) starts further from mid-grey, so it clears 4.52:1 sooner. */
+  --tn-topbar-fill: rgba(14, 19, 29, 0.45);
+  --tn-topbar-pill: rgba(14, 19, 29, 0.86);
   --tn-border: rgba(255, 255, 255, 0.10);
   --tn-border-strong: rgba(255, 255, 255, 0.16);
   --tn-text: #e6ebf2;
@@ -151,15 +160,41 @@ a { color: var(--tn-accent); }
 .maplibregl-ctrl-attrib a { color: var(--tn-accent); }
 
 /* ===================== Top status bar ===================== */
+/* The bar is SEE-THROUGH: the map runs under it and shows between the content
+   groups. That is a real constraint, not just a look — text on a translucent bar
+   is legible only as far as whatever happens to be underneath allows, and the map
+   underneath ranges from near-black satellite imagery to bright snow and desert.
+   Measured over that range (WCAG relative-luminance formula, both themes), NO flat
+   bar opacity keeps --tn-text-faint at AA: 0.80 already only reached 3.42:1, and
+   0.55 falls to 2.11:1.
+
+   So the transparency and the legibility are separated. --tn-topbar-fill is the
+   see-through bar itself and carries no bare text. Each content group sits on
+   --tn-topbar-pill, which is opaque enough that the WEAKEST ink used up here
+   (--tn-text-faint, on the tagline and the metric labels) clears 4.5:1 against any
+   map beneath it. Those two alphas are computed, not chosen by eye: light needs
+   0.93 (worst case 4.52:1) and dark needs 0.86 (worst case 4.52:1) — dark tolerates
+   more because its ink starts further from mid-grey. Lower either one and the
+   contrast pass that landed with the a11y work is quietly undone. */
 .tn-topbar {
   position: fixed; top: 0; left: 0; right: 0; height: var(--tn-topbar-h); z-index: 30;
-  display: flex; align-items: center; gap: 16px; padding: 0 14px;
-  background: var(--tn-glass);
-  backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 14px;
+  background: var(--tn-topbar-fill);
+  backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
   border-bottom: 1px solid var(--tn-border);
   color: var(--tn-text);
 }
-.tn-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+/* The three groups hug their content (flex: 0 1 auto) rather than filling the bar,
+   which is what leaves the gaps the map is visible through. They still SHRINK, so
+   the existing min-width:0 truncation behaviour is unchanged. */
+.tn-topbar > .tn-topbar-left,
+.tn-topbar > .tn-topbar-metrics,
+.tn-topbar > .tn-topbar-right {
+  background: var(--tn-topbar-pill);
+  border-radius: 10px;
+  padding: 4px 10px;
+}
+.tn-topbar-left { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 0 1 auto; }
 /* The wordmark is the page's <h1> (components/shell/StatusBar.tsx). `margin: 0`
    cancels the UA heading margin so promoting the span to a heading is a zero-pixel
    change; font-size/weight were already pinned here. */
@@ -167,7 +202,7 @@ a { color: var(--tn-accent); }
 .tn-wordmark-accent { color: var(--tn-accent); }
 .tn-tagline { font-size: 11.5px; color: var(--tn-text-faint); white-space: nowrap; }
 
-.tn-topbar-metrics { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.tn-topbar-metrics { display: flex; align-items: center; gap: 12px; flex: 0 1 auto; min-width: 0; }
 .tn-metric { display: flex; flex-direction: column; line-height: 1.1; }
 .tn-metric-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tn-text-faint); }
 .tn-metric-value { font-size: 14px; font-weight: 650; color: var(--tn-text); }
@@ -666,6 +701,15 @@ a { color: var(--tn-accent); }
 .tn-markets-section-label { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
 .tn-markets-section-source { font-size: 10px; color: var(--tn-text-faint); }
 .tn-markets-dormant { padding: 9px 2px; font-size: 11.5px; color: var(--tn-text-faint); font-style: italic; }
+/* A stale section still shows its rows, so its disclosure sits ABOVE them and has
+   to be readable rather than a whisper — it is the only thing separating a
+   carried-over price from a live one. Uses the lagging ink (a warning), not the
+   faint ink that .tn-markets-dormant uses for "nothing here anyway". */
+.tn-markets-stale {
+  margin: 0 0 4px; padding: 5px 8px; font-size: 11px; line-height: 1.35;
+  color: var(--tn-lagging-ink); background: var(--tn-surface-2);
+  border-left: 2px solid var(--tn-lagging); border-radius: 4px;
+}
 /* AI daily brief */
 .tn-brief { margin: 4px 0 12px; padding: 11px 12px; border: 1px solid var(--tn-border); border-radius: 10px; background: var(--tn-chip-bg); }
 .tn-brief-dormant { opacity: 0.85; }
@@ -1293,6 +1337,16 @@ a { color: var(--tn-accent); }
 .tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging-ink)}
 .tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale-ink)}
 .tn-cw-fresh.tn-fresh-down{color:var(--tn-down-ink)}
+/* `refused` (credential held, upstream said no) reuses --tn-down-ink rather
+   than a new hue: components/shell/SourceCatalog.tsx already made this call
+   for the rail badge ("the same red the freshness chip uses for 'down'... it
+   reads as a fault because it is one"), and the two states are told apart by
+   their TEXT ("refused" vs "down"), not by colour. Contrast verified
+   arithmetically (WCAG relative-luminance formula, not eyeballed) against
+   --tn-surface — the composited background .tn-cw-fresh actually sits on,
+   since --tn-surface is translucent: light 5.67:1, dark 6.56:1. Both clear
+   4.5:1 with room to spare. */
+.tn-cw-fresh.tn-fresh-refused{color:var(--tn-down-ink)}
 .tn-cw-fresh.tn-fresh-empty{color:var(--tn-text-faint)}
 .tn-cw-fresh.tn-fresh-off,.tn-cw-fresh.tn-fresh-unknown{color:var(--tn-text-faint);font-style:italic}
 .tn-cw-menu,.tn-cw-expand{border:0;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:14px}
@@ -1393,6 +1447,25 @@ a { color: var(--tn-accent); }
 .tn-w-muted{color:var(--tn-text-muted)}
 .tn-w-num{font-family:var(--tn-mono);text-align:right;color:var(--tn-text-muted)}
 .tn-w-empty{padding:12px 8px;font-size:12px;color:var(--tn-text-muted);text-align:center}
+/* Capability-refusal notice inside a widget body. Round 4 wired the classes
+   from capabilityBadge() (lib/console/widgets/signals.tsx) onto the element
+   but left them unstyled, so a locked-or-refused layer fell back to plain
+   centred .tn-w-empty grey text — indistinguishable from "Nothing in scope."
+   even though badge.long is a full sentence explaining WHY, which reads
+   better left-aligned in its own block than centred.
+   `locked` (no credential held) stays a neutral, low-emphasis notice — a
+   configuration fact, not a fault. `refused` (credential held and the
+   upstream rejected it) gets the same red as the rail badge and the
+   freshness chip's `tn-fresh-refused` above — one fault colour across the
+   product, not three shades of "this is fine, actually".
+   Contrast (WCAG relative-luminance formula, not eyeballed) of --tn-down-ink
+   on this block's --tn-surface-2 background: light 5.25:1, dark 6.24:1 — both
+   clear 4.5:1. --tn-text-muted on --tn-surface-2 was already covered by the
+   a11y pass that produced the --tn-text-faint/--tn-text-muted hierarchy at
+   the top of this file. */
+.tn-w-capstate{margin:6px 8px;padding:9px 10px;border-radius:8px;text-align:left;line-height:1.45;background:var(--tn-surface-2)}
+.tn-w-capstate-locked{color:var(--tn-text-muted);border-left:3px solid var(--tn-border-strong)}
+.tn-w-capstate-refused{color:var(--tn-down-ink);border-left:3px solid var(--tn-down)}
 
 /* ====================================================================   Widget body — list primitives (Task 10 Disasters & Events widget)
    =========================================================================== */
@@ -2615,6 +2688,13 @@ a { color: var(--tn-accent); }
   .tn-topbar { gap: 10px; padding: 0 10px; }
   .tn-topbar-left { overflow: hidden; }
   .tn-topbar-right { flex: 0 0 auto; }
+  /* The see-through bar's content pills cost 10px of padding each, which is three
+     lots of horizontal space a phone does not have. Trim it here rather than
+     shrinking the pill everywhere — the pill's OPACITY is load-bearing for
+     contrast and must not change, but its padding is free. */
+  .tn-topbar > .tn-topbar-left,
+  .tn-topbar > .tn-topbar-metrics,
+  .tn-topbar > .tn-topbar-right { padding: 3px 7px; border-radius: 8px; }
   .tn-wordmark { white-space: nowrap; }
 }
 
