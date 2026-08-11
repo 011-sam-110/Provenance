@@ -12,3 +12,6 @@ next-env.d.ts
 
 # local dev build
 .next-dev/
+
+# Isolated verification builds (TN_DIST_DIR)
+.next-*/
