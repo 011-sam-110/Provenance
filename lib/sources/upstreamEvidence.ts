@@ -361,3 +361,87 @@ export function instrumentSignalRegistry<T>(sources: InstrumentableSource<T>[]):
   observingSince ??= Date.now();
   return wrappedCount;
 }
+
+// --- cross-instance honesty ---------------------------------------------------
+//
+// WHY THIS EXISTS. The ledger above is per-process module state. In production
+// that mostly means "one specific serverless function instance handling one
+// specific request", and /api/status and /api/signals/[id] are ordinarily
+// different route modules entirely, each scaling to many concurrent instances.
+// So a refusal this process's fetch wrapper genuinely observed (ACLED answering
+// 403) usually never reaches the instance that later serves GET /api/status.
+// Verified in prod 2026-08-11: curl /api/signals/acled forced a live fetch, and
+// the immediately-following curl /api/status still read `fetches: 0, observed:
+// false` for acled. `observed: false` is the correct, honest reading of what
+// THAT instance saw — but read alone, without knowing about serverless
+// fragmentation, it invites the wrong conclusion: a reader sees `state:
+// "configured"` (not "refused", not "locked") and reasonably assumes the
+// credential is fine. It was never checked by the process answering them.
+//
+// CROSS-INSTANCE PERSISTENCE WAS INVESTIGATED AND REJECTED. Next's Data Cache
+// (`unstable_cache`, used deployment-wide by lib/sources/opensky.ts) is a
+// get-or-recompute cache keyed by a static key — it has no set()/merge()/
+// read-modify-write primitive. The only way to PUSH a write is to invalidate an
+// entry (revalidateTag/revalidatePath) and immediately recompute it, but the
+// recompute can only return what THIS instance's local ledger holds — it has no
+// access to what a previous writer stored. An instance that has observed LESS
+// would then silently CLOBBER an instance that observed MORE the next time the
+// cache happened to go stale, making a refusal flicker between "refused" and
+// "configured" depending on which instance last answered — a fabricated
+// recovery, which is worse than today's honest gap and exactly the class of lie
+// the product exists to refuse. Forcing that write from inside
+// installUpstreamObserver's global fetch wrapper is additionally unsafe on its
+// own terms: that wrapper runs inside every fetch the app makes, including ones
+// already executing inside ANOTHER adapter's own unstable_cache callback (see
+// opensky.ts's fetchGlobalOnce), and Next.js does not support calling
+// revalidateTag/revalidatePath from inside a cache computation. No dependency-
+// free, race-free write path was found, so none is used.
+//
+// So instead: the same per-process evidence, published with a caveat a reader
+// cannot miss without reading code comments — see EvidenceScope below.
+
+/** True once this snapshot holds a record for at least one capability. */
+export function hasAnyEvidence(snapshot: Record<string, UpstreamEvidence>): boolean {
+  return Object.keys(snapshot).length > 0;
+}
+
+export const CROSS_INSTANCE_CAVEAT =
+  "This evidence is per-process, in-memory, and NOT shared across instances. On a " +
+  "serverless deployment, the request that actually talked to an upstream (e.g. GET " +
+  "/api/signals/acled) and the request reading this report (GET /api/status) are " +
+  "usually different processes with separate ledgers, so a credential refusal that " +
+  "genuinely happened may never appear here. A 'configured' state means only 'this " +
+  "process has not observed a refusal' — never 'this credential was checked and " +
+  "works'. anyEvidence:false means nothing has been observed BY THIS PROCESS, never " +
+  "that nothing is wrong.";
+
+/** Everything a reader needs to correctly weigh an empty or sparse ledger. Pure. */
+export interface EvidenceScope {
+  /** Always "process" — see `caveat` for what that means in a serverless deployment. */
+  scope: "process";
+  /** Epoch ms this process began observing, or null if nothing installed yet. */
+  observingSinceMs: number | null;
+  /** Age of that window at report time, in ms. Null when observingSinceMs is null. */
+  ageMs: number | null;
+  /** Has this process recorded anything at all, for any capability? */
+  anyEvidence: boolean;
+  /** How many capabilities this process holds any record for. */
+  capabilitiesObserved: number;
+  caveat: string;
+}
+
+/** Pure: fold a snapshot + observation window into the honesty caveat block. */
+export function describeEvidenceScope(
+  snapshot: Record<string, UpstreamEvidence>,
+  observingSince: number | null,
+  now: number,
+): EvidenceScope {
+  return {
+    scope: "process",
+    observingSinceMs: observingSince,
+    ageMs: observingSince != null ? Math.max(0, now - observingSince) : null,
+    anyEvidence: hasAnyEvidence(snapshot),
+    capabilitiesObserved: Object.keys(snapshot).length,
+    caveat: CROSS_INSTANCE_CAVEAT,
+  };
+}
