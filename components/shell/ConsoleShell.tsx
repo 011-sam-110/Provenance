@@ -15,6 +15,7 @@ import { timeWindowStore } from "@/lib/shell/timeWindow";
 import { registerServiceWorker } from "@/lib/pwa/register";
 import { variantStore } from "@/lib/variants/store";
 import StatusBar from "@/components/shell/StatusBar";
+import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import BreakingBanner from "@/components/shell/BreakingBanner";
 import TourOverlay from "@/components/shell/TourOverlay";
@@ -105,6 +106,8 @@ export default function ConsoleShell() {
 
   return (
     <div className="tn-shell">
+      {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
+      <SkipLink />
       <StatusBar onOpenPalette={() => setPaletteOpen(true)} />
       <BreakingBanner />
       <ConsoleWorkspace />
@@ -112,7 +115,16 @@ export default function ConsoleShell() {
       <FeedOverlay />
       <CinematicDive />
       <TourOverlay />
-      {toast && <div className="tn-toast" role="status" aria-live="polite">{toast}</div>}
+      {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
+          disappearing with its text. A live region has to already be in the
+          accessibility tree when its content changes for the change to be
+          announced; a region that arrives *carrying* its message is announced
+          inconsistently across browser/screen-reader pairs, which is the same as
+          not announcing at all. `.tn-toast:empty` (app/globals.css) strips the
+          pill's padding, background and shadow so the idle element is invisible
+          and zero-sized — it must NOT be display:none/visibility:hidden, which
+          would take it back out of the accessibility tree and undo the fix. */}
+      <div className="tn-toast" role="status" aria-live="polite">{toast}</div>
     </div>
   );
 }

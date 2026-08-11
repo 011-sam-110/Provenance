@@ -11,6 +11,9 @@
 import { useState } from "react";
 import { useMetrics } from "@/lib/metrics";
 import { useLayers } from "@/lib/layers";
+import { useActivePreset } from "@/lib/console/activePreset";
+import { listPresets } from "@/lib/console/presets";
+import { appStatusLine } from "@/components/shell/a11y";
 import PresetPill from "@/components/shell/PresetPill";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
@@ -18,7 +21,12 @@ import SettingsPanel from "@/components/shell/SettingsPanel";
 export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const m = useMetrics();
   const layers = useLayers();
+  const activePresetId = useActivePreset();
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Board name for the spoken status line. Same source the central pill reads, so
+  // the two can never disagree about which board is loaded.
+  const boardTitle = listPresets().find((p) => p.id === activePresetId)?.title ?? null;
 
   return (
     <>
@@ -36,11 +44,28 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
           {layers.satellites ? `${m.satellites.toLocaleString()} satellites` : "satellites off"}
         </span>
 
+        {/* The SPOKEN status line, and deliberately a different string from the one
+            above. The pulse line re-renders every few seconds as the tallies move,
+            so wiring aria-live to it would make a screen reader recite
+            "18,729 cameras · 3,000 planes · 412 satellites" on a loop — noise that
+            drowns the page. This one carries state only (board + which layers are
+            on), so it changes when, and only when, the user changed something.
+            See appStatusLine() in components/shell/a11y.ts. */}
+        <span className="tn-sr-only" role="status" aria-live="polite" data-testid="a11y-status-line">
+          {appStatusLine({ boardTitle, layers })}
+        </span>
+
         {/* ── Brand ────────────────────────────────────────────────────────── */}
         <div className="tn-topbar-left">
-          <span className="tn-wordmark">
+          {/* The page's one h1. It is the wordmark itself rather than a hidden
+              duplicate — the visible product name IS the page's title — with a
+              visually-hidden tail so the accessible heading says what the product
+              is instead of just "OpenData". `.tn-wordmark` pins font-size/weight
+              and now margin, so swapping the span for an h1 changes no pixels. */}
+          <h1 className="tn-wordmark">
             Open<span className="tn-wordmark-accent">Data</span>
-          </span>
+            <span className="tn-sr-only"> — live global situational-awareness map</span>
+          </h1>
         </div>
 
         {/* ── Central board switcher (absolutely centred over the bar) ─────── */}

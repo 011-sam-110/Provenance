@@ -13,6 +13,9 @@ import PanelHost from "@/components/shell/PanelHost";
 import CoveragePanel from "@/components/shell/CoveragePanel";
 import MarketsPanel from "@/components/shell/MarketsPanel";
 import WatchlistPanel from "@/components/shell/WatchlistPanel";
+import { getWidgetType } from "@/lib/console/registry";
+import { stageRegionLabel } from "@/components/shell/a11y";
+import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 
 // Full-bleed console: the map is a 100%×100% base layer and the three widget
 // segments FLOAT over it as translucent glass columns (the calm-glass identity the
@@ -54,29 +57,67 @@ export default function ConsoleWorkspace() {
   // never when a widget is fullscreened onto the stage (focused) or on a non-map stage.
   const showMapOverlays = layout.focusedWidgetId == null && (layout.stage === "map3d" || layout.stage === "map2d");
 
+  // The stage heading is derived, not fixed: the stage is the 2D map, the 3D globe,
+  // or a widget expanded onto it, and a hard-coded "Map" would be a false claim in
+  // two of those three states. Pure — see components/shell/a11y.ts.
+  const focusedType = layout.focusedWidgetId
+    ? getWidgetType(layout.widgets.find((x) => x.id === layout.focusedWidgetId)?.type ?? "")
+    : undefined;
+  const stageLabel = stageRegionLabel({
+    focusedWidgetId: layout.focusedWidgetId ?? null,
+    focusedTitle: focusedType?.title ?? null,
+    stage: layout.stage,
+  });
+
   return (
     <div className="tn-cw-shell" style={vars}>
-      <div className="tn-cw-stage">
+      {/* The centre stage is the skip link's landing site, so it is a NAMED region
+          with a real (visually-hidden) heading and tabIndex={-1}. Without the
+          tabindex the browser scrolls here and leaves focus behind on the link,
+          which is how most skip links quietly fail. */}
+      <section
+        className="tn-cw-stage"
+        id={SKIP_TARGET_ID}
+        tabIndex={-1}
+        aria-labelledby="tn-cw-stage-h"
+      >
+        <h2 id="tn-cw-stage-h" className="tn-sr-only">{stageLabel}</h2>
         <StageHost stage={layout.stage} />
         {showMapOverlays && <MapControls />}
         {showMapOverlays && <MapSearch />}
         {showMapOverlays && <PinNavigator />}
         {showMapOverlays && <WorldClock />}
-      </div>
+      </section>
 
       {/* Widths come from --tn-lw / --tn-rw (set on the shell above), NOT an inline
-          style — see the note at the top of this file. */}
-      <div className="tn-cw-col tn-cw-col-left"><Segment id="left" /></div>
+          style — see the note at the top of this file.
+
+          Each column carries a visually-hidden <h2>. They are headings rather than
+          landmarks on purpose: three more region landmarks would crowd the landmark
+          menu, whereas headings give the page the outline it was missing entirely
+          (h1 product → h2 region → h3 widget) and let a screen-reader user walk it
+          with the H key. `.tn-sr-only` is position:absolute, so none of these
+          headings is a flex/grid item and none of them moves a pixel. */}
+      <div className="tn-cw-col tn-cw-col-left">
+        <h2 className="tn-sr-only">Left widget column</h2>
+        <Segment id="left" />
+      </div>
       <VGrip seg="left" dir={1} cls="tn-grip-l" />
 
-      <div className="tn-cw-col tn-cw-col-right"><Segment id="right" /></div>
+      <div className="tn-cw-col tn-cw-col-right">
+        <h2 className="tn-sr-only">Right widget column</h2>
+        <Segment id="right" />
+      </div>
       <VGrip seg="right" dir={-1} cls="tn-grip-r" />
 
       {bottomShown && (
         <>
           {/* max-height also rides --tn-bh in CSS (same value as bottom.size whenever
               this branch renders), so the mobile block can lift the cap. */}
-          <div className="tn-cw-bottom"><Segment id="bottom" /></div>
+          <div className="tn-cw-bottom">
+            <h2 className="tn-sr-only">Bottom widget dock</h2>
+            <Segment id="bottom" />
+          </div>
           <div className="tn-grip tn-grip-b"
                onPointerDown={(e) => {
                  e.preventDefault();

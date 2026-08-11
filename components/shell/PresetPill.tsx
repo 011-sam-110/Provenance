@@ -14,7 +14,7 @@ const FALLBACK = BUILTIN_PRESETS[0]; // World Overview — shown before the stor
 export default function PresetPill() {
   const activeId = useActivePreset();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
 
   const all = listPresets();
   const active = all.find((p) => p.id === activeId) ?? FALLBACK;
@@ -34,7 +34,12 @@ export default function PresetPill() {
   const pick = (id: string) => { applyPreset(id); setOpen(false); };
 
   return (
-    <div className="tn-preset-pill" ref={ref}>
+    // A <nav>, not a <div>: this is the console's primary way of moving between
+    // views — picking a board swaps every widget AND the map overlays, so it is the
+    // structural equivalent of a site's main menu. Same element, same class, so the
+    // absolute centring in `.tn-preset-pill` is untouched; it just becomes a
+    // landmark a screen-reader user can jump straight to.
+    <nav className="tn-preset-pill" ref={ref} aria-label="Boards">
       <button type="button" className="tn-preset-pill-btn" aria-haspopup="menu" aria-expanded={open}
         aria-label="Board preset" onClick={() => setOpen((o) => !o)}>
         <span className="tn-preset-pill-icon" aria-hidden>{active.icon}</span>
@@ -68,6 +73,6 @@ export default function PresetPill() {
           )}
         </div>
       )}
-    </div>
+    </nav>
   );
 }
