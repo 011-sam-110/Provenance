@@ -190,21 +190,56 @@ export function missingEnvFor(id: string, env: Record<string, string | undefined
 
 /**
  * - keyless    — needs no credential at all. The default and the norm.
- * - configured — required credential, and we hold it. NOT a promise that the
- *                upstream accepts it: ACLED answers 403 to a token that passes
- *                its own OAuth flow. Liveness is the freshness chip's job; this
- *                field is about configuration only, and the UI must not conflate
- *                the two.
+ * - configured — required credential, we hold it, and nothing has been observed
+ *                against it. NOT a promise that the upstream accepts it — only
+ *                that no upstream has been seen refusing it in this process.
+ * - refused    — required credential, we hold it, AND an upstream we send it to
+ *                answered 401/402/403. See below.
  * - locked     — required credential, and we do not hold it. Genuinely unavailable.
  * - upgradable — OPTIONAL credential we do not hold. The feature works keylessly;
  *                a key would make it better. Reporting this as "locked" was a lie.
  * - enhanced   — optional credential, and we hold it.
+ *
+ * WHY `refused` EXISTS. Holding a credential and having it accepted are two
+ * different facts, and the report used to carry only the first. ACLED was published
+ * as `configured` with `missingEnv: []` — "we hold ACLED_EMAIL and ACLED_PASSWORD" —
+ * while acleddata.com answered HTTP 403 to a token that had just passed ACLED's own
+ * OAuth password grant. Every reader hears "this works". It does not, and no amount
+ * of reading the config could tell you so.
+ *
+ * `refused` is EVIDENCE-DRIVEN, never a list of layers we happen to know are broken:
+ * it is reached only from a verdict of an actually-observed refusal (see
+ * lib/sources/upstreamEvidence.ts). A capability nothing has been observed about
+ * stays `configured`. Silence is not proof.
  */
-export type CapabilityState = "keyless" | "configured" | "locked" | "upgradable" | "enhanced";
+export type CapabilityState =
+  | "keyless"
+  | "configured"
+  | "refused"
+  | "locked"
+  | "upgradable"
+  | "enhanced";
+
+/** What observation supports about a credential we hold. */
+export type CredentialVerdict = "refused" | "accepted" | "unknown";
 
 /** True for a state in which the capability delivers something usable right now. */
 export function isUsable(state: CapabilityState): boolean {
-  return state !== "locked";
+  return state !== "locked" && state !== "refused";
+}
+
+/**
+ * Fold observed evidence into the configured state. Pure.
+ *
+ * Only a credential we actually SEND can be refused, so the transition is reachable
+ * from `configured` and `enhanced` alone. A `keyless` layer sends nothing; `locked`
+ * and `upgradable` mean we hold nothing to send. A 403 seen against any of those
+ * three is somebody else's problem — a WAF, a geo-block, an unrelated caller — and
+ * pinning it on our configuration would be a guess.
+ */
+export function stateWithEvidence(base: CapabilityState, verdict: CredentialVerdict): CapabilityState {
+  if (verdict !== "refused") return base;
+  return base === "configured" || base === "enhanced" ? "refused" : base;
 }
 
 export function capabilityState(id: string, env: Record<string, string | undefined>): CapabilityState {
