@@ -1,5 +1,9 @@
 /**
- * OpenSky Network — live aircraft worldwide, from ONE global snapshot.
+ * The aircraft layer. OpenSky Network is the PRIMARY source — live aircraft
+ * worldwide from ONE global snapshot — with a bounded adsb.lol grid sweep
+ * (lib/sources/adsb.ts) as the fallback when OpenSky refuses. See
+ * `fetchAircraftOnce` for why the fallback exists and what it costs in coverage.
+ * Everything below this line describes the OpenSky path specifically.
  *
  * WHY GLOBAL, NOT A SWEEP: adsb.lol/adsb.fi are point+radius only (max 250 nm, no
  * global query), so worldwide coverage there means sweeping ~50 cells and stitching
@@ -40,6 +44,7 @@ import {
   withCoverage,
   type SignalCoverage,
 } from "@/lib/signals/coverage";
+import { fetchAdsbSweep, sweepToObjects } from "@/lib/sources/adsb";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -249,6 +254,14 @@ export interface AircraftSnapshot {
    * fabrication — see `decideStaleness`/`gateSnapshot` below.
    */
   staleness?: { stale: true; ageMs: number } | { reason: "too-old"; ageMs: number };
+  /**
+   * Which upstream actually produced these positions. The two providers have
+   * materially different coverage — OpenSky is worldwide, the adsb.lol sweep sees
+   * only where volunteers run receivers — so a consumer that prints a count without
+   * knowing the provider cannot describe it correctly. Undefined only for a
+   * snapshot that predates this field or carries no aircraft.
+   */
+  source?: "opensky" | "adsb.lol";
 }
 
 /** Pure: lift the coverage a capped array carries into a JSON-serializable snapshot. */
@@ -312,6 +325,43 @@ async function fetchGlobalOnce(): Promise<AircraftSnapshot> {
   return { ...toAircraftSnapshot(objects), fetchedAt: Date.now() };
 }
 
+/**
+ * One aircraft snapshot from the best provider that answers.
+ *
+ * OpenSky stays PRIMARY because `/states/all` is genuinely worldwide in one call.
+ * But its anonymous tier is credit-capped per IP, and on the production
+ * deployment's IP that cap is permanently exhausted — measured 2026-08-13, prod
+ * `/api/planes` served `{count: 0}` while the same endpoint answered 200 with
+ * ~1.7 MB in 0.58 s from a home IP. With OpenSky as the only provider,
+ * `fetchGlobalOnce` throws on every poll, `unstable_cache` never commits, and the
+ * layer sits in `never-fetched` forever. A staleness gate cannot rescue that: there
+ * has never been a good snapshot to go stale.
+ *
+ * So on an OpenSky failure we fall back to a bounded adsb.lol grid sweep
+ * (lib/sources/adsb.ts), which answers fine from a datacentre IP — the sibling
+ * `military-air` layer has been serving from it in prod all along, which is the
+ * evidence that the block is OpenSky-specific and not general egress.
+ *
+ * The two providers do NOT have equal coverage, and the snapshot says which one
+ * served so that difference is never silent: OpenSky is worldwide, the sweep sees
+ * only where volunteers run receivers. Each attaches its own coverage record.
+ *
+ * If BOTH fail we rethrow OpenSky's error rather than returning an empty snapshot —
+ * `unstable_cache` must not commit a success on a total failure, or an empty result
+ * poisons the cache for the whole revalidate window. That is the same bug the
+ * `fetchGlobalOnce` docstring describes; it applies to the fallback path too.
+ */
+async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
+  try {
+    return { ...(await fetchGlobalOnce()), source: "opensky" };
+  } catch (openSkyError) {
+    const sweep = await fetchAdsbSweep();
+    if (!sweep.objects.length) throw openSkyError;
+    const objects = sweepToObjects(sweep, MAX_PLANES);
+    return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+  }
+}
+
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
 function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
   const planes = Array.isArray(snapshot?.planes) ? snapshot.planes : [];
@@ -322,6 +372,7 @@ function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
     planes,
     ...(snapshot?.coverage ? { coverage: snapshot.coverage } : {}),
     ...(snapshot?.fetchedAt ? { fetchedAt: snapshot.fetchedAt } : {}),
+    ...(snapshot?.source ? { source: snapshot.source } : {}),
   };
 }
 
@@ -405,17 +456,18 @@ export function gateSnapshot(snapshot: AircraftSnapshot, now: number = Date.now(
  * — cache hit or fallback — passes through `gateSnapshot` before it leaves this
  * function, so nothing older than STALE_CEILING_MS is ever returned.
  *
- * CACHE KEY: bumped to -v3, both for the shape change (added `fetchedAt`) and to
- * guarantee a clean start after this fix — a v2 entry may currently hold the
- * `{planes: []}` this exact bug wrote into production, and reusing that key
- * would mean serving that poisoned entry until it happened to revalidate.
+ * CACHE KEY: `planes-aircraft-v4`. Renamed off `planes-opensky-global-v3` because
+ * the entry is no longer OpenSky-specific — it now holds whichever provider
+ * answered — and bumped for the shape change (added `source`). The rename also
+ * guarantees a clean start: a v3 entry on prod can only hold what the exhausted
+ * credit cap produced, and reusing that key would serve it until it revalidated.
  */
 export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
   let snapshot: AircraftSnapshot;
   try {
     const { unstable_cache } = await import("next/cache");
     snapshot = rehydrate(
-      await unstable_cache(fetchGlobalOnce, ["planes-opensky-global-v3"], {
+      await unstable_cache(fetchAircraftOnce, ["planes-aircraft-v4"], {
         revalidate: REVALIDATE_S,
       })(),
     );
@@ -425,7 +477,7 @@ export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
     // failed too. One direct attempt; if that also fails, there is genuinely
     // nothing to serve.
     try {
-      snapshot = await fetchGlobalOnce();
+      snapshot = await fetchAircraftOnce();
     } catch {
       snapshot = { planes: [] };
     }
