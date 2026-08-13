@@ -23,6 +23,29 @@ export const BRAND = {
   ink: "#0b1016",
   /** Ko-fi support link (the calm, opt-in "Support" button). */
   kofiUrl: "https://ko-fi.com/opendata",
+  /** Canonical public repository. */
+  repo: "011-sam-110/TrafficNerd-V2",
+  repoUrl: "https://github.com/011-sam-110/TrafficNerd-V2",
+  /**
+   * The licence, and it is load bearing rather than decorative.
+   *
+   * AGPL-3.0 section 13 says that if users interact with the program REMOTELY over
+   * a network — which is the only way anyone uses this — they must be offered the
+   * Corresponding Source. A hosted AGPL app that does not link its own source is in
+   * breach of its own licence, so `repoUrl` is rendered in the console chrome and in
+   * the site footer for legal reasons, not as a portfolio flourish. Do not remove
+   * those links without changing the licence.
+   */
+  license: {
+    /** SPDX identifier; matches the `license` field in package.json. */
+    spdx: "AGPL-3.0-only",
+    name: "GNU Affero General Public License v3.0",
+    short: "AGPL-3.0",
+    /** The copy in this repo, which is what section 13 points a user at. */
+    url: "https://github.com/011-sam-110/TrafficNerd-V2/blob/main/LICENSE",
+    holder: "Sam Poplett",
+    year: "2026",
+  },
 } as const;
 
 /**

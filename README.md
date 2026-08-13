@@ -108,3 +108,21 @@ API routes:  /api/cameras · /api/coverage · /api/planes · /api/satellites · 
 ```
 
 Adding a camera source or a signal layer is one adapter file plus a fixture test; the normalisation layer, and the proxy that fronts every image, are the core of the project.
+
+## Licence
+
+Copyright © 2026 Sam Poplett.
+
+Provenance is free software licensed under the **[GNU Affero General Public License v3.0](LICENSE)** (`AGPL-3.0-only`).
+
+You may use, study, modify and redistribute it. The condition is reciprocity: if you distribute a modified version, **or run one as a network service**, you must make your source available to its users under the same licence. That network clause (section 13) is the reason this licence was chosen over MIT — the natural way to reuse this project is to host it, and a licence that only bound redistribution would not reach that.
+
+Concretely, the running app links to this repository from the console header and the site footer. Those links are how section 13's offer of source is served, so they are a licence obligation rather than decoration.
+
+### The data is not covered by this licence
+
+The AGPL covers **this codebase only**. Every upstream feed keeps its own separate terms, and some require attribution that is reproduced in the app: TfL Open Data, Windy.com webcams, CARTO and OpenStreetMap basemaps, NASA EONET and FIRMS, USGS, GDACS, TeleGeography, adsb.lol and OpenSky, among others. Redistributing this code does not grant you any right to their data — check each source before relying on it.
+
+### Third-party code
+
+None. No code was copied from any other project; `koala73/worldmonitor` was read for factual endpoint information only, which is not copyrightable.
