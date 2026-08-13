@@ -6,10 +6,17 @@ import Starfield from "./Starfield";
 import type { HeroLayer } from "./HeroGlobe";
 
 // MapLibre + the TLE propagator are the heaviest things on this page, so the globe
-// is never part of the first paint. The headline and the star field render
-// immediately; the globe box is an empty, correctly-sized square of night until the
-// browser is idle, then the real engine mounts into it. Nothing reflows when it
-// arrives, because the box was always that size.
+// is still never part of the FIRST PAINT — but it now starts loading immediately
+// after it, in parallel with the launch sequence, rather than waiting for the
+// browser to go idle.
+//
+// It used to mount on `requestIdleCallback(…, { timeout: 1800 })`, which meant the
+// engine did not begin until roughly the moment the choreography finished, and the
+// globe then faded up into a hero that had already finished arriving. Loading it
+// under the sequence spends the one second the text is animating on the network
+// and the style parse, so the globe is usually painted by the time the rail lands.
+//
+// Nothing reflows when it arrives, because the box was always that size.
 const HeroGlobe = dynamic(() => import("./HeroGlobe"), { ssr: false });
 
 /**
@@ -27,6 +34,7 @@ const HeroGlobe = dynamic(() => import("./HeroGlobe"), { ssr: false });
  */
 export default function HeroStage({ layers, satColor }: { layers: HeroLayer[]; satColor: string }) {
   const [mount, setMount] = useState(false);
+  const [ready, setReady] = useState(false);
   const [status, setStatus] = useState("Starting the engine");
 
   // The ticker: the globe hands us lines as its layers land, and we show them one
@@ -53,18 +61,40 @@ export default function HeroStage({ layers, satColor }: { layers: HeroLayer[]; s
     timer.current = setInterval(step, 1600);
   }, []);
 
+  // Mount on the frame AFTER the first paint. Two nested rAFs is the cheap way to
+  // say that: the first fires before the paint that follows hydration, the second
+  // after it. So the headline still owns the critical path and the engine starts
+  // roughly 16ms later, under the animation rather than after it.
   useEffect(() => {
-    type IdleWindow = Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (handle: number) => void;
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setMount(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
     };
-    const w = window as IdleWindow;
-    if (typeof w.requestIdleCallback === "function") {
-      const id = w.requestIdleCallback(() => setMount(true), { timeout: 1800 });
-      return () => w.cancelIdleCallback?.(id);
-    }
-    const t = setTimeout(() => setMount(true), 600);
-    return () => clearTimeout(t);
+  }, []);
+
+  // Replay the launch sequence on every arrival, not just on a cold load.
+  //
+  // A document restored from the back/forward cache comes back with its animations
+  // already finished, so returning from /app showed the hero fully assembled with
+  // no launch at all. Removing the class, forcing a reflow and putting it back is
+  // what actually restarts a CSS animation — reading `offsetWidth` in between is
+  // the flush, and without it the browser coalesces the two class changes into no
+  // change whatsoever.
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      const hero = document.querySelector<HTMLElement>(".pv-hero");
+      if (!hero) return;
+      hero.classList.remove("pv-intro");
+      void hero.offsetWidth;
+      hero.classList.add("pv-intro");
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
   }, []);
 
   useEffect(() => () => clearInterval(timer.current), []);
@@ -73,8 +103,18 @@ export default function HeroStage({ layers, satColor }: { layers: HeroLayer[]; s
     <>
       <div className="pv-hero-stage" aria-hidden="true">
         <Starfield />
-        <div className="pv-hero-globe">
-          {mount ? <HeroGlobe layers={layers} satColor={satColor} onStatus={pushStatus} /> : null}
+        {/* `data-ready` drives the globe's own fade-and-settle, and is set when
+            MapLibre has painted a frame — not when it mounted. Fading in on mount
+            would fade in an empty black square. */}
+        <div className="pv-hero-globe" data-ready={ready ? "1" : "0"}>
+          {mount ? (
+            <HeroGlobe
+              layers={layers}
+              satColor={satColor}
+              onStatus={pushStatus}
+              onReady={() => setReady(true)}
+            />
+          ) : null}
         </div>
         <div className="pv-hero-scrim" />
       </div>
