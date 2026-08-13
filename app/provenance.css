@@ -4,13 +4,21 @@
    console's `.tn-*` tokens, and none of the console's chrome leaks in here.
 
    The whole page is one mechanic: a scroll-linked ground that interpolates
-   bone -> ink. `--pv-g` (0..1) is written by ONE rAF-throttled subscriber in
+   bone <-> ink. `--pv-g` (0..1) is written by ONE rAF-throttled subscriber in
    ScrollGround.tsx; everything else in this file just reads it. Never add a
    second scroll listener.
 
-   The foreground token set flips at the moment the opaque Adapter panel fills
-   the viewport (`.pv-night` on .pv-root), so no type is ever read against the
-   ambiguous mid-grey the ramp passes through.
+   The ramp runs NIGHT -> DAY -> NIGHT. The hero is a full-bleed night stage
+   (`--pv-g` starts at 1), the ground lifts to daylight as the reader enters the
+   document, and it plunges back to ink behind the opaque Adapter panel. The
+   foreground token set flips (`.pv-night` on .pv-root) only while something
+   opaque covers the viewport, so no type is ever read against the ambiguous
+   mid-grey the ramp passes through.
+
+   `.pv-night` is SERVER-RENDERED onto .pv-root (see (site)/layout.tsx) because
+   the first thing on the page is the night hero. Defaulting to daylight and
+   letting the first scroll frame correct it flashed a bone instrument bar over
+   a black hero on every cold load.
    =========================================================================== */
 
 .pv-root {
@@ -36,8 +44,9 @@
   --pv-surface: rgba(255, 255, 255, 0.55);
   --pv-surface-2: rgba(255, 255, 255, 0.34);
 
-  /* scroll progress, 0..1 */
-  --pv-g: 0;
+  /* scroll progress, 0..1. `--pv-g` starts at 1: the page opens on the night hero,
+     so ink is the correct ground before a single scroll frame has run. */
+  --pv-g: 1;
   --pv-p: 0;
 
   /* type roles — the variables are published by next/font in (site)/layout.tsx */
@@ -95,6 +104,50 @@
   pointer-events: none;
 }
 
+/* ─────────────────────────── load choreography ───────────────────────────
+   The hero arrives in a fixed order — starfield, then globe (its own spin-up
+   lives in the canvas), then headline, lede, buttons, legend, status rail. All
+   of it is CSS `animation` with a delay, never a scroll listener and never
+   React state, so it costs nothing after the first second and the reduced-motion
+   block at the foot of this file collapses the whole sequence to zero.
+
+   These are keyed off page load rather than an IntersectionObserver on purpose:
+   the hero is above the fold by definition, so there is nothing to observe. */
+
+@keyframes pv-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 34px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* The clip-path end state is inset by -20% rather than 0: a 0 inset clips the
+   headline's own descenders and letter overhang at the exact moment the
+   animation finishes, which reads as a 1px twitch on the last frame. */
+@keyframes pv-wipe {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 26px, 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-20% -20% -20% -20%);
+    transform: none;
+  }
+}
+
 /* ─────────────────────────── layout ─────────────────────────── */
 
 .pv-doc {
@@ -103,6 +156,9 @@
   display: grid;
   grid-template-columns: 1fr min(74rem, calc(100% - 2.5rem)) 1fr;
   row-gap: 6rem;
+  /* The hero is no longer a child of this grid, so the document opens against
+     the bottom of the night stage and needs its own headroom. */
+  padding-top: 6rem;
   padding-bottom: 0;
 }
 .pv-doc > * {
@@ -217,13 +273,52 @@
   height: 44px;
   padding: 0 1.25rem;
   border-bottom: 1px solid var(--pv-rule);
-  background: color-mix(in oklab, color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%)) 82%, transparent);
+  /* The bar reads `--pv-bar-g`, NOT `--pv-g`.
+     It is translucent and it is sticky, so it is the one element on the page that
+     can be over two different grounds at once — and during the hero's exit it is:
+     the black stage is still under it while the ground behind the document below
+     has already lifted to bone. Following the page ramp painted a bone bar across
+     the night hero. ScrollGround publishes `--pv-bar-g` as the ground *directly
+     beneath the bar*, which is the only ground it can honestly match. */
+  background-color: color-mix(
+    in oklab,
+    color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-bar-g, 1) * 100%)) 82%,
+    transparent
+  );
   backdrop-filter: blur(10px);
   font-family: var(--pv-mono);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--pv-fg-mute);
+  /* The handover happens the instant the hero's bottom edge clears the bar, so it
+     is a step, not a ramp. Ease it or it snaps. */
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* While the night stage is the thing under the bar, the bar wears night type —
+   independently of `.pv-night`, which by then has already handed the document
+   over to daylight. */
+.pv-root.pv-bar-night .pv-bar {
+  color: #7a8892;
+  border-bottom-color: rgba(232, 238, 241, 0.16);
+}
+.pv-root.pv-bar-night .pv-wordmark {
+  color: #e8eef1;
+}
+.pv-root.pv-bar-night .pv-bar-live {
+  color: #93a3ae;
+}
+.pv-root.pv-bar-night .pv-bar-links a {
+  color: #7a8892;
+}
+.pv-root.pv-bar-night .pv-bar-links a:hover {
+  color: #e8eef1;
+}
+.pv-root.pv-bar-night .pv-wordmark,
+.pv-root.pv-bar-night .pv-bar-live,
+.pv-root.pv-bar-night .pv-bar-links a {
+  transition: color 0.3s ease;
 }
 .pv-wordmark {
   font-family: var(--pv-display);
@@ -277,39 +372,279 @@
   color: var(--pv-fg);
 }
 
-/* ─────────────────────────── hero ─────────────────────────── */
+/* ─────────────────────────── hero (the night stage) ───────────────────────────
+   Not a plate beside the copy — a stage behind it. The globe is a full-bleed
+   backdrop rising from below the fold, the headline sits ON it, and the only
+   thing separating them is a radial scrim over the copy's corner.
+
+   The stage is always night regardless of `--pv-g`, so everything in here that
+   carries type states its own colour rather than reading the flipping token set.
+   The ground ramp starts at ink to match it and lifts to daylight below. */
 
 .pv-hero {
+  position: relative;
+  z-index: 1;
+  /* The globe's radius, in the design's own terms: 60% of the width or 86% of
+     the stage height, whichever is smaller. Both the canvas box and the copy's
+     breathing room are derived from it, so the composition holds at any size. */
+  --pv-globe-r: min(60vw, calc(0.86 * (100svh - 44px)));
   min-height: calc(100svh - 44px);
+  background: #05070c;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr;
   align-content: center;
-  gap: 2.2rem;
-  padding: 3.5rem 0 4.5rem;
 }
-@media (min-width: 62rem) {
-  /* The hero breaks the document grid: the copy keeps the document's left margin,
-     the globe runs off the right edge of the viewport. Two columns of a centred
-     container would put a hard rule down the middle of the page, which is exactly
-     the framed-box look this replaced. */
-  .pv-hero {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-    align-items: stretch;
-    gap: 0;
-    padding-left: max(1.25rem, calc((100vw - 74rem) / 2));
-    padding-right: 0;
-  }
-  .pv-hero-copy {
-    justify-content: center;
-    padding-right: 3rem;
-  }
+
+/* ── the stage: stars, globe, scrim ── */
+.pv-hero-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
 }
+.pv-hero-stage > .pv-hero-stars {
+  position: absolute;
+  inset: 0;
+  /* A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps
+     its intrinsic 300x150. It needs explicit width/height. */
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  animation: pv-fade 1.4s ease both;
+}
+
+/* The globe box is a square of the sphere's own diameter, parked so its centre
+   sits below the fold (94% down, 56% across). Only the upper cap is on screen,
+   which is what makes it read as rising rather than floating. */
+.pv-hero-globe {
+  position: absolute;
+  left: 56%;
+  top: 94%;
+  width: calc(var(--pv-globe-r) * 2);
+  height: calc(var(--pv-globe-r) * 2);
+  /* The -50%/-50% is the centring; the two custom properties on top of it are
+     written by ScrollGround so the globe sinks, swells slightly and dims as the
+     reader leaves the hero. Scale is last in the list and the origin is the
+     element's own centre, so it grows about the parked centre point rather than
+     wandering off it. */
+  transform: translate3d(-50%, calc(-50% + var(--pv-globe-y, 0%)), 0) scale(var(--pv-globe-s, 1));
+  opacity: var(--pv-globe-o, 1);
+  z-index: 1;
+  will-change: opacity, transform;
+}
+/* MapLibre stamps `.maplibregl-map { position: relative }` onto whatever element
+   you hand it, and maplibre-gl.css is imported from the component so it lands
+   AFTER this file. At equal specificity source order wins and the container
+   collapses to a static zero-height block. The child combinator outranks it. */
+.pv-hero-globe > .pv-hero-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pv-hero .maplibregl-control-container {
+  display: none;
+}
+
+/* Darkens the headline's corner without putting an edge anywhere. Decorative, so
+   it must not eat the pointer — the globe underneath is still grabbable. */
+.pv-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 22% 42%,
+    rgba(5, 7, 12, 0.86) 0%,
+    rgba(5, 7, 12, 0.62) 34%,
+    rgba(5, 7, 12, 0) 68%
+  );
+}
+
+/* ── the copy ── */
 .pv-hero-copy {
+  position: relative;
+  z-index: 3;
+  width: min(74rem, calc(100% - 3rem));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vh, 3rem) 0 clamp(4.5rem, 9vh, 6.5rem);
   display: flex;
   flex-direction: column;
-  gap: 1.6rem;
-  position: relative;
-  z-index: 2;
+  gap: clamp(0.9rem, 2.2vh, 1.5rem);
+  /* Shrink every child to its own content width. Full-width blocks here would
+     lay a transparent sheet across the globe and swallow the drag. */
+  align-items: flex-start;
+  pointer-events: none;
+}
+.pv-hero-copy > * {
+  pointer-events: auto;
+}
+
+.pv-hero-eyebrow {
+  font-family: var(--pv-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #3fb4ce;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  animation: pv-fade 0.9s ease 0.35s both;
+}
+.pv-hero-eyebrow span + span {
+  color: #7a8892;
+}
+
+.pv-hero .pv-h1 {
+  /* Capped against the VIEWPORT height as well as its width: the headline now
+     shares the stage with the globe, and a purely vw-scaled size pushed the
+     legend and the status bar off a short laptop screen. */
+  font-size: clamp(2.2rem, min(7.4vw, 13vh), 6.4rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  color: #f4f8fa;
+  max-width: 22ch;
+}
+/* Each line wipes up under its own clip, one after the other. */
+.pv-hero .pv-h1 > span {
+  display: block;
+  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pv-hero .pv-h1 > span:nth-child(1) {
+  animation-delay: 0.5s;
+}
+.pv-hero .pv-h1 > span:nth-child(2) {
+  animation-delay: 0.64s;
+}
+
+.pv-hero-lede {
+  font-size: 1.16rem;
+  line-height: 1.5;
+  color: #b8c5cd;
+  max-width: 34rem;
+  margin: 0;
+  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.86s both;
+}
+.pv-hero .pv-cta-row {
+  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
+}
+/* The stage is always night, so the hero's buttons state their colours outright
+   instead of deriving them from the ramp. */
+.pv-hero .pv-cta {
+  background: #e8eef1;
+  border-color: #e8eef1;
+  color: #0b1016;
+}
+.pv-hero .pv-cta-ghost {
+  background: transparent;
+  color: #e8eef1;
+  border-color: rgba(232, 238, 241, 0.34);
+}
+.pv-hero .pv-cta-ghost:hover {
+  border-color: #e8eef1;
+}
+
+/* The legend that used to float over the aperture, now a line of the copy. */
+.pv-hero-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem 1.6rem;
+  font-family: var(--pv-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 241, 0.7);
+  animation: pv-fade 1s ease 1.35s both;
+}
+.pv-hero-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.pv-hero-legend i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  display: block;
+  flex: none;
+}
+
+/* ── the status rail along the foot of the stage ── */
+.pv-hero-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  border-top: 1px solid rgba(232, 238, 241, 0.14);
+  background: linear-gradient(to top, rgba(5, 7, 12, 0.92), rgba(5, 7, 12, 0.35));
+  animation: pv-fade 1s ease 1.5s both;
+  pointer-events: none;
+}
+.pv-hero-foot-inner {
+  width: min(74rem, calc(100% - 2.5rem));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.75rem 0;
+  font-family: var(--pv-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 241, 0.6);
+}
+.pv-hero-status {
+  margin: 0;
+  color: rgba(232, 238, 241, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.pv-hero-credit {
+  margin: 0;
+  text-align: right;
+  color: rgba(232, 238, 241, 0.42);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  flex: none;
+}
+/* A quiet nudge that the thing can be grabbed. Mouse only — on touch the globe
+   deliberately does not take the drag, so the hint would be a lie. */
+.pv-hero-hint {
+  position: absolute;
+  right: 1.6rem;
+  top: 1.6rem;
+  z-index: 3;
+  margin: 0;
+  font-family: var(--pv-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 241, 0.4);
+  pointer-events: none;
+  animation: pv-fade 1s ease 1.8s both;
+}
+@media (pointer: coarse) {
+  .pv-hero-hint {
+    display: none;
+  }
+}
+@media (max-width: 52rem) {
+  /* The credit list is six publishers long and wraps into a paragraph at this
+     width, shoving the status line out of the rail. Keep the live line. */
+  .pv-hero-credit {
+    display: none;
+  }
+  .pv-hero-hint {
+    display: none;
+  }
+  .pv-hero-foot-inner {
+    width: calc(100% - 1.8rem);
+  }
 }
 .pv-cta-row {
   display: flex;
@@ -324,7 +659,10 @@
   padding: 0.85rem 1.5rem;
   border: 1px solid var(--pv-fg);
   background: var(--pv-fg);
-  color: color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc((1 - var(--pv-g)) * 100%));
+  /* The label matches the GROUND, so it always contrasts with `--pv-fg` behind
+     it. Reading `(1 - --pv-g)` here inverted that and painted an ink label on an
+     ink button in daylight — the primary call to action, invisible. */
+  color: color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%));
   text-decoration: none;
   transition: opacity 0.18s ease;
 }
@@ -341,202 +679,6 @@
   opacity: 1;
 }
 
-/* ── the aperture ──────────────────────────────────────────────────────────
-   Night bleeding in from the right, not a framed plate. The dark field runs the
-   full height of the hero and off the right edge of the viewport; the ONLY soft
-   edge is the left one, where it dissolves into the bone ground.
-
-   Earlier this masked on all four sides, which looked like a smudge and — worse —
-   put the legend, the hint and the mandatory credit inside the faded band where
-   none of them could be read. Fade one edge, keep the rest solid, and every label
-   sits on a surface dark enough to carry it. */
-.pv-aperture {
-  position: relative;
-  width: 100%;
-  align-self: stretch;
-  min-height: min(78svh, 46rem);
-}
-@media (max-width: 61.99rem) {
-  .pv-aperture {
-    min-height: 60svh;
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-  }
-}
-
-/* Only the ARTWORK is masked. The legend and the credit sit outside this element
-   so they stay crisp instead of dissolving with the picture. */
-.pv-aperture-vis {
-  position: absolute;
-  inset: 0;
-  background: #05070c;
-  overflow: hidden;
-  /* A long, eased ramp. A short one (transparent -> 55% -> opaque inside 30%) reads
-     as a pale vertical BAND with two visible edges rather than a dissolve, because
-     the eye finds the two inflection points immediately. These stops approximate an
-     ease-in-out over half the panel, which has no locatable edge anywhere. */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(0, 0, 0, 0.04) 8%,
-    rgba(0, 0, 0, 0.14) 16%,
-    rgba(0, 0, 0, 0.32) 24%,
-    rgba(0, 0, 0, 0.56) 32%,
-    rgba(0, 0, 0, 0.78) 40%,
-    rgba(0, 0, 0, 0.93) 47%,
-    #000 55%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(0, 0, 0, 0.04) 8%,
-    rgba(0, 0, 0, 0.14) 16%,
-    rgba(0, 0, 0, 0.32) 24%,
-    rgba(0, 0, 0, 0.56) 32%,
-    rgba(0, 0, 0, 0.78) 40%,
-    rgba(0, 0, 0, 0.93) 47%,
-    #000 55%
-  );
-}
-@media (min-width: 62rem) {
-  /* Cover the hero's vertical padding so there is no seam above or below.
-     NO negative `right` here: .pv-hero is already full-bleed (grid-column 1/-1),
-     so this element's right edge IS the viewport's. Adding a negative offset on
-     top of that pushed it past the viewport and gave the whole page a horizontal
-     scrollbar — 48px of it at 1280px wide. */
-  .pv-aperture-vis {
-    top: -3.5rem;
-    bottom: -4.5rem;
-  }
-}
-@media (max-width: 61.99rem) {
-  /* Stacked layout: the fade moves to the top edge, where the copy meets it. */
-  .pv-aperture-vis {
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
-  }
-}
-
-/* Both layers fill the aperture. Two traps are handled here, and removing either
-   silently collapses the globe to nothing with no error anywhere:
-
-   1. MapLibre stamps `.maplibregl-map { position: relative }` onto whatever element
-      you hand it, and maplibre-gl.css is imported from the component so it lands
-      AFTER this file. At equal specificity source order wins, so a plain
-      `.pv-aperture-map` rule loses and the container becomes a static, zero-height
-      block. The child combinator outranks it.
-   2. A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps its
-      intrinsic 300x150. It needs explicit width/height. */
-.pv-aperture-vis > .pv-aperture-canvas,
-.pv-aperture-vis > .pv-aperture-map {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-.pv-aperture-vis > .pv-aperture-map {
-  z-index: 1;
-  cursor: grab;
-}
-.pv-aperture-vis > .pv-aperture-map:active {
-  cursor: grabbing;
-}
-.pv-aperture-vis > .pv-aperture-canvas {
-  z-index: 0;
-}
-/* Keep MapLibre's own chrome out of the hero; attribution is rendered by us. */
-.pv-aperture .maplibregl-control-container {
-  display: none;
-}
-
-/* Everything below is map furniture, positioned inside the SOLID part of the dark
-   field (left: 40%) so it never lands on the fade. */
-.pv-aperture-legend {
-  position: absolute;
-  right: 1.6rem;
-  top: 2rem;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-family: var(--pv-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.78);
-  pointer-events: none;
-  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
-}
-.pv-aperture-legend span {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-.pv-aperture-legend i {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  display: block;
-  flex: none;
-}
-.pv-aperture-foot {
-  position: absolute;
-  left: 42%;
-  right: 1.6rem;
-  bottom: 1.6rem;
-  z-index: 3;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  pointer-events: none;
-  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
-}
-.pv-aperture-status {
-  margin: 0;
-  font-family: var(--pv-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.66);
-  flex: none;
-  max-width: 52%;
-}
-.pv-aperture-credit {
-  font-family: var(--pv-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-  color: rgba(232, 238, 241, 0.44);
-  text-align: right;
-  line-height: 1.5;
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-}
-/* A quiet nudge that the thing can be grabbed. Mouse only — on touch the globe
-   deliberately does not take the drag, so the hint would be a lie. */
-.pv-aperture-hint {
-  position: absolute;
-  left: 42%;
-  top: 2rem;
-  z-index: 3;
-  margin: 0;
-  font-family: var(--pv-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.4);
-  pointer-events: none;
-  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
-}
-@media (max-width: 61.99rem) {
-  .pv-aperture-foot { left: 1.25rem; right: 1.25rem; }
-  .pv-aperture-hint { display: none; }
-  .pv-aperture-legend { top: 4.5rem; right: 1.25rem; }
-}
-@media (pointer: coarse) {
-  .pv-aperture-hint { display: none; }
-}
 
 /* ─────────────────────────── marquee ─────────────────────────── */
 
@@ -1118,14 +1260,27 @@
      same fate because it already sets z-index: 1. */
   position: relative;
   z-index: 1;
-  background: var(--pv-ink);
+  /* The same black as the hero, not `--pv-ink`. The closing section is the other
+     half of a bookend — "everything above was this" lands because the reader is
+     standing back on the stage they started on, under the same sky. */
+  background: #05070c;
   color: #e8eef1;
   min-height: 100svh;
   display: flex;
   align-items: center;
   padding: 5rem 1.25rem;
+  overflow: hidden;
+}
+.pv-handoff > .pv-hero-stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
 }
 .pv-handoff-inner {
+  position: relative;
+  z-index: 1;
   width: min(74rem, 100%);
   margin: 0 auto;
   display: flex;

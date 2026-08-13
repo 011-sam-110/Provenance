@@ -17,7 +17,7 @@ interface Coverage {
  * If the fetch fails, the slot stays empty. A stale hardcoded figure on the one
  * page arguing for trustworthiness is worse than no figure.
  */
-export default function InstrumentBar({ repoUrl }: { repoUrl: string }) {
+export default function InstrumentBar() {
   const [cov, setCov] = useState<Coverage | null>(null);
 
   useEffect(() => {
@@ -47,9 +47,11 @@ export default function InstrumentBar({ repoUrl }: { repoUrl: string }) {
       <span className="pv-bar-live">{live}</span>
       <span className="pv-bar-links">
         <a href="#sources">Sources</a>
-        <a href={repoUrl} target="_blank" rel="noreferrer noopener">
-          Source code
-        </a>
+        {/* The ledger, not the repo. The bar's job is to get you to the two things
+            that back the claim it is making one slot to the left — every source,
+            and what each of them is doing right now. The repo link is in the
+            footer and in the hero's second button. */}
+        <a href="#ledger">Status</a>
         <a href="/app">Open the map →</a>
       </span>
     </div>

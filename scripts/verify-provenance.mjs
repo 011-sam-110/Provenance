@@ -96,15 +96,24 @@ await page.waitForTimeout(1200);
 const h1 = (await page.locator("h1.pv-h1").first().innerText()).replace(/\s+/g, " ").trim();
 h1.toLowerCase().includes("already") ? pass("hero headline renders", h1) : fail("hero headline", h1);
 
-// ── 2. the ground starts at bone and the foreground is daylight ────────────
+// ── 2. the page OPENS on night and the foreground agrees ───────────────────
+// The ramp runs night -> day -> night. If this ever reads daylight at the top
+// again, the hero has lost its stage and the instrument bar is painting bone
+// across a black header.
 const g0 = await g();
-g0 < 0.05 ? pass("ground starts at bone", `--pv-g=${g0}`) : fail("ground starts at bone", `--pv-g=${g0}`);
-(await isNight()) === false ? pass("daylight foreground at top") : fail("daylight foreground at top");
+g0 > 0.95 ? pass("ground starts at ink", `--pv-g=${g0}`) : fail("ground starts at ink", `--pv-g=${g0}`);
+(await isNight()) === true ? pass("night foreground at top") : fail("night foreground at top");
+
+// The bar is translucent and sticky, so it tracks the ground DIRECTLY under it
+// rather than the page's. At the top that is the hero.
+(await page.evaluate(() => document.querySelector(".pv-root").classList.contains("pv-bar-night")))
+  ? pass("instrument bar wears the stage it is sitting on")
+  : fail("instrument bar is not in night over the hero");
 
 // ── 3. the real globe mounts (MapLibre canvas, not an image) ───────────────
-await page.waitForSelector(".pv-aperture canvas.maplibregl-canvas", { timeout: 25000 }).catch(() => {});
-const canvases = await page.locator(".pv-aperture canvas").count();
-const hasMap = await page.locator(".pv-aperture canvas.maplibregl-canvas").count();
+await page.waitForSelector(".pv-hero-globe canvas.maplibregl-canvas", { timeout: 25000 }).catch(() => {});
+const canvases = await page.locator(".pv-hero canvas").count();
+const hasMap = await page.locator(".pv-hero-globe canvas.maplibregl-canvas").count();
 hasMap > 0
   ? pass("hero globe is the real MapLibre engine", `${canvases} canvases (starfield + map)`)
   : fail("hero globe did not mount", `${canvases} canvases`);
@@ -117,21 +126,22 @@ const box = await page.evaluate(() => {
     const el = document.querySelector(sel);
     return el ? Math.round(el.getBoundingClientRect().height) : -1;
   };
-  const cv = document.querySelector(".pv-aperture canvas.maplibregl-canvas");
+  const cv = document.querySelector(".pv-hero-globe canvas.maplibregl-canvas");
   return {
-    aperture: r(".pv-aperture"),
-    mapDiv: r(".pv-aperture-map"),
-    starfield: r(".pv-aperture-canvas"),
+    stage: r(".pv-hero-stage"),
+    globeBox: r(".pv-hero-globe"),
+    mapDiv: r(".pv-hero-map"),
+    starfield: r(".pv-hero-stars"),
     canvasH: cv ? cv.height : 0,
   };
 });
 box.mapDiv > 300 && box.starfield > 300 && box.canvasH > 300
-  ? pass("globe fills the aperture", JSON.stringify(box))
+  ? pass("globe fills its box", JSON.stringify(box))
   : fail("globe container collapsed", JSON.stringify(box));
 
 // And prove it actually PAINTED something, rather than being a correctly-sized void.
 const painted = await page.evaluate(() => {
-  const cv = document.querySelector(".pv-aperture canvas.maplibregl-canvas");
+  const cv = document.querySelector(".pv-hero-globe canvas.maplibregl-canvas");
   if (!cv) return null;
   const gl = cv.getContext("webgl2") || cv.getContext("webgl");
   if (!gl) return null;
@@ -148,9 +158,45 @@ painted === null || painted >= 2
   ? pass("globe renders pixels", `${painted}/5 sample points lit`)
   : fail("globe canvas is blank", `${painted}/5 lit`);
 
+// The sphere has to very nearly fill its square box. HeroGlobe's zoom is derived
+// from a calibration constant against MapLibre's perspective globe, and there is no
+// closed form to fall back on — so a MapLibre upgrade that moves the framing has to
+// fail here rather than quietly reshooting the hero. Under-fill leaves the limb
+// floating in the middle of the stage; over-fill clips it into a straight edge.
+const fill = await page.evaluate(() => {
+  const cv = document.querySelector(".pv-hero-globe canvas.maplibregl-canvas");
+  if (!cv) return null;
+  const gl = cv.getContext("webgl2") || cv.getContext("webgl");
+  if (!gl) return null;
+  const W = cv.width;
+  const H = cv.height;
+  const lit = (x, y) => {
+    const b = new Uint8Array(4);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b);
+    return b[0] + b[1] + b[2] > 24;
+  };
+  let left = -1;
+  let right = -1;
+  for (let x = 0; x < W; x += 2) if (lit(x, H >> 1)) { left = x; break; }
+  for (let x = W - 1; x >= 0; x -= 2) if (lit(x, H >> 1)) { right = x; break; }
+  return left < 0 ? null : +((right - left) / W).toFixed(3);
+});
+fill === null || (fill > 0.9 && fill <= 1)
+  ? pass("globe fills its box without clipping", fill === null ? "(no readback)" : `fill=${fill}`)
+  : fail("globe framing is off — recalibrate GLOBE_FIT_PX", `fill=${fill}`);
+
 // give the layers a moment to land, then screenshot the hero
 await page.waitForTimeout(22000);
 await shot(page, "pv-01-hero.png");
+
+// ── 3b. the status rail reports MEASURED counts, not a script ──────────────
+// The design this page was reworked from carried a scripted ticker with plausible
+// figures typed into it. On a page whose entire argument is that its numbers are
+// checkable, that would have been the one lie on it.
+const rail = await page.locator(".pv-hero-status").innerText();
+/\d/.test(rail) || /quiet right now/.test(rail)
+  ? pass("hero status rail carries a live reading", rail)
+  : fail("hero status rail never reported", `"${rail}"`);
 
 // ── 4. live layers actually reached the globe ──────────────────────────────
 // Poll rather than sample once. These layers arrive over the network at their own
@@ -158,7 +204,9 @@ await shot(page, "pv-01-hero.png");
 // be in flight on a cold server — sampling a single instant made the gate flaky,
 // which is worse than useless because a green run stopped meaning anything.
 async function probeLayers(deadlineMs) {
-  const ids = ["pv-cables", "pv-earthquakes", "pv-sats", "pv-airports", "pv-wildfires"];
+  // The globe drains every registered signal layer into THREE aggregated sources
+  // (see HeroGlobe), so these are the sources to count — not one per feed.
+  const ids = ["pv-points", "pv-lines", "pv-fills", "pv-sats"];
   const started = Date.now();
   let last = null;
   for (;;) {
@@ -189,22 +237,60 @@ if (layerCounts) {
   pass("layer probe skipped", "no debug handle exposed");
 }
 
+// The hero draws EVERY registered signal layer, not a chosen handful. If that
+// silently regresses to a shortlist the globe still looks fine in a screenshot, so
+// assert the breadth: the status rail names each feed that answered, and the count
+// of distinct layers reported has to be more than a token few.
+const layerBreadth = await page.evaluate(() => window.__pvMap?.getSource?.("pv-points") ? true : false);
+layerBreadth
+  ? pass("globe renders the registry's aggregated sources")
+  : fail("globe is not using the aggregated signal sources");
+
 // ── 5. the instrument bar shows a MEASURED count, not a typed one ──────────
 const barText = await page.locator(".pv-bar-live").innerText();
 /\d/.test(barText)
   ? pass("instrument bar shows live coverage", barText)
   : fail("instrument bar empty", `"${barText}" (honest if /api/coverage failed)`);
 
-// ── 6. the ground descends and the foreground flips behind the adapter ─────
+// ── 6. the ground lifts out of the hero, then plunges into the adapter ─────
+// Leg 1: leaving the night stage has to reach daylight, or the whole document is
+// read against ink with a token set that says otherwise.
+const heroH = await page.evaluate(() => document.querySelector(".pv-hero").offsetHeight);
+await page.evaluate((y) => {
+  document.documentElement.style.scrollBehavior = "auto";
+  window.scrollTo(0, y);
+}, Math.round(heroH * 0.9));
+await page.waitForTimeout(400);
+const gDay = await g();
+const dayTokens = (await isNight()) === false;
+gDay < 0.05 && dayTokens
+  ? pass("ground lifts to daylight leaving the hero", `--pv-g ${g0} → ${gDay.toFixed(3)}`)
+  : fail("ground did not reach daylight", `--pv-g=${gDay} night=${!dayTokens}`);
+
+// The bar must NOT have handed over yet: at 90% of the stage its bottom edge is
+// still above the viewport top, so the black hero is still the thing behind the
+// bar even though the page ramp has already reached bone. This is the exact state
+// that used to paint a bone strip across the night hero.
+(await page.evaluate(() => document.querySelector(".pv-root").classList.contains("pv-bar-night")))
+  ? pass("instrument bar holds night while the stage is still under it")
+  : fail("instrument bar went bone while the hero was still behind it");
+
+// ...and hands over once the stage has actually cleared it.
+await page.evaluate((y) => window.scrollTo(0, y), Math.round(heroH + 120));
+await page.waitForTimeout(400);
+(await page.evaluate(() => document.querySelector(".pv-root").classList.contains("pv-bar-night")))
+  ? fail("instrument bar stayed night past the hero")
+  : pass("instrument bar hands over to daylight with the document");
+
 const adapterTop = await page.evaluate(
   () => document.querySelector("[data-pv-adapter]").getBoundingClientRect().top + window.scrollY,
 );
 await page.evaluate((y) => window.scrollTo(0, y - window.innerHeight * 0.5), adapterTop);
 await page.waitForTimeout(400);
 const gMid = await g();
-gMid > g0
-  ? pass("ground darkens on scroll", `--pv-g ${g0} → ${gMid.toFixed(3)}`)
-  : fail("ground did not darken", `${g0} → ${gMid}`);
+gMid > gDay
+  ? pass("ground darkens into the adapter", `--pv-g ${gDay.toFixed(3)} → ${gMid.toFixed(3)}`)
+  : fail("ground did not darken", `${gDay} → ${gMid}`);
 
 await page.evaluate((y) => window.scrollTo(0, y + 10), adapterTop);
 await page.waitForTimeout(400);
@@ -424,15 +510,23 @@ const m = await ctx.newPage();
 await m.setViewportSize({ width: 390, height: 844 });
 await m.goto(BASE, { waitUntil: "domcontentloaded", timeout: 90000 });
 await m.waitForTimeout(6000);
-const mobileAperture = await m.evaluate(() => {
-  const vis = document.querySelector(".pv-aperture-vis");
-  if (!vis) return { present: false };
-  const r = vis.getBoundingClientRect();
-  return { present: true, h: Math.round(r.height), bg: getComputedStyle(vis).backgroundColor };
+const mobileStage = await m.evaluate(() => {
+  const hero = document.querySelector(".pv-hero");
+  const stage = document.querySelector(".pv-hero-stage");
+  if (!hero || !stage) return { present: false };
+  const r = stage.getBoundingClientRect();
+  return {
+    present: true,
+    h: Math.round(r.height),
+    bg: getComputedStyle(hero).backgroundColor,
+    // The globe box is width-limited on a phone (60vw), so it must still be a
+    // real square rather than collapsing to the stage's aspect.
+    globe: Math.round(document.querySelector(".pv-hero-globe")?.getBoundingClientRect().width || 0),
+  };
 });
-mobileAperture.present && mobileAperture.h > 200
-  ? pass("mobile shows the dark field, not a bone hole", JSON.stringify(mobileAperture))
-  : fail("mobile aperture missing or collapsed", JSON.stringify(mobileAperture));
+mobileStage.present && mobileStage.h > 200 && mobileStage.globe > 100
+  ? pass("mobile shows the night stage, not a bone hole", JSON.stringify(mobileStage))
+  : fail("mobile stage missing or collapsed", JSON.stringify(mobileStage));
 const overflow = await m.evaluate(
   () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 );
