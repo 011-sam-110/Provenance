@@ -22,9 +22,12 @@ function onLayers(layout: ReturnType<typeof createDefaultLayout>) {
   return { core, signals, onSignals, onCore };
 }
 
-test("Situation Room board → conflict/intel signals ON, all core layers OFF", () => {
+test("Conflict board → conflict/intel signals ON, all core layers OFF", () => {
   const { onSignals, onCore, core } = onLayers(buildById("situation"));
-  expect(onSignals).toEqual(["acled", "conflict", "displacement", "instability", "military-air", "protests"]);
+  // `displacement` left this board deliberately: it is an annual stock figure, and
+  // sitting on a live conflict board it read as something that had just moved. It
+  // now lives on Recon with the other reference lookups.
+  expect(onSignals).toEqual(["acled", "conflict", "instability", "military-air", "protests"]);
   expect(onCore).toEqual([]); // no planes/cameras/satellites on an analyst board
   expect(core.countries).toBe(true); // base geography is never stripped
 });
@@ -36,11 +39,18 @@ test("Air·Sea·Space board → planes+satellites core layers ON plus its signal
 });
 
 test("list-only widgets (events/markets/headlines/locate) imply no map layer", () => {
-  // World Overview mixes a cameras widget + signal cards + list/utility widgets: only
-  // the cameras core layer + the two signal layers (instability, gdacs) should light up.
-  const { onCore, onSignals } = onLayers(buildById("overview"));
-  expect(onCore).toEqual(["cameras"]);
-  expect(onSignals).toEqual(["gdacs", "instability"]);
+  // The Brief board is the case that forced `extraSignals` to exist. Its cards are
+  // merged lists — anomalies, an event log, headlines — not one card per source, so
+  // deriving layers from cards alone would light nothing but cameras and leave the
+  // landing map empty of everything the lists beside it are describing.
+  const board = BUILTIN_PRESETS.find((p) => p.id === "overview")!;
+  const { core, signals } = layersForLayout(board.build(), board.mapSignals ?? []);
+  expect(Object.entries(core).filter(([k, v]) => v && k !== "countries").map(([k]) => k).sort()).toEqual(["cameras"]);
+  expect(Object.entries(signals).filter(([, v]) => v).map(([k]) => k).sort())
+    .toEqual(["conflict", "earthquakes", "gdacs", "wildfires"]);
+
+  // Without the declared map layers, the same board lights only its cameras card.
+  expect(onLayers(board.build()).onSignals).toEqual([]);
 
   // A board of pure list widgets lights up nothing.
   let l = createDefaultLayout();
@@ -52,11 +62,14 @@ test("list-only widgets (events/markets/headlines/locate) imply no map layer", (
   expect(empty.onSignals).toEqual([]);
 });
 
-test("Tools board → cyber backdrop signals ON (recon widgets imply no layer), no core", () => {
+test("Recon board → recon widgets imply no layer, no core", () => {
   const { onSignals, onCore } = onLayers(buildById("tools"));
-  // recon:* widgets are query→response tools, not map layers, so they light nothing;
-  // the three cyber/infra signal widgets provide the live backdrop.
-  expect(onSignals).toEqual(["cyber-c2", "cyber-ransomware", "internet-outages"]);
+  // recon:* widgets are query→response tools, not map layers, so they light nothing.
+  // The three cyber/infra cards that used to sit here as a live backdrop moved to
+  // Markets & Cyber, where they are the subject rather than the wallpaper — this
+  // board was carrying nine widgets, five of them in one column, so the recon
+  // results a user came here to read were the ones falling off the bottom.
+  expect(onSignals).toEqual(["displacement"]);
   expect(onCore).toEqual([]);
 });
 

@@ -1,6 +1,10 @@
-import type { ShellLayout, WidgetInstance, SegmentId, StageId } from "@/lib/console/types";
-import { MAX_WIDGETS } from "@/lib/console/types";
+import type { GridRect, ShellLayout, WidgetInstance, SegmentId, StageId } from "@/lib/console/types";
+import { MAX_WIDGETS, STAGE_ID } from "@/lib/console/types";
 import { clampSpan } from "@/lib/console/resize";
+import {
+  arrangeConsole, arrangeWall, findFreeSpot, fromLegacy, place, settle,
+  MIN_H, MIN_W, type GridItem,
+} from "@/lib/terminal/layoutGrid";
 
 const SEGMENTS: SegmentId[] = ["left", "right", "bottom"];
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
@@ -29,10 +33,17 @@ export function addWidget(
   if (isAtCapacity(l)) return l;
   const segment = opts.segment ?? emptiestSegment(l);
   const order = l.widgets.filter((w) => w.segment === segment).length;
+  // A new widget takes the first cell it fits in, scanning left to right then
+  // down. Appending below everything would be undone immediately — compaction
+  // floats it up into the first gap anyway — so the scan is simply the honest
+  // version of what the board does.
+  const size = { w: 4, h: 7 };
   const inst: WidgetInstance = {
     id: instanceId, type, segment, order,
     width: opts.width ?? 12,
-    height: opts.height ?? 260, collapsed: false, config: opts.config ?? {},
+    height: opts.height ?? 260,
+    rect: { ...findFreeSpot(gridItems(l), size.w, size.h), ...size },
+    collapsed: false, config: opts.config ?? {},
   };
   return { ...l, widgets: [...l.widgets, inst] };
 }
@@ -43,11 +54,13 @@ export function removeWidget(l: ShellLayout, id: string): ShellLayout {
   const kept = l.widgets.filter((w) => w.id !== id);
   const segSorted = kept.filter((w) => w.segment === removed.segment).sort((a, b) => a.order - b.order);
   const orderMap = new Map(segSorted.map((w, i) => [w.id, i] as const));
-  return {
+  const next: ShellLayout = {
     ...l,
     focusedWidgetId: l.focusedWidgetId === id ? null : l.focusedWidgetId,
     widgets: kept.map((w) => (orderMap.has(w.id) ? { ...w, order: orderMap.get(w.id)! } : w)),
   };
+  // Close the hole the removal left, so the board does not slowly fill with gaps.
+  return applyItems(next, settle(gridItems(next), null));
 }
 
 export function moveWidget(l: ShellLayout, id: string, toSegment: SegmentId, toIndex: number): ShellLayout {
@@ -65,11 +78,93 @@ export function moveWidget(l: ShellLayout, id: string, toSegment: SegmentId, toI
   return { ...l, widgets: [...untouched, ...rebuilt] };
 }
 
-export function setWidgetHeight(l: ShellLayout, id: string, height: number): ShellLayout {
-  return { ...l, widgets: l.widgets.map((w) => w.id === id ? { ...w, height: clamp(height, 120, 1200) } : w) };
+// ── Grid ────────────────────────────────────────────────────────────────────
+// The Terminal renders from rects. These are the reducers that own them; the
+// legacy segment/order/width/height reducers below stay because presets, share
+// links and the palette still speak that vocabulary.
+
+/** Every grid item on the board — the stage included, since it is one. */
+export function gridItems(l: ShellLayout): GridItem[] {
+  const items: GridItem[] = [];
+  if (l.stageRect) items.push({ id: STAGE_ID, ...l.stageRect });
+  for (const w of l.widgets) if (w.rect) items.push({ id: w.id, ...w.rect });
+  return items;
 }
+
+/** Write a settled board back onto the layout. Items with no matching widget are
+ *  dropped silently — the only such id is the stage, handled explicitly.
+ *
+ *  Exported because `presets.ts` composes boards from `arrangeHouse` and needs the
+ *  same rects-onto-layout step every other reducer here uses; a second copy of it
+ *  living in presets is how the two would drift. */
+export function applyItems(l: ShellLayout, items: readonly GridItem[]): ShellLayout {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const stage = byId.get(STAGE_ID);
+  return {
+    ...l,
+    stageRect: stage ? { x: stage.x, y: stage.y, w: stage.w, h: stage.h } : l.stageRect,
+    widgets: l.widgets.map((w) => {
+      const r = byId.get(w.id);
+      return r ? { ...w, rect: { x: r.x, y: r.y, w: r.w, h: r.h } } : w;
+    }),
+  };
+}
+
+/** Move or resize one item (widget or stage) and settle the board around it. */
+export function setItemRect(l: ShellLayout, id: string, rect: GridRect): ShellLayout {
+  return applyItems(l, place(gridItems(l), id, rect));
+}
+
+/**
+ * Lay a board out from its widgets' segments.
+ *
+ * Presets are AUTHORED in segments — `{ type: "cameras", segment: "right" }` says
+ * what a board is for far more legibly than a table of x/y/w/h would, and all six
+ * built-ins are written that way. They are composed with addWidget, which places
+ * each card in the first cell it fits; run in sequence that packs a board but
+ * throws away the author's left/right/bottom intent. This puts it back, and is the
+ * last step of building any preset.
+ */
+export function seedRectsFromSegments(l: ShellLayout): ShellLayout {
+  return applyItems(l, fromLegacy(l.widgets, l.stageRect ? STAGE_ID : null));
+}
+
+/** Re-seed every position from one of the two named arrangements, fitted to `rows`.
+ *  Sizes the user set are deliberately NOT preserved — that is what makes this a
+ *  reset. `rows` is what stops the reset from re-creating the bug it rescues you
+ *  from: an arrangement that ignores the window is how boards came to be 1249px
+ *  tall in an 820px band in the first place. */
+export function arrangeBoard(l: ShellLayout, mode: "console" | "wall", rows?: number): ShellLayout {
+  const ids = l.widgets.map((w) => w.id);
+  const stageId = l.stageRect ? STAGE_ID : null;
+  return applyItems(l, mode === "wall" ? arrangeWall(ids, stageId, rows) : arrangeConsole(ids, stageId, rows));
+}
+
+/**
+ * The ⋯ menu's S/M/L/XL heights, in px.
+ *
+ * These wrote `height` and nothing else, which the Terminal never read — so the
+ * chips were live, `aria-pressed` reflected a value on screen nowhere, and
+ * clicking one did nothing at all. They now drive the rect as well, converting px
+ * to whole rows; `height` is still written so the legacy field stays truthful for
+ * share links and the migration.
+ */
+export function setWidgetHeight(l: ShellLayout, id: string, height: number): ShellLayout {
+  const px = clamp(height, 120, 1200);
+  const withPx = { ...l, widgets: l.widgets.map((w) => w.id === id ? { ...w, height: px } : w) };
+  const cur = withPx.widgets.find((w) => w.id === id)?.rect;
+  if (!cur) return withPx;
+  return setItemRect(withPx, id, { ...cur, h: Math.max(MIN_H, Math.round(px / 25)) });
+}
+
+/** The ⋯ menu's ⅓/½/⅔/Full widths. Same story as the heights above: the span is
+ *  now board columns, which is what those fractions always claimed to be. */
 export function setWidgetWidth(l: ShellLayout, id: string, width: number): ShellLayout {
-  return { ...l, widgets: l.widgets.map((w) => w.id === id ? { ...w, width: clampSpan(width) } : w) };
+  const span = clampSpan(width);
+  const withSpan = { ...l, widgets: l.widgets.map((w) => w.id === id ? { ...w, width: span } : w) };
+  const cur = withSpan.widgets.find((w) => w.id === id)?.rect;
+  if (!cur) return withSpan;
+  return setItemRect(withSpan, id, { ...cur, w: Math.max(MIN_W, span) });
 }
 export function setWidgetCollapsed(l: ShellLayout, id: string, collapsed: boolean): ShellLayout {
   return { ...l, widgets: l.widgets.map((w) => w.id === id ? { ...w, collapsed } : w) };

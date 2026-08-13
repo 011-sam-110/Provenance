@@ -1,11 +1,15 @@
 "use client";
-import { createDefaultLayout, type ShellLayout, type SegmentId } from "@/lib/console/types";
-import { addWidget, setStage } from "@/lib/console/reducers";
+import { createDefaultLayout, STAGE_ID, type ShellLayout } from "@/lib/console/types";
+import { addWidget, applyItems, setStage } from "@/lib/console/reducers";
+import { arrangeHouse, DEFAULT_BOARD_ROWS, RAIL_CAPACITY } from "@/lib/terminal/layoutGrid";
+import { visibleRows } from "@/lib/terminal/rowBudget";
 import { shellLayoutStore } from "@/lib/console/store";
 import { layersStore } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
 import { layersForLayout } from "@/lib/console/presetLayers";
 import { activePresetStore } from "@/lib/console/activePreset";
+import { forgetBoardLayout, isBoardEdited, layoutSignature, readBoardLayout, writeBoardLayout } from "@/lib/console/boards";
+import { sanitizeLayout } from "@/lib/console/sanitize";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 // A preset is a persona: a curated workspace aimed at ONE kind of user. `blurb` is the
@@ -16,67 +20,178 @@ export interface ConsolePreset {
   title: string;
   icon: string;
   blurb: string;
-  build(): ShellLayout;
+  /** Signal layers this board lights ON THE MAP without spending a card on each.
+   *  For boards whose cards are merged lists rather than one card per source —
+   *  without it the Brief board's map would show nothing but camera pins. */
+  mapSignals?: string[];
+  /** `rows` is the board's height budget — see the note on WEIGHTS below. Defaults
+   *  to DEFAULT_BOARD_ROWS so tests and any off-DOM caller still get a real board. */
+  build(rows?: number): ShellLayout;
 }
 
 /** The board a fresh visitor lands on (ConsoleShell first-run seed + "Reset to default"). */
 export const DEFAULT_PRESET_ID = "overview";
 
+// ── WEIGHTS, AND WHY BOARDS ARE AUTHORED THIS WAY NOW ────────────────────────
+//
+// A board used to be authored as "these widgets, in the left / right / bottom
+// segment", and `seedRectsFromSegments` turned that into three stacks of identical
+// 10-row cards. Two things were measured in the running app at 1440x900:
+//
+//   .tn-cw-shell (the band the board lives in)   clientHeight   820px
+//   .tn-seg      (the board)                     scrollHeight  1249px
+//
+// — and the band is `overflow: hidden` while the grid carries an inline min-height
+// equal to its own content, so the grid never overflows itself and its own
+// `overflow: auto` never engages. Setting scrollTop on it does nothing. So 429px,
+// a THIRD of the board, was clipped and genuinely unreachable: the Headlines card
+// on this board sat at rows 40-50 and never drew at all. The second effect was a
+// ~470x400px empty rectangle under the 4-column map — larger in area than the map.
+//
+// Both are gone by construction. A board now declares cards in PRIORITY order with
+// a WEIGHT, and `arrangeHouse` fits them to a measured row budget beside a map that
+// runs the full height of the board. Weight is a claim about attention, not size:
+//
+//   3 — the card this board exists for. First thing the eye should land on.
+//   2 — a card that is read.
+//   1 — a card that is checked. Lands ~3 rows: a header and a line. That is the
+//       right size for a feed that is usually empty or key-gated (ACLED, floods),
+//       and it is deliberate — a dormant feed used to hold a full 250px card to
+//       say "Nothing in World.", on the most valuable slot of the board.
+//
+// Cards past the sixth dock in a strip beneath the map rather than squeezing the
+// rail into a column of headers.
+
 let seed = 0;
 const id = () => `p${(seed += 1).toString(36)}`;
-function compose(stage: ShellLayout["stage"], specs: { type: string; segment: SegmentId }[]): ShellLayout {
+
+interface CardSpec { type: string; weight: number }
+
+function compose(stage: ShellLayout["stage"], rows: number, cards: CardSpec[]): ShellLayout {
   let l = setStage(createDefaultLayout(), stage);
-  for (const s of specs) l = addWidget(l, s.type, id(), { segment: s.segment });
-  return l;
+  // `segment` is legacy, but `?c=` share links and the migration path still read it,
+  // so it is kept truthful: the rail is "left", the dock beneath the map is "bottom".
+  cards.forEach((c, i) => {
+    l = addWidget(l, c.type, id(), { segment: i < RAIL_CAPACITY ? "left" : "bottom" });
+  });
+  const ids = l.widgets.map((w) => w.id);
+  return applyItems(
+    l,
+    arrangeHouse(cards.map((c, i) => ({ id: ids[i], weight: c.weight })), STAGE_ID, rows),
+  );
 }
 
-// FIVE broad boards — deliberately few. Each drops a curated set of widgets across the
-// left / right / bottom segments; the *union* of the five touches every widget group (all
-// seven core cards + every signal group), so the lineup exercises the whole catalogue while
-// staying scannable in the central navbar pill. Widget `type`s are registered widget ids:
-// core cards (events, cameras, aviation, satellites, markets, headlines, news) and per-signal
-// cards (`signal:<sourceId>`). Switching a board re-skins BOTH the widgets and the map
-// overlays via applyPreset → layersForLayout.
+// SIX broad boards — deliberately few. The *union* still touches every widget group
+// (all seven core cards + every signal group), so the lineup exercises the whole
+// catalogue; `tests/unit/console-presets.test.ts` asserts that and the row budget.
+//
+// ── ON THE NAMES ────────────────────────────────────────────────────────────
+// Six reviewers were briefed separately as different real users — a conflict
+// researcher, a newsroom duty editor, a humanitarian duty officer, a first-time
+// visitor, a power user, and a design/accessibility auditor. Every one of them
+// independently reported that WORLD and EARTH are the same word in English and
+// that nothing in either label says which is "a bit of everything" and which is
+// "natural hazards". CONFLICT and HAZARDS were proposed by all six unprompted.
+//
+// The ids below are NOT renamed. They are pinned by `?c=` share links, the
+// first-run seed and the saved-board archive; changing them would silently
+// orphan every layout anyone has saved. Only what the user reads changes.
 export const BUILTIN_PRESETS: ConsolePreset[] = [
-  // ── World Overview — the calm landing board (a bit of everything) ────────
-  { id: "overview", title: "World Overview", icon: "🌐", blurb: "a bit of everything", build: () => compose("map2d", [
-      { type: "anomaly", segment: "left" }, { type: "signal:instability", segment: "left" }, { type: "events", segment: "left" }, { type: "signal:gdacs", segment: "left" },
-      { type: "cameras", segment: "right" }, { type: "markets", segment: "right" }, { type: "locate", segment: "right" },
-      { type: "headlines", segment: "bottom" },
+  // ── Brief — what changed since you last looked. The landing board ────────
+  // Was "World Overview": an anomaly list, a country risk index, London traffic
+  // cameras and crypto prices. Reviewers called it "miscellaneous" and "the tab
+  // I'd have designed last, and it's the one you land on". Markets moved to its
+  // own board and the photo-geolocation tool moved to Recon, which is where the
+  // other query-and-answer surfaces live — it had been holding a 250px card on
+  // the landing board every day to show an empty dropzone.
+  { id: "overview", title: "Brief", icon: "🌐", blurb: "what changed since you last looked",
+    mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"], build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+      { type: "anomaly", weight: 3 },
+      { type: "events", weight: 3 },
+      { type: "headlines", weight: 2 },
+      { type: "cameras", weight: 2 },
   ]) },
 
-  // ── Situation Room — conflict, intel & the human cost ───────────────────
-  { id: "situation", title: "Situation Room", icon: "🎯", blurb: "conflict & intel", build: () => compose("map2d", [
-      { type: "signal:instability", segment: "left" }, { type: "signal:conflict", segment: "left" }, { type: "signal:military-air", segment: "left" },
-      { type: "signal:acled", segment: "right" }, { type: "signal:protests", segment: "right" }, { type: "signal:displacement", segment: "right" },
-      { type: "news", segment: "bottom" },
+  // ── Conflict — armed events, protest, military movement ─────────────────
+  // Was "Situation Room". "Situation" is the most overloaded word in this trade:
+  // every board is a situation and every report is a sitrep, so the label carried
+  // no information. ACLED is key-gated and dormant in production, so it takes the
+  // smallest slot rather than the top-right corner it used to hold empty.
+  { id: "situation", title: "Conflict", icon: "🎯", blurb: "armed events, protest & military movement", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+      { type: "signal:conflict", weight: 3 },
+      { type: "signal:military-air", weight: 2 },
+      { type: "signal:protests", weight: 2 },
+      { type: "news", weight: 2 },
+      { type: "signal:instability", weight: 2 },
+      { type: "signal:acled", weight: 1 },
   ]) },
 
-  // ── Earth Systems — hazards, weather & climate ──────────────────────────
-  { id: "earth", title: "Earth Systems", icon: "🌍", blurb: "hazards & climate", build: () => compose("map2d", [
-      { type: "signal:gdacs", segment: "left" }, { type: "signal:earthquakes", segment: "left" }, { type: "signal:weather", segment: "left" },
-      { type: "signal:wildfires", segment: "right" }, { type: "signal:floods", segment: "right" }, { type: "signal:airquality", segment: "right" },
-      { type: "signal:tropical-cyclones", segment: "bottom" },
+  // ── Hazards — quakes, fire, flood, storm ────────────────────────────────
+  // Was "Earth Systems". Floods and air quality are frequently empty and sized
+  // accordingly; weather docks under the map as a strip.
+  //
+  // GDACS is second, not first, and that is a reversal worth writing down. A
+  // humanitarian duty officer reviewing this asked for GDACS as the board's spine,
+  // on the good argument that it is the alerting layer OVER the others rather than
+  // a peer feed — it is the card that answers "does this need anyone to do
+  // something". It was built that way, and the first screenshot showed the largest
+  // card on the board reading "Nothing in World." while its own badge said 8: the
+  // card carries a recency filter that its header does not mention. Until that is
+  // fixed (see the widget-level follow-ups), giving the top slot to a feed that is
+  // routinely blank ships exactly the failure the same reviewer described. So the
+  // slot goes to the card that reliably has something in it, and GDACS keeps the
+  // second — restore the order once the empty state distinguishes "no alerts" from
+  // "filtered out" from "no key".
+  { id: "earth", title: "Hazards", icon: "🌍", blurb: "quakes, fire, flood & storm", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+      { type: "signal:earthquakes", weight: 3 },
+      { type: "signal:gdacs", weight: 2 },
+      { type: "signal:wildfires", weight: 2 },
+      { type: "signal:tropical-cyclones", weight: 2 },
+      { type: "signal:floods", weight: 1 },
+      { type: "signal:airquality", weight: 1 },
+      { type: "signal:weather", weight: 1 },
   ]) },
 
-  // ── Air · Sea · Space — mobility & orbital (globe stage) ────────────────
-  { id: "mobility", title: "Air · Sea · Space", icon: "🛰", blurb: "mobility & orbital", build: () => compose("map3d", [
-      { type: "aviation", segment: "left" }, { type: "satellites", segment: "left" }, { type: "signal:launches", segment: "left" }, { type: "signal:cables", segment: "left" },
-      { type: "signal:ais", segment: "right" }, { type: "signal:ports", segment: "right" }, { type: "signal:aurora", segment: "right" },
+  // ── Transit — things that move, and the lanes they move in (globe stage) ─
+  // Was "Air · Sea · Space": three domains and two separators in one tab. One
+  // word, and it survives rail or road being added later.
+  { id: "mobility", title: "Transit", icon: "🛰", blurb: "aircraft, vessels & orbit", build: (rows = DEFAULT_BOARD_ROWS) => compose("map3d", rows, [
+      { type: "aviation", weight: 3 },
+      { type: "satellites", weight: 2 },
+      { type: "signal:ais", weight: 2 },
+      { type: "signal:launches", weight: 2 },
+      { type: "signal:ports", weight: 1 },
+      { type: "signal:aurora", weight: 1 },
+      { type: "signal:cables", weight: 1 },
   ]) },
 
-  // ── Markets & Cyber — economy & security ────────────────────────────────
-  { id: "markets", title: "Markets & Cyber", icon: "📈", blurb: "economy & security", build: () => compose("map2d", [
-      { type: "markets", segment: "left" }, { type: "headlines", segment: "left" }, { type: "signal:internet-outages", segment: "left" },
-      { type: "signal:cyber-c2", segment: "right" }, { type: "signal:cyber-ransomware", segment: "right" }, { type: "signal:grid-load", segment: "right" },
+  // ── Markets & Cyber — the economy and the infrastructure under it ───────
+  // Was "MKT·CYBER" in the tab strip. Abbreviating one half of a pair and not the
+  // other reads as a rendering fault, and the header band has the room.
+  { id: "markets", title: "Markets & Cyber", icon: "📈", blurb: "economy, outages & intrusions", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+      { type: "markets", weight: 3 },
+      { type: "signal:internet-outages", weight: 2 },
+      { type: "signal:cyber-ransomware", weight: 2 },
+      { type: "signal:cyber-c2", weight: 2 },
+      { type: "signal:grid-load", weight: 1 },
+      { type: "headlines", weight: 1 },
   ]) },
 
-  // ── Tools — passive OSINT recon (domain & IP intel), over a live cyber backdrop ──
-  { id: "tools", title: "Tools", icon: "🔎", blurb: "domain & IP intel", build: () => compose("map2d", [
-      { type: "recon:dns", segment: "left" }, { type: "recon:whois", segment: "left" }, { type: "recon:certs", segment: "left" },
-      { type: "recon:ports", segment: "right" }, { type: "recon:threat", segment: "right" }, { type: "recon:bgp", segment: "right" },
-      { type: "signal:cyber-ransomware", segment: "right" }, { type: "signal:internet-outages", segment: "right" },
-      { type: "signal:cyber-c2", segment: "bottom" },
+  // ── Recon — passive lookups: you ask, it answers ────────────────────────
+  // Was "Tools", the only tab naming a UI category rather than a subject. It is
+  // also the one board with a different contract from the rest — every other board
+  // monitors, this one is queried — so it takes the two other query surfaces:
+  // photo geolocation, and displacement, which is an annual stock figure that was
+  // sitting on a live conflict board looking like it moved.
+  { id: "tools", title: "Recon", icon: "🔎", blurb: "domain & IP intel, photo geolocation", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+      { type: "recon:dns", weight: 2 },
+      { type: "recon:whois", weight: 2 },
+      { type: "recon:certs", weight: 2 },
+      { type: "recon:ports", weight: 2 },
+      { type: "recon:threat", weight: 2 },
+      { type: "recon:bgp", weight: 2 },
+      { type: "locate", weight: 2 },
+      { type: "signal:displacement", weight: 1 },
   ]) },
 ];
 
@@ -86,19 +201,101 @@ interface CustomPreset { id: string; title: string; layout: ShellLayout }
 
 function loadCustom(): CustomPreset[] { return loadPersisted<CustomPreset[]>(KEY, VERSION) ?? []; }
 
-export function applyPreset(presetId: string): void {
+/**
+ * The board a given id renders when it has never been edited.
+ *
+ * Built at the CURRENT row budget, not the default one. Comparing a live board
+ * against a template built at `DEFAULT_BOARD_ROWS` compares two different windows:
+ * on a 900px-tall screen the live board is 32 rows and the default template is 28,
+ * so every card's height differs, every board looks edited the moment you glance at
+ * it, and the "customised" dot lights on boards nobody has touched. Observed doing
+ * exactly that on the Brief tab after a single board switch.
+ */
+function templateFor(presetId: string): ShellLayout | null {
   const built = BUILTIN_PRESETS.find((p) => p.id === presetId);
-  const layout = built ? built.build() : loadCustom().find((p) => p.id === presetId)?.layout;
-  if (!layout) return;
-  shellLayoutStore.replace(layout);
+  if (built) return built.build(visibleRows());
+  return loadCustom().find((p) => p.id === presetId)?.layout ?? null;
+}
+
+/**
+ * ONE-TIME MIGRATION, and nothing more.
+ *
+ * Ordinary edits need no help: `shellLayoutStore` files every change under the open
+ * board as it happens, so by the time anyone switches away the slot already exists.
+ * The single case this covers is a user who customised a board BEFORE per-board
+ * storage shipped — their work is sitting in the old single slot with no board slot
+ * to its name, and without this it would be destroyed by their first tab click,
+ * which is precisely the bug being fixed.
+ *
+ * Both guards matter. Skipping boards that already have a slot keeps this off the
+ * hot path. Comparing against the template is what stops merely LOOKING at a board
+ * from filing its template as "the user's edits" — which would light the edited dot
+ * on every board the moment it was viewed, and leave a board dirty right after a
+ * reset.
+ */
+function migrateOutgoing(presetId: string): void {
+  if (isBoardEdited(presetId)) return;
+  const template = templateFor(presetId);
+  if (!template) return;
+  const live = shellLayoutStore.get();
+  // Sanitise the template before comparing: the live layout has been through
+  // `sanitizeLayout`, and comparing a settled board against an unsettled one would
+  // report a difference that only the sanitiser introduced.
+  const clean = sanitizeLayout(template) ?? template;
+  if (layoutSignature(clean) === layoutSignature(live)) return;
+  writeBoardLayout(presetId, live);
+}
+
+/**
+ * Open a board.
+ *
+ * The order of the first three steps is the whole fix, and each one is load-bearing:
+ *
+ *  1. Rescue the outgoing board if it predates per-board storage (see above).
+ *  2. Set the active id BEFORE the layout lands. `shellLayoutStore` files every
+ *     change under whatever board is current, so replacing the layout first would
+ *     write the INCOMING board's cards into the OUTGOING board's slot — the same
+ *     class of bug, moved one step along.
+ *  3. Saved edits beat the template. `reset: true` is the one caller that wants the
+ *     template back, and it is also what makes "Reset this board" a real action
+ *     rather than a relabelled reload.
+ */
+export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): void {
+  const built = BUILTIN_PRESETS.find((p) => p.id === presetId);
+  const custom = built ? undefined : loadCustom().find((p) => p.id === presetId);
+  if (!built && !custom) return;
+
+  const outgoing = activePresetStore.get();
+  if (outgoing && outgoing !== presetId) migrateOutgoing(outgoing);
+
+  activePresetStore.set(presetId);
+
+  if (opts.reset) forgetBoardLayout(presetId);
+  const saved = opts.reset ? null : readBoardLayout(presetId);
+  // Only the TEMPLATE is fitted to the window. A saved layout is the user's own
+  // arrangement and is restored verbatim — re-flowing someone's board because they
+  // unplugged a monitor is how a workspace loses trust.
+  const layout = saved ?? (built ? built.build(visibleRows()) : custom!.layout);
+  // `archive: false` — opening a board is not editing it. See store.ts's emit().
+  shellLayoutStore.replace(layout, { archive: Boolean(saved) });
   // Drive the globe to match the board: the persona's widgets decide which core +
   // signal layers are lit, so switching persona actually re-skins the map (not just
   // the side rail). See lib/console/presetLayers.ts.
-  const { core, signals } = layersForLayout(layout);
+  const { core, signals } = layersForLayout(layout, built?.mapSignals ?? []);
   layersStore.applyExact(core);
   signalsStore.applyExact(signals);
-  // Record which board is now live so the central pill / Settings list reflect it.
-  activePresetStore.set(presetId);
+}
+
+/**
+ * Throw away a board's edits and put its authored default back.
+ *
+ * Deliberately NOT "reset the workspace": resetting has to be per-board now that
+ * saving is, or the escape hatch is more destructive than the thing it rescues you
+ * from. Falls back to the landing board when nothing is open, so the command is
+ * never a silent no-op.
+ */
+export function resetActiveBoard(): void {
+  applyPreset(activePresetStore.get() ?? DEFAULT_PRESET_ID, { reset: true });
 }
 
 export function saveCustomPreset(title: string): void {

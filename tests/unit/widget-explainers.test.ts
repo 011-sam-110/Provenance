@@ -108,10 +108,14 @@ describe("coverage — no widget ships without a trust card", () => {
   });
 });
 
-describe("the default board — the eight panels a first-time visitor actually sees", () => {
-  it("gives all eight a real card, not two of eight", () => {
+describe("the default board — the panels a first-time visitor actually sees", () => {
+  it("gives every one of them a real card, not two of them", () => {
     const board = BUILTIN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!.build();
-    expect(board.widgets.length).toBe(8);
+    // Deliberately not pinned to a count. This used to assert `.toBe(8)`, which
+    // described the old landing board rather than any property worth keeping — and
+    // four of those eight were widgets reviewers asked to have removed. What has to
+    // hold is that the board is real and every card on it can explain itself.
+    expect(board.widgets.length).toBeGreaterThan(0);
     const bare = board.widgets.map((w) => w.type).filter((type) => !widgetExplainerFor(type));
     expect(bare, `default-board widgets with no trust card: ${bare.join(", ")}`).toEqual([]);
   });

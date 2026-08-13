@@ -51,6 +51,7 @@
   color: var(--pv-fg);
   -webkit-font-smoothing: antialiased;
   position: relative;
+  overflow-x: clip;
 }
 
 /* Night: the same tokens, re-pointed. Nothing below this line hardcodes a colour. */
@@ -398,12 +399,14 @@
   );
 }
 @media (min-width: 62rem) {
-  /* Cover the hero's vertical padding and run past the right edge of the viewport,
-     so there is no seam anywhere the eye can catch. */
+  /* Cover the hero's vertical padding so there is no seam above or below.
+     NO negative `right` here: .pv-hero is already full-bleed (grid-column 1/-1),
+     so this element's right edge IS the viewport's. Adding a negative offset on
+     top of that pushed it past the viewport and gave the whole page a horizontal
+     scrollbar — 48px of it at 1280px wide. */
   .pv-aperture-vis {
     top: -3.5rem;
     bottom: -4.5rem;
-    right: calc(-1 * max(1.25rem, (100vw - 74rem) / 2));
   }
 }
 @media (max-width: 61.99rem) {

@@ -391,6 +391,14 @@ const naming = await appPage.evaluate(() => ({
   h1: document.querySelector("h1")?.textContent?.trim().slice(0, 60) || "",
   stale: (document.body.innerText.match(/OpenData/g) || []).length,
 }));
+const boot = await appPage.evaluate(() => {
+  const el = document.querySelector(".tnx-boot-word");
+  return el ? { text: el.textContent?.trim(), transform: getComputedStyle(el).textTransform } : null;
+});
+boot === null || (/Provenance/i.test(boot.text || "") && boot.transform === "uppercase")
+  ? pass("launch sequence carries the current name", boot ? JSON.stringify(boot) : "(already dismissed)")
+  : fail("launch sequence shows a stale name", JSON.stringify(boot));
+
 naming.stale === 0 && /Provenance/i.test(naming.h1)
   ? pass("console carries the current product name", naming.h1)
   : fail("stale product name in the console", JSON.stringify(naming));
@@ -422,6 +430,27 @@ const swipeVisible = await m.evaluate(
 swipeVisible ? pass("mobile gets the swipe strip, not a pin") : fail("mobile still pinned");
 await shot(m, "pv-07-mobile.png");
 await m.close();
+
+// ── 14b. NO sideways scroll at any width ───────────────────────────────────
+// This check only covered 390px before, and a hero element bleeding 48px past the
+// viewport gave every desktop width a horizontal scrollbar for a whole revision.
+const widths = [1920, 1440, 1280, 1024, 834, 390];
+const overflows = [];
+for (const w of widths) {
+  const t = await ctx.newPage();
+  await t.setViewportSize({ width: w, height: 900 });
+  await t.goto(BASE, { waitUntil: "domcontentloaded", timeout: 90000 });
+  await t.waitForTimeout(2500);
+  const over = await t.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  overflows.push(`${w}:${over}`);
+  await t.close();
+}
+const anyOver = overflows.filter((o) => Number(o.split(":")[1]) > 1);
+anyOver.length === 0
+  ? pass("no sideways scroll at any width", overflows.join(" "))
+  : fail("page scrolls sideways", anyOver.join(" "));
 
 // ── 15. reduced motion still makes the whole argument ──────────────────────
 const rm = await ctx.newPage();

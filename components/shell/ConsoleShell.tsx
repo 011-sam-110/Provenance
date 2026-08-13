@@ -13,7 +13,7 @@
 // Scoping it also means widget bodies inherit the terminal surfaces through the
 // remapped --tn-* tokens without a single .tn-cw* rule being rewritten.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uiStore } from "@/lib/shell/ui";
 import { alertStore } from "@/lib/shell/alert";
 import { langStore } from "@/lib/i18n/store";
@@ -22,10 +22,15 @@ import { timeWindowStore } from "@/lib/shell/timeWindow";
 import { registerServiceWorker } from "@/lib/pwa/register";
 import { variantStore } from "@/lib/variants/store";
 import TerminalHeader from "@/components/terminal/TerminalHeader";
+import BootSequence from "@/components/terminal/BootSequence";
+import { SIGNALS } from "@/lib/signals/registry";
+import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import TerminalFooter from "@/components/terminal/TerminalFooter";
 import { focusStageSearch } from "@/components/terminal/StageBar";
-import { terminalModeStore } from "@/lib/terminal/mode";
+import { terminalModeStore, useTerminalMode } from "@/lib/terminal/mode";
+import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
+import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
@@ -53,6 +58,8 @@ import "@/lib/console/widgets";
 export default function ConsoleShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const skin = useTerminalSkin();
+  const mode = useTerminalMode();
 
   // Re-hydrate persisted view state once, client-side (render defaults on the
   // server, reconcile after mount → no hydration mismatch).
@@ -82,6 +89,10 @@ export default function ConsoleShell() {
     // theme nor layout — it owns its own key, `tn.terminal.mode.v1`. Without this
     // call the persisted CONSOLE/WALL choice is silently ignored on reload.
     terminalModeStore.hydrate();
+    // Same reasoning, same appended position: the skin owns `tn.terminal.skin.v1`
+    // and touches neither theme nor layout. Without this the persisted DARK/LIGHT
+    // choice is silently ignored on every reload.
+    terminalSkinStore.hydrate();
     const c = new URLSearchParams(window.location.search).get("c");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
@@ -94,6 +105,47 @@ export default function ConsoleShell() {
     const tourTimer = setTimeout(() => tourStore.maybeAutoStart(), 900);
     return () => clearTimeout(tourTimer);
   }, []);
+
+  // ── Skin ⇄ basemap ───────────────────────────────────────────────────────
+  // The Terminal pins CARTO Dark Matter, and a near-white console wrapped around
+  // a near-black map is the most obviously wrong thing a light skin could ship
+  // with. Positron is the light counterpart and already exists in lib/basemaps.ts,
+  // described there as "the calm light default".
+  //
+  // It only swaps when the current basemap is the OTHER skin's default. Someone
+  // who deliberately chose Satellite or Topographic keeps it — a skin toggle is a
+  // statement about chrome, not a licence to throw away a map choice. The first
+  // run is skipped so a deep-linked `?base=` is never clobbered; the skin's own
+  // hydrate() then counts as a real change, which is what gives a returning
+  // light-skin user positron on load.
+  const skinSettled = useRef(false);
+  useEffect(() => {
+    if (!skinSettled.current) { skinSettled.current = true; return; }
+    const other = basemapForSkin(skin === "dark" ? "light" : "dark");
+    if (mapViewStore.get().basemap === other) mapViewStore.setBasemap(basemapForSkin(skin));
+  }, [skin]);
+
+  // ── CONSOLE ⇄ WALL actually re-arranges the board ────────────────────────
+  //
+  // Until now it did nothing. `terminalModeStore.set()` flipped an enum, persisted
+  // it, and repainted the button's own highlight; `useTerminalMode()` had exactly
+  // one consumer, the header's active class. Meanwhile `arrangeBoard`,
+  // `arrangeConsole` and `arrangeWall` were all fully implemented and unit-tested
+  // with zero callers — a green suite over a dead feature. The W and C keyboard
+  // shortcuts hit the same inert setter.
+  //
+  // Wired HERE rather than in the two places that set the mode, so the button and
+  // the shortcut cannot drift apart, and so `terminalModeStore` stays the small
+  // independent store its own header comment promises it is.
+  //
+  // The first-run skip is not optional: `hydrate()` sets the mode during mount, and
+  // re-arranging on that would throw away the layout the store has just restored —
+  // which is the exact bug class this session is here to remove.
+  const modeSettled = useRef(false);
+  useEffect(() => {
+    if (!modeSettled.current) { modeSettled.current = true; return; }
+    shellLayoutStore.arrange(mode);
+  }, [mode]);
 
   // Global shortcuts. One listener, because they share two guards that have to agree.
   //
@@ -176,8 +228,16 @@ export default function ConsoleShell() {
   }, []);
 
   return (
-    <div className="tn-shell tn-terminal">
+    <div className="tn-shell tn-terminal" data-tnx-skin={skin}>
       {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
+      {/* The cold-start overlay. Mounted INSIDE the shell as a sibling, never
+          wrapping it: the app is already mounted and fetching behind this, so the
+          boot covers work that was happening anyway and costs nothing in
+          time-to-interactive. Gate the shell on it and a decoration becomes a
+          load-time regression. Counts are read from the registries rather than
+          typed, so the line cannot drift from the product. */}
+      <BootSequence layers={SIGNALS.length} feeds={CAMERA_FEED_COUNT} />
+
       <SkipLink />
       {/* Replaces StatusBar outright rather than sitting beside it: it carries the
           page's single <h1>, the `stat-line` / `a11y-status-line` spans, and the

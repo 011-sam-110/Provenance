@@ -15,7 +15,7 @@ import type { SignalSource } from "@/lib/signals/types";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { useScope } from "@/lib/shell/scope";
-import { projectSignal } from "@/lib/console/signals/signalCard";
+import { projectSignal, rowLabel } from "@/lib/console/signals/signalCard";
 import { signalHelp } from "@/lib/console/help";
 import { useSignalFeed } from "@/lib/console/signals/useSignalFeed";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
@@ -220,7 +220,22 @@ function makeSignalBody(source: SignalSource) {
       );
     }
     if (projected.shown === 0) {
-      return <p className="tn-w-empty">Nothing in {scope.label}.</p>;
+      // "Nothing in World." beside a header badge reading 8 is the contradiction
+      // reviewers reported: the badge counts the FEED, the body counts what
+      // survived the active scope, and printing only the second makes a filtered
+      // card indistinguishable from a dead one. A duty officer's words for it:
+      // "an empty panel I cannot prove is truly empty is worse than no panel".
+      //
+      // The genuinely-zero case is unchanged. Only the case where the feed has
+      // rows and the scope hid them gains a sentence, and that sentence names
+      // both numbers so the disagreement resolves itself on screen.
+      return projected.total > 0 ? (
+        <p className="tn-w-empty">
+          {projected.totalLabel} in the feed, none inside {scope.label}.
+        </p>
+      ) : (
+        <p className="tn-w-empty">Nothing in {scope.label}.</p>
+      );
     }
 
     const now = Date.now();
@@ -241,7 +256,10 @@ function makeSignalBody(source: SignalSource) {
               ) : (
                 <span className="tn-w-dot" style={{ background: r.color || "var(--tn-text-faint, #94a3b8)" }} aria-hidden />
               )}
-              <span className="tn-w-place">{r.title}</span>
+              {/* rowLabel, not r.title: the title also serves as the map's pin
+                  label, where there is no value column and the magnitude has to
+                  stay. In the row it was said twice. See lib/console/signals/signalCard. */}
+              <span className="tn-w-place">{rowLabel(r.title, r.metric)}</span>
               {rel && <span className="tn-w-muted"> · {rel}</span>}
             </li>
           );
