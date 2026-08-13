@@ -4,12 +4,39 @@ A Next.js 15 single-page global situational-awareness map. **Product name: OpenD
 **Prod domain: `traffic-nerd-v2.vercel.app`** — that is the only domain we ship on.
 Deployed product = `origin/main`.
 
+## Licence — `AGPL-3.0-only`
+
+This repo is **AGPL-3.0-only** (`LICENSE`, verbatim FSF text; `BRAND.license` in
+`lib/brand.ts` is the single source of truth for anything user-facing).
+
+**§13 is an obligation on the deployment, not just a file.** Anyone interacting with
+this program over a network must be offered its Corresponding Source, so the console
+header (`components/terminal/TerminalHeader.tsx`) and the site footer
+(`app/(site)/page.tsx`) both link the repo. **Do not remove those links** — a hosted
+AGPL app that does not offer its source is in breach of its own licence.
+
+The AGPL covers **this codebase only**. Every upstream feed keeps its own terms; the
+in-app attributions (TfL, Windy, CARTO/OSM, NASA, GDACS, TeleGeography…) are separate
+obligations and are not satisfied by the licence.
+
 > **Naming guard.** `worldmonitor.app` / "World Monitor" is a **competitor**
 > (`koala73/worldmonitor`, **AGPL-3.0**), not us. Never write it as our domain, our
-> product name, or in user-visible strings — their README reserves branding rights, and
-> AGPL §13 triggers on network interaction, so lifting any of their *code* would force
-> OpenData to relicense. Read their repo for **facts only** (endpoint URLs, cadences).
+> product name, or in user-visible strings — **their README reserves branding rights,
+> and that is a trademark matter which our licence choice does not touch.**
+>
+> **What DID change (2026-08-13):** this repo is now AGPL-3.0 itself, so the old
+> reasoning here — "lifting their code would force us to relicense" — no longer bites,
+> because we have already relicensed and published. Their code is now licence-
+> *compatible* with ours. That removes the legal barrier; it does not remove the
+> others, and the standing instruction is unchanged: **read their repo for facts only**
+> (endpoint URLs, cadences). Copying still requires preserving their copyright notices
+> and attribution, and it is a bad *product* call regardless — "we have seen hundreds of
+> these, all based on the same one project" is the main thing this project has to
+> overcome. If you ever do want to lift something, raise it with Sampo first; it is his
+> call and worth a lawyer's glance, not mine.
+>
 > `simplifaisoul/osiris` is **MIT** and may be copied **with** an attribution header.
+> Nothing has been copied from it to date (grep for "Adapted from OSIRIS" returns none).
 >
 > The two known leftovers this section used to list (`lib/export.ts` naming downloads
 > `worldmonitor-*`, and `lib/events/alerting.ts` sending `"World Monitor — Disasters &

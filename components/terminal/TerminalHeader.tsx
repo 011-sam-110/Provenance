@@ -397,6 +397,23 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             <span>SUPPORT</span>
           </a>
 
+          {/* AGPL-3.0 section 13: a user who interacts with this program remotely —
+              which is the only way anyone uses it — must be offered the Corresponding
+              Source. This link is that offer, so it is a licence obligation rather
+              than a nicety. Removing it puts the deployment in breach of its own
+              licence. Reuses .tnx-hdr-kofi so the right cluster stays one visual
+              family; see the CSS block at the top of this file. */}
+          <a
+            className="tnx-hdr-kofi"
+            href={BRAND.repoUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={`${BRAND.name} is free software under the ${BRAND.license.name}. Read the source.`}
+          >
+            <span aria-hidden>{"<>"}</span>
+            <span>SOURCE</span>
+          </a>
+
           <button
             type="button"
             className="tnx-hdr-cmd tn-palette-trigger"

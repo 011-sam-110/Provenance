@@ -270,6 +270,9 @@ export default async function Landing({
             <a href={`${REPO_URL}/blob/main/docs/API_KEYS.md`} target="_blank" rel="noreferrer noopener">
               Which layers need a key
             </a>
+            <a href={BRAND.license.url} target="_blank" rel="noreferrer noopener">
+              Licence ({BRAND.license.short})
+            </a>
             <a href={BRAND.kofiUrl} target="_blank" rel="noreferrer noopener">
               Support the running costs
             </a>
@@ -292,6 +295,10 @@ export default async function Landing({
               Powered by TfL Open Data. Webcams provided by Windy.com. Basemap © CARTO, ©
               OpenStreetMap contributors. Contains public sector information licensed under the
               Open Government Licence.
+            </p>
+            <p>
+              © {BRAND.license.year} {BRAND.license.holder}. {BRAND.name} is free software
+              under the {BRAND.license.name}. The data above keeps its own separate terms.
             </p>
           </div>
         </div>
