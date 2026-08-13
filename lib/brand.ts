@@ -7,7 +7,7 @@
 
 export const BRAND = {
   /** Product/display name. The one line to change for a rename. */
-  name: "OpenData",
+  name: "Provenance",
   /** Lower-case tagline used after the name in <title> and cards. No trailing dot. */
   tagline: "live global situational-awareness map",
   /** Card headline for the default view (no specific board selected). */
