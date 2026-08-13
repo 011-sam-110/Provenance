@@ -40,6 +40,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Mark from "@/components/brand/Mark";
+import { BRAND } from "@/lib/brand";
 import {
   BOOT_FADE_MS,
   BOOT_MS,
@@ -190,7 +191,7 @@ export default function BootSequence({ layers, feeds }: { layers: number; feeds:
           idle={reached >= stageIndex("identify")}
           className="tnx-boot-mark"
         />
-        <div className="tnx-boot-word">OPENDATA</div>
+        <div className="tnx-boot-word">{BRAND.name}</div>
         <div className="tnx-boot-rule" />
         <div className="tnx-boot-sub">GLOBAL SITUATIONAL AWARENESS</div>
 

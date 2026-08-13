@@ -6,6 +6,8 @@
 // live in lib/shell/tour.ts. Keeping the steps + gating here makes them unit-testable
 // with no DOM (mirrors the other pure-logic-with-a-fixture-test modules).
 
+import { BRAND } from "@/lib/brand";
+
 export interface TourStep {
   id: string;
   /** CSS selector for the element to spotlight. "" ⇒ a centred, target-less card. */
@@ -34,7 +36,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "welcome",
     target: "",
-    title: "Welcome to OpenData",
+    title: `Welcome to ${BRAND.name}`,
     body: "A live map of what's happening on Earth right now — flights, quakes, ships, conflict, markets and more. Here's a 40-second tour. You can skip any time.",
     placement: "center",
   },
@@ -84,7 +86,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "done",
     target: "",
     title: "That's the tour",
-    body: "Explore freely — nothing here needs a login or a key. Replay this any time from ⌘K → “Take the tour”, and if OpenData is useful you can support it with the ☕ button up top.",
+    body: `Explore freely — nothing here needs a login or a key. Replay this any time from ⌘K → “Take the tour”, and if ${BRAND.name} is useful you can support it with the ☕ button up top.`,
     placement: "center",
   },
 ];

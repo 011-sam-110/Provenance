@@ -17,6 +17,7 @@ import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { requestNotifyPermission } from "@/lib/events/alerting";
 import { sendTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
+import { BRAND } from "@/lib/brand";
 
 export type NotifyChannel = "browser" | "telegram" | "discord";
 export interface NotifyChannels { browser: boolean; telegram: boolean; discord: boolean }
@@ -150,7 +151,7 @@ function fireBrowserNote(text: string): void {
   if (typeof window === "undefined" || !("Notification" in window)) return;
   try {
     if (Notification.permission !== "granted") return;
-    new Notification("OpenData", { body: text.slice(0, 240) });
+    new Notification(BRAND.name, { body: text.slice(0, 240) });
   } catch {
     /* some browsers throw on construct without a service worker — non-fatal */
   }

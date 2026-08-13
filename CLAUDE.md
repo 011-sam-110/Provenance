@@ -30,6 +30,17 @@ Deployed product = `origin/main`.
 - PR: fresh branch + PR per milestone/group. Sampo live-merges and deletes branches fast → always branch off the latest `main` and open a new PR for follow-ons.
 
 ## Shape
+- **`/` is the marketing site, `/app` is the console.** `app/(site)/` holds the landing
+  page (its own layout loads the three marketing typefaces so `/app` never downloads
+  them); `app/(console)/app/` holds the shell. `/` forwards any request carrying `?v=`
+  or `?c=` to `/app` with the query intact — shared links and OG cards were minted
+  against `/`, so removing that shim breaks every link anyone has already sent.
+- `components/marketing/*` — landing page only. ONE scroll subscriber
+  (`ScrollGround.tsx`) publishes CSS custom properties; nothing else may add a scroll
+  listener and nothing may set React state per frame. `.pv-*` tokens in
+  `app/provenance.css`, scoped to `.pv-root` so they cannot reach the console.
+- The source wall + counts are generated from `SOURCE_CATALOG` via `lib/marketing/wall.ts`.
+  Adding an adapter adds a card. Never type a count into the landing page.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,

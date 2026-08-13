@@ -126,6 +126,7 @@ import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import Mark from "@/components/brand/Mark";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
+import { BRAND } from "@/lib/brand";
 
 /**
  * The tab label IS the board's title, uppercased. There used to be a second map here
@@ -305,19 +306,20 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               what stopped the browser tab showing a different logo from the app.
 
               No label: the mark is a decorative duplicate of the h1 beside it, and
-              a second "OpenData" in the accessibility tree is noise. `idle` runs
+              a second copy of the product name in the accessibility tree
+              is noise. `idle` runs
               the slow ring-dot orbit — the ambient "system is live" tell. */}
           <Mark className="tnx-hdr-mark" size={24} idle />
 
           {/* The page's one h1. It is the wordmark itself rather than a hidden
               duplicate — the visible product name IS the page's title — with a
               visually-hidden tail so the accessible heading says what the product
-              is instead of just "OpenData". The DOM text is mixed-case and the
-              uppercase is CSS (see the block at the top of this file): a literal
-              "OPENDATA" reads out as an initialism on some screen readers. */}
+              is instead of the bare name. The DOM text keeps BRAND's mixed case and
+              the uppercase is CSS (see the block at the top of this file): an
+              all-caps literal reads out as an initialism on some screen readers. */}
           <h1 className="tnx-hdr-h1">
-            OpenData
-            <span className="tn-sr-only"> — live global situational-awareness map</span>
+            {BRAND.name}
+            <span className="tn-sr-only"> — {BRAND.tagline}</span>
           </h1>
 
           {/* aria-hidden, and OUTSIDE the h1: inside it, this would append to the
@@ -389,7 +391,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             href="https://ko-fi.com/opendata"
             target="_blank"
             rel="noreferrer noopener"
-            title="Support OpenData on Ko-fi"
+            title={`Support ${BRAND.name} on Ko-fi`}
           >
             <span aria-hidden>☕</span>
             <span>SUPPORT</span>

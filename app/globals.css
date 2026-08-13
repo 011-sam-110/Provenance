@@ -3431,6 +3431,9 @@ a.tn-w-place { display: flex; align-items: center; }
 .tnx-boot-word {
   margin-top: 26px;
   font-family: var(--tnx-font-title);
+  /* Uppercase in CSS, not as a literal: the DOM text is BRAND's mixed case so a
+     screen reader says the name rather than spelling it out as an initialism. */
+  text-transform: uppercase;
   font-weight: 700;
   font-size: clamp(40px, 8.4vmin, 92px);
   line-height: 1;
