@@ -3221,6 +3221,99 @@ a.tn-w-place { display: flex; align-items: center; }
   background: rgba(16, 22, 29, 0.30);
 }
 
+/* ── The mark, and the boot sequence ───────────────────────────────────────
+   Every part of the mark is its own group so it can assemble rather than just
+   appear. All of it draws from currentColor, so one file serves both skins and
+   the header, the boot overlay and the generated icons cannot drift apart. */
+.tn-mark { display: block; color: var(--tnx-ink); }
+.tn-mark .mk-ring {
+  fill: none; stroke: currentColor; stroke-width: 1.1; opacity: 0.55;
+}
+/* 3.4, not 5.5. A heavier ring closes the aperture at icon sizes and the globe
+   inside collapses into an undifferentiated blob. */
+.tn-mark .mk-lens { fill: none; stroke: currentColor; stroke-width: 3.4; }
+.tn-mark .mk-fill { fill: currentColor; }
+.tn-mark .mk-dot { fill: currentColor; opacity: 0.75; }
+
+/* The assemble timeline. `pathLength: 100` on the circles is what lets the
+   dasharray be a plain 100 here instead of a circumference per radius. */
+.tn-mark.is-playing .mk-ring {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tnx-mark-draw 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+.tn-mark.is-playing .mk-ring-2 { animation-delay: 110ms; }
+.tn-mark.is-playing .mk-dots { opacity: 0; animation: tnx-mark-in 400ms 620ms forwards; }
+.tn-mark.is-playing .mk-glass {
+  opacity: 0; transform-origin: 50% 44%;
+  animation: tnx-mark-pop 520ms 380ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+}
+.tn-mark.is-playing .mk-book {
+  opacity: 0; transform-origin: 50% 78%;
+  animation: tnx-mark-unfold 480ms 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* The ambient "system is live" tell on the header mark. Deliberately 22s: fast
+   enough to notice if you look, slow enough never to pull the eye off the data. */
+.tn-mark .mk-dots.is-idle {
+  transform-origin: 50% 50%;
+  animation: tnx-mark-orbit 22s linear infinite;
+}
+
+@keyframes tnx-mark-draw { to { stroke-dashoffset: 0; } }
+@keyframes tnx-mark-in { to { opacity: 1; } }
+@keyframes tnx-mark-pop {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes tnx-mark-unfold {
+  from { opacity: 0; transform: scaleY(0.3) translateY(6px); }
+  to { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+@keyframes tnx-mark-orbit { to { transform: rotate(360deg); } }
+
+/* The overlay. It sits over a shell that is ALREADY mounted and fetching — see
+   the note in BootSequence.tsx. It must never gate rendering, or a decoration
+   becomes a load-time regression. */
+.tnx-boot {
+  position: fixed; inset: 0; z-index: 3000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tnx-bg);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 320ms ease;
+}
+.tnx-boot.is-leaving { opacity: 0; pointer-events: none; }
+.tnx-boot-inner { display: grid; justify-items: center; gap: 22px; }
+.tnx-boot-mark { color: var(--tnx-ink); }
+.tnx-boot-lines {
+  display: grid; gap: 3px; justify-items: start;
+  min-height: 58px; min-width: 230px;
+  font-family: var(--tnx-font-mono);
+  font-size: 11px; letter-spacing: 0.08em;
+  color: var(--tnx-ink-dim);
+}
+.tnx-boot-line { opacity: 0; transition: opacity 160ms ease; }
+.tnx-boot-line.is-on { opacity: 1; }
+.tnx-boot-ok { color: var(--tnx-live); }
+.tnx-boot-skip {
+  position: absolute; right: 16px; bottom: 14px;
+  font-family: var(--tnx-font-mono);
+  font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--tnx-ink-ghost);
+}
+
+/* Reduced motion: the overlay still appears and leaves (BootSequence shortens it
+   to a single static frame), but nothing assembles and nothing orbits. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-mark.is-playing .mk-ring,
+  .tn-mark.is-playing .mk-dots,
+  .tn-mark.is-playing .mk-glass,
+  .tn-mark.is-playing .mk-book,
+  .tn-mark .mk-dots.is-idle { animation: none; opacity: 1; stroke-dashoffset: 0; transform: none; }
+  .tnx-boot, .tnx-boot-line { transition: none; }
+}
+
 /* The skin toggle, sized to match the Ko-fi chip beside it. */
 .tn-terminal .tnx-hdr-skin {
   display: inline-flex; align-items: center; gap: 4px;

@@ -22,6 +22,9 @@ import { timeWindowStore } from "@/lib/shell/timeWindow";
 import { registerServiceWorker } from "@/lib/pwa/register";
 import { variantStore } from "@/lib/variants/store";
 import TerminalHeader from "@/components/terminal/TerminalHeader";
+import BootSequence from "@/components/terminal/BootSequence";
+import { SIGNALS } from "@/lib/signals/registry";
+import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import TerminalFooter from "@/components/terminal/TerminalFooter";
 import { focusStageSearch } from "@/components/terminal/StageBar";
@@ -204,6 +207,14 @@ export default function ConsoleShell() {
   return (
     <div className="tn-shell tn-terminal" data-tnx-skin={skin}>
       {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
+      {/* The cold-start overlay. Mounted INSIDE the shell as a sibling, never
+          wrapping it: the app is already mounted and fetching behind this, so the
+          boot covers work that was happening anyway and costs nothing in
+          time-to-interactive. Gate the shell on it and a decoration becomes a
+          load-time regression. Counts are read from the registries rather than
+          typed, so the line cannot drift from the product. */}
+      <BootSequence layers={SIGNALS.length} feeds={CAMERA_FEED_COUNT} />
+
       <SkipLink />
       {/* Replaces StatusBar outright rather than sitting beside it: it carries the
           page's single <h1>, the `stat-line` / `a11y-status-line` spans, and the

@@ -1,148 +1,108 @@
-// Generate the calm-light PWA icons (a white globe on the brand teal) as real
-// PNGs, with no image dependency: rasterise to an RGBA buffer and hand-encode the
-// PNG via node:zlib. Run once with `node scripts/gen-icons.mjs`; the committed
-// outputs under public/icons/ are the actual app assets (this script is provenance).
-import { writeFileSync, mkdirSync } from "node:fs";
-import { deflateSync } from "node:zlib";
+// Generate the app icons from the ONE source of truth: the SVG mark in
+// components/brand/Mark.tsx. Run with `node scripts/gen-icons.mjs`; the committed
+// outputs under public/icons/ and public/brand/ are the actual app assets and this
+// script is their provenance.
+//
+// WHY THIS WAS REWRITTEN. The previous version hand-rasterised a teal globe to an
+// RGBA buffer and encoded the PNG through node:zlib. That globe was the product's
+// old identity, and it never got updated when the new mark landed — so the header
+// showed one logo while the browser tab, the apple-touch-icon and the installed
+// PWA showed a different one from June. Generating from the same SVG the app
+// renders is what makes that class of drift impossible rather than merely fixed.
+//
+// It rasterises through Playwright, which is ALREADY a devDependency here (it runs
+// the e2e suite), so this adds no packages. `sharp` and `resvg` would each have
+// been a new native dependency for a script that runs by hand a few times a year.
+//
+// The mark's own geometry is duplicated below rather than imported: Mark.tsx is a
+// .tsx React component and this is a plain node script with no build step. The
+// duplication is deliberate and small, and gen-icons verifies it — see verifySync().
+
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { chromium } from "@playwright/test";
 
-const OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "public", "icons");
-mkdirSync(OUT, { recursive: true });
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const ICONS = resolve(ROOT, "public", "icons");
+const BRAND = resolve(ROOT, "public", "brand");
 
-// Brand palette (calm light identity — accent teal, no neon).
-const TEAL_TOP = [14, 125, 151]; // #0e7d97
-const TEAL_BOT = [11, 97, 117]; // #0b6175
-const WHITE = [255, 255, 255];
+// The mark, read from the SAME artefact components/brand/Mark.tsx renders.
+// Not a copy with a drift check — one file, two consumers — because a copy is
+// how the app and its favicon came to show different logos in the first place.
+// scripts/trace-mark.mjs regenerates it from public/brand/mark.png.
+const TRACED = JSON.parse(readFileSync(resolve(ROOT, "lib", "brand", "markPaths.json"), "utf8"));
 
-const clamp01 = (x) => Math.max(0, Math.min(1, x));
-const lerp = (a, b, t) => a + (b - a) * t;
-// Smooth 1px-ish antialiased coverage from a signed distance (inside = positive).
-const aa = (d) => clamp01(d + 0.5);
+// fill-rule="evenodd" is mandatory: the traced contours include the inner
+// boundaries of the lens ring and of every continent. Under the default nonzero
+// rule those inner loops fill solid and the globe renders as a plain disc.
+const MARK_BODY = `
+  <g fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.55">
+    <circle cx="64" cy="63" r="46"/>
+    <circle cx="64" cy="56" r="37"/>
+  </g>
+  <g fill="currentColor" opacity="0.75">
+    <circle cx="18" cy="63" r="2.4"/>
+    <circle cx="110" cy="63" r="2.4"/>
+  </g>
+  <path fill="currentColor" fill-rule="evenodd" d="${TRACED.glass.join(" ")}"/>
+  <path fill="currentColor" fill-rule="evenodd" d="${TRACED.book.join(" ")}"/>`;
 
-function draw({ size, maskable }) {
-  const buf = Buffer.alloc(size * size * 4); // RGBA
-  const cx = size / 2;
-  const cy = size / 2;
-  // Maskable icons need their content inside the ~80% safe zone → smaller globe,
-  // full-bleed background. Normal icons get rounded corners + a roomier globe.
-  const pad = maskable ? size * 0.06 : 0;
-  const corner = maskable ? 0 : size * 0.22;
-  const R = (maskable ? 0.30 : 0.34) * size; // globe radius
-  const stroke = Math.max(2, size * 0.018); // line thickness
-  const meridianRx = R * 0.55; // side-meridian ellipse half-width
-
-  const px = (x, y, rgb, a) => {
-    if (a <= 0) return;
-    const i = (y * size + x) * 4;
-    const ea = a + buf[i + 3] / 255 * (1 - a);
-    if (ea <= 0) return;
-    for (let c = 0; c < 3; c++) {
-      buf[i + c] = Math.round((rgb[c] * a + buf[i + c] * (buf[i + 3] / 255) * (1 - a)) / ea);
-    }
-    buf[i + 3] = Math.round(ea * 255);
-  };
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const fx = x + 0.5;
-      const fy = y + 0.5;
-
-      // --- Background (rounded rect, or full square for maskable) ---
-      let bgCov;
-      if (maskable) {
-        bgCov = 1;
-      } else {
-        // rounded-rect signed distance
-        const qx = Math.abs(fx - cx) - (size / 2 - pad - corner);
-        const qy = Math.abs(fy - cy) - (size / 2 - pad - corner);
-        const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) - corner;
-        const inside = Math.min(Math.max(qx, qy), 0);
-        bgCov = aa(-(outside + inside));
-      }
-      if (bgCov > 0) {
-        const t = clamp01((fy - pad) / (size - 2 * pad));
-        const bg = [lerp(TEAL_TOP[0], TEAL_BOT[0], t), lerp(TEAL_TOP[1], TEAL_BOT[1], t), lerp(TEAL_TOP[2], TEAL_BOT[2], t)];
-        px(x, y, bg, bgCov);
-      }
-
-      // --- Globe ---
-      const dx = fx - cx;
-      const dy = fy - cy;
-      const r = Math.hypot(dx, dy);
-      const inGlobe = aa(R - r); // 1 inside disc
-      if (inGlobe <= 0) continue;
-
-      // White ocean disc (slightly translucent so the teal reads through faintly).
-      px(x, y, WHITE, inGlobe * 0.96);
-
-      // Teal graticule, clipped to the disc. line(d) = thin band where |d|<stroke/2.
-      const line = (d) => inGlobe * aa(stroke / 2 - Math.abs(d));
-      let g = 0;
-      g = Math.max(g, line(dy)); // equator
-      g = Math.max(g, line(dy - R * 0.5)); // lower latitude
-      g = Math.max(g, line(dy + R * 0.5)); // upper latitude
-      g = Math.max(g, line(dx)); // central meridian
-      // Side meridians: a vertical ellipse (|hypot(dx/rx, dy/R)| = 1).
-      const e = Math.hypot(dx / meridianRx, dy / R) - 1;
-      g = Math.max(g, inGlobe * aa(stroke / 2 / meridianRx - Math.abs(e)) );
-      // Rim ring.
-      g = Math.max(g, aa(stroke / 2 - Math.abs(R - r)));
-      if (g > 0) px(x, y, TEAL_BOT, g * 0.92);
-    }
-  }
-  return buf;
+/** `maskable` fills the frame and keeps the art inside Android's ~80% safe zone. */
+function svg({ size, ink, plate, radius, pad }) {
+  const inner = 128 * (1 - pad * 2);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="${radius}" fill="${plate}"/>
+  <g color="${ink}" transform="translate(${128 * pad} ${128 * pad}) scale(${inner / 128})">${MARK_BODY}</g>
+</svg>`;
 }
 
-// --- Minimal PNG encoder (truecolor + alpha, 8-bit, no interlace) ---
-const CRC = (() => {
-  const t = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c >>> 0;
-  }
-  return t;
-})();
-function crc32(buf) {
-  let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = CRC[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length, 0);
-  const typeBuf = Buffer.from(type, "ascii");
-  const body = Buffer.concat([typeBuf, data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(body), 0);
-  return Buffer.concat([len, body, crc]);
-}
-function encodePng(rgba, size) {
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // colour type RGBA
-  // 10,11,12 = compression/filter/interlace = 0
-  const raw = Buffer.alloc(size * (size * 4 + 1));
-  for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0; // filter: none
-    rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
-  }
-  const idat = deflateSync(raw, { level: 9 });
-  return Buffer.concat([sig, chunk("IHDR", ihdr), chunk("IDAT", idat), chunk("IEND", Buffer.alloc(0))]);
-}
+// The plate. Near-black, matching --tnx-bg: the mark is a light figure on a dark
+// ground in the design, and an OS icon has no theme to follow.
+const PLATE = "#06080b";
+const INK = "#e8ecf1";
 
-const targets = [
-  { name: "icon-192.png", size: 192, maskable: false },
-  { name: "icon-512.png", size: 512, maskable: false },
-  { name: "icon-maskable-512.png", size: 512, maskable: true },
-  { name: "apple-touch-icon.png", size: 180, maskable: true },
+const TARGETS = [
+  { file: resolve(ICONS, "icon-192.png"), size: 192, radius: 28, pad: 0.06 },
+  { file: resolve(ICONS, "icon-512.png"), size: 512, radius: 76, pad: 0.06 },
+  { file: resolve(ICONS, "icon-maskable-512.png"), size: 512, radius: 0, pad: 0.12 },
+  { file: resolve(ICONS, "apple-touch-icon.png"), size: 180, radius: 0, pad: 0.08 },
+  // The brand marks the app itself references.
+  { file: resolve(BRAND, "mark-32.png"), size: 32, radius: 0, pad: 0.02 },
+  { file: resolve(BRAND, "mark-64.png"), size: 64, radius: 0, pad: 0.02 },
+  { file: resolve(BRAND, "mark-128.png"), size: 128, radius: 0, pad: 0.02 },
+  { file: resolve(BRAND, "mark-512.png"), size: 512, radius: 0, pad: 0.02 },
 ];
-for (const t of targets) {
-  const buf = draw(t);
-  writeFileSync(resolve(OUT, t.name), encodePng(buf, t.size));
-  console.log("wrote", t.name);
+
+async function main() {
+  mkdirSync(ICONS, { recursive: true });
+  mkdirSync(BRAND, { recursive: true });
+
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+
+  for (const t of TARGETS) {
+    const markup = svg({ size: t.size, ink: INK, plate: PLATE, radius: t.radius, pad: t.pad });
+    await page.setViewportSize({ width: t.size, height: t.size });
+    await page.setContent(
+      `<style>html,body{margin:0;padding:0;background:transparent}</style>${markup}`,
+      { waitUntil: "load" },
+    );
+    const buf = await page.locator("svg").screenshot({ omitBackground: true });
+    writeFileSync(t.file, buf);
+    console.log(`gen-icons: ${t.size}px -> ${t.file.replace(ROOT, ".")}`);
+  }
+
+  // The favicon the browser tab reads. 32px, plated, so it stays legible against
+  // both a light and a dark tab strip.
+  const ico = svg({ size: 32, ink: INK, plate: PLATE, radius: 0, pad: 0.02 });
+  writeFileSync(resolve(ROOT, "public", "favicon.svg"), ico);
+  console.log("gen-icons: -> ./public/favicon.svg");
+
+  await browser.close();
 }
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
