@@ -26,6 +26,12 @@ test("first-run seeds the World preset with widgets in segments", async ({ page 
 
 test("⌘K adds a widget instance", async ({ page }) => {
   await page.goto("/");
+  // Wait for the seeded board before counting. `count()` does NOT retry — it is a
+  // one-shot query — so reading it straight after goto() captured 0 on a cold load
+  // and the assertion below then demanded exactly 1 widget while the first-run
+  // preset was busy rendering its eight. Anchoring on the first widget being
+  // visible is the same gate the seeding test above uses.
+  await expect(page.locator(".tn-cw").first()).toBeVisible();
   const before = await page.locator(".tn-cw").count();
   await page.keyboard.press("Control+k");
   // WAS getByPlaceholder(/Search/), which is a strict-mode violation: three inputs on
