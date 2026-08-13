@@ -179,7 +179,15 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
             unchanged. No aria-label goes on the .tn-cw frame: this h3 is
             already the frame's accessible name source, and a label here too
             would just duplicate it. */}
-        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }}>{type.title}</h3>
+        {/* `title` carries the SAME string the heading already shows, purely so a
+            sighted user can recover a name the column was too narrow to render:
+            .tn-cw-title ellipsises, and the Terminal's 250-300px columns clip most
+            widget names ("Country Instability Index" renders as "COU…"). It is
+            deliberately identical text rather than a longer description - an
+            accessible description that merely repeats the accessible name is
+            suppressed by screen readers rather than announced twice, which is the
+            trap f79b004 fixed and this must not reintroduce. */}
+        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={type.title}>{type.title}</h3>
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
         {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}

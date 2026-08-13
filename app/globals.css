@@ -68,8 +68,22 @@
   --tn-alert-h: 54px;
   --tn-alert-gap: 10px;
   --tn-alert-band: calc(var(--tn-alert-h) + var(--tn-alert-gap) * 2);
-  --tn-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* CHANGED: was
+       --tn-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+     which NAMED JetBrains Mono third in an OS-fallback list without ever loading it,
+     so it resolved to Consolas on Windows and SF Mono on macOS and the face was
+     never actually used. app/layout.tsx now self-hosts it via next/font and
+     publishes the stack as --tn-font-mono on <html>; the old list is kept behind it
+     as the fallback, and the var() default covers the case where the font class is
+     missing (an unstyled error page, a test harness) — without it, an undefined var
+     would invalidate the whole declaration rather than degrade. */
+  --tn-mono: var(--tn-font-mono, ui-monospace), "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
   --tn-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* IBM Plex Sans, loaded by app/layout.tsx. NOT folded into --tn-sans: the calm
+     light console's identity is the system sans, and the design uses Plex for
+     headline titles only. The Terminal block at the end of this file is the only
+     consumer. */
+  --tn-title: var(--tn-font-sans, ui-sans-serif), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 [data-theme="dark"] {
@@ -2967,4 +2981,934 @@ a.tn-w-place { display: flex; align-items: center; }
   .maplibregl-ctrl.maplibregl-ctrl-group button { width: 44px; height: 44px; }
   .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
   .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { width: 44px; height: 44px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ██ OPENDATA TERMINAL ██  — the dark, dense OSINT chrome.
+   ════════════════════════════════════════════════════════════════════════════
+   Everything below is scoped to `.tn-terminal`, which ConsoleShell puts on
+   `.tn-shell` (and ConsoleWorkspace repeats on `.tn-cw-shell`). NOTHING here
+   touches `:root` or `[data-theme]`, and that is the single most important
+   property of this block:
+
+     • app/layout.tsx hard-codes `data-theme="light"` so the SSR markup matches
+       first paint, and
+     • lib/variants/store.ts calls `uiStore.setTheme(v.theme)` on EVERY variant
+       switch — and `applyPreset()` (every board tab) writes layers and signals,
+       which marks the variant edited.
+
+   A `[data-theme="dark"]` default would therefore be yanked back to light by the
+   first board change, and a `prefers-color-scheme` block would break the explicit
+   light toggle for users on a dark OS. A scoped block sidesteps both: the Terminal
+   is dark because it is the Terminal, not because a theme said so, and the light
+   console tokens are still intact underneath for /locate and any future surface.
+
+   Two blocks follow. The first defines the design's own --tnx-* palette. The
+   second REMAPS the app's existing --tn-* tokens onto it, which is how ~1,500
+   lines of widget chrome (.tn-cw*, .tn-w-*, the rail, the palette, the settings
+   drawer, the dossier) become dark without a single one of their rules being
+   rewritten — and, just as importantly, without their measured contrast reasoning
+   being discarded rule by rule.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.tn-terminal {
+  /* ── The design palette, verbatim ──────────────────────────────────────── */
+  --tnx-bg: #06080b;
+  --tnx-panel: #0a0d12;
+  --tnx-panel-head: #0e1319;
+  /* The header/footer band. A THIRD value between --tnx-bg and --tnx-panel, not a
+     rounding of either: substituting --tnx-bg makes the chrome disappear into the
+     page and leaves the hairline under it doing all the work. */
+  --tnx-chrome: #080b0f;
+
+  --tnx-ink: #e8ecf1;
+  --tnx-ink-dim: #93a0b0;
+  --tnx-ink-faint: #67757f;
+  --tnx-ink-ghost: #4d5a66;
+
+  --tnx-line: rgba(255, 255, 255, 0.08);
+  --tnx-line-strong: rgba(255, 255, 255, 0.14);
+  --tnx-row-rule: rgba(255, 255, 255, 0.05);
+
+  --tnx-accent: #ffb020;
+  --tnx-accent-soft: rgba(255, 176, 32, 0.13);
+
+  --tnx-live: #35c46a;
+  --tnx-lag: #ffb020;
+  --tnx-down: #ff5449;
+  --tnx-dormant: #3a4550;
+  --tnx-key: #5b6673;
+
+  /* Geometry. --tnx-rh is the standard row height; a widget body that wants the
+     compact 19px variant sets --tnx-rh on itself and every row below follows. */
+  --tnx-rh: 22px;
+  --tnx-fs: 11.5px;
+  --tnx-hdr-h: 34px;
+  --tnx-feed-h: 22px;
+  --tnx-foot-h: 24px;
+  /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
+     width and the shell's reserved left padding, so the two can never disagree
+     and let the tab sit on top of the first widget. */
+  --tnx-rail-tab-w: 26px;
+
+  /* Type. JetBrains Mono for everything; IBM Plex Sans for headline titles only. */
+  --tnx-font-mono: var(--tn-mono);
+  --tnx-font-title: var(--tn-title);
+
+  /* ── REMAP: the app's own tokens, pointed at the palette above ─────────── */
+  /* Every one of these is already consumed by existing rules, so redefining them
+     here re-skins the whole widget system at once. Restyling .tn-cw* one rule at a
+     time would have meant re-deriving ~40 hand-measured contrast decisions, and
+     getting some of them wrong. */
+  --tn-bg: var(--tnx-bg);
+  --tn-surface: var(--tnx-panel);
+  --tn-surface-solid: var(--tnx-panel-head);
+  --tn-surface-2: #11161d;
+  --tn-glass: rgba(8, 11, 15, 0.90);
+  --tn-topbar-fill: rgba(8, 11, 15, 0.72);
+  --tn-topbar-pill: rgba(8, 11, 15, 0.92);
+  --tn-border: var(--tnx-line);
+  --tn-border-strong: var(--tnx-line-strong);
+  --tn-text: var(--tnx-ink);
+  --tn-text-muted: var(--tnx-ink-dim);
+  --tn-text-faint: var(--tnx-ink-faint);
+  /* These two are CONSUMED BUT NEVER DEFINED in the light sheet (11 uses of
+     --tn-text-dim, 3 of --tn-hover), so every consumer falls back to a hard-coded
+     LIGHT hex — pale grey text and a near-white hover wash, which would have landed
+     unchanged on near-black. Defining them here is the fix; chasing the fallbacks
+     rule by rule would not have been. */
+  --tn-text-dim: var(--tnx-ink-faint);
+  --tn-hover: rgba(255, 255, 255, 0.06);
+  --tn-accent: var(--tnx-accent);
+  --tn-accent-strong: #ffc457;
+  --tn-accent-soft: var(--tnx-accent-soft);
+  --tn-chip-bg: #141a22;
+  --tn-toggle-off: rgba(255, 255, 255, 0.16);
+  /* The terminal separates surfaces with hairlines, not elevation. A shadow
+     survives only where a popover has to detach from the panel behind it. */
+  --tn-shadow-sm: none;
+  --tn-shadow: 0 14px 40px rgba(0, 0, 0, 0.66);
+
+  --tn-live: var(--tnx-live);
+  --tn-lagging: var(--tnx-lag);
+  --tn-stale: #ff8a3d;
+  --tn-down: var(--tnx-down);
+  --tn-unknown: var(--tnx-ink-ghost);
+  --tn-paused: var(--tnx-dormant);
+  /* On near-black the vivid status hues ARE the legible ones, so the five text inks
+     collapse back onto the fills — the same move the existing dark block makes, for
+     the same measured reason. */
+  --tn-live-ink: var(--tnx-live);
+  --tn-lagging-ink: var(--tnx-lag);
+  --tn-stale-ink: #ff8a3d;
+  --tn-down-ink: var(--tnx-down);
+  --tn-unknown-ink: var(--tnx-ink-faint);
+
+  /* GEOMETRY TOKENS OTHER RULES RESERVE SPACE AGAINST.
+     --tn-topbar-h is not a bar height any more (the header is a flex band, not a
+     fixed overlay) — it is "how much chrome sits above the stage", which is what
+     the rules reading it actually mean: the fixed-position dossier tops out below
+     it. 34px header + 22px feed strip = 56px.
+     --tn-ticker-h is the licensing-critical one: the MapLibre attribution control
+     is pinned to `bottom: var(--tn-ticker-h)`, and the Terminal footer is 24px, not
+     the retired ticker's 32px. */
+  --tn-topbar-h: calc(var(--tnx-hdr-h) + var(--tnx-feed-h));
+  --tn-ticker-h: var(--tnx-foot-h);
+  --tn-alert-h: 30px;
+  --tn-alert-gap: 0px;
+
+  font-family: var(--tnx-font-mono);
+  font-size: var(--tnx-fs);
+  color: var(--tnx-ink);
+  /* Firefox scrollbars; the WebKit equivalents are near the end of this block. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* The page behind the shell. `.tn-shell` is 100vw x 100dvh so this shows only as
+   overscroll / rubber-band on a trackpad — but a white flash at the edge of a
+   near-black terminal is the most obvious kind of wrong. :has() is already a
+   dependency of this sheet (the rail's inset rule); browsers without it simply keep
+   the light overscroll, which is a cosmetic degradation, not a broken layout. */
+body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
+
+/* ── Shell: five stacked bands ─────────────────────────────────────────────
+   Flex column, not grid, and deliberately: every overlay in the app
+   (.tn-palette-root, .tn-dossier, .tn-dive, .tn-tour, .tn-toast,
+   .tn-settings-scrim) is position:fixed and therefore out of flow, so a flex
+   column needs no grid-row bookkeeping to stop one of them claiming a band.
+   100dvh rather than 100vh: on iOS/Android 100vh is taller than the visible area
+   and the footer would sit under the URL bar. */
+.tn-shell.tn-terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tnx-bg);
+}
+.tn-shell.tn-terminal > .tnx-hdr,
+.tn-shell.tn-terminal > .tnx-feed,
+.tn-shell.tn-terminal > .tnx-footer { flex: 0 0 auto; }
+
+/* ── The workspace band ────────────────────────────────────────────────────
+   `.tn-cw-shell` stops being an absolute canvas. The `top:` it inherits from
+   `.tn-alert ~ .tn-cw-shell` (the banner reservation) would OFFSET a positioned
+   element, so `inset` is reset explicitly. The banner reserves its band by being a
+   flex sibling now — the same guarantee by simpler means — and the sibling
+   combinator that encoded it is left intact and harmless. Specificity here is
+   (0,2,0), equal to that rule, and this block is later in the sheet, so it wins. */
+.tn-terminal .tn-cw-shell,
+.tn-cw-shell.tn-terminal {
+  position: relative;
+  inset: auto;
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  background: var(--tnx-bg);
+}
+
+/* The grid itself. Background = the hairline colour and gap = 1px, so the gutters
+   between panels ARE the rules: no panel needs a border, and two adjacent panels
+   can never produce a 2px double rule. */
+.tn-terminal .tn-seg {
+  display: grid;
+  gap: 1px;
+  padding: 0;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  align-content: stretch;
+  overflow: auto;
+  background: var(--tnx-line);
+  /* grid-template-areas / -columns / -rows arrive as an inline style from
+     lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
+}
+.tn-terminal .tn-seg-slot {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--tnx-panel);
+}
+
+/* ── Stage cell ────────────────────────────────────────────────────────────
+   position:relative is mandatory, not stylistic: WorldMap renders `.world-map` /
+   `.map-canvas` at `position:absolute; inset:0`, so without a positioned ancestor
+   here the canvas escapes to the next one out and paints over the entire shell.
+   min-height keeps a dense board from squeezing the map to a sliver — below ~180px
+   it is not a map, and the grid would rather scroll than pretend otherwise. */
+.tn-terminal .tn-cw-stage {
+  position: relative;
+  inset: auto;
+  min-width: 0;
+  min-height: 180px;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  background: var(--tnx-bg);
+}
+.tn-terminal .tn-cw-stage:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--tnx-accent);
+}
+.tn-terminal .tn-stage-loading {
+  background: var(--tnx-panel);
+  color: var(--tnx-ink-faint);
+  font-family: var(--tnx-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Widget frames ─────────────────────────────────────────────────────────
+   Colour comes from the token remap above; only GEOMETRY is restated here, because
+   there is no token for "square, flush, filling its cell".
+
+   `max-height: none !important` is the one !important in this section and it is
+   unavoidable: WidgetFrame writes `style.maxHeight = instance.height` inline on
+   every card (WidgetFrame.tsx:163) and an inline style outranks every stylesheet
+   rule. The existing ≤900px block needs the same escape for the same reason. */
+.tn-terminal .tn-cw {
+  max-height: none !important;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--tnx-panel);
+  font-size: var(--tnx-fs);
+}
+.tn-terminal .tn-cw-head {
+  height: var(--tnx-rh);
+  padding: 0 8px;
+  gap: 7px;
+  background: var(--tnx-panel-head);
+  border-bottom: 1px solid var(--tnx-line);
+  font-size: 10px;
+}
+.tn-terminal .tn-cw-icon { font-size: 10px; opacity: 0.75; }
+.tn-terminal .tn-cw-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tn-terminal .tn-cw-count { font-size: 10px; font-variant-numeric: tabular-nums; }
+.tn-terminal .tn-cw-badge {
+  border-radius: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.04em;
+  padding: 1px 4px; color: var(--tnx-bg); background: var(--tnx-ink-dim);
+}
+.tn-terminal .tn-cw-badge.tn-sev-critical { background: var(--tnx-down); }
+.tn-terminal .tn-cw-badge.tn-sev-warn { background: var(--tnx-accent); }
+.tn-terminal .tn-cw-badge.tn-sev-info { background: var(--tnx-ink-dim); }
+.tn-terminal .tn-cw-fresh {
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+}
+.tn-terminal .tn-cw-help::after { box-shadow: inset 0 0 0 1px var(--tnx-line-strong); }
+/* Height and width drags are dead controls in a fixed-track grid — a widget owns
+   exactly one cell and the cell's size comes from the template. Hiding them is the
+   honest render. The equivalent CHIP rows in the ⋯ menu live inside WidgetFrame and
+   cannot be reached from here; they are called out in the handover instead. */
+.tn-terminal .tn-cw-resize,
+.tn-terminal .tn-cw-resize-x,
+.tn-terminal .tn-cw-resize-xy { display: none; }
+
+/* Rows. `.tn-ev-row` and friends keep the 30px floor the touch-target pass measured
+   for them — the design's 22px is a display height, and shrinking a control that
+   pass grew would trade a real defect for a cosmetic one. */
+.tn-terminal .tn-w-table { font-size: var(--tnx-fs); }
+.tn-terminal .tn-w-table tr { border-bottom: 1px solid var(--tnx-row-rule); }
+.tn-terminal .tn-w-table td { height: var(--tnx-rh); padding: 0 8px; }
+.tn-terminal .tn-w-list { font-size: var(--tnx-fs); }
+.tn-terminal .tn-w-list li {
+  min-height: var(--tnx-rh); padding: 0 8px;
+  border-bottom: 1px solid var(--tnx-row-rule);
+  white-space: nowrap;
+}
+.tn-terminal .tn-w-num,
+.tn-terminal .tn-w-mag,
+.tn-terminal .tn-w-bar-num,
+.tn-terminal .tn-num { font-variant-numeric: tabular-nums; }
+.tn-terminal .tn-w-sev { border-radius: 0; font-size: 9px; }
+
+/* The render half of rowState() in lib/terminal/selection: the selected row, and
+   rows LINKED to it by country code. Currently UNUSED — the selection store, the
+   footer readout and the map's selection ring all exist, but no widget body emits
+   these classes yet, so the click that would apply them has nowhere to come from.
+   They are written here rather than left out so that wiring one widget is a
+   one-line change in that widget instead of a CSS archaeology exercise; the gap is
+   named plainly in the handover rather than left to be discovered. */
+.tn-terminal .tnx-row-selected {
+  background: rgba(255, 176, 32, 0.16);
+  box-shadow: inset 2px 0 0 var(--tnx-accent);
+}
+.tn-terminal .tnx-row-linked {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ── Source Catalog rail ───────────────────────────────────────────────────
+   The rail is `position:fixed` in its base rule and re-homed by
+   `.tn-cw-shell > .tn-rail`, which measured itself off the OLD 50px top bar. It
+   becomes absolute INSIDE the workspace band instead, so it is correct whether or
+   not a breaking banner is up, with no arithmetic against the header height. It
+   must stay a DIRECT child of `.tn-cw-shell` for either selector to match — it is
+   the only surface in the product with per-layer map toggles for all 37 signals. */
+.tn-terminal .tn-cw-shell > .tn-rail {
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 304px;
+  max-height: none;
+  border-radius: 0;
+  border-top: 0; border-bottom: 0; border-left: 0;
+  border-right: 1px solid var(--tnx-line-strong);
+  background: var(--tnx-panel);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: none;
+  z-index: 26;
+}
+.tn-terminal .tn-cw-shell > .tn-rail-fab {
+  position: absolute;
+  top: 8px; left: 8px; bottom: auto;
+  border-radius: 0;
+  border: 1px solid var(--tnx-line-strong);
+  background: rgba(8, 11, 15, 0.9);
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  z-index: 6;
+}
+@media (min-width: 901px) {
+  /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
+     the shell, not `left:` — the shell is `position:relative` here (see the
+     `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
+     element sideways and push its right edge out of the viewport instead of
+     reflowing the grid inside it. */
+  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: 304px; }
+
+  /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
+     tab, so the grid starts to the RIGHT of the control.
+
+     The open-rail rule above used to be the only one here, which left the closed
+     state's button on the base `top:8px; left:8px`. That was empty map in the old
+     full-bleed console — but in the Terminal grid the shell's top-left corner is
+     the FIRST WIDGET'S cell, so a 95x40 button sat on top of that widget's title
+     and its first data row (measured: FAB 8,64 95x40 over slot w0 at 0,56 300x171).
+
+     Reserving the gutter is what makes the collision structurally impossible
+     rather than merely unlikely — a grid item cannot start left of the padding
+     edge, whatever the layout does. The tab itself still resolves `left:0` against
+     the shell's PADDING box, which is the reserved strip, not the widget area. */
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) { padding-left: var(--tnx-rail-tab-w); }
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab {
+    top: 0; left: 0; bottom: auto;
+    width: var(--tnx-rail-tab-w);
+    height: 100%;
+    /* `row`, not `column`, and that is not a typo. Under `writing-mode:
+       vertical-rl` the INLINE axis runs top-to-bottom and the BLOCK axis runs
+       right-to-left, so flex `row` (which follows the inline axis) is what stacks
+       the glyph above the label DOWN the tab. `column` would follow the block axis
+       and lay them out side by side across a 26px-wide box, clipping the label
+       away entirely — which is exactly what it did. */
+    display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    writing-mode: vertical-rl;
+    border-width: 0 1px 0 0;
+  }
+  /* The ≡ glyph is a pictogram, not text — let it stay upright while the label
+     runs down the tab. */
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab .tn-rail-fab-bars {
+    writing-mode: horizontal-tb;
+  }
+}
+
+/* ── Breaking banner ───────────────────────────────────────────────────────
+   Becomes a real band in the column instead of a fixed card floating over the map.
+   That is what `.tn-alert ~ .tn-cw-shell` was simulating with a reserved band; as a
+   flex item it simply takes its own space, and the measured bug that rule was
+   written to fix (the banner sitting on top of the stage's search box and
+   projection switch, both dead to elementFromPoint) cannot recur, because the
+   banner no longer overlaps anything. */
+.tn-terminal .tn-alert {
+  position: static;
+  transform: none;
+  width: auto;
+  height: var(--tn-alert-h);
+  border-radius: 0;
+  border: 0;
+  border-bottom: 1px solid var(--tnx-line-strong);
+  border-left: 3px solid var(--tnx-down);
+  background: var(--tnx-chrome);
+  box-shadow: none;
+  padding: 0 10px;
+  gap: 10px;
+  font-size: 10px;
+}
+.tn-terminal .tn-alert-news { border-left-color: var(--tnx-accent); }
+.tn-terminal .tn-alert-tag {
+  border-radius: 0; font-size: 9px; letter-spacing: 0.12em; padding: 2px 5px;
+  color: var(--tnx-bg);
+  animation: om-pulse 2.4s ease-in-out infinite;
+}
+.tn-terminal .tn-alert-text { font-size: 11px; font-weight: 700; }
+.tn-terminal .tn-alert-detail { font-size: 9.5px; }
+.tn-terminal .tn-alert-view {
+  border-radius: 0; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 3px 9px;
+  border: 1px solid var(--tnx-line-strong); color: var(--tnx-accent); background: none;
+}
+.tn-terminal .tn-alert-dismiss { border-radius: 0; width: 22px; height: 22px; font-size: 13px; }
+
+/* ── MapLibre chrome ───────────────────────────────────────────────────────
+   ATTRIBUTION IS A LICENSING REQUIREMENT (Esri / OpenTopoMap / CARTO), and it is
+   MapLibre's own control rather than text we type, so it stays correct when the
+   basemap changes. It shares one bottom-right container with the zoom/compass
+   control, so both are lifted clear of the stage's 24px world-clock bar.
+   `bottom:12px` at globals.css:1474 beats the `var(--tn-ticker-h)` rule above it on
+   source order, so this has to be an explicitly higher-specificity override rather
+   than a token change alone. */
+.tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
+.tn-terminal .maplibregl-ctrl-bottom-left { left: 8px; bottom: 28px; }
+.tn-terminal .maplibregl-ctrl-attrib {
+  background: rgba(8, 11, 15, 0.85) !important;
+  color: var(--tnx-ink-ghost);
+  font-family: var(--tnx-font-mono);
+  font-size: 9px;
+}
+.tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+.tn-terminal .maplibregl-ctrl-group {
+  border-radius: 0;
+  background: rgba(8, 11, 15, 0.9);
+  box-shadow: 0 0 0 1px var(--tnx-line-strong);
+}
+
+/* Pin navigator: the stage has a search box at top-left and a legend at top-right,
+   and the navigator's default top-right slot lands underneath the legend. Moved to
+   the free bottom-left corner, above the clock bar. */
+.tn-terminal .tn-pinnav {
+  top: auto; right: auto; bottom: 30px; left: 8px;
+  border-radius: 0; border: 1px solid var(--tnx-line-strong);
+  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+}
+
+/* Plane-tracking chip: its default top:10px left:10px lands UNDER the 22px stage
+   bar, and the two free corners below the bar are already taken (search left,
+   legend right). Top-centre is the one slot nothing else claims — and it is where
+   a "you are following BA117" readout wants to be anyway. */
+.tn-terminal .tn-track-chip {
+  top: 30px; left: 50%; transform: translateX(-50%);
+  border-radius: 0; border: 1px solid var(--tnx-line-strong);
+  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+  font-size: 10px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   1. HEADER — 34px
+   ════════════════════════════════════════════════════════════════════════════ */
+.tn-terminal .tnx-hdr {
+  display: flex; align-items: stretch; height: var(--tnx-hdr-h);
+  background: var(--tnx-chrome);
+  border-bottom: 1px solid var(--tnx-line-strong);
+  font-family: var(--tnx-font-mono); font-size: var(--tnx-fs); color: var(--tnx-ink);
+}
+.tn-terminal .tnx-hdr-brand {
+  display: flex; align-items: center; gap: 8px; padding: 0 11px;
+  border-right: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-hdr-mark { width: 24px; height: 24px; display: block; }
+.tn-terminal .tnx-hdr-h1 {
+  margin: 0; font-family: var(--tnx-font-title); font-size: 12px; font-weight: 800;
+  letter-spacing: 0.14em; line-height: 1; text-transform: uppercase; color: var(--tnx-ink);
+  white-space: nowrap;
+}
+.tn-terminal .tnx-hdr-tag {
+  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); white-space: nowrap;
+}
+
+/* MANDATORY, not cosmetic. `.tn-preset-pill` (globals.css:2316) is
+   `position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)` for the old
+   centred board pill; left unreset it rips the whole tab strip out of the header's
+   flex row and parks it over the brand block. `.tn-terminal` + the class beats the
+   bare class on specificity. */
+.tn-terminal .tn-preset-pill.tnx-hdr-boards {
+  position: static; transform: none; z-index: auto;
+  display: flex; align-items: stretch; min-width: 0;
+}
+.tn-terminal .tnx-hdr-board {
+  font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  padding: 0 13px; background: none; cursor: pointer; white-space: nowrap;
+  border: 0; border-right: 1px solid var(--tnx-line);
+  border-bottom: 2px solid transparent; color: var(--tnx-ink-faint);
+}
+.tn-terminal .tnx-hdr-board:hover { color: var(--tnx-ink-dim); }
+.tn-terminal .tnx-hdr-board.is-active {
+  color: var(--tnx-ink); background: var(--tnx-panel-head);
+  border-bottom-color: var(--tnx-accent);
+}
+.tn-terminal .tnx-hdr-spacer { flex: 1; min-width: 0; }
+.tn-terminal .tnx-hdr-utc {
+  display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  border-left: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-hdr-utc-label { font-size: 9.5px; color: var(--tnx-ink-faint); }
+.tn-terminal .tnx-hdr-utc-time {
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tnx-ink);
+}
+.tn-terminal .tnx-hdr-mode {
+  display: flex; align-items: stretch; border-left: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-hdr-mode-btn {
+  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  padding: 0 9px; border: 0; background: none; cursor: pointer; color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-hdr-mode-btn.is-active { background: var(--tnx-accent); color: var(--tnx-bg); }
+.tn-terminal .tnx-hdr-right {
+  display: flex; align-items: center; gap: 8px; padding: 0 9px;
+  border-left: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-hdr-kofi {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-decoration: none; color: var(--tnx-accent); white-space: nowrap;
+}
+.tn-terminal .tnx-hdr-kofi:hover { text-decoration: underline; }
+.tn-terminal .tnx-hdr-cmd {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit;
+  border: 0; background: none; cursor: pointer; padding: 0; color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-hdr-kbd {
+  font-size: 9.5px; font-weight: 700; padding: 2px 6px;
+  border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink);
+}
+.tn-terminal .tnx-hdr-cmd-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
+}
+.tn-terminal .tnx-hdr-icon {
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: 11px; border: 1px solid var(--tnx-line-strong);
+  background: none; cursor: pointer; color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-hdr-icon:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+.tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: 10px; border-radius: 0; }
+/* Focus has to stay visible on a dark, borderless bar — these buttons have no
+   resting outline for a focus ring to thicken. */
+.tn-terminal .tnx-hdr :focus-visible,
+.tn-terminal .tnx-feed :focus-visible,
+.tn-terminal .tnx-footer :focus-visible,
+.tn-terminal .tnx-stage-bar :focus-visible {
+  outline: 2px solid var(--tnx-accent); outline-offset: -2px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   2. FEED HEALTH STRIP — 22px, one cell per REGISTERED signal layer (37 today)
+   ════════════════════════════════════════════════════════════════════════════ */
+.tn-terminal .tnx-feed {
+  height: var(--tnx-feed-h); display: flex; align-items: stretch;
+  background: var(--tnx-panel); border-bottom: 1px solid var(--tnx-line-strong);
+  font-size: 9.5px; user-select: none;
+}
+.tn-terminal .tnx-feed-label {
+  display: flex; align-items: center; padding: 0 9px; letter-spacing: 0.12em;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-feed-cells { flex: 1; display: flex; gap: 2px; padding: 4px 8px; min-width: 0; }
+.tn-terminal .tnx-feed-cell {
+  flex: 1; min-width: 3px; border: 0; padding: 0; border-radius: 1px; cursor: pointer;
+}
+.tn-terminal .tnx-feed-cell:hover { outline: 1px solid var(--tnx-ink); outline-offset: 0; }
+.tn-terminal .tnx-feed-readout {
+  display: flex; align-items: center; padding: 0 10px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 34ch;
+  color: var(--tnx-ink-dim); letter-spacing: 0.06em;
+  border-left: 1px solid var(--tnx-line); flex: none;
+}
+.tn-terminal .tnx-feed-counts {
+  display: flex; align-items: center; gap: 10px; padding: 0 10px;
+  border-left: 1px solid var(--tnx-line); flex: none;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.06em;
+}
+.tn-terminal .tnx-feed-count { color: var(--tnx-ink-faint); white-space: nowrap; }
+.tn-terminal .tnx-feed-count b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.tn-terminal .tnx-feed-count.is-live b { color: var(--tnx-live); }
+.tn-terminal .tnx-feed-count.is-lag b { color: var(--tnx-lag); }
+.tn-terminal .tnx-feed-count.is-down b { color: var(--tnx-down); }
+.tn-terminal .tnx-feed-count.is-key b { color: var(--tnx-key); }
+.tn-terminal .tnx-feed-count.is-off b { color: var(--tnx-ink-ghost); }
+.tn-terminal .tnx-num { font-variant-numeric: tabular-nums; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   3. STAGE CHROME — bars, search, legend, clocks (all inside the stage cell)
+   ════════════════════════════════════════════════════════════════════════════ */
+.tn-terminal .tnx-stage-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 22px; z-index: 6;
+  display: flex; align-items: stretch; font-size: 9px;
+  background: rgba(8, 11, 15, 0.88);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+.tn-terminal .tnx-stage-label {
+  display: flex; align-items: center; padding: 0 9px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--tnx-ink-dim); border-right: 1px solid var(--tnx-line); flex: none; white-space: nowrap;
+}
+.tn-terminal .tnx-stage-spacer { flex: 1; min-width: 0; }
+.tn-terminal .tnx-stage-cursor {
+  display: flex; align-items: center; padding: 0 10px; font-size: 9.5px;
+  color: var(--tnx-ink-faint); border-left: 1px solid var(--tnx-line);
+  flex: none; white-space: nowrap;
+}
+.tn-terminal .tnx-basemaps { display: flex; align-items: stretch; }
+.tn-terminal .tnx-basemap-btn,
+.tn-terminal .tnx-stage-proj .tn-stage-switch button {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tnx-basemap-btn:hover,
+.tn-terminal .tnx-stage-proj .tn-stage-switch button:hover { color: var(--tnx-ink); }
+.tn-terminal .tnx-basemap-btn[aria-pressed="true"],
+.tn-terminal .tnx-stage-proj .tn-stage-switch button.is-on {
+  background: var(--tnx-accent); color: var(--tnx-bg);
+}
+.tn-terminal .tnx-stage-proj { display: flex; align-items: stretch; }
+.tn-terminal .tnx-stage-proj .tn-stage-switch {
+  display: flex; align-items: stretch; gap: 0;
+  background: none; border: 0; padding: 0; border-radius: 0; box-shadow: none;
+}
+.tn-terminal .tnx-stage-proj .tn-stage-focus {
+  display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: 9px;
+}
+
+/* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
+   translateX(-50%)`, so it has to be flattened or it re-centres itself inside this
+   frame instead of filling it. Restyled, never forked — one geocoder in the app. */
+.tn-terminal .tnx-stage-search {
+  position: absolute; top: 30px; left: 8px; width: 290px; max-width: calc(100% - 16px);
+  z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
+  background: rgba(8, 11, 15, 0.9); border: 1px solid var(--tnx-line-strong);
+  pointer-events: auto;
+}
+.tn-terminal .tnx-stage-search-pfx { font-size: 11px; font-weight: 700; color: var(--tnx-accent); flex: none; }
+.tn-terminal .tnx-stage-search .tn-mapsearch {
+  position: static; transform: none; width: 100%; max-width: none; flex: 1; min-width: 0; padding: 0;
+}
+.tn-terminal .tnx-stage-search .tn-mapsearch-bar {
+  background: none; border: 0; box-shadow: none; border-radius: 0; padding: 4px 0; gap: 0;
+}
+.tn-terminal .tnx-stage-search .tn-mapsearch-icon { display: none; }
+.tn-terminal .tnx-stage-search .tn-mapsearch-input {
+  font-size: 10.5px; color: var(--tnx-ink); font-family: inherit; min-height: 0;
+}
+.tn-terminal .tnx-stage-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
+.tn-terminal .tnx-stage-search .tn-mapsearch-results {
+  margin-top: 5px; border-radius: 0; background: rgba(8, 11, 15, 0.96);
+  border: 1px solid var(--tnx-line-strong); box-shadow: none;
+}
+.tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: 10.5px; color: var(--tnx-ink); padding: 5px 8px; }
+.tn-terminal .tnx-stage-search .tn-mapsearch-item:hover { background: var(--tnx-accent-soft); }
+.tn-terminal .tnx-stage-search .tn-mapsearch-item-meta,
+.tn-terminal .tnx-stage-search .tn-mapsearch-status { font-size: 9px; color: var(--tnx-ink-faint); }
+
+.tn-terminal .tnx-stage-legend {
+  position: absolute; top: 30px; right: 8px; z-index: 6; max-width: 200px;
+  padding: 5px 7px; font-size: 8.5px; letter-spacing: 0.05em;
+  background: rgba(8, 11, 15, 0.85); border: 1px solid var(--tnx-line);
+  color: var(--tnx-ink-dim); pointer-events: auto;
+}
+.tn-terminal .tnx-legend-row {
+  display: flex; align-items: center; gap: 6px; line-height: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tn-terminal .tnx-legend-swatch { width: 6px; height: 6px; flex: none; }
+.tn-terminal .tnx-legend-more { color: var(--tnx-ink-ghost); }
+
+/* Clock bar. WorldClock's root is an absolutely-positioned rounded glass ribbon;
+   flatten it into this frame rather than forking the component (one clock timer). */
+.tn-terminal .tnx-stage-foot {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 24px; z-index: 6;
+  display: flex; align-items: center; padding: 0 8px;
+  background: rgba(8, 11, 15, 0.88);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.tn-terminal .tnx-stage-foot .tn-worldclock {
+  position: static; transform: none; display: flex; padding: 0;
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-cell {
+  flex-direction: row; align-items: baseline; gap: 5px; padding: 0 9px; min-width: 0;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-cell + .tn-wc-cell::before { background: var(--tnx-line); }
+.tn-terminal .tnx-stage-foot .tn-wc-glyph { display: none; }
+.tn-terminal .tnx-stage-foot .tn-wc-city {
+  order: -1; font-size: 9px; font-weight: 400; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
+}
+.tn-terminal .tnx-stage-foot .tn-wc-time,
+.tn-terminal .tnx-stage-foot .tn-wc-cell.is-night .tn-wc-time {
+  font-size: 11px; font-weight: 700; letter-spacing: 0; color: var(--tnx-ink);
+  font-variant-numeric: tabular-nums;
+}
+/* London tinted accent. POSITIONAL, and knowingly so: WorldClock renders one cell
+   per entry of its CITIES array (LA, NYC, LDN, DXB, SGP, TYO, SYD) and puts no
+   per-city hook in the DOM, so :nth-child(3) is the only handle CSS has. If that
+   array changes this tints the wrong city — cosmetic, not a lie, but fix it at
+   components/console/WorldClock.tsx rather than here. */
+.tn-terminal .tnx-stage-foot .tn-wc-cell:nth-child(3) .tn-wc-time { color: var(--tnx-accent); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   4. FOOTER — 24px: SEL · what is selected · the ticker · the key hints
+   ════════════════════════════════════════════════════════════════════════════ */
+.tn-terminal .tnx-footer {
+  height: var(--tnx-foot-h); display: flex; align-items: stretch;
+  background: var(--tnx-chrome); border-top: 1px solid var(--tnx-line-strong);
+  font-size: 9.5px; color: var(--tnx-ink-faint); overflow: hidden;
+}
+.tn-terminal .tnx-sel-badge {
+  display: flex; align-items: center; padding: 0 9px;
+  background: var(--tnx-accent); color: var(--tnx-bg);
+  font-weight: 800; letter-spacing: 0.1em; flex: none;
+}
+.tn-terminal .tnx-sel {
+  display: flex; align-items: center; gap: 8px; padding: 0 10px; min-width: 0;
+  border-right: 1px solid var(--tnx-line); white-space: nowrap;
+}
+.tn-terminal .tnx-sel-title {
+  font-weight: 700; color: var(--tnx-ink); max-width: 38vw;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.tn-terminal .tnx-sel-coord { color: var(--tnx-ink-dim); font-variant-numeric: tabular-nums; flex: none; }
+.tn-terminal .tnx-sel-meta { color: var(--tnx-ink-faint); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tn-terminal .tnx-keys {
+  display: flex; align-items: center; gap: 7px; padding: 0 10px; flex: none;
+  border-left: 1px solid var(--tnx-line); color: var(--tnx-ink-faint); white-space: nowrap;
+}
+.tn-terminal .tnx-keys-sep { color: var(--tnx-ink-ghost); }
+.tn-terminal .tnx-keycap { color: var(--tnx-ink-dim); font-weight: 700; }
+
+.tn-terminal .tnx-ticker {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center;
+  overflow: hidden; white-space: nowrap;
+}
+.tn-terminal .tnx-ticker-track {
+  display: flex; align-items: center; flex: none;
+  animation: om-ticker 55s linear infinite; will-change: transform;
+}
+/* The trailing gap lives on the ITEM, not the track: translateX(-50%) is half the
+   track and the track holds exactly two identical items, so the two halves have to
+   stay identical in width or the loop visibly jumps every 55s. */
+.tn-terminal .tnx-ticker-item {
+  flex: none; padding-right: 3rem; color: var(--tnx-ink-faint);
+  letter-spacing: 0.06em; font-variant-numeric: tabular-nums;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   5. ANIMATIONS + SCROLLBARS
+   ════════════════════════════════════════════════════════════════════════════ */
+@keyframes om-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes om-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  /* TickerLine always renders both copies; the query stops the scroll and hides the
+     duplicate, leaving one static line. Done in CSS rather than a matchMedia branch
+     so there is no window read at first paint and no chance of an SSR/client
+     hydration mismatch on the very first frame. */
+  .tn-terminal .tnx-ticker-track { animation: none; }
+  .tn-terminal .tnx-ticker-item + .tnx-ticker-item { display: none; }
+  .tn-terminal .tn-alert-tag { animation: none; }
+}
+
+/* `.sc` is the design's opt-in scroller class. The terminal-wide selector beside it
+   is what actually does the work: every scroller in this shell is one of ours, and a
+   native 15px light scrollbar down the side of a 250px panel is the loudest thing on
+   the screen. */
+.tn-terminal .sc::-webkit-scrollbar,
+.tn-terminal ::-webkit-scrollbar { width: 8px; height: 8px; }
+.tn-terminal .sc::-webkit-scrollbar-track,
+.tn-terminal ::-webkit-scrollbar-track { background: transparent; }
+.tn-terminal .sc::-webkit-scrollbar-thumb,
+.tn-terminal ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); }
+.tn-terminal .sc::-webkit-scrollbar-thumb:hover,
+.tn-terminal ::-webkit-scrollbar-thumb:hover { background: rgba(255, 176, 32, 0.5); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   6. RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════════
+   The Terminal is a desktop instrument, and 900px is this codebase's existing
+   restack point — three @media blocks already do the console's responsive work
+   there — so these rules JOIN that breakpoint rather than inventing a second one
+   that would interleave unpredictably with it.
+
+   Below 900px the grid becomes `display:flex`, which is the cheapest correct
+   answer: it makes EVERY inline grid property inert in one declaration —
+   grid-template-areas/-columns/-rows on the container, grid-area on each slot, and
+   the `grid-column: span 12 !important` the ≤720px block puts on `.tn-seg-slot`
+   (an !important that would otherwise beat the inline grid-area and spray implicit
+   columns across a one-column layout). Overriding those one at a time would need
+   four more !importants and would still be fragile. DOM order is stage → left →
+   right → bottom, so a plain column reads correctly with no `order` juggling. */
+@media (max-width: 900px) {
+  .tn-terminal .tn-seg {
+    display: flex; flex-direction: column; gap: 1px;
+    height: auto; min-height: 100%;
+    overflow-x: hidden; overflow-y: auto;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
+  }
+  .tn-terminal .tn-seg-slot { flex: 0 0 auto; overflow: visible; }
+  /* The card grows to its content and the PAGE scrolls — one scroller, not dozens
+     of nested portholes. Matches the existing ≤900px widget rules. */
+  .tn-terminal .tn-cw { height: auto; }
+  .tn-terminal .tn-cw-stage { flex: 0 0 auto; min-height: 0; }
+
+  /* Header: wrap the board tabs onto their own scrollable line instead of crushing
+     six tabs, a clock, a mode switch and four controls into 34px. `order` puts them
+     last in the wrap even though they are second in the DOM, so the brand and the
+     entry points keep the top line. */
+  .tn-terminal .tnx-hdr { height: auto; min-height: var(--tnx-hdr-h); flex-wrap: wrap; }
+  /* globals.css:2343 hides `.tn-preset-pill` outright below 720px — written for the
+     old centred pill, but these ARE the board tabs, i.e. the console's main menu.
+     Losing them on a phone would remove the only way to change board. */
+  .tn-terminal .tn-preset-pill.tnx-hdr-boards {
+    display: flex; order: 5; flex: 1 0 100%;
+    overflow-x: auto; overflow-y: hidden;
+    border-top: 1px solid var(--tnx-line); min-height: 26px;
+  }
+  .tn-terminal .tnx-hdr-spacer { display: none; }
+  .tn-terminal .tnx-hdr-tag,
+  .tn-terminal .tnx-hdr-cmd-label,
+  .tn-terminal .tnx-hdr-utc-label { display: none; }
+  .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
+
+  /* Strip: the cells and the tallies are the payload; the hover readout has no
+     hover to drive it on a touch screen. */
+  .tn-terminal .tnx-feed-counts { gap: 7px; padding: 0 7px; }
+
+  /* Stage chrome: the legend and the clock ribbon crowd a ~300px map, and the clock
+     is already hidden below 900px for the old shell. */
+  .tn-terminal .tnx-stage-legend,
+  .tn-terminal .tnx-stage-foot { display: none; }
+  .tn-terminal .tnx-stage-search { width: auto; right: 8px; }
+  .tn-terminal .maplibregl-ctrl-bottom-right,
+  .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
+  .tn-terminal .tn-pinnav { bottom: 10px; }
+
+  /* Footer: keyboard hints for keys a phone does not have. */
+  .tn-terminal .tnx-keys { display: none; }
+  .tn-terminal .tnx-sel-title { max-width: 46vw; }
+
+  /* The rail is a bottom sheet at this width (the existing block re-homes it); it is
+     absolute inside the workspace band now, so the sheet fills that band. */
+  .tn-terminal .tn-cw-shell > .tn-rail {
+    top: auto; left: 0; right: 0; bottom: 0; width: auto;
+    max-height: 66dvh; border-right: 0; border-top: 1px solid var(--tnx-line-strong);
+  }
+  .tn-terminal .tn-cw-shell > .tn-rail-fab { top: auto; bottom: 12px; left: 12px; z-index: 26; }
+}
+
+/* The first thing to go as the strip tightens. 37 cells and five tallies survive —
+   the readout is a hover caption for something the cells already show. */
+@media (max-width: 1100px) {
+  .tn-terminal .tnx-feed-readout { display: none; }
+}
+
+/* ── Touch targets for the new chrome ─────────────────────────────────────
+   The existing ≤900px pass grew every control in the OLD shell to a 44px hit box
+   (measured with elementFromPoint, not getBoundingClientRect), and it reaches the
+   Terminal's controls only where they reuse an old class — `.tn-stage-switch
+   button` and the widget-header cluster. The bars below are new classes, so they
+   need the same treatment or the pass silently stops at the header.
+
+   Two techniques, chosen per control, exactly as that pass documents:
+   (a) real size where a control sits in a row with space around it;
+   (b) a transparent ::before overlay where the painted box must stay small.
+
+   Where 44px is not reachable it is said so rather than fudged: a 22px stage bar
+   physically cannot hold a 44px button without eating the map, so it grows to 34px
+   on touch — the largest honest value — and the same controls remain available at
+   full size in the ⌘K palette ("Basemap", "Stage") and the Source Catalog rail. */
+@media (max-width: 900px) {
+  .tn-terminal .tnx-stage-bar { height: 34px; }
+  .tn-terminal .tnx-basemap-btn,
+  .tn-terminal .tnx-stage-proj .tn-stage-switch button { min-height: 34px; padding: 0 12px; }
+  .tn-terminal .tnx-stage-search { top: 42px; }
+  .tn-terminal .tnx-stage-legend { top: 42px; }
+
+  /* Board tabs get real height — they are the console's main menu, and a 26px tab
+     in a horizontally-scrolling strip is the easiest thing on the page to miss. */
+  .tn-terminal .tnx-hdr-board { min-height: 34px; padding: 0 15px; }
+  .tn-terminal .tnx-hdr-mode-btn { min-height: 34px; padding: 0 12px; }
+
+  /* (b) The right cluster keeps its 22px painted boxes — a 44px ⚙ in a 34px band is
+     not possible — and grows only the tappable area. The overlays are sized to the
+     8px gap between them so none of them steals its neighbour's taps. */
+  .tn-terminal .tnx-hdr-icon,
+  .tn-terminal .tnx-hdr-cmd,
+  .tn-terminal .tnx-hdr-kofi { position: relative; }
+  .tn-terminal .tnx-hdr-icon::before,
+  .tn-terminal .tnx-hdr-cmd::before,
+  .tn-terminal .tnx-hdr-kofi::before {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% + 8px); height: 34px;
+  }
 }

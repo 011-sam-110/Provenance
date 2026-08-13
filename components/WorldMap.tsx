@@ -47,6 +47,11 @@ import {
   type MapClickHit,
 } from "@/lib/map/hitTest";
 import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/geo/country";
+// The Terminal chrome owns both of these contracts, so they are imported rather than
+// re-declared here: the cursor event NAME (a second literal would drift the day one
+// side is renamed) and the selection store the highlight ring is driven by.
+import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
+import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { CAMERA_CLUSTER, WEBCAM_CLUSTER, expandCluster } from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
@@ -88,6 +93,16 @@ const TRAIL_LAYER = "trail-lines";
 // own source so it updates independently of the plane layer and survives restyles.
 const TRACK_SRC = "track-highlight";
 const TRACK_RING_LAYER = "track-ring";
+// The Terminal's cross-widget selection (lib/terminal/selection). Same shape as the
+// tracked-plane ring above and for the same reason: a single-feature source that is
+// empty when nothing is selected, so the layer costs nothing while idle and survives
+// a basemap restyle through addAppLayers.
+//
+// This is NEW capability, not a restyle: before it, clicking a widget row flew the
+// camera and opened a dossier but painted NOTHING on the map, so "the stage flies to
+// it" ended with the user hunting for which of forty dots had just been chosen.
+const SELECT_SRC = "selection-highlight";
+const SELECT_RING_LAYER = "selection-ring";
 // User-dropped pins (search bar + right-click). Rendered on top of everything.
 const PIN_SRC = "user-pins";
 const PIN_DOT_LAYER = "user-pin-dots";
@@ -141,6 +156,28 @@ function toTrackFC(o: WorldObject | null | undefined): GeoJSON.FeatureCollection
   return {
     type: "FeatureCollection",
     features: [{ type: "Feature", geometry: { type: "Point", coordinates: [o.lon, o.lat] }, properties: {} }],
+  };
+}
+
+/**
+ * The Terminal selection → 0-or-1 point features.
+ *
+ * A selection without coordinates (a row for a country-wide reading, a market
+ * ticker) yields an EMPTY collection rather than a feature at 0,0. Null Island is
+ * the classic way a "we don't know where this is" becomes a confident pin in the
+ * Gulf of Guinea, and the footer already says the honest thing ("—").
+ */
+function toSelectionFC(sel: TerminalSelection | null): GeoJSON.FeatureCollection {
+  if (!sel || !Number.isFinite(sel.lat) || !Number.isFinite(sel.lon)) return EMPTY_FC;
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [sel.lon as number, sel.lat as number] },
+        properties: {},
+      },
+    ],
   };
 }
 
@@ -230,6 +267,8 @@ export default function WorldMap() {
   const followMoveRef = useRef(false);
   // Latest user pins, so addAppLayers can re-seed the pin source after a restyle.
   const pinsRef = useRef<{ pins: MapPin[]; activeId: string | null }>({ pins: [], activeId: null });
+  // Same job for the Terminal's selection ring.
+  const selectionRef = useRef<TerminalSelection | null>(null);
   // A deep-linked object id (?obj=) waiting to be resolved once its layer's data
   // has streamed in — see the restore effect below. Cleared after it opens.
   const pendingObjRef = useRef<string | null>(null);
@@ -267,6 +306,11 @@ export default function WorldMap() {
   trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
   const pins = useMapPins();
   pinsRef.current = pins;
+  // Subscribing the map to the selection is cheap in the way the cursor readout is
+  // not: a selection changes when the user clicks a widget row, so this re-renders
+  // on a human action, never on a pointer move or a poll tick.
+  const selection = useTerminalSelection();
+  selectionRef.current = selection;
   const camFilter = useCameraFilter();
   const signalsState = useSignals();
   // Global time-window filter (M-final): trims time-stamped signals by recency.
@@ -493,6 +537,7 @@ export default function WorldMap() {
       ensureGeoJSON(map, WEBCAM_SRC, toWebcamFC(webcamsRef.current), WEBCAM_CLUSTER);
       ensureGeoJSON(map, PLANE_SRC, toPlaneFC(planesRef.current));
       ensureGeoJSON(map, TRACK_SRC, toTrackFC(trackedObjectRef.current));
+      ensureGeoJSON(map, SELECT_SRC, toSelectionFC(selectionRef.current));
       ensureGeoJSON(map, PIN_SRC, toPinFC(pinsRef.current.pins, pinsRef.current.activeId));
       ensureGeoJSON(map, SIGNAL_FILL_SRC, toSignalFillFC(signalsRef.current));
       ensureGeoJSON(map, SIGNAL_LINE_SRC, toSignalLineFC(signalsRef.current));
@@ -945,6 +990,41 @@ export default function WorldMap() {
         });
       }
 
+      // Terminal selection ring — the map's answer to "which one did I just click?".
+      //
+      // Modelled on TRACK_RING_LAYER above rather than invented: same circle-with-halo
+      // idiom, so the two highlights read as one language, and the same empty-source
+      // trick means it is invisible with zero cost until something is selected. It is
+      // added AFTER every data layer so it is never buried under a dot, and BEFORE the
+      // user pins so a pin the user placed themselves still wins the top of the stack.
+      //
+      // Deliberately NOT registered in PIN_HIT_LAYERS (lib/map/hitTest): that list is
+      // "layers whose features are a clickable object in their own right", and this
+      // ring has no object of its own — it is a halo drawn around whatever is already
+      // there. Adding it would make resolveMapClickTarget answer "pin" for every click
+      // inside the ring while no layer-scoped click handler exists to open anything,
+      // so the country dossier under it would go dark and nothing would replace it.
+      //
+      // The accent is the design's #ffb020, hard-coded for the same reason every other
+      // paint value in this file is: MapLibre paint properties cannot read a CSS custom
+      // property, and a JS read of getComputedStyle here would tie the map to whether
+      // the terminal shell happened to have mounted first.
+      if (!map.getLayer(SELECT_RING_LAYER)) {
+        map.addLayer({
+          id: SELECT_RING_LAYER,
+          type: "circle",
+          source: SELECT_SRC,
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 2, 10, 6, 16, 11, 24, 15, 32],
+            "circle-color": "#ffb020",
+            "circle-opacity": 0.12,
+            "circle-stroke-color": "#ffb020",
+            "circle-stroke-width": 2,
+            "circle-stroke-opacity": 0.95,
+          },
+        });
+      }
+
       // User pins — drawn on top of every data layer. The active pin reads larger
       // and fully-opaque; its label rides above the dot. Data-driven off `active`.
       if (!map.getLayer(PIN_DOT_LAYER)) {
@@ -1391,6 +1471,35 @@ export default function WorldMap() {
     const inputs: (keyof HTMLElementEventMap)[] = ["mousedown", "wheel", "touchstart", "pointerdown"];
     for (const ev of inputs) el.addEventListener(ev, markInteract, { passive: true });
 
+    // ── Cursor lat/lon readout (the Terminal stage bar) ──────────────────────
+    //
+    // A window CustomEvent, and NOT React state. `mousemove` on the whole map fires
+    // at pointer rate; a setState here would re-render WorldMap — and with it every
+    // <…Feed> child, the 27-layer effect chain and the thumbnail pool — on every
+    // mouse move across the globe. The stage bar's readout writes the text straight
+    // into its own DOM node instead (see StageCursor in components/terminal/StageBar).
+    //
+    // requestAnimationFrame coalesces the burst: MapLibre can emit several moves per
+    // frame, and only the last one is worth publishing because only the last one is
+    // what the pointer is on when the frame paints. The pending coordinate is held in
+    // a closure variable rather than dispatched immediately, so the cost of a fast
+    // drag across the map is one dispatch per frame, not one per event.
+    let cursorFrame = 0;
+    let cursorLat = 0;
+    let cursorLon = 0;
+    const flushCursor = () => {
+      cursorFrame = 0;
+      window.dispatchEvent(
+        new CustomEvent(MAP_CURSOR_EVENT, { detail: { lat: cursorLat, lon: cursorLon } }),
+      );
+    };
+    const onCursorMove = (e: maplibregl.MapMouseEvent) => {
+      cursorLat = e.lngLat.lat;
+      cursorLon = e.lngLat.lng; // PointView-style naming: `lon` on the wire, `lng` from MapLibre
+      if (cursorFrame === 0) cursorFrame = requestAnimationFrame(flushCursor);
+    };
+    map.on("mousemove", onCursorMove);
+
     // Shareable deep links: mirror the live view into the URL (debounced,
     // replaceState — no history spam, no reload). moveend writes are skipped while
     // the calm idle spin is running so the URL doesn't churn on its own; deliberate
@@ -1431,6 +1540,11 @@ export default function WorldMap() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
+      map.off("mousemove", onCursorMove);
+      // A queued frame would otherwise dispatch one last coordinate after the map is
+      // gone — harmless for the readout, but it is exactly the kind of leak that
+      // survives a remount and then fires against two maps at once.
+      if (cursorFrame !== 0) cancelAnimationFrame(cursorFrame);
       cancelUrlWrite();
       unsubLayers();
       unsubView();
@@ -1544,6 +1658,16 @@ export default function WorldMap() {
     if (!map || !readyRef.current) return;
     (map.getSource(PIN_SRC) as GeoJSONSource | undefined)?.setData(toPinFC(pins.pins, pins.activeId));
   }, [pins]);
+
+  // Terminal selection → the highlight ring. selectionStore.select() already flies
+  // the camera; this is the other half of that gesture — the ring is what makes the
+  // arrival mean something. Clearing the selection empties the source, so Escape
+  // takes the ring away without touching the camera.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    (map.getSource(SELECT_SRC) as GeoJSONSource | undefined)?.setData(toSelectionFC(selection));
+  }, [selection]);
 
   // Restore a deep-linked dossier (?obj=) once its layer's data has streamed in.
   // Planes/satellites stream after first paint, so this retries on each data tick
