@@ -29,7 +29,7 @@ export default function ScrollGround() {
 
     const adapter = root.querySelector<HTMLElement>("[data-pv-adapter]");
     const wall = root.querySelector<HTMLElement>("[data-pv-wall]");
-    const wallTrack = root.querySelector<HTMLElement>("[data-pv-wall-track]");
+    const wallTracks = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-wall-track]"));
     const parallax = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-parallax]"));
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -97,12 +97,16 @@ export default function ScrollGround() {
       }
 
       // ── the horizontal source wall ──────────────────────────────────────
-      if (wall && wallTrack && !reduce.matches) {
+      if (wall && wallTracks.length && !reduce.matches) {
         const scrolled = y - docTop(wall);
         const span = Math.max(1, wall.offsetHeight - vh);
         const t = clamp01(scrolled / span);
-        const travel = Math.max(0, wallTrack.scrollWidth - window.innerWidth + 40);
-        wall.style.setProperty("--pv-wall-x", (t * travel).toFixed(1));
+        // Each row travels its OWN width. Sharing one offset would leave the shorter
+        // row stranded mid-scrub while the longer one was still going.
+        wallTracks.forEach((track, i) => {
+          const travel = Math.max(0, track.scrollWidth - window.innerWidth + 40);
+          wall.style.setProperty(`--pv-wall-x${i + 1}`, (t * travel).toFixed(1));
+        });
         wall.style.setProperty("--pv-wall-p", t.toFixed(4));
       }
 

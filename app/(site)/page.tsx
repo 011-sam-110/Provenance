@@ -68,7 +68,7 @@ export default async function Landing({
 
       <div className="pv-doc" id="top">
         {/* ── hero ───────────────────────────────────────────────────────── */}
-        <header className="pv-hero">
+        <header className="pv-hero pv-bleed">
           <div className="pv-hero-copy">
             <h1 className="pv-h1">
               You already

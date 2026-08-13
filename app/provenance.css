@@ -263,9 +263,10 @@
    reader is about to scroll through anyway, and at 390px they overflowed the bar
    and took the whole page sideways with them. */
 @media (max-width: 40rem) {
-  .pv-bar-links a:not(:last-child) { display: none; }
-  .pv-bar { gap: 0.75rem; padding: 0 0.85rem; }
-  .pv-wordmark { letter-spacing: 0.18em; }
+  .pv-bar-links { display: none; }
+  .pv-bar { gap: 0.85rem; padding: 0 0.9rem; }
+  .pv-wordmark { letter-spacing: 0.16em; font-size: 0.8rem; }
+  .pv-bar-live { font-size: 0.66rem; }
 }
 .pv-bar-links a {
   color: var(--pv-fg-mute);
@@ -286,16 +287,28 @@
   padding: 3.5rem 0 4.5rem;
 }
 @media (min-width: 62rem) {
+  /* The hero breaks the document grid: the copy keeps the document's left margin,
+     the globe runs off the right edge of the viewport. Two columns of a centred
+     container would put a hard rule down the middle of the page, which is exactly
+     the framed-box look this replaced. */
   .pv-hero {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 3.5rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: stretch;
+    gap: 0;
+    padding-left: max(1.25rem, calc((100vw - 74rem) / 2));
+    padding-right: 0;
+  }
+  .pv-hero-copy {
+    justify-content: center;
+    padding-right: 3rem;
   }
 }
 .pv-hero-copy {
   display: flex;
   flex-direction: column;
   gap: 1.6rem;
+  position: relative;
+  z-index: 2;
 }
 .pv-cta-row {
   display: flex;
@@ -327,19 +340,80 @@
   opacity: 1;
 }
 
-/* The aperture: a dark window into space, cut into the bone page. As the ground
-   descends the frame dissolves, so by the handoff the window IS the page. */
+/* ── the aperture ──────────────────────────────────────────────────────────
+   Night bleeding in from the right, not a framed plate. The dark field runs the
+   full height of the hero and off the right edge of the viewport; the ONLY soft
+   edge is the left one, where it dissolves into the bone ground.
+
+   Earlier this masked on all four sides, which looked like a smudge and — worse —
+   put the legend, the hint and the mandatory credit inside the faded band where
+   none of them could be read. Fade one edge, keep the rest solid, and every label
+   sits on a surface dark enough to carry it. */
 .pv-aperture {
   position: relative;
-  aspect-ratio: 1 / 1;
-  max-height: 74svh;
   width: 100%;
-  margin: 0 auto;
-  overflow: hidden;
-  background: #05070c;
-  border: 1px solid color-mix(in oklab, var(--pv-rule-hi), transparent calc(var(--pv-g) * 100%));
-  box-shadow: 0 30px 90px -40px rgba(11, 16, 22, calc(0.55 * (1 - var(--pv-g))));
+  align-self: stretch;
+  min-height: min(78svh, 46rem);
 }
+@media (max-width: 61.99rem) {
+  .pv-aperture {
+    min-height: 60svh;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+}
+
+/* Only the ARTWORK is masked. The legend and the credit sit outside this element
+   so they stay crisp instead of dissolving with the picture. */
+.pv-aperture-vis {
+  position: absolute;
+  inset: 0;
+  background: #05070c;
+  overflow: hidden;
+  /* A long, eased ramp. A short one (transparent -> 55% -> opaque inside 30%) reads
+     as a pale vertical BAND with two visible edges rather than a dissolve, because
+     the eye finds the two inflection points immediately. These stops approximate an
+     ease-in-out over half the panel, which has no locatable edge anywhere. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.04) 8%,
+    rgba(0, 0, 0, 0.14) 16%,
+    rgba(0, 0, 0, 0.32) 24%,
+    rgba(0, 0, 0, 0.56) 32%,
+    rgba(0, 0, 0, 0.78) 40%,
+    rgba(0, 0, 0, 0.93) 47%,
+    #000 55%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.04) 8%,
+    rgba(0, 0, 0, 0.14) 16%,
+    rgba(0, 0, 0, 0.32) 24%,
+    rgba(0, 0, 0, 0.56) 32%,
+    rgba(0, 0, 0, 0.78) 40%,
+    rgba(0, 0, 0, 0.93) 47%,
+    #000 55%
+  );
+}
+@media (min-width: 62rem) {
+  /* Cover the hero's vertical padding and run past the right edge of the viewport,
+     so there is no seam anywhere the eye can catch. */
+  .pv-aperture-vis {
+    top: -3.5rem;
+    bottom: -4.5rem;
+    right: calc(-1 * max(1.25rem, (100vw - 74rem) / 2));
+  }
+}
+@media (max-width: 61.99rem) {
+  /* Stacked layout: the fade moves to the top edge, where the copy meets it. */
+  .pv-aperture-vis {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 22%);
+  }
+}
+
 /* Both layers fill the aperture. Two traps are handled here, and removing either
    silently collapses the globe to nothing with no error anywhere:
 
@@ -350,48 +424,45 @@
       block. The child combinator outranks it.
    2. A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps its
       intrinsic 300x150. It needs explicit width/height. */
-.pv-aperture > .pv-aperture-canvas,
-.pv-aperture > .pv-aperture-map {
+.pv-aperture-vis > .pv-aperture-canvas,
+.pv-aperture-vis > .pv-aperture-map {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-.pv-aperture > .pv-aperture-map {
+.pv-aperture-vis > .pv-aperture-map {
   z-index: 1;
+  cursor: grab;
 }
-.pv-aperture > .pv-aperture-canvas {
+.pv-aperture-vis > .pv-aperture-map:active {
+  cursor: grabbing;
+}
+.pv-aperture-vis > .pv-aperture-canvas {
   z-index: 0;
 }
 /* Keep MapLibre's own chrome out of the hero; attribution is rendered by us. */
 .pv-aperture .maplibregl-control-container {
   display: none;
 }
-.pv-aperture-credit {
-  font-family: var(--pv-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-  color: rgba(232, 238, 241, 0.5);
-  text-align: right;
-  line-height: 1.5;
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-}
+
+/* Everything below is map furniture, positioned inside the SOLID part of the dark
+   field (left: 40%) so it never lands on the fade. */
 .pv-aperture-legend {
   position: absolute;
-  left: 0.7rem;
-  top: 0.6rem;
-  z-index: 2;
+  right: 1.6rem;
+  top: 2rem;
+  z-index: 3;
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.3rem;
   font-family: var(--pv-mono);
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.72);
+  color: rgba(232, 238, 241, 0.78);
   pointer-events: none;
+  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
 }
 .pv-aperture-legend span {
   display: flex;
@@ -405,20 +476,18 @@
   display: block;
   flex: none;
 }
-/* Status (left) and mandatory credit (right) share one row along the bottom of the
-   aperture. They used to be two independently-positioned absolute boxes and
-   overlapped each other at every width. */
 .pv-aperture-foot {
   position: absolute;
-  inset: auto 0 0 0;
-  z-index: 2;
+  left: 42%;
+  right: 1.6rem;
+  bottom: 1.6rem;
+  z-index: 3;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0.7rem;
-  background: linear-gradient(to top, rgba(5, 7, 12, 0.85), transparent);
+  gap: 1.5rem;
   pointer-events: none;
+  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
 }
 .pv-aperture-status {
   margin: 0;
@@ -426,9 +495,44 @@
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.62);
+  color: rgba(232, 238, 241, 0.66);
   flex: none;
-  max-width: 55%;
+  max-width: 52%;
+}
+.pv-aperture-credit {
+  font-family: var(--pv-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  color: rgba(232, 238, 241, 0.44);
+  text-align: right;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+/* A quiet nudge that the thing can be grabbed. Mouse only — on touch the globe
+   deliberately does not take the drag, so the hint would be a lie. */
+.pv-aperture-hint {
+  position: absolute;
+  left: 42%;
+  top: 2rem;
+  z-index: 3;
+  margin: 0;
+  font-family: var(--pv-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(232, 238, 241, 0.4);
+  pointer-events: none;
+  text-shadow: 0 1px 8px rgba(5, 7, 12, 0.95);
+}
+@media (max-width: 61.99rem) {
+  .pv-aperture-foot { left: 1.25rem; right: 1.25rem; }
+  .pv-aperture-hint { display: none; }
+  .pv-aperture-legend { top: 4.5rem; right: 1.25rem; }
+}
+@media (pointer: coarse) {
+  .pv-aperture-hint { display: none; }
 }
 
 /* ─────────────────────────── marquee ─────────────────────────── */
@@ -743,9 +847,9 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1.6rem;
+  gap: 2.4rem;
   overflow: hidden;
-  padding: 2.5rem 0;
+  padding: 3rem 0;
 }
 .pv-wall-head {
   padding: 0 1.25rem;
@@ -756,13 +860,23 @@
   overflow: hidden;
   width: 100%;
 }
+.pv-wall-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
 .pv-wall-track {
   display: flex;
   gap: 1rem;
   padding: 0 1.25rem;
   width: max-content;
-  transform: translate3d(calc(var(--pv-wall-x, 0) * -1px), 0, 0);
   will-change: transform;
+}
+.pv-wall-track[data-row="1"] {
+  transform: translate3d(calc(var(--pv-wall-x1, 0) * -1px), 0, 0);
+}
+.pv-wall-track[data-row="2"] {
+  transform: translate3d(calc(var(--pv-wall-x2, 0) * -1px), 0, 0);
 }
 .pv-wall-group {
   display: flex;
@@ -775,7 +889,9 @@
   font-size: 0.66rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--pv-fg-mute);
+  color: var(--pv-accent);
+  border-bottom: 1px solid var(--pv-rule);
+  padding-bottom: 0.45rem;
 }
 .pv-wall-cards {
   display: flex;
@@ -783,14 +899,14 @@
 }
 .pv-src {
   flex: none;
-  width: 14rem;
-  padding: 0.95rem;
+  width: 15.5rem;
+  padding: 1.15rem;
   border: 1px solid var(--pv-rule);
   background: var(--pv-surface);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  min-height: 10.5rem;
+  gap: 0.55rem;
+  min-height: 11.5rem;
 }
 .pv-src-label {
   font-family: var(--pv-display);
@@ -837,6 +953,17 @@
 .pv-status[data-state="empty"] i { background: var(--pv-slate); }
 .pv-status[data-state="key"] i { background: var(--pv-amber); }
 .pv-status[data-state="down"] i { background: #b4413c; }
+.pv-env {
+  font-family: var(--pv-mono);
+  font-style: normal;
+  font-size: 0.62em;
+  letter-spacing: 0.04em;
+  color: var(--pv-warn);
+  border: 1px solid color-mix(in oklab, var(--pv-warn), transparent 62%);
+  padding: 0.05em 0.4em;
+  margin-left: 0.5em;
+  white-space: nowrap;
+}
 .pv-status[data-state="checking"] i {
   background: var(--pv-fg-mute);
   animation: pv-pulse 1.4s ease-in-out infinite;
@@ -912,7 +1039,7 @@
   color: var(--pv-fg-mute);
   font-weight: 500;
   position: sticky;
-  top: 44px;
+  top: 0;
   background: color-mix(in oklab, color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%)) 94%, transparent);
   backdrop-filter: blur(6px);
 }
@@ -981,6 +1108,13 @@
 /* ─────────────────────────── handoff ─────────────────────────── */
 
 .pv-handoff {
+  /* MUST be positioned. `.pv-ground` is `position: fixed; z-index: 0`, and a
+     positioned element with z-index >= 0 paints ABOVE unpositioned in-flow content
+     — so without this the ground covers this whole section and the closing pitch,
+     the CTA and the footer render invisible against it. `.pv-doc` only escapes the
+     same fate because it already sets z-index: 1. */
+  position: relative;
+  z-index: 1;
   background: var(--pv-ink);
   color: #e8eef1;
   min-height: 100svh;
@@ -1019,6 +1153,9 @@
 /* ─────────────────────────── footer ─────────────────────────── */
 
 .pv-footer {
+  /* Same stacking trap as .pv-handoff — see the note there. */
+  position: relative;
+  z-index: 1;
   background: var(--pv-ink);
   color: #7a8892;
   padding: 3.5rem 1.25rem 4rem;

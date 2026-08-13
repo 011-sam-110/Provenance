@@ -20,6 +20,11 @@ async function fetchRepo(repo: string): Promise<Repo | null> {
     const res = await fetch(`https://api.github.com/repos/${repo}`, {
       headers: { Accept: "application/vnd.github+json" },
       next: { revalidate: 3600 },
+      // This runs inside the page's own render. Unauthenticated GitHub allows 60
+      // requests an hour per IP, so on a shared production address it will
+      // sometimes be slow or 403 — and without a ceiling that latency becomes the
+      // landing page's latency. Three seconds, then render the panel without it.
+      signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;
     return (await res.json()) as Repo;

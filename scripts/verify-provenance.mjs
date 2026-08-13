@@ -91,7 +91,7 @@ const g = () =>
 const isNight = () => page.evaluate(() => document.querySelector(".pv-root").classList.contains("pv-night"));
 
 // ── 1. the page loads and the thesis is the first thing in it ──────────────
-await page.goto(`${BASE}/?capture=1`, { waitUntil: "domcontentloaded" });
+await page.goto(`${BASE}/?capture=1`, { waitUntil: "domcontentloaded", timeout: 90000 });
 await page.waitForTimeout(1200);
 const h1 = (await page.locator("h1.pv-h1").first().innerText()).replace(/\s+/g, " ").trim();
 h1.toLowerCase().includes("already") ? pass("hero headline renders", h1) : fail("hero headline", h1);
@@ -149,7 +149,7 @@ painted === null || painted >= 2
   : fail("globe canvas is blank", `${painted}/5 lit`);
 
 // give the layers a moment to land, then screenshot the hero
-await page.waitForTimeout(9000);
+await page.waitForTimeout(22000);
 await shot(page, "pv-01-hero.png");
 
 // ── 4. live layers actually reached the globe ──────────────────────────────
@@ -245,19 +245,22 @@ const wall = await page.evaluate(() => {
     top: w.getBoundingClientRect().top + window.scrollY,
     height: w.offsetHeight,
     cards: w.querySelectorAll(".pv-wall-track .pv-src").length,
+    rows: w.querySelectorAll("[data-pv-wall-track]").length,
   };
 });
-wall.cards > 20
-  ? pass("source wall generated from the registry", `${wall.cards} cards`)
-  : fail("source wall too small", `${wall.cards} cards`);
+wall.cards > 20 && wall.rows === 2
+  ? pass("source wall generated from the registry", `${wall.cards} cards across ${wall.rows} rows`)
+  : fail("source wall shape wrong", JSON.stringify(wall));
 
 await page.evaluate((w) => window.scrollTo(0, w.top + (w.height - window.innerHeight) * 0.6), wall);
 await page.waitForTimeout(400);
-const wallX = await page.evaluate(() =>
-  parseFloat(
-    getComputedStyle(document.querySelector("[data-pv-wall]")).getPropertyValue("--pv-wall-x") || "0",
-  ),
-);
+const wallX = await page.evaluate(() => {
+  const cs = getComputedStyle(document.querySelector("[data-pv-wall]"));
+  // Each row carries its own offset so they finish together; report the smaller,
+  // so a stranded row cannot hide behind a moving one.
+  const xs = [1, 2].map((i) => parseFloat(cs.getPropertyValue(`--pv-wall-x${i}`) || "0"));
+  return Math.min(...xs);
+});
 wallX > 100
   ? pass("wall scrubs horizontally", `--pv-wall-x=${wallX.toFixed(0)}px`)
   : fail("wall did not translate", `--pv-wall-x=${wallX}`);
@@ -285,6 +288,31 @@ const ledger = await page.evaluate(() => {
 (ledger.states.empty || 0) > 0
   ? pass("ledger admits empty layers", `${ledger.states.empty} empty`)
   : fail("no empty layers reported — suspicious", JSON.stringify(ledger.states));
+
+// A key-gated layer must NOT be reported as a quiet feed. /api/status only learns
+// "refused" once something has attempted the layer, so this specifically guards the
+// cold-process race where a rejected credential reads as "live, none right now".
+const gating = await page.evaluate(() => {
+  const out = { gated: 0, named: 0, misreported: [] };
+  for (const tr of document.querySelectorAll("#ledger tbody tr")) {
+    const label = tr.querySelector("td")?.textContent || "";
+    const st = tr.querySelector(".pv-status");
+    const state = st?.dataset.state;
+    const text = st?.textContent || "";
+    if (state === "key") {
+      out.gated++;
+      if (tr.querySelector(".pv-env")) out.named++;
+    }
+    // Layers we know are credential-gated must never read as merely quiet.
+    if (/ACLED|ENTSO-E|ReliefWeb/i.test(label) && /none right now/.test(text)) {
+      out.misreported.push(label.trim());
+    }
+  }
+  return out;
+});
+gating.gated > 0 && gating.misreported.length === 0
+  ? pass("gated layers say they are gated", `${gating.gated} gated, ${gating.named} name the env var`)
+  : fail("a credential-gated layer is reported as quiet", JSON.stringify(gating));
 await shot(page, "pv-04-ledger.png");
 
 // ── 10. the licence row tells the truth ────────────────────────────────────
@@ -298,19 +326,46 @@ licence
   : fail("licence row missing");
 
 // ── 11. bottom of page is ink ──────────────────────────────────────────────
-await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-await page.waitForTimeout(400);
+await page.evaluate(() => {
+  document.documentElement.style.scrollBehavior = "auto";
+  window.scrollTo(0, document.documentElement.scrollHeight);
+});
+await page.waitForTimeout(900);
+
+// HIT-TEST the closing section and the footer. They are unpositioned in-flow
+// content sitting under a fixed, z-indexed ground layer; get the stacking wrong and
+// they are laid out perfectly, report opacity 1, and paint nothing at all. Reading
+// the DOM is not enough — ask what is actually on top at those coordinates.
+const bottomVisible = await page.evaluate(() => {
+  const hit = (el) => {
+    if (!el) return "missing";
+    const r = el.getBoundingClientRect();
+    const x = Math.round(r.left + Math.min(r.width / 2, 80));
+    const y = Math.round(r.top + r.height / 2);
+    if (y < 0 || y > window.innerHeight) return "offscreen";
+    const top = document.elementFromPoint(x, y);
+    return el.contains(top) || top === el ? "visible" : `covered by .${(top?.className || top?.tagName || "?").toString().split(" ")[0]}`;
+  };
+  return {
+    cta: hit(document.querySelector(".pv-handoff .pv-cta")),
+    footerLink: hit(document.querySelector(".pv-footer a")),
+  };
+});
+bottomVisible.cta === "visible" && bottomVisible.footerLink === "visible"
+  ? pass("closing section and footer actually paint", JSON.stringify(bottomVisible))
+  : fail("bottom of page is covered", JSON.stringify(bottomVisible));
+
 await shot(page, "pv-05-handoff.png");
 
 // ── 12. the deep-link shim ─────────────────────────────────────────────────
 const shim = await ctx.newPage();
-await shim.goto(`${BASE}/?v=aviation`, { waitUntil: "domcontentloaded" });
+await shim.goto(`${BASE}/?v=aviation`, { waitUntil: "domcontentloaded", timeout: 90000 });
 const shimUrl = shim.url();
 shimUrl.includes("/app") && shimUrl.includes("v=aviation")
   ? pass("deep-link shim preserves shared links", shimUrl.replace(BASE, ""))
   : fail("deep-link shim", shimUrl);
 
-const shim2 = await shim.goto(`${BASE}/?c=abc123`, { waitUntil: "domcontentloaded" }).then(() => shim.url());
+const shim2 = await shim.goto(`${BASE}/?c=abc123`, { waitUntil: "domcontentloaded", timeout: 90000 }).then(() => shim.url());
 shim2.includes("/app") && shim2.includes("c=abc123")
   ? pass("layout deep-links preserved", shim2.replace(BASE, ""))
   : fail("layout deep-link shim", shim2);
@@ -320,7 +375,7 @@ await shim.close();
 const appPage = await ctx.newPage();
 const appErrors = [];
 appPage.on("pageerror", (e) => appErrors.push(String(e)));
-await appPage.goto(`${BASE}/app`, { waitUntil: "domcontentloaded" });
+await appPage.goto(`${BASE}/app`, { waitUntil: "domcontentloaded", timeout: 90000 });
 await appPage.waitForTimeout(6000);
 const shellPresent = await appPage.locator(".tn-shell-main, [class*='tn-']").count();
 shellPresent > 0
@@ -333,8 +388,17 @@ await appPage.close();
 // ── 14. mobile: no pins, no horizontal body scroll ─────────────────────────
 const m = await ctx.newPage();
 await m.setViewportSize({ width: 390, height: 844 });
-await m.goto(BASE, { waitUntil: "domcontentloaded" });
-await m.waitForTimeout(2500);
+await m.goto(BASE, { waitUntil: "domcontentloaded", timeout: 90000 });
+await m.waitForTimeout(6000);
+const mobileAperture = await m.evaluate(() => {
+  const vis = document.querySelector(".pv-aperture-vis");
+  if (!vis) return { present: false };
+  const r = vis.getBoundingClientRect();
+  return { present: true, h: Math.round(r.height), bg: getComputedStyle(vis).backgroundColor };
+});
+mobileAperture.present && mobileAperture.h > 200
+  ? pass("mobile shows the dark field, not a bone hole", JSON.stringify(mobileAperture))
+  : fail("mobile aperture missing or collapsed", JSON.stringify(mobileAperture));
 const overflow = await m.evaluate(
   () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 );

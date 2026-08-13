@@ -1,6 +1,7 @@
 import { getSignal } from "@/lib/signals/registry";
 import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
 import type { SignalFeature } from "@/lib/signals/types";
+import { cacheTtlMs } from "@/lib/signals/cacheTtl";
 
 export const dynamic = "force-dynamic";
 // Most adapters are a single fast upstream call. A few (e.g. submarine cables,
@@ -34,6 +35,7 @@ interface Cached {
 }
 const cache = new Map<string, Cached>();
 
+
 /** `{count, features}` plus the adapter's coverage record when it declared one. */
 function payload(features: SignalFeature[]) {
   const coverage = readCoverage(features);
@@ -53,7 +55,7 @@ export async function GET(
   if (!source) return new Response("unknown signal", { status: 404 });
 
   const hit = cache.get(id);
-  if (hit && Date.now() - hit.at < source.refreshMs) {
+  if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, hit.features.length === 0)) {
     return Response.json(payload(hit.features));
   }
 

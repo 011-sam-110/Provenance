@@ -28,11 +28,12 @@ export default function Aperture() {
 
   return (
     <div className="pv-aperture">
-      {mount ? (
-        <HeroGlobe />
-      ) : (
-        <p className="pv-aperture-status">Starting the engine</p>
-      )}
+      {/* The dark field must exist BEFORE the engine does. Without this the hero
+          shows a blank bone rectangle where the globe belongs until MapLibre has
+          loaded — most visible on mobile, where the aperture sits below the copy
+          and the reader reaches it long before idle-mount has finished. Same
+          class, same mask, so nothing shifts when the real one replaces it. */}
+      {mount ? <HeroGlobe /> : <div className="pv-aperture-vis" aria-hidden="true" />}
     </div>
   );
 }

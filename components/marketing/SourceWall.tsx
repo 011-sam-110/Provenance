@@ -21,6 +21,20 @@ import type { WallGroup } from "@/lib/marketing/wall";
 export default function SourceWall({ groups, total }: { groups: WallGroup[]; total: number }) {
   const cards = groups.flatMap((g) => g.entries);
 
+  // Two rows rather than one. A single strip left the pinned viewport half empty and
+  // read as a shelf; stacking them doubles the density so the section actually looks
+  // like the wall the copy claims. Split on cumulative CARD count, not group count,
+  // so the two rows come out close to the same width and finish their travel
+  // together — groups vary from 1 to 9 entries.
+  const half = Math.ceil(cards.length / 2);
+  const rows: WallGroup[][] = [[], []];
+  let run = 0;
+  for (const g of groups) {
+    rows[run < half ? 0 : 1].push(g);
+    run += g.entries.length;
+  }
+  if (rows[1].length === 0 && rows[0].length > 1) rows[1].push(rows[0].pop() as WallGroup);
+
   return (
     <section className="pv-wall pv-bleed" data-pv-wall id="sources">
       <div className="pv-wall-pin">
@@ -37,29 +51,34 @@ export default function SourceWall({ groups, total }: { groups: WallGroup[]; tot
         </div>
 
         <div className="pv-wall-track-outer pv-wall-viewport">
-          <div className="pv-wall-track" data-pv-wall-track>
-            {groups.map((g) => (
-              <div className="pv-wall-group" key={g.group}>
-                <span className="pv-wall-group-label">
-                  {g.group} · {g.entries.length}
-                </span>
-                <div className="pv-wall-cards">
-                  {g.entries.map((e) => (
-                    <article className="pv-src" key={e.id}>
-                      <span className="pv-src-label" style={{ borderLeft: `2px solid ${e.color}`, paddingLeft: ".5rem" }}>
-                        {e.label}
-                      </span>
-                      <p className="pv-src-attr">{e.attribution}</p>
-                      <div className="pv-src-meta">
-                        <span>{e.kind === "core" ? "core layer" : "signal"}</span>
-                        <span>{e.cadence}</span>
-                      </div>
-                    </article>
-                  ))}
+          {rows.map((row, i) => (
+            <div className="pv-wall-track" data-pv-wall-track data-row={i + 1} key={i}>
+              {row.map((g) => (
+                <div className="pv-wall-group" key={g.group}>
+                  <span className="pv-wall-group-label">
+                    {g.group} · {g.entries.length}
+                  </span>
+                  <div className="pv-wall-cards">
+                    {g.entries.map((e) => (
+                      <article className="pv-src" key={e.id}>
+                        <span
+                          className="pv-src-label"
+                          style={{ borderLeft: `2px solid ${e.color}`, paddingLeft: ".5rem" }}
+                        >
+                          {e.label}
+                        </span>
+                        <p className="pv-src-attr">{e.attribution}</p>
+                        <div className="pv-src-meta">
+                          <span>{e.kind === "core" ? "core layer" : "signal"}</span>
+                          <span>{e.cadence}</span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ))}
         </div>
 
         {/* Touch / reduced-motion fallback: the same cards, swipeable. */}

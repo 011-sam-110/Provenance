@@ -105,6 +105,11 @@ export default function HeroGlobe() {
     // script and never paid for by an actual visitor.
     const capture = new URLSearchParams(window.location.search).has("capture");
 
+    // Drag-to-spin is a mouse affordance only. On touch, a drag on the globe would
+    // swallow the vertical swipe and trap the reader in the hero unable to scroll
+    // the page, so coarse pointers get the ambient rotation and nothing else.
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+
     const map = new maplibregl.Map({
       container: el,
       style: BASEMAPS.dark.style,
@@ -114,13 +119,18 @@ export default function HeroGlobe() {
       center: [8, 22],
       zoom: 1.15,
       attributionControl: false,
-      // A hero, not a toy: drag to spin, no zoom/pitch/rotate controls to get lost in.
+      // Grab it and spin it. Wheel-zoom stays OFF deliberately: the globe fills half
+      // the hero, and hijacking the wheel there would stop the page scrolling for
+      // anyone whose cursor happens to be over it. Zoom is on the double-click and
+      // the pinch instead, where the intent is unambiguous.
+      dragPan: !touch,
+      dragRotate: !touch,
+      touchZoomRotate: true,
+      doubleClickZoom: true,
+      keyboard: true,
       scrollZoom: false,
-      doubleClickZoom: false,
-      touchZoomRotate: false,
-      keyboard: false,
-      dragPan: false,
-      dragRotate: false,
+      minZoom: 0.6,
+      maxZoom: 5,
     });
     mapRef.current = map;
     // Debug handle, matching the app's existing `window.__map` convention. The
@@ -269,19 +279,51 @@ export default function HeroGlobe() {
       map.jumpTo({ center: [c.lng + 0.035, c.lat] });
     }
 
-    // Pause the drift while the tab is hidden or the pointer is on the globe, so
-    // a backgrounded hero costs nothing.
-    const onEnter = () => (paused = true);
-    const onLeave = () => (paused = false);
+    // Pause the drift while the tab is hidden or the pointer is on the globe, so a
+    // backgrounded hero costs nothing and hovering to read a label does not fight
+    // you. After a drag, hold still briefly before resuming — snapping straight
+    // back into rotation the instant you let go feels like the page undoing you.
+    let resume: ReturnType<typeof setTimeout> | undefined;
+    const hold = () => {
+      paused = true;
+      if (resume) clearTimeout(resume);
+    };
+    const release = (delay: number) => {
+      if (resume) clearTimeout(resume);
+      resume = setTimeout(() => (paused = document.hidden), delay);
+    };
+    const onEnter = () => hold();
+    const onLeave = () => release(400);
     const onVis = () => (paused = document.hidden);
+    const onDragStart = () => hold();
+    const onDragEnd = () => release(2500);
+
     el.addEventListener("pointerenter", onEnter);
     el.addEventListener("pointerleave", onLeave);
     document.addEventListener("visibilitychange", onVis);
+    map.on("dragstart", onDragStart);
+    map.on("dragend", onDragEnd);
+    map.on("zoomstart", onDragStart);
+    map.on("zoomend", onDragEnd);
+
+    // Clicking a feature names it. The dossier proper lives in the app; here it is
+    // just enough to prove the dots are real objects and not decoration.
+    const DATA_LAYERS = ["pv-cables", "pv-sats", ...POINT_LAYERS.map((l) => `pv-${l.id}`)];
+    map.on("click", (e) => {
+      const hits = map.queryRenderedFeatures(e.point, { layers: DATA_LAYERS.filter((id) => map.getLayer(id)) });
+      const title = hits[0]?.properties?.title;
+      if (typeof title === "string" && title) setStatus(title);
+    });
+    map.on("mousemove", (e) => {
+      const hits = map.queryRenderedFeatures(e.point, { layers: DATA_LAYERS.filter((id) => map.getLayer(id)) });
+      map.getCanvas().style.cursor = hits.length ? "pointer" : touch ? "" : "grab";
+    });
 
     return () => {
       disposed = true;
       ac.abort();
       if (satTimer) clearInterval(satTimer);
+      if (resume) clearTimeout(resume);
       if (spin) cancelAnimationFrame(spin);
       el.removeEventListener("pointerenter", onEnter);
       el.removeEventListener("pointerleave", onLeave);
@@ -294,8 +336,11 @@ export default function HeroGlobe() {
 
   return (
     <>
-      <Starfield />
-      <div ref={holder} className="pv-aperture-map" aria-hidden="true" />
+      <div className="pv-aperture-vis">
+        <Starfield />
+        <div ref={holder} className="pv-aperture-map" />
+      </div>
+      <p className="pv-aperture-hint">Drag to spin</p>
       <div className="pv-aperture-legend">
         <span>
           <i style={{ background: "#2ea3bd" }} />

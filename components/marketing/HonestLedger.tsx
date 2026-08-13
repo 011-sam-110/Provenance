@@ -10,13 +10,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * uses, six at a time, and reports exactly what came back — including the ones
  * that returned nothing.
  *
- * The concurrency cap is not a nicety. Firing forty cold upstream fetches at once
- * because a marketing page scrolled into view would be the sort of thing this
- * product's whole argument is against. Six at a time, once per page view, and the
- * server route's own per-id cache absorbs repeats.
+ * THE "WHY" MATTERS AS MUCH AS THE "WHAT". An adapter is dormant-safe, so a layer
+ * gated behind a credential we do not hold returns `[]` — identical on the wire to
+ * a feed that is simply quiet. Reporting both as "live · none right now" would tell
+ * the reader a locked feed is working, which is precisely the class of comfortable
+ * lie this whole page argues against. So the count is joined against /api/status
+ * (the app's own capability model: keyless / configured / locked / refused) and a
+ * gated layer says it is gated, naming the variable it wants.
  *
- * "Empty" is reported as a fact, not an error. A quiet cyclone season is the feed
- * working correctly.
+ * The concurrency cap is not a nicety either. Firing forty cold upstream fetches at
+ * once because a marketing page scrolled into view is the sort of thing this
+ * product exists to not do. Six at a time, once per page view, and the route's own
+ * per-id cache absorbs repeats.
  */
 
 export interface LedgerSource {
@@ -25,11 +30,18 @@ export interface LedgerSource {
   group: string;
 }
 
-type State = "checking" | "live" | "empty" | "down";
+type State = "checking" | "live" | "empty" | "locked" | "refused" | "down";
 
 interface Row extends LedgerSource {
   state: State;
   count: number;
+  missingEnv: string[];
+}
+
+interface StatusLayer {
+  id: string;
+  state?: string;
+  missingEnv?: string[];
 }
 
 const CONCURRENCY = 6;
@@ -45,34 +57,114 @@ async function pool<T>(items: T[], limit: number, run: (item: T) => Promise<void
   await Promise.all(workers);
 }
 
+const LABEL: Record<State, string> = {
+  checking: "checking",
+  live: "live",
+  empty: "live · none right now",
+  locked: "needs a key",
+  refused: "key refused upstream",
+  down: "no answer",
+};
+
+/** Which dot colour the shared .pv-status styling should use. */
+function tone(state: State): string {
+  if (state === "locked" || state === "refused") return "key";
+  if (state === "down") return "down";
+  return state;
+}
+
 export default function HonestLedger({ sources }: { sources: LedgerSource[] }) {
   const [rows, setRows] = useState<Row[]>(() =>
-    sources.map((s) => ({ ...s, state: "checking" as State, count: 0 })),
+    sources.map((s) => ({ ...s, state: "checking" as State, count: 0, missingEnv: [] })),
   );
   const [started, setStarted] = useState(false);
   const [done, setDone] = useState(false);
   const holder = useRef<HTMLDivElement>(null);
 
-  const check = useCallback(async (ac: AbortController) => {
-    await pool(sources, CONCURRENCY, async (s) => {
-      let state: State = "down";
-      let count = 0;
+  const check = useCallback(
+    async (ac: AbortController) => {
+      // Gating first, and only once: it is a single cheap call and it decides how
+      // an empty count should be READ.
+      const gating = new Map<string, { state: string; missingEnv: string[] }>();
       try {
-        const res = await fetch(`/api/signals/${s.id}`, { signal: ac.signal });
+        const res = await fetch("/api/status", { signal: ac.signal, cache: "no-store" });
         if (res.ok) {
-          const body = (await res.json()) as { count?: number };
-          count = typeof body.count === "number" ? body.count : 0;
-          state = count > 0 ? "live" : "empty";
+          const body = (await res.json()) as { layers?: StatusLayer[] };
+          for (const l of body.layers ?? []) {
+            gating.set(l.id, { state: l.state ?? "keyless", missingEnv: l.missingEnv ?? [] });
+          }
         }
       } catch {
-        if (ac.signal.aborted) return;
-        state = "down";
+        /* no gating info — fall back to reporting counts alone, never to guessing */
       }
       if (ac.signal.aborted) return;
-      setRows((prev) => prev.map((r) => (r.id === s.id ? { ...r, state, count } : r)));
-    });
-    if (!ac.signal.aborted) setDone(true);
-  }, [sources]);
+
+      await pool(sources, CONCURRENCY, async (s) => {
+        const gate = gating.get(s.id);
+        let state: State = "down";
+        let count = 0;
+        try {
+          const res = await fetch(`/api/signals/${s.id}`, { signal: ac.signal });
+          if (res.ok) {
+            const body = (await res.json()) as { count?: number };
+            count = typeof body.count === "number" ? body.count : 0;
+            state = count > 0 ? "live" : "empty";
+          }
+        } catch {
+          if (ac.signal.aborted) return;
+          state = "down";
+        }
+        // A gated layer with nothing in it is gated, not quiet. A gated layer that
+        // is somehow returning rows is reported as live — the gate is the
+        // explanation for emptiness, not an override of observed data.
+        if (count === 0 && gate) {
+          if (gate.state === "locked") state = "locked";
+          else if (gate.state === "refused") state = "refused";
+        }
+        if (ac.signal.aborted) return;
+        setRows((prev) =>
+          prev.map((r) => (r.id === s.id ? { ...r, state, count, missingEnv: gate?.missingEnv ?? [] } : r)),
+        );
+      });
+      if (ac.signal.aborted) return;
+
+      // Ask about gating a SECOND time, now that we have probed every layer.
+      //
+      // `locked` is derived from environment variables and is known immediately.
+      // `refused` is not: it means a credential we DO hold was rejected upstream,
+      // which the server can only know once something has actually tried. On a
+      // cold process nothing has, so the first call reports such a layer as
+      // configured and its empty result reads as "quiet" — the exact
+      // misattribution this section exists to avoid. Our own probes just produced
+      // that evidence, so re-reading it now turns "quiet" into the truth.
+      try {
+        const res = await fetch("/api/status", { signal: ac.signal, cache: "no-store" });
+        if (res.ok) {
+          const body = (await res.json()) as { layers?: StatusLayer[] };
+          const after = new Map(
+            (body.layers ?? []).map((l) => [l.id, { state: l.state ?? "keyless", missingEnv: l.missingEnv ?? [] }]),
+          );
+          if (!ac.signal.aborted) {
+            setRows((prev) =>
+              prev.map((r) => {
+                if (r.count > 0) return r;
+                const g = after.get(r.id);
+                if (!g) return r;
+                if (g.state === "locked") return { ...r, state: "locked", missingEnv: g.missingEnv };
+                if (g.state === "refused") return { ...r, state: "refused", missingEnv: g.missingEnv };
+                return r;
+              }),
+            );
+          }
+        }
+      } catch {
+        /* keep the first pass's labels */
+      }
+
+      if (!ac.signal.aborted) setDone(true);
+    },
+    [sources],
+  );
 
   useEffect(() => {
     const el = holder.current;
@@ -97,20 +189,23 @@ export default function HonestLedger({ sources }: { sources: LedgerSource[] }) {
     return () => ac.abort();
   }, [started, check]);
 
-  const empty = rows.filter((r) => r.state === "empty");
-  const live = rows.filter((r) => r.state === "live");
-  const downs = rows.filter((r) => r.state === "down");
-  const checking = rows.filter((r) => r.state === "checking").length;
+  const live = rows.filter((r) => r.state === "live").length;
+  const quiet = rows.filter((r) => r.state === "empty").length;
+  const gated = rows.filter((r) => r.state === "locked" || r.state === "refused").length;
+  const downs = rows.filter((r) => r.state === "down").length;
+  const answered = rows.filter((r) => r.state !== "checking").length;
 
   const headline = !started
     ? `${rows.length} layers, unchecked`
     : done
-      ? `${live.length} of ${rows.length} returning data right now`
-      : `Checking ${rows.length} layers · ${rows.length - checking} answered`;
+      ? `${live} of ${rows.length} returning data right now`
+      : `Checking ${rows.length} layers · ${answered} answered`;
 
-  // Empties first: they are the point of the section. Then anything down, then live.
-  const order: Record<State, number> = { empty: 0, down: 1, checking: 2, live: 3 };
-  const sorted = [...rows].sort((a, b) => order[a.state] - order[b.state] || a.label.localeCompare(b.label));
+  // Anything that is NOT returning data comes first: those rows are the section.
+  const order: Record<State, number> = { locked: 0, refused: 1, down: 2, empty: 3, checking: 4, live: 5 };
+  const sorted = [...rows].sort(
+    (a, b) => order[a.state] - order[b.state] || a.label.localeCompare(b.label),
+  );
 
   return (
     <section className="pv-block" ref={holder} id="ledger">
@@ -126,13 +221,14 @@ export default function HonestLedger({ sources }: { sources: LedgerSource[] }) {
       <div className="pv-prose">
         <p>
           Some layers are quiet because the world is quiet: no named storm today means the cyclone
-          feed is correctly empty. Some are gated behind a key we do not have. Some are simply
-          down. All of them say so, here and on the map, instead of showing you a plausible number.
+          feed is correctly empty. Some are gated behind a credential we do not hold, and say so
+          rather than looking broken. Some are simply down. None of them fills the gap with a
+          plausible number.
         </p>
-        {done && downs.length > 0 && (
+        {done && (
           <p className="pv-note">
-            {downs.length} {downs.length === 1 ? "layer" : "layers"} did not answer this check.
-            That is reported as-is, not retried until it looks better.
+            {quiet} quiet · {gated} waiting on a key · {downs} no answer. Every row below was
+            measured in your browser just now, against the endpoints the map itself uses.
           </p>
         )}
       </div>
@@ -153,15 +249,12 @@ export default function HonestLedger({ sources }: { sources: LedgerSource[] }) {
                 <td>{r.label}</td>
                 <td>{r.group}</td>
                 <td>
-                  <span className="pv-status" data-state={r.state === "down" ? "down" : r.state}>
+                  <span className="pv-status" data-state={tone(r.state)}>
                     <i />
-                    {r.state === "checking"
-                      ? "checking"
-                      : r.state === "live"
-                        ? "live"
-                        : r.state === "empty"
-                          ? "live · none right now"
-                          : "no answer"}
+                    {LABEL[r.state]}
+                    {r.state === "locked" && r.missingEnv.length > 0 && (
+                      <em className="pv-env">{r.missingEnv.join(" + ")}</em>
+                    )}
                   </span>
                 </td>
                 <td className="pv-num">{r.state === "live" ? r.count.toLocaleString() : "—"}</td>
@@ -170,13 +263,6 @@ export default function HonestLedger({ sources }: { sources: LedgerSource[] }) {
           </tbody>
         </table>
       </div>
-
-      {done && (
-        <p className="pv-note">
-          Measured just now, in your browser, against the same endpoints the map uses. Reload and
-          the numbers will differ — that is what live means.
-        </p>
-      )}
     </section>
   );
 }

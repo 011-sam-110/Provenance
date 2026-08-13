@@ -63,11 +63,14 @@ export default function Starfield() {
       if (!ctx) return;
 
       ctx.clearRect(0, 0, w, h);
-      // A faint galactic wash so the field is not a flat black rectangle.
-      const wash = ctx.createLinearGradient(0, 0, w, h);
-      wash.addColorStop(0, "rgba(24,38,58,0.55)");
-      wash.addColorStop(0.5, "rgba(10,14,22,0.2)");
-      wash.addColorStop(1, "rgba(30,26,52,0.45)");
+      // A faint galactic wash so the field is not a flat black rectangle. It runs
+      // dark-to-light LEFT to RIGHT on purpose: the aperture is masked away on its
+      // left edge, so any brightness there shows through the fade as a pale stripe
+      // against the bone ground. Keep the light in the solid half.
+      const wash = ctx.createLinearGradient(0, h, w, 0);
+      wash.addColorStop(0, "rgba(8,11,18,0.5)");
+      wash.addColorStop(0.55, "rgba(16,24,38,0.34)");
+      wash.addColorStop(1, "rgba(34,29,58,0.4)");
       ctx.fillStyle = wash;
       ctx.fillRect(0, 0, w, h);
 
