@@ -1,16 +1,14 @@
 // components/console/WidgetFrame.tsx
 "use client";
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
-import type { SegmentId, WidgetInstance } from "@/lib/console/types";
+import type { WidgetInstance } from "@/lib/console/types";
 import { shellLayoutStore } from "@/lib/console/store";
 import {
   activePreset,
-  spanFromPointer,
   HEIGHT_PRESETS,
   HEIGHT_PRESET_TOLERANCE_PX,
   WIDTH_PRESETS,
 } from "@/lib/console/resize";
-import { nudgeTarget, otherSegments, sendToTarget, SEGMENT_LABEL } from "@/lib/console/move";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -43,7 +41,20 @@ interface Report {
 const ReportCtx = createContext<(r: Report) => void>(() => {});
 export function useWidgetReport() { return useContext(ReportCtx); }
 
-export default function WidgetFrame({ instance }: { instance: WidgetInstance }) {
+export default function WidgetFrame({
+  instance,
+  onGrab,
+  onNudgeKey,
+  onNudge,
+}: {
+  instance: WidgetInstance;
+  /** Starts a grid drag. Supplied by ConsoleWorkspace, which owns the board. */
+  onGrab?: (e: React.PointerEvent) => void;
+  /** Arrow-key move, Shift+arrow resize — the keyboard path to the same result. */
+  onNudgeKey?: (e: React.KeyboardEvent) => void;
+  /** One-cell move/resize, for the ⋯ menu's buttons. */
+  onNudge?: (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => void;
+}) {
   const type = getWidgetType(instance.type);
   const [report, setReport] = useState<Report>({ alerts: [] });
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,76 +110,55 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
     shellLayoutStore.configure(instance.id, { alertMin: n }); // widget's own alert maths honours it
   };
 
-  const onDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData("text/tn-widget", instance.id);
-    e.dataTransfer.effectAllowed = "move";
-  };
+  // The header used to carry `draggable` + an HTML5 dataTransfer payload
+  // ("text/tn-widget"). Both are gone, and removing them was not optional: a
+  // `draggable` element starts a NATIVE drag on pointerdown, which cancels the
+  // pointer capture the grid drag depends on — the two cannot coexist on one
+  // element. The only consumer of that payload was components/console/Segment.tsx,
+  // which nothing has imported since the Terminal replaced the three segment
+  // containers with one grid; it is deleted in the same change rather than left
+  // behind implementing a protocol no one sends.
 
   // ── Explicit move + size, so neither needs a drag ────────────────────────
-  // Dragging still works, but it was the ONLY way to move or size a card, and a
-  // draggable header with no grab affordance is a feature most people never find.
-  // These read the layout fresh at click time (the menu can outlive a re-order).
-  const layoutNow = () => shellLayoutStore.get();
-  const canNudge = (dir: -1 | 1) => nudgeTarget(layoutNow(), instance.id, dir) != null;
-  const nudge = (dir: -1 | 1) => {
-    const t = nudgeTarget(layoutNow(), instance.id, dir);
-    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
-  };
-  const sendTo = (seg: SegmentId) => {
-    const t = sendToTarget(layoutNow(), instance.id, seg);
-    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
-    setMenuOpen(false);
-  };
-  const destinations = otherSegments(layoutNow(), instance.id);
-  const activeWidth = activePreset(WIDTH_PRESETS, instance.width);
+  // Dragging works, but a draggable header with no alternative is a feature most
+  // people never find — and one nobody without a pointer can use at all.
+  //
+  // The "send to left / right / bottom" buttons that used to live here are GONE.
+  // They moved a widget between three fixed segments, and on a free-form grid
+  // those segments no longer describe where anything is: a widget's `segment`
+  // survives only as preset-authoring and migration input. A button offering to
+  // send a card "to the bottom dock" when there is no bottom dock would be a
+  // control that lies, which is the exact fault this whole change is fixing.
+  // Directional nudges replace them — same one-click, no-aim, keyboard-reachable
+  // promise, in coordinates the board actually has.
+  const rect = instance.rect;
+  const nudgeBy = (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => onNudge?.(d);
+  const activeWidth = activePreset(WIDTH_PRESETS, rect?.w ?? instance.width);
   const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
-  const onResizePointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const startY = e.clientY, startH = instance.height;
-    const move = (ev: PointerEvent) => shellLayoutStore.resizeWidget(instance.id, startH + (ev.clientY - startY));
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
-  };
-  const measureSeg = (target: HTMLElement) => {
-    const seg = target.closest(".tn-seg") as HTMLElement | null;
-    const slot = target.closest(".tn-seg-slot") as HTMLElement | null;
-    if (!seg || !slot) return null;
-    const cs = getComputedStyle(seg);
-    const padL = parseFloat(cs.paddingLeft) || 0;
-    const padR = parseFloat(cs.paddingRight) || 0;
-    return { slotLeft: slot.getBoundingClientRect().left, segWidth: seg.getBoundingClientRect().width - padL - padR };
-  };
-  const onResizeWidthPointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const m = measureSeg(e.currentTarget as HTMLElement);
-    if (!m) return;
-    const move = (ev: PointerEvent) =>
-      shellLayoutStore.resizeWidth(instance.id, spanFromPointer({ pointerX: ev.clientX, slotLeft: m.slotLeft, segWidth: m.segWidth }));
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
-  };
-  const onResizeCornerPointerDown = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const m = measureSeg(e.currentTarget as HTMLElement);
-    const startY = e.clientY, startH = instance.height;
-    const move = (ev: PointerEvent) => {
-      shellLayoutStore.resizeWidget(instance.id, startH + (ev.clientY - startY));
-      if (m) shellLayoutStore.resizeWidth(instance.id, spanFromPointer({ pointerX: ev.clientX, slotLeft: m.slotLeft, segWidth: m.segWidth }));
-    };
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
-  };
 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
-      <header className="tn-cw-head" draggable onDragStart={onDragStart}>
-        {/* The grab affordance the drag never had. Purely a signpost — the whole
-            header is still the drag source — but without something that LOOKS
-            draggable, the drag may as well not exist. aria-hidden because the
-            same move is available as real buttons in the ⋯ menu, which is what a
-            keyboard or screen-reader user should get; a "drag me" control that
-            cannot be operated without a pointer is not worth announcing. */}
-        <span className="tn-cw-grip" aria-hidden="true" title="Drag to move, or use ⋯ → Move">⠿</span>
+      <header className="tn-cw-head" onPointerDown={onGrab}>
+        {/* The grab affordance. The whole header is the drag source; this is the
+            signpost, because without something that LOOKS draggable the drag may
+            as well not exist.
+
+            It is a real button now rather than an aria-hidden decoration: it
+            carries the KEYBOARD path to moving and resizing (arrows, and Shift
+            with arrows). It used to be safe to hide because the ⋯ menu offered
+            "send to left/right/bottom" as ordinary buttons — but those segments
+            no longer describe where anything is on a free-form grid, so this is
+            the accessible route and it has to be announced. */}
+        <button
+          type="button"
+          className="tn-cw-grip"
+          aria-label={`Move ${type.title}. Arrow keys move, shift with arrow keys resizes.`}
+          title="Drag to move · arrows to nudge · shift+arrows to resize"
+          onPointerDown={onGrab}
+          onKeyDown={onNudgeKey}
+        >
+          ⠿
+        </button>
         <span className="tn-cw-icon" aria-hidden="true">{type.icon}</span>
         {/* Real heading (not a styled span) so a screen reader gets a stop for
             every widget and can jump by heading. margin/fontSize are reset
@@ -266,20 +256,17 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
           {/* MOVE — the drag, as buttons. One click, no aim, keyboard-reachable. */}
           <div className="tn-cw-menu-sec">Move</div>
           <div className="tn-cw-menu-row">
-            {destinations.map((seg) => (
-              <button
-                key={seg}
-                className="tn-cw-chip"
-                title={`Send this widget to the ${SEGMENT_LABEL[seg].toLowerCase()}`}
-                onClick={() => sendTo(seg)}
-              >
-                {seg === "left" ? "◧" : seg === "right" ? "◨" : "▤"} {SEGMENT_LABEL[seg]}
-              </button>
-            ))}
+            <button className="tn-cw-chip" title="Move one column left" onClick={() => nudgeBy({ dx: -1 })}>◀</button>
+            <button className="tn-cw-chip" title="Move one row up" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
+            <button className="tn-cw-chip" title="Move one row down" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
+            <button className="tn-cw-chip" title="Move one column right" onClick={() => nudgeBy({ dx: 1 })}>▶</button>
           </div>
+          <div className="tn-cw-menu-sec">Grow / shrink</div>
           <div className="tn-cw-menu-row">
-            <button className="tn-cw-chip" disabled={!canNudge(-1)} title="Move one place earlier in this column" onClick={() => nudge(-1)}>▲ Up</button>
-            <button className="tn-cw-chip" disabled={!canNudge(1)} title="Move one place later in this column" onClick={() => nudge(1)}>▼ Down</button>
+            <button className="tn-cw-chip" title="One column narrower" onClick={() => nudgeBy({ dw: -1 })}>−W</button>
+            <button className="tn-cw-chip" title="One column wider" onClick={() => nudgeBy({ dw: 1 })}>+W</button>
+            <button className="tn-cw-chip" title="One row shorter" onClick={() => nudgeBy({ dh: -1 })}>−H</button>
+            <button className="tn-cw-chip" title="One row taller" onClick={() => nudgeBy({ dh: 1 })}>+H</button>
           </div>
 
           {/* SIZE — the same sizes the drag handles snap to, as named targets. */}
@@ -351,30 +338,13 @@ export default function WidgetFrame({ instance }: { instance: WidgetInstance }) 
               <ReportCtx.Provider value={onReport}><Body instanceId={instance.id} config={cfg} /></ReportCtx.Provider>
             </WidgetErrorBoundary>
           </div>
-          {/* Resize handles. They were 6px targets with no resting appearance, so
-              you had to already know they were there and then hit them — WCAG's
-              minimum target is 24px, and these are now 14–20px with the widget's
-              own hover as the reveal. Double-click resets to the widget's
-              registered default, which is the cheap undo a drag has never had.
-              The named sizes in ⋯ → Width/Height do the same job with no aim. */}
-          <div
-            className="tn-cw-resize"
-            onPointerDown={onResizePointerDown}
-            onDoubleClick={() => shellLayoutStore.resizeWidget(instance.id, type.defaultHeight)}
-            title="Drag to resize height · double-click to reset"
-          />
-          <div
-            className="tn-cw-resize-x"
-            onPointerDown={onResizeWidthPointerDown}
-            onDoubleClick={() => shellLayoutStore.resizeWidth(instance.id, 12)}
-            title="Drag to resize width · double-click for full width"
-          />
-          <div
-            className="tn-cw-resize-xy"
-            onPointerDown={onResizeCornerPointerDown}
-            onDoubleClick={() => { shellLayoutStore.resizeWidget(instance.id, type.defaultHeight); shellLayoutStore.resizeWidth(instance.id, 12); }}
-            title="Drag to resize · double-click to reset"
-          />
+          {/* The three old resize handles used to live here. They are gone, not
+              moved: they resized a widget by writing `width`/`height`, which the
+              Terminal never read, and globals.css hid them outright on top of
+              that. Resizing is now eight handles on the SLOT, owned by
+              ConsoleWorkspace — they have to sit outside this frame's overflow
+              so an edge stays grabbable, and the board is the only thing that
+              knows what a resize does to a widget's neighbours. */}
         </>
       )}
     </div>

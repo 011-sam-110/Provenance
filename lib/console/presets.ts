@@ -1,6 +1,6 @@
 "use client";
 import { createDefaultLayout, type ShellLayout, type SegmentId } from "@/lib/console/types";
-import { addWidget, setStage } from "@/lib/console/reducers";
+import { addWidget, seedRectsFromSegments, setStage } from "@/lib/console/reducers";
 import { shellLayoutStore } from "@/lib/console/store";
 import { layersStore } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
@@ -27,7 +27,11 @@ const id = () => `p${(seed += 1).toString(36)}`;
 function compose(stage: ShellLayout["stage"], specs: { type: string; segment: SegmentId }[]): ShellLayout {
   let l = setStage(createDefaultLayout(), stage);
   for (const s of specs) l = addWidget(l, s.type, id(), { segment: s.segment });
-  return l;
+  // addWidget packs each card into the first cell it fits, which is right for a
+  // card the USER adds but loses the left/right/bottom intent these specs are
+  // written in. Seeding from the segments at the end is what makes a preset's
+  // authored shape the shape it renders as.
+  return seedRectsFromSegments(l);
 }
 
 // FIVE broad boards — deliberately few. Each drops a curated set of widgets across the

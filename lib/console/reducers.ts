@@ -2,7 +2,7 @@ import type { GridRect, ShellLayout, WidgetInstance, SegmentId, StageId } from "
 import { MAX_WIDGETS, STAGE_ID } from "@/lib/console/types";
 import { clampSpan } from "@/lib/console/resize";
 import {
-  arrangeConsole, arrangeWall, place, rowsUsed, settle,
+  arrangeConsole, arrangeWall, findFreeSpot, fromLegacy, place, settle,
   MIN_H, MIN_W, type GridItem,
 } from "@/lib/terminal/layoutGrid";
 
@@ -33,14 +33,16 @@ export function addWidget(
   if (isAtCapacity(l)) return l;
   const segment = opts.segment ?? emptiestSegment(l);
   const order = l.widgets.filter((w) => w.segment === segment).length;
-  // A new widget lands on a fresh row under everything, full width of its rail.
-  // Never in a gap: dropping a card the user did not place into a hole halfway up
-  // the board makes it look like something moved rather than something arrived.
+  // A new widget takes the first cell it fits in, scanning left to right then
+  // down. Appending below everything would be undone immediately — compaction
+  // floats it up into the first gap anyway — so the scan is simply the honest
+  // version of what the board does.
+  const size = { w: 4, h: 7 };
   const inst: WidgetInstance = {
     id: instanceId, type, segment, order,
     width: opts.width ?? 12,
     height: opts.height ?? 260,
-    rect: { x: 0, y: rowsUsed(gridItems(l)), w: 4, h: 7 },
+    rect: { ...findFreeSpot(gridItems(l), size.w, size.h), ...size },
     collapsed: false, config: opts.config ?? {},
   };
   return { ...l, widgets: [...l.widgets, inst] };
@@ -107,6 +109,20 @@ function applyItems(l: ShellLayout, items: readonly GridItem[]): ShellLayout {
 /** Move or resize one item (widget or stage) and settle the board around it. */
 export function setItemRect(l: ShellLayout, id: string, rect: GridRect): ShellLayout {
   return applyItems(l, place(gridItems(l), id, rect));
+}
+
+/**
+ * Lay a board out from its widgets' segments.
+ *
+ * Presets are AUTHORED in segments — `{ type: "cameras", segment: "right" }` says
+ * what a board is for far more legibly than a table of x/y/w/h would, and all six
+ * built-ins are written that way. They are composed with addWidget, which places
+ * each card in the first cell it fits; run in sequence that packs a board but
+ * throws away the author's left/right/bottom intent. This puts it back, and is the
+ * last step of building any preset.
+ */
+export function seedRectsFromSegments(l: ShellLayout): ShellLayout {
+  return applyItems(l, fromLegacy(l.widgets, l.stageRect ? STAGE_ID : null));
 }
 
 /** Re-seed every position from one of the two named arrangements. Sizes the user

@@ -3187,10 +3187,168 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
      lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
 }
 .tn-terminal .tn-seg-slot {
+  /* MANDATORY, not stylistic: the eight `.tn-rz` resize handles are
+     position:absolute and pin themselves to this box's edges. Without a
+     positioned ancestor here they resolve against `.tn-grid` instead, so every
+     card's handles pile up in the corners of the whole board — the handles are
+     invisible at rest, so this fails as "resizing does nothing" rather than as
+     anything you can see. */
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   background: var(--tnx-panel);
+}
+
+/* ── The snap grid ─────────────────────────────────────────────────────────
+   Twelve columns and 24px rows, written as inline styles by ConsoleWorkspace
+   because the row count depends on how tall the board is. Everything below is
+   the CHROME of dragging: the guides, the placeholder, the eight handles and
+   the lifted card. `position: relative` is what the guides and the absolutely
+   positioned resizing card are measured against. */
+.tn-terminal .tn-grid { position: relative; }
+
+/* Guides. A gradient rather than twelve elements: no DOM, nothing to hit-test by
+   accident, and a single opacity to fade. Only visible during a gesture — a
+   permanently drawn grid is noise on a surface whose job is reading data.
+   --tn-col-step is published by the grid so the vertical lines land exactly on
+   the column boundaries at any container width. */
+.tn-terminal .tn-grid-guides {
+  position: absolute; inset: 0; z-index: 5;
+  pointer-events: none; opacity: 0;
+  transition: opacity 140ms ease;
+  background-image:
+    repeating-linear-gradient(to right,
+      color-mix(in srgb, var(--tnx-accent) 22%, transparent) 0 1px,
+      transparent 1px var(--tn-col-step, 8.3333%)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--tnx-accent) 16%, transparent) 0 1px,
+      transparent 1px 25px);
+}
+.tn-terminal .tn-grid.is-dragging .tn-grid-guides { opacity: 1; }
+
+/* The placeholder — where the held card will land. Dashed, because it is a
+   promise about the future rather than a thing on the board. */
+.tn-terminal .tn-grid-ghost {
+  z-index: 4;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--tnx-accent) 7%, transparent);
+  outline: 1px dashed var(--tnx-accent);
+  outline-offset: -1px;
+}
+
+/* The held card. It leaves the flat, hairline-separated surface for as long as
+   it is held — the one place the Terminal spends a shadow, because "this one is
+   in your hand" is exactly what elevation is for. `transition: none` matters:
+   the drag writes a transform every frame and a transition on top of that would
+   make the card lag the pointer. */
+.tn-terminal .tn-seg-slot.is-held,
+.tn-terminal .tn-cw-stage.is-held {
+  z-index: 40;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  outline: 1px solid var(--tnx-accent);
+  outline-offset: -1px;
+  transition: none !important;
+  cursor: grabbing;
+}
+
+/* ── Resize handles ────────────────────────────────────────────────────────
+   Eight of them, invisible at rest and revealed by the slot's own hover. The
+   old three were 6px targets with no resting appearance, so you had to already
+   know they were there and then hit them. These are 10px edges and 16px
+   corners, which is the most that can be given without eating into a 22px
+   header row; the ⋯ menu's nudge buttons and the arrow keys are the no-aim
+   route for anyone who does not want to chase an edge. */
+.tn-terminal .tn-rz {
+  position: absolute; z-index: 20;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  touch-action: none;
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz,
+.tn-terminal .tn-cw-stage:hover .tn-rz,
+.tn-terminal .is-held .tn-rz { opacity: 1; }
+
+.tn-terminal .tn-rz::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--tnx-accent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.tn-terminal .tn-rz:hover::after { opacity: 0.45; }
+
+.tn-terminal .tn-rz-n  { top: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-s  { bottom: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-w  { left: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-e  { right: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.tn-terminal .tn-rz-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+
+/* The south-east corner gets the only resting mark — the universal "this
+   resizes" tell, and the handle people reach for first. */
+.tn-terminal .tn-rz-se::before {
+  content: ""; position: absolute; right: 2px; bottom: 2px;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--tnx-ink-ghost);
+  border-bottom: 1.5px solid var(--tnx-ink-ghost);
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz-se::before { border-color: var(--tnx-accent); }
+
+/* The stage's drag grip. The map owns click, drag and wheel for panning and
+   zooming, so the stage cannot be draggable by its surface the way a widget's
+   header is — it gets one explicit grip instead, tucked into the corner the map
+   chrome leaves free. */
+.tn-terminal .tn-stage-grip {
+  position: absolute; left: 6px; bottom: 6px; z-index: 22;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: color-mix(in srgb, var(--tnx-panel) 88%, transparent);
+  border: 1px solid var(--tnx-line-strong);
+  color: var(--tnx-ink-faint);
+  font-size: 10px; line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.tn-terminal .tn-stage-grip:hover { color: var(--tnx-accent); border-color: var(--tnx-accent); }
+.tn-terminal .tn-stage-grip:focus-visible {
+  outline: none; color: var(--tnx-accent);
+  box-shadow: 0 0 0 2px var(--tnx-accent);
+}
+
+/* Reduced motion: the board still rearranges, it just does not animate. The FLIP
+   helper already resolves its duration to 0, and these cover the CSS-only fades
+   so nothing is left half-transitioned. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-grid-guides,
+  .tn-terminal .tn-rz,
+  .tn-terminal .tn-rz::after { transition: none; }
+}
+
+/* Below this width a twelve-column drag is not a real interaction — a column is
+   under 30px and the handles are bigger than the cells they target. The board
+   stacks in reading order and the gesture chrome is withdrawn rather than left
+   present and unusable. */
+@media (max-width: 900px) {
+  .tn-terminal .tn-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    min-height: 0;
+  }
+  .tn-terminal .tn-grid > .tn-seg-slot,
+  .tn-terminal .tn-grid > .tn-cw-stage {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    flex: 0 0 auto;
+    min-height: 220px;
+  }
+  .tn-terminal .tn-rz,
+  .tn-terminal .tn-grid-guides,
+  .tn-terminal .tn-grid-ghost,
+  .tn-terminal .tn-stage-grip { display: none; }
+  .tn-terminal .tn-cw-grip { cursor: default; }
 }
 
 /* ── Stage cell ────────────────────────────────────────────────────────────
@@ -3266,13 +3424,32 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
   font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
 }
 .tn-terminal .tn-cw-help::after { box-shadow: inset 0 0 0 1px var(--tnx-line-strong); }
-/* Height and width drags are dead controls in a fixed-track grid — a widget owns
-   exactly one cell and the cell's size comes from the template. Hiding them is the
-   honest render. The equivalent CHIP rows in the ⋯ menu live inside WidgetFrame and
-   cannot be reached from here; they are called out in the handover instead. */
-.tn-terminal .tn-cw-resize,
-.tn-terminal .tn-cw-resize-x,
-.tn-terminal .tn-cw-resize-xy { display: none; }
+
+/* The three old `.tn-cw-resize*` handles used to be hidden here, because a widget
+   owned exactly one template cell and its size came from the template — so a
+   resize control was a control that lied. Widgets own a rectangle now, and
+   resizing lives on the SLOT as eight handles (`.tn-rz-*` below) rather than
+   inside the frame: an edge has to stay grabbable, and `.tn-cw` clips its
+   overflow. The handles no longer exist in WidgetFrame's markup, so there is
+   nothing left to hide. */
+
+/* The grab handle. A real button now — it carries the keyboard path to moving and
+   resizing, so it has to be focusable and announced. */
+.tn-terminal .tn-cw-grip {
+  display: flex; align-items: center; justify-content: center;
+  width: 14px; height: 100%; flex: 0 0 auto;
+  padding: 0; border: 0; background: transparent;
+  color: var(--tnx-ink-ghost);
+  font: inherit; font-size: 10px; line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.tn-terminal .tn-cw-grip:hover { color: var(--tnx-accent); }
+.tn-terminal .tn-cw-grip:focus-visible {
+  outline: none; color: var(--tnx-accent);
+  box-shadow: inset 0 0 0 1px var(--tnx-accent);
+}
+.tn-grid.is-dragging .tn-cw-grip { cursor: grabbing; }
 
 /* Rows. `.tn-ev-row` and friends keep the 30px floor the touch-target pass measured
    for them — the design's 22px is a display height, and shrinking a control that

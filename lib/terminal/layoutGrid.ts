@@ -170,6 +170,36 @@ export function place(
   return settle(next, id);
 }
 
+/**
+ * The first cell a `w`x`h` card fits in, scanning left to right then down.
+ *
+ * "Append at the bottom" is the obvious alternative and it is wrong here, because
+ * compaction would immediately float the card up into the first gap anyway — so
+ * appending does not actually put the card at the bottom, it just makes where it
+ * lands unpredictable. Scanning for the fit says out loud what the board was going
+ * to do regardless.
+ *
+ * The row bound is one card-height past the current bottom, so there is always a
+ * clear row to fall back to and the scan cannot run away on a full board.
+ */
+export function findFreeSpot(
+  items: readonly GridRect[],
+  w: number,
+  h: number,
+): { x: number; y: number } {
+  const width = Math.max(MIN_W, Math.min(COLS, Math.round(w)));
+  const height = Math.max(MIN_H, Math.round(h));
+  const limit = rowsUsed(items) + height;
+
+  for (let y = 0; y <= limit; y++) {
+    for (let x = 0; x + width <= COLS; x++) {
+      const probe = { x, y, w: width, h: height };
+      if (!items.some((i) => overlaps(probe, i))) return { x, y };
+    }
+  }
+  return { x: 0, y: rowsUsed(items) };
+}
+
 // ── Pixel ⇄ cell ────────────────────────────────────────────────────────────
 // The only two functions here that know about pixels. Column width has to be
 // MEASURED rather than assumed: the grid is fluid, and the rail collapsing or a
@@ -312,27 +342,30 @@ export function fromLegacy(
   const out: GridItem[] = [];
   if (stageId) out.push({ id: stageId, x: 4, y: 0, w: 4, h: 14 });
 
-  const seen: Record<SegmentId, number> = { left: 0, right: 0, bottom: 0 };
-  const ordered = [...widgets].sort((a, b) => {
-    const sa = SEGMENT_X[a.segment] ?? 0;
-    const sb = SEGMENT_X[b.segment] ?? 0;
-    return sa - sb || (int(a.order) - int(b.order));
-  });
+  const byOrder = (a: WidgetInstance, b: WidgetInstance) => int(a.order) - int(b.order);
+  const of = (seg: SegmentId) =>
+    widgets.filter((w) => (w.segment in SEGMENT_X ? w.segment : "left") === seg).sort(byOrder);
 
-  for (const w of ordered) {
-    const seg: SegmentId = w.segment in SEGMENT_X ? w.segment : "left";
-    const n = seen[seg]++;
-    const rows = Math.max(MIN_H, Math.round(int(w.height, 260) / (ROW_PX + GAP_PX)));
-    out.push(
-      clampRect({
-        id: w.id,
-        x: SEGMENT_X[seg],
-        y: n * rows,
-        w: scaleLegacyWidth(w.width, seg),
-        h: rows,
-      }),
-    );
-  }
+  const rowsFor = (w: WidgetInstance) =>
+    Math.max(MIN_H, Math.round(int(w.height, 260) / (ROW_PX + GAP_PX)));
+
+  /** Stack one segment's widgets down its column, returning the y it ended at. */
+  const stack = (seg: SegmentId, startY: number): number => {
+    let y = startY;
+    for (const w of of(seg)) {
+      const h = rowsFor(w);
+      out.push(clampRect({ id: w.id, x: SEGMENT_X[seg], y, w: scaleLegacyWidth(w.width, seg), h }));
+      y += h;
+    }
+    return y;
+  };
+
+  // The two rails first, then the dock BELOW both of them. Laying all three out
+  // from y=0 and letting settle() sort it out interleaves the full-width dock
+  // between the rail cards — which is a legal board, but not the one the preset
+  // author wrote: "bottom" has always meant underneath, not "somewhere in the mix".
+  const railBottom = Math.max(stack("left", 0), stack("right", 0), stageId ? 14 : 0);
+  stack("bottom", railBottom);
 
   return settle(out, null);
 }
