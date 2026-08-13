@@ -224,6 +224,139 @@ export function cellDelta(
   };
 }
 
+// ── The house layout ────────────────────────────────────────────────────────
+//
+// Every default board is one shape: a FULL-HEIGHT map beside ONE column of cards.
+//
+// WHAT IT REPLACED, AND WHY. Defaults used to be seeded by `fromLegacy` — three
+// cards stacked down a left column, three down a right, one full-width underneath,
+// every card exactly 10 rows tall whatever it held. Two things fell out of that,
+// and both were measured on the running app rather than argued about:
+//
+//   * The board came to ~1000px against ~820px of viewport, so the last card on
+//     every board was cut off by the window edge. The board does not scroll, so it
+//     was not merely below the fold — it was unreachable.
+//   * The stage was 4 of 12 columns and 14 of ~40 rows, which left the cells
+//     directly beneath it (cols 4–7, rows 14–30) permanently empty: a ~470x400px
+//     black rectangle in the dead centre of the screen, LARGER IN AREA THAN THE MAP.
+//     Six independent reviewers, briefed separately, each named it first.
+//
+// So the rule here is not "nicer proportions", it is two invariants:
+//   1. The board is never taller than the rows it was given. Nothing below the fold.
+//   2. The map's rectangle runs the full height of the board, so there are no cells
+//      left over to be empty. The void is designed out rather than filled in.
+//
+// Card heights come from WEIGHTS, not from equality. A board has one card its owner
+// looks at first and two or three it glances at; giving all of them the same 10 rows
+// is what produced a Locate card sitting mostly empty beside a Markets card scrolling
+// its own content.
+
+/** Rows a board is authored against when the real viewport is unknown (SSR, tests). */
+export const DEFAULT_BOARD_ROWS = 28;
+
+/** Columns the card rail owns. The map takes the remaining eight. */
+export const RAIL_COLS = 4;
+
+/** Cards the left rail holds before the rest are docked under the map. Past six,
+ *  a rail card is a header and a line of content, which is a label, not a card. */
+export const RAIL_CAPACITY = 6;
+
+/**
+ * Split `total` between items in proportion to their weights, exactly.
+ *
+ * The drift from rounding is absorbed by the LARGEST item rather than left on the
+ * end, because a column that comes to rows+1 reintroduces exactly the clipped-last-
+ * card bug this file exists to remove, and the largest item is the one that can
+ * least notice losing or gaining one unit.
+ *
+ * Nothing is ever dropped. If the caller asks for more items than fit at `min` the
+ * board honestly overflows instead of silently losing one — a missing card is worse
+ * than a tight one, and the preset test asserts boards stay inside their budget.
+ */
+export function splitSpan(weights: readonly number[], total: number, min: number): number[] {
+  if (weights.length === 0) return [];
+  const safe = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 1));
+  const sum = safe.reduce((a, b) => a + b, 0);
+  const out = safe.map((w) => Math.max(min, Math.round((total * w) / sum)));
+
+  const drift = total - out.reduce((a, b) => a + b, 0);
+  if (drift !== 0) {
+    let biggest = 0;
+    for (let i = 1; i < out.length; i++) if (out[i] > out[biggest]) biggest = i;
+    out[biggest] = Math.max(min, out[biggest] + drift);
+  }
+  return out;
+}
+
+/**
+ * Lay a board out as a dominant map with one weighted rail of cards beside it.
+ *
+ * Two shapes, chosen by card count:
+ *
+ *   ≤ RAIL_CAPACITY          more than that
+ *   ┌────┬──────────┐        ┌────┬──────────┐
+ *   │card│          │        │card│   MAP    │
+ *   ├────┤   MAP    │        ├────┼───┬──┬───┤
+ *   │card│ full     │        │card│ c │c │ c │   ← the rest dock under the map
+ *   ├────┤ height   │        ├────┴───┴──┴───┘
+ *   │card│          │        │card│
+ *   └────┴──────────┘        └────┘
+ *
+ * In BOTH shapes the map's rectangle and the docked strip together cover every cell
+ * to the right of the rail, for the full height of the board. That is the invariant
+ * that matters: the previous defaults left cols 4–7 / rows 14–30 empty, a ~470x400px
+ * black rectangle in the dead centre of the screen — larger in area than the map
+ * itself, and the first thing six independent reviewers each named. The void is
+ * designed out here rather than filled in later.
+ *
+ * Cards are expected in priority order: the rail takes the first RAIL_CAPACITY, so
+ * whatever the board is *for* stays at the top left where the eye starts.
+ */
+export function arrangeHouse(
+  cards: readonly { id: string; weight: number }[],
+  stageId: string,
+  rows = DEFAULT_BOARD_ROWS,
+): GridItem[] {
+  const out: GridItem[] = [];
+  const rail = cards.slice(0, RAIL_CAPACITY);
+  const docked = cards.slice(RAIL_CAPACITY);
+  const mapCols = COLS - RAIL_COLS;
+
+  // The dock WRAPS. At MIN_W columns a card needs, only so many fit across the
+  // eight columns beside the rail; laying them all in one band walked straight off
+  // the right edge once a board carried seven docked cards, which `arrangeConsole`
+  // does the moment a user has 13 widgets open.
+  const perBand = Math.max(1, Math.floor(mapCols / MIN_W));
+  const bands = docked.length ? Math.ceil(docked.length / perBand) : 0;
+  // One band is a shallow strip. Past that the dock is capped at half the board, so
+  // a busy workspace costs the map some height but never reduces it to a sliver.
+  const bandH = bands === 0 ? 0
+    : bands === 1 ? Math.max(MIN_H + 2, Math.round(rows * 0.26))
+    : Math.max(MIN_H, Math.floor((rows * 0.5) / bands));
+  const mapH = Math.max(MIN_H, rows - bands * bandH);
+
+  out.push({ id: stageId, x: RAIL_COLS, y: 0, w: mapCols, h: mapH });
+
+  let y = 0;
+  const heights = splitSpan(rail.map((c) => c.weight), rows, MIN_H);
+  rail.forEach((c, i) => {
+    out.push({ id: c.id, x: 0, y, w: RAIL_COLS, h: heights[i] });
+    y += heights[i];
+  });
+
+  for (let b = 0; b < bands; b++) {
+    const band = docked.slice(b * perBand, (b + 1) * perBand);
+    const widths = splitSpan(band.map((c) => c.weight), mapCols, MIN_W);
+    let x = RAIL_COLS;
+    band.forEach((c, i) => {
+      out.push({ id: c.id, x, y: mapH + b * bandH, w: widths[i], h: bandH });
+      x += widths[i];
+    });
+  }
+
+  return settle(out, null);
+}
+
 // ── Auto-arrange ────────────────────────────────────────────────────────────
 // CONSOLE and WALL used to be templates that decided every widget's size. They
 // are now GENERATORS: one click seeds a full set of rects, and everything stays
@@ -234,50 +367,46 @@ export function cellDelta(
 // so every id handed in comes back with a cell. Losing a card is the one failure
 // the old file called out as unacceptable, and it stays unacceptable.
 
-/** CONSOLE — map-dominant. A rail down each side, the stage in the middle, the
- *  overflow docked underneath in a four-across strip. */
-export function arrangeConsole(ids: readonly string[], stageId: string | null): GridItem[] {
-  const RAIL_W = 3;
-  const CARD_H = 7;
-  const STAGE_H = 14;
-  const RAILS = Math.floor(STAGE_H / CARD_H) * 2; // cards that fit beside the stage
+/**
+ * CONSOLE — the house layout, re-seeded and refitted to the current window.
+ *
+ * This is what the header's CONSOLE button now does. It used to do nothing at all:
+ * `terminalModeStore.set()` flipped an enum, persisted it, and repainted the
+ * button's own highlight, while `arrangeBoard` / `arrangeConsole` / `arrangeWall`
+ * sat fully implemented and unit-tested with zero callers. The W and C keyboard
+ * shortcuts hit the same inert setter. A green test suite over a dead feature.
+ *
+ * Weights are equal here on purpose — this is a RESET, and a reset that quietly
+ * preserved some of what it was resetting would be the harder thing to explain.
+ */
+export function arrangeConsole(ids: readonly string[], stageId: string | null, rows = DEFAULT_BOARD_ROWS): GridItem[] {
+  const cards = ids.map((id) => ({ id, weight: 1 }));
+  if (stageId) return arrangeHouse(cards, stageId, rows);
 
+  // No stage: two columns of six, so a card is still a readable width rather than
+  // a rail with two-thirds of the board empty beside it.
   const out: GridItem[] = [];
-  if (stageId) out.push({ id: stageId, x: RAIL_W, y: 0, w: COLS - RAIL_W * 2, h: STAGE_H });
-
-  ids.forEach((id, n) => {
-    if (stageId && n < RAILS) {
-      // Alternate left rail / right rail so both fill evenly.
-      const onLeft = n % 2 === 0;
-      const slot = Math.floor(n / 2);
-      out.push({
-        id,
-        x: onLeft ? 0 : COLS - RAIL_W,
-        y: slot * CARD_H,
-        w: RAIL_W,
-        h: CARD_H,
-      });
-      return;
-    }
-    const k = stageId ? n - RAILS : n;
-    const perRow = COLS / RAIL_W; // 4
-    out.push({
-      id,
-      x: (k % perRow) * RAIL_W,
-      y: (stageId ? STAGE_H : 0) + Math.floor(k / perRow) * CARD_H,
-      w: RAIL_W,
-      h: CARD_H,
-    });
-  });
-
+  const half = Math.ceil(cards.length / 2);
+  for (const [col, group] of [[0, cards.slice(0, half)], [6, cards.slice(half)]] as const) {
+    let y = 0;
+    const hs = splitSpan(group.map((c) => c.weight), rows, MIN_H);
+    group.forEach((c, i) => { out.push({ id: c.id, x: col, y, w: 6, h: hs[i] }); y += hs[i]; });
+  }
   return settle(out, null);
 }
 
-/** WALL — everything equal, for unattended scanning. Uniform 4x5 cards, three
- *  across; the stage takes a double-height block in the top-left. */
-export function arrangeWall(ids: readonly string[], stageId: string | null): GridItem[] {
+/** WALL — everything equal, for unattended scanning. Uniform cards three across;
+ *  the stage takes a double-height block in the top-left.
+ *
+ *  Card height is derived from the row budget rather than fixed at 5, so a wall
+ *  fills the window it is on instead of stopping partway down a large monitor or
+ *  running off the bottom of a laptop. */
+export function arrangeWall(ids: readonly string[], stageId: string | null, rows = DEFAULT_BOARD_ROWS): GridItem[] {
   const CARD_W = 4;
-  const CARD_H = 5;
+  const perRow = COLS / CARD_W; // 3
+  // The stage occupies one column across two bands, so it costs two cells.
+  const bands = Math.max(2, Math.ceil((ids.length + (stageId ? 2 : 0)) / perRow));
+  const CARD_H = Math.max(MIN_H, Math.floor(rows / bands));
   const STAGE_H = CARD_H * 2;
 
   const out: GridItem[] = [];

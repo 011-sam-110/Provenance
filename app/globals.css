@@ -3891,6 +3891,33 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   color: var(--tnx-ink); background: var(--tnx-panel-head);
   border-bottom-color: var(--tnx-accent);
 }
+
+/* ── "This board has been customised" ─────────────────────────────────────
+   An accessibility auditor measured `--tnx-ink-faint` (#67757f) at 4.16:1 on the
+   header ground — under AA for text this size, and it was carrying five of the six
+   board tabs. Inactive tabs move to --tnx-ink-dim (7.3:1 measured on the panel).
+   The dot is a SECOND channel on top of the tooltip and the screen-reader tail, not
+   a colour-only signal, so it survives both a greyscale screen and deuteranopia. */
+.tn-terminal .tnx-hdr-board { color: var(--tnx-ink-dim); }
+.tn-terminal .tnx-hdr-board-dot {
+  margin-left: 5px; font-size: 13px; line-height: 0; vertical-align: middle;
+  color: var(--tnx-accent);
+}
+.tn-terminal .tnx-hdr-board.is-edited { color: var(--tnx-ink); }
+
+/* Reset. 24x24 minimum target (WCAG 2.2 SC 2.5.8) — the header controls beside it
+   were measured at ~16px with 7px gaps, failing both the minimum and the spacing
+   exception, so this one does not repeat that. */
+.tn-terminal .tnx-hdr-board-reset {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 24px; min-height: 24px; align-self: center; margin: 0 6px;
+  font: inherit; font-size: 12px; line-height: 1; cursor: pointer;
+  border: 1px solid var(--tnx-line-strong); background: none; color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-hdr-board-reset:hover {
+  color: var(--tnx-accent); border-color: var(--tnx-accent);
+}
+
 .tn-terminal .tnx-hdr-spacer { flex: 1; min-width: 0; }
 .tn-terminal .tnx-hdr-utc {
   display: flex; align-items: center; gap: 6px; padding: 0 10px;

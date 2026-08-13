@@ -117,7 +117,9 @@ import { useEffect, useState } from "react";
 import { useMetrics } from "@/lib/metrics";
 import { useLayers } from "@/lib/layers";
 import { useActivePreset } from "@/lib/console/activePreset";
-import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";
+import { BUILTIN_PRESETS, applyPreset, listPresets, resetActiveBoard } from "@/lib/console/presets";
+import { isBoardEdited } from "@/lib/console/boards";
+import { useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
 import { terminalModeStore, useTerminalMode, type TerminalMode } from "@/lib/terminal/mode";
 import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
@@ -126,20 +128,23 @@ import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 
 /**
- * Terminal wording for the six built-in boards. This is a LABEL map, never the list:
- * the tabs are derived from BUILTIN_PRESETS so a preset that is renamed, reordered or
- * (against the pinned test) added cannot leave a tab pointing at nothing. An id with
- * no entry here falls back to the preset's own title, so the worst case is a
- * long-but-correct tab rather than a missing board.
+ * The tab label IS the board's title, uppercased. There used to be a second map here
+ * translating the six titles into terminal wording — "World Overview" → WORLD,
+ * "Markets & Cyber" → MKT·CYBER — and it cost more than it saved:
+ *
+ *  * WORLD and EARTH are the same word in English. Six reviewers, briefed separately
+ *    as different real users, each reported independently that they could not tell
+ *    which tab held "a bit of everything" and which held natural hazards. The full
+ *    titles ("World Overview" / "Earth Systems") at least disambiguated; the
+ *    abbreviations threw that away for horizontal space the 34px band was not short
+ *    of — the tabs end around x=700 with the clock starting near x=940.
+ *  * Three naming layers — board id, preset title, tab label — could disagree, and
+ *    did: `mobility` was a better name than AIR·SEA·SPACE and it was already in the
+ *    code, unused.
+ *
+ * One string, one source. Rename a board in `presets.ts` and the tab follows.
  */
-const BOARD_LABELS: Record<string, string> = {
-  overview: "WORLD",
-  situation: "SITUATION",
-  earth: "EARTH",
-  mobility: "AIR·SEA·SPACE",
-  markets: "MKT·CYBER",
-  tools: "TOOLS",
-};
+const boardLabel = (title: string) => title.toUpperCase();
 
 /** CONSOLE first, WALL second — the design's reading order. */
 const MODES: { id: TerminalMode; label: string; title: string }[] = [
@@ -179,6 +184,75 @@ function UtcClock() {
       <span className="tnx-hdr-utc-label" aria-hidden>UTC</span>
       <span className="tnx-hdr-utc-time">{time ?? "--:--:--"}</span>
     </div>
+  );
+}
+
+/**
+ * The board tabs, and the edited/reset state that belongs with them.
+ *
+ * Its own component for the same reason UtcClock is: it subscribes to the console
+ * layout so the "customised" dot is live, and the layout changes on every cell
+ * crossing of every drag. Keeping that subscription here re-renders six buttons
+ * instead of dragging SettingsPanel and ProfileMenu along with it.
+ */
+function BoardTabs() {
+  const activePresetId = useActivePreset();
+  // Subscribed, not read: `isBoardEdited` hits localStorage, so without a re-render
+  // trigger the dot would be a snapshot from whenever the header last happened to
+  // paint. The value itself is unused — the subscription is the point.
+  useShellLayout();
+
+  const activeTitle = BUILTIN_PRESETS.find((p) => p.id === activePresetId)?.title;
+
+  return (
+    <nav className="tn-preset-pill tnx-hdr-boards" aria-label="Boards">
+      {BUILTIN_PRESETS.map((p) => {
+        const active = p.id === activePresetId;
+        // A board is "edited" once its owner has moved, resized, added or removed
+        // something on it. Merely opening a board does not count — see the
+        // `archive: false` path in lib/console/store.
+        //
+        // The dot exists because the state model used to be invisible in both
+        // directions: a board switch silently rebuilt the board from its template
+        // and destroyed the user's arrangement, and the only signal was noticing
+        // later that the cards had moved. Switching now preserves the work, and
+        // this says so.
+        const edited = isBoardEdited(p.id);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            className={`tnx-hdr-board${active ? " is-active" : ""}${edited ? " is-edited" : ""}`}
+            aria-pressed={active}
+            title={`${p.title} — ${p.blurb}${edited ? " · customised" : ""}`}
+            onClick={() => applyPreset(p.id)}
+          >
+            {boardLabel(p.title)}
+            {edited && <span className="tnx-hdr-board-dot" aria-hidden>•</span>}
+            {/* Appends to the visible text, so the accessible name still contains
+                it (WCAG 2.5.3 label-in-name). */}
+            <span className="tn-sr-only"> board{edited ? ", customised" : ""}</span>
+          </button>
+        );
+      })}
+
+      {/* Reset. Shown only when the open board actually has edits to throw away — a
+          permanently-visible destructive control on a monitoring surface is one
+          people learn to avoid rather than use. No confirm dialog: this is reached
+          far more often on purpose than by accident, and a modal in a monitoring
+          tool is a tax. The board's template comes straight back. */}
+      {activePresetId && isBoardEdited(activePresetId) && (
+        <button
+          type="button"
+          className="tnx-hdr-board-reset"
+          onClick={() => resetActiveBoard()}
+          title={`Reset ${activeTitle ?? "this board"} to its default layout`}
+        >
+          <span aria-hidden>⟲</span>
+          <span className="tn-sr-only">Reset {activeTitle ?? "this board"} to its default layout</span>
+        </button>
+      )}
+    </nav>
   );
 }
 
@@ -262,28 +336,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             aria-pressed rather than role="tab"/aria-selected: these tabs control the
             whole workspace — widgets, map layers, stage — not one tabpanel, and a
             tablist with no tabpanel is a promise the DOM does not keep. */}
-        <nav className="tn-preset-pill tnx-hdr-boards" aria-label="Boards">
-          {BUILTIN_PRESETS.map((p) => {
-            const active = p.id === activePresetId;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                className={`tnx-hdr-board${active ? " is-active" : ""}`}
-                aria-pressed={active}
-                title={`${p.title} — ${p.blurb}`}
-                onClick={() => applyPreset(p.id)}
-              >
-                {BOARD_LABELS[p.id] ?? p.title.toUpperCase()}
-                {/* The visible label is a terminal abbreviation ("MKT·CYBER"); the
-                    tail restores the real board name for anyone who cannot see the
-                    tooltip. It APPENDS to the visible text, so the accessible name
-                    still contains it (WCAG 2.5.3 label-in-name). */}
-                <span className="tn-sr-only"> board — {p.title}</span>
-              </button>
-            );
-          })}
-        </nav>
+        <BoardTabs />
 
         <div className="tnx-hdr-spacer" />
 

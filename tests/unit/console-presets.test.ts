@@ -25,6 +25,72 @@ test("the board lineup is exactly the five broad boards, each non-empty and with
   }
 });
 
+// ── The invariant that was missing ──────────────────────────────────────────
+// Boards were authored in absolute rows with no idea how tall the window was. On a
+// 1280x800 screen the workspace band measured 820px and the landing board rendered
+// 1249px — and because the band is `overflow: hidden` while the grid carries an
+// inline min-height equal to its own content, the grid never overflows ITSELF and
+// its `overflow: auto` never engages. 429px of every board was clipped and
+// genuinely unreachable: the landing board's Headlines card sat at rows 40-50 and
+// never drew at all. No test failed, because no test knew how tall a board was.
+
+const ROWS = [24, 28, 32, 40]; // small laptop → large desktop
+
+test("no board is taller than the rows it was built for — nothing below the fold", () => {
+  for (const rows of ROWS) {
+    for (const p of BUILTIN_PRESETS) {
+      const l = p.build(rows);
+      const items = [...l.widgets.map((w) => w.rect!), ...(l.stageRect ? [l.stageRect] : [])];
+      const bottom = items.reduce((m, r) => Math.max(m, r.y + r.h), 0);
+      expect(bottom, `board "${p.id}" is ${bottom} rows tall in a ${rows}-row budget`).toBeLessThanOrEqual(rows);
+    }
+  }
+});
+
+test("every widget on every board has a rectangle, and none of them overlap", () => {
+  for (const rows of ROWS) {
+    for (const p of BUILTIN_PRESETS) {
+      const l = p.build(rows);
+      const rects = l.widgets.map((w) => {
+        expect(w.rect, `"${p.id}" widget ${w.type} has no rect`).toBeDefined();
+        return { id: w.type, ...w.rect! };
+      });
+      if (l.stageRect) rects.push({ id: "__stage", ...l.stageRect });
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          const a = rects[i], b = rects[j];
+          const hit = a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+          expect(hit, `"${p.id}": ${a.id} overlaps ${b.id} at ${rows} rows`).toBe(false);
+        }
+      }
+    }
+  }
+});
+
+test("the map is the tallest thing on every board, and nothing is left empty beneath it", () => {
+  for (const rows of ROWS) {
+    for (const p of BUILTIN_PRESETS) {
+      const l = p.build(rows);
+      const stage = l.stageRect!;
+      // The old defaults gave the stage 4 of 12 columns and 14 of ~40 rows, which
+      // left a ~470x400px black rectangle under it — larger in area than the map.
+      // Six reviewers each named that hole first, so it gets an assertion.
+      expect(stage.w, `"${p.id}" map is only ${stage.w} columns`).toBeGreaterThanOrEqual(8);
+
+      // Every cell to the right of the rail, for the full height, is covered by
+      // either the map or a docked card. That is what makes the void impossible
+      // rather than merely absent from today's boards.
+      const covering = [stage, ...l.widgets.map((w) => w.rect!)];
+      for (let x = stage.x; x < 12; x++) {
+        for (let y = 0; y < rows; y++) {
+          const covered = covering.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+          expect(covered, `"${p.id}" leaves cell (${x},${y}) empty at ${rows} rows`).toBe(true);
+        }
+      }
+    }
+  }
+});
+
 test("the default landing preset exists and seeds a real board", () => {
   const def = BUILTIN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID);
   expect(def, `DEFAULT_PRESET_ID "${DEFAULT_PRESET_ID}" must be a built-in`).toBeDefined();
