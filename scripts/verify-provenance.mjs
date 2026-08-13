@@ -153,18 +153,33 @@ await page.waitForTimeout(22000);
 await shot(page, "pv-01-hero.png");
 
 // ── 4. live layers actually reached the globe ──────────────────────────────
-const layerCounts = await page.evaluate(() => {
-  const m = window.__pvMap;
-  if (!m) return null;
+// Poll rather than sample once. These layers arrive over the network at their own
+// pace and the heavy one (submarine cables enriches ~700 per-cable JSONs) can still
+// be in flight on a cold server — sampling a single instant made the gate flaky,
+// which is worse than useless because a green run stopped meaning anything.
+async function probeLayers(deadlineMs) {
   const ids = ["pv-cables", "pv-earthquakes", "pv-sats", "pv-airports", "pv-wildfires"];
-  const out = {};
-  for (const id of ids) {
-    // Public API. Reading src._data returns nothing useful — MapLibre keeps the
-    // parsed features internally once the source has loaded.
-    try { out[id] = m.querySourceFeatures(id).length; } catch { out[id] = 0; }
+  const started = Date.now();
+  let last = null;
+  for (;;) {
+    last = await page.evaluate((layerIds) => {
+      const m = window.__pvMap;
+      if (!m) return null;
+      const out = {};
+      for (const id of layerIds) {
+        // Public API: reading src._data returns nothing useful once the source has
+        // parsed its features.
+        try { out[id] = m.querySourceFeatures(id).length; } catch { out[id] = 0; }
+      }
+      return out;
+    }, ids);
+    if (last && Object.values(last).filter((n) => n > 0).length >= 3) return last;
+    if (Date.now() - started > deadlineMs) return last;
+    await page.waitForTimeout(2000);
   }
-  return out;
-});
+}
+
+const layerCounts = await probeLayers(45000);
 if (layerCounts) {
   const live = Object.entries(layerCounts).filter(([, n]) => n > 0);
   live.length >= 2
