@@ -3,7 +3,7 @@
 //
 // ── WHY THIS HAS TO BE MEASURED ──────────────────────────────────────────────
 // Board defaults used to be authored in absolute rows with no idea how tall the
-// window was, and the result was measured in the running app at 1280x800:
+// window was, and the result was measured in the running app at 1440x900:
 //
 //     .tn-cw-shell (the workspace band)  clientHeight  820px
 //     .tn-seg      (the grid)            scrollHeight 1249px

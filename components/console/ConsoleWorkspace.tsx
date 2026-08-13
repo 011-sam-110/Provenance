@@ -108,7 +108,7 @@ export default function ConsoleWorkspace() {
     alignContent: "start",
     // NO min-height. It used to carry `boardHeightPx(gridItems(layout))` under the
     // comment "tall boards scroll; they never squeeze their rows" — and it was the
-    // reason tall boards did NOT scroll. Measured in the running app at 1280x800:
+    // reason tall boards did NOT scroll. Measured in the running app at 1440x900:
     //
     //   .tn-cw-shell (the band)   clientHeight   820px   overflow: hidden
     //   .tn-seg      (this grid)  scrollHeight  1249px   overflow: auto

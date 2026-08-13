@@ -36,7 +36,7 @@ export const DEFAULT_PRESET_ID = "overview";
 //
 // A board used to be authored as "these widgets, in the left / right / bottom
 // segment", and `seedRectsFromSegments` turned that into three stacks of identical
-// 10-row cards. Two things were measured in the running app at 1280x800:
+// 10-row cards. Two things were measured in the running app at 1440x900:
 //
 //   .tn-cw-shell (the band the board lives in)   clientHeight   820px
 //   .tn-seg      (the board)                     scrollHeight  1249px

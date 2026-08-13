@@ -27,7 +27,7 @@ test("the board lineup is exactly the five broad boards, each non-empty and with
 
 // ── The invariant that was missing ──────────────────────────────────────────
 // Boards were authored in absolute rows with no idea how tall the window was. On a
-// 1280x800 screen the workspace band measured 820px and the landing board rendered
+// 1440x900 screen the workspace band measured 820px and the landing board rendered
 // 1249px — and because the band is `overflow: hidden` while the grid carries an
 // inline min-height equal to its own content, the grid never overflows ITSELF and
 // its `overflow: auto` never engages. 429px of every board was clipped and
