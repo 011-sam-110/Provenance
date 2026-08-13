@@ -92,8 +92,12 @@ export function gridItems(l: ShellLayout): GridItem[] {
 }
 
 /** Write a settled board back onto the layout. Items with no matching widget are
- *  dropped silently — the only such id is the stage, handled explicitly. */
-function applyItems(l: ShellLayout, items: readonly GridItem[]): ShellLayout {
+ *  dropped silently — the only such id is the stage, handled explicitly.
+ *
+ *  Exported because `presets.ts` composes boards from `arrangeHouse` and needs the
+ *  same rects-onto-layout step every other reducer here uses; a second copy of it
+ *  living in presets is how the two would drift. */
+export function applyItems(l: ShellLayout, items: readonly GridItem[]): ShellLayout {
   const byId = new Map(items.map((i) => [i.id, i]));
   const stage = byId.get(STAGE_ID);
   return {
@@ -125,12 +129,15 @@ export function seedRectsFromSegments(l: ShellLayout): ShellLayout {
   return applyItems(l, fromLegacy(l.widgets, l.stageRect ? STAGE_ID : null));
 }
 
-/** Re-seed every position from one of the two named arrangements. Sizes the user
- *  set are deliberately NOT preserved — that is what makes this a reset. */
-export function arrangeBoard(l: ShellLayout, mode: "console" | "wall"): ShellLayout {
+/** Re-seed every position from one of the two named arrangements, fitted to `rows`.
+ *  Sizes the user set are deliberately NOT preserved — that is what makes this a
+ *  reset. `rows` is what stops the reset from re-creating the bug it rescues you
+ *  from: an arrangement that ignores the window is how boards came to be 1249px
+ *  tall in an 820px band in the first place. */
+export function arrangeBoard(l: ShellLayout, mode: "console" | "wall", rows?: number): ShellLayout {
   const ids = l.widgets.map((w) => w.id);
   const stageId = l.stageRect ? STAGE_ID : null;
-  return applyItems(l, mode === "wall" ? arrangeWall(ids, stageId) : arrangeConsole(ids, stageId));
+  return applyItems(l, mode === "wall" ? arrangeWall(ids, stageId, rows) : arrangeConsole(ids, stageId, rows));
 }
 
 /**

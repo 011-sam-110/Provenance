@@ -15,8 +15,8 @@ import "@/lib/console/widgets";
 import { widgetsByCategory, getWidgetType } from "@/lib/console/registry";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import type { StageId } from "@/lib/console/types";
-import { listPresets, applyPreset, saveCustomPreset, DEFAULT_PRESET_ID } from "@/lib/console/presets";
-import { useActivePreset } from "@/lib/console/activePreset";
+import { listPresets, applyPreset, saveCustomPreset, resetActiveBoard } from "@/lib/console/presets";
+import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
 import { encodeLayout } from "@/lib/console/share";
 import { tourStore } from "@/lib/shell/tour";
 import { uiStore, useUI } from "@/lib/shell/ui";
@@ -186,7 +186,18 @@ function buildCommands(close: () => void): Command[] {
 
   // ── Workspace: reset / save / share the current composition ─────────────
   cmds.push({ id: "take-tour", label: "Take the tour", hint: "guide", group: "Workspace", run: () => { tourStore.start(); close(); } });
-  cmds.push({ id: "reset-layout", label: "Reset to default layout", hint: "reset", group: "Workspace", run: () => { applyPreset(DEFAULT_PRESET_ID); close(); } });
+  // Names the board it will actually reset. The old command ran
+  // `applyPreset(DEFAULT_PRESET_ID)`, so on any board but the landing one it did not
+  // reset anything — it navigated you to a different board. Now that boards restore
+  // their saved layout it would have been worse still: "reset" on Hazards would have
+  // opened Brief *with Brief's edits intact*, i.e. the opposite of the label, twice.
+  const boardName = listPresets().find((p) => p.id === activePresetStore.get())?.title;
+  cmds.push({
+    id: "reset-layout",
+    label: boardName ? `Reset ${boardName} to its default layout` : "Reset this board to its default layout",
+    hint: "reset", group: "Workspace",
+    run: () => { resetActiveBoard(); close(); },
+  });
   cmds.push({ id: "save-preset", label: "Save layout as preset…", hint: "save", group: "Workspace", run: () => { const t = window.prompt("Preset name?"); if (t) saveCustomPreset(t); close(); } });
   cmds.push({ id: "share-layout", label: "Copy shareable link", hint: "share", group: "Workspace", run: () => { const url = `${location.origin}${location.pathname}?c=${encodeLayout(shellLayoutStore.get())}`; navigator.clipboard?.writeText(url); close(); } });
 

@@ -28,7 +28,7 @@ import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import TerminalFooter from "@/components/terminal/TerminalFooter";
 import { focusStageSearch } from "@/components/terminal/StageBar";
-import { terminalModeStore } from "@/lib/terminal/mode";
+import { terminalModeStore, useTerminalMode } from "@/lib/terminal/mode";
 import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
@@ -59,6 +59,7 @@ export default function ConsoleShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const skin = useTerminalSkin();
+  const mode = useTerminalMode();
 
   // Re-hydrate persisted view state once, client-side (render defaults on the
   // server, reconcile after mount → no hydration mismatch).
@@ -123,6 +124,28 @@ export default function ConsoleShell() {
     const other = basemapForSkin(skin === "dark" ? "light" : "dark");
     if (mapViewStore.get().basemap === other) mapViewStore.setBasemap(basemapForSkin(skin));
   }, [skin]);
+
+  // ── CONSOLE ⇄ WALL actually re-arranges the board ────────────────────────
+  //
+  // Until now it did nothing. `terminalModeStore.set()` flipped an enum, persisted
+  // it, and repainted the button's own highlight; `useTerminalMode()` had exactly
+  // one consumer, the header's active class. Meanwhile `arrangeBoard`,
+  // `arrangeConsole` and `arrangeWall` were all fully implemented and unit-tested
+  // with zero callers — a green suite over a dead feature. The W and C keyboard
+  // shortcuts hit the same inert setter.
+  //
+  // Wired HERE rather than in the two places that set the mode, so the button and
+  // the shortcut cannot drift apart, and so `terminalModeStore` stays the small
+  // independent store its own header comment promises it is.
+  //
+  // The first-run skip is not optional: `hydrate()` sets the mode during mount, and
+  // re-arranging on that would throw away the layout the store has just restored —
+  // which is the exact bug class this session is here to remove.
+  const modeSettled = useRef(false);
+  useEffect(() => {
+    if (!modeSettled.current) { modeSettled.current = true; return; }
+    shellLayoutStore.arrange(mode);
+  }, [mode]);
 
   // Global shortcuts. One listener, because they share two guards that have to agree.
   //

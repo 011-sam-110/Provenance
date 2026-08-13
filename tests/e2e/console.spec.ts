@@ -12,9 +12,16 @@ import { test, expect } from "@playwright/test";
 // reads, so tourStore.hydrate() finds TOUR_VERSION already seen and
 // maybeAutoStart() returns without opening anything. The tour itself is unaffected
 // and still reachable from ⌘K and the profile menu; this only declines the auto-run.
+//
+// The launch sequence (components/terminal/BootSequence.tsx) is the same problem
+// twice over: it is a `position:fixed; inset:0` plate that owns the screen for five
+// seconds on a first visit. Its "seen" flag uses the identical envelope under the
+// key lib/terminal/boot.ts reads, so stamping it here means the app is interactive
+// from the first frame instead of five seconds in.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
+    window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
 });
 

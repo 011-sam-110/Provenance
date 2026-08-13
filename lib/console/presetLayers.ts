@@ -32,7 +32,7 @@ export interface PersonaLayers {
  * base layer (borders + click target) always stays ON. Works for custom presets too
  * since it reads the ShellLayout, not the preset spec.
  */
-export function layersForLayout(layout: ShellLayout): PersonaLayers {
+export function layersForLayout(layout: ShellLayout, extraSignals: readonly string[] = []): PersonaLayers {
   const core: LayerState = {
     ...DEFAULT_STATE,
     cameras: false,
@@ -49,5 +49,15 @@ export function layersForLayout(layout: ShellLayout): PersonaLayers {
       if (key) core[key] = true;
     }
   }
+  // Layers a board wants ON THE MAP without spending a card on each.
+  //
+  // Deriving map layers purely from cards was fine while every board was a wall of
+  // per-signal cards. It breaks for a board whose cards are merged lists: the Brief
+  // board carries an anomaly feed and an event log rather than one card per source,
+  // so without this its map would light nothing but cameras — and reviewers'
+  // sharpest complaint about the old landing board was exactly that, "not one item
+  // I can read is on the map I can see". The cards are the captions; this is the
+  // picture they caption.
+  for (const id of extraSignals) signals[id] = true;
   return { core, signals };
 }

@@ -3,7 +3,6 @@
 import { useMemo, useRef, type CSSProperties } from "react";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
 import { STAGE_ID, type GridRect, type WidgetInstance } from "@/lib/console/types";
-import { gridItems } from "@/lib/console/reducers";
 import WidgetFrame from "@/components/console/WidgetFrame";
 import StageHost from "@/components/console/StageHost";
 import StageBar from "@/components/terminal/StageBar";
@@ -16,7 +15,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { readingOrder, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
-import { useGridDrag, gridArea, boardHeightPx, type ResizeDir } from "@/lib/terminal/useGridDrag";
+import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
 import { useTerminalSkin } from "@/lib/terminal/skin";
 
 // The OpenData Terminal workspace: ONE twelve-column grid holding the map stage and
@@ -102,20 +101,34 @@ export default function ConsoleWorkspace() {
     return [...held, ...ordered.filter((w) => !heldIds.has(w.id))];
   }, [ordered, drag.activeId]);
 
-  const boardHeight = useMemo(
-    () => boardHeightPx(gridItems(layout)),
-    [layout],
-  );
-
   const gridStyle = {
     gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
     gridAutoRows: `${ROW_PX}px`,
     gap: `${GAP_PX}px`,
     alignContent: "start",
-    // Tall boards scroll; they never squeeze their rows. A dashboard that
-    // silently shrinks every card to fit is how a 24px row becomes 19px and the
-    // text inside it stops lining up with anything.
-    minHeight: `${boardHeight}px`,
+    // NO min-height. It used to carry `boardHeightPx(gridItems(layout))` under the
+    // comment "tall boards scroll; they never squeeze their rows" — and it was the
+    // reason tall boards did NOT scroll. Measured in the running app at 1440x900:
+    //
+    //   .tn-cw-shell (the band)   clientHeight   820px   overflow: hidden
+    //   .tn-seg      (this grid)  scrollHeight  1249px   overflow: auto
+    //
+    // Growing the grid to its own content means the grid never overflows ITSELF,
+    // so its `overflow: auto` never engages, and the excess is clipped by the
+    // band above it instead. `seg.scrollTop = 400` did nothing. 429px of the
+    // landing board — including a whole Headlines card at rows 40-50 — was not
+    // merely below the fold, it was unreachable at any scroll position.
+    //
+    // The rows cannot squeeze without it: `gridAutoRows` is a fixed 24px and
+    // `alignContent: start` pins the tracks to the top, so a short board still
+    // sits up against the header and a tall one now genuinely scrolls. Verified
+    // in the browser — dropping the declaration made scrollHeight exceed
+    // clientHeight, `scrollTop` take effect, and a card stay exactly 249px.
+    //
+    // Defaults are fitted to the window (lib/terminal/rowBudget) so this should
+    // stay a safety net rather than a scrollbar anyone meets — but a user can
+    // always drag a card past the fold, and content you cannot reach is worse
+    // than a scrollbar.
     // The guide overlay's column pitch, derived rather than measured: percentages
     // in a `to right` gradient resolve against the element's own width, so this
     // stays correct at any container size, including while the rail animates open.
