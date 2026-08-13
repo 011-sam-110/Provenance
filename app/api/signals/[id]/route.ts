@@ -2,6 +2,7 @@ import { getSignal } from "@/lib/signals/registry";
 import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
 import type { SignalFeature } from "@/lib/signals/types";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
+import { edgeCacheControl } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 // Most adapters are a single fast upstream call. A few (e.g. submarine cables,
@@ -46,6 +47,22 @@ function payload(features: SignalFeature[]) {
   };
 }
 
+/**
+ * The shared-cache lifetime is the SAME value the in-process cache above uses, so
+ * the edge and the server expire together. Deriving both from `cacheTtlMs` means a
+ * layer's cadence is declared once, on the adapter, and a new layer inherits correct
+ * caching with no route edit — the property the whole registry is built on.
+ *
+ * The empty-result rule carries over for free: a layer returning nothing is held for
+ * at most EMPTY_RETRY_MS, so a dormant upstream is re-asked promptly instead of a
+ * six-hour blank being pinned at the edge.
+ */
+function cacheHeaders(refreshMs: number, features: SignalFeature[]) {
+  return {
+    "Cache-Control": edgeCacheControl(cacheTtlMs(refreshMs, features.length === 0)),
+  };
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -56,7 +73,9 @@ export async function GET(
 
   const hit = cache.get(id);
   if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, hit.features.length === 0)) {
-    return Response.json(payload(hit.features));
+    return Response.json(payload(hit.features), {
+      headers: cacheHeaders(source.refreshMs, hit.features),
+    });
   }
 
   let features: SignalFeature[] = [];
@@ -67,5 +86,7 @@ export async function GET(
     features = hit?.features ?? [];
   }
   cache.set(id, { at: Date.now(), features });
-  return Response.json(payload(features));
+  return Response.json(payload(features), {
+    headers: cacheHeaders(source.refreshMs, features),
+  });
 }

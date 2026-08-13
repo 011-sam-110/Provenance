@@ -1,7 +1,19 @@
 import { getRegistry } from "@/lib/sources/registry";
 import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
+import { edgeCacheControl } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Shared-cache lifetime for the camera list. The registry itself is already
+ * stale-while-revalidate server-side, so this is about not paying an invocation per
+ * visitor, not about protecting the upstreams.
+ *
+ * 60 s is safe for this body specifically because every time it carries is ABSOLUTE
+ * (`lastSampledAt`), so a cached copy cannot under-report a camera's age — the client
+ * subtracts from its own clock. Positions and names move on the order of days.
+ */
+const CAMERAS_TTL_MS = 60_000;
 
 export async function GET() {
   const cams = await getRegistry();
@@ -17,5 +29,8 @@ export async function GET() {
     region: c.region, road: c.road, refreshSeconds: c.refreshSeconds,
     attribution: c.attribution, license: c.license, lastSampledAt: c.lastSampledAt,
   }));
-  return Response.json({ count: cameras.length, cameras });
+  return Response.json(
+    { count: cameras.length, cameras },
+    { headers: { "Cache-Control": edgeCacheControl(CAMERAS_TTL_MS, 300_000) } },
+  );
 }

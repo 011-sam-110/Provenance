@@ -1,7 +1,21 @@
 import { fetchAircraftSnapshot } from "@/lib/sources/opensky";
 import { describeCoverage } from "@/lib/signals/coverage";
+import { edgeCacheControl } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Shared-cache lifetime, deliberately far shorter than the 240 s upstream cadence.
+ *
+ * This body is the one read response carrying a RELATIVE age (`staleness.ageMs`),
+ * and a cached copy freezes that number while the clock keeps running — so the TTL
+ * is the maximum amount by which this endpoint can under-report staleness. 20 s
+ * against a 240 s refresh keeps that error under 10% of one cycle, which is inside
+ * what the staleness gate already tolerates. Do not raise it to "save invocations"
+ * without also making the age absolute; the saving is small and the cost is the
+ * freshness claim.
+ */
+const PLANES_TTL_MS = 20_000;
 
 /**
  * Headroom for the adsb.lol fallback sweep, which is rate-limit-paced and budgets
@@ -49,11 +63,14 @@ export const maxDuration = 30;
  */
 export async function GET() {
   const { planes, coverage, staleness, source } = await fetchAircraftSnapshot();
-  return Response.json({
-    count: planes.length,
-    ...(source ? { source } : {}),
-    ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
-    ...(staleness ? { staleness } : {}),
-    planes,
-  });
+  return Response.json(
+    {
+      count: planes.length,
+      ...(source ? { source } : {}),
+      ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
+      ...(staleness ? { staleness } : {}),
+      planes,
+    },
+    { headers: { "Cache-Control": edgeCacheControl(PLANES_TTL_MS) } },
+  );
 }

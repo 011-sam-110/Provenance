@@ -1,7 +1,17 @@
 import { getRegistry, feedHealth, CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { groupCoverage } from "@/lib/coverage";
+import { edgeCacheControl } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Matches the camera list's shared-cache lifetime — the two are computed from the
+ * same registry, so letting them expire at different rates would let the Coverage
+ * panel and the map disagree about how many feeds answered.
+ *
+ * `generatedAt` is absolute, so a cached copy states its own age correctly.
+ */
+const COVERAGE_TTL_MS = 60_000;
 
 // Honest per-source camera coverage: total + currently-online, grouped by source.
 // A tiny payload (one row per source) so the Coverage panel never re-fetches the
@@ -19,16 +29,19 @@ export async function GET() {
   const coverage = groupCoverage(cams.map((c) => ({ source: c.source, available: c.available })));
   const health = feedHealth();
   const answered = health.filter((h) => h.ok).length;
-  return Response.json({
-    generatedAt: Date.now(),
-    ...coverage,
-    feeds: {
-      answered,
-      total: CAMERA_FEED_COUNT || health.length,
-      // Feeds serving last-good data because this round failed. Their cameras are
-      // still counted in `total` above, so the caller can say so.
-      stale: health.filter((h) => h.stale).map((h) => h.key),
-      detail: health,
+  return Response.json(
+    {
+      generatedAt: Date.now(),
+      ...coverage,
+      feeds: {
+        answered,
+        total: CAMERA_FEED_COUNT || health.length,
+        // Feeds serving last-good data because this round failed. Their cameras are
+        // still counted in `total` above, so the caller can say so.
+        stale: health.filter((h) => h.stale).map((h) => h.key),
+        detail: health,
+      },
     },
-  });
+    { headers: { "Cache-Control": edgeCacheControl(COVERAGE_TTL_MS, 300_000) } },
+  );
 }
