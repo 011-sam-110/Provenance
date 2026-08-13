@@ -189,6 +189,40 @@ fill === null || (fill > 0.9 && fill <= 1)
 await page.waitForTimeout(22000);
 await shot(page, "pv-01-hero.png");
 
+// ── 3a. the launch sequence, and the globe arriving inside it ──────────────
+// The intro is scoped to `.pv-intro` and SERVER-RENDERED, so a cold load plays it
+// on the first paint rather than waiting for JS to switch it on.
+(await page.locator(".pv-hero.pv-intro").count()) === 1
+  ? pass("launch sequence is armed in the server HTML")
+  : fail("hero is missing .pv-intro — the sequence will not play on a cold load");
+
+// The globe is revealed by `data-ready`, which is keyed to MapLibre's first painted
+// frame with a 1.5s backstop. Keying it to `load` or `idle` instead put the reveal
+// at 5.4s and 9.1s respectively — well after the text had settled — and `load`
+// silently never fired at all on one run. Assert it lands inside the sequence.
+await page
+  .waitForFunction(() => document.querySelector(".pv-hero-globe")?.getAttribute("data-ready") === "1", {
+    timeout: 4000,
+  })
+  .then(() => pass("globe is revealed during the launch sequence, not after it"))
+  .catch(() => fail("globe reveal is late — check what onReady is keyed to"));
+
+// A document restored from the back/forward cache keeps its finished animations, so
+// the sequence has to be explicitly restarted or the hero comes back fully
+// assembled. Drive the mechanism directly rather than trying to coax a real bfcache
+// restore out of the harness.
+const replay = await page.evaluate(async () => {
+  const span = document.querySelector(".pv-h1 > span");
+  if (!span) return null;
+  window.dispatchEvent(Object.assign(new Event("pageshow"), { persisted: true }));
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const a = span.getAnimations().find((x) => String(x.animationName) === "pv-wipe");
+  return a ? Math.round(Number(a.currentTime)) : null;
+});
+replay !== null && replay < 200
+  ? pass("a back/forward restore replays the launch sequence", `wipe restarted at ${replay}ms`)
+  : fail("launch sequence did not restart on pageshow", `currentTime=${replay}`);
+
 // ── 3b. the status rail reports MEASURED counts, not a script ──────────────
 // The design this page was reworked from carried a scripted ticker with plausible
 // figures typed into it. On a page whose entire argument is that its numbers are

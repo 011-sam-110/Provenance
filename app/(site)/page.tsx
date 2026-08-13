@@ -95,7 +95,10 @@ export default async function Landing({
       <InstrumentBar />
 
       {/* ── hero: a full-bleed night stage, outside the document grid ─────── */}
-      <header className="pv-hero" id="top" data-pv-hero>
+      {/* `pv-intro` arms the launch sequence and is server-rendered so a cold load
+          plays it on the first paint. HeroStage takes it off and puts it back to
+          replay the sequence when the page returns from the back/forward cache. */}
+      <header className="pv-hero pv-intro" id="top" data-pv-hero>
         <HeroStage layers={heroLayers} satColor={satColor} />
 
         <div className="pv-hero-copy">

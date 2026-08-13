@@ -136,12 +136,16 @@ export default function HeroGlobe({
   layers,
   satColor,
   onStatus,
+  onReady,
 }: {
   layers: HeroLayer[];
   /** The catalog's own colour for the satellite layer, so the hero's key cannot
       disagree with what is painted. */
   satColor: string;
   onStatus?: (line: string) => void;
+  /** Fired once the engine has actually PAINTED, which is what the hero's globe
+      entrance is keyed to. Mount is far too early — the box is still empty. */
+  onReady?: () => void;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -150,6 +154,8 @@ export default function HeroGlobe({
   // tear down and rebuild the engine underneath it.
   const statusRef = useRef(onStatus);
   statusRef.current = onStatus;
+  const readyRef = useRef(onReady);
+  readyRef.current = onReady;
   const layersRef = useRef(layers);
   layersRef.current = layers;
   const satColorRef = useRef(satColor);
@@ -270,7 +276,31 @@ export default function HeroGlobe({
 
       void hydrate();
       spinLoop();
+
+      // The globe's entrance is keyed to the FIRST PAINTED FRAME, not to the map
+      // being finished. Both of the obvious events are wrong here:
+      //   `idle` — nothing left in flight, i.e. all 37 feeds home. Measured at 9.1s,
+      //     so the globe faded up six seconds after the text had settled.
+      //   `load` — style plus the initial raster tiles. Measured at 5.4s on one run
+      //     and NEVER on the next, because a single stalled tile request holds it.
+      // `render` is the moment MapLibre has actually drawn the sphere, which is
+      // what there is to reveal; the data then lands on top of it, which is the
+      // order the choreography wants anyway.
+      map.once("render", fireReady);
     });
+
+    // ...and a hard backstop. The entrance is part of a timed sequence, so it is
+    // not allowed to depend on the network at all: if nothing has rendered by the
+    // time the headline has finished, reveal the box regardless. A stage that is
+    // still empty is honest — it is black on black — but a globe that stays hidden
+    // because one tile hung is not.
+    let readyFired = false;
+    function fireReady() {
+      if (readyFired || disposed) return;
+      readyFired = true;
+      readyRef.current?.();
+    }
+    const readyBackstop = setTimeout(fireReady, 1500);
 
     // The globe's on-screen size is a function of zoom alone, so a resized
     // container has to be re-fitted or the sphere stops filling its square —
@@ -463,6 +493,7 @@ export default function HeroGlobe({
       disposed = true;
       ac.abort();
       refit.disconnect();
+      clearTimeout(readyBackstop);
       if (satTimer) clearInterval(satTimer);
       if (resume) clearTimeout(resume);
       if (spin) cancelAnimationFrame(spin);

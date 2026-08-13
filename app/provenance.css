@@ -409,7 +409,6 @@
   width: 100%;
   height: 100%;
   z-index: 0;
-  animation: pv-fade 1.4s ease both;
 }
 
 /* The globe box is a square of the sphere's own diameter, parked so its centre
@@ -489,7 +488,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6em;
-  animation: pv-fade 0.9s ease 0.35s both;
 }
 .pv-hero-eyebrow span + span {
   color: #7a8892;
@@ -508,12 +506,11 @@
 /* Each line wipes up under its own clip, one after the other. */
 .pv-hero .pv-h1 > span {
   display: block;
-  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.pv-hero .pv-h1 > span:nth-child(1) {
+.pv-hero.pv-intro .pv-h1 > span:nth-child(1) {
   animation-delay: 0.5s;
 }
-.pv-hero .pv-h1 > span:nth-child(2) {
+.pv-hero.pv-intro .pv-h1 > span:nth-child(2) {
   animation-delay: 0.64s;
 }
 
@@ -523,10 +520,8 @@
   color: #b8c5cd;
   max-width: 34rem;
   margin: 0;
-  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.86s both;
 }
 .pv-hero .pv-cta-row {
-  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
 }
 /* The stage is always night, so the hero's buttons state their colours outright
    instead of deriving them from the ramp. */
@@ -554,7 +549,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(232, 238, 241, 0.7);
-  animation: pv-fade 1s ease 1.35s both;
 }
 .pv-hero-legend span {
   display: flex;
@@ -578,7 +572,6 @@
   z-index: 4;
   border-top: 1px solid rgba(232, 238, 241, 0.14);
   background: linear-gradient(to top, rgba(5, 7, 12, 0.92), rgba(5, 7, 12, 0.35));
-  animation: pv-fade 1s ease 1.5s both;
   pointer-events: none;
 }
 .pv-hero-foot-inner {
@@ -626,7 +619,6 @@
   text-transform: uppercase;
   color: rgba(232, 238, 241, 0.4);
   pointer-events: none;
-  animation: pv-fade 1s ease 1.8s both;
 }
 @media (pointer: coarse) {
   .pv-hero-hint {
@@ -679,6 +671,63 @@
   opacity: 1;
 }
 
+
+/* ── the launch sequence ───────────────────────────────────────────────────
+   Every animation in the hero's opening is scoped to `.pv-intro`, which exists
+   so the whole sequence can be RESTARTED: remove the class, force a reflow,
+   put it back. HeroStage does that on `pageshow` when the page came out of the
+   back/forward cache, where a restored document keeps its finished animations
+   and the hero would otherwise appear fully assembled with no launch at all.
+
+   The class is server-rendered, so a cold load still plays the sequence on the
+   first paint without waiting for JavaScript to arrive and switch it on. */
+
+.pv-hero.pv-intro .pv-hero-stage > .pv-hero-stars {
+  animation: pv-fade 1.4s ease both;
+}
+.pv-hero.pv-intro .pv-hero-eyebrow {
+  animation: pv-fade 0.9s ease 0.35s both;
+}
+.pv-hero.pv-intro .pv-h1 > span {
+  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.pv-hero.pv-intro .pv-h1 > span:nth-child(1) {
+  animation-delay: 0.5s;
+}
+.pv-hero.pv-intro .pv-h1 > span:nth-child(2) {
+  animation-delay: 0.64s;
+}
+.pv-hero.pv-intro .pv-hero-lede {
+  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.86s both;
+}
+.pv-hero.pv-intro .pv-cta-row {
+  animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
+}
+.pv-hero.pv-intro .pv-hero-legend {
+  animation: pv-fade 1s ease 1.35s both;
+}
+.pv-hero.pv-intro .pv-hero-foot {
+  animation: pv-fade 1s ease 1.5s both;
+}
+.pv-hero.pv-intro .pv-hero-hint {
+  animation: pv-fade 1s ease 1.8s both;
+}
+
+/* The globe now starts loading with the sequence rather than after it, so it
+   arrives mid-choreography and has to arrive as part of it. The entrance sits on
+   the INNER map element while the scroll-driven dim sits on the outer box — two
+   nested opacities multiply on their own, which one element could not do.
+   Keyed off `data-ready`, set when MapLibre has actually painted a frame: fading
+   in on mount instead would just fade in an empty black square. */
+.pv-hero-globe > .pv-hero-map {
+  opacity: 0;
+  transform: scale(0.965);
+  transition: opacity 1.1s ease, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pv-hero-globe[data-ready="1"] > .pv-hero-map {
+  opacity: 1;
+  transform: none;
+}
 
 /* ─────────────────────────── marquee ─────────────────────────── */
 
