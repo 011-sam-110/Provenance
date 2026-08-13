@@ -4611,3 +4611,76 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     width: calc(100% + 8px); height: 34px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE — RE-ASSERTED OVER THE TERMINAL SKIN
+   ══════════════════════════════════════════════════════════════════════════
+   The `@media (max-width: 900px)` pass much earlier in this sheet is correct and
+   was measured; on the shipped skin it is DEAD CODE. Every rule it writes is
+   re-set by the `.tn-terminal …` block, which is later in the sheet and carries
+   (0,2,0) against the mobile rules' (0,1,0). A media query adds NO specificity,
+   so the skin wins at every width — including 390px.
+
+   Measured on prod (provenance-online.vercel.app) at 390x844, tour dismissed:
+
+     .tn-cw-shell  overflow-y: hidden   scrollHeight 5998 / clientHeight 662
+     wheel 2500px over the workspace -> scrollTop stayed 0
+
+   The default BRIEF board carries four widgets. One (WHAT'S ABNORMAL) was
+   partly visible — 273px of its 572px. DISASTERS & EVENTS, WORLD HEADLINES and
+   CAMERAS all began below the shell's clipped edge and NO gesture could reach
+   them: `overflow: hidden` is not scrollable by touch, wheel or trackpad.
+
+   So this block re-states the mobile intent with selectors that match the skin's
+   specificity, from a later position in the sheet. It is scoped to the skin on
+   purpose — it is not a second mobile pass, it is the first one made to apply.
+   Anything added to the `.tn-terminal` section from here on that also appears in
+   the 900px block above needs re-asserting HERE too, or it will silently die the
+   same way.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* The workspace becomes one vertical scroller, as the 900px block intended.
+     `overscroll-behavior-y: contain` stops a fling at the end of the list from
+     chaining into the document and dragging the whole console. */
+  .tn-terminal .tn-cw-shell,
+  .tn-cw-shell.tn-terminal {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* The grid sizes to its stacked content instead of being pinned to the band's
+     height — that pin is what made scrollHeight exceed clientHeight with no way
+     to scroll. `align-content: start` keeps the rows packed at the top rather
+     than stretched across a now-taller box. */
+  .tn-terminal .tn-seg {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    align-content: start;
+    align-items: start;
+  }
+
+  /* A slot clipped to its desktop grid row re-creates the porthole one level
+     down. `position: relative` is deliberately NOT touched — the .tn-rz handles
+     resolve against it (see the note on .tn-terminal .tn-seg-slot above). */
+  .tn-terminal .tn-seg-slot { overflow: visible; }
+
+  /* Resize handles are eight invisible 10px drag bands pinned to every card
+     edge. There is no hover on touch, so they never reveal themselves, and card
+     height is CSS-derived here anyway — they are dead controls that sit exactly
+     where a thumb starts a swipe. Hidden for the same reason .tn-grip and
+     .tn-cw-resize* already are in the 900px block. */
+  .tn-terminal .tn-rz { display: none; }
+
+  /* iOS Safari zooms the page in on focus of any field under 16px and does not
+     zoom back out. The skin set 10.5px and `min-height: 0`, which also cancelled
+     the 44px target the 900px block gives this same input. */
+  .tn-terminal .tnx-stage-search .tn-mapsearch-input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}

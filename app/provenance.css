@@ -938,6 +938,39 @@
 .pv-dossier div + div {
   margin-top: 0.1rem;
 }
+
+/* ── The dossier on a narrow stage ─────────────────────────────────────────
+   `.pv-dossier` chases the marker: pinned to dead centre with a fixed 1.6rem
+   offset and a 13rem min-width. That is fine on a wide stage and broken on a
+   phone. Measured on prod at 375px CSS width, the stage is 335px and the card
+   starts at x=193, so its right edge lands at 401px — 66px past a stage that is
+   `overflow: hidden`. It overhung the bottom by a further 40px. The result:
+   `public domain` rendered as "public doma" and the whole `recorded` row was
+   cut off.
+
+   The card IS this section's payoff — the caption underneath it reads "now it
+   is a place on a map, with its source attached", and the attached source was
+   the unreadable part. So below 40rem it stops chasing the marker and sits as a
+   full-width plate at the foot of the stage, with the marker pinging above it.
+   Nothing is hidden and the beat still reads. */
+@media (max-width: 40rem) {
+  .pv-marker-stage {
+    /* Room for marker + plate without the plate landing on the marker. */
+    min-height: 17rem;
+    max-height: none;
+    align-items: flex-start;
+    padding-top: 4.5rem;
+  }
+  .pv-dossier {
+    left: 0.75rem;
+    right: 0.75rem;
+    top: auto;
+    bottom: 0.75rem;
+    margin: 0;
+    min-width: 0;
+  }
+}
+
 .pv-caption {
   font-size: 1rem;
   line-height: 1.55;
