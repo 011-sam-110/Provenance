@@ -42,7 +42,9 @@ test("declares a real numeric displaced-count metric that rowMetric resolves", (
 
   expect(DISPLACEMENT_SOURCE.metric).toEqual({ field: "displacedCount", domain: [0, 5_000_000] });
   const m = rowMetric(afg, DISPLACEMENT_SOURCE.metric);
-  expect(m).toEqual({ value: 3_220_946, domain: [0, 5_000_000], label: "3220946" });
+  // Grouped. An ungrouped "3220946" sat beside a title that had already written
+  // the same number as "3,220,946" — one row, one number, two spellings.
+  expect(m).toEqual({ value: 3_220_946, domain: [0, 5_000_000], label: "3,220,946" });
 });
 
 test("displacement colour ramps by total", () => {

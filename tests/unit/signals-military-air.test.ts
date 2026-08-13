@@ -38,7 +38,7 @@ test("declares an altitude metric that resolves to a finite number", () => {
   const resolved = rowMetric(c17, metric)!;
   expect(resolved.value).toBe(15000);
   expect(resolved.domain).toEqual([0, 45000]);
-  expect(resolved.label).toBe("15000 ft");
+  expect(resolved.label).toBe("15,000 ft"); // grouped: an altitude is read, not parsed
 
   // "ground" maps to a genuine 0 ft — still a finite metric, not a dot.
   const grounded = out.find((f) => f.id === "mil:abc123")!;

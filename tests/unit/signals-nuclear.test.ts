@@ -82,7 +82,7 @@ test("adds a numeric outputMw prop that the declared metric resolves to a bar", 
 
   // rowMetric reads the real scalar (not the radius proxy) and formats the label.
   const bar = rowMetric(way!, NUCLEAR_SOURCE.metric);
-  expect(bar).toEqual({ value: 1180, domain: [0, 8000], label: "1180 MW" });
+  expect(bar).toEqual({ value: 1180, domain: [0, 8000], label: "1,180 MW" });
 
   // The unnamed / capacity-less plant carries no outputMw and no bar.
   const capacityless = out.find((f) => f.id === "nuclear:node/6443114600");
