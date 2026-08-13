@@ -39,6 +39,21 @@ Deployed product = `origin/main`.
   (`ScrollGround.tsx`) publishes CSS custom properties; nothing else may add a scroll
   listener and nothing may set React state per frame. `.pv-*` tokens in
   `app/provenance.css`, scoped to `.pv-root` so they cannot reach the console.
+- The hero is a full-bleed **night stage** (`HeroStage` → `HeroGlobe`), not a plate
+  beside the copy. The ground ramp runs **night → day → night**: `--pv-g` starts at
+  1, lifts across the hero, and plunges back behind the Adapter panel. `.pv-night`
+  is server-rendered in `(site)/layout.tsx` so a cold load does not flash daylight.
+  The sticky bar reads `--pv-bar-g` (the ground *directly beneath it*), not `--pv-g`
+  — it is the one element that can straddle two grounds at once.
+- The hero globe renders **every registered signal layer**, drained into three
+  aggregated MapLibre sources (points / lines / fills) exactly like `WorldMap`. The
+  layer list is read from `SOURCE_CATALOG` in the server component and passed down
+  as a prop — never imported into the client, or all ~39 adapters land in the
+  browser bundle. Adding an adapter adds it to the globe with no edit to the hero.
+- `zoomToFill()` in `HeroGlobe` uses a MEASURED constant, not a derivation:
+  MapLibre's globe is a perspective render, so apparent diameter is not linear in
+  2^z. `verify-provenance.mjs` asserts the fill ratio so an upgrade that moves it
+  fails loudly instead of quietly reframing the hero.
 - The source wall + counts are generated from `SOURCE_CATALOG` via `lib/marketing/wall.ts`.
   Adding an adapter adds a card. Never type a count into the landing page.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):

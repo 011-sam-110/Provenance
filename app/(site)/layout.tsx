@@ -32,8 +32,12 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
+  // `pv-night` is server-rendered because the page opens on the night hero. It is
+  // ScrollGround's to own from the first scroll frame onward, but leaving it off
+  // the initial HTML meant every cold load painted a bone instrument bar and
+  // daylight type over a black stage until hydration corrected it.
   return (
-    <div className={`pv-root ${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}>
+    <div className={`pv-root pv-night ${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}>
       {children}
     </div>
   );

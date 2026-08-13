@@ -3,17 +3,18 @@
 import { useEffect, useRef } from "react";
 
 /**
- * The star field behind the hero globe.
+ * The star field. Behind the hero globe, and again behind the closing section —
+ * the page opens and closes on the same sky.
  *
  * Procedural canvas rather than an image: it costs a few hundred bytes instead of
- * a megabyte, scales to any aperture size, and re-renders crisply on a HiDPI
+ * a megabyte, scales to any stage size, and re-renders crisply on a HiDPI
  * screen. Stars twinkle by a slow per-star phase, not by redrawing everything at
- * full rate — the whole field is one 30fps pass over ~420 points.
+ * full rate — the whole field is one 30fps pass over ~500 points.
  *
  * Deliberately dim. It sits behind a globe carrying live data; if you notice the
  * stars first, they are wrong.
  */
-export default function Starfield() {
+export default function Starfield({ className = "pv-hero-stars" }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -38,8 +39,8 @@ export default function Starfield() {
       canvas.height = Math.round(h * dpr);
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Density scaled to area so a wide aperture is not sparse.
-      const count = Math.round(Math.min(620, Math.max(180, (w * h) / 1400)));
+      // Density scaled to area so a full-bleed stage is not sparse.
+      const count = Math.round(Math.min(700, Math.max(200, (w * h) / 1300)));
       stars = Array.from({ length: count }, () => {
         // Cube the roll so most stars are faint and a handful are bright — a flat
         // distribution reads as noise, not sky.
@@ -63,14 +64,13 @@ export default function Starfield() {
       if (!ctx) return;
 
       ctx.clearRect(0, 0, w, h);
-      // A faint galactic wash so the field is not a flat black rectangle. It runs
-      // dark-to-light LEFT to RIGHT on purpose: the aperture is masked away on its
-      // left edge, so any brightness there shows through the fade as a pale stripe
-      // against the bone ground. Keep the light in the solid half.
+      // A faint galactic wash so the field is not a flat black rectangle. Bottom-
+      // left to top-right, warming into violet at the far corner — the opposite
+      // corner from the globe, so the two never compete for the same eye.
       const wash = ctx.createLinearGradient(0, h, w, 0);
       wash.addColorStop(0, "rgba(8,11,18,0.5)");
-      wash.addColorStop(0.55, "rgba(16,24,38,0.34)");
-      wash.addColorStop(1, "rgba(34,29,58,0.4)");
+      wash.addColorStop(0.55, "rgba(16,24,38,0.3)");
+      wash.addColorStop(1, "rgba(34,29,58,0.38)");
       ctx.fillStyle = wash;
       ctx.fillRect(0, 0, w, h);
 
@@ -98,5 +98,5 @@ export default function Starfield() {
     };
   }, []);
 
-  return <canvas ref={ref} className="pv-aperture-canvas" aria-hidden="true" />;
+  return <canvas ref={ref} className={className} aria-hidden="true" />;
 }

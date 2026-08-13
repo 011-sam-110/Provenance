@@ -13,20 +13,24 @@ import { useEffect } from "react";
  * undo the whole point.
  *
  * Elements opt in by data attribute:
+ *   [data-pv-hero]      the night stage (writes --pv-globe-o/-y/-s)
  *   [data-pv-adapter]   the pinned adapter section (writes --pv-marker-scale,
  *                       --pv-dossier-o and data-beat="0|1|2")
  *   [data-pv-wall]      the pinned horizontal wall (writes --pv-wall-x/-p)
  *   [data-pv-parallax]  any element that should drift (writes --pv-shift)
  *
- * The ground ramp is deliberately NOT a linear function of page scroll. It is
- * driven off the adapter panel's position so the ambiguous mid-grey is only ever
- * on screen while that opaque panel covers the viewport — see provenance.css.
+ * The ground ramp is deliberately NOT a linear function of page scroll. It runs
+ * NIGHT -> DAY -> NIGHT and is driven off two opaque landmarks — the hero on the
+ * way out and the adapter panel on the way in — so the ambiguous mid-grey the
+ * ramp passes through is only ever on screen while one of them covers the
+ * viewport. See provenance.css.
  */
 export default function ScrollGround() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".pv-root");
     if (!root) return;
 
+    const hero = root.querySelector<HTMLElement>("[data-pv-hero]");
     const adapter = root.querySelector<HTMLElement>("[data-pv-adapter]");
     const wall = root.querySelector<HTMLElement>("[data-pv-wall]");
     const wallTracks = Array.from(root.querySelectorAll<HTMLElement>("[data-pv-wall-track]"));
@@ -37,6 +41,9 @@ export default function ScrollGround() {
     let lastBeat = -1;
 
     const clamp01 = (n: number) => (n < 0 ? 0 : n > 1 ? 1 : n);
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+    /** Height of the sticky instrument bar; must match `.pv-bar` in provenance.css. */
+    const BAR_H = 44;
 
     // offsetTop is measured from the nearest POSITIONED ancestor, and both
     // .pv-root and .pv-doc are position:relative — so it silently means different
@@ -53,26 +60,58 @@ export default function ScrollGround() {
 
       root.style.setProperty("--pv-p", clamp01(docMax > 0 ? y / docMax : 0).toFixed(4));
 
-      // ── ground ramp, anchored to the adapter panel ──────────────────────
-      // Above the panel the ground only ever reaches a 0.30 mix, which still
-      // holds contrast for ink type. The plunge to full ink happens precisely
-      // while the opaque panel sweeps up the screen.
-      let g = 0;
-      let night = false;
-      if (adapter) {
+      // ── ground ramp: night -> day -> night ──────────────────────────────
+      // Leg 1 (inside the hero): ink lifts to bone, eased, over the first 72% of
+      //   the stage. The hero is opaque, so the whole transit is hidden behind it.
+      // Leg 2 (the document): a slow drift to a 0.28 mix — dusk, but still holding
+      //   contrast for ink type.
+      // Leg 3 (into the adapter): the plunge back to full ink, timed to happen
+      //   precisely while the opaque panel sweeps up the screen.
+      const heroH = hero ? hero.offsetHeight : vh;
+      let g = 1;
+      if (y < heroH) {
+        g = 1 - easeOut(clamp01(y / (heroH * 0.72)));
+      } else if (adapter) {
         const top = docTop(adapter);
-        const enter = Math.max(1, top - vh);
-        const full = Math.max(enter + 1, top);
-        if (y <= enter) g = (y / enter) * 0.3;
-        else if (y < full) g = 0.3 + ((y - enter) / (full - enter)) * 0.7;
+        const enter = Math.max(heroH + 1, top - vh);
+        if (y <= enter) g = clamp01((y - heroH) / Math.max(1, enter - heroH)) * 0.28;
+        else if (y < top) g = 0.28 + ((y - enter) / Math.max(1, top - enter)) * 0.72;
         else g = 1;
-        night = y >= full;
       } else {
-        g = docMax > 0 ? y / docMax : 0;
-        night = g > 0.5;
+        g = docMax > 0 ? clamp01(y / docMax) : 0;
       }
-      root.style.setProperty("--pv-g", clamp01(g).toFixed(4));
-      root.classList.toggle("pv-night", night);
+      g = clamp01(g);
+      root.style.setProperty("--pv-g", g.toFixed(4));
+      // The foreground set follows the ground rather than a scroll position of its
+      // own. Deriving it from `g` is what guarantees light type never lands on a
+      // light ground: the two cannot drift apart, because there is only one number.
+      root.classList.toggle("pv-night", g > 0.5);
+
+      // ── the instrument bar's own ground ─────────────────────────────────
+      // The bar is sticky AND translucent, so it is the one thing on the page that
+      // can straddle two grounds: mid-exit, the opaque night stage is still behind
+      // it while the ground under the rest of the viewport has already lifted to
+      // bone. Give it the ground DIRECTLY BENEATH IT rather than the page's, or it
+      // paints a bone strip across the hero.
+      const barOverHero = hero ? y < heroH - BAR_H : false;
+      root.style.setProperty("--pv-bar-g", barOverHero ? "1" : g.toFixed(4));
+      root.classList.toggle("pv-bar-night", barOverHero);
+
+      // ── the hero globe leaves with the hero ─────────────────────────────
+      // Sinks, swells very slightly, and dims to nothing by the time the stage is
+      // gone. Published as custom properties; the transform itself is composed in
+      // CSS alongside the centring translate.
+      if (hero) {
+        const t = clamp01(y / Math.max(1, heroH));
+        hero.style.setProperty("--pv-globe-o", (1 - t * 0.9).toFixed(3));
+        if (reduce.matches) {
+          hero.style.setProperty("--pv-globe-y", "0%");
+          hero.style.setProperty("--pv-globe-s", "1");
+        } else {
+          hero.style.setProperty("--pv-globe-y", `${(t * 12).toFixed(1)}%`);
+          hero.style.setProperty("--pv-globe-s", (1 + t * 0.08).toFixed(3));
+        }
+      }
 
       // ── the adapter's three beats ───────────────────────────────────────
       if (adapter && !reduce.matches) {

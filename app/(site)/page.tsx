@@ -5,7 +5,8 @@ import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { buildWall, marqueePublishers, wallCount } from "@/lib/marketing/wall";
 import ScrollGround from "@/components/marketing/ScrollGround";
 import InstrumentBar from "@/components/marketing/InstrumentBar";
-import Aperture from "@/components/marketing/Aperture";
+import HeroStage from "@/components/marketing/HeroStage";
+import Starfield from "@/components/marketing/Starfield";
 import Marquee from "@/components/marketing/Marquee";
 import AdapterSection from "@/components/marketing/AdapterSection";
 import SourceWall from "@/components/marketing/SourceWall";
@@ -58,40 +59,83 @@ export default async function Landing({
     group: s.group,
   }));
 
+  // Every registered signal layer, handed to the hero globe. Read here on the
+  // server rather than imported by the globe itself: `SOURCE_CATALOG` pulls in
+  // `SIGNALS`, and `SIGNALS` pulls in all ~39 adapter modules, none of which the
+  // browser needs in order to read three strings off each entry.
+  //
+  // This is why the hero cannot drift from the product. A new adapter appears on
+  // the globe, in the wall and in the ledger from the same registry entry, and
+  // there is no marketing-side list to forget to update.
+  const heroLayers = SOURCE_CATALOG.filter((s) => s.kind === "signal").map((s) => ({
+    id: s.id,
+    label: s.label,
+    color: s.color,
+  }));
+
+  // Four exemplars for the hero's key. Looked up rather than typed, so the swatch
+  // is the colour the globe is actually painting that layer — a legend that has
+  // drifted from its map is worse than no legend.
+  //
+  // Chosen to span the registry AND the palette: infrastructure, space, a hazard,
+  // and the synthesis layer. Wildfires was the obvious fourth and is the wrong
+  // one — its registry colour sits a few degrees from the earthquake orange, so
+  // the two swatches were indistinguishable at 0.45rem.
+  const legend = ["cables", "satellites", "earthquakes", "instability"]
+    .map((id) => SOURCE_CATALOG.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+  const satColor = SOURCE_CATALOG.find((s) => s.id === "satellites")?.color ?? "#7c3aed";
+
   return (
     <>
       <div className="pv-ground" aria-hidden="true" />
       <div className="pv-progress" aria-hidden="true" />
       <ScrollGround />
 
-      <InstrumentBar repoUrl={REPO_URL} />
+      <InstrumentBar />
 
-      <div className="pv-doc" id="top">
-        {/* ── hero ───────────────────────────────────────────────────────── */}
-        <header className="pv-hero pv-bleed">
-          <div className="pv-hero-copy">
-            <h1 className="pv-h1">
-              You already
-              <br />
-              paid for this.
-            </h1>
-            <p className="pv-lede">
-              Satellites, seismographs, road cameras and river gauges, funded by the public and
-              published in formats almost nobody can read. {BRAND.name} renders them, live, on one
-              map. No key. No login.
-            </p>
-            <div className="pv-cta-row">
-              <a className="pv-cta" href="/app">
-                Open the map
-              </a>
-              <a className="pv-cta pv-cta-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
-                Read the source
-              </a>
-            </div>
+      {/* ── hero: a full-bleed night stage, outside the document grid ─────── */}
+      <header className="pv-hero" id="top" data-pv-hero>
+        <HeroStage layers={heroLayers} satColor={satColor} />
+
+        <div className="pv-hero-copy">
+          <p className="pv-hero-eyebrow">
+            <span>Live · no key · no login</span>
+            <span>{total} adapters, one per source</span>
+          </p>
+          {/* Two spans, not a <br>: each line wipes up under its own clip, and a
+              line break cannot carry an animation. */}
+          <h1 className="pv-h1">
+            <span>You already</span>
+            <span>paid for this.</span>
+          </h1>
+          <p className="pv-hero-lede">
+            Satellites, seismographs, road cameras and river gauges, funded by the public and
+            published in formats almost nobody can read. {BRAND.name} renders them, live, on one
+            map.
+          </p>
+          <div className="pv-cta-row">
+            <a className="pv-cta" href="/app">
+              Open the map
+            </a>
+            <a className="pv-cta pv-cta-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
+              Read the source
+            </a>
           </div>
-          <Aperture />
-        </header>
+          {/* The globe's key: four of the {total} layers on it, named and coloured
+              from the same registry the globe renders from. */}
+          <div className="pv-hero-legend">
+            {legend.map((s) => (
+              <span key={s.id}>
+                <i style={{ background: s.color }} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </header>
 
+      <div className="pv-doc">
         {/* ── the publishers ─────────────────────────────────────────────── */}
         <div className="pv-bleed">
           <Marquee publishers={publishers} />
@@ -179,6 +223,8 @@ export default async function Landing({
 
       {/* ── handoff ──────────────────────────────────────────────────────── */}
       <section className="pv-handoff">
+        {/* The page closes under the same sky it opened on. */}
+        <Starfield />
         <div className="pv-handoff-inner">
           <p className="pv-eyebrow">
             <span>The map</span>
