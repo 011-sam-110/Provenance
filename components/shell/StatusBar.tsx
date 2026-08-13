@@ -17,6 +17,7 @@ import { appStatusLine } from "@/components/shell/a11y";
 import PresetPill from "@/components/shell/PresetPill";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
+import { BRAND } from "@/lib/brand";
 
 export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const m = useMetrics();
@@ -60,11 +61,15 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
           {/* The page's one h1. It is the wordmark itself rather than a hidden
               duplicate — the visible product name IS the page's title — with a
               visually-hidden tail so the accessible heading says what the product
-              is instead of just "OpenData". `.tn-wordmark` pins font-size/weight
-              and now margin, so swapping the span for an h1 changes no pixels. */}
+              is instead of the bare name. `.tn-wordmark` pins font-size/weight
+              and margin, so this changes no pixels.
+
+              The name comes from BRAND so a rename stays a one-line change. The old
+              two-tone "Open|Data" split is gone with it: it only worked for a name
+              that happened to be two words. */}
           <h1 className="tn-wordmark">
-            Open<span className="tn-wordmark-accent">Data</span>
-            <span className="tn-sr-only"> — live global situational-awareness map</span>
+            {BRAND.name}
+            <span className="tn-sr-only"> — {BRAND.tagline}</span>
           </h1>
         </div>
 
@@ -78,10 +83,10 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
               opt-in way to support it. Present but not shouty. */}
           <a
             className="tn-kofi"
-            href="https://ko-fi.com/opendata"
+            href={BRAND.kofiUrl}
             target="_blank"
             rel="noreferrer noopener"
-            title="Support OpenData on Ko-fi"
+            title={`Support ${BRAND.name} on Ko-fi`}
           >
             <span className="tn-kofi-icon" aria-hidden>☕</span>
             <span className="tn-kofi-label">Support</span>

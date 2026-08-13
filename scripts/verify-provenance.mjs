@@ -383,6 +383,17 @@ shellPresent > 0
   : fail("console missing at /app");
 await shot(appPage, "pv-06-app.png");
 appErrors.length === 0 ? pass("no page errors on /app") : fail("/app page errors", appErrors.slice(0, 3).join(" | "));
+
+// The rename is one line in lib/brand.ts, but hardcoded copy elsewhere silently
+// ignores it — the console kept saying the old name for a whole milestone while the
+// landing page said the new one. Assert BOTH routes agree.
+const naming = await appPage.evaluate(() => ({
+  h1: document.querySelector("h1")?.textContent?.trim().slice(0, 60) || "",
+  stale: (document.body.innerText.match(/OpenData/g) || []).length,
+}));
+naming.stale === 0 && /Provenance/i.test(naming.h1)
+  ? pass("console carries the current product name", naming.h1)
+  : fail("stale product name in the console", JSON.stringify(naming));
 await appPage.close();
 
 // ── 14. mobile: no pins, no horizontal body scroll ─────────────────────────

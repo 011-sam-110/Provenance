@@ -19,6 +19,7 @@ import {
   useNotifications, notificationsStore, isDiscordConfigured, requestNotifyPermission, type NotifyRule,
 } from "@/lib/shell/notifications";
 import { getWidgetType } from "@/lib/console/registry";
+import { BRAND } from "@/lib/brand";
 
 /** A "Browser · Telegram" style summary of a rule's armed channels. */
 function channelSummary(r: NotifyRule): string {
@@ -79,7 +80,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
 
   const onSendTest = async () => {
     setTgStatus({ kind: "sending" });
-    const res = await sendTelegram("✅ Test alert from OpenData — your Telegram channel is working.");
+    const res = await sendTelegram(`✅ Test alert from ${BRAND.name} — your Telegram channel is working.`);
     setTgStatus(res.ok ? { kind: "ok" } : { kind: "err", msg: res.error ?? "Failed" });
   };
 
