@@ -351,6 +351,24 @@ a { color: var(--tn-accent); }
 .tn-conf-reported { color: var(--tn-text-muted); }
 .tn-conf-modelled { color: var(--tn-lagging-ink); }
 .tn-conf-derived  { color: var(--tn-stale-ink); }
+/* Provenance chip on a layer row in the Source Catalog. Shares the .tn-conf-*
+   colours above and deliberately sets no colour of its own, so the class a layer
+   declares is the same hue wherever it appears. Sized to sit inline ahead of the
+   attribution without pushing the row taller. */
+.tn-layer-prov {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 0 4px;
+  margin-right: 5px;
+  vertical-align: 1px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
 .tn-explain-lims-h { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--tn-text-faint); margin-bottom: 4px; }
 .tn-explain-lims ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 .tn-explain-lims li { font-size: 12px; line-height: 1.45; color: var(--tn-text-muted); }

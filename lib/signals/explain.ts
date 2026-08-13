@@ -381,8 +381,17 @@ const EXPLAINERS: LayerExplainer[] = [
   {
     id: "military-air",
     whatItShows: "An aircraft currently broadcasting ADS-B that community trackers classify as military.",
-    method: "Measured from the aircraft's own transponder; the military classification comes from community-maintained registration lists.",
-    confidence: "measured",
+    // Two different claims live in one pin, and they do NOT share a provenance.
+    // The POSITION is measured (the aircraft's own transponder). The MILITARY
+    // CLASSIFICATION — which is the only reason this layer exists, and the whole
+    // content of the label "Military flights" — is inherited wholesale from a
+    // community-maintained hex-range list. Grading the layer `measured` borrowed
+    // the transponder's credibility for somebody else's judgement call, which is
+    // exactly the "every Dash 8 marked military" complaint users report. Per this
+    // file's own house rule, `confidence` describes the DATA's provenance, and the
+    // datum here is "this is military", not "an aircraft is at this lat/lon".
+    method: "The position is measured from the aircraft's own transponder. The military classification is not ours and is not measured: it is inherited unchanged from community-maintained registration lists, and we render their call as they made it.",
+    confidence: "reported",
     coverage: "Wherever volunteer ADS-B receivers listen — good over Europe and North America, poor over oceans, deserts and much of Africa and Asia.",
     limitations: [
       "Aircraft on sensitive missions routinely switch their transponder off or broadcast a false identity. This layer shows what is willing to be seen.",
@@ -561,4 +570,20 @@ const CONFIDENCE_TEXT: Record<Confidence, string> = {
 
 export function confidenceLabel(c: Confidence): string {
   return CONFIDENCE_TEXT[c];
+}
+
+/**
+ * The one-word class, for a chip that has to sit inside a layer row.
+ *
+ * WHY A SECOND LABEL. `confidenceLabel` is a sentence fragment written for the
+ * expanded trust card, where there is room to read. Until now that card was the
+ * ONLY place provenance appeared, which meant a visitor had to open a panel per
+ * layer to learn that one dot is a seismometer and the next is a machine reading
+ * a news wire. Nobody does that in the five seconds they give an unfamiliar map,
+ * so in practice every layer read as equally authoritative — the single defect
+ * users actually report about products in this category. This is the same fact,
+ * short enough to render everywhere the layer is listed.
+ */
+export function confidenceChip(c: Confidence): string {
+  return c;
 }
