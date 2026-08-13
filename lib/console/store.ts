@@ -1,7 +1,7 @@
 "use client";
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
-import { createDefaultLayout, type ShellLayout, type SegmentId, type StageId } from "@/lib/console/types";
+import { createDefaultLayout, type GridRect, type ShellLayout, type SegmentId, type StageId } from "@/lib/console/types";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import * as R from "@/lib/console/reducers";
 
@@ -30,6 +30,11 @@ export const shellLayoutStore = {
   move(id: string, seg: SegmentId, idx: number) { state = R.moveWidget(state, id, seg, idx); emit(); },
   resizeWidget(id: string, h: number) { state = R.setWidgetHeight(state, id, h); emit(); },
   resizeWidth(id: string, span: number) { state = R.setWidgetWidth(state, id, span); emit(); },
+  /** Move or resize a grid item — a widget, or STAGE_ID for the map. The single
+   *  write path for every drag, resize and keyboard nudge. */
+  placeItem(id: string, rect: GridRect) { state = R.setItemRect(state, id, rect); emit(); },
+  /** Re-seed every position from CONSOLE or WALL. */
+  arrange(mode: "console" | "wall") { state = R.arrangeBoard(state, mode); emit(); },
   collapseWidget(id: string, c: boolean) { state = R.setWidgetCollapsed(state, id, c); emit(); },
   configure(id: string, patch: Record<string, unknown>) { state = R.setWidgetConfig(state, id, patch); emit(); },
   setSegment(seg: SegmentId, size: number) { state = R.setSegmentSize(state, seg, size); emit(); },
