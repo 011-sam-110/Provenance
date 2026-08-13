@@ -3033,6 +3033,16 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-accent: #ffb020;
   --tnx-accent-soft: rgba(255, 176, 32, 0.13);
 
+  /* Glass: the translucent near-black the stage chrome, the rail tab and the
+     MapLibre controls float on. It was written as a literal rgba(8,11,15,a) in
+     thirteen places, which is exactly why the light skin first shipped with dark
+     panels carrying dark ink on top — unreadable, and invisible to any check that
+     only looks at the token block. Tokenised so a skin can move it. */
+  --tnx-glass: rgba(8, 11, 15, 0.90);
+  --tnx-glass-soft: rgba(8, 11, 15, 0.85);
+  --tnx-glass-bar: rgba(8, 11, 15, 0.88);
+  --tnx-glass-solid: rgba(8, 11, 15, 0.96);
+
   --tnx-live: #35c46a;
   --tnx-lag: #ffb020;
   --tnx-down: #ff5449;
@@ -3125,12 +3135,210 @@ a.tn-w-place { display: flex; align-items: center; }
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
+/* ── LIGHT SKIN ────────────────────────────────────────────────────────────
+   The second palette, selected by `data-tnx-skin="light"` on the same element.
+   It redefines the SAME --tnx-* tokens the block above sets, and nothing else —
+   the ~40 --tn-* remaps below it are written in terms of --tnx-*, so re-skinning
+   the entire widget system is this one block and no rule downstream changes.
+
+   NOT a `[data-theme]` and not a `prefers-color-scheme` block, deliberately.
+   lib/variants/store.ts re-asserts a variant's theme on every board switch, so a
+   theme-based skin would be yanked back the first time a tab is clicked; and a
+   media query would take the choice away from anyone whose OS disagrees with
+   them. See the note at the top of this section, and lib/terminal/skin.ts.
+
+   The status hues are NOT the dark ones carried over. --tnx-live #35c46a sits at
+   about 2.1:1 on white — fine as a 5px LED, unreadable as text, and the Terminal
+   spends those tokens on both. Each is re-derived to clear 4.5:1 on --tnx-panel.
+   The accent moves furthest: #ffb020 is ~1.9:1 on white and cannot be used for
+   text at all, so light gets a deepened amber that keeps the identity and the
+   contrast. */
+.tn-terminal[data-tnx-skin="light"] {
+  --tnx-bg: #eef1f5;
+  --tnx-panel: #ffffff;
+  --tnx-panel-head: #f6f8fa;
+  --tnx-chrome: #e8ecf1;
+
+  --tnx-ink: #10161d;
+  --tnx-ink-dim: #5a6673;
+  --tnx-ink-faint: #7d8894;
+  --tnx-ink-ghost: #a3adb8;
+
+  --tnx-line: rgba(16, 22, 29, 0.12);
+  --tnx-line-strong: rgba(16, 22, 29, 0.22);
+  --tnx-row-rule: rgba(16, 22, 29, 0.07);
+
+  --tnx-accent: #b8690a;
+  --tnx-accent-soft: rgba(184, 105, 10, 0.12);
+
+  /* The glass family, on paper. Same alphas, opposite ground. */
+  --tnx-glass: rgba(255, 255, 255, 0.92);
+  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
+  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
+  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
+
+  --tnx-live: #1a8f4c;
+  --tnx-lag: #b8690a;
+  --tnx-down: #c8352a;
+  --tnx-dormant: #b3bcc5;
+  --tnx-key: #8a94a0;
+
+  /* The remaps that are not a straight pass-through of a --tnx-* value. Anything
+     the dark block hard-codes a hex or an rgba() for has to be restated, or it
+     stays dark: a white overlay on white, a black-on-black shadow, a chip fill
+     that was picked against near-black. */
+  --tn-surface-2: #e9edf2;
+  --tn-glass: rgba(255, 255, 255, 0.92);
+  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
+  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
+  --tn-hover: rgba(16, 22, 29, 0.05);
+  --tn-accent-strong: #8f5107;
+  --tn-chip-bg: #eaeef3;
+  --tn-toggle-off: rgba(16, 22, 29, 0.20);
+  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
+  --tn-stale: #b5521a;
+  --tn-stale-ink: #b5521a;
+
+  scrollbar-color: rgba(16, 22, 29, 0.22) transparent;
+}
+
+/* The five status INKS collapse onto their fills on near-black because the vivid
+   hue is the legible one there. On white the opposite is true, so they are pointed
+   at the light ramp rather than left inheriting the dark one. */
+.tn-terminal[data-tnx-skin="light"] {
+  --tn-live-ink: var(--tnx-live);
+  --tn-lagging-ink: var(--tnx-lag);
+  --tn-down-ink: var(--tnx-down);
+  --tn-unknown-ink: var(--tnx-ink-faint);
+}
+
+/* WebKit scrollbars are set on the dark block with literal rgba(255,255,255,…);
+   they need the mirror or the light skin gets white-on-white thumbs. */
+.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(16, 22, 29, 0.20);
+}
+.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 22, 29, 0.30);
+}
+
+/* ── The mark, and the boot sequence ───────────────────────────────────────
+   Every part of the mark is its own group so it can assemble rather than just
+   appear. All of it draws from currentColor, so one file serves both skins and
+   the header, the boot overlay and the generated icons cannot drift apart. */
+.tn-mark { display: block; color: var(--tnx-ink); }
+.tn-mark .mk-ring {
+  fill: none; stroke: currentColor; stroke-width: 1.1; opacity: 0.55;
+}
+/* 3.4, not 5.5. A heavier ring closes the aperture at icon sizes and the globe
+   inside collapses into an undifferentiated blob. */
+.tn-mark .mk-lens { fill: none; stroke: currentColor; stroke-width: 3.4; }
+.tn-mark .mk-fill { fill: currentColor; }
+.tn-mark .mk-dot { fill: currentColor; opacity: 0.75; }
+
+/* The assemble timeline. `pathLength: 100` on the circles is what lets the
+   dasharray be a plain 100 here instead of a circumference per radius. */
+.tn-mark.is-playing .mk-ring {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: tnx-mark-draw 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+.tn-mark.is-playing .mk-ring-2 { animation-delay: 110ms; }
+.tn-mark.is-playing .mk-dots { opacity: 0; animation: tnx-mark-in 400ms 620ms forwards; }
+.tn-mark.is-playing .mk-glass {
+  opacity: 0; transform-origin: 50% 44%;
+  animation: tnx-mark-pop 520ms 380ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+}
+.tn-mark.is-playing .mk-book {
+  opacity: 0; transform-origin: 50% 78%;
+  animation: tnx-mark-unfold 480ms 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+/* The ambient "system is live" tell on the header mark. Deliberately 22s: fast
+   enough to notice if you look, slow enough never to pull the eye off the data. */
+.tn-mark .mk-dots.is-idle {
+  transform-origin: 50% 50%;
+  animation: tnx-mark-orbit 22s linear infinite;
+}
+
+@keyframes tnx-mark-draw { to { stroke-dashoffset: 0; } }
+@keyframes tnx-mark-in { to { opacity: 1; } }
+@keyframes tnx-mark-pop {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes tnx-mark-unfold {
+  from { opacity: 0; transform: scaleY(0.3) translateY(6px); }
+  to { opacity: 1; transform: scaleY(1) translateY(0); }
+}
+@keyframes tnx-mark-orbit { to { transform: rotate(360deg); } }
+
+/* The overlay. It sits over a shell that is ALREADY mounted and fetching — see
+   the note in BootSequence.tsx. It must never gate rendering, or a decoration
+   becomes a load-time regression. */
+.tnx-boot {
+  position: fixed; inset: 0; z-index: 3000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tnx-bg);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 320ms ease;
+}
+.tnx-boot.is-leaving { opacity: 0; pointer-events: none; }
+.tnx-boot-inner { display: grid; justify-items: center; gap: 22px; }
+.tnx-boot-mark { color: var(--tnx-ink); }
+.tnx-boot-lines {
+  display: grid; gap: 3px; justify-items: start;
+  min-height: 58px; min-width: 230px;
+  font-family: var(--tnx-font-mono);
+  font-size: 11px; letter-spacing: 0.08em;
+  color: var(--tnx-ink-dim);
+}
+.tnx-boot-line { opacity: 0; transition: opacity 160ms ease; }
+.tnx-boot-line.is-on { opacity: 1; }
+.tnx-boot-ok { color: var(--tnx-live); }
+.tnx-boot-skip {
+  position: absolute; right: 16px; bottom: 14px;
+  font-family: var(--tnx-font-mono);
+  font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--tnx-ink-ghost);
+}
+
+/* Reduced motion: the overlay still appears and leaves (BootSequence shortens it
+   to a single static frame), but nothing assembles and nothing orbits. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-mark.is-playing .mk-ring,
+  .tn-mark.is-playing .mk-dots,
+  .tn-mark.is-playing .mk-glass,
+  .tn-mark.is-playing .mk-book,
+  .tn-mark .mk-dots.is-idle { animation: none; opacity: 1; stroke-dashoffset: 0; transform: none; }
+  .tnx-boot, .tnx-boot-line { transition: none; }
+}
+
+/* The skin toggle, sized to match the Ko-fi chip beside it. */
+.tn-terminal .tnx-hdr-skin {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border: 1px solid var(--tnx-line-strong);
+  background: none;
+  color: var(--tnx-ink-dim);
+  cursor: pointer;
+}
+.tn-terminal .tnx-hdr-skin:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+
+/* The lifted card's shadow is tuned for near-black and disappears on paper. */
+.tn-terminal[data-tnx-skin="light"] .tn-seg-slot.is-held,
+.tn-terminal[data-tnx-skin="light"] .tn-cw-stage.is-held {
+  box-shadow: 0 16px 44px rgba(16, 22, 29, 0.22);
+}
+
 /* The page behind the shell. `.tn-shell` is 100vw x 100dvh so this shows only as
    overscroll / rubber-band on a trackpad — but a white flash at the edge of a
    near-black terminal is the most obvious kind of wrong. :has() is already a
    dependency of this sheet (the rail's inset rule); browsers without it simply keep
    the light overscroll, which is a cosmetic degradation, not a broken layout. */
 body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
+body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
@@ -3187,10 +3395,168 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
      lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
 }
 .tn-terminal .tn-seg-slot {
+  /* MANDATORY, not stylistic: the eight `.tn-rz` resize handles are
+     position:absolute and pin themselves to this box's edges. Without a
+     positioned ancestor here they resolve against `.tn-grid` instead, so every
+     card's handles pile up in the corners of the whole board — the handles are
+     invisible at rest, so this fails as "resizing does nothing" rather than as
+     anything you can see. */
+  position: relative;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
   background: var(--tnx-panel);
+}
+
+/* ── The snap grid ─────────────────────────────────────────────────────────
+   Twelve columns and 24px rows, written as inline styles by ConsoleWorkspace
+   because the row count depends on how tall the board is. Everything below is
+   the CHROME of dragging: the guides, the placeholder, the eight handles and
+   the lifted card. `position: relative` is what the guides and the absolutely
+   positioned resizing card are measured against. */
+.tn-terminal .tn-grid { position: relative; }
+
+/* Guides. A gradient rather than twelve elements: no DOM, nothing to hit-test by
+   accident, and a single opacity to fade. Only visible during a gesture — a
+   permanently drawn grid is noise on a surface whose job is reading data.
+   --tn-col-step is published by the grid so the vertical lines land exactly on
+   the column boundaries at any container width. */
+.tn-terminal .tn-grid-guides {
+  position: absolute; inset: 0; z-index: 5;
+  pointer-events: none; opacity: 0;
+  transition: opacity 140ms ease;
+  background-image:
+    repeating-linear-gradient(to right,
+      color-mix(in srgb, var(--tnx-accent) 22%, transparent) 0 1px,
+      transparent 1px var(--tn-col-step, 8.3333%)),
+    repeating-linear-gradient(to bottom,
+      color-mix(in srgb, var(--tnx-accent) 16%, transparent) 0 1px,
+      transparent 1px 25px);
+}
+.tn-terminal .tn-grid.is-dragging .tn-grid-guides { opacity: 1; }
+
+/* The placeholder — where the held card will land. Dashed, because it is a
+   promise about the future rather than a thing on the board. */
+.tn-terminal .tn-grid-ghost {
+  z-index: 4;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--tnx-accent) 7%, transparent);
+  outline: 1px dashed var(--tnx-accent);
+  outline-offset: -1px;
+}
+
+/* The held card. It leaves the flat, hairline-separated surface for as long as
+   it is held — the one place the Terminal spends a shadow, because "this one is
+   in your hand" is exactly what elevation is for. `transition: none` matters:
+   the drag writes a transform every frame and a transition on top of that would
+   make the card lag the pointer. */
+.tn-terminal .tn-seg-slot.is-held,
+.tn-terminal .tn-cw-stage.is-held {
+  z-index: 40;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  outline: 1px solid var(--tnx-accent);
+  outline-offset: -1px;
+  transition: none !important;
+  cursor: grabbing;
+}
+
+/* ── Resize handles ────────────────────────────────────────────────────────
+   Eight of them, invisible at rest and revealed by the slot's own hover. The
+   old three were 6px targets with no resting appearance, so you had to already
+   know they were there and then hit them. These are 10px edges and 16px
+   corners, which is the most that can be given without eating into a 22px
+   header row; the ⋯ menu's nudge buttons and the arrow keys are the no-aim
+   route for anyone who does not want to chase an edge. */
+.tn-terminal .tn-rz {
+  position: absolute; z-index: 20;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  touch-action: none;
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz,
+.tn-terminal .tn-cw-stage:hover .tn-rz,
+.tn-terminal .is-held .tn-rz { opacity: 1; }
+
+.tn-terminal .tn-rz::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--tnx-accent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.tn-terminal .tn-rz:hover::after { opacity: 0.45; }
+
+.tn-terminal .tn-rz-n  { top: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-s  { bottom: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-w  { left: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-e  { right: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.tn-terminal .tn-rz-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+
+/* The south-east corner gets the only resting mark — the universal "this
+   resizes" tell, and the handle people reach for first. */
+.tn-terminal .tn-rz-se::before {
+  content: ""; position: absolute; right: 2px; bottom: 2px;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--tnx-ink-ghost);
+  border-bottom: 1.5px solid var(--tnx-ink-ghost);
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz-se::before { border-color: var(--tnx-accent); }
+
+/* The stage's drag grip. The map owns click, drag and wheel for panning and
+   zooming, so the stage cannot be draggable by its surface the way a widget's
+   header is — it gets one explicit grip instead, tucked into the corner the map
+   chrome leaves free. */
+.tn-terminal .tn-stage-grip {
+  position: absolute; left: 6px; bottom: 6px; z-index: 22;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: color-mix(in srgb, var(--tnx-panel) 88%, transparent);
+  border: 1px solid var(--tnx-line-strong);
+  color: var(--tnx-ink-faint);
+  font-size: 10px; line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.tn-terminal .tn-stage-grip:hover { color: var(--tnx-accent); border-color: var(--tnx-accent); }
+.tn-terminal .tn-stage-grip:focus-visible {
+  outline: none; color: var(--tnx-accent);
+  box-shadow: 0 0 0 2px var(--tnx-accent);
+}
+
+/* Reduced motion: the board still rearranges, it just does not animate. The FLIP
+   helper already resolves its duration to 0, and these cover the CSS-only fades
+   so nothing is left half-transitioned. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-grid-guides,
+  .tn-terminal .tn-rz,
+  .tn-terminal .tn-rz::after { transition: none; }
+}
+
+/* Below this width a twelve-column drag is not a real interaction — a column is
+   under 30px and the handles are bigger than the cells they target. The board
+   stacks in reading order and the gesture chrome is withdrawn rather than left
+   present and unusable. */
+@media (max-width: 900px) {
+  .tn-terminal .tn-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    min-height: 0;
+  }
+  .tn-terminal .tn-grid > .tn-seg-slot,
+  .tn-terminal .tn-grid > .tn-cw-stage {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    flex: 0 0 auto;
+    min-height: 220px;
+  }
+  .tn-terminal .tn-rz,
+  .tn-terminal .tn-grid-guides,
+  .tn-terminal .tn-grid-ghost,
+  .tn-terminal .tn-stage-grip { display: none; }
+  .tn-terminal .tn-cw-grip { cursor: default; }
 }
 
 /* ── Stage cell ────────────────────────────────────────────────────────────
@@ -3266,13 +3632,32 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
   font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
 }
 .tn-terminal .tn-cw-help::after { box-shadow: inset 0 0 0 1px var(--tnx-line-strong); }
-/* Height and width drags are dead controls in a fixed-track grid — a widget owns
-   exactly one cell and the cell's size comes from the template. Hiding them is the
-   honest render. The equivalent CHIP rows in the ⋯ menu live inside WidgetFrame and
-   cannot be reached from here; they are called out in the handover instead. */
-.tn-terminal .tn-cw-resize,
-.tn-terminal .tn-cw-resize-x,
-.tn-terminal .tn-cw-resize-xy { display: none; }
+
+/* The three old `.tn-cw-resize*` handles used to be hidden here, because a widget
+   owned exactly one template cell and its size came from the template — so a
+   resize control was a control that lied. Widgets own a rectangle now, and
+   resizing lives on the SLOT as eight handles (`.tn-rz-*` below) rather than
+   inside the frame: an edge has to stay grabbable, and `.tn-cw` clips its
+   overflow. The handles no longer exist in WidgetFrame's markup, so there is
+   nothing left to hide. */
+
+/* The grab handle. A real button now — it carries the keyboard path to moving and
+   resizing, so it has to be focusable and announced. */
+.tn-terminal .tn-cw-grip {
+  display: flex; align-items: center; justify-content: center;
+  width: 14px; height: 100%; flex: 0 0 auto;
+  padding: 0; border: 0; background: transparent;
+  color: var(--tnx-ink-ghost);
+  font: inherit; font-size: 10px; line-height: 1;
+  cursor: grab;
+  touch-action: none;
+}
+.tn-terminal .tn-cw-grip:hover { color: var(--tnx-accent); }
+.tn-terminal .tn-cw-grip:focus-visible {
+  outline: none; color: var(--tnx-accent);
+  box-shadow: inset 0 0 0 1px var(--tnx-accent);
+}
+.tn-grid.is-dragging .tn-cw-grip { cursor: grabbing; }
 
 /* Rows. `.tn-ev-row` and friends keep the 30px floor the touch-target pass measured
    for them — the design's 22px is a display height, and shrinking a control that
@@ -3333,7 +3718,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
   top: 8px; left: 8px; bottom: auto;
   border-radius: 0;
   border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9);
+  background: var(--tnx-glass);
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   z-index: 6;
 }
@@ -3430,7 +3815,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
 .tn-terminal .maplibregl-ctrl-bottom-left { left: 8px; bottom: 28px; }
 .tn-terminal .maplibregl-ctrl-attrib {
-  background: rgba(8, 11, 15, 0.85) !important;
+  background: var(--tnx-glass-soft) !important;
   color: var(--tnx-ink-ghost);
   font-family: var(--tnx-font-mono);
   font-size: 9px;
@@ -3438,7 +3823,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
 .tn-terminal .maplibregl-ctrl-group {
   border-radius: 0;
-  background: rgba(8, 11, 15, 0.9);
+  background: var(--tnx-glass);
   box-shadow: 0 0 0 1px var(--tnx-line-strong);
 }
 
@@ -3448,7 +3833,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tn-pinnav {
   top: auto; right: auto; bottom: 30px; left: 8px;
   border-radius: 0; border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+  background: var(--tnx-glass); box-shadow: none;
 }
 
 /* Plane-tracking chip: its default top:10px left:10px lands UNDER the 22px stage
@@ -3458,7 +3843,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tn-track-chip {
   top: 30px; left: 50%; transform: translateX(-50%);
   border-radius: 0; border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+  background: var(--tnx-glass); box-shadow: none;
   font-size: 10px;
 }
 
@@ -3602,7 +3987,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-bar {
   position: absolute; top: 0; left: 0; right: 0; height: 22px; z-index: 6;
   display: flex; align-items: stretch; font-size: 9px;
-  background: rgba(8, 11, 15, 0.88);
+  background: var(--tnx-glass-bar);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   pointer-events: auto;
 }
@@ -3645,7 +4030,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-search {
   position: absolute; top: 30px; left: 8px; width: 290px; max-width: calc(100% - 16px);
   z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
-  background: rgba(8, 11, 15, 0.9); border: 1px solid var(--tnx-line-strong);
+  background: var(--tnx-glass); border: 1px solid var(--tnx-line-strong);
   pointer-events: auto;
 }
 .tn-terminal .tnx-stage-search-pfx { font-size: 11px; font-weight: 700; color: var(--tnx-accent); flex: none; }
@@ -3661,7 +4046,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
 .tn-terminal .tnx-stage-search .tn-mapsearch-results {
-  margin-top: 5px; border-radius: 0; background: rgba(8, 11, 15, 0.96);
+  margin-top: 5px; border-radius: 0; background: var(--tnx-glass-solid);
   border: 1px solid var(--tnx-line-strong); box-shadow: none;
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: 10.5px; color: var(--tnx-ink); padding: 5px 8px; }
@@ -3672,7 +4057,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-legend {
   position: absolute; top: 30px; right: 8px; z-index: 6; max-width: 200px;
   padding: 5px 7px; font-size: 8.5px; letter-spacing: 0.05em;
-  background: rgba(8, 11, 15, 0.85); border: 1px solid var(--tnx-line);
+  background: var(--tnx-glass-soft); border: 1px solid var(--tnx-line);
   color: var(--tnx-ink-dim); pointer-events: auto;
 }
 .tn-terminal .tnx-legend-row {
@@ -3687,7 +4072,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-foot {
   position: absolute; left: 0; right: 0; bottom: 0; height: 24px; z-index: 6;
   display: flex; align-items: center; padding: 0 8px;
-  background: rgba(8, 11, 15, 0.88);
+  background: var(--tnx-glass-bar);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
 }

@@ -120,6 +120,8 @@ import { useActivePreset } from "@/lib/console/activePreset";
 import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";
 import { appStatusLine } from "@/components/shell/a11y";
 import { terminalModeStore, useTerminalMode, type TerminalMode } from "@/lib/terminal/mode";
+import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
+import Mark from "@/components/brand/Mark";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 
@@ -185,6 +187,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const layers = useLayers();
   const activePresetId = useActivePreset();
   const mode = useTerminalMode();
+  const skin = useTerminalSkin();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
@@ -221,10 +224,16 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
 
         {/* ── Brand ────────────────────────────────────────────────────────── */}
         <div className="tnx-hdr-brand">
-          {/* alt="" + aria-hidden: the mark is a decorative duplicate of the h1 next
-              to it, and a second "OpenData" in the accessibility tree is noise. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="tnx-hdr-mark" src="/brand/mark-64.png" alt="" width={24} height={24} aria-hidden />
+          {/* SVG, not the PNG this used to load. The raster has a baked near-black
+              plate, so on the light skin it sat as a dark square in the header;
+              the vector draws from currentColor and works on both. It is also the
+              one source the favicon and PWA icons are generated from, which is
+              what stopped the browser tab showing a different logo from the app.
+
+              No label: the mark is a decorative duplicate of the h1 beside it, and
+              a second "OpenData" in the accessibility tree is noise. `idle` runs
+              the slow ring-dot orbit — the ambient "system is live" tell. */}
+          <Mark className="tnx-hdr-mark" size={24} idle />
 
           {/* The page's one h1. It is the wordmark itself rather than a hidden
               duplicate — the visible product name IS the page's title — with a
@@ -301,6 +310,23 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
 
         {/* ── Entry points + identity ──────────────────────────────────────── */}
         <div className="tnx-hdr-right">
+          {/* Skin. Sits beside CONSOLE/WALL because it is the same kind of control —
+              how the Terminal looks, not what it shows — and it is deliberately a
+              two-state toggle rather than a third mode button: the label names the
+              skin you would GET, which is what a single button has to do to be
+              unambiguous. It does not touch [data-theme]; see lib/terminal/skin.ts
+              for why a Terminal skin cannot be a theme. */}
+          <button
+            type="button"
+            className="tnx-hdr-skin"
+            onClick={() => terminalSkinStore.toggle()}
+            aria-pressed={skin === "light"}
+            title={skin === "dark" ? "Switch to the light skin" : "Switch to the dark skin"}
+          >
+            <span aria-hidden>{skin === "dark" ? "☀" : "☾"}</span>
+            <span>{skin === "dark" ? "LIGHT" : "DARK"}</span>
+          </button>
+
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. Kept in the header rather than exiled to the
               footer: the 34px band holds a 9.5px chip fine, and the footer's right
