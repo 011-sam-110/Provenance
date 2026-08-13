@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/gdacs-events.json";
-import { normalizeGdacs, gdacsEventLabel, gdacsAlertColor, GDACS_SOURCE } from "@/lib/signals/gdacs";
+import {
+  normalizeGdacs,
+  gdacsEventLabel,
+  gdacsAlertColor,
+  GDACS_SOURCE,
+  GDACS_ENDPOINT,
+  GDACS_EVENT_TYPES,
+} from "@/lib/signals/gdacs";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
 test("normalizes the GDACS multi-hazard FeatureCollection", () => {
@@ -77,4 +84,36 @@ test("declares GDACS's real alert score (0–3) as the metric and it resolves pe
   for (const f of out) {
     expect(rowMetric(f, GDACS_SOURCE.metric)).toBeDefined();
   }
+});
+
+// ── Regression: the layer was silently empty in production ──────────────────
+//
+// GDACS began rejecting a bare event-list call with HTTP 400
+// {"message":"Eventtype is required."}. Because GDACS_SOURCE.fetch() returns []
+// on any non-ok response, the layer published a clean zero on every poll and
+// looked identical to "no disasters today". The parser was never wrong; the URL
+// was. These assert the URL, which is the thing that actually broke.
+
+test("the event-list URL carries the mandatory eventtype parameter", () => {
+  expect(GDACS_ENDPOINT).toContain("eventtype=");
+  const value = new URL(GDACS_ENDPOINT).searchParams.get("eventtype");
+  expect(value).toBeTruthy();
+  expect(value).not.toBe("");
+});
+
+test("eventtype is semicolon-separated, which is the form GDACS accepts", () => {
+  const value = new URL(GDACS_ENDPOINT).searchParams.get("eventtype")!;
+  expect(value).toBe(GDACS_EVENT_TYPES.join(";"));
+  // A comma-separated list is the obvious thing to reach for and it is wrong here.
+  expect(value).not.toContain(",");
+});
+
+test("every hazard code we request is one the label map understands", () => {
+  for (const code of GDACS_EVENT_TYPES) {
+    expect(gdacsEventLabel(code)).not.toBe("Disaster"); // "Disaster" is the fallback
+  }
+});
+
+test("requests all six hazard types, so the layer is not quietly single-hazard", () => {
+  expect([...GDACS_EVENT_TYPES].sort()).toEqual(["DR", "EQ", "FL", "TC", "VO", "WF"]);
 });

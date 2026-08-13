@@ -5,9 +5,29 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 // cyclones, floods, volcanoes, droughts and wildfires, each with a Green/Orange/Red
 // alert level. Complements the per-hazard feeds (USGS quakes, EONET fires/floods)
 // with a single multi-hazard, severity-scored, alert-coloured overlay. The marker
-// is GDACS's representative centroid. Confirmed live 2026-06-27.
+// is GDACS's representative centroid. Confirmed live 2026-06-27; re-verified
+// 2026-08-13 after upstream began requiring `eventtype` — see ENDPOINT below.
 
-const ENDPOINT = "https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP";
+/**
+ * EVENTTYPE IS MANDATORY. Calling this endpoint bare — as this adapter did until
+ * 2026-08-13 — now answers HTTP 400 `{"message":"Eventtype is required."}`. GDACS
+ * added the requirement at some point after the 2026-06-27 verification above, and
+ * because `fetch()` below returns `[]` on any non-ok response, the layer reported a
+ * clean, quiet zero rather than a failure. It looked exactly like "no disasters
+ * today" while being a hard 400 on every single poll.
+ *
+ * The parameter is SEMICOLON-separated, not comma-separated or repeated. All six
+ * hazard codes, measured 2026-08-13: 289 events (TC 203, WF 32, DR 24, FL 15,
+ * EQ 10, VO 5). The response shape is unchanged, so `normalizeGdacs` needed no
+ * edit — this was one missing query parameter, nothing more.
+ *
+ * TS (tsunami) is deliberately absent: `gdacsEventLabel` maps it because GDACS
+ * documents the code, but the event list does not accept it as a filter value.
+ */
+export const GDACS_EVENT_TYPES = ["EQ", "TC", "FL", "VO", "DR", "WF"] as const;
+/** Exported so a regression test can assert the parameter is still there. */
+export const GDACS_ENDPOINT =
+  `https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtype=${GDACS_EVENT_TYPES.join(";")}`;
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 export const GDACS_ATTRIBUTION = "Disaster alerts © GDACS (UN OCHA / European Commission JRC)";
@@ -122,7 +142,7 @@ export const GDACS_SOURCE: SignalSource = {
   metric: { field: "alertScore", domain: [0, 3] },
   async fetch() {
     try {
-      const res = await fetch(ENDPOINT, {
+      const res = await fetch(GDACS_ENDPOINT, {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
