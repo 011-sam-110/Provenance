@@ -48,6 +48,7 @@ import {
 } from "@/lib/widgets/dock";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import { explainerFor, confidenceChip, confidenceLabel } from "@/lib/signals/explain";
 import { capabilityBadge } from "@/lib/console/widgets/signals";
 
 interface LayerMeta {
@@ -301,6 +302,43 @@ function SignalFreshNote({ id, refreshMs }: { id: string; refreshMs: number }) {
 }
 
 /**
+ * How this layer knows what it claims — measured / official / reported /
+ * modelled / derived, straight off the layer's own trust card.
+ *
+ * WHY IT IS ON THE ROW AND NOT JUST IN THE CARD. Every layer in this rail draws
+ * the same coloured dot at the same visual weight, so a seismometer reading and a
+ * machine's interpretation of a news wire look equally authoritative until you
+ * open a panel. That flattening is the one defect users of products in this
+ * category consistently report — a civil aircraft on a community list showing as
+ * military, a machine-coded protest filed under the wrong heading. The fix is not
+ * to drop the derived layers, which are genuinely useful; it is to stop rendering
+ * a derivation with the same authority as an observation.
+ *
+ * DELIBERATELY NOT GATED ON `on`, unlike the freshness note beneath it. Freshness
+ * is a fact about our last fetch and only exists once we have fetched. Provenance
+ * is a fact about the source itself and is equally true switched off — a visitor
+ * deciding WHETHER to turn a layer on is exactly who needs it.
+ *
+ * Renders nothing when a layer has no explainer, rather than guessing a class.
+ * `undocumentedLayerIds()` already fails the build in that case, so in practice
+ * this is unreachable for a registered layer — but a fabricated provenance chip
+ * would be a worse bug than a missing one.
+ */
+function ProvenanceChip({ id }: { id: string }) {
+  const e = explainerFor(id);
+  if (!e) return null;
+  return (
+    <span
+      className={`tn-layer-prov tn-conf-${e.confidence}`}
+      title={`${confidenceLabel(e.confidence)} — ${e.method}`}
+      data-confidence={e.confidence}
+    >
+      {confidenceChip(e.confidence)}
+    </span>
+  );
+}
+
+/**
  * "Locked — needs a key" or "credential refused" for a layer this deployment
  * cannot use right now. The state → badge decision is the shared
  * capabilityBadge() (lib/console/widgets/signals.tsx) so this rail row and the
@@ -364,7 +402,10 @@ function SignalRow({
             {label}
             <LockedBadge id={id} />
           </span>
-          <span className="tn-layer-source">{attribution}</span>
+          <span className="tn-layer-source">
+            <ProvenanceChip id={id} />
+            {attribution}
+          </span>
           {on ? <SignalFreshNote id={id} refreshMs={refreshMs} /> : null}
         </div>
       </div>
