@@ -1,10 +1,17 @@
 "use client";
-// The calm light console shell. Hosts the widget workspace (3 resizable segments
-// around a fixed centre stage) with the thin chrome that recedes around it: a thin
-// top status bar, the ⌘K palette, the breaking banner, and the cinematic/feed
-// overlays. Owns the global ⌘K shortcut, the one-time client hydration of the
+// The OpenData Terminal shell. Five stacked bands — 34px header, 22px feed-health
+// strip, the breaking-banner band, the widget/stage grid, 24px footer — plus the
+// overlays that float over all of them (⌘K palette, dossier, cinematic dive, tour,
+// toast). Owns the global keyboard shortcuts, the one-time client hydration of the
 // persisted stores (including the console layout + ?c= shared-layout / first-run
 // seed), and the global capacity toast.
+//
+// `tn-terminal` on the root is where the near-black --tnx-* palette starts. It is a
+// SCOPED token block, not a theme: app/layout.tsx still hard-codes
+// data-theme="light", and variantStore re-asserts a variant's theme on every switch,
+// so a global dark default would be yanked back to light by the first board change.
+// Scoping it also means widget bodies inherit the terminal surfaces through the
+// remapped --tn-* tokens without a single .tn-cw* rule being rewritten.
 
 import { useEffect, useState } from "react";
 import { uiStore } from "@/lib/shell/ui";
@@ -14,7 +21,12 @@ import { watchlistStore } from "@/lib/shell/watchlist";
 import { timeWindowStore } from "@/lib/shell/timeWindow";
 import { registerServiceWorker } from "@/lib/pwa/register";
 import { variantStore } from "@/lib/variants/store";
-import StatusBar from "@/components/shell/StatusBar";
+import TerminalHeader from "@/components/terminal/TerminalHeader";
+import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
+import TerminalFooter from "@/components/terminal/TerminalFooter";
+import { focusStageSearch } from "@/components/terminal/StageBar";
+import { terminalModeStore } from "@/lib/terminal/mode";
+import { selectionStore } from "@/lib/terminal/selection";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import BreakingBanner from "@/components/shell/BreakingBanner";
@@ -64,6 +76,12 @@ export default function ConsoleShell() {
     notificationsStore.hydrate();
     trackStore.hydrate();
     pinsStore.hydrate();
+    // APPENDED, not inserted. The seventeen calls above are order-dependent
+    // (uiStore.hydrate applies the persisted data-theme before paint; variantStore
+    // then re-asserts the variant's theme), and terminalModeStore touches neither
+    // theme nor layout — it owns its own key, `tn.terminal.mode.v1`. Without this
+    // call the persisted CONSOLE/WALL choice is silently ignored on reload.
+    terminalModeStore.hydrate();
     const c = new URLSearchParams(window.location.search).get("c");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
@@ -77,12 +95,65 @@ export default function ConsoleShell() {
     return () => clearTimeout(tourTimer);
   }, []);
 
-  // Global ⌘K / Ctrl-K toggles the palette.
+  // Global shortcuts. One listener, because they share two guards that have to agree.
+  //
+  //   ⌘K / Ctrl-K  toggle the command palette   (unchanged)
+  //   W            WALL layout
+  //   C            CONSOLE layout
+  //   /            focus the stage search
+  //   Escape       clear the terminal selection
+  //
+  // GUARD 1 — never steal a keystroke from a text field. W, C and / are single
+  // printable characters, so without this, typing "console" into the stage search
+  // would flip the layout twice and typing a "/" anywhere would be swallowed. The
+  // check is on the EVENT TARGET rather than document.activeElement because a
+  // keydown is dispatched at the focused element, and contentEditable is included
+  // because a rich-text field is a text field even though its tagName is not INPUT.
+  //
+  // GUARD 2 — Escape belongs to whatever dialog is open. The palette, the settings
+  // drawer, the coverage panel and the tour all close on Escape, and clearing the
+  // user's selection as a side effect of closing a dialog would be a silent data
+  // loss they never asked for. Any mounted role="dialog" hands Escape (and the rest)
+  // back to that surface.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
         e.preventDefault();
         setPaletteOpen((o) => !o);
+        return;
+      }
+      // A modifier means the user is aiming at the browser or the OS, not at us.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable === true) return;
+      if (document.querySelector('[role="dialog"]')) return;
+
+      switch (e.key) {
+        case "w":
+        case "W":
+          e.preventDefault();
+          terminalModeStore.set("wall");
+          break;
+        case "c":
+        case "C":
+          e.preventDefault();
+          terminalModeStore.set("console");
+          break;
+        case "/":
+          // Only swallow the "/" if there was actually a search box to focus — the
+          // stage chrome unmounts while a widget is expanded onto the stage, and a
+          // preventDefault with nothing to show for it would look like a dead key
+          // (and would block Firefox's quick-find, which is the browser default
+          // this shortcut is deliberately shadowing).
+          if (focusStageSearch()) e.preventDefault();
+          break;
+        case "Escape":
+          selectionStore.clear();
+          break;
+        default:
+          break;
       }
     };
     window.addEventListener("keydown", onKey);
@@ -105,12 +176,27 @@ export default function ConsoleShell() {
   }, []);
 
   return (
-    <div className="tn-shell">
+    <div className="tn-shell tn-terminal">
       {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
       <SkipLink />
-      <StatusBar onOpenPalette={() => setPaletteOpen(true)} />
+      {/* Replaces StatusBar outright rather than sitting beside it: it carries the
+          page's single <h1>, the `stat-line` / `a11y-status-line` spans, and the
+          `.tn-preset-pill` / `.tn-palette-trigger` / `.tn-settings-trigger` tour
+          targets. Mounting both would duplicate all of those in the DOM and make
+          getByTestId("stat-line") strict-mode ambiguous in the e2e suite. */}
+      <TerminalHeader onOpenPalette={() => setPaletteOpen(true)} />
+      <FeedHealthStrip />
+      {/* BreakingBanner must stay the DIRECT PREVIOUS SIBLING of ConsoleWorkspace's
+          `.tn-cw-shell`: globals.css reserves the banner's band with the sibling
+          combinator `.tn-alert ~ .tn-cw-shell`, and the banner renders a fragment
+          (an sr-only live region, then the strip), so wrapping it in anything —
+          including a layout div for the new grid — breaks that selector and puts the
+          banner back on top of the stage's search box and projection switch. */}
       <BreakingBanner />
       <ConsoleWorkspace />
+      {/* Last band. Everything after it is fixed-position overlay chrome that takes
+          itself out of flow, so this is the final element in the column. */}
+      <TerminalFooter />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <FeedOverlay />
       <CinematicDive />
