@@ -8,6 +8,7 @@ import fixture from "@/tests/fixtures/eonet-events.json";
 const FIXTURE_NOW = Date.parse("2026-06-26T00:00:00Z");
 import {
   eonetToFeatures,
+  categoryFeedUrl,
   representativePoint,
   CATEGORIES,
   SEVERE_STORMS_SOURCE,
@@ -131,4 +132,49 @@ describe("per-category staleness window", () => {
       eonetToFeatures([evAt("W3", "wildfires", "not-a-date")] as never, CATEGORIES.wildfires, NOW_W),
     ).toHaveLength(1);
   });
+});
+
+// ── Regression: the floods layer was empty in production ────────────────────
+//
+// EONET closes a flood within days of the water receding, so the shared
+// `status=open` feed matched none of them — measured 2026-08-13, the open feed
+// held 7,058 events and ZERO floods, while the category feed held 9 that month
+// and 62 the month before, all closed. The parser was fine; the feed was wrong.
+
+test("floods reads its own full-status feed, because open never matches a flood", () => {
+  expect(CATEGORIES.floods.allStatuses).toBe(true);
+});
+
+test("the categories that legitimately mean open by staying open still use the shared feed", () => {
+  expect(CATEGORIES.wildfires.allStatuses).toBeUndefined();
+  expect(CATEGORIES.volcanoes.allStatuses).toBeUndefined();
+  expect(CATEGORIES.severeStorms.allStatuses).toBeUndefined();
+});
+
+test("floods keeps a recency bound, since a full-status feed reaches back years", () => {
+  // Without this, allStatuses would pull in floods from previous years.
+  expect(CATEGORIES.floods.maxAgeDays).toBe(60);
+});
+
+test("the category feed asks for all statuses and bounds the page", () => {
+  const url = new URL(categoryFeedUrl("floods"));
+  expect(url.pathname).toContain("/categories/floods");
+  expect(url.searchParams.get("status")).toBe("all");
+  expect(Number(url.searchParams.get("limit"))).toBeGreaterThanOrEqual(200);
+});
+
+test("a closed flood inside the window is kept, and one outside it is dropped", () => {
+  const now = Date.parse("2026-08-13T00:00:00Z");
+  const mk = (id: string, date: string) => ({
+    id,
+    title: `Flood ${id}`,
+    categories: [{ id: "floods" }],
+    geometry: [{ type: "Point", coordinates: [10, 20], date }],
+  });
+  const out = eonetToFeatures(
+    [mk("recent", "2026-08-10T00:00:00Z"), mk("ancient", "2026-01-01T00:00:00Z")],
+    CATEGORIES.floods,
+    now,
+  );
+  expect(out.map((f) => f.id)).toEqual(["eonet:recent"]);
 });

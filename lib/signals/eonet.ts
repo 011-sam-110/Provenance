@@ -21,6 +21,21 @@ import type { SignalFeature, SignalMetric, SignalSource } from "@/lib/signals/ty
 const ENDPOINT = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
+/**
+ * Some categories cannot be read off the shared `status=open` feed at all, because
+ * for them "open" does not mean "still happening" — see `allStatuses` on
+ * EonetCategoryMeta. Those get their own category-scoped feed.
+ *
+ * `limit`, not `days`. Measured 2026-08-13: `status=all&days=60` costs 15.9 s,
+ * while `status=all&limit=200` costs 2.4 s for the same 2.7 MB of the newest
+ * events, which comfortably spans the 60-day window `maxAgeDays` then applies
+ * client-side. EONET returns newest-first, so the limit trims the far tail, which
+ * is the part `maxAgeDays` was going to drop anyway.
+ */
+const CATEGORY_FEED_LIMIT = 200;
+export const categoryFeedUrl = (category: string): string =>
+  `https://eonet.gsfc.nasa.gov/api/v3/categories/${category}?status=all&limit=${CATEGORY_FEED_LIMIT}`;
+
 export const EONET_ATTRIBUTION = "Natural-event data © NASA EONET";
 
 export interface EonetGeometry {
@@ -57,6 +72,24 @@ export interface EonetCategoryMeta {
    * ago is almost certainly out, whereas a volcano is still a volcano.
    */
   maxAgeDays?: number;
+  /**
+   * Read this category from its own `status=all` feed instead of the shared
+   * `status=open` one.
+   *
+   * The comment on `maxAgeDays` above assumes "open ⇒ not declared finished", and
+   * for wildfires, volcanoes and storms that holds. For FLOODS it does not, and
+   * the layer was empty in production because of it: EONET closes a flood within
+   * days of the water going down, so `status=open` matched NOTHING. Measured
+   * 2026-08-13 — the open feed carried 7,058 events (6,985 wildfires, 33
+   * seaLakeIce, 32 volcanoes, 8 severeStorms) and exactly ZERO floods, while the
+   * category feed held 9 floods that month and 62 the month before, every one of
+   * them already closed. One had closed three days earlier.
+   *
+   * This is the same shape of bug the ENDPOINT comment records for volcanoes: an
+   * upstream filter that reads as a sensible default while silently emptying a
+   * layer. `maxAgeDays` is what bounds recency here, which is what it was for.
+   */
+  allStatuses?: boolean;
 }
 
 export const CATEGORIES: Record<string, EonetCategoryMeta> = {
@@ -73,7 +106,16 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     metric: { field: "windKt", domain: [35, 140], unit: " kts" },
     maxAgeDays: 14, // a storm nobody has observed in a fortnight is over
   },
-  floods: { signalId: "floods", category: "floods", label: "Floods", color: "#0ea5e9", maxAgeDays: 60 },
+  // allStatuses: a flood is closed almost as soon as it recedes, so the shared
+  // open feed never contains one. maxAgeDays is what keeps this recent.
+  floods: {
+    signalId: "floods",
+    category: "floods",
+    label: "Floods",
+    color: "#0ea5e9",
+    maxAgeDays: 60,
+    allStatuses: true,
+  },
 };
 
 /** Extract a representative [lon, lat] from a Point or (defensively) a Polygon. */
@@ -171,10 +213,25 @@ export function eonetToFeatures(
 let cache: { events: EonetEvent[]; at: number } | null = null;
 let inflight: Promise<EonetEvent[]> | null = null;
 
+/**
+ * 30 s, not 15 s. The shared open feed measured 4.9 MB on 2026-08-13 and its
+ * fetch time is genuinely variable: 7.7 s on one call and 18.3 s on another,
+ * minutes apart. Against a 15 s timeout that is a coin flip, and losing it takes
+ * ALL FOUR EONET layers to zero at once — with no error surfaced, because the
+ * catch below falls back to last-good, which on a cold instance is empty. That
+ * was observed live: volcanoes and wildfires read 0 on a dev server while the
+ * same code read 32 and 171 when the fetch happened to win.
+ *
+ * The route allows 60 s (app/api/signals/[id] sets maxDuration = 60), and the
+ * result is cached for CACHE_TTL_MS, so a slow fetch is paid once per ten
+ * minutes rather than per request.
+ */
+const FETCH_TIMEOUT_MS = 30_000;
+
 async function refresh(): Promise<EonetEvent[]> {
   const res = await fetch(ENDPOINT, {
     headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`EONET: ${res.status}`);
   const json = (await res.json()) as { events?: EonetEvent[] };
@@ -195,6 +252,41 @@ export async function fetchEonet(): Promise<EonetEvent[]> {
   return cache ? cache.events : inflight;
 }
 
+// --- Per-category cached fetch, for `allStatuses` categories ----------------
+// Same fresh-or-stale-while-revalidate contract as fetchEonet, keyed by category
+// so two such layers never share each other's events.
+const catCache = new Map<string, { events: EonetEvent[]; at: number }>();
+const catInflight = new Map<string, Promise<EonetEvent[]>>();
+
+async function refreshCategory(category: string): Promise<EonetEvent[]> {
+  const res = await fetch(categoryFeedUrl(category), {
+    headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`EONET ${category}: ${res.status}`);
+  const json = (await res.json()) as { events?: EonetEvent[] };
+  const events = json.events ?? [];
+  catCache.set(category, { events, at: Date.now() });
+  return events;
+}
+
+/** One category's full-status feed. Never throws — falls back to last-good. */
+export async function fetchEonetCategory(category: string): Promise<EonetEvent[]> {
+  const hit = catCache.get(category);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.events;
+  if (!catInflight.has(category)) {
+    catInflight.set(
+      category,
+      refreshCategory(category)
+        .catch(() => catCache.get(category)?.events ?? [])
+        .finally(() => {
+          catInflight.delete(category);
+        }),
+    );
+  }
+  return hit ? hit.events : (catInflight.get(category) as Promise<EonetEvent[]>);
+}
+
 function makeSource(meta: EonetCategoryMeta): SignalSource {
   return {
     id: meta.signalId,
@@ -205,7 +297,9 @@ function makeSource(meta: EonetCategoryMeta): SignalSource {
     attribution: EONET_ATTRIBUTION,
     ...(meta.metric ? { metric: meta.metric } : {}),
     async fetch() {
-      const events = await fetchEonet();
+      const events = meta.allStatuses
+        ? await fetchEonetCategory(meta.category)
+        : await fetchEonet();
       return eonetToFeatures(events, meta);
     },
   };
