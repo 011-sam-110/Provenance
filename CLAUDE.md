@@ -132,6 +132,21 @@ Re-measure before putting a number in a README, a CV or a PR description.
   `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare
   300. The last blocker was a zip member sliced to end-of-file (`4ffcf7a`), which made
   production reject all 16 files while local decoded them fine.
+- **GDELT rows are not incidents — do not re-assert them (2026-08-14).** Sampo caught prod
+  showing "Use of military force · Bristol, UK" sourced from an article about a Perez
+  Hilton TikTok livestream. Nothing was broken: the row cleared every guard because GDELT
+  genuinely published it that way. The article referenced Christchurch, GDELT promoted the
+  city name to actor `NZL` **with no actor type**, coded the violence vocabulary as CAMEO
+  190, and geocoded the action to Bristol. One story seeded pins on three cities.
+  Measured on the live window: that untyped-actor shape was **388 of 1,037 shipped rows
+  (37%)**. Two things follow, both now enforced in `lib/signals/gdelt.ts`:
+  (a) **require a typed actor** — costs ~30% of places and is the only guard that works;
+  `NumSources >= 2` was measured and REJECTED (391 places → 22, and Gaza/Ukraine/Syria to
+  zero). (b) **never state a CAMEO label as fact** — `toCoverageProps()` attributes it
+  (`codedAs`) beside an explicit "not a verified incident", because no filter can remove
+  the residue (a court report about a shooting has real police actors and survives
+  everything). The layer is labelled **"Conflict coverage"**, not "Conflict". Regression
+  fixture: `tests/fixtures/gdelt-bristol-miscoding.export.tsv` (verbatim rows).
 - **`/api/planes` still returns `{"count":0}` in prod** (re-checked 2026-08-11, after the
   coverage work landed). The cap is now honest, but the layer is empty: OpenSky's
   anonymous credit cap appears to be hit on the deployment's IP, and there is no last-good
