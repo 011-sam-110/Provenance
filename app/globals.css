@@ -3046,6 +3046,10 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-hdr-h: 34px;
   --tnx-feed-h: 22px;
   --tnx-foot-h: 24px;
+  /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
+     width and the shell's reserved left padding, so the two can never disagree
+     and let the tab sit on top of the first widget. */
+  --tnx-rail-tab-w: 26px;
 
   /* Type. JetBrains Mono for everything; IBM Plex Sans for headline titles only. */
   --tnx-font-mono: var(--tn-mono);
@@ -3334,9 +3338,48 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
   z-index: 6;
 }
 @media (min-width: 901px) {
-  /* The open rail PUSHES the grid rather than covering it. Padding on the shell,
-     not `left:` — the shell is no longer positioned, so `left` would do nothing. */
+  /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
+     the shell, not `left:` — the shell is `position:relative` here (see the
+     `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
+     element sideways and push its right edge out of the viewport instead of
+     reflowing the grid inside it. */
   .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: 304px; }
+
+  /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
+     tab, so the grid starts to the RIGHT of the control.
+
+     The open-rail rule above used to be the only one here, which left the closed
+     state's button on the base `top:8px; left:8px`. That was empty map in the old
+     full-bleed console — but in the Terminal grid the shell's top-left corner is
+     the FIRST WIDGET'S cell, so a 95x40 button sat on top of that widget's title
+     and its first data row (measured: FAB 8,64 95x40 over slot w0 at 0,56 300x171).
+
+     Reserving the gutter is what makes the collision structurally impossible
+     rather than merely unlikely — a grid item cannot start left of the padding
+     edge, whatever the layout does. The tab itself still resolves `left:0` against
+     the shell's PADDING box, which is the reserved strip, not the widget area. */
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) { padding-left: var(--tnx-rail-tab-w); }
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab {
+    top: 0; left: 0; bottom: auto;
+    width: var(--tnx-rail-tab-w);
+    height: 100%;
+    /* `row`, not `column`, and that is not a typo. Under `writing-mode:
+       vertical-rl` the INLINE axis runs top-to-bottom and the BLOCK axis runs
+       right-to-left, so flex `row` (which follows the inline axis) is what stacks
+       the glyph above the label DOWN the tab. `column` would follow the block axis
+       and lay them out side by side across a 26px-wide box, clipping the label
+       away entirely — which is exactly what it did. */
+    display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    writing-mode: vertical-rl;
+    border-width: 0 1px 0 0;
+  }
+  /* The ≡ glyph is a pictogram, not text — let it stay upright while the label
+     runs down the tab. */
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab .tn-rail-fab-bars {
+    writing-mode: horizontal-tb;
+  }
 }
 
 /* ── Breaking banner ───────────────────────────────────────────────────────
