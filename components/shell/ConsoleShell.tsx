@@ -13,7 +13,7 @@
 // Scoping it also means widget bodies inherit the terminal surfaces through the
 // remapped --tn-* tokens without a single .tn-cw* rule being rewritten.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uiStore } from "@/lib/shell/ui";
 import { alertStore } from "@/lib/shell/alert";
 import { langStore } from "@/lib/i18n/store";
@@ -26,6 +26,8 @@ import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import TerminalFooter from "@/components/terminal/TerminalFooter";
 import { focusStageSearch } from "@/components/terminal/StageBar";
 import { terminalModeStore } from "@/lib/terminal/mode";
+import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
+import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
@@ -53,6 +55,7 @@ import "@/lib/console/widgets";
 export default function ConsoleShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const skin = useTerminalSkin();
 
   // Re-hydrate persisted view state once, client-side (render defaults on the
   // server, reconcile after mount → no hydration mismatch).
@@ -82,6 +85,10 @@ export default function ConsoleShell() {
     // theme nor layout — it owns its own key, `tn.terminal.mode.v1`. Without this
     // call the persisted CONSOLE/WALL choice is silently ignored on reload.
     terminalModeStore.hydrate();
+    // Same reasoning, same appended position: the skin owns `tn.terminal.skin.v1`
+    // and touches neither theme nor layout. Without this the persisted DARK/LIGHT
+    // choice is silently ignored on every reload.
+    terminalSkinStore.hydrate();
     const c = new URLSearchParams(window.location.search).get("c");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
@@ -94,6 +101,25 @@ export default function ConsoleShell() {
     const tourTimer = setTimeout(() => tourStore.maybeAutoStart(), 900);
     return () => clearTimeout(tourTimer);
   }, []);
+
+  // ── Skin ⇄ basemap ───────────────────────────────────────────────────────
+  // The Terminal pins CARTO Dark Matter, and a near-white console wrapped around
+  // a near-black map is the most obviously wrong thing a light skin could ship
+  // with. Positron is the light counterpart and already exists in lib/basemaps.ts,
+  // described there as "the calm light default".
+  //
+  // It only swaps when the current basemap is the OTHER skin's default. Someone
+  // who deliberately chose Satellite or Topographic keeps it — a skin toggle is a
+  // statement about chrome, not a licence to throw away a map choice. The first
+  // run is skipped so a deep-linked `?base=` is never clobbered; the skin's own
+  // hydrate() then counts as a real change, which is what gives a returning
+  // light-skin user positron on load.
+  const skinSettled = useRef(false);
+  useEffect(() => {
+    if (!skinSettled.current) { skinSettled.current = true; return; }
+    const other = basemapForSkin(skin === "dark" ? "light" : "dark");
+    if (mapViewStore.get().basemap === other) mapViewStore.setBasemap(basemapForSkin(skin));
+  }, [skin]);
 
   // Global shortcuts. One listener, because they share two guards that have to agree.
   //
@@ -176,7 +202,7 @@ export default function ConsoleShell() {
   }, []);
 
   return (
-    <div className="tn-shell tn-terminal">
+    <div className="tn-shell tn-terminal" data-tnx-skin={skin}>
       {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
       <SkipLink />
       {/* Replaces StatusBar outright rather than sitting beside it: it carries the

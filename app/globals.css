@@ -3033,6 +3033,16 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-accent: #ffb020;
   --tnx-accent-soft: rgba(255, 176, 32, 0.13);
 
+  /* Glass: the translucent near-black the stage chrome, the rail tab and the
+     MapLibre controls float on. It was written as a literal rgba(8,11,15,a) in
+     thirteen places, which is exactly why the light skin first shipped with dark
+     panels carrying dark ink on top — unreadable, and invisible to any check that
+     only looks at the token block. Tokenised so a skin can move it. */
+  --tnx-glass: rgba(8, 11, 15, 0.90);
+  --tnx-glass-soft: rgba(8, 11, 15, 0.85);
+  --tnx-glass-bar: rgba(8, 11, 15, 0.88);
+  --tnx-glass-solid: rgba(8, 11, 15, 0.96);
+
   --tnx-live: #35c46a;
   --tnx-lag: #ffb020;
   --tnx-down: #ff5449;
@@ -3125,12 +3135,117 @@ a.tn-w-place { display: flex; align-items: center; }
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
+/* ── LIGHT SKIN ────────────────────────────────────────────────────────────
+   The second palette, selected by `data-tnx-skin="light"` on the same element.
+   It redefines the SAME --tnx-* tokens the block above sets, and nothing else —
+   the ~40 --tn-* remaps below it are written in terms of --tnx-*, so re-skinning
+   the entire widget system is this one block and no rule downstream changes.
+
+   NOT a `[data-theme]` and not a `prefers-color-scheme` block, deliberately.
+   lib/variants/store.ts re-asserts a variant's theme on every board switch, so a
+   theme-based skin would be yanked back the first time a tab is clicked; and a
+   media query would take the choice away from anyone whose OS disagrees with
+   them. See the note at the top of this section, and lib/terminal/skin.ts.
+
+   The status hues are NOT the dark ones carried over. --tnx-live #35c46a sits at
+   about 2.1:1 on white — fine as a 5px LED, unreadable as text, and the Terminal
+   spends those tokens on both. Each is re-derived to clear 4.5:1 on --tnx-panel.
+   The accent moves furthest: #ffb020 is ~1.9:1 on white and cannot be used for
+   text at all, so light gets a deepened amber that keeps the identity and the
+   contrast. */
+.tn-terminal[data-tnx-skin="light"] {
+  --tnx-bg: #eef1f5;
+  --tnx-panel: #ffffff;
+  --tnx-panel-head: #f6f8fa;
+  --tnx-chrome: #e8ecf1;
+
+  --tnx-ink: #10161d;
+  --tnx-ink-dim: #5a6673;
+  --tnx-ink-faint: #7d8894;
+  --tnx-ink-ghost: #a3adb8;
+
+  --tnx-line: rgba(16, 22, 29, 0.12);
+  --tnx-line-strong: rgba(16, 22, 29, 0.22);
+  --tnx-row-rule: rgba(16, 22, 29, 0.07);
+
+  --tnx-accent: #b8690a;
+  --tnx-accent-soft: rgba(184, 105, 10, 0.12);
+
+  /* The glass family, on paper. Same alphas, opposite ground. */
+  --tnx-glass: rgba(255, 255, 255, 0.92);
+  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
+  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
+  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
+
+  --tnx-live: #1a8f4c;
+  --tnx-lag: #b8690a;
+  --tnx-down: #c8352a;
+  --tnx-dormant: #b3bcc5;
+  --tnx-key: #8a94a0;
+
+  /* The remaps that are not a straight pass-through of a --tnx-* value. Anything
+     the dark block hard-codes a hex or an rgba() for has to be restated, or it
+     stays dark: a white overlay on white, a black-on-black shadow, a chip fill
+     that was picked against near-black. */
+  --tn-surface-2: #e9edf2;
+  --tn-glass: rgba(255, 255, 255, 0.92);
+  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
+  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
+  --tn-hover: rgba(16, 22, 29, 0.05);
+  --tn-accent-strong: #8f5107;
+  --tn-chip-bg: #eaeef3;
+  --tn-toggle-off: rgba(16, 22, 29, 0.20);
+  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
+  --tn-stale: #b5521a;
+  --tn-stale-ink: #b5521a;
+
+  scrollbar-color: rgba(16, 22, 29, 0.22) transparent;
+}
+
+/* The five status INKS collapse onto their fills on near-black because the vivid
+   hue is the legible one there. On white the opposite is true, so they are pointed
+   at the light ramp rather than left inheriting the dark one. */
+.tn-terminal[data-tnx-skin="light"] {
+  --tn-live-ink: var(--tnx-live);
+  --tn-lagging-ink: var(--tnx-lag);
+  --tn-down-ink: var(--tnx-down);
+  --tn-unknown-ink: var(--tnx-ink-faint);
+}
+
+/* WebKit scrollbars are set on the dark block with literal rgba(255,255,255,…);
+   they need the mirror or the light skin gets white-on-white thumbs. */
+.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(16, 22, 29, 0.20);
+}
+.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 22, 29, 0.30);
+}
+
+/* The skin toggle, sized to match the Ko-fi chip beside it. */
+.tn-terminal .tnx-hdr-skin {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border: 1px solid var(--tnx-line-strong);
+  background: none;
+  color: var(--tnx-ink-dim);
+  cursor: pointer;
+}
+.tn-terminal .tnx-hdr-skin:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+
+/* The lifted card's shadow is tuned for near-black and disappears on paper. */
+.tn-terminal[data-tnx-skin="light"] .tn-seg-slot.is-held,
+.tn-terminal[data-tnx-skin="light"] .tn-cw-stage.is-held {
+  box-shadow: 0 16px 44px rgba(16, 22, 29, 0.22);
+}
+
 /* The page behind the shell. `.tn-shell` is 100vw x 100dvh so this shows only as
    overscroll / rubber-band on a trackpad — but a white flash at the edge of a
    near-black terminal is the most obvious kind of wrong. :has() is already a
    dependency of this sheet (the rail's inset rule); browsers without it simply keep
    the light overscroll, which is a cosmetic degradation, not a broken layout. */
 body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
+body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
@@ -3510,7 +3625,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
   top: 8px; left: 8px; bottom: auto;
   border-radius: 0;
   border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9);
+  background: var(--tnx-glass);
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   z-index: 6;
 }
@@ -3607,7 +3722,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
 .tn-terminal .maplibregl-ctrl-bottom-left { left: 8px; bottom: 28px; }
 .tn-terminal .maplibregl-ctrl-attrib {
-  background: rgba(8, 11, 15, 0.85) !important;
+  background: var(--tnx-glass-soft) !important;
   color: var(--tnx-ink-ghost);
   font-family: var(--tnx-font-mono);
   font-size: 9px;
@@ -3615,7 +3730,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
 .tn-terminal .maplibregl-ctrl-group {
   border-radius: 0;
-  background: rgba(8, 11, 15, 0.9);
+  background: var(--tnx-glass);
   box-shadow: 0 0 0 1px var(--tnx-line-strong);
 }
 
@@ -3625,7 +3740,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tn-pinnav {
   top: auto; right: auto; bottom: 30px; left: 8px;
   border-radius: 0; border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+  background: var(--tnx-glass); box-shadow: none;
 }
 
 /* Plane-tracking chip: its default top:10px left:10px lands UNDER the 22px stage
@@ -3635,7 +3750,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tn-track-chip {
   top: 30px; left: 50%; transform: translateX(-50%);
   border-radius: 0; border: 1px solid var(--tnx-line-strong);
-  background: rgba(8, 11, 15, 0.9); box-shadow: none;
+  background: var(--tnx-glass); box-shadow: none;
   font-size: 10px;
 }
 
@@ -3779,7 +3894,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-bar {
   position: absolute; top: 0; left: 0; right: 0; height: 22px; z-index: 6;
   display: flex; align-items: stretch; font-size: 9px;
-  background: rgba(8, 11, 15, 0.88);
+  background: var(--tnx-glass-bar);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   pointer-events: auto;
 }
@@ -3822,7 +3937,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-search {
   position: absolute; top: 30px; left: 8px; width: 290px; max-width: calc(100% - 16px);
   z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
-  background: rgba(8, 11, 15, 0.9); border: 1px solid var(--tnx-line-strong);
+  background: var(--tnx-glass); border: 1px solid var(--tnx-line-strong);
   pointer-events: auto;
 }
 .tn-terminal .tnx-stage-search-pfx { font-size: 11px; font-weight: 700; color: var(--tnx-accent); flex: none; }
@@ -3838,7 +3953,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
 .tn-terminal .tnx-stage-search .tn-mapsearch-results {
-  margin-top: 5px; border-radius: 0; background: rgba(8, 11, 15, 0.96);
+  margin-top: 5px; border-radius: 0; background: var(--tnx-glass-solid);
   border: 1px solid var(--tnx-line-strong); box-shadow: none;
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: 10.5px; color: var(--tnx-ink); padding: 5px 8px; }
@@ -3849,7 +3964,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-legend {
   position: absolute; top: 30px; right: 8px; z-index: 6; max-width: 200px;
   padding: 5px 7px; font-size: 8.5px; letter-spacing: 0.05em;
-  background: rgba(8, 11, 15, 0.85); border: 1px solid var(--tnx-line);
+  background: var(--tnx-glass-soft); border: 1px solid var(--tnx-line);
   color: var(--tnx-ink-dim); pointer-events: auto;
 }
 .tn-terminal .tnx-legend-row {
@@ -3864,7 +3979,7 @@ body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
 .tn-terminal .tnx-stage-foot {
   position: absolute; left: 0; right: 0; bottom: 0; height: 24px; z-index: 6;
   display: flex; align-items: center; padding: 0 8px;
-  background: rgba(8, 11, 15, 0.88);
+  background: var(--tnx-glass-bar);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
 }

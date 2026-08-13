@@ -17,6 +17,7 @@ import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { readingOrder, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { useGridDrag, gridArea, boardHeightPx, type ResizeDir } from "@/lib/terminal/useGridDrag";
+import { useTerminalSkin } from "@/lib/terminal/skin";
 
 // The OpenData Terminal workspace: ONE twelve-column grid holding the map stage and
 // every widget, each at its own rectangle.
@@ -54,6 +55,7 @@ const HANDLES: ResizeDir[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
 
 export default function ConsoleWorkspace() {
   const layout = useShellLayout();
+  const skin = useTerminalSkin();
   const gridRef = useRef<HTMLDivElement>(null);
   const drag = useGridDrag(gridRef);
 
@@ -167,7 +169,12 @@ export default function ConsoleWorkspace() {
     ));
 
   return (
-    <div className="tn-cw-shell tn-terminal" style={legacyVars}>
+    // data-tnx-skin is repeated here, not inherited. This element carries
+    // `.tn-terminal` too, and that block re-declares the whole dark --tnx-*
+    // palette — so without the attribute the inner scope would override the
+    // light values cascading down from the shell and only the chrome would
+    // change skin.
+    <div className="tn-cw-shell tn-terminal" data-tnx-skin={skin} style={legacyVars}>
       {/* The grid is a separate element from `.tn-cw-shell`, and that is not
           incidental: grid areas only apply to DIRECT children of the grid container,
           while the rail (PanelHost) has to stay a direct child of `.tn-cw-shell` for

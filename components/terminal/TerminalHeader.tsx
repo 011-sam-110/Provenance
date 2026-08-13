@@ -120,6 +120,7 @@ import { useActivePreset } from "@/lib/console/activePreset";
 import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";
 import { appStatusLine } from "@/components/shell/a11y";
 import { terminalModeStore, useTerminalMode, type TerminalMode } from "@/lib/terminal/mode";
+import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 
@@ -185,6 +186,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const layers = useLayers();
   const activePresetId = useActivePreset();
   const mode = useTerminalMode();
+  const skin = useTerminalSkin();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
@@ -301,6 +303,23 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
 
         {/* ── Entry points + identity ──────────────────────────────────────── */}
         <div className="tnx-hdr-right">
+          {/* Skin. Sits beside CONSOLE/WALL because it is the same kind of control —
+              how the Terminal looks, not what it shows — and it is deliberately a
+              two-state toggle rather than a third mode button: the label names the
+              skin you would GET, which is what a single button has to do to be
+              unambiguous. It does not touch [data-theme]; see lib/terminal/skin.ts
+              for why a Terminal skin cannot be a theme. */}
+          <button
+            type="button"
+            className="tnx-hdr-skin"
+            onClick={() => terminalSkinStore.toggle()}
+            aria-pressed={skin === "light"}
+            title={skin === "dark" ? "Switch to the light skin" : "Switch to the dark skin"}
+          >
+            <span aria-hidden>{skin === "dark" ? "☀" : "☾"}</span>
+            <span>{skin === "dark" ? "LIGHT" : "DARK"}</span>
+          </button>
+
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. Kept in the header rather than exiled to the
               footer: the 34px band holds a 9.5px chip fine, and the footer's right
