@@ -1,38 +1,42 @@
 /**
- * The aircraft layer. OpenSky Network is the PRIMARY source — live aircraft
- * worldwide from ONE global snapshot — with a bounded adsb.lol grid sweep
- * (lib/sources/adsb.ts) as the fallback when OpenSky refuses. See
- * `fetchAircraftOnce` for why the fallback exists and what it costs in coverage.
- * Everything below this line describes the OpenSky path specifically.
+ * The aircraft layer. The sole source is a bounded adsb.lol grid sweep
+ * (lib/sources/adsb.ts). See `fetchAircraftOnce` for why OpenSky was removed —
+ * the reason is its licence, not its reliability — and what the change costs in
+ * coverage (in practice: nothing, because the sweep was already serving prod alone).
  *
- * WHY GLOBAL, NOT A SWEEP: adsb.lol/adsb.fi are point+radius only (max 250 nm, no
- * global query), so worldwide coverage there means sweeping ~50 cells and stitching
- * them together in server state. On Vercel serverless that state is per-instance and
- * never accumulates across the cold, independent lambdas that handle each cache
- * revalidation — so the stitched union collapses to whichever handful of (rate-limit-
- * surviving, North-America-first) cells landed last. OpenSky's `/states/all` returns
- * EVERY tracked aircraft on Earth in a single request, so coverage is worldwide by
- * construction — no grid, no rolling store, no rate-limit-order bias.
+ * FILENAME. This module is still called `opensky.ts` even though it no longer
+ * contacts OpenSky, because renaming it touches eight importers and would bury a
+ * licensing fix inside a rename diff. That rename is a named follow-up, not an
+ * oversight.
  *
- * TRADE-OFF: OpenSky's anonymous tier is credit-capped (~400 credits/day, a global
- * call costs ~4), so we DON'T poll it per-visitor. The fetch is wrapped in Next's
- * Data Cache (`unstable_cache`, revalidate = REVALIDATE_S) so upstream is hit at most
- * once per window for the ENTIRE deployment (stale-while-revalidate) and REVALIDATE_S
- * is set so a fully-saturated day still stays under the daily cap. On any failure
- * (429 / 5xx / null states / timeout) fetchGlobalOnce THROWS rather than swallowing
- * the failure, so the Data Cache keeps serving whatever it last cached successfully
- * — a persisted last-good snapshot, not a module variable a fresh serverless
- * instance would reset to empty (see fetchGlobalOnce below for why that distinction
- * is the whole fix). Because that snapshot is GLOBAL, even a stale serve is still
- * worldwide, never regional. A staleness gate (decideStaleness/gateSnapshot) then
- * refuses to serve anything older than STALE_CEILING_MS — aircraft move, so an old
- * enough "live" snapshot would be a fabrication, not just a late one.
+ * WHY A SWEEP IS AWKWARD, retained because it still shapes the code below:
+ * adsb.lol is point+radius only (max 250 nm, no global query), so worldwide coverage
+ * means sweeping ~50 cells and stitching them. On Vercel serverless that stitching
+ * cannot accumulate across the cold, independent lambdas that handle each cache
+ * revalidation, so the union is whatever one sweep collects inside its own budget —
+ * dense over North America and Europe, thin elsewhere. That limit is real and is
+ * declared through the coverage record rather than hidden. OpenSky's `/states/all`
+ * did not have it, which is why it was preferred until the terms were read.
  *
- * OpenSky omits type-code + registration (unlike adsb.lol); the dossier fetches those
- * on demand from /api/flight by callsign+hex, both of which OpenSky provides. squawk
- * IS present (index 14), so the emergency-squawk (7500/7600/7700) alerts stay live.
+ * CADENCE: the sweep is wrapped in Next's Data Cache (`unstable_cache`,
+ * revalidate = REVALIDATE_S), so upstream is hit at most once per window for the
+ * ENTIRE deployment (stale-while-revalidate) rather than per visitor. On failure
+ * `fetchAircraftOnce` THROWS rather than returning empty, so the Data Cache keeps
+ * serving whatever it last cached successfully — a persisted last-good snapshot, not
+ * a module variable a fresh serverless instance would reset to empty. That
+ * distinction is load-bearing: `unstable_cache` commits whatever it is handed, so a
+ * swallowed failure overwrites a good snapshot with an empty one. A staleness gate
+ * (decideStaleness/gateSnapshot) then refuses to serve anything older than
+ * STALE_CEILING_MS — aircraft move, so an old enough "live" snapshot would be a
+ * fabrication, not just a late one.
  *
- * Docs: https://openskynetwork.github.io/opensky-api/rest.html#all-state-vectors
+ * RETAINED, NOT DEAD: `parseStates` / `planeToWorldObject` / the `Plane` interface
+ * parse OpenSky's positional state-vector format and are no longer on any live path.
+ * They stay because `lib/sources/adsb.ts` shapes its `meta` to match
+ * `planeToWorldObject` exactly, so this is the written contract for that shape, and
+ * because their squawk handling (index 14 → 7500/7600/7700) is what the
+ * emergency-squawk alerts in `lib/console/widgets/aviation.tsx` are specified
+ * against. Deleting them is a separate mechanical change with its own test churn.
  */
 
 import type { WorldObject } from "@/lib/world";
@@ -255,10 +259,18 @@ export interface AircraftSnapshot {
    */
   staleness?: { stale: true; ageMs: number } | { reason: "too-old"; ageMs: number };
   /**
-   * Which upstream actually produced these positions. The two providers have
-   * materially different coverage — OpenSky is worldwide, the adsb.lol sweep sees
-   * only where volunteers run receivers — so a consumer that prints a count without
-   * knowing the provider cannot describe it correctly. Undefined only for a
+   * Which upstream actually produced these positions. Everything minted now is
+   * `"adsb.lol"` — OpenSky was removed on licensing grounds (see `fetchAircraftOnce`).
+   *
+   * `"opensky"` REMAINS IN THIS UNION ON PURPOSE. The Data Cache persists across
+   * deploys, so a snapshot stamped by the previous code can still be rehydrated and
+   * served after this change ships; narrowing the type would make that a parse
+   * failure rather than a correctly-labelled stale snapshot. It will age out on its
+   * own. Do not remove it in the same PR as the fetch change.
+   *
+   * The providers had materially different coverage — OpenSky was worldwide, the
+   * sweep sees only where volunteers run receivers — so a consumer that prints a
+   * count without reading this cannot describe it correctly. Undefined only for a
    * snapshot that predates this field or carries no aircraft.
    */
   source?: "opensky" | "adsb.lol";
@@ -271,95 +283,60 @@ export function toAircraftSnapshot(planes: WorldObject[]): AircraftSnapshot {
 }
 
 // ---------------------------------------------------------------------------
-// Global fetch — one worldwide snapshot, cached deployment-wide, dormant-safe
+// Snapshot fetch — one adsb.lol sweep, cached deployment-wide, dormant-safe
 // ---------------------------------------------------------------------------
 
-// No bbox → every tracked aircraft on Earth in one response.
-const GLOBAL_URL = "https://opensky-network.org/api/states/all";
-const FETCH_TIMEOUT_MS = 12_000;
-// Deployment-wide revalidate. OpenSky anonymous is ~400 credits/day and a global
-// call costs ~4 (≈100 calls/day). 240 s ⇒ ≤360 upstream calls even on a fully
-// saturated day, so it never exhausts the daily budget and freezes. (A registered
-// OpenSky account lifts the cap ~10×; this could then drop to ~60–90 s.)
+// Deployment-wide revalidate, unchanged at 240 s. This used to be sized against
+// OpenSky's ~400-credits/day anonymous budget; adsb.lol publishes no such cap, so
+// the number now exists only to bound how often the 14 s sweep runs.
 const REVALIDATE_S = 240;
 
-interface OpenSkyResponse {
-  time: number;
-  states: unknown[][] | null;
-}
-
 /**
- * Fetch one global snapshot and map it to capped WorldObjects, stamped with the
- * moment it was fetched.
+ * One aircraft snapshot, from a bounded adsb.lol grid sweep (lib/sources/adsb.ts).
  *
- * THROWS — deliberately — on any failure: a 429 (rate-limit), non-2xx, null
- * `states` (degraded upstream), a zero-aircraft parse, a timeout, or a parse
- * error. This used to swallow every one of those into a "last-good" fallback
- * held in a MODULE-LEVEL variable, which does not survive between serverless
- * invocations: Vercel starts each cold lambda with fresh module state, so on a
- * fresh instance that fallback was always `{planes: []}`. Once OpenSky's
- * anonymous credit cap was hit on the deployment's IP, EVERY poll failed there —
- * so `{planes: []}` is what got returned, and because fetchAircraftSnapshot's
- * unstable_cache wrapper commits whatever this function returns, that empty
- * result is what got WRITTEN into the Data Cache, overwriting any earlier good
- * snapshot. That is the exact bug this fixes: one throttled poll from a fresh
- * instance emptied the whole layer for the rest of the revalidate window —
- * indefinitely, on an IP whose cap never lifts.
+ * WHY OPENSKY IS GONE, AND WHY THIS IS NOT A REGRESSION.
  *
- * Throwing instead means unstable_cache never commits a new value on failure —
- * the PREVIOUS cached snapshot (in the Data Cache, which persists across
- * invocations, unlike module state) keeps being served. That persisted snapshot
- * is what fetchAircraftSnapshot's staleness gate then decides whether to serve,
- * serve-with-disclosed-age, or withhold as too old — see `decideStaleness`.
- */
-async function fetchGlobalOnce(): Promise<AircraftSnapshot> {
-  const res = await fetch(GLOBAL_URL, {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`OpenSky /states/all answered ${res.status}`);
-  const data = (await res.json()) as OpenSkyResponse;
-  if (!data.states) throw new Error("OpenSky /states/all returned degraded (null) states");
-  const objects = capPlanes(parseStates(data.states).map(planeToWorldObject), MAX_PLANES);
-  if (!objects.length) throw new Error("OpenSky /states/all parsed to zero positioned aircraft");
-  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now() };
-}
-
-/**
- * One aircraft snapshot from the best provider that answers.
+ * OpenSky used to be the primary here, with this sweep as its fallback. It has been
+ * removed outright — not demoted — because of its licence, not its reliability.
+ * OpenSky's Terms of Use require a WRITTEN LICENCE for "use of the REST API in any
+ * operational ... integration into a live product, service, or automated system",
+ * and state that this applies "REGARDLESS OF THE ENTITY'S NON-PROFIT STATUS". The
+ * free grant covers non-profit research and education only. Provenance is a live,
+ * publicly reachable product, so calling that endpoint from it is the licensed act
+ * whether or not the response is ever served onward, and whether or not this project
+ * is free and open-source. We hold no such licence, so we do not make the call.
  *
- * OpenSky stays PRIMARY because `/states/all` is genuinely worldwide in one call.
- * But its anonymous tier is credit-capped per IP, and on the production
- * deployment's IP that cap is permanently exhausted — measured 2026-08-13, prod
- * `/api/planes` served `{count: 0}` while the same endpoint answered 200 with
- * ~1.7 MB in 0.58 s from a home IP. With OpenSky as the only provider,
- * `fetchGlobalOnce` throws on every poll, `unstable_cache` never commits, and the
- * layer sits in `never-fetched` forever. A staleness gate cannot rescue that: there
- * has never been a good snapshot to go stale.
+ * Note the shape of that clause: it binds the CALL, not the data. Demoting OpenSky
+ * to a fallback would not have helped — a fallback still calls it. Neither would
+ * adding credentials, which is what CLAUDE.md previously prescribed for the empty
+ * layer: that turns an anonymous failing request into an authenticated, working,
+ * attributable one, which is more squarely the licensed act, not less.
  *
- * So on an OpenSky failure we fall back to a bounded adsb.lol grid sweep
- * (lib/sources/adsb.ts), which answers fine from a datacentre IP — the sibling
- * `military-air` layer has been serving from it in prod all along, which is the
- * evidence that the block is OpenSky-specific and not general egress.
+ * NOTHING IS LOST OPERATIONALLY. The OpenSky call had already been failing from the
+ * deployment for months, and this sweep has been carrying the layer alone: prod
+ * `/api/planes` measured 3,000 aircraft with `source: "adsb.lol"` on 2026-08-14. The
+ * coverage difference is real and is still declared — OpenSky was worldwide in one
+ * call, the sweep sees only where volunteers run receivers, dense over North America
+ * and Europe and thin elsewhere — but that difference was already what production
+ * was serving. This change makes the code match it.
  *
- * The two providers do NOT have equal coverage, and the snapshot says which one
- * served so that difference is never silent: OpenSky is worldwide, the sweep sees
- * only where volunteers run receivers. Each attaches its own coverage record.
+ * adsb.lol carries no equivalent restriction: its feeders waive rights under CC0 and
+ * no term on its site restricts API use, commercial use or redistribution. Verified
+ * against content/en/privacy-license/index.md in the adsblol/website repo, 2026-08-14.
+ * That is "no restriction exists", which is a slightly weaker claim than "a licence
+ * expressly grants this" — worth knowing before anyone builds a paid product on it.
  *
- * If BOTH fail we rethrow OpenSky's error rather than returning an empty snapshot —
- * `unstable_cache` must not commit a success on a total failure, or an empty result
- * poisons the cache for the whole revalidate window. That is the same bug the
- * `fetchGlobalOnce` docstring describes; it applies to the fallback path too.
+ * THROWS on a sweep that returns nothing, deliberately. `unstable_cache` commits
+ * whatever this returns, so returning an empty snapshot on failure would overwrite a
+ * good cached one and empty the layer for the rest of the revalidate window. Throwing
+ * leaves the previous Data Cache entry in place for the staleness gate to judge —
+ * see `decideStaleness`.
  */
 async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
-  try {
-    return { ...(await fetchGlobalOnce()), source: "opensky" };
-  } catch (openSkyError) {
-    const sweep = await fetchAdsbSweep();
-    if (!sweep.objects.length) throw openSkyError;
-    const objects = sweepToObjects(sweep, MAX_PLANES);
-    return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
-  }
+  const sweep = await fetchAdsbSweep();
+  if (!sweep.objects.length) throw new Error("adsb.lol sweep returned zero positioned aircraft");
+  const objects = sweepToObjects(sweep, MAX_PLANES);
+  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
 }
 
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */

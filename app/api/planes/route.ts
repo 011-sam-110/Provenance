@@ -28,10 +28,17 @@ const PLANES_TTL_MS = 20_000;
 export const maxDuration = 30;
 
 /**
- * GET /api/planes — live aircraft worldwide (keyless, from OpenSky's global
- * `/states/all` snapshot) as classified WorldObjects. fetchAircraftSnapshot serves a
- * shared, stored snapshot (Next Data Cache) and handles failure (last-good / empty),
- * so this route never throws and users never trigger their own upstream pull.
+ * GET /api/planes — live aircraft (keyless, from a bounded adsb.lol grid sweep) as
+ * classified WorldObjects. fetchAircraftSnapshot serves a shared, stored snapshot
+ * (Next Data Cache) and handles failure (last-good / empty), so this route never
+ * throws and users never trigger their own upstream pull.
+ *
+ * NOT WORLDWIDE, and do not describe it as such. OpenSky's global `/states/all` was
+ * the source until it was removed on licensing grounds (lib/sources/opensky.ts,
+ * `fetchAircraftOnce`). The sweep that replaced it is dense over North America and
+ * Europe and thin elsewhere. Production had already been served entirely by the
+ * sweep for months, so the coverage did not change here — only the code's claim
+ * about it did.
  *
  * TRUNCATION HONESTY. The served set is capped at MAX_PLANES (3,000) out of a global
  * snapshot measured at 11,705 positioned aircraft, so `count` alone was the cap
@@ -52,12 +59,15 @@ export const maxDuration = 30;
  *   - too old, or never fetched → `planes: []`; `staleness: {reason, ageMs?}` when
  *     there's a reason to give (never served as if the layer were simply quiet).
  *
- * PROVENANCE. `source` names which upstream actually produced these positions:
- * `"opensky"` (worldwide, one global snapshot) or `"adsb.lol"` (a bounded grid
- * sweep of a community receiver network, dense over North America and Europe and
- * thin elsewhere). The two are NOT interchangeable in coverage, so a consumer that
- * prints a count without reading this cannot describe it correctly. Absent means no
- * snapshot was served, never "either is fine".
+ * PROVENANCE. `source` names which upstream actually produced these positions.
+ * Everything minted now is `"adsb.lol"` (a bounded grid sweep of a community
+ * receiver network, dense over North America and Europe and thin elsewhere).
+ * `"opensky"` (worldwide, one global snapshot) can still appear on a snapshot the
+ * Data Cache kept across the deploy that removed it; that is a correctly-labelled
+ * stale snapshot, not a live source, and it ages out on its own. The two are NOT
+ * interchangeable in coverage, so a consumer that prints a count without reading
+ * this cannot describe it correctly. Absent means no snapshot was served, never
+ * "either is fine".
  *
  * Response: { count, source?, coverage?, staleness?, planes }
  */
