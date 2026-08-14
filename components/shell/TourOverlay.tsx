@@ -330,7 +330,13 @@ export default function TourOverlay() {
           verify-tour.mjs has to keep a hard-coded list of framing-step titles —
           which goes stale the first time one is reworded, and then reports a
           healthy tour as broken. Exactly the rot this rewrite exists to remove. */}
-      <div className="tn-tour-card" ref={cardRef} tabIndex={-1} data-framing={isFramingStep(flat.step) ? "true" : "false"}
+      {/* A reactive step with nothing to ring is expected, not broken: the banner
+          and the pin navigator are genuinely absent until something happens. They
+          are marked framing so the verification walk does not report a healthy run
+          as a miss — the cost being that a reactive step CAN hide a dead selector,
+          which is why `reactive` is restricted to controls that come and go. */}
+      <div className="tn-tour-card" ref={cardRef} tabIndex={-1}
+        data-framing={isFramingStep(flat.step) || (flat.step.reactive === true && !box) ? "true" : "false"}
         style={pos ? { left: pos.left, top: pos.top, visibility: "visible" } : { visibility: "hidden" }}>
         <div className="tn-tour-meta">
           <span className="tn-tour-count">

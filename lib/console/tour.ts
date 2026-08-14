@@ -32,7 +32,6 @@
 
 import { BRAND } from "@/lib/brand";
 import { SIGNALS } from "@/lib/signals/registry";
-import { CAMERA_REGIONS } from "@/lib/icons/svg";
 
 /**
  * Counts are DERIVED, never typed. A tour whose sixth chapter is about not being
@@ -40,14 +39,18 @@ import { CAMERA_REGIONS } from "@/lib/icons/svg";
  * thirty-seven — which is exactly what the first draft did, because the number
  * came from a stale note rather than the registry.
  *
- * Both imports are already in the console's client bundle (SourceCatalog pulls
- * `signalsByGroup` from the same registry and `CAMERA_REGIONS` from the same
- * module), so this costs nothing. Do not import the camera SOURCES registry here
- * for the same figure — that one drags eleven adapters and zod into the browser.
+ * The registry is already in the console's client bundle (SourceCatalog pulls
+ * `signalsByGroup` from it), so this costs nothing. Do NOT import the camera
+ * `SOURCES` registry here for the equivalent figure — that one drags a dozen
+ * adapters and zod into the browser.
  */
 const SIGNAL_COUNT = SIGNALS.length;
-const FEED_COUNT = CAMERA_REGIONS.length;
-const SOURCE_COUNT = SIGNAL_COUNT + FEED_COUNT;
+
+// There is deliberately NO camera-feed constant here. `SOURCES` holds twelve
+// adapters and `CAMERA_REGIONS` eleven entries — the São Paulo feed has no region
+// — so the app disagrees with itself, and a tour that picks a side is asserting a
+// number it cannot support. The rail prints its own live count; the copy says
+// "every open road-camera network we carry" and leaves the arithmetic alone.
 
 /**
  * A conditional click. `ensure` opens a surface, `close` puts it back — each a
@@ -75,6 +78,21 @@ export interface TourStep {
   body: string;
   /** Preferred placement relative to the target (the overlay clamps to the viewport). */
   placement?: "top" | "bottom" | "left" | "right" | "center";
+  /**
+   * Keep this step even when its target is nowhere on the page.
+   *
+   * For a control that comes and goes on its own — the breaking banner arrives
+   * when a headline does, the pin navigator when you have dropped a pin. The run
+   * is built once, so a reactive control that has not fired yet would drop its
+   * step and never come back: a verification walk found the banner step missing
+   * from all 58 steps while the banner itself sat above every one of them, which
+   * is the same silent-drop failure this rewrite exists to remove.
+   *
+   * This is NOT an escape hatch for a control the viewport does not render — the
+   * 390px case must still drop, or a phone gets told about a keyboard-shortcut
+   * strip it does not have. Reactive means "not on screen YET", not "not here".
+   */
+  reactive?: boolean;
   /** Opened before the step is shown, so the target exists to be spotlit. */
   setup?: TourAction[];
   /** Extra settle time in ms after setup, for a surface that animates open. */
@@ -129,6 +147,10 @@ const SHUT_PALETTE: TourAction = { kind: "close", want: ".tn-palette-root", clic
 const OPEN_SETTINGS: TourAction = { kind: "ensure", want: ".tn-settings", click: ".tn-settings-trigger" };
 const SHUT_SETTINGS: TourAction = { kind: "close", want: ".tn-settings", click: ".tn-settings-close" };
 
+// The profile popover toggles from the avatar, so the same control opens and closes it.
+const OPEN_PROFILE: TourAction = { kind: "ensure", want: ".tn-profile-menu", click: ".tn-profile-avatar" };
+const SHUT_PROFILE: TourAction = { kind: "close", want: ".tn-profile-menu", click: ".tn-profile-avatar" };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // The walkthrough.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -143,7 +165,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "orientation",
     title: "The layout",
-    summary: "The five bands of the console, and what each one is for",
+    summary: "The bands the console is built from, and what each is for",
     icon: "▤",
     steps: [
       {
@@ -151,7 +173,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Start with the shape of it",
         body:
-          `${BRAND.name} is one screen in five horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
+          `${BRAND.name} is one screen in four horizontal bands, plus a fifth that drops in when something is breaking. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
         placement: "center",
       },
       {
@@ -173,9 +195,10 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       {
         id: "orientation-banner",
         target: [".tn-alert-body", ".tn-alert"],
+        reactive: true, // arrives with a headline, so it may not be up when the run is built
         title: "The breaking strip",
         body:
-          "When a headline or a large quake arrives, it takes this band across the top. Read article opens the source in a new tab; the ✕ dismisses it. It appears only when there is something to say, so the band is not always there.",
+          "When a headline or a large earthquake arrives it takes a band across the top, above everything else. Its button changes with the kind: Read article opens a news source in a new tab, View on map flies the map to a quake. The ✕ dismisses it. It is only there when there is something to say.",
         placement: "bottom",
       },
       {
@@ -197,17 +220,17 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       {
         id: "orientation-footer",
         target: [".tnx-sel", ".tnx-footer"],
-        title: "Band 4 — the selection bar",
+        title: "Band 4 — the footer",
         body:
-          "The answer to \"what did I just click?\". Selecting a pin on the map or a row in a widget writes its name and coordinates here — the map flies, but only this bar says what it flew to. Esc clears it.",
+          "Three things share the bottom band. On the left, SEL is the answer to \"what did I just click?\" — selecting a pin or a widget row writes its name and coordinates here, because the map flies but only this bar says what it flew to. Esc clears it.",
         placement: "top",
       },
       {
         id: "orientation-ticker",
         target: [".tnx-ticker", ".tnx-keys"],
-        title: "Band 5 — ticker and keys",
+        title: "Band 4 also — ticker and keys",
         body:
-          "The footer also runs a live ticker of what is arriving, and lists the four single-key shortcuts: W for wall, C for console, / for search, Esc to clear.",
+          "In the middle of that same band, a live ticker of what is arriving. On the right, the four single-key shortcuts: W for wall, C for console, / for search, Esc to clear.",
         placement: "top",
       },
     ],
@@ -225,7 +248,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Everything on the map is clickable",
         body:
-          "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Numbered bubbles are clusters; click one to zoom into what it is holding. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
+          "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution, plus a ⬇ Export for that one record and an ✕ to close. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Numbered bubbles are clusters; click one to zoom into what it is holding. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
         placement: "center",
       },
       {
@@ -271,6 +294,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       {
         id: "map-pins",
         target: [".tn-pinnav", ".tnx-stage-foot"],
+        reactive: true, // the pin navigator exists only once a pin has been dropped
         title: "Pins, zoom and world clocks",
         body:
           "Searching drops a pin, and the pin navigator steps between them, flies back to any one, and clears them. The + and − in the bottom-right corner zoom without a scroll wheel, and the compass under them resets the tilt. The bar along the bottom of the stage carries local time in several cities, so an event has a human hour attached.",
@@ -366,7 +390,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-cw-fresh", ".tn-cw-head"],
         title: "The freshness chip",
         body:
-          "How old this widget's data actually is. CONNECTING… while it waits, LIVE once it has answered, then an age as it drifts, DOWN when it stops, DORMANT when the layer is off, LIVE STREAM for continuous video. \"LIVE · 7/8\" means only seven of the eight feeds behind it answered. A feed that quietly freezes says so here instead of continuing to look healthy.",
+          "How old this widget's data actually is. CONNECTING… while it waits, LIVE once it has answered, then an age as it drifts, then STALE, DOWN when it stops, and DORMANT when the layer needs an API key this deployment does not hold, so nothing was ever fetched. \"LIVE · 7/8\" means only seven of the eight feeds behind it answered. A feed that quietly freezes says so here instead of continuing to look healthy.",
         placement: "bottom",
       },
       {
@@ -396,16 +420,16 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tn-cw-expand",
         title: "⤢ — expand onto the stage",
         body:
-          "Throws this widget full-size onto the centre stage, over the map, for when a table needs the room. The map chrome steps aside while it is there.",
+          "Throws this widget full-size onto the centre stage, over the map, for when a table needs the room — often with a richer view than the small card had. The map chrome steps aside while it is there, and \"← Back to map\" in its top-left puts the map back.",
         placement: "bottom",
         setup: [SHUT_BELL],
       },
       {
         id: "widgets-menu-pop",
         target: [".tn-cw-menu-pop", ".tn-cw-menu"],
-        title: "Move, size, duplicate, export, remove",
+        title: "⋯ — move, size, duplicate, export, remove",
         body:
-          "Arrows nudge the card one cell at a time and the width and height chips snap it to named sizes — both work without a mouse. Below: duplicate the widget, choose whether its alerts sit on top or inline, and remove it. Widgets holding a table of rows add CSV and GeoJSON downloads here too; ones that do not have rows to give simply do not offer it.",
+          "The ⋯ in the header opens this. Arrows nudge the card one cell at a time, −W +W −H +H grow and shrink it by one, and the width and height chips snap it to named sizes — all of it works without a mouse. Below: duplicate the widget, choose whether its alerts sit on top or inline, and remove it. A widget holding a table of rows adds a CSV download here, and one holding map points adds GeoJSON; a widget with neither simply does not offer them.",
         placement: "left",
         setup: [OPEN_MENU],
         settleMs: 120,
@@ -480,7 +504,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tn-cat-search",
         title: "Search the catalogue",
         body:
-          `${SOURCE_COUNT} sources is more than anyone scrolls. Type a word — quake, cyber, camera, cable — and the whole rail filters to matching layers with their groups already expanded.`,
+          "There are more sources here than anyone scrolls. Type a word — quake, cyber, camera, cable — and the whole rail filters to matching layers with their groups already expanded.",
         placement: "right",
         setup: [OPEN_RAIL],
         settleMs: 220,
@@ -517,7 +541,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-widget-toggle", ".tn-layer-row"],
         title: "＋ — any source becomes a widget",
         body:
-          "This is the shortcut worth knowing. ＋ docks that feed onto your workspace as its own live tile; ▦ means it is already there. The counter at the top of the rail tracks how many you have open.",
+          "This is the shortcut worth knowing. ＋ docks that feed onto your workspace as its own live tile; ▦ means it is already there. Each signal GROUP heading has one too, which docks a single roll-up tile for the whole theme instead of one per layer. The counter at the top of the rail tracks how many you have open.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
@@ -582,7 +606,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tn-coverage-open",
         title: "Coverage · Markets · Saved",
         body:
-          "Three panels at the foot of the rail, each closing on its own ✕. Coverage is the honest account of what we do and do not have, per source. Markets is the economic board. Saved is your watchlist — its \"Save current view\" button bookmarks wherever the map is pointing right now, and each saved place gets a row that flies you back to it.",
+          "Three panels at the foot of the rail, each closing on its own ✕. Camera coverage is the honest per-feed account of how many cameras each agency is giving us and how many are answering. Markets is the economic board. Saved is your watchlist — \"Save current view\" bookmarks wherever the map is pointing, each saved place gets a row that flies you back to it, and each row has an ✕ to drop it.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
@@ -671,7 +695,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-palette-root", ".tn-palette-trigger"],
         title: "⌘K — one box for the whole app",
         body:
-          "Command-K on a Mac, Ctrl-K everywhere else, or the COMMAND button in the header. Type to switch board, add any widget, toggle a map layer, change basemap, fly to any place on Earth by name, dive straight into a live camera, change language or theme — or replay this tour. Arrows move, Enter runs, Esc closes.",
+          "Command-K on a Mac, Ctrl-K everywhere else, or the COMMAND button in the header. Grouped by what it does: switch board, add any widget, jump to an open widget, toggle a map layer, change basemap, choose what the stage shows, apply a themed scenario, fly to any place on Earth by name, dive straight into a live camera, change language or theme — and replay this tour. Arrows move, Enter runs, Esc closes.",
         placement: "center",
         setup: [OPEN_PALETTE],
         settleMs: 200,
@@ -703,7 +727,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
     title: "Settings & finishing up",
     summary: "Theme, language, alert channels and your profile",
     icon: "⚙",
-    cleanup: [SHUT_SETTINGS],
+    cleanup: [SHUT_PROFILE, SHUT_SETTINGS],
     steps: [
       {
         id: "settings-trigger",
@@ -717,19 +741,20 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-settings", ".tn-settings-trigger"],
         title: "Theme, language, boards, sharing, alerts",
         body:
-          "Scroll it — there is more below the fold than above. Appearance and Language; Load a board; Share, which copies a link rebuilding your current view for whoever you send it to; then Notifications, which holds a master switch that silences every armed widget at once, a test-message button, the Telegram and Discord credentials, and the list of rules you have armed. Credentials are stored in this browser and sent nowhere else.",
+          "Scroll it — there is more below the fold than above. Appearance and Language; Load a board; Share, which copies a link rebuilding your current view for whoever you send it to; a Telegram section with its own send-a-test button; and Notifications, holding a master switch that silences every armed widget at once, the Discord webhook, and the list of rules you have armed. Credentials are stored in this browser and sent nowhere else.",
         placement: "left",
         setup: [OPEN_SETTINGS],
         settleMs: 200,
       },
       {
         id: "settings-profile",
-        target: [".tn-profile-avatar", ".tnx-hdr-profile"],
+        target: [".tn-profile-menu", ".tn-profile-avatar", ".tnx-hdr-profile"],
         title: "Your profile",
         body:
-          "Set a display name for this browser, and replay this tour. The Sign in button is a placeholder for accounts that do not exist yet — it opens a form that cannot be submitted. Nothing is uploaded: your boards, pins, watchlist and alert credentials all live in this browser only.",
+          "Set a display name for this browser, and replay this tour from here — 🧭 Take the tour is the second way in, alongside ⌘K. The Sign in button is a placeholder for accounts that do not exist yet: it opens a form that cannot be submitted. Nothing is uploaded — your boards, pins, watchlist and alert credentials all live in this browser only.",
         placement: "bottom",
-        setup: [SHUT_SETTINGS],
+        setup: [SHUT_SETTINGS, OPEN_PROFILE],
+        settleMs: 140,
       },
       {
         id: "settings-done",
@@ -845,6 +870,8 @@ export function buildRun(
       steps: chapter.steps.filter(
         (s) =>
           isFramingStep(s) ||
+          // A control that has not appeared YET is not a control that is absent.
+          s.reactive === true ||
           // A step that OPENS its own surface cannot be judged by what is on
           // screen right now — its target does not exist until setup has run.
           // Only an `ensure` earns that exemption: a `close`-only setup (several
