@@ -214,3 +214,91 @@ export function buildSitemap(cameras: Camera[], origin: string, staticPaths: str
   const dropped = Math.max(0, total - SITEMAP_MAX_URLS);
   return { entries: dropped ? entries.slice(0, SITEMAP_MAX_URLS) : entries, total, dropped, skippedUnavailable };
 }
+
+export interface SitemapShard {
+  /** URL-safe shard id, e.g. "core" or "cameras-us". Becomes /sitemap/<id>.xml. */
+  id: string;
+  /** Human label, shown only by the browser stylesheet. */
+  label: string;
+  entries: SitemapEntry[];
+}
+
+/** The shard holding the site's own pages rather than any one country's cameras. */
+export const CORE_SHARD_ID = "core";
+
+/**
+ * Split the sitemap into an index plus one child per country.
+ *
+ * WHY SPLIT AT ALL — it is not size, and it is not speed. At 18.6k URLs and 2.6 MB
+ * we sit at roughly a third of the 50,000-URL protocol limit and a twentieth of the
+ * 50 MB one, and the single file serves in well under a second.
+ *
+ * It is MEASUREMENT. Search Console reports discovered-and-indexed counts PER
+ * SUBMITTED SITEMAP. One file yields one aggregate number covering everything, and
+ * one country dominates the corpus badly enough to hide the others inside it — the
+ * US camera pages alone are the clear majority. If one country's pages index poorly
+ * and another's index fine, a single figure averages the two into something that
+ * describes neither. Sharding is what turns "is it indexed" from a yes/no into a
+ * question you can actually answer per group.
+ *
+ * WHY BY COUNTRY, not by upstream feed: the shards should mirror how the pages are
+ * organised and how people search, and the site's own hierarchy is already
+ * /cameras -> /cameras/gb -> /cameras/gb/london. Which feed supplied a camera is an
+ * implementation detail no visitor sees, and several feeds straddle borders anyway,
+ * so feed-shaped shards would cut across the content rather than along it.
+ *
+ * Sharding is a REGROUPING, never a filter: every entry buildSitemap produces lands
+ * in exactly one shard. A unit test asserts the union is identical to the flat
+ * build, because the failure mode here is silent — dropping a shard loses thousands
+ * of pages while every file still returns a valid 200.
+ */
+export function buildSitemapShards(
+  cameras: Camera[],
+  origin: string,
+  staticPaths: string[] = [],
+): { shards: SitemapShard[]; result: SitemapResult } {
+  const result = buildSitemap(cameras, origin, staticPaths);
+
+  // Bucket by the country segment of /camera/<feed>%3A<id>, resolved from the
+  // registry rather than parsed out of the URL — the id format is a feed's business,
+  // not ours, and a parser over it would break the day a feed changes its ids.
+  const countryById = new Map<string, string>();
+  for (const cam of cameras) countryById.set(absoluteUrl(origin, cameraPath(cam.id)), cam.country.toUpperCase());
+
+  const core: SitemapEntry[] = [];
+  const byCountry = new Map<string, SitemapEntry[]>();
+
+  for (const entry of result.entries) {
+    const iso2 = countryById.get(entry.url);
+    if (!iso2) {
+      core.push(entry);
+      continue;
+    }
+    const bucket = byCountry.get(iso2) ?? [];
+    bucket.push(entry);
+    byCountry.set(iso2, bucket);
+  }
+
+  const shards: SitemapShard[] = [
+    { id: CORE_SHARD_ID, label: "Site pages and directory", entries: core },
+  ];
+
+  // Biggest first, so the index reads as a summary of where the corpus actually is.
+  for (const [iso2, entries] of [...byCountry].sort(
+    (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]),
+  )) {
+    shards.push({
+      id: `cameras-${iso2.toLowerCase()}`,
+      label: `Cameras · ${countryName(iso2)}`,
+      entries,
+    });
+  }
+
+  return { shards, result };
+}
+
+/** Look up one shard by id. Null (not an empty shard) when the id is unknown, so a route 404s. */
+export function findShard(shards: SitemapShard[], id: string): SitemapShard | null {
+  const want = id.trim().toLowerCase();
+  return shards.find((s) => s.id === want) ?? null;
+}
