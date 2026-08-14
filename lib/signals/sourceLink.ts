@@ -17,6 +17,34 @@
 
 export type SourceScope = "record" | "provider";
 
+/**
+ * A licence that obliges us to LINK it, not merely to name the provider.
+ *
+ * CC BY 4.0 asks for three things: appropriate credit, a link to the licence, and an
+ * indication of whether changes were made. Naming the provider satisfies the first
+ * only. Open-Meteo publishes its API data under CC BY 4.0 ("API data are offered
+ * under Attribution 4.0 International"), so a bare "Open-Meteo" chip left us
+ * nearly-conformant rather than conformant.
+ *
+ * Only declare this where the upstream's own terms ask for a licence link. Most of
+ * the table does not: USGS and NOAA are US-government public domain, GDELT asks for
+ * a citation plus a link to gdeltproject.org (which the provider chip already is),
+ * and OGL v3 sources are covered by the site-wide OGL notice on the landing page.
+ * Adding it everywhere would be noise, and noise is how a real obligation gets
+ * missed.
+ */
+export interface SourceLicence {
+  /** Short licence name shown on the chip, e.g. "CC BY 4.0". */
+  label: string;
+  /** Canonical licence deed URL — this is the link the licence actually requires. */
+  url: string;
+}
+
+export const CC_BY_4_0: SourceLicence = {
+  label: "CC BY 4.0",
+  url: "https://creativecommons.org/licenses/by/4.0/",
+};
+
 export interface ResolvedSource {
   /** Absolute https URL to open in a new tab. */
   href: string;
@@ -24,11 +52,14 @@ export interface ResolvedSource {
   label: string;
   /** "record" = deep permalink to THIS event; "provider" = the dataset / home page. */
   scope: SourceScope;
+  /** Present only when the upstream's terms require the licence itself to be linked. */
+  licence?: SourceLicence;
 }
 
 interface Provider {
   label: string;
   url: string;
+  licence?: SourceLicence;
 }
 
 /**
@@ -62,8 +93,12 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   conflict: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   protests: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   acled: { label: "ACLED", url: "https://acleddata.com/" },
-  weather: { label: "Open-Meteo", url: "https://open-meteo.com/" },
-  airquality: { label: "Open-Meteo", url: "https://open-meteo.com/en/docs/air-quality-api" },
+  weather: { label: "Open-Meteo", url: "https://open-meteo.com/", licence: CC_BY_4_0 },
+  airquality: {
+    label: "Open-Meteo",
+    url: "https://open-meteo.com/en/docs/air-quality-api",
+    licence: CC_BY_4_0,
+  },
   "air-quality-stations": { label: "OpenAQ", url: "https://openaq.org/" },
   crime: { label: "data.police.uk", url: "https://data.police.uk/" },
   "cyber-c2": { label: "abuse.ch", url: "https://feodotracker.abuse.ch/" },
@@ -147,9 +182,13 @@ export function resolveSignalSources(input: {
       : SIGNAL_PROVIDER_URLS[id]);
 
   // 1. Deep record permalink (preferred) — the exact upstream page for THIS event.
+  // It carries the provider's licence too: the obligation attaches to the data, and
+  // a record link can be the ONLY chip shown (step 2 suppresses a provider chip on
+  // the same host), so hanging the licence off the provider entry alone would drop
+  // it exactly when the deep link works.
   if (isHttpUrl(input.link)) {
     const label = provider?.label ?? hostLabel(input.link);
-    push({ href: input.link, label, scope: "record" });
+    push({ href: input.link, label, scope: "record", licence: provider?.licence });
   }
 
   // 2. Provider dataset / home page(s). A composite shows all contributors; a plain
@@ -157,9 +196,10 @@ export function resolveSignalSources(input: {
   //    the same host (that would just duplicate it).
   const recordHosts = new Set(out.map((s) => hostOf(s.href)));
   if (composite) {
-    for (const p of composite) push({ href: p.url, label: p.label, scope: "provider" });
+    for (const p of composite)
+      push({ href: p.url, label: p.label, scope: "provider", licence: p.licence });
   } else if (provider && !recordHosts.has(hostOf(provider.url))) {
-    push({ href: provider.url, label: provider.label, scope: "provider" });
+    push({ href: provider.url, label: provider.label, scope: "provider", licence: provider.licence });
   }
 
   return out;

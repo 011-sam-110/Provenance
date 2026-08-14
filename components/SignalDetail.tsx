@@ -172,6 +172,40 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
                 {s.scope === "record" ? `View record · ${s.label}` : s.label} ↗
               </a>
             ))}
+            {/*
+              Licence chips. CC BY 4.0 requires a link to the LICENCE, not just credit
+              to the provider, so a source whose terms demand it renders its deed URL
+              here. Deduped by licence URL: a layer can resolve both a record link and
+              a provider link from the same upstream, and one obligation is one chip.
+              Muted on purpose — this is a legal notice sitting beside the sources, not
+              a third place to click through to the data.
+            */}
+            {Array.from(
+              new Map(
+                sources
+                  .filter((s) => s.licence)
+                  .map((s) => [s.licence!.url, s.licence!] as const),
+              ).values(),
+            ).map((lic) => (
+              <a
+                key={lic.url}
+                href={lic.url}
+                target="_blank"
+                rel="noreferrer noopener license"
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--tn-text-muted)",
+                  textDecoration: "none",
+                  border: "1px dashed var(--tn-border)",
+                  borderRadius: 999,
+                  padding: "3px 10px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {lic.label} ↗
+              </a>
+            ))}
           </div>
         </div>
       )}

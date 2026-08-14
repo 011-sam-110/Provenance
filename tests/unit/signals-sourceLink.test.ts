@@ -7,6 +7,7 @@ import {
   isCompositeSignal,
   SIGNAL_PROVIDER_URLS,
   SIGNAL_COMPOSITE_SOURCES,
+  CC_BY_4_0,
 } from "@/lib/signals/sourceLink";
 
 describe("resolveSignalSources — the clickable-source guarantee", () => {
@@ -78,5 +79,45 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
       if (SIGNAL_COMPOSITE_SOURCES[s.id]) continue;
       expect(SIGNAL_PROVIDER_URLS[s.id], `missing provider url for ${s.id}`).toBeTruthy();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Licence linking — CC BY 4.0 asks for a link to the LICENCE, not just credit.
+// Naming the provider satisfies "appropriate credit" only, which left the two
+// Open-Meteo layers nearly-conformant rather than conformant.
+// ---------------------------------------------------------------------------
+describe("resolveSignalSources — licence obligations", () => {
+  test("Open-Meteo layers carry the CC BY 4.0 deed link", () => {
+    for (const id of ["weather", "airquality"]) {
+      const sources = resolveSignalSources({ signalId: id });
+      const licensed = sources.filter((s) => s.licence);
+      expect(licensed.length, `${id} lost its licence link`).toBeGreaterThanOrEqual(1);
+      expect(licensed[0].licence).toEqual(CC_BY_4_0);
+    }
+  });
+
+  test("the licence survives when a deep record link is the only chip", () => {
+    // A record link on the provider's own host suppresses the provider chip, so a
+    // licence hung only off the provider entry would vanish exactly when the deep
+    // link works. It must ride on the record entry too.
+    const sources = resolveSignalSources({
+      signalId: "weather",
+      link: "https://open-meteo.com/en/docs#some-record",
+    });
+    expect(sources.some((s) => s.licence?.url === CC_BY_4_0.url)).toBe(true);
+  });
+
+  test("the deed URL is the canonical creativecommons.org link", () => {
+    // The obligation is specifically to link the licence. A link to Open-Meteo's own
+    // terms page would name it without discharging it.
+    expect(CC_BY_4_0.url).toBe("https://creativecommons.org/licenses/by/4.0/");
+  });
+
+  test("licences are declared, never inferred — most sources carry none", () => {
+    // Public-domain (USGS, NOAA) and OGL sources must NOT sprout a licence chip:
+    // an unnecessary legal notice on every layer is how a real one gets ignored.
+    expect(resolveSignalSources({ signalId: "earthquakes" }).every((s) => !s.licence)).toBe(true);
+    expect(resolveSignalSources({ signalId: "crime" }).every((s) => !s.licence)).toBe(true);
   });
 });
