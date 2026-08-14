@@ -660,7 +660,10 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Once you know your way around",
         body:
-          "Everything in the last six chapters has a keyboard route through one search box.",
+          // Not "the last six chapters": chapters are dropped when their controls
+          // are not rendered, so at a phone width there are fewer of them and the
+          // number would be wrong.
+          "Almost everything this tour has shown you also has a keyboard route, through one search box.",
         placement: "center",
       },
       {
