@@ -16,7 +16,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 // layer can exist on a map, and the layer explainer says exactly that. We do NOT
 // invent a region or draw an outage footprint.
 
-const UA = "OpenData/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 const TIMEOUT_MS = 8_000;
 
 export const CLOUD_STATUS_ATTRIBUTION = "Service status © each vendor's own Atlassian Statuspage";

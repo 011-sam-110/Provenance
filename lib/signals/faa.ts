@@ -20,7 +20,7 @@ import { parseAirportsCsv } from "@/lib/signals/airports";
 
 const ENDPOINT = "https://nasstatus.faa.gov/api/airport-status-information";
 const AIRPORTS_CSV = "https://davidmegginson.github.io/ourairports-data/airports.csv";
-const UA = "OpenData/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 const REFRESH_MS = 5 * 60_000;
 const COORD_TTL_MS = 24 * 60 * 60 * 1000;
 
