@@ -117,7 +117,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 6 | `BUILTIN_PRESETS` in `lib/console/presets.ts` |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Widget types | 69 registered (2026-08-11) | `listWidgetTypes()` after importing `lib/console/widgets` — asserted in `tests/unit/widget-explainers.test.ts` |
+| Widget types | 71 registered (2026-08-15) | `listWidgetTypes()` after importing `lib/console/widgets`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. Nothing fails when this number drifts, so re-measure it rather than trusting the table. |
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
 
 ## Live-source notes (verified 2026-08-10, these change)
