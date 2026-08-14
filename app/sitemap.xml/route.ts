@@ -1,4 +1,4 @@
-import { loadSitemapShards } from "@/lib/seo/sitemapData";
+import { loadSitemapShards, sitemapUnavailable } from "@/lib/seo/sitemapData";
 import { renderSitemapIndex, sitemapHeaders } from "@/lib/seo/xml";
 import { absoluteUrl } from "@/lib/seo/paths";
 
@@ -21,8 +21,30 @@ import { absoluteUrl } from "@/lib/seo/paths";
  */
 export const revalidate = 86_400;
 
+/**
+ * Headroom for a COLD registry build, and it is not optional.
+ *
+ * Google reported "Couldn't fetch" against three children on the first read after
+ * this shipped, including the two largest. The cause was a duration limit, not the
+ * documents: with no `maxDuration` a route inherits Vercel's default (10-15 s),
+ * while `getRegistry()` on a cold cache waits on the Castle Rock feed, whose
+ * measured budget is 60 s (lib/sources/registry.ts). The children that succeeded
+ * were the ones whose requests arrived AFTER the registry had warmed.
+ *
+ * The interaction is what made it invisible: before Castle Rock was repaired it
+ * failed fast, so a cold sitemap build finished inside the default and nobody had
+ * to think about this. Repairing the feed made the cold path six times slower.
+ *
+ * `app/api/planes/route.ts` sets its own limit for the same class of reason.
+ */
+export const maxDuration = 60;
+
 export async function GET(): Promise<Response> {
-  const { origin, shards, result } = await loadSitemapShards();
+  const { origin, shards, result, registryOk } = await loadSitemapShards();
+
+  // Never publish an index we cannot vouch for. Advertising only the core shard
+  // would tell a crawler the ~20,000 camera pages have been removed.
+  if (!registryOk) return sitemapUnavailable();
 
   // An empty shard is omitted rather than advertised. A child sitemap containing
   // zero URLs is a valid document that tells a crawler nothing, and Search Console

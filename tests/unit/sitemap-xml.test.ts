@@ -14,6 +14,7 @@ import {
   xmlEscape,
   SITEMAP_STYLESHEET_PATH,
 } from "@/lib/seo/xml";
+import { sitemapUnavailable } from "@/lib/seo/sitemapData";
 
 const ORIGIN = "https://provenance-online.vercel.app";
 
@@ -195,6 +196,28 @@ describe("buildSitemapShards — sharding must be a REGROUPING, never a filter",
     const { shards } = buildSitemapShards([], ORIGIN, ["/app"]);
     expect(findShard(shards, CORE_SHARD_ID)!.entries.length).toBeGreaterThan(0);
     expect(shards.filter((s) => s.id.startsWith("cameras-"))).toHaveLength(0);
+  });
+});
+
+describe("sitemapUnavailable — the dormant-safe convention inverts here", () => {
+  it("is a 503 with Retry-After, not a 200 with fewer URLs", () => {
+    // Everywhere else in this repo a failed upstream degrades to [] and never 5xxes.
+    // A sitemap is an assertion about what EXISTS, so a 200 listing only the static
+    // pages reads as "the 20,000 camera pages were removed" rather than "degraded".
+    // A 5xx is merely a retry, and by the retry the registry cache is warm.
+    const res = sitemapUnavailable();
+    expect(res.status).toBe(503);
+    expect(res.headers.get("Retry-After")).toBe("600");
+  });
+
+  it("is never cached, or the outage outlives itself", () => {
+    expect(sitemapUnavailable().headers.get("Cache-Control")).toContain("no-store");
+  });
+
+  it("does not masquerade as XML", () => {
+    // A 503 body served as application/xml invites a parser to read the error text
+    // as a sitemap.
+    expect(sitemapUnavailable().headers.get("Content-Type")).toContain("text/plain");
   });
 });
 
