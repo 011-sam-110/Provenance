@@ -25,7 +25,7 @@ import {
 export const revalidate = 300; // 5-minute edge cache per target
 
 const RIPESTAT = "https://stat.ripe.net/data";
-const UA = "OpenData/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 const TIMEOUT_MS = 8_000;
 
 function empty(kind: "ip" | "asn", reason: string, target: string) {

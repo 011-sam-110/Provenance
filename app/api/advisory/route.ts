@@ -25,7 +25,7 @@ interface Cached {
 }
 const cache = new Map<string, Cached>();
 const TTL_MS = 6 * 60 * 60 * 1000; // the FCDO updates continuously but not by the minute
-const UA = "OpenData/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
+const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 export async function GET(req: Request) {
   const iso2 = (new URL(req.url).searchParams.get("iso2") ?? "").trim().toUpperCase();
