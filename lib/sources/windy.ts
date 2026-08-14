@@ -120,8 +120,11 @@ export function normalizeWindy(json: WindyListResponse): Webcam[] {
 // --- Network ----------------------------------------------------------------
 
 const INCLUDE = "images,location,urls,categories";
-const LIMIT = 50; // free-tier hard cap
-const PAGES_PER_REGION = 2; // 2 × 50 = up to 100 webcams/region (offset 0,50)
+// Exported so tests derive the expected request count from the registry instead
+// of hard-coding "14 regions × 2" — a literal that silently rots the moment a
+// region is added or given a `pages` override.
+export const LIMIT = 50; // free-tier hard cap
+export const PAGES_PER_REGION = 2; // 2 × 50 = up to 100 webcams/region (offset 0,50)
 const REGION_CONCURRENCY = 6; // polite + bounded parallelism across page jobs
 const MAX_WEBCAMS = 2000; // safety cap on the merged global sample — disclosed via lib/signals/coverage.ts, not silent
 
@@ -131,6 +134,17 @@ const MAX_WEBCAMS = 2000; // safety cap on the merged global sample — disclose
 export interface WindyRegion {
   name: string;
   bbox: [number, number, number, number];
+  /**
+   * Pages to request for THIS region, overriding the module default. A page is
+   * `LIMIT` (50) webcams, so `pages` × 50 is the region's ceiling.
+   *
+   * Exists because the default of 2 is a global compromise that silently
+   * truncates dense regions: every region is capped at 100 regardless of how
+   * many webcams the bbox actually holds, and nothing reports the shortfall.
+   * Splitting a dense bbox into smaller boxes is the tempting fix and it is the
+   * wrong one — the split has to be re-tuned every time Windy's inventory moves.
+   */
+  pages?: number;
 }
 
 export const WINDY_REGIONS: WindyRegion[] = [
@@ -142,6 +156,20 @@ export const WINDY_REGIONS: WindyRegion[] = [
   { name: "na-west", bbox: [60, -100, 24, -130] },
   { name: "na-east", bbox: [50, -60, 24, -100] },
   { name: "latin-america", bbox: [25, -35, -56, -118] },
+  // Brazil, overlapping `latin-america` deliberately — the fan-out dedupes by
+  // webcamId, so an overlap costs requests, not correctness.
+  //
+  // Measured 2026-08-14 against api.windy.com: this bbox reports total=206, of
+  // which 135 carry location.country === "Brazil" (the rest are Chile 35,
+  // Argentina 23, Paraguay 9, Uruguay 2, Ecuador 1 — real webcams, kept). The
+  // `latin-america` box already spans this area but at the default 2 pages it
+  // ceilings at 100 for the whole continent, so Brazil was mostly invisible.
+  //
+  // 5 pages = 250 capacity against a measured 206, i.e. headroom rather than a
+  // number tuned to today's inventory. Re-measure before changing it:
+  //   curl -H "x-windy-api-key: $KEY" \
+  //     "https://api.windy.com/webcams/api/v3/webcams?bbox=5.3,-34.7,-33.8,-74.0&limit=1"
+  { name: "brazil", bbox: [5.3, -34.7, -33.8, -74.0], pages: 5 },
   { name: "africa", bbox: [37, 52, -35, -18] },
   { name: "middle-east", bbox: [42, 63, 12, 34] },
   { name: "s-asia", bbox: [37, 92, 5, 60] },
@@ -149,6 +177,37 @@ export const WINDY_REGIONS: WindyRegion[] = [
   { name: "se-asia", bbox: [23, 141, -11, 92] },
   { name: "oceania", bbox: [-9, 180, -48, 110] },
 ];
+
+/** One planned upstream request: which bbox, and which page of it. */
+export interface WindyPageJob {
+  region: string;
+  bbox: [number, number, number, number];
+  offset: number;
+}
+
+/**
+ * Expand the region list into the flat list of page requests to make.
+ *
+ * Pure so the paging arithmetic — the part that decides whether a region is
+ * silently truncated — is unit-testable without touching the network. Both
+ * fan-outs (this module's `fetchWebcams` and lib/webcams/fetch.ts's
+ * `fetchWebcamSample`) call this, so `WindyRegion.pages` cannot be honoured on
+ * one path and ignored on the other.
+ */
+export function planPageJobs(
+  regions: readonly WindyRegion[],
+  defaultPages: number,
+  limit: number,
+): WindyPageJob[] {
+  const jobs: WindyPageJob[] = [];
+  for (const region of regions) {
+    const pages = Math.max(0, Math.trunc(region.pages ?? defaultPages));
+    for (let p = 0; p < pages; p++) {
+      jobs.push({ region: region.name, bbox: region.bbox, offset: p * limit });
+    }
+  }
+  return jobs;
+}
 
 /** Tiny bounded-concurrency map — no deps; runs `fn` over items, `limit` at a time. */
 async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -205,10 +264,7 @@ export async function fetchWebcams(apiKey: string | undefined = process.env.WIND
     return [];
   }
 
-  const jobs: { bbox: [number, number, number, number]; offset: number }[] = [];
-  for (const region of WINDY_REGIONS) {
-    for (let p = 0; p < PAGES_PER_REGION; p++) jobs.push({ bbox: region.bbox, offset: p * LIMIT });
-  }
+  const jobs = planPageJobs(WINDY_REGIONS, PAGES_PER_REGION, LIMIT);
 
   const pages = await mapPool(jobs, REGION_CONCURRENCY, (job) =>
     fetchPage(apiKey, job.bbox, job.offset).catch(() => [] as WindyWebcam[]),

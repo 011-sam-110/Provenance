@@ -1,5 +1,10 @@
 import type { Webcam } from "@/lib/types";
-import { WINDY_REGIONS, type WindyListResponse, type WindyWebcam } from "@/lib/sources/windy";
+import {
+  WINDY_REGIONS,
+  planPageJobs,
+  type WindyListResponse,
+  type WindyWebcam,
+} from "@/lib/sources/windy";
 import { toWebcams, MAX_WEBCAMS, type WebcamMapping } from "@/lib/webcams/normalize";
 import { coverageCountLabel, type SignalCoverage } from "@/lib/signals/coverage";
 
@@ -126,10 +131,10 @@ export async function fetchWebcamSample(
     return { webcams: [], dormant: true, pagesOk: 0, pagesFailed: 0, statuses: [], mapping: null };
   }
 
-  const jobs: { bbox: [number, number, number, number]; offset: number }[] = [];
-  for (const region of WINDY_REGIONS) {
-    for (let p = 0; p < PAGES_PER_REGION; p++) jobs.push({ bbox: region.bbox, offset: p * LIMIT });
-  }
+  // Shared with lib/sources/windy.ts's fan-out so a region's `pages` override
+  // cannot be honoured on one path and ignored on the other — this is the path
+  // /api/webcams actually runs.
+  const jobs = planPageJobs(WINDY_REGIONS, PAGES_PER_REGION, LIMIT);
 
   const pages = await mapPool(jobs, CONCURRENCY, (job) => fetchPage(key, job.bbox, job.offset));
 
