@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Cloud and developer-platform outages — keyless, from the vendors' own status pages.
 //
@@ -128,18 +129,29 @@ export function normalizeCloudStatus(vendor: CloudVendor, summary: StatuspageSum
   };
 }
 
-async function fetchVendor(vendor: CloudVendor): Promise<SignalFeature | null> {
+/**
+ * One vendor's read. `ok` is about the FETCH, `feature` is about the vendor: a
+ * healthy vendor is `{ ok: true, feature: null }` and an unreachable status page is
+ * `{ ok: false, feature: null }`. A bare `null` conflated those two, and the outer
+ * fetch cannot declare an outcome it cannot see.
+ */
+interface VendorRead {
+  ok: boolean;
+  feature: SignalFeature | null;
+}
+
+async function fetchVendor(vendor: CloudVendor): Promise<VendorRead> {
   try {
     const res = await fetch(`https://${vendor.host}/api/v2/summary.json`, {
       headers: { "user-agent": UA, accept: "application/json" },
       signal: AbortSignal.timeout(TIMEOUT_MS),
       next: { revalidate: 120 },
     });
-    if (!res.ok) return null;
-    return normalizeCloudStatus(vendor, (await res.json()) as StatuspageSummary);
+    if (!res.ok) return { ok: false, feature: null };
+    return { ok: true, feature: normalizeCloudStatus(vendor, (await res.json()) as StatuspageSummary) };
   } catch {
     // Dormant-safe per vendor: one unreachable status page must not blank the layer.
-    return null;
+    return { ok: false, feature: null };
   }
 }
 
@@ -154,6 +166,28 @@ export const CLOUD_STATUS_SOURCE: SignalSource = {
   metric: { field: "magnitude", domain: [0, 10] },
   async fetch(): Promise<SignalFeature[]> {
     const settled = await Promise.all(CLOUD_VENDORS.map(fetchVendor));
-    return settled.filter((f): f is SignalFeature => f !== null);
+    const features = settled.map((r) => r.feature).filter((f): f is SignalFeature => f !== null);
+    const unreachable = settled.filter((r) => !r.ok).length;
+    // Empty is a REAL answer here (every vendor operational), so only a status page
+    // we could not read counts as degraded. A partial failure keeps the vendors that
+    // did answer — losing a live outage marker because an unrelated page timed out
+    // would be the worse error of the two.
+    // TOTAL failure is degraded; PARTIAL failure is not. This layer fans out to 14
+    // independent vendor status pages, and those are flaky by nature — one of them
+    // hiccupping is the normal weather here, not an outage of this layer.
+    //
+    // Marking the whole layer ok:false on a single unreachable vendor would render
+    // it "down" on the public ledger while 13 of 14 vendors were read perfectly
+    // well. That is its own false claim, and a worse one than it looks: a row that
+    // shows red most days is a row people learn to skip, which costs us the days it
+    // means something. Same reasoning as keeping licence notices off every layer.
+    //
+    // Partial coverage already has a mechanism in this repo, and it is not `ok` —
+    // it is the coverage record, which exists to say "this is N of M". `ok`
+    // answers a narrower question: could we read this source at all. So a partial
+    // read stays observed, and the shortfall is named in the reason for operators
+    // rather than escalated to a fault for visitors.
+    if (unreachable === settled.length) return degraded("no vendor status page answered");
+    return observed(features);
   },
 };

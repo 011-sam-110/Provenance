@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // UK street-level crime — keyless data.police.uk. The richest open, geocoded crime
 // feed available without a key (England, Wales & Northern Ireland; Police Scotland
@@ -121,6 +122,9 @@ export const UK_CRIME_SOURCE: SignalSource = {
   async fetch() {
     try {
       // Each city in parallel; omitting `date` makes the API use the latest month.
+      // `null` = that city's query FAILED, `[]` = it answered with no crimes. The
+      // per-city helper only reports the difference; the outcome is marked below,
+      // because an outcome attached in here would be dropped by the merge.
       const perCity = await Promise.all(
         CRIME_CITIES.map(async (c) => {
           try {
@@ -128,17 +132,21 @@ export const UK_CRIME_SOURCE: SignalSource = {
               headers: { "User-Agent": UA, Accept: "application/json" },
               signal: AbortSignal.timeout(20_000),
             });
-            if (!res.ok) return [] as CrimeRow[];
+            if (!res.ok) return null;
             return (await res.json()) as CrimeRow[];
           } catch {
-            return [] as CrimeRow[];
+            return null;
           }
         }),
       );
-      const merged = perCity.flat();
-      return capCrime(normalizeCrime(merged));
+      // Every city failed ⇒ we never read data.police.uk at all. One survivor is
+      // still a real (if partial) read of the month, so it counts as observed.
+      const answered = perCity.filter((rows): rows is CrimeRow[] => rows !== null);
+      if (answered.length === 0) return degraded("all city queries failed");
+      const merged = answered.flat();
+      return observed(capCrime(normalizeCrime(merged)));
     } catch {
-      return [];
+      return degraded("read failed");
     }
   },
 };

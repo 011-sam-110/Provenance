@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { WORLD_CITIES, cityCoordParams, type City } from "@/lib/signals/cities.data";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Live air quality at major world cities — keyless Open-Meteo Air-Quality API.
 // Same one-request-covers-all-cities pattern as the weather layer (multi-coordinate
@@ -98,12 +99,12 @@ export const AIR_QUALITY_SOURCE: SignalSource = {
         `${ENDPOINT}?latitude=${latitude}&longitude=${longitude}` +
         `&current=pm2_5,pm10,us_aqi,european_aqi,nitrogen_dioxide,ozone&timezone=GMT`;
       const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = await res.json();
       const points = Array.isArray(json) ? (json as AqPoint[]) : [json as AqPoint];
-      return normalizeAirQuality(points);
+      return observed(normalizeAirQuality(points));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

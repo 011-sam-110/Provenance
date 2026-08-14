@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { countMagnitude } from "@/lib/signals/aggregate";
 import { applyCap } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Active fire detections — NASA FIRMS (VIIRS S-NPP near-real-time). Satellite
 // thermal anomalies for the last 24h worldwide, each with a fire radiative power
@@ -112,16 +113,16 @@ export const FIRE_FIRMS_SOURCE: SignalSource = {
   attribution: FIRMS_ATTRIBUTION,
   async fetch() {
     const key = (process.env.FIRMS_MAP_KEY ?? "").trim();
-    if (!key) return []; // dormant until the free MAP_KEY is set
+    if (!key) return degraded("no key"); // dormant until the free MAP_KEY is set
     try {
       const res = await fetch(`${BASE}/${key}/VIIRS_SNPP_NRT/world/1`, {
         headers: { "User-Agent": UA },
         signal: AbortSignal.timeout(20_000),
       });
-      if (!res.ok) return [];
-      return normalizeFirms(await res.text());
-    } catch {
-      return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
+      return observed(normalizeFirms(await res.text()));
+    } catch (e) {
+      return degraded((e as Error)?.name === "TimeoutError" ? "timeout" : "upstream read failed");
     }
   },
 };

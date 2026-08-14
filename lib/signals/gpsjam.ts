@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // gpsjam.org — daily GPS/GNSS interference, aggregated from ADS-B Exchange flight
 // telemetry into H3 hexagons. Keyless. NOTE: the site migrated from GeoJSON to a
@@ -142,7 +143,8 @@ export const GPS_JAMMING_SOURCE: SignalSource = {
   // Real per-cell scalar: % of sampled aircraft reporting bad GNSS (bad / total).
   metric: { field: "interferencePct", domain: [0, 100], unit: "%" },
   async fetch() {
-    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.features;
+    // A cache hit is a real upstream read — stamped when it happened, not now.
+    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
       const now = new Date();
       let csv: string | null = null;
@@ -163,14 +165,25 @@ export const GPS_JAMMING_SOURCE: SignalSource = {
           }
         }
       }
-      if (!csv) return cache?.features ?? [];
+      // Nothing published across the whole lookback window. Keep the last-good
+      // cells rather than emptying the layer, but declare the failure and stamp
+      // the age of the data we are actually serving — `degraded()` would have
+      // dropped the cache, `observed()` would claim a read that did not happen.
+      if (!csv) {
+        return cache
+          ? degradedWith(cache.features, "no data file", cache.at)
+          : degraded("no data file");
+      }
       const cells = parseGpsjamCsv(csv);
       const h3 = (await import("h3-js")) as unknown as H3Lib;
       const features = gpsjamCellsToFeatures(cells, h3, day);
       cache = { features, at: Date.now() };
-      return features;
+      return observed(features, cache.at);
     } catch {
-      return cache?.features ?? []; // dormant-safe
+      // Same last-good rule as the no-file path above.
+      return cache
+        ? degradedWith(cache.features, "fetch failed", cache.at)
+        : degraded("fetch failed"); // dormant-safe
     }
   },
 };

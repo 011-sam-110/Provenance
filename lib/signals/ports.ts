@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { MAJOR_PORTS, type PortRecord } from "@/lib/signals/ports.data";
+import { compiled } from "@/lib/signals/outcome";
 
 // Major seaports — a curated STATIC dataset (lib/signals/ports.data.ts) of the
 // world's busiest container/cargo ports. Deliberately static, not live: there is
@@ -7,6 +8,10 @@ import { MAJOR_PORTS, type PortRecord } from "@/lib/signals/ports.data";
 // signal). See ports.data.ts for the source + date. Points only.
 
 export const PORTS_ATTRIBUTION = "Major ports: curated from public busiest-port rankings (2023)";
+
+/** When the curated list in ports.data.ts was compiled (see its header). The outcome
+ *  stamps the age of the DATA, so these rows never read as a read that just happened. */
+const COMPILED_AT = Date.parse("2026-06-27T00:00:00Z");
 
 /** Stable slug for a namespaced feature id. */
 function slug(name: string): string {
@@ -69,6 +74,13 @@ export const PORTS_SOURCE: SignalSource = {
   attribution: PORTS_ATTRIBUTION,
   async fetch() {
     // No network: a curated static list, so this is trivially dormant-safe.
-    return normalizePorts(MAJOR_PORTS);
+    //
+    // NOT degraded. There is no upstream to have failed, and marking it so rendered
+    // "no answer" on the public ledger for a layer delivering a complete, correct
+    // world. `observed()` is equally wrong — it would assert a live read that never
+    // happens here, and the freshness classifier would then call it stale forever.
+    // `compiled()` is the honest verb: ok, because nothing broke; basis "compiled",
+    // so no consumer presents it as live; stamped when the list was actually made.
+    return compiled(normalizePorts(MAJOR_PORTS), COMPILED_AT);
   },
 };

@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // Major airports — OurAirports open data (public domain). Keyless CSV. The full
 // file is ~85k rows / ~12 MB, so we FILTER to `type=large_airport` (~1,180,
@@ -125,19 +126,31 @@ export const AIRPORTS_SOURCE: SignalSource = {
   // No throughput scalar, so the directory browses by IATA + country + continent.
   directory: { codeKey: "iata", codeLabel: "IATA", detailKey: "city", detailLabel: "City" },
   async fetch() {
-    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.features;
+    // A cache hit is a real upstream read — stamped when it happened, not now.
+    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
       const res = await fetch(ENDPOINT, {
         headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
         signal: AbortSignal.timeout(30_000),
       });
-      if (!res.ok) return cache?.features ?? [];
+      // Keep the last-good rows rather than emptying the layer over one blip, but
+      // declare the failure and stamp the age of the data we are actually serving.
+      // `degraded()` would have dropped the cache; marking it observed would have
+      // claimed a read that did not happen.
+      if (!res.ok) {
+        return cache
+          ? degradedWith(cache.features, `http ${res.status}`, cache.at)
+          : degraded(`http ${res.status}`);
+      }
       const text = await res.text();
       const features = parseAirportsCsv(text);
       cache = { features, at: Date.now() };
-      return features;
+      return observed(features, cache.at);
     } catch {
-      return cache?.features ?? []; // dormant-safe
+      // Same last-good rule as the non-2xx path above.
+      return cache
+        ? degradedWith(cache.features, "fetch failed", cache.at)
+        : degraded("fetch failed"); // dormant-safe
     }
   },
 };

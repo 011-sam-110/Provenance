@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { magnitudeColor } from "@/lib/signals/usgs";
 import { markCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Earthquakes — EMSC (European-Mediterranean Seismological Centre) real-time feed.
 // A keyless FDSN GeoJSON service that aggregates many national networks, often
@@ -100,11 +101,11 @@ export const EMSC_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { features?: EmscFeature[] };
-      return normalizeEmsc(json);
+      return observed(normalizeEmsc(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

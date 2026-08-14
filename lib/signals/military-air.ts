@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Military aircraft worldwide — keyless adsb.lol / adsb.fi `/mil` feed. Most ADS-B
 // aggregators (and OpenSky's anonymous tier) FILTER OUT military traffic, which is
@@ -89,20 +90,29 @@ export const MILITARY_AIR_SOURCE: SignalSource = {
   // Barometric altitude is the real per-aircraft scalar: 0 (on ground) → ~45k ft ceiling.
   metric: { field: "altitudeFt", domain: [0, 45000], unit: " ft" },
   async fetch() {
+    // Only the exit AFTER the loop knows whether any endpoint spoke at all, so the
+    // loop records what it saw rather than marking an outcome per attempt.
+    let answered = false; // an endpoint returned a parsable body, just no aircraft
+    let reason = "both feeds unreachable"; // nothing answered; overwritten by an http status
     for (const url of ENDPOINTS) {
       try {
         const res = await fetch(url, {
           headers: { "User-Agent": UA, Accept: "application/json" },
           signal: AbortSignal.timeout(12_000),
         });
-        if (!res.ok) continue;
+        if (!res.ok) {
+          reason = `http ${res.status}`;
+          continue;
+        }
         const json = (await res.json()) as { ac?: AcRow[] };
         const out = normalizeMilitaryAir(json);
-        if (out.length) return out;
+        if (out.length) return observed(out);
+        answered = true;
       } catch {
         // try the next endpoint
       }
     }
-    return []; // dormant-safe: both feeds unreachable → nothing
+    if (answered) return observed<SignalFeature>([]); // a feed answered with no military traffic
+    return degraded(reason); // dormant-safe: both feeds unreachable → nothing
   },
 };

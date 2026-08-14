@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { markCoverage, withCoverage } from "@/lib/signals/coverage";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // The Space Devs — Launch Library 2 "upcoming launches". Keyless JSON; the
 // canonical open feed of scheduled orbital + suborbital launches. Each launch is
@@ -135,16 +136,25 @@ export const LAUNCHES_SOURCE: SignalSource = {
   attribution: LAUNCHES_ATTRIBUTION,
   kind: "schedule", // forward-looking, time-anchored → the countdown-agenda focus view
   async fetch() {
-    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.features;
+    // A cache hit is a real upstream read — stamped when it happened, not now.
+    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
       const features = (await tryFetch(PROD)) ?? (await tryFetch(DEV));
       if (features) {
         cache = { features, at: Date.now() };
-        return features;
+        return observed(features, cache.at);
       }
-      return cache?.features ?? []; // both throttled → last good, else empty
+      // both throttled → last good, else empty. Keep the rows and declare the
+      // failure, stamped with when they were really read: `degraded()` would drop
+      // the cache, `observed()` would claim a read that did not happen.
+      return cache
+        ? degradedWith(cache.features, "http error (prod and dev)", cache.at)
+        : degraded("http error (prod and dev)");
     } catch {
-      return cache?.features ?? []; // dormant-safe
+      // Same last-good rule as the throttled path above.
+      return cache
+        ? degradedWith(cache.features, "fetch failed", cache.at)
+        : degraded("fetch failed"); // dormant-safe
     }
   },
 };

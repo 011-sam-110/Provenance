@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Internet outages — IODA (Internet Outage Detection & Analysis, Georgia Tech /
 // CAIDA). Detects national-scale connectivity drops from three independent
@@ -125,11 +126,12 @@ export const INTERNET_OUTAGES_SOURCE: SignalSource = {
         `${SUMMARY_URL}?from=${from}&until=${until}&entityType=country&limit=200`,
         { headers: { Accept: "application/json", "User-Agent": UA }, signal: AbortSignal.timeout(20_000) },
       );
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { data?: IodaRow[] };
-      return normalizeOutages(json);
+      // An empty payload here is a real reading: IODA answered, no country is out.
+      return observed(normalizeOutages(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

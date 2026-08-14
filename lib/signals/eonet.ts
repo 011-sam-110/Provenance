@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalMetric, SignalSource } from "@/lib/signals/types";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // NASA EONET (Earth Observatory Natural Event Tracker) — open natural events of
 // the last 30 days. ONE upstream fetch feeds FOUR registry layers (wildfires /
@@ -213,6 +214,24 @@ export function eonetToFeatures(
 let cache: { events: EonetEvent[]; at: number } | null = null;
 let inflight: Promise<EonetEvent[]> | null = null;
 
+// Why the last COMPLETED read of each feed failed, or undefined when it succeeded.
+// Recorded here, DECLARED by the registered fetch below: one read feeds four layers,
+// and an outcome attached to this shared event array would be lost the moment each
+// layer re-maps it into its own features.
+let sharedFailure: string | undefined;
+const categoryFailure = new Map<string, string>();
+
+/**
+ * Short, operator-facing reason for a refresh that threw. Only the status our own
+ * refreshers put in the message is passed through (`EONET: 503` → "http 503");
+ * anything else — network, timeout, an unreadable body — is reported generically, so
+ * no upstream text can reach the API envelope.
+ */
+function failureReason(err: unknown): string {
+  const m = err instanceof Error ? /^EONET(?: \S+)?: (\d{3})$/.exec(err.message) : null;
+  return m ? `http ${m[1]}` : "fetch failed";
+}
+
 /**
  * 30 s, not 15 s. The shared open feed measured 4.9 MB on 2026-08-13 and its
  * fetch time is genuinely variable: 7.7 s on one call and 18.3 s on another,
@@ -236,6 +255,7 @@ async function refresh(): Promise<EonetEvent[]> {
   if (!res.ok) throw new Error(`EONET: ${res.status}`);
   const json = (await res.json()) as { events?: EonetEvent[] };
   cache = { events: json.events ?? [], at: Date.now() };
+  sharedFailure = undefined;
   return cache.events;
 }
 
@@ -244,7 +264,10 @@ export async function fetchEonet(): Promise<EonetEvent[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.events;
   if (!inflight) {
     inflight = refresh()
-      .catch(() => cache?.events ?? [])
+      .catch((err) => {
+        sharedFailure = failureReason(err);
+        return cache?.events ?? [];
+      })
       .finally(() => {
         inflight = null;
       });
@@ -267,6 +290,7 @@ async function refreshCategory(category: string): Promise<EonetEvent[]> {
   const json = (await res.json()) as { events?: EonetEvent[] };
   const events = json.events ?? [];
   catCache.set(category, { events, at: Date.now() });
+  categoryFailure.delete(category);
   return events;
 }
 
@@ -278,13 +302,27 @@ export async function fetchEonetCategory(category: string): Promise<EonetEvent[]
     catInflight.set(
       category,
       refreshCategory(category)
-        .catch(() => catCache.get(category)?.events ?? [])
+        .catch((err) => {
+          categoryFailure.set(category, failureReason(err));
+          return catCache.get(category)?.events ?? [];
+        })
         .finally(() => {
           catInflight.delete(category);
         }),
     );
   }
   return hit ? hit.events : (catInflight.get(category) as Promise<EonetEvent[]>);
+}
+
+/**
+ * What the read behind this layer's events left behind: when they were ACTUALLY read
+ * (the cache instant, not now — a stale serve must report the age of the DATA) and
+ * the reason if that read refused.
+ */
+function lastRead(meta: EonetCategoryMeta): { at: number | null; failure: string | undefined } {
+  return meta.allStatuses
+    ? { at: catCache.get(meta.category)?.at ?? null, failure: categoryFailure.get(meta.category) }
+    : { at: cache?.at ?? null, failure: sharedFailure };
 }
 
 function makeSource(meta: EonetCategoryMeta): SignalSource {
@@ -300,7 +338,14 @@ function makeSource(meta: EonetCategoryMeta): SignalSource {
       const events = meta.allStatuses
         ? await fetchEonetCategory(meta.category)
         : await fetchEonet();
-      return eonetToFeatures(events, meta);
+      const features = eonetToFeatures(events, meta);
+      const { at, failure } = lastRead(meta);
+      // Both fetchers fall back to last-good rather than throwing, so when the feed
+      // refuses we keep the rows we still hold and stamp the age of THAT read —
+      // `degraded()` would empty all four layers over one blip, and `observed()`
+      // would claim a read that did not happen.
+      if (failure) return at != null ? degradedWith(features, failure, at) : degraded(failure);
+      return observed(features, at ?? Date.now());
     },
   };
 }

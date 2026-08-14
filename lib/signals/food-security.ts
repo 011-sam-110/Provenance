@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude } from "@/lib/signals/aggregate";
+import { markOutcome, observed } from "@/lib/signals/outcome";
 
 // Food insecurity by country — WFP HungerMap LIVE.
 //
@@ -145,10 +146,18 @@ export const FOOD_SECURITY_SOURCE: SignalSource = {
   // The dormancy notice omits this field, so it renders as a dot, not a bar.
   metric: { field: "prevalencePct", domain: [5, 50], unit: " %" },
 
+  // The notice paths below keep the placeholder feature EXACTLY as it was — the
+  // strip, the monitor row and lib/terminal/feedHealth.ts all read it — and declare
+  // the failure beside it. That is the fix for the `count: 1, ok: true` payload
+  // feedHealth.ts:123 documents: the row said "no data" in words while the envelope
+  // said the layer was live, and only the words were true.
   async fetch() {
     const key = process.env[HUNGERMAP_KEY_ENV];
     if (!key) {
-      return [foodSecurityNotice(`No ${HUNGERMAP_KEY_ENV} is set, and WFP withdrew the keyless feed.`)];
+      return markOutcome(
+        [foodSecurityNotice(`No ${HUNGERMAP_KEY_ENV} is set, and WFP withdrew the keyless feed.`)],
+        { ok: false, at: Date.now(), reason: "no key" },
+      );
     }
     // NOTE: the auth SCHEME is unverified — we hold no HungerMap credential to test
     // with. The 401 body is API Gateway's authorizer shape, so a bearer token is the
@@ -160,15 +169,29 @@ export const FOOD_SECURITY_SOURCE: SignalSource = {
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) {
-        return [foodSecurityNotice(`${HUNGERMAP_KEY_ENV} is set but WFP rejected it (HTTP ${res.status}).`)];
+        return markOutcome(
+          [foodSecurityNotice(`${HUNGERMAP_KEY_ENV} is set but WFP rejected it (HTTP ${res.status}).`)],
+          { ok: false, at: Date.now(), reason: `http ${res.status}` },
+        );
       }
       const json = (await res.json()) as { body?: { countries?: HmCountry[] } };
       const features = normalizeFoodSecurity(json);
+      // Zero readings is NOT the honest-empty case: this path still ships a notice
+      // titled "no data", so the outcome has to agree with the row rather than
+      // assert a reading we did not get.
       return features.length
-        ? features
-        : [foodSecurityNotice("WFP accepted the request but returned no country readings.")];
+        ? observed(features)
+        : markOutcome([foodSecurityNotice("WFP accepted the request but returned no country readings.")], {
+            ok: false,
+            at: Date.now(),
+            reason: "no country readings",
+          });
     } catch {
-      return [foodSecurityNotice("WFP HungerMap could not be reached.")];
+      return markOutcome([foodSecurityNotice("WFP HungerMap could not be reached.")], {
+        ok: false,
+        at: Date.now(),
+        reason: "fetch failed",
+      });
     }
   },
 };

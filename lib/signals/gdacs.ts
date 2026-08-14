@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // GDACS — the Global Disaster Alert & Coordination System (UN/EC). One keyless
 // GeoJSON feed of the CURRENT global disaster picture: earthquakes, tropical
@@ -146,11 +147,13 @@ export const GDACS_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      // The 400 described above is exactly this branch: it now reports "http 400"
+      // instead of a clean zero, so a missing parameter cannot pass for a quiet day.
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { features?: GdacsFeature[] };
-      return normalizeGdacs(json);
-    } catch {
-      return [];
+      return observed(normalizeGdacs(json));
+    } catch (e) {
+      return degraded((e as Error)?.name === "TimeoutError" ? "timeout" : "upstream read failed");
     }
   },
 };

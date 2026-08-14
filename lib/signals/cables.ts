@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalGeometry, SignalSource } from "@/lib/signals/types";
 import { classifyLandingRegion } from "@/lib/signals/cable-regions";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // ── Submarine cables — an ASSET layer, not an event feed ────────────────────
 //
@@ -387,6 +388,14 @@ let state: State | null = null;
 let built: { data: CableDataset; at: number; complete: boolean } | null = null;
 let inflight: Promise<CableDataset> | null = null;
 
+// How the last COMPLETED load ended. Recorded where each failure is DETECTED and
+// declared by the two registered fetches below, never in here: one dataset feeds two
+// sources, and each of them has to be able to say it for itself.
+/** Set when the required geometry call refused; cleared by a load that succeeds. */
+let loadFailure: string | undefined;
+/** Landings only: their coordinates refused, so that layer builds nothing. */
+let landingFailure: string | undefined;
+
 /** Build the two feature lists from the current bases + accumulated metadata. */
 function assemble(s: State): CableDataset {
   const landingToCables = new Map<string, string[]>();
@@ -411,7 +420,10 @@ async function loadDataset(): Promise<CableDataset> {
       fetchJson<{ features?: LandingGeoFeature[] }>(LANDING_GEO_ENDPOINT),
       fetchJson<{ id?: string; name?: string }[]>(ALL_ENDPOINT),
     ]);
-    if (!geo) return built?.data ?? { cables: [], landings: [] }; // dormant-safe
+    if (!geo) {
+      loadFailure = "geometry fetch failed";
+      return built?.data ?? { cables: [], landings: [] }; // dormant-safe
+    }
     const bases = mergeCableSegments(geo);
     const ids = all?.length
       ? all.map((c) => (c.id ?? "").toString().trim()).filter(Boolean)
@@ -423,6 +435,10 @@ async function loadDataset(): Promise<CableDataset> {
       metaById: state?.metaById ?? new Map(), // keep any metadata we already have
       geoAt: Date.now(),
     };
+    // Landing coordinates are optional for cables but REQUIRED for landing nodes:
+    // without them that layer builds nothing, which would read as a quiet layer
+    // rather than a refused call.
+    landingFailure = landingGeoRaw ? undefined : "landing coords fetch failed";
   }
   const s = state;
 
@@ -441,6 +457,7 @@ async function loadDataset(): Promise<CableDataset> {
   const data = assemble(s);
   const complete = s.ids.every((id) => s.metaById.has(id)) || s.metaById.size >= s.bases.size;
   built = { data, at: Date.now(), complete };
+  loadFailure = undefined; // geometry answered; partial enrichment is not a failure
   return data;
 }
 
@@ -450,7 +467,10 @@ export function getCableDataset(): Promise<CableDataset> {
   if (built && Date.now() - built.at < ttl) return Promise.resolve(built.data);
   if (inflight) return inflight;
   inflight = loadDataset()
-    .catch(() => built?.data ?? { cables: [], landings: [] })
+    .catch(() => {
+      loadFailure = "fetch failed";
+      return built?.data ?? { cables: [], landings: [] };
+    })
     .finally(() => {
       inflight = null;
     });
@@ -462,6 +482,8 @@ export function __resetCableCache(): void {
   state = null;
   built = null;
   inflight = null;
+  loadFailure = undefined;
+  landingFailure = undefined;
 }
 
 /**
@@ -473,6 +495,19 @@ export function normalizeCables(geojson: { features?: GeoFeature[] }): SignalFea
   return [...mergeCableSegments(geojson).values()].map((b) => buildCableFeature(b, undefined));
 }
 
+/**
+ * Declare the outcome of the load that produced these rows. Both sources go through
+ * here so they say the same thing about the one shared read: on a refusal the
+ * last-good rows are KEPT and stamped with when they were really read — `degraded()`
+ * would empty a layer that still has perfectly serviceable infrastructure in it, and
+ * `observed()` would claim a read that did not happen.
+ */
+function declareOutcome(rows: SignalFeature[], layerFailure?: string): SignalFeature[] {
+  const failure = loadFailure ?? layerFailure;
+  if (failure) return built ? degradedWith(rows, failure, built.at) : degraded(failure);
+  return observed(rows, built?.at ?? Date.now());
+}
+
 export const CABLES_SOURCE: SignalSource = {
   id: "cables",
   kind: "asset",
@@ -482,7 +517,8 @@ export const CABLES_SOURCE: SignalSource = {
   refreshMs: REFRESH_MS,
   attribution: CABLES_ATTRIBUTION,
   async fetch() {
-    return (await getCableDataset()).cables;
+    const { cables } = await getCableDataset();
+    return declareOutcome(cables);
   },
 };
 
@@ -495,6 +531,7 @@ export const CABLE_LANDINGS_SOURCE: SignalSource = {
   refreshMs: REFRESH_MS,
   attribution: CABLES_ATTRIBUTION,
   async fetch() {
-    return (await getCableDataset()).landings;
+    const { landings } = await getCableDataset();
+    return declareOutcome(landings, landingFailure);
   },
 };
