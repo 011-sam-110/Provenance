@@ -43,12 +43,40 @@ const WINDOW_FILES = 16;
 /** Parallel zip downloads. The bucket is a CDN, but stay a polite client. */
 const FETCH_CONCURRENCY = 8;
 /**
- * Minimum distinct source documents before an event may reach the map. CAMEO is
- * machine-coded and its single-document codings are where nearly all the nonsense
- * lives (a stadium "clash", a "blitz" of publicity). Two independent documents is
- * a defensible floor and it is GDELT's own count, not a score we invented.
+ * Minimum source documents before an event may reach the map.
+ *
+ * NOTE what this is NOT. It is a VOLUME floor, not a corroboration floor:
+ * NumArticles counts documents, and five documents from one syndicating publisher
+ * is one story told five times. GDELT's actual independence count is NumSources,
+ * and requiring NumSources >= 2 was measured against a live 4-hour window on
+ * 2026-08-14: it cut the layer from 391 places to 22 and took Gaza, Ukraine and
+ * Syria to ZERO while leaving the junk untouched. So it is deliberately not used.
+ * Corroboration and truth are different axes here — see MIN_TYPED_ACTOR below.
  */
 const MIN_ARTICLES = 2;
+
+/**
+ * Require GDELT to have TYPED at least one actor on the row.
+ *
+ * This is the guard that catches the coder's own worst failure mode, and it is
+ * GDELT telling on itself rather than a heuristic we invented. When CAMEO cannot
+ * find a real actor it will promote a bare PLACE NAME to a national actor —
+ * Actor1Name "CHRISTCHURCH" → Actor1Code "NZL" — and in exactly those cases it
+ * attaches NO Actor*Type*Code, because there was no organisation or role to type.
+ * The action then gets geocoded to whatever other place the text mentioned.
+ *
+ * That is precisely how an article about a TikTok livestream moderation failure
+ * (which referenced the Christchurch attack) became "Use of military force" at a
+ * city-precision pin in Bristol, UK on 2026-08-13, and it is not a rare shape:
+ * measured on that window, 388 of the 1,037 rows the layer shipped — 37% — were
+ * untyped-actor rows. Requiring a type drops them for ~30% of all places.
+ *
+ * It is NOT sufficient on its own, and nothing available in this feed is. A court
+ * report about a shooting carries real police and judicial actors and real
+ * violence vocabulary, so it survives every structured filter GDELT exposes. That
+ * residue is handled by no longer ASSERTING an incident — see toCoverageProps().
+ */
+const MIN_TYPED_ACTOR = true;
 /** Round coordinates to this many dp to bucket one place. 2dp ~ 1.1 km. */
 const PLACE_DP = 2;
 const MAX_POINTS = 300;
@@ -58,10 +86,14 @@ export const GDELT_ATTRIBUTION = "Event coding © The GDELT Project";
 
 // --- GDELT 2.0 Event table column indices (0-based, 61 columns) -------------
 const C_ID = 0;
+const C_SQLDATE = 1;
+/** Actor1Type1–3Code and Actor2Type1–3Code — the CAMEO role codes (MIL, COP, GOV…). */
+const C_ACTOR_TYPES = [12, 13, 14, 22, 23, 24];
 const C_EVENT_CODE = 26;
 const C_ROOT_CODE = 28;
 const C_QUAD_CLASS = 29;
 const C_NUM_MENTIONS = 31;
+const C_NUM_SOURCES = 32;
 const C_NUM_ARTICLES = 33;
 const C_AVG_TONE = 34;
 const C_GEO_TYPE = 51;
@@ -79,6 +111,8 @@ export interface GdeltEvent {
   rootCode: string;
   quadClass: string;
   numMentions: number;
+  /** Distinct INFORMATION SOURCES, from NumSources. Independence, unlike numArticles. */
+  numSources: number;
   numArticles: number;
   avgTone: number;
   geoType: string;
@@ -86,8 +120,21 @@ export interface GdeltEvent {
   lat: number;
   lon: number;
   sourceUrl: string;
-  /** ISO timestamp GDELT added the event, from DATEADDED. */
+  /**
+   * CAMEO role codes present on either actor (MIL, COP, GOV, REB, MED…). EMPTY is
+   * the meaningful case: it marks a row where GDELT inferred an actor from a bare
+   * place name rather than reading one. See MIN_TYPED_ACTOR.
+   */
+  actorTypes: string[];
+  /** ISO timestamp GDELT ADDED the event, from DATEADDED. NOT when it happened. */
   ts?: string;
+  /**
+   * Date the event is asserted to have OCCURRED (SQLDATE), day resolution only.
+   * Routinely differs from `ts`: on the 2026-08-14 window 22 rows were backdated,
+   * eleven by a year and one by a decade, and every one of them was being stamped
+   * onto the map as if it were inside the trailing four hours.
+   */
+  eventDate?: string;
 }
 
 /** Per-layer config: registry id, rail colour, and which CAMEO codes it accepts. */
@@ -104,9 +151,14 @@ export interface GdeltLayerMeta {
 export const GDELT_LAYERS: Record<string, GdeltLayerMeta> = {
   // CAMEO roots 18 ASSAULT / 19 FIGHT / 20 UNCONVENTIONAL MASS VIOLENCE, further
   // narrowed to QuadClass 4 (material conflict) so verbal threats stay out.
+  // The label says COVERAGE, deliberately. This layer maps where conflict-coded
+  // reporting is clustering; it does not map confirmed incidents, and calling it
+  // "Conflict" invited exactly the reading that a Bristol pin reading "Use of
+  // military force" was a report of military force in Bristol. ACLED is the
+  // layer that maps adjudicated incidents.
   conflict: {
     signalId: "conflict",
-    label: "Conflict",
+    label: "Conflict coverage",
     color: "#b91c1c",
     rootCodes: ["18", "19", "20"],
     quadClass: "4",
@@ -115,7 +167,7 @@ export const GDELT_LAYERS: Record<string, GdeltLayerMeta> = {
   // so it is deliberately NOT constrained here.
   protests: {
     signalId: "protests",
-    label: "Protests",
+    label: "Protest coverage",
     color: "#7c3aed",
     rootCodes: ["14"],
   },
@@ -198,6 +250,30 @@ function isoFromStamp(stamp: string): string | undefined {
   return Number.isNaN(Date.parse(iso)) ? undefined : iso;
 }
 
+/** SQLDATE (YYYYMMDD) → ISO date, or undefined. Day resolution is all GDELT has. */
+export function dateFromSqlDate(sqlDate: string): string | undefined {
+  const s = (sqlDate ?? "").trim();
+  if (!/^\d{8}$/.test(s)) return undefined;
+  const iso = `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`;
+  return Number.isNaN(Date.parse(`${iso}T00:00:00Z`)) ? undefined : iso;
+}
+
+/**
+ * Pure: how to describe a row's timing WITHOUT claiming we know when it happened.
+ *
+ * The layer used to stamp every marker `last 4h`. That window is when GDELT
+ * INGESTED the record; the event date is a separate field, at day resolution, and
+ * it is frequently older. Saying "reported in the last 4h" is true of every row;
+ * saying the event occurred then is true of almost none.
+ */
+export function describeTiming(ingestedIso?: string, eventDate?: string): string {
+  if (!ingestedIso) return eventDate ? `Event dated ${eventDate}` : "Timing unknown";
+  const ingestDay = ingestedIso.slice(0, 10);
+  if (!eventDate) return "Reported in the last 4h";
+  if (eventDate === ingestDay) return "Reported in the last 4h · event dated today";
+  return `Reported in the last 4h · event dated ${eventDate}`;
+}
+
 /**
  * Pure: one raw GDELT Event export (tab-separated, one event per line) → typed
  * rows. Drops anything without a usable action location: GDELT writes
@@ -223,6 +299,7 @@ export function parseGdeltExport(tsv: string): GdeltEvent[] {
 
     const numArticles = num(c[C_NUM_ARTICLES]);
     const numMentions = num(c[C_NUM_MENTIONS]);
+    const numSources = num(c[C_NUM_SOURCES]);
     const avgTone = num(c[C_AVG_TONE]);
 
     out.push({
@@ -231,6 +308,7 @@ export function parseGdeltExport(tsv: string): GdeltEvent[] {
       rootCode: (c[C_ROOT_CODE] ?? "").trim(),
       quadClass: (c[C_QUAD_CLASS] ?? "").trim(),
       numMentions: Number.isFinite(numMentions) ? numMentions : 0,
+      numSources: Number.isFinite(numSources) ? numSources : 0,
       numArticles: Number.isFinite(numArticles) ? numArticles : 0,
       avgTone: Number.isFinite(avgTone) ? avgTone : 0,
       geoType,
@@ -238,13 +316,15 @@ export function parseGdeltExport(tsv: string): GdeltEvent[] {
       lat,
       lon,
       sourceUrl: (c[C_SOURCE_URL] ?? "").trim(),
+      actorTypes: C_ACTOR_TYPES.map((i) => (c[i] ?? "").trim()).filter(Boolean),
       ts: isoFromStamp(c[C_DATE_ADDED] ?? ""),
+      eventDate: dateFromSqlDate(c[C_SQLDATE] ?? ""),
     });
   }
   return out;
 }
 
-interface PlaceBucket {
+export interface PlaceBucket {
   lat: number;
   lon: number;
   place: string;
@@ -268,6 +348,7 @@ export function normalizeGdeltEvents(
   meta: GdeltLayerMeta,
   cap = MAX_POINTS,
   minArticles = MIN_ARTICLES,
+  requireTypedActor = MIN_TYPED_ACTOR,
 ): SignalFeature[] {
   const roots = new Set(meta.rootCodes);
 
@@ -277,6 +358,7 @@ export function normalizeGdeltEvents(
     if (!roots.has(e.rootCode)) continue;
     if (meta.quadClass && e.quadClass !== meta.quadClass) continue;
     if (e.numArticles < minArticles) continue;
+    if (requireTypedActor && e.actorTypes.length === 0) continue;
     if (!e.place) continue;
     const key = `${e.rootCode}|${e.lat.toFixed(3)}|${e.lon.toFixed(3)}|${e.sourceUrl}`;
     const prev = deduped.get(key);
@@ -319,20 +401,47 @@ export function normalizeGdeltEvents(
     color: meta.color,
     link: /^https?:\/\//i.test(b.top.sourceUrl) ? b.top.sourceUrl : undefined,
     ts: b.top.ts,
-    props: {
-      place: b.place,
-      // `articles` is GDELT's NumArticles summed over the place — source-document
-      // volume, NOT a 0–10 magnitude, so it stays off `magnitude` and never
-      // distorts the marker radius (see types.ts).
-      articles: b.articles,
-      events: b.events,
-      topEvent: cameoLabel(b.top.eventCode),
-      cameoCode: b.top.eventCode,
-      precision: geoPrecision(b.top.geoType),
-      tone: Math.round(b.top.avgTone * 10) / 10,
-      window: `last ${(WINDOW_FILES * 15) / 60}h`,
-    },
+    props: toCoverageProps(b),
   })));
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Pure: one place bucket → the dossier's definition list.
+ *
+ * THIS IS THE HONESTY SEAM, and it is the half of the fix that no filter can do.
+ * The layer used to publish `topEvent: "Use of military force"` — a bare finding,
+ * beside a precise pin, in conflict red. A reader had every right to take that as
+ * "military force was used here". It was never that. It is one machine coding of
+ * one article's text, and on 2026-08-13 that exact field read "Use of military
+ * force" at Bristol for a story about a TikTok livestream.
+ *
+ * So the assertion is attributed instead of stated. `codedAs` says whose coding
+ * it is, `codedFrom` shows the evidence behind it (five articles from ONE
+ * publisher is visibly thin), `coding` states plainly that it is unverified, and
+ * `timing` separates when GDELT filed the record from when the event is dated.
+ * Same data, same pin, no claim we cannot support.
+ *
+ * The caveats already existed — in the explainer panel, which a reader has to go
+ * and open. The defect was that the hedge lived there and the assertion lived
+ * here. This moves the hedge to where the claim is.
+ */
+export function toCoverageProps(b: PlaceBucket): Record<string, unknown> {
+  return {
+    place: b.place,
+    // `articles` is GDELT's NumArticles summed over the place — source-document
+    // volume, NOT a 0–10 magnitude, so it stays off `magnitude` and never
+    // distorts the marker radius (see types.ts).
+    articles: b.articles,
+    events: b.events,
+    codedAs: `${cameoLabel(b.top.eventCode)} (CAMEO ${b.top.eventCode})`,
+    codedFrom: `${plural(b.top.numArticles, "article")} · ${plural(b.top.numSources, "publisher")}`,
+    coding: "Machine-coded from article text by GDELT — not a verified incident",
+    timing: describeTiming(b.top.ts, b.top.eventDate),
+    pinPrecision: geoPrecision(b.top.geoType),
+    tone: Math.round(b.top.avgTone * 10) / 10,
+  };
 }
 
 // --- upstream window fetch (shared by both layers) --------------------------

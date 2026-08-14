@@ -113,13 +113,16 @@ describe("conflict / protests (GDELT)", () => {
     quadClass: "4",
     numMentions: 10,
     numArticles: 21 - i, // ≥ MIN_ARTICLES(2) for all 20, so none is filtered out
+    numSources: 3,
     avgTone: -5,
     geoType: "3",
     place: `Place ${i}`,
     lat: 10 + i,
     lon: 20 + i,
     sourceUrl: `https://example.test/${i}`,
+    actorTypes: ["MIL"], // typed, so the typed-actor guard keeps all 20
     ts: "2026-08-10T10:00:00.000Z",
+    eventDate: "2026-08-10",
   }));
 
   test("a busy window declares the places it could not draw", () => {

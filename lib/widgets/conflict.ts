@@ -47,10 +47,13 @@ export function conflictView(
     return { mode: "acled", sourceLabel: "ACLED", rows };
   }
   if (gdelt.length > 0) {
+    // `sub` shows what GDELT coded, ATTRIBUTED. It used to show props.window —
+    // a flat "last 4h" that described our ingest, not the event, and defaulted to
+    // an even wronger "last 24h" when absent.
     const rows = gdelt.slice(0, cap).map((f) => ({
       id: f.id,
       title: String(f.props?.place ?? f.title),
-      sub: String(f.props?.window ?? "last 24h"),
+      sub: f.props?.codedAs ? `GDELT coded: ${f.props.codedAs}` : String(f.props?.timing ?? ""),
       metricLabel: "articles",
       metric: Number(f.props?.articles ?? 0),
       lat: f.lat,

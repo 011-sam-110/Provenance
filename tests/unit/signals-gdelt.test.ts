@@ -8,6 +8,8 @@ import {
   geoPrecision,
   parseLastUpdate,
   shiftStamp,
+  describeTiming,
+  dateFromSqlDate,
   GDELT_LAYERS,
   CONFLICT_SOURCE,
   PROTESTS_SOURCE,
@@ -53,18 +55,37 @@ test("conflict keeps CAMEO roots 18/19/20 at QuadClass 4 and ranks places by art
   // Protest rows (root 14) and off-theme roots (01/04/05/08/09/11) are excluded.
   expect(out.every((f) => f.signalId === "conflict")).toBe(true);
   expect(out.every((f) => f.color === "#b91c1c")).toBe(true);
+  // Every surviving place has a TYPED actor. The five places the typed-actor
+  // guard removes from this fixture are listed in the test below, with what each
+  // article actually was — they are not collateral, they are the point.
   expect(out.map((f) => f.title)).toEqual([
-    "Denmark",                              // 10 articles
-    "Hiroshima, Hiroshima, Japan",          // 10
-    "France",                               // 8
-    "Italy",                                // 8
-    "Taipei, T'ai-pei, Taiwan",             // 8
-    "Australia",                            // 6
-    "Las Vegas, Nevada, United States",     // 4
-    "Entebbe, Wakiso, Uganda",              // 3
-    "Jerusalem, Israel (general), Israel",  // 2
-    "Kuala Lumpur, Kuala Lumpur, Malaysia", // 2
+    "Denmark",                              // 10 articles, actor CRM/GANG
+    "France",                               // 8, actor GOV/MINISTRY
+    "Australia",                            // 6, actor COP
+    "Las Vegas, Nevada, United States",     // 4, actor CRM
+    "Jerusalem, Israel (general), Israel",  // 2, actor CVL
   ]);
+});
+
+test("the typed-actor guard drops rows where GDELT invented an actor from a place name", () => {
+  const withGuard = normalizeGdeltEvents(EVENTS, GDELT_LAYERS.conflict);
+  const without = normalizeGdeltEvents(EVENTS, GDELT_LAYERS.conflict, 300, 2, false);
+
+  // Turning the guard OFF restores exactly the five places — proving the guard is
+  // what removes them, not some incidental change to parsing or bucketing.
+  const dropped = without.map((f) => f.title).filter((t) => !withGuard.some((f) => f.title === t));
+  expect(dropped.sort()).toEqual([
+    "Entebbe, Wakiso, Uganda",              // CAMEO 190: Uganda unveils a STATUE commemorating the 1976 raid
+    "Hiroshima, Hiroshima, Japan",          // CAMEO 190: an article about buying a paper-crane ornament
+    "Italy",                                // CAMEO 190: a new Italian RESTAURANT opening in Birmingham
+    "Kuala Lumpur, Kuala Lumpur, Malaysia", // CAMEO 181: a real ransom case — an honest cost of the guard
+    "Taipei, T'ai-pei, Taiwan",             // CAMEO 191: Taiwan building drones against a FUTURE invasion
+  ]);
+
+  // Each one carries an actor GDELT inferred from a place name, with no type.
+  for (const e of EVENTS.filter((e) => e.place.startsWith("Entebbe") || e.place === "Italy")) {
+    expect(e.actorTypes).toEqual([]);
+  }
 });
 
 test("actor-pair duplicates collapse to the best-covered row, not a summed pile", () => {
@@ -100,7 +121,7 @@ test("two distinct stories in one place aggregate into a single ranked marker", 
   const ranchi = out[0];
   expect(ranchi.props?.articles).toBe(12);
   expect(ranchi.props?.events).toBe(2);
-  expect(ranchi.props?.topEvent).toBe("Demonstration or rally"); // CAMEO 141, the best-covered
+  expect(ranchi.props?.codedAs).toBe("Demonstration or rally (CAMEO 141)"); // the best-covered
   expect(ranchi.link).toContain("oneindia.com");
   expect(ranchi.signalId).toBe("protests");
   expect(ranchi.color).toBe("#7c3aed");
@@ -153,15 +174,41 @@ test("each marker carries a verifiable source article and an honest precision no
   expect(out.every((f) => f.link === undefined || /^https?:\/\//.test(f.link))).toBe(true);
 
   const denmark = out.find((f) => f.title === "Denmark")!;
-  expect(denmark.props?.precision).toBe("country"); // ActionGeo_Type 1 — a whole-country centroid
-  expect(denmark.props?.cameoCode).toBe("193");
-  expect(denmark.props?.topEvent).toBe("Fighting with small arms");
-  expect(denmark.props?.window).toBe("last 4h");
+  expect(denmark.props?.pinPrecision).toBe("country"); // ActionGeo_Type 1 — a whole-country centroid
   expect(typeof denmark.props?.tone).toBe("number");
 
+  // The CAMEO label is ATTRIBUTED, never asserted. This is the Bristol fix: the
+  // dossier must not read as a finding of fact about what happened at the pin.
+  expect(denmark.props?.codedAs).toBe("Fighting with small arms (CAMEO 193)");
+  expect(denmark.props?.coding).toMatch(/not a verified incident/i);
+  expect(denmark.props?.codedFrom).toMatch(/^\d+ articles? · \d+ publishers?$/);
+
+  // Timing separates OUR ingest window from the event's own date, and never
+  // claims the event happened in the last four hours.
+  expect(String(denmark.props?.timing)).toMatch(/^Reported in the last 4h/);
+  expect(denmark.props?.window).toBeUndefined();
+
   const vegas = out.find((f) => f.title.startsWith("Las Vegas"))!;
-  expect(vegas.props?.precision).toBe("city"); // ActionGeo_Type 3
+  expect(vegas.props?.pinPrecision).toBe("city"); // ActionGeo_Type 3
   expect(vegas.id).toBe("gdelt:conflict:36.175:-115.137");
+});
+
+test("no marker states a CAMEO label as a bare fact", () => {
+  const all = [
+    ...normalizeGdeltEvents(EVENTS, GDELT_LAYERS.conflict),
+    ...normalizeGdeltEvents(EVENTS, GDELT_LAYERS.protests),
+  ];
+  expect(all.length).toBeGreaterThan(0);
+  for (const f of all) {
+    // The old assertive field is gone entirely, in both layers.
+    expect(f.props?.topEvent).toBeUndefined();
+    // Whatever CAMEO says is carried under a key that names it as a coding, and
+    // sits beside an explicit statement that it is unverified.
+    expect(typeof f.props?.codedAs).toBe("string");
+    expect(f.props?.coding).toMatch(/machine-coded .* by GDELT/i);
+    // The title is the PLACE. It never becomes the alleged act.
+    expect(f.title).toBe(f.props?.place);
+  }
 });
 
 test("cameoLabel names the codes, rolls 4-digit leaves up, and never invents one", () => {
@@ -247,4 +294,90 @@ describeZ("zipMemberExtent", () => {
   itZ("refuses anything that is not a zip", () => {
     expectZ(() => zipMemberExtent(new Uint8Array([1, 2, 3, 4, 5]).buffer)).toThrow(/not a zip/);
   });
+});
+
+// ---------------------------------------------------------------------------
+// REGRESSION — the Bristol miscoding, 2026-08-13
+//
+// Sampo, reading the live console: "your site is telling me that there has been
+// use of military force in Bristol in the last 4 hours based on an article about
+// Perez Hilton livestreaming his breakdown on TikTok."
+//
+// He was right. These ten rows are the VERBATIM GDELT export rows for that one
+// article, captured from the slots that were live at the time. Four of them are
+// QuadClass-4 armed-conflict codings, seeding pins on three cities in two
+// countries, all from a story about a TikTok moderation failure. The mechanism:
+// the article referenced the Christchurch attack, GDELT promoted the city name
+// to a national actor (NZL) WITHOUT an actor type, coded the violence vocabulary
+// as CAMEO 190, and geocoded the action to unrelated places.
+// ---------------------------------------------------------------------------
+
+const BRISTOL_TSV = readFileSync(
+  join(process.cwd(), "tests/fixtures/gdelt-bristol-miscoding.export.tsv"),
+  "utf8",
+);
+const BRISTOL_EVENTS = parseGdeltExport(BRISTOL_TSV);
+
+test("the Bristol row passed every guard the layer had before this fix", () => {
+  const bristol = BRISTOL_EVENTS.find(
+    (e) => e.place.startsWith("Bristol") && e.eventCode === "190",
+  )!;
+  expect(bristol).toBeDefined();
+
+  // It is not malformed and it is not a null-island artefact. It cleared the
+  // root-code, QuadClass, article-floor and geocode guards on the merits.
+  expect(bristol.rootCode).toBe("19");
+  expect(bristol.quadClass).toBe("4");
+  expect(bristol.numArticles).toBeGreaterThanOrEqual(2);
+  expect(bristol.geoType).toBe("4"); // GDELT's most precise geo class
+  expect(bristol.lat).toBeCloseTo(51.45, 2);
+  expect(bristol.lon).toBeCloseTo(-2.58333, 4);
+  expect(bristol.sourceUrl).toContain("perez-hilton-self-harm-livestream");
+
+  // Five articles, ONE publisher. The article floor reads that as corroborated.
+  expect(bristol.numArticles).toBe(5);
+  expect(bristol.numSources).toBe(1);
+
+  // And here is the tell the layer was not reading: an actor invented from a
+  // place name, with no type attached.
+  expect(bristol.actorTypes).toEqual([]);
+});
+
+test("one celebrity story no longer seeds armed-conflict pins across three cities", () => {
+  // Before the fix: four QuadClass-4 rows from this single article reached the
+  // conflict layer, pinning Bristol, New York and Westchester FL.
+  const unguarded = normalizeGdeltEvents(BRISTOL_EVENTS, GDELT_LAYERS.conflict, 300, 2, false);
+  expect(unguarded.map((f) => f.title).sort()).toEqual([
+    "Bristol, Bristol, City of, United Kingdom",
+    "New York, United States",
+    "Westchester, Florida, United States",
+  ]);
+  expect(unguarded.find((f) => f.title.startsWith("Bristol"))!.props?.codedAs)
+    .toBe("Use of military force (CAMEO 190)");
+
+  // After: every one of them is gone, from both layers.
+  expect(normalizeGdeltEvents(BRISTOL_EVENTS, GDELT_LAYERS.conflict)).toEqual([]);
+  expect(normalizeGdeltEvents(BRISTOL_EVENTS, GDELT_LAYERS.protests)).toEqual([]);
+});
+
+test("describeTiming never claims an event occurred inside the ingest window", () => {
+  // Same day: still only ever a claim about REPORTING.
+  expect(describeTiming("2026-08-13T20:30:00Z", "2026-08-13"))
+    .toBe("Reported in the last 4h · event dated today");
+  // Backdated — 22 rows in the live window were, eleven of them by a year.
+  expect(describeTiming("2026-08-13T20:30:00Z", "2025-08-13"))
+    .toBe("Reported in the last 4h · event dated 2025-08-13");
+  // Missing pieces degrade honestly rather than inventing a window.
+  expect(describeTiming("2026-08-13T20:30:00Z", undefined)).toBe("Reported in the last 4h");
+  expect(describeTiming(undefined, "2026-08-13")).toBe("Event dated 2026-08-13");
+  expect(describeTiming(undefined, undefined)).toBe("Timing unknown");
+  // The word "happened" is never used, and neither is a bare "last 4h".
+  expect(describeTiming("2026-08-13T20:30:00Z", "2026-08-13")).not.toMatch(/happened|occurred/i);
+});
+
+test("dateFromSqlDate reads SQLDATE and rejects anything else", () => {
+  expect(dateFromSqlDate("20260813")).toBe("2026-08-13");
+  expect(dateFromSqlDate("")).toBeUndefined();
+  expect(dateFromSqlDate("2026081")).toBeUndefined();
+  expect(dateFromSqlDate("notadate")).toBeUndefined();
 });

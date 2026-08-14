@@ -341,13 +341,15 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Intel / conflict -----------------------------------------------------
   {
     id: "conflict",
-    whatItShows: "A place where GDELT's machine coder logged armed violence — assaults, armed clashes or mass violence — in the last four hours.",
-    method: "GDELT codes global news into CAMEO event records, each with an action location. We keep roots 18/19/20 at QuadClass 4 (material conflict), require at least two source documents, collapse GDELT's repeated actor-pair rows, then total the remaining events per place. The dot is sized by how many documents covered them.",
+    whatItShows: "A place where conflict-coded news reporting is clustering — GDELT's machine coder tagged articles mentioning it as assault, armed clash or mass violence, and filed them in the last four hours. It is a map of coverage, not of confirmed incidents.",
+    method: "GDELT codes global news into CAMEO event records, each with an action location. We keep roots 18/19/20 at QuadClass 4 (material conflict), require at least two source documents AND at least one TYPED actor, collapse GDELT's repeated actor-pair rows, then total the remaining events per place. The dot is sized by how many documents covered them.",
     confidence: "modelled",
     coverage: "Global, but strongly shaped by which languages and outlets GDELT ingests.",
     limitations: [
-      "These are MACHINE-CODED events, not verified incidents. Miscodings are routine — a sporting 'clash' or a metaphorical 'attack' can reach the map.",
-      "Ranking is MEDIA ATTENTION, not severity. A widely-reported incident outweighs an unreported massacre.",
+      "These are MACHINE-CODED events, not verified incidents. Miscodings are routine — a sporting 'clash' or a metaphorical 'attack' can reach the map, so every marker attributes its label to GDELT rather than stating it.",
+      "The typed-actor requirement exists because when GDELT cannot find a real actor it promotes a PLACE NAME to a national one and geocodes the action somewhere else entirely. That shape was 37% of this layer before it was filtered out, and it is what once put 'Use of military force' on Bristol from an article about a livestream.",
+      "Ranking is MEDIA ATTENTION, not severity. A widely-reported incident outweighs an unreported massacre, and a viral non-event can outrank both.",
+      "The four-hour window is when GDELT FILED the record, not when anything happened. Each marker also shows the event's own date, which carries day resolution at best and is sometimes years older.",
       "The pin is GDELT's action geocode, which is frequently only state- or country-level; each marker states the precision it used, and a country-level pin sits on a national centroid, not the event.",
       "Coverage follows press freedom and internet access, so the quietest places on this layer are often the least covered.",
       "For adjudicated incident records use the ACLED layer instead.",
@@ -355,13 +357,15 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "protests",
-    whatItShows: "A place where GDELT logged protest activity — a demonstration, strike, blockade or riot — in the last four hours.",
-    method: "As with the conflict layer, but keeping CAMEO root 14 (protest). Most of that branch is coded QuadClass 3, so no material-conflict filter is applied to it.",
+    whatItShows: "A place where protest-coded reporting is clustering — GDELT tagged articles mentioning it as a demonstration, strike, blockade or riot and filed them in the last four hours.",
+    method: "As with the conflict layer, but keeping CAMEO root 14 (protest). Most of that branch is coded QuadClass 3, so no material-conflict filter is applied to it. The typed-actor requirement applies here too.",
     confidence: "modelled",
     coverage: "Global, shaped by GDELT's source and language mix.",
     limitations: [
       "Media attention, not turnout. There is no crowd size and no verification here.",
+      "Machine coding misfires the same way it does on the conflict layer — an emergency-restrictions notice has been coded as a blockade. Each marker attributes its label to GDELT rather than asserting it.",
       "Article volume drives the ranking, so one heavily-covered protest outranks several larger but ignored ones.",
+      "The four-hour window is GDELT's filing time, not the protest's. The marker also carries the event's own date.",
       "Geocoding is often only state- or country-level, which puts pins on capitals and national centroids.",
     ],
   },
