@@ -10,6 +10,9 @@ import {
   shiftStamp,
   describeTiming,
   dateFromSqlDate,
+  aggregateGdeltByCountry,
+  countryFromPlace,
+  meanLon,
   GDELT_LAYERS,
   CONFLICT_SOURCE,
   PROTESTS_SOURCE,
@@ -153,8 +156,8 @@ test("the cap bounds the output regardless of event count", () => {
 });
 
 test("declares article volume as the real metric and resolves it per feature", () => {
-  expect(CONFLICT_SOURCE.metric).toEqual({ field: "articles", domain: [1, 100], unit: " articles" });
-  expect(PROTESTS_SOURCE.metric).toEqual({ field: "articles", domain: [1, 100], unit: " articles" });
+  expect(CONFLICT_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
+  expect(PROTESTS_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
 
   const [top] = normalizeGdeltEvents(EVENTS, GDELT_LAYERS.conflict);
   expect(typeof top.props?.articles).toBe("number");
@@ -164,7 +167,7 @@ test("declares article volume as the real metric and resolves it per feature", (
 
   expect(rowMetric(top, CONFLICT_SOURCE.metric)).toEqual({
     value: 10,
-    domain: [1, 100],
+    domain: [1, 400],
     label: "10 articles",
   });
 });
@@ -380,4 +383,88 @@ test("dateFromSqlDate reads SQLDATE and rejects anything else", () => {
   expect(dateFromSqlDate("")).toBeUndefined();
   expect(dateFromSqlDate("2026081")).toBeUndefined();
   expect(dateFromSqlDate("notadate")).toBeUndefined();
+});
+
+// ---------------------------------------------------------------------------
+// COUNTRY AGGREGATION — the layer that actually ships.
+//
+// Per-place pins were retired after an audit of the top 30 live markers against
+// their source articles: most were court reporting about past events, metaphor,
+// or unrelated news. GDELT is sound in bulk and unreliable per record, so the
+// layer renders the only claim the feed supports — how much conflict-coded
+// reporting mentions each COUNTRY.
+// ---------------------------------------------------------------------------
+
+test("countryFromPlace takes the country off the end of an ActionGeo name", () => {
+  expect(countryFromPlace("Bristol, Bristol, City of, United Kingdom")).toBe("United Kingdom");
+  expect(countryFromPlace("Denmark")).toBe("Denmark");
+  expect(countryFromPlace("Gaza, Israel (general), Israel")).toBe("Israel");
+  expect(countryFromPlace("")).toBe("");
+  expect(countryFromPlace("  ,  ")).toBe("");
+});
+
+test("meanLon averages across the antimeridian instead of through the Atlantic", () => {
+  // A country straddling 180: the arithmetic mean of 179 and -179 is 0, which is
+  // the Gulf of Guinea. The circular mean is 180.
+  expect(Math.abs(meanLon([179, -179]))).toBeCloseTo(180, 6);
+  expect(meanLon([10, 20])).toBeCloseTo(15, 6);
+  expect(meanLon([-5, 5])).toBeCloseTo(0, 6);
+  expect(meanLon([])).toBe(0);
+});
+
+test("the layer emits one marker per country, totalled by article volume", () => {
+  const out = aggregateGdeltByCountry(EVENTS, GDELT_LAYERS.conflict);
+
+  // Five surviving places collapse into four countries: the two US places
+  // (Las Vegas 4 + Jerusalem is Israel) stay separate, Denmark/France/Australia
+  // are already whole countries.
+  expect(out.every((f) => f.signalId === "conflict")).toBe(true);
+  expect(new Set(out.map((f) => f.title)).size).toBe(out.length); // no duplicate countries
+  // Denmark 10 · France 8 · Australia 6 · United States 4 (Las Vegas) · Israel 2 (Jerusalem)
+  expect(out.map((f) => f.title)).toEqual(["Denmark", "France", "Australia", "United States", "Israel"]);
+
+  // Ranked by total article volume, descending.
+  const vols = out.map((f) => Number(f.props?.articles));
+  expect([...vols].sort((a, b) => b - a)).toEqual(vols);
+});
+
+test("a country marker states a country total, never an incident", () => {
+  const [top] = aggregateGdeltByCountry(EVENTS, GDELT_LAYERS.conflict);
+
+  expect(top.props?.country).toBe("Denmark");
+  expect(typeof top.props?.articles).toBe("number");
+  expect(top.props?.locationsRolledUp).toBeGreaterThanOrEqual(1);
+
+  // The CAMEO label survives ONLY as the best-covered coding, attributed.
+  expect(String(top.props?.topCoding)).toMatch(/\(CAMEO \d+\)$/);
+  expect(top.props?.codedAs).toBeUndefined();  // the per-place field is gone
+  expect(top.props?.topEvent).toBeUndefined(); // and so is the original assertion
+
+  // And the marker says outright what it is and where it sits.
+  expect(String(top.props?.coding)).toMatch(/REPORTING VOLUME, not confirmed incidents/);
+  expect(String(top.props?.coding)).toMatch(/national centroid/);
+
+  // magnitude drives the radius here, unlike the per-place layer.
+  expect(typeof top.props?.magnitude).toBe("number");
+});
+
+test("aggregation carries the typed-actor guard, so Bristol stays gone", () => {
+  expect(aggregateGdeltByCountry(BRISTOL_EVENTS, GDELT_LAYERS.conflict)).toEqual([]);
+  expect(aggregateGdeltByCountry(BRISTOL_EVENTS, GDELT_LAYERS.protests)).toEqual([]);
+
+  // Without the guard the article would have contributed to THREE countries'
+  // totals — which is the aggregate-scale version of the same bug, and is why
+  // the guard is applied before aggregating, not instead of it.
+  const unguarded = aggregateGdeltByCountry(BRISTOL_EVENTS, GDELT_LAYERS.conflict, 300, 2, false);
+  expect(unguarded.map((f) => f.title).sort()).toEqual(["United Kingdom", "United States"]);
+});
+
+test("a country-level row anchors on GDELT's own national point, not a mean", () => {
+  // Denmark's row is ActionGeo_Type 1 — GDELT already gives the national point,
+  // so we use it rather than averaging city coordinates into a field somewhere.
+  const denmark = aggregateGdeltByCountry(EVENTS, GDELT_LAYERS.conflict)
+    .find((f) => f.title === "Denmark")!;
+  const src = EVENTS.find((e) => e.place === "Denmark" && e.geoType === "1")!;
+  expect(denmark.lat).toBeCloseTo(src.lat, 4);
+  expect(denmark.lon).toBeCloseTo(src.lon, 4);
 });

@@ -3,7 +3,7 @@ import { readCoverage, coverageCountLabel, coverageNote } from "@/lib/signals/co
 import { normalizeFirms, FIRMS_CAP } from "@/lib/signals/fire-firms";
 import { normalizeCrime, capCrime, CRIME_CAP } from "@/lib/signals/crime";
 import { parseGpsjamCsv, gpsjamCellsToFeatures, type H3Lib } from "@/lib/signals/gpsjam";
-import { normalizeGdeltEvents, GDELT_LAYERS, type GdeltEvent } from "@/lib/signals/gdelt";
+import { aggregateGdeltByCountry, GDELT_LAYERS, type GdeltEvent } from "@/lib/signals/gdelt";
 import { normalizeAurora } from "@/lib/signals/aurora";
 import { normalizeAis, AIS_CAP } from "@/lib/signals/ais";
 import { normalizeAirStations, OPENAQ_CAP } from "@/lib/signals/airquality-stations";
@@ -116,7 +116,8 @@ describe("conflict / protests (GDELT)", () => {
     numSources: 3,
     avgTone: -5,
     geoType: "3",
-    place: `Place ${i}`,
+    place: `Place ${i}, Country ${i}`,
+    countryCode: `C${i}`, // distinct countries, so the cap still sees 20 buckets
     lat: 10 + i,
     lon: 20 + i,
     sourceUrl: `https://example.test/${i}`,
@@ -125,18 +126,20 @@ describe("conflict / protests (GDELT)", () => {
     eventDate: "2026-08-10",
   }));
 
-  test("a busy window declares the places it could not draw", () => {
-    const out = normalizeGdeltEvents(events, GDELT_LAYERS.conflict, 4);
+  test("a busy window declares the countries it could not draw", () => {
+    // The SHIPPING path is the country aggregate, so the cap is counted in
+    // countries — the noun has to match what was actually dropped.
+    const out = aggregateGdeltByCountry(events, GDELT_LAYERS.conflict, 4);
     expect(out).toHaveLength(4);
     const c = readCoverage(out)!;
-    expect(c).toMatchObject({ returned: 4, available: 20, capped: true, cap: 4, noun: "places" });
+    expect(c).toMatchObject({ returned: 4, available: 20, capped: true, cap: 4, noun: "countries" });
     expect(coverageCountLabel(c)).toBe("4 of 20");
-    // The cap keeps the best-covered places, so say so — the dropped ones are real.
-    expect(out.map((f) => f.title)).toEqual(["Place 0", "Place 1", "Place 2", "Place 3"]);
+    // The cap keeps the best-covered countries, so say so — the dropped ones are real.
+    expect(out.map((f) => f.title)).toEqual(["Country 0", "Country 1", "Country 2", "Country 3"]);
   });
 
   test("a quiet window is reported complete rather than silent", () => {
-    expect(readCoverage(normalizeGdeltEvents(events, GDELT_LAYERS.conflict, 300))).toMatchObject({
+    expect(readCoverage(aggregateGdeltByCountry(events, GDELT_LAYERS.conflict, 300))).toMatchObject({
       returned: 20,
       capped: false,
     });
