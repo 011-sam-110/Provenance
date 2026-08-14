@@ -170,6 +170,26 @@ export const WINDY_REGIONS: WindyRegion[] = [
   //   curl -H "x-windy-api-key: $KEY" \
   //     "https://api.windy.com/webcams/api/v3/webcams?bbox=5.3,-34.7,-33.8,-74.0&limit=1"
   { name: "brazil", bbox: [5.3, -34.7, -33.8, -74.0], pages: 5 },
+  // Belgium (with its border strip into NL/LU/DE/FR), for the same reason as
+  // Brazil, only starker.
+  //
+  // Measured 2026-08-14: `w-europe` is the ONLY region whose bbox contains
+  // Brussels, that bbox holds 19,204 webcams, and at the default 2 pages it
+  // fetches 100 of them — 0.5%. Which 100 is not chosen, it is whatever the API
+  // returns first, and on the day of measurement that was Italy 60 / France 18 /
+  // Switzerland 8 / Czechia 5 / Germany 4 / Spain 2 and **zero Belgium**. So a
+  // country with 114 webcams in the feed was rendering none at all.
+  //
+  // This bbox holds 225 (114 of them Belgian), so 5 pages = 250 capacity covers
+  // it with headroom. Re-measure before changing:
+  //   curl -H "x-windy-api-key: $KEY" \
+  //     "https://api.windy.com/webcams/api/v3/webcams?bbox=51.55,6.45,49.45,2.5&limit=1"
+  //
+  // NOT A GENERAL FIX. The Netherlands and Luxembourg are starved by the same
+  // 100-row ceiling, and so is everywhere else in w-europe that is not Italy.
+  // Adding a region per country does not scale — the real fix is to stop
+  // sampling a 19k-webcam box with 100 rows. Tracked, not solved here.
+  { name: "belgium", bbox: [51.55, 6.45, 49.45, 2.5], pages: 5 },
   { name: "africa", bbox: [37, 52, -35, -18] },
   { name: "middle-east", bbox: [42, 63, 12, 34] },
   { name: "s-asia", bbox: [37, 92, 5, 60] },

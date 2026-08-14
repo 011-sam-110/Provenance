@@ -44,6 +44,27 @@ test("every Brazil offset stays inside the free tier's offset<=1000 limit", () =
   for (const job of jobs) expect(job.offset).toBeLessThanOrEqual(1000);
 });
 
+test("Belgium is registered with enough pages to carry the measured inventory", () => {
+  const belgium = WINDY_REGIONS.find((r) => r.name === "belgium");
+  expect(belgium).toBeDefined();
+  // Measured 2026-08-14: bbox total=225, of which 114 are Belgian. Under the
+  // default 2 pages the only region containing Brussels (w-europe) returned
+  // ZERO Belgian webcams — its 100 rows went to Italy, France and Switzerland.
+  const capacity = (belgium!.pages ?? DEFAULT_PAGES) * LIMIT;
+  expect(capacity).toBeGreaterThanOrEqual(225);
+});
+
+test("Belgium's bbox actually contains Brussels", () => {
+  // Guards the transcription slip that would make this whole region pointless:
+  // WindyRegion bbox order is [north, east, south, west], NOT a lat/lon pair.
+  const [north, east, south, west] = WINDY_REGIONS.find((r) => r.name === "belgium")!.bbox;
+  const [lat, lon] = [50.85, 4.35];
+  expect(south).toBeLessThanOrEqual(lat);
+  expect(north).toBeGreaterThanOrEqual(lat);
+  expect(west).toBeLessThanOrEqual(lon);
+  expect(east).toBeGreaterThanOrEqual(lon);
+});
+
 test("region names are unique, so a duplicate bbox cannot be added unnoticed", () => {
   const names = WINDY_REGIONS.map((r) => r.name);
   expect(new Set(names).size).toBe(names.length);
