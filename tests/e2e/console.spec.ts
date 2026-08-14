@@ -20,7 +20,10 @@ import { test, expect } from "@playwright/test";
 // from the first frame instead of five seconds in.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
+    // A number far above TOUR_VERSION, deliberately: seeding the CURRENT version
+    // means every bump of the tour silently re-arms this overlay and breaks the
+    // suite in a way that looks like a console regression.
+    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
 });
