@@ -11,7 +11,8 @@ import type { WidgetDetailProps } from "@/lib/console/registry";
 import type { NewsItem } from "@/lib/news";
 import { useJsonPoll } from "@/lib/console/widgets/useJsonPoll";
 import { shellLayoutStore } from "@/lib/console/store";
-import { NEWS_PROVIDERS, parseCustomStream, providerThumb, resolveEmbed, type NewsProvider } from "@/lib/console/news/providers";
+import { NEWS_PROVIDERS, parseCustomStream, playableRef, providerThumb, resolveEmbed, type NewsProvider } from "@/lib/console/news/providers";
+import { useLiveVideoIds } from "@/lib/console/news/useLiveVideoIds";
 import { toCsv, downloadText, exportFilename } from "@/lib/export";
 
 /** Compact relative age (mirrors headlines.detail). */
@@ -102,7 +103,9 @@ export default function NewsDetail({ instanceId, config }: WidgetDetailProps) {
   const headlines = newsData.items ?? [];
   const now = Date.now();
 
-  const embed = active ? resolveEmbed(active) : null;
+  // Channel-resolved video ids, falling back to each provider's pinned ref.
+  const liveIds = useLiveVideoIds();
+  const embed = active ? resolveEmbed(active, liveIds[active.id]) : null;
 
   // HLS hero: reuse the docked NewsBody's inline hls.js loader verbatim (no new player,
   // no /api/hls host change). YouTube heroes use the keyless <iframe> below. Since the
@@ -161,7 +164,7 @@ export default function NewsDetail({ instanceId, config }: WidgetDetailProps) {
             return (
               <div key={p.id} className={`tn-nv-cell${on ? " is-on" : ""}`}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${p.ref}?autoplay=1&mute=${on ? 0 : 1}&playsinline=1`}
+                  src={`https://www.youtube.com/embed/${playableRef(p, liveIds[p.id])}?autoplay=1&mute=${on ? 0 : 1}&playsinline=1`}
                   title={p.name}
                   allow="autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
@@ -186,7 +189,7 @@ export default function NewsDetail({ instanceId, config }: WidgetDetailProps) {
           <Fragment key={cat}>
             <div className="tn-nv-cat-h">{cat}</div>
             {ps.map((p) => {
-              const thumb = providerThumb(p);
+              const thumb = providerThumb(p, liveIds[p.id]);
               const on = p.id === activeId;
               return (
                 <button

@@ -22,6 +22,7 @@ import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import SatelliteDetail from "@/components/SatelliteDetail";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import { useLiveVideoIds } from "@/lib/console/news/useLiveVideoIds";
 
 // The satellite meta the propagation hook attaches (see lib/satellites/useSatellites).
 // meta is Record<string, unknown> on WorldObject, so we narrow it here.
@@ -37,9 +38,17 @@ interface SatMeta {
 }
 const metaOf = (o: WorldObject | undefined): SatMeta => (o?.meta ?? {}) as SatMeta;
 
-// NASA's official (main) YouTube channel — the live_stream embed resolves to whatever
-// that channel is currently broadcasting: the ISS HD cameras when they're live, other
-// NASA programming otherwise. Keyless. The caption is honest about this (not ISS-only).
+// NASA's official (main) YouTube channel.
+//
+// This used to be embedded as `youtube.com/embed/live_stream?channel=${NASA_CHANNEL}`,
+// on the assumption that YouTube would resolve the channel's current broadcast for us.
+// IT NO LONGER DOES — that endpoint is retired. Loaded in a real browser against this
+// exact channel id it renders "Error 153 — Video player configuration error" and builds
+// a link to `watch?v=live_stream`, i.e. it takes the literal string as a video id. The
+// panel has been a dead player for every user since YouTube pulled it.
+//
+// The channel id is still the right thing to register — it is durable where a video id
+// is not — but it now has to be resolved server-side. See lib/youtube/live.ts.
 const NASA_CHANNEL = "UCLA_DiR1FfKNvjuUpBHmylQ";
 const ISS_NORAD = "25544";
 
@@ -52,6 +61,11 @@ export default function SatellitesDetail(props: WidgetDetailProps) {
   const objects = useSatellites(group, 5000);
   const total = objects.length;
 
+  // Resolved server-side (lib/youtube/live.ts): "iss" prefers NASA's HD Earth-viewing
+  // stream, "nasa" its other concurrent feed. Undefined when nothing is live or the
+  // resolver is dormant — the panel then says so instead of rendering a dead player.
+  const liveIds = useLiveVideoIds();
+  const issVideoId = liveIds["iss"] ?? liveIds["nasa"];
   const [selId, setSelId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -273,13 +287,29 @@ export default function SatellitesDetail(props: WidgetDetailProps) {
             <h3>Live feed</h3>
             {selMeta.noradId === ISS_NORAD ? (
               <div className="tn-sat-live">
-                <iframe
-                  className="tn-sat-live-frame"
-                  src={`https://www.youtube.com/embed/live_stream?channel=${NASA_CHANNEL}`}
-                  title="NASA live channel"
-                  allow="encrypted-media; picture-in-picture"
-                  allowFullScreen
-                />
+                {issVideoId ? (
+                  <iframe
+                    className="tn-sat-live-frame"
+                    src={`https://www.youtube.com/embed/${issVideoId}?playsinline=1`}
+                    title="NASA live channel"
+                    allow="encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  // Say nothing is playing rather than render a player that fails.
+                  // An empty state a user can act on beats "Error 153".
+                  <p className="tn-w-empty">
+                    NASA is not broadcasting a live stream right now, or live resolution is
+                    unavailable.{" "}
+                    <a
+                      href={`https://www.youtube.com/channel/${NASA_CHANNEL}/streams`}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >
+                      Open NASA&apos;s channel
+                    </a>
+                  </p>
+                )}
                 <p className="tn-sat-cap">
                   NASA&apos;s live channel — carries the ISS HD cameras when NASA is broadcasting them (other NASA programming otherwise).
                 </p>

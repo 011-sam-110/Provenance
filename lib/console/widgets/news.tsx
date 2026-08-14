@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { NEWS_PROVIDERS, parseCustomStream, resolveEmbed, type NewsProvider } from "@/lib/console/news/providers";
+import { useLiveVideoIds } from "@/lib/console/news/useLiveVideoIds";
 import NewsDetail from "./news.detail";
 
 function NewsBody({ instanceId, config }: WidgetBodyProps) {
@@ -10,7 +11,10 @@ function NewsBody({ instanceId, config }: WidgetBodyProps) {
   const activeId = (config.providerId as string) ?? NEWS_PROVIDERS[0].id;
   const custom = config.customProvider as NewsProvider | undefined;
   const active = custom?.id === activeId ? custom : NEWS_PROVIDERS.find((p) => p.id === activeId) ?? NEWS_PROVIDERS[0];
-  const embed = resolveEmbed(active);
+  // Resolved live video ids; falls back to the provider's pinned ref when the
+  // resolver is dormant or the channel has nothing live.
+  const liveIds = useLiveVideoIds();
+  const embed = resolveEmbed(active, liveIds[active.id]);
   const favorites = NEWS_PROVIDERS.filter((p) => p.favorite).slice(0, 4);
   const [picker, setPicker] = useState(false);
   // No `fresh` observation here on purpose: this widget embeds a third-party live

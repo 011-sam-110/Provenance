@@ -88,6 +88,34 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | **Photo geolocation** (`/locate`) vision fallback | freellmapi.co gateway (you own it) | `FREELLMAPI_BASE_URL`, `FREELLMAPI_KEY` |
 | **Photo geolocation** GeoCLIP backend (best accuracy) | run `scripts/geolocate_service.py`, point the app at it | `GEOLOCATE_GEOCLIP_URL` (+ optional `GEOLOCATE_BACKEND=geoclip\|llm`) |
 | **Windy webcams** layer | Windy API keys (you said these are already in `.env.local`) | `WINDY_WEBCAMS_API_KEY`, `WINDY_MAP_FORECAST_API_KEY` |
+| **Live channel resolution** (news presets + the ISS panel) | YouTube Data API v3 key — see below | `YOUTUBE_API_KEY` |
+
+### `YOUTUBE_API_KEY` — why this one is not optional polish
+
+Pinned YouTube **video** ids rot. Audited 2026-08-14: **8 of the 12 news presets were
+already dead** ("Video unavailable", "this live stream recording is not available", one
+gone private), and the ISS panel had been rendering *"Error 153 — Video player
+configuration error"* since YouTube retired the `embed/live_stream?channel=` endpoint.
+
+Channel ids are durable, but resolving one to its current live video needs this key.
+Without it the console falls back to the pinned ids — i.e. exactly today's behaviour,
+no worse — so nothing breaks while it is missing.
+
+Getting it (~2 minutes, free, **no billing account required**):
+
+1. console.cloud.google.com → create or pick a project
+2. **APIs & Services → Library** → "YouTube Data API v3" → **Enable**
+3. **APIs & Services → Credentials** → **Create credentials → API key**
+4. **Edit** the key → **API restrictions → Restrict key → YouTube Data API v3**.
+   Leave *Application restrictions* as **None** — it is called server-side, so an
+   HTTP-referrer or IP restriction would break it.
+5. `.env.local` → `YOUTUBE_API_KEY=…`, and the same in Vercel → Environment Variables
+
+Quota: 10,000 units/day free. The resolver is built to fit well inside that — it
+validates every known stream in a single 1-unit call and only pays the expensive
+100-unit search for channels that actually rotated, costing roughly 1,900 units/day at
+the measured rotation rate. `/api/youtube-live` publishes `quotaSpent` so this can be
+checked rather than assumed.
 
 ---
 
