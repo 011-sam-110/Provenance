@@ -4,7 +4,7 @@ import { addWidget, applyItems, setStage } from "@/lib/console/reducers";
 import { arrangeHouse, DEFAULT_BOARD_ROWS, RAIL_CAPACITY } from "@/lib/terminal/layoutGrid";
 import { visibleRows } from "@/lib/terminal/rowBudget";
 import { shellLayoutStore } from "@/lib/console/store";
-import { layersStore } from "@/lib/layers";
+import { layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
 import { layersForLayout } from "@/lib/console/presetLayers";
 import { activePresetStore } from "@/lib/console/activePreset";
@@ -24,6 +24,11 @@ export interface ConsolePreset {
    *  For boards whose cards are merged lists rather than one card per source —
    *  without it the Brief board's map would show nothing but camera pins. */
   mapSignals?: string[];
+  /** Core layers this board lights ON THE MAP without spending a card on each —
+   *  the `mapSignals` idea applied to cameras/planes/satellites/webcams. Needed
+   *  because a core layer is otherwise only ever implied by a widget, and webcams
+   *  has no widget to imply it. */
+  mapCore?: LayerKey[];
   /** `rows` is the board's height budget — see the note on WEIGHTS below. Defaults
    *  to DEFAULT_BOARD_ROWS so tests and any off-DOM caller still get a real board. */
   build(rows?: number): ShellLayout;
@@ -104,8 +109,17 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // own board and the photo-geolocation tool moved to Recon, which is where the
   // other query-and-answer surfaces live — it had been holding a 250px card on
   // the landing board every day to show an empty dropzone.
+  // Webcams is ON here and nowhere else. The Brief board is the one a fresh
+  // visitor lands on, and its job is "what changed since you last looked" — a
+  // ground-level view of somewhere is exactly that, and the webcam layer is the
+  // only one that covers the places our government camera feeds do not (Brazil,
+  // Belgium, most of the southern hemisphere). It stays opt-in on every other
+  // board and in lib/layers.ts's defaults; this is a per-board choice, not a
+  // change to what the layer does by default.
   { id: "overview", title: "Brief", icon: "🌐", blurb: "what changed since you last looked",
-    mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"], build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+    mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"],
+    mapCore: ["webcams"],
+    build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
       { type: "anomaly", weight: 3 },
       { type: "events", weight: 3 },
       { type: "headlines", weight: 2 },
@@ -281,7 +295,7 @@ export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): v
   // Drive the globe to match the board: the persona's widgets decide which core +
   // signal layers are lit, so switching persona actually re-skins the map (not just
   // the side rail). See lib/console/presetLayers.ts.
-  const { core, signals } = layersForLayout(layout, built?.mapSignals ?? []);
+  const { core, signals } = layersForLayout(layout, built?.mapSignals ?? [], built?.mapCore ?? []);
   layersStore.applyExact(core);
   signalsStore.applyExact(signals);
 }

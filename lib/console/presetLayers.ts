@@ -32,7 +32,11 @@ export interface PersonaLayers {
  * base layer (borders + click target) always stays ON. Works for custom presets too
  * since it reads the ShellLayout, not the preset spec.
  */
-export function layersForLayout(layout: ShellLayout, extraSignals: readonly string[] = []): PersonaLayers {
+export function layersForLayout(
+  layout: ShellLayout,
+  extraSignals: readonly string[] = [],
+  extraCore: readonly LayerKey[] = [],
+): PersonaLayers {
   const core: LayerState = {
     ...DEFAULT_STATE,
     cameras: false,
@@ -59,5 +63,10 @@ export function layersForLayout(layout: ShellLayout, extraSignals: readonly stri
   // I can read is on the map I can see". The cards are the captions; this is the
   // picture they caption.
   for (const id of extraSignals) signals[id] = true;
+  // The same escape hatch for CORE layers. Webcams is the case that needs it:
+  // there is no webcams widget, so WIDGET_TO_CORE can never imply it, and the
+  // reset above forces it off — which means no board could show webcams however
+  // it was composed. Applied after the widget pass so an explicit request wins.
+  for (const key of extraCore) core[key] = true;
   return { core, signals };
 }

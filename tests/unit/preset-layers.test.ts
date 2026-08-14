@@ -82,3 +82,37 @@ test("every built-in persona lights up at least one data layer (no blank-map boa
     ).toBeGreaterThan(0);
   }
 });
+
+// --- core-layer escape hatch (mapCore) --------------------------------------
+
+test("a board can light a core layer that no widget implies", () => {
+  // Webcams is the case this exists for: there is no webcams widget, so
+  // WIDGET_TO_CORE can never imply it and the reset forces it off — meaning
+  // before `extraCore` no board could show webcams however it was composed.
+  const bare = createDefaultLayout();
+  expect(layersForLayout(bare).core.webcams).toBe(false);
+  expect(layersForLayout(bare, [], ["webcams"]).core.webcams).toBe(true);
+});
+
+test("an explicit core request wins over the reset, and leaves the others alone", () => {
+  const { core } = layersForLayout(createDefaultLayout(), [], ["webcams"]);
+  expect(core.webcams).toBe(true);
+  expect(core.cameras).toBe(false);
+  expect(core.planes).toBe(false);
+  expect(core.satellites).toBe(false);
+});
+
+test("the Brief board turns webcams on", () => {
+  const brief = BUILTIN_PRESETS.find((p) => p.id === "overview")!;
+  expect(brief.mapCore).toContain("webcams");
+  const { core } = layersForLayout(brief.build(), brief.mapSignals ?? [], brief.mapCore ?? []);
+  expect(core.webcams).toBe(true);
+});
+
+test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
+  for (const p of BUILTIN_PRESETS) {
+    if (p.id === "overview") continue;
+    const { core } = layersForLayout(p.build(), p.mapSignals ?? [], p.mapCore ?? []);
+    expect(core.webcams, `${p.id} unexpectedly lights webcams`).toBe(false);
+  }
+});
