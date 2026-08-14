@@ -362,16 +362,31 @@ async function acledConflictFactor(): Promise<Map<string, number>> {
  * Keyless, so this is what keeps the 0.40 conflict weight alive while ACLED's
  * account is not yet activated.
  */
-async function gdeltConflictFactor(): Promise<Map<string, number>> {
+/**
+ * PURE: conflict-layer features -> article volume by ISO-3.
+ *
+ * Exported and separated from the fetch on purpose. It reads `country` (what the
+ * layer emits now that it aggregates per country) and falls back to `place` (the
+ * per-PLACE field it emitted before). Reading only one of them silently zeroes
+ * the 0.40 conflict weight for every country the moment the layer changes shape:
+ * the index keeps producing scores and simply stops counting conflict, which is
+ * the worst failure this index can have. A test drives THIS function with the
+ * real adapter's output so the two modules cannot drift apart unnoticed.
+ */
+export function gdeltFeaturesToConflictFactor(feats: SignalFeature[]): Map<string, number> {
   const out = new Map<string, number>();
-  const feats = await CONFLICT_SOURCE.fetch();
   for (const f of feats) {
     if (f.props?.status === "unavailable") continue; // the dormant-notice placeholder, not an event
-    const iso3 = iso3FromGdeltPlace(String(f.props?.place ?? ""));
+    const named = String(f.props?.country ?? f.props?.place ?? "");
+    const iso3 = iso3FromGdeltPlace(named);
     const articles = Number(f.props?.articles ?? 0);
     if (iso3 && articles > 0) out.set(iso3, (out.get(iso3) ?? 0) + articles);
   }
   return out;
+}
+
+async function gdeltConflictFactor(): Promise<Map<string, number>> {
+  return gdeltFeaturesToConflictFactor(await CONFLICT_SOURCE.fetch());
 }
 
 /**

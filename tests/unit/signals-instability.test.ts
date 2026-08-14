@@ -159,3 +159,42 @@ test("iso3FromGdeltPlace handles official long-forms with an embedded comma via 
   // The centroid dataset's own name for South Korea already has a comma in it.
   expect(iso3FromGdeltPlace("Seoul, Seoul, Korea, Republic of")).toBe("KOR");
 });
+
+// ---------------------------------------------------------------------------
+// CONTRACT GUARD — the CII reads the conflict layer's own output.
+//
+// The conflict layer changed from per-PLACE features (props.place) to per-COUNTRY
+// features (props.country). gdeltConflictFactor() read only props.place, so the
+// change would have silently zeroed the 0.40 conflict weight for every country:
+// the index would keep producing scores and simply stop counting conflict. This
+// test drives the REAL adapter output shape so the two cannot drift apart again.
+// ---------------------------------------------------------------------------
+import { aggregateGdeltByCountry, GDELT_LAYERS, parseGdeltExport } from "@/lib/signals/gdelt";
+import { gdeltFeaturesToConflictFactor } from "@/lib/signals/instability";
+import { readFileSync as readFixture } from "node:fs";
+import { join as joinPath } from "node:path";
+
+test("the CII counts conflict from what the conflict layer actually emits", () => {
+  const events = parseGdeltExport(
+    readFixture(joinPath(process.cwd(), "tests/fixtures/gdelt-events.export.tsv"), "utf8"),
+  );
+  const feats = aggregateGdeltByCountry(events, GDELT_LAYERS.conflict);
+  expect(feats.length).toBeGreaterThan(0);
+
+  // Drive the REAL function the CII uses, not a re-implementation of it.
+  const factor = gdeltFeaturesToConflictFactor(feats);
+
+  // Every country the layer surfaced must reach the index with a positive volume.
+  expect(factor.size).toBe(feats.length);
+  for (const v of factor.values()) expect(v).toBeGreaterThan(0);
+  expect(factor.get("DNK")).toBe(10); // Denmark, 10 articles
+  expect(factor.get("ISR")).toBe(2);  // Jerusalem -> Israel
+
+  // The dormant placeholder must never be counted as conflict.
+  const withNotice = gdeltFeaturesToConflictFactor([
+    ...feats,
+    { id: "conflict:unavailable", lat: 0, lon: 0, title: "no data", signalId: "conflict",
+      props: { status: "unavailable", reason: "x", articles: 999 } },
+  ]);
+  expect(withNotice.size).toBe(factor.size);
+});
