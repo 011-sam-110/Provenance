@@ -169,8 +169,16 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "profile avatar", via: ".tn-profile-avatar" },
 
   // Feed health strip
-  { control: "per-layer health cells", via: ".tnx-feed-cells" },
-  { control: "LIVE/LAG/DOWN/LOCKED/IDLE counters", via: ".tnx-feed-counts" },
+  // Two entries, not one: the cells are a readout AND a toggle. An independent
+  // review found the tour describing them as telemetry only, which made every
+  // cell an undocumented control that silently switches a data layer.
+  { control: "per-layer health cells (hover to name)", via: ".tnx-feed-cells" },
+  { control: "health cell click = toggle that layer", via: ".tnx-feed-cells" },
+  { control: "LIVE/LAG/DOWN/NEEDS KEY/OFF counters", via: ".tnx-feed-counts" },
+
+  // Breaking banner — reactive, so it is absent from a calm screenshot and easy
+  // to forget. It takes a full band and pushes the console down when it fires.
+  { control: "breaking banner, Read article + dismiss", via: ".tn-alert-body" },
 
   // Stage
   { control: "3D / 2D projection switch", via: ".tnx-stage-proj" },
@@ -194,6 +202,11 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "⋯ widget menu", via: ".tn-cw-menu" },
   { control: "menu: move / size / duplicate / export / remove", via: ".tn-cw-menu-pop" },
   { control: "widget resize handles", via: ".tn-seg-slot .tn-rz" },
+  // The widget BODY. Every other entry here is chrome; these are the controls
+  // inside a card (group-by chips, collapsible headings, the "N hidden" filter
+  // chip, camera tiles). The tour cannot enumerate seventy widgets' insides, so
+  // one step names the recurring patterns and points at the ? for the rest.
+  { control: "widget body controls (chips, groups, N hidden)", via: ".tn-cw-body" },
 
   // Source Catalog rail
   { control: "≡ Sources launcher", via: ".tn-rail-fab" },
@@ -209,6 +222,8 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "provenance / confidence chip", via: ".tn-layer-prov" },
   { control: "locked (needs a key) badge", via: ".tn-layer-locked" },
   { control: "Coverage / Markets / Saved panels", via: ".tn-coverage-open" },
+  { control: "rail collapse ‹", via: ".tn-rail-fab" },
+  { control: "map zoom + / − / compass", via: ".tn-pinnav" },
 
   // Footer
   { control: "selection readout", via: ".tnx-sel" },
@@ -229,9 +244,9 @@ test("every interactive control in the console is explained by some tour step", 
 test("the coverage manifest is not padded with selectors the tour never uses", () => {
   // Guards the inverse failure: a manifest that agrees with the tour because both
   // were edited to agree, rather than because the tour covers the product.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(45);
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(53);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
-  expect(vias.size).toBeGreaterThanOrEqual(40);
+  expect(vias.size).toBeGreaterThanOrEqual(44);
 });
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */

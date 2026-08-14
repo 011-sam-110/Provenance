@@ -26,20 +26,10 @@ const widthFlag = process.argv.indexOf("--width");
 const width = widthFlag > -1 ? Number(process.argv[widthFlag + 1]) : 1512;
 const height = width < 700 ? 844 : 945;
 
-// Steps that are framing cards BY DESIGN — a centred title card with no target.
-// Listed by title so a missing ring on one of these reads as expected rather than
-// as the defect above.
-const FRAMING_TITLES = new Set([
-  "Start with the shape of it",
-  "The map is a tool, not a backdrop",
-  "Six boards, each a job",
-  "Four buttons, and what is behind them",
-  "One rail, every source",
-  "The part most of these tools skip",
-  "One caveat worth reading",
-  "Once you know your way around",
-  "That is the whole console",
-]);
+// Whether a step is a framing card BY DESIGN is read off the card itself
+// (`data-framing`), not from a list of titles kept in this file. The list version
+// went stale the first time a framing step was reworded and reported a healthy
+// tour as broken — the same silent-drift failure this script exists to catch.
 
 const run = async () => {
   const browser = await chromium.launch();
@@ -85,7 +75,7 @@ const run = async () => {
     const title = (await page.locator(".tn-tour-title").first().textContent())?.trim() ?? "";
     const meta = (await page.locator(".tn-tour-count").first().textContent())?.trim() ?? "";
     const ringed = (await page.locator(".tn-tour-ring").count()) > 0;
-    const framing = FRAMING_TITLES.has(title);
+    const framing = (await card.first().getAttribute("data-framing")) === "true";
 
     const mark = ringed ? "◉" : framing ? "·" : "✗";
     console.log(`${mark} ${String(i + 1).padStart(2)} ${meta.replace(/\s+/g, " ")} — ${title}`);

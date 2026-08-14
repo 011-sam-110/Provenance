@@ -30,6 +30,7 @@ import {
   cleanupBetween,
   allCleanup,
   clampStep,
+  isFramingStep,
   isLastStep,
   targetsOf,
   type FlatStep,
@@ -280,9 +281,13 @@ export default function TourOverlay() {
             straight to the part you need — you can leave at any point.
           </p>
 
+          {/* The estimate is deliberately generous rather than flattering. An
+              earlier draft said "about 4 minutes" for a run of sixty-odd steps,
+              which is four seconds a step — under-promising by roughly 3x on a
+              tour whose own sixth chapter is about not overstating things. */}
           <button type="button" className="tn-tour-btn is-primary is-block" onClick={() => tourStore.runAll()}>
             Take the full tour
-            <span className="tn-tour-btn-sub">8 chapters · about 4 minutes</span>
+            <span className="tn-tour-btn-sub">{TOUR_CHAPTERS.length} chapters · 10–15 minutes</span>
           </button>
 
           <ul className="tn-tour-chapters">
@@ -320,7 +325,12 @@ export default function TourOverlay() {
         <div className="tn-tour-ring" aria-hidden
           style={{ left: box.left, top: box.top, width: box.width, height: box.height }} />
       )}
-      <div className="tn-tour-card" ref={cardRef} tabIndex={-1}
+      {/* `data-framing` says whether this step is MEANT to have no spotlight (a
+          centred title card) or has simply failed to find its target. Without it,
+          verify-tour.mjs has to keep a hard-coded list of framing-step titles —
+          which goes stale the first time one is reworded, and then reports a
+          healthy tour as broken. Exactly the rot this rewrite exists to remove. */}
+      <div className="tn-tour-card" ref={cardRef} tabIndex={-1} data-framing={isFramingStep(flat.step) ? "true" : "false"}
         style={pos ? { left: pos.left, top: pos.top, visibility: "visible" } : { visibility: "hidden" }}>
         <div className="tn-tour-meta">
           <span className="tn-tour-count">

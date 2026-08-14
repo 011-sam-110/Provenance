@@ -11,7 +11,7 @@
 // which (`.tn-cw-col-left`) had not existed since the Terminal grid replaced the
 // three-column shell. resolveTourSteps() drops a step whose target is missing
 // SILENTLY, so the product shipped a seven-step tour of a console with six boards,
-// eleven camera feeds, thirty-five signal layers, sixty-nine widget types and a
+// a dozen camera feeds, thirty-odd signal layers, seventy widget types and a
 // four-button widget header — and nothing failed.
 //
 // A single forty-step run would be worse than the seven, so the walkthrough is
@@ -31,6 +31,23 @@
 // setup that has already run is a no-op rather than a toggle back off.
 
 import { BRAND } from "@/lib/brand";
+import { SIGNALS } from "@/lib/signals/registry";
+import { CAMERA_REGIONS } from "@/lib/icons/svg";
+
+/**
+ * Counts are DERIVED, never typed. A tour whose sixth chapter is about not being
+ * misled cannot itself claim thirty-five layers while the strip above it says
+ * thirty-seven — which is exactly what the first draft did, because the number
+ * came from a stale note rather than the registry.
+ *
+ * Both imports are already in the console's client bundle (SourceCatalog pulls
+ * `signalsByGroup` from the same registry and `CAMERA_REGIONS` from the same
+ * module), so this costs nothing. Do not import the camera SOURCES registry here
+ * for the same figure — that one drags eleven adapters and zod into the browser.
+ */
+const SIGNAL_COUNT = SIGNALS.length;
+const FEED_COUNT = CAMERA_REGIONS.length;
+const SOURCE_COUNT = SIGNAL_COUNT + FEED_COUNT;
 
 /**
  * A conditional click. `ensure` opens a surface, `close` puts it back — each a
@@ -116,7 +133,12 @@ const SHUT_SETTINGS: TourAction = { kind: "close", want: ".tn-settings", click: 
 // The walkthrough.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const TOUR_CHAPTERS: TourChapter[] = [
+/**
+ * The chapters as authored. The order they are WALKED in is CHAPTER_ORDER below —
+ * kept separate so resequencing the tour is one line rather than moving three
+ * hundred lines of copy around and re-reviewing all of it.
+ */
+const AUTHORED_CHAPTERS: TourChapter[] = [
   // ── 1 ──────────────────────────────────────────────────────────────────────
   {
     id: "orientation",
@@ -129,7 +151,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Start with the shape of it",
         body:
-          `${BRAND.name} is one screen in five horizontal bands. Learn the bands and everything else has an address. Nothing here needs a login, a key or a payment.`,
+          `${BRAND.name} is one screen in five horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
         placement: "center",
       },
       {
@@ -142,10 +164,18 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       },
       {
         id: "orientation-health",
-        target: [".tnx-feed-counts", ".tnx-feed"],
+        target: [".tnx-feed-cells", ".tnx-feed"],
         title: "Band 2 — feed health",
         body:
-          "Every data layer reports whether its last fetch worked. This strip is the running tally: live, lagging, down, locked behind a key, or idle. It is the first place to look when a layer shows nothing.",
+          "One cell per data layer, coloured by whether its last fetch worked, with a running tally on the right. Hover a cell to name the layer. Cells are also switches: clicking one turns that layer on or off, the same as its switch in the Sources rail — so a click here changes the map, it does not just inspect it.",
+        placement: "bottom",
+      },
+      {
+        id: "orientation-banner",
+        target: [".tn-alert-body", ".tn-alert"],
+        title: "The breaking strip",
+        body:
+          "When a headline or a large quake arrives, it takes this band across the top. Read article opens the source in a new tab; the ✕ dismisses it. It appears only when there is something to say, so the band is not always there.",
         placement: "bottom",
       },
       {
@@ -161,7 +191,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-seg-slot", ".tn-cw"],
         title: "Band 3 also — the widgets",
         body:
-          "The stage shares a twelve-column grid with the widgets around it. Each widget watches one source and can be moved, resized, duplicated or removed. Chapter 4 takes one apart.",
+          "The stage shares a twelve-column grid with the widgets around it. Most watch a single source; a few combine several. All of them can be moved, resized, duplicated or removed, and a later chapter takes one apart.",
         placement: "left",
       },
       {
@@ -193,9 +223,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "map-lead",
         target: "",
-        title: "The map is a tool, not a backdrop",
+        title: "Everything on the map is clickable",
         body:
-          "It switches between a 3D globe and a flat 2D map, carries four basemaps, geocodes any place on Earth, and explains its own colours. Here is each control.",
+          "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Numbered bubbles are clusters; click one to zoom into what it is holding. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
         placement: "center",
       },
       {
@@ -225,9 +255,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "map-legend",
         target: ".tnx-stage-legend",
-        title: "The legend is derived, not decorative",
+        title: "The legend",
         body:
-          "It lists the layers that are on right now, in the colours the map is actually painting them. Cameras are coloured by source region, aircraft by type, satellites by category — so a fixed key would be a lie within a week.",
+          "It lists the layers that are on right now, in the colours the map is actually painting them. Cameras are coloured by source region, aircraft by type, satellites by category, and each signal layer brings its own — so the key is built from what is on screen rather than fixed in advance.",
         placement: "left",
       },
       {
@@ -241,9 +271,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "map-pins",
         target: [".tn-pinnav", ".tnx-stage-foot"],
-        title: "Pins and world clocks",
+        title: "Pins, zoom and world clocks",
         body:
-          "Searching drops a pin, and the pin navigator steps between them, flies back to any one, and clears them. The bar along the bottom of the stage carries local time in several cities so an event has a human hour attached.",
+          "Searching drops a pin, and the pin navigator steps between them, flies back to any one, and clears them. The + and − in the bottom-right corner zoom without a scroll wheel, and the compass under them resets the tilt. The bar along the bottom of the stage carries local time in several cities, so an event has a human hour attached.",
         placement: "top",
       },
       {
@@ -320,7 +350,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Four buttons, and what is behind them",
         body:
-          "Every widget has the same header. Once you know it you know all sixty-nine of them. This chapter opens each control in turn on a real widget.",
+          "Every widget has the same header, whichever source it watches. Learn it once and it applies to all of them. This chapter opens each control in turn on a real widget.",
         placement: "center",
       },
       {
@@ -336,44 +366,30 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-cw-fresh", ".tn-cw-head"],
         title: "The freshness chip",
         body:
-          "How old this widget's data actually is, ageing in place: live, then \"4m old\", then stale. A feed that quietly freezes shows it here instead of continuing to look healthy — that failure is the single most common complaint about tools like this one.",
+          "How old this widget's data actually is. CONNECTING… while it waits, LIVE once it has answered, then an age as it drifts, DOWN when it stops, DORMANT when the layer is off, LIVE STREAM for continuous video. \"LIVE · 7/8\" means only seven of the eight feeds behind it answered. A feed that quietly freezes says so here instead of continuing to look healthy.",
         placement: "bottom",
       },
       {
         id: "widgets-help",
-        target: ".tn-cw-help",
+        // The popover first, the ? button as the fallback: if the surface fails to
+        // open, ring the control that opens it rather than nothing.
+        target: [".tn-cw-help-pop", ".tn-cw-help"],
         title: "? — what am I looking at",
         body:
-          "Every widget explains itself. No jargon, no assumption you already know the source.",
-        placement: "bottom",
-      },
-      {
-        id: "widgets-help-pop",
-        target: ".tn-cw-help-pop",
-        title: "The trust card",
-        body:
-          "It names what the widget shows, which organisation the data comes from, and — this is the part most products skip — how the source knows: measured by an instrument, officially reported, or inferred by a machine. It also says what the layer cannot tell you.",
+          "The ? in every widget header opens this. It names what the widget shows, which organisation the data comes from, how that source knows (an instrument measured it, an agency stated it, a model produced it), and what the layer cannot tell you. Some of it gets technical — that is the layer's own method, written down rather than hidden.",
         placement: "bottom",
         setup: [OPEN_HELP],
-        settleMs: 120,
+        settleMs: 140,
       },
       {
         id: "widgets-bell",
-        target: ".tn-cw-bell",
+        target: [".tn-cw-notify-pop", ".tn-cw-bell"],
         title: "🔔 — tell me when it changes",
-        body: "Arm any widget and it will notify you when something new arrives.",
-        placement: "bottom",
-        setup: [SHUT_HELP],
-      },
-      {
-        id: "widgets-bell-pop",
-        target: ".tn-cw-notify-pop",
-        title: "Channels and a threshold",
         body:
-          "Browser notifications work immediately. Telegram and Discord light up once you have pasted credentials in Settings. The threshold suppresses everything under a number you choose — a magnitude, a count — so an armed widget stays quiet until it matters.",
+          "Two checkboxes, and both must be on: \"Notify me\" arms this widget, then pick a channel. Browser works straight away; Telegram and Discord stay greyed out until you add credentials in Settings. The threshold suppresses everything under a number you choose — a magnitude, a count — so an armed widget stays quiet until it matters.",
         placement: "bottom",
-        setup: [OPEN_BELL],
-        settleMs: 120,
+        setup: [SHUT_HELP, OPEN_BELL],
+        settleMs: 140,
       },
       {
         id: "widgets-expand",
@@ -385,18 +401,11 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         setup: [SHUT_BELL],
       },
       {
-        id: "widgets-menu",
-        target: ".tn-cw-menu",
-        title: "⋯ — everything else",
-        body: "Position, size, duplication, export and removal all live in one menu.",
-        placement: "bottom",
-      },
-      {
         id: "widgets-menu-pop",
-        target: ".tn-cw-menu-pop",
+        target: [".tn-cw-menu-pop", ".tn-cw-menu"],
         title: "Move, size, duplicate, export, remove",
         body:
-          "Arrows nudge the card one cell at a time and the width and height chips snap it to named sizes — both work without a mouse. Below: duplicate the widget, choose whether its alerts sit on top or inline, download what you are looking at as CSV or GeoJSON, or remove it.",
+          "Arrows nudge the card one cell at a time and the width and height chips snap it to named sizes — both work without a mouse. Below: duplicate the widget, choose whether its alerts sit on top or inline, and remove it. Widgets holding a table of rows add CSV and GeoJSON downloads here too; ones that do not have rows to give simply do not offer it.",
         placement: "left",
         setup: [OPEN_MENU],
         settleMs: 120,
@@ -409,6 +418,14 @@ export const TOUR_CHAPTERS: TourChapter[] = [
           "Drag the grip, or the header, to move a widget anywhere on the grid. With it focused, arrow keys move it a cell at a time and shift with arrows resizes it.",
         placement: "bottom",
         setup: [SHUT_MENU],
+      },
+      {
+        id: "widgets-body",
+        target: [".tn-cw-body", ".tn-cw"],
+        title: "Inside the card, each widget differs",
+        body:
+          "Below the header the controls belong to that widget. Common ones: chips that regroup the list (by region, by type, or flat), collapsible group headings, a \"needs attention\" band at the top, thumbnail tiles that open a camera, and — worth knowing — an \"N hidden ✕\" chip meaning rows are being filtered out, whose ✕ brings them back. This tour does not cover every widget's insides; the ? on each one does.",
+        placement: "right",
       },
       {
         id: "widgets-resize",
@@ -447,7 +464,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: "",
         title: "One rail, every source",
         body:
-          "Eleven camera networks and thirty-five global signal layers, each with a map toggle, a live count, an attribution and its own freshness. This is where you compose what the map shows.",
+          `Every open road-camera network we carry, plus ${SIGNAL_COUNT} global signal layers — each with a map toggle, a live count, an attribution and its own freshness. This is where you compose what the map shows.`,
         placement: "center",
       },
       {
@@ -455,7 +472,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: ".tn-rail-fab",
         title: "≡ Sources",
         body:
-          "The rail starts collapsed so the board gets the screen. One click opens it, and it pushes the grid across rather than covering it.",
+          "The rail starts collapsed so the board gets the screen. One click opens it, and it pushes the grid across rather than covering it. The ‹ in its top corner puts it away again.",
         placement: "right",
       },
       {
@@ -463,7 +480,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: ".tn-cat-search",
         title: "Search the catalogue",
         body:
-          "Forty-six sources is more than anyone scrolls. Type a word — quake, cyber, camera, cable — and the whole rail filters to matching layers with their groups already expanded.",
+          `${SOURCE_COUNT} sources is more than anyone scrolls. Type a word — quake, cyber, camera, cable — and the whole rail filters to matching layers with their groups already expanded.`,
         placement: "right",
         setup: [OPEN_RAIL],
         settleMs: 220,
@@ -491,7 +508,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: ".tn-layer-row",
         title: "Reading a source row",
         body:
-          "A coloured dot matching the map, the name, who supplies it, and how long ago it last answered. On the right: the live count, a ＋ that puts this source on your board as a widget, and the switch that puts it on the map.",
+          "A coloured dot matching the map, the name, who supplies it, and how long ago it last answered. On the right: the live count, a ＋ that puts this source on your board as a widget, and the switch that puts it on the map. A dimmed row with an \"in signals\" pill has no map layer of its own — the pill is a label, not a button, and it tells you the data is further down under Global signals.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
@@ -516,9 +533,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "sources-cameras",
         target: [".tn-cam-filters", ".tn-layer-row"],
-        title: "Camera filters",
+        title: "Camera filters — and where the cameras are",
         body:
-          "Open the Cameras row and you can filter by agency feed, hide whole regions, or show only cameras serving genuine live video rather than a still that refreshes.",
+          "Open the Cameras row and you can hide whole regions with the region chips, or show only cameras serving genuine live video rather than a still that refreshes. The two chips under \"Feed\" are labels for those two kinds, not buttons. This region list is also the honest answer to \"which places have cameras?\" — they come from road agencies that publish openly, so London, California, Finland and British Columbia are covered and most of the world is not.",
         placement: "right",
         setup: [OPEN_RAIL, { kind: "ensure", want: ".tn-cam-filters", click: ".tn-layer-head" }],
         settleMs: 160,
@@ -528,7 +545,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-signals-header", ".tn-signals"],
         title: "Global signals",
         body:
-          "Thirty-five opt-in intelligence layers grouped by theme — hazards, conflict, cyber, maritime, infrastructure, humanitarian — plus a Country Instability Index built from four of them. All off by default; you choose what to look at.",
+          `${SIGNAL_COUNT} intelligence layers grouped by theme — hazards, conflict, cyber, maritime, infrastructure, humanitarian — including a Country Instability Index computed from four of the others. Your board decides which start on: Brief opens with four. To add one, expand its group and flip its switch; the badge beside this header counts how many are on.`,
         placement: "right",
         setup: [OPEN_RAIL],
       },
@@ -547,7 +564,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-layer-prov", ".tn-signals-body"],
         title: "How each layer knows",
         body:
-          "The small chip beside a source grades it: measured by an instrument, officially reported, or a machine's interpretation of text. Everything on this map draws the same coloured dot, so without this a seismometer and a news-wire guess would look equally authoritative.",
+          "The small chip beside a source grades it, and there are five: MEASURED by an instrument, OFFICIAL from an agency, REPORTED and checked by people, MODELLED by a forecast or index, or DERIVED — computed here from other layers, the most caveated of the five. Everything on this map draws the same coloured dot, so without this a seismometer and a news-wire guess would look equally authoritative.",
         placement: "right",
         setup: [OPEN_RAIL, OPEN_SIGNALS],
       },
@@ -565,7 +582,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: ".tn-coverage-open",
         title: "Coverage · Markets · Saved",
         body:
-          "Three panels at the foot of the rail. Coverage is the honest map of what we do and do not have, by country. Markets is the economic board. Saved is your watchlist of places worth coming back to.",
+          "Three panels at the foot of the rail, each closing on its own ✕. Coverage is the honest account of what we do and do not have, per source. Markets is the economic board. Saved is your watchlist — its \"Save current view\" button bookmarks wherever the map is pointing right now, and each saved place gets a row that flies you back to it.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
@@ -582,9 +599,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "trust-lead",
         target: "",
-        title: "The part most of these tools skip",
+        title: "How to tell what to trust",
         body:
-          "A wall of live-looking dots is easy. Saying which ones you should actually trust is the hard part, and it is the reason this console is built the way it is.",
+          "Everything on this map is drawn at the same visual weight, whether an instrument measured it or a machine guessed it from a news wire. These are the four places the console tells you which is which.",
         placement: "center",
       },
       {
@@ -592,7 +609,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tnx-feed-counts", ".tnx-feed"],
         title: "Five states, not two",
         body:
-          "LIVE means the last fetch worked — including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed or has gone quiet for hours. LOCKED needs a key. IDLE is switched off, which is neither a fault nor a clean bill of health.",
+          "LIVE means the last fetch worked — including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. OFF is switched off, which is neither a fault nor a clean bill of health. Hover any cell for the full wording.",
         placement: "bottom",
       },
       {
@@ -600,7 +617,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tnx-feed-cells", ".tnx-feed"],
         title: "Per-layer, not just a total",
         body:
-          "Each cell is one layer's current state, so a single dead feed is visible rather than averaged away into a reassuring summary.",
+          "Each cell is one layer's current state, so a single dead feed is visible rather than averaged away into a reassuring summary. Hover for its name and the full wording; click to switch that layer on or off.",
         placement: "bottom",
       },
       {
@@ -608,7 +625,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-layer-count", ".tn-cw-count", ".tn-cw-head"],
         title: "Counts say what they cover",
         body:
-          "Where a source only gives us part of the picture, the count says so — \"300 of 470\" rather than a confident 300. A number with no denominator is a claim we cannot support.",
+          "A widget's number is what it is holding. Where we know we are seeing only part of a source, the freshness chip beside it carries the fraction — \"LIVE · 7/8\" means seven of the eight feeds behind this widget answered. Check that chip before reading the count as the whole picture.",
         placement: "left",
       },
       {
@@ -624,7 +641,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: ".tnx-hdr-kofi",
         title: "You can check all of this",
         body:
-          `The whole console is free software under the ${BRAND.license.name}. SOURCE opens the repository, so every adapter, filter and claim in this tour can be read rather than taken on trust. SUPPORT is optional and changes nothing about what you get.`,
+          `Two links sit together up here. SOURCE opens the repository — the whole console is free software under the ${BRAND.license.name}, so every adapter, filter and claim in this tour can be read rather than taken on trust. SUPPORT, beside it, is an optional tip jar and changes nothing about what you get.`,
         placement: "bottom",
       },
     ],
@@ -647,29 +664,21 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         placement: "center",
       },
       {
-        id: "power-trigger",
-        target: ".tn-palette-trigger",
-        title: "⌘K — the command bar",
-        body:
-          "Command-K on a Mac, Ctrl-K everywhere else, from anywhere in the console. This button does the same thing if you would rather click it.",
-        placement: "bottom",
-      },
-      {
         id: "power-palette",
         target: [".tn-palette-root", ".tn-palette-trigger"],
-        title: "One box for the whole app",
+        title: "⌘K — one box for the whole app",
         body:
-          "Type to switch board, add any of the sixty-nine widgets, toggle a map layer, change basemap, jump to a covered region, fly to any place on Earth by name, dive into a live camera, change language or theme — or replay this tour.",
+          "Command-K on a Mac, Ctrl-K everywhere else, or the COMMAND button in the header. Type to switch board, add any widget, toggle a map layer, change basemap, fly to any place on Earth by name, dive straight into a live camera, change language or theme — or replay this tour. Arrows move, Enter runs, Esc closes.",
         placement: "center",
         setup: [OPEN_PALETTE],
-        settleMs: 160,
+        settleMs: 200,
       },
       {
         id: "power-workspace",
         target: [".tn-palette-root", ".tn-palette-trigger"],
         title: "Save and share, in the same box",
         body:
-          "\"Copy shareable link\" encodes your exact layout into a URL that rebuilds it for whoever you send it to. \"Save layout as preset\" keeps it as your own board alongside the six built-in ones.",
+          "Under Workspace: \"Copy shareable link\" encodes your exact layout into a URL that rebuilds it for whoever you send it to — Settings has the same thing as a button. \"Save layout as preset\" keeps your arrangement as your own board alongside the six built-in ones, and \"Reset board\" puts the current one back to its template.",
         placement: "center",
         setup: [OPEN_PALETTE],
       },
@@ -703,9 +712,9 @@ export const TOUR_CHAPTERS: TourChapter[] = [
       {
         id: "settings-panel",
         target: [".tn-settings", ".tn-settings-trigger"],
-        title: "Theme, language, alert channels",
+        title: "Theme, language, boards, sharing, alerts",
         body:
-          "Light or dark, English, Spanish or French, and the credentials for the two alert channels — a Telegram bot token and chat id, or a Discord webhook. Both are stored in your browser and sent nowhere else; until one is set, those channels stay greyed out on every widget's 🔔.",
+          "Scroll it — there is more below the fold than above. Appearance and Language; Load a board; Share, which copies a link rebuilding your current view for whoever you send it to; then Notifications, which holds a master switch that silences every armed widget at once, a test-message button, the Telegram and Discord credentials, and the list of rules you have armed. Credentials are stored in this browser and sent nowhere else.",
         placement: "left",
         setup: [OPEN_SETTINGS],
         settleMs: 200,
@@ -715,7 +724,7 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: [".tn-profile-avatar", ".tnx-hdr-profile"],
         title: "Your profile",
         body:
-          "A display name for this browser, and where accounts will live. There is no account today and nothing is uploaded — your boards, pins and keys are stored locally.",
+          "Set a display name for this browser, and replay this tour. The Sign in button is a placeholder for accounts that do not exist yet — it opens a form that cannot be submitted. Nothing is uploaded: your boards, pins, watchlist and alert credentials all live in this browser only.",
         placement: "bottom",
         setup: [SHUT_SETTINGS],
       },
@@ -724,12 +733,42 @@ export const TOUR_CHAPTERS: TourChapter[] = [
         target: "",
         title: "That is the whole console",
         body:
-          "Nothing you have seen needs a key or a login. Replay this tour, or any single chapter, from ⌘K → \"Take the tour\". Start with the Brief board if you want the short version of what changed today.",
+          "No login, no payment, and nothing you have to configure to start. Replay this tour, or any single chapter, from ⌘K → \"Take the tour\" or the profile menu. Start with the Brief board if you want the short version of what changed today.",
         placement: "center",
       },
     ],
   },
 ];
+
+/**
+ * The order the chapters are walked in.
+ *
+ * Not the order they were written. A reviewer taking the tour cold made the case
+ * that the original sequence dissected a widget header before the visitor had any
+ * reason to care which widgets were on screen: boards are the concept that makes
+ * the rest useful ("pick the board matching your job and the whole screen
+ * reconfigures"), and the rail's ＋ is how widgets get onto a board in the first
+ * place. So: shape of the screen → boards → the map → where data comes from →
+ * what a widget is → how much to trust it → going faster → preferences.
+ */
+const CHAPTER_ORDER = [
+  "orientation",
+  "boards",
+  "map",
+  "sources",
+  "widgets",
+  "trust",
+  "power",
+  "settings",
+] as const;
+
+export const TOUR_CHAPTERS: TourChapter[] = CHAPTER_ORDER.map((id) => {
+  const chapter = AUTHORED_CHAPTERS.find((c) => c.id === id);
+  // A typo here would silently shorten the tour, which is the whole class of bug
+  // this rewrite exists to remove. Fail loudly at module load instead.
+  if (!chapter) throw new Error(`CHAPTER_ORDER names "${id}", which is not an authored chapter`);
+  return chapter;
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers. Everything below is DOM-free so the run can be reasoned about
