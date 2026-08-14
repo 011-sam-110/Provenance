@@ -118,6 +118,24 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     ],
   },
 
+  {
+    id: "camslot",
+    whatItShows:
+      "One live view at a time from a list you built yourself — a public road camera, a city webcam, or a YouTube stream you pasted. With more than one in the list, the slot cycles through them on a timer.",
+    method:
+      "Still images are re-fetched on the interval their own operator publishes — 60s for most highway agencies, 300s for TfL and the Nordic road-weather cameras, 600s for Windy webcams — and always through our own proxy, never a raw upstream URL. Rotation only changes which already-fetched frame is on screen; it never pulls a new one, and a slot scrolled out of view stops fetching altogether.",
+    confidence: "official",
+    coverage:
+      "The same seven countries the road-camera registry covers, plus a partial global sample of Windy webcams. Anywhere else, there is nothing to add.",
+    limitations: [
+      "The webcam half is a partial sample of Windy's catalogue built from fixed regional queries, so many major cities return nothing at all — a search finding no camera in a city is not evidence that none exists there.",
+      "A frame is only as recent as its operator's last publish, which for TfL and the Nordic road-weather cameras is up to five minutes. Nothing in this slot is a real-time video feed.",
+      "These cameras are run by transport authorities and private webcam owners for their own purposes. They get re-pointed, go dark for days, and freeze on an old frame while still reporting as available.",
+      "A YouTube stream in the list stops that slot rotating, because an embed takes seconds to start and would never finish loading at a rotation interval.",
+      "Rotation means you are looking at one camera at a time. The others in the list are not being watched while they are off screen, and nothing is recorded.",
+    ],
+  },
+
   // --- Aviation / space -----------------------------------------------------
   {
     id: "aviation",

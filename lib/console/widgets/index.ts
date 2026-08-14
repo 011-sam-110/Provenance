@@ -17,3 +17,5 @@ import "@/lib/console/widgets/sources";
 import "@/lib/console/widgets/recon";
 // Registers the cross-layer "What's abnormal" anomaly-triage widget.
 import "@/lib/console/widgets/anomaly";
+// Registers the camera-slot widget — a playlist of live views (Streets M1).
+import "@/lib/console/widgets/camslot";

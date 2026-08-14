@@ -4800,3 +4800,46 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     min-height: 44px;
   }
 }
+
+/* ── Camera slot (Streets M1) ─────────────────────────────────────────────
+   A slot holds a LIST of live views and shows one at a time. The stage is
+   absolutely positioned so the current view and its single prefetch can occupy
+   the same cell, with the prefetch hidden — that is what lets rotation swap
+   without unmounting and losing each view's refresh interval. */
+.tn-cs { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.tn-cs-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--tn-surface-2); }
+.tn-cs-view, .tn-cs-view figure { position: absolute; inset: 0; margin: 0; }
+.tn-cs-view img, .tn-cs-frame { width: 100%; height: 100%; border: 0; display: block; }
+.tn-cs-stage[data-fit="cover"] .tn-cs-view img { object-fit: cover; }
+.tn-cs-stage[data-fit="contain"] .tn-cs-view img { object-fit: contain; }
+.tn-cs-view figcaption { position: absolute; right: 4px; bottom: 4px; }
+.tn-cs-bar { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; min-width: 0; }
+.tn-cs-name { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-cs-pos { font-family: var(--tn-mono); font-variant-numeric: tabular-nums; font-size: 10px; color: var(--tn-text-faint); }
+.tn-cs-ctl { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity 120ms; }
+.tn-cs:hover .tn-cs-ctl, .tn-cs:focus-within .tn-cs-ctl { opacity: 1; }
+.tn-cs-ctl button { font-size: 11px; line-height: 1; padding: 3px 6px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-topbar-pill); color: var(--tn-text); cursor: pointer; }
+.tn-cs-ctl button:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-cs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 100%; color: var(--tn-text-faint); font-size: 11.5px; text-align: center; padding: 8px; }
+.tn-cs-add { font-size: 12px; padding: 6px 12px; border: 1px solid var(--tn-border-strong); border-radius: 4px; background: var(--tn-surface-solid); color: var(--tn-accent-strong); cursor: pointer; }
+.tn-cs-add:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-cs-dead, .tn-cam-dead { display: flex; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center; font-size: 11px; color: var(--tn-text-faint); background: var(--tn-chip-bg); }
+.tn-cs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.tn-cs-picker { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--tn-surface-solid); border: 1px solid var(--tn-border-strong); border-radius: 4px; overflow: auto; }
+.tn-cs-picker-head { display: flex; gap: 6px; }
+.tn-cs-picker-head input, .tn-cs-picker-paste input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 8px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-surface-2); color: var(--tn-text); }
+.tn-cs-picker-head button, .tn-cs-picker-paste button { font-size: 11px; padding: 5px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-cs-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 46%; overflow: auto; }
+.tn-cs-hit { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 5px 7px; border: 0; border-radius: 3px; background: transparent; text-align: left; cursor: pointer; }
+.tn-cs-hit:hover:not(:disabled) { background: var(--tn-accent-soft); }
+.tn-cs-hit:disabled { opacity: 0.5; cursor: default; }
+.tn-cs-hit-name { font-size: 12px; font-weight: 600; }
+.tn-cs-hit-sub { font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); }
+.tn-cs-picker-paste { display: flex; gap: 6px; }
+.tn-cs-picker-err { font-size: 11px; color: var(--tn-down-ink); }
+.tn-cs-picker-chosen { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tn-cs-picker-label { font-family: var(--tn-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tn-text-faint); }
+.tn-cs-picker-chosen button { font-family: var(--tn-mono); font-size: 9.5px; padding: 2px 6px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+@media (prefers-reduced-motion: reduce) { .tn-cs-ctl { transition: none; } }
