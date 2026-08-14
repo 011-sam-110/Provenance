@@ -41,3 +41,23 @@ export function sampledAgeMs(lastSampledAt: string | undefined | null, now: numb
   const t = Date.parse(lastSampledAt);
   return Number.isFinite(t) ? Math.max(0, now - t) : null;
 }
+
+/**
+ * The cache-buster, quantised to a global window instead of a per-mount counter.
+ *
+ * `?_=` exists so a browser cannot serve a frame older than the operator's own
+ * publish interval. But an INCREMENTING value mints a fresh CDN key on every
+ * refresh — measured on prod, `_=0` twice is a HIT and `_=1` is a MISS — so every
+ * viewer pays an origin fetch that nobody else can share. Flooring the clock into
+ * refresh-sized buckets gives one value per window that all clients agree on: the
+ * first request in a window fills the cache and the rest hit it, while the value
+ * still changes as soon as a genuinely newer frame could exist.
+ *
+ * It is also mount-independent, which is what lets a tile unmount and come back
+ * without resetting to bucket 0 and pinning itself to a frame from whenever it
+ * first loaded.
+ */
+export function frameBucket(nowMs: number, refreshSeconds: number): number {
+  const secs = Number.isFinite(refreshSeconds) && refreshSeconds > 0 ? refreshSeconds : 60;
+  return Math.floor(nowMs / (secs * 1000));
+}
