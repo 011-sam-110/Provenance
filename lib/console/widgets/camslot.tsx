@@ -17,6 +17,7 @@ import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { CameraImage } from "@/components/CameraImage";
 import { useCameras } from "@/lib/cameras/useCameras";
+import { useWebcamTitles } from "@/lib/webcams/titles";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import {
@@ -120,6 +121,9 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   // slots share one 60s poll instead of each starting their own.
   const { cameras } = useCameras();
   const byId = useMemo(() => new Map(cameras.map((c) => [c.id, c])), [cameras]);
+  // A slot restored from a ?c= link carries ids and nothing else, so titles have to
+  // be resolved separately or every caption reads "Webcam 1229966910".
+  const webcamTitles = useWebcamTitles();
 
   // Keep the index inside the playlist when streams are removed under a running
   // rotation.
@@ -155,10 +159,11 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const labelFor = useCallback(
     (s: StreamRef): string => {
       if (s.k === "yt") return "YouTube stream";
-      if (s.k === "webcam") return `Webcam ${s.id.replace(/^windy:/, "")}`;
+      // Falling back to the id is ugly but true; inventing a place name would not be.
+      if (s.k === "webcam") return webcamTitles?.get(s.id) ?? `Webcam ${s.id.replace(/^windy:/, "")}`;
       return byId.get(s.id)?.name ?? s.id;
     },
-    [byId],
+    [byId, webcamTitles],
   );
 
   const refreshFor = useCallback(

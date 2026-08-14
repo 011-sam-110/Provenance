@@ -7,22 +7,15 @@
 // from it and 528 from Windy's own bbox endpoint — so the empty state has to say so
 // rather than imply the city has no cameras. The live bbox search that fixes it
 // properly is M2.
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCameras } from "@/lib/cameras/useCameras";
+import { useWebcamDirectory } from "@/lib/webcams/titles";
 import {
   parseYouTubeVideoId,
   streamKey,
   MAX_STREAMS,
   type StreamRef,
 } from "@/lib/console/widgets/camslot.model";
-
-interface WebcamLite {
-  id: string;
-  title: string;
-  country?: string;
-  region?: string;
-  available?: boolean;
-}
 
 const MAX_RESULTS = 40;
 
@@ -38,23 +31,10 @@ export default function CamslotPicker({
   const [q, setQ] = useState("");
   const [paste, setPaste] = useState("");
   const [pasteError, setPasteError] = useState<string | null>(null);
-  const [webcams, setWebcams] = useState<WebcamLite[]>([]);
   const { cameras } = useCameras();
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/webcams", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        if (!cancelled) setWebcams(Array.isArray(j?.webcams) ? j.webcams : []);
-      })
-      .catch(() => {
-        if (!cancelled) setWebcams([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Shared with the slot captions, so the ~76 KB directory is fetched once for the
+  // session rather than once per widget on screen.
+  const webcams = useWebcamDirectory();
 
   const chosen = useMemo(() => new Set(streams.map(streamKey)), [streams]);
 
@@ -98,6 +78,16 @@ export default function CamslotPicker({
   };
 
   const remove = (key: string) => commit(streams.filter((s) => streamKey(s) !== key));
+
+  // Chips name the place, not the internal key. Falling back to the id is ugly but
+  // true — inventing a place name would not be.
+  const labelFor = (s: StreamRef): string => {
+    if (s.k === "yt") return "YouTube stream";
+    if (s.k === "webcam") {
+      return webcams.find((w) => w.id === s.id)?.title ?? s.id.replace(/^windy:/, "Webcam ");
+    }
+    return cameras.find((c) => c.id === s.id)?.name ?? s.id;
+  };
 
   const addPasted = () => {
     const id = parseYouTubeVideoId(paste);
@@ -183,9 +173,10 @@ export default function CamslotPicker({
             <button
               key={streamKey(s)}
               onClick={() => remove(streamKey(s))}
-              aria-label={`Remove ${streamKey(s)}`}
+              aria-label={`Remove ${labelFor(s)}`}
+              title={labelFor(s)}
             >
-              {streamKey(s)} ✕
+              {labelFor(s)} ✕
             </button>
           ))}
         </div>
