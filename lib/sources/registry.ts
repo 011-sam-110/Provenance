@@ -16,20 +16,40 @@ import { findById, nearest } from "@/lib/sources/select";
 const TTL_MS = 5 * 60 * 1000;
 
 /**
- * How long one upstream feed gets before its round is treated as a timeout.
- * `refresh()` used to await every feed with no ceiling, so the single slowest
- * source set the whole registry rebuild's latency — Castle Rock's ~100-request
- * pagination (see lib/sources/castlerock.ts) has been observed taking ~40s cold.
- * Every refresh() now has a hard ceiling of this value instead of "however long
- * the slowest feed takes." A feed that blows the budget is treated exactly like
- * any other failure by mergeResults: it keeps its last-good cameras and never
- * silently empties its region (see mergeResults above). This only stops US
- * WAITING on the feed — the underlying request has no AbortSignal wired through
- * `CameraFeed.fetch()`, so it keeps running server-side until it settles on its
- * own; that's a follow-up (threading an AbortSignal into each adapter), not
- * something fixable from this file alone.
+ * How long a feed gets before its round is treated as a timeout, unless it
+ * declares its own `budgetMs`. `refresh()` used to await every feed with no
+ * ceiling, so the single slowest source set the whole registry rebuild's
+ * latency; this bounds that.
+ *
+ * WHY THIS IS A DEFAULT AND NO LONGER A UNIFORM RULE. Applied to every feed
+ * alike, 10s did not bound Castle Rock — it DELETED it. That adapter pages ~143
+ * requests across nine 511 systems (see lib/sources/castlerock.ts) and its own
+ * measurements are ~18.5s warm and ~40s cold, so it lost this race on every
+ * refresh and was absent from production entirely. Not intermittently:
+ * structurally, and for as long as the ceiling was uniform.
+ *
+ * The symptom read like a network problem and was recorded as one — running the
+ * adapter DIRECTLY succeeded in 18.5s, so the deployment's egress looked
+ * refused. It was not. The ceiling lives here, in `refresh()`, not in the
+ * adapter, so a direct call never meets it. The 511 upstreams answer 200 in
+ * ~1s and refuse nobody.
+ *
+ * What the ceiling was protecting is already protected elsewhere: `getRegistry()`
+ * is stale-while-revalidate, so a warm caller gets the cached answer INSTANTLY
+ * while one shared refresh runs behind it. Only a cold call with no cache waits.
+ * So a feed that needs longer costs a slower cold start, not slower requests —
+ * and paying for it with two thirds of the camera catalogue was the worse trade.
+ *
+ * A feed that blows its budget is still treated exactly like any other failure
+ * by mergeResults: it keeps its last-good cameras and never silently empties its
+ * region. This only stops US WAITING on the feed — the underlying request has no
+ * AbortSignal wired through `CameraFeed.fetch()`, so it keeps running
+ * server-side until it settles on its own. On serverless that is ~143 abandoned
+ * requests still executing per refresh, and it is billed; threading an
+ * AbortSignal into each adapter is the fix and is a follow-up, not something
+ * this file can do alone.
  */
-const UPSTREAM_TIMEOUT_MS = 10_000;
+export const DEFAULT_UPSTREAM_TIMEOUT_MS = 10_000;
 
 /**
  * Race `promise` against a `ms` timer, rejecting with a labelled timeout error
@@ -63,6 +83,17 @@ export interface CameraFeed {
   /** Stable id, used only for last-good bookkeeping and the coverage denominator. */
   key: string;
   fetch: () => Promise<Camera[]>;
+  /**
+   * This feed's own timeout, for the rare source whose honest cost exceeds
+   * DEFAULT_UPSTREAM_TIMEOUT_MS. Omit it unless the number is MEASURED — the
+   * point of the default is that it still bounds everything else.
+   */
+  budgetMs?: number;
+}
+
+/** The budget one feed gets this round. Pure. */
+export function feedBudgetMs(feed: Pick<CameraFeed, "budgetMs">): number {
+  return feed.budgetMs ?? DEFAULT_UPSTREAM_TIMEOUT_MS;
 }
 
 const SOURCES: CameraFeed[] = [
@@ -70,7 +101,13 @@ const SOURCES: CameraFeed[] = [
   { key: "caltrans", fetch: fetchCaltrans },
   { key: "scdot", fetch: fetchScdot },
   { key: "digitraffic", fetch: fetchDigitraffic },
-  { key: "castlerock", fetch: fetchCastlerock },
+  // The one feed that needs longer than the default, and the reason the default
+  // exists rather than a uniform rule. ~143 paginated requests across nine 511
+  // systems; measured at ~18.5s warm and ~40s cold. 60s is that worst case plus
+  // headroom — not a guess, and not "big enough to be safe". See
+  // DEFAULT_UPSTREAM_TIMEOUT_MS above for why this costs a cold start and
+  // nothing else.
+  { key: "castlerock", fetch: fetchCastlerock, budgetMs: 60_000 },
   { key: "tripcheck", fetch: fetchTripcheck },
   { key: "drivebc", fetch: fetchDriveBc },
   { key: "nzta", fetch: fetchNzta },
@@ -84,6 +121,9 @@ const SOURCES: CameraFeed[] = [
 ];
 
 export const CAMERA_FEED_COUNT = SOURCES.length;
+
+/** The feed table itself, so a test can assert on the budgets we actually ship. */
+export const CAMERA_FEEDS: readonly CameraFeed[] = SOURCES;
 
 /** How the last refresh went, per feed. Published by /api/coverage. */
 export interface FeedHealth {
@@ -139,7 +179,7 @@ export function mergeResults(
 
 async function refresh(): Promise<Camera[]> {
   const results = await Promise.allSettled(
-    SOURCES.map((f) => withTimeout(f.fetch(), UPSTREAM_TIMEOUT_MS, f.key)),
+    SOURCES.map((f) => withTimeout(f.fetch(), feedBudgetMs(f), f.key)),
   );
   const merged = mergeResults(results, lastGood);
   if (merged.cameras.length === 0) {
