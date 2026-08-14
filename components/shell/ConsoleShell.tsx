@@ -23,6 +23,7 @@ import { registerServiceWorker } from "@/lib/pwa/register";
 import { variantStore } from "@/lib/variants/store";
 import TerminalHeader from "@/components/terminal/TerminalHeader";
 import BootSequence from "@/components/terminal/BootSequence";
+import { BOOT_MS, bootOverrideFromSearch, loadBootSeen, shouldPlayBoot } from "@/lib/terminal/boot";
 import { SIGNALS } from "@/lib/signals/registry";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
@@ -98,11 +99,20 @@ export default function ConsoleShell() {
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
-    // First-visit guided tour: hydrate the persisted "seen" flag, then auto-open once
+    // First-visit guided tour: hydrate the persisted "seen" flag, then invite once
     // the seeded widgets have painted (so the tour can spotlight a real widget frame).
     // Gated so it never nags on return visits — see lib/shell/tour.ts.
     tourStore.hydrate();
-    const tourTimer = setTimeout(() => tourStore.maybeAutoStart(), 900);
+
+    // WAIT FOR THE BOOT SEQUENCE. Both of these are first-visit-only surfaces, and
+    // they were racing: the boot overlay holds the screen for BOOT_MS while the tour
+    // invited itself at 900ms underneath it. The visitor saw the launch animation,
+    // then a modal already half-open behind it — and it is the one visit where the
+    // product gets to explain itself. shouldPlayBoot() is the same predicate
+    // BootSequence uses, including the ?boot= override, so the two cannot disagree
+    // about whether a boot is happening.
+    const bootPlaying = shouldPlayBoot(loadBootSeen(), bootOverrideFromSearch(window.location.search));
+    const tourTimer = setTimeout(() => tourStore.maybeAutoStart(), bootPlaying ? BOOT_MS + 500 : 900);
     return () => clearTimeout(tourTimer);
   }, []);
 

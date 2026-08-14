@@ -24,7 +24,10 @@ test("hovering a submarine cable names it, and clicking there opens that cable",
   // Pre-set the "tour seen" flag — the first-run overlay is modal and would
   // intercept every click below. Same shape lib/shell/tour.ts persists.
   await page.evaluate(() =>
-    localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, data: { seenVersion: 99 } })),
+    // `d`, not `data` — that is the key PersistEnvelope actually writes, so the
+    // old spelling parsed to undefined and this seed never suppressed anything.
+    // The .tn-tour-skip click below was covering for it.
+    localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } })),
   );
 
   await page.goto("/?lat=22&lon=128&z=5&base=light");
