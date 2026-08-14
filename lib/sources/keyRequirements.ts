@@ -115,6 +115,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain: "Free tier — api.windy.com/webcams.",
   },
   {
+    kind: "required",
+    id: "youtube-live",
+    label: "Live channel resolution (news presets, ISS panel)",
+    env: ["YOUTUBE_API_KEY"],
+    degrades:
+      "Live video ids fall back to the pinned ones, which rot: 8 of the 12 news presets were already dead when audited on 2026-08-14, and the ISS panel shows an empty state instead of a stream. Nothing errors, and no other layer is affected.",
+    obtain:
+      "Free, no billing account: console.cloud.google.com → enable YouTube Data API v3 → Credentials → API key. Restrict it to that API, leave application restrictions as None (it is called server-side).",
+  },
+  {
     kind: "enhancement",
     id: "markets-equities",
     label: "Real-time equities",
@@ -158,6 +168,8 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
 export const NON_SIGNAL_IDS = new Set([
   "webcams",
+  // Console capability, not a map layer — resolves channel ids to live video ids.
+  "youtube-live",
   "markets-equities",
   "markets-macro",
   "ai-brief",
