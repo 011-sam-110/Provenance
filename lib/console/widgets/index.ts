@@ -3,6 +3,7 @@ import "@/lib/console/widgets/aviation";
 import "@/lib/console/widgets/events";
 import "@/lib/console/widgets/cameras";
 import "@/lib/console/widgets/news";
+import "@/lib/console/widgets/livecams";
 import "@/lib/console/widgets/satellites";
 import "@/lib/console/widgets/markets";
 import "@/lib/console/widgets/headlines";

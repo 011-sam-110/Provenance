@@ -1,9 +1,11 @@
 import {
   resolveLiveVideos,
+  listChannelLive,
   requestKey,
   type ChannelRequest,
   type ResolveResult,
   type Resolution,
+  type ChannelLive,
 } from "@/lib/youtube/live";
 
 // Server-side cache for channel → current live video, the YouTube analogue of
@@ -28,6 +30,8 @@ export function __resetYoutubeRegistry(): void {
   lastKnown.clear();
   cache = null;
   inflight = null;
+  channelCache.clear();
+  channelInflight.clear();
 }
 
 /**
@@ -42,6 +46,33 @@ export function rememberResolutions(resolutions: readonly Resolution[]): void {
   for (const r of resolutions) {
     if (r.videoId) lastKnown.set(requestKey(r), r.videoId);
   }
+}
+
+// Per-channel cache for the live-cams board. Separate from the resolution cache
+// above because it answers a different question ("everything this channel is
+// running") and is populated ON DEMAND, one channel at a time — see
+// listChannelLive for why eager resolution would be unaffordable.
+const channelCache = new Map<string, { value: ChannelLive; at: number }>();
+const channelInflight = new Map<string, Promise<ChannelLive>>();
+
+export async function getChannelLive(channelId: string): Promise<ChannelLive> {
+  const hit = channelCache.get(channelId);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
+
+  let pending = channelInflight.get(channelId);
+  if (!pending) {
+    pending = listChannelLive(channelId)
+      .then((value) => {
+        // Only cache a positive answer. Caching "nothing live" for ten minutes
+        // would hide a stream that started thirty seconds later, and costs the
+        // user the thing they clicked on.
+        if (value.videos.length > 0 || value.dormant) channelCache.set(channelId, { value, at: Date.now() });
+        return value;
+      })
+      .finally(() => channelInflight.delete(channelId));
+    channelInflight.set(channelId, pending);
+  }
+  return pending;
 }
 
 async function refresh(requests: readonly ChannelRequest[]): Promise<ResolveResult> {

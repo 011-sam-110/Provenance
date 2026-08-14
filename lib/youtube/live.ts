@@ -192,6 +192,51 @@ export function planRediscovery(
   return { resolved, needSearch };
 }
 
+export interface ChannelLive {
+  channelId: string;
+  videos: LiveVideo[];
+  dormant: boolean;
+  quotaSpent: number;
+  note: string | null;
+}
+
+/**
+ * Every stream a single channel is running right now, not just one.
+ *
+ * Used by the live-cams board, where one broadcaster commonly runs many cameras
+ * at once (UBACAM 8, CLIMA BC 6). Costs a full search.list — 100 units — so it
+ * is called ON DEMAND for the channel a user actually opened, never eagerly for
+ * a whole list. Resolving all 32 registered Brazilian channels up front would
+ * cost 3,200 units of a 10,000/day budget on a single cold start.
+ */
+export async function listChannelLive(
+  channelId: string,
+  apiKey: string | undefined = process.env.YOUTUBE_API_KEY,
+): Promise<ChannelLive> {
+  const key = (apiKey ?? "").trim();
+  if (!key) {
+    return {
+      channelId,
+      videos: [],
+      dormant: true,
+      quotaSpent: 0,
+      note: "YOUTUBE_API_KEY is not set — showing the last-known stream instead of the current one.",
+    };
+  }
+  const url =
+    `${API}/search?part=snippet&channelId=${encodeURIComponent(channelId)}` +
+    `&eventType=live&type=video&order=date&maxResults=25&key=${encodeURIComponent(key)}`;
+  const json = await getJson(url);
+  const videos = json ? parseSearchList(json).filter((v) => v.channelId === channelId) : [];
+  return {
+    channelId,
+    videos,
+    dormant: false,
+    quotaSpent: COST_SEARCH_LIST,
+    note: videos.length === 0 ? "This channel has nothing live right now." : null,
+  };
+}
+
 async function getJson(url: string): Promise<unknown | null> {
   try {
     const res = await fetch(url, {

@@ -1,4 +1,4 @@
-import { getLiveVideos } from "@/lib/youtube/registry";
+import { getLiveVideos, getChannelLive } from "@/lib/youtube/registry";
 import { NEWS_PROVIDERS, newsChannelRequests } from "@/lib/console/news/providers";
 import { requestKey } from "@/lib/youtube/live";
 
@@ -26,7 +26,25 @@ export const dynamic = "force-dynamic";
  * design's whole claim is that it costs ~1,900. A number nobody can see is a
  * number nobody notices going wrong.
  */
-export async function GET() {
+export async function GET(req: Request) {
+  // ?channel=UC… — everything ONE channel is running right now, for the live-cams
+  // board. Demand-driven on purpose: this costs a 100-unit search, so it is paid
+  // for the channel a user opened, never for a whole list up front.
+  const channelId = new URL(req.url).searchParams.get("channel");
+  if (channelId) {
+    if (!/^UC[A-Za-z0-9_-]{22}$/.test(channelId)) {
+      return Response.json({ error: "bad channel id" }, { status: 400 });
+    }
+    const live = await getChannelLive(channelId);
+    return Response.json({
+      channelId: live.channelId,
+      videos: live.videos.map((v) => ({ videoId: v.videoId, title: v.title })),
+      dormant: live.dormant,
+      note: live.note,
+      quotaSpent: live.quotaSpent,
+    });
+  }
+
   const requests = newsChannelRequests();
   const result = await getLiveVideos(requests);
 
