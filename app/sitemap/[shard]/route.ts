@@ -1,4 +1,4 @@
-import { loadSitemapShards } from "@/lib/seo/sitemapData";
+import { loadSitemapShards, sitemapUnavailable } from "@/lib/seo/sitemapData";
 import { findShard } from "@/lib/seo/directory";
 import { renderUrlset, sitemapHeaders } from "@/lib/seo/xml";
 
@@ -18,6 +18,9 @@ import { renderUrlset, sitemapHeaders } from "@/lib/seo/xml";
  */
 export const revalidate = 86_400;
 
+/** Same cold-registry headroom as the index — see app/sitemap.xml/route.ts. */
+export const maxDuration = 60;
+
 export async function GET(
   _req: Request,
   ctx: { params: Promise<{ shard: string }> },
@@ -29,7 +32,14 @@ export async function GET(
   }
   const id = raw.slice(0, -".xml".length);
 
-  const { shards } = await loadSitemapShards();
+  const { shards, registryOk } = await loadSitemapShards();
+
+  // 503, not 404, when the registry did not answer. A 404 on a child the index
+  // advertises tells a crawler that group is permanently gone; a 503 says come back.
+  // Order matters — this must precede the not-found check, because a failed registry
+  // makes every camera shard look non-existent.
+  if (!registryOk) return sitemapUnavailable();
+
   const shard = findShard(shards, id);
   if (!shard || shard.entries.length === 0) {
     return new Response("Not found", { status: 404 });
