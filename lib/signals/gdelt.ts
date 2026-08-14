@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
+import { countMagnitude } from "@/lib/signals/aggregate";
 
 // GDELT — geolocated conflict and protest events, from the raw 15-minute EVENT
 // EXPORT rather than an API endpoint.
@@ -98,6 +99,8 @@ const C_NUM_ARTICLES = 33;
 const C_AVG_TONE = 34;
 const C_GEO_TYPE = 51;
 const C_GEO_NAME = 52;
+/** ActionGeo_CountryCode — GDELT uses FIPS 10-4 here ("UK", not ISO "GB"). */
+const C_GEO_COUNTRY = 53;
 const C_GEO_LAT = 56;
 const C_GEO_LON = 57;
 const C_DATE_ADDED = 59;
@@ -117,6 +120,8 @@ export interface GdeltEvent {
   avgTone: number;
   geoType: string;
   place: string;
+  /** ActionGeo_CountryCode, FIPS 10-4. Only used to GROUP rows, never displayed. */
+  countryCode: string;
   lat: number;
   lon: number;
   sourceUrl: string;
@@ -313,6 +318,7 @@ export function parseGdeltExport(tsv: string): GdeltEvent[] {
       avgTone: Number.isFinite(avgTone) ? avgTone : 0,
       geoType,
       place: (c[C_GEO_NAME] ?? "").trim(),
+      countryCode: (c[C_GEO_COUNTRY] ?? "").trim(),
       lat,
       lon,
       sourceUrl: (c[C_SOURCE_URL] ?? "").trim(),
@@ -343,16 +349,13 @@ export interface PlaceBucket {
  * rounded coordinate into one marker per place — matching how this layer has always
  * rendered — sorted by total article volume and hard-capped.
  */
-export function normalizeGdeltEvents(
+export function selectLayerEvents(
   events: GdeltEvent[],
   meta: GdeltLayerMeta,
-  cap = MAX_POINTS,
   minArticles = MIN_ARTICLES,
   requireTypedActor = MIN_TYPED_ACTOR,
-): SignalFeature[] {
+): GdeltEvent[] {
   const roots = new Set(meta.rootCodes);
-
-  // 1. filter to the layer, then collapse actor-pair duplicates
   const deduped = new Map<string, GdeltEvent>();
   for (const e of events) {
     if (!roots.has(e.rootCode)) continue;
@@ -364,6 +367,19 @@ export function normalizeGdeltEvents(
     const prev = deduped.get(key);
     if (!prev || e.numArticles > prev.numArticles) deduped.set(key, e);
   }
+  return [...deduped.values()];
+}
+
+export function normalizeGdeltEvents(
+  events: GdeltEvent[],
+  meta: GdeltLayerMeta,
+  cap = MAX_POINTS,
+  minArticles = MIN_ARTICLES,
+  requireTypedActor = MIN_TYPED_ACTOR,
+): SignalFeature[] {
+  const deduped = new Map<string, GdeltEvent>(
+    selectLayerEvents(events, meta, minArticles, requireTypedActor).map((e) => [e.id, e]),
+  );
 
   // 2. bucket by place
   const places = new Map<string, PlaceBucket>();
@@ -442,6 +458,138 @@ export function toCoverageProps(b: PlaceBucket): Record<string, unknown> {
     pinPrecision: geoPrecision(b.top.geoType),
     tone: Math.round(b.top.avgTone * 10) / 10,
   };
+}
+
+// --- country aggregation (what the layers actually render) ------------------
+
+/**
+ * Country name out of an ActionGeo_FullName. GDELT writes the country last:
+ * "Bristol, Bristol, City of, United Kingdom" -> "United Kingdom", and a
+ * country-level row is just "Denmark".
+ */
+export function countryFromPlace(place: string): string {
+  const parts = (place ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : "";
+}
+
+/**
+ * Circular mean of longitudes, in degrees. A plain arithmetic mean puts a
+ * country that straddles the antimeridian (Russia, Fiji) in the middle of the
+ * Atlantic, which is the kind of confidently-wrong pin this whole layer is
+ * being rebuilt to stop producing.
+ */
+export function meanLon(lons: number[]): number {
+  if (lons.length === 0) return 0;
+  let x = 0;
+  let y = 0;
+  for (const d of lons) {
+    const r = (d * Math.PI) / 180;
+    x += Math.cos(r);
+    y += Math.sin(r);
+  }
+  if (Math.abs(x) < 1e-12 && Math.abs(y) < 1e-12) return 0;
+  return (Math.atan2(y, x) * 180) / Math.PI;
+}
+
+/**
+ * Pure: layer events -> ONE feature per country.
+ *
+ * WHY THIS REPLACED PER-PLACE PINS. GDELT's per-row accuracy was never its
+ * design target: it is a machine coder run over every article on earth, and it
+ * is used in research by aggregating millions of events, where uncorrelated
+ * miscodings average out. At n=1 they do not average out — the miscoding IS the
+ * marker. Auditing the top 30 city pins against their source articles on
+ * 2026-08-14 found roughly a fifth were current, violent and correctly placed;
+ * the rest were court reporting about past events, metaphor ("Reform Tories vow
+ * legal war"), or unrelated news (a judge dismissing a lawsuit, pinned to
+ * Israel as "use of military force").
+ *
+ * Aggregating to the country restores the only scale at which this feed is
+ * sound, and it changes the CLAIM from "this happened here" to "this much
+ * conflict-coded reporting mentions this country" — which is true, and is
+ * measurable, and is all GDELT ever knew.
+ */
+export function aggregateGdeltByCountry(
+  events: GdeltEvent[],
+  meta: GdeltLayerMeta,
+  cap = MAX_POINTS,
+  minArticles = MIN_ARTICLES,
+  requireTypedActor = MIN_TYPED_ACTOR,
+): SignalFeature[] {
+  const selected = selectLayerEvents(events, meta, minArticles, requireTypedActor);
+
+  interface CountryBucket {
+    key: string;
+    name: string;
+    articles: number;
+    events: number;
+    places: Set<string>;
+    lats: number[];
+    lons: number[];
+    /** GDELT's own country-level point, when any member row carried one. */
+    anchor?: GdeltEvent;
+    top: GdeltEvent;
+  }
+
+  const byCountry = new Map<string, CountryBucket>();
+  for (const e of selected) {
+    // Group by FIPS country code where GDELT gave one; fall back to the name so
+    // a missing code cannot silently merge unrelated countries into one bucket.
+    const name = countryFromPlace(e.place);
+    const key = e.countryCode || name.toUpperCase();
+    if (!key) continue;
+    let b = byCountry.get(key);
+    if (!b) {
+      b = { key, name, articles: 0, events: 0, places: new Set(), lats: [], lons: [], top: e };
+      byCountry.set(key, b);
+    }
+    b.articles += e.numArticles;
+    b.events += 1;
+    b.places.add(`${e.lat.toFixed(2)}|${e.lon.toFixed(2)}`);
+    b.lats.push(e.lat);
+    b.lons.push(e.lon);
+    if (e.geoType === "1" && !b.anchor) b.anchor = e; // GDELT's national centroid
+    if (e.numArticles > b.top.numArticles) {
+      b.top = e;
+      if (name) b.name = name;
+    }
+  }
+
+  const ranked = applyCap(
+    [...byCountry.values()].sort((a, b) => b.articles - a.articles || a.name.localeCompare(b.name)),
+    cap,
+    { noun: "countries", rule: "the most covered by article volume" },
+  );
+
+  return carryCoverage(ranked, ranked.map((b) => {
+    const lat = b.anchor ? b.anchor.lat : b.lats.reduce((s, v) => s + v, 0) / b.lats.length;
+    const lon = b.anchor ? b.anchor.lon : meanLon(b.lons);
+    return {
+      id: `gdelt:${meta.signalId}:country:${b.key}`,
+      lat,
+      lon,
+      title: b.name || b.key,
+      signalId: meta.signalId,
+      color: meta.color,
+      link: /^https?:\/\//i.test(b.top.sourceUrl) ? b.top.sourceUrl : undefined,
+      ts: b.top.ts,
+      props: {
+        country: b.name || b.key,
+        articles: b.articles,
+        // Radius driver. Log-scaled like every other country-aggregated layer.
+        magnitude: countMagnitude(b.articles),
+        events: b.events,
+        locationsRolledUp: b.places.size,
+        topCoding: `${cameoLabel(b.top.eventCode)} (CAMEO ${b.top.eventCode})`,
+        codedFrom: `${plural(b.top.numArticles, "article")} · ${plural(b.top.numSources, "publisher")}`,
+        coding:
+          "Country total of conflict-coded news articles, machine-coded by GDELT. " +
+          "This measures REPORTING VOLUME, not confirmed incidents, and the marker sits on a national centroid.",
+        timing: describeTiming(b.top.ts, b.top.eventDate),
+        topArticle: b.top.place ? `Best-covered mention: ${b.top.place}` : undefined,
+      },
+    };
+  }));
 }
 
 // --- upstream window fetch (shared by both layers) --------------------------
@@ -730,10 +878,10 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
     color: meta.color,
     refreshMs: 15 * 60 * 1000, // GDELT publishes a new export every 15 minutes
     attribution: GDELT_ATTRIBUTION,
-    // Real scalar: NumArticles summed over the place — how many distinct source
-    // documents covered events there in the trailing window. A quiet place is a
-    // couple of documents; a heavily-covered flashpoint runs to ~100+.
-    metric: { field: "articles", domain: [1, 100], unit: " articles" },
+    // Real scalar: NumArticles summed over the COUNTRY — how many source documents
+    // carried conflict-coded reporting mentioning it in the trailing window. It is
+    // reporting volume and is labelled as such; it is not a severity score.
+    metric: { field: "articles", domain: [1, 400], unit: " articles" },
     async fetch() {
       // A capability the runtime lacks is not "nothing is happening in the world".
       // This layer returned 300 points locally and 0 in production, silently,
@@ -751,7 +899,7 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
             ),
           ];
         }
-        return normalizeGdeltEvents(events, meta);
+        return aggregateGdeltByCountry(events, meta);
       } catch (e) {
         return [dormantNotice(meta, `The GDELT export could not be read: ${(e as Error)?.message ?? "unknown error"}.`)];
       }
