@@ -8,7 +8,14 @@
 //                                 brand, not the competitor's (already fixed pre-existing; guarded here)
 import { afterEach, expect, test } from "vitest";
 import { getCatalogSource } from "@/lib/sources/catalog";
-import { fetchWebcams, type WindyWebcam } from "@/lib/sources/windy";
+import {
+  fetchWebcams,
+  planPageJobs,
+  WINDY_REGIONS,
+  PAGES_PER_REGION,
+  LIMIT,
+  type WindyWebcam,
+} from "@/lib/sources/windy";
 import { readCoverage } from "@/lib/signals/coverage";
 import { exportFilename } from "@/lib/export";
 import { postWebhook, type AlertHit } from "@/lib/events/alerting";
@@ -50,9 +57,13 @@ function stubWindyFetch(rowsPerPage: number) {
   }) as unknown as typeof fetch;
 }
 
+// Derived from the registry, not hard-coded: regions carry per-region `pages`
+// overrides now, so "14 × 2" is no longer the request count and any literal here
+// would break every time a region is added rather than testing the disclosure.
+const REQUESTS = planPageJobs(WINDY_REGIONS, PAGES_PER_REGION, LIMIT).length;
+
 test("fetchWebcams discloses the cap when the merged sample exceeds it", async () => {
-  // 14 regions x 2 pages = 28 requests; 100/page = 2,800 unique candidates,
-  // comfortably over the 2,000 safety cap.
+  // 100 unique rows per request, which is comfortably over the 2,000 safety cap.
   stubWindyFetch(100);
   const result = await fetchWebcams("fake-test-key");
   expect(result.length).toBe(2000);
@@ -60,21 +71,21 @@ test("fetchWebcams discloses the cap when the merged sample exceeds it", async (
   const coverage = readCoverage(result);
   expect(coverage).toBeDefined();
   expect(coverage!.capped).toBe(true);
-  expect(coverage!.available).toBe(2800);
+  expect(coverage!.available).toBe(REQUESTS * 100);
   expect(coverage!.cap).toBe(2000);
   expect(coverage!.noun).toBe("webcams");
 });
 
 test("fetchWebcams does NOT claim a cap when the sample is under it", async () => {
-  // 28 requests x 1 row = 28 unique candidates, well under the cap.
+  // 1 row per request — well under the cap however many regions are registered.
   stubWindyFetch(1);
   const result = await fetchWebcams("fake-test-key");
-  expect(result.length).toBe(28);
+  expect(result.length).toBe(REQUESTS);
 
   const coverage = readCoverage(result);
   expect(coverage).toBeDefined();
   expect(coverage!.capped).toBe(false);
-  expect(coverage!.available).toBe(28);
+  expect(coverage!.available).toBe(REQUESTS);
 });
 
 test("fetchWebcams stays dormant-safe with no key configured (no network call)", async () => {
