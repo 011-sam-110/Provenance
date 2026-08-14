@@ -1,6 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { MAJOR_PORTS, type PortRecord } from "@/lib/signals/ports.data";
-import { degradedWith } from "@/lib/signals/outcome";
+import { compiled } from "@/lib/signals/outcome";
 
 // Major seaports — a curated STATIC dataset (lib/signals/ports.data.ts) of the
 // world's busiest container/cargo ports. Deliberately static, not live: there is
@@ -74,9 +74,13 @@ export const PORTS_SOURCE: SignalSource = {
   attribution: PORTS_ATTRIBUTION,
   async fetch() {
     // No network: a curated static list, so this is trivially dormant-safe.
-    // There is no upstream to have answered, so `observed()` would assert a live read
-    // that never happens here. Keep every row — they are real and complete — and
-    // declare the layer for what it is: a dated compilation, stamped when it was made.
-    return degradedWith(normalizePorts(MAJOR_PORTS), "static dataset, no live feed", COMPILED_AT);
+    //
+    // NOT degraded. There is no upstream to have failed, and marking it so rendered
+    // "no answer" on the public ledger for a layer delivering a complete, correct
+    // world. `observed()` is equally wrong — it would assert a live read that never
+    // happens here, and the freshness classifier would then call it stale forever.
+    // `compiled()` is the honest verb: ok, because nothing broke; basis "compiled",
+    // so no consumer presents it as live; stamped when the list was actually made.
+    return compiled(normalizePorts(MAJOR_PORTS), COMPILED_AT);
   },
 };

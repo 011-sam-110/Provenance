@@ -1,6 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { NUCLEAR_SNAPSHOT, NUCLEAR_SNAPSHOT_DATE } from "@/lib/signals/nuclear.data";
-import { degradedWith, observed } from "@/lib/signals/outcome";
+import { compiled, observed } from "@/lib/signals/outcome";
 
 // Nuclear power plants — OpenStreetMap `power=plant` + `plant:source=nuclear`.
 // Keyless. ~216 named plants worldwide, so the payload is light; the PROBLEM is
@@ -207,9 +207,12 @@ export const NUCLEAR_SOURCE: SignalSource = {
     // in `cache` and is served from the next call onwards. `refresh()` already
     // swallows its own failures, so there is nothing to reject here.
     void refresh();
-    // The snapshot is this layer's last-good copy: real, dated OSM data, so keep
-    // every row and declare that no live read stands behind it, stamped with when
-    // the extract was harvested. `degraded()` here would empty a complete world.
-    return degradedWith(nuclearSnapshotFeatures(), "no live overpass answer, serving snapshot", SNAPSHOT_AT);
+    // The snapshot is a COMPILED extract, not a failed read. Serverless instances
+    // are cold constantly, so a `degraded` here would have shown "no answer" much of
+    // the time while a complete world was on the map. Nothing has failed on this
+    // path: the live refresh is merely still in flight, and until it lands this is
+    // dated OSM data we stand behind. Stamped when the extract was harvested, so a
+    // consumer can say "compiled <date>" rather than implying a reading just now.
+    return compiled(nuclearSnapshotFeatures(), SNAPSHOT_AT);
   },
 };

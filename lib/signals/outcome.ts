@@ -44,6 +44,23 @@ export interface SignalOutcome {
   at: number;
   /** Short machine-ish reason when ok is false, e.g. "http 503", "timeout". */
   reason?: string;
+  /**
+   * WHERE these rows came from, which is a different question from whether a read
+   * succeeded — and conflating the two puts a false claim on the public page.
+   *
+   * "live"     — fetched from an upstream on this call, or cached from one.
+   * "compiled" — a curated or snapshotted dataset that HAS no live upstream by
+   *              design. Nothing failed; there was simply nothing to call.
+   *
+   * Without this axis a static layer has no honest representation. `degraded` would
+   * say a complete, correct dataset is broken (ports.ts publishes a full curated
+   * world and would have rendered "no answer" forever). `observed` would assert an
+   * upstream read that never happened, and the freshness classifier would then call
+   * it stale for eternity. Both are lies; the missing fact was never `ok` at all.
+   *
+   * Defaults to "live", so every existing call site keeps its current meaning.
+   */
+  basis?: "live" | "compiled";
 }
 
 const OUTCOME_KEY = Symbol.for("opendata.signals.outcome");
@@ -66,7 +83,16 @@ export function readOutcome(features: unknown): SignalOutcome | undefined {
   if (!value || typeof value !== "object") return undefined;
   const o = value as Partial<SignalOutcome>;
   if (typeof o.ok !== "boolean" || typeof o.at !== "number") return undefined;
-  return { ok: o.ok, at: o.at, reason: o.reason };
+  // Rebuilt field by field rather than spread, so a malformed record cannot smuggle
+  // arbitrary keys through. That means EVERY field has to be listed here — `basis`
+  // was added to the interface and silently dropped on the way out, which made every
+  // compiled layer read as live. If you add a field above, add it here too.
+  return {
+    ok: o.ok,
+    at: o.at,
+    reason: o.reason,
+    basis: o.basis === "compiled" ? "compiled" : "live",
+  };
 }
 
 /**
@@ -120,6 +146,21 @@ export function degradedWith<T>(features: T[], reason: string, at: number = Date
 }
 
 /**
+ * A layer with NO live upstream: a curated list, a compiled snapshot.
+ *
+ * `ok: true` because nothing failed — there was nothing to call. `basis: "compiled"`
+ * because the consumer must not present it as a live reading. `at` is when the data
+ * was compiled or snapshotted, NOT now, so "compiled 12 Aug" is sayable and true.
+ *
+ * Use this only where a live feed genuinely does not exist. A layer that HAS an
+ * upstream and is falling back to a cached copy is `degradedWith` — that one really
+ * did fail, and flattening the two would hide real outages behind a reassuring word.
+ */
+export function compiled<T>(features: T[], at: number): T[] {
+  return markOutcome(features, { ok: true, at, basis: "compiled" });
+}
+
+/**
  * Fold an outcome into what the API should publish.
  *
  * Undeclared is reported as `ok: false` with reason "not declared". Deliberate, and
@@ -131,12 +172,17 @@ export function degradedWith<T>(features: T[], reason: string, at: number = Date
 export function publishOutcome(
   features: unknown,
   now: number = Date.now(),
-): { ok: boolean; observedAt: number; degradedReason?: string } {
+): { ok: boolean; observedAt: number; basis: "live" | "compiled"; degradedReason?: string } {
   const outcome = readOutcome(features);
-  if (!outcome) return { ok: false, observedAt: now, degradedReason: "not declared" };
+  if (!outcome) {
+    return { ok: false, observedAt: now, basis: "live", degradedReason: "not declared" };
+  }
   return {
     ok: outcome.ok,
     observedAt: outcome.at,
+    // Always published, like `ok`, so a consumer never has to infer it. A missing
+    // field would send it back to guessing, and the guess is always "live".
+    basis: outcome.basis ?? "live",
     ...(outcome.ok ? {} : { degradedReason: outcome.reason ?? "upstream failed" }),
   };
 }

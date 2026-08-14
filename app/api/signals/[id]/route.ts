@@ -100,7 +100,15 @@ export async function GET(
   if (!source) return new Response("unknown signal", { status: 404 });
 
   const hit = cache.get(id);
-  if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, hit.features.length === 0)) {
+  // A DEGRADED entry is held for the short empty-retry window, not the layer's full
+  // cadence — even when it carries last-good rows. This used to key on
+  // `features.length === 0` alone, which meant a failure that still had features was
+  // replayed from this cache for the whole refresh window (up to 24h on some
+  // layers). The route's `no-store` header then only stopped the EDGE caching it,
+  // so the claim that "the next request re-asks upstream" was simply false for that
+  // case: the in-process cache answered first and never re-asked.
+  const holdBriefly = hit ? hit.features.length === 0 || !hit.outcome.ok : false;
+  if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, holdBriefly)) {
     return Response.json(payload(hit.features, hit.outcome), {
       headers: cacheHeaders(source.refreshMs, hit.features, hit.outcome.ok),
     });
@@ -125,6 +133,9 @@ export async function GET(
     outcome = {
       ok: false,
       observedAt: hit?.outcome.observedAt ?? Date.now(),
+      // An adapter that threw tells us nothing about provenance, so do not inherit
+      // the previous basis — "live" is the honest default for an unknown read.
+      basis: "live",
       degradedReason: "adapter threw",
     };
     console.warn(`[signals:${id}] adapter threw:`, err);

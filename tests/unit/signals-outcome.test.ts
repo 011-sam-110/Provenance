@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { SIGNALS } from "@/lib/signals/registry";
 import {
+  compiled,
   degraded,
+  degradedWith,
   markOutcome,
   observed,
   publishOutcome,
@@ -42,6 +44,39 @@ describe("outcome side-channel", () => {
   });
 });
 
+describe("compiled — a layer with no upstream is not a broken layer", () => {
+  it("is ok:true with basis compiled, because nothing failed", () => {
+    // ports.ts publishes a complete curated world and has no feed to call. Marking
+    // it degraded rendered "no answer" on the public ledger for a layer that was
+    // working perfectly — the inverse of the bug this contract exists to fix.
+    const rows = compiled([{ id: "p" }], 1_700_000);
+    expect(publishOutcome(rows)).toEqual({ ok: true, observedAt: 1_700_000, basis: "compiled" });
+  });
+
+  it("keeps the compile stamp rather than claiming a reading just now", () => {
+    expect(readOutcome(compiled([], 42))).toMatchObject({ ok: true, at: 42, basis: "compiled" });
+  });
+
+  it("is distinct from a live read AND from a degraded one", () => {
+    // The three states must stay separable: a consumer that cannot tell "compiled"
+    // from "live" will call a dated list fresh, and one that cannot tell it from
+    // "degraded" will call a working layer broken.
+    expect(publishOutcome(observed([{ id: "a" }])).basis).toBe("live");
+    expect(publishOutcome(compiled([{ id: "a" }], 1)).basis).toBe("compiled");
+    expect(publishOutcome(degradedWith([{ id: "a" }], "http 503", 1))).toMatchObject({
+      ok: false,
+      basis: "live",
+      degradedReason: "http 503",
+    });
+  });
+
+  it("basis is ALWAYS published, so a consumer never has to infer it", () => {
+    for (const sample of [observed([]), degraded("x"), compiled([], 1), []]) {
+      expect(publishOutcome(sample)).toHaveProperty("basis");
+    }
+  });
+});
+
 describe("publishOutcome — absence is never health", () => {
   it("reports an undeclared array as not-ok, not as fine", () => {
     // An adapter that has not been converted must not assert health it never
@@ -50,6 +85,7 @@ describe("publishOutcome — absence is never health", () => {
     expect(publishOutcome([], 1234)).toEqual({
       ok: false,
       observedAt: 1234,
+      basis: "live",
       degradedReason: "not declared",
     });
   });
@@ -58,7 +94,7 @@ describe("publishOutcome — absence is never health", () => {
     // observedAt must be the age of the DATA. A cached body stamped at request time
     // looks perpetually fresh no matter how old the reading behind it is.
     const rows = observed([{ id: "a" }], 1_000);
-    expect(publishOutcome(rows, 9_999)).toEqual({ ok: true, observedAt: 1_000 });
+    expect(publishOutcome(rows, 9_999)).toEqual({ ok: true, observedAt: 1_000, basis: "live" });
   });
 
   it("always emits ok and observedAt, so a missing field means a pre-contract payload", () => {
@@ -120,6 +156,17 @@ describe("every registered adapter declares a failure outcome", () => {
         outcome,
         `${id} returned a bare array on failure — it will read as a quiet layer, not a broken one. Return degraded("...") instead of [].`,
       ).toBeDefined();
+      // A COMPILED layer (a curated list, a dated snapshot) has no upstream to have
+      // failed, so it legitimately stays ok:true with the network down. Requiring
+      // ok:false from it would push it back to claiming it was broken — the exact
+      // false statement `compiled` exists to remove. It must still say it is
+      // compiled, and must still carry its real compile stamp rather than "now".
+      if (outcome!.basis === "compiled") {
+        expect(outcome!.ok, `${id} declared compiled but not ok`).toBe(true);
+        expect(outcome!.at, `${id} is compiled but stamped itself with now`).toBeLessThan(Date.now());
+        return;
+      }
+
       expect(outcome!.ok, `${id} reported ok:true while its upstream was refusing`).toBe(false);
       expect(typeof outcome!.reason, `${id} gave no reason`).toBe("string");
       expect(outcome!.reason!.length, `${id} gave an empty reason`).toBeGreaterThan(0);
