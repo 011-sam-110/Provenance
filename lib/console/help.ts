@@ -203,9 +203,31 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     limitations: [
       "This is a television channel, not a data layer. Nothing in it is plotted, searchable, alertable or checked by us in any way.",
       "The header word \"live stream\" names the medium, not a freshness we can observe. We cannot tell whether the player is actually playing, so a dead or geo-blocked stream still says it.",
-      "Channels are pinned by YouTube video id. Broadcasters rotate those ids without notice and a rotated preset simply plays nothing until someone updates the id.",
+      "Channels are registered by YouTube CHANNEL id and resolved to whatever that channel is streaming now, so a broadcaster restarting a stream no longer breaks the preset. Without a YOUTUBE_API_KEY that resolution is switched off and the panel falls back to a pinned video id, which does rot — 8 of the 12 pinned ids were already dead when audited on 2026-08-14.",
       "Several of these are state-funded broadcasters. The panel presents every channel identically and makes no editorial distinction between them.",
       "Playback depends on YouTube, so regional blocking, ads and platform outages all apply and none of them surface as an error here.",
+    ],
+  },
+
+  {
+    id: "livecams-brazil",
+    whatItShows:
+      "Live cameras across Brazil — beaches, city centres, the BR-101, ports and airports — streamed 24/7 on YouTube by local broadcasters, embedded in the panel.",
+    method:
+      "Nothing is derived or measured. We register a broadcaster's CHANNEL id and ask YouTube which video that channel is streaming right now, then embed it. Stream titles are the broadcaster's own words, shown verbatim.",
+    // NOT "official". The news panel earns that word because broadcasters are
+    // institutions; these are private individuals and small local media. What was
+    // actually checked is the channel list, by hand — which is "reported".
+    confidence: "reported",
+    coverage:
+      "32 independent Brazilian channels, carrying 100 live streams between them when the list was captured on 2026-08-14. Both numbers move: broadcasters start and stop cameras without notice.",
+    limitations: [
+      "These are private individuals and local media, NOT government camera feeds. Nobody guarantees a camera stays up, points the same way, or is where its title says.",
+      "No coordinates. YouTube attaches none, so nothing here is plotted on the map, and the panel deliberately asserts no city or category of its own — deriving those from titles was tried and got a Cubatão train labelled Natal.",
+      "The header word \"live stream\" names the medium, not a freshness we can observe. We cannot tell whether the player is actually playing.",
+      "The channel list was assembled by searching YouTube in Portuguese and reading the results. It is a sample of what exists, not an inventory of it.",
+      "Without a YOUTUBE_API_KEY the panel falls back to a last-known stream that may have ended, and says so rather than presenting it as current.",
+      "Playback depends on YouTube, so ads, regional blocking and platform outages all apply and none surface as an error here.",
     ],
   },
 
