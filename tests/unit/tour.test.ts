@@ -167,6 +167,7 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "⌘K command trigger", via: ".tn-palette-trigger" },
   { control: "⚙ settings trigger", via: ".tn-settings-trigger" },
   { control: "profile avatar", via: ".tn-profile-avatar" },
+  { control: "profile popover: name, Sign in, Take the tour", via: ".tn-profile-menu" },
 
   // Feed health strip
   // Two entries, not one: the cells are a readout AND a toggle. An independent
@@ -244,9 +245,9 @@ test("every interactive control in the console is explained by some tour step", 
 test("the coverage manifest is not padded with selectors the tour never uses", () => {
   // Guards the inverse failure: a manifest that agrees with the tour because both
   // were edited to agree, rather than because the tour covers the product.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(53);
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(54);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
-  expect(vias.size).toBeGreaterThanOrEqual(44);
+  expect(vias.size).toBeGreaterThanOrEqual(45);
 });
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
