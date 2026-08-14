@@ -42,6 +42,13 @@ export const metadata: Metadata = {
   title: DEFAULT_TITLE,
   description: BRAND.description,
   applicationName: BRAND.name,
+  // Google Search Console ownership proof for the URL-prefix property
+  // https://provenance-online.vercel.app/. A *domain* property is not available to
+  // us: it needs a DNS TXT record and `vercel.app` is on the Public Suffix List, so
+  // we cannot prove ownership of the zone. Removing this tag un-verifies the
+  // property and silently drops all indexing telemetry, so leave it in place even
+  // after verification succeeds.
+  verification: { google: "dzW30K7NcjXkOgxgdARj9YQ6bgR6oIIrMlfUgTu_y1s" },
   // app/manifest.ts is auto-linked by Next; this is the explicit reference.
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
