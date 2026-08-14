@@ -10,6 +10,7 @@ import { fetchRegistry as fetchNzta } from "@/lib/sources/nzta";
 import { fetchRegistry as fetchIceland } from "@/lib/sources/iceland";
 import { fetchRegistry as fetchEstonia } from "@/lib/sources/estonia";
 import { fetchRegistry as fetchTrafficScotland } from "@/lib/sources/trafficscotland";
+import { fetchRegistry as fetchCetsp } from "@/lib/sources/cetsp";
 import { findById, nearest } from "@/lib/sources/select";
 
 const TTL_MS = 5 * 60 * 1000;
@@ -76,6 +77,10 @@ const SOURCES: CameraFeed[] = [
   { key: "iceland", fetch: fetchIceland },
   { key: "estonia", fetch: fetchEstonia },
   { key: "trafficscotland", fetch: fetchTrafficScotland },
+  // First South American feed. Small (11 cameras) and deliberately so — see
+  // lib/sources/cetsp.ts for why the other ~195 snapshot folders on that host
+  // are not cameras.
+  { key: "cetsp", fetch: fetchCetsp },
 ];
 
 export const CAMERA_FEED_COUNT = SOURCES.length;

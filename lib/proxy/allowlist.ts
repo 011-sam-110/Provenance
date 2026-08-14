@@ -29,6 +29,8 @@ const RULES: { host: string; prefix: string; suffix?: string }[] = [
   // Scotland Traffic Scotland — the "image" is the camerahtml page; the proxy
   // fetches it and extracts the embedded base64 JPEG (not a direct .jpg).
   { host: "www.traffic.gov.scot", prefix: "/tsis/camerahtml" },
+  // CET São Paulo — snapshots at /cams/{pasta}/1.jpg.
+  { host: "cameras.cetsp.com.br", prefix: "/cams/", suffix: ".jpg" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).
