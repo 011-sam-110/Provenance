@@ -2,6 +2,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, type CountryCentroid } from "@/lib/signals/country-centroids.data";
 import { ACLED_SOURCE } from "@/lib/signals/acled";
 import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // ============================================================================
 // Country Instability Index (CII) — the synthesis layer, the "real product".
@@ -435,9 +436,13 @@ export const INSTABILITY_SOURCE: SignalSource = {
         ],
         conflict.source,
       );
-      return computeInstability(inputs);
+      // Not one country row from ANY of the four factor upstreams. A partial read
+      // is normal here and stays a floor (see the coverage note above), but zero
+      // rows across all four is a dead composite, not a calm world.
+      if (inputs.length === 0) return degraded("no upstream data");
+      return observed(computeInstability(inputs));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { ENTSOE_ZONES, zoneByEic, type EntsoeZone } from "@/lib/signals/entsoe-zones.data";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // European electricity grid — ENTSO-E Transparency. Live total load (electricity
 // demand, MW) per bidding zone: a real-time read on each country's grid, and the
@@ -81,7 +82,7 @@ export const GRID_LOAD_SOURCE: SignalSource = {
   attribution: ENTSOE_ATTRIBUTION,
   async fetch() {
     const token = (process.env.ENTSOE_API_TOKEN ?? "").trim();
-    if (!token) return []; // dormant until the security token is set
+    if (!token) return degraded("no key"); // dormant until the security token is set
     const now = Date.now();
     const periodStart = entsoeStamp(new Date(now - 3 * 3600_000)); // last 3h window
     const periodEnd = entsoeStamp(new Date(now));
@@ -93,16 +94,22 @@ export const GRID_LOAD_SOURCE: SignalSource = {
               `${ENDPOINT}?documentType=A65&processType=A16&outBiddingZone_Domain=${z.eic}` +
               `&periodStart=${periodStart}&periodEnd=${periodEnd}&securityToken=${encodeURIComponent(token)}`;
             const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-            if (!res.ok) return { eic: z.eic, mw: null };
+            // null ⇒ this zone never answered; { mw: null } ⇒ it answered with no
+            // reading. normalizeGridLoad skips both, but only the outer fetch can
+            // say whether the LAYER read succeeded, so the two must stay distinct.
+            if (!res.ok) return null;
             return { eic: z.eic, mw: parseLatestLoad(await res.text()) };
           } catch {
-            return { eic: z.eic, mw: null };
+            return null;
           }
         }),
       );
-      return normalizeGridLoad(results);
+      const answered = results.filter((r): r is { eic: string; mw: number | null } => r !== null);
+      // Every zone refusing is an upstream failure, not a continent with no demand.
+      if (answered.length === 0) return degraded("no zone answered");
+      return observed(normalizeGridLoad(answered));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

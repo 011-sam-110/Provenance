@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { parseAirportsCsv } from "@/lib/signals/airports";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // US airport ground stops, closures and delay programmes — the FAA's own live
 // national airspace status feed. Keyless, no signup.
@@ -235,11 +236,14 @@ export const FAA_SOURCE: SignalSource = {
         }),
         coordIndex(),
       ]);
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const xml = await res.text();
-      return faaFeatures(parseFaaStatus(xml), coords, tagText(xml, "Update_Time"));
-    } catch {
-      return [];
+      return observed(faaFeatures(parseFaaStatus(xml), coords, tagText(xml, "Update_Time")));
+    } catch (e) {
+      // Also the path for a coordIndex() throw — the airports CSV is an upstream of
+      // this layer too, and without it every event would be dropped for want of a
+      // position, which must not read as "no airport is disrupted".
+      return degraded((e as Error)?.name === "TimeoutError" ? "timeout" : "upstream read failed");
     }
   },
 };

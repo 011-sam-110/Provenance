@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { countMagnitude } from "@/lib/signals/aggregate";
 import { markCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // ACLED — real-time armed-conflict & protest events with actor attribution and
 // fatality counts. The canonical "is the line moving today" source. Key-gated:
@@ -154,19 +155,20 @@ export const ACLED_SOURCE: SignalSource = {
   async fetch() {
     const email = (process.env.ACLED_EMAIL ?? "").trim();
     const password = (process.env.ACLED_PASSWORD ?? "").trim();
-    if (!email || !password) return []; // dormant until creds are set
+    if (!email || !password) return degraded("no key"); // dormant until creds are set
     const token = await getToken(email, password);
-    if (!token) return [];
+    if (!token) return degraded("token request failed");
     try {
       const res = await fetch(`${READ_URL}?limit=${ACLED_PAGE_LIMIT}&_format=json`, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "User-Agent": UA },
         signal: AbortSignal.timeout(20_000),
       });
-      if (!res.ok) return []; // e.g. 403 "Access denied" until API access is activated
+      // e.g. 403 "Access denied" until API access is activated
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { data?: AcledRow[] };
-      return normalizeAcled(json);
+      return observed(normalizeAcled(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

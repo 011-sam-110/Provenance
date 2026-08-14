@@ -2,6 +2,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude, toNum } from "@/lib/signals/aggregate";
 import { markCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Forced displacement by country — keyless UNHCR population statistics API. One
 // marker per country of asylum (ISO-3), summing the people it hosts or holds:
@@ -115,7 +116,7 @@ export const DISPLACEMENT_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(20_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { items?: UnRow[] };
       const rows = Array.isArray(json.items) ? json.items : [];
       const out = normalizeDisplacement(rows);
@@ -126,13 +127,13 @@ export const DISPLACEMENT_SOURCE: SignalSource = {
           headers: { "User-Agent": UA, Accept: "application/json" },
           signal: AbortSignal.timeout(20_000),
         });
-        if (!res2.ok) return [];
+        if (!res2.ok) return degraded(`http ${res2.status}`);
         const json2 = (await res2.json()) as { items?: UnRow[] };
-        return normalizeDisplacement(Array.isArray(json2.items) ? json2.items : []);
+        return observed(normalizeDisplacement(Array.isArray(json2.items) ? json2.items : []));
       }
-      return out;
+      return observed(out);
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

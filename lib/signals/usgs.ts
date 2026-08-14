@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { markCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // USGS earthquakes — past 24h, all magnitudes. Keyless GeoJSON FeatureCollection,
 // the canonical real-time seismic feed. Each feature's geometry is a Point whose
@@ -94,11 +95,11 @@ export const EARTHQUAKES_SOURCE: SignalSource = {
         headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { features?: UsgsFeature[] };
-      return normalizeUsgs(json);
+      return observed(normalizeUsgs(json));
     } catch {
-      return []; // dormant-safe: never throw, just yield nothing
+      return degraded("fetch failed"); // dormant-safe: never throw, just yield nothing
     }
   },
 };

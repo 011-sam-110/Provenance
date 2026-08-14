@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { MAJOR_PORTS, type PortRecord } from "@/lib/signals/ports.data";
+import { degradedWith } from "@/lib/signals/outcome";
 
 // Major seaports — a curated STATIC dataset (lib/signals/ports.data.ts) of the
 // world's busiest container/cargo ports. Deliberately static, not live: there is
@@ -7,6 +8,10 @@ import { MAJOR_PORTS, type PortRecord } from "@/lib/signals/ports.data";
 // signal). See ports.data.ts for the source + date. Points only.
 
 export const PORTS_ATTRIBUTION = "Major ports: curated from public busiest-port rankings (2023)";
+
+/** When the curated list in ports.data.ts was compiled (see its header). The outcome
+ *  stamps the age of the DATA, so these rows never read as a read that just happened. */
+const COMPILED_AT = Date.parse("2026-06-27T00:00:00Z");
 
 /** Stable slug for a namespaced feature id. */
 function slug(name: string): string {
@@ -69,6 +74,9 @@ export const PORTS_SOURCE: SignalSource = {
   attribution: PORTS_ATTRIBUTION,
   async fetch() {
     // No network: a curated static list, so this is trivially dormant-safe.
-    return normalizePorts(MAJOR_PORTS);
+    // There is no upstream to have answered, so `observed()` would assert a live read
+    // that never happens here. Keep every row — they are real and complete — and
+    // declare the layer for what it is: a dated compilation, stamped when it was made.
+    return degradedWith(normalizePorts(MAJOR_PORTS), "static dataset, no live feed", COMPILED_AT);
   },
 };

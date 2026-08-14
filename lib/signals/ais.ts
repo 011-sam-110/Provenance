@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 import { recordCredentialRefusal } from "@/lib/sources/upstreamEvidence";
 
 // Real-time ship tracking — AISStream.io (free WebSocket). AISStream streams live
@@ -146,23 +147,35 @@ export function normalizeAis(vessels: AisVessel[]): SignalFeature[] {
   });
 }
 
+/**
+ * What one collection run ended up with: the vessels seen, plus a short reason when
+ * the socket itself failed. The reason is reported by AIS_SOURCE.fetch, never here —
+ * an outcome marked on an inner array is lost when the outer function re-wraps it.
+ */
+interface AisCollection {
+  vessels: AisVessel[];
+  /** Set when the socket failed rather than simply finding quiet water. */
+  failure?: string;
+}
+
 /** Open the AISStream socket, accumulate latest PositionReport per vessel, then close. */
-async function collectAis(key: string, ms: number): Promise<AisVessel[]> {
+async function collectAis(key: string, ms: number): Promise<AisCollection> {
   return new Promise((resolve) => {
     const seen = new Map<number, AisVessel>();
     let settled = false;
+    let failure: string | undefined;
     const decoder = new TextDecoder();
     let ws: WebSocket;
     const done = () => {
       if (settled) return;
       settled = true;
       try { ws.close(); } catch { /* already closing */ }
-      resolve([...seen.values()]);
+      resolve({ vessels: [...seen.values()], failure });
     };
     try {
       ws = new WebSocket(WS_URL);
     } catch {
-      resolve([]);
+      resolve({ vessels: [], failure: "socket failed" });
       return;
     }
     ws.binaryType = "arraybuffer";
@@ -188,6 +201,7 @@ async function collectAis(key: string, ms: number): Promise<AisVessel[]> {
         // read of "Api Key Is Not Valid".
         if (typeof m.error === "string" && isAisCredentialError(m.error)) {
           recordCredentialRefusal("ais", 401, WS_HOST);
+          failure = "key rejected";
           clearTimeout(timer);
           done();
           return;
@@ -203,7 +217,7 @@ async function collectAis(key: string, ms: number): Promise<AisVessel[]> {
         if (seen.size >= AIS_CAP) { clearTimeout(timer); done(); }
       } catch { /* skip malformed frame */ }
     };
-    ws.onerror = () => { clearTimeout(timer); done(); };
+    ws.onerror = () => { failure = "socket error"; clearTimeout(timer); done(); };
     ws.onclose = () => { clearTimeout(timer); done(); };
   });
 }
@@ -218,12 +232,16 @@ export const AIS_SOURCE: SignalSource = {
   sourceUrl: "https://aisstream.io/", // real-time AIS stream (dossier source)
   async fetch() {
     const key = (process.env.AISSTREAM_API_KEY ?? "").trim();
-    if (!key) return []; // dormant until the free key is set
+    if (!key) return degraded("no key"); // dormant until the free key is set
     try {
-      const vessels = await collectAis(key, COLLECT_MS);
-      return normalizeAis(vessels);
+      const { vessels, failure } = await collectAis(key, COLLECT_MS);
+      // A socket failure that yielded NOTHING is the upstream, not quiet water —
+      // the chokepoints are never empty. A run that failed after positions had
+      // already arrived still read the stream, so it stays a success.
+      if (failure && vessels.length === 0) return degraded(failure);
+      return observed(normalizeAis(vessels));
     } catch {
-      return [];
+      return degraded("read failed");
     }
   },
 };

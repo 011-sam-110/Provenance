@@ -3,6 +3,7 @@ import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
 import type { SignalFeature } from "@/lib/signals/types";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
 import { edgeCacheControl } from "@/lib/http/cache";
+import { publishOutcome } from "@/lib/signals/outcome";
 
 export const dynamic = "force-dynamic";
 // Most adapters are a single fast upstream call. A few (e.g. submarine cables,
@@ -33,14 +34,34 @@ export const maxDuration = 60;
 interface Cached {
   at: number;
   features: SignalFeature[];
+  /**
+   * The outcome as the adapter reported it, captured at fetch time.
+   *
+   * Stored separately because the Symbol side-channel does NOT survive a structured
+   * clone or a JSON round trip, and because a cache hit must report the ORIGINAL
+   * upstream read instant rather than the moment it was replayed. Re-deriving
+   * `observedAt` on a hit would make a six-hour-old reading look brand new on every
+   * request, which is precisely the "age of the response, not age of the data"
+   * failure this whole change exists to remove.
+   */
+  outcome: ReturnType<typeof publishOutcome>;
 }
 const cache = new Map<string, Cached>();
 
 
-/** `{count, features}` plus the adapter's coverage record when it declared one. */
-function payload(features: SignalFeature[]) {
+/**
+ * `{ok, observedAt, count, features}` plus the adapter's coverage record.
+ *
+ * `ok` and `observedAt` are ALWAYS present, unlike `coverage`. That asymmetry is
+ * deliberate: an absent coverage record honestly means "this layer declares no
+ * denominator", whereas an absent outcome would leave a consumer to guess, and the
+ * guess everyone makes is "fine". `publishOutcome` therefore resolves undeclared to
+ * `ok: false, degradedReason: "not declared"` rather than omitting the field.
+ */
+function payload(features: SignalFeature[], outcome: ReturnType<typeof publishOutcome>) {
   const coverage = readCoverage(features);
   return {
+    ...outcome,
     count: features.length,
     ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
     features,
@@ -57,7 +78,14 @@ function payload(features: SignalFeature[]) {
  * at most EMPTY_RETRY_MS, so a dormant upstream is re-asked promptly instead of a
  * six-hour blank being pinned at the edge.
  */
-function cacheHeaders(refreshMs: number, features: SignalFeature[]) {
+function cacheHeaders(refreshMs: number, features: SignalFeature[], ok: boolean) {
+  // A failure is never cached. `cacheTtlMs`'s EMPTY_RETRY_MS already shortens an
+  // empty result to minutes rather than hours, but "short" is still wrong here: a
+  // cached degraded body keeps asserting a specific `observedAt` and a specific
+  // reason for the whole window, so a five-minute outage would be reported for five
+  // minutes after it ended. no-store means the next request re-asks upstream and the
+  // layer recovers as soon as the upstream does.
+  if (!ok) return { "Cache-Control": "no-store" };
   return {
     "Cache-Control": edgeCacheControl(cacheTtlMs(refreshMs, features.length === 0)),
   };
@@ -73,20 +101,36 @@ export async function GET(
 
   const hit = cache.get(id);
   if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, hit.features.length === 0)) {
-    return Response.json(payload(hit.features), {
-      headers: cacheHeaders(source.refreshMs, hit.features),
+    return Response.json(payload(hit.features, hit.outcome), {
+      headers: cacheHeaders(source.refreshMs, hit.features, hit.outcome.ok),
     });
   }
 
   let features: SignalFeature[] = [];
+  let outcome: ReturnType<typeof publishOutcome>;
   try {
     features = await source.fetch();
-  } catch {
-    // Belt-and-braces: a misbehaving adapter must never surface as a 5xx.
+    outcome = publishOutcome(features);
+  } catch (err) {
+    // Belt-and-braces: a misbehaving adapter must never surface as a 5xx. It also
+    // must not surface as a healthy empty layer — an adapter that THREW is the most
+    // degraded state there is, so say so rather than inheriting the last-good
+    // outcome along with the last-good features.
     features = hit?.features ?? [];
+    // observedAt is the ORIGINAL upstream read behind these fallback rows, taken
+    // from the previous outcome rather than from `hit.at` (when the cache was
+    // written) or Date.now() (when we gave up). Serving last-good rows under a
+    // fresh-looking stamp is the same age-of-response-not-age-of-data lie this
+    // change exists to remove.
+    outcome = {
+      ok: false,
+      observedAt: hit?.outcome.observedAt ?? Date.now(),
+      degradedReason: "adapter threw",
+    };
+    console.warn(`[signals:${id}] adapter threw:`, err);
   }
-  cache.set(id, { at: Date.now(), features });
-  return Response.json(payload(features), {
-    headers: cacheHeaders(source.refreshMs, features),
+  cache.set(id, { at: Date.now(), features, outcome });
+  return Response.json(payload(features, outcome), {
+    headers: cacheHeaders(source.refreshMs, features, outcome.ok),
   });
 }

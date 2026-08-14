@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // NOAA SWPC OVATION aurora forecast — the modelled probability (%) of visible
 // aurora on a 1°×1° global grid for the next ~30 min. Keyless JSON:
@@ -177,11 +178,13 @@ export const AURORA_SOURCE: SignalSource = {
         headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as OvationGrid;
-      return normalizeAurora(json);
+      // A quiet night is a real reading: every cell can sit under 5% while SWPC is
+      // perfectly healthy, so an empty grid here is observed, not degraded.
+      return observed(normalizeAurora(json));
     } catch {
-      return []; // dormant-safe
+      return degraded("fetch failed"); // dormant-safe
     }
   },
 };

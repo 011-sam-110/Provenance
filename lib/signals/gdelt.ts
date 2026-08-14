@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { countMagnitude } from "@/lib/signals/aggregate";
+import { markOutcome, observed } from "@/lib/signals/outcome";
 
 // GDELT — geolocated conflict and protest events, from the raw 15-minute EVENT
 // EXPORT rather than an API endpoint.
@@ -887,21 +888,43 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
       // This layer returned 300 points locally and 0 in production, silently,
       // because the catch below treated an unsupported decoder exactly like a
       // quiet news day. Say so instead — one labelled feature, never a bare [].
+      //
+      // The outcome and the notice say the same thing to two different readers: the
+      // notice is the on-map sentence a visitor reads, the outcome is the short
+      // machine reason the API envelope publishes. So these paths declare ok:false
+      // AROUND the notice rather than returning degraded()'s empty array — dropping
+      // the notice would delete the very affordance the comment above defends, and
+      // the diagnostic prose is far too long (and too raw) to be a `reason`.
       const blocked = windowBlocker();
-      if (blocked) return [dormantNotice(meta, blocked)];
+      if (blocked) {
+        return markOutcome([dormantNotice(meta, blocked)], {
+          ok: false,
+          at: Date.now(),
+          reason: "runtime lacks deflate-raw",
+        });
+      }
       try {
         const events = await fetchGdeltWindow();
         if (events.length === 0) {
-          return [
-            dormantNotice(
-              meta,
-              `No event rows came back for the last four hours, which GDELT does not normally do. ${describeDiag(windowDiag())}`,
-            ),
-          ];
+          return markOutcome(
+            [
+              dormantNotice(
+                meta,
+                `No event rows came back for the last four hours, which GDELT does not normally do. ${describeDiag(windowDiag())}`,
+              ),
+            ],
+            { ok: false, at: Date.now(), reason: "empty upstream window" },
+          );
         }
-        return aggregateGdeltByCountry(events, meta);
+        // `cache.at` is when the window was actually READ upstream, which on a cache
+        // hit is up to 15 minutes before this request. Stamping it with `now` would
+        // make a stale window look freshly observed.
+        return observed(aggregateGdeltByCountry(events, meta), cache?.at);
       } catch (e) {
-        return [dormantNotice(meta, `The GDELT export could not be read: ${(e as Error)?.message ?? "unknown error"}.`)];
+        return markOutcome(
+          [dormantNotice(meta, `The GDELT export could not be read: ${(e as Error)?.message ?? "unknown error"}.`)],
+          { ok: false, at: Date.now(), reason: "window read failed" },
+        );
       }
     },
   };

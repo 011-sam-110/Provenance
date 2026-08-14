@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { WORLD_CITIES, cityCoordParams, type City } from "@/lib/signals/cities.data";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Live weather at major world cities — keyless Open-Meteo "current" forecast.
 // One multi-coordinate request covers the whole WORLD_CITIES list; the response is
@@ -113,13 +114,13 @@ export const WEATHER_SOURCE: SignalSource = {
         `${ENDPOINT}?latitude=${latitude}&longitude=${longitude}` +
         `&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m&timezone=GMT`;
       const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = await res.json();
       // A single-coordinate request returns an object; our multi-city one returns an array.
       const points = Array.isArray(json) ? (json as MeteoPoint[]) : [json as MeteoPoint];
-      return normalizeWeather(points);
+      return observed(normalizeWeather(points));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

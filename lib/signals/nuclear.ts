@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { NUCLEAR_SNAPSHOT, NUCLEAR_SNAPSHOT_DATE } from "@/lib/signals/nuclear.data";
+import { degradedWith, observed } from "@/lib/signals/outcome";
 
 // Nuclear power plants — OpenStreetMap `power=plant` + `plant:source=nuclear`.
 // Keyless. ~216 named plants worldwide, so the payload is light; the PROBLEM is
@@ -112,6 +113,9 @@ export function normalizeOverpassNuclear(
 
 export const LIVE_DATASET_LABEL = "OpenStreetMap via Overpass (live)";
 export const SNAPSHOT_DATASET_LABEL = `OpenStreetMap via Overpass (snapshot ${NUCLEAR_SNAPSHOT_DATE})`;
+/** When the committed extract was ACTUALLY harvested from Overpass. The outcome
+ *  stamps the age of the DATA, so a snapshot answer must not read as a fresh one. */
+const SNAPSHOT_AT = Date.parse(`${NUCLEAR_SNAPSHOT_DATE}T00:00:00Z`);
 
 /** The committed extract, mapped once. Real OSM data — the layer's floor, not a stub. */
 let snapshotFeatures: SignalFeature[] | null = null;
@@ -196,12 +200,16 @@ export const NUCLEAR_SOURCE: SignalSource = {
   // OSM carries no country, so the directory ranks by capacity and shows the operator.
   directory: { detailKey: "operator", detailLabel: "Operator" },
   async fetch() {
-    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.features;
+    // A live Overpass answer is a real upstream read — stamped when it landed, not now.
+    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     // Start (or join) the background refresh and DO NOT wait for it: a late or
     // never-arriving Overpass answer must not delay the response. Its result lands
     // in `cache` and is served from the next call onwards. `refresh()` already
     // swallows its own failures, so there is nothing to reject here.
     void refresh();
-    return nuclearSnapshotFeatures();
+    // The snapshot is this layer's last-good copy: real, dated OSM data, so keep
+    // every row and declare that no live read stands behind it, stamped with when
+    // the extract was harvested. `degraded()` here would empty a complete world.
+    return degradedWith(nuclearSnapshotFeatures(), "no live overpass answer, serving snapshot", SNAPSHOT_AT);
   },
 };

@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Tropical cyclones — NOAA NHC active-storms feed (keyless). Named tropical
 // systems (depressions → major hurricanes) with live position, intensity and
@@ -121,11 +122,11 @@ export const TROPICAL_CYCLONES_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { activeStorms?: NhcStorm[] };
-      return normalizeCyclones(json);
+      return observed(normalizeCyclones(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

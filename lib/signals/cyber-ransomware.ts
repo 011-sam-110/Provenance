@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude, groupByCountry } from "@/lib/signals/aggregate";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Recent ransomware victims — keyless Ransomware.live. Aggregates the public
 // leak-site claims of the last days by victim COUNTRY (ISO-2), so the map shows
@@ -84,11 +85,12 @@ export const CYBER_RANSOMWARE_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as RwRow[];
-      return Array.isArray(json) ? normalizeRansomware(json) : [];
+      if (!Array.isArray(json)) return degraded("bad json");
+      return observed(normalizeRansomware(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

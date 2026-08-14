@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Space weather — NOAA SWPC. A global "status" signal: the planetary K-index
 // (geomagnetic activity, 0–9) plus the current NOAA storm scales — G (geomagnetic),
@@ -114,12 +115,12 @@ export const SPACE_WEATHER_SOURCE: SignalSource = {
         fetch(KP_URL, { signal: AbortSignal.timeout(15_000) }),
         fetch(SCALES_URL, { signal: AbortSignal.timeout(15_000) }),
       ]);
-      if (!kpRes.ok) return [];
+      if (!kpRes.ok) return degraded(`http ${kpRes.status}`);
       const kp = (await kpRes.json()) as KpRow[];
       const scales = scRes.ok ? ((await scRes.json()) as Record<string, ScaleBlock>) : {};
-      return normalizeSpaceWeather({ kp: Array.isArray(kp) ? kp : [], scales0: scales["0"] });
+      return observed(normalizeSpaceWeather({ kp: Array.isArray(kp) ? kp : [], scales0: scales["0"] }));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

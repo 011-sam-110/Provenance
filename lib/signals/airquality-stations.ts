@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Air quality — real station measurements (OpenAQ v3). This is the measured
 // counterpart to the modelled CAMS/Open-Meteo air-quality layer: actual PM2.5
@@ -89,17 +90,17 @@ export const AIR_QUALITY_STATIONS_SOURCE: SignalSource = {
   attribution: OPENAQ_ATTRIBUTION,
   async fetch() {
     const key = (process.env.OPENAQ_API_KEY ?? "").trim();
-    if (!key) return []; // dormant until the free key is set
+    if (!key) return degraded("no key"); // dormant until the free key is set
     try {
       const res = await fetch(PM25_LATEST_URL, {
         headers: { "X-API-Key": key, Accept: "application/json" },
         signal: AbortSignal.timeout(20_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { results?: AqLatest[] };
-      return normalizeAirStations(json);
+      return observed(normalizeAirStations(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

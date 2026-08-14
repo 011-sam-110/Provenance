@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude, groupByCountry } from "@/lib/signals/aggregate";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Live botnet command-and-control servers — keyless abuse.ch Feodo Tracker. The
 // feed is a conservative, high-confidence list of currently-tracked C2s (Emotet,
@@ -77,11 +78,13 @@ export const CYBER_C2_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as FeodoRow[];
-      return Array.isArray(json) ? normalizeFeodoC2(json) : [];
+      // An empty blocklist is a real answer (the feed is often sparse); a body that
+      // is not a list at all is not.
+      return Array.isArray(json) ? observed(normalizeFeodoC2(json)) : degraded("bad json");
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };

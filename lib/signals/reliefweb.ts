@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 import { markCoverage } from "@/lib/signals/coverage";
+import { degraded, observed } from "@/lib/signals/outcome";
 
 // Humanitarian disasters — ReliefWeb (UN OCHA). The authoritative register of
 // active humanitarian emergencies (conflict, flood, drought, epidemic, cyclone,
@@ -132,7 +133,7 @@ export const RELIEFWEB_SOURCE: SignalSource = {
   attribution: RELIEFWEB_ATTRIBUTION,
   async fetch() {
     const appname = (process.env.RELIEFWEB_APPNAME ?? "").trim();
-    if (!appname) return []; // dormant until an approved appname is set
+    if (!appname) return degraded("no key"); // dormant until an approved appname is set
     try {
       const url =
         `${ENDPOINT}?appname=${encodeURIComponent(appname)}&profile=full&limit=${RELIEFWEB_PAGE_LIMIT}` +
@@ -142,11 +143,13 @@ export const RELIEFWEB_SOURCE: SignalSource = {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(20_000),
       });
-      if (!res.ok) return [];
+      if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { data?: RwDisaster[] };
-      return normalizeReliefWeb(json);
+      // Marked on the array normalizeReliefWeb already carries coverage on — the
+      // two side channels use different symbols, so neither overwrites the other.
+      return observed(normalizeReliefWeb(json));
     } catch {
-      return [];
+      return degraded("fetch failed");
     }
   },
 };
