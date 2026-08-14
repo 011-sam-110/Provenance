@@ -562,6 +562,39 @@ a { color: var(--tn-accent); }
 .camera-detail dt { color: var(--tn-text-faint); }
 .attribution { font-size: 12px; color: var(--tn-text-muted); }
 
+/* ===================== Crawlable camera directory (/cameras) =====================
+   These pages sit OUTSIDE the .tn-terminal skin, so plain class selectors are safe
+   here - the specificity trap documented at the foot of this file applies only to
+   things the terminal also styles. Sizing is done with clamp() and auto-fill grids
+   rather than media queries, for the same reason: a media query adds no specificity
+   and is easy to lose. */
+.tn-dir { max-width: 940px; margin: 0 auto; padding: clamp(16px, 4vw, 32px); color: var(--tn-text); }
+.tn-dir h1 { font-size: clamp(22px, 4vw, 30px); line-height: 1.2; margin: 0 0 12px; text-wrap: balance; }
+.tn-dir h2 { font-size: 16px; margin: 0 0 4px; }
+.tn-dir-crumbs { font-size: 13px; color: var(--tn-text-muted); margin-bottom: 18px; }
+.tn-dir-crumbs a { color: var(--tn-text-muted); }
+.tn-dir-lede { font-size: 15px; line-height: 1.6; margin: 0 0 12px; max-width: 62ch; }
+.tn-dir-note { font-size: 13px; color: var(--tn-text-muted); line-height: 1.6; margin: 18px 0 0; max-width: 66ch; }
+.tn-dir-count { font-size: 13px; color: var(--tn-text-muted); margin: 0 0 8px; }
+.tn-dir-dim { color: var(--tn-text-faint); font-size: 12px; }
+.tn-dir-down { color: var(--tn-warn, #92600f); font-size: 12px; }
+
+.tn-dir-grid { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.tn-dir-card { border: 1px solid var(--tn-border); border-radius: 8px; padding: 14px; background: var(--tn-surface); }
+.tn-dir-sub { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+
+.tn-dir-regions { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.tn-dir-regions li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+  border-bottom: 1px solid var(--tn-border); padding-bottom: 6px; }
+
+.tn-dir-cams { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); font-size: 14px; }
+.tn-dir-cams li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+
+.tn-dir-pager { display: flex; gap: 16px; align-items: center; margin-top: 24px; font-size: 14px; }
+
 /* ===================== Share button (deep links) ===================== */
 .tn-share-btn { font-size: 12px; font-weight: 600; padding: 0 10px; white-space: nowrap; }
 .tn-share-btn.is-copied { color: var(--tn-live); border-color: var(--tn-live); }
