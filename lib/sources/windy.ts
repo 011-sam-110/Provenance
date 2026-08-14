@@ -340,3 +340,52 @@ export async function fetchWebcamById(
   const w = (await res.json()) as WindyWebcam;
   return normalizeWindyWebcam(w);
 }
+
+/**
+ * Every webcam Windy has inside one bounding box, plus Windy's OWN total for that
+ * box.
+ *
+ * WHY THIS EXISTS SEPARATELY FROM fetchWebcams(). The layer above builds a GLOBAL
+ * sample by fanning 14 fixed region boxes × 2 pages × 50 rows — an unranked ~2% of
+ * the catalogue. Measured 2026-08-15: that sample returns 0 webcams for Madrid,
+ * Paris, Barcelona and Amsterdam, while this endpoint returns 528 for Madrid alone
+ * (including Puerta del Sol and Plaza Canalejas). A user searching for a city needs
+ * the live answer, not our sample of it.
+ *
+ * `total` is Windy's count for the box, NOT our page size. Reporting the page size
+ * as if it were the total is exactly the coverage lie lib/signals/coverage.ts exists
+ * to prevent — "12 cameras in Madrid" would be a measurement we never made.
+ *
+ * Dormant-safe: no key, or any upstream failure, resolves to an empty result with
+ * `dormant` set. Never throws, never a 5xx, never invented webcams.
+ */
+export async function fetchWebcamsInBbox(
+  bbox: [number, number, number, number],
+  opts: { apiKey?: string; limit?: number; offset?: number } = {},
+): Promise<{ webcams: Webcam[]; total: number; dormant: boolean; note: string | null }> {
+  const apiKey = opts.apiKey ?? process.env.WINDY_WEBCAMS_API_KEY;
+  if (!apiKey) {
+    return { webcams: [], total: 0, dormant: true, note: "Live webcam search is switched off — no Windy API key is configured." };
+  }
+
+  // The free tier caps `limit` at 50 and `offset` at 1000; asking for more is a 400,
+  // not a bigger page.
+  const limit = Math.min(LIMIT, Math.max(1, opts.limit ?? LIMIT));
+  const offset = Math.min(1000, Math.max(0, opts.offset ?? 0));
+  const url = `${BASE}?bbox=${bbox.join(",")}&limit=${limit}&offset=${offset}&include=${INCLUDE}&lang=en`;
+
+  try {
+    const res = await fetch(url, { headers: headers(apiKey), signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) {
+      return { webcams: [], total: 0, dormant: false, note: `Windy answered ${res.status} for this area.` };
+    }
+    const json = (await res.json()) as WindyListResponse;
+    const webcams = normalizeWindy(json);
+    // Fall back to what we actually received rather than claiming zero: a missing
+    // `total` means Windy did not tell us, not that the box is empty.
+    const total = typeof json.total === "number" && Number.isFinite(json.total) ? json.total : webcams.length;
+    return { webcams, total, dormant: false, note: null };
+  } catch {
+    return { webcams: [], total: 0, dormant: false, note: "Could not reach Windy for this area." };
+  }
+}
