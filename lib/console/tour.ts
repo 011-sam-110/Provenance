@@ -165,7 +165,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "orientation",
     title: "The layout",
-    summary: "The five bands of the console, and what each one is for",
+    summary: "The bands the console is built from, and what each is for",
     icon: "▤",
     steps: [
       {
@@ -173,7 +173,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Start with the shape of it",
         body:
-          `${BRAND.name} is one screen in four horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
+          `${BRAND.name} is one screen in four horizontal bands, plus a fifth that drops in when something is breaking. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
         placement: "center",
       },
       {
