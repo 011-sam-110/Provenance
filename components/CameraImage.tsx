@@ -5,8 +5,12 @@ import { frameBucket } from "@/lib/cameras/freshness";
 
 export function CameraImage(props: {
   id: string; alt: string; attribution: string; license: string; refreshSeconds: number;
+  /** Optional: told whether each frame loaded, so a caller that rotates through many
+   *  cameras can stop re-fetching one that has stopped answering. Optional because
+   *  /camera/[id] and the existing camera wall neither need nor want the bookkeeping. */
+  onOutcome?: (ok: boolean) => void;
 }) {
-  const { id, alt, attribution, license, refreshSeconds } = props;
+  const { id, alt, attribution, license, refreshSeconds, onOutcome } = props;
   // The buster is derived from the CLOCK, not from how long this component has been
   // mounted (see frameBucket). The interval below only exists to re-render when the
   // window rolls over — it is not what produces the value, which is why a tile that
@@ -31,7 +35,7 @@ export function CameraImage(props: {
   if (failed) {
     return (
       <figure style={{ margin: 0 }} className="tn-cam-dead">
-        <span>This camera is no longer published by its operator.</span>
+        <span>This camera is not answering.</span>
       </figure>
     );
   }
@@ -42,7 +46,11 @@ export function CameraImage(props: {
       <img
         src={`/api/proxy?id=${encodeURIComponent(id)}&_=${bucket}`}
         alt={alt}
-        onError={() => setFailed(true)}
+        onLoad={() => onOutcome?.(true)}
+        onError={() => {
+          setFailed(true);
+          onOutcome?.(false);
+        }}
       />
       <figcaption><AttributionBadge attribution={attribution} license={license} /></figcaption>
     </figure>

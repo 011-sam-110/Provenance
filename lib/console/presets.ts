@@ -269,9 +269,9 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     mapCore: ["cameras", "webcams"],
     build: (rows = DEFAULT_BOARD_ROWS) => composeWall("map2d", rows, [
-      { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641" }] } },
-      { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744" }] } },
-      { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762" }] } },
+      { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641", t: "London: Trafalgar Square" }] } },
+      { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744", t: "Madrid: Cortes: Plaza Canalejas" }] } },
+      { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762", t: "Prague: Wenceslas Square" }] } },
       { type: "camslot", weight: 3, config: { streams: [] } },
   ]) },
 ];

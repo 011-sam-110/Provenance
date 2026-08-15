@@ -133,7 +133,10 @@ export default function CamslotPicker({
     for (const w of live?.hits ?? []) {
       if (!matchesFilter(w.categories)) continue;
       push({
-        ref: { k: "webcam", id: w.id },
+        // Carry the title with the ref: this webcam came from the live bbox search
+        // and is probably not in the cached directory, so without it the slot would
+        // caption itself "Webcam 1606332744" the moment the page reloads.
+        ref: { k: "webcam", id: w.id, t: w.title },
         label: w.title,
         sub: [w.city ?? w.region, w.country].filter(Boolean).join(" · ") || "webcam",
         live: true,
@@ -144,7 +147,7 @@ export default function CamslotPicker({
       if (!w.title?.toLowerCase().includes(needle)) continue;
       if (placesOnly) continue; // the cached layer carries no categories for older entries
       push({
-        ref: { k: "webcam", id: w.id },
+        ref: { k: "webcam", id: w.id, t: w.title },
         label: w.title,
         sub: [w.country, w.region].filter(Boolean).join(" · ") || "webcam",
       });
@@ -195,6 +198,7 @@ export default function CamslotPicker({
       return (
         webcams.find((w) => w.id === s.id)?.title ??
         live?.hits.find((h) => h.id === s.id)?.title ??
+        s.t ??
         s.id.replace(/^windy:/, "Webcam ")
       );
     }

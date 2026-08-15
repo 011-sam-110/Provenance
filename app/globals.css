@@ -4870,3 +4870,5 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-csd-live { align-self: flex-start; font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
 .tn-csd-full { font-size: 11px; color: var(--tn-down-ink); }
 .tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
+.tn-cs-note { padding: 3px 8px 5px; font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink); }
+.tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }

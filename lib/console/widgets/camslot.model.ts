@@ -12,7 +12,13 @@
 
 export type StreamRef =
   | { k: "cam"; id: string }
-  | { k: "webcam"; id: string }
+  /** `t` is a DISPLAY FALLBACK, not a source of truth. The cached webcam directory
+   *  only covers an unranked ~2% sample, so a webcam added from the live bbox search
+   *  — or seeded onto the default board from it — has no title to look up and would
+   *  otherwise render as "Webcam 1606332744". We keep the title we saw at the moment
+   *  it was added. The directory always wins when it has an answer; this is only
+   *  consulted on a miss. Display-only, escaped by React, never used to fetch. */
+  | { k: "webcam"; id: string; t?: string }
   | { k: "yt"; videoId: string };
 
 export interface CamslotConfig {
@@ -31,6 +37,7 @@ export const MAX_INTERVAL_MS = 300_000;
 export const MAX_STREAMS = 60;
 const MAX_ID_LEN = 128;
 const MAX_NAME_LEN = 80;
+const MAX_TITLE_LEN = 120;
 
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 /** Camera and webcam ids are our own registry keys (`tfl:JamCams_00001`,
@@ -86,10 +93,16 @@ export function parseStreamRef(raw: unknown): StreamRef | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const o = raw as Record<string, unknown>;
 
-  if (o.k === "cam" || o.k === "webcam") {
+  if (o.k === "cam") {
     const id = typeof o.id === "string" ? o.id : "";
     if (id.length > MAX_ID_LEN || !SOURCE_ID.test(id)) return null;
-    return { k: o.k, id };
+    return { k: "cam", id };
+  }
+  if (o.k === "webcam") {
+    const id = typeof o.id === "string" ? o.id : "";
+    if (id.length > MAX_ID_LEN || !SOURCE_ID.test(id)) return null;
+    const t = typeof o.t === "string" ? o.t.trim().slice(0, MAX_TITLE_LEN) : "";
+    return t ? { k: "webcam", id, t } : { k: "webcam", id };
   }
   if (o.k === "yt") {
     const v = typeof o.videoId === "string" ? o.videoId : "";

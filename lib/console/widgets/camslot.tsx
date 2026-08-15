@@ -22,6 +22,7 @@ import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
+import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
 import {
   sanitizeCamslotConfig,
   nextIndex,
@@ -36,6 +37,18 @@ const WEBCAM_REFRESH_SECONDS = 600;
  *  for a frame faster than any operator actually publishes one. */
 const FALLBACK_REFRESH_SECONDS = 300;
 
+/** A clock that ticks once a minute. The bench has a five-minute retry window, so
+ *  re-evaluating it every second would re-render every slot on the board sixty times
+ *  more often than the answer can change. */
+function useNowCoarse(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
 function useCamslotPaused(): boolean {
   return useSyncExternalStore(
     camslotPrefs.subscribe,
@@ -46,16 +59,20 @@ function useCamslotPaused(): boolean {
 
 /** The webcam analogue of CameraImage. /api/webcam-image re-resolves Windy's
  *  short-lived token server-side, so the client only ever holds an id. */
-function WebcamImage({ id, alt }: { id: string; alt: string }) {
+function WebcamImage({ id, alt, onOutcome }: { id: string; alt: string; onOutcome: (ok: boolean) => void }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [id]);
-  if (failed) return <div className="tn-cs-dead">This webcam is no longer published.</div>;
+  if (failed) return <div className="tn-cs-dead">This webcam is not answering.</div>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/api/webcam-image?id=${encodeURIComponent(id)}`}
       alt={alt}
-      onError={() => setFailed(true)}
+      onLoad={() => onOutcome(true)}
+      onError={() => {
+        setFailed(true);
+        onOutcome(false);
+      }}
     />
   );
 }
@@ -102,7 +119,11 @@ function StreamView({
   return (
     <div className="tn-cs-view" data-kind={stream.k} style={style}>
       {stream.k === "webcam" ? (
-        <WebcamImage id={stream.id} alt={label} />
+        <WebcamImage
+          id={stream.id}
+          alt={label}
+          onOutcome={(ok) => streamHealth.report(stream, ok)}
+        />
       ) : (
         <CameraImage
           id={stream.id}
@@ -110,6 +131,7 @@ function StreamView({
           attribution=""
           license=""
           refreshSeconds={refreshSeconds}
+          onOutcome={(ok) => streamHealth.report(stream, ok)}
         />
       )}
     </div>
@@ -120,8 +142,18 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   // Config is untrusted even here: it arrives from ?c= links and from live
   // configure() calls, so it is re-validated rather than cast.
   const cfg = useMemo(() => sanitizeCamslotConfig(config), [config]);
-  const streams = cfg.streams;
+  const all = cfg.streams;
   const paused = useCamslotPaused();
+
+  // A stream that has failed twice is BENCHED: taken out of rotation and not
+  // fetched again for five minutes. Without this a dead id is re-requested on every
+  // rotation pass — QA measured ~19 hits on one 404 in under two minutes, against
+  // free public feeds we have no contract with. `health` is an observation about
+  // now, deliberately not persisted and not in config.
+  const health = useStreamHealth();
+  const benchTick = useNowCoarse();
+  const streams = useMemo(() => liveStreams(all, health, benchTick), [all, health, benchTick]);
+  const unavailable = useMemo(() => benchedNote(all, health, benchTick), [all, health, benchTick]);
 
   const [i, setI] = useState(0);
   const [hovering, setHovering] = useState(false);
@@ -172,7 +204,9 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
     (s: StreamRef): string => {
       if (s.k === "yt") return "YouTube stream";
       // Falling back to the id is ugly but true; inventing a place name would not be.
-      if (s.k === "webcam") return webcamTitles?.get(s.id) ?? `Webcam ${s.id.replace(/^windy:/, "")}`;
+      // Directory first (authoritative and current), then the title we stored when
+      // it was added, then the bare id. Never a made-up name.
+      if (s.k === "webcam") return webcamTitles?.get(s.id) ?? s.t ?? `Webcam ${s.id.replace(/^windy:/, "")}`;
       return byId.get(s.id)?.name ?? s.id;
     },
     [byId, webcamTitles],
@@ -191,7 +225,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   useEffect(() => {
     report({
       alerts: [],
-      count: streams.length,
+      count: all.length,
       freshLabel: streams.length > 0 ? "live views" : undefined,
     });
   }, [report, streams.length]);
@@ -215,10 +249,25 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
     >
       {!current ? (
         <div className="tn-cs-empty">
-          <button className="tn-cs-add" onClick={() => setPicking(true)}>
-            ＋ Add a camera
-          </button>
-          <span>Search a place, or paste a YouTube link</span>
+          {/* Two different nothings, and conflating them would be a lie. An empty
+              playlist invites a pick; a playlist whose every stream has stopped
+              answering must say so, or the user reads "add a camera" and concludes
+              they never added one. */}
+          {all.length > 0 ? (
+            <>
+              <span className="tn-cs-note">{unavailable ?? "Nothing in this slot is answering."}</span>
+              <button className="tn-cs-add" onClick={() => setPicking(true)}>
+                Change what is in this slot
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="tn-cs-add" onClick={() => setPicking(true)}>
+                ＋ Add a camera
+              </button>
+              <span>Search a place, or paste a YouTube link</span>
+            </>
+          )}
         </div>
       ) : (
         <>
@@ -251,6 +300,8 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           </span>
         )}
       </div>
+
+      {unavailable && <p className="tn-cs-note">{unavailable}</p>}
 
       <div className="tn-cs-ctl">
         {streams.length > 1 && (
