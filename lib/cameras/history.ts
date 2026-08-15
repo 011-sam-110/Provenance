@@ -140,6 +140,43 @@ export function buildDayStrip(
   return buckets;
 }
 
+export interface CaptureFailureState {
+  count: number;
+  nextAttemptAt: number;
+}
+
+/**
+ * Minutes-scale backoff, matching spec §7.3's rule for the visible wall itself:
+ * "dead streams drop out of rotation after 2 consecutive failures, retried on a
+ * minutes-scale backoff". This capture path is a SEPARATE fetch from whatever the
+ * widget's own <img> is doing — CameraImage tracks its own onError state, this
+ * module cannot see it — so without its own backoff a dead id would have this
+ * module re-fetching it every refresh window forever, on top of anything else
+ * already retrying it.
+ */
+export const CAPTURE_BACKOFF_MS = 2 * 60 * 1000;
+const CAPTURE_FAILURE_THRESHOLD = 2;
+
+/** Should a capture attempt for a stream be skipped right now, given its last
+ *  recorded failure state? */
+export function shouldSkipCapture(state: CaptureFailureState | undefined, nowMs: number): boolean {
+  if (!state) return false;
+  return state.count >= CAPTURE_FAILURE_THRESHOLD && nowMs < state.nextAttemptAt;
+}
+
+/** The failure state after one more attempt resolves ok/not-ok. A success clears
+ *  the count outright — a stream that comes back should not still be "one failure
+ *  away" from a backoff it already earned its way out of. */
+export function nextCaptureFailureState(
+  prev: CaptureFailureState | undefined,
+  ok: boolean,
+  nowMs: number,
+): CaptureFailureState {
+  if (ok) return { count: 0, nextAttemptAt: 0 };
+  const count = (prev?.count ?? 0) + 1;
+  return { count, nextAttemptAt: nowMs + CAPTURE_BACKOFF_MS };
+}
+
 // ── IndexedDB adapter — untested (no IndexedDB in the node vitest environment). ──
 // Everything above this line is what decides what happens; everything below it is
 // plumbing that carries the decision out. Two object stores, not one: `meta` holds
@@ -233,6 +270,9 @@ function getIndex(db: IDBDatabase): Promise<{ meta: FrameMeta[]; usedBytes: numb
 // Last fingerprint seen per stream, so dedupe never needs a DB round trip on the
 // common case (this stream's own last capture, still in memory from last tick).
 const lastFingerprint = new Map<string, FrameFingerprint>();
+// Per-stream capture failure state, so a dead id backs off instead of being
+// re-fetched by this module every refresh window forever.
+const captureFailures = new Map<string, CaptureFailureState>();
 
 /**
  * Record one captured frame for `key` if it is not a duplicate of the last one
@@ -368,13 +408,19 @@ export function captureUrl(ref: StreamRef, nowMs: number, refreshSeconds: number
  */
 export function recordVisibleFrame(ref: StreamRef, refreshSeconds: number, active: boolean): void {
   if (!active || ref.k === "yt" || isHidden()) return;
-  const url = captureUrl(ref, Date.now(), refreshSeconds);
-  if (!url) return;
   const key = streamKey(ref);
-  const ts = Date.now();
+  const now = Date.now();
+  if (shouldSkipCapture(captureFailures.get(key), now)) return;
+  const url = captureUrl(ref, now, refreshSeconds);
+  if (!url) return;
   fetch(url, { cache: "force-cache" })
-    .then((res) => recordFrame(key, res, ts))
-    .catch(() => {});
+    .then((res) => {
+      captureFailures.set(key, nextCaptureFailureState(captureFailures.get(key), res.ok, now));
+      return recordFrame(key, res, now);
+    })
+    .catch(() => {
+      captureFailures.set(key, nextCaptureFailureState(captureFailures.get(key), false, now));
+    });
 }
 
 /** Test-only: reset module singletons between tests. */
@@ -382,6 +428,7 @@ export function __resetHistoryForTests(): void {
   dbPromise = null;
   indexPromise = null;
   lastFingerprint.clear();
+  captureFailures.clear();
   status = { pausedFull: false, usedBytes: 0 };
 }
 

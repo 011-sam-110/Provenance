@@ -3,7 +3,10 @@ import {
   isDuplicateFrame,
   selectEvictions,
   buildDayStrip,
+  shouldSkipCapture,
+  nextCaptureFailureState,
   HISTORY_CEILING_BYTES,
+  CAPTURE_BACKOFF_MS,
   type FrameMeta,
 } from "@/lib/cameras/history";
 
@@ -103,5 +106,41 @@ describe("buildDayStrip", () => {
   it("is safe for a degenerate zero-width window", () => {
     const buckets = buildDayStrip([5], 5, 5, 4);
     expect(buckets).toHaveLength(4);
+  });
+});
+
+describe("nextCaptureFailureState / shouldSkipCapture", () => {
+  it("does not skip a stream with no prior failures", () => {
+    expect(shouldSkipCapture(undefined, 1000)).toBe(false);
+  });
+
+  it("does not skip after a single failure — the spec's threshold is 2 consecutive", () => {
+    const s1 = nextCaptureFailureState(undefined, false, 1000);
+    expect(s1.count).toBe(1);
+    expect(shouldSkipCapture(s1, 1000)).toBe(false);
+  });
+
+  it("skips after the second consecutive failure, until the backoff window elapses", () => {
+    const s1 = nextCaptureFailureState(undefined, false, 1000);
+    const s2 = nextCaptureFailureState(s1, false, 1000);
+    expect(s2.count).toBe(2);
+    expect(shouldSkipCapture(s2, 1000)).toBe(true);
+    expect(shouldSkipCapture(s2, 1000 + CAPTURE_BACKOFF_MS - 1)).toBe(true);
+    expect(shouldSkipCapture(s2, 1000 + CAPTURE_BACKOFF_MS)).toBe(false);
+  });
+
+  it("a success clears the count outright, not just decrements it", () => {
+    const s1 = nextCaptureFailureState(undefined, false, 1000);
+    const s2 = nextCaptureFailureState(s1, false, 1000);
+    const recovered = nextCaptureFailureState(s2, true, 5000);
+    expect(recovered).toEqual({ count: 0, nextAttemptAt: 0 });
+    expect(shouldSkipCapture(recovered, 5000)).toBe(false);
+  });
+
+  it("keeps extending the backoff on repeated failures past the threshold", () => {
+    let state = undefined as ReturnType<typeof nextCaptureFailureState> | undefined;
+    for (let i = 0; i < 5; i++) state = nextCaptureFailureState(state, false, 1000);
+    expect(state!.count).toBe(5);
+    expect(state!.nextAttemptAt).toBe(1000 + CAPTURE_BACKOFF_MS);
   });
 });
