@@ -123,14 +123,20 @@ opens with no pins and map-picking has nothing to click.
 
 Per the product requirement — as many widgets as wanted, resized however wanted:
 
-- **The board scrolls on desktop**, opt-in per board. Today `.tn-cw-shell` is `overflow:hidden`
-  with rows fitted to the viewport by `visibleRows()`; anything past the budget is clipped and
-  unreachable — the documented failure in `presets.ts` where a Headlines card at rows 40–50 never
-  drew. Mobile already scrolls (`globals.css:2835`). Scoped so the other six boards keep their
-  fit-to-viewport guarantee.
-- **`MAX_WIDGETS` does not bind on this board.** Storage is not the constraint: 6 slots × 20
-  streams × 40 boards ≈ 508 KiB UTF-16 against ~5 MB. §4.2 and §7 handle the DOM and network.
-- **`MIN_W` drops to 2** on this board (6 across) from the global 3.
+- **Scrolling already works — CORRECTED 2026-08-15.** An earlier draft of this spec said the
+  desktop board does not scroll, citing `.tn-cw-shell{overflow:hidden}` at `globals.css:1485`.
+  That is the *outer band*. The actual scroll container is the inner grid `.tn-seg`, which is
+  `overflow-y:auto` (`globals.css:1514`), and `ConsoleWorkspace` already removed the `min-height`
+  that was defeating it — its comment at `:107-130` documents the measurement and the fix. Tall
+  boards scroll today. **No work required.**
+- **`MAX_WIDGETS` raised 50 → 200**, globally rather than per-board, with the reasoning recorded
+  in the constant. Storage is not the constraint (a `StreamRef` is ~35 bytes, so 200 slots × 10
+  streams ≈ 70 KB against ~5 MB); the network is bounded by §4.2; the real cost is the drag path
+  (§4.3), which is why it is 200 rather than unbounded.
+- **`MIN_W` is already 2 — CORRECTED.** `layoutGrid.ts:52` has had `MIN_W = 2` all along, so
+  6-across resizing works today. Only the legacy one-click width path (`resize.ts:2`
+  `MIN_WIDGET_SPAN = 3`) uses 3, and that is a set of preset buttons, not a constraint on
+  dragging. **No work required.**
 
 ### 4.2 Off-screen slots pause
 
@@ -252,12 +258,13 @@ full interception list, all verified:
 | # | What | Where |
 |---|---|---|
 | 1 | Suppress `cinematic.dive` for road pins. A road pin does **not** open a dossier today — it flies the map and lands a full-screen hero card. Webcam pins *are* the dossier case. Write the two separately. | `WorldMap.tsx:1075-1090`, `:1124-1130` |
-| 2 | Branch `onPick` on live-thumbnail markers. Above zoom 12 these DOM buttons `stopPropagation()`, so they never reach `map.on("click", CAM_LAYER)` — patching `camClick` alone breaks arming at exactly the zoom it is for. | `WorldMap.tsx:1421-1427`, `liveThumbnails.ts:19-60` |
+| 2 | **The worst of the seven — sharpened 2026-08-15 by map-arming, and worse than this spec first said.** Not "breaks above zoom 12": it breaks for *some pins and not others at the same zoom, side by side*. `liveThumbnails.ts:21` caps the pool at `MAX_THUMBS = 24` and `:86` skips any camera with `available !== true`, so above zoom 12 the top 24 available in-viewport cameras are DOM buttons that `stopPropagation()` while every other camera on the same screen is still a plain layer click. Arming would appear to work on one pin and silently fly the map into a cinematic dive on its neighbour. **A manual "I clicked a pin and it armed" proves nothing here — verification must hit a pin inside the thumbnail pool AND one outside it.** The fix is not "also patch `onPick`": `onPick` and `camClick` must call ONE shared resolver that reads the store at event time. | `WorldMap.tsx:1421-1427`, `liveThumbnails.ts:19-60,86` |
 | 3 | Define armed cluster behaviour. `clusterMaxZoom: 11` and every pin layer filters `["!",["has","point_count"]]`, so below zoom 12 an armed user clicks a badge and the map just zooms with the counter unmoved. Append leaves via `getClusterLeaves`, or show "zoom in to add these 61". **Never leave an armed click with no visible consequence.** | `cluster.ts:22-23`, `WorldMap.tsx:1240-1247` |
 | 4 | Resolve MapLibre's box zoom, which owns shift-drag and is enabled (no `boxZoom` option is passed). Prefer `map.boxZoom.disable()/.enable()` in the same effect that paints the ring — it must never desync. The constructor-only `boxZoomEnd` option suppresses fit-to-box *unconditionally* and would silently delete shift-drag zoom from all six existing boards. | `WorldMap.tsx:1389-1397` |
 | 5 | Sequence disarm **inside** `ConsoleShell`'s Escape switch, ahead of `selectionStore.clear()`. A separate listener races it and one Escape does both. Note that switch returns early when any `[role="dialog"]` is mounted — including `WidgetFrame`'s help and 🔔 popovers — so "arm, open help, Esc" would otherwise leave the slot armed. | `ConsoleShell.tsx:193,214-216` |
 | 6 | Find a home for the control. `MapControls.tsx` is dead code; `StageBar` self-gates off whenever a widget is focused; `WidgetFrame` has no slot or render-prop and its whole `<header>` carries `onPointerDown={onGrab}` which does not skip buttons. **Put arm/prev/next/pause in the widget body**, or amend `WidgetFrame` and own the blast radius. | `ConsoleWorkspace.tsx:226-228`, `WidgetFrame.tsx:141-194` |
-| 7 | Hold arm state **outside** `WorldMap`, read at event time via ref or `useSyncExternalStore`. `wireInteractions` is a `useCallback(…, [])` invoked once at mount, so any closed-over React value is frozen; and focusing a widget unmounts `<WorldMap/>` entirely. | `WorldMap.tsx:1074,1405`, `StageHost.tsx:33,37` |
+| 7 | Hold arm state **outside** `WorldMap`, read at event time via ref or `useSyncExternalStore`. **There are TWO mount-once closures, not one** (corrected 2026-08-15): `wireInteractions` is a `useCallback(…, [])` closing at `:1262`, *and* `createThumbnailManager` is handed `onPick` inside a second init effect closing at `:1563`. Any arm state either one reads directly is frozen at mount. Focusing a widget also unmounts `<WorldMap/>` entirely, so the store must outlive it. | `WorldMap.tsx:1074,1262,1421-1426,1563`, `StageHost.tsx:33,37` |
+| 8 | **Suspected, unverified — raised by map-arming.** `CAM_DOT_LAYER` (`:660-678`) has no `minzoom` and its `circle-opacity` interpolates to 0 from zoom 6, but paint opacity does not affect hit-testing — only `minzoom`/`filter` do. If so, between zoom 6 and 11 an armed click could append a camera from a pin the user **cannot see**: an append with no visible cause, which is worse than a crash. Verify in the browser before designing around it; the likely honest fix is a `minzoom` on the armed hit target rather than allowing an invisible pin to be clickable. | `WorldMap.tsx:660-678,1090` |
 
 Focus view and map-arming are therefore **mutually exclusive modes**. Focusing a slot clears its
 armed state, and the hint says so.
