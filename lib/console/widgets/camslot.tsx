@@ -277,7 +277,18 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
               <button className="tn-cs-add" onClick={() => openPicker()}>
                 ＋ Add a camera
               </button>
-              <span>Search a place, or paste a YouTube link</span>
+              {/* An EMPTY slot is the one you most want to fill from the map, and the
+                  header controls only render once a slot has something in it — so
+                  without this the primary path ("give me a blank tile, let me drag a
+                  box over Soho") had no way in. */}
+              <button
+                className={armed ? "tn-cs-add tn-cs-arm is-on" : "tn-cs-add tn-cs-arm"}
+                aria-pressed={armed}
+                onClick={() => armStore.toggle(instanceId)}
+              >
+                {armed ? "⊕ Picking from the map — Esc to stop" : "⊕ Pick from the map"}
+              </button>
+              <span>Search a place, paste a YouTube link, or pick on the map</span>
             </>
           )}
         </div>
