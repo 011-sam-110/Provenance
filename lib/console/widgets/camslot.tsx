@@ -20,6 +20,8 @@ import { useCameras } from "@/lib/cameras/useCameras";
 import { useWebcamTitles } from "@/lib/webcams/titles";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
+import CamslotDetail from "@/lib/console/widgets/camslot.detail";
+import { useHistoryRecorder } from "@/lib/cameras/history";
 import {
   sanitizeCamslotConfig,
   nextIndex,
@@ -72,6 +74,16 @@ function StreamView({
   hidden: boolean;
 }) {
   const style = hidden ? ({ display: "none" } as const) : undefined;
+
+  // Record the day strip from the WALL, not only from the focus view. Called before
+  // any early return, because hooks cannot be conditional. Without this the history
+  // only covers however long someone happened to keep a slot focused, which is not
+  // "throughout the day" by any reading. It is safe to call from several mounted
+  // places at once: the recorder dedupes on ETag/Content-Length, so a second caller
+  // for the same stream confirms the cache rather than writing twice.
+  // `!hidden` means the prefetched-but-invisible view does not record — a frame
+  // nobody has seen is not part of their day.
+  useHistoryRecorder(stream, refreshSeconds, !hidden);
 
   if (stream.k === "yt") {
     return (
@@ -303,6 +315,9 @@ export const CAMSLOT_WIDGET = {
   defaultHeight: 260,
   defaultConfig: { streams: [], intervalMs: 5000 },
   component: CamslotBody,
+  // The focus view: a scrubbable strip of the frames this browser already fetched.
+  // Same widget id, so it needs no new WIDGET_EXPLAINERS entry.
+  detail: CamslotDetail,
   help: {
     what: "A slot you fill with live views — road cameras, city webcams, or a YouTube stream you paste. Give it one and it stays put; give it several and it cycles through them, so a handful of tiles can hold dozens of places.",
     source: "Public transport-agency camera feeds, Windy webcams, and any YouTube video you paste",

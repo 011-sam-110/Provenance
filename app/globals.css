@@ -4848,3 +4848,25 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-cs-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
 .tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
 .tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+
+/* ── Camera slot day history (Streets M5) ─────────────────────────────────
+   Authored by the day-history agent and landed here because globals.css is
+   serialised through streets-lead. Every token it references already existed. */
+.tn-csd { display: flex; flex-direction: column; gap: 10px; padding: 4px; }
+.tn-csd-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tn-csd-tabs button { font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-csd-tabs button.active { background: var(--tn-accent-soft); color: var(--tn-text); border-color: var(--tn-border-strong); }
+.tn-csd-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--tn-surface-2); overflow: hidden; border-radius: 4px; }
+.tn-csd-stage img, .tn-csd-stage .tn-cs-frame { width: 100%; height: 100%; object-fit: contain; border: 0; display: block; }
+.tn-csd-name { font-size: 12.5px; font-weight: 620; }
+.tn-csd-scrub-label { font-weight: 400; color: var(--tn-text-faint); }
+.tn-csd-strip { display: flex; flex-direction: column; gap: 4px; }
+.tn-csd-strip-head { display: flex; justify-content: space-between; font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.tn-csd-strip-row { display: flex; gap: 1px; height: 28px; }
+.tn-csd-bucket { flex: 1; min-width: 2px; border: 0; border-radius: 1px; background: var(--tn-accent); cursor: pointer; padding: 0; }
+.tn-csd-bucket.gap { background: var(--tn-border); cursor: default; }
+.tn-csd-bucket.active { outline: 2px solid var(--tn-accent-strong); outline-offset: 1px; }
+.tn-csd-bucket:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-csd-live { align-self: flex-start; font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-csd-full { font-size: 11px; color: var(--tn-down-ink); }
+.tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
