@@ -62,7 +62,7 @@ export function benchedNote(streams: readonly StreamRef[], health: HealthMap, no
   if (n === streams.length) {
     return n === 1 ? "This stream is not answering." : `None of these ${n} streams are answering.`;
   }
-  return n === 1 ? "1 stream is not answering — skipped." : `${n} streams are not answering — skipped.`;
+  return n === 1 ? "1 stream is not answering, so it is skipped." : `${n} streams are not answering, so they are skipped.`;
 }
 
 /** Fold one outcome into a stream's record. Pure, so the reducer is testable. */

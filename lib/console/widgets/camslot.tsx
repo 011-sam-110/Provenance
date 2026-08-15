@@ -286,7 +286,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
                 aria-pressed={armed}
                 onClick={() => armStore.toggle(instanceId)}
               >
-                {armed ? "⊕ Picking from the map — Esc to stop" : "⊕ Pick from the map"}
+                {armed ? "⊕ Picking from the map. Esc to stop" : "⊕ Pick from the map"}
               </button>
               <span>Search a place, paste a YouTube link, or pick on the map</span>
             </>
@@ -356,7 +356,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           className={armed ? "tn-cs-arm is-on" : "tn-cs-arm"}
           aria-pressed={armed}
           aria-label={armed ? "Stop picking from the map" : "Pick cameras from the map"}
-          title={armed ? "Armed — click a pin or shift-drag a box on the map. Esc to stop." : "Pick from the map"}
+          title={armed ? "Armed. Click a pin or shift-drag a box on the map. Esc to stop." : "Pick from the map"}
           onClick={() => armStore.toggle(instanceId)}
         >
           ⊕
@@ -372,9 +372,9 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
       <span className="tn-cs-sr" aria-live="off">
         {labelFor(current)} — {safeIndex + 1} of {streams.length}
         {hasEmbed && streams.length > 1
-          ? " — rotation is off while a YouTube stream is in this slot"
+          ? ". Rotation is off while a YouTube stream is in this slot"
           : ""}
-        {paused && rotates ? " — paused" : ""}
+        {paused && rotates ? ". Paused" : ""}
       </span>
         </>
       )}
@@ -402,7 +402,7 @@ export const CAMSLOT_WIDGET = {
   // Same widget id, so it needs no new WIDGET_EXPLAINERS entry.
   detail: CamslotDetail,
   help: {
-    what: "A slot you fill with live views — road cameras, city webcams, or a YouTube stream you paste. Give it one and it stays put; give it several and it cycles through them, so a handful of tiles can hold dozens of places.",
+    what: "A slot you fill with live views: road cameras, city webcams, or a YouTube stream you paste. Give it one and it stays put; give it several and it cycles through them, so a handful of tiles can hold dozens of places.",
     source: "Public transport-agency camera feeds, Windy webcams, and any YouTube video you paste",
   },
 };

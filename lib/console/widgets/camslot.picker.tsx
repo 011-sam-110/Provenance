@@ -228,7 +228,7 @@ export default function CamslotPicker({
           onKeyDown={(e) => {
             if (e.key === "Escape") onClose();
           }}
-          placeholder="Search a place — Madrid, Trafalgar Square, Shibuya…"
+          placeholder="Search a place: Madrid, Trafalgar Square, Shibuya…"
           aria-label="Search cameras and webcams"
         />
         <button onClick={onClose} aria-label="Close">
@@ -267,7 +267,7 @@ export default function CamslotPicker({
               ? live.note
               : live
                 ? `Windy has no webcams near ${live.place}.`
-                : `Nothing matching “${q.trim()}”. Try a city or a landmark — the live search needs a place it can find on a map.`}
+                : `Nothing matching “${q.trim()}”. Try a city or a landmark, since the live search needs a place it can find on a map.`}
           </p>
         )}
         {results.map((r) => {

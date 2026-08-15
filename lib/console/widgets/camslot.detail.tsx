@@ -143,7 +143,7 @@ export default function CamslotDetail({ config }: WidgetDetailProps) {
   if (streams.length === 0) {
     return (
       <div className="tn-csd">
-        <p className="tn-w-empty">This slot has no cameras yet — add one from the wall tile first.</p>
+        <p className="tn-w-empty">This slot has no cameras yet. Add one from the wall tile first.</p>
       </div>
     );
   }
@@ -175,7 +175,7 @@ export default function CamslotDetail({ config }: WidgetDetailProps) {
           <div className="tn-csd-stage">
             {scrubUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={scrubUrl} alt={`${labelFor(selected)} — captured earlier`} />
+              <img src={scrubUrl} alt={`${labelFor(selected)}, captured earlier`} />
             ) : selected.k === "yt" ? (
               <iframe
                 className="tn-cs-frame"
@@ -199,24 +199,24 @@ export default function CamslotDetail({ config }: WidgetDetailProps) {
 
           <div className="tn-csd-name">
             {labelFor(selected)}
-            {scrubTs != null && <span className="tn-csd-scrub-label"> — captured {formatClock(scrubTs)}</span>}
+            {scrubTs != null && <span className="tn-csd-scrub-label">, captured {formatClock(scrubTs)}</span>}
           </div>
 
           {selected.k === "yt" ? (
             <p className="tn-w-empty">
-              No history for a YouTube stream — the embed is opaque, so there is no frame to capture.
+              No history for a YouTube stream. The embed is opaque, so there is no frame to capture.
             </p>
           ) : (
             <>
               {status.pausedFull && (
                 <p className="tn-csd-full">
-                  History storage is full — older frames are being dropped to make room for new ones.
+                  History storage is full, so older frames are being dropped to make room for new ones.
                   Nothing is lost from the live view, only from what can be scrubbed back to.
                 </p>
               )}
               <DayStrip buckets={buckets} selectedTs={scrubTs} onScrub={onScrub} />
               <p className="tn-csd-caveat">
-                Only covers time this board was open on screen — a backgrounded or closed tab
+                Only covers time this board was open on screen. A backgrounded or closed tab
                 captures nothing.
                 {streams.length > 1 &&
                   ` With ${streams.length} streams sharing this slot's rotation, each one is only on

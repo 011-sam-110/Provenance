@@ -290,7 +290,7 @@ export function describeAppend(plan: AppendPlan, opts: AppendNoteOpts): string {
 
   if (added === 0 && refused === 0) {
     return duplicates > 0
-      ? "Already in this slot — nothing added."
+      ? "Already in this slot, so nothing was added."
       : "Nothing here to add.";
   }
   if (added === 0) {
@@ -310,7 +310,7 @@ export function describeAppend(plan: AppendPlan, opts: AppendNoteOpts): string {
   }
   if (duplicates > 0) bits.push(`${duplicates} already in the slot.`);
   if (refused > 0) {
-    bits.push(`${refused} refused — the cap is ${opts.cap}${capReason(opts)}.`);
+    bits.push(`${refused} refused, because the cap is ${opts.cap}${capReason(opts)}.`);
     // Only offer the "drop the fastest one" lever when there IS a fastest one to
     // drop. Otherwise a second slot is the honest answer, and it is the shape of
     // the product anyway: a wall is made of slots.

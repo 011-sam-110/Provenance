@@ -71,12 +71,12 @@ describe("benchedNote", () => {
       "cam:b": { failures: 2, lastFailedAt: T },
       "cam:c": { failures: 3, lastFailedAt: T },
     };
-    expect(benchedNote(streams, health, T + 10)).toBe("2 streams are not answering — skipped.");
+    expect(benchedNote(streams, health, T + 10)).toBe("2 streams are not answering, so they are skipped.");
   });
 
   it("uses singular for one", () => {
     const health: HealthMap = { "cam:b": { failures: 2, lastFailedAt: T } };
-    expect(benchedNote([cam("a"), cam("b")], health, T + 10)).toBe("1 stream is not answering — skipped.");
+    expect(benchedNote([cam("a"), cam("b")], health, T + 10)).toBe("1 stream is not answering, so it is skipped.");
   });
 
   it("says something different when NOTHING answers, rather than 'skipped'", () => {
