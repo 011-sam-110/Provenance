@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Next.js-15-black?logo=next.js" alt="Next.js 15">
   <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/MapLibre%20GL-v5-1a73e8" alt="MapLibre GL v5">
-  <img src="https://img.shields.io/badge/unit%20tests-1%2C726-2ea44f" alt="1,726 unit tests">
+  <img src="https://img.shields.io/badge/unit%20tests-2%2C037-2ea44f" alt="2,037 unit tests">
 </p>
 
 Governments, space agencies, seismologists and UN clusters publish an enormous amount of live data for free, in formats almost nobody can read. Provenance renders **41 of those feeds on one globe**: government road cameras, aircraft, satellites, earthquakes, wildfires, undersea cables, national internet shutdowns, conflict, displacement, markets and news. Every layer carries the body that published it, how its numbers were arrived at, and what it *cannot* tell you. The core map takes no key and no login.
@@ -45,6 +45,12 @@ Every figure above will drift. `CLAUDE.md` holds the command to re-measure each 
 - **A landing page that cannot drift** - the hero globe, source wall and live ledger at `/` are generated from the same `SOURCE_CATALOG` the app renders from, so adding an adapter updates the marketing site with no marketing-side edit and there is not a hand-typed figure on it.
 
 ## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/streets.png" width="900" alt="The Streets board: six camera-wall tiles showing Trafalgar Square, Plaza Canalejas, Wenceslas Square and three London road cameras at night, beside a dark map of southern England carrying camera and webcam clusters">
+</p>
+
+**Streets** is a board of camera walls you compose yourself. Every tile holds a *list* of live views rather than one, so `47/60` is a slot cycling through the sixtieth camera it was given - sixty road cameras added in a single drag of a box across London. Search a place, paste a YouTube link, or arm a tile and pick straight off the map.
 
 | The console at `/app`: brief, hazards and the live map | Cameras clustered over London |
 |---|---|
