@@ -33,6 +33,7 @@ import { terminalModeStore, useTerminalMode } from "@/lib/terminal/mode";
 import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
+import { armStore } from "@/lib/console/widgets/camslot.arm";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import BreakingBanner from "@/components/shell/BreakingBanner";
@@ -212,6 +213,16 @@ export default function ConsoleShell() {
           if (focusStageSearch()) e.preventDefault();
           break;
         case "Escape":
+          // Escape leaves the innermost thing first, and a map armed to fill a slot
+          // is inner to a selection. Sequenced HERE rather than from a second
+          // listener, because two listeners would both fire on the same keydown and
+          // one press would end arming AND silently clear the user's selection —
+          // work they never asked to lose. Armed: end the mode, nothing else. A
+          // second Escape then clears the selection as it always did.
+          if (armStore.get()) {
+            armStore.disarm();
+            break;
+          }
           selectionStore.clear();
           break;
         default:
@@ -220,6 +231,37 @@ export default function ConsoleShell() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ── Arming is a MAP mode, so anything that takes the map away ends it ──────
+  //
+  // Focusing a widget unmounts <WorldMap/> entirely (StageHost.tsx:33,37), and
+  // switching board replaces the widget the arm points at. Either way the ring is
+  // gone while the mode is still on — and a mode you cannot see is one that turns
+  // the next pin click into a silent append to a slot that is no longer on screen.
+  //
+  // Store subscriptions rather than hooks on purpose: the shell has no reason to
+  // re-render for this, and useShellLayout() here would re-render the whole terminal
+  // on every layout write, including each armed append.
+  useEffect(() => {
+    let lastFocus = shellLayoutStore.get().focusedWidgetId;
+    let lastPreset = activePresetStore.get();
+    const offLayout = shellLayoutStore.subscribe(() => {
+      const now = shellLayoutStore.get().focusedWidgetId;
+      if (now === lastFocus) return;
+      lastFocus = now;
+      if (now) armStore.disarm(); // entering focus, not leaving it
+    });
+    const offPreset = activePresetStore.subscribe(() => {
+      const now = activePresetStore.get();
+      if (now === lastPreset) return;
+      lastPreset = now;
+      armStore.disarm();
+    });
+    return () => {
+      offLayout();
+      offPreset();
+    };
   }, []);
 
   // The ⌘K palette dispatches a `tn-toast` CustomEvent (e.g. the 50-widget cap).
