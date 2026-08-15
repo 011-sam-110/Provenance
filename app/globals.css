@@ -4843,3 +4843,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-cs-picker-chosen button { font-family: var(--tn-mono); font-size: 9.5px; padding: 2px 6px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 @media (prefers-reduced-motion: reduce) { .tn-cs-ctl { transition: none; } }
+.tn-cs-picker-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tn-cs-chip { font-family: var(--tn-mono); font-size: 9.5px; letter-spacing: 0.04em; padding: 3px 7px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-cs-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
+.tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
+.tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }

@@ -12,7 +12,11 @@ export type Bbox = [number, number, number, number];
 /** Mean metres per degree of latitude. Longitude shrinks by cos(lat). */
 const KM_PER_DEG_LAT = 111.32;
 
-export const DEFAULT_RADIUS_KM = 15;
+// 25km, measured rather than picked: at 15km Tokyo's box holds 33 webcams and at
+// 25km it holds 55, while Madrid and London are already over the free tier's
+// 50-row page cap at either radius, so the wider box costs nothing there. Beyond
+// ~40km the gain flattens and the box stops meaning "this city".
+export const DEFAULT_RADIUS_KM = 25;
 const MIN_RADIUS_KM = 1;
 const MAX_RADIUS_KM = 200;
 

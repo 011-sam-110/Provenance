@@ -184,30 +184,16 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
     });
   }, [report, streams.length]);
 
-  if (streams.length === 0) {
-    return (
-      <div className="tn-cs" ref={hostRef}>
-        <div className="tn-cs-empty">
-          <button className="tn-cs-add" onClick={() => setPicking(true)}>
-            ＋ Add a camera
-          </button>
-          <span>Search a place, or paste a YouTube link</span>
-        </div>
-        {picking && (
-          <CamslotPicker
-            instanceId={instanceId}
-            streams={streams}
-            onClose={() => setPicking(false)}
-          />
-        )}
-      </div>
-    );
-  }
-
   const safeIndex = i < streams.length ? i : 0;
-  const current = streams[safeIndex];
+  // Typed as possibly-absent on purpose: an empty playlist is a normal state, and
+  // narrowing on `current` below is what keeps the populated branch type-safe.
+  const current: StreamRef | undefined = streams[safeIndex];
   const upcoming = rotates ? streams[nextIndex(safeIndex, streams.length)] : undefined;
 
+  // ONE tree, both states. The picker used to be rendered inside each branch, so
+  // adding the first camera moved it to a different position in the tree — React
+  // unmounted and remounted it, and the user's search results and query vanished at
+  // the exact moment they were using them.
   return (
     <div
       className="tn-cs"
@@ -215,6 +201,15 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
     >
+      {!current ? (
+        <div className="tn-cs-empty">
+          <button className="tn-cs-add" onClick={() => setPicking(true)}>
+            ＋ Add a camera
+          </button>
+          <span>Search a place, or paste a YouTube link</span>
+        </div>
+      ) : (
+        <>
       <div className="tn-cs-stage" data-fit={cfg.fit ?? "cover"}>
         {/* Rule 1: exactly the current view, plus one hidden prefetch. Never the
             whole playlist — that is what would multiply fetches. */}
@@ -286,6 +281,8 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           : ""}
         {paused && rotates ? " — paused" : ""}
       </span>
+        </>
+      )}
 
       {picking && (
         <CamslotPicker

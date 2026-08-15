@@ -1,13 +1,18 @@
 "use client";
 // Search-and-add for a camera slot.
 //
-// v1 searches the pools the console already holds: the road-camera list (a shared,
-// ref-counted poller) and the cached webcam layer. That layer is a PARTIAL sample of
-// Windy's catalogue built from fixed regional queries — measured, Madrid returns 0
-// from it and 528 from Windy's own bbox endpoint — so the empty state has to say so
-// rather than imply the city has no cameras. The live bbox search that fixes it
-// properly is M2.
-import { useMemo, useState } from "react";
+// TWO POOLS, DELIBERATELY IN THIS ORDER.
+//   1. What the console already holds — the road-camera list (a shared, ref-counted
+//      poller) and the cached webcam layer. Instant, no upstream call.
+//   2. Windy, live, for the place you typed. The cached layer is an unranked ~2%
+//      sample built from 14 fixed region boxes; measured 2026-08-15 it holds 0
+//      webcams for Madrid, Paris, Barcelona and Amsterdam, while Windy's own answer
+//      for the Madrid box is 528. Without step 2 this search tells a user there are
+//      no cameras in cities full of them.
+//
+// The live step costs a geocode plus a Windy call, so it only runs when the user
+// stops typing, and never on open.
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCameras } from "@/lib/cameras/useCameras";
 import { useWebcamDirectory } from "@/lib/webcams/titles";
 import {
@@ -17,7 +22,30 @@ import {
   type StreamRef,
 } from "@/lib/console/widgets/camslot.model";
 
-const MAX_RESULTS = 40;
+const MAX_RESULTS = 60;
+const DEBOUNCE_MS = 450;
+
+/** Windy's own category names that mean "somewhere people walk". Matched
+ *  case-insensitively against the `categories` array /api/webcam-search now emits —
+ *  which is a far better filter than matching words in a title. */
+const PLACE_CATEGORIES = new Set(["square", "city", "harbor", "park"]);
+
+interface LiveHit {
+  id: string;
+  title: string;
+  country?: string;
+  region?: string;
+  city?: string;
+  categories?: string[];
+}
+
+interface Row {
+  ref: StreamRef;
+  label: string;
+  sub: string;
+  live?: boolean;
+  categories?: string[];
+}
 
 export default function CamslotPicker({
   instanceId,
@@ -31,40 +59,108 @@ export default function CamslotPicker({
   const [q, setQ] = useState("");
   const [paste, setPaste] = useState("");
   const [pasteError, setPasteError] = useState<string | null>(null);
+  const [placesOnly, setPlacesOnly] = useState(false);
+  const [live, setLive] = useState<{ hits: LiveHit[]; total: number; place: string; note: string | null } | null>(null);
+  const [searching, setSearching] = useState(false);
   const { cameras } = useCameras();
   // Shared with the slot captions, so the ~76 KB directory is fetched once for the
   // session rather than once per widget on screen.
   const webcams = useWebcamDirectory();
+  const seq = useRef(0);
 
   const chosen = useMemo(() => new Set(streams.map(streamKey)), [streams]);
+  const needle = q.trim().toLowerCase();
+
+  // --- Live search: geocode the query, then ask Windy for that box ------------
+  useEffect(() => {
+    if (needle.length < 3) {
+      setLive(null);
+      setSearching(false);
+      return;
+    }
+    const mine = ++seq.current;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const g = await fetch(`/api/geocode?q=${encodeURIComponent(needle)}`, { cache: "no-store" })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null);
+        const place = g?.results?.[0];
+        if (!place || !Number.isFinite(place.lat) || !Number.isFinite(place.lon)) {
+          if (mine === seq.current) {
+            setLive(null);
+            setSearching(false);
+          }
+          return;
+        }
+        const r = await fetch(`/api/webcam-search?lat=${place.lat}&lon=${place.lon}`, { cache: "no-store" })
+          .then((res) => (res.ok ? res.json() : null))
+          .catch(() => null);
+        if (mine !== seq.current) return;
+        setLive(
+          r
+            ? {
+                hits: Array.isArray(r.webcams) ? r.webcams : [],
+                total: typeof r.total === "number" ? r.total : 0,
+                place: place.name ?? needle,
+                note: r.note ?? null,
+              }
+            : null,
+        );
+      } finally {
+        if (mine === seq.current) setSearching(false);
+      }
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [needle]);
+
+  const matchesFilter = (cats: string[] | undefined) =>
+    !placesOnly || (cats ?? []).some((c) => PLACE_CATEGORIES.has(c.toLowerCase()));
 
   const results = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (needle.length < 2) return [] as { ref: StreamRef; label: string; sub: string }[];
-    const out: { ref: StreamRef; label: string; sub: string }[] = [];
+    if (needle.length < 2) return [] as Row[];
+    const out: Row[] = [];
+    const seen = new Set<string>();
 
-    // Webcams first: they are the city-square views this feature exists for, while
-    // road cameras are mostly junctions and carriageways.
+    const push = (row: Row) => {
+      const key = streamKey(row.ref);
+      if (seen.has(key) || out.length >= MAX_RESULTS) return;
+      seen.add(key);
+      out.push(row);
+    };
+
+    // Live hits first — they are the answer to what the user actually typed.
+    for (const w of live?.hits ?? []) {
+      if (!matchesFilter(w.categories)) continue;
+      push({
+        ref: { k: "webcam", id: w.id },
+        label: w.title,
+        sub: [w.city ?? w.region, w.country].filter(Boolean).join(" · ") || "webcam",
+        live: true,
+        categories: w.categories,
+      });
+    }
     for (const w of webcams) {
-      if (out.length >= MAX_RESULTS) break;
       if (!w.title?.toLowerCase().includes(needle)) continue;
-      out.push({
+      if (placesOnly) continue; // the cached layer carries no categories for older entries
+      push({
         ref: { k: "webcam", id: w.id },
         label: w.title,
         sub: [w.country, w.region].filter(Boolean).join(" · ") || "webcam",
       });
     }
-    for (const c of cameras) {
-      if (out.length >= MAX_RESULTS) break;
-      if (!c.name.toLowerCase().includes(needle)) continue;
-      out.push({
-        ref: { k: "cam", id: c.id },
-        label: c.name,
-        sub: `${c.country} · new frame every ${c.refreshSeconds}s`,
-      });
+    if (!placesOnly) {
+      for (const c of cameras) {
+        if (!c.name.toLowerCase().includes(needle)) continue;
+        push({
+          ref: { k: "cam", id: c.id },
+          label: c.name,
+          sub: `${c.country} · new frame every ${c.refreshSeconds}s`,
+        });
+      }
     }
     return out;
-  }, [q, webcams, cameras]);
+  }, [needle, webcams, cameras, live, placesOnly]);
 
   const commit = (next: StreamRef[]) => {
     import("@/lib/console/store").then((m) =>
@@ -77,6 +173,18 @@ export default function CamslotPicker({
     commit([...streams, ref]);
   };
 
+  const addAllShown = () => {
+    const room = MAX_STREAMS - streams.length;
+    if (room <= 0) return;
+    const next = [...streams];
+    for (const r of results) {
+      if (next.length >= MAX_STREAMS) break;
+      if (chosen.has(streamKey(r.ref))) continue;
+      next.push(r.ref);
+    }
+    commit(next);
+  };
+
   const remove = (key: string) => commit(streams.filter((s) => streamKey(s) !== key));
 
   // Chips name the place, not the internal key. Falling back to the id is ugly but
@@ -84,7 +192,11 @@ export default function CamslotPicker({
   const labelFor = (s: StreamRef): string => {
     if (s.k === "yt") return "YouTube stream";
     if (s.k === "webcam") {
-      return webcams.find((w) => w.id === s.id)?.title ?? s.id.replace(/^windy:/, "Webcam ");
+      return (
+        webcams.find((w) => w.id === s.id)?.title ??
+        live?.hits.find((h) => h.id === s.id)?.title ??
+        s.id.replace(/^windy:/, "Webcam ")
+      );
     }
     return cameras.find((c) => c.id === s.id)?.name ?? s.id;
   };
@@ -112,7 +224,7 @@ export default function CamslotPicker({
           onKeyDown={(e) => {
             if (e.key === "Escape") onClose();
           }}
-          placeholder="Search a place — Trafalgar, Piccadilly, Piazza…"
+          placeholder="Search a place — Madrid, Trafalgar Square, Shibuya…"
           aria-label="Search cameras and webcams"
         />
         <button onClick={onClose} aria-label="Close">
@@ -120,11 +232,38 @@ export default function CamslotPicker({
         </button>
       </div>
 
+      <div className="tn-cs-picker-meta">
+        <button
+          className={placesOnly ? "tn-cs-chip is-on" : "tn-cs-chip"}
+          aria-pressed={placesOnly}
+          onClick={() => setPlacesOnly((v) => !v)}
+          title="Windy's own categories: squares, city views, harbours and parks"
+        >
+          Squares &amp; public spaces
+        </button>
+        {searching && <span className="tn-cs-picker-label">searching {q.trim()}…</span>}
+        {!searching && live && (
+          <span className="tn-cs-picker-label">
+            {live.total > live.hits.length
+              ? `${live.hits.length} of ${live.total} near ${live.place}`
+              : `${live.hits.length} near ${live.place}`}
+          </span>
+        )}
+        {results.length > 0 && !full && (
+          <button className="tn-cs-chip" onClick={addAllShown}>
+            ＋ Add all {Math.min(results.length, MAX_STREAMS - streams.length)}
+          </button>
+        )}
+      </div>
+
       <div className="tn-cs-picker-list">
-        {q.trim().length >= 2 && results.length === 0 && (
+        {needle.length >= 2 && !searching && results.length === 0 && (
           <p className="tn-w-empty">
-            Nothing matching “{q.trim()}” in the cameras loaded here. The webcam layer is a partial
-            sample of Windy&rsquo;s catalogue, so this is not evidence there is no camera there.
+            {live?.note
+              ? live.note
+              : live
+                ? `Windy has no webcams near ${live.place}.`
+                : `Nothing matching “${q.trim()}”. Try a city or a landmark — the live search needs a place it can find on a map.`}
           </p>
         )}
         {results.map((r) => {
@@ -138,7 +277,10 @@ export default function CamslotPicker({
               onClick={() => add(r.ref)}
             >
               <span className="tn-cs-hit-name">{r.label}</span>
-              <span className="tn-cs-hit-sub">{already ? "already in this slot" : r.sub}</span>
+              <span className="tn-cs-hit-sub">
+                {already ? "already in this slot" : r.sub}
+                {r.live && !already && " · live"}
+              </span>
             </button>
           );
         })}
