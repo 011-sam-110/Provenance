@@ -4912,3 +4912,4 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   .tn-cs { height: auto; }
   .tn-cs-stage { aspect-ratio: 16 / 9; min-height: 0; flex: none; }
 }
+.tn-cs-arm.is-on { border-color: var(--tn-accent); background: var(--tn-accent-soft); color: var(--tn-accent-strong); font-weight: 700; }

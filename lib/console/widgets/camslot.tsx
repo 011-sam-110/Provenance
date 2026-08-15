@@ -23,6 +23,7 @@ import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
 import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
+import { armStore, useIsArmed } from "@/lib/console/widgets/camslot.arm";
 import {
   sanitizeCamslotConfig,
   nextIndex,
@@ -160,6 +161,17 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const [visible, setVisible] = useState(true);
   const [picking, setPicking] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const armed = useIsArmed(instanceId);
+
+  // Arming and the picker are two routes to the same append, so being in both at
+  // once is meaningless — and it is also what would strand a ring behind a closed
+  // dialog, because ConsoleShell's Escape handler returns early whenever any
+  // [role="dialog"] is mounted and the picker is one. Opening the picker ends
+  // arming, which removes the collision without touching that shared guard.
+  const openPicker = useCallback(() => {
+    armStore.disarm();
+    setPicking(true);
+  }, []);
 
   // Names and cadences come from the shared camera poller — ref-counted, so several
   // slots share one 60s poll instead of each starting their own.
@@ -256,13 +268,13 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           {all.length > 0 ? (
             <>
               <span className="tn-cs-note">{unavailable ?? "Nothing in this slot is answering."}</span>
-              <button className="tn-cs-add" onClick={() => setPicking(true)}>
+              <button className="tn-cs-add" onClick={() => openPicker()}>
                 Change what is in this slot
               </button>
             </>
           ) : (
             <>
-              <button className="tn-cs-add" onClick={() => setPicking(true)}>
+              <button className="tn-cs-add" onClick={() => openPicker()}>
                 ＋ Add a camera
               </button>
               <span>Search a place, or paste a YouTube link</span>
@@ -329,7 +341,16 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
             {paused ? "▶" : "❙❙"}
           </button>
         )}
-        <button aria-label="Add or remove cameras" onClick={() => setPicking(true)}>
+        <button
+          className={armed ? "tn-cs-arm is-on" : "tn-cs-arm"}
+          aria-pressed={armed}
+          aria-label={armed ? "Stop picking from the map" : "Pick cameras from the map"}
+          title={armed ? "Armed — click a pin or shift-drag a box on the map. Esc to stop." : "Pick from the map"}
+          onClick={() => armStore.toggle(instanceId)}
+        >
+          ⊕
+        </button>
+        <button aria-label="Add or remove cameras" onClick={() => openPicker()}>
           ＋
         </button>
       </div>
