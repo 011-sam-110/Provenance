@@ -4898,3 +4898,17 @@ box-shadow:0 6px 22px rgba(20,28,38,.18)}
 .tn-arm-hint kbd{font:inherit;font-size:11px;padding:1px 6px;border-radius:4px;
 border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-arm-box{border:1px solid var(--tn-accent);background:var(--tn-accent-soft);border-radius:2px}
+
+/* A camera slot must never collapse to its chrome.
+   `.tn-cs` is height:100% with a flex:1 stage, which works while an ancestor has a
+   DEFINITE height — true on the desktop grid. Below 900px the mobile rules lift
+   max-height off `.tn-seg` and the widget bodies, so the ancestor becomes auto and
+   height:100% resolves against auto: the stage collapsed to 0 and every seeded slot
+   on Streets rendered 25px tall, caption only, no picture. Measured at 390x844.
+   A camera frame is ~16:9, so that is what the stage falls back to when nothing
+   above it has a height to divide up. */
+.tn-cs-stage { min-height: 120px; }
+@media (max-width: 900px) {
+  .tn-cs { height: auto; }
+  .tn-cs-stage { aspect-ratio: 16 / 9; min-height: 0; flex: none; }
+}
