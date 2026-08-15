@@ -1,7 +1,7 @@
 "use client";
 import { createDefaultLayout, STAGE_ID, type ShellLayout } from "@/lib/console/types";
 import { addWidget, applyItems, setStage } from "@/lib/console/reducers";
-import { arrangeHouse, DEFAULT_BOARD_ROWS, RAIL_CAPACITY } from "@/lib/terminal/layoutGrid";
+import { arrangeHouse, arrangeWall, DEFAULT_BOARD_ROWS, RAIL_CAPACITY } from "@/lib/terminal/layoutGrid";
 import { visibleRows } from "@/lib/terminal/rowBudget";
 import { shellLayoutStore } from "@/lib/console/store";
 import { layersStore, type LayerKey } from "@/lib/layers";
@@ -70,20 +70,56 @@ export const DEFAULT_PRESET_ID = "overview";
 let seed = 0;
 const id = () => `p${(seed += 1).toString(36)}`;
 
-interface CardSpec { type: string; weight: number }
+interface CardSpec {
+  type: string;
+  weight: number;
+  /** Seed config for this card. Without it a preset can only place EMPTY widgets —
+   *  addWidget already accepts `config`, compose just never passed it, so every
+   *  built-in board shipped `config: {}` and a board could not open pre-filled. */
+  config?: Record<string, unknown>;
+}
 
 function compose(stage: ShellLayout["stage"], rows: number, cards: CardSpec[]): ShellLayout {
   let l = setStage(createDefaultLayout(), stage);
   // `segment` is legacy, but `?c=` share links and the migration path still read it,
   // so it is kept truthful: the rail is "left", the dock beneath the map is "bottom".
   cards.forEach((c, i) => {
-    l = addWidget(l, c.type, id(), { segment: i < RAIL_CAPACITY ? "left" : "bottom" });
+    l = addWidget(l, c.type, id(), {
+      segment: i < RAIL_CAPACITY ? "left" : "bottom",
+      ...(c.config ? { config: c.config } : {}),
+    });
   });
   const ids = l.widgets.map((w) => w.id);
   return applyItems(
     l,
     arrangeHouse(cards.map((c, i) => ({ id: ids[i], weight: c.weight })), STAGE_ID, rows),
   );
+}
+
+/**
+ * A WALL board: equal cards tiled three across, with the map taking one card's
+ * width over two bands.
+ *
+ * `compose()` above cannot express this. It calls `arrangeHouse`, which hardcodes
+ * `mapCols = COLS - RAIL_COLS` — the map always takes 8 of 12 columns and the cards
+ * land in a 4-column rail. Measured at 1400px that rail gives cards aspect ratios
+ * from 2.68 to 6.30; none is near the 16:9 a camera frame actually is, so a board
+ * whose entire purpose is showing pictures would show letterboxed slivers.
+ *
+ * `arrangeWall` already existed for exactly this shape. The only thing it costs is
+ * that the map is 4 columns rather than 8, which is why the Streets board is
+ * explicitly exempted from the `stage.w >= 8` assertion in
+ * tests/unit/console-presets.test.ts rather than quietly failing it.
+ */
+function composeWall(stage: ShellLayout["stage"], rows: number, cards: CardSpec[]): ShellLayout {
+  let l = setStage(createDefaultLayout(), stage);
+  cards.forEach((c, i) => {
+    l = addWidget(l, c.type, id(), {
+      segment: i < RAIL_CAPACITY ? "left" : "bottom",
+      ...(c.config ? { config: c.config } : {}),
+    });
+  });
+  return applyItems(l, arrangeWall(l.widgets.map((w) => w.id), STAGE_ID, rows));
 }
 
 // SIX broad boards — deliberately few. The *union* still touches every widget group
@@ -206,6 +242,37 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
       { type: "recon:bgp", weight: 2 },
       { type: "locate", weight: 2 },
       { type: "signal:displacement", weight: 1 },
+  ]) },
+
+  // ── Streets — the places people actually walk ────────────────────────────
+  // Built for a user request: "custom dashboards so I can see images from major
+  // cities' high pedestrian zones throughout the day."
+  //
+  // Not called "Cameras": that word already names a widget, a widget category, a
+  // ⌘K palette section and a map layer key, and a fifth meaning would make the
+  // palette ambiguous.
+  //
+  // Authored with composeWall, NOT compose — see the note on composeWall for why a
+  // camera board cannot live in arrangeHouse's 4-column rail. Exactly four cards,
+  // which is what tiles the 3-across grid beside the map with no uncovered cell.
+  //
+  // mapCore is REQUIRED. presetLayers hard-resets cameras/webcams to false on every
+  // board switch and only maps a handful of widget types back on; without this the
+  // board would open with a map showing no camera pins at all.
+  //
+  // THE SEEDS ROT AND THAT IS EXPECTED. These are real Windy ids, verified live on
+  // 2026-08-15, but the webcam layer is an unranked sample of a third-party
+  // catalogue and any of them can be unpublished without notice. A dead id renders
+  // an honest "no longer published" tile (see camslot.tsx / CameraImage), which is
+  // why seeding is safe at all. The fourth slot is deliberately empty: it is the
+  // affordance that teaches the board is yours to fill.
+  { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
+    mapCore: ["cameras", "webcams"],
+    build: (rows = DEFAULT_BOARD_ROWS) => composeWall("map2d", rows, [
+      { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641" }] } },
+      { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744" }] } },
+      { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762" }] } },
+      { type: "camslot", weight: 3, config: { streams: [] } },
   ]) },
 ];
 

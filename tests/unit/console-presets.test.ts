@@ -1,15 +1,16 @@
 import { expect, test } from "vitest";
 import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
+import { MAX_WIDGETS } from "@/lib/console/types";
 
-const CORE_WIDGETS = new Set(["events", "news", "cameras", "aviation", "satellites", "markets", "headlines", "locate", "anomaly"]);
+const CORE_WIDGETS = new Set(["events", "news", "cameras", "aviation", "satellites", "markets", "headlines", "locate", "anomaly", "camslot"]);
 const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
 
 // Deliberately FEW: six broad boards, one per navbar-pill slot. Ids are stable (used by
 // the first-run seed, the ⌘K Profiles section, the central preset pill, and shared URLs).
-const BOARD_IDS = ["overview", "situation", "earth", "mobility", "markets", "tools"];
+const BOARD_IDS = ["overview", "situation", "earth", "mobility", "markets", "tools", "streets"];
 
 // The seven core monitoring cards the union of boards must all surface (the "use all our
 // widgets" intent). `locate` is a utility card, not a monitoring board card, so it's exempt.
@@ -21,7 +22,7 @@ test("the board lineup is exactly the five broad boards, each non-empty and with
   for (const p of BUILTIN_PRESETS) {
     const l = p.build();
     expect(l.widgets.length).toBeGreaterThan(0);
-    expect(l.widgets.length).toBeLessThanOrEqual(50);
+    expect(l.widgets.length).toBeLessThanOrEqual(MAX_WIDGETS);
   }
 });
 
@@ -75,7 +76,17 @@ test("the map is the tallest thing on every board, and nothing is left empty ben
       // The old defaults gave the stage 4 of 12 columns and 14 of ~40 rows, which
       // left a ~470x400px black rectangle under it — larger in area than the map.
       // Six reviewers each named that hole first, so it gets an assertion.
-      expect(stage.w, `"${p.id}" map is only ${stage.w} columns`).toBeGreaterThanOrEqual(8);
+      // EXEMPTION, argued rather than assumed. Streets is a wall of camera tiles:
+      // arrangeHouse's 8-of-12-column map leaves cards in a 4-column rail at
+      // measured aspect ratios of 2.68 to 6.30, and a 16:9 camera frame rendered
+      // into that is a letterboxed sliver. It is authored with arrangeWall instead,
+      // where the map takes one card's width (4 columns) over two bands. The hole
+      // this assertion exists to prevent is still impossible there — the coverage
+      // check below runs on Streets unchanged and proves every cell is filled.
+      const wallBoards = new Set(["streets"]);
+      if (!wallBoards.has(p.id)) {
+        expect(stage.w, `"${p.id}" map is only ${stage.w} columns`).toBeGreaterThanOrEqual(8);
+      }
 
       // Every cell to the right of the rail, for the full height, is covered by
       // either the map or a docked card. That is what makes the void impossible

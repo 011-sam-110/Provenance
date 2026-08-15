@@ -109,9 +109,17 @@ test("the Brief board turns webcams on", () => {
   expect(core.webcams).toBe(true);
 });
 
+// Two boards light webcams, and only two. Brief, because its job is "what changed
+// since you last looked" and a ground-level view is exactly that. Streets, because
+// the webcam layer IS the pedestrian-zone content that board exists to show — the
+// road-camera feeds are junctions and carriageways, and a Streets board without
+// webcams would be a camera board with none of the cameras people asked for.
+// Everywhere else it stays off, which is the point of this test.
+const WEBCAM_BOARDS = new Set(["overview", "streets"]);
+
 test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
   for (const p of BUILTIN_PRESETS) {
-    if (p.id === "overview") continue;
+    if (WEBCAM_BOARDS.has(p.id)) continue;
     const { core } = layersForLayout(p.build(), p.mapSignals ?? [], p.mapCore ?? []);
     expect(core.webcams, `${p.id} unexpectedly lights webcams`).toBe(false);
   }
