@@ -48,7 +48,23 @@ export interface ShellLayout {
   focusedWidgetId: string | null;
 }
 
-export const MAX_WIDGETS = 50;
+/**
+ * A runaway-writer backstop, not a product limit.
+ *
+ * Raised from 50 for the Streets board, where "as many camera slots as you want" is
+ * the requirement rather than a nice-to-have. Three things were checked before
+ * raising it, because a cap removed for the wrong reason is how a console gets slow:
+ *
+ *  • STORAGE is not the constraint. A camera StreamRef is ~35 bytes of JSON, so even
+ *    200 slots holding 10 streams each is ~70 KB against localStorage's ~5 MB.
+ *  • NETWORK is not the constraint any more. A camslot only fetches the stream it is
+ *    showing, and stops entirely when scrolled out of view (IntersectionObserver), so
+ *    200 slots cost what the dozen on screen cost.
+ *  • The DRAG PATH is the thing to watch: boards.ts re-parses its whole archive on
+ *    every cell crossing of every drag. That is a real cost and it is why this is 200
+ *    rather than unbounded.
+ */
+export const MAX_WIDGETS = 200;
 
 export function createDefaultLayout(): ShellLayout {
   return {

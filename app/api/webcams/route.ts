@@ -41,6 +41,10 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const sample = await getWebcams();
+  // `city` and `categories` survive lib/webcams/normalize.ts but used to be dropped
+  // here. They are what lets a caller filter to squares, promenades and old towns
+  // instead of matching on title text — the difference between finding the
+  // pedestrian-zone cameras this layer is mostly useful for and guessing at them.
   const thin = sample.webcams.map((w) => ({
     id: w.id,
     title: w.title,
@@ -48,6 +52,8 @@ export async function GET() {
     lon: w.lon,
     country: w.country,
     region: w.region,
+    city: w.city,
+    categories: w.categories,
     available: w.available,
     detailUrl: w.detailUrl,
   }));

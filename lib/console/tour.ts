@@ -32,6 +32,7 @@
 
 import { BRAND } from "@/lib/brand";
 import { SIGNALS } from "@/lib/signals/registry";
+import { BUILTIN_PRESETS } from "@/lib/console/presets";
 
 /**
  * Counts are DERIVED, never typed. A tour whose sixth chapter is about not being
@@ -45,6 +46,20 @@ import { SIGNALS } from "@/lib/signals/registry";
  * adapters and zod into the browser.
  */
 const SIGNAL_COUNT = SIGNALS.length;
+
+/**
+ * The board lineup, derived for the same reason as SIGNAL_COUNT — and this one had
+ * already rotted. The chapter below said "Six boards" and then listed six by name
+ * while the console shipped seven, with no test behind either. The header rule at
+ * the top of this file existed the whole time; the boards just were not covered by
+ * it. `presets.ts` is already in the client bundle (the header's board tabs map over
+ * it), so this costs nothing.
+ */
+const BOARD_COUNT = BUILTIN_PRESETS.length;
+const BOARD_WORD = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"][BOARD_COUNT] ?? String(BOARD_COUNT);
+/** "Brief (what changed…) · Conflict (armed events…) · …" — straight from the presets,
+ *  so a new board appears in the tour the moment it appears in the switcher. */
+const BOARD_LIST = BUILTIN_PRESETS.map((p) => `${p.title} (${p.blurb})`).join(" · ");
 
 // There is deliberately NO camera-feed constant here. `SOURCES` holds twelve
 // adapters and `CAMERA_REGIONS` eleven entries — the São Paulo feed has no region
@@ -315,13 +330,13 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "boards",
     title: "Boards & modes",
-    summary: "Six ready-made workspaces, two layout modes, two skins",
+    summary: `${BOARD_COUNT} ready-made workspaces, two layout modes, two skins`,
     icon: "▦",
     steps: [
       {
         id: "boards-lead",
         target: "",
-        title: "Six boards, each a job",
+        title: `${BOARD_WORD.charAt(0).toUpperCase()}${BOARD_WORD.slice(1)} boards, each a job`,
         body:
           "A board is a whole workspace: which widgets are open, where they sit, and which map layers are on. Switching board changes all three at once.",
         placement: "center",
@@ -331,7 +346,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tnx-hdr-boards", ".tn-preset-pill"],
         title: "The boards",
         body:
-          "Brief (what changed since you last looked) · Conflict (armed events, protest, military movement) · Hazards (quake, fire, flood, storm) · Transit (aircraft, vessels, orbit) · Markets & Cyber (economy, outages, intrusions) · Recon (domain and IP intel, photo geolocation).",
+          `${BOARD_LIST}.`,
         placement: "bottom",
       },
       {
@@ -705,7 +720,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-palette-root", ".tn-palette-trigger"],
         title: "Save and share, in the same box",
         body:
-          "Under Workspace: \"Copy shareable link\" encodes your exact layout into a URL that rebuilds it for whoever you send it to — Settings has the same thing as a button. \"Save layout as preset\" keeps your arrangement as your own board alongside the six built-in ones, and \"Reset board\" puts the current one back to its template.",
+          "Under Workspace: \"Copy shareable link\" encodes your exact layout into a URL that rebuilds it for whoever you send it to — Settings has the same thing as a button. \"Save layout as preset\" keeps your arrangement as your own board alongside the built-in ones, and \"Reset board\" puts the current one back to its template.",
         placement: "center",
         setup: [OPEN_PALETTE],
       },

@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "vitest";
 import { shellLayoutStore } from "@/lib/console/store";
-import { createDefaultLayout } from "@/lib/console/types";
+import { createDefaultLayout, MAX_WIDGETS } from "@/lib/console/types";
 
 afterEach(() => shellLayoutStore.replace(createDefaultLayout()));
 
@@ -10,11 +10,11 @@ test("add returns the new id and lands the widget", () => {
   expect(shellLayoutStore.get().widgets.find((w) => w.id === r.id)?.type).toBe("aviation");
 });
 
-test("add past 50 is rejected with ok:false", () => {
-  for (let i = 0; i < 50; i++) shellLayoutStore.add("aviation");
+test("add past the widget cap is rejected with ok:false", () => {
+  for (let i = 0; i < MAX_WIDGETS; i++) shellLayoutStore.add("aviation");
   const r = shellLayoutStore.add("aviation");
   expect(r.ok).toBe(false);
-  expect(shellLayoutStore.get().widgets.length).toBe(50);
+  expect(shellLayoutStore.get().widgets.length).toBe(MAX_WIDGETS);
 });
 
 test("subscribers fire on mutation", () => {

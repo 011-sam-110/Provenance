@@ -48,7 +48,7 @@ test("sanitizeLayout clamps widget height into [120,1200] and caps count", () =>
 
   const many = sanitizeLayout({
     segments: createDefaultLayout().segments, stage: "map2d",
-    widgets: Array.from({ length: 60 }, (_, i) => ({ id: `w${i}`, type: "clock" })),
+    widgets: Array.from({ length: MAX_WIDGETS + 10 }, (_, i) => ({ id: `w${i}`, type: "clock" })),
   });
   expect(many!.widgets.length).toBe(MAX_WIDGETS);
 });

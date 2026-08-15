@@ -4,6 +4,7 @@ import {
 } from "@/lib/console/types";
 import { clampSpan } from "@/lib/console/resize";
 import { clampRect, fromLegacy, settle, type GridItem } from "@/lib/terminal/layoutGrid";
+import { sanitizeCamslotConfig } from "@/lib/console/widgets/camslot.model";
 
 const SEGMENTS: SegmentId[] = ["left", "right", "bottom"];
 const STAGES: StageId[] = ["map3d", "map2d", "clock"];
@@ -66,6 +67,26 @@ function withRects(widgets: WidgetInstance[], stageRect: GridRect | null): {
  *  Guarantees: all three segment keys present; sizes clamped [0,900]; each widget has a
  *  valid segment, clamped height [120,1200], object config, and a legal non-overlapping
  *  grid rect; total widgets <= MAX_WIDGETS. */
+/**
+ * Per-type config coercion.
+ *
+ * Everything except `camslot` keeps the historic behaviour — an object passes
+ * through untouched — because those configs are small scalars written by our own UI,
+ * and validating them here would be a silent behaviour change across ~69 widget
+ * types.
+ *
+ * `camslot` is different in kind. Its config carries a LIST that becomes image
+ * requests and an iframe src, and it arrives from `?c=` links a stranger can author:
+ * an `intervalMs` of 0 clamps to ~4ms in setInterval, which is a one-click DoS on
+ * whoever opens the link. Sanitising it here means every share link is validated at
+ * the one choke point they all pass through, instead of relying on each render path
+ * to remember.
+ */
+function readConfig(type: unknown, raw: unknown): Record<string, unknown> {
+  if (type === "camslot") return sanitizeCamslotConfig(raw) as unknown as Record<string, unknown>;
+  return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+}
+
 export function sanitizeLayout(raw: unknown): ShellLayout | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -100,7 +121,7 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
       height: clamp(num(o.height, 240), 120, 1200),
       ...(rect ? { rect } : {}),
       collapsed: o.collapsed === true,
-      config: o.config && typeof o.config === "object" ? (o.config as Record<string, unknown>) : {},
+      config: readConfig(o.type, o.config),
     });
   }
   const ids = new Set(widgets.map((w) => w.id));

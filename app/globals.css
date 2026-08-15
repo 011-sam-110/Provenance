@@ -4800,3 +4800,116 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     min-height: 44px;
   }
 }
+
+/* ── Camera slot (Streets M1) ─────────────────────────────────────────────
+   A slot holds a LIST of live views and shows one at a time. The stage is
+   absolutely positioned so the current view and its single prefetch can occupy
+   the same cell, with the prefetch hidden — that is what lets rotation swap
+   without unmounting and losing each view's refresh interval. */
+.tn-cs { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.tn-cs-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--tn-surface-2); }
+.tn-cs-view, .tn-cs-view figure { position: absolute; inset: 0; margin: 0; }
+.tn-cs-view img, .tn-cs-frame { width: 100%; height: 100%; border: 0; display: block; }
+.tn-cs-stage[data-fit="cover"] .tn-cs-view img { object-fit: cover; }
+.tn-cs-stage[data-fit="contain"] .tn-cs-view img { object-fit: contain; }
+.tn-cs-view figcaption { position: absolute; right: 4px; bottom: 4px; }
+.tn-cs-bar { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; min-width: 0; }
+.tn-cs-name { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-cs-pos { font-family: var(--tn-mono); font-variant-numeric: tabular-nums; font-size: 10px; color: var(--tn-text-faint); }
+.tn-cs-ctl { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity 120ms; }
+.tn-cs:hover .tn-cs-ctl, .tn-cs:focus-within .tn-cs-ctl { opacity: 1; }
+.tn-cs-ctl button { font-size: 11px; line-height: 1; padding: 3px 6px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-topbar-pill); color: var(--tn-text); cursor: pointer; }
+.tn-cs-ctl button:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-cs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 100%; color: var(--tn-text-faint); font-size: 11.5px; text-align: center; padding: 8px; }
+.tn-cs-add { font-size: 12px; padding: 6px 12px; border: 1px solid var(--tn-border-strong); border-radius: 4px; background: var(--tn-surface-solid); color: var(--tn-accent-strong); cursor: pointer; }
+.tn-cs-add:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-cs-dead, .tn-cam-dead { display: flex; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center; font-size: 11px; color: var(--tn-text-faint); background: var(--tn-chip-bg); }
+.tn-cs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.tn-cs-picker { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--tn-surface-solid); border: 1px solid var(--tn-border-strong); border-radius: 4px; overflow: auto; }
+.tn-cs-picker-head { display: flex; gap: 6px; }
+.tn-cs-picker-head input, .tn-cs-picker-paste input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 8px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-surface-2); color: var(--tn-text); }
+.tn-cs-picker-head button, .tn-cs-picker-paste button { font-size: 11px; padding: 5px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-cs-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 46%; overflow: auto; }
+.tn-cs-hit { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 5px 7px; border: 0; border-radius: 3px; background: transparent; text-align: left; cursor: pointer; }
+.tn-cs-hit:hover:not(:disabled) { background: var(--tn-accent-soft); }
+.tn-cs-hit:disabled { opacity: 0.5; cursor: default; }
+.tn-cs-hit-name { font-size: 12px; font-weight: 600; }
+.tn-cs-hit-sub { font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); }
+.tn-cs-picker-paste { display: flex; gap: 6px; }
+.tn-cs-picker-err { font-size: 11px; color: var(--tn-down-ink); }
+.tn-cs-picker-chosen { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tn-cs-picker-label { font-family: var(--tn-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tn-text-faint); }
+.tn-cs-picker-chosen button { font-family: var(--tn-mono); font-size: 9.5px; padding: 2px 6px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+@media (prefers-reduced-motion: reduce) { .tn-cs-ctl { transition: none; } }
+.tn-cs-picker-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tn-cs-chip { font-family: var(--tn-mono); font-size: 9.5px; letter-spacing: 0.04em; padding: 3px 7px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-cs-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
+.tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
+.tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+
+/* ── Camera slot day history (Streets M5) ─────────────────────────────────
+   Authored by the day-history agent and landed here because globals.css is
+   serialised through streets-lead. Every token it references already existed. */
+.tn-csd { display: flex; flex-direction: column; gap: 10px; padding: 4px; }
+.tn-csd-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.tn-csd-tabs button { font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-csd-tabs button.active { background: var(--tn-accent-soft); color: var(--tn-text); border-color: var(--tn-border-strong); }
+.tn-csd-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--tn-surface-2); overflow: hidden; border-radius: 4px; }
+.tn-csd-stage img, .tn-csd-stage .tn-cs-frame { width: 100%; height: 100%; object-fit: contain; border: 0; display: block; }
+.tn-csd-name { font-size: 12.5px; font-weight: 620; }
+.tn-csd-scrub-label { font-weight: 400; color: var(--tn-text-faint); }
+.tn-csd-strip { display: flex; flex-direction: column; gap: 4px; }
+.tn-csd-strip-head { display: flex; justify-content: space-between; font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.tn-csd-strip-row { display: flex; gap: 1px; height: 28px; }
+.tn-csd-bucket { flex: 1; min-width: 2px; border: 0; border-radius: 1px; background: var(--tn-accent); cursor: pointer; padding: 0; }
+.tn-csd-bucket.gap { background: var(--tn-border); cursor: default; }
+.tn-csd-bucket.active { outline: 2px solid var(--tn-accent-strong); outline-offset: 1px; }
+.tn-csd-bucket:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-csd-live { align-self: flex-start; font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-csd-full { font-size: 11px; color: var(--tn-down-ink); }
+.tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
+.tn-cs-note { padding: 3px 8px 5px; font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink); }
+.tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }
+
+/* ── Map arming (Streets M4) ───────────────────────────────────────────────
+   Authored by the map-arming agent; landed here because globals.css is serialised
+   through streets-lead. The map has no other mode, so armed has to be visible from
+   the map itself, not only from the slot that is armed. Ring + crosshair + a hint
+   that names the way out. The drag rectangle carries its own position and
+   pointer-events inline in WorldMap, so a missing rule here can never shove the map
+   around.
+
+   The hint sits TOP-centre deliberately: .tn-map-notice is bottom:116px and the
+   basemap-failure notice can be on screen during an armed session, so bottom-centre
+   would stack them. The ring is on ::after with pointer-events:none because
+   .world-map is the click surface — a real border would move the canvas by 2px and
+   re-project every pin. */
+.world-map.tn-armed::after{content:"";position:absolute;inset:0;z-index:20;pointer-events:none;
+border-radius:10px;box-shadow:inset 0 0 0 2px var(--tn-accent)}
+.world-map.tn-armed .maplibregl-canvas-container,
+.world-map.tn-armed .maplibregl-canvas{cursor:crosshair}
+.tn-arm-hint{position:absolute;left:50%;transform:translateX(-50%);top:12px;z-index:30;
+display:flex;align-items:center;gap:8px;max-width:min(560px,calc(100% - 32px));
+padding:6px 14px;border-radius:999px;border:1px solid var(--tn-accent);
+background:var(--tn-surface-solid);color:var(--tn-text);font-size:13px;
+box-shadow:0 6px 22px rgba(20,28,38,.18)}
+.tn-arm-hint kbd{font:inherit;font-size:11px;padding:1px 6px;border-radius:4px;
+border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
+.tn-arm-box{border:1px solid var(--tn-accent);background:var(--tn-accent-soft);border-radius:2px}
+
+/* A camera slot must never collapse to its chrome.
+   `.tn-cs` is height:100% with a flex:1 stage, which works while an ancestor has a
+   DEFINITE height — true on the desktop grid. Below 900px the mobile rules lift
+   max-height off `.tn-seg` and the widget bodies, so the ancestor becomes auto and
+   height:100% resolves against auto: the stage collapsed to 0 and every seeded slot
+   on Streets rendered 25px tall, caption only, no picture. Measured at 390x844.
+   A camera frame is ~16:9, so that is what the stage falls back to when nothing
+   above it has a height to divide up. */
+.tn-cs-stage { min-height: 120px; }
+@media (max-width: 900px) {
+  .tn-cs { height: auto; }
+  .tn-cs-stage { aspect-ratio: 16 / 9; min-height: 0; flex: none; }
+}
+.tn-cs-arm.is-on { border-color: var(--tn-accent); background: var(--tn-accent-soft); color: var(--tn-accent-strong); font-weight: 700; }

@@ -41,7 +41,7 @@ Every figure above will drift. `CLAUDE.md` holds the command to re-measure each 
 - **Truncation is declared, not hidden** - an endpoint that caps its response says so in a coverage record: how many rows existed upstream, how many are here, and how the survivors were chosen. Active fires returned 1,500 of 70,339 that way, UK crime 1,500 of 10,504, aircraft 3,000 of 3,652.
 - **11 government camera networks, keyless** - the actual agency feeds (TfL, Caltrans, SCDOT, Finland Digitraffic, Castle Rock 511, Oregon TripCheck, DriveBC, NZTA, Iceland, Estonia, Traffic Scotland), normalised into one `Camera` shape and clustered natively by MapLibre rather than in a client-side loop. Each camera opens its live still or HLS video through a closed proxy that takes a camera **id**, never an arbitrary URL, resolves it behind a host allowlist and caches at that source's own cadence. A feed that fails keeps its last-good cameras instead of silently deleting its region.
 - **Aircraft and satellites** - live ADS-B from OpenSky's global snapshot with an adsb.lol grid sweep as fallback, breadcrumb trails and route enrichment fetched on click; satellites propagated in the browser from CelesTrak TLEs with SGP4, so the server never ticks orbits and the constellation moves at frame rate.
-- **A terminal-style console** - a dense OSINT shell at `/app`: 69 widget types in a ⌘K catalogue, six boards that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
+- **A terminal-style console** - a dense OSINT shell at `/app`: 71 widget types in a ⌘K catalogue, seven boards that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
 - **A landing page that cannot drift** - the hero globe, source wall and live ledger at `/` are generated from the same `SOURCE_CATALOG` the app renders from, so adding an adapter updates the marketing site with no marketing-side edit and there is not a hand-typed figure on it.
 
 ## 📸 Screenshots
@@ -87,7 +87,7 @@ app/(console)/app/ ──── the console shell
   ├── lib/satellites/*   CelesTrak TLE -> SGP4 propagation on a client tick
   ├── lib/geo/*          Natural Earth borders, advisory + instability dossier
   ├── lib/proxy/*        closed image + HLS proxies (host allowlist, per-source cache)
-  └── lib/console/*      widget registry (69 types), 6 boards, shareable ?c= layouts
+  └── lib/console/*      widget registry (71 types), 7 boards, shareable ?c= layouts
 API routes:  /api/cameras · /api/camera · /api/coverage · /api/status · /api/planes
              /api/satellites · /api/signals/[id] · /api/proxy · /api/hls · /api/webcams
              /api/news · /api/brief · /api/markets · /api/advisory · /api/recon

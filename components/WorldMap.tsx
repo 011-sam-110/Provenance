@@ -55,6 +55,23 @@ import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/sel
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { CAMERA_CLUSTER, WEBCAM_CLUSTER, expandCluster } from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
+// Map arming. Every rule lives in camslot.arm; this file supplies geometry and
+// side effects and decides nothing. See the block above appendToArmedSlot for why
+// none of it may be closed over.
+import {
+  armStore,
+  useArmedSlot,
+  camerasInBounds,
+  normalizeBounds,
+  orderByDistanceFrom,
+  cadenceCap,
+  planAppend,
+  describeAppend,
+  webcamRef,
+  FALLBACK_REFRESH_SECONDS,
+  type LatLon,
+} from "@/lib/console/widgets/camslot.arm";
+import { sanitizeCamslotConfig, type StreamRef } from "@/lib/console/widgets/camslot.model";
 import { SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore } from "@/lib/signals/freshness";
@@ -244,6 +261,233 @@ function whenStyleReady(map: maplibregl.Map, fn: () => void): void {
   map.on("styledata", onData);
 }
 
+// ── Map arming: ONE resolver, four entry points ──────────────────────────────
+//
+// These are MODULE-scope on purpose, and they take everything they need as
+// arguments or read it from a store at call time. Two of their four callers are
+// frozen closures — `wireInteractions` is a useCallback(…, []) run once at mount,
+// and `createThumbnailManager`'s onPick is built inside the init effect — so a
+// helper that closed over any React value would work in whichever state the map
+// mounted in and never change again.
+//
+// The reason there is ONE resolver rather than a patch per call site is measured,
+// not stylistic. At z13 over central London the map draws 97 individual camera pins
+// and 24 live-thumbnail buttons; the buttons stopPropagation (liveThumbnails.ts:58)
+// so they never reach the layer handler, and which of the two a given camera gets
+// depends on MAX_THUMBS and on `available`. Two code paths that can disagree about
+// what an armed click means would disagree for 24 cameras out of 97, side by side,
+// at the same zoom — a bug no manual click-test would reliably find.
+
+interface ArmCandidate extends LatLon {
+  ref: StreamRef;
+  refreshSeconds?: number;
+  available?: boolean;
+}
+
+function toast(message: string): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("tn-toast", { detail: message }));
+}
+
+/** Mirrors camslot.tsx:32 — Windy's image tokens last ~10 minutes and
+ *  /api/webcam-image is bounded by that. */
+const WEBCAM_REFRESH_SECONDS = 600;
+
+
+/** The cadence of a stream already in the slot. Road cameras are the only kind that
+ *  varies, and loadedCamerasStore is the only place the client holds it. */
+function refreshForRef(ref: StreamRef): number | undefined {
+  if (ref.k === "webcam") return WEBCAM_REFRESH_SECONDS;
+  if (ref.k === "yt") return undefined; // an embed is not polled; it has no cadence
+  return loadedCamerasStore.get().find((c) => c.id === ref.id)?.refreshSeconds;
+}
+
+/**
+ * Append candidates to the armed slot, if one is armed.
+ *
+ * Returns TRUE when the gesture was consumed, so every caller can bail before
+ * doing its normal job. Consumption is decided synchronously and does not depend
+ * on whether anything was actually added: an armed click on a camera already in
+ * the slot still belongs to arming, and still owes the user a visible answer
+ * rather than a silent nothing or a surprise dossier.
+ *
+ * The write is async because the layout store is imported lazily — the same shape
+ * camslot.picker.tsx:165-169 uses, and for the same reason: it keeps the console
+ * store out of the map's import graph.
+ */
+function appendToArmedSlot(candidates: ArmCandidate[], centre: LatLon): boolean {
+  const instanceId = armStore.get();
+  if (!instanceId) return false;
+
+  void import("@/lib/console/store").then(({ shellLayoutStore }) => {
+    const widget = shellLayoutStore.get().widgets.find((w) => w.id === instanceId);
+    if (!widget) {
+      // The armed slot was removed from the board while the mode was on.
+      armStore.disarm();
+      toast("That slot is gone — arming turned off.");
+      return;
+    }
+    // Read the playlist from the STORE, never from a value captured when the mode
+    // was armed: between arming and clicking, the picker or another append may have
+    // changed it, and writing a stale array would silently drop those streams.
+    const cfg = sanitizeCamslotConfig(widget.config);
+
+    const ordered = orderByDistanceFrom(candidates, centre);
+    // The cap is set by the FASTEST-refreshing member of the resulting playlist, so
+    // the streams already in the slot count too — appending a 60s camera to a slot of
+    // 300s ones is exactly the case that moves it, and ignoring the existing members
+    // would let the cap drift up every time the user clicked.
+    const cadences = [
+      ...cfg.streams.map(refreshForRef),
+      ...ordered.map((c) => c.refreshSeconds),
+    ];
+    const cap = cadenceCap(cadences, cfg.intervalMs);
+    const plan = planAppend(cfg.streams, ordered.map((c) => c.ref), cap);
+    const resolved = cadences.map((s) =>
+      typeof s === "number" && s > 0 ? s : FALLBACK_REFRESH_SECONDS,
+    );
+    const capSetBySeconds = Math.min(...resolved, FALLBACK_REFRESH_SECONDS);
+    const capMixed = new Set(resolved).size > 1;
+
+    if (plan.next) shellLayoutStore.configure(instanceId, { streams: plan.next });
+    toast(
+      describeAppend(plan, {
+        available: candidates.filter((c) => c.available !== false).length,
+        cap,
+        capSetBySeconds,
+        capMixed,
+      }),
+    );
+  });
+
+  return true;
+}
+
+/** One road camera, from either the layer click or a live-thumbnail button. */
+function armedPickCamera(id: string, lat: number, lon: number): boolean {
+  if (!armStore.get()) return false;
+  // The store row is the only place a per-camera cadence exists on the client.
+  const row = loadedCamerasStore.get().find((c) => c.id === id);
+  return appendToArmedSlot(
+    [{ ref: { k: "cam", id }, lat, lon, refreshSeconds: row?.refreshSeconds, available: row?.available }],
+    { lat, lon },
+  );
+}
+
+/**
+ * An armed click on a cluster badge appends its leaves instead of zooming.
+ *
+ * `point_count` from the badge is the honest denominator — it is the number the user
+ * can see printed on the circle they clicked — so it is what we ask for and what the
+ * note reports. Every failure path here still ends in a toast: an armed click that
+ * produced no visible consequence is the one outcome this interception exists to
+ * prevent, and "the map moved a bit" does not count as one.
+ */
+async function appendClusterLeaves(
+  map: maplibregl.Map,
+  sourceId: string,
+  clusterId: number,
+  centre: [number, number],
+  pointCount: number,
+): Promise<void> {
+  const src = map.getSource(sourceId) as GeoJSONSource | undefined;
+  if (!src || typeof src.getClusterLeaves !== "function") {
+    toast("Couldn't read that group — zoom in and pick the pins directly.");
+    return;
+  }
+
+  let leaves: GeoJSON.Feature[] = [];
+  try {
+    leaves = await src.getClusterLeaves(clusterId, Math.max(pointCount, 1), 0);
+  } catch {
+    toast("Couldn't read that group — zoom in and pick the pins directly.");
+    return;
+  }
+
+  const isWebcam = sourceId === WEBCAM_SRC;
+  const rows = loadedCamerasStore.get();
+  const candidates: ArmCandidate[] = [];
+  for (const leaf of leaves) {
+    if (leaf.geometry?.type !== "Point") continue;
+    const props = leaf.properties as { id?: string; name?: string } | null;
+    const id = props?.id;
+    if (!id) continue;
+    const [lon, lat] = leaf.geometry.coordinates as [number, number];
+    if (isWebcam) {
+      // toWebcamFC puts the title in `name` (features.ts:82).
+      candidates.push({
+        ref: webcamRef(id, props?.name),
+        lat,
+        lon,
+        refreshSeconds: WEBCAM_REFRESH_SECONDS,
+      });
+    } else {
+      const row = rows.find((c) => c.id === id);
+      candidates.push({
+        ref: { k: "cam", id },
+        lat,
+        lon,
+        refreshSeconds: row?.refreshSeconds,
+        available: row?.available,
+      });
+    }
+  }
+
+  if (candidates.length === 0) {
+    toast("That group is empty now — nothing to add.");
+    return;
+  }
+  appendToArmedSlot(candidates, { lat: centre[1], lon: centre[0] });
+}
+
+/**
+ * Shift-drag a box → append everything inside it.
+ *
+ * Covers the road cameras in `loadedCamerasStore` and the webcams already drawn on
+ * the map. It deliberately does NOT fire /api/webcam-search per drag: §3.1 says that
+ * route fires only on an explicit search, never on pan, and §15 lists Windy's request
+ * ceiling as undocumented and unmeasured. A map gesture is not an explicit search, and
+ * a drag-triggered fan-out is precisely the "going wide" that risk is about. The note
+ * says what was covered instead of quietly covering less.
+ */
+function appendBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams: WorldObject[]): void {
+  const rows = loadedCamerasStore.get();
+  const cams = camerasInBounds(rows, bounds);
+  const cover = camerasInBounds(webcams, bounds);
+
+  if (rows.length === 0 && webcams.length === 0) {
+    // The store is populated only while the camera layer is on (WorldMap:1859), so an
+    // empty result here means "we were not looking", not "there is nothing there".
+    toast("No camera pins are loaded, so a box has nothing to select. Turn on the Cameras layer.");
+    return;
+  }
+  if (cams.length === 0 && cover.length === 0) {
+    toast("No cameras inside that box.");
+    return;
+  }
+
+  const candidates: ArmCandidate[] = [
+    ...cams.map((c) => ({
+      ref: { k: "cam", id: c.id } as StreamRef,
+      lat: c.lat,
+      lon: c.lon,
+      refreshSeconds: c.refreshSeconds,
+      available: c.available,
+    })),
+    ...cover.map((w) => ({
+      ref: webcamRef(w.id, w.label),
+      lat: w.lat,
+      lon: w.lon,
+      refreshSeconds: WEBCAM_REFRESH_SECONDS,
+    })),
+  ];
+
+  appendToArmedSlot(candidates, {
+    lat: (bounds.north + bounds.south) / 2,
+    lon: (bounds.east + bounds.west) / 2,
+  });
+}
+
 export default function WorldMap() {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -311,6 +555,10 @@ export default function WorldMap() {
   // on a human action, never on a pointer move or a poll tick.
   const selection = useTerminalSelection();
   selectionRef.current = selection;
+  // Which slot the map is currently filling, or null. Read as a HOOK here because
+  // this is the render path — the ring, the cursor and the hint are React's job. The
+  // event handlers deliberately do not use this value; they call armStore.get().
+  const armedSlot = useArmedSlot();
   const camFilter = useCameraFilter();
   const signalsState = useSignals();
   // Global time-window filter (M-final): trims time-stamped signals by recency.
@@ -1072,11 +1320,34 @@ export default function WorldMap() {
   // Click + cursor handlers, wired ONCE. Layer-scoped handlers survive basemap
   // swaps (resolved by layer id at event time), so they must not be re-added.
   const wireInteractions = useCallback((map: maplibregl.Map) => {
+    // ONE physical click is delivered TWICE to these handlers, because the pins and
+    // the glows are two layers over one source and both are bound to the same
+    // function. Verified live: a single click produced one generic map `click` and
+    // one delivery each from camera-markers and camera-dots.
+    //
+    // Unarmed that was invisible — two identical cinematic.dive calls collapse into
+    // one dossier. Armed it is not: the first delivery appends and the second reports
+    // "Already in this slot — nothing added" for the same click, so the user is told
+    // their click did nothing immediately after being told it worked. Keying off the
+    // underlying DOM event drops the second delivery without changing which layers
+    // are clickable.
+    let lastCamEvent: MouseEvent | null = null;
+    let lastWebcamEvent: MouseEvent | null = null;
+
     const camClick = (e: maplibregl.MapLayerMouseEvent) => {
       const f = e.features?.[0];
       if (!f || f.geometry.type !== "Point") return;
       const [lon, lat] = f.geometry.coordinates as [number, number];
       const p = f.properties as { id: string; name: string; available: boolean | string };
+      // INTERCEPTION 1. A road pin does not open a dossier — it flies the map and
+      // lands a full-screen hero card, so an armed click that fell through here
+      // would be loudly wrong rather than merely inert. Bail before the dive.
+      if (armStore.get()) {
+        if (e.originalEvent === lastCamEvent) return; // second layer delivery
+        lastCamEvent = e.originalEvent;
+        armedPickCamera(p.id, lat, lon);
+        return;
+      }
       cinematic.dive({
         kind: "camera",
         id: p.id,
@@ -1124,7 +1395,28 @@ export default function WorldMap() {
     const webcamClick = (e: maplibregl.MapLayerMouseEvent) => {
       const id = (e.features?.[0]?.properties as { id?: string })?.id;
       const cam = webcamsRef.current.find((w) => w.id === id);
-      if (cam) overlay.open(cam);
+      if (!cam) return;
+      // Webcam pins ARE the dossier case, unlike road pins — so this suppression is
+      // written separately rather than folded in with camClick. The id is the same
+      // "windy:NNN" key /api/webcam-image re-resolves server-side (WebcamsFeed:2016),
+      // so the ref is valid without any translation.
+      if (armStore.get()) {
+        if (e.originalEvent === lastWebcamEvent) return; // second layer delivery
+        lastWebcamEvent = e.originalEvent;
+        appendToArmedSlot(
+          [
+            {
+              ref: webcamRef(cam.id, cam.label),
+              lat: cam.lat,
+              lon: cam.lon,
+              refreshSeconds: WEBCAM_REFRESH_SECONDS,
+            },
+          ],
+          { lat: cam.lat, lon: cam.lon },
+        );
+        return;
+      }
+      overlay.open(cam);
     };
     map.on("click", WEBCAM_LAYER, webcamClick);
     map.on("click", WEBCAM_DOT_LAYER, webcamClick);
@@ -1237,11 +1529,24 @@ export default function WorldMap() {
     map.on("mouseleave", COUNTRY_FILL_LAYER, clearCountryHover);
 
     // Click a cluster badge → ease into the zoom where it splits apart.
+    //
+    // INTERCEPTION 3, and it is the majority path, not an edge case. Measured over
+    // central London with the camera layer on: z11 draws 71 cluster badges against
+    // 18 individual pins, z9 draws 30 against 3. So below z12 most armed clicks land
+    // here, and the unarmed behaviour — move the camera, leave the slot unchanged —
+    // would read as "arming is broken" rather than "zoom in first".
     const clusterClick = (sourceId: string) => (e: maplibregl.MapLayerMouseEvent) => {
       const f = e.features?.[0];
-      const clusterId = (f?.properties as { cluster_id?: number } | undefined)?.cluster_id;
+      const props = f?.properties as { cluster_id?: number; point_count?: number } | undefined;
+      const clusterId = props?.cluster_id;
       if (clusterId == null || f?.geometry.type !== "Point") return;
-      void expandCluster(map, sourceId, clusterId, f.geometry.coordinates as [number, number]);
+      const centre = f.geometry.coordinates as [number, number];
+
+      if (armStore.get()) {
+        void appendClusterLeaves(map, sourceId, clusterId, centre, props?.point_count ?? 0);
+        return;
+      }
+      void expandCluster(map, sourceId, clusterId, centre);
     };
     map.on("click", CAM_CLUSTER_LAYER, clusterClick(CAM_SRC));
     map.on("click", WEBCAM_CLUSTER_LAYER, clusterClick(WEBCAM_SRC));
@@ -1398,6 +1703,13 @@ export default function WorldMap() {
     mapRef.current = map;
     (window as unknown as { __map?: maplibregl.Map }).__map = map; // debug handle
     (window as unknown as { __overlay?: typeof overlay }).__overlay = overlay;
+    // Same debug-handle pattern as the two above, and it earns its place: arming is
+    // a mode whose failures are invisible to clicking. At z13 over central London the
+    // map draws 97 camera pins and 24 live-thumbnail buttons, and only the buttons
+    // stopPropagation — so "I clicked a pin and it armed" is true 75% of the time
+    // whether or not interception 2 works. A handle is the only way to aim a test at
+    // a NAMED camera on a chosen path.
+    (window as unknown as { __arm?: typeof armStore }).__arm = armStore;
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
@@ -1421,8 +1733,16 @@ export default function WorldMap() {
     const thumbMgr = createThumbnailManager({
       map,
       layerId: CAM_LAYER,
-      onPick: (c) =>
-        cinematic.dive({ kind: "camera", id: c.id, lat: c.lat, lon: c.lon, label: c.name, meta: { available: true } }),
+      // INTERCEPTION 2, and it is the same call as the layer handler on purpose.
+      // These DOM buttons stopPropagation (liveThumbnails.ts:58) so they never reach
+      // map.on("click", CAM_LAYER). Measured at z13 over central London: 24 of the 97
+      // visible cameras are routed through here and 73 are not, and which is which
+      // depends on MAX_THUMBS and on `available`. If arming were patched into camClick
+      // alone it would fail for those 24 while working for the 73 beside them.
+      onPick: (c) => {
+        if (armedPickCamera(c.id, c.lat, c.lon)) return;
+        cinematic.dive({ kind: "camera", id: c.id, lat: c.lat, lon: c.lon, label: c.name, meta: { available: true } });
+      },
     });
     thumbMgrRef.current = thumbMgr;
     const onThumbRefresh = () => thumbMgr.update();
@@ -1774,6 +2094,94 @@ export default function WorldMap() {
     return () => mapViewStore.registerDiveTo(null);
   }, [diveTo]);
 
+  // ── INTERCEPTION 4: shift-drag, and custody of MapLibre's box zoom ─────────
+  //
+  // BoxZoomHandler owns shift-drag and is on by default — the constructor passes no
+  // `boxZoom` option (verified live: map.boxZoom.isEnabled() === true). So arming has
+  // to borrow it and give it back, and BOTH halves live in this one effect so they
+  // cannot desync. The alternative, the constructor-only `boxZoomEnd` option,
+  // suppresses fit-to-box unconditionally and would have silently deleted shift-drag
+  // zoom from all seven boards for everyone, armed or not.
+  //
+  // The re-enable is in the CLEANUP, not merely on disarm. StageHost.tsx:33,37
+  // unmounts <WorldMap/> when a widget is focused, so the disable and the re-enable
+  // can be separated by an unmount; without this path, focusing a widget while armed
+  // would leave box zoom off for the rest of the session with nothing on screen to
+  // explain it — a silent, sitewide regression from a feature nobody was using.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !armedSlot) return;
+
+    map.boxZoom.disable();
+    const canvas = map.getCanvasContainer();
+    let start: { x: number; y: number } | null = null;
+    let box: HTMLDivElement | null = null;
+
+    const clearBox = () => {
+      box?.remove();
+      box = null;
+      start = null;
+    };
+
+    const onDown = (ev: MouseEvent) => {
+      if (!ev.shiftKey || ev.button !== 0) return;
+      ev.preventDefault();
+      start = { x: ev.clientX, y: ev.clientY };
+      box = document.createElement("div");
+      box.className = "tn-arm-box";
+      // Geometry inline, skin in CSS. A stylesheet this file does not own is not a
+      // safe place for "does not break the map": without position:absolute this div
+      // would be a static block inside the canvas container and would shove the map
+      // around, and pointer-events would swallow the mouseup that ends the drag.
+      box.style.position = "absolute";
+      box.style.left = "0";
+      box.style.top = "0";
+      box.style.pointerEvents = "none";
+      canvas.appendChild(box);
+    };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!start || !box) return;
+      const rect = canvas.getBoundingClientRect();
+      box.style.transform = `translate(${Math.min(start.x, ev.clientX) - rect.left}px, ${
+        Math.min(start.y, ev.clientY) - rect.top
+      }px)`;
+      box.style.width = `${Math.abs(ev.clientX - start.x)}px`;
+      box.style.height = `${Math.abs(ev.clientY - start.y)}px`;
+    };
+
+    const onUp = (ev: MouseEvent) => {
+      if (!start) return;
+      const from = start;
+      clearBox();
+      // A shift-CLICK is not a box. Under a few pixels the user was aiming at a pin,
+      // and turning that into a zero-area selection would answer "0 cameras here"
+      // to a gesture that just added one.
+      if (Math.abs(ev.clientX - from.x) < 4 && Math.abs(ev.clientY - from.y) < 4) return;
+      const rect = canvas.getBoundingClientRect();
+      const a = map.unproject([from.x - rect.left, from.y - rect.top]);
+      const b = map.unproject([ev.clientX - rect.left, ev.clientY - rect.top]);
+      appendBoxSelection(
+        normalizeBounds({ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }),
+        webcamsRef.current,
+      );
+    };
+
+    canvas.addEventListener("mousedown", onDown);
+    // move/up on the window, not the canvas: a drag that ends outside the map still
+    // ends, rather than leaving a ghost rectangle stuck to the cursor.
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+
+    return () => {
+      canvas.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      clearBox();
+      map.boxZoom.enable();
+    };
+  }, [armedSlot]);
+
   const trackedFound = track.id ? planesLayer.objects.some((o) => o.id === track.id) : false;
 
   // Drop a pin at a point (right-click menu). Labels with coords immediately, then
@@ -1789,8 +2197,20 @@ export default function WorldMap() {
   }, []);
 
   return (
-    <div className="world-map">
+    <div className={armedSlot ? "world-map tn-armed" : "world-map"}>
       <div ref={containerRef} className="map-canvas" />
+
+      {/* INTERCEPTION 7, the visible half. A global mode on a map that has no other
+          mode has to say it is on and say how to leave, or the next click is a
+          surprise. Rendered from the hook, so it survives the fact that the click
+          handlers themselves are frozen closures. */}
+      {armedSlot && (
+        <div className="tn-arm-hint" role="status" aria-live="polite">
+          <span>
+            Filling a slot — click a pin, or shift-drag a box. <kbd>Esc</kbd> to stop.
+          </span>
+        </div>
+      )}
 
       {/* Basemap load notice. A basemap that fails to load used to leave a silent
           black rectangle; say what happened and offer a way back. */}

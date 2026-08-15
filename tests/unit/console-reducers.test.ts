@@ -13,7 +13,10 @@ test("default layout has three segments, a 2D stage, and no widgets", () => {
   expect(l.segments.bottom).toEqual({ size: 220, collapsed: false });
   expect(l.stage).toBe("map2d");
   expect(l.widgets).toEqual([]);
-  expect(MAX_WIDGETS).toBe(50);
+  // Deliberately asserts a FLOOR, not the exact number. This is a runaway-writer
+  // backstop that has already been raised once (50 -> 200 for the Streets board);
+  // pinning the literal made five tests fail for a change that broke nothing.
+  expect(MAX_WIDGETS).toBeGreaterThanOrEqual(50);
 });
 
 test("addWidget appends to the emptiest segment and assigns dense order", () => {
@@ -26,8 +29,8 @@ test("addWidget appends to the emptiest segment and assigns dense order", () => 
 
 test("addWidget is a no-op at capacity", () => {
   let l = createDefaultLayout();
-  for (let i = 0; i < 50; i++) l = addWidget(l, "aviation", newInstanceId(i));
-  expect(l.widgets.length).toBe(50);
+  for (let i = 0; i < MAX_WIDGETS; i++) l = addWidget(l, "aviation", newInstanceId(i));
+  expect(l.widgets.length).toBe(MAX_WIDGETS);
   expect(isAtCapacity(l)).toBe(true);
   const same = addWidget(l, "aviation", "overflow");
   expect(same).toBe(l); // identity — caller can detect rejection

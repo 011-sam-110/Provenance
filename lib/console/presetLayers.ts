@@ -14,6 +14,12 @@ const WIDGET_TO_CORE: Record<string, LayerKey> = {
   cameras: "cameras",
   aviation: "planes",
   satellites: "satellites",
+  // A camera slot is a camera widget, so it implies the camera pins wherever it is
+  // dropped — including on a board that was not authored around it. It deliberately
+  // does NOT imply webcams: that layer stays a per-board choice made through
+  // `mapCore`, because a board asking for road cameras has not asked for a
+  // third-party webcam sample as well.
+  camslot: "cameras",
 };
 
 const SIGNAL_PREFIX = "signal:";
