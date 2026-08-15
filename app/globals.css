@@ -4872,3 +4872,29 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
 .tn-cs-note { padding: 3px 8px 5px; font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink); }
 .tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }
+
+/* ── Map arming (Streets M4) ───────────────────────────────────────────────
+   Authored by the map-arming agent; landed here because globals.css is serialised
+   through streets-lead. The map has no other mode, so armed has to be visible from
+   the map itself, not only from the slot that is armed. Ring + crosshair + a hint
+   that names the way out. The drag rectangle carries its own position and
+   pointer-events inline in WorldMap, so a missing rule here can never shove the map
+   around.
+
+   The hint sits TOP-centre deliberately: .tn-map-notice is bottom:116px and the
+   basemap-failure notice can be on screen during an armed session, so bottom-centre
+   would stack them. The ring is on ::after with pointer-events:none because
+   .world-map is the click surface — a real border would move the canvas by 2px and
+   re-project every pin. */
+.world-map.tn-armed::after{content:"";position:absolute;inset:0;z-index:20;pointer-events:none;
+border-radius:10px;box-shadow:inset 0 0 0 2px var(--tn-accent)}
+.world-map.tn-armed .maplibregl-canvas-container,
+.world-map.tn-armed .maplibregl-canvas{cursor:crosshair}
+.tn-arm-hint{position:absolute;left:50%;transform:translateX(-50%);top:12px;z-index:30;
+display:flex;align-items:center;gap:8px;max-width:min(560px,calc(100% - 32px));
+padding:6px 14px;border-radius:999px;border:1px solid var(--tn-accent);
+background:var(--tn-surface-solid);color:var(--tn-text);font-size:13px;
+box-shadow:0 6px 22px rgba(20,28,38,.18)}
+.tn-arm-hint kbd{font:inherit;font-size:11px;padding:1px 6px;border-radius:4px;
+border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
+.tn-arm-box{border:1px solid var(--tn-accent);background:var(--tn-accent-soft);border-radius:2px}
