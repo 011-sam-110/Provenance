@@ -465,6 +465,11 @@ The feature is too large for one implementation plan, and the pieces have a real
 Each milestone below is independently shippable and independently valuable — which matters, because
 M1 alone already answers the originating feedback.
 
+**Status as of 2026-08-15:** M1, M2, M3 and M5 are committed on `docs/streets-board-spec` and
+green (1,976 tests / 244 files, `tsc` clean, production build succeeds). M4 is in verification.
+Built in parallel by four agents on the `#trafficnerd-v2` bus — `streets-lead` (M1–M3 + integration),
+`map-arming` (M4), `day-history` (M5), `streets-qa` (verification).
+
 | M | Scope | Why this order |
 |---|---|---|
 | **M1** | `camslot` widget: config, rotation, prefetch, pause, accessibility (§5) · in-widget search over the **cached** pools · `sanitizeLayout` branch and render-path validation (§8) · the cache-buster and mount fixes (§7.2) | A card that displays chosen camera images is the thing the console has never had — `presets.ts` says so itself ("webcams has no widget to imply it"), and the only renderer in the tree today is `WebcamDetail.tsx`, reachable solely by clicking a pin. Drop this card on any existing board and the feedback is answered, because per-board layouts already persist. |
