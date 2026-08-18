@@ -184,6 +184,13 @@ error, and the outbound URL that contains it must never be logged.
 
 ## Testing
 
+The house gate is `npx tsc --noEmit && npm test`, both halves. vitest here runs in the
+node environment over pure modules only, so it does not typecheck pages or components:
+a type error in `FeedbackPrompt.tsx` passes every test and surfaces only in Vercel's
+build. Verified clean on this branch before any code was written - tsc exit 0, 246
+files / 2037 tests.
+
+
 Test files live at **`tests/unit/feedback.test.ts`** and nowhere else. `vitest.config.ts`
 includes only `tests/unit/**/*.test.ts`, so a file at `tests/` root - or any `.test.tsx`
 - is silently skipped and still reports green. There is also no React testing library
