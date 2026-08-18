@@ -165,6 +165,23 @@ This route differs from `/api/telegram` in a way that matters: that one relays t
 - If `FEEDBACK_TELEGRAM_BOT_TOKEN` / `FEEDBACK_TELEGRAM_CHAT_ID` are unset the route
   is dormant and the prompt never mounts - no dead form on a deploy without secrets.
 
+### The one place this route must NOT copy `/api/telegram`
+
+That route ends with `error: j?.description`, passing Telegram's own error text back to
+the caller. It is correct there, because the caller supplied the credentials and the
+error is about their own bot.
+
+Here it would be a credential oracle. An anonymous caller who can read "Unauthorized"
+versus "chat not found" versus a success learns whether the token is live and whether
+the chat id resolves - and the repo is public, so anyone can read the route and know
+exactly what the responses mean. **This route returns a single generic failure string
+for every upstream outcome**, and the real reason is never echoed and never logged.
+
+For the same reason the token is read from `process.env` at request time inside the
+handler. It has no `NEXT_PUBLIC_` prefix and a route handler is server-only, so it
+cannot reach a client bundle - but it must also never be interpolated into a returned
+error, and the outbound URL that contains it must never be logged.
+
 ## Testing
 
 Test files live at **`tests/unit/feedback.test.ts`** and nowhere else. `vitest.config.ts`
