@@ -14,7 +14,7 @@ vi.mock("@/lib/webcams/fetch", async (importOriginal) => ({
   describeWebcamSample: () => describeWebcamSample(),
 }));
 
-const { webcamsBody, __resetWebcamsBody } = await import("@/app/api/webcams/route");
+const { webcamsBody, __resetWebcamsBody } = await import("@/lib/webcams/body");
 
 const webcam = (id: string, over: Record<string, unknown> = {}) => ({
   id,
