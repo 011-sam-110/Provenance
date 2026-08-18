@@ -54,7 +54,7 @@
 
 import { unstable_cache } from "next/cache";
 import type { Camera } from "@/lib/types";
-import { getRegistry } from "@/lib/sources/registry";
+import { REGISTRY_TTL_MS, getRegistry } from "@/lib/sources/registry";
 import { findById, nearest } from "@/lib/sources/select";
 import { camerasInRegion, groupByCountry, pageSlice, type CountryGroup } from "@/lib/seo/directory";
 import { REGION_PAGE_SIZE } from "@/lib/seo/paths";
@@ -62,8 +62,17 @@ import { REGION_PAGE_SIZE } from "@/lib/seo/paths";
 /** Matches `revalidate` on app/cameras/**. The directory moves at the speed of a feed being added. */
 const DIRECTORY_TTL_SECONDS = 86_400;
 
-/** Matches `revalidate` on app/camera/[id]/page.tsx. */
-const CAMERA_TTL_SECONDS = 3_600;
+/**
+ * Matches `revalidate` on app/camera/[id]/page.tsx, and is DERIVED rather than typed.
+ *
+ * Sampo's call, 2026-08-18: track the registry's own refresh rather than the hour the
+ * page used to declare. `available` - the "not answering at the last check" line - is
+ * the one field on that page that genuinely moves, and an hour of it was more slack
+ * than the saving was worth. At the registry's own cadence the page is never staler
+ * than the data behind it, which is the tightest window that means anything: a shorter
+ * one would re-render to fetch a snapshot that had not changed.
+ */
+const CAMERA_TTL_SECONDS = REGISTRY_TTL_MS / 1_000;
 
 /**
  * Everything `/cameras` and `/cameras/[country]` render, in one small object.
