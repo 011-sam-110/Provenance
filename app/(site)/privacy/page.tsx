@@ -170,10 +170,16 @@ export default function PrivacyPage() {
               disappears when that instance recycles.
             </p>
             <p>
-              Be clear about what that hash is and is not. It stops the same person submitting
-              fifty times. It is not an anonymisation technique, because there are few enough
-              possible addresses that a hash of one could be worked backwards. It is a counter, and
-              it is the only thing in this application that touches your address at all.
+              The hash is salted with a random value generated when the server instance starts. That
+              matters, because a plain hash of an address would not protect it: there are only about
+              four billion possible addresses, so anyone could hash all of them and look yours up.
+              The salt makes that impossible. It never leaves memory, it is not in the source code,
+              and it dies with the instance that made it.
+            </p>
+            <p>
+              Be clear about what it is for. It stops the same person submitting fifty times. It is
+              a counter, and it is the only thing in this application that touches your address at
+              all.
             </p>
             <p>
               Some routes hold what you typed in ordinary server memory for a few minutes so a
