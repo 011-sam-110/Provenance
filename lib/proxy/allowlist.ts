@@ -31,6 +31,14 @@ const RULES: { host: string; prefix: string; suffix?: string }[] = [
   { host: "www.traffic.gov.scot", prefix: "/tsis/camerahtml" },
   // CET São Paulo — snapshots at /cams/{pasta}/1.jpg.
   { host: "cameras.cetsp.com.br", prefix: "/cams/", suffix: ".jpg" },
+  // JP Putevi Srbije toll plazas — one poster JPEG per camera, always at
+  // /{camera-slug}/index.jpg, so the suffix pins the filename and not just the
+  // extension. TWO hosts because the operator splits them: the front-plaza
+  // cameras post to cam, the side-plaza cameras to jpps. Both also serve the
+  // HLS, which is a separate rule in hls-allowlist.ts and needs a Referer; the
+  // JPEG does not.
+  { host: "cam.bitinfo.co.rs", prefix: "/", suffix: "/index.jpg" },
+  { host: "jpps.bitinfo.co.rs", prefix: "/", suffix: "/index.jpg" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

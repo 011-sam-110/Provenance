@@ -11,6 +11,8 @@ import { fetchRegistry as fetchIceland } from "@/lib/sources/iceland";
 import { fetchRegistry as fetchEstonia } from "@/lib/sources/estonia";
 import { fetchRegistry as fetchTrafficScotland } from "@/lib/sources/trafficscotland";
 import { fetchRegistry as fetchCetsp } from "@/lib/sources/cetsp";
+import { fetchRegistry as fetchSerbiaBorders } from "@/lib/sources/serbia-borders";
+import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
 import { findById, nearest } from "@/lib/sources/select";
 
 const TTL_MS = 5 * 60 * 1000;
@@ -118,6 +120,14 @@ const SOURCES: CameraFeed[] = [
   // lib/sources/cetsp.ts for why the other ~195 snapshot folders on that host
   // are not cameras.
   { key: "cetsp", fetch: fetchCetsp },
+  // First Balkan feeds, and two rather than one on purpose: they are separate
+  // operators (the interior ministry and the roads company) with separate
+  // outages, and mergeResults keeps last-good PER FEED. Folded into a single
+  // "serbia" key, a bad round at either portal would mark the other's cameras
+  // stale too. Neither declares a budgetMs — both were measured well inside the
+  // 10s default (see each adapter's fetchRegistry).
+  { key: "mup-rs", fetch: fetchSerbiaBorders },
+  { key: "putevi-rs", fetch: fetchSerbiaTolls },
 ];
 
 export const CAMERA_FEED_COUNT = SOURCES.length;
