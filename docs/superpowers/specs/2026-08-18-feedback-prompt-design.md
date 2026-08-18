@@ -1,4 +1,4 @@
-# Feedback prompt — design
+# Feedback prompt - design
 
 Date: 2026-08-18
 Branch: `feat/feedback-prompt` off `origin/main` (80b684d)
@@ -10,11 +10,11 @@ A one-time in-console prompt that asks a visitor four things:
 
 1. What occupation are you in?
 2. What do you find useful here?
-3. Rate the tool 1–10.
+3. Rate the tool 1-10.
 4. Optional email, so Sam can arrange a 15-minute video call.
 
-It appears only to visitors who have plausibly *used* the thing — 15 minutes of
-active time, or a return visit — and only to a third of them, and never twice.
+It appears only to visitors who have plausibly *used* the thing - 15 minutes of
+active time, or a return visit - and only to a third of them, and never twice.
 
 ## Why the shape is what it is
 
@@ -30,7 +30,7 @@ mirrors `app/api/telegram/route.ts`.
 
 Three new units plus one mount line. Each is separately testable.
 
-### `lib/shell/feedback.ts` — the gate (pure, no React, no DOM)
+### `lib/shell/feedback.ts` - the gate (pure, no React, no DOM)
 
 Owns every decision about *whether* to show the prompt. Storage is injectable, the
 same trick `persist.ts` uses, so the whole thing is unit-testable in the node vitest
@@ -42,7 +42,7 @@ Persisted state, under one versioned key `tn.feedback.v1`:
 |---|---|
 | `visits` | count of distinct visits (incremented once per page load) |
 | `activeMs` | cumulative **visible** time across all visits |
-| `resolved` | `"submitted"` \| `"dismissed"` \| absent — the permanent stop |
+| `resolved` | `"submitted"` \| `"dismissed"` \| absent - the permanent stop |
 
 Ephemeral (in memory, per visit): whether this visit's roll has been made, and its
 outcome.
@@ -50,19 +50,19 @@ outcome.
 Exported pure functions: `qualifies(state)`, `rollFor(visit)`, `shouldPrompt(state,
 context)`, `recordVisit`, `addActiveMs`, `markSubmitted`, `markDismissed`.
 
-### `components/shell/FeedbackPrompt.tsx` — the modal
+### `components/shell/FeedbackPrompt.tsx` - the modal
 
 Centred card over a dimmed app, matching the tour's menu card so it reads as part of
 the console rather than a bolted-on widget. Uses the existing `--tn-*` tokens, so it
 inherits light/dark and the terminal skin for free.
 
-### `app/api/feedback/route.ts` — the relay
+### `app/api/feedback/route.ts` - the relay
 
 `POST` only. Validates, then forwards one `sendMessage` to Telegram using
 **server-side** env vars. Fails closed to `{ ok: false }` with a 200, the
 dormant-safe convention both sibling relays already follow.
 
-### `components/shell/ConsoleShell.tsx` — one line
+### `components/shell/ConsoleShell.tsx` - one line
 
 Mounted as overlay chrome alongside `<TourOverlay />`, after `<TerminalFooter />`.
 
@@ -81,14 +81,14 @@ show        = qualifies AND !blocked AND rollWon
 Four judgement calls inside that, each of which you can veto:
 
 **The roll is per visit, not per browser.** "Never ask twice" plainly means never
-nag someone who already answered or said no — so `submitted` and `dismissed` are
+nag someone who already answered or said no - so `submitted` and `dismissed` are
 permanent. But if a *lost roll* were also permanent, two thirds of everyone who ever
 uses the tool would be silently excluded forever, which is not a sampling policy, it
 is a cap. A returning visitor gets a fresh roll.
 
 **15 minutes means 15 minutes of visible time, not wall clock.** A ticker accumulates
 only while `document.visibilityState === "visible"`. Otherwise a tab left open
-overnight — completely normal for a live map — qualifies without anyone having looked
+overnight - completely normal for a live map - qualifies without anyone having looked
 at it, and the trigger stops meaning what it says.
 
 **It re-checks mid-session.** A first-time visitor who crosses 15 minutes is prompted
@@ -105,13 +105,13 @@ top of a first-run walkthrough would be the worst possible first impression.
 |---|---|---|---|
 | Occupation | select + free-text "Other" | yes | 100 chars |
 | What's useful | textarea | yes | 1000 chars |
-| Rating 1–10 | radio group, ①–⑩ | yes | int 1–10 |
+| Rating 1-10 | radio group, ①-⑩ | yes | int 1-10 |
 | Email | `type="email"` | **no** | 200 chars |
 
 The occupation select is a judgement call worth naming: a free-text box gives you
-prose you have to read and cannot count, whereas a short list — Journalist,
+prose you have to read and cannot count, whereas a short list - Journalist,
 Researcher/Academic, OSINT / investigations, Security / defence, Software /
-engineering, Emergency response, Student, Other — is one tap, lifts completion, and
+engineering, Emergency response, Student, Other - is one tap, lifts completion, and
 lets you actually segment who is showing up. "Other" reveals a text input so the
 unexpected answers still land.
 
@@ -137,7 +137,7 @@ inside the form itself:
   prompt. No IP, no user agent, no session id, no board state.
 - The email address is **never persisted anywhere**. It is not written to
   `localStorage` (only the `resolved` flag is), not attached to any analytics event,
-  and **not logged server-side** — the route must not `console.log` the body, including
+  and **not logged server-side** - the route must not `console.log` the body, including
   on the error path, because that is exactly where an address leaks into Vercel's log
   drain.
 
@@ -163,13 +163,13 @@ This route differs from `/api/telegram` in a way that matters: that one relays t
   Fluid Compute instances are ephemeral and plural, so this is a speed bump, not a
   guarantee. The caps above are the real protection.
 - If `FEEDBACK_TELEGRAM_BOT_TOKEN` / `FEEDBACK_TELEGRAM_CHAT_ID` are unset the route
-  is dormant and the prompt never mounts — no dead form on a deploy without secrets.
+  is dormant and the prompt never mounts - no dead form on a deploy without secrets.
 
 ## Testing
 
 Test files live at **`tests/unit/feedback.test.ts`** and nowhere else. `vitest.config.ts`
-includes only `tests/unit/**/*.test.ts`, so a file at `tests/` root — or any `.test.tsx`
-— is silently skipped and still reports green. There is also no React testing library
+includes only `tests/unit/**/*.test.ts`, so a file at `tests/` root - or any `.test.tsx`
+- is silently skipped and still reports green. There is also no React testing library
 in the repo, so `FeedbackPrompt` gets no component test; its behaviour is covered by the
 pure gate module underneath it plus the Playwright pass.
 
