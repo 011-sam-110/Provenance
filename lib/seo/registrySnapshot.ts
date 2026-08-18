@@ -39,13 +39,19 @@
 //
 // TWO RULES FOR ANYTHING ADDED BELOW.
 //
-//   1. KEEP ENTRIES SMALL. These are stored in the same incremental cache that backs
-//      ISR, which has a documented per-entry size limit (2 MB on Vercel at the time of
-//      writing — a vendor limit, taken from their docs and NOT measured here; an
-//      oversized entry is declined SILENTLY, so the failure looks like the cache
-//      simply never working). The whole registry is ~6.4 MB of JSON, measured
-//      (6,443,932 bytes on prod, 2026-08-18), so it must never be cached whole; every
-//      reader here returns only the rows its page renders.
+//   1. KEEP ENTRIES SMALL. `unstable_cache` writes to Vercel's Data cache, whose
+//      documented item-size limit is 2 MB — "items larger won't be cached"
+//      (vercel.com/docs/caching/runtime-cache/data-cache, "Limits and usage",
+//      last updated 2026-07-27). That wording is the reason this rule is worth
+//      stating: an oversized entry does not throw, it SILENTLY never caches, so the
+//      symptom is a caching fix that looks fine and does nothing. It is a vendor
+//      limit, cited rather than measured — an oversized entry produces no local
+//      signal to measure. Re-check it against that page, not against this comment.
+//
+//      The whole registry is ~6.4 MB of JSON — measured, 6,443,932 bytes on prod
+//      2026-08-18 — so it must never be cached whole; every reader here returns only
+//      the rows its page renders. For scale, the directory snapshot measures 1,663
+//      bytes.
 //
 //      The region reader is keyed by page number because one region can be thousands
 //      of cameras — the largest, US/Florida, measured 4,646 in the 2026-08-18 snapshot
