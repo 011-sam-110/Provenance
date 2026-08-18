@@ -4913,3 +4913,75 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   .tn-cs-stage { aspect-ratio: 16 / 9; min-height: 0; flex: none; }
 }
 .tn-cs-arm.is-on { border-color: var(--tn-accent); background: var(--tn-accent-soft); color: var(--tn-accent-strong); font-weight: 700; }
+
+/* ── Feedback prompt ────────────────────────────────────────────────────────
+   A centred card over a dimmed console, shown once to a sampled third of the
+   people who have actually used the thing. Mirrors .tn-tour-card's surface and
+   radius so it reads as part of the console rather than a bolted-on widget; it
+   is wider only because it carries a four-field form rather than a sentence. */
+.tn-fb { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 16px; }
+.tn-fb-veil { position: fixed; inset: 0; background: rgba(15, 23, 42, .55); }
+.tn-fb-card {
+  position: relative; width: min(460px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto;
+  background: var(--tn-surface-solid); color: var(--tn-text);
+  border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow);
+  display: flex; flex-direction: column;
+  animation: tn-fade-in .16s ease;
+}
+.tn-fb-card.is-thanks { align-items: center; text-align: center; gap: 8px; padding: 34px 24px; }
+.tn-fb-tick {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--tn-live); color: var(--tn-live); font-size: 18px;
+}
+.tn-fb-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px 13px; border-bottom: 1px solid var(--tn-border); }
+.tn-fb-title { margin: 0; font-size: 16.5px; font-weight: 700; color: var(--tn-text); }
+.tn-fb-sub { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--tn-text-muted); }
+.tn-fb-x {
+  margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid transparent; background: none; color: var(--tn-text-faint);
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.tn-fb-x:hover { color: var(--tn-text); border-color: var(--tn-border-strong); }
+.tn-fb-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 15px; }
+.tn-fb-field { display: flex; flex-direction: column; gap: 6px; }
+.tn-fb-label { font-size: 13px; font-weight: 700; color: var(--tn-text); }
+.tn-fb-optional { font-weight: 400; color: var(--tn-text-faint); }
+.tn-fb-input {
+  font: inherit; font-size: 13.5px; width: 100%; padding: 8px 10px;
+  color: var(--tn-text); background: var(--tn-surface-2);
+  border: 1px solid var(--tn-border-strong); border-radius: 8px;
+}
+.tn-fb-input:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-fb-area { min-height: 68px; line-height: 1.5; resize: vertical; }
+.tn-fb-rating { display: flex; gap: 4px; }
+.tn-fb-rate {
+  flex: 1 1 0; min-width: 0; padding: 8px 0; font: inherit; font-size: 13px;
+  font-variant-numeric: tabular-nums; cursor: pointer;
+  color: var(--tn-text-muted); background: var(--tn-surface-2);
+  border: 1px solid var(--tn-border-strong); border-radius: 7px;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.tn-fb-rate:hover:not(:disabled) { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
+.tn-fb-rate.is-on { background: var(--tn-accent); border-color: var(--tn-accent); color: #fff; font-weight: 700; }
+.tn-fb-scale { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--tn-text-faint); }
+.tn-fb-privacy {
+  margin: 2px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--tn-text-muted);
+  border-left: 2px solid var(--tn-accent); padding-left: 9px;
+}
+.tn-fb-error { margin: 0; font-size: 12.5px; color: var(--tn-down-ink); }
+/* Off-screen rather than display:none — some bots skip hidden fields, and skipping
+   is exactly what a human does, so hiding it that way would blunt the trap. */
+.tn-fb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.tn-fb-foot { display: flex; align-items: center; gap: 10px; padding: 13px 18px 16px; border-top: 1px solid var(--tn-border); }
+.tn-fb-spacer { flex: 1; }
+.tn-fb-btn {
+  font: inherit; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  border: 1px solid var(--tn-border-strong); background: var(--tn-surface-2); color: var(--tn-text);
+  cursor: pointer;
+}
+.tn-fb-btn:disabled { opacity: .5; cursor: default; }
+.tn-fb-btn.is-primary { background: var(--tn-accent); border-color: transparent; color: #fff; }
+.tn-fb-btn.is-primary:hover:not(:disabled) { background: var(--tn-accent-strong); }
+.tn-fb-btn.is-ghost { background: none; border-color: transparent; color: var(--tn-text-faint); font-weight: 400; }
+.tn-fb-btn.is-ghost:hover:not(:disabled) { color: var(--tn-text); background: var(--tn-surface-2); }
+@media (prefers-reduced-motion: reduce) { .tn-fb-card { animation: none; } }

@@ -38,6 +38,7 @@ import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import BreakingBanner from "@/components/shell/BreakingBanner";
 import TourOverlay from "@/components/shell/TourOverlay";
+import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
 import { tourStore } from "@/lib/shell/tour";
 import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
@@ -313,6 +314,9 @@ export default function ConsoleShell() {
       <FeedOverlay />
       <CinematicDive />
       <TourOverlay />
+      {/* Gates itself entirely (lib/shell/feedback.ts) and renders null until it
+          decides to ask, so mounting it unconditionally costs one interval. */}
+      <FeedbackPrompt />
       {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
           disappearing with its text. A live region has to already be in the
           accessibility tree when its content changes for the change to be

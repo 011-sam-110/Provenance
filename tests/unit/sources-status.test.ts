@@ -227,7 +227,7 @@ describe("buildStatusReport", () => {
   it("reports the non-layer capabilities too, and keeps them out of the layer totals", () => {
     const rep = buildStatusReport(reg, {}, NOW);
     expect(rep.capabilities.map((c) => c.id).sort()).toEqual(
-      ["ai-brief", "geolocate-vision", "markets-equities", "markets-macro", "webcams", "youtube-live"],
+      ["ai-brief", "feedback-prompt", "geolocate-vision", "markets-equities", "markets-macro", "webcams", "youtube-live"],
     );
     expect(rep.summary.layersRegistered).toBe(3);
   });
