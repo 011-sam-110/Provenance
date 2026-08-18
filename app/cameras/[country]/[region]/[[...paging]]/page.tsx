@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { getRegistry } from "@/lib/sources/registry";
-import { camerasInRegion, pageSlice } from "@/lib/seo/directory";
+import { getRegionPage } from "@/lib/seo/registrySnapshot";
 import {
   CAMERAS_ROOT,
   REGION_PAGE_SIZE,
@@ -39,9 +38,16 @@ function parsePage(paging: string[] | undefined): number | null {
   return Number(raw);
 }
 
-async function load(country: string, region: string) {
-  const cameras = await getRegistry().catch(() => []);
-  return camerasInRegion(cameras, country, region);
+/**
+ * Returns NO paths, for the same reason as `/camera/[id]` - see the long note there.
+ * Next's docs: "you must return an array from generateStaticParams, even if it's
+ * empty. Otherwise, the route will be dynamically rendered instead of statically."
+ *
+ * Empty rather than the ~60 region/page combinations, so a region that appears when a
+ * feed is added is cached on first visit with no build edit and no build cost.
+ */
+export async function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
@@ -51,11 +57,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { country, region, paging } = await params;
   const page = parsePage(paging);
-  const hit = await load(country, region);
-  if (!hit || page === null) return { title: "Region not found" };
+  if (page === null) return { title: "Region not found" };
+  const hit = await getRegionPage(country, region, page);
+  if (!hit) return { title: "Region not found" };
 
-  const pages = regionPageCount(hit.cameras.length);
-  const title = regionTitle(country, hit.region, hit.cameras.length, page);
+  const pages = regionPageCount(hit.total);
+  const title = regionTitle(country, hit.region, hit.total, page);
   const where = `${hit.region}, ${countryName(country)}`;
 
   return {
@@ -63,7 +70,7 @@ export async function generateMetadata({
     description:
       page > 1
         ? `Page ${page} of ${pages}: more public road cameras in ${where}, each with a live image and its operator named.`
-        : `Every public road camera in ${where}: ${formatCount(hit.cameras.length)} live feeds, each with its own page showing the current image, the operator and how often it refreshes.`,
+        : `Every public road camera in ${where}: ${formatCount(hit.total)} live feeds, each with its own page showing the current image, the operator and how often it refreshes.`,
     alternates: { canonical: regionPath(country, hit.region, page) },
     // Deep pages of a long list are real, useful and crawlable, but they are not
     // what should surface for "cameras in Florida" - page 1 is. Following the links
@@ -82,13 +89,13 @@ export default async function RegionPage({ params }: { params: Promise<RoutePara
   // canonical one permanently rather than serving identical content at two URLs.
   if (paging && paging.length === 1 && page === 1) permanentRedirect(regionPath(country, region));
 
-  const hit = await load(country, region);
+  const hit = await getRegionPage(country, region, page);
   if (!hit) notFound();
 
-  const pages = regionPageCount(hit.cameras.length);
+  const pages = regionPageCount(hit.total);
   if (page > pages) notFound();
 
-  const slice = pageSlice(hit.cameras, page, REGION_PAGE_SIZE);
+  const slice = hit.cameras;
   const first = (page - 1) * REGION_PAGE_SIZE + 1;
   const last = first + slice.length - 1;
   const countryLabel = countryName(country);
@@ -107,7 +114,7 @@ export default async function RegionPage({ params }: { params: Promise<RoutePara
       </h1>
 
       <p className="tn-dir-lede">
-        {formatCount(hit.cameras.length)} public road cameras.{" "}
+        {formatCount(hit.total)} public road cameras.{" "}
         {pages > 1 && (
           <>
             Showing {formatCount(first)}&ndash;{formatCount(last)}, page {page} of {pages}.

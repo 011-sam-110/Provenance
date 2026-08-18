@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getRegistry } from "@/lib/sources/registry";
-import { groupByCountry } from "@/lib/seo/directory";
+import { getDirectory } from "@/lib/seo/registrySnapshot";
 import { CAMERAS_ROOT, countryPath, formatCount, regionPath } from "@/lib/seo/paths";
 import { BRAND } from "@/lib/brand";
 
@@ -15,10 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CamerasIndex() {
-  const cameras = await getRegistry().catch(() => []);
-  const groups = groupByCountry(cameras);
-  const available = cameras.filter((c) => c.available).length;
-  const regionCount = groups.reduce((n, g) => n + g.regions.length, 0);
+  const { groups, total, available, regionCount } = await getDirectory();
 
   return (
     <main className="tn-dir">
@@ -29,7 +25,7 @@ export default async function CamerasIndex() {
       <h1>Live traffic cameras by country</h1>
 
       <p className="tn-dir-lede">
-        {formatCount(cameras.length)} public road cameras from {groups.length} countries and{" "}
+        {formatCount(total)} public road cameras from {groups.length} countries and{" "}
         {formatCount(regionCount)} regions, read directly from the transport authorities that
         operate them. {formatCount(available)} were answering at the last check.
       </p>

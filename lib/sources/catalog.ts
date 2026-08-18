@@ -25,7 +25,7 @@ export const CORE_IDS = ["cameras", "planes", "satellites", "webcams"] as const;
 // Core-layer descriptors. refreshMs mirrors lib/freshness.ts seed(); groups use the
 // roll-up vocabulary (a group with one source still yields a valid 1-source roll-up).
 const CORE_SOURCES: CatalogSource[] = [
-  { id: "cameras",    kind: "core", label: "Cameras",    group: "Cameras",  color: "#0e7d97", attribution: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC", refreshMs: 300_000 },
+  { id: "cameras",    kind: "core", label: "Cameras",    group: "Cameras",  color: "#0e7d97", attribution: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC · MUP Srbije · Putevi Srbije", refreshMs: 300_000 },
   { id: "webcams",    kind: "core", label: "Webcams",    group: "Cameras",  color: "#ec4899", attribution: "Windy.com — global webcams", refreshMs: 600_000 },
   // OpenSky, not adsb.lol: app/api/planes → lib/sources/opensky.ts pulls the global
   // /states/all snapshot. adsb.lol backs only the separate military-air SIGNAL layer
