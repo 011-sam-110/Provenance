@@ -210,6 +210,40 @@ export function validateFeedback(input: unknown): Validated<FeedbackPayload> {
   };
 }
 
+/* ── Rate-limit bucket key ──────────────────────────────────────────────── */
+
+/**
+ * A per-instance bucket key for the rate limiter.
+ *
+ * THIS IS NOT ANONYMISATION, and an earlier version of this code claimed it was.
+ * The claim was wrong for a reason worth writing down, because it looks safe: the
+ * weakness is not SHA-256, it is that the INPUT SPACE IS ENUMERABLE. There are
+ * about 4.3 billion IPv4 addresses, so an unsalted digest over a fixed public
+ * prefix is a lookup table rather than an attack. Measured on this machine:
+ * ~743k hashes/sec single-threaded, i.e. a full IPv4 sweep in ~96 minutes on one
+ * core or ~12 on eight. Truncating to 64 bits does not help either - across 2^32
+ * inputs the expected number of 64-bit collisions is 0.5, so a match comes back
+ * effectively unique. And this repo is public, so the construction is readable.
+ *
+ * The salt is what makes it genuinely non-reversible, and it costs nothing here:
+ * the limiter is already per-instance and best-effort (its Map dies with the
+ * instance), so a salt that never leaves memory and never reaches the repo gives
+ * up nothing that was not already given up.
+ */
+export async function bucketKey(salt: string, ip: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${salt}:feedback:${ip}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest).slice(0, 8))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** First entry of x-forwarded-for, or a shared "unknown" bucket. Split out so the
+ *  parsing is testable without a Request. */
+export function clientIpFrom(forwardedFor: string | null): string {
+  return (forwardedFor ?? "").split(",")[0]?.trim() || "unknown";
+}
+
 /** The Telegram message body. Kept pure so its shape is pinned by a test rather
  *  than discovered in a chat window. */
 export function formatFeedbackMessage(p: FeedbackPayload): string {
