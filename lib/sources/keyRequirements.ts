@@ -163,6 +163,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
       "The brief falls back to the keyless heuristic version. The numbers are identical either way — only the prose is missing.",
     obtain: "Any OpenAI-compatible gateway.",
   },
+  {
+    kind: "required",
+    id: "feedback-prompt",
+    label: "In-console feedback prompt",
+    env: ["FEEDBACK_TELEGRAM_BOT_TOKEN", "FEEDBACK_TELEGRAM_CHAT_ID"],
+    degrades:
+      "The prompt never mounts, so nobody is asked and no dead form is shown. Nothing else about the console changes.",
+    obtain:
+      "Free - @BotFather on Telegram issues the token; the chat id is the destination chat. Unlike the /api/telegram relay, these are the DEPLOYMENT'S own credentials, not the visitor's.",
+  },
 ];
 
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
@@ -174,6 +184,8 @@ export const NON_SIGNAL_IDS = new Set([
   "markets-macro",
   "ai-brief",
   "geolocate-vision",
+  // A product-feedback channel, not a data capability.
+  "feedback-prompt",
 ]);
 
 const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));
