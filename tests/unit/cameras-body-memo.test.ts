@@ -14,7 +14,7 @@ vi.mock("@/lib/proxy/hls-allowlist", () => ({
   isLiveStreamUrl: (url?: string) => isLiveStreamUrl(url),
 }));
 
-const { camerasBody, __resetCamerasBody } = await import("@/app/api/cameras/route");
+const { camerasBody, __resetCamerasBody } = await import("@/lib/cameras/body");
 
 const cam = (id: string, over: Partial<Camera> = {}): Camera =>
   ({
