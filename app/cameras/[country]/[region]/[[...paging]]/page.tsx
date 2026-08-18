@@ -38,6 +38,18 @@ function parsePage(paging: string[] | undefined): number | null {
   return Number(raw);
 }
 
+/**
+ * Returns NO paths, for the same reason as `/camera/[id]` - see the long note there.
+ * Next's docs: "you must return an array from generateStaticParams, even if it's
+ * empty. Otherwise, the route will be dynamically rendered instead of statically."
+ *
+ * Empty rather than the ~60 region/page combinations, so a region that appears when a
+ * feed is added is cached on first visit with no build edit and no build cost.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
 export async function generateMetadata({
   params,
 }: {

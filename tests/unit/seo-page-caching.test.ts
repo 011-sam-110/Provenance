@@ -68,3 +68,33 @@ test("the snapshot never caches the whole registry", () => {
   expect(text).toContain("pageSlice(");
   expect(text).not.toMatch(/return\s+await\s+getRegistry\(\)/);
 });
+
+/**
+ * The second half of the same fix, and the half that is easiest to delete by accident
+ * because an empty array looks like dead code.
+ *
+ * Next's docs, on on-demand static generation: "you must return an array from
+ * generateStaticParams, even if it's empty. Otherwise, the route will be dynamically
+ * rendered instead of statically." Measured across two builds of this tree: caching
+ * the data alone moved /cameras from dynamic to static but left /camera/[id] and the
+ * region route on `f (Dynamic)`. A route with a dynamic segment and no
+ * generateStaticParams is dynamic no matter how well its data is cached.
+ */
+const PARAMETERISED_PAGES = [
+  "app/cameras/[country]/page.tsx",
+  "app/cameras/[country]/[region]/[[...paging]]/page.tsx",
+  "app/camera/[id]/page.tsx",
+];
+
+test.each(PARAMETERISED_PAGES)("%s exports generateStaticParams", (page) => {
+  expect(source(page)).toMatch(/export async function generateStaticParams\(/);
+});
+
+test.each(PARAMETERISED_PAGES)("%s does not force-static its way out of it", (page) => {
+  // `dynamic = "force-static"` flips dynamicParams to false, which would 404 every
+  // camera page that had not already been generated - a far worse failure than the
+  // caching one, and a tempting-looking shortcut.
+  // Anchored on `export const` so the warning ABOUT force-static in the page's own
+  // comment does not trip it.
+  expect(source(page)).not.toMatch(/export\s+const\s+dynamic\s*=\s*["']force-static["']/);
+});
