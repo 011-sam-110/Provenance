@@ -90,7 +90,7 @@ obligations and are not satisfied by the licence.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
-- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (11 feeds).
+- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (14 feeds).
 - `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
 - `lib/console/*` — widget registry, presets (**7 boards** in `presets.ts`), store, share (`?c=` layout URL).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
@@ -113,7 +113,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Claim | Value | How it was checked (2026-08-10) |
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
-| Camera feeds | 11 adapters, 7 countries | `lib/sources/registry.ts` |
+| Camera feeds | 14 adapters, 9 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). |
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 7 (2026-08-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. `tests/unit/console-presets.test.ts` pins the exact id list, and `tests/unit/tour-board-copy.test.ts` fails if the guided tour states a different number — so this row cannot silently rot. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
