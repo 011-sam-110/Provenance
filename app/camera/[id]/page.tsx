@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCameraById, nearestTo } from "@/lib/sources/registry";
+import { getCameraPage } from "@/lib/seo/registrySnapshot";
 import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
 import { CameraImage } from "@/components/CameraImage";
 import { CameraVideo } from "@/components/CameraVideo";
@@ -29,7 +29,7 @@ import {
 export const revalidate = 3_600;
 
 async function load(idParam: string) {
-  return getCameraById(decodeURIComponent(idParam));
+  return getCameraPage(decodeURIComponent(idParam));
 }
 
 export async function generateMetadata({
@@ -38,9 +38,10 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const cam = await load(id);
-  if (!cam) return { title: "Camera not found" };
+  const hit = await load(id);
+  if (!hit) return { title: "Camera not found" };
 
+  const cam = hit.camera;
   const title = cameraTitle(cam);
   const description = cameraDescription(cam);
 
@@ -57,12 +58,10 @@ export async function generateMetadata({
 
 export default async function CameraPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const cam = await load(id);
-  if (!cam) notFound();
+  const hit = await load(id);
+  if (!hit) notFound();
 
-  const nearby = (await nearestTo(cam.lat, cam.lon, 8))
-    .filter((n) => n.camera.id !== cam.id)
-    .slice(0, 6);
+  const { camera: cam, nearby } = hit;
   const live = isLiveStreamUrl(cam.streamUrl);
   const country = countryName(cam.country);
 
@@ -136,9 +135,9 @@ export default async function CameraPage({ params }: { params: Promise<{ id: str
         <h2>Nearby cameras</h2>
         <ul>
           {nearby.map((n) => (
-            <li key={n.camera.id}>
-              <Link href={cameraPath(n.camera.id)}>
-                {n.camera.name} &middot; {n.km.toFixed(2)} km
+            <li key={n.id}>
+              <Link href={cameraPath(n.id)}>
+                {n.name} &middot; {n.km.toFixed(2)} km
               </Link>
             </li>
           ))}

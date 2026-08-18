@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRegistry } from "@/lib/sources/registry";
-import { groupByCountry } from "@/lib/seo/directory";
+import { getDirectory } from "@/lib/seo/registrySnapshot";
 import {
   CAMERAS_ROOT,
   countryName,
@@ -20,14 +19,13 @@ export const revalidate = 86_400;
  * being warm when a crawler first arrives.
  */
 export async function generateStaticParams() {
-  const cameras = await getRegistry().catch(() => []);
-  return groupByCountry(cameras).map((g) => ({ country: g.iso2.toLowerCase() }));
+  const { groups } = await getDirectory();
+  return groups.map((g) => ({ country: g.iso2.toLowerCase() }));
 }
 
 async function load(countryParam: string) {
-  const cameras = await getRegistry().catch(() => []);
-  const group = groupByCountry(cameras).find((g) => g.iso2.toLowerCase() === countryParam.toLowerCase());
-  return group ?? null;
+  const { groups } = await getDirectory();
+  return groups.find((g) => g.iso2.toLowerCase() === countryParam.toLowerCase()) ?? null;
 }
 
 export async function generateMetadata({
