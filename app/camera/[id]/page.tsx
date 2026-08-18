@@ -26,7 +26,10 @@ import {
  * refresh interval. Everything the server renders - name, place, operator, cadence,
  * neighbours - changes at the speed of the registry, not the speed of traffic.
  */
-export const revalidate = 3_600;
+export const revalidate = 300; // = REGISTRY_TTL_MS. Must stay equal to CAMERA_TTL_SECONDS
+// in lib/seo/registrySnapshot.ts; a `revalidate` export has to be a literal Next can read
+// statically, so it cannot import the constant. tests/unit/seo-page-caching.test.ts pins
+// the three together.
 
 /**
  * Returns NO paths, and that empty array is the entire point.

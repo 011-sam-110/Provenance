@@ -140,6 +140,29 @@ Fear & Greed, World Bank, Eurostat, OECD SDMX remain keyless options if we expan
 
 ---
 
+## 5 - Feedback prompt (BUILT, dormant until set)
+
+The in-console feedback prompt asks a sampled third of people who have actually used
+the console what they do, what is useful, and for a 1-10 rating, plus an optional email
+so Sam can arrange a call. Responses arrive as a Telegram message.
+
+| Var | What it is |
+|---|---|
+| `FEEDBACK_TELEGRAM_BOT_TOKEN` | A bot token from `@BotFather`. Free. |
+| `FEEDBACK_TELEGRAM_CHAT_ID` | The destination chat. Free. |
+
+**These are the DEPLOYMENT'S own credentials, and that makes them different from
+`/api/telegram`.** That route relays a token the visitor supplies in the request body,
+so its worst case is that someone messages themselves. `/api/feedback` spends the
+deployment's token, which makes it an unauthenticated write path into the owner's chat.
+It is defended with a body-size cap enforced before the body is read, a strict field
+whitelist, a same-origin check, a honeypot, a minimum dwell, and a best-effort per-IP
+limit - best-effort because Fluid Compute instances are ephemeral and plural.
+
+With either var unset the route is inert and the prompt never mounts, so an unconfigured
+deploy shows no dead form.
+
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
@@ -170,6 +193,10 @@ WINDY_MAP_FORECAST_API_KEY=
 # --- Markets/macro (Task #12, BUILT — crypto+FX already live keyless; these unlock the rest) ---
 FINNHUB_API_KEY=
 FRED_API_KEY=
+
+# --- Feedback prompt (BUILT - the deployment's OWN bot, not the visitor's) ---
+FEEDBACK_TELEGRAM_BOT_TOKEN=
+FEEDBACK_TELEGRAM_CHAT_ID=
 ```
 
 > These env‑var names are the contract — when I build each key‑gated adapter it reads
