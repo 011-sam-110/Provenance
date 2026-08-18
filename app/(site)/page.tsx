@@ -261,6 +261,7 @@ export default async function Landing({
             <a href="/app">Open the map</a>
             <a href="#sources">All {total} sources</a>
             <a href="#ledger">Live layer status</a>
+            <a href="/privacy">Privacy</a>
           </div>
           <div>
             <h4>The code</h4>
