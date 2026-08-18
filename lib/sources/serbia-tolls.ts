@@ -39,8 +39,21 @@ const VIEWER_URL = "https://kamere.toll4all.com/";
  * the 38 STREAMS is on cam.bitinfo.co.rs. Pinning this adapter to one host
  * looked right against the camera list that pointed us here and would have
  * dropped Niš, Novi Sad, Smederevo, Požarevac, Pakovraće and Leskovac without
- * saying so. Both hosts were checked directly: jpps serves the same JPEGs, and
- * the same HLS, under the same Referer rule.
+ * saying so.
+ *
+ * The two hosts are NOT configured alike, and the original version of this
+ * comment said they were. Measured:
+ *
+ *   cam .../index.m3u8   no Referer -> 403      with Referer -> 200
+ *   jpps.../index.m3u8   no Referer -> 200      with Referer -> 200
+ *   jpps.../index.jpg    no Referer -> 200
+ *
+ * So only cam enforces hotlink protection; jpps accepts the Referer we send but
+ * does not require it. That costs nothing today - every one of the 38 streams
+ * is on cam, so no camera reaches jpps over HLS at all, and an unnecessary
+ * Referer is harmless - but "under the same Referer rule" was a claim nobody had
+ * measured, and a comment that overstates what was checked is how the next
+ * person inherits a wrong assumption.
  */
 const MEDIA_HOSTS = new Set(["cam.bitinfo.co.rs", "jpps.bitinfo.co.rs"]);
 
