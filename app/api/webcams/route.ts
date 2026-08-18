@@ -1,9 +1,52 @@
 import { getWebcams } from "@/lib/webcams/registry";
-import { describeWebcamSample } from "@/lib/webcams/fetch";
+import { describeWebcamSample, type WebcamSample } from "@/lib/webcams/fetch";
 import { WINDY_SOURCE } from "@/lib/sources/windy";
 import { describeCoverage } from "@/lib/signals/coverage";
+import { edgeCacheControl } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Shared-cache lifetime, and the reasoning is NOT the registry's.
+ *
+ * lib/webcams/registry.ts holds its sample for 8 minutes, deliberately under Windy's
+ * ~10-minute image-token expiry. That ceiling protects TOKENS, and there are none in
+ * this response: the route ships thin markers and the dossier re-resolves a fresh
+ * image per view through /api/webcam-image. So the token clock does not bind here.
+ *
+ * What does bind is honesty, and this body is the easy case — it carries no timestamp
+ * at all, absolute or relative, so a cached copy cannot under-report anything's age.
+ * Compare /api/planes, whose `staleness.ageMs` is relative and freezes under a cache;
+ * that is why its TTL is 20 s and this one can be the same 60 s as /api/cameras. What
+ * moves in this body is a webcam's position, title and `available` flag, on the order
+ * of the 8-minute sample behind it.
+ *
+ * As with /api/cameras this is about not paying an invocation per visitor, not about
+ * protecting the upstream — getWebcams() already shields Windy.
+ */
+const WEBCAMS_TTL_MS = 60_000;
+
+/**
+ * The serialised body, held until the registry publishes a new sample.
+ *
+ * WHY. 2,000 webcams, 425 KB of JSON measured on prod, rebuilt on every request
+ * because this route had no cache header at all — so the edge never answered one and
+ * every visitor cost an invocation AND a full re-serialisation. The answer was
+ * byte-for-byte the same each time until the 8-minute sample rolled over.
+ *
+ * WHY IDENTITY IS THE RIGHT KEY. `getWebcams()` returns `cache.sample`, and
+ * `refresh()` only ever REPLACES that object — including on the failure path, where it
+ * rewrites the timestamp but re-uses the same sample rather than mutating it. So
+ * `from === sample` is true exactly while the contents are unchanged, and a new sample
+ * recomputes. Nothing in the body depends on the clock: `describeWebcamSample` and
+ * `describeCoverage` are both pure over the sample, so there is no second expiry to
+ * keep in step.
+ *
+ * Same shape as the memo in app/api/cameras/route.ts. One entry, per isolate, and it
+ * lowers peak memory rather than raising it — one retained string instead of 425 KB of
+ * garbage per request.
+ */
+let serialised: { from: WebcamSample; body: string } | null = null;
 
 /**
  * GET /api/webcams — a global sample of Windy webcams as thin markers (the
@@ -39,8 +82,8 @@ export const dynamic = "force-dynamic";
  * `coverage` is present only when the sample declared one (i.e. not dormant) —
  * its absence means "not declared", never "nothing was truncated".
  */
-export async function GET() {
-  const sample = await getWebcams();
+export function webcamsBody(sample: WebcamSample): string {
+  if (serialised && serialised.from === sample) return serialised.body;
   // `city` and `categories` survive lib/webcams/normalize.ts but used to be dropped
   // here. They are what lets a caller filter to squares, promenades and old towns
   // instead of matching on title text — the difference between finding the
@@ -57,12 +100,31 @@ export async function GET() {
     available: w.available,
     detailUrl: w.detailUrl,
   }));
-  return Response.json({
+  const body = JSON.stringify({
     count: thin.length,
     webcams: thin,
     dormant: sample.dormant,
     note: describeWebcamSample(sample),
     attribution: WINDY_SOURCE.attribution,
     ...(sample.coverage ? { coverage: describeCoverage(sample.coverage) } : {}),
+  });
+  serialised = { from: sample, body };
+  return body;
+}
+
+/** Test seam, matching the house pattern in lib/webcams/search.ts. */
+export function __resetWebcamsBody(): void {
+  serialised = null;
+}
+
+export async function GET() {
+  const sample = await getWebcams();
+  // `Response.json` is not used here only because the body is already a string;
+  // it sets exactly this Content-Type, so the response is unchanged on the wire.
+  return new Response(webcamsBody(sample), {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": edgeCacheControl(WEBCAMS_TTL_MS, 300_000),
+    },
   });
 }
