@@ -1,36 +1,18 @@
 import { getRegistry } from "@/lib/sources/registry";
-import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { camerasBody, camerasCacheControl } from "@/lib/cameras/body";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Shared-cache lifetime for the camera list. The registry itself is already
- * stale-while-revalidate server-side, so this is about not paying an invocation per
- * visitor, not about protecting the upstreams.
- *
- * 60 s is safe for this body specifically because every time it carries is ABSOLUTE
- * (`lastSampledAt`), so a cached copy cannot under-report a camera's age — the client
- * subtracts from its own clock. Positions and names move on the order of days.
- */
-const CAMERAS_TTL_MS = 60_000;
+// A route module may export ONLY the fields Next recognises, so `camerasBody` and its
+// test seam live in lib/cameras/body.ts, where the reasoning for the memo is written up.
 
 export async function GET() {
-  const cams = await getRegistry();
-  // source + live let the client pick the right camera icon (shape = feed,
-  // colour = region). `live` = has a stream our /api/hls proxy can play, so the
-  // video icon means genuinely-playable live video (not just any mediaType).
-  const cameras = cams.map((c) => ({
-    id: c.id, name: c.name, lat: c.lat, lon: c.lon, available: c.available,
-    source: c.source, country: c.country, live: isLiveStreamUrl(c.streamUrl),
-    // Enriched for the focus view (Camera fields the docked widget doesn't need).
-    // NOTE: deliberately NO imageUrl/streamUrl — snapshots go through /api/proxy?id=
-    // and /api/hls?id= (SSRF allowlist by id), never a raw upstream URL.
-    region: c.region, road: c.road, refreshSeconds: c.refreshSeconds,
-    attribution: c.attribution, license: c.license, lastSampledAt: c.lastSampledAt,
-  }));
-  return Response.json(
-    { count: cameras.length, cameras },
-    { headers: { "Cache-Control": edgeCacheControl(CAMERAS_TTL_MS, 300_000) } },
-  );
+  // `Response.json` is not used only because the body is already a string; it sets
+  // exactly this Content-Type, so the response is unchanged on the wire.
+  return new Response(camerasBody(await getRegistry()), {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": camerasCacheControl(),
+    },
+  });
 }
