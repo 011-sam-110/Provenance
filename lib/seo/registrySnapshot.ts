@@ -40,11 +40,18 @@
 // TWO RULES FOR ANYTHING ADDED BELOW.
 //
 //   1. KEEP ENTRIES SMALL. These are stored in the same incremental cache that backs
-//      ISR, and Vercel caps a Data Cache entry at 2 MB. The whole registry is ~6.4 MB
-//      of JSON, so it must never be cached whole; every reader here returns only the
-//      rows its page renders. The region reader is keyed by page number for this
-//      reason — US/Florida alone is 4,838 cameras, and REGION_PAGE_SIZE bounds a
-//      cached slice at 500 rows.
+//      ISR, which has a documented per-entry size limit (2 MB on Vercel at the time of
+//      writing — a vendor limit, taken from their docs and NOT measured here; an
+//      oversized entry is declined SILENTLY, so the failure looks like the cache
+//      simply never working). The whole registry is ~6.4 MB of JSON, measured
+//      (6,443,932 bytes on prod, 2026-08-18), so it must never be cached whole; every
+//      reader here returns only the rows its page renders.
+//
+//      The region reader is keyed by page number because one region can be thousands
+//      of cameras — the largest, US/Florida, measured 4,646 in the 2026-08-18 snapshot
+//      and 4,838 four days earlier, which is the point: it moves, so do not rely on
+//      either figure. REGION_PAGE_SIZE is what actually bounds a cached slice, at 500
+//      rows, and that is a constant rather than a measurement.
 //   2. NEVER CALL A DYNAMIC API IN A CALLBACK. `headers()`, `cookies()` and friends
 //      throw inside `unstable_cache`. That is the same property that makes this work.
 //
