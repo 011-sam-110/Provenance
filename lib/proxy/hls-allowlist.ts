@@ -11,11 +11,14 @@ const RULES: HlsRule[] = [
   // Serbia — MUP border crossings. Playlists carry ABSOLUTE segment URLs on the
   // same host, and no Referer is required (measured).
   { match: (h) => h === "kamere.mup.gov.rs", prefix: "/" },
-  // Serbia — JP Putevi Srbije toll plazas. 403s without a Referer, and the
-  // TRAILING SLASH matters: "https://kamere.toll4all.com" alone is refused.
-  // Segment URIs are relative, so rewritePlaylist resolves them onto the same
-  // host and they come back through this rule. Two subdomains because the
-  // operator splits front-plaza and side-plaza cameras across them.
+  // Serbia — JP Putevi Srbije toll plazas. cam.bitinfo.co.rs 403s without a
+  // Referer, and the TRAILING SLASH matters: "https://kamere.toll4all.com"
+  // alone is refused. jpps.bitinfo.co.rs does NOT enforce it (measured: 200
+  // with no Referer) and is covered by the same rule anyway, because sending
+  // one where it is not required is harmless and a second rule would only be
+  // one more thing to keep in step. Segment URIs are relative, so
+  // rewritePlaylist resolves them onto the same host and they come back
+  // through this rule.
   {
     match: (h) => h === "cam.bitinfo.co.rs" || h === "jpps.bitinfo.co.rs",
     prefix: "/",
