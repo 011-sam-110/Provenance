@@ -167,6 +167,12 @@ This route differs from `/api/telegram` in a way that matters: that one relays t
 
 ## Testing
 
+Test files live at **`tests/unit/feedback.test.ts`** and nowhere else. `vitest.config.ts`
+includes only `tests/unit/**/*.test.ts`, so a file at `tests/` root — or any `.test.tsx`
+— is silently skipped and still reports green. There is also no React testing library
+in the repo, so `FeedbackPrompt` gets no component test; its behaviour is covered by the
+pure gate module underneath it plus the Playwright pass.
+
 **Unit (vitest, node):** eligibility maths at the boundaries; visible-time
 accumulation ignoring hidden time; roll fresh per visit; `dismissed`/`submitted`
 permanent; version bump invalidating a stale shape; the route's validator accepting a
