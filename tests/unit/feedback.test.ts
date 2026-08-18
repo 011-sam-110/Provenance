@@ -97,15 +97,35 @@ describe("the permanent stop", () => {
     expect(shouldPrompt(s, CLEAR, true)).toBe(false);
   });
 
-  test("LOSING THE ROLL IS NOT PERMANENT - it is per visit", () => {
-    // The whole point of the design. A lost roll leaves no trace in the persisted
-    // state, so the same visitor coming back is asked again. If this ever starts
-    // failing because a "rolled" flag was added, two thirds of all visitors would
-    // be silently excluded forever.
+  test("losing the roll does not resolve anyone - the same state still prompts on a win", () => {
     const s = state({ visits: 2 });
     expect(shouldPrompt(s, CLEAR, false)).toBe(false);
-    expect(s.resolved).toBeUndefined();
     expect(shouldPrompt(s, CLEAR, true)).toBe(true);
+  });
+
+  // THE ACTUAL GUARD FOR "a lost roll is not permanent", and it is worth being
+  // precise about why it is shaped like this. The obvious test - assert the state
+  // is unchanged after a lost roll - proves nothing, because shouldPrompt is pure
+  // and never mutates anything, so it passes even if stickiness is added.
+  // VERIFIED by injecting the real regression (a persisted `rolledLost` flag that
+  // blockedBy honours): all the behavioural cases above stayed green, and only the
+  // test below went red, with "rolledLost" named in the diff.
+  //
+  // So the lock is on the PERSISTED CONTRACT instead. Making a lost roll permanent
+  // requires storing it somewhere, and anything stored has to survive this. Adding
+  // a field forces someone to edit this test, which is where they will read that
+  // two thirds of all visitors would be silently excluded forever.
+  test("the persisted contract is exactly visits/activeMs/resolved - a stored roll flag is dropped", () => {
+    const s = memoryStorage();
+    s.setItem(
+      FEEDBACK_KEY,
+      JSON.stringify({ v: FEEDBACK_VERSION, d: { visits: 2, activeMs: 0, rolledLost: true } }),
+    );
+    expect(Object.keys(loadFeedbackState(s)).sort()).toEqual(["activeMs", "visits"]);
+
+    saveFeedbackState({ visits: 2, activeMs: 5, resolved: "dismissed" }, s);
+    const stored = JSON.parse(s.getItem(FEEDBACK_KEY)!) as { d: Record<string, unknown> };
+    expect(Object.keys(stored.d).sort()).toEqual(["activeMs", "resolved", "visits"]);
   });
 });
 
