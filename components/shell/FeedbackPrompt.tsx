@@ -9,12 +9,13 @@
 // a form.
 //
 // WHY IT WAITS BEFORE EVALUATING AT ALL. BootSequence writes its "seen" flag when
-// the plate STARTS, and sibling effects run in document order, so reading
-// shouldPlayBoot() from here would race and usually report "no boot" while the
-// boot was on screen. Rather than depend on that ordering, the gate simply does
-// not run for the first few seconds of any visit. Nobody can qualify that early
-// (a first visit cannot qualify by visit count, and the time arm needs fifteen
-// minutes), so the hold costs nothing and cannot be raced.
+// the plate STARTS, so reading shouldPlayBoot() from here could see the flag
+// already set while the boot is still on screen, depending on the order sibling
+// effects run in. I have NOT measured that ordering and this deliberately does not
+// depend on it either way: the gate simply does not run for the first few seconds
+// of any visit. Nobody can qualify that early (a first visit cannot qualify by
+// visit count, and the time arm needs fifteen minutes), so the hold costs nothing
+// and removes the question rather than answering it.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOOT_FADE_MS, BOOT_MS } from "@/lib/terminal/boot";
@@ -363,7 +364,10 @@ export default function FeedbackPrompt() {
             </p>
           </div>
 
-          {/* Honeypot. Off-screen rather than display:none, which some bots skip. */}
+          {/* Honeypot. Positioned off-screen rather than display:none - the usual
+              advice, on the theory that some bots skip hidden fields. I have not
+              measured that, and it is not load-bearing: the caps, the same-origin
+              check and the dwell guard are. */}
           <input
             className="tn-fb-hp"
             type="text"

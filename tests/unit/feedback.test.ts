@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
+  bucketKey,
+  clientIpFrom,
   CAP_EMAIL,
   CAP_OCCUPATION,
   CAP_USEFUL,
@@ -289,6 +291,51 @@ describe("validateFeedback", () => {
     for (const bad of [null, undefined, "string", 42, []]) {
       expect(validateFeedback(bad).ok).toBe(false);
     }
+  });
+});
+
+/* ── The rate-limit bucket key ────────────────────────────────────────────── */
+
+describe("bucketKey", () => {
+  // The property the limiter needs: the same visitor lands in the same bucket.
+  test("is stable for the same salt and address", async () => {
+    expect(await bucketKey("s", "203.0.113.7")).toBe(await bucketKey("s", "203.0.113.7"));
+  });
+
+  test("separates different addresses", async () => {
+    expect(await bucketKey("s", "203.0.113.7")).not.toBe(await bucketKey("s", "203.0.113.8"));
+  });
+
+  // THE POINT OF THE SALT. Without it this is an unsalted digest over ~4.3 billion
+  // enumerable IPv4 candidates and a fixed prefix in a PUBLIC repo, which is a
+  // lookup table, not a one-way function - measured at ~743k hashes/sec on one
+  // core, so a full sweep is ~96 min single-threaded and ~12 min on eight. This
+  // case fails the moment someone drops the salt back out, which is the change to
+  // be afraid of.
+  test("the same address under different salts shares nothing", async () => {
+    const a = await bucketKey("salt-one", "203.0.113.7");
+    const b = await bucketKey("salt-two", "203.0.113.7");
+    expect(a).not.toBe(b);
+    // And it must not be the unsalted digest either - i.e. the salt is genuinely
+    // mixed in rather than appended somewhere ignorable.
+    expect(a).not.toBe(await bucketKey("", "203.0.113.7"));
+  });
+
+  test("is a short fixed-width hex key", async () => {
+    expect(await bucketKey("s", "203.0.113.7")).toMatch(/^[0-9a-f]{16}$/);
+  });
+});
+
+describe("clientIpFrom", () => {
+  test("takes the first hop and trims it", () => {
+    expect(clientIpFrom("203.0.113.7, 70.41.3.18, 150.172.238.178")).toBe("203.0.113.7");
+    expect(clientIpFrom("  203.0.113.7  ")).toBe("203.0.113.7");
+  });
+
+  test("falls back to a shared bucket rather than throwing", () => {
+    expect(clientIpFrom(null)).toBe("unknown");
+    expect(clientIpFrom("")).toBe("unknown");
+    expect(clientIpFrom(",  ,")).toBe("unknown");
   });
 });
 
