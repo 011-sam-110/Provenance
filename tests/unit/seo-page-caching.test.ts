@@ -18,7 +18,7 @@ import { expect, test } from "vitest";
  * Cache", and Next 15 makes every `fetch` uncached by default. `getRegistry()`
  * fetches whenever its 5-minute module cache is cold. So a page importing it
  * directly renders correctly, passes every test, deploys green, and quietly costs a
- * full server render on every one of the ~19k crawlable URLs.
+ * full server render on every one of the ~20k crawlable URLs.
  *
  * Reading through `lib/seo/registrySnapshot` instead puts an `unstable_cache`
  * boundary in the way, and its callback runs in a swapped work-unit store so the
@@ -97,4 +97,32 @@ test.each(PARAMETERISED_PAGES)("%s does not force-static its way out of it", (pa
   // Anchored on `export const` so the warning ABOUT force-static in the page's own
   // comment does not trip it.
   expect(source(page)).not.toMatch(/export\s+const\s+dynamic\s*=\s*["']force-static["']/);
+});
+
+/**
+ * The camera page's `revalidate` must equal the registry's own TTL.
+ *
+ * Next needs `revalidate` to be a statically-analysable literal, so the page cannot
+ * import the constant and the number has to be written out by hand - which is exactly
+ * how it drifts. Three places have to agree and nothing else makes them:
+ *   lib/sources/registry.ts       REGISTRY_TTL_MS      (the real cadence)
+ *   lib/seo/registrySnapshot.ts   CAMERA_TTL_SECONDS   (derived, so it cannot drift)
+ *   app/camera/[id]/page.tsx      export const revalidate   (a literal, so it can)
+ *
+ * A page window SHORTER than the registry's re-renders to fetch a snapshot that has
+ * not changed. A LONGER one decides how far behind the data the page may sit, which
+ * is a product decision and not something to arrive at by forgetting to update it.
+ */
+test("the camera page revalidate tracks the registry's own refresh", async () => {
+  const { REGISTRY_TTL_MS } = await import("@/lib/sources/registry");
+  const declared = source("app/camera/[id]/page.tsx").match(
+    /export const revalidate = ([0-9_]+)/,
+  );
+
+  expect(declared).not.toBeNull();
+  expect(Number(declared![1].replace(/_/g, ""))).toBe(REGISTRY_TTL_MS / 1_000);
+});
+
+test("the cached camera reader derives its window rather than repeating the number", () => {
+  expect(source("lib/seo/registrySnapshot.ts")).toContain("REGISTRY_TTL_MS / 1_000");
 });

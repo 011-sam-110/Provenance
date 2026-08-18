@@ -13,7 +13,16 @@ import { fetchRegistry as fetchTrafficScotland } from "@/lib/sources/trafficscot
 import { fetchRegistry as fetchCetsp } from "@/lib/sources/cetsp";
 import { findById, nearest } from "@/lib/sources/select";
 
-const TTL_MS = 5 * 60 * 1000;
+/**
+ * How long the merged camera set is served before a refresh is kicked off.
+ *
+ * Exported because the SEO pages' `revalidate` is DERIVED from it rather than typed
+ * (lib/seo/registrySnapshot.ts). A camera page cannot be fresher than the registry
+ * behind it, so a page window shorter than this buys nothing but re-renders, and one
+ * longer than this decides how far behind the registry the page is allowed to sit.
+ * Keeping it one number stops the two drifting apart silently.
+ */
+export const REGISTRY_TTL_MS = 5 * 60 * 1000;
 
 /**
  * How long a feed gets before its round is treated as a timeout, unless it
@@ -204,7 +213,7 @@ export function feedHealth(): FeedHealth[] {
 // very first (cold) call, with no cache at all, waits for the fetch — important
 // now that Castle Rock pages ~100 requests and a cold load can take ~40s.
 export async function getRegistry(): Promise<Camera[]> {
-  if (cache && Date.now() - cache.at < TTL_MS) return cache.cameras;
+  if (cache && Date.now() - cache.at < REGISTRY_TTL_MS) return cache.cameras;
   if (!inflight) {
     inflight = refresh()
       .catch((e) => {
