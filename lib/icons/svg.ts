@@ -265,6 +265,11 @@ export const CAMERA_REGIONS: RegionMeta[] = [
   { source: "iceland", label: "Iceland", color: "#2dd4bf", view: { lat: 64.9, lng: -18.6, altitude: 0.7 } },
   { source: "estonia", label: "Estonia", color: "#6ee7b7", view: { lat: 58.7, lng: 25.5, altitude: 0.55 } },
   { source: "trafficscotland", label: "Scotland", color: "#22d3ee", view: { lat: 56.5, lng: -4, altitude: 0.55 } },
+  // Serbia arrives as two operators rather than one region, so both get a view
+  // framing the whole country: the border crossings ring its edge and the toll
+  // plazas run down the motorway spine, and neither is legible zoomed to itself.
+  { source: "mup-rs", label: "Serbia (borders)", color: "#7dd3fc", view: { lat: 44.1, lng: 20.9, altitude: 0.6 } },
+  { source: "putevi-rs", label: "Serbia (motorways)", color: "#99f6e4", view: { lat: 44.1, lng: 20.9, altitude: 0.6 } },
 ];
 
 export const CAMERA_DEFAULT_REGION: RegionMeta = {
