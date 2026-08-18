@@ -13,6 +13,8 @@
 
 import {
   CAP_BODY_BYTES,
+  bucketKey,
+  clientIpFrom,
   formatFeedbackMessage,
   validateFeedback,
 } from "@/lib/shell/feedback";
@@ -57,16 +59,20 @@ function rateLimited(key: string, now: number): boolean {
   return false;
 }
 
-/** A coarse, non-reversible bucket key. The address itself is never stored, never
- *  sent on, and never logged. */
-async function bucketKey(req: Request): Promise<string> {
-  const fwd = req.headers.get("x-forwarded-for") ?? "";
-  const ip = fwd.split(",")[0]?.trim() || "unknown";
-  const bytes = new TextEncoder().encode(`feedback:${ip}`);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest).slice(0, 8))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+/**
+ * Per-instance salt for the rate-limit bucket key, generated once at module load
+ * and never persisted, logged or sent anywhere. Rate-limit buckets do not need to
+ * survive a restart - the Map above is per-instance already - so a salt that dies
+ * with the process costs nothing and is what makes the key genuinely unguessable.
+ * See bucketKey() in lib/shell/feedback.ts for why an UNSALTED hash of an IP is
+ * not anonymisation, whatever it looks like.
+ */
+const BUCKET_SALT = crypto.randomUUID();
+
+/** A per-address bucket key, held in memory only for rate limiting. The address is
+ *  never stored, never logged, and never included in what is sent on. */
+function bucketKeyFor(req: Request): Promise<string> {
+  return bucketKey(BUCKET_SALT, clientIpFrom(req.headers.get("x-forwarded-for")));
 }
 
 /** Same-origin only. The prompt is served from this site; nothing else has any
@@ -116,7 +122,7 @@ export async function POST(req: Request): Promise<Response> {
   const checked = validateFeedback(parsed);
   if (!checked.ok) return fail(checked.error);
 
-  if (rateLimited(await bucketKey(req), Date.now())) return fail(GENERIC_FAILURE);
+  if (rateLimited(await bucketKeyFor(req), Date.now())) return fail(GENERIC_FAILURE);
 
   try {
     const r = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
