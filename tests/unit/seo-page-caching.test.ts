@@ -60,10 +60,14 @@ test("every cached reader declares a revalidate window", () => {
 });
 
 test("the snapshot never caches the whole registry", () => {
-  // A Vercel Data Cache entry is capped at 2 MB and the full camera array is ~6.4 MB
-  // of JSON, so a reader that returns `cameras` wholesale would fail to store - and
-  // fail SILENTLY, falling back to recomputing on every request, which is the exact
-  // cost this module exists to remove.
+  // Vercel's Data cache - what unstable_cache writes to - documents a 2 MB item-size
+  // limit, "items larger won't be cached"
+  // (vercel.com/docs/caching/runtime-cache/data-cache, last updated 2026-07-27). Cited,
+  // not measured: an oversized entry produces no local signal. The full camera array is
+  // ~6.4 MB of JSON (6,443,932 bytes, measured on prod 2026-08-18), so a reader
+  // returning `cameras` wholesale would fail to store - and fail SILENTLY, falling back
+  // to recomputing on every request, which is the exact cost this module exists to
+  // remove.
   const text = source("lib/seo/registrySnapshot.ts");
   expect(text).toContain("pageSlice(");
   expect(text).not.toMatch(/return\s+await\s+getRegistry\(\)/);
