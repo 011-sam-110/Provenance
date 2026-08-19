@@ -3163,6 +3163,31 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-accent: #ffb020;
   --tnx-accent-soft: rgba(255, 176, 32, 0.13);
 
+  /* ── The ALERT ramp — deliberately NOT the accent ───────────────────────
+     An OSINT analyst reviewing the console read the left column as "a visual
+     panic attack". Measured on prod 2026-08-19, he was right and the cause was
+     not any one widget: `--tnx-accent` (#ffb020) was carrying SEVEN unrelated
+     meanings in a single viewport — the selected board tab, the active stage
+     chip, the active basemap chip, the `/` search prefix, the world clock, the
+     warn-severity alert badge, and the "25m old" staleness chip. Nineteen
+     saturated elements in the left column, fifteen of them that one orange,
+     against exactly ONE red — which was the only genuine emergency on screen.
+
+     Selection and urgency cannot share a hue. The accent keeps identity,
+     selection and focus; urgency moves here. Anything that means "this needs a
+     human" reads from these four and NOTHING else, so the number of saturated
+     things on screen is now a function of how bad the world is, not of how much
+     chrome is switched on.
+
+     Contrast, measured (the badge sets `color: var(--tnx-bg)`, so the FILL has to
+     carry it): text-on-fill 5.56 / 8.55 / 6.32 for none / warn / critical, and
+     ≥5.39 for each as a fill on --tnx-panel. `warn` is #ff8a3d rather than a
+     tweak of the accent because 15° of hue separation is what makes the two
+     legibly different at 9px; #ffb020 sits at 39°, this at 24°. */
+  --tnx-alert-none: #7c8896;
+  --tnx-alert-warn: #ff8a3d;
+  --tnx-alert-critical: #ff5449;
+
   /* Glass: the translucent near-black the stage chrome, the rail tab and the
      MapLibre controls float on. It was written as a literal rgba(8,11,15,a) in
      thirteen places, which is exactly why the light skin first shipped with dark
@@ -3300,6 +3325,18 @@ a.tn-w-place { display: flex; align-items: center; }
 
   --tnx-accent: #b8690a;
   --tnx-accent-soft: rgba(184, 105, 10, 0.12);
+
+  /* The alert ramp, re-derived on paper — NOT the dark values dimmed. Same rule
+     as the status hues above: the badge prints --tnx-bg (#eef1f5) ON these, so
+     each fill has to clear 4.5:1 against near-white, and the dark ramp is far too
+     light to. Measured text-on-fill: 4.79 / 5.22 / 5.36.
+     `warn` is #a8460f, NOT the #a35c0c this would otherwise inherit from the base
+     sheet: #a35c0c sits 1° of hue from the light accent #b8690a, which would have
+     rebuilt on paper exactly the collision this ramp exists to break. #a8460f
+     sits 11° off the accent and 20° off critical. */
+  --tnx-alert-none: #5f6b7a;
+  --tnx-alert-warn: #a8460f;
+  --tnx-alert-critical: #b5322e;
 
   /* The glass family, on paper. Same alphas, opposite ground. */
   --tnx-glass: rgba(255, 255, 255, 0.92);
@@ -4028,9 +4065,22 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   border-radius: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.04em;
   padding: 1px 4px; color: var(--tnx-bg); background: var(--tnx-ink-dim);
 }
-.tn-terminal .tn-cw-badge.tn-sev-critical { background: var(--tnx-down); }
-.tn-terminal .tn-cw-badge.tn-sev-warn { background: var(--tnx-accent); }
-.tn-terminal .tn-cw-badge.tn-sev-info { background: var(--tnx-ink-dim); }
+/* The alert ramp, not the accent and not the status hues. `warn` pointed straight
+   at var(--tnx-accent) until 2026-08-19, which is what made a routine "249 cameras
+   offline" count the same colour as a selected board tab. `info` is deliberately
+   NEUTRAL rather than a third hue: an informational count is not urgent, and the
+   whole point of the ramp is that saturation means something. */
+.tn-terminal .tn-cw-badge.tn-sev-critical { background: var(--tnx-alert-critical); }
+.tn-terminal .tn-cw-badge.tn-sev-warn { background: var(--tnx-alert-warn); }
+.tn-terminal .tn-cw-badge.tn-sev-info { background: var(--tnx-alert-none); }
+/* The "needs attention" rows. The base sheet gives each a 12%-alpha wash of its own
+   hue, which on near-black stacks into a warm band that reads as urgent whether or
+   not anything in it is — and the widest one on the default board is 249 cameras
+   being offline, which is housekeeping. Neutral row, coloured 3px edge: the
+   severity is still scannable down the left margin, without tinting the text. */
+.tn-terminal .tn-cw-alert { border-left-color: var(--tnx-alert-critical); background: var(--tnx-panel-head); }
+.tn-terminal .tn-cw-alert.tn-sev-warn { border-left-color: var(--tnx-alert-warn); background: var(--tnx-panel-head); }
+.tn-terminal .tn-cw-alert.tn-sev-info { border-left-color: var(--tnx-alert-none); background: var(--tnx-panel-head); }
 .tn-terminal .tn-cw-fresh {
   font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
 }

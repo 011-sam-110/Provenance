@@ -10,6 +10,7 @@ import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { useSignalFeatures } from "@/lib/widgets/useSignalFeatures";
 import { getSignal } from "@/lib/signals/registry";
 import { rankAnomalies, type AnomalyInput, type AnomalyRow } from "@/lib/console/anomaly/anomaly";
+import { severityBand, severityColor, CRITICAL_AT, WARN_AT } from "@/lib/console/severityRamp";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { useScope, withinScope } from "@/lib/shell/scope";
 import { useNow, formatAge } from "@/lib/shell/useNow";
@@ -68,13 +69,18 @@ function AnomalyList({ rows, now }: { rows: AnomalyRow[]; now: number }) {
       {rows.map((r) => (
         <li key={`${r.layerId}:${r.id}`}>
           <button type="button" className="tn-anom-row" onClick={() => openSignalFeature(r.feature, r.layerLabel)}>
+            {/* WIDTH is the severity, and so is the COLOUR now. It used to be r.color
+                — the feature's own hue — which meant each row was tinted by a scale
+                calibrated for its own layer and none of them were comparable to each
+                other, in a list whose entire job is ranking across layers. The layer
+                identity it was carrying has not been lost; it is the label below. */}
             <span className="tn-anom-sev" title={`severity ${(r.severity * 100).toFixed(0)}%`}>
-              <i style={{ width: `${Math.max(8, r.severity * 100)}%`, background: r.color }} />
+              <i style={{ width: `${Math.max(8, r.severity * 100)}%`, background: severityColor(r.severity) }} />
             </span>
             <span className="tn-anom-main">
               <span className="tn-anom-title">{r.title}</span>
               <span className="tn-anom-meta">
-                <span className="tn-anom-layer" style={{ color: r.color }}>{r.layerLabel}</span>
+                <span className="tn-anom-layer">{r.layerLabel}</span>
                 {r.valueLabel && <> · <b>{r.valueLabel}</b></>}
                 {r.ageMs != null && <> · {formatAge(r.ageMs)} ago</>}
               </span>
@@ -114,9 +120,14 @@ function AnomalyDetail(_p: WidgetDetailProps) {
   const { rows, updatedAt, loading } = useAnomalyRows(now, 24);
   const showOnMap = () => { for (const id of ANOMALY_IDS) signalsStore.set(id, true); shellLayoutStore.unfocus(); };
   const mapPoints: InsetPoint[] = rows.map((r) => ({ lat: r.lat, lon: r.lon, id: r.id, color: r.color, props: { title: r.title } }));
+  // These two thresholds were already 0.8 / 0.6 here, as literals, and the KPI tiles
+  // below print them to the user as "≥ 80%" and "60–80%". The ROW BARS disagreed with
+  // both, because they were coloured by layer rather than by severity. Now everything
+  // reads the same two constants, so the count in the tile and the colour of the bar
+  // cannot drift apart — including if someone retunes the ramp.
   const bands = useMemo(() => ({
-    critical: rows.filter((r) => r.severity >= 0.8).length,
-    elevated: rows.filter((r) => r.severity >= 0.6 && r.severity < 0.8).length,
+    critical: rows.filter((r) => severityBand(r.severity) === "critical").length,
+    elevated: rows.filter((r) => severityBand(r.severity) === "warn").length,
     layers: new Set(rows.map((r) => r.layerId)).size,
   }), [rows]);
 
@@ -131,8 +142,8 @@ function AnomalyDetail(_p: WidgetDetailProps) {
 
       {rows.length > 0 && (
         <div className="tn-sd-kpis">
-          <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Critical</div><div className="tn-sd-kpi-value">{bands.critical}</div><div className="tn-sd-kpi-sub">severity ≥ 80%</div></div>
-          <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Elevated</div><div className="tn-sd-kpi-value">{bands.elevated}</div><div className="tn-sd-kpi-sub">60–80%</div></div>
+          <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Critical</div><div className="tn-sd-kpi-value">{bands.critical}</div><div className="tn-sd-kpi-sub">severity ≥ {Math.round(CRITICAL_AT * 100)}%</div></div>
+          <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Elevated</div><div className="tn-sd-kpi-value">{bands.elevated}</div><div className="tn-sd-kpi-sub">{Math.round(WARN_AT * 100)}–{Math.round(CRITICAL_AT * 100)}%</div></div>
           <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Layers hit</div><div className="tn-sd-kpi-value">{bands.layers}</div><div className="tn-sd-kpi-sub">of {ANOMALY_IDS.length} scanned</div></div>
         </div>
       )}
