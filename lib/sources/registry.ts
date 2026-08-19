@@ -13,6 +13,7 @@ import { fetchRegistry as fetchTrafficScotland } from "@/lib/sources/trafficscot
 import { fetchRegistry as fetchCetsp } from "@/lib/sources/cetsp";
 import { fetchRegistry as fetchSerbiaBorders } from "@/lib/sources/serbia-borders";
 import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
+import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
 
 /**
@@ -137,6 +138,16 @@ const SOURCES: CameraFeed[] = [
   // 10s default (see each adapter's fetchRegistry).
   { key: "mup-rs", fetch: fetchSerbiaBorders },
   { key: "putevi-rs", fetch: fetchSerbiaTolls },
+  // Networks found by discovery and admitted by a reviewer, one entry each rather
+  // than one entry for all of them — last-good is kept PER FEED, so a shared key
+  // would let one network's outage discard every other discovered network's
+  // cameras in the same round. See lib/sources/discovered.ts.
+  //
+  // This spreads to LENGTH ZERO until a feed is admitted, so CAMERA_FEED_COUNT is
+  // 14 today and the two documents pinned against it stay true. When it grows,
+  // claude-md-counts and readme-counts go red on purpose: a new camera network is
+  // exactly the kind of change that ought to force the docs to move.
+  ...discoveredCameraFeeds(),
 ];
 
 export const CAMERA_FEED_COUNT = SOURCES.length;
