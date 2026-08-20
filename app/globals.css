@@ -4532,6 +4532,24 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    region carrying the OUTCOME, including the refusals (see ExportView): a capture
    that came back empty is something the user is told about, not something they
    discover on opening the file. */
+/* Area-of-interest control. Same button family as export and the basemaps —
+   these are all properties of the view, and they share one bar. */
+.tn-terminal .tn-aoi { display: flex; align-items: stretch; }
+.tn-terminal .tn-aoi-btn {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); }
+/* The vertex count while drawing. Accent, because it is the only feedback that
+   the gesture is being received at all. */
+.tn-terminal .tn-aoi-live {
+  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
+  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--tnx-accent); white-space: nowrap;
+}
+
 .tn-terminal .tn-export { display: flex; align-items: stretch; }
 .tn-terminal .tn-export-btn {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;

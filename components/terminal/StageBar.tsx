@@ -136,6 +136,7 @@ import {
 } from "@/lib/icons/svg";
 import StageSwitch from "@/components/console/StageSwitch";
 import ExportView from "@/components/console/ExportView";
+import AoiControl from "@/components/console/AoiControl";
 import MapSearch from "@/components/console/MapSearch";
 import WorldClock from "@/components/console/WorldClock";
 
@@ -395,6 +396,8 @@ export default function StageBar() {
           nowhere and the tests still passed. Verified in the running app, not read
           off the component tree.
         */}
+        <AoiControl />
+
         <ExportView />
 
         <span className="tnx-stage-spacer" />

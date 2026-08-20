@@ -54,6 +54,7 @@ import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
+import { attachAoi } from "@/lib/map/aoi";
 import {
   CAMERA_CLUSTER,
   WEBCAM_CLUSTER,
@@ -1720,6 +1721,10 @@ export default function WorldMap() {
     // without a ref threaded through the console layout. Read-only by contract —
     // see lib/map/instance.
     setMapInstance(map);
+    // Paints the drawn area-of-interest and keeps it alive across a basemap
+    // switch (which throws the whole style away). Owns its own layers — see
+    // lib/map/aoi — so nothing in this file has to know about scope.
+    const detachAoi = attachAoi(map);
     (window as unknown as { __map?: maplibregl.Map }).__map = map; // debug handle
     (window as unknown as { __overlay?: typeof overlay }).__overlay = overlay;
     // Same debug-handle pattern as the two above, and it earns its place: arming is
@@ -1894,6 +1899,7 @@ export default function WorldMap() {
       thumbMgr.destroy();
       thumbMgrRef.current = null;
       clearStyleWatchdog(); // never let a pending retry fire at a removed map
+      detachAoi();
       map.remove();
       mapRef.current = null;
       setMapInstance(null); // a removed map must never be handed to a capture
