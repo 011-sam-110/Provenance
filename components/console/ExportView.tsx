@@ -55,7 +55,7 @@ export default function ExportView() {
   const onReport = useCallback(() => {
     try {
       const { filename, markdown } = buildSitrep();
-      downloadText(filename, "text/markdown;charset=utf-8", markdown);
+      downloadText(filename, "text/markdown", markdown); // downloadText appends the charset
       note("Report saved.");
     } catch {
       note("Could not build the report.");

@@ -135,6 +135,7 @@ import {
   WEBCAM_COLOR,
 } from "@/lib/icons/svg";
 import StageSwitch from "@/components/console/StageSwitch";
+import ExportView from "@/components/console/ExportView";
 import MapSearch from "@/components/console/MapSearch";
 import WorldClock from "@/components/console/WorldClock";
 
@@ -385,6 +386,16 @@ export default function StageBar() {
             </button>
           ))}
         </div>
+
+        {/*
+          Export sits with the basemap buttons because the thing it exports IS this
+          view: the scope, the moment, and which feeds were answering. It went into
+          MapControls first, which was the obvious-looking home and is DEAD CODE —
+          the Terminal replaced that cluster with this bar, so the control rendered
+          nowhere and the tests still passed. Verified in the running app, not read
+          off the component tree.
+        */}
+        <ExportView />
 
         <span className="tnx-stage-spacer" />
         <StageCursor />

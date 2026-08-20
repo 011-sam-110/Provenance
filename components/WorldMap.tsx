@@ -58,13 +58,9 @@ import {
   CAMERA_CLUSTER,
   WEBCAM_CLUSTER,
   CLUSTER_FILL_OPACITY,
-  CLUSTER_RADIUS_TIERS,
-  CLUSTER_TEXT_TIERS,
-  CLUSTER_TEXT_ZOOM_SCALE,
-  CLUSTER_ZOOM_SCALE,
+  clusterRadiusExpression,
+  clusterTextSizeExpression,
   expandCluster,
-  stepExpression,
-  zoomScaleExpression,
 } from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map arming. Every rule lives in camslot.arm; this file supplies geometry and
@@ -112,16 +108,8 @@ type Pt = {
 // used to be independent copies: the camera ramp read 15/19/24/30 and the webcam
 // ramp 14/18/23/29, one pixel adrift at every tier, under a comment in cluster.ts
 // promising a unit test that guarded them. No such test existed.
-const CLUSTER_RADIUS_PAINT = [
-  "*",
-  zoomScaleExpression(CLUSTER_ZOOM_SCALE),
-  stepExpression(CLUSTER_RADIUS_TIERS),
-];
-const CLUSTER_TEXT_PAINT = [
-  "*",
-  zoomScaleExpression(CLUSTER_TEXT_ZOOM_SCALE),
-  stepExpression(CLUSTER_TEXT_TIERS),
-];
+const CLUSTER_RADIUS_PAINT = clusterRadiusExpression();
+const CLUSTER_TEXT_PAINT = clusterTextSizeExpression();
 
 // Source / layer ids.
 const CAM_SRC = "cameras";

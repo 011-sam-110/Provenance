@@ -114,14 +114,39 @@ test("end to end: a down layer lands under the coverage-gap heading of the docum
 // --- capture ---------------------------------------------------------------
 
 test("looksBlank rejects anything that is not a PNG data URL", () => {
-  expect(looksBlank("")).toBe(true);
-  expect(looksBlank("data:image/jpeg;base64,AAAA")).toBe(true);
-  expect(looksBlank("https://example.invalid/x.png")).toBe(true);
+  expect(looksBlank("", 23838)).toBe(true);
+  expect(looksBlank("data:image/jpeg;base64,AAAA", 23838)).toBe(true);
+  expect(looksBlank("https://example.invalid/x.png", 23838)).toBe(true);
 });
 
-test("looksBlank treats a tiny PNG payload as the cleared-buffer case", () => {
-  expect(looksBlank("data:image/png;base64," + "A".repeat(100))).toBe(true);
-  expect(looksBlank("data:image/png;base64," + "A".repeat(5000))).toBe(false);
+// The numbers below are MEASURED, in the running app, on a 942x799 stage:
+//   cleared WebGL buffer  23,838 chars
+//   fresh blank canvas    23,838 chars  (byte-identical)
+//   real captured frame 1,592,118 chars
+// The first version of looksBlank used a flat 2 KB floor and would have passed
+// the cleared buffer straight through to the user as a valid, blank download.
+const BLANK_942x799 = 23_838;
+const REAL_FRAME = 1_592_118;
+
+test("a cleared buffer is caught — it is the same size as a blank canvas", () => {
+  expect(looksBlank("data:image/png;base64," + "A".repeat(BLANK_942x799), BLANK_942x799)).toBe(true);
+});
+
+test("a real frame passes", () => {
+  expect(looksBlank("data:image/png;base64," + "A".repeat(REAL_FRAME), BLANK_942x799)).toBe(false);
+});
+
+test("the blank baseline scales with the canvas, which a flat floor cannot", () => {
+  // A payload comfortably over any fixed 2 KB floor is still blank for a big canvas.
+  const big = 200_000;
+  expect(looksBlank("data:image/png;base64," + "A".repeat(20_000), big)).toBe(true);
+  // ...and the SAME payload is a real capture on a small one.
+  expect(looksBlank("data:image/png;base64," + "A".repeat(20_000), 1_200)).toBe(false);
+});
+
+test("with no baseline available it falls back to a floor rather than failing open", () => {
+  expect(looksBlank("data:image/png;base64," + "A".repeat(100), 0)).toBe(true);
+  expect(looksBlank("data:image/png;base64," + "A".repeat(50_000), 0)).toBe(false);
 });
 
 test("captureFilename is sortable and carries no path-hostile characters", () => {

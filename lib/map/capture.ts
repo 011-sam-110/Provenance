@@ -37,16 +37,44 @@ export type CaptureResult =
 const RENDER_TIMEOUT_MS = 4000;
 
 /**
- * Pure: does this data URL carry actual pixels?
+ * Pure: does this data URL carry actual pixels, judged against a blank PNG of
+ * the SAME dimensions?
  *
- * A fully transparent PNG of any size compresses to a very small payload, so a
- * length floor separates "the buffer was cleared" from "we captured something".
- * This is a heuristic and is treated as one: it only ever downgrades a capture
- * to an honest `blank` failure, and never fabricates a success.
+ * The baseline is not optional and the first version of this function got it
+ * wrong. A flat length floor looks reasonable — surely a transparent image is
+ * tiny — and it is false: a blank PNG's compressed size grows with its canvas,
+ * so any fixed threshold is either useless on a large stage or trigger-happy on
+ * a small one. MEASURED in the running app on a 942x799 stage: the cleared
+ * buffer encoded to 23,838 characters, a fresh untouched canvas of the same size
+ * encoded to 23,838 characters — byte-identical — and a real captured frame to
+ * 1,592,118. A 2 KB floor would have waved the blank one straight through to the
+ * user's downloads folder, which is the exact failure this function exists to
+ * prevent.
+ *
+ * So: compare against the blank of the same size. The 1.5x margin is generous
+ * against a 66x observed gap, and it errs toward an honest refusal rather than a
+ * fabricated success.
  */
-export function looksBlank(dataUrl: string): boolean {
+export function looksBlank(dataUrl: string, blankLength: number): boolean {
   if (!dataUrl.startsWith("data:image/png;base64,")) return true;
-  return dataUrl.length < 2048;
+  if (!Number.isFinite(blankLength) || blankLength <= 0) return dataUrl.length < 2048;
+  return dataUrl.length < blankLength * 1.5;
+}
+
+/**
+ * Length of a blank PNG at these dimensions — the baseline {@link looksBlank}
+ * measures against. Browser-only; an untouched 2D canvas is the cheapest exact
+ * reference there is, and it costs one allocation per export.
+ */
+export function blankLengthFor(width: number, height: number): number {
+  try {
+    const c = document.createElement("canvas");
+    c.width = width;
+    c.height = height;
+    return c.toDataURL("image/png").length;
+  } catch {
+    return 0; // fall back to the flat floor rather than failing the capture
+  }
 }
 
 /** Sortable capture filename, matching lib/export's convention. */
@@ -94,10 +122,11 @@ export async function captureMapPng(map: MapLibreMap | null): Promise<CaptureRes
     const timer = setTimeout(() => finish({ ok: false, reason: "timeout" }), RENDER_TIMEOUT_MS);
 
     // Read synchronously inside the render frame — this is the whole technique.
+    const blankLength = blankLengthFor(canvas.width, canvas.height);
     const onRender = () => {
       try {
         const url = canvas.toDataURL("image/png");
-        if (looksBlank(url)) return finish({ ok: false, reason: "blank" });
+        if (looksBlank(url, blankLength)) return finish({ ok: false, reason: "blank" });
         finish({ ok: true, blob: dataUrlToBlob(url), width: canvas.width, height: canvas.height });
       } catch {
         finish({ ok: false, reason: "error" });

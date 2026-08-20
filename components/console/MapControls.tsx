@@ -8,7 +8,6 @@
 import { useMapView, mapViewStore } from "@/lib/mapView";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import StageSwitch from "@/components/console/StageSwitch";
-import ExportView from "@/components/console/ExportView";
 
 export default function MapControls() {
   const view = useMapView();
@@ -28,7 +27,6 @@ export default function MapControls() {
           </button>
         ))}
       </div>
-      <ExportView />
     </div>
   );
 }

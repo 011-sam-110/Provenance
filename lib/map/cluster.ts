@@ -108,19 +108,56 @@ export function clusterRadiusAt(count: number, zoom: number): number {
  */
 export const CLUSTER_FILL_OPACITY = 0.7;
 
-/** A MapLibre `interpolate` expression mirroring one of the zoom ramps above. */
-export function zoomScaleExpression(
+/**
+ * Pure: a [min, value] tier ramp, every output multiplied by `scale`, as a
+ * MapLibre `step` keyed on `point_count`. Rounded to 2dp so the expression does
+ * not carry binary-float noise (15 * 0.72 is 10.799999999999999) into the style.
+ */
+export function scaledStepExpression(
   ramp: ReadonlyArray<readonly [number, number]>,
+  scale: number,
 ): unknown[] {
-  return ["interpolate", ["linear"], ["zoom"], ...ramp.flatMap(([z, s]) => [z, s])];
+  const at = (v: number) => Math.round(v * scale * 100) / 100;
+  const [, base] = ramp[0];
+  return ["step", ["get", "point_count"], at(base), ...ramp.slice(1).flatMap(([min, v]) => [min, at(v)])];
 }
 
-/** A MapLibre `step` expression mirroring a [min, value] ramp keyed on point_count. */
-export function stepExpression(
-  ramp: ReadonlyArray<readonly [number, number]>,
-): unknown[] {
-  const [, base] = ramp[0];
-  return ["step", ["get", "point_count"], base, ...ramp.slice(1).flatMap(([min, v]) => [min, v])];
+/**
+ * The `circle-radius` paint for both cluster layers, and the MapLibre rule that
+ * dictates its shape.
+ *
+ * The obvious construction is a product: one `interpolate` over zoom giving a
+ * scale, times one `step` over point_count giving the tier. It reads better and
+ * it is ILLEGAL — `"zoom" expression may only be used as input to a top-level
+ * "step" or "interpolate" expression`. What makes that worth a paragraph is HOW
+ * it fails. MapLibre does not throw and does not log: it emits the message on
+ * the map's `error` event, declines to add the layer, and carries on. The first
+ * version of this shipped exactly that way — every later layer mounted fine, the
+ * unit tests were green, `tsc` was clean, and the map simply had no cluster
+ * badges on it at all. It was found by counting layers in the running app.
+ *
+ * So the zoom ramp has to be the OUTER expression, with the count tiers nested
+ * inside each stop, pre-scaled. Same numbers, legal shape. Guarded now by a test
+ * that runs the real style validator (validateStyleMin) over the built layer —
+ * `createExpression` alone does NOT enforce this rule and reports it valid.
+ */
+export function clusterRadiusExpression(): unknown[] {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    ...CLUSTER_ZOOM_SCALE.flatMap(([z, scale]) => [z, scaledStepExpression(CLUSTER_RADIUS_TIERS, scale)]),
+  ];
+}
+
+/** The `text-size` layout for both cluster count labels. Same shape, same reason. */
+export function clusterTextSizeExpression(): unknown[] {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    ...CLUSTER_TEXT_ZOOM_SCALE.flatMap(([z, scale]) => [z, scaledStepExpression(CLUSTER_TEXT_TIERS, scale)]),
+  ];
 }
 
 /**

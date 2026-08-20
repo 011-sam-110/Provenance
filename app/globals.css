@@ -4527,6 +4527,28 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: 9px;
 }
 
+/* Export this view. Same button family as the basemaps to its left — it is a
+   property of the view, so it belongs on the view's own bar. The note is a live
+   region carrying the OUTCOME, including the refusals (see ExportView): a capture
+   that came back empty is something the user is told about, not something they
+   discover on opening the file. */
+.tn-terminal .tn-export { display: flex; align-items: stretch; }
+.tn-terminal .tn-export-btn {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-export-btn:hover:not(:disabled) { color: var(--tnx-ink); }
+.tn-terminal .tn-export-btn:disabled { opacity: 0.45; cursor: progress; }
+/* Empty until something happens, and it must not reserve width while empty or the
+   bar reflows every time a message appears and expires. */
+.tn-terminal .tn-export-note:not(:empty) {
+  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
+  letter-spacing: 0.04em; color: var(--tnx-ink-dim); max-width: 30ch;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
    translateX(-50%)`, so it has to be flattened or it re-centres itself inside this
    frame instead of filling it. Restyled, never forked — one geocoder in the app. */
