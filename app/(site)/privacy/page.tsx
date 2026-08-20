@@ -25,6 +25,14 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     names it, points at /admin as a 404 the reader can check for themselves, and says
  *     a test enforces the gate. A sentence that is nearly true is the thing this file
  *     exists to prevent; the fix is to narrow it, never to leave it.
+ *   - And then narrowed AGAIN, same day, for the same reason. The page briefly said
+ *     "every one of its routes returns 404 here", which is false for a verb no route
+ *     implements: Next answers an unimplemented method with 405 before any handler runs,
+ *     so a POST to a GET-only admin route says 405 and not 404. Nothing is reachable
+ *     either way. The claim is now "every request that tool makes", which is exactly
+ *     true and is still something a reader can check. Chasing verb parity would have
+ *     meant forty-odd stub exports across six routes to protect a sentence that was
+ *     simply worded too widely.
  *   - Nothing about COLLECTION changed. The curation tooling reads open-data catalogues
  *     and camera pictures; it never sees a visitor, and it is not deployed.
  *
@@ -193,14 +201,15 @@ export default function PrivacyPage() {
               it stopped being exactly true in August 2026, so it has been narrowed rather than
               left to rot. The repository now contains a camera-review tool that does write files:
               it records which cameras a person looked at before their pictures were allowed onto
-              the map. It runs on a laptop, against a local development server, and every one of its
-              routes returns 404 here. You can check that.{" "}
+              the map. It runs on a laptop, against a local development server, and it is not
+              deployed here at all. You can check that.{" "}
               <a href="/admin" rel="nofollow">
                 /admin
               </a>{" "}
-              is a 404 on this deployment, and a test in the repository fails the build if a new
-              route is added under it without that guard. Two files in the whole tree can write to
-              disk, both belong to that tool, and a second test fails if a third appears.
+              is a 404 on this deployment, and so is every request that tool makes. A test in the
+              repository fails the build if a new route is added under it without that guard. Two
+              files in the whole tree can write to disk, both belong to that tool, and a second
+              test fails if a third appears.
             </p>
             <p>
               No route reads a cookie or a session. There is nothing in the code that could.
