@@ -53,7 +53,16 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
-import { CAMERA_CLUSTER, WEBCAM_CLUSTER, expandCluster } from "@/lib/map/cluster";
+import { setMapInstance } from "@/lib/map/instance";
+import { attachAoi } from "@/lib/map/aoi";
+import {
+  CAMERA_CLUSTER,
+  WEBCAM_CLUSTER,
+  CLUSTER_FILL_OPACITY,
+  clusterRadiusExpression,
+  clusterTextSizeExpression,
+  expandCluster,
+} from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map arming. Every rule lives in camslot.arm; this file supplies geometry and
 // side effects and decides nothing. See the block above appendToArmedSlot for why
@@ -95,6 +104,13 @@ type Pt = {
   country: string;
   live: boolean;
 };
+
+// Cluster paint, BUILT from lib/map/cluster rather than hand-typed here. The two
+// used to be independent copies: the camera ramp read 15/19/24/30 and the webcam
+// ramp 14/18/23/29, one pixel adrift at every tier, under a comment in cluster.ts
+// promising a unit test that guarded them. No such test existed.
+const CLUSTER_RADIUS_PAINT = clusterRadiusExpression();
+const CLUSTER_TEXT_PAINT = clusterTextSizeExpression();
 
 // Source / layer ids.
 const CAM_SRC = "cameras";
@@ -960,8 +976,8 @@ export default function WorldMap() {
           layout: { visibility: vis(layersRef.current.cameras) },
           paint: {
             "circle-color": "#0ea5e9",
-            "circle-opacity": 0.82,
-            "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24, 750, 30],
+            "circle-opacity": CLUSTER_FILL_OPACITY,
+            "circle-radius": CLUSTER_RADIUS_PAINT as never,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
             "circle-stroke-opacity": 0.9,
@@ -977,7 +993,7 @@ export default function WorldMap() {
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
             "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
-            "text-size": ["step", ["get", "point_count"], 11, 100, 13, 750, 15],
+            "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.cameras),
           },
@@ -1028,8 +1044,8 @@ export default function WorldMap() {
           layout: { visibility: vis(layersRef.current.webcams) },
           paint: {
             "circle-color": WEBCAM_COLOR,
-            "circle-opacity": 0.82,
-            "circle-radius": ["step", ["get", "point_count"], 14, 25, 18, 100, 23, 750, 29],
+            "circle-opacity": CLUSTER_FILL_OPACITY,
+            "circle-radius": CLUSTER_RADIUS_PAINT as never,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
             "circle-stroke-opacity": 0.9,
@@ -1045,7 +1061,7 @@ export default function WorldMap() {
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
             "text-font": ["Open Sans Regular"],
-            "text-size": ["step", ["get", "point_count"], 11, 100, 13, 750, 15],
+            "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.webcams),
           },
@@ -1701,6 +1717,14 @@ export default function WorldMap() {
       attributionControl: false,
     });
     mapRef.current = map;
+    // Published so the export control can READ this map (centre, zoom, canvas)
+    // without a ref threaded through the console layout. Read-only by contract —
+    // see lib/map/instance.
+    setMapInstance(map);
+    // Paints the drawn area-of-interest and keeps it alive across a basemap
+    // switch (which throws the whole style away). Owns its own layers — see
+    // lib/map/aoi — so nothing in this file has to know about scope.
+    const detachAoi = attachAoi(map);
     (window as unknown as { __map?: maplibregl.Map }).__map = map; // debug handle
     (window as unknown as { __overlay?: typeof overlay }).__overlay = overlay;
     // Same debug-handle pattern as the two above, and it earns its place: arming is
@@ -1875,8 +1899,10 @@ export default function WorldMap() {
       thumbMgr.destroy();
       thumbMgrRef.current = null;
       clearStyleWatchdog(); // never let a pending retry fire at a removed map
+      detachAoi();
       map.remove();
       mapRef.current = null;
+      setMapInstance(null); // a removed map must never be handed to a capture
       readyRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

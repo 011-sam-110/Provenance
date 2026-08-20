@@ -245,6 +245,27 @@ a { color: var(--tn-accent); }
 .tn-basemap-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
 .tn-basemap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Export this view ────────────────────────────────────────────────────────
+   Same chip family as the basemap picker beside it — this is a property of the
+   view, so it belongs to the map's own control cluster rather than a menu.
+   The note is a live region: it reports the outcome, including the failures
+   (see components/console/ExportView), so an empty capture is something the
+   user is TOLD about rather than something they discover on opening the file. */
+.tn-export { display: flex; align-items: center; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
+.tn-export-btn {
+  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--tn-text-muted);
+  background: transparent; border: none; border-radius: 7px; padding: 5px 9px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tn-export-btn:hover:not(:disabled) { background: var(--tn-surface-solid); color: var(--tn-accent); }
+.tn-export-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Empty until something happens, and it must not reserve width while empty or the
+   control cluster shifts every time a message appears and expires. */
+.tn-export-note:not(:empty) {
+  font-size: 11px; color: var(--tn-text-muted); padding: 0 8px 0 4px; max-width: 22ch;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 .tn-icon-btn {
   font: inherit; font-size: 13px; color: var(--tn-text-muted);
   background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 8px;
@@ -256,6 +277,8 @@ a { color: var(--tn-accent); }
 
 @media (max-width: 860px) { .tn-tagline { display: none; } }
 @media (max-width: 720px) { .tn-basemap { display: none; } }
+/* The export note is the first thing to go on a narrow stage; the buttons stay. */
+@media (max-width: 720px) { .tn-export-note { display: none; } }
 
 /* ── Compact live-data pulse (replaces the three tall Metric blocks) ────────── */
 .tn-top-pulse {
@@ -4502,6 +4525,46 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 }
 .tn-terminal .tnx-stage-proj .tn-stage-focus {
   display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: 9px;
+}
+
+/* Export this view. Same button family as the basemaps to its left — it is a
+   property of the view, so it belongs on the view's own bar. The note is a live
+   region carrying the OUTCOME, including the refusals (see ExportView): a capture
+   that came back empty is something the user is told about, not something they
+   discover on opening the file. */
+/* Area-of-interest control. Same button family as export and the basemaps —
+   these are all properties of the view, and they share one bar. */
+.tn-terminal .tn-aoi { display: flex; align-items: stretch; }
+.tn-terminal .tn-aoi-btn {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); }
+/* The vertex count while drawing. Accent, because it is the only feedback that
+   the gesture is being received at all. */
+.tn-terminal .tn-aoi-live {
+  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
+  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--tnx-accent); white-space: nowrap;
+}
+
+.tn-terminal .tn-export { display: flex; align-items: stretch; }
+.tn-terminal .tn-export-btn {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-export-btn:hover:not(:disabled) { color: var(--tnx-ink); }
+.tn-terminal .tn-export-btn:disabled { opacity: 0.45; cursor: progress; }
+/* Empty until something happens, and it must not reserve width while empty or the
+   bar reflows every time a message appears and expires. */
+.tn-terminal .tn-export-note:not(:empty) {
+  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
+  letter-spacing: 0.04em; color: var(--tnx-ink-dim); max-width: 30ch;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
