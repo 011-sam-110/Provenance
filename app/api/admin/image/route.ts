@@ -50,15 +50,34 @@ export async function GET(req: NextRequest) {
         "User-Agent": "TrafficNerd/2.0 discovery review (+https://github.com/011-sam-110/Provenance)",
       },
       cache: "no-store",
-      // A camera URL that redirects to somewhere else is a fact the reviewer should
-      // see as a failure rather than have silently followed for them.
-      redirect: "error",
+      // Redirects are FOLLOWED and then checked, rather than refused.
+      //
+      // Refusing them outright was the first version and it was wrong in a way that
+      // would have quietly cost a whole network: Caltrans serves its snapshots over
+      // http and 302s to https, which is an ordinary scheme upgrade and not a
+      // redirection anywhere. A reviewer would have seen "this picture did not load"
+      // on all 371 District 4 cameras and correctly pressed reject on every one of
+      // them. What actually matters is landing somewhere ELSE, which is the signature
+      // of a relay or a login wall, so that is what is checked below.
+      redirect: "follow",
       signal: AbortSignal.timeout(12_000),
     });
   } catch {
     return new Response("upstream fetch failed", { status: 502 });
   }
   if (!upstream.ok) return new Response("upstream " + upstream.status, { status: 502 });
+
+  const from = new URL(url).hostname.toLowerCase();
+  const to = (() => {
+    try {
+      return new URL(upstream.url).hostname.toLowerCase();
+    } catch {
+      return from;
+    }
+  })();
+  if (to !== from) {
+    return new Response("this camera redirects from " + from + " to " + to, { status: 421 });
+  }
 
   const ct = upstream.headers.get("content-type") ?? "";
   if (!ct.startsWith("image/")) {
