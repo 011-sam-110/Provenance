@@ -91,6 +91,19 @@ obligations and are not satisfied by the licence.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
 - `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (14 feeds).
+- `lib/discovery/*` + `/admin` — **camera auto-discovery and the human review gate.** Discovery
+  asks open-data catalogues (CKAN, Socrata, ArcGIS Hub) and produces a queue in
+  `data/discovery/candidates.json`; a person works through it at `/admin/verify`, one
+  camera at a time; promote writes `lib/sources/discovered.data.ts`, which is the ONLY
+  thing `lib/sources/discovered.ts` serves. **Adding a camera network is now a committed
+  data row plus a signed review record, not a new adapter module.** Everything under
+  `/admin` and `/api/admin` returns 404 in production — that is the whole security model,
+  pinned by `tests/unit/discovery-admin-gate.test.ts`. Full write-up in
+  `docs/CAMERA_DISCOVERY.md`.
+- **`CAMERA_FEED_COUNT` is `14 + ADMITTED_FEEDS.length`.** It is 14 today because that array
+  is empty: an admitted feed needs a person to look at the pictures. When it moves, the two
+  pinning tests go red until this file and the README state the new figures. That is the
+  guard working.
 - `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
 - `lib/console/*` — widget registry, presets (**7 boards** in `presets.ts`), store, share (`?c=` layout URL).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
