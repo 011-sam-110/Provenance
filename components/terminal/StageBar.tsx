@@ -137,6 +137,7 @@ import {
 import StageSwitch from "@/components/console/StageSwitch";
 import ExportView from "@/components/console/ExportView";
 import AoiControl from "@/components/console/AoiControl";
+import { soloStore, useStageSolo } from "@/lib/terminal/solo";
 import MapSearch from "@/components/console/MapSearch";
 import WorldClock from "@/components/console/WorldClock";
 
@@ -336,6 +337,7 @@ export default function StageBar() {
   const view = useMapView();
   const mode = useViewMode();
   const { stage, focusedWidgetId } = useShellLayout();
+  const solo = useStageSolo();
 
   // The same gate ConsoleWorkspace applies to MapControls/MapSearch/PinNavigator/
   // WorldClock (ConsoleWorkspace.tsx:101). Without it, this chrome floats on top of
@@ -364,6 +366,20 @@ export default function StageBar() {
           quietly delete the projection toggle from the product. Reused verbatim so
           the unfocus-then-switch behaviour and the "◱ Focus" indicator come along.
         */}
+        {/* Answers the half of "sobrecarga cognitiva" that the colour work did
+            not: his own second suggestion, "o de plano poder colapsar esa barra".
+            First control on the bar because it is the largest change any of them
+            makes. */}
+        <button
+          type="button"
+          className="tn-solo-btn"
+          aria-pressed={solo}
+          onClick={() => soloStore.toggle()}
+          title={solo ? "Bring the widgets back" : "Hide the widgets and give the board to the map"}
+        >
+          {solo ? "Board" : "Solo"}
+        </button>
+
         <span className="tnx-stage-proj">
           <StageSwitch />
         </span>
