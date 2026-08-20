@@ -39,6 +39,13 @@ const RULES: { host: string; prefix: string; suffix?: string }[] = [
   // JPEG does not.
   { host: "cam.bitinfo.co.rs", prefix: "/", suffix: "/index.jpg" },
   { host: "jpps.bitinfo.co.rs", prefix: "/", suffix: "/index.jpg" },
+  // BIHAMK (Bosnia and Herzegovina) — one still per site at
+  // /videosurveillence/{KEY}.jpg on the club's own host. The operator's own
+  // spelling of that path segment, typo and all; do not "correct" it or every
+  // Bosnian camera 404s.
+  { host: "video-nadzor.bihamk.ba", prefix: "/videosurveillence/", suffix: ".jpg" },
+  // ACT Puerto Rico — ITS stills at /images/cameras/{name}.jpg.
+  { host: "its.act.pr.gov", prefix: "/images/cameras/", suffix: ".jpg" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

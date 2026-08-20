@@ -145,6 +145,20 @@ export function decodeHtmlEntities(s: string): string {
   const NAMED: Record<string, string> = {
     scaron: "š",
     Scaron: "Š",
+    // The rest of the region's Latin-Extended-A set. Added when BIHAMK was wired
+    // up (lib/sources/bihamk.ts), which shares this decoder: Bosnian crossing
+    // names carry č, ć, ž and đ, and an undecoded "&ccaron;" would ship a camera
+    // labelled "Bija&ccaron;a". Note these are the CARON forms — ç (&ccedil;) is
+    // French and does not appear in any of these languages, so it is deliberately
+    // not in this map.
+    ccaron: "č",
+    Ccaron: "Č",
+    cacute: "ć",
+    Cacute: "Ć",
+    zcaron: "ž",
+    Zcaron: "Ž",
+    dstrok: "đ",
+    Dstrok: "Đ",
     amp: "&",
     lt: "<",
     gt: ">",

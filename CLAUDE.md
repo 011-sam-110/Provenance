@@ -90,7 +90,7 @@ obligations and are not satisfied by the licence.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
-- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (14 feeds).
+- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (16 feeds).
 - `lib/discovery/*` + `/admin` — **camera auto-discovery and the human review gate.** Discovery
   asks open-data catalogues (CKAN, Socrata, ArcGIS Hub) and produces a queue in
   `data/discovery/candidates.json`; a person works through it at `/admin/verify`, one
@@ -100,7 +100,7 @@ obligations and are not satisfied by the licence.
   `/admin` and `/api/admin` returns 404 in production — that is the whole security model,
   pinned by `tests/unit/discovery-admin-gate.test.ts`. Full write-up in
   `docs/CAMERA_DISCOVERY.md`.
-- **`CAMERA_FEED_COUNT` is `14 + ADMITTED_FEEDS.length`.** It is 14 today because that array
+- **`CAMERA_FEED_COUNT` is `16 + ADMITTED_FEEDS.length`.** It is 16 today because that array
   is empty: an admitted feed needs a person to look at the pictures. When it moves, the two
   pinning tests go red until this file and the README state the new figures. That is the
   guard working.
@@ -126,7 +126,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Claim | Value | How it was checked (2026-08-10) |
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
-| Camera feeds | 14 adapters, 9 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). |
+| Camera feeds | 16 adapters, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). |
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 7 (2026-08-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. `tests/unit/console-presets.test.ts` pins the exact id list, and `tests/unit/tour-board-copy.test.ts` fails if the guided tour states a different number — so this row cannot silently rot. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
