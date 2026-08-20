@@ -50,7 +50,6 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 // The Terminal chrome owns both of these contracts, so they are imported rather than
 // re-declared here: the cursor event NAME (a second literal would drift the day one
 // side is renamed) and the selection store the highlight ring is driven by.
-import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
@@ -1815,34 +1814,14 @@ export default function WorldMap() {
     const inputs: (keyof HTMLElementEventMap)[] = ["mousedown", "wheel", "touchstart", "pointerdown"];
     for (const ev of inputs) el.addEventListener(ev, markInteract, { passive: true });
 
-    // ── Cursor lat/lon readout (the Terminal stage bar) ──────────────────────
-    //
-    // A window CustomEvent, and NOT React state. `mousemove` on the whole map fires
-    // at pointer rate; a setState here would re-render WorldMap — and with it every
-    // <…Feed> child, the 27-layer effect chain and the thumbnail pool — on every
-    // mouse move across the globe. The stage bar's readout writes the text straight
-    // into its own DOM node instead (see StageCursor in components/terminal/StageBar).
-    //
-    // requestAnimationFrame coalesces the burst: MapLibre can emit several moves per
-    // frame, and only the last one is worth publishing because only the last one is
-    // what the pointer is on when the frame paints. The pending coordinate is held in
-    // a closure variable rather than dispatched immediately, so the cost of a fast
-    // drag across the map is one dispatch per frame, not one per event.
-    let cursorFrame = 0;
-    let cursorLat = 0;
-    let cursorLon = 0;
-    const flushCursor = () => {
-      cursorFrame = 0;
-      window.dispatchEvent(
-        new CustomEvent(MAP_CURSOR_EVENT, { detail: { lat: cursorLat, lon: cursorLon } }),
-      );
-    };
-    const onCursorMove = (e: maplibregl.MapMouseEvent) => {
-      cursorLat = e.lngLat.lat;
-      cursorLon = e.lngLat.lng; // PointView-style naming: `lon` on the wire, `lng` from MapLibre
-      if (cursorFrame === 0) cursorFrame = requestAnimationFrame(flushCursor);
-    };
-    map.on("mousemove", onCursorMove);
+    // The `tn-map-cursor` publisher used to live here: a rAF-coalesced window
+    // CustomEvent carrying lat/lon on every mousemove, read by the stage bar's
+    // coordinate readout. The stage bar is gone and nothing listens any more, so
+    // the publisher went with it rather than staying as a per-frame dispatch into
+    // an empty room. If a coordinate readout comes back, this is the shape to
+    // restore — a window event, never React state: a setState on mousemove
+    // re-renders WorldMap and with it every <…Feed> child, the 27-layer effect
+    // chain and the thumbnail pool, at pointer rate.
 
     // Shareable deep links: mirror the live view into the URL (debounced,
     // replaceState — no history spam, no reload). moveend writes are skipped while
@@ -1884,11 +1863,6 @@ export default function WorldMap() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
-      map.off("mousemove", onCursorMove);
-      // A queued frame would otherwise dispatch one last coordinate after the map is
-      // gone — harmless for the readout, but it is exactly the kind of leak that
-      // survives a remount and then fires against two maps at once.
-      if (cursorFrame !== 0) cancelAnimationFrame(cursorFrame);
       cancelUrlWrite();
       unsubLayers();
       unsubView();

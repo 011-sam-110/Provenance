@@ -29,17 +29,35 @@
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import { mapViewStore, useMapView } from "@/lib/mapView";
 import { useShellLayout } from "@/lib/console/store";
+import { soloStore, useStageSolo } from "@/lib/terminal/solo";
 import StageSwitch from "@/components/console/StageSwitch";
 import ExportView from "@/components/console/ExportView";
 
 export default function StageControls() {
   const view = useMapView();
   const { stage, focusedWidgetId } = useShellLayout();
+  const solo = useStageSolo();
 
   if (focusedWidgetId != null || (stage !== "map3d" && stage !== "map2d")) return null;
 
   return (
     <div className="tnx-view-controls">
+      {/*
+        SOLO first, because it is the largest change any control here makes: it
+        hides every widget and gives the whole board to the map. It arrived on the
+        stage's own 22px bar one release ago and moved here when that bar was
+        removed — the band went, the feature did not.
+      */}
+      <button
+        type="button"
+        className="tn-solo-btn"
+        aria-pressed={solo}
+        onClick={() => soloStore.toggle()}
+        title={solo ? "Bring the widgets back" : "Hide the widgets and give the board to the map"}
+      >
+        {solo ? "Board" : "Solo"}
+      </button>
+
       {/*
         The 3D/2D switch. Reused verbatim rather than rebuilt so the
         unfocus-then-switch behaviour and the "◱ Focus" indicator come along —

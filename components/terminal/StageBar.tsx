@@ -1,35 +1,32 @@
 "use client";
-// The Terminal's stage chrome — the four pieces of UI that float OVER the map
-// inside the stage cell: the 22px top bar (stage readout, Solo, cursor
-// coordinates), the centred search box, the right-hand stack (layer legend + the
-// area filter), and the 24px bottom clock bar.
+// The Terminal's stage chrome — the three pieces of UI that float OVER the map
+// inside the stage cell: the centred search box, the right-hand stack (layer
+// legend + the area filter), and the 24px bottom clock bar.
 //
-// WHAT LEFT THIS FILE, AND WHY. The projection switch, the basemap picker and
-// Export used to sit on the top bar. They now live at the right-hand end of the
-// FEED HEALTH row — see components/terminal/StageControls.tsx, which carries the
-// same gate this component applies to itself. The bar kept STAGE·FLAT, Solo and
-// the cursor readout, because those describe the STAGE rather than the view.
+// THE 22px TOP BAR IS GONE, and with it three things. Two moved, one was deleted:
+//
+//   * the projection switch, the basemap picker and Export had already moved to the
+//     FEED HEALTH row (components/terminal/StageControls.tsx);
+//   * SOLO moved there too rather than dying with the bar. It is the control that
+//     hands the whole board to the map, it shipped one release ago, and a band
+//     being removed is not a reason to delete a feature — so it now sits with the
+//     other stage controls, which is where a reader looking for "make the map
+//     bigger" would go next;
+//   * STAGE·FLAT and the cursor coordinate readout were DELETED. The label
+//     duplicated the 3D/2D switch, which shows the same fact by which segment is
+//     lit; the coordinate readout had no second home and is simply gone. Say so
+//     out loud rather than implying it moved — WorldMap's `tn-map-cursor` dispatch
+//     was removed in the same change, because a window event with no listener is
+//     work done every mousemove for nobody.
 //
 // TWO EXISTING COMPONENTS ARE RE-SKINNED, NOT REBUILT: MapSearch (geocode → drop a
-// pin → fly) and WorldClock. They are rendered inside this bar's frames and
+// pin → fly) and WorldClock. They are rendered inside this file's frames and
 // restyled by scoped CSS, so there is exactly one geocoder and one clock timer in
 // the app. See the CSS block below for the overrides each one needs.
 //
 // ─── CSS THIS COMPONENT NEEDS (integrator owns app/globals.css) ───────────────
 // All scoped under .tn-terminal, using the --tnx-* token block.
 //
-// TOP BAR
-// .tnx-stage-bar        position:absolute; top:0; left:0; right:0; height:22px; z-index:6;
-//                       display:flex; align-items:stretch; gap:0; font-size:9px;
-//                       background:rgba(8,11,15,.88); backdrop-filter:blur(6px);
-//                       -webkit-backdrop-filter:blur(6px); pointer-events:auto;
-// .tnx-stage-label      display:flex; align-items:center; padding:0 9px; font-weight:700;
-//                       letter-spacing:.1em; color:var(--tnx-ink-dim);
-//                       border-right:1px solid var(--tnx-line); flex:none; white-space:nowrap;
-// .tnx-stage-spacer     flex:1; min-width:0;
-// .tnx-stage-cursor     display:flex; align-items:center; padding:0 10px; font-size:9.5px;
-//                       color:var(--tnx-ink-faint); border-left:1px solid var(--tnx-line);
-//                       flex:none; white-space:nowrap;
 // SEARCH (restyle of components/console/MapSearch)
 // .tnx-stage-search     position:absolute; top:30px; left:50%; transform:translateX(-50%);
 //                       width:min(420px, calc(100% - 16px));
@@ -102,13 +99,11 @@
 //                                              color:var(--tnx-ink-ghost); }
 // .tn-terminal .maplibregl-ctrl-attrib a     { color:var(--tnx-ink-faint); }
 
-import { memo, useEffect, useMemo, useRef } from "react";
-import { useViewMode } from "@/lib/shell/viewMode";
+import { useMemo } from "react";
 import { useShellLayout } from "@/lib/console/store";
 import { useLayers } from "@/lib/layers";
 import { SIGNALS } from "@/lib/signals/registry";
 import { useSignals } from "@/lib/signals/store";
-import { formatCoord } from "@/lib/terminal/selection";
 import {
   CAMERA_OFFLINE_COLOR,
   CAMERA_REGIONS,
@@ -117,24 +112,8 @@ import {
   WEBCAM_COLOR,
 } from "@/lib/icons/svg";
 import AoiControl from "@/components/console/AoiControl";
-import { soloStore, useStageSolo } from "@/lib/terminal/solo";
 import MapSearch from "@/components/console/MapSearch";
 import WorldClock from "@/components/console/WorldClock";
-
-/**
- * The window event WorldMap dispatches on map mousemove, carrying the cursor's
- * geographic position.
- *
- * A window event rather than a store or a prop, and read straight into a DOM node
- * rather than into React state, because it fires at pointer rate. A setState here
- * would re-render this bar — and, through any shared context, the shell around it —
- * on every mouse move across the map.
- */
-export const MAP_CURSOR_EVENT = "tn-map-cursor";
-export interface MapCursorDetail {
-  lat: number;
-  lon: number;
-}
 
 /** The id on the search frame, so the shell's "/" shortcut can find it. */
 export const STAGE_SEARCH_ID = "stage-search";
@@ -154,41 +133,6 @@ export function focusStageSearch(): boolean {
   input.select();
   return true;
 }
-
-/** Shown until the pointer has actually been over the map. Never a fake 0.00N 0.00E. */
-const CURSOR_EMPTY = "—";
-
-/**
- * The cursor coordinate readout.
- *
- * memo() is load-bearing, not an optimisation. The text is written imperatively
- * into the node, so any re-render of this component would let React reconcile its
- * text child back to the em dash and blank a readout that is otherwise correct.
- * With no props, memo means it renders exactly once and the DOM write is the only
- * thing that ever touches it afterwards.
- */
-const StageCursor = memo(function StageCursor() {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const onCursor = (e: Event) => {
-      const node = ref.current;
-      if (!node) return;
-      // The detail is untrusted: any script can dispatch this event name, and the
-      // map integrator's shape could drift. formatCoord() already answers "—" for
-      // anything that is not a finite pair, so the narrowing is all that is needed.
-      const detail = (e as CustomEvent<Partial<MapCursorDetail> | undefined>).detail;
-      const next = formatCoord(detail?.lat, detail?.lon);
-      if (node.textContent !== next) node.textContent = next;
-    };
-    window.addEventListener(MAP_CURSOR_EVENT, onCursor);
-    return () => window.removeEventListener(MAP_CURSOR_EVENT, onCursor);
-  }, []);
-  return (
-    <span ref={ref} className="tnx-stage-cursor tnx-num">
-      {CURSOR_EMPTY}
-    </span>
-  );
-});
 
 interface LegendRow {
   key: string;
@@ -314,15 +258,13 @@ function StageLegend() {
 }
 
 export default function StageBar() {
-  const mode = useViewMode();
   const { stage, focusedWidgetId } = useShellLayout();
-  const solo = useStageSolo();
 
   // The same gate ConsoleWorkspace applies to MapControls/MapSearch/PinNavigator/
   // WorldClock (ConsoleWorkspace.tsx:101). Without it, this chrome floats on top of
-  // a widget that has been expanded onto the stage — a search box and a set of
-  // basemap buttons painted over a fullscreened chart. Keeping the gate inside the
-  // component means the shell can mount <StageBar /> unconditionally.
+  // a widget that has been expanded onto the stage — a search box and a legend
+  // painted over a fullscreened chart. Keeping the gate inside the component means
+  // the shell can mount <StageBar /> unconditionally.
   //
   // In a Terminal layout that never focuses a widget onto the stage this is inert,
   // which is the correct cost for a guard that cannot then be forgotten.
@@ -330,34 +272,6 @@ export default function StageBar() {
 
   return (
     <>
-      <div className="tnx-stage-bar">
-        {/*
-          "GLOBE" or "FLAT" is read from viewMode, not hardcoded from the design.
-          viewMode is the thing that actually sets the MapLibre projection (explore →
-          globe, console → mercator) and it defaults to console, so a fixed "GLOBE"
-          label would be wrong on first paint for every visitor.
-        */}
-        <span className="tnx-stage-label">STAGE · {mode === "explore" ? "GLOBE" : "FLAT"}</span>
-
-        {/* Answers the half of "sobrecarga cognitiva" that the colour work did
-            not: his own second suggestion, "o de plano poder colapsar esa barra".
-            It stays on this bar while the view controls move up to the FEED HEALTH
-            row, because it is not a property of the view — it is a property of the
-            BOARD, and it is the largest change any control on screen makes. */}
-        <button
-          type="button"
-          className="tn-solo-btn"
-          aria-pressed={solo}
-          onClick={() => soloStore.toggle()}
-          title={solo ? "Bring the widgets back" : "Hide the widgets and give the board to the map"}
-        >
-          {solo ? "Board" : "Solo"}
-        </button>
-
-        <span className="tnx-stage-spacer" />
-        <StageCursor />
-      </div>
-
       <div className="tnx-stage-search" id={STAGE_SEARCH_ID}>
         <span className="tnx-stage-search-pfx" aria-hidden>
           /

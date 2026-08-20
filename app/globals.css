@@ -60,14 +60,6 @@
 
   --tn-topbar-h: 50px;
   --tn-ticker-h: 32px;
-  /* Breaking-banner geometry. The banner is an at-a-glance strip, NOT a modal, so
-     it gets its own reserved band under the top bar instead of floating over the
-     map chrome (it used to sit on top of the map search box and the 3D/2D switch
-     and kill both). `--tn-alert-band` is what the console shell is pushed down by
-     while a banner exists; see `.tn-alert ~ .tn-cw-shell`. */
-  --tn-alert-h: 54px;
-  --tn-alert-gap: 10px;
-  --tn-alert-band: calc(var(--tn-alert-h) + var(--tn-alert-gap) * 2);
   /* CHANGED: was
        --tn-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
      which NAMED JetBrains Mono third in an OS-fallback list without ever loading it,
@@ -841,80 +833,6 @@ a { color: var(--tn-accent); }
   .tn-news-viewport { overflow-x: auto; }
 }
 @media (max-width: 600px) { .tn-news-label { display: none; } }
-
-/* ====================================================================   Breaking-alert banner — one honest, dismissible alert under the top bar.
-   =========================================================================== */
-.tn-alert {
-  position: fixed; top: calc(var(--tn-topbar-h) + var(--tn-alert-gap)); left: 50%; transform: translateX(-50%);
-  z-index: 45; width: min(560px, calc(100vw - 24px));
-  /* Fixed height, not intrinsic: the shell below reserves exactly --tn-alert-band,
-     so the banner's box has to be deterministic or the reservation drifts. Both
-     text rows already ellipsise, so a long headline cannot grow it. */
-  height: var(--tn-alert-h);
-  display: flex; align-items: center; gap: 12px; padding: 9px 12px;
-  background: var(--tn-surface-solid); border: 1px solid var(--tn-border-strong);
-  border-left: 4px solid var(--tn-down); border-radius: 12px; box-shadow: var(--tn-shadow);
-  color: var(--tn-text); animation: tn-pop 0.18s ease;
-}
-.tn-alert-news { border-left-color: var(--tn-accent); }
-.tn-alert-tag {
-  flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.1em; font-family: var(--tn-mono);
-  color: #fff; background: var(--tn-down); border-radius: 4px; padding: 3px 7px;
-}
-.tn-alert-news .tn-alert-tag { background: var(--tn-accent); }
-.tn-alert-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.tn-alert-text { font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-alert-detail { font-size: 11px; color: var(--tn-text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-alert-view {
-  /* 4.18:1 on its own accent-soft fill before; --tn-accent-strong is 6.11:1 there. */
-  flex-shrink: 0; font: inherit; font-size: 12px; font-weight: 650; color: var(--tn-accent-strong);
-  background: var(--tn-accent-soft); border: 1px solid var(--tn-border); border-radius: 8px;
-  padding: 6px 11px; cursor: pointer; white-space: nowrap;
-}
-.tn-alert-view:hover { background: var(--tn-chip-bg); color: var(--tn-accent-strong); }
-.tn-alert-dismiss {
-  flex-shrink: 0; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
-  background: transparent; color: var(--tn-text-faint); border: 1px solid var(--tn-border);
-  font-size: 16px; line-height: 1; cursor: pointer;
-}
-.tn-alert-dismiss:hover { color: var(--tn-text); }
-/* The button carries a full aria-label; these two spans are the visible glyphs only,
-   so the accessible name stays "View on map" even when the short one is showing. */
-.tn-alert-view-abbr { display: none; }
-
-/* ── The banner must never sit ON an interactive control ──────────────────────
-   Measured before this rule (production build, tour suppressed):
-     390x844  .tn-alert 10,60 370x50  →  elementFromPoint over .tn-mapsearch
-              (59,72 273x37) returned span.tn-alert-text, and over .tn-stage-switch
-              (302,70 68x22) returned div.tn-alert — both controls were dead.
-     1440x900 the same: .tn-alert 440,60 560x53 covered .tn-mapsearch 520,72 400x37.
-   The banner is a *strip*, not a modal, so the fix is spatial rather than a
-   z-index or pointer-events trick: the console shell starts BELOW the banner's
-   band whenever a banner exists. `.tn-alert` is a previous sibling of
-   `.tn-cw-shell` inside `.tn-shell` (ConsoleShell renders StatusBar → banner →
-   ConsoleWorkspace), so `~` reserves the space only while an alert is live and
-   gives it straight back the moment the alert is dismissed — no layout jump left
-   behind, no permanently stolen pixels. */
-.tn-alert ~ .tn-cw-shell { top: calc(var(--tn-topbar-h) + var(--tn-alert-band)); }
-
-@media (prefers-reduced-motion: reduce) { .tn-alert { animation: none; } }
-/* Phones: a flush full-bleed band docked under the top bar. Edge-to-edge buys back
-   the ~24px of side inset for headline text on a 360px screen, and the band reads
-   as system chrome rather than a card floating over the map. */
-@media (max-width: 720px) {
-  :root { --tn-alert-h: 46px; --tn-alert-gap: 0px; }
-  .tn-alert {
-    left: 0; right: 0; width: auto; transform: none;
-    border-radius: 0; border-top: 0; border-right: 0;
-    padding: 5px 8px; gap: 8px;
-  }
-  .tn-alert-detail { display: none; }
-  .tn-alert-view-full { display: none; }
-  .tn-alert-view-abbr { display: inline; }
-  /* Real touch targets — the old 26px × was "the small close ×" a user had to hunt for. */
-  .tn-alert-view { padding: 6px 10px; min-height: 34px; }
-  .tn-alert-dismiss { width: 34px; height: 34px; font-size: 19px; }
-}
 
 /* ==================================================================   Batch D — platform/UX chrome: monitor presets, time-window filter, language
    switcher, and the saved-places (watchlist) slide-in. All reuse the calm-light
@@ -3116,14 +3034,6 @@ a.tn-w-place { display: flex; align-items: center; }
   /* Ko-fi loses its label under 720px, so its own box also needs a floor. */
   .tn-kofi { min-width: 44px; justify-content: center; }
 
-  /* ---- (b) breaking banner: a fixed 54px band, so the paint cannot grow ---- */
-  .tn-alert-view, .tn-alert-dismiss { position: relative; }
-  .tn-alert-view::before, .tn-alert-dismiss::before {
-    content: ""; position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%; min-width: 44px; height: 44px;
-  }
-
   /* ---- MapLibre's own chrome (zoom / compass / attribution) ---------------
      maplibre-gl.css declares `.maplibregl-ctrl-group button {29px}` and
      `.maplibregl-ctrl-attrib-button {24px}` at the same specificity as a plain
@@ -3233,7 +3143,6 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-fs: 11.5px;
   --tnx-hdr-h: 34px;
   --tnx-feed-h: 22px;
-  --tnx-foot-h: 24px;
   /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
      width and the shell's reserved left padding, so the two can never disagree
      and let the tab sit on top of the first widget. */
@@ -3297,13 +3206,19 @@ a.tn-w-place { display: flex; align-items: center; }
      fixed overlay) — it is "how much chrome sits above the stage", which is what
      the rules reading it actually mean: the fixed-position dossier tops out below
      it. 34px header + 22px feed strip = 56px.
-     --tn-ticker-h is the licensing-critical one: the MapLibre attribution control
-     is pinned to `bottom: var(--tn-ticker-h)`, and the Terminal footer is 24px, not
-     the retired ticker's 32px. */
+     --tn-ticker-h is "how much chrome sits below the stage". It was the retired
+     ticker's 32px, then the Terminal footer's 24px, and it is now 0: this shell has
+     no bottom band at all. The rules reading it (the rail's max-height, the pin
+     navigator, the old shell's attribution pin) all mean "clear the bottom chrome",
+     and there is none to clear. NOT deleted — the non-Terminal shell still has a
+     ticker and still reads this token from the `:root` default above.
+
+     The attribution is unaffected either way: inside the Terminal it is pinned
+     explicitly to `bottom: 28px` further down this file, clear of the stage's own
+     24px world-clock bar, precisely because it must not depend on a band that can
+     be removed. It is a licensing requirement (Esri / OpenTopoMap / CARTO). */
   --tn-topbar-h: calc(var(--tnx-hdr-h) + var(--tnx-feed-h));
-  --tn-ticker-h: var(--tnx-foot-h);
-  --tn-alert-h: 30px;
-  --tn-alert-gap: 0px;
+  --tn-ticker-h: 0px;
 
   font-family: var(--tnx-font-mono);
   font-size: var(--tnx-fs);
@@ -3766,18 +3681,6 @@ a.tn-w-place { display: flex; align-items: center; }
   .tnx-boot-rail-fill { transform: scaleX(1) !important; }
 }
 
-/* The skin toggle, sized to match the Ko-fi chip beside it. */
-.tn-terminal .tnx-hdr-skin {
-  display: inline-flex; align-items: center; gap: 4px;
-  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
-  padding: 3px 7px;
-  border: 1px solid var(--tnx-line-strong);
-  background: none;
-  color: var(--tnx-ink-dim);
-  cursor: pointer;
-}
-.tn-terminal .tnx-hdr-skin:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
-
 /* The lifted card's shadow is tuned for near-black and disappears on paper. */
 .tn-terminal[data-tnx-skin="light"] .tn-seg-slot.is-held,
 .tn-terminal[data-tnx-skin="light"] .tn-cw-stage.is-held {
@@ -3807,16 +3710,14 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-bg);
 }
 .tn-shell.tn-terminal > .tnx-hdr,
-.tn-shell.tn-terminal > .tnx-feed,
-.tn-shell.tn-terminal > .tnx-footer { flex: 0 0 auto; }
+.tn-shell.tn-terminal > .tnx-feed { flex: 0 0 auto; }
 
 /* ── The workspace band ────────────────────────────────────────────────────
-   `.tn-cw-shell` stops being an absolute canvas. The `top:` it inherits from
-   `.tn-alert ~ .tn-cw-shell` (the banner reservation) would OFFSET a positioned
-   element, so `inset` is reset explicitly. The banner reserves its band by being a
-   flex sibling now — the same guarantee by simpler means — and the sibling
-   combinator that encoded it is left intact and harmless. Specificity here is
-   (0,2,0), equal to that rule, and this block is later in the sheet, so it wins. */
+   `.tn-cw-shell` stops being an absolute canvas, so `inset` is reset explicitly.
+   It used to also have to out-specify `.tn-alert ~ .tn-cw-shell` — the breaking
+   banner's reserved band, which set a `top:` that would OFFSET a positioned
+   element. That banner and its sibling combinator are both gone now; the reset
+   stays because the absolute-to-relative change is still real. */
 .tn-terminal .tn-cw-shell,
 .tn-cw-shell.tn-terminal {
   position: relative;
@@ -4249,43 +4150,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   }
 }
 
-/* ── Breaking banner ───────────────────────────────────────────────────────
-   Becomes a real band in the column instead of a fixed card floating over the map.
-   That is what `.tn-alert ~ .tn-cw-shell` was simulating with a reserved band; as a
-   flex item it simply takes its own space, and the measured bug that rule was
-   written to fix (the banner sitting on top of the stage's search box and
-   projection switch, both dead to elementFromPoint) cannot recur, because the
-   banner no longer overlaps anything. */
-.tn-terminal .tn-alert {
-  position: static;
-  transform: none;
-  width: auto;
-  height: var(--tn-alert-h);
-  border-radius: 0;
-  border: 0;
-  border-bottom: 1px solid var(--tnx-line-strong);
-  border-left: 3px solid var(--tnx-down);
-  background: var(--tnx-chrome);
-  box-shadow: none;
-  padding: 0 10px;
-  gap: 10px;
-  font-size: 10px;
-}
-.tn-terminal .tn-alert-news { border-left-color: var(--tnx-accent); }
-.tn-terminal .tn-alert-tag {
-  border-radius: 0; font-size: 9px; letter-spacing: 0.12em; padding: 2px 5px;
-  color: var(--tnx-bg);
-  animation: om-pulse 2.4s ease-in-out infinite;
-}
-.tn-terminal .tn-alert-text { font-size: 11px; font-weight: 700; }
-.tn-terminal .tn-alert-detail { font-size: 9.5px; }
-.tn-terminal .tn-alert-view {
-  border-radius: 0; font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; padding: 3px 9px;
-  border: 1px solid var(--tnx-line-strong); color: var(--tnx-accent); background: none;
-}
-.tn-terminal .tn-alert-dismiss { border-radius: 0; width: 22px; height: 22px; font-size: 13px; }
-
 /* ── MapLibre chrome ───────────────────────────────────────────────────────
    ATTRIBUTION IS A LICENSING REQUIREMENT (Esri / OpenTopoMap / CARTO), and it is
    MapLibre's own control rather than text we type, so it stays correct when the
@@ -4405,47 +4269,39 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-hdr-utc-time {
   font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tnx-ink);
 }
-.tn-terminal .tnx-hdr-mode {
-  display: flex; align-items: stretch; border-left: 1px solid var(--tnx-line); flex: none;
-}
-.tn-terminal .tnx-hdr-mode-btn {
-  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
-  padding: 0 9px; border: 0; background: none; cursor: pointer; color: var(--tnx-ink-dim);
-}
-.tn-terminal .tnx-hdr-mode-btn.is-active { background: var(--tnx-accent); color: var(--tnx-bg); }
 .tn-terminal .tnx-hdr-right {
-  display: flex; align-items: center; gap: 8px; padding: 0 9px;
+  display: flex; align-items: stretch; padding: 0;
   border-left: 1px solid var(--tnx-line); flex: none;
 }
-.tn-terminal .tnx-hdr-kofi {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700;
-  letter-spacing: 0.08em; text-decoration: none; color: var(--tnx-accent); white-space: nowrap;
+
+/* ONE FAMILY for the whole right cluster: skin, Support, Source, Shortcuts.
+   This is the shape CONSOLE/WALL had — flat segments divided by hairlines, no
+   chip outlines, no bare accent links. Those buttons are gone; the shape stayed,
+   because at 34px it was the only thing in this corner that read as a button.
+   Applied via `.tnx-hdr-btn` so `.tnx-hdr-skin` and `.tn-palette-trigger` can go
+   on keeping their own hooks (a store toggle and a tour target) without owning
+   any appearance. */
+.tn-terminal .tnx-hdr-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  padding: 0 10px; border: 0; border-right: 1px solid var(--tnx-line);
+  background: none; cursor: pointer; color: var(--tnx-ink-dim);
+  text-decoration: none; white-space: nowrap;
 }
-.tn-terminal .tnx-hdr-kofi:hover { text-decoration: underline; }
-.tn-terminal .tnx-hdr-cmd {
-  display: inline-flex; align-items: center; gap: 6px; font: inherit;
-  border: 0; background: none; cursor: pointer; padding: 0; color: var(--tnx-ink-dim);
-}
+.tn-terminal .tnx-hdr-btn:hover { color: var(--tnx-ink); background: var(--tnx-panel-head); }
+/* The skin toggle is the one member with an on-state, and it earns the accent:
+   it is the only one that changes the page rather than opening something. */
+.tn-terminal .tnx-hdr-btn[aria-pressed="true"] { color: var(--tnx-ink); }
 .tn-terminal .tnx-hdr-kbd {
-  font-size: 9.5px; font-weight: 700; padding: 2px 6px;
+  font-size: 9.5px; font-weight: 700; padding: 1px 5px;
   border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink);
 }
-.tn-terminal .tnx-hdr-cmd-label {
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
-}
-.tn-terminal .tnx-hdr-icon {
-  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
-  font: inherit; font-size: 11px; border: 1px solid var(--tnx-line-strong);
-  background: none; cursor: pointer; color: var(--tnx-ink-dim);
-}
-.tn-terminal .tnx-hdr-icon:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+.tn-terminal .tnx-hdr-btn-label { color: inherit; }
 .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: 10px; border-radius: 0; }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
    resting outline for a focus ring to thicken. */
 .tn-terminal .tnx-hdr :focus-visible,
-.tn-terminal .tnx-feed :focus-visible,
-.tn-terminal .tnx-footer :focus-visible,
-.tn-terminal .tnx-stage-bar :focus-visible {
+.tn-terminal .tnx-feed :focus-visible {
   outline: 2px solid var(--tnx-accent); outline-offset: -2px;
 }
 
@@ -4479,29 +4335,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 /* ════════════════════════════════════════════════════════════════════════════
    3. STAGE CHROME — bars, search, legend, clocks (all inside the stage cell)
    ════════════════════════════════════════════════════════════════════════════ */
-.tn-terminal .tnx-stage-bar {
-  position: absolute; top: 0; left: 0; right: 0; height: 22px; z-index: 6;
-  display: flex; align-items: stretch; font-size: 9px;
-  background: var(--tnx-glass-bar);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  pointer-events: auto;
-}
-.tn-terminal .tnx-stage-label {
-  display: flex; align-items: center; padding: 0 9px; font-weight: 700; letter-spacing: 0.1em;
-  color: var(--tnx-ink-dim); border-right: 1px solid var(--tnx-line); flex: none; white-space: nowrap;
-}
 .tn-terminal .tnx-stage-spacer { flex: 1; min-width: 0; }
-.tn-terminal .tnx-stage-cursor {
-  display: flex; align-items: center; padding: 0 10px; font-size: 9.5px;
-  color: var(--tnx-ink-faint); border-left: 1px solid var(--tnx-line);
-  flex: none; white-space: nowrap;
-}
-/* The projection switch, the basemap picker and Export now live in the FEED
-   HEALTH row (components/terminal/StageControls.tsx), not on the stage bar. The
-   selectors are unchanged and still scoped to `.tn-terminal`, so the button family
-   is shared by both bands — which is the point: they are one family, and a reader
-   should not have to learn two. The rules stay in this section because the
-   controls act on the STAGE, wherever they are painted. */
 .tn-terminal .tnx-basemaps { display: flex; align-items: stretch; }
 .tn-terminal .tnx-basemap-btn,
 .tn-terminal .tnx-stage-proj .tn-stage-switch button {
@@ -4671,66 +4505,17 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-stage-foot .tn-wc-cell:nth-child(3) .tn-wc-time { color: var(--tnx-accent); }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   4. FOOTER — 24px: SEL · what is selected · the ticker · the key hints
+   4. (the 24px footer used to be here)
+   ────────────────────────────────────────────────────────────────────────────
+   SEL, the live ticker and the key hints are all gone with the band. The one
+   thing that band did which was not paint — announcing the selection to a screen
+   reader — is kept by components/terminal/SelectionAnnouncer.tsx, which needs no
+   CSS of its own: it reuses `.tn-sr-only`.
    ════════════════════════════════════════════════════════════════════════════ */
-.tn-terminal .tnx-footer {
-  height: var(--tnx-foot-h); display: flex; align-items: stretch;
-  background: var(--tnx-chrome); border-top: 1px solid var(--tnx-line-strong);
-  font-size: 9.5px; color: var(--tnx-ink-faint); overflow: hidden;
-}
-.tn-terminal .tnx-sel-badge {
-  display: flex; align-items: center; padding: 0 9px;
-  background: var(--tnx-accent); color: var(--tnx-bg);
-  font-weight: 800; letter-spacing: 0.1em; flex: none;
-}
-.tn-terminal .tnx-sel {
-  display: flex; align-items: center; gap: 8px; padding: 0 10px; min-width: 0;
-  border-right: 1px solid var(--tnx-line); white-space: nowrap;
-}
-.tn-terminal .tnx-sel-title {
-  font-weight: 700; color: var(--tnx-ink); max-width: 38vw;
-  overflow: hidden; text-overflow: ellipsis;
-}
-.tn-terminal .tnx-sel-coord { color: var(--tnx-ink-dim); font-variant-numeric: tabular-nums; flex: none; }
-.tn-terminal .tnx-sel-meta { color: var(--tnx-ink-faint); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.tn-terminal .tnx-keys {
-  display: flex; align-items: center; gap: 7px; padding: 0 10px; flex: none;
-  border-left: 1px solid var(--tnx-line); color: var(--tnx-ink-faint); white-space: nowrap;
-}
-.tn-terminal .tnx-keys-sep { color: var(--tnx-ink-ghost); }
-.tn-terminal .tnx-keycap { color: var(--tnx-ink-dim); font-weight: 700; }
-
-.tn-terminal .tnx-ticker {
-  flex: 1 1 auto; min-width: 0; display: flex; align-items: center;
-  overflow: hidden; white-space: nowrap;
-}
-.tn-terminal .tnx-ticker-track {
-  display: flex; align-items: center; flex: none;
-  animation: om-ticker 55s linear infinite; will-change: transform;
-}
-/* The trailing gap lives on the ITEM, not the track: translateX(-50%) is half the
-   track and the track holds exactly two identical items, so the two halves have to
-   stay identical in width or the loop visibly jumps every 55s. */
-.tn-terminal .tnx-ticker-item {
-  flex: none; padding-right: 3rem; color: var(--tnx-ink-faint);
-  letter-spacing: 0.06em; font-variant-numeric: tabular-nums;
-}
 
 /* ════════════════════════════════════════════════════════════════════════════
    5. ANIMATIONS + SCROLLBARS
    ════════════════════════════════════════════════════════════════════════════ */
-@keyframes om-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-@keyframes om-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-
-@media (prefers-reduced-motion: reduce) {
-  /* TickerLine always renders both copies; the query stops the scroll and hides the
-     duplicate, leaving one static line. Done in CSS rather than a matchMedia branch
-     so there is no window read at first paint and no chance of an SSR/client
-     hydration mismatch on the very first frame. */
-  .tn-terminal .tnx-ticker-track { animation: none; }
-  .tn-terminal .tnx-ticker-item + .tnx-ticker-item { display: none; }
-  .tn-terminal .tn-alert-tag { animation: none; }
-}
 
 /* `.sc` is the design's opt-in scroller class. The terminal-wide selector beside it
    is what actually does the work: every scroller in this shell is one of ours, and a
@@ -4788,7 +4573,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     border-top: 1px solid var(--tnx-line); min-height: 26px;
   }
   .tn-terminal .tnx-hdr-spacer { display: none; }
-  .tn-terminal .tnx-hdr-cmd-label,
+  .tn-terminal .tnx-hdr-btn-label,
   .tn-terminal .tnx-hdr-utc-label { display: none; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
@@ -4815,10 +4600,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
-
-  /* Footer: keyboard hints for keys a phone does not have. */
-  .tn-terminal .tnx-keys { display: none; }
-  .tn-terminal .tnx-sel-title { max-width: 46vw; }
 
   /* The rail is a bottom sheet at this width (the existing block re-homes it); it is
      absolute inside the workspace band now, so the sheet fills that band. */
@@ -4852,7 +4633,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    on touch — the largest honest value — and the same controls remain available at
    full size in the ⌘K palette ("Basemap", "Stage") and the Source Catalog rail. */
 @media (max-width: 900px) {
-  .tn-terminal .tnx-stage-bar { height: 34px; }
   .tn-terminal .tnx-basemap-btn,
   .tn-terminal .tnx-stage-proj .tn-stage-switch button { min-height: 34px; padding: 0 12px; }
   .tn-terminal .tnx-stage-search { top: 42px; }
@@ -4864,21 +4644,13 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   /* Board tabs get real height — they are the console's main menu, and a 26px tab
      in a horizontally-scrolling strip is the easiest thing on the page to miss. */
   .tn-terminal .tnx-hdr-board { min-height: 34px; padding: 0 15px; }
-  .tn-terminal .tnx-hdr-mode-btn { min-height: 34px; padding: 0 12px; }
 
-  /* (b) The right cluster keeps its 22px painted boxes — a 44px ⚙ in a 34px band is
-     not possible — and grows only the tappable area. The overlays are sized to the
-     8px gap between them so none of them steals its neighbour's taps. */
-  .tn-terminal .tnx-hdr-icon,
-  .tn-terminal .tnx-hdr-cmd,
-  .tn-terminal .tnx-hdr-kofi { position: relative; }
-  .tn-terminal .tnx-hdr-icon::before,
-  .tn-terminal .tnx-hdr-cmd::before,
-  .tn-terminal .tnx-hdr-kofi::before {
-    content: ""; position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    width: calc(100% + 8px); height: 34px;
-  }
+  /* (a) Real size. The right cluster is now one family of full-height segments
+     rather than four differently-shaped chips, so each one can simply BE 34px
+     tall instead of wearing a transparent ::before overlay to fake a hit box.
+     That was technique (b) in the original pass, chosen because the chips had to
+     stay small; they no longer do. */
+  .tn-terminal .tnx-hdr-btn { min-height: 34px; padding: 0 12px; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

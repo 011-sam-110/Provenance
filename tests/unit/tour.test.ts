@@ -161,11 +161,14 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "brand mark + product name", via: ".tnx-hdr-brand" },
   { control: "the six board tabs", via: ".tnx-hdr-boards" },
   { control: "reset-board ⟲", via: ".tnx-hdr-boards" },
-  { control: "CONSOLE / WALL mode", via: ".tnx-hdr-mode" },
+  // CONSOLE / WALL is gone — the control, its two keyboard shortcuts and the step
+  // that explained them. Nothing left to cover.
   { control: "DARK / LIGHT skin toggle", via: ".tnx-hdr-skin" },
-  { control: "☕ SUPPORT + <> SOURCE links", via: ".tnx-hdr-kofi" },
-  { control: "⌘K command trigger", via: ".tn-palette-trigger" },
-  { control: "⚙ settings trigger", via: ".tn-settings-trigger" },
+  { control: "☕ SUPPORT + <> SOURCE links", via: ".tnx-hdr-right" },
+  { control: "⌘K SHORTCUTS trigger", via: ".tn-palette-trigger" },
+  // Moved out of the header and into the profile popover; the class travelled with
+  // the control, which is the only reason its two steps still resolve.
+  { control: "⚙ settings trigger (in the profile menu)", via: ".tn-settings-trigger" },
   { control: "profile avatar", via: ".tn-profile-avatar" },
   { control: "profile popover: name, Sign in, Take the tour", via: ".tn-profile-menu" },
 
@@ -175,13 +178,16 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   // cell an undocumented control that silently switches a data layer.
   { control: "per-layer health cells (hover to name)", via: ".tnx-feed-cells" },
   { control: "health cell click = toggle that layer", via: ".tnx-feed-cells" },
-  // The five tallies print in the footer ticker now — the strip's right-hand end
-  // holds the map's view controls. Same numbers, same feedCounts().
-  { control: "LIVE/LAG/DOWN/NEEDS KEY/DORMANT counters", via: ".tnx-ticker" },
+  // No numeric tally anywhere any more. The five STATES still have to be taught,
+  // because the colour is now the whole readout — so the entry stays and points at
+  // the cells that carry it.
+  { control: "the five feed states (colour = state)", via: ".tnx-feed-cells" },
 
-  // Breaking banner — reactive, so it is absent from a calm screenshot and easy
-  // to forget. It takes a full band and pushes the console down when it fires.
-  { control: "breaking banner, Read article + dismiss", via: ".tn-alert-body" },
+  // The breaking banner and the 24px footer are both gone, and with them: the
+  // banner's Read-article/dismiss pair, SEL, the live ticker and the key hints.
+  // Removed from this manifest rather than re-pointed, because a manifest that
+  // lists controls the product does not have is the padding the test below guards
+  // against.
 
   // Stage. The first three are painted in the FEED HEALTH row rather than on the
   // stage bar, but they act on the stage, which is what the tour has to explain.
@@ -191,7 +197,8 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "restrict results to area", via: ".tn-aoi" },
   { control: "map search box", via: ".tnx-stage-search" },
   { control: "map legend", via: ".tnx-stage-legend" },
-  { control: "cursor coordinate readout", via: ".tnx-stage-cursor" },
+  // The cursor coordinate readout went with the stage's 22px bar and has no second
+  // home, so it is not listed. WorldMap's `tn-map-cursor` publisher went with it.
   { control: "world-clock bar", via: ".tnx-stage-foot" },
   { control: "pin navigator", via: ".tn-pinnav" },
   { control: "stage move grip", via: ".tn-stage-grip" },
@@ -231,11 +238,6 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "rail collapse ‹", via: ".tn-rail-fab" },
   { control: "map zoom + / − / compass", via: ".tn-pinnav" },
 
-  // Footer
-  { control: "selection readout", via: ".tnx-sel" },
-  { control: "keyboard hints", via: ".tnx-keys" },
-  { control: "live ticker", via: ".tnx-ticker" },
-
   // Overlays
   { control: "command palette contents", via: ".tn-palette-root" },
   { control: "settings drawer contents", via: ".tn-settings" },
@@ -250,7 +252,18 @@ test("every interactive control in the console is explained by some tour step", 
 test("the coverage manifest is not padded with selectors the tour never uses", () => {
   // Guards the inverse failure: a manifest that agrees with the tour because both
   // were edited to agree, rather than because the tour covers the product.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(54);
+  //
+  // THE FLOOR CAME DOWN FROM 54 TO 50, and that is the one edit this test exists to
+  // make someone justify. It is not a manifest that was trimmed to go green — it is
+  // six controls that no longer exist in the product: CONSOLE/WALL and its two
+  // single-key shortcuts, the breaking banner's Read-article and dismiss pair, SEL,
+  // the live ticker, the keyboard-hint strip, and the cursor coordinate readout.
+  // Their bands were removed. A manifest still listing them would fail the test
+  // ABOVE this one, which checks every entry against a class the app actually
+  // renders — so the two guards were doing opposite jobs and both had to be
+  // satisfied honestly. Measured after the fact, not chosen to pass: 50 entries,
+  // 45 distinct selectors.
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(50);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
   expect(vias.size).toBeGreaterThanOrEqual(45);
 });

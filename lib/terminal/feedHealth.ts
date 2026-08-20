@@ -77,12 +77,22 @@ export interface FeedCell {
    * ADDITIVE to the agreed contract, and load-bearing: such a layer's honest
    * freshness IS "off" (nothing was ever attempted), so `kind` alone cannot tell
    * "dormant because nobody switched it on" from "dormant because we hold no
-   * key" — and feedCounts() has to put those in different buckets. Optional so a
+   * key" — and feedBucket() has to put those in different buckets. Optional so a
    * hand-built cell in a test or another agent's mock still type-checks.
    */
   locked?: boolean;
 }
 
+/**
+ * The five states a layer can be in.
+ *
+ * It survives as a TYPE after the tallies stopped being rendered anywhere: the UI
+ * no longer prints "4 LIVE · 3 NEEDS KEY", but feedBucket() still has to answer
+ * WHICH of these five a cell is, because that answer picks the cell's colour. So
+ * this is the vocabulary, and `FeedBucket` below is the only thing that reads it.
+ * If a numeric summary comes back, fold feedBucket() over the cells — that is all
+ * the counter ever did.
+ */
 export interface FeedCounts {
   live: number;
   lag: number;
@@ -369,13 +379,6 @@ export function buildFeedCells(input: BuildFeedCellsInput): FeedCell[] {
       locked,
     };
   });
-}
-
-/** PURE. The strip's four tallies. Fold "refused" into down, never into key. */
-export function feedCounts(cells: readonly FeedCell[]): FeedCounts {
-  const counts: FeedCounts = { live: 0, lag: 0, down: 0, key: 0, dormant: 0 };
-  for (const cell of cells) counts[feedBucket(cell)] += 1;
-  return counts;
 }
 
 /**
