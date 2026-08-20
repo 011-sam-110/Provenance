@@ -15,6 +15,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { readingOrder, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
+import { useStageSolo } from "@/lib/terminal/solo";
 import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
 import { useTerminalSkin } from "@/lib/terminal/skin";
 
@@ -58,7 +59,22 @@ export default function ConsoleWorkspace() {
   const gridRef = useRef<HTMLDivElement>(null);
   const drag = useGridDrag(gridRef);
 
-  const stageRect: GridRect = layout.stageRect ?? { x: 3, y: 0, w: 6, h: 14 };
+  const boardRect: GridRect = layout.stageRect ?? { x: 3, y: 0, w: 6, h: 14 };
+
+  /**
+   * SOLO gives the whole board to the map and stands the widgets down.
+   *
+   * The height is the stage's OWN height, not a taller full-board guess: the grid
+   * is `alignContent: start` over fixed 24px rows, so a rect taller than the
+   * fitted row budget introduces a scrollbar on a view whose entire purpose is
+   * that there is nothing else to look at.
+   *
+   * The widgets are not unmounted, only skipped — see the note on domOrder below.
+   */
+  const solo = useStageSolo();
+  const stageRect: GridRect = solo
+    ? { x: 0, y: 0, w: COLS, h: boardRect.h }
+    : boardRect;
 
   /**
    * DOM order is READING order — top to bottom, then left to right — not the order
@@ -245,6 +261,13 @@ export default function ConsoleWorkspace() {
           {handlesFor(STAGE_ID, stageRect)}
         </section>
 
+        {/* HIDDEN while solo, not removed — `hidden` is display:none, so the slots
+            take no grid space, leave the accessibility tree and drop out of the
+            tab order, while the widgets stay MOUNTED. That distinction is the
+            point: dropping them from the tree would throw away every widget's
+            fetched rows and scroll position, and coming back from solo would
+            repopulate an empty board feed by feed. Returning is meant to give you
+            the board you left. */}
         {domOrder.map((w) => (
           <div
             key={w.id}
@@ -253,6 +276,7 @@ export default function ConsoleWorkspace() {
             data-segment={w.segment}
             className={`tn-seg-slot${isHeld(w.id) ? " is-held" : ""}`}
             style={gridArea(drawnRect(w.id, w.rect))}
+            hidden={solo}
           >
             <WidgetFrame
               instance={w}

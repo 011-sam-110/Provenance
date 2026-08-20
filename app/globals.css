@@ -3846,6 +3846,12 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   /* grid-template-areas / -columns / -rows arrive as an inline style from
      lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
 }
+/* `hidden` has to actually hide. `[hidden]{display:none}` is a UA rule and the
+   lowest-specificity thing in the cascade, so ANY `display` added to this
+   selector later would silently defeat solo mode and leave the widgets sitting
+   on top of a full-board map. Pinned here so that cannot happen quietly. */
+.tn-terminal .tn-seg-slot[hidden] { display: none !important; }
+
 .tn-terminal .tn-seg-slot {
   /* MANDATORY, not stylistic: the eight `.tn-rz` resize handles are
      position:absolute and pin themselves to this box's edges. Without a
@@ -4534,6 +4540,16 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    discover on opening the file. */
 /* Area-of-interest control. Same button family as export and the basemaps —
    these are all properties of the view, and they share one bar. */
+/* Solo — gives the board to the map. Same family as the rest of the bar. */
+.tn-terminal .tn-solo-btn {
+  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
+  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-solo-btn:hover { color: var(--tnx-ink); }
+.tn-terminal .tn-solo-btn[aria-pressed="true"] { background: var(--tnx-accent); color: var(--tnx-bg); }
+
 .tn-terminal .tn-aoi { display: flex; align-items: stretch; }
 .tn-terminal .tn-aoi-btn {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;

@@ -44,6 +44,7 @@ import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
 import { viewModeStore } from "@/lib/shell/viewMode";
+import { soloStore } from "@/lib/terminal/solo";
 import { assetsStore } from "@/lib/events/assets";
 import { alertingStore } from "@/lib/events/alerting";
 import ConsoleWorkspace from "@/components/console/ConsoleWorkspace";
@@ -77,6 +78,7 @@ export default function ConsoleShell() {
     langStore.hydrate();
     scopeStore.hydrate();
     viewModeStore.hydrate();
+    soloStore.hydrate();
     assetsStore.hydrate();
     alertingStore.hydrate();
     shellLayoutStore.hydrate();
