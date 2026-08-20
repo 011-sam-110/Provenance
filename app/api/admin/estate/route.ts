@@ -13,7 +13,9 @@ import { getRegistry } from "@/lib/sources/registry";
  */
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+// No maxDuration: see app/api/admin/discover/route.ts. A dev-only route has no
+// production execution to bound, and an out-of-plan value fails the DEPLOY, not the
+// build.
 
 export async function GET() {
   if (process.env.NODE_ENV === "production") {

@@ -16,8 +16,19 @@ import { getRegistry } from "@/lib/sources/registry";
  */
 
 export const dynamic = "force-dynamic";
-// A sweep across thirteen portals with a politeness delay is minutes, not seconds.
-export const maxDuration = 800;
+
+// NO maxDuration, deliberately, and this cost a deployment to learn.
+//
+// A sweep across thirteen portals with a politeness delay takes minutes, so this route
+// declared `maxDuration = 800`. The build compiled, typechecked and generated every
+// page — and then the deployment failed at "Deploying outputs" with nothing in the
+// build log, because the value is above what the plan allows and that is enforced when
+// the function config is applied, not when it is compiled.
+//
+// The right fix is to delete it rather than lower it. This route returns 404 in
+// production, so it has no production execution to bound; the only place it runs is a
+// dev server, where the setting does nothing at all. A limit that only ever applies
+// where the route cannot run is not a limit, it is a way to break a deploy.
 
 export async function POST(req: Request) {
   if (process.env.NODE_ENV === "production") {
