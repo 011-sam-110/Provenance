@@ -155,12 +155,17 @@
   font-size: 13px;
 }
 .adm-funnel-track {
+  /* A span is inline by default and height does not apply to an inline box, so
+     without this the track and its fill both collapse and every bar renders as an
+     identical empty strip. Caught by looking at the page, not by tsc or the suite. */
+  display: block;
   background: var(--adm-panel);
   border-radius: 4px;
   height: 22px;
   overflow: hidden;
 }
 .adm-funnel-fill {
+  display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--adm-accent), var(--adm-accent-bright));
   border-radius: 4px;
@@ -341,6 +346,7 @@
   color: var(--adm-ink-dim);
 }
 .adm-progress-track {
+  display: block;
   flex: 1;
   height: 4px;
   border-radius: 2px;
@@ -348,6 +354,7 @@
   overflow: hidden;
 }
 .adm-progress-fill {
+  display: block;
   height: 100%;
   background: var(--adm-accent-bright);
 }
