@@ -132,8 +132,13 @@ export interface TourChapter {
  *
  * 1 → 2: the eight-step run became this chaptered walkthrough, and one of its
  * targets had been dead for a while. Everyone deserves the re-invite.
+ * 2 → 3: the chrome moved. The projection switch, the basemaps and Export left the
+ * stage bar for the FEED HEALTH row, the health tallies left that row for the
+ * footer ticker, search is centred, and the area filter — which the tour had never
+ * mentioned — now has a name, a home under the key, and a step of its own. A tour
+ * that walks someone to the wrong side of the screen is worse than no tour.
  */
-export const TOUR_VERSION = 2;
+export const TOUR_VERSION = 3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable actions. Named because several chapters need the same surface, and a
@@ -271,7 +276,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tnx-stage-proj",
         title: "3D globe ⇄ 2D flat",
         body:
-          "The same data, two projections. The globe is better for orbital and long-haul context; flat is better for reading dense regions and for anything you want to compare side by side. The label to the left tells you which you are in.",
+          "The same data, two projections. The globe is better for orbital and long-haul context; flat is better for reading dense regions and for anything you want to compare side by side. STAGE·GLOBE or STAGE·FLAT, in the corner of the map itself, tells you which you are in.",
         placement: "bottom",
       },
       {
@@ -288,7 +293,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         title: "Search anywhere",
         body:
           "Type any place name — a city, a street, an airport — and pick a result to fly there and drop a pin. Press / from anywhere in the console to jump into this box.",
-        placement: "right",
+        placement: "bottom",
       },
       {
         id: "map-legend",
@@ -296,6 +301,22 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         title: "The legend",
         body:
           "It lists the layers that are on right now, in the colours the map is actually painting them. Cameras are coloured by source region, aircraft by type, satellites by category, and each signal layer brings its own — so the key is built from what is on screen rather than fixed in advance.",
+        placement: "left",
+      },
+      {
+        id: "map-solo",
+        target: ".tn-solo-btn",
+        title: "Give the board to the map",
+        body:
+          "Solo hides every widget and lets the map fill the workspace; the same button then reads Board and puts them all back exactly as they were. Nothing is closed and nothing is lost — it is a view of the same board, for when the panels around the edge are the thing in your way.",
+        placement: "bottom",
+      },
+      {
+        id: "map-area",
+        target: ".tn-aoi",
+        title: "Restrict results to area",
+        body:
+          "Under the key: draw a zone on the map and every scoped panel narrows to what is inside it. Click to place each corner, Enter to close the ring once you have three, Esc to abandon it. It filters the FEEDS rather than moving the camera — the map stays where you left it, and the counts in the panels change. Clear brings the whole world back.",
         placement: "left",
       },
       {
@@ -645,11 +666,11 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "trust-health",
-        target: [".tnx-feed-counts", ".tnx-feed"],
+        target: [".tnx-ticker", ".tnx-footer"],
         title: "Five states, not two",
         body:
-          "LIVE means the last fetch worked — including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. OFF is switched off, which is neither a fault nor a clean bill of health. Hover any cell for the full wording.",
-        placement: "bottom",
+          "The tallies run along the bottom bar. LIVE means the last fetch worked — including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. DORMANT is switched off, which is neither a fault nor a clean bill of health. LAG and DOWN are printed only when they are not zero, so a run of reassuring noughts is never scrolled past. Hover any cell in the FEED HEALTH strip for one layer's full wording.",
+        placement: "top",
       },
       {
         id: "trust-cells",

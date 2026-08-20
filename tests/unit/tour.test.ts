@@ -175,15 +175,20 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   // cell an undocumented control that silently switches a data layer.
   { control: "per-layer health cells (hover to name)", via: ".tnx-feed-cells" },
   { control: "health cell click = toggle that layer", via: ".tnx-feed-cells" },
-  { control: "LIVE/LAG/DOWN/NEEDS KEY/OFF counters", via: ".tnx-feed-counts" },
+  // The five tallies print in the footer ticker now — the strip's right-hand end
+  // holds the map's view controls. Same numbers, same feedCounts().
+  { control: "LIVE/LAG/DOWN/NEEDS KEY/DORMANT counters", via: ".tnx-ticker" },
 
   // Breaking banner — reactive, so it is absent from a calm screenshot and easy
   // to forget. It takes a full band and pushes the console down when it fires.
   { control: "breaking banner, Read article + dismiss", via: ".tn-alert-body" },
 
-  // Stage
+  // Stage. The first three are painted in the FEED HEALTH row rather than on the
+  // stage bar, but they act on the stage, which is what the tour has to explain.
   { control: "3D / 2D projection switch", via: ".tnx-stage-proj" },
   { control: "basemap buttons", via: ".tnx-basemaps" },
+  { control: "Solo — hide the widgets", via: ".tn-solo-btn" },
+  { control: "restrict results to area", via: ".tn-aoi" },
   { control: "map search box", via: ".tnx-stage-search" },
   { control: "map legend", via: ".tnx-stage-legend" },
   { control: "cursor coordinate readout", via: ".tnx-stage-cursor" },

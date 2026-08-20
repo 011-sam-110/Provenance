@@ -2,7 +2,7 @@
 // The OpenData Terminal's 34px top chrome — the replacement for
 // components/shell/StatusBar.tsx.
 //
-// Left → right: brand block (logo · h1 · tag) │ board tabs │ ——— │ UTC clock │
+// Left → right: brand block (logo · h1) │ board tabs │ ——— │ UTC clock │
 // CONSOLE|WALL │ ☕ · ⌘K COMMAND · ⚙ · avatar.
 //
 // It is a *replacement*, not an addition, so everything StatusBar carried that has
@@ -41,8 +41,6 @@
 //        ↑ text-transform, NOT a capitalised literal: the DOM text is "OpenData" so
 //          the accessible heading stays "OpenData — live global situational-awareness
 //          map" instead of a string some screen readers spell out letter by letter.
-//   .tn-terminal .tnx-hdr-tag { font-size: 9.5px; letter-spacing: 0.12em;
-//     text-transform: uppercase; color: var(--tnx-ink-faint); }
 //
 //   /* Board tabs. The FIRST rule is mandatory, not cosmetic: the shared
 //      `.tn-preset-pill` in globals.css is `position:absolute; left:50%; top:50%;
@@ -321,11 +319,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             {BRAND.name}
             <span className="tn-sr-only"> — {BRAND.tagline}</span>
           </h1>
-
-          {/* aria-hidden, and OUTSIDE the h1: inside it, this would append to the
-              heading's accessible name and the h1 would stop reading as the
-              product-plus-description sentence the tail exists to build. */}
-          <span className="tnx-hdr-tag" aria-hidden>OSINT Terminal</span>
         </div>
 
         {/* ── Board tabs ───────────────────────────────────────────────────── */}

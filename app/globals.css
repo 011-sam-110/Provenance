@@ -4348,10 +4348,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   letter-spacing: 0.14em; line-height: 1; text-transform: uppercase; color: var(--tnx-ink);
   white-space: nowrap;
 }
-.tn-terminal .tnx-hdr-tag {
-  font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); white-space: nowrap;
-}
 
 /* MANDATORY, not cosmetic. `.tn-preset-pill` (globals.css:2316) is
    `position:absolute; left:50%; top:50%; transform:translate(-50%,-50%)` for the old
@@ -4470,24 +4466,14 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   flex: 1; min-width: 3px; border: 0; padding: 0; border-radius: 1px; cursor: pointer;
 }
 .tn-terminal .tnx-feed-cell:hover { outline: 1px solid var(--tnx-ink); outline-offset: 0; }
-.tn-terminal .tnx-feed-readout {
-  display: flex; align-items: center; padding: 0 10px; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis; max-width: 34ch;
-  color: var(--tnx-ink-dim); letter-spacing: 0.06em;
-  border-left: 1px solid var(--tnx-line); flex: none;
+/* The right-hand end of the strip, where the hover readout and the five tallies
+   used to print. It holds the map's VIEW controls now — projection, basemap,
+   export. Those numbers were not deleted: the footer ticker prints all five from
+   the same feedCounts() this strip used to call. */
+.tn-terminal .tnx-view-controls {
+  display: flex; align-items: stretch; flex: none;
+  border-left: 1px solid var(--tnx-line);
 }
-.tn-terminal .tnx-feed-counts {
-  display: flex; align-items: center; gap: 10px; padding: 0 10px;
-  border-left: 1px solid var(--tnx-line); flex: none;
-  font-variant-numeric: tabular-nums; letter-spacing: 0.06em;
-}
-.tn-terminal .tnx-feed-count { color: var(--tnx-ink-faint); white-space: nowrap; }
-.tn-terminal .tnx-feed-count b { font-weight: 700; font-variant-numeric: tabular-nums; }
-.tn-terminal .tnx-feed-count.is-live b { color: var(--tnx-live); }
-.tn-terminal .tnx-feed-count.is-lag b { color: var(--tnx-lag); }
-.tn-terminal .tnx-feed-count.is-down b { color: var(--tnx-down); }
-.tn-terminal .tnx-feed-count.is-key b { color: var(--tnx-key); }
-.tn-terminal .tnx-feed-count.is-off b { color: var(--tnx-ink-ghost); }
 .tn-terminal .tnx-num { font-variant-numeric: tabular-nums; }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -4510,6 +4496,12 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   color: var(--tnx-ink-faint); border-left: 1px solid var(--tnx-line);
   flex: none; white-space: nowrap;
 }
+/* The projection switch, the basemap picker and Export now live in the FEED
+   HEALTH row (components/terminal/StageControls.tsx), not on the stage bar. The
+   selectors are unchanged and still scoped to `.tn-terminal`, so the button family
+   is shared by both bands — which is the point: they are one family, and a reader
+   should not have to learn two. The rules stay in this section because the
+   controls act on the STAGE, wherever they are painted. */
 .tn-terminal .tnx-basemaps { display: flex; align-items: stretch; }
 .tn-terminal .tnx-basemap-btn,
 .tn-terminal .tnx-stage-proj .tn-stage-switch button {
@@ -4550,20 +4542,28 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-solo-btn:hover { color: var(--tnx-ink); }
 .tn-terminal .tn-solo-btn[aria-pressed="true"] { background: var(--tnx-accent); color: var(--tnx-bg); }
 
-.tn-terminal .tn-aoi { display: flex; align-items: stretch; }
-.tn-terminal .tn-aoi-btn {
-  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+/* Area filter — under the legend in the right-hand stack. It reads as a panel
+   rather than a chip because it is no longer in a row of chips: it is a full-width
+   control the width of the key above it, and its label is a sentence, so
+   `white-space:nowrap` (correct for a 22px bar) would now clip it. */
+.tn-terminal .tn-aoi {
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+  padding: 5px 7px; background: var(--tnx-glass-soft);
+  border: 1px solid var(--tnx-line); pointer-events: auto;
 }
-.tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); }
+.tn-terminal .tn-aoi-btn {
+  border: 1px solid var(--tnx-line-strong); background: none; padding: 4px 6px;
+  cursor: pointer; font: inherit; text-align: left;
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--tnx-ink-dim); line-height: 1.35; border-radius: 0;
+  min-height: 0; min-width: 0;
+}
+.tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
 /* The vertex count while drawing. Accent, because it is the only feedback that
    the gesture is being received at all. */
 .tn-terminal .tn-aoi-live {
-  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
-  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--tnx-accent); white-space: nowrap;
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--tnx-accent); line-height: 1.35;
 }
 
 .tn-terminal .tn-export { display: flex; align-items: stretch; }
@@ -4587,7 +4587,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    translateX(-50%)`, so it has to be flattened or it re-centres itself inside this
    frame instead of filling it. Restyled, never forked — one geocoder in the app. */
 .tn-terminal .tnx-stage-search {
-  position: absolute; top: 30px; left: 8px; width: 290px; max-width: calc(100% - 16px);
+  position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+  width: min(420px, calc(100% - 16px));
   z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
   background: var(--tnx-glass); border: 1px solid var(--tnx-line-strong);
   pointer-events: auto;
@@ -4613,8 +4614,17 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-stage-search .tn-mapsearch-item-meta,
 .tn-terminal .tnx-stage-search .tn-mapsearch-status { font-size: 9px; color: var(--tnx-ink-faint); }
 
+/* The right-hand stack. It is the positioned element now, and the legend inside it
+   is in normal flow — the legend's height is DERIVED (one row per layer that is on,
+   up to nine) so anything under it has to be laid out by the stack rather than
+   pinned to a guessed offset. `pointer-events:none` on the column with `auto` back
+   on each child keeps the gap between them clickable map. */
+.tn-terminal .tnx-stage-right {
+  position: absolute; top: 30px; right: 8px; z-index: 6; width: 200px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+  pointer-events: none;
+}
 .tn-terminal .tnx-stage-legend {
-  position: absolute; top: 30px; right: 8px; z-index: 6; max-width: 200px;
   padding: 5px 7px; font-size: 8.5px; letter-spacing: 0.05em;
   background: var(--tnx-glass-soft); border: 1px solid var(--tnx-line);
   color: var(--tnx-ink-dim); pointer-events: auto;
@@ -4778,20 +4788,30 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     border-top: 1px solid var(--tnx-line); min-height: 26px;
   }
   .tn-terminal .tnx-hdr-spacer { display: none; }
-  .tn-terminal .tnx-hdr-tag,
   .tn-terminal .tnx-hdr-cmd-label,
   .tn-terminal .tnx-hdr-utc-label { display: none; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
-  /* Strip: the cells and the tallies are the payload; the hover readout has no
-     hover to drive it on a touch screen. */
-  .tn-terminal .tnx-feed-counts { gap: 7px; padding: 0 7px; }
+  /* Strip: the 37 cells are the payload. The view controls keep the projection
+     switch and Export — the two that have no equal in the ⌘K palette's reach on a
+     phone — and shed the basemap names, which do (palette → "Basemap"). */
+  .tn-terminal .tnx-view-controls .tnx-basemaps { display: none; }
 
-  /* Stage chrome: the legend and the clock ribbon crowd a ~300px map, and the clock
-     is already hidden below 900px for the old shell. */
-  .tn-terminal .tnx-stage-legend,
+  /* Stage chrome: the key and the clock ribbon crowd a ~300px map, and the clock
+     is already hidden below 900px for the old shell. The area filter goes with the
+     key it now sits under — drawing a polygon by finger on a 300px map is not the
+     gesture this control was built for, and it stays in the ⌘K palette. */
+  .tn-terminal .tnx-stage-right,
   .tn-terminal .tnx-stage-foot { display: none; }
-  .tn-terminal .tnx-stage-search { width: auto; right: 8px; }
+  /* Un-centre it. Below this width the stage is the whole console, so "centred on
+     the map" and "spanning the map" are the same box — and a translateX(-50%) on a
+     stage that has been squeezed to nothing puts the box at a NEGATIVE x, half off
+     the screen, where left/right insets simply collapse to nothing instead.
+     (The squeeze itself is a pre-existing mobile-grid bug: `.tn-cw-stage` measures
+     0px wide at 760px on main too. Not fixed here — but not made worse either.) */
+  .tn-terminal .tnx-stage-search {
+    left: 8px; right: 8px; width: auto; transform: none;
+  }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
@@ -4809,10 +4829,11 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   .tn-terminal .tn-cw-shell > .tn-rail-fab { top: auto; bottom: 12px; left: 12px; z-index: 26; }
 }
 
-/* The first thing to go as the strip tightens. 37 cells and five tallies survive —
-   the readout is a hover caption for something the cells already show. */
+/* The first thing to go as the strip tightens. 37 cells and the projection switch
+   survive; the basemap names are the widest thing in the row and the same choice is
+   one keystroke away in the ⌘K palette. */
 @media (max-width: 1100px) {
-  .tn-terminal .tnx-feed-readout { display: none; }
+  .tn-terminal .tnx-view-controls .tnx-basemap-btn { padding: 0 6px; }
 }
 
 /* ── Touch targets for the new chrome ─────────────────────────────────────
@@ -4835,7 +4856,10 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   .tn-terminal .tnx-basemap-btn,
   .tn-terminal .tnx-stage-proj .tn-stage-switch button { min-height: 34px; padding: 0 12px; }
   .tn-terminal .tnx-stage-search { top: 42px; }
-  .tn-terminal .tnx-stage-legend { top: 42px; }
+  .tn-terminal .tnx-stage-right { top: 42px; }
+  /* (a) Real size: the area filter is a full-width control in a column, so it has
+     the room to reach a genuine 44px box rather than a transparent overlay. */
+  .tn-terminal .tn-aoi-btn { min-height: 44px; padding: 6px 8px; }
 
   /* Board tabs get real height — they are the console's main menu, and a 26px tab
      in a horizontally-scrolling strip is the easiest thing on the page to miss. */

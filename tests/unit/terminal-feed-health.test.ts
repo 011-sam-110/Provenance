@@ -3,7 +3,7 @@ import {
   buildFeedCells,
   feedBucket,
   feedCounts,
-  idleReadout,
+
   isPlaceholderFeature,
   isPlaceholderOnly,
   FEED_COLOR,
@@ -401,17 +401,6 @@ describe("feedCounts", () => {
 
   it("is all zeroes for no cells", () => {
     expect(feedCounts([])).toEqual({ live: 0, lag: 0, down: 0, key: 0, dormant: 0 });
-  });
-});
-
-describe("idleReadout", () => {
-  it("formats the layer count and the hint", () => {
-    expect(idleReadout(37)).toBe("37 SIGNAL LAYERS · HOVER A CELL");
-    expect(idleReadout(0)).toBe("0 SIGNAL LAYERS · HOVER A CELL");
-  });
-
-  it("matches the real registry size when fed SIGNALS.length", () => {
-    expect(idleReadout(SIGNALS.length)).toBe(`${SIGNALS.length} SIGNAL LAYERS · HOVER A CELL`);
   });
 });
 

@@ -1,21 +1,19 @@
 "use client";
 // The Terminal's stage chrome — the four pieces of UI that float OVER the map
-// inside the stage cell: the 22px top bar (stage readout, projection switch,
-// basemap picker, cursor coordinates), the search box, the layer legend, and the
-// 24px bottom clock bar.
+// inside the stage cell: the 22px top bar (stage readout, Solo, cursor
+// coordinates), the centred search box, the right-hand stack (layer legend + the
+// area filter), and the 24px bottom clock bar.
 //
-// NOTHING HERE OWNS THE MAP. Every control routes through the store that already
-// owns that concern — mapViewStore for the basemap, shellLayoutStore for the
-// projection — because WorldMap's own effects sit downstream of those stores with
-// a load watchdog, a retry, a fallback basemap and an on-screen failure notice
-// wired to them. A switcher that called map.setStyle() directly would issue the
-// style swap twice and bypass all of it; the trap is documented at WorldMap.tsx:1194.
+// WHAT LEFT THIS FILE, AND WHY. The projection switch, the basemap picker and
+// Export used to sit on the top bar. They now live at the right-hand end of the
+// FEED HEALTH row — see components/terminal/StageControls.tsx, which carries the
+// same gate this component applies to itself. The bar kept STAGE·FLAT, Solo and
+// the cursor readout, because those describe the STAGE rather than the view.
 //
-// THREE EXISTING COMPONENTS ARE RE-SKINNED, NOT REBUILT: StageSwitch (3D/2D),
-// MapSearch (geocode → drop a pin → fly) and WorldClock. They are rendered inside
-// this bar's frames and restyled by scoped CSS, so there is exactly one geocoder,
-// one clock timer and one projection switch in the app. See the CSS block below
-// for the overrides each one needs.
+// TWO EXISTING COMPONENTS ARE RE-SKINNED, NOT REBUILT: MapSearch (geocode → drop a
+// pin → fly) and WorldClock. They are rendered inside this bar's frames and
+// restyled by scoped CSS, so there is exactly one geocoder and one clock timer in
+// the app. See the CSS block below for the overrides each one needs.
 //
 // ─── CSS THIS COMPONENT NEEDS (integrator owns app/globals.css) ───────────────
 // All scoped under .tn-terminal, using the --tnx-* token block.
@@ -32,25 +30,9 @@
 // .tnx-stage-cursor     display:flex; align-items:center; padding:0 10px; font-size:9.5px;
 //                       color:var(--tnx-ink-faint); border-left:1px solid var(--tnx-line);
 //                       flex:none; white-space:nowrap;
-// .tnx-basemaps         display:flex; align-items:stretch;
-// .tnx-basemap-btn      border:0; background:none; padding:0 10px; cursor:pointer;
-//                       font:inherit; font-size:9px; font-weight:700; letter-spacing:.08em;
-//                       text-transform:uppercase; color:var(--tnx-ink-faint);
-//                       border-right:1px solid var(--tnx-line); white-space:nowrap;
-// .tnx-basemap-btn:hover           color:var(--tnx-ink);
-// .tnx-basemap-btn[aria-pressed="true"] { background:var(--tnx-accent); color:var(--tnx-bg); }
-//
-// PROJECTION SWITCH (restyle of components/console/StageSwitch)
-// .tnx-stage-proj .tn-stage-switch        display:flex; align-items:stretch; gap:0;
-//                                         background:none; border:0; padding:0; border-radius:0;
-//                                         box-shadow:none;
-// .tnx-stage-proj .tn-stage-switch button same rules as .tnx-basemap-btn above
-// .tnx-stage-proj .tn-stage-switch button.is-on { background:var(--tnx-accent); color:var(--tnx-bg); }
-// .tnx-stage-proj .tn-stage-focus         display:flex; align-items:center; padding:0 8px;
-//                                         color:var(--tnx-accent); font-size:9px;
-//
 // SEARCH (restyle of components/console/MapSearch)
-// .tnx-stage-search     position:absolute; top:30px; left:8px; width:290px; max-width:calc(100% - 16px);
+// .tnx-stage-search     position:absolute; top:30px; left:50%; transform:translateX(-50%);
+//                       width:min(420px, calc(100% - 16px));
 //                       z-index:6; display:flex; align-items:center; gap:6px; padding:0 8px;
 //                       background:rgba(8,11,15,.9); border:1px solid var(--tnx-line-strong);
 //                       pointer-events:auto;
@@ -73,9 +55,11 @@
 // .tnx-stage-search .tn-mapsearch-item-meta,
 // .tnx-stage-search .tn-mapsearch-status { font-size:9px; color:var(--tnx-ink-faint); }
 //
-// LEGEND
-// .tnx-stage-legend     position:absolute; top:30px; right:8px; z-index:6; max-width:200px;
-//                       padding:5px 7px; font-size:8.5px; letter-spacing:.05em;
+// RIGHT-HAND STACK — legend, then the area filter under it
+// .tnx-stage-right      position:absolute; top:30px; right:8px; z-index:6; width:200px;
+//                       display:flex; flex-direction:column; align-items:stretch; gap:6px;
+//                       pointer-events:none;   /* children re-enable it */
+// .tnx-stage-legend     padding:5px 7px; font-size:8.5px; letter-spacing:.05em;
 //                       background:rgba(8,11,15,.85); border:1px solid var(--tnx-line);
 //                       color:var(--tnx-ink-dim); pointer-events:auto;
 // .tnx-legend-row       display:flex; align-items:center; gap:6px; line-height:14px;
@@ -119,8 +103,6 @@
 // .tn-terminal .maplibregl-ctrl-attrib a     { color:var(--tnx-ink-faint); }
 
 import { memo, useEffect, useMemo, useRef } from "react";
-import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
-import { mapViewStore, useMapView } from "@/lib/mapView";
 import { useViewMode } from "@/lib/shell/viewMode";
 import { useShellLayout } from "@/lib/console/store";
 import { useLayers } from "@/lib/layers";
@@ -134,8 +116,6 @@ import {
   SAT_META,
   WEBCAM_COLOR,
 } from "@/lib/icons/svg";
-import StageSwitch from "@/components/console/StageSwitch";
-import ExportView from "@/components/console/ExportView";
 import AoiControl from "@/components/console/AoiControl";
 import { soloStore, useStageSolo } from "@/lib/terminal/solo";
 import MapSearch from "@/components/console/MapSearch";
@@ -334,7 +314,6 @@ function StageLegend() {
 }
 
 export default function StageBar() {
-  const view = useMapView();
   const mode = useViewMode();
   const { stage, focusedWidgetId } = useShellLayout();
   const solo = useStageSolo();
@@ -360,16 +339,11 @@ export default function StageBar() {
         */}
         <span className="tnx-stage-label">STAGE · {mode === "explore" ? "GLOBE" : "FLAT"}</span>
 
-        {/*
-          The 3D/2D switch lives here because the Terminal replaces MapControls, and
-          MapControls is where it lives today — dropping this bar in without it would
-          quietly delete the projection toggle from the product. Reused verbatim so
-          the unfocus-then-switch behaviour and the "◱ Focus" indicator come along.
-        */}
         {/* Answers the half of "sobrecarga cognitiva" that the colour work did
             not: his own second suggestion, "o de plano poder colapsar esa barra".
-            First control on the bar because it is the largest change any of them
-            makes. */}
+            It stays on this bar while the view controls move up to the FEED HEALTH
+            row, because it is not a property of the view — it is a property of the
+            BOARD, and it is the largest change any control on screen makes. */}
         <button
           type="button"
           className="tn-solo-btn"
@@ -379,42 +353,6 @@ export default function StageBar() {
         >
           {solo ? "Board" : "Solo"}
         </button>
-
-        <span className="tnx-stage-proj">
-          <StageSwitch />
-        </span>
-
-        {/*
-          One button per BASEMAPS entry — the registry is iterated, never enumerated,
-          so a fourth (dark) basemap appears here the moment lib/basemaps.ts grows one,
-          with no edit to this file. setBasemap() is the only legal way in; WorldMap's
-          effect owns setStyle and re-arms its load watchdog on the way through.
-        */}
-        <div className="tnx-basemaps" role="group" aria-label="Basemap">
-          {(Object.keys(BASEMAPS) as BasemapKey[]).map((k) => (
-            <button
-              key={k}
-              type="button"
-              className="tnx-basemap-btn"
-              aria-pressed={view.basemap === k}
-              onClick={() => mapViewStore.setBasemap(k)}
-            >
-              {BASEMAPS[k].label}
-            </button>
-          ))}
-        </div>
-
-        {/*
-          Export sits with the basemap buttons because the thing it exports IS this
-          view: the scope, the moment, and which feeds were answering. It went into
-          MapControls first, which was the obvious-looking home and is DEAD CODE —
-          the Terminal replaced that cluster with this bar, so the control rendered
-          nowhere and the tests still passed. Verified in the running app, not read
-          off the component tree.
-        */}
-        <AoiControl />
-
-        <ExportView />
 
         <span className="tnx-stage-spacer" />
         <StageCursor />
@@ -427,7 +365,18 @@ export default function StageBar() {
         <MapSearch />
       </div>
 
-      <StageLegend />
+      {/*
+        The right-hand stack: the key, and directly under it the area filter.
+        AREA used to sit on the bar above with the basemaps, on the reasoning that
+        everything up there was "a property of the view". It is not the same kind of
+        thing — a basemap changes how the world is drawn, while an area changes WHAT
+        THE FEEDS ANSWER WITH, which is the same job the legend is describing. Under
+        the key is where a reader is already looking to find out what is on screen.
+      */}
+      <div className="tnx-stage-right">
+        <StageLegend />
+        <AoiControl />
+      </div>
 
       <div className="tnx-stage-foot">
         <WorldClock />
