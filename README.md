@@ -108,7 +108,7 @@ Adding a camera source or a signal layer is one adapter file, one registry entry
 
 ## Licence
 
-Copyright © 2026 Sam Poplett.
+Copyright © 2026 011-sam-110.
 
 Provenance is free software licensed under the **[GNU Affero General Public License v3.0](LICENSE)** (`AGPL-3.0-only`).
 

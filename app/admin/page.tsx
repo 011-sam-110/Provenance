@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AdminActions } from "@/components/admin/AdminActions";
+import { AdminActions, AdminEstate } from "@/components/admin/AdminActions";
 import { discoveryFunnel, gatePressure, portalYield, verdictBreakdown } from "@/lib/discovery/analytics";
 import { readCandidates, readLedger } from "@/lib/discovery/store";
 import { DISCOVERED_FEEDS } from "@/lib/sources/discovered";
@@ -148,7 +148,7 @@ export default function AdminOverview() {
         instance, so two reads minutes apart can differ by thousands with no deploy between them.
         Read the shape, never the trend.
       </p>
-      <AdminActions.Estate />
+      <AdminEstate />
     </>
   );
 }

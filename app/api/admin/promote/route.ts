@@ -59,12 +59,15 @@ export async function POST(req: Request) {
       skipped.push({ id, why: "a gate fails: " + candidate.gates.filter((g) => g.status === "fail").map((g) => g.gate).join(", ") });
       continue;
     }
+    const feedVerdict = ledger.feeds.find((f) => f.candidateId === id);
     const blocked = verdicts
       .filter((v) => v.verdict === "bad-image" || v.verdict === "bad-pin" || v.verdict === "not-a-camera")
       .map((v) => v.nativeId);
-    const feedVerdict = ledger.feeds.find((f) => f.candidateId === id);
     feeds.push({
       ...candidate.descriptor,
+      // The reviewer's wording wins over anything the catalogue offered.
+      ...(feedVerdict?.name ? { name: feedVerdict.name } : {}),
+      ...(feedVerdict?.attribution ? { attribution: feedVerdict.attribution } : {}),
       review: {
         by,
         at: feedVerdict?.at ?? new Date().toISOString(),

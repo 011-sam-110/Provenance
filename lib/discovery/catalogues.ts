@@ -85,6 +85,14 @@ export function ckanSearchUrl(base: string, query: string, rows = 25): string {
 const asString = (v: unknown): string | undefined =>
   typeof v === "string" && v.trim() !== "" ? v.trim() : undefined;
 
+/** An email is not an organisation name, but its domain is a better clue than nothing. */
+function stripMailto(v: string | undefined): string | undefined {
+  if (!v) return undefined;
+  const addr = v.replace(/^mailto:/i, "").trim();
+  const domain = addr.split("@")[1];
+  return domain || addr || undefined;
+}
+
 /** Parse a CKAN `package_search` body into hits. Returns [] for any unexpected shape. */
 export function parseCkanSearch(body: unknown, portal: string): CatalogueHit[] {
   const result = (body as { result?: { results?: unknown } } | null)?.result?.results;
@@ -191,13 +199,48 @@ export function parseArcgisHub(body: unknown): CatalogueHit[] {
       datasetId: id,
       title,
       description: asString(attrs?.description as string),
-      publisher: asString(attrs?.orgContactEmail as string) ?? asString(attrs?.source as string),
+      // `source` is the publishing organisation's own name ("Caltrans", "Lexington-
+      // Fayette Urban County Government"); `orgContactEmail` is a mailbox and was what
+      // this read first, which put "mailto:spatial@nzta.govt.nz" in the name field of
+      // every ArcGIS candidate the first live run produced.
+      publisher:
+        asString(attrs?.source as string) ??
+        asString(attrs?.owner as string) ??
+        stripMailto(asString(attrs?.orgContactEmail as string)),
       license: asString(attrs?.license as string),
       landingPage: "https://hub.arcgis.com/datasets/" + id,
       resources,
     });
   }
   return out;
+}
+
+/**
+ * Catalogue licence values that are not a licence.
+ *
+ * ArcGIS Hub answers `"none"` or `"custom"` in its licence field for most datasets, and
+ * both are the ABSENCE of a stated licence rather than the name of one. Copying them
+ * into a camera's `license` string would put the word "none" on a public attribution
+ * line, which reads as a claim that the operator granted nothing — and "custom" reads
+ * as a licence that exists and cannot be found. Neither is what the publisher said.
+ */
+const NON_LICENCES = new Set(["none", "custom", "other", "unknown", "n/a", "na", "-", "notspecified", "not specified"]);
+
+/**
+ * The licence string that ships, and the raw value kept beside it.
+ *
+ * Where the catalogue states nothing usable this returns the same honest form the
+ * `cetsp` adapter uses — naming the publisher and saying plainly that no licence is
+ * stated — with the catalogue's own word in brackets so a reviewer can check what was
+ * actually there. A licence nobody granted is worse than an absent one.
+ */
+export function licenceStatement(raw: string | undefined, publisher: string | undefined): string {
+  const trimmed = (raw ?? "").trim();
+  if (trimmed && !NON_LICENCES.has(trimmed.toLowerCase())) return trimmed;
+  const who = publisher?.trim() || "the publisher";
+  return trimmed
+    ? who + " states no licence for this data (catalogue records: " + trimmed + ")"
+    : who + " states no licence for this data";
 }
 
 /** Formats this pipeline can actually parse. Anything else is a document, not a feed. */

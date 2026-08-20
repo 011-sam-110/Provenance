@@ -81,6 +81,11 @@ export function ReviewDeck({
   const [imageState, setImageState] = useState<"loading" | "ok" | "error">("loading");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The two fields discovery cannot get right and must not fake. Pre-filled with the
+  // catalogue's best offer, which on the first live run was a mailbox and an Esri
+  // account slug — so they are inputs, not labels.
+  const [operator, setOperator] = useState("");
+  const [attribution, setAttribution] = useState("");
 
   // Undecided feeds only, best candidate first, and every sample of each in turn.
   const deck = useMemo<DeckItem[]>(() => {
@@ -140,6 +145,13 @@ export function ReviewDeck({
     }
   }, [reviewer]);
 
+  const currentCandidateId = deck[index]?.candidate.id;
+  useEffect(() => {
+    const c = deck.find((d) => d.candidate.id === currentCandidateId)?.candidate;
+    setOperator(c?.descriptor.name ?? "");
+    setAttribution(c?.descriptor.attribution ?? "");
+  }, [currentCandidateId, deck]);
+
   const judge = useCallback(
     async (verdict: CameraVerdict["verdict"]) => {
       if (!item) return;
@@ -180,13 +192,23 @@ export function ReviewDeck({
         }
         reason = answer.trim();
       }
-      const done = await post({ kind: "feed", candidateId: item.candidate.id, verdict, reason }, "/api/admin/verdict");
+      const done = await post(
+        {
+          kind: "feed",
+          candidateId: item.candidate.id,
+          verdict,
+          reason,
+          name: operator.trim(),
+          attribution: attribution.trim(),
+        },
+        "/api/admin/verdict",
+      );
       if (!done) return;
       // Skip past every remaining camera of a feed that has just been decided.
       const nextIndex = deck.findIndex((d, i) => i > index && d.candidate.id !== item.candidate.id);
       setIndex(nextIndex === -1 ? deck.length : nextIndex);
     },
-    [item, deck, index, post],
+    [item, deck, index, post, operator, attribution],
   );
 
   useEffect(() => {
@@ -414,6 +436,36 @@ export function ReviewDeck({
               </span>
             )}
           </div>
+
+          {(candidate.notes ?? []).length > 0 && (
+            <div className="adm-note" style={{ marginBottom: 12 }}>
+              <strong>Worked out, not read:</strong>
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                {(candidate.notes ?? []).map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <label className="adm-field">
+            <span>Operator</span>
+            <input
+              className="adm-input"
+              value={operator}
+              onChange={(e) => setOperator(e.target.value)}
+              placeholder="The operator's own name for itself"
+            />
+          </label>
+          <label className="adm-field">
+            <span>Attribution line</span>
+            <input
+              className="adm-input"
+              value={attribution}
+              onChange={(e) => setAttribution(e.target.value)}
+              placeholder="What appears under the picture"
+            />
+          </label>
 
           <div className="adm-verdicts">
             <button

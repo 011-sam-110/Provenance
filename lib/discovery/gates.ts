@@ -52,6 +52,23 @@ export const RELAY_HOSTS = [
   "webcams.travel",
 ] as const;
 
+/**
+ * Hosts that publish other people's datasets without being their author.
+ *
+ * These are not relays — an ArcGIS Online feature service IS the agency's own data,
+ * served on infrastructure the agency rents. But the media-origin check assumes the
+ * endpoint host identifies the publisher, and on these it identifies Esri. The first
+ * live run warned about all five candidates for the same wrong reason: "pictures come
+ * from cwwp2.dot.ca.gov but the feed is published on services3.arcgis.com". That reads
+ * as suspicion of Caltrans's own camera server, when the picture host is in fact the
+ * BEST evidence of who the operator is.
+ */
+export const PLATFORM_HOSTS = ["arcgis.com", "socrata.com", "data.gov", "opendata.arcgis.com"] as const;
+
+export function isPlatformHost(host: string): boolean {
+  return PLATFORM_HOSTS.some((h) => host === h || host.endsWith("." + h));
+}
+
 /** Registrable-ish host suffix match, so a subdomain of a relay is also a relay. */
 export function isRelayHost(rawUrl: string): boolean {
   let host: string;
@@ -213,17 +230,30 @@ export function runGates(input: GateInput): GateResult[] {
   const mediaHosts = new Set<string>();
   for (const s of samples) for (const u of [s.imageUrl, s.streamUrl]) if (u) mediaHosts.add(safeHost(u));
   mediaHosts.delete("");
-  const foreign = [...mediaHosts].filter((h) => !sharesRegistrableRoot(h, endpointHost));
-  if (foreign.length) {
+  if (isPlatformHost(endpointHost)) {
+    // The dataset is hosted for the agency rather than by it, so the endpoint host says
+    // nothing about the operator and the picture host says almost everything.
     out.push(
-      warn(
-        "media-origin",
-        "Pictures come from " + foreign.join(", ") + " but the feed is published on " + endpointHost +
-          ". Confirm that is the operator's own CDN and not a relay.",
-      ),
+      mediaHosts.size
+        ? warn(
+            "media-origin",
+            "The dataset is hosted on " + endpointHost + " for " + descriptor.name +
+              ", so the endpoint host does not identify the operator. The pictures come from " +
+              [...mediaHosts].join(", ") + " — that is the host to judge.",
+          )
+        : warn("media-origin", "No media host to check."),
     );
   } else {
-    out.push(pass("media-origin", "Pictures are served from the publishing domain."));
+    const foreign = [...mediaHosts].filter((h) => !sharesRegistrableRoot(h, endpointHost));
+    out.push(
+      foreign.length
+        ? warn(
+            "media-origin",
+            "Pictures come from " + foreign.join(", ") + " but the feed is published on " + endpointHost +
+              ". Confirm that is the operator's own CDN and not a relay.",
+          )
+        : pass("media-origin", "Pictures are served from the publishing domain."),
+    );
   }
 
   return out;

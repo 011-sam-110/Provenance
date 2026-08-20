@@ -27,6 +27,7 @@ import {
   CKAN_PORTALS,
   arcgisHubSearchUrl,
   ckanSearchUrl,
+  licenceStatement,
   looksLikeCameraDataset,
   machineReadable,
   parseArcgisHub,
@@ -37,6 +38,7 @@ import {
   type CatalogueHit,
 } from "@/lib/discovery/catalogues";
 import { runGates } from "@/lib/discovery/gates";
+import { inferCountry } from "@/lib/discovery/geo";
 import { normalizeFeed } from "@/lib/discovery/normalize";
 import { extractRows, findRowArrays, sniffFormat, sniffMapping } from "@/lib/discovery/sniff";
 import type { Candidate, FeedDescriptor, SampleCamera } from "@/lib/discovery/types";
@@ -273,7 +275,7 @@ export async function runDiscovery(opts: RunOptions = {}): Promise<RunReport> {
         format,
         rowsPath,
         mapping: { id: "", name: "", lat: "", lon: "" },
-        license: hit.license ?? "No licence stated by the publisher",
+        license: licenceStatement(hit.license, hit.publisher),
         attribution: (hit.publisher ?? hit.title) + " — via " + hit.portal,
         refreshSeconds: 300,
       };
@@ -289,9 +291,26 @@ export async function runDiscovery(opts: RunOptions = {}): Promise<RunReport> {
         ...probe,
         mapping: sniffed.mapping as FeedDescriptor["mapping"],
       };
-      const normalized = normalizeFeed(descriptor, body);
+      let normalized = normalizeFeed(descriptor, body);
       if (normalized.cameras.length === 0) continue;
       parsedCount++;
+
+      // ArcGIS Hub and Socrata are multi-country and record no country per dataset, so
+      // without this every candidate from them ships `country: "??"` — which passes
+      // CameraSchema's two-character rule and means a camera in no country. Inferred
+      // from where the cameras actually are, and said out loud as inferred.
+      const inferredNotes: string[] = [];
+      if (descriptor.country === "??") {
+        const inferred = inferCountry(normalized.cameras);
+        if (inferred) {
+          descriptor.country = inferred;
+          normalized = normalizeFeed(descriptor, body);
+          inferredNotes.push(
+            "The catalogue states no country. " + inferred +
+              " was inferred from where the cameras are, not read from the data — check it against the pictures.",
+          );
+        }
+      }
 
       const samples = pickSamples(normalized.cameras);
       const gates = runGates({
@@ -316,6 +335,7 @@ export async function runDiscovery(opts: RunOptions = {}): Promise<RunReport> {
         parsed: { rows: normalized.rows, valid: normalized.cameras.length },
         samples,
         confidence: sniffed.confidence,
+        notes: [...sniffed.notes, ...inferredNotes],
       });
       const row = perPortal.get(hit.portal);
       if (row) row.candidates++;

@@ -132,6 +132,14 @@ export interface Candidate {
   parsed: { rows: number; valid: number };
   samples: SampleCamera[];
   confidence: number;
+  /**
+   * Anything the pipeline resolved by inference rather than by reading it — a column
+   * identified by its values because its name was in another language, a country
+   * deduced from where the cameras are. Shown to the reviewer, because "we worked this
+   * out" is a materially weaker claim than "the publisher said so" and only the
+   * reviewer can price that difference.
+   */
+  notes?: string[];
 }
 
 /** A human's decision about one camera inside a candidate feed. */
@@ -152,6 +160,17 @@ export interface FeedVerdict {
   at: string;
   /** Why. Required for `reject` and `hold` so the queue does not re-propose blindly. */
   reason?: string;
+  /**
+   * The operator's name and the attribution line, as a human corrected them.
+   *
+   * These are the two fields discovery cannot get right on its own and must not fake.
+   * A catalogue's publisher field is a mailbox, an Esri account name or a layer slug —
+   * the first live run produced "mailto:spatial@nzta.govt.nz" and "pweeks_DOIT" — and
+   * this repo puts the operator's own wording on a public attribution line. So the
+   * reviewer types them, and `promote` uses these in preference to anything sniffed.
+   */
+  name?: string;
+  attribution?: string;
 }
 
 /** The on-disk review state. One file, committed, diffable in a PR. */

@@ -14,13 +14,31 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
- * The load-bearing checks behind the copy below, all re-run against 8986349:
+ * WHAT CHANGED ON 2026-08-20, and why each sentence moved:
+ *   - The "who runs this" paragraph no longer states a legal name. It names the GitHub
+ *     account instead and says in as many words that this is a handle, that the work is
+ *     attributable through it, and how to get the legal identity if you have a reason
+ *     to need it. Removing the name without saying that had happened would have been a
+ *     quieter page and a less honest one.
+ *   - "The application code writes no files" became "nothing this site serves writes a
+ *     file", because the repository gained a camera-review tool that does. The page now
+ *     names it, points at /admin as a 404 the reader can check for themselves, and says
+ *     a test enforces the gate. A sentence that is nearly true is the thing this file
+ *     exists to prevent; the fix is to narrow it, never to leave it.
+ *   - Nothing about COLLECTION changed. The curation tooling reads open-data catalogues
+ *     and camera pictures; it never sees a visitor, and it is not deployed.
+ *
+ * The load-bearing checks behind the copy below, all re-run against 2cf8797:
  *   • analytics — `<Analytics />` from @vercel/analytics in app/layout.tsx:99, and
  *     nothing else. A repo-wide grep for gtag / GA / Plausible / PostHog / Segment /
  *     Hotjar / Sentry / Clarity returns no runtime hit.
  *   • persistence — package.json ships ten runtime deps and not one is a database
- *     client; `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/
- *     components/ returns nothing.
+ *     client. `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/ components/
+ *     now returns TWO files, lib/discovery/store.ts and app/api/admin/promote/route.ts,
+ *     both belonging to the dev-only camera-review tool and both behind a production
+ *     404. tests/unit/discovery-admin-gate.test.ts asserts that list is exactly those
+ *     two and that every route under app/admin and app/api/admin carries the guard —
+ *     proven by injection in both directions before it was committed, not by reading.
  *   • identity — `next/headers|cookies\(\)|x-forwarded-for|x-real-ip|req(uest)?\.ip`
  *     over app/ lib/ components/ returns exactly ONE hit, app/api/feedback/route.ts:63,
  *     and the page names it rather than rounding it down to "we read nothing". That
@@ -66,7 +84,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-08-18">18 August 2026</time>
+                Last updated <time dateTime="2026-08-20">20 August 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -87,8 +105,8 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h2 className="pv-h3">No database</h2>
               <p>
-                No database, no key-value store, no file writes. There is nowhere for the server to
-                put anything about you.
+                No database, no key-value store, and nothing this site serves writes a file. There
+                is nowhere for the server to put anything about you.
               </p>
             </div>
             <div className="pv-card">
@@ -119,8 +137,20 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              {BRAND.name} is built and run by {BRAND.license.holder}, in the United Kingdom. Under
-              UK GDPR that makes him the controller for whatever personal data this site processes.
+              {BRAND.name} is built and run by one person in the United Kingdom, publishing as{" "}
+              <a href={`https://github.com/${BRAND.license.holder}`} target="_blank" rel="noreferrer noopener">
+                {BRAND.license.holder}
+              </a>
+              . Under UK GDPR that person is the controller for whatever personal data this site
+              processes, which the rest of this page sets out and which is very close to none.
+            </p>
+            <p>
+              That is a handle rather than a legal name, and it is worth being straight about what
+              that does and does not mean. It is the account that authored every commit in the
+              repository below, so the work is attributable and the person is reachable. If you have
+              a formal reason to know who they are, such as a data-protection request or a legal
+              notice, open an issue asking and you will be told. Nothing here is anonymous. It is
+              pseudonymous, which is not the same thing.
             </p>
             <p>
               The whole application is open source under the {BRAND.license.short}, so every claim
@@ -155,8 +185,22 @@ export default function PrivacyPage() {
             <p>
               This is the strongest thing on the page, so it is the one worth checking. The app has
               ten runtime dependencies and not one of them is a database client. There is no
-              key-value store, no object store and no cloud storage account. The application code
-              writes no files.
+              key-value store, no object store and no cloud storage account. Nothing this site
+              serves writes a file.
+            </p>
+            <p>
+              That last sentence used to say &ldquo;the application code writes no files&rdquo;, and
+              it stopped being exactly true in August 2026, so it has been narrowed rather than
+              left to rot. The repository now contains a camera-review tool that does write files:
+              it records which cameras a person looked at before their pictures were allowed onto
+              the map. It runs on a laptop, against a local development server, and every one of its
+              routes returns 404 here. You can check that.{" "}
+              <a href="/admin" rel="nofollow">
+                /admin
+              </a>{" "}
+              is a 404 on this deployment, and a test in the repository fails the build if a new
+              route is added under it without that guard. Two files in the whole tree can write to
+              disk, both belong to that tool, and a second test fails if a third appears.
             </p>
             <p>
               No route reads a cookie or a session. There is nothing in the code that could.

@@ -67,3 +67,36 @@ export function countryBox(country: string | undefined): [number, number, number
 export function insideBox(lat: number, lon: number, box: [number, number, number, number]): boolean {
   return lat >= box[0] && lat <= box[2] && lon >= box[1] && lon <= box[3];
 }
+
+/**
+ * Which country a set of coordinates is in, when nobody said.
+ *
+ * ArcGIS Hub and Socrata are multi-country catalogues and neither records a country
+ * per dataset, so a candidate from them arrives with no hint at all — and `country` is
+ * not cosmetic here: `CameraSchema` requires two characters, it prefixes nothing but
+ * it drives the country-fit gate, the map's own filters and the coverage tables. A
+ * literal "??" shipping into the registry would be a camera in no country.
+ *
+ * The rule is deliberately narrow. A box must contain nearly every sample, and where
+ * several do — the US and Canadian boxes overlap across the whole northern border, and
+ * France's contains Switzerland — the SMALLEST is taken, because a box that contains
+ * the points and less of everything else is the better fit. That is a heuristic and it
+ * can be wrong at a border, so the caller records that the country was inferred rather
+ * than read, and the reviewer sees a picture of an American interstate next to the
+ * letters US and can say so.
+ *
+ * Returns null rather than a guess when no box fits, which leaves the candidate
+ * without a country and its country-fit gate saying it did not check.
+ */
+export function inferCountry(points: Array<{ lat: number; lon: number }>): string | null {
+  if (points.length === 0) return null;
+  const need = points.length * 0.95;
+  const fits: Array<{ code: string; area: number }> = [];
+  for (const [code, box] of Object.entries(COUNTRY_BOXES)) {
+    const hits = points.filter((p) => insideBox(p.lat, p.lon, box)).length;
+    if (hits >= need) fits.push({ code, area: (box[2] - box[0]) * (box[3] - box[1]) });
+  }
+  if (fits.length === 0) return null;
+  fits.sort((a, b) => a.area - b.area || a.code.localeCompare(b.code));
+  return fits[0].code;
+}

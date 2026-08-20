@@ -117,8 +117,16 @@ export function AdminActions({ queued, camerasWaiting }: { queued: number; camer
   );
 }
 
-/** The live estate, loaded only when asked for. */
-function Estate() {
+/**
+ * The live estate, loaded only when asked for.
+ *
+ * A NAMED export, not a property hung off `AdminActions`. Across the "use client"
+ * boundary a module is a proxy of its named exports, so `AdminActions.Estate` resolves
+ * to undefined in the server component that renders it and React throws "Element type
+ * is invalid" at request time — which tsc and the whole unit suite pass straight
+ * through. Caught by opening the page.
+ */
+export function AdminEstate() {
   const [stats, setStats] = useState<EstateStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -220,5 +228,3 @@ function Estate() {
     </>
   );
 }
-
-AdminActions.Estate = Estate;

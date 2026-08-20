@@ -438,3 +438,17 @@
   text-decoration: underline dotted;
 }
 .adm-linkbtn:hover { color: var(--adm-ink); }
+
+.adm-field {
+  display: block;
+  margin-bottom: 10px;
+}
+.adm-field span {
+  display: block;
+  color: var(--adm-ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.adm-field .adm-input { width: 100%; min-width: 0; }

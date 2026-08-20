@@ -86,7 +86,24 @@ export async function POST(req: Request) {
     if (verdict !== "admit" && !reason) {
       return NextResponse.json({ error: "A reason is required to reject or hold a feed." }, { status: 400 });
     }
-    const entry: FeedVerdict = { candidateId, verdict: verdict as FeedVerdict["verdict"], at, reason: reason || undefined };
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const attribution = typeof body.attribution === "string" ? body.attribution.trim() : "";
+    // Required to admit, and only to admit. A catalogue's idea of a publisher is a
+    // mailbox or an Esri account slug, and this ends up on a public attribution line.
+    if (verdict === "admit" && (!name || !attribution)) {
+      return NextResponse.json(
+        { error: "An operator name and an attribution line are required to admit a feed." },
+        { status: 400 },
+      );
+    }
+    const entry: FeedVerdict = {
+      candidateId,
+      verdict: verdict as FeedVerdict["verdict"],
+      at,
+      reason: reason || undefined,
+      name: name || undefined,
+      attribution: attribution || undefined,
+    };
     ledger = recordFeedVerdict(ledger, entry);
     writeLedger(ledger);
     return NextResponse.json({ ok: true, ledger });
