@@ -53,7 +53,18 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
-import { CAMERA_CLUSTER, WEBCAM_CLUSTER, expandCluster } from "@/lib/map/cluster";
+import {
+  CAMERA_CLUSTER,
+  WEBCAM_CLUSTER,
+  CLUSTER_FILL_OPACITY,
+  CLUSTER_RADIUS_TIERS,
+  CLUSTER_TEXT_TIERS,
+  CLUSTER_TEXT_ZOOM_SCALE,
+  CLUSTER_ZOOM_SCALE,
+  expandCluster,
+  stepExpression,
+  zoomScaleExpression,
+} from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map arming. Every rule lives in camslot.arm; this file supplies geometry and
 // side effects and decides nothing. See the block above appendToArmedSlot for why
@@ -95,6 +106,21 @@ type Pt = {
   country: string;
   live: boolean;
 };
+
+// Cluster paint, BUILT from lib/map/cluster rather than hand-typed here. The two
+// used to be independent copies: the camera ramp read 15/19/24/30 and the webcam
+// ramp 14/18/23/29, one pixel adrift at every tier, under a comment in cluster.ts
+// promising a unit test that guarded them. No such test existed.
+const CLUSTER_RADIUS_PAINT = [
+  "*",
+  zoomScaleExpression(CLUSTER_ZOOM_SCALE),
+  stepExpression(CLUSTER_RADIUS_TIERS),
+];
+const CLUSTER_TEXT_PAINT = [
+  "*",
+  zoomScaleExpression(CLUSTER_TEXT_ZOOM_SCALE),
+  stepExpression(CLUSTER_TEXT_TIERS),
+];
 
 // Source / layer ids.
 const CAM_SRC = "cameras";
@@ -960,8 +986,8 @@ export default function WorldMap() {
           layout: { visibility: vis(layersRef.current.cameras) },
           paint: {
             "circle-color": "#0ea5e9",
-            "circle-opacity": 0.82,
-            "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24, 750, 30],
+            "circle-opacity": CLUSTER_FILL_OPACITY,
+            "circle-radius": CLUSTER_RADIUS_PAINT as never,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
             "circle-stroke-opacity": 0.9,
@@ -977,7 +1003,7 @@ export default function WorldMap() {
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
             "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
-            "text-size": ["step", ["get", "point_count"], 11, 100, 13, 750, 15],
+            "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.cameras),
           },
@@ -1028,8 +1054,8 @@ export default function WorldMap() {
           layout: { visibility: vis(layersRef.current.webcams) },
           paint: {
             "circle-color": WEBCAM_COLOR,
-            "circle-opacity": 0.82,
-            "circle-radius": ["step", ["get", "point_count"], 14, 25, 18, 100, 23, 750, 29],
+            "circle-opacity": CLUSTER_FILL_OPACITY,
+            "circle-radius": CLUSTER_RADIUS_PAINT as never,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.5,
             "circle-stroke-opacity": 0.9,
@@ -1045,7 +1071,7 @@ export default function WorldMap() {
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
             "text-font": ["Open Sans Regular"],
-            "text-size": ["step", ["get", "point_count"], 11, 100, 13, 750, 15],
+            "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.webcams),
           },
