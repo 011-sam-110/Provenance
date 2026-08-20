@@ -53,6 +53,7 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 import { MAP_CURSOR_EVENT } from "@/components/terminal/StageBar";
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
+import { setMapInstance } from "@/lib/map/instance";
 import {
   CAMERA_CLUSTER,
   WEBCAM_CLUSTER,
@@ -1727,6 +1728,10 @@ export default function WorldMap() {
       attributionControl: false,
     });
     mapRef.current = map;
+    // Published so the export control can READ this map (centre, zoom, canvas)
+    // without a ref threaded through the console layout. Read-only by contract —
+    // see lib/map/instance.
+    setMapInstance(map);
     (window as unknown as { __map?: maplibregl.Map }).__map = map; // debug handle
     (window as unknown as { __overlay?: typeof overlay }).__overlay = overlay;
     // Same debug-handle pattern as the two above, and it earns its place: arming is
@@ -1903,6 +1908,7 @@ export default function WorldMap() {
       clearStyleWatchdog(); // never let a pending retry fire at a removed map
       map.remove();
       mapRef.current = null;
+      setMapInstance(null); // a removed map must never be handed to a capture
       readyRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

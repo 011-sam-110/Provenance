@@ -245,6 +245,27 @@ a { color: var(--tn-accent); }
 .tn-basemap-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
 .tn-basemap-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* ── Export this view ────────────────────────────────────────────────────────
+   Same chip family as the basemap picker beside it — this is a property of the
+   view, so it belongs to the map's own control cluster rather than a menu.
+   The note is a live region: it reports the outcome, including the failures
+   (see components/console/ExportView), so an empty capture is something the
+   user is TOLD about rather than something they discover on opening the file. */
+.tn-export { display: flex; align-items: center; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
+.tn-export-btn {
+  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--tn-text-muted);
+  background: transparent; border: none; border-radius: 7px; padding: 5px 9px; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tn-export-btn:hover:not(:disabled) { background: var(--tn-surface-solid); color: var(--tn-accent); }
+.tn-export-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Empty until something happens, and it must not reserve width while empty or the
+   control cluster shifts every time a message appears and expires. */
+.tn-export-note:not(:empty) {
+  font-size: 11px; color: var(--tn-text-muted); padding: 0 8px 0 4px; max-width: 22ch;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 .tn-icon-btn {
   font: inherit; font-size: 13px; color: var(--tn-text-muted);
   background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 8px;
@@ -256,6 +277,8 @@ a { color: var(--tn-accent); }
 
 @media (max-width: 860px) { .tn-tagline { display: none; } }
 @media (max-width: 720px) { .tn-basemap { display: none; } }
+/* The export note is the first thing to go on a narrow stage; the buttons stay. */
+@media (max-width: 720px) { .tn-export-note { display: none; } }
 
 /* ── Compact live-data pulse (replaces the three tall Metric blocks) ────────── */
 .tn-top-pulse {
