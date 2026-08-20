@@ -28,6 +28,23 @@ export const dynamic = "force-dynamic";
 const CAMERA_VERDICTS = new Set(["good", "bad-image", "bad-pin", "not-a-camera", "unsure"]);
 const FEED_VERDICTS = new Set(["admit", "reject", "hold"]);
 
+/**
+ * A GET to a POST-only route is answered by Next with 405 before any handler runs, so
+ * these three routes said "method not allowed" in production while every other admin
+ * route said 404. That is a small thing and it is still a difference between what the
+ * /privacy page claims and what the deployment does: the page tells a reader that every
+ * route under here returns 404 and invites them to check. Two of the three verbs
+ * disagreed.
+ *
+ * Nothing was reachable either way -- the POST 404s -- and the route's existence is in a
+ * public repository anyway, so this is not a leak. It is a sentence on a page whose only
+ * value is being exactly true, and the cheaper fix was to correct the page. Correcting
+ * the deployment is the right one.
+ */
+export async function GET() {
+  return new Response(null, { status: 404 });
+}
+
 export async function POST(req: Request) {
   if (isProduction()) {
     return new NextResponse(null, { status: 404 });
