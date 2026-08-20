@@ -30,7 +30,7 @@ export function captureMessage(reason: string): string {
     case "no-canvas":
       return "The map has not finished drawing yet.";
     case "blank":
-      return "The map returned an empty frame — try again once it has settled.";
+      return "The map returned an empty frame; try again once it has settled.";
     case "timeout":
       return "The map did not redraw in time.";
     default:
