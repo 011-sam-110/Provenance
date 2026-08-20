@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import { readCandidates } from "@/lib/discovery/store";
 
 /**
@@ -25,7 +26,7 @@ import { readCandidates } from "@/lib/discovery/store";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new Response(null, { status: 404 });
   }
 

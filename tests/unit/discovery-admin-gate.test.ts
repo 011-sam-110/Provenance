@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { isProduction } from "@/lib/discovery/devOnly";
 
 /**
  * The curation tools have no password, no session and no rate limit. What they have is
@@ -45,17 +46,14 @@ function routeFiles(dir: string): string[] {
 /**
  * What counts as guarded.
  *
- * Both forms are accepted because they are the right tool in different places: a page
- * or layout can call `notFound()` and get Next's own 404 rendering, while an API route
- * has no such affordance and returns the status itself. What is NOT accepted is a
- * check against anything other than NODE_ENV — `VERCEL_ENV` is unset on a self-hosted
- * deployment and a check against it would silently pass everything through.
+ * Every route now routes through ONE helper, `lib/discovery/devOnly.ts`, rather than
+ * repeating an inline environment check. That is worth the indirection for a reason
+ * the second test below makes concrete: the helper fails closed on EITHER production
+ * signal, and getting eight copies of that condition right is eight chances to get it
+ * wrong. A route may call `assertDevOnly()` (pages and layouts, which get Next's own
+ * 404 rendering) or `isProduction()` (API routes, which return the status themselves).
  */
-const GUARDS = [
-  /process\.env\.NODE_ENV === "production"[\s\S]{0,120}?notFound\(\)/,
-  /process\.env\.NODE_ENV === "production"[\s\S]{0,160}?status: 404/,
-  /assertDevOnly\(\)/,
-];
+const GUARDS = [/assertDevOnly\(\)/, /isProduction\(\)/];
 
 describe("the /admin production gate", () => {
   const files = [...routeFiles("app/admin"), ...routeFiles("app/api/admin")];
@@ -78,6 +76,21 @@ describe("the /admin production gate", () => {
       unguarded,
       "these curation routes would be reachable in production: " + unguarded.join(", "),
     ).toEqual([]);
+  });
+
+  it("fails closed on either production signal, not just NODE_ENV", () => {
+    // One signal is one thing that can be misconfigured. A build with NODE_ENV unset,
+    // a self-hosted runner, a Dockerfile that forgets it — any of those would turn a
+    // NODE_ENV-only check into an open admin surface on a live deployment. VERCEL_ENV
+    // is set independently by the platform, so both are required to say development.
+    //
+    // Asserted on the helper's behaviour rather than by reading its source, so a
+    // rewrite that keeps the name and loses the rule still fails here.
+    expect(isProduction({ NODE_ENV: "production", VERCEL_ENV: "preview" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "development", VERCEL_ENV: "production" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "production", VERCEL_ENV: "production" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "development", VERCEL_ENV: "preview" })).toBe(false);
+    expect(isProduction({})).toBe(false);
   });
 
   it("keeps the review tool out of the crawler's way as well", () => {

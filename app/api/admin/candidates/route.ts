@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import { readCandidates, readLedger } from "@/lib/discovery/store";
 
 /**
@@ -13,7 +14,7 @@ import { readCandidates, readLedger } from "@/lib/discovery/store";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new NextResponse(null, { status: 404 });
   }
   return NextResponse.json({ candidates: readCandidates(), ledger: readLedger() });

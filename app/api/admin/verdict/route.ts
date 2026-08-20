@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import {
   readLedger,
   recordCameraVerdict,
@@ -28,7 +29,7 @@ const CAMERA_VERDICTS = new Set(["good", "bad-image", "bad-pin", "not-a-camera",
 const FEED_VERDICTS = new Set(["admit", "reject", "hold"]);
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new NextResponse(null, { status: 404 });
   }
 

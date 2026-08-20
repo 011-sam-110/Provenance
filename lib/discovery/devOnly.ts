@@ -10,14 +10,26 @@ import { notFound } from "next/navigation";
  * reason that test exists.
  */
 
-/** 404 unless this is a development server. Used by every page and layout under /admin. */
-export function assertDevOnly(): void {
-  if (process.env.NODE_ENV === "production") notFound();
+/**
+ * Is this a live deployment?
+ *
+ * FAILS CLOSED ON EITHER SIGNAL. `NODE_ENV` alone was the first version and one
+ * signal is one thing that can be misconfigured: a build run with NODE_ENV unset, a
+ * self-hosted runner, a Dockerfile that forgets it. `VERCEL_ENV` is set independently
+ * by the platform, so requiring BOTH to say development is the difference between an
+ * admin surface that leaks on a misconfiguration and one that does not.
+ *
+ * The cost of the stricter rule is a developer occasionally having to work out why
+ * their production-mode local build 404s. That is a much better afternoon than the
+ * other one.
+ */
+export function isProduction(env: Record<string, string | undefined> = process.env): boolean {
+  return env.VERCEL_ENV === "production" || env.NODE_ENV === "production";
 }
 
-/** True in production, for API routes, which return the status themselves. */
-export function isProduction(): boolean {
-  return process.env.NODE_ENV === "production";
+/** 404 unless this is a development server. Used by every page and layout under /admin. */
+export function assertDevOnly(): void {
+  if (isProduction()) notFound();
 }
 
 /**

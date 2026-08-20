@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { assertDevOnly } from "@/lib/discovery/devOnly";
 import { ReviewDeck } from "@/components/admin/ReviewDeck";
 import { readCandidates, readLedger } from "@/lib/discovery/store";
 
@@ -12,7 +12,7 @@ import { readCandidates, readLedger } from "@/lib/discovery/store";
 export const dynamic = "force-dynamic";
 
 export default function VerifyPage() {
-  if (process.env.NODE_ENV === "production") notFound();
+  assertDevOnly();
 
   return (
     <>

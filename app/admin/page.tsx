@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { assertDevOnly } from "@/lib/discovery/devOnly";
 import { AdminActions, AdminEstate } from "@/components/admin/AdminActions";
 import { discoveryFunnel, gatePressure, portalYield, verdictBreakdown } from "@/lib/discovery/analytics";
 import { readCandidates, readLedger } from "@/lib/discovery/store";
@@ -19,7 +19,7 @@ import { DISCOVERED_FEEDS } from "@/lib/sources/discovered";
 export const dynamic = "force-dynamic";
 
 export default function AdminOverview() {
-  if (process.env.NODE_ENV === "production") notFound();
+  assertDevOnly();
 
   const candidates = readCandidates();
   const ledger = readLedger();

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { readCandidates, readLedger } from "@/lib/discovery/store";
@@ -22,7 +23,7 @@ import { PROMOTED_FILE_HEADER } from "@/lib/discovery/devOnly";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new NextResponse(null, { status: 404 });
   }
 

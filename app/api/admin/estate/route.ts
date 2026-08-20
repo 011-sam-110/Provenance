@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import { estateStats } from "@/lib/discovery/analytics";
 import { getRegistry } from "@/lib/sources/registry";
 
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 // build.
 
 export async function GET() {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new NextResponse(null, { status: 404 });
   }
   try {

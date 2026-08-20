@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isProduction } from "@/lib/discovery/devOnly";
 import { runDiscovery } from "@/lib/discovery/run";
 import { readCandidates, readLedger, writeCandidates } from "@/lib/discovery/store";
 import { getRegistry } from "@/lib/sources/registry";
@@ -31,7 +32,7 @@ export const dynamic = "force-dynamic";
 // where the route cannot run is not a limit, it is a way to break a deploy.
 
 export async function POST(req: Request) {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction()) {
     return new NextResponse(null, { status: 404 });
   }
 
