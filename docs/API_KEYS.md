@@ -89,6 +89,32 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | **Photo geolocation** GeoCLIP backend (best accuracy) | run `scripts/geolocate_service.py`, point the app at it | `GEOLOCATE_GEOCLIP_URL` (+ optional `GEOLOCATE_BACKEND=geoclip\|llm`) |
 | **Windy webcams** layer | Windy API keys (you said these are already in `.env.local`) | `WINDY_WEBCAMS_API_KEY`, `WINDY_MAP_FORECAST_API_KEY` |
 | **Live channel resolution** (news presets + the ISS panel) | YouTube Data API v3 key — see below | `YOUTUBE_API_KEY` |
+| **Traffic dashboard** (`/admin/analytics`, development only) | A Vercel API token plus the project and team ids — see below | `VERCEL_ANALYTICS_TOKEN`, `VERCEL_ANALYTICS_PROJECT_ID`, `VERCEL_ANALYTICS_TEAM_ID` |
+
+### `VERCEL_ANALYTICS_*` — what it does and does not buy you
+
+`/admin/analytics` reads Vercel's Web Analytics query API and renders the traffic this
+site actually receives. It **404s in production** and is a development-only view.
+
+Pageview collection itself needs no key at all — it is done by the `<Analytics />`
+script already mounted in `app/layout.tsx`. These three variables only let the dashboard
+*read the numbers back*. Without them the page renders a labelled empty state naming the
+missing variables; it never renders a chart of zeroes.
+
+- `VERCEL_ANALYTICS_TOKEN` — create at [vercel.com/account/tokens](https://vercel.com/account/tokens), scoped to the team. Read-only use. Never sent to the browser.
+- `VERCEL_ANALYTICS_PROJECT_ID` and `VERCEL_ANALYTICS_TEAM_ID` — from the project's **Settings** page. Not secrets, but not hardcoded either, so a self-hoster points the dashboard at their own project.
+
+**What the plan refuses.** Measured against the live API on 2026-08-19, quoted verbatim:
+
+| Asked for | Status | Vercel's answer |
+|---|---|---|
+| Custom events (`track()`) | 402 | `Accessing Analytics custom events requires an Enterprise or Pro plan.` |
+| UTM dimensions | 402 | `UTM dimensions require an Enterprise plan or the Web Analytics Plus add-on.` |
+| Anything older than 31 days | 400 | `Invalid request: the hobby plan only grants access to the latest 31 days of data.` |
+
+So on the current Hobby plan the dashboard covers pageviews, routes, referrers,
+countries, devices and browsers, over a rolling 31-day window — and nothing else. The
+page states this itself rather than leaving an empty panel to imply zero traffic.
 
 ### `YOUTUBE_API_KEY` — why this one is not optional polish
 
