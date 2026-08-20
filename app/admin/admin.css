@@ -1,0 +1,461 @@
+/*
+ * The curation tools' own skin.
+ *
+ * Scoped under `.adm-root` and loaded only by `app/admin/layout.tsx`, so nothing here
+ * can reach the console or the landing page — the same containment rule `.pv-*` and
+ * `.tn-terminal` already follow in this repo.
+ *
+ * The palette is the product's teal on near-black. This is a tool for looking at
+ * photographs for an hour at a time: the surface is dark so the pictures carry the
+ * light, and nothing but the verdict controls is allowed to be saturated.
+ */
+
+.adm-root {
+  --adm-bg: #0b1016;
+  --adm-panel: #131b24;
+  --adm-panel-2: #1a242f;
+  --adm-line: #24313e;
+  --adm-ink: #e8eef4;
+  --adm-ink-dim: #93a4b4;
+  --adm-ink-faint: #64798c;
+  --adm-accent: #0e7d97;
+  --adm-accent-bright: #22b8d8;
+  --adm-good: #2f9e5e;
+  --adm-bad: #c0483f;
+  --adm-warn: #b6842a;
+
+  min-height: 100vh;
+  background: var(--adm-bg);
+  color: var(--adm-ink);
+  font-family: var(--tn-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.adm-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--adm-panel);
+  border-bottom: 1px solid var(--adm-line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.adm-brand {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.adm-brand-sub {
+  color: var(--adm-ink-faint);
+  font-weight: 400;
+}
+
+.adm-nav {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+.adm-navlink {
+  color: var(--adm-ink-dim);
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+.adm-navlink:hover {
+  color: var(--adm-ink);
+  background: var(--adm-panel-2);
+}
+
+.adm-env {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--adm-warn);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 2px 7px;
+  cursor: help;
+}
+
+.adm-main {
+  padding: 24px 20px 64px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.adm-h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+.adm-lede {
+  color: var(--adm-ink-dim);
+  margin: 0 0 28px;
+  max-width: 78ch;
+}
+.adm-h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 32px 0 12px;
+  letter-spacing: -0.01em;
+}
+
+/* ── numbers ─────────────────────────────────────────────────────────────── */
+
+.adm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.adm-stat {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.adm-stat-n {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  display: block;
+}
+.adm-stat-k {
+  color: var(--adm-ink-dim);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.adm-stat-note {
+  color: var(--adm-ink-faint);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* The funnel: a bar per stage, width proportional to the widest stage. */
+.adm-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.adm-funnel-row {
+  display: grid;
+  grid-template-columns: 190px 1fr 76px;
+  align-items: center;
+  gap: 12px;
+}
+.adm-funnel-label {
+  color: var(--adm-ink-dim);
+  font-size: 13px;
+}
+.adm-funnel-track {
+  /* A span is inline by default and height does not apply to an inline box, so
+     without this the track and its fill both collapse and every bar renders as an
+     identical empty strip. Caught by looking at the page, not by tsc or the suite. */
+  display: block;
+  background: var(--adm-panel);
+  border-radius: 4px;
+  height: 22px;
+  overflow: hidden;
+}
+.adm-funnel-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--adm-accent), var(--adm-accent-bright));
+  border-radius: 4px;
+  min-width: 2px;
+}
+.adm-funnel-n {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  text-align: right;
+  font-size: 13px;
+}
+
+/* ── tables ──────────────────────────────────────────────────────────────── */
+
+.adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.adm-table th {
+  text-align: left;
+  color: var(--adm-ink-faint);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--adm-line);
+}
+.adm-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--adm-line);
+  vertical-align: top;
+}
+.adm-table td.adm-num {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  text-align: right;
+}
+
+/* ── the review card ─────────────────────────────────────────────────────── */
+
+.adm-review {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.adm-frame {
+  background: #000;
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  aspect-ratio: 16 / 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.adm-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.adm-frame-msg {
+  color: var(--adm-ink-faint);
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 13px;
+  padding: 24px;
+  text-align: center;
+}
+
+.adm-side {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.adm-cam-name {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 2px;
+  letter-spacing: -0.01em;
+}
+.adm-cam-sub {
+  color: var(--adm-ink-dim);
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+.adm-kv {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+.adm-kv dt {
+  color: var(--adm-ink-faint);
+}
+.adm-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.adm-kv a {
+  color: var(--adm-accent-bright);
+}
+
+.adm-gates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.adm-gate {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--adm-ink-dim);
+  align-items: start;
+}
+.adm-gate-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+.adm-gate-pass .adm-gate-dot { background: var(--adm-good); }
+.adm-gate-warn .adm-gate-dot { background: var(--adm-warn); }
+.adm-gate-fail .adm-gate-dot { background: var(--adm-bad); }
+.adm-gate-warn, .adm-gate-fail { color: var(--adm-ink); }
+
+/* ── verdict controls ────────────────────────────────────────────────────── */
+
+.adm-verdicts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+.adm-btn {
+  appearance: none;
+  border: 1px solid var(--adm-line);
+  background: var(--adm-panel-2);
+  color: var(--adm-ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.adm-btn:hover { border-color: var(--adm-accent-bright); }
+.adm-btn:focus-visible { outline: 2px solid var(--adm-accent-bright); outline-offset: 2px; }
+.adm-btn kbd {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--adm-ink-faint);
+  border: 1px solid var(--adm-line);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.adm-btn-good { border-color: color-mix(in srgb, var(--adm-good) 55%, transparent); }
+.adm-btn-bad { border-color: color-mix(in srgb, var(--adm-bad) 55%, transparent); }
+.adm-btn-wide { grid-column: 1 / -1; }
+.adm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.adm-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--adm-ink-dim);
+}
+.adm-progress-track {
+  display: block;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--adm-panel-2);
+  overflow: hidden;
+}
+.adm-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--adm-accent-bright);
+}
+
+.adm-tally {
+  display: flex;
+  gap: 14px;
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--adm-ink-dim);
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--adm-line);
+}
+
+.adm-empty {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  color: var(--adm-ink-dim);
+}
+
+.adm-note {
+  background: color-mix(in srgb, var(--adm-warn) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--adm-warn) 40%, transparent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+
+.adm-log {
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--adm-ink-dim);
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.adm-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0 20px;
+}
+
+.adm-map {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 1px solid var(--adm-line);
+  border-radius: 8px;
+  margin-bottom: 14px;
+  background: var(--adm-panel-2);
+  display: block;
+}
+
+@media (max-width: 880px) {
+  .adm-review { grid-template-columns: 1fr; }
+}
+
+.adm-input {
+  background: var(--adm-panel-2);
+  border: 1px solid var(--adm-line);
+  border-radius: 8px;
+  color: var(--adm-ink);
+  font: inherit;
+  padding: 9px 12px;
+  min-width: 220px;
+}
+.adm-input:focus-visible { outline: 2px solid var(--adm-accent-bright); outline-offset: 2px; }
+
+.adm-linkbtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--adm-ink-faint);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.adm-linkbtn:hover { color: var(--adm-ink); }
+
+.adm-field {
+  display: block;
+  margin-bottom: 10px;
+}
+.adm-field span {
+  display: block;
+  color: var(--adm-ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.adm-field .adm-input { width: 100%; min-width: 0; }

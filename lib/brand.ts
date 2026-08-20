@@ -43,7 +43,25 @@ export const BRAND = {
     short: "AGPL-3.0",
     /** The copy in this repo, which is what section 13 points a user at. */
     url: "https://github.com/011-sam-110/TrafficNerd-V2/blob/main/LICENSE",
-    holder: "Sam Poplett",
+    /**
+     * The copyright holder as it appears in public.
+     *
+     * This is the GitHub account that authored the work, not a legal name, and that is
+     * a deliberate choice rather than an oversight. It is rendered in three places a
+     * search engine indexes — the site footer, the /privacy footer, and the "who runs
+     * this" paragraph — and the author would rather those carried a handle.
+     *
+     * It does not weaken anything. Copyright vests in the author whether or not the
+     * notice names them; a notice is evidence of a claim, not the source of it, and a
+     * pseudonymous one is ordinary in open source. AGPL section 13's obligation is to
+     * OFFER the corresponding source, which `repoUrl` does, and that is unaffected.
+     *
+     * What it does mean is that anyone with a formal reason to know who the controller
+     * is — a data-protection request, a legal notice — has to ask through the issue
+     * tracker the page names. That is the trade, and it is written down here so the
+     * next person changing this line knows what they are changing.
+     */
+    holder: "011-sam-110",
     year: "2026",
   },
 } as const;

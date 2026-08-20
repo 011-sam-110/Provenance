@@ -85,6 +85,26 @@ describe("key requirements table", () => {
       "DISCORD_WEBHOOK_URL",
       "TELEGRAM_BOT_TOKEN",
       "TELEGRAM_CHAT_ID",
+      // The dev-only traffic dashboard at /admin/analytics reads these from a
+      // developer's .env.local. They are exempt for a DIFFERENT reason from the three
+      // above, and the difference is worth writing down because the obvious reading of
+      // this list is wrong.
+      //
+      // What the list actually encodes is not "this is not a secret" — DISCORD_WEBHOOK_URL
+      // and TELEGRAM_BOT_TOKEN are both secrets. It is "the DEPLOYMENT does not hold this
+      // to unlock a capability /api/status reports". Those two qualify because the visitor
+      // supplies them. These qualify because nothing supplies them in production: the only
+      // route that reads them returns 404 there, and they are never set in Vercel.
+      //
+      // The alternative was a KEY_REQUIREMENTS entry, and it was tried and reversed.
+      // statusReport.ts maps every id in NON_SIGNAL_IDS into `capabilities`, and
+      // /api/status is public — so registering it would have announced to anyone who
+      // curls that endpoint that an /admin/analytics surface exists, that it is locked,
+      // and what the three variables behind it are called. No values leak, but the
+      // existence of an internal surface is not something a status page owes a visitor.
+      "VERCEL_ANALYTICS_TOKEN",
+      "VERCEL_ANALYTICS_PROJECT_ID",
+      "VERCEL_ANALYTICS_TEAM_ID",
     ]);
     const declared = new Set(KEY_REQUIREMENTS.flatMap((r) => r.env));
 
