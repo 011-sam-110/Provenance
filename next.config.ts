@@ -1,6 +1,36 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * DEEP-LINK SHIM. Links and OG cards already shared in the wild were minted against
+   * `/` carrying `?v=` (board) or `?c=` (layout). The console now lives at /app, so
+   * those are forwarded there with the query intact — without this, every link anyone
+   * has already posted lands on marketing copy instead of the map they sent.
+   *
+   * WHY IT LIVES HERE AND NOT IN THE PAGE. It used to be a `searchParams` read inside
+   * app/(site)/page.tsx, and that is what made `/` dynamic: Next opts a page into
+   * dynamic rendering the moment it accepts `searchParams`, for EVERY request, not
+   * just the ones carrying a query. So the landing page paid a full React server
+   * render per visitor — never cached, `X-Vercel-Cache: MISS` forever — to serve a
+   * redirect that almost nobody triggers. The routing layer applies these rules with
+   * no function invocation at all, so the common case now costs nothing.
+   *
+   * TWO RULES, NOT ONE. `has` entries are AND-ed within a rule, so a single rule
+   * listing both keys would only fire for a link carrying `?v=` AND `?c=`.
+   *
+   * The original query survives: Next's redirect handler spreads the incoming query
+   * into the destination before anything else, so unlisted keys are preserved too.
+   */
+  async redirects() {
+    return ["v", "c"].map((key) => ({
+      source: "/",
+      has: [{ type: "query" as const, key }],
+      destination: "/app",
+      // Temporary. /app is where the console lives today; a 308 would be cached
+      // permanently by every browser that ever followed one of these links.
+      permanent: false,
+    }));
+  },
   // Allow an isolated build dir so a verification `next build` doesn't fight a
   // concurrently-running `next dev` over `.next` (defaults to `.next`).
   distDir: process.env.TN_DIST_DIR || ".next",

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { BRAND } from "@/lib/brand";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { buildWall, marqueePublishers, wallCount } from "@/lib/marketing/wall";
@@ -30,26 +29,13 @@ export const metadata: Metadata = {
  * same endpoints the console uses. There is not a hand-typed figure on the page,
  * because the page's entire argument is that its numbers are checkable.
  *
- * DEEP-LINK SHIM. Shared links and the OG cards were minted against `/` carrying
- * `?v=` (board) or `?c=` (layout). The console now lives at /app, so those params
- * are forwarded there with the query intact. Without this, every link anyone has
- * already shared would land on marketing copy instead of the map they sent.
+ * DEEP-LINK SHIM. Legacy `?v=`/`?c=` links are forwarded to /app by `redirects()` in
+ * next.config.ts, NOT here. Reading `searchParams` in this component is what made the
+ * whole page dynamic, so the shim was costing a server render on every visit to serve
+ * a redirect almost nobody triggers. tests/unit/landing-static.test.ts guards both
+ * halves. Do not reintroduce a `searchParams` prop on this page.
  */
-export default async function Landing({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  if (sp.v !== undefined || sp.c !== undefined) {
-    const qs = new URLSearchParams();
-    for (const [k, val] of Object.entries(sp)) {
-      if (typeof val === "string") qs.set(k, val);
-      else if (Array.isArray(val) && val[0] !== undefined) qs.set(k, val[0]);
-    }
-    redirect(`/app?${qs.toString()}`);
-  }
-
+export default async function Landing() {
   const groups = buildWall();
   const total = wallCount();
   const publishers = marqueePublishers();
