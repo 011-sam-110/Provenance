@@ -94,6 +94,28 @@ The gates deliberately do **not** include "does the image load". That is a live 
 fact that goes stale between the run and the review, so it is measured in the review UI,
 at the moment of review, against the real URL.
 
+### What a clean `overlap` is allowed to mean
+
+A pass on `overlap` speaks only for the feeds that were in the registry snapshot when
+the run happened, and it now says so.
+
+The first live admission found out why. An ArcGIS mirror of **Caltrans District 4**
+passed with "No sampled camera sits within 60 m of one already served". All twelve of
+its samples were within 50 m of a camera this product already serves and eleven had
+byte-identical image URLs — it was the `caltrans` adapter's own cameras, offered back
+under a second key, and admitting it would have double-counted 746 of them.
+
+The registry read was not empty, so the gate ran. It simply had no `caltrans` cameras in
+it, because a feed that fails resolves to `[]` rather than throwing — the same last-good
+behaviour that stops one outage emptying a region also makes an absent feed and an
+absent duplicate look identical from inside a gate.
+
+So `runGates` now takes `expectedSources`, the feed keys the registry is supposed to
+contain, and a zero-overlap result with any of them missing is a **warn naming the
+absent feeds** rather than a pass. The rule is the same one the licence gate follows:
+where the code cannot know, it says it cannot know instead of reporting the comfortable
+answer.
+
 ## The review tool
 
 One camera at a time, and that is the point. A grid of thumbnails gets skimmed, and
@@ -179,6 +201,15 @@ reviewed. Reach for that rather than bolting a check onto this.
 Adding a portal is one line in `CKAN_PORTALS`. Adding a country box for the coordinate
 tie-break is one line in `COUNTRY_BOXES`. Neither needs a code change anywhere else, and
 both are the reason the probe is catalogue-shaped rather than portal-shaped.
+
+`upgradeMediaToHttps` on a descriptor rewrites that feed's `http://` media to `https://`.
+Catalogues publish the URL the operator wrote down, and agencies still write http for
+hosts that have served https for years — those pictures are then blocked as mixed content
+on an https page, so the cameras are real, reviewed and invisible. It is **opt-in per
+feed and set only after fetching the https form of real samples and getting images back**:
+Houston TranStar carries it because all twelve of its sampled URLs answered `200
+image/jpeg` over https. Blanket-upgrading instead would break the operators for whom http
+is the only thing that answers, silently and only in production.
 
 Known gaps, stated rather than left to be discovered:
 

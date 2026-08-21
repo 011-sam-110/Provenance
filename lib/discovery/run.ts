@@ -106,6 +106,8 @@ export interface RunOptions {
   limit?: number;
   /** Cameras already served, for the overlap gate. */
   existing?: Pick<Camera, "id" | "source" | "lat" | "lon">[];
+  /** Feed keys the registry should contain, so the overlap gate can say what it checked. */
+  expectedSources?: string[];
   signal?: AbortSignal;
   /** Progress line sink, so a long run is not a blank screen. */
   onProgress?: (line: string) => void;
@@ -319,6 +321,7 @@ export async function runDiscovery(opts: RunOptions = {}): Promise<RunReport> {
         parsed: { rows: normalized.rows, valid: normalized.cameras.length },
         catalogueLicense: hit.license,
         existing: opts.existing,
+        expectedSources: opts.expectedSources,
       });
 
       candidates.push({

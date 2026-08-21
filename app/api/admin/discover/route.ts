@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { isProduction } from "@/lib/discovery/devOnly";
 import { runDiscovery } from "@/lib/discovery/run";
 import { readCandidates, readLedger, writeCandidates } from "@/lib/discovery/store";
-import { getRegistry } from "@/lib/sources/registry";
+import { CAMERA_FEEDS, getRegistry } from "@/lib/sources/registry";
 
 /**
  * Start a discovery run and write the queue.
@@ -79,6 +79,11 @@ export async function POST(req: Request) {
     arcgis: opts.arcgis !== false,
     limit: typeof opts.limit === "number" ? opts.limit : 40,
     existing: existing.map((c) => ({ id: c.id, source: c.source, lat: c.lat, lon: c.lon })),
+    // What the snapshot SHOULD have contained. A feed that fails resolves to `[]`
+    // rather than throwing, so without this the overlap gate cannot tell an absent
+    // feed from an absent duplicate — and it once reported a clean pass on a mirror
+    // of a network we already serve.
+    expectedSources: CAMERA_FEEDS.map((f) => f.key),
     signal: req.signal,
     onProgress: (line) => log.push(line),
   });

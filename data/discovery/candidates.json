@@ -1,335 +1,5 @@
 [
   {
-    "id": "services-arcgis-com-15ltha2",
-    "descriptor": {
-      "key": "services-arcgis-a817a48983f144e0943cf1d3",
-      "name": "Waka Kotahi",
-      "country": "NZ",
-      "endpoint": "https://services.arcgis.com/CXBb7LAjgIIdcsPt/arcgis/rest/services/nzta_cameras/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
-      "format": "arcgis",
-      "mapping": {
-        "lat": "__lat",
-        "lon": "__lon",
-        "direction": "direction",
-        "id": "id",
-        "imageUrl": "imageurl",
-        "name": "name",
-        "region": "region"
-      },
-      "license": "Waka Kotahi states no licence for this data (catalogue records: custom)",
-      "attribution": "Waka Kotahi — via https://hub.arcgis.com",
-      "refreshSeconds": 300
-    },
-    "provenance": {
-      "probe": "arcgis-hub",
-      "discoveredVia": "https://hub.arcgis.com/datasets/a817a48983f144e0943cf1d3fee15c08_0",
-      "publisher": "Waka Kotahi",
-      "catalogueLicense": "custom",
-      "foundAt": "2026-08-20T02:00:45.571Z"
-    },
-    "gates": [
-      {
-        "gate": "relay",
-        "status": "pass",
-        "detail": "No known relay host on the endpoint or the media URLs."
-      },
-      {
-        "gate": "media-host",
-        "status": "pass",
-        "detail": "All sampled media URLs are on named hosts."
-      },
-      {
-        "gate": "yield",
-        "status": "pass",
-        "detail": "224 of 224 rows parsed (100%)."
-      },
-      {
-        "gate": "licence",
-        "status": "pass",
-        "detail": "Catalogue states: custom"
-      },
-      {
-        "gate": "transport",
-        "status": "warn",
-        "detail": "12 sampled media URLs are plain http and will be blocked as mixed content."
-      },
-      {
-        "gate": "country-fit",
-        "status": "pass",
-        "detail": "Every sampled coordinate falls inside NZ."
-      },
-      {
-        "gate": "overlap",
-        "status": "fail",
-        "detail": "11 of 12 sampled cameras are already served, mostly by nzta. This is the same network under a second key."
-      },
-      {
-        "gate": "media-origin",
-        "status": "warn",
-        "detail": "The dataset is hosted on services.arcgis.com for Waka Kotahi, so the endpoint host does not identify the operator. The pictures come from www.trafficnz.info — that is the host to judge."
-      }
-    ],
-    "parsed": {
-      "rows": 224,
-      "valid": 224
-    },
-    "samples": [
-      {
-        "nativeId": "190",
-        "name": "SH20 Queenstown Rd",
-        "lat": -36.921434017433015,
-        "lon": 174.767310105494,
-        "imageUrl": "http://www.trafficnz.info/camera/190.jpg"
-      },
-      {
-        "nativeId": "122",
-        "name": "SH1 Walter Strevens Dr Overbridge",
-        "lat": -37.044,
-        "lon": 174.913,
-        "imageUrl": "http://www.trafficnz.info/camera/122.jpg"
-      },
-      {
-        "nativeId": "301",
-        "name": "SH74A Woolston",
-        "lat": -43.551594999999985,
-        "lon": 172.686952,
-        "imageUrl": "http://www.trafficnz.info/camera/301.jpg"
-      },
-      {
-        "nativeId": "273",
-        "name": "SH20B Puhinui Rd West",
-        "lat": -36.99799999999999,
-        "lon": 174.829,
-        "imageUrl": "http://www.trafficnz.info/camera/273.jpg"
-      },
-      {
-        "nativeId": "204",
-        "name": "SH20 Hastie Ave Footbridge",
-        "lat": -36.94499999999999,
-        "lon": 174.79299999999998,
-        "imageUrl": "http://www.trafficnz.info/camera/204.jpg"
-      },
-      {
-        "nativeId": "174",
-        "name": "SH18 Paul Matthews Rd",
-        "lat": -36.75300000000001,
-        "lon": 174.714,
-        "imageUrl": "http://www.trafficnz.info/camera/174.jpg"
-      },
-      {
-        "nativeId": "613",
-        "name": "SH1 Ramarama",
-        "lat": -37.14349600000001,
-        "lon": 174.96921300000002,
-        "imageUrl": "http://www.trafficnz.info/camera/613.jpg"
-      },
-      {
-        "nativeId": "599",
-        "name": "Sockburn Roundabout West",
-        "lat": -43.539327,
-        "lon": 172.55341500000003,
-        "imageUrl": "http://www.trafficnz.info/camera/599.jpg"
-      },
-      {
-        "nativeId": "246",
-        "name": "SH1/SH23 Massey St Intersection",
-        "lat": -37.789,
-        "lon": 175.259,
-        "imageUrl": "http://www.trafficnz.info/camera/246.jpg"
-      },
-      {
-        "nativeId": "258",
-        "name": "SH73 Blenheim Rd",
-        "lat": -43.53931000000001,
-        "lon": 172.56837999999996,
-        "imageUrl": "http://www.trafficnz.info/camera/258.jpg"
-      },
-      {
-        "nativeId": "672",
-        "name": "SH74 Anzac / New Brighton",
-        "lat": -43.500042,
-        "lon": 172.700719,
-        "imageUrl": "http://www.trafficnz.info/camera/672.jpg"
-      },
-      {
-        "nativeId": "682",
-        "name": "Lincoln / Nairn Crossing N",
-        "lat": -43.54801800000001,
-        "lon": 172.60403799999997,
-        "imageUrl": "http://www.trafficnz.info/camera/682.jpg"
-      }
-    ],
-    "confidence": 1,
-    "notes": [
-      "The catalogue states no country. NZ was inferred from where the cameras are, not read from the data — check it against the pictures."
-    ]
-  },
-  {
-    "id": "services-arcgis-com-1i1an65",
-    "descriptor": {
-      "key": "services-arcgis-893d8a697d7f418f87392fb1",
-      "name": "Waka Kotahi",
-      "country": "NZ",
-      "endpoint": "https://services.arcgis.com/CXBb7LAjgIIdcsPt/arcgis/rest/services/LiveCamerasNZTA_Public_View/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
-      "format": "arcgis",
-      "mapping": {
-        "lat": "__lat",
-        "lon": "__lon",
-        "direction": "direction",
-        "id": "id",
-        "imageUrl": "imageurl",
-        "name": "name",
-        "region": "region"
-      },
-      "license": "Waka Kotahi states no licence for this data (catalogue records: custom)",
-      "attribution": "Waka Kotahi — via https://hub.arcgis.com",
-      "refreshSeconds": 300
-    },
-    "provenance": {
-      "probe": "arcgis-hub",
-      "discoveredVia": "https://hub.arcgis.com/datasets/893d8a697d7f418f87392fb1222f5b95_0",
-      "publisher": "Waka Kotahi",
-      "catalogueLicense": "custom",
-      "foundAt": "2026-08-20T02:00:48.169Z"
-    },
-    "gates": [
-      {
-        "gate": "relay",
-        "status": "pass",
-        "detail": "No known relay host on the endpoint or the media URLs."
-      },
-      {
-        "gate": "media-host",
-        "status": "pass",
-        "detail": "All sampled media URLs are on named hosts."
-      },
-      {
-        "gate": "yield",
-        "status": "pass",
-        "detail": "224 of 224 rows parsed (100%)."
-      },
-      {
-        "gate": "licence",
-        "status": "pass",
-        "detail": "Catalogue states: custom"
-      },
-      {
-        "gate": "transport",
-        "status": "warn",
-        "detail": "12 sampled media URLs are plain http and will be blocked as mixed content."
-      },
-      {
-        "gate": "country-fit",
-        "status": "pass",
-        "detail": "Every sampled coordinate falls inside NZ."
-      },
-      {
-        "gate": "overlap",
-        "status": "fail",
-        "detail": "11 of 12 sampled cameras are already served, mostly by nzta. This is the same network under a second key."
-      },
-      {
-        "gate": "media-origin",
-        "status": "warn",
-        "detail": "The dataset is hosted on services.arcgis.com for Waka Kotahi, so the endpoint host does not identify the operator. The pictures come from www.trafficnz.info — that is the host to judge."
-      }
-    ],
-    "parsed": {
-      "rows": 224,
-      "valid": 224
-    },
-    "samples": [
-      {
-        "nativeId": "190",
-        "name": "SH20 Queenstown Rd",
-        "lat": -36.921434017433015,
-        "lon": 174.767310105494,
-        "imageUrl": "http://www.trafficnz.info/camera/190.jpg"
-      },
-      {
-        "nativeId": "122",
-        "name": "SH1 Walter Strevens Dr Overbridge",
-        "lat": -37.044,
-        "lon": 174.913,
-        "imageUrl": "http://www.trafficnz.info/camera/122.jpg"
-      },
-      {
-        "nativeId": "301",
-        "name": "SH74A Woolston",
-        "lat": -43.551594999999985,
-        "lon": 172.686952,
-        "imageUrl": "http://www.trafficnz.info/camera/301.jpg"
-      },
-      {
-        "nativeId": "273",
-        "name": "SH20B Puhinui Rd West",
-        "lat": -36.99799999999999,
-        "lon": 174.829,
-        "imageUrl": "http://www.trafficnz.info/camera/273.jpg"
-      },
-      {
-        "nativeId": "204",
-        "name": "SH20 Hastie Ave Footbridge",
-        "lat": -36.94499999999999,
-        "lon": 174.79299999999998,
-        "imageUrl": "http://www.trafficnz.info/camera/204.jpg"
-      },
-      {
-        "nativeId": "174",
-        "name": "SH18 Paul Matthews Rd",
-        "lat": -36.75300000000001,
-        "lon": 174.714,
-        "imageUrl": "http://www.trafficnz.info/camera/174.jpg"
-      },
-      {
-        "nativeId": "613",
-        "name": "SH1 Ramarama",
-        "lat": -37.14349600000001,
-        "lon": 174.96921300000002,
-        "imageUrl": "http://www.trafficnz.info/camera/613.jpg"
-      },
-      {
-        "nativeId": "599",
-        "name": "Sockburn Roundabout West",
-        "lat": -43.539327,
-        "lon": 172.55341500000003,
-        "imageUrl": "http://www.trafficnz.info/camera/599.jpg"
-      },
-      {
-        "nativeId": "246",
-        "name": "SH1/SH23 Massey St Intersection",
-        "lat": -37.789,
-        "lon": 175.259,
-        "imageUrl": "http://www.trafficnz.info/camera/246.jpg"
-      },
-      {
-        "nativeId": "258",
-        "name": "SH73 Blenheim Rd",
-        "lat": -43.53931000000001,
-        "lon": 172.56837999999996,
-        "imageUrl": "http://www.trafficnz.info/camera/258.jpg"
-      },
-      {
-        "nativeId": "672",
-        "name": "SH74 Anzac / New Brighton",
-        "lat": -43.500042,
-        "lon": 172.700719,
-        "imageUrl": "http://www.trafficnz.info/camera/672.jpg"
-      },
-      {
-        "nativeId": "682",
-        "name": "Lincoln / Nairn Crossing N",
-        "lat": -43.54801800000001,
-        "lon": 172.60403799999997,
-        "imageUrl": "http://www.trafficnz.info/camera/682.jpg"
-      }
-    ],
-    "confidence": 1,
-    "notes": [
-      "The catalogue states no country. NZ was inferred from where the cameras are, not read from the data — check it against the pictures."
-    ]
-  },
-  {
     "id": "services3-arcgis-com-1ez7c40",
     "descriptor": {
       "key": "services3-arcgis-f8e21e4a949c4ba8a4d2758e",
@@ -671,187 +341,9 @@
     ]
   },
   {
-    "id": "services-arcgis-com-5n6b3x",
-    "descriptor": {
-      "key": "services-arcgis-7d9763d5fc474b1b8047e521",
-      "name": "Esri National Government",
-      "country": "US",
-      "endpoint": "https://services.arcgis.com/hRUr1F8lE8Jq2uJo/arcgis/rest/services/CameraLocationVDOT/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
-      "format": "arcgis",
-      "mapping": {
-        "lat": "__lat",
-        "lon": "__lon",
-        "direction": "direction",
-        "id": "id",
-        "imageUrl": "image_url",
-        "road": "route",
-        "streamUrl": "rtsp_url",
-        "name": "descriptio"
-      },
-      "license": "Esri National Government states no licence for this data (catalogue records: none)",
-      "attribution": "Esri National Government — via https://hub.arcgis.com",
-      "refreshSeconds": 300
-    },
-    "provenance": {
-      "probe": "arcgis-hub",
-      "discoveredVia": "https://hub.arcgis.com/datasets/7d9763d5fc474b1b8047e52117876859_0",
-      "publisher": "Esri National Government",
-      "catalogueLicense": "none",
-      "foundAt": "2026-08-20T02:04:56.480Z"
-    },
-    "gates": [
-      {
-        "gate": "relay",
-        "status": "pass",
-        "detail": "No known relay host on the endpoint or the media URLs."
-      },
-      {
-        "gate": "media-host",
-        "status": "pass",
-        "detail": "All sampled media URLs are on named hosts."
-      },
-      {
-        "gate": "yield",
-        "status": "pass",
-        "detail": "1000 of 1000 rows parsed (100%)."
-      },
-      {
-        "gate": "licence",
-        "status": "pass",
-        "detail": "Catalogue states: none"
-      },
-      {
-        "gate": "transport",
-        "status": "pass",
-        "detail": "All sampled media URLs are https."
-      },
-      {
-        "gate": "country-fit",
-        "status": "pass",
-        "detail": "Every sampled coordinate falls inside US."
-      },
-      {
-        "gate": "overlap",
-        "status": "pass",
-        "detail": "No sampled camera sits within 60 m of one already served."
-      },
-      {
-        "gate": "media-origin",
-        "status": "warn",
-        "detail": "The dataset is hosted on services.arcgis.com for Esri National Government, so the endpoint host does not identify the operator. The pictures come from images.skyvdn.com — that is the host to judge."
-      }
-    ],
-    "parsed": {
-      "rows": 1000,
-      "valid": 1000
-    },
-    "samples": [
-      {
-        "nativeId": "86188",
-        "name": "I-64  /  MM 279.5  /  WB  /  OL AT CHESAPEAKE BLVD",
-        "lat": 36.90329000021598,
-        "lon": -76.2384400002377,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads769.flv.png",
-        "road": "I-64"
-      },
-      {
-        "nativeId": "c899dfc0-fefc-11e6-b128-0123456789ab",
-        "name": "Rio Rd & Berkmar Dr / NE Corner",
-        "lat": 38.085100000343274,
-        "lon": -78.47729999972181,
-        "imageUrl": "https://images.skyvdn.com/thumbs/StauntonCCTVRIOBERKMAR.flv.png",
-        "road": "Rio Rd"
-      },
-      {
-        "nativeId": "85665",
-        "name": "I-64  /  MM 296.95  /  EB  /  IL PAST GEORGE WASHINGTON  HIGHWAY",
-        "lat": 36.761370000123854,
-        "lon": -76.35653999967458,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads724.flv.png",
-        "road": "I-64"
-      },
-      {
-        "nativeId": "85859",
-        "name": "I-264  /  MM 14  /  Median  /  AT I-64 INTERCHANGE B",
-        "lat": 36.84569999998801,
-        "lon": -76.1946300001627,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads232.flv.png",
-        "road": "I-264"
-      },
-      {
-        "nativeId": "5f6a6662-5c7f-11e7-899a-0123456789ab",
-        "name": "LORCOM LANE AT FILLMORE ST",
-        "lat": 38.89970400019716,
-        "lon": -77.09845100026811,
-        "imageUrl": "https://images.skyvdn.com/thumbs/ygo2u5t4739ftaohh6spy2xggt0fknhd.flv.png"
-      },
-      {
-        "nativeId": "87001",
-        "name": "VA-7 / EB / Haycock Rd and Shreve Rd",
-        "lat": 38.89460000017625,
-        "lon": -77.19070000021252,
-        "imageUrl": "https://images.skyvdn.com/thumbs/FairfaxVideo3615.flv.png",
-        "road": "VA-7"
-      },
-      {
-        "nativeId": "85232",
-        "name": "I-64  /  MM 251.38  /  EB  /  just past Industrial Park Dr",
-        "lat": 37.160480000143274,
-        "lon": -76.5421299997076,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads837.flv.png",
-        "road": "I-64"
-      },
-      {
-        "nativeId": "110131",
-        "name": "US-60 / NN08 / Warwick Blvd @ J Clyde Morris Blvd",
-        "lat": 37.06181799998407,
-        "lon": -76.48720300034364,
-        "imageUrl": "https://images.skyvdn.com/thumbs/newportcam030.flv.png",
-        "road": "US-60"
-      },
-      {
-        "nativeId": "86458",
-        "name": "I-564  /  MM No MM  /  WB  /  NAS GATE 3A",
-        "lat": 36.944409999979015,
-        "lon": -76.30792000005519,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads506.flv.png",
-        "road": "I-564"
-      },
-      {
-        "nativeId": "86049",
-        "name": "I-264  /  MM 20  /  WB  /  AT ROSEMONT ROAD",
-        "lat": 36.838700000248345,
-        "lon": -76.09689000043342,
-        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads244.flv.png",
-        "road": "I-264"
-      },
-      {
-        "nativeId": "85787",
-        "name": "I-95  /  MM 77.4  /  SB  /  Lombardy / Bus Depot",
-        "lat": 37.56034900032909,
-        "lon": -77.45397200039103,
-        "imageUrl": "https://images.skyvdn.com/thumbs/RichmondCS095SB0774.flv.png",
-        "road": "I-95"
-      },
-      {
-        "nativeId": "85356",
-        "name": "US-17 / Median / JRB South Gate",
-        "lat": 37.00329299982966,
-        "lon": -76.4682079996934,
-        "imageUrl": "https://images.skyvdn.com/thumbs/TLJamesRiverBridgeSouthGate.flv.png",
-        "road": "US-17"
-      }
-    ],
-    "confidence": 0.875,
-    "notes": [
-      "The name column (descriptio) was identified by its values, not by its name.",
-      "The catalogue states no country. US was inferred from where the cameras are, not read from the data — check it against the pictures."
-    ]
-  },
-  {
     "id": "services-arcgis-com-1hbyghq",
     "descriptor": {
-      "key": "services-arcgis-7e9c75d460a54db194afc103",
+      "key": "houston-transtar",
       "name": "City of Houston GIS",
       "country": "US",
       "endpoint": "https://services.arcgis.com/NummVBqZSIJKUeVR/arcgis/rest/services/Trantar_Camera_Locations/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
@@ -866,7 +358,9 @@
       },
       "license": "City of Houston GIS states no licence for this data (catalogue records: none)",
       "attribution": "City of Houston GIS — via https://hub.arcgis.com",
-      "refreshSeconds": 300
+      "refreshSeconds": 300,
+      "upgradeMediaToHttps": true,
+      "homepage": "https://www.houstontranstar.org/"
     },
     "provenance": {
       "probe": "arcgis-hub",
@@ -1025,6 +519,691 @@
     ]
   },
   {
+    "id": "services2-arcgis-com-1bf68z7",
+    "descriptor": {
+      "key": "services2-arcgis-00715d24d2bf42e5abc1fab8",
+      "name": "Kentucky Transportation Cabinet",
+      "country": "US",
+      "endpoint": "https://services2.arcgis.com/CcI36Pduqd0OR4W9/arcgis/rest/services/trafficCamerasCur_Prd/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
+      "format": "arcgis",
+      "mapping": {
+        "lat": "__lat",
+        "lon": "__lon",
+        "region": "county",
+        "direction": "direction",
+        "road": "highway",
+        "name": "name",
+        "id": "OBJECTID",
+        "imageUrl": "snapshot"
+      },
+      "license": "Kentucky Transportation Cabinet states no licence for this data (catalogue records: custom)",
+      "attribution": "Kentucky Transportation Cabinet — via https://hub.arcgis.com",
+      "refreshSeconds": 300
+    },
+    "provenance": {
+      "probe": "arcgis-hub",
+      "discoveredVia": "https://hub.arcgis.com/datasets/00715d24d2bf42e5abc1fab8a08d45eb_0",
+      "publisher": "Kentucky Transportation Cabinet",
+      "catalogueLicense": "custom",
+      "foundAt": "2026-08-20T12:26:23.867Z"
+    },
+    "gates": [
+      {
+        "gate": "relay",
+        "status": "pass",
+        "detail": "No known relay host on the endpoint or the media URLs."
+      },
+      {
+        "gate": "media-host",
+        "status": "pass",
+        "detail": "All sampled media URLs are on named hosts."
+      },
+      {
+        "gate": "yield",
+        "status": "pass",
+        "detail": "245 of 254 rows parsed (96%)."
+      },
+      {
+        "gate": "licence",
+        "status": "pass",
+        "detail": "Catalogue states: custom"
+      },
+      {
+        "gate": "transport",
+        "status": "pass",
+        "detail": "All sampled media URLs are https."
+      },
+      {
+        "gate": "country-fit",
+        "status": "pass",
+        "detail": "Every sampled coordinate falls inside US."
+      },
+      {
+        "gate": "overlap",
+        "status": "pass",
+        "detail": "No sampled camera sits within 60 m of one already served."
+      },
+      {
+        "gate": "media-origin",
+        "status": "warn",
+        "detail": "The dataset is hosted on services2.arcgis.com for Kentucky Transportation Cabinet, so the endpoint host does not identify the operator. The pictures come from www.trimarc.org — that is the host to judge."
+      }
+    ],
+    "parsed": {
+      "rows": 254,
+      "valid": 245
+    },
+    "samples": [
+      {
+        "nativeId": "583737",
+        "name": "CCTV05039",
+        "lat": 38.29163900000003,
+        "lon": -85.65062499999999,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_71_0048.jpg",
+        "road": "I-71"
+      },
+      {
+        "nativeId": "583757",
+        "name": "CCTV01002",
+        "lat": 37.058328000000074,
+        "lon": -88.65494699999994,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_01_24_0064.jpg",
+        "road": "I-24"
+      },
+      {
+        "nativeId": "583777",
+        "name": "CCTV05005",
+        "lat": 38.23973900000004,
+        "lon": -85.75416399999995,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_65_1348.jpg",
+        "road": "I-65"
+      },
+      {
+        "nativeId": "583797",
+        "name": "CCTV07021",
+        "lat": 37.82502000000005,
+        "lon": -84.32434599999993,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_07_75_0933.jpg",
+        "road": "I-75"
+      },
+      {
+        "nativeId": "583817",
+        "name": "CCTV07006",
+        "lat": 37.882156000000066,
+        "lon": -84.33738099999994,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_07_75_0976.jpg",
+        "road": "I-75"
+      },
+      {
+        "nativeId": "583837",
+        "name": "CCTV05117",
+        "lat": 38.33500800000007,
+        "lon": -85.63453799999996,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_841_0380.jpg",
+        "road": "KY 841"
+      },
+      {
+        "nativeId": "583857",
+        "name": "CCTV05004",
+        "lat": 38.250117000000046,
+        "lon": -85.75191399999994,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_65_1356.jpg",
+        "road": "I-65"
+      },
+      {
+        "nativeId": "583877",
+        "name": "CCTV05007",
+        "lat": 38.327260000000024,
+        "lon": -85.54730399999994,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_71_0112.jpg",
+        "road": "I-71"
+      },
+      {
+        "nativeId": "583897",
+        "name": "CCTV07014",
+        "lat": 38.039483000000075,
+        "lon": -84.41979099999998,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_07_75_1096.jpg",
+        "road": "I-75"
+      },
+      {
+        "nativeId": "583917",
+        "name": "CCTV02008",
+        "lat": 36.66541500000005,
+        "lon": -87.44070099999999,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_02_KY911_0001.jpg"
+      },
+      {
+        "nativeId": "583937",
+        "name": "CCTV05023",
+        "lat": 38.28618600000004,
+        "lon": -85.67926399999999,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_71_0030.jpg",
+        "road": "I-71"
+      },
+      {
+        "nativeId": "583957",
+        "name": "CCTV05036",
+        "lat": 38.189347000000055,
+        "lon": -85.78098099999994,
+        "imageUrl": "https://www.trimarc.org/images/milestone/CCTV_05_264_0093.jpg",
+        "road": "I-264"
+      }
+    ],
+    "confidence": 1,
+    "notes": [
+      "The catalogue states no country. US was inferred from where the cameras are, not read from the data — check it against the pictures."
+    ]
+  },
+  {
+    "id": "services-arcgis-com-15ltha2",
+    "descriptor": {
+      "key": "services-arcgis-a817a48983f144e0943cf1d3",
+      "name": "Waka Kotahi",
+      "country": "NZ",
+      "endpoint": "https://services.arcgis.com/CXBb7LAjgIIdcsPt/arcgis/rest/services/nzta_cameras/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
+      "format": "arcgis",
+      "mapping": {
+        "lat": "__lat",
+        "lon": "__lon",
+        "direction": "direction",
+        "id": "id",
+        "imageUrl": "imageurl",
+        "name": "name",
+        "region": "region"
+      },
+      "license": "Waka Kotahi states no licence for this data (catalogue records: custom)",
+      "attribution": "Waka Kotahi — via https://hub.arcgis.com",
+      "refreshSeconds": 300
+    },
+    "provenance": {
+      "probe": "arcgis-hub",
+      "discoveredVia": "https://hub.arcgis.com/datasets/a817a48983f144e0943cf1d3fee15c08_0",
+      "publisher": "Waka Kotahi",
+      "catalogueLicense": "custom",
+      "foundAt": "2026-08-20T12:25:37.760Z"
+    },
+    "gates": [
+      {
+        "gate": "relay",
+        "status": "pass",
+        "detail": "No known relay host on the endpoint or the media URLs."
+      },
+      {
+        "gate": "media-host",
+        "status": "pass",
+        "detail": "All sampled media URLs are on named hosts."
+      },
+      {
+        "gate": "yield",
+        "status": "pass",
+        "detail": "224 of 224 rows parsed (100%)."
+      },
+      {
+        "gate": "licence",
+        "status": "pass",
+        "detail": "Catalogue states: custom"
+      },
+      {
+        "gate": "transport",
+        "status": "warn",
+        "detail": "12 sampled media URLs are plain http and will be blocked as mixed content."
+      },
+      {
+        "gate": "country-fit",
+        "status": "pass",
+        "detail": "Every sampled coordinate falls inside NZ."
+      },
+      {
+        "gate": "overlap",
+        "status": "fail",
+        "detail": "11 of 12 sampled cameras are already served, mostly by nzta. This is the same network under a second key."
+      },
+      {
+        "gate": "media-origin",
+        "status": "warn",
+        "detail": "The dataset is hosted on services.arcgis.com for Waka Kotahi, so the endpoint host does not identify the operator. The pictures come from www.trafficnz.info — that is the host to judge."
+      }
+    ],
+    "parsed": {
+      "rows": 224,
+      "valid": 224
+    },
+    "samples": [
+      {
+        "nativeId": "190",
+        "name": "SH20 Queenstown Rd",
+        "lat": -36.921434017433015,
+        "lon": 174.767310105494,
+        "imageUrl": "http://www.trafficnz.info/camera/190.jpg"
+      },
+      {
+        "nativeId": "122",
+        "name": "SH1 Walter Strevens Dr Overbridge",
+        "lat": -37.044,
+        "lon": 174.913,
+        "imageUrl": "http://www.trafficnz.info/camera/122.jpg"
+      },
+      {
+        "nativeId": "301",
+        "name": "SH74A Woolston",
+        "lat": -43.551594999999985,
+        "lon": 172.686952,
+        "imageUrl": "http://www.trafficnz.info/camera/301.jpg"
+      },
+      {
+        "nativeId": "273",
+        "name": "SH20B Puhinui Rd West",
+        "lat": -36.99799999999999,
+        "lon": 174.829,
+        "imageUrl": "http://www.trafficnz.info/camera/273.jpg"
+      },
+      {
+        "nativeId": "204",
+        "name": "SH20 Hastie Ave Footbridge",
+        "lat": -36.94499999999999,
+        "lon": 174.79299999999998,
+        "imageUrl": "http://www.trafficnz.info/camera/204.jpg"
+      },
+      {
+        "nativeId": "174",
+        "name": "SH18 Paul Matthews Rd",
+        "lat": -36.75300000000001,
+        "lon": 174.714,
+        "imageUrl": "http://www.trafficnz.info/camera/174.jpg"
+      },
+      {
+        "nativeId": "613",
+        "name": "SH1 Ramarama",
+        "lat": -37.14349600000001,
+        "lon": 174.96921300000002,
+        "imageUrl": "http://www.trafficnz.info/camera/613.jpg"
+      },
+      {
+        "nativeId": "599",
+        "name": "Sockburn Roundabout West",
+        "lat": -43.539327,
+        "lon": 172.55341500000003,
+        "imageUrl": "http://www.trafficnz.info/camera/599.jpg"
+      },
+      {
+        "nativeId": "246",
+        "name": "SH1/SH23 Massey St Intersection",
+        "lat": -37.789,
+        "lon": 175.259,
+        "imageUrl": "http://www.trafficnz.info/camera/246.jpg"
+      },
+      {
+        "nativeId": "258",
+        "name": "SH73 Blenheim Rd",
+        "lat": -43.53931000000001,
+        "lon": 172.56837999999996,
+        "imageUrl": "http://www.trafficnz.info/camera/258.jpg"
+      },
+      {
+        "nativeId": "672",
+        "name": "SH74 Anzac / New Brighton",
+        "lat": -43.500042,
+        "lon": 172.700719,
+        "imageUrl": "http://www.trafficnz.info/camera/672.jpg"
+      },
+      {
+        "nativeId": "682",
+        "name": "Lincoln / Nairn Crossing N",
+        "lat": -43.54801800000001,
+        "lon": 172.60403799999997,
+        "imageUrl": "http://www.trafficnz.info/camera/682.jpg"
+      }
+    ],
+    "confidence": 1,
+    "notes": [
+      "The catalogue states no country. NZ was inferred from where the cameras are, not read from the data — check it against the pictures."
+    ]
+  },
+  {
+    "id": "services-arcgis-com-1i1an65",
+    "descriptor": {
+      "key": "services-arcgis-893d8a697d7f418f87392fb1",
+      "name": "Waka Kotahi",
+      "country": "NZ",
+      "endpoint": "https://services.arcgis.com/CXBb7LAjgIIdcsPt/arcgis/rest/services/LiveCamerasNZTA_Public_View/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
+      "format": "arcgis",
+      "mapping": {
+        "lat": "__lat",
+        "lon": "__lon",
+        "direction": "direction",
+        "id": "id",
+        "imageUrl": "imageurl",
+        "name": "name",
+        "region": "region"
+      },
+      "license": "Waka Kotahi states no licence for this data (catalogue records: custom)",
+      "attribution": "Waka Kotahi — via https://hub.arcgis.com",
+      "refreshSeconds": 300
+    },
+    "provenance": {
+      "probe": "arcgis-hub",
+      "discoveredVia": "https://hub.arcgis.com/datasets/893d8a697d7f418f87392fb1222f5b95_0",
+      "publisher": "Waka Kotahi",
+      "catalogueLicense": "custom",
+      "foundAt": "2026-08-20T12:25:39.050Z"
+    },
+    "gates": [
+      {
+        "gate": "relay",
+        "status": "pass",
+        "detail": "No known relay host on the endpoint or the media URLs."
+      },
+      {
+        "gate": "media-host",
+        "status": "pass",
+        "detail": "All sampled media URLs are on named hosts."
+      },
+      {
+        "gate": "yield",
+        "status": "pass",
+        "detail": "224 of 224 rows parsed (100%)."
+      },
+      {
+        "gate": "licence",
+        "status": "pass",
+        "detail": "Catalogue states: custom"
+      },
+      {
+        "gate": "transport",
+        "status": "warn",
+        "detail": "12 sampled media URLs are plain http and will be blocked as mixed content."
+      },
+      {
+        "gate": "country-fit",
+        "status": "pass",
+        "detail": "Every sampled coordinate falls inside NZ."
+      },
+      {
+        "gate": "overlap",
+        "status": "fail",
+        "detail": "11 of 12 sampled cameras are already served, mostly by nzta. This is the same network under a second key."
+      },
+      {
+        "gate": "media-origin",
+        "status": "warn",
+        "detail": "The dataset is hosted on services.arcgis.com for Waka Kotahi, so the endpoint host does not identify the operator. The pictures come from www.trafficnz.info — that is the host to judge."
+      }
+    ],
+    "parsed": {
+      "rows": 224,
+      "valid": 224
+    },
+    "samples": [
+      {
+        "nativeId": "190",
+        "name": "SH20 Queenstown Rd",
+        "lat": -36.921434017433015,
+        "lon": 174.767310105494,
+        "imageUrl": "http://www.trafficnz.info/camera/190.jpg"
+      },
+      {
+        "nativeId": "122",
+        "name": "SH1 Walter Strevens Dr Overbridge",
+        "lat": -37.044,
+        "lon": 174.913,
+        "imageUrl": "http://www.trafficnz.info/camera/122.jpg"
+      },
+      {
+        "nativeId": "301",
+        "name": "SH74A Woolston",
+        "lat": -43.551594999999985,
+        "lon": 172.686952,
+        "imageUrl": "http://www.trafficnz.info/camera/301.jpg"
+      },
+      {
+        "nativeId": "273",
+        "name": "SH20B Puhinui Rd West",
+        "lat": -36.99799999999999,
+        "lon": 174.829,
+        "imageUrl": "http://www.trafficnz.info/camera/273.jpg"
+      },
+      {
+        "nativeId": "204",
+        "name": "SH20 Hastie Ave Footbridge",
+        "lat": -36.94499999999999,
+        "lon": 174.79299999999998,
+        "imageUrl": "http://www.trafficnz.info/camera/204.jpg"
+      },
+      {
+        "nativeId": "174",
+        "name": "SH18 Paul Matthews Rd",
+        "lat": -36.75300000000001,
+        "lon": 174.714,
+        "imageUrl": "http://www.trafficnz.info/camera/174.jpg"
+      },
+      {
+        "nativeId": "613",
+        "name": "SH1 Ramarama",
+        "lat": -37.14349600000001,
+        "lon": 174.96921300000002,
+        "imageUrl": "http://www.trafficnz.info/camera/613.jpg"
+      },
+      {
+        "nativeId": "599",
+        "name": "Sockburn Roundabout West",
+        "lat": -43.539327,
+        "lon": 172.55341500000003,
+        "imageUrl": "http://www.trafficnz.info/camera/599.jpg"
+      },
+      {
+        "nativeId": "246",
+        "name": "SH1/SH23 Massey St Intersection",
+        "lat": -37.789,
+        "lon": 175.259,
+        "imageUrl": "http://www.trafficnz.info/camera/246.jpg"
+      },
+      {
+        "nativeId": "258",
+        "name": "SH73 Blenheim Rd",
+        "lat": -43.53931000000001,
+        "lon": 172.56837999999996,
+        "imageUrl": "http://www.trafficnz.info/camera/258.jpg"
+      },
+      {
+        "nativeId": "672",
+        "name": "SH74 Anzac / New Brighton",
+        "lat": -43.500042,
+        "lon": 172.700719,
+        "imageUrl": "http://www.trafficnz.info/camera/672.jpg"
+      },
+      {
+        "nativeId": "682",
+        "name": "Lincoln / Nairn Crossing N",
+        "lat": -43.54801800000001,
+        "lon": 172.60403799999997,
+        "imageUrl": "http://www.trafficnz.info/camera/682.jpg"
+      }
+    ],
+    "confidence": 1,
+    "notes": [
+      "The catalogue states no country. NZ was inferred from where the cameras are, not read from the data — check it against the pictures."
+    ]
+  },
+  {
+    "id": "services-arcgis-com-5n6b3x",
+    "descriptor": {
+      "key": "services-arcgis-7d9763d5fc474b1b8047e521",
+      "name": "Esri National Government",
+      "country": "US",
+      "endpoint": "https://services.arcgis.com/hRUr1F8lE8Jq2uJo/arcgis/rest/services/CameraLocationVDOT/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
+      "format": "arcgis",
+      "mapping": {
+        "lat": "__lat",
+        "lon": "__lon",
+        "direction": "direction",
+        "id": "id",
+        "imageUrl": "image_url",
+        "road": "route",
+        "streamUrl": "rtsp_url",
+        "name": "descriptio"
+      },
+      "license": "Esri National Government states no licence for this data (catalogue records: none)",
+      "attribution": "Esri National Government — via https://hub.arcgis.com",
+      "refreshSeconds": 300
+    },
+    "provenance": {
+      "probe": "arcgis-hub",
+      "discoveredVia": "https://hub.arcgis.com/datasets/7d9763d5fc474b1b8047e52117876859_0",
+      "publisher": "Esri National Government",
+      "catalogueLicense": "none",
+      "foundAt": "2026-08-20T12:26:29.846Z"
+    },
+    "gates": [
+      {
+        "gate": "relay",
+        "status": "pass",
+        "detail": "No known relay host on the endpoint or the media URLs."
+      },
+      {
+        "gate": "media-host",
+        "status": "pass",
+        "detail": "All sampled media URLs are on named hosts."
+      },
+      {
+        "gate": "yield",
+        "status": "pass",
+        "detail": "1000 of 1000 rows parsed (100%)."
+      },
+      {
+        "gate": "licence",
+        "status": "pass",
+        "detail": "Catalogue states: none"
+      },
+      {
+        "gate": "transport",
+        "status": "pass",
+        "detail": "All sampled media URLs are https."
+      },
+      {
+        "gate": "country-fit",
+        "status": "pass",
+        "detail": "Every sampled coordinate falls inside US."
+      },
+      {
+        "gate": "overlap",
+        "status": "pass",
+        "detail": "No sampled camera sits within 60 m of one already served."
+      },
+      {
+        "gate": "media-origin",
+        "status": "warn",
+        "detail": "The dataset is hosted on services.arcgis.com for Esri National Government, so the endpoint host does not identify the operator. The pictures come from images.skyvdn.com — that is the host to judge."
+      }
+    ],
+    "parsed": {
+      "rows": 1000,
+      "valid": 1000
+    },
+    "samples": [
+      {
+        "nativeId": "86188",
+        "name": "I-64  /  MM 279.5  /  WB  /  OL AT CHESAPEAKE BLVD",
+        "lat": 36.90329000021598,
+        "lon": -76.2384400002377,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads769.flv.png",
+        "road": "I-64"
+      },
+      {
+        "nativeId": "c899dfc0-fefc-11e6-b128-0123456789ab",
+        "name": "Rio Rd & Berkmar Dr / NE Corner",
+        "lat": 38.085100000343274,
+        "lon": -78.47729999972181,
+        "imageUrl": "https://images.skyvdn.com/thumbs/StauntonCCTVRIOBERKMAR.flv.png",
+        "road": "Rio Rd"
+      },
+      {
+        "nativeId": "85665",
+        "name": "I-64  /  MM 296.95  /  EB  /  IL PAST GEORGE WASHINGTON  HIGHWAY",
+        "lat": 36.761370000123854,
+        "lon": -76.35653999967458,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads724.flv.png",
+        "road": "I-64"
+      },
+      {
+        "nativeId": "85859",
+        "name": "I-264  /  MM 14  /  Median  /  AT I-64 INTERCHANGE B",
+        "lat": 36.84569999998801,
+        "lon": -76.1946300001627,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads232.flv.png",
+        "road": "I-264"
+      },
+      {
+        "nativeId": "5f6a6662-5c7f-11e7-899a-0123456789ab",
+        "name": "LORCOM LANE AT FILLMORE ST",
+        "lat": 38.89970400019716,
+        "lon": -77.09845100026811,
+        "imageUrl": "https://images.skyvdn.com/thumbs/ygo2u5t4739ftaohh6spy2xggt0fknhd.flv.png"
+      },
+      {
+        "nativeId": "87001",
+        "name": "VA-7 / EB / Haycock Rd and Shreve Rd",
+        "lat": 38.89460000017625,
+        "lon": -77.19070000021252,
+        "imageUrl": "https://images.skyvdn.com/thumbs/FairfaxVideo3615.flv.png",
+        "road": "VA-7"
+      },
+      {
+        "nativeId": "85232",
+        "name": "I-64  /  MM 251.38  /  EB  /  just past Industrial Park Dr",
+        "lat": 37.160480000143274,
+        "lon": -76.5421299997076,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads837.flv.png",
+        "road": "I-64"
+      },
+      {
+        "nativeId": "110131",
+        "name": "US-60 / NN08 / Warwick Blvd @ J Clyde Morris Blvd",
+        "lat": 37.06181799998407,
+        "lon": -76.48720300034364,
+        "imageUrl": "https://images.skyvdn.com/thumbs/newportcam030.flv.png",
+        "road": "US-60"
+      },
+      {
+        "nativeId": "86458",
+        "name": "I-564  /  MM No MM  /  WB  /  NAS GATE 3A",
+        "lat": 36.944409999979015,
+        "lon": -76.30792000005519,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads506.flv.png",
+        "road": "I-564"
+      },
+      {
+        "nativeId": "86049",
+        "name": "I-264  /  MM 20  /  WB  /  AT ROSEMONT ROAD",
+        "lat": 36.838700000248345,
+        "lon": -76.09689000043342,
+        "imageUrl": "https://images.skyvdn.com/thumbs/HamptonRoads244.flv.png",
+        "road": "I-264"
+      },
+      {
+        "nativeId": "85787",
+        "name": "I-95  /  MM 77.4  /  SB  /  Lombardy / Bus Depot",
+        "lat": 37.56034900032909,
+        "lon": -77.45397200039103,
+        "imageUrl": "https://images.skyvdn.com/thumbs/RichmondCS095SB0774.flv.png",
+        "road": "I-95"
+      },
+      {
+        "nativeId": "85356",
+        "name": "US-17 / Median / JRB South Gate",
+        "lat": 37.00329299982966,
+        "lon": -76.4682079996934,
+        "imageUrl": "https://images.skyvdn.com/thumbs/TLJamesRiverBridgeSouthGate.flv.png",
+        "road": "US-17"
+      }
+    ],
+    "confidence": 0.875,
+    "notes": [
+      "The name column (descriptio) was identified by its values, not by its name.",
+      "The catalogue states no country. US was inferred from where the cameras are, not read from the data — check it against the pictures."
+    ]
+  },
+  {
     "id": "services7-arcgis-com-5gqlbs",
     "descriptor": {
       "key": "services7-arcgis-8d205857b0ba47dea0371a80",
@@ -1049,7 +1228,7 @@
       "discoveredVia": "https://hub.arcgis.com/datasets/8d205857b0ba47dea0371a80032d9101_0",
       "publisher": "Bellingen Shire Council",
       "catalogueLicense": "none",
-      "foundAt": "2026-08-20T02:03:38.545Z"
+      "foundAt": "2026-08-20T12:26:10.792Z"
     },
     "gates": [
       {
@@ -1176,7 +1355,7 @@
       "discoveredVia": "https://hub.arcgis.com/datasets/d220ce31999448659626afe990ca1328_0",
       "publisher": "Lexington-Fayette Urban County Government",
       "catalogueLicense": "custom",
-      "foundAt": "2026-08-20T02:00:47.330Z"
+      "foundAt": "2026-08-20T12:25:38.382Z"
     },
     "gates": [
       {
