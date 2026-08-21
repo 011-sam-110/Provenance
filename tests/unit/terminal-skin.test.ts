@@ -4,7 +4,7 @@ import {
   basemapForSkin,
   DEFAULT_TERMINAL_SKIN,
 } from "@/lib/terminal/skin";
-import { BASEMAPS } from "@/lib/basemaps";
+import { BASEMAPS, DEFAULT_BASEMAP } from "@/lib/basemaps";
 
 describe("coerceTerminalSkin", () => {
   it("accepts the two literals", () => {
@@ -18,10 +18,11 @@ describe("coerceTerminalSkin", () => {
     }
   });
 
-  it("defaults to dark — the Terminal's designed identity", () => {
-    // A skin flip on upgrade would be a change nobody asked for. If this ever
-    // becomes light, that has to be a deliberate edit, not a drift.
-    expect(DEFAULT_TERMINAL_SKIN).toBe("dark");
+  it("defaults to light", () => {
+    // The Terminal was designed and shipped as dark OSINT chrome; light is now the
+    // opening state. If this ever flips back, that has to be a deliberate edit,
+    // not a drift.
+    expect(DEFAULT_TERMINAL_SKIN).toBe("light");
   });
 });
 
@@ -29,6 +30,16 @@ describe("basemapForSkin", () => {
   it("pairs light with positron and dark with dark", () => {
     expect(basemapForSkin("light")).toBe("positron");
     expect(basemapForSkin("dark")).toBe("dark");
+  });
+
+  it("the DEFAULT basemap is the one the DEFAULT skin implies", () => {
+    // The two constants live in different files and neither imports the other, so
+    // nothing but this line stops them drifting apart. Drift is not a crash: it is
+    // a first-time visitor getting light chrome wrapped around CARTO Dark Matter,
+    // which is the exact render ConsoleShell's skin⇄basemap effect exists to
+    // prevent and cannot, because that effect deliberately skips its first run so
+    // a deep-linked `?base=` is never clobbered.
+    expect(DEFAULT_BASEMAP).toBe(basemapForSkin(DEFAULT_TERMINAL_SKIN));
   });
 
   it("names basemaps that actually exist", () => {

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   STATUS_LAYERS,
   appStatusLine,
-  breakingAnnouncement,
   stageRegionLabel,
 } from "@/components/shell/a11y";
 
@@ -67,32 +66,5 @@ describe("appStatusLine", () => {
 
   it("only ever talks about the four real data layers", () => {
     expect([...STATUS_LAYERS]).toEqual(["cameras", "planes", "satellites", "webcams"]);
-  });
-});
-
-describe("breakingAnnouncement", () => {
-  const quake = { key: "q:us7000", kind: "quake" as const, text: "M6.4 earthquake, 32 km SW of Hualien", detail: "USGS · 11 minutes ago" };
-  const news = { key: "n:abc", kind: "news" as const, text: "Three outlets report a ceasefire", detail: "Reuters, AP, AFP" };
-
-  it("says nothing when there is nothing to announce", () => {
-    expect(breakingAnnouncement(null, null)).toBe("");
-    expect(breakingAnnouncement(undefined, null)).toBe("");
-  });
-
-  it("spells the tag out in words instead of leaving the banner's shouty capitals", () => {
-    expect(breakingAnnouncement(quake, null)).toBe("Alert: M6.4 earthquake, 32 km SW of Hualien. USGS · 11 minutes ago");
-    expect(breakingAnnouncement(news, null)).toBe("Breaking news: Three outlets report a ceasefire. Reuters, AP, AFP");
-  });
-
-  it("goes silent for an alert the user has already dismissed", () => {
-    expect(breakingAnnouncement(quake, "q:us7000")).toBe("");
-  });
-
-  it("still announces a NEW alert while an older one stays dismissed", () => {
-    expect(breakingAnnouncement(news, "q:us7000")).toContain("Breaking news:");
-  });
-
-  it("does not leave a dangling full stop when there is no detail line", () => {
-    expect(breakingAnnouncement({ ...quake, detail: "   " }, null)).toBe("Alert: M6.4 earthquake, 32 km SW of Hualien");
   });
 });

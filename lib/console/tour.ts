@@ -132,8 +132,15 @@ export interface TourChapter {
  *
  * 1 → 2: the eight-step run became this chaptered walkthrough, and one of its
  * targets had been dead for a while. Everyone deserves the re-invite.
+ * 2 → 3: the chrome moved, then most of it was removed. The projection switch, the
+ * basemaps, Export and Solo are all in the FEED HEALTH row now; search is centred;
+ * the area filter has a name, a home under the key and a step of its own. Three
+ * whole bands went — the breaking strip, the 24px footer and the stage's own top
+ * bar — taking six steps with them, and CONSOLE/WALL went with its buttons. The
+ * console is three bands, not four-plus-one, and a tour that walks someone to a
+ * band that is not there is worse than no tour.
  */
-export const TOUR_VERSION = 2;
+export const TOUR_VERSION = 3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable actions. Named because several chapters need the same surface, and a
@@ -159,7 +166,13 @@ const SHUT_MENU: TourAction = { kind: "close", want: ".tn-cw-menu-pop", click: "
 const OPEN_PALETTE: TourAction = { kind: "ensure", want: ".tn-palette-root", click: ".tn-palette-trigger" };
 const SHUT_PALETTE: TourAction = { kind: "close", want: ".tn-palette-root", click: ".tn-palette-backdrop" };
 
-const OPEN_SETTINGS: TourAction = { kind: "ensure", want: ".tn-settings", click: ".tn-settings-trigger" };
+// `.tn-settings-trigger` moved into the profile popover when the header's ⚙ icon
+// was removed, so the popover has to be open before the click can land. Two
+// actions, in order — every step that opens Settings now carries both.
+const OPEN_SETTINGS: TourAction[] = [
+  { kind: "ensure", want: ".tn-profile-menu", click: ".tn-profile-avatar" },
+  { kind: "ensure", want: ".tn-settings", click: ".tn-settings-trigger" },
+];
 const SHUT_SETTINGS: TourAction = { kind: "close", want: ".tn-settings", click: ".tn-settings-close" };
 
 // The profile popover toggles from the avatar, so the same control opens and closes it.
@@ -188,7 +201,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Start with the shape of it",
         body:
-          `${BRAND.name} is one screen in four horizontal bands, plus a fifth that drops in when something is breaking. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
+          `${BRAND.name} is one screen in three horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
         placement: "center",
       },
       {
@@ -196,7 +209,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tnx-hdr-brand",
         title: "Band 1 — the header",
         body:
-          "The top strip is navigation and identity: the boards you can switch between, a UTC clock, the layout mode, and the way into the command bar and settings. It never scrolls away.",
+          "The top strip is navigation and identity: the boards you can switch between, a UTC clock, and — on the right — the skin toggle, the links out, and Shortcuts. It never scrolls away.",
         placement: "bottom",
       },
       {
@@ -204,16 +217,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tnx-feed-cells", ".tnx-feed"],
         title: "Band 2 — feed health",
         body:
-          "One cell per data layer, coloured by whether its last fetch worked, with a running tally on the right. Hover a cell to name the layer. Cells are also switches: clicking one turns that layer on or off, the same as its switch in the Sources rail — so a click here changes the map, it does not just inspect it.",
-        placement: "bottom",
-      },
-      {
-        id: "orientation-banner",
-        target: [".tn-alert-body", ".tn-alert"],
-        reactive: true, // arrives with a headline, so it may not be up when the run is built
-        title: "The breaking strip",
-        body:
-          "When a headline or a large earthquake arrives it takes a band across the top, above everything else. Its button changes with the kind: Read article opens a news source in a new tab, View on map flies the map to a quake. The ✕ dismisses it. It is only there when there is something to say.",
+          "One cell per data layer, coloured by whether its last fetch worked. Hover a cell to name the layer and read its state. The right-hand end of this band holds the map's own controls: Solo, the 3D/2D switch, the four basemaps and the two exports. Cells are also switches: clicking one turns that layer on or off, the same as its switch in the Sources rail — so a click here changes the map, it does not just inspect it.",
         placement: "bottom",
       },
       {
@@ -231,22 +235,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         body:
           "The stage shares a twelve-column grid with the widgets around it. Most watch a single source; a few combine several. All of them can be moved, resized, duplicated or removed, and a later chapter takes one apart.",
         placement: "left",
-      },
-      {
-        id: "orientation-footer",
-        target: [".tnx-sel", ".tnx-footer"],
-        title: "Band 4 — the footer",
-        body:
-          "Three things share the bottom band. On the left, SEL is the answer to \"what did I just click?\" — selecting a pin or a widget row writes its name and coordinates here, because the map flies but only this bar says what it flew to. Esc clears it.",
-        placement: "top",
-      },
-      {
-        id: "orientation-ticker",
-        target: [".tnx-ticker", ".tnx-keys"],
-        title: "Band 4 also — ticker and keys",
-        body:
-          "In the middle of that same band, a live ticker of what is arriving. On the right, the four single-key shortcuts: W for wall, C for console, / for search, Esc to clear.",
-        placement: "top",
       },
     ],
   },
@@ -271,7 +259,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tnx-stage-proj",
         title: "3D globe ⇄ 2D flat",
         body:
-          "The same data, two projections. The globe is better for orbital and long-haul context; flat is better for reading dense regions and for anything you want to compare side by side. The label to the left tells you which you are in.",
+          "The same data, two projections. The globe is better for orbital and long-haul context; flat is better for reading dense regions and for anything you want to compare side by side. STAGE·GLOBE or STAGE·FLAT, in the corner of the map itself, tells you which you are in.",
         placement: "bottom",
       },
       {
@@ -288,7 +276,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         title: "Search anywhere",
         body:
           "Type any place name — a city, a street, an airport — and pick a result to fly there and drop a pin. Press / from anywhere in the console to jump into this box.",
-        placement: "right",
+        placement: "bottom",
       },
       {
         id: "map-legend",
@@ -299,11 +287,19 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         placement: "left",
       },
       {
-        id: "map-cursor",
-        target: ".tnx-stage-cursor",
-        title: "Cursor coordinates",
+        id: "map-solo",
+        target: ".tn-solo-btn",
+        title: "Give the board to the map",
         body:
-          "Live latitude and longitude under the pointer. It shows a dash until your pointer has actually been over the map, rather than claiming a fake 0.00N 0.00E.",
+          "First control in the FEED HEALTH band. Solo hides every widget and lets the map fill the workspace; the same button then reads Board and puts them all back exactly as they were. Nothing is closed and nothing is lost — it is a view of the same board, for when the panels around the edge are the thing in your way.",
+        placement: "bottom",
+      },
+      {
+        id: "map-area",
+        target: ".tn-aoi",
+        title: "Restrict results to area",
+        body:
+          "Under the key: draw a zone on the map and every scoped panel narrows to what is inside it. Click to place each corner, Enter to close the ring once you have three, Esc to abandon it. It filters the FEEDS rather than moving the camera — the map stays where you left it, and the counts in the panels change. Clear brings the whole world back.",
         placement: "left",
       },
       {
@@ -355,14 +351,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         title: "Your changes survive a switch",
         body:
           "Move or resize anything and that board is marked customised with a dot. Switching away and back brings your arrangement with you — and a ⟲ appears beside the tabs to put the board back to its template when you want the original.",
-        placement: "bottom",
-      },
-      {
-        id: "boards-mode",
-        target: ".tnx-hdr-mode",
-        title: "Console ⇄ Wall",
-        body:
-          "Console keeps the map dominant with widgets around it. Wall drops the map back and spreads every widget across the grid — the view for a second screen you glance at. Keys C and W do the same thing.",
         placement: "bottom",
       },
       {
@@ -645,10 +633,10 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "trust-health",
-        target: [".tnx-feed-counts", ".tnx-feed"],
+        target: [".tnx-feed-cells", ".tnx-feed"],
         title: "Five states, not two",
         body:
-          "LIVE means the last fetch worked — including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. OFF is switched off, which is neither a fault nor a clean bill of health. Hover any cell for the full wording.",
+          "Each cell is one of five states, and the colour is the whole readout — there is no numeric tally anywhere, on purpose, because a total is the thing that hides one dead feed among thirty-six healthy ones. LIVE means the last fetch worked, including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. DORMANT is switched off, which is neither a fault nor a clean bill of health. Hover any cell for that layer's state in words.",
         placement: "bottom",
       },
       {
@@ -677,7 +665,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "trust-source",
-        target: ".tnx-hdr-kofi",
+        target: [".tnx-hdr-right", ".tnx-hdr-btn"],
         title: "You can check all of this",
         body:
           `Two links sit together up here. SOURCE opens the repository — the whole console is free software under the ${BRAND.license.name}, so every adapter, filter and claim in this tour can be read rather than taken on trust. SUPPORT, beside it, is an optional tip jar and changes nothing about what you get.`,
@@ -726,11 +714,11 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "power-keys",
-        target: ".tnx-keys",
+        target: [".tn-palette-trigger", ".tnx-hdr-right"],
         title: "The single-key shortcuts",
         body:
-          "W and C switch layout mode, / jumps to map search, Esc clears your selection. They are ignored while you are typing in a field, so they never eat a keystroke.",
-        placement: "top",
+          "/ jumps straight to map search and Esc clears your selection, from anywhere on the page. Both are ignored while you are typing in a field, so they never eat a keystroke, and Esc goes to whatever dialog is open before it reaches your selection. ⌘K opens this list any time.",
+        placement: "bottom",
         setup: [SHUT_PALETTE],
       },
     ],
@@ -746,10 +734,16 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
     steps: [
       {
         id: "settings-trigger",
-        target: ".tn-settings-trigger",
+        target: [".tn-settings-trigger", ".tn-profile-menu"],
         title: "⚙ — settings",
-        body: "The drawer holding everything that is a preference rather than a view.",
+        body:
+          "It lives in the profile menu rather than as its own header icon: one door to a room, not two. Open the avatar and it is the last item. Behind it is the drawer holding everything that is a preference rather than a view.",
         placement: "bottom",
+        // The trigger is INSIDE the popover now, so the popover has to be open
+        // before there is anything to spotlight. A step whose target is missing is
+        // dropped silently, which is how this would have failed.
+        setup: [OPEN_PROFILE],
+        settleMs: 140,
       },
       {
         id: "settings-panel",
@@ -758,7 +752,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         body:
           "Scroll it — there is more below the fold than above. Appearance and Language; Load a board; Share, which copies a link rebuilding your current view for whoever you send it to; a Telegram section with its own send-a-test button; and Notifications, holding a master switch that silences every armed widget at once, the Discord webhook, and the list of rules you have armed. Credentials are stored in this browser and sent nowhere else.",
         placement: "left",
-        setup: [OPEN_SETTINGS],
+        setup: [...OPEN_SETTINGS],
         settleMs: 200,
       },
       {

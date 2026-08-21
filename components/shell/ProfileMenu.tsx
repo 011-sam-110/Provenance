@@ -65,7 +65,11 @@ export default function ProfileMenu({ onOpenSettings }: { onOpenSettings: () => 
               </label>
               <button type="button" className="tn-profile-btn is-primary" onClick={() => setSignIn(true)}>Sign in</button>
               <button type="button" className="tn-profile-btn" onClick={() => { setOpen(false); tourStore.start(); }}>🧭 Take the tour</button>
-              <button type="button" className="tn-profile-btn" onClick={() => { setOpen(false); onOpenSettings(); }}>⚙ Settings</button>
+              {/* `tn-settings-trigger` lives HERE now, not on a header icon. It is both a
+                  TourOverlay spotlight target and the selector OPEN_SETTINGS clicks
+                  (lib/console/tour.ts:167), and a tour step whose target is missing is
+                  dropped SILENTLY — so the class had to travel with the control. */}
+              <button type="button" className="tn-profile-btn tn-settings-trigger" onClick={() => { setOpen(false); onOpenSettings(); }}>⚙ Settings</button>
             </>
           )}
         </div>

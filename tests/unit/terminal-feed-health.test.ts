@@ -2,17 +2,38 @@ import { describe, it, expect } from "vitest";
 import {
   buildFeedCells,
   feedBucket,
-  feedCounts,
-  idleReadout,
   isPlaceholderFeature,
   isPlaceholderOnly,
   FEED_COLOR,
   PLACEHOLDER_NOTICE_LAYERS,
   type BuildFeedCellsInput,
   type FeedCell,
+  type FeedCounts,
 } from "@/lib/terminal/feedHealth";
 import { SIGNALS } from "@/lib/signals/registry";
 import type { FreshKind } from "@/lib/sources/freshKind";
+
+/**
+ * Fold the cells into the five states.
+ *
+ * This USED to be `tally()`, exported from the module. The UI stopped
+ * printing a numeric tally — the strip's counters and the footer ticker that
+ * inherited them are both gone — which left that export with no caller in the
+ * app and a full set of passing tests, i.e. exactly the green-suite-over-dead-code
+ * shape this repo keeps finding and removing.
+ *
+ * So the fold moved here and the assertions did not, because what they actually
+ * pin is `feedBucket()` — that "refused" lands in DOWN and never in KEY, that a
+ * locked layer lands in KEY and never in DOWN, that a first visit is all dormant.
+ * feedBucket() is very much alive: it picks every cell's colour on screen. The
+ * rules are now tested against the function that runs, through a fold the test
+ * owns.
+ */
+function tally(cells: readonly FeedCell[]): FeedCounts {
+  const counts: FeedCounts = { live: 0, lag: 0, down: 0, key: 0, dormant: 0 };
+  for (const cell of cells) counts[feedBucket(cell)] += 1;
+  return counts;
+}
 
 // The FEED HEALTH strip is the highest-leverage place in this product to tell a
 // lie: 37 small coloured cells that a reader takes in at a glance and trusts.
@@ -97,7 +118,7 @@ describe("buildFeedCells — a layer nobody switched on is dormant, never green"
 
   it("counts a first visit — every layer off — as all dormant and nothing live", () => {
     const signals = SIGNALS.map((s) => ({ id: s.id, title: s.label }));
-    const counts = feedCounts(buildFeedCells(input({ signals })));
+    const counts = tally(buildFeedCells(input({ signals })));
     expect(counts).toEqual({ live: 0, lag: 0, down: 0, key: 0, dormant: SIGNALS.length });
   });
 });
@@ -176,7 +197,7 @@ describe("buildFeedCells — locked is a key, not a fault", () => {
   });
 
   it("counts as KEY and never as DOWN", () => {
-    expect(feedCounts([locked()])).toEqual({ live: 0, lag: 0, down: 0, key: 1, dormant: 0 });
+    expect(tally([locked()])).toEqual({ live: 0, lag: 0, down: 0, key: 1, dormant: 0 });
   });
 
   it("keeps its honest freshness — nothing was ever fetched, so the state is off", () => {
@@ -222,7 +243,7 @@ describe("buildFeedCells — refused is a fault, and never a key", () => {
   });
 
   it("counts as DOWN and never as KEY", () => {
-    expect(feedCounts([refused()])).toEqual({ live: 0, lag: 0, down: 1, key: 0, dormant: 0 });
+    expect(tally([refused()])).toEqual({ live: 0, lag: 0, down: 1, key: 0, dormant: 0 });
   });
 
   it("never renders the same as a locked layer — different kind, colour and word", () => {
@@ -359,7 +380,7 @@ describe("feedCounts", () => {
         }),
       ),
     ];
-    const counts = feedCounts(cells);
+    const counts = tally(cells);
     const total = counts.live + counts.lag + counts.down + counts.key + counts.dormant;
     expect(total).toBe(cells.length);
   });
@@ -379,7 +400,7 @@ describe("feedCounts", () => {
         status: { layers: [{ id: "acled", state: "locked" }, { id: "ais", state: "refused" }] },
       }),
     );
-    const counts = feedCounts(cells);
+    const counts = tally(cells);
     expect(counts.live + counts.lag + counts.down + counts.key + counts.dormant).toBe(SIGNALS.length);
     expect(counts.key).toBe(1); // acled
   });
@@ -396,22 +417,11 @@ describe("feedCounts", () => {
       buildFeedCells(input({ signals: [SIG("b")], status: { sources: { b: { state: "locked" } } } }))[0],
       buildFeedCells(input({ signals: [SIG("c")], status: { sources: { c: { state: "refused" } } } }))[0],
     ];
-    expect(feedCounts(cells)).toEqual({ live: 2, lag: 1, down: 3, key: 1, dormant: 2 });
+    expect(tally(cells)).toEqual({ live: 2, lag: 1, down: 3, key: 1, dormant: 2 });
   });
 
   it("is all zeroes for no cells", () => {
-    expect(feedCounts([])).toEqual({ live: 0, lag: 0, down: 0, key: 0, dormant: 0 });
-  });
-});
-
-describe("idleReadout", () => {
-  it("formats the layer count and the hint", () => {
-    expect(idleReadout(37)).toBe("37 SIGNAL LAYERS · HOVER A CELL");
-    expect(idleReadout(0)).toBe("0 SIGNAL LAYERS · HOVER A CELL");
-  });
-
-  it("matches the real registry size when fed SIGNALS.length", () => {
-    expect(idleReadout(SIGNALS.length)).toBe(`${SIGNALS.length} SIGNAL LAYERS · HOVER A CELL`);
+    expect(tally([])).toEqual({ live: 0, lag: 0, down: 0, key: 0, dormant: 0 });
   });
 });
 

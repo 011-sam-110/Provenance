@@ -2,6 +2,19 @@
 // The Terminal shell's 22px FEED HEALTH band — one cell per REGISTERED signal
 // layer, sitting directly under the header.
 //
+// WHAT THE STRIP NO LONGER PRINTS, AND WHERE THOSE NUMBERS WENT. It used to end
+// in a hover readout ("37 SIGNAL LAYERS · HOVER A CELL") and five tallies
+// (LIVE/LAG/DOWN/NEEDS KEY/OFF). Both are gone from here and that slot now holds
+// the map's view controls. Nothing factual was lost:
+//
+//   * the five tallies are printed by the footer ticker, from feedCounts() — the
+//     SAME pure function this file calls (components/terminal/TickerLine.tsx:166),
+//     so the two surfaces cannot disagree, and the ticker additionally suppresses
+//     LAG/DOWN when they are zero rather than parading four reassuring noughts;
+//   * the per-cell readout survives as the FIRST LINE of each cell's `title`, which
+//     is where a mouse user was reading the prose from anyway — the caption was a
+//     summary of the tooltip it now sits on top of.
+//
 // THIS COMPONENT DECIDES NOTHING. Every judgement about what a layer's state is,
 // what colour it earns and which tally it lands in lives in lib/terminal/feedHealth
 // as pure, unit-tested functions (tests/unit/terminal-feed-health.test.ts), because
@@ -47,32 +60,21 @@
 // .tnx-feed-cell     flex:1; min-width:3px; border:0; padding:0; border-radius:1px;
 //                    cursor:pointer; background:currentColor (overridden inline);
 // .tnx-feed-cell:hover  outline:1px solid var(--tnx-ink); outline-offset:0;
-// .tnx-feed-readout  display:flex; align-items:center; padding:0 10px; white-space:nowrap;
-//                    overflow:hidden; text-overflow:ellipsis; max-width:34ch;
-//                    color:var(--tnx-ink-dim); letter-spacing:.06em;
-//                    border-left:1px solid var(--tnx-line); flex:none;
-// .tnx-feed-counts   display:flex; align-items:center; gap:10px; padding:0 10px;
-//                    border-left:1px solid var(--tnx-line); flex:none;
-//                    font-variant-numeric:tabular-nums; letter-spacing:.06em;
-// .tnx-feed-count            color:var(--tnx-ink-faint); white-space:nowrap;
-// .tnx-feed-count b          font-weight:700; font-variant-numeric:tabular-nums;
-// .tnx-feed-count.is-live b  color:var(--tnx-live);
-// .tnx-feed-count.is-lag  b  color:var(--tnx-lag);
-// .tnx-feed-count.is-down b  color:var(--tnx-down);
-// .tnx-feed-count.is-key  b  color:var(--tnx-key);
-// .tnx-feed-count.is-off  b  color:var(--tnx-ink-ghost);
+// .tnx-view-controls display:flex; align-items:stretch; flex:none;
+//                    border-left:1px solid var(--tnx-line);
 // .tnx-num           font-variant-numeric:tabular-nums;
-// Narrow viewports: .tnx-feed-readout { display:none } below ~1100px is the first
-// thing to drop — the cells and the tallies are the payload.
+// Narrow viewports: the cells are the payload, so .tnx-view-controls sheds its
+// basemap buttons before the strip lets a cell drop below 3px.
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { SIGNALS } from "@/lib/signals/registry";
 import { signalsStore, useSignals } from "@/lib/signals/store";
 import { classifySignalFreshness, useSignalFreshness } from "@/lib/signals/freshness";
 import { unifySignalFresh, type FreshKind } from "@/lib/sources/freshKind";
 import { useStatus } from "@/lib/sources/useStatus";
 import { useNow } from "@/lib/shell/useNow";
-import { buildFeedCells, feedCounts, idleReadout } from "@/lib/terminal/feedHealth";
+import { buildFeedCells } from "@/lib/terminal/feedHealth";
+import StageControls from "@/components/terminal/StageControls";
 
 /**
  * The id+title list the strip renders, derived once at module load from the
@@ -97,10 +99,6 @@ export default function FeedHealthStrip() {
   const status = useStatus();
   const on = useSignals();
   const records = useSignalFreshness();
-  // The hovered/focused cell is held by ID, not by its readout string: the readout
-  // is re-derived every tick, so storing the string would freeze the caption at
-  // whatever the layer's state was when the pointer arrived.
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   const onIds = useMemo(() => {
     const ids = new Set<string>();
@@ -132,31 +130,38 @@ export default function FeedHealthStrip() {
     () => buildFeedCells({ signals: STRIP_SIGNALS, status, fresh, on: onIds }),
     [status, fresh, onIds],
   );
-  const counts = useMemo(() => feedCounts(cells), [cells]);
-  const readout = (activeId && cells.find((c) => c.id === activeId)?.readout) || idleReadout(cells.length);
 
   return (
-    // aria-hidden, and every cell is out of the tab order — the two halves of one
-    // decision, taken together on purpose.
+    // THE aria-hidden MOVED DOWN A LEVEL, and that is the whole reason this band
+    // could take the view controls at all.
     //
-    // The band re-derives on a 10s timer and carries five live counters, and
-    // tests/unit/shell-a11y.test.ts asserts the announced status line contains no
-    // digits precisely because a screen reader must not be interrupted by numbers
-    // that change on their own. So the strip is hidden from assistive tech.
+    // It used to sit on the root, which was right when the row held nothing but a
+    // health readout: the band re-derives on a 10s timer, and tests/unit/
+    // shell-a11y.test.ts asserts the announced status line contains no digits
+    // precisely because a screen reader must not be interrupted by numbers that
+    // change on their own. Left on the root, it would now also bury the basemap
+    // buttons, the projection switch and Export — real controls with no second
+    // home in this layout — inside a subtree assistive tech is told to ignore.
     //
-    // The tradeoff: hiding it while leaving 37 buttons tabbable would be the worst
-    // of both — a keyboard user tabbing through three dozen controls that announce
-    // nothing at all. tabIndex={-1} keeps them out of that path, which is only
-    // acceptable because the SAME 37 layers have a fully labelled, fully keyboard-
-    // reachable toggle in the Source Catalog rail (components/shell/SourceCatalog),
-    // and that rail is a hard requirement of the Terminal layout. This strip is a
-    // glanceable duplicate of a control that exists properly elsewhere; it is not
-    // anyone's only way in. Each cell still carries the full `tip` as a title, so a
-    // sighted mouse user gets the evidence behind the colour.
-    <div className="tnx-feed" aria-hidden="true">
-      <span className="tnx-feed-label">FEED HEALTH</span>
+    // So the attribute is on the two children that earn it: the label and the cell
+    // grid. The controls sit outside them and stay in the accessibility tree.
+    //
+    // The cells keep tabIndex={-1} as the other half of the same decision. Hiding
+    // them while leaving 37 buttons tabbable would be the worst of both — a
+    // keyboard user tabbing through three dozen controls that announce nothing.
+    // That is only acceptable because the SAME 37 layers have a fully labelled,
+    // fully keyboard-reachable toggle in the Source Catalog rail
+    // (components/shell/SourceCatalog), which is a hard requirement of the Terminal
+    // layout. This strip is a glanceable duplicate of a control that exists
+    // properly elsewhere; it is not anyone's only way in. Each cell still carries
+    // the full `tip` as a title, so a sighted mouse user gets the evidence behind
+    // the colour.
+    <div className="tnx-feed">
+      <span className="tnx-feed-label" aria-hidden="true">
+        FEED HEALTH
+      </span>
 
-      <div className="tnx-feed-cells" onMouseLeave={() => setActiveId(null)}>
+      <div className="tnx-feed-cells" aria-hidden="true">
         {cells.map((cell) => (
           <button
             key={cell.id}
@@ -169,10 +174,12 @@ export default function FeedHealthStrip() {
             // class without inventing a parallel bucket→class map that could
             // disagree with feedBucket().
             style={{ background: cell.color, opacity: cell.opacity }}
-            title={cell.tip}
-            onMouseEnter={() => setActiveId(cell.id)}
-            onFocus={() => setActiveId(cell.id)}
-            onBlur={() => setActiveId(null)}
+            // Two lines: the state in four words, then the prose behind it. The
+            // strip used to print the first line as a hover caption beside the
+            // cells; that slot holds the view controls now, so it moved into the
+            // tooltip it was always a summary of rather than being deleted.
+            title={`${cell.readout}
+${cell.tip}`}
             // The same call the Source Catalog rail's per-signal toggle makes
             // (SourceCatalog.tsx:373, `signalsStore.toggle(id)`) — verbatim, so the
             // two surfaces cannot disagree about what "on" means or drift apart if
@@ -185,47 +192,13 @@ export default function FeedHealthStrip() {
         ))}
       </div>
 
-      <span className="tnx-feed-readout">{readout}</span>
-
-      <div className="tnx-feed-counts">
-        <span
-          className="tnx-feed-count is-live"
-          title="Layers delivering: last fetch succeeded within two refresh cycles. Includes layers that are connected and genuinely have nothing to report right now."
-        >
-          <b>{counts.live}</b> LIVE
-        </span>
-        <span
-          className="tnx-feed-count is-lag"
-          title="Layers whose last successful fetch is more than two refresh cycles old."
-        >
-          <b>{counts.lag}</b> LAG
-        </span>
-        <span
-          className="tnx-feed-count is-down"
-          title="Layers whose last attempt failed — plus stale layers (nothing for six or more refresh cycles) and layers whose credential the upstream refused. Stale counts here rather than as LAG because a feed that stopped answering hours ago is not 'a bit behind'."
-        >
-          <b>{counts.down}</b> DOWN
-        </span>
-        <span
-          className="tnx-feed-count is-key"
-          title="Layers requiring an API key this deployment does not hold, so they are never fetched. A credential we DO hold that the upstream rejected is counted under DOWN, never here — those are different facts with different fixes."
-        >
-          <b>{counts.key}</b> NEEDS KEY
-        </span>
-        {/*
-          A fifth tally the design does not name, and the strip is dishonest without
-          it. Signals default all off, so on a first visit the four designed counters
-          read 0 / 0 / 0 / n — four zeros that a reader takes as a clean bill of
-          health while 30-odd layers are sitting unfetched. This is the number that
-          makes the row add up to the registry.
-        */}
-        <span
-          className="tnx-feed-count is-off"
-          title="Layers switched off (never fetched this session, so nothing is known about them) or switched on with no reading back yet. Off is not a fault — and it is not a clean bill of health either."
-        >
-          <b>{counts.dormant}</b> OFF
-        </span>
-      </div>
+      {/*
+        The map's view controls, in the slot the hover readout and the five tallies
+        used to hold. They render nothing unless a map is actually on the stage —
+        the gate lives inside the component, so this band does not have to know
+        what the stage is showing.
+      */}
+      <StageControls />
     </div>
   );
 }

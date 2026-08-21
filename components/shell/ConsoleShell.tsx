@@ -15,7 +15,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { uiStore } from "@/lib/shell/ui";
-import { alertStore } from "@/lib/shell/alert";
 import { langStore } from "@/lib/i18n/store";
 import { watchlistStore } from "@/lib/shell/watchlist";
 import { timeWindowStore } from "@/lib/shell/timeWindow";
@@ -27,16 +26,14 @@ import { BOOT_MS, bootOverrideFromSearch, loadBootSeen, shouldPlayBoot } from "@
 import { SIGNALS } from "@/lib/signals/registry";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
-import TerminalFooter from "@/components/terminal/TerminalFooter";
 import { focusStageSearch } from "@/components/terminal/StageBar";
-import { terminalModeStore, useTerminalMode } from "@/lib/terminal/mode";
+import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
 import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
 import { armStore } from "@/lib/console/widgets/camslot.arm";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
-import BreakingBanner from "@/components/shell/BreakingBanner";
 import TourOverlay from "@/components/shell/TourOverlay";
 import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
 import { tourStore } from "@/lib/shell/tour";
@@ -63,7 +60,6 @@ export default function ConsoleShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const skin = useTerminalSkin();
-  const mode = useTerminalMode();
 
   // Re-hydrate persisted view state once, client-side (render defaults on the
   // server, reconcile after mount → no hydration mismatch).
@@ -74,7 +70,6 @@ export default function ConsoleShell() {
     variantStore.bootstrap(new URLSearchParams(window.location.search));
     watchlistStore.hydrate();
     timeWindowStore.hydrate();
-    alertStore.hydrate();
     langStore.hydrate();
     scopeStore.hydrate();
     viewModeStore.hydrate();
@@ -88,13 +83,9 @@ export default function ConsoleShell() {
     notificationsStore.hydrate();
     trackStore.hydrate();
     pinsStore.hydrate();
-    // APPENDED, not inserted. The seventeen calls above are order-dependent
-    // (uiStore.hydrate applies the persisted data-theme before paint; variantStore
-    // then re-asserts the variant's theme), and terminalModeStore touches neither
-    // theme nor layout — it owns its own key, `tn.terminal.mode.v1`. Without this
-    // call the persisted CONSOLE/WALL choice is silently ignored on reload.
-    terminalModeStore.hydrate();
-    // Same reasoning, same appended position: the skin owns `tn.terminal.skin.v1`
+    // APPENDED, not inserted. The calls above are order-dependent (uiStore.hydrate
+    // applies the persisted data-theme before paint; variantStore then re-asserts
+    // the variant's theme). The skin owns `tn.terminal.skin.v1`
     // and touches neither theme nor layout. Without this the persisted DARK/LIGHT
     // choice is silently ignored on every reload.
     terminalSkinStore.hydrate();
@@ -139,39 +130,20 @@ export default function ConsoleShell() {
     if (mapViewStore.get().basemap === other) mapViewStore.setBasemap(basemapForSkin(skin));
   }, [skin]);
 
-  // ── CONSOLE ⇄ WALL actually re-arranges the board ────────────────────────
-  //
-  // Until now it did nothing. `terminalModeStore.set()` flipped an enum, persisted
-  // it, and repainted the button's own highlight; `useTerminalMode()` had exactly
-  // one consumer, the header's active class. Meanwhile `arrangeBoard`,
-  // `arrangeConsole` and `arrangeWall` were all fully implemented and unit-tested
-  // with zero callers — a green suite over a dead feature. The W and C keyboard
-  // shortcuts hit the same inert setter.
-  //
-  // Wired HERE rather than in the two places that set the mode, so the button and
-  // the shortcut cannot drift apart, and so `terminalModeStore` stays the small
-  // independent store its own header comment promises it is.
-  //
-  // The first-run skip is not optional: `hydrate()` sets the mode during mount, and
-  // re-arranging on that would throw away the layout the store has just restored —
-  // which is the exact bug class this session is here to remove.
-  const modeSettled = useRef(false);
-  useEffect(() => {
-    if (!modeSettled.current) { modeSettled.current = true; return; }
-    shellLayoutStore.arrange(mode);
-  }, [mode]);
-
   // Global shortcuts. One listener, because they share two guards that have to agree.
   //
-  //   ⌘K / Ctrl-K  toggle the command palette   (unchanged)
-  //   W            WALL layout
-  //   C            CONSOLE layout
+  //   ⌘K / Ctrl-K  toggle the command palette
   //   /            focus the stage search
   //   Escape       clear the terminal selection
   //
-  // GUARD 1 — never steal a keystroke from a text field. W, C and / are single
-  // printable characters, so without this, typing "console" into the stage search
-  // would flip the layout twice and typing a "/" anywhere would be swallowed. The
+  // W and C are gone with the CONSOLE/WALL control they drove. A single-key
+  // shortcut for a mode with no button, no label and no hint bar to advertise it
+  // is not a power feature, it is a trap — the layout would rearrange itself for
+  // anyone who pressed W outside a text field and there would be nothing on screen
+  // to explain what had happened or how to undo it.
+  //
+  // GUARD 1 — never steal a keystroke from a text field. "/" is a single printable
+  // character, so without this, typing a "/" anywhere would be swallowed. The
   // check is on the EVENT TARGET rather than document.activeElement because a
   // keydown is dispatched at the focused element, and contentEditable is included
   // because a rich-text field is a text field even though its tagName is not INPUT.
@@ -197,16 +169,6 @@ export default function ConsoleShell() {
       if (document.querySelector('[role="dialog"]')) return;
 
       switch (e.key) {
-        case "w":
-        case "W":
-          e.preventDefault();
-          terminalModeStore.set("wall");
-          break;
-        case "c":
-        case "C":
-          e.preventDefault();
-          terminalModeStore.set("console");
-          break;
         case "/":
           // Only swallow the "/" if there was actually a search box to focus — the
           // stage chrome unmounts while a widget is expanded onto the stage, and a
@@ -301,17 +263,18 @@ export default function ConsoleShell() {
           getByTestId("stat-line") strict-mode ambiguous in the e2e suite. */}
       <TerminalHeader onOpenPalette={() => setPaletteOpen(true)} />
       <FeedHealthStrip />
-      {/* BreakingBanner must stay the DIRECT PREVIOUS SIBLING of ConsoleWorkspace's
-          `.tn-cw-shell`: globals.css reserves the banner's band with the sibling
-          combinator `.tn-alert ~ .tn-cw-shell`, and the banner renders a fragment
-          (an sr-only live region, then the strip), so wrapping it in anything —
-          including a layout div for the new grid — breaks that selector and puts the
-          banner back on top of the stage's search box and projection switch. */}
-      <BreakingBanner />
       <ConsoleWorkspace />
-      {/* Last band. Everything after it is fixed-position overlay chrome that takes
-          itself out of flow, so this is the final element in the column. */}
-      <TerminalFooter />
+      {/*
+        WHAT THE FOOTER USED TO ANNOUNCE, KEPT WITHOUT THE BAND.
+        The 24px footer carried SEL — the answer to "what did I just click?" — and
+        it was the ONE announced surface in that bar: role="status", aria-live, fed
+        by the same pure footerLine() this uses. Deleting the band would have
+        deleted a live region, which is a silent accessibility regression rather
+        than a visual change, so the announcement stays and only the paint goes.
+        Sighted users still get the answer from the dossier that slides in on
+        select; this is for the users who were relying on the bar.
+      */}
+      <SelectionAnnouncer />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <FeedOverlay />
       <CinematicDive />

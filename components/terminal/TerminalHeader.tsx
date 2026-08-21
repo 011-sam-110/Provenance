@@ -2,7 +2,7 @@
 // The OpenData Terminal's 34px top chrome — the replacement for
 // components/shell/StatusBar.tsx.
 //
-// Left → right: brand block (logo · h1 · tag) │ board tabs │ ——— │ UTC clock │
+// Left → right: brand block (logo · h1) │ board tabs │ ——— │ UTC clock │
 // CONSOLE|WALL │ ☕ · ⌘K COMMAND · ⚙ · avatar.
 //
 // It is a *replacement*, not an addition, so everything StatusBar carried that has
@@ -41,8 +41,6 @@
 //        ↑ text-transform, NOT a capitalised literal: the DOM text is "OpenData" so
 //          the accessible heading stays "OpenData — live global situational-awareness
 //          map" instead of a string some screen readers spell out letter by letter.
-//   .tn-terminal .tnx-hdr-tag { font-size: 9.5px; letter-spacing: 0.12em;
-//     text-transform: uppercase; color: var(--tnx-ink-faint); }
 //
 //   /* Board tabs. The FIRST rule is mandatory, not cosmetic: the shared
 //      `.tn-preset-pill` in globals.css is `position:absolute; left:50%; top:50%;
@@ -72,34 +70,19 @@
 //   .tn-terminal .tnx-hdr-utc-time { font-size: 12px; font-weight: 700;
 //     font-variant-numeric: tabular-nums; color: var(--tnx-ink); }
 //
-//   /* CONSOLE | WALL */
-//   .tn-terminal .tnx-hdr-mode { display: flex; align-items: stretch;
-//     border-left: 1px solid var(--tnx-line); }
-//   .tn-terminal .tnx-hdr-mode-btn {
+//   /* Right cluster — ONE family, the shape CONSOLE|WALL used to have. */
+//   .tn-terminal .tnx-hdr-right { display: flex; align-items: stretch; padding: 0;
+//     border-left: 1px solid var(--tnx-line); flex: none; }
+//   .tn-terminal .tnx-hdr-btn { display: inline-flex; align-items: center; gap: 5px;
 //     font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
-//     padding: 0 9px; border: 0; background: none; cursor: pointer; color: var(--tnx-ink-dim);
-//   }
-//   .tn-terminal .tnx-hdr-mode-btn.is-active { background: var(--tnx-accent); color: #06080b; }
-//
-//   /* Right cluster */
-//   .tn-terminal .tnx-hdr-right { display: flex; align-items: center; gap: 8px;
-//     padding: 0 9px; border-left: 1px solid var(--tnx-line); }
-//   .tn-terminal .tnx-hdr-kofi { display: inline-flex; align-items: center; gap: 4px;
-//     font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-decoration: none;
-//     color: var(--tnx-accent); }
-//   .tn-terminal .tnx-hdr-kofi:hover { text-decoration: underline; }
-//   .tn-terminal .tnx-hdr-cmd { display: inline-flex; align-items: center; gap: 6px;
-//     font: inherit; border: 0; background: none; cursor: pointer; padding: 0;
-//     color: var(--tnx-ink-dim); }
-//   .tn-terminal .tnx-hdr-kbd { font-size: 9.5px; font-weight: 700; padding: 2px 6px;
+//     padding: 0 10px; border: 0; border-right: 1px solid var(--tnx-line);
+//     background: none; cursor: pointer; color: var(--tnx-ink-dim);
+//     text-decoration: none; white-space: nowrap; }
+//   .tn-terminal .tnx-hdr-btn:hover { color: var(--tnx-ink); background: var(--tnx-panel-head); }
+//   .tn-terminal .tnx-hdr-kbd { font-size: 9.5px; font-weight: 700; padding: 1px 5px;
 //     border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink); }
-//   .tn-terminal .tnx-hdr-cmd-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
-//     color: var(--tnx-ink-faint); }
-//   .tn-terminal .tnx-hdr-icon { width: 22px; height: 22px; display: inline-flex;
-//     align-items: center; justify-content: center; font: inherit; font-size: 11px;
-//     border: 1px solid var(--tnx-line-strong); background: none; cursor: pointer;
-//     color: var(--tnx-ink-dim); }
-//   .tn-terminal .tnx-hdr-icon:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+//   .tn-terminal .tnx-hdr-btn-label { color: inherit; }
+//
 //   /* ProfileMenu keeps its own light-theme classes; this only shrinks the avatar
 //      into the 34px band. See the report — the popover is still light-tokened. */
 //   .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: 10px; }
@@ -121,7 +104,6 @@ import { BUILTIN_PRESETS, applyPreset, listPresets, resetActiveBoard } from "@/l
 import { isBoardEdited } from "@/lib/console/boards";
 import { useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
-import { terminalModeStore, useTerminalMode, type TerminalMode } from "@/lib/terminal/mode";
 import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import Mark from "@/components/brand/Mark";
 import ProfileMenu from "@/components/shell/ProfileMenu";
@@ -146,12 +128,6 @@ import { BRAND } from "@/lib/brand";
  * One string, one source. Rename a board in `presets.ts` and the tab follows.
  */
 const boardLabel = (title: string) => title.toUpperCase();
-
-/** CONSOLE first, WALL second — the design's reading order. */
-const MODES: { id: TerminalMode; label: string; title: string }[] = [
-  { id: "console", label: "CONSOLE", title: "Map-dominant console (C)" },
-  { id: "wall", label: "WALL", title: "All widgets on one grid (W)" },
-];
 
 /**
  * The live UTC readout.
@@ -261,7 +237,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const m = useMetrics();
   const layers = useLayers();
   const activePresetId = useActivePreset();
-  const mode = useTerminalMode();
   const skin = useTerminalSkin();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -321,11 +296,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             {BRAND.name}
             <span className="tn-sr-only"> — {BRAND.tagline}</span>
           </h1>
-
-          {/* aria-hidden, and OUTSIDE the h1: inside it, this would append to the
-              heading's accessible name and the h1 would stop reading as the
-              product-plus-description sentence the tail exists to build. */}
-          <span className="tnx-hdr-tag" aria-hidden>OSINT Terminal</span>
         </div>
 
         {/* ── Board tabs ───────────────────────────────────────────────────── */}
@@ -344,36 +314,36 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
 
         <UtcClock />
 
-        {/* ── CONSOLE | WALL ───────────────────────────────────────────────── */}
-        {/* terminalModeStore, NOT viewModeStore: that one drives the MapLibre
-            projection (globe↔mercator) and flipping it here would spin the globe.
-            See the header comment in lib/terminal/mode.ts. */}
-        <div className="tnx-hdr-mode" role="group" aria-label="Layout mode">
-          {MODES.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              className={`tnx-hdr-mode-btn${mode === opt.id ? " is-active" : ""}`}
-              aria-pressed={mode === opt.id}
-              title={opt.title}
-              onClick={() => terminalModeStore.set(opt.id)}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
         {/* ── Entry points + identity ──────────────────────────────────────── */}
+        {/*
+          ONE BUTTON FAMILY, not four styles in a row. The skin toggle, Support,
+          Source and the palette trigger were each dressed differently — a bordered
+          chip, two bare accent links, and a key-cap-plus-label — which made a
+          four-item cluster read as four unrelated things. They are all the same
+          kind of control (a way OUT of the console, or a way to change how it
+          looks), so they now share `.tnx-hdr-btn`: the flat segmented style
+          CONSOLE/WALL used to have, kept on after those buttons were removed
+          because it was the one shape in this cluster that read as a button at 34px.
+
+          The glyphs stay. They are the fastest way to tell four same-shaped
+          segments apart at a glance, and each is aria-hidden so nothing is read out
+          as a symbol.
+
+          ⚙ IS NOT HERE ANY MORE. Settings opens from the profile popover, which
+          already carried a "⚙ Settings" item — the header icon was a second door to
+          a room that already had one. `.tn-settings-trigger` moved with it (see
+          components/shell/ProfileMenu.tsx) because that class is BOTH a TourOverlay
+          spotlight target and the selector OPEN_SETTINGS clicks; leaving it behind
+          would have dropped two tour steps in silence.
+        */}
         <div className="tnx-hdr-right">
-          {/* Skin. Sits beside CONSOLE/WALL because it is the same kind of control —
-              how the Terminal looks, not what it shows — and it is deliberately a
-              two-state toggle rather than a third mode button: the label names the
-              skin you would GET, which is what a single button has to do to be
-              unambiguous. It does not touch [data-theme]; see lib/terminal/skin.ts
-              for why a Terminal skin cannot be a theme. */}
+          {/* Skin. Deliberately a two-state toggle rather than a pair of segments:
+              the label names the skin you would GET, which is what a single button
+              has to do to be unambiguous. It does not touch [data-theme]; see
+              lib/terminal/skin.ts for why a Terminal skin cannot be a theme. */}
           <button
             type="button"
-            className="tnx-hdr-skin"
+            className="tnx-hdr-btn tnx-hdr-skin"
             onClick={() => terminalSkinStore.toggle()}
             aria-pressed={skin === "light"}
             title={skin === "dark" ? "Switch to the light skin" : "Switch to the dark skin"}
@@ -383,11 +353,9 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           </button>
 
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
-              opt-in way to support it. Kept in the header rather than exiled to the
-              footer: the 34px band holds a 9.5px chip fine, and the footer's right
-              cluster is the keyboard-hint block. */}
+              opt-in way to support it. */}
           <a
-            className="tnx-hdr-kofi"
+            className="tnx-hdr-btn"
             href="https://ko-fi.com/opendata"
             target="_blank"
             rel="noreferrer noopener"
@@ -401,10 +369,9 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               which is the only way anyone uses it — must be offered the Corresponding
               Source. This link is that offer, so it is a licence obligation rather
               than a nicety. Removing it puts the deployment in breach of its own
-              licence. Reuses .tnx-hdr-kofi so the right cluster stays one visual
-              family; see the CSS block at the top of this file. */}
+              licence. */}
           <a
-            className="tnx-hdr-kofi"
+            className="tnx-hdr-btn"
             href={BRAND.repoUrl}
             target="_blank"
             rel="noreferrer noopener"
@@ -414,25 +381,23 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             <span>SOURCE</span>
           </a>
 
+          {/*
+            SHORTCUTS, not COMMAND. The palette is a command bar, but "COMMAND" told
+            a first-time reader nothing about what was behind it, and the ⌘K cap
+            beside it was doing all the explaining on its own. "Shortcuts" names what
+            people open it for. `.tn-palette-trigger` is unchanged — it is a
+            TourOverlay spotlight target AND the selector OPEN_PALETTE clicks, and
+            renaming it would silently shorten the tour (lib/console/tour.ts:164).
+          */}
           <button
             type="button"
-            className="tnx-hdr-cmd tn-palette-trigger"
+            className="tnx-hdr-btn tn-palette-trigger"
             onClick={onOpenPalette}
-            aria-label="Command palette"
-            title="Command palette (⌘K)"
+            aria-label="Shortcuts and command palette"
+            title="Shortcuts (⌘K)"
           >
             <span className="tnx-hdr-kbd" aria-hidden>⌘K</span>
-            <span className="tnx-hdr-cmd-label" aria-hidden>COMMAND</span>
-          </button>
-
-          <button
-            type="button"
-            className="tnx-hdr-icon tn-settings-trigger"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <span aria-hidden>⚙</span>
+            <span className="tnx-hdr-btn-label">SHORTCUTS</span>
           </button>
 
           {/* Not in the design's header, kept anyway: this popover is the ONLY UI for

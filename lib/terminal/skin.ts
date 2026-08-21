@@ -18,63 +18,39 @@
 // own comment in globals.css documents. The skin is a scoped attribute on the
 // `.tn-terminal` element instead: `data-tnx-skin`, read only by the scoped block.
 //
-// WHY THERE IS NOW A `prefers-color-scheme` READ, AND WHY IT IS NOT THE THING THE
-// LIGHT-SKIN BLOCK IN globals.css WARNS AGAINST. That comment rejects a CSS
-// `@media (prefers-color-scheme)` block "because a media query would take the
-// choice away from anyone whose OS disagrees with them" — and it is right. A media
-// query is CONTINUOUS: it overrides the person's explicit pick every time the OS
-// changes, and there is no way to say "no, I meant it". What `hydrate` does is a
-// one-time read of a value that has never been set, on a visitor who has expressed
-// no preference at all. It cannot override a choice, because there is no choice to
-// override; the moment one exists, the stored value wins forever.
+// LIGHT IS THE DEFAULT, AND THE OS IS NO LONGER ASKED.
 //
-// This was added because a working OSINT analyst reviewed the console and asked for
-// a light theme that already shipped and worked. He never found the toggle. A
-// default that ignores the one signal the browser already has about how someone
-// wants to look at a screen for eight hours is not a neutral default.
+// Both halves of that changed together, and the second is a consequence of the
+// first rather than a separate decision. The previous default was dark with a
+// one-time `prefers-color-scheme` read for visitors who had never touched the
+// toggle — added because a working OSINT analyst reviewed the console, wanted the
+// light theme that already shipped, and never found the switch. Making light the
+// default answers that complaint directly and completely, which leaves the media
+// read doing only one thing: sending anyone whose OS is dark back to the skin the
+// product no longer opens in. So it is gone.
 //
-// Nothing here touches window/document at module scope — `loadPersisted` and
-// `matchMedia` are only reached from `hydrate()`, which callers run inside an
-// effect. Importing this on the server, or in the node vitest environment, is inert.
+// What is deliberately NOT gone is the persistence. A stored choice still wins
+// forever and is still the only value ever written, so "light is standard" is a
+// statement about the FIRST visit, not an override of anybody's second one.
+//
+// Nothing here touches window/document at module scope — `loadPersisted` is only
+// reached from `hydrate()`, which callers run inside an effect. Importing this on
+// the server, or in the node vitest environment, is inert.
 
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 export type TerminalSkin = "dark" | "light";
 
-/** Dark stays the default: the Terminal was designed as dark OSINT chrome, and a
- *  skin flip on upgrade would be a change nobody asked for. The choice persists,
- *  so anyone who wants light picks it once. */
-export const DEFAULT_TERMINAL_SKIN: TerminalSkin = "dark";
+/** Light is the default. The Terminal was designed as dark OSINT chrome and shipped
+ *  that way, but the skin is a reading surface people sit in front of for hours and
+ *  the review feedback ran one direction only. The choice persists, so anyone who
+ *  wants the dark chrome picks it once. */
+export const DEFAULT_TERMINAL_SKIN: TerminalSkin = "light";
 
 /** Narrow an untrusted value (persisted JSON, a URL param) to a TerminalSkin. */
 export function coerceTerminalSkin(v: unknown): TerminalSkin {
   return v === "light" || v === "dark" ? v : DEFAULT_TERMINAL_SKIN;
-}
-
-/**
- * PURE: what a `prefers-color-scheme: light` match means for the skin.
- *
- * Separated from the `matchMedia` call so the decision is testable in the node
- * vitest environment, where there is no `window`.
- */
-export function skinForSystemPreference(prefersLight: boolean): TerminalSkin {
-  return prefersLight ? "light" : DEFAULT_TERMINAL_SKIN;
-}
-
-/**
- * The OS preference, or the default anywhere it cannot be read (server, node,
- * an old browser, a locked-down iframe). Never throws.
- */
-function systemSkin(): TerminalSkin {
-  try {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return DEFAULT_TERMINAL_SKIN;
-    }
-    return skinForSystemPreference(window.matchMedia("(prefers-color-scheme: light)").matches);
-  } catch {
-    return DEFAULT_TERMINAL_SKIN;
-  }
 }
 
 /**
@@ -133,11 +109,11 @@ export const terminalSkinStore = {
    * snapshot is always DEFAULT_TERMINAL_SKIN, so hydrating mid-render would make
    * React's first client pass disagree with the server HTML.
    *
-   * A stored value ALWAYS wins. Only when there is none — nobody has ever touched
-   * the toggle — do we ask the OS, and even then we do not write the answer, so the
-   * next visit asks again and a person who changes their system setting is followed
-   * rather than frozen. `notify` not `emit` is what makes that true; the difference
-   * is the whole feature.
+   * A stored value ALWAYS wins. With none — nobody has ever touched the toggle —
+   * the state is already DEFAULT_TERMINAL_SKIN and this only has to say so, via
+   * `notify` rather than `emit`: seeding must not WRITE, or a visitor who never
+   * expressed a preference would be recorded as having expressed one, and a later
+   * change to the default could never reach them.
    */
   hydrate() {
     const saved = loadPersisted<TerminalSkin>(PERSIST_KEY, PERSIST_VERSION);
@@ -146,7 +122,12 @@ export const terminalSkinStore = {
       emit();
       return;
     }
-    state = systemSkin();
+    // Assign rather than leave it alone. In the app `state` is still the module's
+    // initial value here so this is a no-op — but "no stored choice means the
+    // default" is the rule, and a rule that only holds because nothing has run yet
+    // is not a rule. Written this way it also survives a second hydrate() after a
+    // toggle, which is exactly the case a test can reach and a user cannot.
+    state = DEFAULT_TERMINAL_SKIN;
     notify();
   },
 };

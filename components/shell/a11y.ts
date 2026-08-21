@@ -70,31 +70,3 @@ export function appStatusLine(input: {
 }
 
 /* ── Breaking banner ──────────────────────────────────────────────────────── */
-
-/** The subset of BreakingAlert (lib/alert.ts) this announcement needs. */
-export interface AnnounceableAlert {
-  key: string;
-  kind: "quake" | "news";
-  text: string;
-  detail: string;
-}
-
-/**
- * What the always-mounted polite region under the top bar should be saying.
- *
- * Returns "" when there is nothing to announce — including when the user has
- * already dismissed this exact alert, so re-mounting or re-polling can never
- * re-announce something they have explicitly waved away. The visible banner's tag
- * ("ALERT" / "BREAKING") is spelled out in words because a screen reader reading
- * shouty capitals letter-by-letter is a known failure mode.
- */
-export function breakingAnnouncement(
-  alert: AnnounceableAlert | null | undefined,
-  dismissedKey: string | null,
-): string {
-  if (!alert) return "";
-  if (dismissedKey != null && alert.key === dismissedKey) return "";
-  const tag = alert.kind === "quake" ? "Alert" : "Breaking news";
-  const detail = alert.detail.trim();
-  return detail ? `${tag}: ${alert.text}. ${detail}` : `${tag}: ${alert.text}`;
-}

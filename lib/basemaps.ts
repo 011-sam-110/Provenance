@@ -140,10 +140,23 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
   },
 };
 
-// DARK by default — the OpenData Terminal shell is near-black chrome around one
-// map, and Esri's photographic imagery under it made the stage the only bright
-// surface on the page. Satellite, Light and Topographic all stay one tap away in
-// the stage bar's basemap group; nothing was removed.
+// POSITRON by default, and it has to be: this constant is the map half of a PAIR
+// whose chrome half is DEFAULT_TERMINAL_SKIN, and that is now light.
+//
+// The pairing is the whole point, and it used to read the other way round. When the
+// Terminal opened as near-black chrome, Esri's photographic imagery under it made
+// the stage the only bright surface on the page, so the default was dark. Light
+// chrome around CARTO Dark Matter is the same mistake with the values swapped —
+// ConsoleShell says so in as many words at its skin⇄basemap effect. Flipping the
+// skin without flipping this would have shipped exactly the render that effect
+// exists to prevent, to every first-time visitor, because that effect deliberately
+// skips its first run so a deep-linked `?base=` is never clobbered.
+//
+// tests/unit/terminal-skin.test.ts pins the two together, so the next person to
+// change either one finds out from a red test rather than from a screenshot.
+//
+// Dark, Satellite and Topographic all stay one tap away in the view controls;
+// nothing was removed.
 //
 // This does NOT reintroduce the persistence hazard lib/mapView.ts warns about. The
 // basemap is still deliberately unpersisted: this constant is the value the store
@@ -151,4 +164,4 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
 // the async style.load the way a localStorage read after first paint would. A
 // deep-link `?base=satellite` still wins (readInitialViewState runs before the map
 // is built).
-export const DEFAULT_BASEMAP: BasemapKey = "dark";
+export const DEFAULT_BASEMAP: BasemapKey = "positron";
