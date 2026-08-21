@@ -24,7 +24,6 @@ import TerminalHeader from "@/components/terminal/TerminalHeader";
 import BootSequence from "@/components/terminal/BootSequence";
 import { BOOT_MS, bootOverrideFromSearch, loadBootSeen, shouldPlayBoot } from "@/lib/terminal/boot";
 import { SIGNALS } from "@/lib/signals/registry";
-import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import { focusStageSearch } from "@/components/terminal/StageBar";
 import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
@@ -56,7 +55,27 @@ import { applyPreset, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { decodeLayout } from "@/lib/console/share";
 import "@/lib/console/widgets";
 
-export default function ConsoleShell() {
+/**
+ * `feeds` — how many camera feeds the registry holds, for the boot screen's one
+ * line of copy.
+ *
+ * IT IS A PROP RATHER THAN AN IMPORT, AND THAT IS LOAD-BEARING. This file is the
+ * "use client" boundary, so `import { CAMERA_FEED_COUNT } from "@/lib/sources/
+ * registry"` — which is what used to be here — pulls every camera adapter into the
+ * BROWSER bundle. On 2026-08-21 that stopped being a size problem and became a
+ * broken build: `lib/sources/actpr.ts` imports `node:http2`, which has no browser
+ * resolution, so `next build` failed with "Module not found: Can't resolve 'http2'"
+ * and an import trace ending here. Production quietly served a two-merges-old build
+ * until someone read the deployment list — `tsc --noEmit` was clean and all 2,445
+ * unit tests passed, because vitest runs in a node environment where node:http2
+ * resolves fine. No test in a node-environment suite can see this class of failure.
+ *
+ * Required, with no default: the only caller is the server component that renders
+ * this shell (app/(console)/app/page.tsx), where the derived constant is already in
+ * scope. A default would invite a hand-typed number that every pinning test would
+ * happily accept and that would rot the next time a feed is added.
+ */
+export default function ConsoleShell({ feeds }: { feeds: number }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const skin = useTerminalSkin();
@@ -253,7 +272,7 @@ export default function ConsoleShell() {
           time-to-interactive. Gate the shell on it and a decoration becomes a
           load-time regression. Counts are read from the registries rather than
           typed, so the line cannot drift from the product. */}
-      <BootSequence layers={SIGNALS.length} feeds={CAMERA_FEED_COUNT} />
+      <BootSequence layers={SIGNALS.length} feeds={feeds} />
 
       <SkipLink />
       {/* Replaces StatusBar outright rather than sitting beside it: it carries the
