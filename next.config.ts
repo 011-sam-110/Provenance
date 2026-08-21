@@ -51,6 +51,22 @@ const nextConfig: NextConfig = {
         ...config.resolve.fallback,
         worker_threads: false,
         module: false,
+        // node:http2, reached via lib/http/h2.ts <- lib/sources/actpr.ts. The plugin
+        // above rewrites `node:http2` to `http2`, which has no browser resolution, so
+        // #136 (Puerto Rico) failed THREE production deploys with "Can't resolve
+        // 'http2'" while `tsc --noEmit` and all 2,445 tests stayed green — vitest runs
+        // in a node environment, where the import resolves fine. Production silently
+        // went on serving the previous build.
+        //
+        // THIS LINE IS A GUARD, NOT THE FIX, and the distinction matters. The actual
+        // defect is that components/shell/ConsoleShell.tsx is a client component and
+        // imports CAMERA_FEED_COUNT from the adapter registry, which drags all ~39
+        // adapter modules into the BROWSER bundle for the sake of one integer.
+        // CLAUDE.md already forbids exactly this for the hero globe. Stubbing http2
+        // stops the build failing; it does not stop the adapters being shipped to the
+        // browser. Fix that separately — and do not read this entry as evidence the
+        // problem is handled.
+        http2: false,
         fs: false,
         path: false,
         os: false,
