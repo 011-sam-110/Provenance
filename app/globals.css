@@ -4400,7 +4400,20 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   color: var(--tnx-accent); line-height: 1.35;
 }
 
-.tn-terminal .tn-export { display: flex; align-items: stretch; }
+/* The terminal override has to UNDO the chip, not just re-flex it.
+   `.tn-export` outside this scope is a rounded pill — `background:var(--tn-chip-bg);
+   border-radius:9px; padding:2px; gap:2px` — which is right in the old control
+   cluster and wrong here. Overriding only `display` and `align-items` left the
+   background, the radius, the padding and the gap in force, so REPORT and IMAGE
+   rendered as a grey rounded pill inset in a bar of flush square segments, and
+   the 2px padding made them 17px tall against their neighbours' 21px, so their
+   divider rules stopped short of the bar's edges. Every property the chip sets is
+   reset here rather than left to the cascade: a partial override is what caused
+   this in the first place. */
+.tn-terminal .tn-export {
+  display: flex; align-items: stretch;
+  background: none; border-radius: 0; padding: 0; gap: 0;
+}
 .tn-terminal .tn-export-btn {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
   font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -4409,6 +4422,10 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 }
 .tn-terminal .tn-export-btn:hover:not(:disabled) { color: var(--tnx-ink); }
 .tn-terminal .tn-export-btn:disabled { opacity: 0.45; cursor: progress; }
+/* Export is the last cluster on the row, so its final divider would be a rule
+   drawn against the window edge. `:last-of-type` and not `:last-child` — the live
+   region span is the last child and is a sibling of these buttons. */
+.tn-terminal .tnx-view-controls .tn-export-btn:last-of-type { border-right: 0; }
 /* Empty until something happens, and it must not reserve width while empty or the
    bar reflows every time a message appears and expires. */
 .tn-terminal .tn-export-note:not(:empty) {

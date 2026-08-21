@@ -14,7 +14,7 @@ import WatchlistPanel from "@/components/shell/WatchlistPanel";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
-import { readingOrder, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
+import { readingOrder, rowsUsed, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { useStageSolo } from "@/lib/terminal/solo";
 import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
 import { useTerminalSkin } from "@/lib/terminal/skin";
@@ -117,8 +117,49 @@ export default function ConsoleWorkspace() {
     return [...held, ...ordered.filter((w) => !heldIds.has(w.id))];
   }, [ordered, drag.activeId]);
 
+  /**
+   * How many rows the board actually occupies — its lowest bottom edge.
+   *
+   * Solo counts the stage alone: the widgets are `hidden`, which is `display:none`,
+   * so they hold no tracks and a board sized to include them would leave the exact
+   * dead strip this is here to remove.
+   */
+  const boardRows = useMemo(() => {
+    const rects: GridRect[] = [stageRect];
+    if (!solo) for (const w of ordered) if (w.rect) rects.push(w.rect);
+    return Math.max(1, rowsUsed(rects));
+  }, [solo, stageRect, ordered]);
+
   const gridStyle = {
     gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
+    // THE LAST ROW ABSORBS THE REMAINDER, and that is the whole reason this is a
+    // template rather than `gridAutoRows` alone.
+    //
+    // Rows are a fixed 24px on a 1px gap — a 25px pitch — and `alignContent:start`
+    // pins them to the top. A band whose height is not an exact multiple of 25 is
+    // therefore left with 0-24px of unused track at the bottom, and `.tn-seg`'s
+    // background is `var(--tnx-line)`: the hairline colour, chosen so the 1px
+    // gutters between panels ARE the rules. Leftover track paints in that colour,
+    // full width, so it reads as a grey bar sitting under the board rather than as
+    // slack. Measured in the running app at 1600x900: band 844px, 33 rows x 25px =
+    // 824px, 20px of bar. Sampo circled it and asked what it was for. Nothing.
+    //
+    // So the last row is `minmax(ROW_PX, 1fr)` and eats the remainder: the map and
+    // the bottom-most cards get those pixels instead. It is not a repaint — there
+    // is no leftover track left to colour.
+    //
+    // WHY THE FLOOR MATTERS. When the board is TALLER than the band there is no
+    // free space, `1fr` collapses to its minimum, the tracks overflow and the
+    // grid's own `overflow:auto` scrolls — which is the behaviour the removed
+    // `min-height` note below exists to protect. Without the `minmax` floor the
+    // final row would flatten to nothing on exactly those tall boards.
+    //
+    // `gridAutoRows` STAYS, and is not redundant: a drag can put a card past the
+    // template's last row mid-gesture, and those implicit rows still need a height.
+    gridTemplateRows:
+      boardRows > 1
+        ? `repeat(${boardRows - 1}, ${ROW_PX}px) minmax(${ROW_PX}px, 1fr)`
+        : `minmax(${ROW_PX}px, 1fr)`,
     gridAutoRows: `${ROW_PX}px`,
     gap: `${GAP_PX}px`,
     alignContent: "start",
