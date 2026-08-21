@@ -35,7 +35,10 @@ describe("CLAUDE.md camera counts", () => {
   it("states the feed count the registry actually ships", () => {
     // Both places the number appears: the Shape bullet and the Numbers table.
     const bullet = CLAUDE_MD.match(/merged in `registry\.ts` \((\d+) feeds\)/);
-    const table = CLAUDE_MD.match(/\|\s*Camera feeds\s*\|\s*(\d+) adapters/);
+    // "adapters" OR "feeds": once a network could be admitted as DATA rather than as a
+    // module, "15 adapters" became a false word for a true number. The row is allowed to
+    // say what it is; the count is still pinned.
+    const table = CLAUDE_MD.match(/\|\s*Camera feeds\s*\|\s*(\d+) (?:adapters|feeds)/);
     expect(bullet, "the `lib/sources/*` bullet no longer states a feed count").not.toBeNull();
     expect(table, "the Camera feeds row no longer states an adapter count").not.toBeNull();
     expect(Number(bullet![1])).toBe(CAMERA_FEED_COUNT);

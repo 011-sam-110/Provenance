@@ -88,6 +88,15 @@ export interface GateInput {
   catalogueLicense?: string;
   /** Cameras already in the registry, for the overlap check. May be empty offline. */
   existing?: Pick<Camera, "id" | "source" | "lat" | "lon">[];
+  /**
+   * Every feed key the registry is supposed to contain, so the overlap gate can tell
+   * "checked and found nothing" from "had nothing to check against".
+   *
+   * Without it a clean pass is unfalsifiable: `existing` being non-empty proves only
+   * that SOME feed answered, and a feed that did not answer contributes no cameras and
+   * no error. See the overlap block below for the run this cost.
+   */
+  expectedSources?: string[];
 }
 
 const pass = (gate: string, detail: string): GateResult => ({ gate, status: "pass", detail });
@@ -206,9 +215,29 @@ export function runGates(input: GateInput): GateResult[] {
       if (hit) bySource.set(hit.source, (bySource.get(hit.source) ?? 0) + 1);
     }
     const worst = [...bySource.entries()].sort((a, b) => b[1] - a[1])[0];
+    // WHICH FEEDS THIS SNAPSHOT ACTUALLY SPEAKS FOR.
+    //
+    // A live run passed an ArcGIS mirror of Caltrans District 4 with "no sampled
+    // camera is already served". All twelve samples were within 50 m of a camera this
+    // product already serves and eleven had byte-identical image URLs — the registry
+    // read simply had no `caltrans` cameras in it that round, because a feed that
+    // fails resolves to `[]` rather than throwing. `existing.length` was non-zero, so
+    // the gate ran and reported a global absence it could not observe.
+    //
+    // A pass may only speak for the feeds in the snapshot. When any known feed is
+    // missing the answer is "not checked", which is a warn, not a pass.
+    const present = new Set(existing.map((e) => e.source));
+    const absent = (input.expectedSources ?? []).filter((k) => !present.has(k));
     out.push(
       near.length === 0
-        ? pass("overlap", "No sampled camera sits within " + DUPLICATE_RADIUS_M + " m of one already served.")
+        ? absent.length
+          ? warn(
+              "overlap",
+              "No sampled camera matches one already served, but " + absent.length +
+                " feed(s) were missing from the registry snapshot (" + absent.join(", ") +
+                "), so this is not a clean check — a duplicate of those would look identical to this.",
+            )
+          : pass("overlap", "No sampled camera sits within " + DUPLICATE_RADIUS_M + " m of one already served.")
         : near.length >= samples.length * 0.8
           ? fail(
               "overlap",

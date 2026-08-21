@@ -9,6 +9,7 @@ import { SIGNALS } from "@/lib/signals/registry";
 import { allExplainers } from "@/lib/signals/explain";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { CASTLEROCK_SYSTEMS } from "@/lib/sources/castlerock";
+import { DISCOVERED_FEEDS } from "@/lib/sources/discovered";
 
 // The README is the first thing a recruiter, a client or a YC reader sees, and on
 // 2026-08-18 an audit of it found four separate figures that had rotted: the test
@@ -69,6 +70,16 @@ function feedAdapterModules(): Map<string, string> {
     const mod = fnToModule.get(m[2]);
     if (mod) byKey.set(m[1], mod);
   }
+  // Discovered networks have NO adapter module of their own, and that is the point of
+  // the subsystem: `lib/sources/discovered.ts` is the behaviour once, and each admitted
+  // network is a committed row of data rather than a new module and a new import.
+  //
+  // This function originally parsed registry.ts alone, which was complete when every
+  // feed was a literal line in SOURCES. The first admitted network made it wrong in a
+  // way no README edit could fix — `feedAdapterModules().size` stayed at 14 while
+  // CAMERA_FEED_COUNT went to 15. Reading the admitted rows here restores what the
+  // function claims to return: an accounting of every registered feed.
+  for (const feed of DISCOVERED_FEEDS) byKey.set(feed.key, "discovered");
   return byKey;
 }
 
@@ -97,6 +108,13 @@ function agencyNetworkCount(): number {
   const dir = join(ROOT, "lib", "sources");
   let total = 0;
   for (const [, mod] of feedAdapterModules()) {
+    // An admitted network is exactly one agency: it was reviewed as one operator, and
+    // reading discovered.ts for `agency:` literals would count the SHARED adapter once
+    // for all of them. Counted per feed here instead.
+    if (mod === "discovered") {
+      total += 1;
+      continue;
+    }
     const src = readFileSync(join(dir, `${mod}.ts`), "utf8");
     const declared = new Set([...src.matchAll(/agency:\s*"([^"]+)"/g)].map((m) => m[1]));
     total += declared.size > 0 ? declared.size : 1;

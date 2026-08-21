@@ -158,3 +158,32 @@ describe("normalizeFeed", () => {
     expect(normalizeFeed(DESCRIPTOR, "a string").cameras).toEqual([]);
   });
 });
+
+describe("upgradeMediaToHttps", () => {
+  /**
+   * Catalogues publish the URL the operator wrote down, and plenty of agencies still
+   * write http:// for a host that has served https for years. Those pictures are
+   * blocked as mixed content on an https page, so the cameras are real, reviewed and
+   * invisible.
+   *
+   * The upgrade is OPT-IN PER FEED rather than blanket, because "http worked, https
+   * must too" is an assumption and this repository does not ship those. The flag is
+   * set only after the https URL has actually been fetched and returned an image.
+   */
+  it("upgrades http media to https when the feed opts in", () => {
+    const feed: FeedDescriptor = { ...DESCRIPTOR, upgradeMediaToHttps: true };
+    const { cameras } = normalizeFeed(feed, rows(1, () => ({ imageUrl: "http://images.example.gov/0.jpg" })));
+    expect(cameras[0].imageUrl).toBe("https://images.example.gov/0.jpg");
+  });
+
+  it("leaves http alone when the feed has not opted in", () => {
+    const { cameras } = normalizeFeed(DESCRIPTOR, rows(1, () => ({ imageUrl: "http://images.example.gov/0.jpg" })));
+    expect(cameras[0].imageUrl).toBe("http://images.example.gov/0.jpg");
+  });
+
+  it("does not touch a URL that is already https", () => {
+    const feed: FeedDescriptor = { ...DESCRIPTOR, upgradeMediaToHttps: true };
+    const { cameras } = normalizeFeed(feed, rows(1, () => ({ imageUrl: "https://images.example.gov/0.jpg" })));
+    expect(cameras[0].imageUrl).toBe("https://images.example.gov/0.jpg");
+  });
+});

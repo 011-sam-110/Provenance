@@ -80,6 +80,21 @@ export interface FeedDescriptor {
   homepage?: string;
   /** Extra request headers some operators require (a `Referer`, an `Accept`). */
   headers?: Record<string, string>;
+  /**
+   * Rewrite `http://` media URLs to `https://` for this feed.
+   *
+   * OPT-IN PER FEED, never blanket. Catalogues publish the URL the operator wrote
+   * down, and plenty of agencies still write http for a host that has served https
+   * for years — those pictures are then blocked as mixed content on an https page, so
+   * the cameras are real, reviewed, and invisible. Upgrading every http URL on the way
+   * past would instead break the operators for whom http is the only thing that
+   * answers, silently and only in production.
+   *
+   * So this is a MEASUREMENT, not a preference: set it only after fetching the https
+   * form of a real sample and getting an image back. The row that carries it should be
+   * able to name the URL that was tried.
+   */
+  upgradeMediaToHttps?: boolean;
 }
 
 /** Where a candidate came from, so a reviewer can re-walk the same path. */

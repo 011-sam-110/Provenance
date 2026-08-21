@@ -18,14 +18,35 @@
  * camera rather than the network. `license` is copied from what the operator or its
  * catalogue states; where nothing is stated it says so in those words, because a
  * licence nobody granted is worse than an absent one.
- *
- * WHY IT IS EMPTY. Discovery has been run and its candidates are in
- * `data/discovery/candidates.json`, but an admitted feed needs a person to look at the
- * pictures, and this file records people rather than intentions. An empty array is the
- * honest state of the review queue, not an unfinished feature — the pipeline, the
- * queue and the reviewer are all shipped and working.
  */
 
 import type { AdmittedFeed } from "@/lib/discovery/types";
 
-export const ADMITTED_FEEDS: AdmittedFeed[] = [];
+export const ADMITTED_FEEDS: AdmittedFeed[] = [
+  {
+    "key": "houston-transtar",
+    "name": "Houston TranStar",
+    "country": "US",
+    "endpoint": "https://services.arcgis.com/NummVBqZSIJKUeVR/arcgis/rest/services/Trantar_Camera_Locations/FeatureServer/0/query?where=1%3D1&outFields=*&outSR=4326&f=json&resultRecordCount=1000",
+    "format": "arcgis",
+    "mapping": {
+      "lat": "__lat",
+      "lon": "__lon",
+      "name": "Name",
+      "id": "OBJECTID",
+      "road": "roadway",
+      "imageUrl": "URL"
+    },
+    "license": "City of Houston GIS states no licence for this data (catalogue records: none)",
+    "attribution": "Live camera imagery © Houston TranStar",
+    "refreshSeconds": 300,
+    "upgradeMediaToHttps": true,
+    "homepage": "https://www.houstontranstar.org/",
+    "review": {
+      "by": "011-sam-110",
+      "at": "2026-08-20T12:13:25.048Z",
+      "sampled": 12,
+      "good": 12
+    }
+  }
+];

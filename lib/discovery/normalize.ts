@@ -46,7 +46,11 @@ const str = (v: unknown): string | undefined => {
  * once, on the way in — not as a hand-maintained exclusion list that silently stops
  * covering a source when the source grows.
  */
-export function resolveMediaUrl(raw: unknown, endpoint: string): string | undefined {
+export function resolveMediaUrl(
+  raw: unknown,
+  endpoint: string,
+  upgradeToHttps = false,
+): string | undefined {
   const s = str(raw);
   if (!s) return undefined;
   let abs: string;
@@ -57,6 +61,9 @@ export function resolveMediaUrl(raw: unknown, endpoint: string): string | undefi
   }
   if (!/^https?:/i.test(abs)) return undefined; // rtsp:// is not fetchable from a browser
   if (isBareIpHost(abs)) return undefined;
+  // Applied here, with the other URL rules, rather than at the call site — so a future
+  // media field gets it for free instead of getting it if somebody remembers.
+  if (upgradeToHttps && abs.startsWith("http://")) return "https://" + abs.slice("http://".length);
   return abs;
 }
 
@@ -124,8 +131,9 @@ export function normalizeFeed(descriptor: FeedDescriptor, body: unknown): Normal
       dropped.badCoord++;
       continue;
     }
-    const imageUrl = m.imageUrl ? resolveMediaUrl(getPath(row, m.imageUrl), descriptor.endpoint) : undefined;
-    const streamUrl = m.streamUrl ? resolveMediaUrl(getPath(row, m.streamUrl), descriptor.endpoint) : undefined;
+    const https = descriptor.upgradeMediaToHttps === true;
+    const imageUrl = m.imageUrl ? resolveMediaUrl(getPath(row, m.imageUrl), descriptor.endpoint, https) : undefined;
+    const streamUrl = m.streamUrl ? resolveMediaUrl(getPath(row, m.streamUrl), descriptor.endpoint, https) : undefined;
     if (!imageUrl && !streamUrl) {
       dropped.noMedia++;
       continue;

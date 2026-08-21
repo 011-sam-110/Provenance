@@ -192,3 +192,57 @@ describe("isAdmissible", () => {
     expect(isAdmissible([{ gate: "a", status: "fail", detail: "" }])).toBe(false);
   });
 });
+
+describe("overlap cannot claim more than it checked", () => {
+  /**
+   * THE FAILURE THIS PINS, which happened. A live run passed an ArcGIS mirror of
+   * Caltrans District 4 with "No sampled camera sits within 60 m of one already
+   * served". Every one of its twelve samples was within 50 m of a camera this product
+   * already serves, and eleven had byte-identical image URLs.
+   *
+   * The registry read that fed the gate was not empty — so the gate ran — it was
+   * simply missing the `caltrans` feed, which had not answered that round. The gate
+   * then reported a global absence it had no way to observe, and a duplicate of 746
+   * cameras came within one keypress of the map.
+   *
+   * A pass may only speak for the feeds that were actually in the snapshot.
+   */
+  const FEEDS = ["tfl", "caltrans", "scdot"];
+
+  it("warns instead of passing when a known feed was absent from the snapshot", () => {
+    const results = runGates({
+      descriptor: DESCRIPTOR,
+      samples: samples(),
+      parsed: { rows: 60, valid: 60 },
+      existing: [{ id: "tfl:1", source: "tfl", lat: 10, lon: 10 }],
+      expectedSources: FEEDS,
+    });
+    const overlap = gate(results, "overlap");
+    expect(overlap?.status).toBe("warn");
+    expect(overlap?.detail).toContain("caltrans");
+    expect(overlap?.detail).toContain("scdot");
+  });
+
+  it("passes cleanly when every known feed was in the snapshot", () => {
+    const results = runGates({
+      descriptor: DESCRIPTOR,
+      samples: samples(),
+      parsed: { rows: 60, valid: 60 },
+      existing: FEEDS.map((source, i) => ({ id: source + ":1", source, lat: 10 + i, lon: 10 })),
+      expectedSources: FEEDS,
+    });
+    expect(gate(results, "overlap")?.status).toBe("pass");
+  });
+
+  it("still fails on a real duplicate even with feeds missing", () => {
+    const dupes = samples().map((s) => ({ id: "caltrans:" + s.nativeId, source: "caltrans", lat: s.lat, lon: s.lon }));
+    const results = runGates({
+      descriptor: DESCRIPTOR,
+      samples: samples(),
+      parsed: { rows: 60, valid: 60 },
+      existing: dupes,
+      expectedSources: FEEDS,
+    });
+    expect(gate(results, "overlap")?.status).toBe("fail");
+  });
+});

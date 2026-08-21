@@ -1,0 +1,421 @@
+{
+  "feeds": [
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "verdict": "reject",
+      "at": "2026-08-20T12:12:27.967Z",
+      "reason": "Duplicate of the existing caltrans feed: an ArcGIS mirror of Caltrans District 4. 12/12 sampled cameras sit within 50 m of one we already serve and 11/12 have byte-identical image URLs. Admitting it would double-count 746 D4 cameras."
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "verdict": "hold",
+      "at": "2026-08-20T12:12:28.132Z",
+      "reason": "Admitted in error with 0/12 cameras judged good. Half the network serves pictures from devtrafficvideo:55012, an internal hostname that does not resolve outside Alpharetta. Back in the queue pending a decision."
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "verdict": "admit",
+      "at": "2026-08-20T12:13:25.048Z",
+      "name": "Houston TranStar",
+      "attribution": "Live camera imagery © Houston TranStar"
+    }
+  ],
+  "cameras": [
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "17",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:56:33.026Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "19",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:56:43.083Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "21",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:56:48.242Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "23",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:56:52.971Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "1",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:15.803Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "31",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:19.587Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "61",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:22.307Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "91",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:23.706Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "121",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:25.247Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "151",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:26.526Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "181",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:27.568Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "211",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:29.050Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "241",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:30.573Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "271",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:32.710Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "301",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:35.139Z"
+    },
+    {
+      "candidateId": "services3-arcgis-com-1ez7c40",
+      "nativeId": "331",
+      "verdict": "good",
+      "at": "2026-08-20T11:57:36.972Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "1",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:41.815Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "3",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:44.697Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "5",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:45.938Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "7",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:46.865Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "9",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:47.738Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "11",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:48.532Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "13",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:49.940Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-12kli36",
+      "nativeId": "15",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:57:51.296Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "86188",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:19.615Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "c899dfc0-fefc-11e6-b128-0123456789ab",
+      "verdict": "not-a-camera",
+      "at": "2026-08-20T11:58:20.946Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "85665",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:22.169Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "85859",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:23.291Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "5f6a6662-5c7f-11e7-899a-0123456789ab",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:24.168Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "87001",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:25.288Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "85232",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:26.396Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "110131",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:27.432Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "86458",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:28.333Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "86049",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:29.491Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "85787",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:30.510Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-5n6b3x",
+      "nativeId": "85356",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:31.657Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "1",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:35.232Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "38",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:36.469Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "75",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:37.442Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "112",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:38.504Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "149",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:39.636Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "186",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:40.738Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "223",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:41.661Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "260",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:42.429Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "297",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:43.406Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "334",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:44.425Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "371",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:45.166Z"
+    },
+    {
+      "candidateId": "services-arcgis-com-1hbyghq",
+      "nativeId": "408",
+      "verdict": "good",
+      "at": "2026-08-20T11:58:45.871Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "1",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:48.348Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "2",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:49.103Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "3",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:49.818Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "4",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:50.455Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "5",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:51.094Z"
+    },
+    {
+      "candidateId": "services7-arcgis-com-5gqlbs",
+      "nativeId": "6",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:51.604Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "1",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:52.126Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "13",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:52.632Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "28",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:53.177Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "37",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:53.664Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "45",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:58:54.449Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "53",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.303Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "61",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.380Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "71",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.455Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "80",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.655Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "89",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.735Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "99",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.807Z"
+    },
+    {
+      "candidateId": "services1-arcgis-com-2ml9bp",
+      "nativeId": "113",
+      "verdict": "bad-image",
+      "at": "2026-08-20T11:59:02.860Z"
+    }
+  ]
+}
