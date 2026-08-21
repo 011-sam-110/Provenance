@@ -13,6 +13,8 @@ import { fetchRegistry as fetchTrafficScotland } from "@/lib/sources/trafficscot
 import { fetchRegistry as fetchCetsp } from "@/lib/sources/cetsp";
 import { fetchRegistry as fetchSerbiaBorders } from "@/lib/sources/serbia-borders";
 import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
+import { fetchRegistry as fetchBihamk } from "@/lib/sources/bihamk";
+import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
 
@@ -138,13 +140,23 @@ const SOURCES: CameraFeed[] = [
   // 10s default (see each adapter's fetchRegistry).
   { key: "mup-rs", fetch: fetchSerbiaBorders },
   { key: "putevi-rs", fetch: fetchSerbiaTolls },
+  // Third Balkan feed, and the first that is not Serbian. BIHAMK is the national
+  // automobile club rather than a ministry, which is who actually operates road
+  // cameras in Bosnia and Herzegovina — see lib/sources/bihamk.ts for why the
+  // several BiH camera DIRECTORIES are pointers and not sources.
+  { key: "bihamk", fetch: fetchBihamk },
+  // First Caribbean feed. Both of these HEAD every still each round to date it,
+  // so their honest cost is one request per camera rather than one per feed —
+  // measured well inside the 10s default (12 and 31 parallel HEADs), so neither
+  // declares a budgetMs.
+  { key: "act-pr", fetch: fetchActPr },
   // Networks found by discovery and admitted by a reviewer, one entry each rather
   // than one entry for all of them — last-good is kept PER FEED, so a shared key
   // would let one network's outage discard every other discovered network's
   // cameras in the same round. See lib/sources/discovered.ts.
   //
   // This spreads to LENGTH ZERO until a feed is admitted, so CAMERA_FEED_COUNT is
-  // 14 today and the two documents pinned against it stay true. When it grows,
+  // 16 today and the two documents pinned against it stay true. When it grows,
   // claude-md-counts and readme-counts go red on purpose: a new camera network is
   // exactly the kind of change that ought to force the docs to move.
   ...discoveredCameraFeeds(),

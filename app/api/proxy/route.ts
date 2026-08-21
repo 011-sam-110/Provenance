@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
 import { isAllowed } from "@/lib/proxy/allowlist";
 import { extractScotlandImage } from "@/lib/sources/trafficscotland";
+import { needsH2, h2Fetch } from "@/lib/http/h2";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,14 @@ export async function GET(req: NextRequest) {
   // JPEG embedded in the /tsis/camerahtml page. Fetch the page and pull the bytes.
   if (target.hostname === "www.traffic.gov.scot") {
     return proxyTrafficScotland(target, cam.refreshSeconds);
+  }
+
+  // A handful of upstreams serve HTTP/1.1 that Node's parser rejects outright, so
+  // `fetch` returns nothing at all for them and every one of their cameras would
+  // render as a broken image. Those hosts are named in lib/http/h2.ts and are
+  // fetched over HTTP/2 instead, where the defect is not representable.
+  if (needsH2(target.hostname)) {
+    return proxyOverH2(target, cam.refreshSeconds);
   }
 
   let upstream: Response;
@@ -46,6 +55,32 @@ export async function GET(req: NextRequest) {
       "Content-Type": contentType,
       // Never serve a camera faster than the source refresh (TfL = 300s).
       "Cache-Control": `public, max-age=${cam.refreshSeconds}, s-maxage=${cam.refreshSeconds}`,
+    },
+  });
+}
+
+// HTTP/2 helper, for the hosts listed in lib/http/h2.ts. Same contract as the
+// `fetch` path above — allowlist already checked by GET(), same cache headers, and
+// a non-image content-type still falls back to image/jpeg.
+async function proxyOverH2(target: URL, refreshSeconds: number): Promise<Response> {
+  let upstream: Awaited<ReturnType<typeof h2Fetch>>;
+  try {
+    upstream = await h2Fetch(target.toString(), {
+      headers: { "user-agent": UA },
+      timeoutMs: 10_000,
+    });
+  } catch {
+    return new Response("upstream fetch failed", { status: 502 });
+  }
+  if (upstream.status < 200 || upstream.status >= 300) {
+    return new Response("upstream error", { status: 502 });
+  }
+  const ct = upstream.headers["content-type"];
+  return new Response(new Uint8Array(upstream.body), {
+    status: 200,
+    headers: {
+      "Content-Type": ct && ct.startsWith("image/") ? ct : "image/jpeg",
+      "Cache-Control": `public, max-age=${refreshSeconds}, s-maxage=${refreshSeconds}`,
     },
   });
 }
