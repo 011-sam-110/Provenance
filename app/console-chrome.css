@@ -1,0 +1,108 @@
+/* ===========================================================================
+   Console board chrome — the affordances that let a board be rebuilt.
+
+   Owned by the grid/card-chrome lane and kept OUT of globals.css deliberately:
+   three agents were appending to that file's tail at once and every one of them
+   was diffing the others. Everything here is scoped under .tn-terminal so it
+   inherits the skin's --tnx-* tokens and follows the light/dark toggle without
+   restating a single colour.
+   =========================================================================== */
+
+/* ── The ghost "add" tile ────────────────────────────────────────────────────
+   Drawn in the cell the next wall will really occupy, so it reads as a place
+   rather than a button that lives nowhere. Dashed, never filled: a solid card
+   here would be counted as content by anyone scanning the wall. */
+.tn-terminal .tn-cw-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  border: 1px dashed var(--tnx-ink-ghost, rgba(127, 140, 158, 0.4));
+  border-radius: 4px;
+  background: transparent;
+  color: var(--tnx-ink-faint);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background 120ms ease;
+}
+
+.tn-terminal .tn-cw-add:hover,
+.tn-terminal .tn-cw-add:focus-visible {
+  border-color: var(--tnx-accent);
+  color: var(--tnx-accent);
+  background: var(--tnx-accent-soft, transparent);
+}
+
+.tn-terminal .tn-cw-add-plus {
+  font-size: 22px;
+  line-height: 1;
+  font-family: var(--tnx-font-mono, ui-monospace, monospace);
+}
+
+.tn-terminal .tn-cw-add-l {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* ── The empty-board rescue panel ────────────────────────────────────────────
+   Shown only when the board holds no widgets at all. This is a dead end
+   otherwise: removing the last wall leaves an empty grid, and the stage bar's
+   control answers it only while the map stage is on screen. */
+.tn-terminal .tn-cw-rescue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  border: 1px dashed var(--tnx-ink-ghost, rgba(127, 140, 158, 0.4));
+  border-radius: 4px;
+  background: var(--tnx-panel);
+  text-align: center;
+}
+
+.tn-terminal .tn-cw-rescue-t {
+  margin: 0;
+  color: var(--tnx-ink);
+  font-size: 13px;
+  font-family: var(--tnx-font-title, inherit);
+}
+
+.tn-terminal .tn-cw-rescue-b {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--tnx-ink-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tn-terminal .tn-cw-rescue-btn {
+  margin-top: 2px;
+  padding: 7px 14px;
+  border: 1px solid var(--tnx-accent);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--tnx-accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tn-terminal .tn-cw-rescue-btn:hover,
+.tn-terminal .tn-cw-rescue-btn:focus-visible {
+  background: var(--tnx-accent);
+  color: var(--tnx-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-cw-add,
+  .tn-terminal .tn-cw-rescue-btn { transition: none; }
+}

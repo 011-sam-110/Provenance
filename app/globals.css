@@ -1,3 +1,5 @@
+@import "./console-chrome.css";
+
 /* ====================================================================   TrafficNerd v2 — calm light console shell.
    Light is the default identity; dark survives as an optional [data-theme]
    toggle. Real typography for text; monospace (.tn-num) reserved for numerics.
