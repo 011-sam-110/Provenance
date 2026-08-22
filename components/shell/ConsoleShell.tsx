@@ -248,7 +248,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     };
   }, []);
 
-  // The ⌘K palette dispatches a `tn-toast` CustomEvent (e.g. the 50-widget cap).
+  // The ⌘K palette dispatches a `tn-toast` CustomEvent (e.g. the widget cap).
   // This always-mounted shell is the host that surfaces it as a calm pill.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;

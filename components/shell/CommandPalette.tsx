@@ -35,6 +35,7 @@ import {
   type PaletteSnapshot,
 } from "@/lib/console/paletteGroups";
 import type { GeocodeResult } from "@/lib/geo/geocode";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 // Pick a fly-to zoom from a geocode result's extent (wider areas frame out).
 function zoomForResult(r: GeocodeResult): number {
@@ -59,7 +60,7 @@ const LAYER_NAMES: Record<LayerKey, string> = {
 };
 
 function alertCapacity() {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" }));
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
 }
 
 function buildCommands(close: () => void): Command[] {

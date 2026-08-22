@@ -66,6 +66,12 @@ export interface ShellLayout {
  */
 export const MAX_WIDGETS = 200;
 
+/** The ONLY wording of the widget-cap toast, derived from MAX_WIDGETS so the
+ *  number cannot drift out of the copy again. It read "50-widget limit" in four
+ *  separate call sites while the cap here was already 200, so every user who hit
+ *  the cap was told a number four times too small. Import this; never retype it. */
+export const WIDGET_LIMIT_MESSAGE = `${MAX_WIDGETS}-widget limit — remove one to add another`;
+
 export function createDefaultLayout(): ShellLayout {
   return {
     segments: {
