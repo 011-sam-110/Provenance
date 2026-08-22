@@ -138,9 +138,16 @@ export function resolveCollisions(
  * its own output changes nothing, which the tests assert because a compactor that
  * drifts would make every drag shuffle the board.
  */
-export function compact(items: readonly GridItem[]): GridItem[] {
+export function compact(items: readonly GridItem[], pinnedId: string | null = null): GridItem[] {
   const placed: GridItem[] = [];
   for (const item of readingOrder(items)) {
+    // The held card does not fall. Without this, a drag DOWNWARD is undone inside
+    // the same settle() that performed it: resolveCollisions honours the pin, then
+    // this loop floats the held card straight back up to the first supported row,
+    // so the card follows the pointer, the dashed ghost never leaves the cell you
+    // started in, and on release the card flies back to where it began. The same
+    // root cause made the menu's "move one row down" and ArrowDown inert.
+    if (pinnedId !== null && item.id === pinnedId) { placed.push({ ...item }); continue; }
     let y = item.y;
     while (y > 0 && !placed.some((p) => overlaps({ ...item, y: y - 1 }, p))) y--;
     placed.push({ ...item, y });
@@ -150,7 +157,7 @@ export function compact(items: readonly GridItem[]): GridItem[] {
 
 /** Resolve overlaps, then close the gaps. The board state after any user action. */
 export function settle(items: readonly GridItem[], pinnedId: string | null): GridItem[] {
-  return compact(resolveCollisions(items, pinnedId));
+  return compact(resolveCollisions(items, pinnedId), pinnedId);
 }
 
 /**
