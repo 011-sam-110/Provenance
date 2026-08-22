@@ -4939,11 +4939,11 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   70%  { box-shadow: inset 0 0 0 2px var(--tn-accent); }
   100% { box-shadow: inset 0 0 0 2px transparent; }
 }
-[data-grid-id].is-just-added { animation: tn-just-added 1.4s ease-out 1; }
+[data-grid-id][data-just-added] { animation: tn-just-added 1.4s ease-out 1; }
 @media (prefers-reduced-motion: reduce) {
   /* No pulse, but the ring still has to appear or the reveal says nothing at
      all to someone who asked for less motion. It simply does not fade. */
-  [data-grid-id].is-just-added { animation: none; box-shadow: inset 0 0 0 2px var(--tn-accent); }
+  [data-grid-id][data-just-added] { animation: none; box-shadow: inset 0 0 0 2px var(--tn-accent); }
 }
 
 /* ── The camera tray ─────────────────────────────────────────────────────────

@@ -82,39 +82,69 @@ export function createCamslot(opts: CreateCamslotOptions = {}): CreateCamslotRes
  *  after a scroll, short enough not to become part of the card's appearance. */
 const FLASH_MS = 1400;
 
+/** How long to keep looking for the new card before giving up. React commits when
+ *  it commits — a fixed number of frames is a guess, and the guess was wrong. */
+const REVEAL_DEADLINE_MS = 600;
+
 /**
  * Scroll a freshly added card into view and mark it, once.
  *
- * Deferred by two animation frames, not called inline: `shellLayoutStore.add`
- * emits synchronously, but React has not committed the new node yet, so a
- * `querySelector` on the same tick finds nothing. One frame gets the commit, the
- * second gets the grid's own layout pass — measured against the settle animation,
- * a single frame lands mid-flight and scrolls to a stale box.
+ * WAITING TWO ANIMATION FRAMES DOES NOT WORK, and this is the second version of
+ * this function for that reason. `shellLayoutStore.add` emits synchronously but
+ * React commits on its own schedule, so `querySelector` inside a fixed number of
+ * frames finds nothing. Measured on the live board: a MutationObserver watching
+ * every `[data-grid-id]` in the workspace recorded the marker being applied ZERO
+ * times across repeated adds — the reveal was silently doing nothing at all, which
+ * is precisely the failure it exists to prevent, hiding inside the fix for it.
  *
- * Silent when the node never appears. The alternative — retrying, or throwing —
- * would turn "the board is in a state I did not anticipate" into either a hang or
- * a crash inside a click handler, and the widget itself has already been created
- * correctly either way.
+ * So it polls per frame until the node exists, with a deadline. Bounded, so a card
+ * that never arrives costs 600ms of empty frames rather than a hang, and the widget
+ * itself has been created correctly either way.
+ *
+ * THE MARKER IS A DATA ATTRIBUTE, NOT A CLASS, and that is not a style preference.
+ * `className` is a prop React owns on these nodes; the board re-renders on the very
+ * store write that created the card, and any class added imperatively is liable to
+ * be reconciled away. React does not touch attributes it never rendered, so
+ * `data-just-added` survives.
  */
 export function revealWidget(id: string): void {
   if (typeof window === "undefined") return;
 
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const el = document.querySelector<HTMLElement>(`[data-grid-id="${CSS.escape(id)}"]`);
-      if (!el) return;
+  const selector = `[data-grid-id="${CSS.escape(id)}"]`;
 
-      // `block: "nearest"` rather than "center": the board is a scroll container
-      // inside a fixed console band, and centring a card at the bottom of a short
-      // board scrolls past the cards the user was already looking at. "Nearest"
-      // moves the minimum needed to bring it fully in, which for an on-screen
-      // card is nothing at all.
-      el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  const mark = (el: HTMLElement) => {
+    // `block: "nearest"` rather than "center": the board is a scroll container
+    // inside a fixed console band, and centring a card at the bottom of a short
+    // board scrolls past the cards the user was already looking at. "Nearest"
+    // moves the minimum needed to bring it fully in, which for a card already on
+    // screen is nothing at all.
+    el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+    el.setAttribute("data-just-added", "");
+    window.setTimeout(() => el.removeAttribute("data-just-added"), FLASH_MS);
+  };
 
-      el.classList.add("is-just-added");
-      window.setTimeout(() => el.classList.remove("is-just-added"), FLASH_MS);
-    });
+  const found = document.querySelector<HTMLElement>(selector);
+  if (found) { mark(found); return; }
+
+  // WATCH FOR IT RATHER THAN GUESSING WHEN IT ARRIVES. The first version waited a
+  // fixed two animation frames and never fired; the second polled with
+  // requestAnimationFrame and fired, but late and erratically — rAF is throttled to
+  // roughly one callback a second in a tab that is not visible, which is also every
+  // tab a headless test runs in. A MutationObserver fires on the insertion itself,
+  // so this is correct whether or not frames are being served.
+  const obs = new MutationObserver(() => {
+    const el = document.querySelector<HTMLElement>(selector);
+    if (!el) return;
+    obs.disconnect();
+    window.clearTimeout(giveUp);
+    mark(el);
   });
+  obs.observe(document.body, { childList: true, subtree: true });
+
+  // Bounded, so a card that never arrives costs one disconnect rather than an
+  // observer that lives for the rest of the session. The widget itself has already
+  // been created correctly either way.
+  const giveUp = window.setTimeout(() => obs.disconnect(), REVEAL_DEADLINE_MS);
 }
 
 function prefersReducedMotion(): boolean {
