@@ -112,6 +112,8 @@ import {
   WEBCAM_COLOR,
 } from "@/lib/icons/svg";
 import AoiControl from "@/components/console/AoiControl";
+import CameraPickControl from "@/components/console/CameraPickControl";
+import CameraTray from "@/components/console/CameraTray";
 import MapSearch from "@/components/console/MapSearch";
 import WorldClock from "@/components/console/WorldClock";
 
@@ -290,7 +292,14 @@ export default function StageBar() {
       <div className="tnx-stage-right">
         <StageLegend />
         <AoiControl />
+        <CameraPickControl />
       </div>
+
+      {/* The tray. Bottom of the STAGE, not of the viewport — it is about the map,
+          and a bar pinned to the window would sit over whichever widget happened to
+          be at the foot of the board. It renders nothing at all when the basket is
+          empty and picking is off. */}
+      <CameraTray />
 
       <div className="tnx-stage-foot">
         <WorldClock />

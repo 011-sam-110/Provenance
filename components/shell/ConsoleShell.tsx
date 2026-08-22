@@ -30,7 +30,7 @@ import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
 import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
-import { armStore } from "@/lib/console/widgets/camslot.arm";
+import { pickStore } from "@/lib/console/widgets/camslot.pick";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import TourOverlay from "@/components/shell/TourOverlay";
@@ -197,14 +197,19 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           if (focusStageSearch()) e.preventDefault();
           break;
         case "Escape":
-          // Escape leaves the innermost thing first, and a map armed to fill a slot
-          // is inner to a selection. Sequenced HERE rather than from a second
+          // Escape leaves the innermost thing first, and a map in camera-picking
+          // mode is inner to a selection. Sequenced HERE rather than from a second
           // listener, because two listeners would both fire on the same keydown and
-          // one press would end arming AND silently clear the user's selection —
-          // work they never asked to lose. Armed: end the mode, nothing else. A
+          // one press would end picking AND silently clear the user's selection —
+          // work they never asked to lose. Picking: leave the mode, nothing else. A
           // second Escape then clears the selection as it always did.
-          if (armStore.get()) {
-            armStore.disarm();
+          //
+          // Leaving the mode does NOT empty the basket. Escape is how you stop the
+          // map intercepting clicks, and a user who presses it to pan around before
+          // sending would otherwise lose every camera they had chosen. `clear()` on
+          // the tray is the only thing that throws picks away.
+          if (pickStore.get().mode === "picking") {
+            pickStore.setMode("off");
             break;
           }
           selectionStore.clear();
@@ -234,13 +239,16 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       const now = shellLayoutStore.get().focusedWidgetId;
       if (now === lastFocus) return;
       lastFocus = now;
-      if (now) armStore.disarm(); // entering focus, not leaving it
+      if (now) pickStore.setMode("off"); // entering focus, not leaving it
     });
     const offPreset = activePresetStore.subscribe(() => {
       const now = activePresetStore.get();
       if (now === lastPreset) return;
       lastPreset = now;
-      armStore.disarm();
+      // A board change is the one case that empties the basket: picks belong to
+      // the wall you were building, and carrying them to another board would
+      // offer to send cameras to slots that are not there any more.
+      pickStore.reset();
     });
     return () => {
       offLayout();

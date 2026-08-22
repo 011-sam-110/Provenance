@@ -266,6 +266,23 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // an honest "no longer published" tile (see camslot.tsx / CameraImage), which is
   // why seeding is safe at all. The fourth slot is deliberately empty: it is the
   // affordance that teaches the board is yours to fill.
+  //
+  // `name` IS RENDERED — do not drop it. It used to be dead config: WidgetFrame drew
+  // the widget TYPE's title, so all four walls here carried the identical header
+  // "CAMERA WALL" and no user could say which tile a camera would land in. The
+  // registry's `titleOf` (see camslotTitle in camslot.tsx) now reads it. That is what
+  // makes these three strings load-bearing rather than decorative.
+  //
+  // THE WEIGHTS BELOW DO NOTHING ON THIS BOARD, and they are left equal to say so.
+  // `composeWall` hands `arrangeWall` a bare id list; `arrangeWall` takes no weights
+  // at all and tiles fixed 4-column cards with the map pinned at 4 columns by
+  // `CARD_W`. Measured over the whole ROWS ladder the preset test uses (24/28/32/40),
+  // weights of 9/3/3/1 produce rects identical to 3/3/3/3 — stage {0,0,4,rows}, four
+  // cards 4 x rows/2. So the stage cannot be widened from here: it needs `arrangeWall`
+  // (shared with `arrangeConsole` and the reducers' wall mode, and pinned by
+  // tests/unit/terminal-layout-grid.test.ts) or `composeWall` to change, and widening
+  // it also has to keep the "no uncovered cell right of the stage" assertion true —
+  // a 6-column stage leaves 6 columns that 4-wide cards cannot tile.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     mapCore: ["cameras", "webcams"],
     build: (rows = DEFAULT_BOARD_ROWS) => composeWall("map2d", rows, [

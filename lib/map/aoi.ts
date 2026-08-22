@@ -240,12 +240,33 @@ export function isDrawing(): boolean {
   return draw.active;
 }
 
+export interface DrawOptions {
+  /**
+   * What a finished ring is FOR.
+   *
+   * Omitted, the ring becomes the console's AOI scope — the original and still the
+   * default behaviour, which every existing caller relies on.
+   *
+   * Supplied, the scope is left completely alone and the ring is handed to the
+   * caller instead. The camera picker needs this: "make me a wall out of Soho" and
+   * "hide everything outside Soho" are different requests, and quietly doing the
+   * second while the user asked for the first would filter a dozen unrelated
+   * widgets as a side effect of picking some cameras. The drawing, the vertex
+   * counter, the click-capture and the double-click-zoom custody are identical for
+   * both, which is why this is an option rather than a second implementation.
+   *
+   * Called only for a ring that reached MIN_VERTICES. An abandoned draw calls
+   * nothing.
+   */
+  onFinish?: (ring: [number, number][]) => void;
+}
+
 /**
  * Begin drawing. Click to place a vertex, Enter or double-click to finish, Escape
  * to abandon. Finishing with fewer than three vertices abandons instead: two
  * points is a line, and a line as an "area" would filter the console to nothing.
  */
-export function startDraw(map: MapLibreMap): boolean {
+export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
   if (draw.active) return false;
   if (!ensureLayers(map)) return false; // style not up: nothing to draw on yet
   setDraw({ active: true, vertices: [] });
@@ -302,6 +323,7 @@ export function startDraw(map: MapLibreMap): boolean {
     const ring = draw.vertices;
     teardown();
     if (ring.length < MIN_VERTICES) return; // not an area - abandon, never filter
+    if (opts.onFinish) { opts.onFinish(ring); return; }
     scopeStore.set(aoiScope(ring, aoiLabel(ring)));
   };
 

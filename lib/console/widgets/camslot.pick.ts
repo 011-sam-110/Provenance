@@ -142,6 +142,49 @@ export function camerasInRing<T extends LatLon>(
   return out;
 }
 
+export interface PickNoteOpts {
+  /** How many the gesture actually found, before the basket's cap. Distinct from
+   *  `added + duplicates + refused` only when a caller filtered first. */
+  found?: number;
+  /** True when the gesture was a drawn area rather than a click or a box. */
+  fromArea?: boolean;
+}
+
+/**
+ * One sentence for what a gesture did to the basket.
+ *
+ * Every branch says something. A gesture that produced no visible consequence is
+ * the failure this whole interception layer exists to prevent — "the map moved a
+ * bit" is not an answer to a click, and neither is silence when everything you
+ * just boxed was already picked.
+ *
+ * The refusal branch names BOTH numbers, because "60 picked" alone reads as
+ * success when fourteen cameras were dropped on the floor.
+ */
+export function describePicked(res: MergeResult, opts: PickNoteOpts = {}): string {
+  const where = opts.fromArea ? " in this area" : "";
+  const n = (c: number, s: string, p = `${s}s`) => `${c} ${c === 1 ? s : p}`;
+
+  if (res.added === 0 && res.duplicates === 0 && res.refused === 0) {
+    return `No cameras${where}.`;
+  }
+  if (res.added === 0 && res.refused > 0) {
+    return `The basket is full at ${MAX_PICKS} — ${n(res.refused, "camera")} not picked. Send or clear what you have first.`;
+  }
+  if (res.added === 0) {
+    return res.duplicates === 1
+      ? "That one is already picked."
+      : `All ${res.duplicates} were already picked.`;
+  }
+
+  const parts = [`Picked ${n(res.added, "camera")}${where}.`];
+  if (res.duplicates > 0) parts.push(`${n(res.duplicates, "was", "were")} already in the basket.`);
+  if (res.refused > 0) {
+    parts.push(`${res.refused} more would not fit — a basket holds ${MAX_PICKS}.`);
+  }
+  return parts.join(" ");
+}
+
 /** What the map is currently doing with a click on a camera. */
 export type PickMode = "off" | "picking";
 
@@ -197,6 +240,28 @@ export const pickStore = {
   clear() {
     if (state.picks.length === 0 && state.ring === null) return;
     state = { ...state, picks: [], ring: null, foundInArea: 0 };
+    emit();
+  },
+
+  /**
+   * Keep only these picks, dropping the rest.
+   *
+   * For a PARTIAL send: a wall took eight of the twelve you had and refused four
+   * because of its cadence cap. Clearing the basket there would destroy those four
+   * at the same moment the message says "use a second wall" — advice the user could
+   * no longer follow, because the cameras it referred to are gone. They stay.
+   *
+   * The area context is dropped regardless, and that is deliberate. Once part of a
+   * ring's contents has been placed, the leftovers are no longer "what is in this
+   * area": keeping `foundInArea` would leave the tray printing "this area has 143
+   * cameras" above a basket of four, which is true about the area and false about
+   * the thing the sentence appears to describe.
+   */
+  retain(keys: readonly string[]) {
+    const keep = new Set(keys);
+    const picks = state.picks.filter((p) => keep.has(p.key));
+    if (picks.length === state.picks.length && state.ring === null) return;
+    state = { ...state, picks, ring: null, foundInArea: 0 };
     emit();
   },
 
