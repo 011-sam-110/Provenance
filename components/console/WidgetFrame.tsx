@@ -21,6 +21,7 @@ import { useTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
 import FreshChip from "@/components/console/FreshChip";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 interface Report {
   alerts: Alert[];
@@ -302,7 +303,7 @@ export default function WidgetFrame({
           </div>
 
           <div className="tn-cw-menu-sep" />
-          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" })); setMenuOpen(false); }}>⧉ Duplicate</button>
+          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE })); setMenuOpen(false); }}>⧉ Duplicate</button>
           <button onClick={() => { shellLayoutStore.configure(instance.id, { alertStyle: alertStyle === "top" ? "feed" : "top" }); setMenuOpen(false); }}>
             ⚡ Alerts: {alertStyle === "top" ? "on top" : "in feed"}
           </button>
