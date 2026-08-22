@@ -1,7 +1,7 @@
 "use client";
 
 import { getMapInstance } from "@/lib/map/instance";
-import { startDraw } from "@/lib/map/aoi";
+import { aoiDrawStore, startDraw } from "@/lib/map/aoi";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
 import { loadedWebcamsStore } from "@/lib/webcams/loaded";
 import { webcamRef, orderByDistanceFrom } from "@/lib/console/widgets/camslot.arm";
@@ -46,6 +46,39 @@ export type AreaPickOutcome =
   | { kind: "busy" }
   | { kind: "not-ready" };
 
+// ── Whose draw is it? ────────────────────────────────────────────────────────
+//
+// `aoiDrawStore` says a ring is being drawn. It does not say what for, and two
+// controls now start one: "Restrict results to area" and "Draw an area". Both
+// render a live vertex counter and a Cancel button while a draw is running, so
+// without this flag BOTH appeared at once — measured on the live stage bar, two
+// stacked "0/3 POINTS / CANCEL" panels, one of which was describing a gesture the
+// user had not asked for. Whichever one the user reads, half the time it is
+// telling them the wrong thing about what closing the ring will do.
+let forPick = false;
+const flagListeners = new Set<() => void>();
+function emitFlag() { for (const fn of flagListeners) fn(); }
+
+function setForPick(v: boolean) {
+  if (forPick === v) return;
+  forPick = v;
+  emitFlag();
+}
+
+export const areaPickStore = {
+  /** True only while the draw in progress was started by the camera picker. */
+  get(): boolean { return forPick; },
+  subscribe(fn: () => void) { flagListeners.add(fn); return () => { flagListeners.delete(fn); }; },
+};
+
+// A cancelled or abandoned draw never reaches onFinish, so the flag has to be
+// cleared from the draw store going idle rather than from the finish path alone.
+// Subscribed once at module load: aoi.ts is imported by the map and by both
+// controls, so there is no later moment that is reliably "after everything".
+aoiDrawStore.subscribe(() => {
+  if (!aoiDrawStore.get().active) setForPick(false);
+});
+
 /**
  * Begin an area pick. Returns as soon as drawing starts — the picks land later,
  * when the user closes the ring.
@@ -59,7 +92,9 @@ export function startAreaPick(): AreaPickOutcome {
   if (!map) return { kind: "no-map" };
 
   pickStore.setMode("picking");
-  const ok = startDraw(map, { onFinish: (ring) => { pickRing(ring); } });
+  setForPick(true);
+  const ok = startDraw(map, { onFinish: (ring) => { setForPick(false); pickRing(ring); } });
+  if (!ok) setForPick(false);
   return ok ? { kind: "started" } : { kind: "not-ready" };
 }
 

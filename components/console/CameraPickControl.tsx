@@ -18,15 +18,19 @@
 // gathers cameras out of the map. Putting them together is also what makes the
 // difference legible — "Restrict results to area" filters, "Draw an area" collects.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { MIN_VERTICES, cancelDraw, useAoiDraw } from "@/lib/map/aoi";
 import { pickStore, usePicks } from "@/lib/console/widgets/camslot.pick";
-import { startAreaPick } from "@/lib/console/widgets/camslot.area";
+import { areaPickStore, startAreaPick } from "@/lib/console/widgets/camslot.area";
 import { createCamslot } from "@/lib/console/widgets/camslot.create";
 
 export default function CameraPickControl() {
   const { mode, picks } = usePicks();
   const drawing = useAoiDraw();
+  // A draw started by "Restrict results to area" is not ours: both controls would
+  // otherwise render a vertex counter and a Cancel button at the same time, and one
+  // of the two would be describing a gesture the user never asked for.
+  const oursToDraw = useSyncExternalStore(areaPickStore.subscribe, areaPickStore.get, () => false);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export default function CameraPickControl() {
   // double-click) is invisible, so a user who has placed two points needs to be
   // told why the ring will not close. Copy deliberately mirrors AoiControl's, since
   // the gesture is literally the same one.
-  if (drawing.active) {
+  if (drawing.active && oursToDraw) {
     const n = drawing.vertices.length;
     const ready = n >= MIN_VERTICES;
     return (
