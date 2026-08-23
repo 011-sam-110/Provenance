@@ -185,6 +185,63 @@ describe("settle — randomised", () => {
   });
 });
 
+describe("settle — randomised, with a pre-move rect", () => {
+  // The block above drives place() the way every caller did before the swap
+  // existed, so it never reaches the pre-pass. This one passes the rect the item
+  // is actually leaving, which is what a live drag does, so the swap runs on
+  // every single move. Same contract: whatever comes back is a valid board.
+  //
+  // It exists because the first attempt at this feature put the lift INSIDE the
+  // collision loop, which broke that loop's "every pass moves a widget down"
+  // termination argument. All 50 deterministic tests passed; the randomised pass
+  // failed on 5 of 5 seeds with cards left overlapping. Nothing else caught it.
+  for (const seed of [1, 7, 42, 1337, 90210, 5150, 24601]) {
+    it(`holds every invariant over 200 swapping moves (seed ${seed})`, () => {
+      const rand = rng(seed);
+      let board: GridItem[] = compact(
+        Array.from({ length: 9 }, (_, i) => it_(`w${i}`, (i % 4) * 3, Math.floor(i / 4) * 5, 3, 5)),
+      );
+      for (let n = 0; n < 200; n++) {
+        const target = board[Math.floor(rand() * board.length)];
+        const prev = { x: target.x, y: target.y, w: target.w, h: target.h };
+        board = place(
+          board,
+          target.id,
+          {
+            x: Math.floor(rand() * 14) - 1,
+            y: Math.floor(rand() * 24) - 1,
+            w: 1 + Math.floor(rand() * 13),
+            h: 1 + Math.floor(rand() * 12),
+          },
+          prev,
+        );
+        expect(board).toHaveLength(9);
+        expectValid(board);
+      }
+    });
+  }
+
+  it("a downward move past a neighbour exchanges them rather than doing nothing", () => {
+    const board = [it_("a", 0, 0, 6, 3), it_("b", 0, 3, 6, 3), it_("c", 0, 6, 6, 3)];
+    const out = place(board, "a", { x: 0, y: 3, w: 6, h: 3 }, { x: 0, y: 0, w: 6, h: 3 });
+    expectValid(out);
+    expect(readingOrder(out).map((i) => i.id)).toEqual(["b", "a", "c"]);
+  });
+
+  it("leaves an upward move alone, which already worked", () => {
+    const board = [it_("a", 0, 0, 6, 3), it_("b", 0, 3, 6, 3), it_("c", 0, 6, 6, 3)];
+    const out = place(board, "c", { x: 0, y: 0, w: 6, h: 3 }, { x: 0, y: 6, w: 6, h: 3 });
+    expectValid(out);
+    expect(readingOrder(out).map((i) => i.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("without a pre-move rect the board settles exactly as it always did", () => {
+    const board = [it_("a", 0, 0, 6, 3), it_("b", 0, 3, 6, 3), it_("c", 0, 6, 6, 3)];
+    const legacy = place(board, "a", { x: 0, y: 3, w: 6, h: 3 });
+    expect(readingOrder(legacy).map((i) => i.id)).toEqual(["a", "b", "c"]);
+  });
+});
+
 describe("readingOrder", () => {
   it("sorts top-to-bottom then left-to-right", () => {
     const order = readingOrder([
