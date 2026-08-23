@@ -105,8 +105,46 @@ export function rowsUsed(items: readonly GridRect[]): number {
 export function resolveCollisions(
   items: readonly GridItem[],
   pinnedId: string | null,
+  prevRect: GridRect | null = null,
 ): GridItem[] {
   const out = items.map((i) => ({ ...i }));
+
+  // ── THE SWAP, applied ONCE and BEFORE the loop below ──────────────────────
+  //
+  // Drag a card DOWN onto its neighbour and the neighbour should rise into the
+  // space you just left. The loop below cannot express that: it only ever moves
+  // a widget DOWN, which is exactly what lets it terminate — "every pass either
+  // moves a widget down or exits" is the whole argument that its bound is a
+  // backstop rather than a real limit. Teaching that loop to lift things breaks
+  // the argument, and it breaks it in practice, not just on paper: an earlier
+  // attempt failed the randomised no-overlap invariant on 5 of 5 seeds while all
+  // 50 deterministic cases passed, because a lift can free space a later pass
+  // refills, and the two ping-pong until LIMIT ends the loop mid-overlap.
+  //
+  // So the exchange happens HERE, once, as a plain assignment, and the loop is
+  // left exactly as it was. It needs the rect the held card came FROM, which is
+  // why the caller supplies it; without one this is skipped and every existing
+  // caller behaves as it always did.
+  if (pinnedId !== null && prevRect) {
+    const held = out.find((i) => i.id === pinnedId);
+    // DOWNWARD ONLY. An upward drag already works: the loop pushes the card that
+    // was there down, which is the direction it is allowed to move things, and
+    // compaction then closes up behind. prevRect is here to tell the two apart.
+    if (held && held.y > prevRect.y) {
+      const blocking = out
+        .filter((i) => i.id !== pinnedId && overlaps(held, i))
+        .sort((a, b) => a.y - b.y)[0];
+      if (blocking) {
+        // Lift the topmost displaced card to sit directly above the held one.
+        // Anything else it now overlaps is left to the loop, which pushes DOWN
+        // and therefore still terminates. That is the whole reason this is a
+        // single assignment out here rather than a rule inside the loop.
+        const y = held.y - blocking.h;
+        if (y >= 0 && !overlaps({ ...blocking, y }, held)) blocking.y = y;
+      }
+    }
+  }
+
   const LIMIT = out.length * out.length + 64;
 
   for (let pass = 0; pass < LIMIT; pass++) {
@@ -149,8 +187,12 @@ export function compact(items: readonly GridItem[]): GridItem[] {
 }
 
 /** Resolve overlaps, then close the gaps. The board state after any user action. */
-export function settle(items: readonly GridItem[], pinnedId: string | null): GridItem[] {
-  return compact(resolveCollisions(items, pinnedId));
+export function settle(
+  items: readonly GridItem[],
+  pinnedId: string | null,
+  prevRect: GridRect | null = null,
+): GridItem[] {
+  return compact(resolveCollisions(items, pinnedId, prevRect));
 }
 
 /**
@@ -164,10 +206,11 @@ export function place(
   items: readonly GridItem[],
   id: string,
   rect: GridRect,
+  prevRect: GridRect | null = null,
 ): GridItem[] {
   if (!items.some((i) => i.id === id)) return items as GridItem[];
   const next = items.map((i) => (i.id === id ? clampRect({ ...i, ...rect }) : i));
-  return settle(next, id);
+  return settle(next, id, prevRect);
 }
 
 /**

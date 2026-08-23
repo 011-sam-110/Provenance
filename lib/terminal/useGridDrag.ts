@@ -126,7 +126,9 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
     s.committed = target;
 
     playFlip.current = captureFlip(containerRef.current);
-    shellLayoutStore.placeItem(s.id, target);
+    // s.origin is where this gesture started — the board needs it to know which
+    // way the exchange goes when the held card lands on a neighbour.
+    shellLayoutStore.placeItem(s.id, target, s.origin);
 
     // Where it ACTUALLY landed: settle may float the card up into a gap, so the
     // placeholder has to show the settled cell, not the raw pointer target.
@@ -306,12 +308,16 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
   const nudge = useCallback(
     (id: string, rect: GridRect, d: { dx?: number; dy?: number; dw?: number; dh?: number }) => {
       playFlip.current = captureFlip(containerRef.current);
+      // `rect` is where the item is NOW, so it doubles as the rect being left.
+      // Passing it is what makes "move one row down" work: without it the board
+      // pushed the neighbour further down and compaction put everything back, so
+      // the button was inert no matter how many times it was pressed.
       shellLayoutStore.placeItem(id, clampRect({
         x: rect.x + (d.dx ?? 0),
         y: Math.max(0, rect.y + (d.dy ?? 0)),
         w: rect.w + (d.dw ?? 0),
         h: rect.h + (d.dh ?? 0),
-      }));
+      }), rect);
     },
     [containerRef],
   );
