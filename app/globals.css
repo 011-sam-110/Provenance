@@ -5098,3 +5098,33 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
      24px it was standing on has gone with it. */
   .tn-terminal .tn-tray { bottom: 0; }
 }
+
+/* ── Stage chrome on a narrow stage ──────────────────────────────────────────
+   The search box is centred and 420px wide; the right-hand stack is 200px and
+   pinned to the right edge. Together they need 628px. The STREETS board gives
+   the map four of twelve columns, so the stage is 471px — and the two were
+   painted on top of each other: measured on the live board, 182px of horizontal
+   overlap and 25px of vertical, the geocoder input running underneath the layer
+   key.
+
+   There is already an un-centring rule for this, and it does not fire here: it
+   is a VIEWPORT media query, and Streets has a narrow stage inside a wide
+   window. That is the whole bug — the constraint is the stage's width, so the
+   query has to be about the stage. Hence a container query on `.tn-cw-stage`,
+   which is already the positioned ancestor both children resolve against.
+
+   Un-centring rather than narrowing, because narrowing cannot work: a CENTRED
+   box of width W on a 471px stage reaches (471+W)/2, so keeping it clear of a
+   stack that starts at 263 would cap it at 55px. Below the threshold the search
+   spans the space to the LEFT of the stack instead. */
+.tn-terminal .tn-cw-stage { container-type: inline-size; container-name: tnstage; }
+
+@container tnstage (max-width: 640px) {
+  .tn-terminal .tnx-stage-search {
+    left: 8px;
+    /* 200px stack + 8px its right inset + 8px gutter. */
+    right: 216px;
+    width: auto;
+    transform: none;
+  }
+}
