@@ -110,9 +110,18 @@ export function applyItems(l: ShellLayout, items: readonly GridItem[]): ShellLay
   };
 }
 
-/** Move or resize one item (widget or stage) and settle the board around it. */
-export function setItemRect(l: ShellLayout, id: string, rect: GridRect): ShellLayout {
-  return applyItems(l, place(gridItems(l), id, rect));
+/** Move or resize one item (widget or stage) and settle the board around it.
+ *
+ *  `prevRect` is the rect the item came FROM, and only a live gesture has it. Given
+ *  one, a card dragged onto a neighbour swaps with it instead of shoving it down.
+ *  Omitted, the board settles exactly as it always has. */
+export function setItemRect(
+  l: ShellLayout,
+  id: string,
+  rect: GridRect,
+  prevRect: GridRect | null = null,
+): ShellLayout {
+  return applyItems(l, place(gridItems(l), id, rect, prevRect));
 }
 
 /**

@@ -35,6 +35,7 @@ import {
 } from "@/lib/console/sourceWidgets";
 import { rollupHelp, sourceHelp } from "@/lib/console/sourceCards";
 import type { FreshKind } from "@/lib/sources/freshKind";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 const FRESH_LABEL: Record<FreshKind, string> = {
   off: "off",
@@ -158,7 +159,7 @@ function RollupRow({ id }: { id: string }) {
           const r = shellLayoutStore.add(widgetTypeForSource(id));
           if (!r.ok) {
             window.dispatchEvent(
-              new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" }),
+              new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }),
             );
           }
         }}
