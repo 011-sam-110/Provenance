@@ -9,6 +9,7 @@ import {
   HEIGHT_PRESET_TOLERANCE_PX,
   WIDTH_PRESETS,
 } from "@/lib/console/resize";
+import { ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -21,6 +22,7 @@ import { useTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
 import FreshChip from "@/components/console/FreshChip";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 interface Report {
   alerts: Alert[];
@@ -62,6 +64,14 @@ export default function WidgetFrame({
   const [helpOpen, setHelpOpen] = useState(false);
   const helpBtnRef = useRef<HTMLButtonElement>(null);
   const onReport = useCallback((r: Report) => setReport(r), []);
+
+  // What this CARD is called, which is not always what its TYPE is called. A widget
+  // that can appear several times on one board and be pointed at individually — a
+  // camera wall, four of them on Streets — has to say WHICH one it is, or every
+  // control that targets one by name is aiming at an unlabelled row of identical
+  // headers. Falls back to the type title, which is the right answer for the ~70
+  // widgets that are only ever on a board once.
+  const frameTitle = type?.titleOf?.(instance.config) || type?.title || instance.type;
 
   // Per-widget notification rule (keyed by TYPE) + the creds that gate each channel.
   const rule = useRule(instance.type);
@@ -134,7 +144,18 @@ export default function WidgetFrame({
   const rect = instance.rect;
   const nudgeBy = (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => onNudge?.(d);
   const activeWidth = activePreset(WIDTH_PRESETS, rect?.w ?? instance.width);
-  const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
+  // Height, like width, has to come off the GRID RECT when there is one.
+  // `instance.height` is the legacy px field: the preset buttons write it, but a
+  // drag-resize writes rect.h and never touches it, so reading it alone left the
+  // S/M/L/XL chips showing whatever was last chosen from this menu no matter how
+  // far the card had since been dragged. Width was already correct because it
+  // reads rect.w first; this is the same rule applied to the other axis.
+  // Rows convert at the grid's own pitch rather than a retyped 25.
+  const activeHeight = activePreset(
+    HEIGHT_PRESETS,
+    rect ? rect.h * (ROW_PX + GAP_PX) : instance.height,
+    HEIGHT_PRESET_TOLERANCE_PX,
+  );
 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
@@ -152,7 +173,7 @@ export default function WidgetFrame({
         <button
           type="button"
           className="tn-cw-grip"
-          aria-label={`Move ${type.title}. Arrow keys move, shift with arrow keys resizes.`}
+          aria-label={`Move ${frameTitle}. Arrow keys move, shift with arrow keys resizes.`}
           title="Drag to move · arrows to nudge · shift+arrows to resize"
           onPointerDown={onGrab}
           onKeyDown={onNudgeKey}
@@ -177,7 +198,7 @@ export default function WidgetFrame({
             accessible description that merely repeats the accessible name is
             suppressed by screen readers rather than announced twice, which is the
             trap f79b004 fixed and this must not reintroduce. */}
-        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={type.title}>{type.title}</h3>
+        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={frameTitle}>{frameTitle}</h3>
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
         {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}
@@ -190,6 +211,20 @@ export default function WidgetFrame({
         <button className={`tn-cw-bell${rule.enabled ? " is-on" : ""}`} aria-label="Notifications" aria-pressed={rule.enabled}
           title={rule.enabled ? "Notifications on" : "Notify me"} onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}>🔔</button>
         <button className="tn-cw-expand" aria-label="Expand widget" title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
+        {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
+            LAST of nineteen entries in a scrolling panel, so on a short card it
+            sits below an internal scroll — a control you have to already know is
+            there. The menu entry stays: this is a second route, not a move, and
+            the menu also holds the nudge buttons that let the 10px resize handles
+            claim the WCAG 2.5.8 equivalent-alternative exemption. */}
+        {/* Sits INBOARD of the menu button on purpose. The 16x16 .tn-rz-ne
+            resize handle is pinned to the card corner at z-index 20 and covers
+            the top-right of the header, so a control placed last here is drawn
+            but not clickable — Playwright caught the handle swallowing the
+            click. Raising this above the handle instead would take the corner
+            away from resizing, which is a real control, not dead space. */}
+        <button className="tn-cw-close" aria-label={`Remove ${frameTitle}`} title="Remove from board"
+          onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
         <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
       </header>
 
@@ -252,13 +287,13 @@ export default function WidgetFrame({
         // toggles (the size chips carry aria-pressed), and a pressed menuitem is
         // a contradiction most screen readers announce badly. A labelled group of
         // ordinary buttons describes what this actually is.
-        <div className="tn-cw-menu-pop" role="group" aria-label={`${type.title} options`}>
+        <div className="tn-cw-menu-pop" role="group" aria-label={`${frameTitle} options`}>
           {/* MOVE — the drag, as buttons. One click, no aim, keyboard-reachable. */}
           <div className="tn-cw-menu-sec">Move</div>
           <div className="tn-cw-menu-row">
             <button className="tn-cw-chip" title="Move one column left" onClick={() => nudgeBy({ dx: -1 })}>◀</button>
-            <button className="tn-cw-chip" title="Move one row up" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
-            <button className="tn-cw-chip" title="Move one row down" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
+            <button className="tn-cw-chip" title="Move up past the card above" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
+            <button className="tn-cw-chip" title="Move down past the card below" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
             <button className="tn-cw-chip" title="Move one column right" onClick={() => nudgeBy({ dx: 1 })}>▶</button>
           </div>
           <div className="tn-cw-menu-sec">Grow / shrink</div>
@@ -302,7 +337,7 @@ export default function WidgetFrame({
           </div>
 
           <div className="tn-cw-menu-sep" />
-          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" })); setMenuOpen(false); }}>⧉ Duplicate</button>
+          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE })); setMenuOpen(false); }}>⧉ Duplicate</button>
           <button onClick={() => { shellLayoutStore.configure(instance.id, { alertStyle: alertStyle === "top" ? "feed" : "top" }); setMenuOpen(false); }}>
             ⚡ Alerts: {alertStyle === "top" ? "on top" : "in feed"}
           </button>

@@ -20,7 +20,7 @@
 // finish gesture is invisible otherwise — a user who has placed two points needs
 // to know why Enter is not closing the ring.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useScope } from "@/lib/shell/scope";
 import {
   MIN_VERTICES,
@@ -30,10 +30,14 @@ import {
   useAoiDraw,
 } from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
+import { areaPickStore } from "@/lib/console/widgets/camslot.area";
 
 export default function AoiControl() {
   const scope = useScope();
   const drawing = useAoiDraw();
+  // The camera picker borrows the same draw tool. While it owns the gesture this
+  // control stays out of the way rather than narrating someone else's ring.
+  const theirs = useSyncExternalStore(areaPickStore.subscribe, areaPickStore.get, () => false);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export default function AoiControl() {
     if (!startDraw(map)) setNote("The map is still loading.");
   }, []);
 
-  if (drawing.active) {
+  if (drawing.active && !theirs) {
     const n = drawing.vertices.length;
     const ready = n >= MIN_VERTICES;
     return (

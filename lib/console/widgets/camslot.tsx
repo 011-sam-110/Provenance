@@ -23,7 +23,7 @@ import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
 import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
-import { armStore, useIsArmed } from "@/lib/console/widgets/camslot.arm";
+import { pickStore } from "@/lib/console/widgets/camslot.pick";
 import {
   sanitizeCamslotConfig,
   nextIndex,
@@ -161,17 +161,15 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const [visible, setVisible] = useState(true);
   const [picking, setPicking] = useState(false);
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const armed = useIsArmed(instanceId);
 
-  // Arming and the picker are two routes to the same append, so being in both at
-  // once is meaningless — and it is also what would strand a ring behind a closed
-  // dialog, because ConsoleShell's Escape handler returns early whenever any
-  // [role="dialog"] is mounted and the picker is one. Opening the picker ends
-  // arming, which removes the collision without touching that shared guard.
-  const openPicker = useCallback(() => {
-    armStore.disarm();
-    setPicking(true);
-  }, []);
+  // Two routes out of an empty slot, and they are deliberately different things.
+  // The PICKER is a dialog owned by this slot: search a place, paste a YouTube
+  // link, add or remove streams here. MAP PICKING is not owned by this slot at all
+  // — it turns the map into a selection surface and the cameras collect in a shared
+  // basket, which is what lets the user choose the destination at send time rather
+  // than committing to one before they have found anything.
+  const openPicker = useCallback(() => setPicking(true), []);
+  const pickOnMap = useCallback(() => pickStore.setMode("picking"), []);
 
   // Names and cadences come from the shared camera poller — ref-counted, so several
   // slots share one 60s poll instead of each starting their own.
@@ -268,8 +266,16 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           {all.length > 0 ? (
             <>
               <span className="tn-cs-note">{unavailable ?? "Nothing in this slot is answering."}</span>
+              {/* This branch used to dead-end: one button into the picker and no way
+                  back to the map at all, on the one state a user is most likely to
+                  want to replace what is here. Both routes now appear. The picker's
+                  label stays "change", not "add" — the slot is NOT empty, and the
+                  note directly above has just said so. */}
               <button className="tn-cs-add" onClick={() => openPicker()}>
                 Change what is in this slot
+              </button>
+              <button className="tn-cs-add" onClick={() => pickOnMap()}>
+                ◎ Pick cameras on the map
               </button>
             </>
           ) : (
@@ -281,14 +287,10 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
                   header controls only render once a slot has something in it — so
                   without this the primary path ("give me a blank tile, let me drag a
                   box over Soho") had no way in. */}
-              <button
-                className={armed ? "tn-cs-add tn-cs-arm is-on" : "tn-cs-add tn-cs-arm"}
-                aria-pressed={armed}
-                onClick={() => armStore.toggle(instanceId)}
-              >
-                {armed ? "⊕ Picking from the map. Esc to stop" : "⊕ Pick from the map"}
+              <button className="tn-cs-add" onClick={() => pickOnMap()}>
+                ◎ Pick cameras on the map
               </button>
-              <span>Search a place, paste a YouTube link, or pick on the map</span>
+              <span>Search a place, paste a YouTube link, or collect cameras from the map</span>
             </>
           )}
         </div>
@@ -352,15 +354,6 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
             {paused ? "▶" : "❙❙"}
           </button>
         )}
-        <button
-          className={armed ? "tn-cs-arm is-on" : "tn-cs-arm"}
-          aria-pressed={armed}
-          aria-label={armed ? "Stop picking from the map" : "Pick cameras from the map"}
-          title={armed ? "Armed. Click a pin or shift-drag a box on the map. Esc to stop." : "Pick from the map"}
-          onClick={() => armStore.toggle(instanceId)}
-        >
-          ⊕
-        </button>
         <button aria-label="Add or remove cameras" onClick={() => openPicker()}>
           ＋
         </button>
@@ -390,9 +383,52 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   );
 }
 
+/**
+ * What THIS slot is called, as opposed to what this KIND of widget is called.
+ *
+ * WidgetFrame renders `type.title` for every instance, so the four camera walls on
+ * the Streets board all carried the identical header "CAMERA WALL" while their
+ * configs said London, Madrid and Prague. `CamslotConfig.name` was set by the
+ * preset and rendered nowhere. That is most of why "I can't tell which widget a
+ * camera would go into" was true — the destinations were literally indistinguishable.
+ *
+ * Registry meta calls this and falls back to `type.title` when it returns undefined,
+ * so the contract is: return a name this slot has EARNED, or nothing.
+ *
+ *  1. `name` — what the board author or the user called it. Always wins.
+ *  2. A one-stream slot with a title in its own config. "London: Trafalgar Square"
+ *     is a better header than "Camera wall" and it costs nothing to read. Only
+ *     `StreamRef.t` on a webcam qualifies: the directory lookup and the camera
+ *     poller are React hooks, and a header is not worth a fetch.
+ *  3. Otherwise undefined. A rotating slot has no single subject, and naming it
+ *     after whichever stream happens to be first would be a header that changes
+ *     meaning without changing text.
+ *
+ * Never "" — an empty string is a truthy-looking falsy value that would render as a
+ * blank header instead of falling back, which is worse than the problem this fixes.
+ * `config` is untrusted (it rides inside `?c=` links), so it is sanitized, not cast.
+ */
+export function camslotTitle(config: Record<string, unknown>): string | undefined {
+  const cfg = sanitizeCamslotConfig(config);
+  if (cfg.name) return cfg.name;
+  if (cfg.streams.length !== 1) return undefined;
+  const only = cfg.streams[0];
+  if (only.k !== "webcam") return undefined;
+  const t = (only.t ?? "").trim();
+  return t || undefined;
+}
+
 export const CAMSLOT_WIDGET = {
   id: "camslot",
   title: "Camera wall",
+  // Optional registry meta: WidgetFrame prefers titleOf(instance.config) and falls
+  // back to `title`. Declared here whether or not `WidgetType` has learned the
+  // property yet — CAMSLOT_WIDGET is a named const, not an inline literal, so
+  // `registerWidget(CAMSLOT_WIDGET)` is a plain assignability check with no excess-
+  // property check, and an extra method neither fails to compile nor gets stripped.
+  // No cast is involved, so if the shared type ever declares an INCOMPATIBLE
+  // `titleOf` this line goes red rather than quietly disagreeing.
+  titleOf: camslotTitle,
   icon: "🎦",
   category: "Cameras",
   defaultHeight: 260,

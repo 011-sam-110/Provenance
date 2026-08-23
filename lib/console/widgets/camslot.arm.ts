@@ -1,78 +1,21 @@
-"use client";
-// Map arming — "fill THIS slot from the map" — plus every rule that decides what a
-// map gesture is allowed to add.
+// Camera-slot rules — the geometry, the cap and the append, all pure.
 //
-// WHY THE MODE LIVES HERE AND NOT IN WorldMap. Two functions in WorldMap would
-// otherwise own it, and both are mount-once closures: `wireInteractions` is a
-// `useCallback(…, [])` invoked once at mount (WorldMap.tsx:1074, closing at :1262),
-// and `createThumbnailManager`'s `onPick` is built inside the init effect that
-// closes at :1563. Anything either one closes over is frozen at mount. On top of
-// that, StageHost.tsx:33,37 unmounts <WorldMap/> entirely when a widget is focused,
-// so React state inside it does not survive a focus round trip either. Module state
-// read at EVENT time is the only shape that works for both.
+// WHAT USED TO LIVE HERE. This file also held `armStore`: a module-level "fill THIS
+// slot from the map" mode, plus the `useArmedSlot` / `useIsArmed` hooks over it.
+// Arming chose the DESTINATION FIRST and it was removed — four camera walls on the
+// Streets board all render the same header, so "arm the right one" was a question
+// the screen could not answer. The basket in camslot.pick.ts replaces it and chooses
+// the destination LAST. That file inherits the reason the mode had to be module
+// state rather than React state: `wireInteractions` in WorldMap is a
+// `useCallback(…, [])` invoked once at mount, the thumbnail manager's `onPick` is
+// built inside the init effect, and StageHost unmounts <WorldMap/> entirely when a
+// widget is focused — so anything either closure captures is frozen at mount and
+// component state does not survive a focus round trip.
 //
-// WHY IT IS NOT PERSISTED. Arming is a held modifier key, not a preference. A
-// persisted mode means you reload tomorrow, click a pin expecting a dossier, and
-// silently append to a slot that is scrolled off screen. Contrast camslot.prefs.ts,
-// which IS persisted, because a pause is something the user chose about themselves.
-// It is not widget config either: store.ts:74 configure() -> emit() -> writeBoardLayout,
-// and boards.ts:104 layoutSignature includes `g: w.config`, so an armed flag in there
-// would light the board's "customised" dot on the first click.
-//
-// Everything below the store is PURE and node-tested. WorldMap supplies geometry and
-// side effects; it does not decide anything.
+// Everything left in this file is PURE and node-tested (tests/unit/camslot-arm.test.ts).
+// WorldMap supplies geometry and side effects; it does not decide anything.
 
-import { useSyncExternalStore } from "react";
 import { MAX_STREAMS, streamKey, type StreamRef } from "@/lib/console/widgets/camslot.model";
-
-// ── The mode ────────────────────────────────────────────────────────────────
-
-let armedId: string | null = null;
-const listeners = new Set<() => void>();
-
-function emit(): void {
-  for (const fn of listeners) fn();
-}
-
-export const armStore = {
-  /** The armed widget instance id, or null. Read at EVENT time, never captured. */
-  get(): string | null {
-    return armedId;
-  },
-  /** Arm one slot. Arming a second disarms the first — one target, always. */
-  arm(instanceId: string): void {
-    if (armedId === instanceId) return;
-    armedId = instanceId;
-    emit();
-  },
-  disarm(): void {
-    if (armedId === null) return;
-    armedId = null;
-    emit();
-  },
-  /** The ⊕ button: same slot turns it off, a different slot moves the arm. */
-  toggle(instanceId: string): void {
-    if (armedId === instanceId) this.disarm();
-    else this.arm(instanceId);
-  },
-  subscribe(fn: () => void): () => void {
-    listeners.add(fn);
-    return () => {
-      listeners.delete(fn);
-    };
-  },
-};
-
-/** Server snapshot is null: nothing is armed before hydration, by definition. */
-const serverSnapshot = (): string | null => null;
-
-export function useArmedSlot(): string | null {
-  return useSyncExternalStore(armStore.subscribe, armStore.get, serverSnapshot);
-}
-
-export function useIsArmed(instanceId: string): boolean {
-  return useArmedSlot() === instanceId;
-}
 
 // ── Geometry ────────────────────────────────────────────────────────────────
 
@@ -294,7 +237,7 @@ export function describeAppend(plan: AppendPlan, opts: AppendNoteOpts): string {
       : "Nothing here to add.";
   }
   if (added === 0) {
-    return `This slot is full at ${opts.cap}${capReason(opts)}. Remove a camera, or arm an empty slot.`;
+    return `This wall is full at ${opts.cap}${capReason(opts)}. Remove a camera, or send these to a new wall.`;
   }
 
   const bits: string[] = [];
@@ -316,8 +259,8 @@ export function describeAppend(plan: AppendPlan, opts: AppendNoteOpts): string {
     // the product anyway: a wall is made of slots.
     bits.push(
       opts.capMixed
-        ? "Narrow the box, drop the fastest-refreshing camera, or use a second slot."
-        : "Narrow the box, or use a second slot.",
+        ? "Pick fewer, drop the fastest-refreshing camera, or use a second wall."
+        : "Pick fewer, or use a second wall.",
     );
   }
   return bits.join(" ");

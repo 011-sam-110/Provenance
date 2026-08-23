@@ -35,6 +35,7 @@ import {
   type PaletteSnapshot,
 } from "@/lib/console/paletteGroups";
 import type { GeocodeResult } from "@/lib/geo/geocode";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 // Pick a fly-to zoom from a geocode result's extent (wider areas frame out).
 function zoomForResult(r: GeocodeResult): number {
@@ -59,7 +60,7 @@ const LAYER_NAMES: Record<LayerKey, string> = {
 };
 
 function alertCapacity() {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" }));
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
 }
 
 function buildCommands(close: () => void): Command[] {
@@ -130,12 +131,31 @@ function buildCommands(close: () => void): Command[] {
 
   // ── Open widgets: jump focus to a card that's already on the workspace ──
   const openWidgets = shellLayoutStore.get().widgets;
-  const typeSeen = new Map<string, number>();
+  // A card is called what the CARD is called, using the same precedence the frame
+  // uses (WidgetFrame's frameTitle): the instance's own name first, the type's name
+  // second. Reading the type title here while the board reads the instance one is
+  // worse than both being anonymous — a user who can finally see "London" on a card
+  // would search the palette for "London" and find four rows called
+  // "Focus Camera wall #1..#4", numbered against nothing on screen.
+  const titleFor = (w: { type: string; config?: Record<string, unknown> }) => {
+    const t = getWidgetType(w.type);
+    return t?.titleOf?.(w.config ?? {}) || t?.title || w.type;
+  };
+  // The #n disambiguator is keyed on the RESOLVED title, not the type: three named
+  // walls need no numbering at all, and numbering them would re-introduce exactly
+  // the anonymity the names just removed. Two walls that genuinely share a name
+  // still get numbered, because then the number is the only thing telling them apart.
+  const titleTotals = new Map<string, number>();
   for (const w of openWidgets) {
-    const title = getWidgetType(w.type)?.title ?? w.type;
-    const total = openWidgets.filter((x) => x.type === w.type).length;
-    const n = (typeSeen.get(w.type) ?? 0) + 1;
-    typeSeen.set(w.type, n);
+    const t = titleFor(w);
+    titleTotals.set(t, (titleTotals.get(t) ?? 0) + 1);
+  }
+  const titleSeen = new Map<string, number>();
+  for (const w of openWidgets) {
+    const title = titleFor(w);
+    const total = titleTotals.get(title) ?? 1;
+    const n = (titleSeen.get(title) ?? 0) + 1;
+    titleSeen.set(title, n);
     cmds.push({
       id: `focus-${w.id}`,
       label: `Focus ${title}${total > 1 ? ` #${n}` : ""}`,

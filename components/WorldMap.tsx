@@ -19,6 +19,7 @@ import { overlay } from "@/lib/overlay";
 import { cinematic } from "@/lib/cinematic/store";
 import { computeDive } from "@/lib/cinematic/dive";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
+import { loadedWebcamsStore } from "@/lib/webcams/loaded";
 import { useSatellites } from "@/lib/satellites/useSatellites";
 import { usePlanes, type PlaneTrail, type PlanesLayer } from "@/lib/planes/usePlanes";
 import { trackStore, useTrack, type TrackState } from "@/lib/planes/track";
@@ -63,20 +64,22 @@ import {
   expandCluster,
 } from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
-// Map arming. Every rule lives in camslot.arm; this file supplies geometry and
-// side effects and decides nothing. See the block above appendToArmedSlot for why
-// none of it may be closed over.
+// Map picking. Every rule lives in camslot.pick and camslot.arm; this file supplies
+// geometry and side effects and decides nothing. See the block above addPicks for
+// why none of it may be closed over.
 import {
-  armStore,
-  useArmedSlot,
+  pickStore,
+  usePicks,
+  describePicked,
+  camerasInRing,
+  pickKey,
+  type PickedCamera,
+} from "@/lib/console/widgets/camslot.pick";
+import {
   camerasInBounds,
   normalizeBounds,
   orderByDistanceFrom,
-  cadenceCap,
-  planAppend,
-  describeAppend,
   webcamRef,
-  FALLBACK_REFRESH_SECONDS,
   type LatLon,
 } from "@/lib/console/widgets/camslot.arm";
 import { sanitizeCamslotConfig, type StreamRef } from "@/lib/console/widgets/camslot.model";
@@ -293,10 +296,14 @@ function whenStyleReady(map: maplibregl.Map, fn: () => void): void {
 // what an armed click means would disagree for 24 cameras out of 97, side by side,
 // at the same zoom — a bug no manual click-test would reliably find.
 
-interface ArmCandidate extends LatLon {
+interface PickCandidate extends LatLon {
   ref: StreamRef;
+  /** What the tray calls it. Resolved here because this is the only place that
+   *  holds both the map feature and the loaded camera row. */
+  label: string;
   refreshSeconds?: number;
   available?: boolean;
+  source?: string;
 }
 
 function toast(message: string): void {
@@ -308,83 +315,68 @@ function toast(message: string): void {
  *  /api/webcam-image is bounded by that. */
 const WEBCAM_REFRESH_SECONDS = 600;
 
-
-/** The cadence of a stream already in the slot. Road cameras are the only kind that
- *  varies, and loadedCamerasStore is the only place the client holds it. */
-function refreshForRef(ref: StreamRef): number | undefined {
-  if (ref.k === "webcam") return WEBCAM_REFRESH_SECONDS;
-  if (ref.k === "yt") return undefined; // an embed is not polled; it has no cadence
-  return loadedCamerasStore.get().find((c) => c.id === ref.id)?.refreshSeconds;
+function toPicked(c: PickCandidate): PickedCamera {
+  return {
+    ref: c.ref,
+    key: pickKey(c.ref),
+    label: c.label,
+    lat: c.lat,
+    lon: c.lon,
+    refreshSeconds: c.refreshSeconds,
+    source: c.source,
+  };
 }
 
 /**
- * Append candidates to the armed slot, if one is armed.
+ * Put candidates in the basket, if picking is on.
  *
  * Returns TRUE when the gesture was consumed, so every caller can bail before
- * doing its normal job. Consumption is decided synchronously and does not depend
- * on whether anything was actually added: an armed click on a camera already in
- * the slot still belongs to arming, and still owes the user a visible answer
+ * doing its normal job. Consumption is decided synchronously and does NOT depend
+ * on whether anything was actually added: a pick-mode click on a camera already in
+ * the basket still belongs to picking, and still owes the user a visible answer
  * rather than a silent nothing or a surprise dossier.
  *
- * The write is async because the layout store is imported lazily — the same shape
- * camslot.picker.tsx:165-169 uses, and for the same reason: it keeps the console
- * store out of the map's import graph.
+ * WHAT CHANGED FROM ARMING, and why this function is now short. Arming had to
+ * resolve a destination widget, read its playlist out of the layout store, work out
+ * a cadence cap from the streams already in it, and plan an append — all inside a
+ * lazily-imported promise, on every click. None of that belongs at click time any
+ * more: the destination is not chosen until the user presses Send, so the cap and
+ * the plan are computed once, there, against the slot they actually pick. This
+ * leaves the map doing what the map is for — turning a gesture into a list of
+ * cameras — and it is why the console store is no longer in this path at all.
  */
-function appendToArmedSlot(candidates: ArmCandidate[], centre: LatLon): boolean {
-  const instanceId = armStore.get();
-  if (!instanceId) return false;
+function addPicks(candidates: PickCandidate[], centre: LatLon, opts: { fromArea?: boolean } = {}): boolean {
+  if (pickStore.get().mode !== "picking") return false;
 
-  void import("@/lib/console/store").then(({ shellLayoutStore }) => {
-    const widget = shellLayoutStore.get().widgets.find((w) => w.id === instanceId);
-    if (!widget) {
-      // The armed slot was removed from the board while the mode was on.
-      armStore.disarm();
-      toast("That slot is gone — arming turned off.");
-      return;
-    }
-    // Read the playlist from the STORE, never from a value captured when the mode
-    // was armed: between arming and clicking, the picker or another append may have
-    // changed it, and writing a stale array would silently drop those streams.
-    const cfg = sanitizeCamslotConfig(widget.config);
-
-    const ordered = orderByDistanceFrom(candidates, centre);
-    // The cap is set by the FASTEST-refreshing member of the resulting playlist, so
-    // the streams already in the slot count too — appending a 60s camera to a slot of
-    // 300s ones is exactly the case that moves it, and ignoring the existing members
-    // would let the cap drift up every time the user clicked.
-    const cadences = [
-      ...cfg.streams.map(refreshForRef),
-      ...ordered.map((c) => c.refreshSeconds),
-    ];
-    const cap = cadenceCap(cadences, cfg.intervalMs);
-    const plan = planAppend(cfg.streams, ordered.map((c) => c.ref), cap);
-    const resolved = cadences.map((s) =>
-      typeof s === "number" && s > 0 ? s : FALLBACK_REFRESH_SECONDS,
-    );
-    const capSetBySeconds = Math.min(...resolved, FALLBACK_REFRESH_SECONDS);
-    const capMixed = new Set(resolved).size > 1;
-
-    if (plan.next) shellLayoutStore.configure(instanceId, { streams: plan.next });
-    toast(
-      describeAppend(plan, {
-        available: candidates.filter((c) => c.available !== false).length,
-        cap,
-        capSetBySeconds,
-        capMixed,
-      }),
-    );
-  });
-
+  // Nearest-first, so a cap that bites drops the far edge of what the user framed
+  // rather than an arbitrary slice of whatever order the feed arrived in.
+  const ordered = orderByDistanceFrom(candidates, centre);
+  const res = pickStore.add(ordered.map(toPicked));
+  toast(describePicked(res, { fromArea: opts.fromArea }));
   return true;
 }
 
+/** A road camera's own name, for the tray. Falls back to the id rather than to a
+ *  blank — an unlabelled chip is worse than an ugly one. */
+function camLabel(id: string, fallback?: string): string {
+  const row = loadedCamerasStore.get().find((c) => c.id === id);
+  return row?.name || fallback || id;
+}
+
 /** One road camera, from either the layer click or a live-thumbnail button. */
-function armedPickCamera(id: string, lat: number, lon: number): boolean {
-  if (!armStore.get()) return false;
+function pickOneCamera(id: string, lat: number, lon: number, name?: string): boolean {
+  if (pickStore.get().mode !== "picking") return false;
   // The store row is the only place a per-camera cadence exists on the client.
   const row = loadedCamerasStore.get().find((c) => c.id === id);
-  return appendToArmedSlot(
-    [{ ref: { k: "cam", id }, lat, lon, refreshSeconds: row?.refreshSeconds, available: row?.available }],
+  return addPicks(
+    [{
+      ref: { k: "cam", id },
+      label: row?.name || name || id,
+      lat, lon,
+      refreshSeconds: row?.refreshSeconds,
+      available: row?.available,
+      source: row?.source,
+    }],
     { lat, lon },
   );
 }
@@ -398,7 +390,7 @@ function armedPickCamera(id: string, lat: number, lon: number): boolean {
  * produced no visible consequence is the one outcome this interception exists to
  * prevent, and "the map moved a bit" does not count as one.
  */
-async function appendClusterLeaves(
+async function pickClusterLeaves(
   map: maplibregl.Map,
   sourceId: string,
   clusterId: number,
@@ -421,7 +413,7 @@ async function appendClusterLeaves(
 
   const isWebcam = sourceId === WEBCAM_SRC;
   const rows = loadedCamerasStore.get();
-  const candidates: ArmCandidate[] = [];
+  const candidates: PickCandidate[] = [];
   for (const leaf of leaves) {
     if (leaf.geometry?.type !== "Point") continue;
     const props = leaf.properties as { id?: string; name?: string } | null;
@@ -432,18 +424,22 @@ async function appendClusterLeaves(
       // toWebcamFC puts the title in `name` (features.ts:82).
       candidates.push({
         ref: webcamRef(id, props?.name),
+        label: props?.name || id,
         lat,
         lon,
         refreshSeconds: WEBCAM_REFRESH_SECONDS,
+        source: "Windy",
       });
     } else {
       const row = rows.find((c) => c.id === id);
       candidates.push({
         ref: { k: "cam", id },
+        label: row?.name || props?.name || id,
         lat,
         lon,
         refreshSeconds: row?.refreshSeconds,
         available: row?.available,
+        source: row?.source,
       });
     }
   }
@@ -452,7 +448,7 @@ async function appendClusterLeaves(
     toast("That group is empty now — nothing to add.");
     return;
   }
-  appendToArmedSlot(candidates, { lat: centre[1], lon: centre[0] });
+  addPicks(candidates, { lat: centre[1], lon: centre[0] });
 }
 
 /**
@@ -465,7 +461,7 @@ async function appendClusterLeaves(
  * a drag-triggered fan-out is precisely the "going wide" that risk is about. The note
  * says what was covered instead of quietly covering less.
  */
-function appendBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams: WorldObject[]): void {
+function pickBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams: WorldObject[]): void {
   const rows = loadedCamerasStore.get();
   const cams = camerasInBounds(rows, bounds);
   const cover = camerasInBounds(webcams, bounds);
@@ -481,23 +477,27 @@ function appendBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams:
     return;
   }
 
-  const candidates: ArmCandidate[] = [
+  const candidates: PickCandidate[] = [
     ...cams.map((c) => ({
       ref: { k: "cam", id: c.id } as StreamRef,
+      label: c.name || c.id,
       lat: c.lat,
       lon: c.lon,
       refreshSeconds: c.refreshSeconds,
       available: c.available,
+      source: c.source,
     })),
     ...cover.map((w) => ({
       ref: webcamRef(w.id, w.label),
+      label: w.label || w.id,
       lat: w.lat,
       lon: w.lon,
       refreshSeconds: WEBCAM_REFRESH_SECONDS,
+      source: "Windy",
     })),
   ];
 
-  appendToArmedSlot(candidates, {
+  addPicks(candidates, {
     lat: (bounds.north + bounds.south) / 2,
     lon: (bounds.east + bounds.west) / 2,
   });
@@ -572,8 +572,8 @@ export default function WorldMap() {
   selectionRef.current = selection;
   // Which slot the map is currently filling, or null. Read as a HOOK here because
   // this is the render path — the ring, the cursor and the hint are React's job. The
-  // event handlers deliberately do not use this value; they call armStore.get().
-  const armedSlot = useArmedSlot();
+  // event handlers deliberately do not use this value; they call pickStore.get().
+  const picking = usePicks().mode === "picking";
   const camFilter = useCameraFilter();
   const signalsState = useSignals();
   // Global time-window filter (M-final): trims time-stamped signals by recency.
@@ -1357,10 +1357,10 @@ export default function WorldMap() {
       // INTERCEPTION 1. A road pin does not open a dossier — it flies the map and
       // lands a full-screen hero card, so an armed click that fell through here
       // would be loudly wrong rather than merely inert. Bail before the dive.
-      if (armStore.get()) {
+      if (pickStore.get().mode === "picking") {
         if (e.originalEvent === lastCamEvent) return; // second layer delivery
         lastCamEvent = e.originalEvent;
-        armedPickCamera(p.id, lat, lon);
+        pickOneCamera(p.id, lat, lon, p.name);
         return;
       }
       cinematic.dive({
@@ -1415,16 +1415,18 @@ export default function WorldMap() {
       // written separately rather than folded in with camClick. The id is the same
       // "windy:NNN" key /api/webcam-image re-resolves server-side (WebcamsFeed:2016),
       // so the ref is valid without any translation.
-      if (armStore.get()) {
+      if (pickStore.get().mode === "picking") {
         if (e.originalEvent === lastWebcamEvent) return; // second layer delivery
         lastWebcamEvent = e.originalEvent;
-        appendToArmedSlot(
+        addPicks(
           [
             {
               ref: webcamRef(cam.id, cam.label),
+              label: cam.label || cam.id,
               lat: cam.lat,
               lon: cam.lon,
               refreshSeconds: WEBCAM_REFRESH_SECONDS,
+              source: "Windy",
             },
           ],
           { lat: cam.lat, lon: cam.lon },
@@ -1557,8 +1559,8 @@ export default function WorldMap() {
       if (clusterId == null || f?.geometry.type !== "Point") return;
       const centre = f.geometry.coordinates as [number, number];
 
-      if (armStore.get()) {
-        void appendClusterLeaves(map, sourceId, clusterId, centre, props?.point_count ?? 0);
+      if (pickStore.get().mode === "picking") {
+        void pickClusterLeaves(map, sourceId, clusterId, centre, props?.point_count ?? 0);
         return;
       }
       void expandCluster(map, sourceId, clusterId, centre);
@@ -1732,7 +1734,7 @@ export default function WorldMap() {
     // stopPropagation — so "I clicked a pin and it armed" is true 75% of the time
     // whether or not interception 2 works. A handle is the only way to aim a test at
     // a NAMED camera on a chosen path.
-    (window as unknown as { __arm?: typeof armStore }).__arm = armStore;
+    (window as unknown as { __pick?: typeof pickStore }).__pick = pickStore;
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
@@ -1763,7 +1765,7 @@ export default function WorldMap() {
       // depends on MAX_THUMBS and on `available`. If arming were patched into camClick
       // alone it would fail for those 24 while working for the 73 beside them.
       onPick: (c) => {
-        if (armedPickCamera(c.id, c.lat, c.lon)) return;
+        if (pickOneCamera(c.id, c.lat, c.lon, c.name)) return;
         cinematic.dive({ kind: "camera", id: c.id, lat: c.lat, lon: c.lon, label: c.name, meta: { available: true } });
       },
     });
@@ -2110,7 +2112,7 @@ export default function WorldMap() {
   // explain it — a silent, sitewide regression from a feature nobody was using.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !armedSlot) return;
+    if (!map || !picking) return;
 
     map.boxZoom.disable();
     const canvas = map.getCanvasContainer();
@@ -2161,7 +2163,7 @@ export default function WorldMap() {
       const rect = canvas.getBoundingClientRect();
       const a = map.unproject([from.x - rect.left, from.y - rect.top]);
       const b = map.unproject([ev.clientX - rect.left, ev.clientY - rect.top]);
-      appendBoxSelection(
+      pickBoxSelection(
         normalizeBounds({ lat: a.lat, lon: a.lng }, { lat: b.lat, lon: b.lng }),
         webcamsRef.current,
       );
@@ -2180,7 +2182,7 @@ export default function WorldMap() {
       clearBox();
       map.boxZoom.enable();
     };
-  }, [armedSlot]);
+  }, [picking]);
 
   const trackedFound = track.id ? planesLayer.objects.some((o) => o.id === track.id) : false;
 
@@ -2197,17 +2199,18 @@ export default function WorldMap() {
   }, []);
 
   return (
-    <div className={armedSlot ? "world-map tn-armed" : "world-map"}>
+    <div className={picking ? "world-map tn-picking" : "world-map"}>
       <div ref={containerRef} className="map-canvas" />
 
       {/* INTERCEPTION 7, the visible half. A global mode on a map that has no other
           mode has to say it is on and say how to leave, or the next click is a
           surprise. Rendered from the hook, so it survives the fact that the click
           handlers themselves are frozen closures. */}
-      {armedSlot && (
+      {picking && (
         <div className="tn-arm-hint" role="status" aria-live="polite">
           <span>
-            Filling a slot — click a pin, or shift-drag a box. <kbd>Esc</kbd> to stop.
+            Picking cameras — click a pin, shift-drag a box, or draw an area.{" "}
+            <kbd>Esc</kbd> to stop.
           </span>
         </div>
       )}
@@ -2448,11 +2451,15 @@ function WebcamsFeed({ onData }: { onData: (webcams: WorldObject[]) => void }) {
           },
         }));
         onData(objects);
+        // Publish alongside onData so anything outside the map — the area picker on
+        // the stage bar, in particular — can read what is drawn without a refetch.
+        loadedWebcamsStore.set(objects.map((o) => ({ id: o.id, label: o.label, lat: o.lat, lon: o.lon })));
         freshnessStore.record("webcams", { count: objects.length, ok: true });
       })
       .catch(() => {
         if (!alive) return;
         onData([]);
+        loadedWebcamsStore.set([]);
         freshnessStore.record("webcams", { count: 0, ok: false });
       });
     return () => {

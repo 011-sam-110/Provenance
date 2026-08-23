@@ -67,7 +67,7 @@ export const shellLayoutStore = {
   resizeWidth(id: string, span: number) { state = R.setWidgetWidth(state, id, span); emit(); },
   /** Move or resize a grid item — a widget, or STAGE_ID for the map. The single
    *  write path for every drag, resize and keyboard nudge. */
-  placeItem(id: string, rect: GridRect) { state = R.setItemRect(state, id, rect); emit(); },
+  placeItem(id: string, rect: GridRect, prevRect: GridRect | null = null) { state = R.setItemRect(state, id, rect, prevRect); emit(); },
   /** Re-seed every position from CONSOLE or WALL, fitted to the window. */
   arrange(mode: "console" | "wall") { state = R.arrangeBoard(state, mode, visibleRows()); emit(); },
   collapseWidget(id: string, c: boolean) { state = R.setWidgetCollapsed(state, id, c); emit(); },

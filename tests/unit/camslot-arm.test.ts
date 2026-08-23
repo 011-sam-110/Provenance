@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
-  armStore,
   normalizeBounds,
   camerasInBounds,
   orderByDistanceFrom,
@@ -23,51 +22,6 @@ const cam = (id: string, lat: number, lon: number, refreshSeconds?: number) => (
   available: true,
   live: false,
   refreshSeconds,
-});
-
-describe("armStore", () => {
-  beforeEach(() => armStore.disarm());
-
-  it("holds one slot at a time — arming a second disarms the first", () => {
-    armStore.arm("a");
-    expect(armStore.get()).toBe("a");
-    armStore.arm("b");
-    expect(armStore.get()).toBe("b");
-  });
-
-  it("toggles the same slot off", () => {
-    armStore.toggle("a");
-    expect(armStore.get()).toBe("a");
-    armStore.toggle("a");
-    expect(armStore.get()).toBeNull();
-  });
-
-  it("toggling a DIFFERENT slot moves the arm rather than disarming", () => {
-    armStore.arm("a");
-    armStore.toggle("b");
-    expect(armStore.get()).toBe("b");
-  });
-
-  it("notifies subscribers and stops after unsubscribe", () => {
-    let n = 0;
-    const off = armStore.subscribe(() => n++);
-    armStore.arm("a");
-    armStore.disarm();
-    expect(n).toBe(2);
-    off();
-    armStore.arm("b");
-    expect(n).toBe(2);
-  });
-
-  it("does not notify when nothing actually changed", () => {
-    let n = 0;
-    const off = armStore.subscribe(() => n++);
-    armStore.disarm(); // already disarmed
-    armStore.arm("a");
-    armStore.arm("a"); // same slot
-    off();
-    expect(n).toBe(1);
-  });
 });
 
 describe("webcamRef", () => {
@@ -283,7 +237,7 @@ describe("describeAppend", () => {
     const note = describeAppend(plan, { available: 29, cap: 24, capSetBySeconds: 120, capMixed: false });
     expect(note).toContain("120s");
     expect(note).not.toContain("fastest-refreshing");
-    expect(note).toContain("second slot");
+    expect(note).toContain("second wall");
   });
 
   it("does not claim a selection it did not make", () => {

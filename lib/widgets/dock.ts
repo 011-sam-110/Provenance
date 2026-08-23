@@ -15,6 +15,7 @@
 
 import { shellLayoutStore } from "@/lib/console/store";
 import { widgetTypeForGroup, widgetTypeForSource } from "@/lib/console/sourceWidgets";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 function toast(message: string): void {
   if (typeof window === "undefined") return;
@@ -31,7 +32,7 @@ function addOnce(type: string, label: string): void {
   const open = shellLayoutStore.get().widgets.filter((w) => w.type === type);
   if (open.length > 0) return;
   const r = shellLayoutStore.add(type);
-  if (!r.ok) toast("50-widget limit — remove one to add another");
+  if (!r.ok) toast(WIDGET_LIMIT_MESSAGE);
   else toast(`${label} added to your workspace`);
 }
 
