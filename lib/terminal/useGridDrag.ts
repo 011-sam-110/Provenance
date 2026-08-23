@@ -61,6 +61,9 @@ interface Session {
   pointerId: number;
   /** The last rect committed to the store, so an unchanged frame does no work. */
   committed: GridRect;
+  /** Where the board actually SETTLED the card — read back after settle(), not the
+   *  raw pointer target. This is what the held card is drawn at. */
+  landed: GridRect;
   moved: boolean;
 }
 
@@ -123,12 +126,16 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
     s.committed = target;
 
     playFlip.current = captureFlip(containerRef.current);
-    shellLayoutStore.placeItem(s.id, target);
+    // s.origin is where this gesture started — the board needs it to know which
+    // way the exchange goes when the held card lands on a neighbour.
+    shellLayoutStore.placeItem(s.id, target, s.origin);
 
     // Where it ACTUALLY landed: settle may float the card up into a gap, so the
     // placeholder has to show the settled cell, not the raw pointer target.
     const landed = gridItems(shellLayoutStore.get()).find((i) => i.id === s.id);
-    setState((prev) => ({ ...prev, ghostRect: landed ? { x: landed.x, y: landed.y, w: landed.w, h: landed.h } : target }));
+    const rect = landed ? { x: landed.x, y: landed.y, w: landed.w, h: landed.h } : target;
+    s.landed = rect;
+    setState((prev) => ({ ...prev, ghostRect: rect }));
   }, [containerRef]);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -145,9 +152,26 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
     const dy = Math.round(dyPx / rowStep());
 
     if (s.mode === "move") {
-      // Straight to the DOM: this runs at refresh rate.
-      s.el.style.transform = `translate(${dxPx}px, ${dyPx}px)`;
+      // Commit FIRST, then draw — the transform below reads what settle() decided.
       commit(s, clampRect({ ...s.origin, x: s.origin.x + dx, y: Math.max(0, s.origin.y + dy) }));
+
+      // THE CARD IS DRAWN WHERE IT WILL LAND, NOT UNDER THE POINTER.
+      //
+      // Free-tracking the pointer made the card promise a position the engine had
+      // already decided not to honour: it followed the cursor the whole way down,
+      // the dashed ghost stayed on the cell it started in, and flipOne paid the
+      // debt at release with a flight back — measured at 360px. That flight IS the
+      // jump people report. Drawing the card at the settled cell means there is
+      // nothing left to animate on release, because it is already there.
+      //
+      // The cost, and it is deliberate: the card no longer tracks the pointer 1:1.
+      // It moves in whole cells and stops where it will actually go. A card that
+      // stops where it will land is honest; one that follows your finger and then
+      // teleports is not.
+      const colW = columnWidth(s.containerWidth);
+      const tx = (s.landed.x - s.origin.x) * (colW + GAP_PX);
+      const ty = (s.landed.y - s.origin.y) * rowStep();
+      s.el.style.transform = `translate(${tx}px, ${ty}px)`;
       return;
     }
 
@@ -257,6 +281,7 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
         el,
         pointerId: e.pointerId,
         committed: { ...rect },
+        landed: { ...rect },
         moved: false,
       };
 
@@ -283,12 +308,56 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
   const nudge = useCallback(
     (id: string, rect: GridRect, d: { dx?: number; dy?: number; dw?: number; dh?: number }) => {
       playFlip.current = captureFlip(containerRef.current);
-      shellLayoutStore.placeItem(id, clampRect({
+      // A PURE VERTICAL NUDGE MOVES PAST A CARD, NOT BY A ROW.
+      //
+      // The board compacts, so one row down is not a position a card can HOLD:
+      // move a card down a single row and compaction floats it straight back,
+      // which is why this button did nothing however many times it was pressed.
+      // The only downward move the board can honour is "past the next card", so
+      // that is what the control does — it targets the neighbour's own row and
+      // lets the exchange in resolveCollisions do the rest.
+      //
+      // Only for a plain up/down with no horizontal or size component; every
+      // other combination keeps the literal one-cell step, which works because
+      // nothing compacts sideways.
+      const vertical = d.dy && !d.dx && !d.dw && !d.dh;
+      let target = {
         x: rect.x + (d.dx ?? 0),
         y: Math.max(0, rect.y + (d.dy ?? 0)),
         w: rect.w + (d.dw ?? 0),
         h: rect.h + (d.dh ?? 0),
-      }));
+      };
+
+      if (vertical) {
+        const items = gridItems(shellLayoutStore.get()).filter((i) => i.id !== id);
+        // Only cards that actually share columns with this one are in the way.
+        const inColumn = items.filter((i) => i.x < rect.x + rect.w && rect.x < i.x + i.w);
+        const neighbour = d.dy! > 0
+          ? inColumn.filter((i) => i.y > rect.y).sort((a, b) => a.y - b.y)[0]
+          : inColumn.filter((i) => i.y < rect.y).sort((a, b) => b.y - a.y)[0];
+        // Going DOWN, line the held card's BOTTOM up with the neighbour's, so the
+        // neighbour has exactly its own height of room above to be lifted into.
+        // Targeting the neighbour's own row instead looks equivalent and is not:
+        // it leaves the lift needing `neighbour.y - neighbour.h`, which is
+        // negative whenever the neighbour is nearer the top than it is tall, so
+        // the exchange is skipped and the button goes back to doing nothing.
+        // Going UP the loop does the work, and the neighbour's row is right.
+        //
+        // No neighbour that way means the edge of the board. Leave the literal
+        // step: it does nothing, which is the honest answer to "move past the
+        // next card" when there is no next card.
+        if (neighbour) {
+          target = {
+            ...target,
+            y: d.dy! > 0
+              ? Math.max(0, neighbour.y + neighbour.h - rect.h)
+              : neighbour.y,
+          };
+        }
+      }
+
+      // `rect` is where the item is NOW, so it doubles as the rect being left.
+      shellLayoutStore.placeItem(id, clampRect(target), rect);
     },
     [containerRef],
   );

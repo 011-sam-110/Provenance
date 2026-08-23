@@ -14,7 +14,8 @@ import WatchlistPanel from "@/components/shell/WatchlistPanel";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
-import { readingOrder, rowsUsed, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
+import { readingOrder, rowsUsed, findFreeSpot, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
+import { createCamslot, CAMSLOT_SIZE } from "@/lib/console/widgets/camslot.create";
 import { useStageSolo } from "@/lib/terminal/solo";
 import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
 import { useTerminalSkin } from "@/lib/terminal/skin";
@@ -129,6 +130,34 @@ export default function ConsoleWorkspace() {
     if (!solo) for (const w of ordered) if (w.rect) rects.push(w.rect);
     return Math.max(1, rowsUsed(rects));
   }, [solo, stageRect, ordered]);
+
+  /**
+   * Where the next camera wall would land, or null when there is nowhere obvious.
+   *
+   * findFreeSpot is the SAME scan the store runs when a card is actually added, so
+   * the ghost tile marks the real destination rather than a guess. Withheld once the
+   * spot falls past the rows the board already occupies: drawing it there would add a
+   * permanent empty row to a surface whose whole argument is that it has no dead
+   * strips, and the board would grow a row taller the moment you stopped using it.
+   */
+  const addSpot = useMemo(() => {
+    if (solo) return null;
+    const rects: GridRect[] = [stageRect];
+    for (const w of ordered) if (w.rect) rects.push(w.rect);
+    const { x, y } = findFreeSpot(rects, CAMSLOT_SIZE.w, CAMSLOT_SIZE.h);
+    if (y + CAMSLOT_SIZE.h > boardRows) return null;
+    return { x, y, w: CAMSLOT_SIZE.w, h: CAMSLOT_SIZE.h } as GridRect;
+  }, [solo, stageRect, ordered, boardRows]);
+
+  /** True when the board carries no widgets at all — the dead end this rescues. */
+  const boardIsEmpty = !solo && ordered.length === 0;
+
+  const addWall = () => {
+    const r = createCamslot();
+    if (!r.ok && r.reason) {
+      window.dispatchEvent(new CustomEvent("tn-toast", { detail: r.reason }));
+    }
+  };
 
   const gridStyle = {
     gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
@@ -328,6 +357,35 @@ export default function ConsoleWorkspace() {
             {handlesFor(w.id, w.rect)}
           </div>
         ))}
+
+        {/* THE DEAD END THIS FIXES: remove the last camera wall and the board is an
+            empty grid with no way back. The stage bar's control only answers it while
+            the map is on screen, so the rescue lives on the board itself. */}
+        {boardIsEmpty && (
+          <div className="tn-cw-rescue" style={addSpot ? gridArea(addSpot) : undefined}>
+            <p className="tn-cw-rescue-t">This board has no camera walls</p>
+            <p className="tn-cw-rescue-b">A wall shows live pictures side by side. Add one, then pick cameras on the map to fill it.</p>
+            <button type="button" className="tn-cw-rescue-btn" onClick={addWall}>
+              Add a camera wall
+            </button>
+          </div>
+        )}
+
+        {/* The ghost tile sits in the cell the next wall will actually occupy. Hidden
+            during a gesture: it is not a drop target, and a phantom card appearing
+            beside the one you are holding reads as the board reflowing under you. */}
+        {!boardIsEmpty && addSpot && !drag.activeId && (
+          <button
+            type="button"
+            className="tn-cw-add"
+            style={gridArea(addSpot)}
+            onClick={addWall}
+            title="Add a camera wall here"
+          >
+            <span className="tn-cw-add-plus" aria-hidden="true">+</span>
+            <span className="tn-cw-add-l">Add camera wall</span>
+          </button>
+        )}
       </div>
 
       {/* The variant's persistent chrome — the Source Catalog rail, and the ONLY

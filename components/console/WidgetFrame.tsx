@@ -9,6 +9,7 @@ import {
   HEIGHT_PRESET_TOLERANCE_PX,
   WIDTH_PRESETS,
 } from "@/lib/console/resize";
+import { ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -21,6 +22,7 @@ import { useTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
 import FreshChip from "@/components/console/FreshChip";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
+import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 interface Report {
   alerts: Alert[];
@@ -134,7 +136,18 @@ export default function WidgetFrame({
   const rect = instance.rect;
   const nudgeBy = (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => onNudge?.(d);
   const activeWidth = activePreset(WIDTH_PRESETS, rect?.w ?? instance.width);
-  const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
+  // Height, like width, has to come off the GRID RECT when there is one.
+  // `instance.height` is the legacy px field: the preset buttons write it, but a
+  // drag-resize writes rect.h and never touches it, so reading it alone left the
+  // S/M/L/XL chips showing whatever was last chosen from this menu no matter how
+  // far the card had since been dragged. Width was already correct because it
+  // reads rect.w first; this is the same rule applied to the other axis.
+  // Rows convert at the grid's own pitch rather than a retyped 25.
+  const activeHeight = activePreset(
+    HEIGHT_PRESETS,
+    rect ? rect.h * (ROW_PX + GAP_PX) : instance.height,
+    HEIGHT_PRESET_TOLERANCE_PX,
+  );
 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
@@ -190,6 +203,20 @@ export default function WidgetFrame({
         <button className={`tn-cw-bell${rule.enabled ? " is-on" : ""}`} aria-label="Notifications" aria-pressed={rule.enabled}
           title={rule.enabled ? "Notifications on" : "Notify me"} onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}>🔔</button>
         <button className="tn-cw-expand" aria-label="Expand widget" title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
+        {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
+            LAST of nineteen entries in a scrolling panel, so on a short card it
+            sits below an internal scroll — a control you have to already know is
+            there. The menu entry stays: this is a second route, not a move, and
+            the menu also holds the nudge buttons that let the 10px resize handles
+            claim the WCAG 2.5.8 equivalent-alternative exemption. */}
+        {/* Sits INBOARD of the menu button on purpose. The 16x16 .tn-rz-ne
+            resize handle is pinned to the card corner at z-index 20 and covers
+            the top-right of the header, so a control placed last here is drawn
+            but not clickable — Playwright caught the handle swallowing the
+            click. Raising this above the handle instead would take the corner
+            away from resizing, which is a real control, not dead space. */}
+        <button className="tn-cw-close" aria-label={`Remove ${type.title}`} title="Remove from board"
+          onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
         <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
       </header>
 
@@ -257,8 +284,8 @@ export default function WidgetFrame({
           <div className="tn-cw-menu-sec">Move</div>
           <div className="tn-cw-menu-row">
             <button className="tn-cw-chip" title="Move one column left" onClick={() => nudgeBy({ dx: -1 })}>◀</button>
-            <button className="tn-cw-chip" title="Move one row up" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
-            <button className="tn-cw-chip" title="Move one row down" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
+            <button className="tn-cw-chip" title="Move up past the card above" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
+            <button className="tn-cw-chip" title="Move down past the card below" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
             <button className="tn-cw-chip" title="Move one column right" onClick={() => nudgeBy({ dx: 1 })}>▶</button>
           </div>
           <div className="tn-cw-menu-sec">Grow / shrink</div>
@@ -302,7 +329,7 @@ export default function WidgetFrame({
           </div>
 
           <div className="tn-cw-menu-sep" />
-          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: "50-widget limit — remove one to add another" })); setMenuOpen(false); }}>⧉ Duplicate</button>
+          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE })); setMenuOpen(false); }}>⧉ Duplicate</button>
           <button onClick={() => { shellLayoutStore.configure(instance.id, { alertStyle: alertStyle === "top" ? "feed" : "top" }); setMenuOpen(false); }}>
             ⚡ Alerts: {alertStyle === "top" ? "on top" : "in feed"}
           </button>

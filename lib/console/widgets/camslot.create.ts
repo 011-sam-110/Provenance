@@ -28,8 +28,12 @@ import { MAX_STREAMS, sanitizeCamslotConfig, type StreamRef } from "@/lib/consol
 /** A camera wall's opening cell. Wider than the generic 4x7 because a camera tile
  *  showing a 16:9 frame at four columns is smaller than the controls on its own
  *  header — this is the smallest size at which a new empty slot reads as a place
- *  a picture will go. */
-const CAMSLOT_SIZE = { w: 4, h: 9 };
+ *  a picture will go.
+ *
+ *  EXPORTED because the board draws a ghost tile in the cell this card WILL
+ *  occupy, and a second copy of these numbers would let the preview drift away
+ *  from the thing it previews. */
+export const CAMSLOT_SIZE = { w: 4, h: 9 };
 
 export interface CreateCamslotOptions {
   /** Shown as the card's title. A place, not a description — "Soho", "Trafalgar
