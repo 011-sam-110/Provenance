@@ -106,3 +106,29 @@
   .tn-terminal .tn-cw-add,
   .tn-terminal .tn-cw-rescue-btn { transition: none; }
 }
+
+/* ── Remove, on the card itself ──────────────────────────────────────────────
+   The ⋯ menu still carries Remove, but there it is the last of nineteen entries
+   in a scrolling panel and on a short card it falls below an internal scroll.
+   Kept visually quieter than its neighbours until hovered: it is the only
+   destructive control in the header and should not compete for the eye with
+   expand or notifications. */
+.tn-terminal .tn-cw-close {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--tnx-ink-ghost, var(--tn-text-faint));
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 1px;
+  transition: color 120ms ease;
+}
+
+.tn-terminal .tn-cw-close:hover,
+.tn-terminal .tn-cw-close:focus-visible {
+  color: var(--tnx-alert-critical, #d4523e);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-cw-close { transition: none; }
+}

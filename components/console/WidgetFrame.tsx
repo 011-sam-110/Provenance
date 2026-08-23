@@ -191,6 +191,20 @@ export default function WidgetFrame({
         <button className={`tn-cw-bell${rule.enabled ? " is-on" : ""}`} aria-label="Notifications" aria-pressed={rule.enabled}
           title={rule.enabled ? "Notifications on" : "Notify me"} onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}>🔔</button>
         <button className="tn-cw-expand" aria-label="Expand widget" title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
+        {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
+            LAST of nineteen entries in a scrolling panel, so on a short card it
+            sits below an internal scroll — a control you have to already know is
+            there. The menu entry stays: this is a second route, not a move, and
+            the menu also holds the nudge buttons that let the 10px resize handles
+            claim the WCAG 2.5.8 equivalent-alternative exemption. */}
+        {/* Sits INBOARD of the menu button on purpose. The 16x16 .tn-rz-ne
+            resize handle is pinned to the card corner at z-index 20 and covers
+            the top-right of the header, so a control placed last here is drawn
+            but not clickable — Playwright caught the handle swallowing the
+            click. Raising this above the handle instead would take the corner
+            away from resizing, which is a real control, not dead space. */}
+        <button className="tn-cw-close" aria-label={`Remove ${type.title}`} title="Remove from board"
+          onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
         <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
       </header>
 
