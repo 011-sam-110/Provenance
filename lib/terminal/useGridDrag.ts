@@ -61,6 +61,9 @@ interface Session {
   pointerId: number;
   /** The last rect committed to the store, so an unchanged frame does no work. */
   committed: GridRect;
+  /** Where the board actually SETTLED the card — read back after settle(), not the
+   *  raw pointer target. This is what the held card is drawn at. */
+  landed: GridRect;
   moved: boolean;
 }
 
@@ -128,7 +131,9 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
     // Where it ACTUALLY landed: settle may float the card up into a gap, so the
     // placeholder has to show the settled cell, not the raw pointer target.
     const landed = gridItems(shellLayoutStore.get()).find((i) => i.id === s.id);
-    setState((prev) => ({ ...prev, ghostRect: landed ? { x: landed.x, y: landed.y, w: landed.w, h: landed.h } : target }));
+    const rect = landed ? { x: landed.x, y: landed.y, w: landed.w, h: landed.h } : target;
+    s.landed = rect;
+    setState((prev) => ({ ...prev, ghostRect: rect }));
   }, [containerRef]);
 
   const onPointerMove = useCallback((e: PointerEvent) => {
@@ -145,9 +150,26 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
     const dy = Math.round(dyPx / rowStep());
 
     if (s.mode === "move") {
-      // Straight to the DOM: this runs at refresh rate.
-      s.el.style.transform = `translate(${dxPx}px, ${dyPx}px)`;
+      // Commit FIRST, then draw — the transform below reads what settle() decided.
       commit(s, clampRect({ ...s.origin, x: s.origin.x + dx, y: Math.max(0, s.origin.y + dy) }));
+
+      // THE CARD IS DRAWN WHERE IT WILL LAND, NOT UNDER THE POINTER.
+      //
+      // Free-tracking the pointer made the card promise a position the engine had
+      // already decided not to honour: it followed the cursor the whole way down,
+      // the dashed ghost stayed on the cell it started in, and flipOne paid the
+      // debt at release with a flight back — measured at 360px. That flight IS the
+      // jump people report. Drawing the card at the settled cell means there is
+      // nothing left to animate on release, because it is already there.
+      //
+      // The cost, and it is deliberate: the card no longer tracks the pointer 1:1.
+      // It moves in whole cells and stops where it will actually go. A card that
+      // stops where it will land is honest; one that follows your finger and then
+      // teleports is not.
+      const colW = columnWidth(s.containerWidth);
+      const tx = (s.landed.x - s.origin.x) * (colW + GAP_PX);
+      const ty = (s.landed.y - s.origin.y) * rowStep();
+      s.el.style.transform = `translate(${tx}px, ${ty}px)`;
       return;
     }
 
@@ -257,6 +279,7 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
         el,
         pointerId: e.pointerId,
         committed: { ...rect },
+        landed: { ...rect },
         moved: false,
       };
 
