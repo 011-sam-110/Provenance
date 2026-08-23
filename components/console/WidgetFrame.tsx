@@ -65,6 +65,14 @@ export default function WidgetFrame({
   const helpBtnRef = useRef<HTMLButtonElement>(null);
   const onReport = useCallback((r: Report) => setReport(r), []);
 
+  // What this CARD is called, which is not always what its TYPE is called. A widget
+  // that can appear several times on one board and be pointed at individually — a
+  // camera wall, four of them on Streets — has to say WHICH one it is, or every
+  // control that targets one by name is aiming at an unlabelled row of identical
+  // headers. Falls back to the type title, which is the right answer for the ~70
+  // widgets that are only ever on a board once.
+  const frameTitle = type?.titleOf?.(instance.config) || type?.title || instance.type;
+
   // Per-widget notification rule (keyed by TYPE) + the creds that gate each channel.
   const rule = useRule(instance.type);
   const notif = useNotifications();
@@ -165,7 +173,7 @@ export default function WidgetFrame({
         <button
           type="button"
           className="tn-cw-grip"
-          aria-label={`Move ${type.title}. Arrow keys move, shift with arrow keys resizes.`}
+          aria-label={`Move ${frameTitle}. Arrow keys move, shift with arrow keys resizes.`}
           title="Drag to move · arrows to nudge · shift+arrows to resize"
           onPointerDown={onGrab}
           onKeyDown={onNudgeKey}
@@ -190,7 +198,7 @@ export default function WidgetFrame({
             accessible description that merely repeats the accessible name is
             suppressed by screen readers rather than announced twice, which is the
             trap f79b004 fixed and this must not reintroduce. */}
-        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={type.title}>{type.title}</h3>
+        <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={frameTitle}>{frameTitle}</h3>
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
         {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}
@@ -215,7 +223,7 @@ export default function WidgetFrame({
             but not clickable — Playwright caught the handle swallowing the
             click. Raising this above the handle instead would take the corner
             away from resizing, which is a real control, not dead space. */}
-        <button className="tn-cw-close" aria-label={`Remove ${type.title}`} title="Remove from board"
+        <button className="tn-cw-close" aria-label={`Remove ${frameTitle}`} title="Remove from board"
           onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
         <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
       </header>
@@ -279,7 +287,7 @@ export default function WidgetFrame({
         // toggles (the size chips carry aria-pressed), and a pressed menuitem is
         // a contradiction most screen readers announce badly. A labelled group of
         // ordinary buttons describes what this actually is.
-        <div className="tn-cw-menu-pop" role="group" aria-label={`${type.title} options`}>
+        <div className="tn-cw-menu-pop" role="group" aria-label={`${frameTitle} options`}>
           {/* MOVE — the drag, as buttons. One click, no aim, keyboard-reachable. */}
           <div className="tn-cw-menu-sec">Move</div>
           <div className="tn-cw-menu-row">
