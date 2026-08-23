@@ -106,25 +106,34 @@ Acceptance criteria:
       passes the leaving rect on every move. The original block could never have caught a
       regression here: it drives `place()` the way callers did before the argument existed, so
       it never reaches the new branch
-- [ ] **the three-dot "move one row down" and ArrowDown still do nothing** — see below
+- [x] the three-dot "move one row down" and ArrowDown now reorder — fixed in the control, not
+      the engine, in d32def7. See below for why that is the right place
 
 Measured in the browser: dragging p1 down 250px takes the board from `p1 p2 p3 p4` to
 `p2 p1 p3 p4`, card drawn where it lands the whole way, no snap on release. Dragging the
 bottom card into empty space below still does nothing, which is correct for a wall that
 compacts, and it is now honest about it rather than moving and springing back.
 
-### The one criterion not met, and why it is not an engine bug
+### Why the nudge was fixed in the control rather than the engine
 
-A one-row nudge cannot reorder on a compacted board, and no change to `resolveCollisions` will
-make it. The pre-pass lifts the displaced neighbour to `held.y - neighbour.h`. Nudge a card
-down one row and that arithmetic goes **negative** — there is nowhere above the held card to
-put the neighbour, because the held card has barely moved. Compaction then returns everything
-to where it began.
+A one-row nudge cannot reorder on a compacted board, and no change to `resolveCollisions` would
+have made it. The pre-pass lifts the displaced neighbour to `held.y - neighbour.h`. Nudge a card
+down one row and that arithmetic goes **negative** — there is nowhere above the held card to put
+the neighbour, because the held card has barely moved. Compaction then returns everything to
+where it began.
 
-The button says "move one row down". On a board that compacts, one row down is not a position
-a card can hold: the only meaningful downward move is *past the next card*. So the fix belongs
-in what the control does — swap with the next widget in reading order — not in the engine. That
-is a small change in the menu's handler and it is deliberately not bundled here.
+The button said "move one row down". On a board that compacts, one row down is not a position a
+card can *hold*: the only meaningful downward move is *past the next card*. So the control now
+asks for that instead — it targets the row that leaves the neighbour exactly its own height of
+room above, and the existing exchange does the rest. ArrowDown shares the handler.
+
+One trap worth recording, because the wrong version looks identical and still does nothing: the
+target must line the held card's **bottom edge** up with the neighbour's, not its **row**.
+Targeting `neighbour.y` leaves the lift needing `neighbour.y - neighbour.h`, negative whenever
+the neighbour is nearer the top than it is tall, so the exchange is skipped. The first
+implementation did exactly that and the button stayed dead.
+
+Verified in the browser: three clicks walk a card from first to last, one place per click.
 
 ## What (d) shipped alongside it
 
