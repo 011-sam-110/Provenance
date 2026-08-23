@@ -308,16 +308,56 @@ export function useGridDrag(containerRef: React.RefObject<HTMLElement | null>) {
   const nudge = useCallback(
     (id: string, rect: GridRect, d: { dx?: number; dy?: number; dw?: number; dh?: number }) => {
       playFlip.current = captureFlip(containerRef.current);
-      // `rect` is where the item is NOW, so it doubles as the rect being left.
-      // Passing it is what makes "move one row down" work: without it the board
-      // pushed the neighbour further down and compaction put everything back, so
-      // the button was inert no matter how many times it was pressed.
-      shellLayoutStore.placeItem(id, clampRect({
+      // A PURE VERTICAL NUDGE MOVES PAST A CARD, NOT BY A ROW.
+      //
+      // The board compacts, so one row down is not a position a card can HOLD:
+      // move a card down a single row and compaction floats it straight back,
+      // which is why this button did nothing however many times it was pressed.
+      // The only downward move the board can honour is "past the next card", so
+      // that is what the control does — it targets the neighbour's own row and
+      // lets the exchange in resolveCollisions do the rest.
+      //
+      // Only for a plain up/down with no horizontal or size component; every
+      // other combination keeps the literal one-cell step, which works because
+      // nothing compacts sideways.
+      const vertical = d.dy && !d.dx && !d.dw && !d.dh;
+      let target = {
         x: rect.x + (d.dx ?? 0),
         y: Math.max(0, rect.y + (d.dy ?? 0)),
         w: rect.w + (d.dw ?? 0),
         h: rect.h + (d.dh ?? 0),
-      }), rect);
+      };
+
+      if (vertical) {
+        const items = gridItems(shellLayoutStore.get()).filter((i) => i.id !== id);
+        // Only cards that actually share columns with this one are in the way.
+        const inColumn = items.filter((i) => i.x < rect.x + rect.w && rect.x < i.x + i.w);
+        const neighbour = d.dy! > 0
+          ? inColumn.filter((i) => i.y > rect.y).sort((a, b) => a.y - b.y)[0]
+          : inColumn.filter((i) => i.y < rect.y).sort((a, b) => b.y - a.y)[0];
+        // Going DOWN, line the held card's BOTTOM up with the neighbour's, so the
+        // neighbour has exactly its own height of room above to be lifted into.
+        // Targeting the neighbour's own row instead looks equivalent and is not:
+        // it leaves the lift needing `neighbour.y - neighbour.h`, which is
+        // negative whenever the neighbour is nearer the top than it is tall, so
+        // the exchange is skipped and the button goes back to doing nothing.
+        // Going UP the loop does the work, and the neighbour's row is right.
+        //
+        // No neighbour that way means the edge of the board. Leave the literal
+        // step: it does nothing, which is the honest answer to "move past the
+        // next card" when there is no next card.
+        if (neighbour) {
+          target = {
+            ...target,
+            y: d.dy! > 0
+              ? Math.max(0, neighbour.y + neighbour.h - rect.h)
+              : neighbour.y,
+          };
+        }
+      }
+
+      // `rect` is where the item is NOW, so it doubles as the rect being left.
+      shellLayoutStore.placeItem(id, clampRect(target), rect);
     },
     [containerRef],
   );

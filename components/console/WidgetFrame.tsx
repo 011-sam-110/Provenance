@@ -9,6 +9,7 @@ import {
   HEIGHT_PRESET_TOLERANCE_PX,
   WIDTH_PRESETS,
 } from "@/lib/console/resize";
+import { ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -135,7 +136,18 @@ export default function WidgetFrame({
   const rect = instance.rect;
   const nudgeBy = (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => onNudge?.(d);
   const activeWidth = activePreset(WIDTH_PRESETS, rect?.w ?? instance.width);
-  const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
+  // Height, like width, has to come off the GRID RECT when there is one.
+  // `instance.height` is the legacy px field: the preset buttons write it, but a
+  // drag-resize writes rect.h and never touches it, so reading it alone left the
+  // S/M/L/XL chips showing whatever was last chosen from this menu no matter how
+  // far the card had since been dragged. Width was already correct because it
+  // reads rect.w first; this is the same rule applied to the other axis.
+  // Rows convert at the grid's own pitch rather than a retyped 25.
+  const activeHeight = activePreset(
+    HEIGHT_PRESETS,
+    rect ? rect.h * (ROW_PX + GAP_PX) : instance.height,
+    HEIGHT_PRESET_TOLERANCE_PX,
+  );
 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
@@ -272,8 +284,8 @@ export default function WidgetFrame({
           <div className="tn-cw-menu-sec">Move</div>
           <div className="tn-cw-menu-row">
             <button className="tn-cw-chip" title="Move one column left" onClick={() => nudgeBy({ dx: -1 })}>◀</button>
-            <button className="tn-cw-chip" title="Move one row up" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
-            <button className="tn-cw-chip" title="Move one row down" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
+            <button className="tn-cw-chip" title="Move up past the card above" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
+            <button className="tn-cw-chip" title="Move down past the card below" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
             <button className="tn-cw-chip" title="Move one column right" onClick={() => nudgeBy({ dx: 1 })}>▶</button>
           </div>
           <div className="tn-cw-menu-sec">Grow / shrink</div>
