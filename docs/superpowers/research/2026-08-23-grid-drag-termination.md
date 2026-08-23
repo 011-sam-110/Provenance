@@ -87,26 +87,46 @@ seed 90210  w0 overlaps w4
 All five seeds fail the no-overlap invariant. **All 50 deterministic tests in that file passed.** Only
 the randomised pass caught it. It must be kept and extended by whoever does this work.
 
-## The fix this asks for
+## The fix — BUILT, shipped in 8b17565
 
-The swap has to be **one atomic exchange applied before the generic loop**, so the loop stays
-push-down-only and keeps its monotonic guarantee.
-
-That needs the held card pre-move rect, which `resolveCollisions` does not have: `settle(items,
-pinnedId)` only ever sees the already-moved board, and `place()` discards the old rect on its first
-line. So this is an API change threading the previous rect through `place`, `settle` and
-`resolveCollisions`, touching a signature with other callers.
+The swap is **one atomic exchange applied before the generic loop**, so the loop stays
+push-down-only and keeps its monotonic guarantee. It needs the held card pre-move rect, which
+is threaded through `placeItem`, `setItemRect`, `place`, `settle` and `resolveCollisions` as an
+**optional trailing argument** — every existing caller passes nothing and settles exactly as
+before.
 
 Acceptance criteria:
 
-- [ ] dragging a card down onto a neighbour swaps them, with no hole
-- [ ] `compact` unchanged, so density and idempotence are untouched
-- [ ] existing `place()` callers keep current behaviour when no previous rect is supplied
-- [ ] the `console-boards.test.ts` board-switch regression still passes
-- [ ] the randomised pass is kept and extended with downward-swap moves
-- [ ] the three-dot "move one row down" and ArrowDown work, since they share the cause
+- [x] dragging a card down onto a neighbour swaps them, with no hole
+- [x] `compact` unchanged, so density and idempotence are untouched
+- [x] existing `place()` callers keep current behaviour when no previous rect is supplied —
+      pinned by a test that asserts the legacy ordering
+- [x] the `console-boards.test.ts` board-switch regression still passes
+- [x] the randomised pass kept, and a **second** randomised block added over seven seeds that
+      passes the leaving rect on every move. The original block could never have caught a
+      regression here: it drives `place()` the way callers did before the argument existed, so
+      it never reaches the new branch
+- [ ] **the three-dot "move one row down" and ArrowDown still do nothing** — see below
 
-## What was shipped instead
+Measured in the browser: dragging p1 down 250px takes the board from `p1 p2 p3 p4` to
+`p2 p1 p3 p4`, card drawn where it lands the whole way, no snap on release. Dragging the
+bottom card into empty space below still does nothing, which is correct for a wall that
+compacts, and it is now honest about it rather than moving and springing back.
+
+### The one criterion not met, and why it is not an engine bug
+
+A one-row nudge cannot reorder on a compacted board, and no change to `resolveCollisions` will
+make it. The pre-pass lifts the displaced neighbour to `held.y - neighbour.h`. Nudge a card
+down one row and that arithmetic goes **negative** — there is nowhere above the held card to
+put the neighbour, because the held card has barely moved. Compaction then returns everything
+to where it began.
+
+The button says "move one row down". On a board that compacts, one row down is not a position
+a card can hold: the only meaningful downward move is *past the next card*. So the fix belongs
+in what the control does — swap with the next widget in reading order — not in the engine. That
+is a small change in the menu's handler and it is deliberately not bundled here.
+
+## What (d) shipped alongside it
 
 Drawing the held card at the settled cell rather than free-tracking the pointer removes the jump
 without touching the layout engine. Measured after: an upward drag ends at 281 having been drawn at
