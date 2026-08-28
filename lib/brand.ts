@@ -24,8 +24,8 @@ export const BRAND = {
   /** Ko-fi support link (the calm, opt-in "Support" button). */
   kofiUrl: "https://ko-fi.com/opendata",
   /** Canonical public repository. */
-  repo: "011-sam-110/TrafficNerd-V2",
-  repoUrl: "https://github.com/011-sam-110/TrafficNerd-V2",
+  repo: "011-sam-110/Provenance",
+  repoUrl: "https://github.com/011-sam-110/Provenance",
   /**
    * The licence, and it is load bearing rather than decorative.
    *
@@ -42,7 +42,7 @@ export const BRAND = {
     name: "GNU Affero General Public License v3.0",
     short: "AGPL-3.0",
     /** The copy in this repo, which is what section 13 points a user at. */
-    url: "https://github.com/011-sam-110/TrafficNerd-V2/blob/main/LICENSE",
+    url: "https://github.com/011-sam-110/Provenance/blob/main/LICENSE",
     /**
      * The copyright holder as it appears in public.
      *
@@ -80,7 +80,7 @@ export function siteUrl(): string {
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "https://traffic-nerd-v2.vercel.app");
+      : "https://provenance-online.vercel.app");
   const trimmed = raw.replace(/\/+$/, "");
   // Guarantee a scheme so `new URL(siteUrl())` (used as metadataBase) never throws on
   // a bare host like "opendata.example" set via NEXT_PUBLIC_SITE_URL.

@@ -1,7 +1,7 @@
-# CLAUDE.md — OpenData (repo `TrafficNerd-V2`)
+# CLAUDE.md — Provenance (repo `Provenance`)
 
-A Next.js 15 single-page global situational-awareness map. **Product name: OpenData.**
-**Prod domain: `traffic-nerd-v2.vercel.app`** — that is the only domain we ship on.
+A Next.js 15 single-page global situational-awareness map. **Product name: Provenance.**
+**Prod domain: `provenance-online.vercel.app`** — that is the only domain we ship on.
 Deployed product = `origin/main`.
 
 ## Licence — `AGPL-3.0-only`
