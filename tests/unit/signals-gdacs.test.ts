@@ -4,10 +4,13 @@ import {
   normalizeGdacs,
   gdacsEventLabel,
   gdacsAlertColor,
+  gdacsEndpointFor,
+  mergeGdacsResults,
   GDACS_SOURCE,
-  GDACS_ENDPOINT,
   GDACS_EVENT_TYPES,
+  type GdacsTypeResult,
 } from "@/lib/signals/gdacs";
+import { readOutcome } from "@/lib/signals/outcome";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
 test("normalizes the GDACS multi-hazard FeatureCollection", () => {
@@ -86,26 +89,25 @@ test("declares GDACS's real alert score (0–3) as the metric and it resolves pe
   }
 });
 
-// ── Regression: the layer was silently empty in production ──────────────────
+// ── Regression: the layer was silently empty in production, twice ───────────
 //
-// GDACS began rejecting a bare event-list call with HTTP 400
-// {"message":"Eventtype is required."}. Because GDACS_SOURCE.fetch() returns []
-// on any non-ok response, the layer published a clean zero on every poll and
-// looked identical to "no disasters today". The parser was never wrong; the URL
-// was. These assert the URL, which is the thing that actually broke.
+// Round one (2026-08-13): GDACS began rejecting a bare event-list call with HTTP
+// 400 {"message":"Eventtype is required."}. Round two (2026-08-28): the fix for
+// round one — one request, all six codes semicolon-joined — started failing the
+// same way with {"message":"Please specify only 1 eventtype."}. Both times
+// GDACS_SOURCE.fetch() turned a hard 400 into a clean, quiet zero, indistinguishable
+// from "no disasters today". The parser was never wrong either time; the request
+// shape was. These assert the request shape, which is the thing that actually broke.
 
-test("the event-list URL carries the mandatory eventtype parameter", () => {
-  expect(GDACS_ENDPOINT).toContain("eventtype=");
-  const value = new URL(GDACS_ENDPOINT).searchParams.get("eventtype");
-  expect(value).toBeTruthy();
-  expect(value).not.toBe("");
-});
-
-test("eventtype is semicolon-separated, which is the form GDACS accepts", () => {
-  const value = new URL(GDACS_ENDPOINT).searchParams.get("eventtype")!;
-  expect(value).toBe(GDACS_EVENT_TYPES.join(";"));
-  // A comma-separated list is the obvious thing to reach for and it is wrong here.
-  expect(value).not.toContain(",");
+test("each hazard type gets its own single-type URL", () => {
+  for (const type of GDACS_EVENT_TYPES) {
+    const url = gdacsEndpointFor(type);
+    const value = new URL(url).searchParams.get("eventtype");
+    expect(value).toBe(type);
+    // The round-two regression: GDACS now rejects more than one type per request.
+    expect(value).not.toContain(";");
+    expect(value).not.toContain(",");
+  }
 });
 
 test("every hazard code we request is one the label map understands", () => {
@@ -116,4 +118,46 @@ test("every hazard code we request is one the label map understands", () => {
 
 test("requests all six hazard types, so the layer is not quietly single-hazard", () => {
   expect([...GDACS_EVENT_TYPES].sort()).toEqual(["DR", "EQ", "FL", "TC", "VO", "WF"]);
+});
+
+// ── mergeGdacsResults: the fan-out/fan-in this fix introduced ────────────────
+
+const okResult = (type: string, eventId: number): GdacsTypeResult => ({
+  type,
+  ok: true,
+  features: [
+    { geometry: { coordinates: [10, 20] }, properties: { eventid: eventId, episodeid: 1, eventtype: type, alertlevel: "Green" } },
+  ],
+});
+const failResult = (type: string, reason: string): GdacsTypeResult => ({ type, ok: false, reason });
+
+test("all six types succeeding merges into one observed result", () => {
+  const results = GDACS_EVENT_TYPES.map((t, i) => okResult(t, i + 1));
+  const out = mergeGdacsResults(results, 1000);
+  expect(readOutcome(out)).toMatchObject({ ok: true, at: 1000 });
+  expect(out).toHaveLength(6);
+});
+
+test("all six types failing reports nothing, not a false quiet day", () => {
+  const results = GDACS_EVENT_TYPES.map((t) => failResult(t, "http 400"));
+  const out = mergeGdacsResults(results, 1000);
+  expect(readOutcome(out)).toMatchObject({ ok: false, reason: "http 400", at: 1000 });
+  expect(out).toHaveLength(0);
+});
+
+test("one type failing keeps the other five, flagged degraded rather than silently OK", () => {
+  const results: GdacsTypeResult[] = [
+    okResult("EQ", 1),
+    okResult("TC", 2),
+    okResult("FL", 3),
+    okResult("VO", 4),
+    okResult("DR", 5),
+    failResult("WF", "http 500"),
+  ];
+  const out = mergeGdacsResults(results, 2000);
+  const outcome = readOutcome(out);
+  expect(outcome?.ok).toBe(false); // partial is not success, even with real rows attached
+  expect(outcome?.reason).toContain("WF");
+  expect(outcome?.reason).toContain("http 500");
+  expect(out).toHaveLength(5); // the five that succeeded are not thrown away
 });

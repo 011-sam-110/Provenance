@@ -1,5 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
-import { degraded, observed } from "@/lib/signals/outcome";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // GDACS — the Global Disaster Alert & Coordination System (UN/EC). One keyless
 // GeoJSON feed of the CURRENT global disaster picture: earthquakes, tropical
@@ -7,28 +7,38 @@ import { degraded, observed } from "@/lib/signals/outcome";
 // alert level. Complements the per-hazard feeds (USGS quakes, EONET fires/floods)
 // with a single multi-hazard, severity-scored, alert-coloured overlay. The marker
 // is GDACS's representative centroid. Confirmed live 2026-06-27; re-verified
-// 2026-08-13 after upstream began requiring `eventtype` — see ENDPOINT below.
+// 2026-08-13 after upstream began requiring `eventtype` — see below.
 
 /**
- * EVENTTYPE IS MANDATORY. Calling this endpoint bare — as this adapter did until
- * 2026-08-13 — now answers HTTP 400 `{"message":"Eventtype is required."}`. GDACS
- * added the requirement at some point after the 2026-06-27 verification above, and
- * because `fetch()` below returns `[]` on any non-ok response, the layer reported a
- * clean, quiet zero rather than a failure. It looked exactly like "no disasters
- * today" while being a hard 400 on every single poll.
+ * EVENTTYPE IS MANDATORY, AND SINCE SOME POINT AFTER 2026-08-13, SINGULAR.
  *
- * The parameter is SEMICOLON-separated, not comma-separated or repeated. All six
- * hazard codes, measured 2026-08-13: 289 events (TC 203, WF 32, DR 24, FL 15,
- * EQ 10, VO 5). The response shape is unchanged, so `normalizeGdacs` needed no
- * edit — this was one missing query parameter, nothing more.
+ * Round one (fixed 2026-08-13): calling the event-list endpoint bare answered
+ * HTTP 400 `{"message":"Eventtype is required."}`. The fix then was one query
+ * parameter, semicolon-joining all six hazard codes into one request — measured
+ * that day at 289 events (TC 203, WF 32, DR 24, FL 15, EQ 10, VO 5).
+ *
+ * Round two (fixed 2026-08-28): that same semicolon-joined request now answers
+ * HTTP 400 `{"message":"Please specify only 1 eventtype."}`. GDACS tightened the
+ * parameter again, some time in the 15 days between. Because `fetch()` returned
+ * `[]` on any non-ok response, the layer went back to publishing a clean, quiet
+ * zero — indistinguishable from "no disasters today" — on every poll in between.
+ * The parser was never wrong either time; the request shape was.
+ *
+ * The fix this time is structural, not one parameter: `gdacsEndpointFor()` below
+ * builds one single-type URL, `fetch()` issues six requests in parallel (one per
+ * `GDACS_EVENT_TYPES` code) and `mergeGdacsResults()` — a PURE function, unit
+ * tested independently of the network — folds them into one outcome. A hazard
+ * type that fails does not empty the other five: see `mergeGdacsResults` for how
+ * a partial round is reported.
  *
  * TS (tsunami) is deliberately absent: `gdacsEventLabel` maps it because GDACS
  * documents the code, but the event list does not accept it as a filter value.
  */
 export const GDACS_EVENT_TYPES = ["EQ", "TC", "FL", "VO", "DR", "WF"] as const;
-/** Exported so a regression test can assert the parameter is still there. */
-export const GDACS_ENDPOINT =
-  `https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtype=${GDACS_EVENT_TYPES.join(";")}`;
+/** One hazard type per request — GDACS rejects more than one as of 2026-08-28. */
+export function gdacsEndpointFor(eventType: string): string {
+  return `https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtype=${eventType}`;
+}
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 export const GDACS_ATTRIBUTION = "Disaster alerts © GDACS (UN OCHA / European Commission JRC)";
@@ -133,6 +143,43 @@ export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFe
   return out;
 }
 
+/** One hazard type's fetch, resolved — never thrown, so `Promise.all` cannot short-circuit. */
+export interface GdacsTypeResult {
+  type: string;
+  ok: boolean;
+  features?: GdacsFeature[];
+  reason?: string;
+}
+
+/**
+ * Fold six per-hazard-type results into one outcome-tagged `SignalFeature[]`. PURE —
+ * no network, no Date.now() default, so it is exercised directly by unit tests.
+ *
+ * A hazard type failing does not empty the layer: the other five still merge into a
+ * real result. All six failing is the only path that reports nothing. A PARTIAL round
+ * uses `degradedWith` (ok: false, but real rows attached) rather than `observed`,
+ * because asserting `ok: true` when a third of the requests failed would be the exact
+ * comfortable lie lib/signals/outcome.ts exists to rule out — even though, unlike that
+ * helper's usual last-good-cache case, every row here really was read this instant.
+ */
+export function mergeGdacsResults(results: GdacsTypeResult[], at: number): SignalFeature[] {
+  const succeeded = results.filter((r) => r.ok);
+  const failed = results.filter((r) => !r.ok);
+
+  if (succeeded.length === 0) {
+    return degraded(failed[0]?.reason ?? "upstream read failed", at);
+  }
+
+  const merged = normalizeGdacs({ features: succeeded.flatMap((r) => r.features ?? []) });
+
+  if (failed.length > 0) {
+    const types = failed.map((f) => f.type).join(",");
+    return degradedWith(merged, `partial: ${types} failed (${failed[0]!.reason})`, at);
+  }
+
+  return observed(merged, at);
+}
+
 export const GDACS_SOURCE: SignalSource = {
   id: "gdacs",
   label: "Disaster alerts",
@@ -142,18 +189,26 @@ export const GDACS_SOURCE: SignalSource = {
   attribution: GDACS_ATTRIBUTION,
   metric: { field: "alertScore", domain: [0, 3] },
   async fetch() {
-    try {
-      const res = await fetch(GDACS_ENDPOINT, {
-        headers: { "User-Agent": UA, Accept: "application/json" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      // The 400 described above is exactly this branch: it now reports "http 400"
-      // instead of a clean zero, so a missing parameter cannot pass for a quiet day.
-      if (!res.ok) return degraded(`http ${res.status}`);
-      const json = (await res.json()) as { features?: GdacsFeature[] };
-      return observed(normalizeGdacs(json));
-    } catch (e) {
-      return degraded((e as Error)?.name === "TimeoutError" ? "timeout" : "upstream read failed");
-    }
+    const at = Date.now();
+    const results = await Promise.all(
+      GDACS_EVENT_TYPES.map(async (type): Promise<GdacsTypeResult> => {
+        try {
+          const res = await fetch(gdacsEndpointFor(type), {
+            headers: { "User-Agent": UA, Accept: "application/json" },
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (!res.ok) return { type, ok: false, reason: `http ${res.status}` };
+          const json = (await res.json()) as { features?: GdacsFeature[] };
+          return { type, ok: true, features: json.features ?? [] };
+        } catch (e) {
+          return {
+            type,
+            ok: false,
+            reason: (e as Error)?.name === "TimeoutError" ? "timeout" : "upstream read failed",
+          };
+        }
+      }),
+    );
+    return mergeGdacsResults(results, at);
   },
 };
