@@ -1,5 +1,8 @@
 // Regression coverage for the "four user-visible strings that are false" fixes:
-//   1. lib/sources/catalog.ts   — planes credited to OpenSky, not adsb.lol
+//   1. lib/sources/catalog.ts   — planes credited to their real current source
+//                                 (adsb.lol), not the OpenSky feed removed on
+//                                 licensing grounds (2026-08-31: this test itself
+//                                 had asserted the stale direction — see below)
 //   2. lib/sources/windy.ts     — the MAX_WEBCAMS cap is disclosed via
 //                                 lib/signals/coverage.ts, not silent
 //   3. lib/export.ts            — downloaded files carry OUR name, not the
@@ -27,12 +30,20 @@ afterEach(() => {
 });
 
 // --- 1. catalog.ts: planes attribution --------------------------------------
+//
+// This test used to assert the OPPOSITE of what was true: it required "OpenSky"
+// and forbade "adsb.lol", which meant it was pinned to the bug rather than
+// guarding against it. OpenSky's global snapshot was removed on licensing
+// grounds and production has been served entirely by the adsb.lol grid sweep
+// for months (app/api/planes/route.ts) — the catalog entry just kept crediting
+// the feed that no longer runs. Fixed here alongside lib/sources/catalog.ts and
+// components/shell/SourceCatalog.tsx's LAYER_META, which had the same string.
 
-test("the planes catalog entry credits OpenSky, not adsb.lol", () => {
+test("the planes catalog entry credits adsb.lol, its real current source", () => {
   const planes = getCatalogSource("planes");
   expect(planes).toBeDefined();
-  expect(planes!.attribution.toLowerCase()).not.toContain("adsb.lol");
-  expect(planes!.attribution).toContain("OpenSky");
+  expect(planes!.attribution.toLowerCase()).toContain("adsb.lol");
+  expect(planes!.attribution).not.toContain("OpenSky");
 });
 
 // --- 2. windy.ts: undisclosed cap --------------------------------------------
