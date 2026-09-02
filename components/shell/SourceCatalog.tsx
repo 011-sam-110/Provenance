@@ -21,6 +21,7 @@ import {
   type LayerKey,
 } from "@/lib/layers";
 import { signalsByGroup } from "@/lib/signals/registry";
+import { ADSB_ATTRIBUTION } from "@/lib/sources/adsb";
 import { signalsStore, useSignals, useSignalCounts } from "@/lib/signals/store";
 import {
   useSignalFreshness,
@@ -75,9 +76,10 @@ const LAYER_META: Record<LayerKey, LayerMeta> = {
     source: `${CAMERA_REGIONS.length} agency feeds — TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC & more`,
     fresh: "cameras",
   },
-  // OpenSky, not adsb.lol: app/api/planes imports fetchAircraft from lib/sources/opensky.
-  // adsb.lol backs the separate military-air SIGNAL layer only.
-  planes: { name: "Planes", group: "Air", accent: "#d97706", source: "OpenSky Network — global ADS-B snapshot", fresh: "planes" },
+  // adsb.lol, not OpenSky: OpenSky's global /states/all was removed on licensing
+  // grounds (app/api/planes/route.ts). Production has been served entirely by the
+  // adsb.lol grid sweep for months — this rail just said the wrong thing about it.
+  planes: { name: "Planes", group: "Air", accent: "#d97706", source: ADSB_ATTRIBUTION, fresh: "planes" },
   satellites: { name: "Satellites", group: "Space", accent: "#7c3aed", source: "CelesTrak TLE · SGP4 (local)", fresh: "satellites" },
   // NOT "soon": AIS shipped as a signal layer (lib/signals/ais.ts, registered at
   // lib/signals/registry.ts:121) and is rendered by this very rail under Maritime.
