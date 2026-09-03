@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { createDefaultLayout, MAX_WIDGETS } from "@/lib/console/types";
+import { RAIL_MAX } from "@/lib/terminal/rails";
 
 test("sanitizeLayout returns null for unrecoverable input", () => {
   expect(sanitizeLayout(null)).toBeNull();
@@ -11,13 +12,13 @@ test("sanitizeLayout returns null for unrecoverable input", () => {
   expect(sanitizeLayout({ segments: {}, stage: "map2d" })).toBeNull(); // widgets not an array
 });
 
-test("sanitizeLayout backfills all three segments and clamps sizes", () => {
+test("sanitizeLayout backfills all three segments and clamps sizes per rail (not the old flat [0,900])", () => {
   const out = sanitizeLayout({ segments: { left: { size: 99999, collapsed: false } }, stage: "map2d", widgets: [] });
   expect(out).not.toBeNull();
   expect(out!.segments.left).toBeDefined();
   expect(out!.segments.right).toBeDefined();
   expect(out!.segments.bottom).toBeDefined();
-  expect(out!.segments.left.size).toBe(900); // clamped into [0,900]
+  expect(out!.segments.left.size).toBe(RAIL_MAX.left); // clamped via clampRailSize
 });
 
 test("sanitizeLayout drops widgets missing id/type and defaults config to {}", () => {
@@ -53,19 +54,22 @@ test("sanitizeLayout clamps widget height into [120,1200] and caps count", () =>
   expect(many!.widgets.length).toBe(MAX_WIDGETS);
 });
 
-test("sanitizeLayout backfills width=12 for legacy widgets and clamps out-of-range", () => {
+test("sanitizeLayout falls back an unknown/missing segment to left, and densely reindexes order per rail", () => {
   const out = sanitizeLayout({
     segments: {}, stage: "map2d",
     widgets: [
-      { id: "a", type: "clock" },              // legacy, no width
-      { id: "b", type: "clock", width: 1 },    // below min
-      { id: "c", type: "clock", width: 99 },   // above max
-      { id: "d", type: "clock", width: 6 },    // valid
+      { id: "a", type: "clock" },                                   // no segment -> left
+      { id: "b", type: "clock", segment: "not-a-rail" },             // bogus -> left
+      { id: "c", type: "clock", segment: "left", order: 5 },
+      { id: "d", type: "clock", segment: "left", order: 5 },         // duplicate order
+      { id: "e", type: "clock", segment: "right", order: 0 },
     ],
   });
-  const byId = Object.fromEntries(out!.widgets.map((w) => [w.id, w.width]));
-  expect(byId.a).toBe(12);
-  expect(byId.b).toBe(3);
-  expect(byId.c).toBe(12);
-  expect(byId.d).toBe(6);
+  const bySegment = (seg: string) =>
+    out!.widgets.filter((w) => w.segment === seg).sort((x, y) => x.order - y.order);
+
+  expect(bySegment("left").map((w) => w.id).sort()).toEqual(["a", "b", "c", "d"]);
+  expect(bySegment("left").map((w) => w.order)).toEqual([0, 1, 2, 3]); // dense, no duplicates
+  expect(bySegment("right").map((w) => w.order)).toEqual([0]);
+  expect(out!.widgets.every((w) => (["left", "right", "bottom"] as const).includes(w.segment))).toBe(true);
 });
