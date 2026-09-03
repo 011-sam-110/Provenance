@@ -215,10 +215,23 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // Belgium, most of the southern hemisphere). It stays opt-in on every other
   // board and in lib/layers.ts's defaults; this is a per-board choice, not a
   // change to what the layer does by default.
+  // THE STAGE IS map3d, and this one line is what makes /app open on the globe.
+  //
+  // Not lib/shell/viewMode.ts. DEFAULT_VIEW_MODE reads like the switch and is not:
+  // StageHost.tsx has a mount effect that sets viewModeStore from the board's stage,
+  // so whatever viewMode hydrates to is overwritten by the literal below before the
+  // map is built. Editing that constant alone changes nothing on screen, which is a
+  // good way to spend an afternoon.
+  //
+  // Returning visitors are NOT migrated. `stage` is part of the persisted shell
+  // layout, so anyone with a saved board keeps the stage they had. Bumping the
+  // layout version to force this would wipe every saved board - widgets, sizes and
+  // all - to change a default, and someone who deliberately chose 2D is not a
+  // regression to fix. New visitors and anyone who resets their board get the globe.
   { id: "overview", title: "Brief", icon: "🌐", blurb: "what changed since you last looked",
     mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"],
     mapCore: ["webcams"],
-    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
+    build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
       { type: "anomaly", weight: 3 },
       { type: "events", weight: 3 },
       { type: "headlines", weight: 2 },
