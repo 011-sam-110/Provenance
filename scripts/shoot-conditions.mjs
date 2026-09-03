@@ -77,12 +77,24 @@ async function findChromium() {
 }
 
 async function openStreets(page) {
-  await page.goto(`${baseUrl}/app`, { waitUntil: "domcontentloaded" });
-  // The board tabs are the console's top nav. Match on the accessible name rather than
-  // a nth-child, so a reordered nav fails loudly instead of shooting the wrong board.
-  const tab = page.getByRole("button", { name: /streets/i }).first();
-  await tab.waitFor({ state: "visible", timeout: 20_000 });
-  await tab.click();
+  // TN_BOARD is a ?c= share link minted by scripts/mint-conditions-board.mts, used to
+  // put a specific camera in a specific tile — the measured and refused tiers cannot
+  // be reached from the seeded board, which is three webcams. It decodes through the
+  // same sanitizeLayout any shared board takes, so it is not a back door: a layout
+  // that would not survive sharing does not render here either. Unset, this shoots
+  // the real seeded Streets board by clicking its tab, which is the default case.
+  const board = process.env.TN_BOARD ?? "";
+  if (board) {
+    await page.goto(`${baseUrl}${board}`, { waitUntil: "domcontentloaded" });
+  } else {
+    await page.goto(`${baseUrl}/app`, { waitUntil: "domcontentloaded" });
+    // The board tabs are the console's top nav. Match on the accessible name rather
+    // than a nth-child, so a reordered nav fails loudly instead of shooting the
+    // wrong board.
+    const tab = page.getByRole("button", { name: /streets/i }).first();
+    await tab.waitFor({ state: "visible", timeout: 20_000 });
+    await tab.click();
+  }
   // Camera tiles are remote images on 60-600s cadences. Give them a real chance to
   // paint, or the evidence shows empty stages and proves nothing about an overlay that
   // sits on top of them.
@@ -105,8 +117,13 @@ const run = async () => {
       "--renderer-process-limit=1",
       "--js-flags=--max-old-space-size=512",
       "--disable-background-networking",
-      "--disable-software-rasterizer",
-      "--no-zygote",
+      // KEEP SwiftShader. --disable-gpu without a software rasteriser leaves the page
+      // with no WebGL at all, and WorldMap's MapLibre constructor THROWS rather than
+      // degrading — which takes the whole console down to Next's error card. The
+      // screenshot still succeeds, of an error page, which is exactly the sort of
+      // false evidence this script exists to prevent. (That the console dies outright
+      // without WebGL is a real product gap, not a test artefact.)
+      "--enable-unsafe-swiftshader",
     ],
   });
   const results = [];
@@ -118,6 +135,22 @@ const run = async () => {
     });
     await ctx.addInitScript(SUPPRESS);
     const page = await ctx.newPage();
+    // A page that throws during hydration still screenshots perfectly happily — it
+    // just screenshots Next's error card. Capturing pageerror is what turns "no
+    // overlays found" from a mystery into a stack trace.
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message).split("\n").slice(0, 6).join("\n")));
+    page.on("console", (m) => {
+      if (m.type() === "error") pageErrors.push(`[console] ${m.text().slice(0, 300)}`);
+    });
+    // Which internal routes the PAGE actually asked for. A tile stuck on "…" is
+    // either waiting on a request that is slow or waiting on one that was never
+    // made, and those have opposite fixes.
+    const apiCalls = [];
+    page.on("request", (r) => {
+      const u = r.url();
+      if (u.includes("/api/")) apiCalls.push(u.replace(baseUrl, "").split("?")[0]);
+    });
     try {
       await openStreets(page);
 
@@ -159,18 +192,86 @@ const run = async () => {
             title: document.title,
             bodyStart: (document.body.innerText || "").replace(/\s+/g, " ").slice(0, 240),
           }));
-      const path = `${outDir}/streets-${vp.name}.png`;
+      const path = `${outDir}/${process.env.TN_TAG ?? "streets"}-${vp.name}.png`;
       await page.screenshot({ path });
       results.push({ viewport: vp.name, note: vp.note, overlays: claims.length, claims, path });
       console.log(`\n=== ${vp.name} (${vp.note}) ===`);
       console.log(`devicePixelRatio actually granted: ${dsf}`);
       console.log(`overlays found: ${claims.length}`);
       if (diag) console.log("  diagnostics:", JSON.stringify(diag, null, 2));
+      if (process.env.TN_TRACE) {
+        const counts = {};
+        for (const c of apiCalls) counts[c] = (counts[c] ?? 0) + 1;
+        console.log("  api calls:", JSON.stringify(counts));
+      }
+      if (!claims.length && pageErrors.length) {
+        console.log("  page errors:");
+        for (const e of pageErrors.slice(0, 4)) console.log(`    ${e.replace(/\n/g, "\n    ")}`);
+      }
       for (const c of claims) {
         console.log(`  [${c.tier}/${c.density}] ${c.cssPx} ${c.text}`);
         if (c.title) console.log(`        hover: ${c.title}`);
       }
       console.log(`shot: ${path}`);
+
+      // --- The focus panel -------------------------------------------------
+      // TN_FOCUS=<1-based tile> expands that camera wall onto the centre stage and
+      // shoots the provenance panel. This is a SECOND piece of evidence and not a
+      // nicer version of the first: the wall proves the tile refuses a bad reading,
+      // and only this proves the refusal is then disclosed rather than buried. A run
+      // that shoots the wall alone cannot tell those apart.
+      const focusAt = Number(process.env.TN_FOCUS ?? 0);
+      if (focusAt > 0) {
+        const expand = page.getByRole("button", { name: "Expand widget" }).nth(focusAt - 1);
+        await expand.waitFor({ state: "visible", timeout: 20_000 });
+        await expand.click();
+        // The detail view mounts its own camera image and asks /api/point-weather for
+        // a coordinate the wall may already have cached. Give it the same real chance
+        // to settle that the wall got.
+        await page.waitForTimeout(Number(process.env.TN_FOCUS_SETTLE_MS ?? 7000));
+
+        const panel = await page.$$eval(".tn-csd-prov", (nodes) =>
+          nodes.map((n) => ({
+            claim: (n.querySelector(".tn-csd-prov-claim")?.textContent || "").replace(/\s+/g, " ").trim(),
+            tier: n.querySelector(".tn-csd-prov-claim")?.getAttribute("data-tier") ?? null,
+            basis: (n.querySelector(".tn-csd-prov-basis")?.textContent || "").replace(/\s+/g, " ").trim(),
+            // The disclosure is the whole point of the panel, so it is reported
+            // separately rather than folded into the row list.
+            refused: (n.querySelector(".tn-csd-prov-refused")?.textContent || "").replace(/\s+/g, " ").trim() || null,
+            rows: Array.from(n.querySelectorAll(".tn-csd-prov-rows > div")).map((d) =>
+              [
+                (d.querySelector("dt")?.textContent || "").trim(),
+                (d.querySelector("dd > span")?.textContent || "").trim(),
+              ].join(": "),
+            ),
+            credit: (n.querySelector(".tn-csd-prov-credit")?.textContent || "").trim() || null,
+          })),
+        );
+        const fpath = `${outDir}/${process.env.TN_TAG ?? "streets"}-focus${focusAt}-${vp.name}.png`;
+        await page.screenshot({ path: fpath });
+        console.log(`\n  --- focus panel, tile ${focusAt} ---`);
+        if (!panel.length) {
+          // Same rule as the wall: a missing panel must SAY so and fail, because a
+          // screenshot of a page with no panel on it looks identical to a success.
+          console.log("  NO PROVENANCE PANEL FOUND. This shot is not evidence.");
+          const why = await page.evaluate(() => ({
+            detail: document.querySelectorAll(".tn-csd").length,
+            stage: document.querySelectorAll(".tn-csd-stage").length,
+            bodyStart: (document.body.innerText || "").replace(/\s+/g, " ").slice(0, 240),
+          }));
+          console.log("  diagnostics:", JSON.stringify(why, null, 2));
+          for (const e of pageErrors.slice(0, 4)) console.log(`    ${e.replace(/\n/g, "\n    ")}`);
+        }
+        for (const pn of panel) {
+          console.log(`  [${pn.tier}] ${pn.claim}`);
+          console.log(`  basis: ${pn.basis}`);
+          if (pn.refused) console.log(`  REFUSED, DISCLOSED: ${pn.refused}`);
+          for (const r of pn.rows) console.log(`    ${r}`);
+          if (pn.credit) console.log(`  credit: ${pn.credit}`);
+        }
+        results.push({ viewport: vp.name, note: `${vp.note} — focus panel`, overlays: panel.length, panel, path: fpath });
+        console.log(`  shot: ${fpath}`);
+      }
     } catch (err) {
       console.error(`FAILED at ${vp.name}:`, err.message);
       results.push({ viewport: vp.name, error: err.message });
