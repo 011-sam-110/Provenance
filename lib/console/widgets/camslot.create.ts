@@ -5,35 +5,57 @@ import { MAX_STREAMS, sanitizeCamslotConfig, type StreamRef } from "@/lib/consol
 
 // ── Making a camera wall, from anywhere ──────────────────────────────────────
 //
-// Four separate surfaces now need to mint a camslot: the ghost "+" tile at the end
-// of the wall, the stage bar's button, the empty-board rescue panel, and the map's
-// "send these to the wall". Before this file each of them would have hand-rolled
-// `shellLayoutStore.add("camslot", …)`, and the four would have drifted — a
-// different default dwell here, a forgotten sanitise there, and only one of them
-// bothering to make the new card visible.
+// Several surfaces need to mint a camslot: the stage bar's button, the map's
+// "send these to the wall", and the widget catalogue. Before this file each of
+// them would have hand-rolled `shellLayoutStore.add("camslot", …)`, and they
+// would have drifted — a different default dwell here, a forgotten sanitise
+// there, and only one of them bothering to make the new card visible.
 //
-// THE VISIBILITY PROBLEM IS THE POINT OF THIS MODULE, not a nicety bolted onto it.
-// `addWidget` places a new card at `findFreeSpot`, and the Streets board is tiled
-// by `arrangeWall` to cover all twelve columns for the full row budget — so there
-// is no free cell, and the scan falls through to `{ x: 0, y: rowsUsed }`: the first
-// row BELOW the board. Measured on the live board at 1440x900, adding a camera wall
-// from the command palette put it at `top: 856px` in a 900px viewport. Nothing
-// scrolled to it, nothing flashed, and the palette stayed open over the top. The
-// user's report was "I add a camera wall and nothing happens", and they were right
-// to say so — 44px of a 174px card, below the world-clock strip, is not feedback.
+// THE VISIBILITY PROBLEM IS THE POINT OF THIS MODULE, not a nicety bolted onto
+// it. It is worth keeping the original diagnosis because the CAUSE is gone while
+// the RISK is not.
 //
-// So creating and revealing are ONE call here. A caller cannot get the first
-// without the second and quietly reintroduce the bug.
+// What it was: `addWidget` placed a new card at `findFreeSpot`, and the Streets
+// board was tiled by `arrangeWall` across all twelve columns for the full row
+// budget — so there was no free cell, and the scan fell through to
+// `{ x: 0, y: rowsUsed }`, the first row BELOW the board. Measured live at
+// 1440x900, adding a camera wall from the command palette put it at `top: 856px`
+// in a 900px viewport. Nothing scrolled to it, nothing flashed, and the palette
+// stayed open over the top. The report was "I add a camera wall and nothing
+// happens", and that was fair: 44px of a 174px card, below the world-clock
+// strip, is not feedback.
+//
+// What it is now: there is no free-space scan to fall through, because a new
+// card appends to the end of a named rail. But a rail SCROLLS, and appending to
+// the end of a rail that is already taller than the window puts the new card
+// below the fold just as surely as the old scan did. It is one scroll away
+// instead of unreachable, which is better and is still not feedback.
+//
+// So creating and revealing stay ONE call. A caller cannot get the first without
+// the second and quietly reintroduce the bug in its new form.
 
-/** A camera wall's opening cell. Wider than the generic 4x7 because a camera tile
- *  showing a 16:9 frame at four columns is smaller than the controls on its own
- *  header — this is the smallest size at which a new empty slot reads as a place
- *  a picture will go.
+/**
+ * A camera wall's opening height, in px.
  *
- *  EXPORTED because the board draws a ghost tile in the cell this card WILL
- *  occupy, and a second copy of these numbers would let the preview drift away
- *  from the thing it previews. */
-export const CAMSLOT_SIZE = { w: 4, h: 9 };
+ * It was `{ w: 4, h: 9 }` in grid cells — taller than the generic 4x7 because a
+ * camera tile showing a 16:9 frame is smaller than the controls on its own
+ * header below that, and this was the smallest size at which a new empty slot
+ * read as a place a picture will go. The WIDTH half is gone: a card is as wide
+ * as its rail now, and the camera boards ask for a wider rail instead.
+ *
+ * 9 rows at the old 25px pitch was 225px, and this rounds UP to 280 rather than
+ * carrying 225 across, for a reason rather than for neatness: 280 is the "M"
+ * height preset, so a freshly created wall opens with a highlighted chip in the
+ * ⋯ menu instead of on a size that matches none of the four offered. The extra
+ * 55px also covers the frame properly — a 16:9 picture in the 480px camera rail
+ * is 270px tall before the header.
+ *
+ * No longer exported. Its only outside consumer was the board's ghost tile,
+ * which previewed the cell this card would occupy; there are no cells to
+ * preview, so the second copy of these numbers that the export existed to
+ * prevent cannot happen.
+ */
+const CAMSLOT_HEIGHT_PX = 280;
 
 export interface CreateCamslotOptions {
   /** Shown as the card's title. A place, not a description — "Soho", "Trafalgar
@@ -69,9 +91,17 @@ export function createCamslot(opts: CreateCamslotOptions = {}): CreateCamslotRes
     name: opts.name,
   });
 
+  // The LEFT rail, not a placement question. Every other add-path opens the
+  // placement picker, and this one deliberately does not: it is called from the
+  // map ("send these cameras to a wall") and from the stage bar, where the user
+  // is in the middle of a different task and a modal asking about layout would
+  // interrupt it to ask something they have no opinion about yet. Left matches
+  // where `createDefaultLayout` and all seven built-in boards put things, so the
+  // answer is at least consistent. It can be moved from the ⋯ menu in one click.
   const res = shellLayoutStore.add("camslot", {
+    segment: "left",
     config: config as unknown as Record<string, unknown>,
-    width: CAMSLOT_SIZE.w,
+    height: CAMSLOT_HEIGHT_PX,
   });
 
   if (!res.ok) {

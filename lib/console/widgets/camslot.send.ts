@@ -104,25 +104,26 @@ function selectionCentre(picks: readonly PickedCamera[]): LatLon | null {
 }
 
 /**
- * Board reading order: top row first, then left to right.
+ * Board reading order: left rail top to bottom, then right, then the bottom dock.
  *
- * The grid `rect` is what the user actually sees, so it is what the menu is ordered
- * by — `widgets[]` array order is authoring order and on a board anyone has dragged
- * it bears no relation to where the cards ended up. A widget with no rect has not
- * been through a sanitize pass yet (hand-built layouts, and the window between
- * `add()` and the first layout); those sort last in array order rather than being
- * dropped, because a wall missing from the menu is a wall you cannot send to.
+ * This used to sort by the grid `rect`, on the reasoning that the rect was what
+ * the user actually saw while `widgets[]` array order was authoring order that
+ * bore no relation to where a dragged card ended up. Both halves of that are now
+ * obsolete: there is no rect, and array order is no longer authoring order
+ * either — `segment` plus `order` IS where the card is, kept dense and 0-based
+ * by every reducer that touches it, so the sort is exact rather than a
+ * reconstruction. The rail sequence matches the DOM order ConsoleWorkspace
+ * renders, which is what makes "Camera wall 3" mean the third one you can see.
  */
-function inReadingOrder<T extends { rect?: { x: number; y: number } }>(rows: readonly T[]): T[] {
+const RAIL_READING_ORDER: Record<string, number> = { left: 0, right: 1, bottom: 2 };
+
+function inReadingOrder<T extends { segment: string; order: number }>(rows: readonly T[]): T[] {
   return rows
     .map((w, i) => ({ w, i }))
     .sort((a, b) => {
-      const ar = a.w.rect;
-      const br = b.w.rect;
-      if (!ar && !br) return a.i - b.i;
-      if (!ar) return 1;
-      if (!br) return -1;
-      return ar.y - br.y || ar.x - br.x || a.i - b.i;
+      const ar = RAIL_READING_ORDER[a.w.segment] ?? 99;
+      const br = RAIL_READING_ORDER[b.w.segment] ?? 99;
+      return ar - br || a.w.order - b.w.order || a.i - b.i;
     })
     .map((e) => e.w);
 }

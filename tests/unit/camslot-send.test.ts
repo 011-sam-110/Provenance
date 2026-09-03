@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { shellLayoutStore } from "@/lib/console/store";
-import { createDefaultLayout, type GridRect, type WidgetInstance } from "@/lib/console/types";
+import { createDefaultLayout, type SegmentId, type WidgetInstance } from "@/lib/console/types";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
 import { pickKey, pickStore, type PickedCamera } from "@/lib/console/widgets/camslot.pick";
 import { sanitizeCamslotConfig } from "@/lib/console/widgets/camslot.model";
@@ -10,17 +10,24 @@ import { camslotTargets, sendPicksToWall } from "@/lib/console/widgets/camslot.s
 // this file can claim: it covers the two exports that are pure functions of the
 // layout store and the basket, and nothing about the tray that draws them.
 
+/**
+ * A card's place is its RAIL and its index in that rail. These tests used to pass
+ * a GridRect here, because under the free grid the rect was the only thing that
+ * knew where a card had ended up. There is no rect now: `segment` + `order` ARE
+ * the position, and every reducer keeps `order` dense and 0-based, so the menu's
+ * sort is exact rather than a reconstruction from geometry.
+ */
 function widget(
   id: string,
   type: string,
-  rect: GridRect | undefined,
+  at: { segment: SegmentId; order: number },
   config: Record<string, unknown> = {},
 ): WidgetInstance {
-  return { id, type, segment: "left", order: 0, width: 4, height: 200, rect, collapsed: false, config };
+  return { id, type, segment: at.segment, order: at.order, height: 200, collapsed: false, config };
 }
 
-/** `set`, not `replace`: replace runs sanitizeLayout, which fills in a rect for any
- *  widget lacking one — and the rect is precisely what these tests are pinning. */
+/** `set`, not `replace`: replace runs sanitizeLayout, which normalises rails and
+ *  re-densifies `order` — and the placement is precisely what these tests pin. */
 function setBoard(...widgets: WidgetInstance[]): void {
   shellLayoutStore.set({ ...createDefaultLayout(), widgets });
 }
@@ -56,25 +63,27 @@ afterEach(() => {
 
 describe("camslotTargets", () => {
   it("lists the walls in board reading order, not the order they were authored in", () => {
-    // Authored bottom-first on purpose: widgets[] is authoring order and a dragged
-    // board bears no relation to it, so a menu built from the array would list the
-    // walls in an order the user cannot see on screen.
+    // Authored bottom-rail-first on purpose: widgets[] is authoring order, and a
+    // board anyone has rearranged bears no relation to it, so a menu built from
+    // the array would list the walls in an order the user cannot see on screen.
+    // Reading order is left rail top to bottom, then right, then the bottom dock
+    // — which is also the DOM order ConsoleWorkspace renders.
     setBoard(
-      widget("bottom", "camslot", { x: 0, y: 6, w: 4, h: 9 }, { name: "Prague" }),
-      widget("top-right", "camslot", { x: 6, y: 0, w: 4, h: 9 }, { name: "Madrid" }),
-      widget("top-left", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { name: "London" }),
+      widget("dock", "camslot", { segment: "bottom", order: 0 }, { name: "Prague" }),
+      widget("right", "camslot", { segment: "right", order: 0 }, { name: "Madrid" }),
+      widget("left", "camslot", { segment: "left", order: 0 }, { name: "London" }),
     );
     expect(camslotTargets().map((t) => t.name)).toEqual(["London", "Madrid", "Prague"]);
-    expect(camslotTargets().map((t) => t.id)).toEqual(["top-left", "top-right", "bottom"]);
+    expect(camslotTargets().map((t) => t.id)).toEqual(["left", "right", "dock"]);
   });
 
   it("numbers an unnamed wall by its place on the board, not among the unnamed ones", () => {
     setBoard(
-      widget("a", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { name: "London" }),
-      widget("b", "camslot", { x: 6, y: 0, w: 4, h: 9 }),
-      widget("c", "camslot", { x: 0, y: 6, w: 4, h: 9 }),
+      widget("a", "camslot", { segment: "left", order: 0 }, { name: "London" }),
+      widget("b", "camslot", { segment: "left", order: 1 }),
+      widget("c", "camslot", { segment: "right", order: 0 }),
     );
-    // "Camera wall 2" is the second card down the board — a claim the user can check.
+    // "Camera wall 2" is the second wall in reading order — a claim the user can check.
     // Numbering only the unnamed ones would make it the first unnamed one, which on
     // this board is also the second card, but on a board whose first two walls are
     // named would be the third. The label has to survive that.
@@ -83,15 +92,15 @@ describe("camslotTargets", () => {
 
   it("counts only camera walls, and numbers them among themselves", () => {
     setBoard(
-      widget("markets", "markets", { x: 0, y: 0, w: 4, h: 6 }),
-      widget("wall", "camslot", { x: 4, y: 0, w: 4, h: 9 }),
+      widget("markets", "markets", { segment: "left", order: 0 }),
+      widget("wall", "camslot", { segment: "left", order: 1 }),
     );
     expect(camslotTargets()).toEqual([{ id: "wall", name: "Camera wall 1", count: 0 }]);
   });
 
   it("prints the number of streams the wall will actually render, not the raw array length", () => {
     setBoard(
-      widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, {
+      widget("wall", "camslot", { segment: "left", order: 0 }, {
         // Two real refs and two that sanitizeCamslotConfig throws away. A `?c=` share
         // link can carry any JSON at all into config, so the count has to be taken
         // after that filter or the menu would advertise streams that never appear.
@@ -101,12 +110,18 @@ describe("camslotTargets", () => {
     expect(camslotTargets()[0].count).toBe(2);
   });
 
-  it("keeps a wall with no rect in the menu, sorted last", () => {
-    // A widget has no rect between add() and the first sanitize pass. Dropping it
-    // would make a freshly created wall unreachable from the menu that created it.
+  it("keeps a wall in an UNKNOWN rail in the menu, sorted last", () => {
+    // The old version of this test covered a wall with no rect, which was the
+    // window between add() and the first sanitize pass. That window is closed:
+    // add() now takes the rail as an argument, so a widget is never rail-less.
+    //
+    // The claim that survives is the one that still has a way of coming true. A
+    // `?c=` share link carries arbitrary JSON, so a board can arrive naming a rail
+    // this build does not have. Such a wall sorts last rather than being dropped,
+    // because a wall missing from the menu is a wall you cannot send cameras to.
     setBoard(
-      widget("unplaced", "camslot", undefined, { name: "Unplaced" }),
-      widget("placed", "camslot", { x: 0, y: 3, w: 4, h: 9 }, { name: "Placed" }),
+      widget("odd", "camslot", { segment: "nowhere" as SegmentId, order: 0 }, { name: "Unplaced" }),
+      widget("placed", "camslot", { segment: "left", order: 0 }, { name: "Placed" }),
     );
     expect(camslotTargets().map((t) => t.name)).toEqual(["Placed", "Unplaced"]);
   });
@@ -120,7 +135,7 @@ describe("sendPicksToWall — an empty basket", () => {
   });
 
   it("gives the same answer for a named target, and touches nothing", () => {
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [{ k: "cam", id: "a" }] }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [{ k: "cam", id: "a" }] }));
     expect(sendPicksToWall("wall").message).toBe("Nothing picked yet.");
     expect(streamsOf("wall")).toEqual(["a"]);
   });
@@ -142,7 +157,7 @@ describe("sendPicksToWall — a target that is not there", () => {
   });
 
   it("treats a live widget of another type as gone rather than writing streams into it", () => {
-    setBoard(widget("markets", "markets", { x: 0, y: 0, w: 4, h: 6 }));
+    setBoard(widget("markets", "markets", { segment: "left", order: 0 }));
     pickStore.add([pick("a")]);
 
     expect(sendPicksToWall("markets").message).toBe("That camera wall is gone.");
@@ -162,7 +177,7 @@ describe("sendPicksToWall — the cadence cap", () => {
   }
 
   it("says how many were refused, why, and what the cap is", () => {
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [], intervalMs: 5000 }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [], intervalMs: 5000 }));
     pickStore.add(thirteenFastPicks());
 
     const r = sendPicksToWall("wall");
@@ -179,7 +194,7 @@ describe("sendPicksToWall — the cadence cap", () => {
   });
 
   it("refuses the pick furthest from the centre of the selection, not the last one added", () => {
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [], intervalMs: 5000 }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [], intervalMs: 5000 }));
     // The stray goes into the basket FIRST, so insertion order and centre-out order
     // disagree. Insertion order would keep the stray and drop a camera in the cluster
     // the user was working in — and would make "the 12 nearest the centre" a lie.
@@ -193,7 +208,7 @@ describe("sendPicksToWall — the cadence cap", () => {
   });
 
   it("empties the basket when the wall took everything", () => {
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [], intervalMs: 5000 }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [], intervalMs: 5000 }));
     // Twelve, not thirteen: exactly the cap, so nothing is refused.
     pickStore.add(thirteenFastPicks().slice(0, 12));
 
@@ -206,7 +221,7 @@ describe("sendPicksToWall — the cadence cap", () => {
     // Thirteen fast cameras into a wall whose cap is 12: twelve land, the stray is
     // refused. Emptying the basket here would destroy the camera the accompanying
     // message tells the user to send somewhere else.
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [], intervalMs: 5000 }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [], intervalMs: 5000 }));
     pickStore.add(thirteenFastPicks());
 
     const r = sendPicksToWall("wall");
@@ -218,7 +233,7 @@ describe("sendPicksToWall — the cadence cap", () => {
   it("drops the area context when only part of the selection was placed", () => {
     // The leftovers are no longer "what is in this area", so the tray must stop
     // captioning them with the area's total.
-    setBoard(widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, { streams: [], intervalMs: 5000 }));
+    setBoard(widget("wall", "camslot", { segment: "left", order: 0 }, { streams: [], intervalMs: 5000 }));
     pickStore.addFromArea(thirteenFastPicks(), [[0, 0], [0, 1], [1, 1]], 143);
 
     sendPicksToWall("wall");
@@ -238,7 +253,7 @@ describe("sendPicksToWall — the cadence cap", () => {
       })),
     );
     setBoard(
-      widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, {
+      widget("wall", "camslot", { segment: "left", order: 0 }, {
         streams: Array.from({ length: 12 }, (_, i) => ({ k: "cam", id: `seat${i}` })),
         intervalMs: 5000,
       }),
@@ -260,7 +275,7 @@ describe("sendPicksToWall — the cadence cap", () => {
       { id: "quick", name: "quick", lat: 51.5, lon: -0.12, available: true, live: true, refreshSeconds: 60 },
     ]);
     setBoard(
-      widget("wall", "camslot", { x: 0, y: 0, w: 4, h: 9 }, {
+      widget("wall", "camslot", { segment: "left", order: 0 }, {
         streams: [{ k: "cam", id: "quick" }],
         intervalMs: 5000,
       }),
