@@ -181,6 +181,31 @@ describe("terminal tokens — drift", () => {
     expect(offenders, `font-size px literals: ${offenders.length}`).toEqual([]);
   });
 
+  it("no custom property smuggles a px font size past the scale", () => {
+    // The third way a scale rots, and the one that is invisible to both rules
+    // above BY CONSTRUCTION. A rule reading `font-size: var(--some-thing)` is
+    // not a literal and never will be, so a sweep of literals cannot see the
+    // px sitting one level up in `--some-thing: 10.5px`.
+    //
+    // Found because the `conditions` session pointed out that its camera-tile
+    // overlay sizes exactly that way — `--tn-cscond-fs: 10.5px` — which is not
+    // on this branch yet and so was never in reach of the sweep. When that work
+    // merges this assertion fires, and firing is the correct behaviour: the
+    // overlay may well be right to stay at 10.5, because it is text on a dark
+    // scrim over a photograph rather than text on a surface, and growing it
+    // costs picture. That is a decision someone should make with a shot in
+    // front of them. This turns it from an omission into a decision.
+    //
+    // `--tnx-fs` is the one legitimate px font size in the region: it is the
+    // root the other four steps are calc()d from, so it has to be a real
+    // length. Everything else derives.
+    const offenders = terminalDeclarations()
+      .filter(({ decl }) => /^--[\w-]*(fs|font-size)[\w-]*\s*:\s*[\d.]+px$/.test(decl))
+      .filter(({ decl }) => !/^--tnx-fs\s*:/.test(decl))
+      .map(({ selector, decl }) => `${selector} { ${decl} }`);
+    expect(offenders, `px font sizes hidden in custom properties: ${offenders.length}`).toEqual([]);
+  });
+
   it("only the boot wordmark sets a fluid size in raw px", () => {
     // clamp() is deliberately NOT covered by the rule above: a fluid size is a
     // different thing from a fixed one, and blanket-banning px inside clamp
