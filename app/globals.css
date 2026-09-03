@@ -2858,6 +2858,12 @@ a { color: var(--tn-accent); }
    PUSHES the widget columns instead of covering them. Without `:has()` support it
    simply overlays, which is what the old shell did anyway.
    ════════════════════════════════════════════════════════════════════════ */
+/* NON-TERMINAL shell only. `.tn-terminal .tn-cw-shell > .tn-rail` further down is
+   more specific and WINS wherever the console actually renders (ConsoleShell puts
+   `tn-terminal` on the root), so editing the width here does nothing to the product
+   — which is the trap this comment exists to stop. The Sources-rail widening reads
+   `--tn-rail-w` and lives in that rule and its `:has()` inset. This pair keeps its
+   own 304/324 so the legacy path stays self-consistent. */
 .tn-cw-shell > .tn-rail {
   top: calc(var(--tn-topbar-h) + 10px);
   bottom: 10px;
@@ -3077,6 +3083,41 @@ a.tn-w-place { display: flex; align-items: center; }
    ════════════════════════════════════════════════════════════════════════════ */
 
 .tn-terminal {
+  /* ── Sources rail width ────────────────────────────────────────────────
+     ONE number for the drawer's width and for the inset it pushes the console
+     by, so the two can never drift apart and put the rail on top of the left
+     widget column it is supposed to push aside.
+
+     602px is MEASURED IN THE RUNNING APP, which is the only place the number
+     could have come out right. An offline probe of the same font stack gave
+     556px and was wrong twice over:
+
+       - it resolved to ui-monospace at a 0.5498 advance, because the probe had
+         no webfont. The app loads JETBRAINS MONO, whose advance is 0.60. The
+         widest label, "Country Instability Index" at 25 characters, is 180px
+         and not the 164.9px the probe reported.
+       - it costed the rail's chrome as 24px of padding. The rail also carries a
+         16px SCROLLBAR, because 42 rows always overflow it. Rail-to-content loss
+         is 40px, measured as offsetWidth - clientWidth plus padding.
+
+     So: label 180 + row chrome 96 (padding 6, dot 8, three 8px gaps, ＋ 22,
+     toggle 30, padding 6) = a 276px column; two of those plus the 10px gap is
+     562px of content; plus the 40px the rail spends on padding and scrollbar is
+     602px. One column needs 316px by the same arithmetic.
+
+     THE CLAMP IS WHAT MAKES IT SCALE DOWN, and it is why this is not just a
+     bigger number. The rail takes 556px only where there is room for it: the
+     console needs STAGE_MIN_PX 360 plus RAIL_MIN.left 220 plus RAIL_MIN.right
+     220, which is 800px, plus 20px of gutters. Below a 1422px viewport the rail
+     gives way instead of squeezing the stage, and once its content drops under
+     562px the container query folds it to a single column. Nothing here needs a
+     media query — the rail simply cannot starve the stage. Walked in the browser
+     at 1920, 1600, 1440, 1422, 1400, 1300 and 1136: no label is ever clipped and
+     the stage never goes below 800.
+
+     Below 901px a separate rule re-homes the rail as a bottom sheet with
+     width:auto, so this value stops applying entirely on a phone. */
+  --tn-rail-w: clamp(316px, calc(100vw - 820px), 602px);
   /* ── The design palette, verbatim ──────────────────────────────────────── */
   --tnx-bg: #06080b;
   --tnx-panel: #0a0d12;
@@ -4132,7 +4173,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-cw-shell > .tn-rail {
   position: absolute;
   top: 0; bottom: 0; left: 0;
-  width: 304px;
+  width: var(--tn-rail-w);
   max-height: none;
   border-radius: var(--tnx-r);
   border-top: 0; border-bottom: 0; border-left: 0;
@@ -4157,7 +4198,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
      `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
      element sideways and push its right edge out of the viewport instead of
      reflowing the grid inside it. */
-  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: 304px; }
+  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: var(--tn-rail-w); }
 
   /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
      tab, so the grid starts to the RIGHT of the control.
@@ -5445,3 +5486,165 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   .tn-terminal .tn-rail-split-grip { transition: none; }
 }
 /* ── end rails ────────────────────────────────── */
+
+/* ── Sources rail: two-column bullet rows ─────────────────────────────────
+   Replaces the single-column .tn-layer-row stack for the source list. The grid
+   is a CONTAINER query, not a viewport one: the rail is a panel, and it can be
+   narrow because the window is narrow OR because it is docked tight. A viewport
+   query cannot tell those apart and would keep two columns in a 240px rail on a
+   wide screen. */
+.tn-src-rows {
+  display: grid;
+  gap: 1px 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@container (max-width: 561px) {
+  .tn-src-rows { grid-template-columns: minmax(0, 1fr); }
+}
+
+.tn-src-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 7px;
+  position: relative;
+  min-width: 0;
+  /* pan-y, NOT none. The rail scrolls vertically and these rows fill it, so
+     touch-action: none here would make the source list unscrollable on a phone
+     to buy a drag gesture that the ＋ already covers. Vertical panning stays
+     with the browser; the drag hook claims the pointer once it has moved. */
+  touch-action: pan-y;
+}
+.tn-src-row:hover,
+.tn-src-row:focus-within { background: var(--tn-surface-2); }
+
+.tn-src-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--tn-src-dot);
+  opacity: 0.42;
+}
+.tn-src-row[data-on="true"] .tn-src-dot { opacity: 1; box-shadow: 0 0 6px var(--tn-src-dot); }
+
+.tn-src-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font: inherit;
+  font-size: var(--tnx-fs-sm);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--tn-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tn-src-row[data-on="true"] .tn-src-label { color: var(--tn-text); font-weight: 500; }
+
+.tn-src-add {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--tn-border);
+  background: var(--tn-surface-solid);
+  color: var(--tn-text-faint);
+  font-size: var(--tnx-fs-sm);
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+.tn-src-add:hover:not(:disabled) { border-color: var(--tn-accent); color: var(--tn-accent); }
+.tn-src-add[data-placed="true"] { background: var(--tn-accent); border-color: var(--tn-accent); color: #fff; }
+/* A source with no widget of its own: the control stays in place so the grid
+   does not reflow, and stops claiming it can do something. */
+.tn-src-add:disabled { opacity: 0.3; cursor: default; }
+
+.tn-src-toggle {
+  flex: none;
+  width: 30px;
+  height: 17px;
+  border-radius: 9px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  background: var(--tn-toggle-off);
+}
+.tn-src-row[data-on="true"] .tn-src-toggle { background: var(--tn-src-dot); }
+.tn-src-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.3);
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.tn-src-row[data-on="true"] .tn-src-toggle::after { transform: translateX(13px); }
+
+.tn-src-pop {
+  position: absolute;
+  z-index: 40;
+  left: 14px;
+  top: calc(100% - 2px);
+  width: 232px;
+  padding: 9px 11px;
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong);
+  border-radius: 10px;
+  box-shadow: var(--tn-shadow);
+  font-size: var(--tnx-fs-xs);
+  line-height: 1.45;
+}
+.tn-src-pop-attr { color: var(--tn-text); }
+.tn-src-pop-hint {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--tn-border);
+  color: var(--tn-text-faint);
+  font-size: var(--tnx-fs-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-src-toggle::after { transition: none; }
+}
+/* ── end sources rail ─────────────────────────── */
+
+/* ── Sources rail: section headings ───────────────────────────────────────
+   Two numbers, two questions. The plain count is how big the section is, for
+   scanning; "N on" appears only when non-zero and says how much of it is
+   painting the map, for when the map looks busy and you want to know why. */
+/* The query container is the SECTION, not .tn-src-rows. A container query
+   matches a container's DESCENDANTS — an element cannot respond to its own
+   container-type — so declaring it on the grid meant the fold never fired and a
+   268px rail still drew two columns. */
+.tn-src-sec { margin: 0 0 10px; container-type: inline-size; }
+.tn-src-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 3px;
+  padding: 0 6px;
+  font-size: var(--tnx-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tn-text-faint);
+}
+.tn-src-sec-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-src-sec-n { font-weight: 500; opacity: 0.7; }
+/* Pushed to the far end so the "on" reading sits in one column down the rail
+   instead of moving with the length of each heading. */
+.tn-src-sec-on { margin-left: auto; color: var(--tn-accent); font-weight: 600; }
+/* ── end sources rail sections ────────────────── */
