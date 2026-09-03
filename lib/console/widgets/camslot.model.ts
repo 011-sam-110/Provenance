@@ -26,6 +26,10 @@ export interface CamslotConfig {
   intervalMs: number;
   name?: string;
   fit?: "cover" | "contain";
+  /** The conditions overlay is ON by default. The only value this key may ever hold
+   *  is the literal string "off" — see `sanitizeCamslotConfig` and `conditionsOn`
+   *  for why the default is encoded as the KEY'S ABSENCE, not as `"on"`. */
+  conditions?: "off";
 }
 
 export const DEFAULT_INTERVAL_MS = 5000;
@@ -143,7 +147,22 @@ export function sanitizeCamslotConfig(raw: unknown): CamslotConfig {
   };
   if (typeof o.name === "string" && o.name.trim()) out.name = o.name.trim().slice(0, MAX_NAME_LEN);
   if (o.fit === "cover" || o.fit === "contain") out.fit = o.fit;
+  // Only the literal string "off" is accepted — anything else (true, 1, "yes", an
+  // object) is dropped entirely, and the key is left absent for every other value,
+  // including a deliberate "on". That is what keeps the default state (overlay
+  // showing) written as NO key: layoutSignature() JSON.stringifies the whole config,
+  // JSON.stringify drops `undefined`, so a board nobody has touched keeps a
+  // byte-identical signature and the "customised" dot stays dark. Writing an
+  // explicit `conditions: "on"` here would make turning the overlay back on look
+  // like an edit, which is exactly the bug this encoding avoids.
+  if (o.conditions === "off") out.conditions = "off";
   return out;
+}
+
+/** Whether the conditions overlay should render. Absence of the key — the state an
+ *  untouched config and an explicitly-restored default both share — means on. */
+export function conditionsOn(cfg: CamslotConfig): boolean {
+  return cfg.conditions !== "off";
 }
 
 /**

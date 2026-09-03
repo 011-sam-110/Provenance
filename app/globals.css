@@ -4793,6 +4793,63 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
 .tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
+/* ── .tn-cscond — camera tile conditions overlay (Streets M6) ─────────────
+   Bottom-right corner of every live tile: road/ground claim, weather, local
+   time + frame age. THEME-INDEPENDENT ON PURPOSE — it sits on live video, not
+   a themed surface, so it uses literal colours the same way .tn-newsw-ch
+   already does (globals.css:1550-1552): --tn-live-ink and other surface
+   tokens drop to ~2.5:1 on a bright frame. Every size/radius below is a
+   custom property so no bare font-size/border-radius literal appears in this
+   block. Sam reads at ~80% browser zoom, so 10.5px/9.5px is a TYPE FLOOR, not
+   a suggestion — do not shrink it. No transitions: unlike .tn-cs-ctl above,
+   this was never meant to fade. */
+.tn-cscond {
+  --tn-cscond-fs: 10.5px;
+  --tn-cscond-fs2: 9.5px;
+  --tn-cscond-mark-fs: 9px;
+  --tn-cscond-r: 3px;
+  --tn-cscond-gap: 5px;
+  --tn-cscond-pad-x: 6px;
+  --tn-cscond-pad-y: 3px;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 3;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--tn-cscond-pad-y) var(--tn-cscond-pad-x);
+  border-radius: var(--tn-cscond-r);
+  background: linear-gradient(to top, rgba(8, 12, 16, .78), rgba(8, 12, 16, .55));
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+  /* The CONTAINER never takes a pointer, so it can never swallow a click meant for
+     the stage. The three spans that carry a title attribute opt back in below,
+     because the tooltip is not decoration here: it is where a refused reading says
+     WHY it was refused, and where "pulled 40s" admits we do not know when the frame
+     was actually taken. pointer-events: none on the whole overlay would silently
+     delete both explanations. */
+  pointer-events: none;
+  transition: none;
+}
+.tn-cscond-claim[title], .tn-cscond-wx[title], .tn-cscond-age[title] { pointer-events: auto; }
+.tn-cscond-row { display: flex; align-items: baseline; gap: var(--tn-cscond-gap); min-width: 0; max-width: 100%; }
+.tn-cscond-row:first-child { font-size: var(--tn-cscond-fs); }
+.tn-cscond-row:last-child { font-size: var(--tn-cscond-fs2); }
+.tn-cscond[data-density="compact"] .tn-cscond-row { font-size: var(--tn-cscond-fs); }
+.tn-cscond-label { flex: none; opacity: .78; text-transform: uppercase; letter-spacing: .04em; }
+.tn-cscond-mark { flex: none; font-size: var(--tn-cscond-mark-fs); line-height: 1; }
+.tn-cscond[data-tier="measured"] .tn-cscond-mark, .tn-cscond[data-tier="measured"] .tn-cscond-claim { color: #4ade80; }
+.tn-cscond[data-tier="derived"] .tn-cscond-mark, .tn-cscond[data-tier="derived"] .tn-cscond-claim { color: #fb923c; }
+.tn-cscond[data-tier="none"] .tn-cscond-claim, .tn-cscond[data-tier="pending"] .tn-cscond-claim { color: rgba(255, 255, 255, .62); }
+.tn-cscond-claim { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-cscond-wx { flex: none; margin-left: auto; color: #fbbf24; }
+.tn-cscond-time { flex: none; font-variant-numeric: tabular-nums; }
+.tn-cscond-age { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .82; }
+
 /* ── Camera slot day history (Streets M5) ─────────────────────────────────
    Authored by the day-history agent and landed here because globals.css is
    serialised through streets-lead. Every token it references already existed. */

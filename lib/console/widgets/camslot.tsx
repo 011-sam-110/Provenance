@@ -17,20 +17,50 @@ import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { CameraImage } from "@/components/CameraImage";
 import { useCameras } from "@/lib/cameras/useCameras";
-import { useWebcamTitles } from "@/lib/webcams/titles";
+import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
+import { useWebcamPlaces } from "@/lib/webcams/places";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
 import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
 import { pickStore } from "@/lib/console/widgets/camslot.pick";
+import { shellLayoutStore } from "@/lib/console/store";
 import {
   sanitizeCamslotConfig,
   nextIndex,
   streamKey,
   embedUrl,
+  conditionsOn,
   type StreamRef,
 } from "@/lib/console/widgets/camslot.model";
+import {
+  roadClaim,
+  weatherChip,
+  formatLocalClock,
+  zoneOffsetLabel,
+  overlayDensity,
+  type PlaceKind,
+  type Density,
+} from "@/lib/console/widgets/camslot.conditions";
+import { CamslotConditions } from "@/lib/console/widgets/camslot.overlay";
+import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
+import { coordKey, type Coord } from "@/lib/weather/pointWeather";
+
+/**
+ * A coordinate pair, or null if either half is missing or not a real number.
+ *
+ * Number.isFinite() is not a type guard, so it cannot narrow the optional lat/lon on
+ * a webcam directory row — hence the explicit typeof. Worth a named function rather
+ * than an inline ternary because "we do not know where this is" is the input that
+ * makes the conditions overlay say "no data" instead of guessing, and guessing a
+ * position (map centre, country centroid) is banned outright for this feature.
+ */
+function finiteCoord(lat: number | undefined, lon: number | undefined): Coord | null {
+  if (typeof lat !== "number" || !Number.isFinite(lat)) return null;
+  if (typeof lon !== "number" || !Number.isFinite(lon)) return null;
+  return { lat, lon };
+}
 
 /** Windy's image tokens last ~10 minutes and /api/webcam-image is bounded by that. */
 const WEBCAM_REFRESH_SECONDS = 600;
@@ -45,6 +75,19 @@ function useNowCoarse(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
+/** The conditions overlay's clock ticks every 30s — fine-grained enough that "14:32"
+ *  never sits stale for a whole minute, coarse enough that it costs nothing next to
+ *  the once-a-minute bench clock above. One interval in the parent, not one per
+ *  mounted overlay — see camslot.overlay.tsx's header note on why `now` is a prop. */
+function useNow30s(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
   }, []);
   return now;
@@ -173,11 +216,91 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
 
   // Names and cadences come from the shared camera poller — ref-counted, so several
   // slots share one 60s poll instead of each starting their own.
-  const { cameras } = useCameras();
+  const { cameras, status: camerasStatus } = useCameras();
   const byId = useMemo(() => new Map(cameras.map((c) => [c.id, c])), [cameras]);
   // A slot restored from a ?c= link carries ids and nothing else, so titles have to
   // be resolved separately or every caption reads "Webcam 1229966910".
   const webcamTitles = useWebcamTitles();
+  // The conditions overlay also needs COORDINATES, which titles.ts's title map does
+  // not carry (see useWebcamTitles' own comment on why it dropped them). The full
+  // directory rows do — reuse the same shared fetch (both hooks read one module
+  // store, see lib/webcams/titles.ts), just for `lat`/`lon` this time.
+  const webcamDirectory = useWebcamDirectory();
+  const webcamDirById = useMemo(() => new Map(webcamDirectory.map((w) => [w.id, w])), [webcamDirectory]);
+
+  // Webcams missing from the directory sample (the real case: windy:1606332744,
+  // Madrid, on the default Streets board) get resolved one id at a time through
+  // /api/webcam-place. Only ask for ids the directory genuinely lacks a position
+  // for — never re-resolve one the directory already answered.
+  const missingWebcamIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const s of streams) {
+      if (s.k !== "webcam") continue;
+      const row = webcamDirById.get(s.id);
+      if (!row || !Number.isFinite(row.lat) || !Number.isFinite(row.lon)) ids.add(s.id);
+    }
+    return Array.from(ids);
+  }, [streams, webcamDirById]);
+  const webcamPlaces = useWebcamPlaces(missingWebcamIds);
+
+  // Where each stream IS, for the conditions overlay. `cam` rows carry lat/lon
+  // directly; `webcam` rows come from the directory first, the per-id resolver on a
+  // miss; `yt` streams have no place at all — kind: null, which is what makes
+  // roadClaim() say "no data" rather than inventing a map-centre or country
+  // centroid, both of which are banned outright for this feature.
+  const placeStateFor = useCallback(
+    (s: StreamRef): { kind: PlaceKind | null; coord: Coord | null; pending: boolean } => {
+      if (s.k === "yt") return { kind: null, coord: null, pending: false };
+      if (s.k === "cam") {
+        const row = byId.get(s.id);
+        const coord = finiteCoord(row?.lat, row?.lon);
+        // "pending" only while we genuinely do not know yet — the camera poller's
+        // first load hasn't resolved. Once it has and the id still has no row (a
+        // deregistered camera, say), that is a real absence, not a pending state.
+        return { kind: "camera", coord, pending: !coord && camerasStatus === "loading" };
+      }
+      const dirRow = webcamDirById.get(s.id);
+      const dirCoord = finiteCoord(dirRow?.lat, dirRow?.lon);
+      if (dirCoord) return { kind: "webcam", coord: dirCoord, pending: false };
+      const resolved = webcamPlaces.get(s.id);
+      if (resolved) return { kind: "webcam", coord: resolved, pending: false };
+      // webcamTitles is null until the shared directory's first load resolves —
+      // reused here as the "do we genuinely not know yet" signal.
+      return { kind: "webcam", coord: null, pending: webcamTitles === null };
+    },
+    [byId, camerasStatus, webcamDirById, webcamPlaces, webcamTitles],
+  );
+
+  // Every coordinate in the PLAYLIST, not only the current stream — so rotating
+  // between streams is a pure map lookup with no request and no flash. See
+  // camslot.conditions.store.ts's file header for why this is one board-wide store.
+  const conditionCoords = useMemo(
+    () => streams.map((s) => placeStateFor(s).coord).filter((c): c is Coord => c !== null),
+    [streams, placeStateFor],
+  );
+  const { data: weatherByCoord, failed: weatherFailed } = usePointWeather(conditionCoords);
+
+  const conditionsNow = useNow30s();
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const [density, setDensity] = useState<Density>("hidden");
+
+  // How much overlay fits — a pure function of the stage's own box, re-measured on
+  // resize. Mirrors the IntersectionObserver effect just below: same shape, same
+  // cleanup discipline.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const measure = () => setDensity(overlayDensity(el.clientWidth, el.clientHeight));
+    // Measure FIRST, then observe. The order matters: density starts at "hidden" so
+    // the overlay never paints at the wrong size for a frame, which means a browser
+    // without ResizeObserver would otherwise leave it hidden forever rather than
+    // merely un-responsive. One measurement is the honest floor.
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Keep the index inside the playlist when streams are removed under a running
   // rotation.
@@ -246,6 +369,32 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const current: StreamRef | undefined = streams[safeIndex];
   const upcoming = rotates ? streams[nextIndex(safeIndex, streams.length)] : undefined;
 
+  // The conditions overlay's data for whichever stream is CURRENTLY on screen.
+  // Rotating to a different stream is a pure lookup into `weatherByCoord` — no
+  // request, no flash — because every place in the playlist was already
+  // subscribed above, not just this one.
+  const currentPlaceState = current ? placeStateFor(current) : null;
+  const currentCoord = currentPlaceState?.coord ?? null;
+  const currentWeather = currentCoord ? weatherByCoord.get(coordKey(currentCoord.lat, currentCoord.lon)) : undefined;
+  const currentSurface = current?.k === "cam" ? byId.get(current.id)?.surface : undefined;
+  const currentSampledAt = current?.k === "cam" ? byId.get(current.id)?.lastSampledAt : undefined;
+
+  const claim = current
+    ? roadClaim({
+        kind: currentPlaceState!.kind,
+        surface: currentSurface,
+        weather: currentWeather,
+        pending: currentPlaceState!.pending,
+        weatherFailed,
+        now: conditionsNow,
+      })
+    : null;
+  const weatherChipForCurrent = weatherChip(currentWeather);
+  const clockForCurrent = currentWeather ? formatLocalClock(currentWeather.timeZone, conditionsNow) : "";
+  const offsetForCurrent = currentWeather
+    ? zoneOffsetLabel(currentWeather.timeZone, conditionsNow, currentWeather.utcOffsetSeconds)
+    : "";
+
   // ONE tree, both states. The picker used to be rendered inside each branch, so
   // adding the first camera moved it to a different position in the tree — React
   // unmounted and remounted it, and the user's search results and query vanished at
@@ -296,7 +445,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         </div>
       ) : (
         <>
-      <div className="tn-cs-stage" data-fit={cfg.fit ?? "cover"}>
+      <div className="tn-cs-stage" ref={stageRef} data-fit={cfg.fit ?? "cover"}>
         {/* Rule 1: exactly the current view, plus one hidden prefetch. Never the
             whole playlist — that is what would multiply fetches. */}
         <StreamView
@@ -313,6 +462,22 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
             hidden
           />
         )}
+        {/* Mounted directly on the stage, never inside .tn-cs-view — that class
+            carries `style={{display:"none"}}` on the hidden prefetch view, and an
+            overlay nested inside it would vanish with it. Keyed by streamKey so a
+            rotation never shows the previous camera's numbers for a frame. */}
+        {conditionsOn(cfg) && claim && (
+          <CamslotConditions
+            key={streamKey(current)}
+            claim={claim}
+            weather={weatherChipForCurrent}
+            place={{ clock: clockForCurrent, offset: offsetForCurrent }}
+            refreshSeconds={refreshFor(current)}
+            lastSampledAt={currentSampledAt}
+            density={density}
+            now={conditionsNow}
+          />
+        )}
       </div>
 
       <div className="tn-cs-bar">
@@ -324,6 +489,20 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
             {safeIndex + 1}/{streams.length}
           </span>
         )}
+        {/* The overlay's own on/off switch lives HERE, not in .tn-cs-ctl — that
+            cluster is opacity:0 until hover (globals.css:4744-4745), and a
+            provenance control (what is this tile claiming, and can I turn it off)
+            must not be hover-only. .tn-cs-bar has no hover rule at all. */}
+        <button
+          className={conditionsOn(cfg) ? "tn-cs-chip is-on" : "tn-cs-chip"}
+          aria-pressed={conditionsOn(cfg)}
+          aria-label={conditionsOn(cfg) ? "Hide road, weather and time" : "Show road, weather and time"}
+          onClick={() =>
+            shellLayoutStore.configure(instanceId, { conditions: conditionsOn(cfg) ? "off" : undefined })
+          }
+        >
+          ⓘ
+        </button>
       </div>
 
       {unavailable && <p className="tn-cs-note">{unavailable}</p>}
@@ -368,6 +547,14 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
           ? ". Rotation is off while a YouTube stream is in this slot"
           : ""}
         {paused && rotates ? ". Paused" : ""}
+        {/* Same words the visible overlay uses — none coined here — so a
+            screen-reader user gets the same three facts, through the one region
+            this playlist is already allowed to announce. */}
+        {conditionsOn(cfg) && claim
+          ? `. ${claim.label ? `${claim.label}: ` : ""}${claim.text}${
+              weatherChipForCurrent ? `, ${weatherChipForCurrent.text}` : ""
+            }${clockForCurrent ? `, ${clockForCurrent} ${offsetForCurrent}`.trim() : ""}`
+          : ""}
       </span>
         </>
       )}
