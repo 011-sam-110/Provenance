@@ -353,11 +353,18 @@ layerBreadth
   ? pass("globe renders the registry's aggregated sources")
   : fail("globe is not using the aggregated signal sources");
 
-// ── 5. the instrument bar shows a MEASURED count, not a typed one ──────────
-const barText = await page.locator(".pv-bar-live").innerText();
-/\d/.test(barText)
-  ? pass("instrument bar shows live coverage", barText)
-  : fail("instrument bar empty", `"${barText}" (honest if /api/coverage failed)`);
+// ── 5. (removed) the instrument bar's coverage readout ─────────────────────
+// The bar no longer carries a number, so there is nothing here to assert. The
+// readout is not hidden and not moved: the /api/coverage fetch is gone from
+// InstrumentBar entirely, which is what let it go back to being a server
+// component. Keeping a green tick here — by hiding an element with a digit in
+// it, or by re-pointing the assertion at some other number — would have left a
+// guard that no longer guards anything, which is the exact failure this file
+// exists to prevent.
+//
+// The rule it enforced is unchanged and is still checked where numbers actually
+// appear: check 3b on the hero status rail, and the source-wall card count
+// below. Both are generated from SOURCE_CATALOG rather than typed.
 
 // ── 6. the ground lifts out of the hero, then plunges into the adapter ─────
 // Leg 1: leaving the night stage has to reach daylight, or the whole document is

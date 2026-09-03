@@ -27,6 +27,10 @@
   --pv-ash: #c9d1d6;
   --pv-dusk: #2b3640;
   --pv-ink: #0b1016;
+  /* The night stage's own black, one notch below the ramp's ink. It was a literal
+     in two places; it is a token because THREE things have to agree on it now —
+     the hero stage, the closing bookend, and the ground behind the sticky bar. */
+  --pv-stage: #05070c;
 
   /* ── semantic (inherited from the app's own meanings) ── */
   --pv-teal: #0e7d97;
@@ -88,7 +92,13 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%));
+  /* The dark stop is the STAGE, not `--pv-ink`. `.pv-bar` is sticky, which keeps
+     it IN FLOW, so at scroll 0 the top 44px of the page is ground and the hero
+     starts below it. The moment the bar lost its background and its hairline, that
+     44px of #0b1016 showed as a band across a #05070c stage — the seam the hairline
+     had been hiding. Landing the ramp on the stage's own black is what makes
+     "transparent" literally true. The daylight end is unchanged. */
+  background-color: color-mix(in oklab, var(--pv-bone), var(--pv-stage) calc(var(--pv-g) * 100%));
 }
 
 .pv-progress {
@@ -261,15 +271,37 @@
   outline-offset: 3px;
 }
 
-/* ─────────────────────────── instrument bar ─────────────────────────── */
+/* ─────────────────────────── instrument bar ───────────────────────────
+   ONE CENTRED CLUSTER: the mark, the wordmark, and the three places worth going.
+   That is why this is `justify-content: center` and not a three-column grid —
+   with nothing in the side slots there is no width to compensate for. The live
+   coverage readout that used to sit here held the slack with `flex: 1`, and it
+   was what pushed the links out to the right edge.
 
+   TWO STATES OFF ONE SIGNAL THAT ALREADY EXISTS. `.pv-bar-night` is on
+   `.pv-root` exactly while the hero is the thing directly under the bar
+   (ScrollGround.tsx:96-98, `y < heroH - BAR_H`). The whole transparent → glass
+   handover reads off that class. Do NOT add a second scroll listener, a second
+   class, or a second custom property for it.
+
+   GLASS IS THE BASE AND TRANSPARENT IS THE OVERRIDE, not the other way round,
+   and `pv-bar-night` is server-rendered in (site)/layout.tsx so the override is
+   in the first paint. Written as `:not(.pv-bar-night)` the glass plate would
+   flash across the black stage on every cold load until hydration — the same
+   trap `.pv-night` is server-rendered to avoid. */
 .pv-bar {
   position: sticky;
   top: 0;
   z-index: 50;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: center;
+  /* Wider than the gap inside `.pv-bar-links`, or the cluster reads as five
+     loose words instead of a lockup followed by a nav. */
+  gap: 2rem;
+  /* 44px is load bearing in two other places and all three must agree: `BAR_H`
+     in ScrollGround.tsx, which decides where the handover fires, and the
+     `calc(100svh - 44px)` hero geometry further down this file. */
   height: 44px;
   padding: 0 1.25rem;
   border-bottom: 1px solid var(--pv-rule);
@@ -285,7 +317,13 @@
     color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-bar-g, 1) * 100%)) 82%,
     transparent
   );
-  backdrop-filter: blur(10px);
+  /* Through a variable so the night state can ramp it to zero rather than snap
+     `none`: `blur(0px)` interpolates and `none` does not, and the snap is visible
+     on the way back UP the page as an unblurred wash over the stage. The
+     `-webkit-` alias is the house pattern everywhere else; this rule was the one
+     place missing it. */
+  backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
+  -webkit-backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
   font-family: var(--pv-mono);
   font-size: 0.72rem;
   letter-spacing: 0.06em;
@@ -293,21 +331,51 @@
   color: var(--pv-fg-mute);
   /* The handover happens the instant the hero's bottom edge clears the bar, so it
      is a step, not a ramp. Ease it or it snaps. */
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+    backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
 }
 
-/* While the night stage is the thing under the bar, the bar wears night type —
-   independently of `.pv-night`, which by then has already handed the document
-   over to daylight. */
+/* A SCRIM, NOT A PLATE. Over the hero the bar has no background and no rule, but
+   the h1 slides directly under it on the way out — #f4f8fa display type passing
+   beneath an #e8eef1 wordmark, both unreadable for the length of the transit.
+   This is a top-down wash that reaches ZERO opacity at the bar's own bottom edge,
+   so it has no edge of its own: the bar still reads as absent while the type
+   stays legible. `--pv-bar-scrim: 0` gives the strict "nothing at all" reading.
+
+   Transitioned opacity on a pseudo-element rather than a transitioned gradient:
+   gradient interpolation is not worth betting a cold load on across engines.
+   `z-index: -1` keeps it above the bar's own background and below its text,
+   inside the stacking context `z-index: 50` already creates. */
+.pv-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--pv-stage), transparent);
+  opacity: var(--pv-bar-scrim, 0);
+  transition: opacity 0.3s ease;
+}
+
+/* Over the night stage the bar is not a bar: no plate, no rule, no blur, so the
+   top of the page reads as the stage rather than as furniture laid across it.
+
+   This is also where the bar wears night type — independently of `.pv-night`,
+   which by then has already handed the document over to daylight.
+
+   `border-bottom-color: transparent` and not `border: none`: `box-sizing` is
+   border-box, so removing the border would give the content box an extra pixel
+   and shift the cluster half a pixel on every handover. */
 .pv-root.pv-bar-night .pv-bar {
+  background-color: transparent;
+  border-bottom-color: transparent;
+  --pv-bar-blur: 0px;
+  --pv-bar-scrim: 0.55;
   color: #7a8892;
-  border-bottom-color: rgba(232, 238, 241, 0.16);
 }
-.pv-root.pv-bar-night .pv-wordmark {
+.pv-root.pv-bar-night .pv-wordmark,
+.pv-root.pv-bar-night .pv-bar-links a.pv-bar-go {
   color: #e8eef1;
-}
-.pv-root.pv-bar-night .pv-bar-live {
-  color: #93a3ae;
 }
 .pv-root.pv-bar-night .pv-bar-links a {
   color: #7a8892;
@@ -315,61 +383,135 @@
 .pv-root.pv-bar-night .pv-bar-links a:hover {
   color: #e8eef1;
 }
+.pv-root.pv-bar-night .pv-bar-rule {
+  background: rgba(232, 238, 241, 0.22);
+}
 .pv-root.pv-bar-night .pv-wordmark,
-.pv-root.pv-bar-night .pv-bar-live,
 .pv-root.pv-bar-night .pv-bar-links a {
   transition: color 0.3s ease;
 }
-.pv-wordmark {
+/* `.pv-root .pv-wordmark` and not `.pv-wordmark`, because `.pv-root a` at the top
+   of this file is (0,2,0) and a bare `.pv-wordmark` is only (0,1,0). The bare
+   selector lost, silently, and the site wordmark has been rendering in the LINK
+   accent in daylight ever since — against its own `color: var(--pv-fg)`. Night
+   never showed it because `.pv-root.pv-bar-night .pv-wordmark` is (0,3,0) and wins.
+   The wordmark is identity, not a link: it should not wear the link colour, and it
+   should not change hue when the page changes ground. */
+.pv-root .pv-wordmark {
   font-family: var(--pv-display);
   font-weight: 900;
   font-variation-settings: "wdth" 112;
   font-size: 0.86rem;
   letter-spacing: 0.3em;
+  /* CSS puts tracking after the LAST glyph too, so 0.3em of dead space hangs off
+     the right of the wordmark and drags the whole centred cluster left of true
+     centre. Claw it back — the centring is optical or it is nothing. */
+  margin-right: -0.3em;
   text-transform: uppercase;
   color: var(--pv-fg);
   display: flex;
   align-items: center;
   gap: 0.6rem;
   flex: none;
+  white-space: nowrap;
   text-decoration: none;
 }
-.pv-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--pv-teal);
-  flex: none;
+/* The mark draws every part from `currentColor`, which is what lets one asset
+   serve both skins. The part rules (`.mk-ring`, `.mk-fill`, `.mk-dot`, and the
+   idle orbit) live in globals.css, which the ROOT layout loads on every route
+   including this one, so they apply here and are not repeated.
+   What DOES need saying is the colour: `.tn-mark` also sets
+   `color: var(--tnx-ink)`, and `--tnx-ink` is defined only under `.tn-terminal`
+   (globals.css:3087, :3255), a selector that does not exist on this page. The
+   variable is therefore invalid here and the colour already falls back to
+   `inherit` BY ACCIDENT. Say it outright, or the day somebody widens the scope of
+   `--tnx-ink` the mark turns console-coloured on the site with nothing to point
+   at. */
+.pv-wordmark .tn-mark {
+  color: inherit;
 }
-.pv-bar-live {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--pv-fg-dim);
-  font-variant-numeric: tabular-nums;
+/* Separates the identity from the navigation, so the cluster reads as one object
+   with two halves rather than five loose words. */
+.pv-bar-rule {
+  width: 1px;
+  height: 14px;
+  background: var(--pv-rule-hi);
+  flex: none;
 }
 .pv-bar-links {
   display: flex;
-  gap: 1.25rem;
+  align-items: center;
+  gap: 1.5rem;
   flex: none;
-}
-/* Narrow viewports keep only the action. The other two are anchors to sections the
-   reader is about to scroll through anyway, and at 390px they overflowed the bar
-   and took the whole page sideways with them. */
-@media (max-width: 40rem) {
-  .pv-bar-links { display: none; }
-  .pv-bar { gap: 0.85rem; padding: 0 0.9rem; }
-  .pv-wordmark { letter-spacing: 0.16em; font-size: 0.8rem; }
-  .pv-bar-live { font-size: 0.66rem; }
 }
 .pv-bar-links a {
   color: var(--pv-fg-mute);
   text-decoration: none;
+  white-space: nowrap; /* nothing wraps to a second line in a 44px bar */
 }
 .pv-bar-links a:hover {
   color: var(--pv-fg);
+}
+/* The one action in the bar, so the one link at full contrast. The arrow and the
+   contrast are the whole distinction — a bordered pill inside a centred cluster
+   reads as a fourth object and pulls the group off balance. */
+.pv-bar-links a.pv-bar-go {
+  color: var(--pv-fg);
+}
+/* Narrow viewports keep only the action — and now actually do. This block used to
+   hide `.pv-bar-links` outright, which took "Open the map" with it and left a
+   phone with no route into the product but the hero button, while the comment
+   here claimed the opposite. The two that go are anchors to sections the reader
+   is about to scroll through anyway; the map is the only thing in the bar you
+   cannot reach by scrolling.
+
+   Named classes and not `:nth-child` — the next person to reorder these links
+   should not silently change which two disappear. */
+@media (max-width: 40rem) {
+  .pv-bar { gap: 1.25rem; padding: 0 0.9rem; }
+  .pv-root .pv-wordmark { letter-spacing: 0.16em; margin-right: -0.16em; font-size: 0.8rem; }
+  .pv-bar-links { gap: 1rem; }
+  .pv-bar-rule, .pv-bar-jump { display: none; }
+}
+/* Phones: tighten before giving anything up. MEASURED at 390 (the commonest phone
+   width), where the untightened cluster left only 34px of slack — enough today and
+   not enough if Archivo fails to load and a wider fallback stands in. */
+@media (max-width: 30rem) {
+  .pv-bar { gap: 1rem; }
+  .pv-root .pv-wordmark {
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    margin-right: -0.12em;
+    gap: 0.45rem;
+  }
+  .pv-root .pv-wordmark .tn-mark { width: 20px; height: 20px; }
+}
+/* Below 23rem the LETTERS finally go and the mark alone carries the identity,
+   leaving the bar as mark + action. This is the one width where they genuinely
+   cannot coexist, and it is measured rather than guessed: at 320 (iPhone SE) the
+   tightened cluster still wants more than the 291px of usable width there, and no
+   type size that keeps the wordmark legible closes the gap — the honest choice is
+   the identity or the action, and on a 320px phone the action wins. 390 and 430
+   keep both.
+
+   Worth knowing WHY this needed measuring at all: `.pv-root` is `overflow-x: clip`,
+   so an over-wide bar never reaches `documentElement.scrollWidth`. It is clipped
+   in silence, and the verifier's no-sideways-scroll sweep reports 0 either way —
+   it would have passed this bar at 320 while the cluster hung 36px off the edge.
+   The cluster has to be measured against the bar's own content box.
+
+   Clipped rather than `display: none`, so the link keeps its accessible name —
+   a link whose only remaining content is an aria-hidden SVG has no name at all. */
+@media (max-width: 23rem) {
+  .pv-wordmark-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .pv-root .pv-wordmark { margin-right: 0; gap: 0; }
 }
 
 /* ─────────────────────────── hero (the night stage) ───────────────────────────
@@ -389,7 +531,7 @@
      breathing room are derived from it, so the composition holds at any size. */
   --pv-globe-r: min(60vw, calc(0.86 * (100svh - 44px)));
   min-height: calc(100svh - 44px);
-  background: #05070c;
+  background: var(--pv-stage);
   overflow: hidden;
   display: grid;
   align-content: center;
@@ -1342,10 +1484,10 @@
      same fate because it already sets z-index: 1. */
   position: relative;
   z-index: 1;
-  /* The same black as the hero, not `--pv-ink`. The closing section is the other
+  /* `--pv-stage`, the same black as the hero and NOT `--pv-ink`. The other
      half of a bookend — "everything above was this" lands because the reader is
      standing back on the stage they started on, under the same sky. */
-  background: #05070c;
+  background: var(--pv-stage);
   color: #e8eef1;
   min-height: 100svh;
   display: flex;
