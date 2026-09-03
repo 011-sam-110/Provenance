@@ -2858,6 +2858,12 @@ a { color: var(--tn-accent); }
    PUSHES the widget columns instead of covering them. Without `:has()` support it
    simply overlays, which is what the old shell did anyway.
    ════════════════════════════════════════════════════════════════════════ */
+/* NON-TERMINAL shell only. `.tn-terminal .tn-cw-shell > .tn-rail` further down is
+   more specific and WINS wherever the console actually renders (ConsoleShell puts
+   `tn-terminal` on the root), so editing the width here does nothing to the product
+   — which is the trap this comment exists to stop. The Sources-rail widening reads
+   `--tn-rail-w` and lives in that rule and its `:has()` inset. This pair keeps its
+   own 304/324 so the legacy path stays self-consistent. */
 .tn-cw-shell > .tn-rail {
   top: calc(var(--tn-topbar-h) + 10px);
   bottom: 10px;
@@ -3077,6 +3083,30 @@ a.tn-w-place { display: flex; align-items: center; }
    ════════════════════════════════════════════════════════════════════════════ */
 
 .tn-terminal {
+  /* ── Sources rail width ────────────────────────────────────────────────
+     ONE number for the drawer's width and for the inset it pushes the console
+     by, so the two can never drift apart and put the rail on top of the left
+     widget column it is supposed to push aside.
+
+     556px is MEASURED, not estimated. The console body font resolves to
+     ui-monospace, which is genuinely monospaced here at an advance of 6.598px
+     at the row's 12px size (ratio 0.5498). The widest label the catalog
+     produces is "Country Instability Index" at 25 characters = 164.9px; the row
+     chrome around it (padding 6 + dot 8 + three 8px gaps + ＋ 22 + toggle 30 +
+     padding 6) is 96px, so one column is 260.9px and two plus the 10px column
+     gap and the rail's 24px padding is 555.8px, rounded up to 556.
+
+     THE CLAMP IS WHAT MAKES IT SCALE DOWN, and it is why this is not just a
+     bigger number. The rail takes 556px only where there is room for it: the
+     console needs STAGE_MIN_PX 360 plus RAIL_MIN.left 220 plus RAIL_MIN.right
+     220, which is 800px, plus 20px of gutters. Below a 1376px viewport the rail
+     gives way instead of squeezing the stage, and once it drops under 531px of
+     content the container query in the rows block folds it to a single column.
+     Nothing here needs a media query — the rail simply cannot starve the stage.
+
+     Below 901px a separate rule re-homes the rail as a bottom sheet with
+     width:auto, so this value stops applying entirely on a phone. */
+  --tn-rail-w: clamp(268px, calc(100vw - 820px), 556px);
   /* ── The design palette, verbatim ──────────────────────────────────────── */
   --tnx-bg: #06080b;
   --tnx-panel: #0a0d12;
@@ -4132,7 +4162,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-cw-shell > .tn-rail {
   position: absolute;
   top: 0; bottom: 0; left: 0;
-  width: 304px;
+  width: var(--tn-rail-w);
   max-height: none;
   border-radius: var(--tnx-r);
   border-top: 0; border-bottom: 0; border-left: 0;
@@ -4157,7 +4187,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
      `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
      element sideways and push its right edge out of the viewport instead of
      reflowing the grid inside it. */
-  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: 304px; }
+  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: var(--tn-rail-w); }
 
   /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
      tab, so the grid starts to the RIGHT of the control.
@@ -5458,7 +5488,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   gap: 1px 10px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-@container (max-width: 470px) {
+@container (max-width: 531px) {
   .tn-src-rows { grid-template-columns: minmax(0, 1fr); }
 }
 
