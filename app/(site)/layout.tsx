@@ -36,8 +36,18 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   // ScrollGround's to own from the first scroll frame onward, but leaving it off
   // the initial HTML meant every cold load painted a bone instrument bar and
   // daylight type over a black stage until hydration corrected it.
+  //
+  // `pv-bar-night` joins it for the same reason and by the same argument. It is
+  // now the class that decides whether the bar has a background AT ALL, so off
+  // the initial HTML every cold load flashed a full glass plate across the black
+  // stage until hydration. Safe for the rest of the group: /privacy renders no
+  // `.pv-bar`, so the class matches nothing there. A future (site) page with a
+  // bar but NO hero would need to clear it — ScrollGround only removes it when a
+  // [data-pv-hero] exists.
   return (
-    <div className={`pv-root pv-night ${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}>
+    <div
+      className={`pv-root pv-night pv-bar-night ${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}
+    >
       {children}
     </div>
   );
