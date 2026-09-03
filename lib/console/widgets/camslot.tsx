@@ -18,7 +18,7 @@ import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { CameraImage } from "@/components/CameraImage";
 import { useCameras } from "@/lib/cameras/useCameras";
 import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
-import { useWebcamPlaces } from "@/lib/webcams/places";
+import { useWebcamPlaces, webcamPlaceState } from "@/lib/webcams/places";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
@@ -260,15 +260,10 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         return { kind: "camera", coord, pending: !coord && camerasStatus === "loading" };
       }
       const dirRow = webcamDirById.get(s.id);
-      const dirCoord = finiteCoord(dirRow?.lat, dirRow?.lon);
-      if (dirCoord) return { kind: "webcam", coord: dirCoord, pending: false };
-      const resolved = webcamPlaces.get(s.id);
-      if (resolved) return { kind: "webcam", coord: resolved, pending: false };
-      // webcamTitles is null until the shared directory's first load resolves —
-      // reused here as the "do we genuinely not know yet" signal.
-      return { kind: "webcam", coord: null, pending: webcamTitles === null };
+      const { coord, pending } = webcamPlaceState(dirRow?.lat, dirRow?.lon, webcamPlaces, s.id);
+      return { kind: "webcam", coord, pending };
     },
-    [byId, camerasStatus, webcamDirById, webcamPlaces, webcamTitles],
+    [byId, camerasStatus, webcamDirById, webcamPlaces],
   );
 
   // Every coordinate in the PLAYLIST, not only the current stream — so rotating
