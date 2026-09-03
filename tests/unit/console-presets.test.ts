@@ -4,7 +4,7 @@ import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
 import { effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
 
-const CORE_WIDGETS = new Set(["events", "news", "cameras", "aviation", "satellites", "markets", "headlines", "locate", "anomaly", "camslot"]);
+const CORE_WIDGETS = new Set(["events", "news", "aviation", "satellites", "markets", "headlines", "locate", "anomaly", "camslot"]);
 const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
@@ -15,7 +15,7 @@ const BOARD_IDS = ["overview", "situation", "earth", "mobility", "markets", "too
 
 // The seven core monitoring cards the union of boards must all surface (the "use all our
 // widgets" intent). `locate` is a utility card, not a monitoring board card, so it's exempt.
-const CORE_MONITORS = ["events", "news", "cameras", "aviation", "satellites", "markets", "headlines"];
+const CORE_MONITORS = ["events", "news", "camslot", "aviation", "satellites", "markets", "headlines"];
 
 test("the board lineup is exactly the seven boards, each non-empty and within the cap", () => {
   const ids = BUILTIN_PRESETS.map((p) => p.id);

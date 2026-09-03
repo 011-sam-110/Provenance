@@ -11,7 +11,6 @@ import type { ShellLayout } from "@/lib/console/types";
 // Core-layer widgets → the core map layer they imply. List-only widgets
 // (events / markets / headlines / news) map to nothing.
 const WIDGET_TO_CORE: Record<string, LayerKey> = {
-  cameras: "cameras",
   aviation: "planes",
   satellites: "satellites",
   // A camera slot is a camera widget, so it implies the camera pins wherever it is

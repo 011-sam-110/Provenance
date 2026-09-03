@@ -98,7 +98,7 @@ export const POPULAR_WIDGET_IDS: string[] = [
   "anomaly", // What's abnormal — the cross-layer triage flagship
   "events", // Disasters & Events
   "signal:instability", // Country Instability Index
-  "cameras",
+  "camslot", // Camera wall — replaced the retired "cameras" grid
   "aviation",
   "markets",
   "headlines", // World Headlines

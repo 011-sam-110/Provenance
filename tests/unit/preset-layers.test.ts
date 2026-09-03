@@ -49,7 +49,7 @@ test("list-only widgets (events/markets/headlines/locate) imply no map layer", (
   expect(Object.entries(signals).filter(([, v]) => v).map(([k]) => k).sort())
     .toEqual(["conflict", "earthquakes", "gdacs", "wildfires"]);
 
-  // Without the declared map layers, the same board lights only its cameras card.
+  // Without the declared map layers, the same board lights only its camera wall.
   expect(onLayers(board.build()).onSignals).toEqual([]);
 
   // A board of pure list widgets lights up nothing.

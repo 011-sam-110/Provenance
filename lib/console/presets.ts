@@ -222,7 +222,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
       { type: "anomaly", weight: 3 },
       { type: "events", weight: 3 },
       { type: "headlines", weight: 2 },
-      { type: "cameras", weight: 2 },
+      { type: "camslot", weight: 2 },
   ]) },
 
   // ── Conflict — armed events, protest, military movement ─────────────────

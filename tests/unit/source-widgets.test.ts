@@ -52,7 +52,7 @@ describe("every catalog row maps to a widget the console can render", () => {
     // Planes are shown by the Aviation card. Adding a second "Planes" widget beside
     // it would be two cards over one feed, which is how a workspace fills with noise.
     expect(widgetTypeForSource("planes")).toBe("aviation");
-    expect(widgetTypeForSource("cameras")).toBe("cameras");
+    expect(widgetTypeForSource("cameras")).toBe("camslot");
     expect(widgetTypeForSource("satellites")).toBe("satellites");
   });
 
