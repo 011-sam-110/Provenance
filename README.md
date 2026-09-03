@@ -56,6 +56,8 @@ Every figure above will drift, which is why each one is dated and pinned to a co
 
 **Streets** is a board of camera walls you compose yourself. Every tile holds a *list* of live views rather than one, so `47/60` is a slot cycling through the sixtieth camera it was given - sixty road cameras added in a single drag of a box across London. Search a place, paste a YouTube link, or arm a tile and pick straight off the map.
 
+Each tile also states the conditions where its camera stands, and the interesting part is what it refuses to say. Where a road-weather station publishes a surface state and that reading survives every disqualification rule, the tile shows the operator's own word for it. Everywhere else it derives a line from air weather and says `from air` in the line itself, reporting rainfall rather than a road state - `rain 1h`, never `wet`, because an hour of rain does not tell you whether a surface is wet, frozen or already dry. Measured live on 2026-09-03: of 19,808 cameras, 912 carry a surface field and **649 survive every rule, which is 3.3%**. A reading from a station over 10 km away, or one the operator has flagged stale or faulty, is refused rather than downgraded, so a camera with a distant station shows *less* than one that never had a station at all. Open the tile and the panel discloses exactly what was refused and whose rule refused it - the 10 km limit is ours, the staleness verdicts are the operator's.
+
 | The console at `/app`: brief, hazards and the live map | Cameras clustered over London |
 |---|---|
 | ![The Provenance OSINT terminal showing what's abnormal, disasters, world headlines and a dark world map](docs/screenshots/console.png) | ![Camera clusters over London on the dark basemap](docs/screenshots/london.png) |

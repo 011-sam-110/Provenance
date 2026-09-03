@@ -281,7 +281,13 @@ export default async function Landing() {
             <p>
               Powered by TfL Open Data. Webcams provided by Windy.com. Basemap © CARTO, ©
               OpenStreetMap contributors. Contains public sector information licensed under the
-              Open Government Licence.
+              Open Government Licence. Star catalogue:{" "}
+              <a href="https://codeberg.org/astronexus/hyg" target="_blank" rel="noreferrer noopener">
+                HYG database v4.4
+              </a>{" "}
+              by David Nash (astronexus), licensed CC BY-SA 4.0. Star positions are real; the sky
+              is shown at a wider angle than the globe's own camera so whole constellations fit
+              the frame.
             </p>
             <p>
               © {BRAND.license.year} {BRAND.license.holder}. {BRAND.name} is free software

@@ -1,4 +1,7 @@
 import { Camera, CameraArray, Source } from "@/lib/types";
+import { fetchRoadWeather } from "@/lib/sources/digitraffic.weather";
+import { DIGITRAFFIC_JOIN } from "@/lib/sources/digitraffic.join.data";
+import type { SurfaceReading } from "@/lib/cameras/surface";
 
 // Fintraffic Digitraffic — Finland's national weather-camera network. Keyless,
 // well-documented, reliable (the PRD's "cleanest source"). One quirk: the API
@@ -70,5 +73,53 @@ export async function fetchRegistry(): Promise<Camera[]> {
   });
   if (!res.ok) throw new Error(`Digitraffic stations: ${res.status}`);
   const json = (await res.json()) as { features?: DigiStation[] };
-  return CameraArray.parse(normalizeDigitraffic(json));
+  const cameras = normalizeDigitraffic(json);
+  attachRoadWeather(cameras, await safeFetchRoadWeather());
+  return CameraArray.parse(cameras);
+}
+
+/**
+ * `fetchRoadWeather()` already resolves to an empty Map on any failure rather than
+ * throwing — this wrapper is a second, independent layer against the same class of
+ * bug, so a future edit to that promise cannot take the whole camera feed down with
+ * it. A thrown feed trips the last-good path in lib/sources/registry.ts; a missing
+ * surface reading should never cost Finland its cameras.
+ */
+async function safeFetchRoadWeather(): Promise<Map<number, SurfaceReading>> {
+  try {
+    return await fetchRoadWeather();
+  } catch (e) {
+    console.warn("Digitraffic road weather unavailable:", e);
+    return new Map();
+  }
+}
+
+/**
+ * Attaches `surface` to each camera whose station has a JOIN ROW — the operator's
+ * own `nearestWeatherStationId`, not a guess of ours (see digitraffic.join.data.ts).
+ * A camera whose station is absent from the join table, or whose declared weather
+ * station has no current reading, gets NO surface. There is no nearest-neighbour
+ * fallback: the whole point of using the operator's declared pairing is that we
+ * never substitute our own.
+ *
+ * `station` (the weather station's name) is deliberately left unset here: naming it
+ * would require fetching the weather-station list on every registry refresh just for
+ * a label, and this function has only the sensor data, not that list. Unset beats
+ * invented.
+ */
+function attachRoadWeather(cameras: Camera[], weather: Map<number, SurfaceReading>): void {
+  if (weather.size === 0) return;
+  const joinByStation = new Map(DIGITRAFFIC_JOIN.map((row) => [row.station, row]));
+  for (const cam of cameras) {
+    const stationId = cam.id.slice("digitraffic:".length);
+    const join = joinByStation.get(stationId);
+    if (!join) continue;
+    const reading = weather.get(join.weatherStationId);
+    // Guards CameraArray.parse below: SurfaceSchema requires a non-empty `state`, and
+    // an upstream sensor with a value but no sensorValueDescriptionEn (not observed as
+    // of 2026-09-03, but not contractually ruled out) would otherwise throw and take
+    // the whole feed down with it — the opposite of "weather failure ≠ camera failure".
+    if (!reading || !reading.state) continue;
+    cam.surface = { ...reading, km: join.km };
+  }
 }

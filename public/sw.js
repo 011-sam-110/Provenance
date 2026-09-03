@@ -5,13 +5,13 @@
  *   • /api/*            → bypassed entirely (cameras, planes, signals, markets…).
  *   • cross-origin      → bypassed (CARTO/Esri basemap tiles, DEM, webcam images…).
  *   • /_next/static/*   → cache-first (content-hashed, immutable build assets).
- *   • /icons, /textures → cache-first (static assets).
+ *   • /icons, /textures, /sky → cache-first (static assets).
  *   • navigations (HTML shell) → network-first, fall back to cache only OFFLINE.
  *
  * So offline you get the last app shell, but every data fetch still hits the
  * network (and simply fails offline) — no stale live data is ever served.
  */
-const VERSION = "tn-v1";
+const VERSION = "tn-v2";
 const SHELL_CACHE = VERSION + "-shell";
 const PRECACHE = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
@@ -44,7 +44,12 @@ self.addEventListener("fetch", (event) => {
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/textures/");
+    url.pathname.startsWith("/textures/") ||
+    // The star catalogue (/sky/naked-eye.json) is generated offline by a
+    // hand-run script and committed, not fetched from a live upstream — it is
+    // reference data, not a data feed, so cache-first is honest here the same
+    // way it is for /textures.
+    url.pathname.startsWith("/sky/");
 
   if (isStatic) {
     event.respondWith(cacheFirst(req));

@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { BASEMAPS } from "@/lib/basemaps";
 import { buildSatrec, propagateAt } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
+import { setHeroView } from "@/lib/marketing/heroView";
 
 /**
  * The hero globe: the product's own MapLibre engine, its own registry, and its own
@@ -213,6 +214,19 @@ export default function HeroGlobe({
     // verification script reads layer feature counts off this to prove the globe
     // is carrying real data rather than looking plausible in a screenshot.
     (window as unknown as { __pvMap?: MlMap }).__pvMap = map;
+
+    // The star layer behind the globe reads the camera out of this plain store
+    // every frame it draws — not React state, per CLAUDE.md's "Shape" rule that
+    // nothing but ScrollGround may set React state per frame. "move" fires for
+    // the spin loop's jumpTo AND for a drag/rotate gesture, so both are covered
+    // by one publisher; a first call right away means the sky is right before
+    // anything has moved at all.
+    const publishHeroView = () => {
+      const c = map.getCenter();
+      setHeroView({ lngDeg: c.lng, latDeg: c.lat, bearingDeg: map.getBearing(), pitchDeg: map.getPitch() });
+    };
+    publishHeroView();
+    map.on("move", publishHeroView);
 
     // The three aggregated collections every signal layer drains into.
     const bag: Record<"fills" | "lines" | "points", GeoJSON.Feature[]> = {
@@ -503,6 +517,7 @@ export default function HeroGlobe({
       map.remove();
       mapRef.current = null;
       delete (window as unknown as { __pvMap?: MlMap }).__pvMap;
+      setHeroView(null);
     };
   }, []);
 

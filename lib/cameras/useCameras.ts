@@ -11,6 +11,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import type { CameraLite } from "@/lib/cameras/coverage";
+import type { SurfaceReading } from "@/lib/cameras/surface";
 
 export interface CameraRow extends CameraLite {
   country: string;
@@ -19,6 +20,9 @@ export interface CameraRow extends CameraLite {
   attribution: string;
   license: string;
   lastSampledAt?: string;
+  /** A measured road-surface state, where the network publishes one. Read it through
+   *  `surfaceValidity` — a present reading is not automatically a usable one. */
+  surface?: SurfaceReading;
 }
 
 export interface CamerasFeed {

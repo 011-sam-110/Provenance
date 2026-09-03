@@ -187,23 +187,58 @@ describe("terminal tokens — drift", () => {
     // not a literal and never will be, so a sweep of literals cannot see the
     // px sitting one level up in `--some-thing: 10.5px`.
     //
-    // Found because the `conditions` session pointed out that its camera-tile
-    // overlay sizes exactly that way — `--tn-cscond-fs: 10.5px` — which is not
-    // on this branch yet and so was never in reach of the sweep. When that work
-    // merges this assertion fires, and firing is the correct behaviour: the
-    // overlay may well be right to stay at 10.5, because it is text on a dark
-    // scrim over a photograph rather than text on a surface, and growing it
-    // costs picture. That is a decision someone should make with a shot in
-    // front of them. This turns it from an omission into a decision.
-    //
     // `--tnx-fs` is the one legitimate px font size in the region: it is the
     // root the other four steps are calc()d from, so it has to be a real
     // length. Everything else derives.
+    //
+    // THE CAMERA-TILE OVERLAY IS EXEMPT, AND ENUMERATED RATHER THAN WAIVED.
+    // This assertion was written before `.tn-cscond` existed, on the prediction
+    // that the conditions work would land holding px in a custom property. It
+    // did, and firing was the point: it turned an omission into a decision.
+    // The decision is to leave it alone, and the reason is that this text is not
+    // console chrome. It is a two-line scrim in the corner of a photograph, and
+    // every point it grows is picture it covers — the one place in the product
+    // where bigger type is a straight loss. It also has no surface behind it to
+    // take a theme from, which is why the same block hardcodes its greens and
+    // oranges. The body scale is a rule about text on a surface and this is not
+    // that.
+    //
+    // Pinned by VALUE, not merely allowed by name, so the exemption cannot
+    // quietly widen: changing one of these three is now an edit to this test
+    // with this comment in front of you. Note they sit below `--tnx-fs-xs`
+    // (11px), and at the ~80% browser zoom this product is read at, 9px is about
+    // 7.2 device pixels. If anyone judges that too small to be worth showing,
+    // the fix is to raise these numbers here — not to loosen the guard.
+    const OVERLAY_EXEMPT: Record<string, string> = {
+      "--tn-cscond-fs": "10.5px",
+      "--tn-cscond-fs2": "9.5px",
+      "--tn-cscond-mark-fs": "9px",
+    };
+
     const offenders = terminalDeclarations()
       .filter(({ decl }) => /^--[\w-]*(fs|font-size)[\w-]*\s*:\s*[\d.]+px$/.test(decl))
       .filter(({ decl }) => !/^--tnx-fs\s*:/.test(decl))
+      .filter(({ decl }) => {
+        const [name, value] = decl.split(":").map((x) => x.trim());
+        return OVERLAY_EXEMPT[name] !== value;
+      })
       .map(({ selector, decl }) => `${selector} { ${decl} }`);
     expect(offenders, `px font sizes hidden in custom properties: ${offenders.length}`).toEqual([]);
+  });
+
+  it("the exempted overlay properties still exist, at the sizes the exemption names", () => {
+    // An exemption for a rule that has been deleted or renamed is worse than no
+    // exemption: it is a silent hole the next px literal drops straight into.
+    // This fails if `.tn-cscond` stops declaring one of them, which is the
+    // moment to delete the entry above rather than leave it standing.
+    const decls = new Set(terminalDeclarations().map(({ decl }) => decl.replace(/\s+/g, " ")));
+    for (const [name, value] of Object.entries({
+      "--tn-cscond-fs": "10.5px",
+      "--tn-cscond-fs2": "9.5px",
+      "--tn-cscond-mark-fs": "9px",
+    })) {
+      expect(decls, `${name} is exempted but no longer declared`).toContain(`${name}: ${value}`);
+    }
   });
 
   it("only the boot wordmark sets a fluid size in raw px", () => {

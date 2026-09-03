@@ -13,7 +13,17 @@ import { useMemo, useState } from "react";
 import type { WidgetDetailProps } from "@/lib/console/registry";
 import { CameraImage } from "@/components/CameraImage";
 import { useCameras } from "@/lib/cameras/useCameras";
-import { useWebcamTitles } from "@/lib/webcams/titles";
+import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
+import { useWebcamPlaces, webcamPlaceState } from "@/lib/webcams/places";
+import { useNow } from "@/lib/shell/useNow";
+import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
+import { coordKey, type Coord } from "@/lib/weather/pointWeather";
+import { provenanceReport } from "@/lib/console/widgets/camslot.provenance";
+import {
+  formatLocalClock,
+  zoneOffsetLabel,
+  type PlaceKind,
+} from "@/lib/console/widgets/camslot.conditions";
 import {
   sanitizeCamslotConfig,
   streamKey,
@@ -89,6 +99,139 @@ function DayStrip({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * Where this tile's conditions claim comes from.
+ *
+ * THE OVERLAY CANNOT BE THIS AND SHOULD NOT TRY. It has room for three short strings
+ * and a hover title; this has room for the station, the distance, both timestamps and
+ * — the case the panel really exists for — the reading the tile REFUSED.
+ *
+ * Refusing to assert a disqualified reading is not the same as concealing that one
+ * exists. Without this panel a user cannot tell "nobody measures this road" apart from
+ * "somebody measures it and we did not accept their number", and those are very
+ * different facts about the world. See camslot.provenance.ts for the rule.
+ *
+ * Every string rendered here was decided by a pure, node-tested function. This
+ * component adds no wording of its own beyond the two sentences that explain whose
+ * threshold refused a reading, which are here rather than in the pure layer because
+ * they are about US, not about the data.
+ */
+function ConditionsPanel({ stream, refreshSeconds }: { stream: StreamRef; refreshSeconds: number }) {
+  // Same 30s cadence as the wall overlay's clock: fine enough that a displayed minute
+  // is never stale for a whole minute, coarse enough to cost nothing.
+  const now = useNow(30_000);
+
+  const { cameras, status: camerasStatus } = useCameras();
+  const byId = useMemo(() => new Map(cameras.map((c) => [c.id, c])), [cameras]);
+  const directory = useWebcamDirectory();
+
+  const dirRow = useMemo(
+    () => (stream.k === "webcam" ? directory.find((w) => w.id === stream.id) : undefined),
+    [directory, stream],
+  );
+  // Only ask /api/webcam-place for an id the cached ~2% directory genuinely lacks.
+  const missingIds = useMemo(
+    () =>
+      stream.k === "webcam" && !(Number.isFinite(dirRow?.lat) && Number.isFinite(dirRow?.lon))
+        ? [stream.id]
+        : [],
+    [stream, dirRow],
+  );
+  const places = useWebcamPlaces(missingIds);
+
+  const place = useMemo((): { kind: PlaceKind | null; coord: Coord | null; pending: boolean } => {
+    // A YouTube embed is a video, not a place. Null kind, and the claim says so.
+    if (stream.k === "yt") return { kind: null, coord: null, pending: false };
+    if (stream.k === "cam") {
+      const row = byId.get(stream.id);
+      const coord = row ? { lat: row.lat, lon: row.lon } : null;
+      // Pending only while the poller's first load is genuinely outstanding. An id the
+      // registry has finished loading and still does not know is a real absence.
+      return { kind: "camera", coord, pending: !coord && camerasStatus === "loading" };
+    }
+    const s = webcamPlaceState(dirRow?.lat, dirRow?.lon, places, stream.id);
+    return { kind: "webcam", coord: s.coord, pending: s.pending };
+  }, [stream, byId, camerasStatus, dirRow, places]);
+
+  const coords = useMemo(() => (place.coord ? [place.coord] : []), [place.coord]);
+  const { data: weatherByCoord, failed: weatherFailed } = usePointWeather(coords);
+  const weather = place.coord
+    ? weatherByCoord.get(coordKey(place.coord.lat, place.coord.lon))
+    : undefined;
+
+  const row = stream.k === "cam" ? byId.get(stream.id) : undefined;
+  const report = provenanceReport({
+    kind: place.kind,
+    surface: row?.surface,
+    weather,
+    pending: place.pending,
+    weatherFailed,
+    lookupFailed: stream.k === "cam" && camerasStatus === "error",
+    lastSampledAt: row?.lastSampledAt,
+    refreshSeconds,
+    now,
+  });
+
+  const clock = weather ? formatLocalClock(weather.timeZone, now) : "";
+  const offset = weather ? zoneOffsetLabel(weather.timeZone, now, weather.utcOffsetSeconds) : "";
+
+  return (
+    <section className="tn-csd-prov" aria-label="Where this tile's conditions claim comes from">
+      <div className="tn-csd-prov-head">
+        <span className="tn-csd-prov-claim" data-tier={report.claim.tier}>
+          {report.claim.label && <b>{report.claim.label}</b>}
+          {report.claim.text}
+        </span>
+        {clock && (
+          <span className="tn-csd-prov-clock">
+            {clock} <span>{offset}</span>
+          </span>
+        )}
+      </div>
+
+      {/* On a refusal these are the SAME SENTENCE — `claim.title` is `refused.reason`,
+          by design, so the tile's tooltip and the panel cannot drift. Rendering both
+          printed it twice, one paragraph under the other. The refusal block states it
+          with its context, so the bare basis line stands down. */}
+      {!report.refused && <p className="tn-csd-prov-basis">{report.claim.title}</p>}
+
+      {report.refused && (
+        <div className="tn-csd-prov-refused">
+          <p>
+            <b>Measured, and not shown.</b> The nearest road-weather station reports{" "}
+            <b>{report.refused.state}</b>. We are not presenting that as the road in this
+            picture, because it fails {report.refused.rule}.
+          </p>
+          <p>{report.refused.reason}</p>
+          <p className="tn-csd-prov-owner">
+            {report.refused.ruleOwner === "ours"
+              ? "That threshold is ours, not the operator's. The figures below are the ones we applied, so you can weigh the reading yourself and disagree with us."
+              : "That is the operator's own verdict on its own reading. We pass it through rather than second-guessing it."}
+          </p>
+        </div>
+      )}
+
+      {report.rows.length > 0 && (
+        <dl className="tn-csd-prov-rows">
+          {report.rows.map((r) => (
+            <div key={r.term}>
+              <dt>{r.term}</dt>
+              <dd>
+                <span>{r.value}</span>
+                {r.note && <span className="tn-csd-prov-note">{r.note}</span>}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {report.credits.length > 0 && (
+        <p className="tn-csd-prov-credit">{report.credits.join(" · ")}</p>
+      )}
+    </section>
   );
 }
 
@@ -201,6 +344,14 @@ export default function CamslotDetail({ config }: WidgetDetailProps) {
             {labelFor(selected)}
             {scrubTs != null && <span className="tn-csd-scrub-label">, captured {formatClock(scrubTs)}</span>}
           </div>
+
+          {/* Keyed on the stream so switching tabs remounts rather than carrying one
+              stream's resolved place into another's panel for a frame. */}
+          <ConditionsPanel
+            key={streamKey(selected)}
+            stream={selected}
+            refreshSeconds={refreshFor(selected)}
+          />
 
           {selected.k === "yt" ? (
             <p className="tn-w-empty">

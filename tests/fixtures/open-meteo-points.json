@@ -1,0 +1,137 @@
+[
+  {
+    "latitude": 51.51147,
+    "longitude": -0.13078308,
+    "generationtime_ms": 0.2067089080810547,
+    "utc_offset_seconds": 3600,
+    "timezone": "Europe/London",
+    "timezone_abbreviation": "GMT+1",
+    "elevation": 16.0,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "temperature_2m": "°C",
+      "weather_code": "wmo code",
+      "precipitation": "mm",
+      "rain": "mm",
+      "snowfall": "cm",
+      "is_day": "",
+      "apparent_temperature": "°C",
+      "wind_speed_10m": "km/h"
+    },
+    "current": {
+      "time": "2026-09-03T05:00",
+      "interval": 900,
+      "temperature_2m": 18.9,
+      "weather_code": 3,
+      "precipitation": 0.0,
+      "rain": 0.0,
+      "snowfall": 0.0,
+      "is_day": 0,
+      "apparent_temperature": 19.0,
+      "wind_speed_10m": 15.8
+    }
+  },
+  {
+    "latitude": 27.732864,
+    "longitude": 85.34831,
+    "generationtime_ms": 0.14340877532958984,
+    "utc_offset_seconds": 20700,
+    "timezone": "Asia/Kathmandu",
+    "timezone_abbreviation": "GMT+5:45",
+    "elevation": 1301.0,
+    "location_id": 1,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "temperature_2m": "°C",
+      "weather_code": "wmo code",
+      "precipitation": "mm",
+      "rain": "mm",
+      "snowfall": "cm",
+      "is_day": "",
+      "apparent_temperature": "°C",
+      "wind_speed_10m": "km/h"
+    },
+    "current": {
+      "time": "2026-09-03T09:45",
+      "interval": 900,
+      "temperature_2m": 25.0,
+      "weather_code": 3,
+      "precipitation": 0.0,
+      "rain": 0.0,
+      "snowfall": 0.0,
+      "is_day": 1,
+      "apparent_temperature": 28.5,
+      "wind_speed_10m": 1.1
+    }
+  },
+  {
+    "latitude": 60.223816,
+    "longitude": 24.5961,
+    "generationtime_ms": 0.0959634780883789,
+    "utc_offset_seconds": 10800,
+    "timezone": "Europe/Helsinki",
+    "timezone_abbreviation": "GMT+3",
+    "elevation": 49.0,
+    "location_id": 2,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "temperature_2m": "°C",
+      "weather_code": "wmo code",
+      "precipitation": "mm",
+      "rain": "mm",
+      "snowfall": "cm",
+      "is_day": "",
+      "apparent_temperature": "°C",
+      "wind_speed_10m": "km/h"
+    },
+    "current": {
+      "time": "2026-09-03T07:00",
+      "interval": 900,
+      "temperature_2m": 12.9,
+      "weather_code": 2,
+      "precipitation": 0.0,
+      "rain": 0.0,
+      "snowfall": 0.0,
+      "is_day": 1,
+      "apparent_temperature": 12.7,
+      "wind_speed_10m": 5.8
+    }
+  },
+  {
+    "latitude": -44.04218,
+    "longitude": -176.58055,
+    "generationtime_ms": 11.940717697143555,
+    "utc_offset_seconds": 45900,
+    "timezone": "Pacific/Chatham",
+    "timezone_abbreviation": "GMT+12:45",
+    "elevation": 0.0,
+    "location_id": 3,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "temperature_2m": "°C",
+      "weather_code": "wmo code",
+      "precipitation": "mm",
+      "rain": "mm",
+      "snowfall": "cm",
+      "is_day": "",
+      "apparent_temperature": "°C",
+      "wind_speed_10m": "km/h"
+    },
+    "current": {
+      "time": "2026-09-03T16:45",
+      "interval": 900,
+      "temperature_2m": 12.5,
+      "weather_code": 0,
+      "precipitation": 0.0,
+      "rain": 0.0,
+      "snowfall": 0.0,
+      "is_day": 1,
+      "apparent_temperature": 10.3,
+      "wind_speed_10m": 12.4
+    }
+  }
+]

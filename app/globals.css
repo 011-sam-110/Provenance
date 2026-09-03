@@ -4830,6 +4830,63 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
 .tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
+/* ── .tn-cscond — camera tile conditions overlay (Streets M6) ─────────────
+   Bottom-right corner of every live tile: road/ground claim, weather, local
+   time + frame age. THEME-INDEPENDENT ON PURPOSE — it sits on live video, not
+   a themed surface, so it uses literal colours the same way .tn-newsw-ch
+   already does (globals.css:1550-1552): --tn-live-ink and other surface
+   tokens drop to ~2.5:1 on a bright frame. Every size/radius below is a
+   custom property so no bare font-size/border-radius literal appears in this
+   block. Sam reads at ~80% browser zoom, so 10.5px/9.5px is a TYPE FLOOR, not
+   a suggestion — do not shrink it. No transitions: unlike .tn-cs-ctl above,
+   this was never meant to fade. */
+.tn-cscond {
+  --tn-cscond-fs: 10.5px;
+  --tn-cscond-fs2: 9.5px;
+  --tn-cscond-mark-fs: 9px;
+  --tn-cscond-r: 3px;
+  --tn-cscond-gap: 5px;
+  --tn-cscond-pad-x: 6px;
+  --tn-cscond-pad-y: 3px;
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 3;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--tn-cscond-pad-y) var(--tn-cscond-pad-x);
+  border-radius: var(--tn-cscond-r);
+  background: linear-gradient(to top, rgba(8, 12, 16, .78), rgba(8, 12, 16, .55));
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+  /* The CONTAINER never takes a pointer, so it can never swallow a click meant for
+     the stage. The three spans that carry a title attribute opt back in below,
+     because the tooltip is not decoration here: it is where a refused reading says
+     WHY it was refused, and where "pulled 40s" admits we do not know when the frame
+     was actually taken. pointer-events: none on the whole overlay would silently
+     delete both explanations. */
+  pointer-events: none;
+  transition: none;
+}
+.tn-cscond-claim[title], .tn-cscond-wx[title], .tn-cscond-age[title] { pointer-events: auto; }
+.tn-cscond-row { display: flex; align-items: baseline; gap: var(--tn-cscond-gap); min-width: 0; max-width: 100%; }
+.tn-cscond-row:first-child { font-size: var(--tn-cscond-fs); }
+.tn-cscond-row:last-child { font-size: var(--tn-cscond-fs2); }
+.tn-cscond[data-density="compact"] .tn-cscond-row { font-size: var(--tn-cscond-fs); }
+.tn-cscond-label { flex: none; opacity: .78; text-transform: uppercase; letter-spacing: .04em; }
+.tn-cscond-mark { flex: none; font-size: var(--tn-cscond-mark-fs); line-height: 1; }
+.tn-cscond[data-tier="measured"] .tn-cscond-mark, .tn-cscond[data-tier="measured"] .tn-cscond-claim { color: #4ade80; }
+.tn-cscond[data-tier="derived"] .tn-cscond-mark, .tn-cscond[data-tier="derived"] .tn-cscond-claim { color: #fb923c; }
+.tn-cscond[data-tier="none"] .tn-cscond-claim, .tn-cscond[data-tier="pending"] .tn-cscond-claim { color: rgba(255, 255, 255, .62); }
+.tn-cscond-claim { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-cscond-wx { flex: none; margin-left: auto; color: #fbbf24; }
+.tn-cscond-time { flex: none; font-variant-numeric: tabular-nums; }
+.tn-cscond-age { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .82; }
+
 /* ── Camera slot day history (Streets M5) ─────────────────────────────────
    Authored by the day-history agent and landed here because globals.css is
    serialised through streets-lead. Every token it references already existed. */
@@ -4851,6 +4908,41 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-csd-live { align-self: flex-start; font-size: var(--tnx-fs-sm); padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
 .tn-csd-full { font-size: var(--tnx-fs-sm); color: var(--tn-down-ink); }
 .tn-csd-caveat { font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
+
+/* --- Camera slot focus: where the tile's conditions claim comes from -------
+   The wall tile gets three strings in a corner and a hover title. This is the
+   same claim with its basis laid out under it, and it is the only place a
+   REFUSED reading is disclosed — see camslot.provenance.ts on why refusing to
+   assert a reading is not the same as hiding that one exists.
+
+   Tier colour reuses the feed-health ink vocabulary rather than inventing a
+   second one: a station reading is "live", an air-derived line is a step
+   removed, and no data is unknown. The tile's own overlay hardcodes greens and
+   oranges because it always sits on a dark scrim over a photograph; this panel
+   sits on the console surface and must follow the theme. */
+.tn-csd-prov { display: flex; flex-direction: column; gap: 7px; padding: 9px 10px; border: 1px solid var(--tn-border); border-radius: 4px; background: var(--tn-surface-2); }
+.tn-csd-prov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tn-csd-prov-claim { display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--tn-mono); font-size: var(--tnx-fs-sm); letter-spacing: .02em; color: var(--tn-unknown-ink); }
+.tn-csd-prov-claim b { font-size: var(--tnx-fs-xs); font-weight: 620; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-claim[data-tier="measured"] { color: var(--tn-live-ink); }
+.tn-csd-prov-claim[data-tier="derived"] { color: var(--tn-lagging-ink); }
+.tn-csd-prov-clock { font-family: var(--tn-mono); font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-csd-prov-clock span { color: var(--tn-text-faint); }
+.tn-csd-prov-basis { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-dim); }
+
+/* The one block on this panel that is allowed to draw the eye. It is a
+   disclosure, and a disclosure nobody notices has not disclosed anything. */
+.tn-csd-prov-refused { display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; border-left: 2px solid var(--tn-stale-ink); border-radius: 0 3px 3px 0; background: var(--tn-chip-bg); }
+.tn-csd-prov-refused p { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-dim); }
+.tn-csd-prov-refused b { font-weight: 620; color: var(--tn-text); }
+.tn-csd-prov-refused p.tn-csd-prov-owner { color: var(--tn-text-faint); }
+
+.tn-csd-prov-rows { display: grid; grid-template-columns: minmax(8em, max-content) 1fr; gap: 4px 12px; margin: 0; }
+.tn-csd-prov-rows > div { display: contents; }
+.tn-csd-prov-rows dt { padding-top: 2px; font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-rows dd { display: flex; flex-direction: column; gap: 2px; margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-csd-prov-note { font-size: var(--tnx-fs-sm); line-height: 1.4; color: var(--tn-text-faint); }
+.tn-csd-prov-credit { margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
 .tn-cs-note { padding: 3px 8px 5px; font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-lagging-ink); }
 .tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }
 
