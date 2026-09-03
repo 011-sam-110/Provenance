@@ -19,7 +19,7 @@ import { kindOf } from "@/lib/sources/catalog";
 
 /** Core layers whose data is already shown by a bespoke console widget. */
 const CORE_TO_WIDGET: Record<string, string> = {
-  cameras: "cameras",
+  cameras: "camslot",
   planes: "aviation",
   satellites: "satellites",
 };

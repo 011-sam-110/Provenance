@@ -149,7 +149,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 7 (2026-08-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. `tests/unit/console-presets.test.ts` pins the exact id list, and `tests/unit/tour-board-copy.test.ts` fails if the guided tour states a different number — so this row cannot silently rot. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Widget types | 71 registered (2026-08-15) | `listWidgetTypes()` after importing `lib/console/widgets`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. Nothing fails when this number drifts, so re-measure it rather than trusting the table. |
+| Widget types | 70 registered (2026-09-03) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
 
 ## Live-source notes (verified 2026-08-10, these change)
