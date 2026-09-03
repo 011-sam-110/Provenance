@@ -14,6 +14,20 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-09-03:
+ *   - A new third-party card, OpenFreeMap, because the default basemap stopped being
+ *     CARTO's. tiles.openfreemap.org now serves the Light and Streets maps, their
+ *     fonts and sprites, and the building geometry the 3D buildings are extruded
+ *     from. That is a new host seeing a visitor's IP on almost every console visit,
+ *     which is exactly the kind of change this section exists to record.
+ *   - The CARTO card was NARROWED rather than deleted. CARTO still serves the Dark
+ *     basemap and still serves the label fonts for all three raster styles, and the
+ *     front-page globe is still CARTO Dark Matter (components/marketing/HeroGlobe.tsx
+ *     reads BASEMAPS.dark) - so "CARTO sees you whether or not you open the console"
+ *     is still true and stays. Only "serves the default map tiles" became false.
+ *   - Checked, not assumed: the landing page and hero credit lines still say CARTO
+ *     and are still correct for the same reason. They were left alone deliberately.
+ *
  * WHAT CHANGED ON 2026-08-20, and why each sentence moved:
  *   - The "who runs this" paragraph no longer states a legal name. It names the GitHub
  *     account instead and says in as many words that this is a handle, that the work is
@@ -92,7 +106,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-08-20">20 August 2026</time>
+                Last updated <time dateTime="2026-09-03">3 September 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -526,11 +540,21 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-cols">
             <div className="pv-card">
+              <h3 className="pv-h3">OpenFreeMap</h3>
+              <p>
+                <span className="pv-num">tiles.openfreemap.org</span> serves the default Light map
+                and the Streets map, along with their fonts, icons and the building shapes the 3D
+                buildings are drawn from. It is the map you get in the console unless you pick
+                another one, so it sees you on almost every visit to the console.
+              </p>
+            </div>
+            <div className="pv-card">
               <h3 className="pv-h3">CARTO</h3>
               <p>
-                <span className="pv-num">basemaps.cartocdn.com</span> serves the default map tiles
-                and the label fonts every map style uses. That includes the globe on the front page,
-                so CARTO sees you whether or not you open the console.
+                <span className="pv-num">basemaps.cartocdn.com</span> serves the Dark map, and the
+                label fonts the Dark, Satellite and Topographic maps use. That includes the globe on
+                the front page, so CARTO sees you whether or not you open the console. It used to
+                serve the default map as well; that moved to OpenFreeMap on 3 September 2026.
               </p>
             </div>
             <div className="pv-card">
@@ -687,14 +711,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-08-18">18 August 2026</time>
+                <time dateTime="2026-09-03">3 September 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 18 August 2026. When the behaviour changes this
+              This describes the code as deployed on 3 September 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

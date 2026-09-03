@@ -92,9 +92,17 @@ describe("resolveMapClickTarget", () => {
     ).toBe("country");
   });
 
-  it("treats cluster badges and their count labels as pins", () => {
-    expect(resolveMapClickTarget(hits({ layer: "camera-clusters" }, country))).toBe("pin");
-    expect(resolveMapClickTarget(hits({ layer: "webcam-cluster-count" }, country))).toBe("pin");
+  it("no longer knows the cluster layers, because there are none", () => {
+    // Cameras and webcams stopped clustering: every one is its own dot at every
+    // zoom. These four ids can never appear in a hit list again, so PIN_HIT_LAYERS
+    // does not carry them and a click on one falls through to whatever is beneath -
+    // here the country polygon. Asserted rather than deleted so the removal is
+    // visible: a reader who finds "camera-clusters" in an old branch can see here
+    // that its absence is deliberate and not an oversight.
+    for (const layer of ["camera-clusters", "camera-cluster-count", "webcam-clusters", "webcam-cluster-count"]) {
+      expect(PIN_HIT_LAYERS).not.toContain(layer);
+      expect(resolveMapClickTarget(hits({ layer }, country))).toBe("country");
+    }
   });
 
   it("treats signal lines and areas as pins", () => {

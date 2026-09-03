@@ -9,9 +9,11 @@ import {
 } from "@/lib/map/resilience";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 
-// Mirrors the real registry shape: positron is a remote style URL, the other two
-// are inline StyleSpecifications.
+// The REAL registry, not a mirror of it. Two entries are remote style URLs that can
+// fail to load (the OpenFreeMap vector styles, positron + streets); three are inline
+// StyleSpecifications that cannot (dark, satellite, topo).
 const STYLES = BASEMAPS as unknown as Record<BasemapKey, { style: string | object }>;
+const ALL_KEYS = Object.keys(BASEMAPS) as BasemapKey[];
 
 describe("classifyMapError", () => {
   it("treats a tile-scoped error as cosmetic, never fatal", () => {
@@ -41,28 +43,65 @@ describe("classifyMapError", () => {
 });
 
 describe("isRemoteStyle / fallbackBasemap", () => {
-  it("knows which real basemaps can fail to load", () => {
-    expect(isRemoteStyle("positron", STYLES)).toBe(true);
-    expect(isRemoteStyle("satellite", STYLES)).toBe(false);
-    expect(isRemoteStyle("topo", STYLES)).toBe(false);
+  // Every basemap in the registry, classified DELIBERATELY, and the reason this is a
+  // table rather than a handful of named assertions.
+  //
+  // This file used to assert isRemoteStyle for positron/satellite/topo and nothing
+  // else. `streets` was then added as a SECOND remote style — a second thing that can
+  // fail to load and strand the user — and every test here stayed green, because
+  // nothing had ever looked at it. `dark` had been invisible the same way for longer.
+  //
+  // Checking the table's keys against the registry's is what fixes that: a sixth
+  // basemap cannot be added without a decision being recorded here about whether it
+  // can fail. That is the assertion that goes red on the next person, and it is the
+  // one this file was missing.
+  const EXPECTED_REMOTE: Record<BasemapKey, boolean> = {
+    dark: false, // inline CARTO Dark Matter raster
+    positron: true, // OpenFreeMap Positron — style URL
+    streets: true, // OpenFreeMap Liberty — style URL
+    satellite: false, // inline Esri World Imagery raster
+    topo: false, // inline OpenTopoMap raster
+  };
+
+  it("classifies every basemap in the registry, with none left unconsidered", () => {
+    expect(Object.keys(EXPECTED_REMOTE).sort()).toEqual([...ALL_KEYS].sort());
+    for (const key of ALL_KEYS) {
+      expect(isRemoteStyle(key, STYLES), `${key} classified wrongly`).toBe(EXPECTED_REMOTE[key]);
+    }
   });
 
   it("falls back from the remote Light basemap to inline satellite", () => {
     expect(fallbackBasemap("positron", STYLES)).toBe("satellite");
   });
 
+  // A different failure from the one above: not "a new basemap went unnoticed" but
+  // "the last inline basemap quietly became a style URL". fallbackBasemap can only
+  // recover onto an inline style, so if someone swaps Esri or OpenTopoMap for a hosted
+  // style, every remote basemap silently loses its escape route and a flaky CDN leaves
+  // the user on a permanent black rectangle — the exact failure resilience.ts exists
+  // to prevent. Cheap to assert, and it holds no matter how the registry grows.
+  it("gives EVERY remote basemap a fallback, and never onto another remote style", () => {
+    const remote = ALL_KEYS.filter((k) => isRemoteStyle(k, STYLES));
+    expect(remote.length).toBeGreaterThan(0);
+    for (const key of remote) {
+      const to = fallbackBasemap(key, STYLES);
+      expect(to, `${key} is remote and can fail, but has no fallback`).not.toBeNull();
+      expect(isRemoteStyle(to as BasemapKey, STYLES), `${key} falls back to another remote style`).toBe(false);
+    }
+  });
+
   it("never falls back from an inline basemap (its style cannot fail)", () => {
-    expect(fallbackBasemap("satellite", STYLES)).toBeNull();
-    expect(fallbackBasemap("topo", STYLES)).toBeNull();
+    for (const key of ALL_KEYS.filter((k) => !isRemoteStyle(k, STYLES))) {
+      expect(fallbackBasemap(key, STYLES), `${key} is inline and should not fall back`).toBeNull();
+    }
   });
 
   it("never falls back to another remote style", () => {
-    const allRemote = {
-      positron: { style: "https://a/style.json" },
-      satellite: { style: "https://b/style.json" },
-      topo: { style: "https://c/style.json" },
-    } as Record<BasemapKey, { style: string | object }>;
+    const allRemote = Object.fromEntries(
+      ALL_KEYS.map((k) => [k, { style: `https://example.invalid/${k}.json` }]),
+    ) as Record<BasemapKey, { style: string | object }>;
     expect(fallbackBasemap("positron", allRemote)).toBeNull();
+    expect(fallbackBasemap("streets", allRemote)).toBeNull();
   });
 });
 

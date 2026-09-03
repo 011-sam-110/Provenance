@@ -31,7 +31,19 @@ import { freshnessStore } from "@/lib/freshness";
 import { mapViewStore, useMapView, type RegionView, type PointView, type DiveView } from "@/lib/mapView";
 import { cameraFeed } from "@/lib/cameras/classify";
 import { CAMERA_FEED_META, cameraRegionColor, WEBCAM_COLOR } from "@/lib/icons/svg";
-import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
+import { BASEMAPS, MAP_LABEL_FONT, usesOwnLabels, type BasemapKey } from "@/lib/basemaps";
+import {
+  BUILDINGS_MIN_ZOOM,
+  BUILDING_LAYER,
+  BUILDING_SRC,
+  BUILDING_TILEJSON,
+  STYLE_OWN_BUILDING_3D,
+  buildingsBeforeId,
+  buildingsFilter,
+  buildingsPaint,
+  buildingsSourceId,
+  needsOwnBuildingSource,
+} from "@/lib/map/buildings";
 import {
   STYLE_LOAD_TIMEOUT_MS,
   classifyMapError,
@@ -55,14 +67,6 @@ import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/sel
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
 import { attachAoi } from "@/lib/map/aoi";
-import {
-  CAMERA_CLUSTER,
-  WEBCAM_CLUSTER,
-  CLUSTER_FILL_OPACITY,
-  clusterRadiusExpression,
-  clusterTextSizeExpression,
-  expandCluster,
-} from "@/lib/map/cluster";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map picking. Every rule lives in camslot.pick and camslot.arm; this file supplies
 // geometry and side effects and decides nothing. See the block above addPicks for
@@ -107,19 +111,10 @@ type Pt = {
   live: boolean;
 };
 
-// Cluster paint, BUILT from lib/map/cluster rather than hand-typed here. The two
-// used to be independent copies: the camera ramp read 15/19/24/30 and the webcam
-// ramp 14/18/23/29, one pixel adrift at every tier, under a comment in cluster.ts
-// promising a unit test that guarded them. No such test existed.
-const CLUSTER_RADIUS_PAINT = clusterRadiusExpression();
-const CLUSTER_TEXT_PAINT = clusterTextSizeExpression();
-
 // Source / layer ids.
 const CAM_SRC = "cameras";
-const CAM_DOT_LAYER = "camera-dots"; // cheap glows — the zoomed-out representation (unclustered only)
-const CAM_LAYER = "camera-markers"; // detailed feed/region icons — appear on descent (unclustered only)
-const CAM_CLUSTER_LAYER = "camera-clusters"; // soft count badges that kill dot-soup
-const CAM_CLUSTER_COUNT = "camera-cluster-count"; // numeric label on each cluster
+const CAM_DOT_LAYER = "camera-dots"; // EVERY camera, as its own dot, at every zoom below CAM_LAYER
+const CAM_LAYER = "camera-markers"; // detailed feed/region icons — take over on descent
 const PLANE_SRC = "planes";
 const PLANE_LAYER = "plane-markers";
 const TRAIL_SRC = "trails";
@@ -146,10 +141,8 @@ const SAT_SRC = "satellites";
 const SAT_GLOW_LAYER = "satellite-glow";
 const SAT_LAYER = "satellite-core";
 const WEBCAM_SRC = "webcams";
-const WEBCAM_DOT_LAYER = "webcam-dots"; // cheap rose glows when zoomed out (unclustered only)
-const WEBCAM_LAYER = "webcam-markers"; // detailed webcam icons on descent (unclustered only)
-const WEBCAM_CLUSTER_LAYER = "webcam-clusters"; // soft rose count badges
-const WEBCAM_CLUSTER_COUNT = "webcam-cluster-count"; // numeric label on each cluster
+const WEBCAM_DOT_LAYER = "webcam-dots"; // every webcam as its own rose dot
+const WEBCAM_LAYER = "webcam-markers"; // detailed webcam icons on descent
 const DEM_SRC = "terrain-dem";
 const HILLSHADE_LAYER = "hillshade";
 // Global signals — THREE aggregated sources carrying the union of every ON
@@ -227,10 +220,6 @@ function toPinFC(pins: MapPin[], activeId: string | null): GeoJSON.FeatureCollec
     })),
   };
 }
-
-// The Light (Positron) vector basemap ships its own country names; the Satellite
-// and Topographic rasters don't. Our name labels show only on the rasters.
-const isRasterBasemap = (b: BasemapKey): boolean => b !== "positron";
 
 // Every layer that takes part in the pin-vs-country arbitration (see
 // lib/map/hitTest). Filtered to existing layers at call time — a layer id that is
@@ -382,76 +371,6 @@ function pickOneCamera(id: string, lat: number, lon: number, name?: string): boo
 }
 
 /**
- * An armed click on a cluster badge appends its leaves instead of zooming.
- *
- * `point_count` from the badge is the honest denominator — it is the number the user
- * can see printed on the circle they clicked — so it is what we ask for and what the
- * note reports. Every failure path here still ends in a toast: an armed click that
- * produced no visible consequence is the one outcome this interception exists to
- * prevent, and "the map moved a bit" does not count as one.
- */
-async function pickClusterLeaves(
-  map: maplibregl.Map,
-  sourceId: string,
-  clusterId: number,
-  centre: [number, number],
-  pointCount: number,
-): Promise<void> {
-  const src = map.getSource(sourceId) as GeoJSONSource | undefined;
-  if (!src || typeof src.getClusterLeaves !== "function") {
-    toast("Couldn't read that group — zoom in and pick the pins directly.");
-    return;
-  }
-
-  let leaves: GeoJSON.Feature[] = [];
-  try {
-    leaves = await src.getClusterLeaves(clusterId, Math.max(pointCount, 1), 0);
-  } catch {
-    toast("Couldn't read that group — zoom in and pick the pins directly.");
-    return;
-  }
-
-  const isWebcam = sourceId === WEBCAM_SRC;
-  const rows = loadedCamerasStore.get();
-  const candidates: PickCandidate[] = [];
-  for (const leaf of leaves) {
-    if (leaf.geometry?.type !== "Point") continue;
-    const props = leaf.properties as { id?: string; name?: string } | null;
-    const id = props?.id;
-    if (!id) continue;
-    const [lon, lat] = leaf.geometry.coordinates as [number, number];
-    if (isWebcam) {
-      // toWebcamFC puts the title in `name` (features.ts:82).
-      candidates.push({
-        ref: webcamRef(id, props?.name),
-        label: props?.name || id,
-        lat,
-        lon,
-        refreshSeconds: WEBCAM_REFRESH_SECONDS,
-        source: "Windy",
-      });
-    } else {
-      const row = rows.find((c) => c.id === id);
-      candidates.push({
-        ref: { k: "cam", id },
-        label: row?.name || props?.name || id,
-        lat,
-        lon,
-        refreshSeconds: row?.refreshSeconds,
-        available: row?.available,
-        source: row?.source,
-      });
-    }
-  }
-
-  if (candidates.length === 0) {
-    toast("That group is empty now — nothing to add.");
-    return;
-  }
-  addPicks(candidates, { lat: centre[1], lon: centre[0] });
-}
-
-/**
  * Shift-drag a box → append everything inside it.
  *
  * Covers the road cameras in `loadedCamerasStore` and the webcams already drawn on
@@ -517,6 +436,7 @@ export default function WorldMap() {
   const rafRef = useRef(0);
   const interactUntilRef = useRef(0);
   const terrainRef = useRef(true);
+  const buildingsRef = useRef(true);
   // Plane-tracking (see lib/planes/track). trackingRef mirrors the store for the
   // spin loop + input handlers (no re-render); trackedObjectRef holds the tracked
   // plane's latest WorldObject so addAppLayers can re-seed the ring after a restyle;
@@ -560,6 +480,7 @@ export default function WorldMap() {
   const view = useMapView();
   const basemap = view.basemap;
   const terrainOn = view.terrain;
+  const buildingsOn = view.buildings;
   const layers = useLayers();
   const track = useTrack();
   trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
@@ -705,20 +626,16 @@ export default function WorldMap() {
     };
     set(CAM_DOT_LAYER, l.cameras);
     set(CAM_LAYER, l.cameras);
-    set(CAM_CLUSTER_LAYER, l.cameras);
-    set(CAM_CLUSTER_COUNT, l.cameras);
     set(SAT_GLOW_LAYER, l.satellites);
     set(SAT_LAYER, l.satellites);
     set(WEBCAM_DOT_LAYER, l.webcams);
     set(WEBCAM_LAYER, l.webcams);
-    set(WEBCAM_CLUSTER_LAYER, l.webcams);
-    set(WEBCAM_CLUSTER_COUNT, l.webcams);
     set(TRAIL_LAYER, l.planes);
     set(PLANE_LAYER, l.planes);
     // Countries: borders + click everywhere; name labels only on the raster basemaps.
     set(COUNTRY_FILL_LAYER, l.countries);
     set(COUNTRY_BORDER_LAYER, l.countries);
-    set(COUNTRY_LABEL_LAYER, l.countries && isRasterBasemap(mapViewStore.get().basemap));
+    set(COUNTRY_LABEL_LAYER, l.countries && !usesOwnLabels(mapViewStore.get().basemap));
   }, []);
 
   const ensureGeoJSON = useCallback(
@@ -726,20 +643,9 @@ export default function WorldMap() {
       map: maplibregl.Map,
       id: string,
       data: GeoJSON.FeatureCollection,
-      cluster?: { clusterRadius: number; clusterMaxZoom: number },
     ) => {
       const src = map.getSource(id) as GeoJSONSource | undefined;
-      // Cluster options are fixed at source-creation; setData just refreshes the
-      // points (MapLibre re-clusters them off-main-thread).
       if (src) src.setData(data);
-      else if (cluster)
-        map.addSource(id, {
-          type: "geojson",
-          data,
-          cluster: true,
-          clusterRadius: cluster.clusterRadius,
-          clusterMaxZoom: cluster.clusterMaxZoom,
-        });
       else map.addSource(id, { type: "geojson", data });
     },
     [],
@@ -783,6 +689,42 @@ export default function WorldMap() {
       }
       applyTerrain(map, terrainRef.current);
 
+      // 3D buildings. Added BEFORE every app layer below, so pins, cameras and
+      // signals draw on top of the massing rather than inside it. See
+      // lib/map/buildings.ts for why the layer is ours and not the basemap's.
+      const styleNow = map.getStyle();
+      const sourceIds = Object.keys(styleNow?.sources ?? {});
+      if (needsOwnBuildingSource(sourceIds) && !map.getSource(BUILDING_SRC)) {
+        map.addSource(BUILDING_SRC, {
+          type: "vector",
+          // `url:` and NOT `tiles:`. The OpenStreetMap / OpenMapTiles / OpenFreeMap
+          // credit lives in the TileJSON this resolves to, and MapLibre reads it
+          // from there; a literal tiles array draws the same buildings with the
+          // attribution silently dropped.
+          url: BUILDING_TILEJSON,
+        });
+      }
+      if (!map.getLayer(BUILDING_LAYER)) {
+        map.addLayer(
+          {
+            id: BUILDING_LAYER,
+            type: "fill-extrusion",
+            source: buildingsSourceId(Object.keys(map.getStyle()?.sources ?? {})),
+            "source-layer": "building",
+            minzoom: BUILDINGS_MIN_ZOOM,
+            filter: buildingsFilter() as never,
+            layout: { visibility: vis(buildingsRef.current) },
+            paint: buildingsPaint(mapViewStore.get().basemap) as never,
+          },
+          buildingsBeforeId(styleNow?.layers),
+        );
+      }
+      // Liberty ships its own `building-3d`. Ours is the single source of truth here,
+      // so hide theirs rather than let two extrusions stack their opacity.
+      if (map.getLayer(STYLE_OWN_BUILDING_3D)) {
+        map.setLayoutProperty(STYLE_OWN_BUILDING_3D, "visibility", "none");
+      }
+
       // Symbol icons are wiped by setStyle — re-rasterise/register them.
       await Promise.all([
         loadCameraIcons(map),
@@ -792,12 +734,12 @@ export default function WorldMap() {
         loadSignalIcons(map),
       ]);
 
-      // Sources, seeded from the latest refs. Cameras + webcams cluster (kills
-      // dot-soup at world zoom); planes/trails/satellites stay individual.
+      // Sources, seeded from the latest refs. NOTHING clusters: every camera and
+      // every webcam is its own feature at every zoom (see CAM_DOT_LAYER).
       ensureGeoJSON(map, TRAIL_SRC, toTrailFC(trailsRef.current));
       ensureGeoJSON(map, SAT_SRC, toSatelliteFC(satsRef.current));
-      ensureGeoJSON(map, CAM_SRC, toCameraFC(camerasRef.current), CAMERA_CLUSTER);
-      ensureGeoJSON(map, WEBCAM_SRC, toWebcamFC(webcamsRef.current), WEBCAM_CLUSTER);
+      ensureGeoJSON(map, CAM_SRC, toCameraFC(camerasRef.current));
+      ensureGeoJSON(map, WEBCAM_SRC, toWebcamFC(webcamsRef.current));
       ensureGeoJSON(map, PLANE_SRC, toPlaneFC(planesRef.current));
       ensureGeoJSON(map, TRACK_SRC, toTrackFC(trackedObjectRef.current));
       ensureGeoJSON(map, SELECT_SRC, toSelectionFC(selectionRef.current));
@@ -809,7 +751,7 @@ export default function WorldMap() {
       // Clickable countries — added FIRST so borders/labels sit beneath every pin.
       // generateId powers the hover feature-state; the polygons stream in via the
       // fetch in the init effect (empty until then). Name labels: raster basemaps only.
-      const countryRaster = isRasterBasemap(mapViewStore.get().basemap);
+      const countryRaster = !usesOwnLabels(mapViewStore.get().basemap);
       if (!map.getSource(COUNTRY_SRC)) {
         map.addSource(COUNTRY_SRC, {
           type: "geojson",
@@ -858,7 +800,7 @@ export default function WorldMap() {
           maxzoom: 6.5, // a country name belongs to the overview, not the street level
           layout: {
             "text-field": ["get", "name"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": ["interpolate", ["linear"], ["zoom"], 1, 9, 3, 11, 5, 13],
             "text-transform": "uppercase",
             "text-letter-spacing": 0.08,
@@ -925,18 +867,23 @@ export default function WorldMap() {
           id: CAM_DOT_LAYER,
           type: "circle",
           source: CAM_SRC,
-          filter: ["!", ["has", "point_count"]], // singletons only; groups → cluster badges
           layout: { visibility: vis(layersRef.current.cameras) },
           paint: {
             // Live → region colour; down → muted slate (= CAMERA_OFFLINE_COLOR) so
             // a dead feed reads as dead even as a faint glow.
             "circle-color": ["case", ["get", "available"], ["get", "regionColor"], "#9aa6b2"],
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1.3, 3, 2, 6, 3, 9, 4],
-            // Fade the cheap glows out as the detailed markers (minzoom 5) fade in.
-            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 3, 0.65, 5, 0.45, 6, 0],
+            // RE-TUNED for ~19k simultaneous dots. The old ramp (0:1.3 3:2 6:3 9:4)
+            // was drawn for the handful of singletons that escaped a cluster badge;
+            // at those sizes the whole feed becomes one smear over Europe. Smaller
+            // and fainter far out, so the map reads as DENSITY, and growing on
+            // descent where the dots have room.
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 3, 1.6, 6, 2.4, 9, 3.2, 11, 4],
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.45, 3, 0.6, 6, 0.75, 10, 0.75, 12, 0],
+            // No stroke at all until the dots are sparse enough to have edges worth
+            // drawing. A white ring on 19k overlapping dots is a grey wash.
             "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 0, 0, 5, 0.5],
-            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0, 6, 0.5],
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0, 9, 0.5],
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0, 9, 0.5],
           },
         });
       }
@@ -945,8 +892,14 @@ export default function WorldMap() {
           id: CAM_LAYER,
           type: "symbol",
           source: CAM_SRC,
-          minzoom: 5,
-          filter: ["!", ["has", "point_count"]], // singletons only; groups → cluster badges
+          // 11 AND NOT LOWER, with a hard ceiling of 12. Symbols carry per-feature
+          // collision detection and glyph layout; circles do not, so this layer is
+          // the real cost of ~19k cameras and the dots cover everything below it.
+          // The ceiling is lib/map/liveThumbnails.ts THUMB_MIN_ZOOM = 12: the
+          // thumbnail pool is built from queryRenderedFeatures over THIS layer, so
+          // a minzoom above 12 leaves it querying a layer that is not drawn yet and
+          // the live thumbnails vanish with no error.
+          minzoom: 11,
           layout: {
             // icon name = "cam-<feed>-<regionKey>", or the muted "cam-<feed>-offline"
             // variant when the feed is down — matches loadCameraIcons().
@@ -956,7 +909,7 @@ export default function WorldMap() {
               ["concat", "cam-", ["get", "feed"], "-", ["get", "regionKey"]],
               ["concat", "cam-", ["get", "feed"], "-offline"],
             ],
-            "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.35, 9, 0.55, 13, 0.7, 17, 0.9],
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 13, 0.7, 17, 0.9],
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
             visibility: vis(layersRef.current.cameras),
@@ -964,56 +917,22 @@ export default function WorldMap() {
           paint: { "icon-opacity": ["case", ["get", "available"], 1, 0.45] },
         });
       }
-      if (!map.getLayer(CAM_CLUSTER_LAYER)) {
-        // Soft cyan count badge — the zoomed-out group representation that kills
-        // dot-soup. Radius grows in gentle tiers (mirrors CLUSTER_RADIUS_TIERS).
-        map.addLayer({
-          id: CAM_CLUSTER_LAYER,
-          type: "circle",
-          source: CAM_SRC,
-          filter: ["has", "point_count"],
-          layout: { visibility: vis(layersRef.current.cameras) },
-          paint: {
-            "circle-color": "#0ea5e9",
-            "circle-opacity": CLUSTER_FILL_OPACITY,
-            "circle-radius": CLUSTER_RADIUS_PAINT as never,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 1.5,
-            "circle-stroke-opacity": 0.9,
-          },
-        });
-      }
-      if (!map.getLayer(CAM_CLUSTER_COUNT)) {
-        map.addLayer({
-          id: CAM_CLUSTER_COUNT,
-          type: "symbol",
-          source: CAM_SRC,
-          filter: ["has", "point_count"],
-          layout: {
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
-            "text-size": CLUSTER_TEXT_PAINT as never,
-            "text-allow-overlap": true,
-            visibility: vis(layersRef.current.cameras),
-          },
-          paint: { "text-color": "#ffffff" },
-        });
-      }
       if (!map.getLayer(WEBCAM_DOT_LAYER)) {
         map.addLayer({
           id: WEBCAM_DOT_LAYER,
           type: "circle",
           source: WEBCAM_SRC,
-          filter: ["!", ["has", "point_count"]], // singletons only; groups → cluster badges
           layout: { visibility: vis(layersRef.current.webcams) },
           paint: {
             "circle-color": WEBCAM_COLOR,
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1.3, 3, 2, 6, 3, 9, 4],
-            // Fade the cheap glows out as the detailed icons (minzoom 5) fade in.
-            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.5, 3, 0.65, 5, 0.45, 6, 0],
+            // Mirrors the camera ramp. Webcams are a far smaller global sample, so
+            // density is not the problem here — consistency is: two dot layers on
+            // one map that grow at different rates read as two kinds of thing.
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 3, 1.6, 6, 2.4, 9, 3.2, 11, 4],
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.45, 3, 0.6, 6, 0.75, 10, 0.75, 12, 0],
             "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 0, 0, 5, 0.5],
-            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 3, 0, 6, 0.5],
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0, 9, 0.5],
+            "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0, 9, 0.5],
           },
         });
       }
@@ -1022,49 +941,14 @@ export default function WorldMap() {
           id: WEBCAM_LAYER,
           type: "symbol",
           source: WEBCAM_SRC,
-          minzoom: 5,
-          filter: ["!", ["has", "point_count"]], // singletons only; groups → cluster badges
+          minzoom: 11, // hands over from the dots at the same zoom the cameras do
           layout: {
             "icon-image": "webcam",
-            "icon-size": ["interpolate", ["linear"], ["zoom"], 5, 0.32, 9, 0.5, 13, 0.65, 17, 0.85],
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.46, 13, 0.65, 17, 0.85],
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
             visibility: vis(layersRef.current.webcams),
           },
-        });
-      }
-      if (!map.getLayer(WEBCAM_CLUSTER_LAYER)) {
-        // Rose count badge — the webcam analogue of the camera cluster badge.
-        map.addLayer({
-          id: WEBCAM_CLUSTER_LAYER,
-          type: "circle",
-          source: WEBCAM_SRC,
-          filter: ["has", "point_count"],
-          layout: { visibility: vis(layersRef.current.webcams) },
-          paint: {
-            "circle-color": WEBCAM_COLOR,
-            "circle-opacity": CLUSTER_FILL_OPACITY,
-            "circle-radius": CLUSTER_RADIUS_PAINT as never,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 1.5,
-            "circle-stroke-opacity": 0.9,
-          },
-        });
-      }
-      if (!map.getLayer(WEBCAM_CLUSTER_COUNT)) {
-        map.addLayer({
-          id: WEBCAM_CLUSTER_COUNT,
-          type: "symbol",
-          source: WEBCAM_SRC,
-          filter: ["has", "point_count"],
-          layout: {
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Open Sans Regular"],
-            "text-size": CLUSTER_TEXT_PAINT as never,
-            "text-allow-overlap": true,
-            visibility: vis(layersRef.current.webcams),
-          },
-          paint: { "text-color": "#ffffff" },
         });
       }
       // Tracked-plane ring — a prominent stroked halo under the icon so the followed
@@ -1239,7 +1123,7 @@ export default function WorldMap() {
           minzoom: 4, // declutter — labels only once zoomed past the globe overview
           layout: {
             "text-field": ["get", "label"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": 11,
             "text-offset": [0, 1.1],
             "text-anchor": "top",
@@ -1311,7 +1195,7 @@ export default function WorldMap() {
           source: PIN_SRC,
           layout: {
             "text-field": ["get", "label"],
-            "text-font": ["Open Sans Regular"],
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": 12,
             "text-offset": [0, 1.2],
             "text-anchor": "top",
@@ -1545,32 +1429,10 @@ export default function WorldMap() {
     });
     map.on("mouseleave", COUNTRY_FILL_LAYER, clearCountryHover);
 
-    // Click a cluster badge → ease into the zoom where it splits apart.
-    //
-    // INTERCEPTION 3, and it is the majority path, not an edge case. Measured over
-    // central London with the camera layer on: z11 draws 71 cluster badges against
-    // 18 individual pins, z9 draws 30 against 3. So below z12 most armed clicks land
-    // here, and the unarmed behaviour — move the camera, leave the slot unchanged —
-    // would read as "arming is broken" rather than "zoom in first".
-    const clusterClick = (sourceId: string) => (e: maplibregl.MapLayerMouseEvent) => {
-      const f = e.features?.[0];
-      const props = f?.properties as { cluster_id?: number; point_count?: number } | undefined;
-      const clusterId = props?.cluster_id;
-      if (clusterId == null || f?.geometry.type !== "Point") return;
-      const centre = f.geometry.coordinates as [number, number];
-
-      if (pickStore.get().mode === "picking") {
-        void pickClusterLeaves(map, sourceId, clusterId, centre, props?.point_count ?? 0);
-        return;
-      }
-      void expandCluster(map, sourceId, clusterId, centre);
-    };
-    map.on("click", CAM_CLUSTER_LAYER, clusterClick(CAM_SRC));
-    map.on("click", WEBCAM_CLUSTER_LAYER, clusterClick(WEBCAM_SRC));
 
     const hoverLayers = [
-      CAM_LAYER, CAM_DOT_LAYER, CAM_CLUSTER_LAYER,
-      WEBCAM_LAYER, WEBCAM_DOT_LAYER, WEBCAM_CLUSTER_LAYER,
+      CAM_LAYER, CAM_DOT_LAYER,
+      WEBCAM_LAYER, WEBCAM_DOT_LAYER,
       PLANE_LAYER, SAT_LAYER, SIGNAL_LAYER, SIGNAL_ICON_LAYER, SIGNAL_LINE_LAYER, SIGNAL_FILL_LAYER,
     ];
     for (const layer of hoverLayers) {
@@ -1713,7 +1575,7 @@ export default function WorldMap() {
       style: BASEMAPS[mapViewStore.get().basemap].style,
       center,
       zoom,
-      maxZoom: 18,
+      maxZoom: 19, // headroom for street-level buildings (OFM tiles stop at z14 and overzoom)
       renderWorldCopies: false,
       attributionControl: false,
     });
@@ -1914,6 +1776,18 @@ export default function WorldMap() {
     if (!map || !readyRef.current) return;
     applyTerrain(map, terrainOn);
   }, [terrainOn, applyTerrain]);
+
+  // 3D buildings toggle. Visibility only, deliberately: MapLibre does not fetch
+  // tiles for a hidden layer, so hiding is enough to stop the ~569 KB z14 tiles
+  // being pulled, and the layer does not have to be torn down and rebuilt.
+  useEffect(() => {
+    buildingsRef.current = buildingsOn;
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (map.getLayer(BUILDING_LAYER)) {
+      map.setLayoutProperty(BUILDING_LAYER, "visibility", vis(buildingsOn));
+    }
+  }, [buildingsOn]);
 
   // Layer visibility toggles.
   useEffect(() => {

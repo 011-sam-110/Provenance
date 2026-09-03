@@ -1,14 +1,24 @@
 "use client";
-// Console (default, flat 2D map) vs Explore (the 3D globe + cinematic dive). One
-// persisted store the shell reads to choose chrome, and WorldMap reads to choose
-// its MapLibre projection. The redesign flips the default from globe-as-hero to
-// console-as-hero (spec §4, §11).
+// Console (flat 2D map) vs Explore (the 3D globe + cinematic dive). One persisted
+// store the shell reads to choose chrome, and WorldMap reads to choose its MapLibre
+// projection.
+//
+// READ THIS BEFORE EDITING DEFAULT_VIEW_MODE. It is not the switch it looks like.
+// components/console/StageHost.tsx sets viewModeStore from the active board's stage
+// in a mount effect, so this value is overwritten before the map is ever built. What
+// actually decides how /app opens is the stage literal on the default board in
+// lib/console/presets.ts. This constant is the fallback for a missing or corrupt
+// persisted value, and it is kept in agreement with that board on purpose -- the two
+// contradicting each other is how it read for a while, and it made this file lie.
+//
+// The redesign had flipped the default to console-as-hero (spec §4, §11). Sam asked
+// for the globe back on 2026-09-03, which supersedes that.
 
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 export type ViewMode = "console" | "explore";
-export const DEFAULT_VIEW_MODE: ViewMode = "console";
+export const DEFAULT_VIEW_MODE: ViewMode = "explore";
 
 export function coerceViewMode(saved: unknown): ViewMode {
   return saved === "explore" || saved === "console" ? saved : DEFAULT_VIEW_MODE;

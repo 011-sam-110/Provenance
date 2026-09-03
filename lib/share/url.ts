@@ -11,7 +11,9 @@
 //   lat, lon — map centre (clamped to ±90 / ±180)
 //   z        — map zoom (clamped 0–18, the engine's maxZoom)
 //   layers   — csv of the ACTIVE layers currently ON (e.g. "cameras,planes")
-//   base     — basemap key (positron | satellite | topo)
+//   base     — basemap key, validated against the live registry, so every entry in
+//              lib/basemaps.ts deep-links with no edit here (dark | positron |
+//              streets | satellite | topo)
 //   obj      — namespaced WorldObject id of the open dossier (opaque internal key)
 
 import { ACTIVE_LAYERS, type LayerKey } from "@/lib/layers";
@@ -36,7 +38,7 @@ export interface ViewState {
 const LAT_MAX = 90;
 const LON_MAX = 180;
 const ZOOM_MIN = 0;
-const ZOOM_MAX = 18; // mirrors WorldMap's maxZoom
+const ZOOM_MAX = 19; // mirrors WorldMap maxZoom (raised for street-level buildings)
 const OBJ_MAX_LEN = 96; // opaque internal key — keep shared links sane
 
 const VALID_LAYERS = new Set<string>(ACTIVE_LAYERS);
