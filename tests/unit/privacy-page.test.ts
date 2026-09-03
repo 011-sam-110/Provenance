@@ -41,8 +41,8 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain('dateTime="2026-08-18"');
-    expect(copy).toContain("18 August 2026");
+    expect(copy).toContain(`dateTime="2026-09-03"`);
+    expect(copy).toContain("3 September 2026");
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {

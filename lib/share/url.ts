@@ -11,7 +11,9 @@
 //   lat, lon — map centre (clamped to ±90 / ±180)
 //   z        — map zoom (clamped 0–18, the engine's maxZoom)
 //   layers   — csv of the ACTIVE layers currently ON (e.g. "cameras,planes")
-//   base     — basemap key (positron | satellite | topo)
+//   base     — basemap key, validated against the live registry, so every entry in
+//              lib/basemaps.ts deep-links with no edit here (dark | positron |
+//              streets | satellite | topo)
 //   obj      — namespaced WorldObject id of the open dossier (opaque internal key)
 
 import { ACTIVE_LAYERS, type LayerKey } from "@/lib/layers";

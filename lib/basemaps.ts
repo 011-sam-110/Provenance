@@ -1,16 +1,35 @@
 // Typed basemap registry for the unified MapLibre globe engine.
 //
-// One map instance, swappable base style. `positron` is the calm light default
-// (CARTO Positron vector — morphs globe→mercator natively); `satellite` is the
-// Esri World Imagery raster for the deep-zoom photographic payoff; `topo` is a
-// keyless OpenTopoMap raster for terrain context. All keyless.
+// One map instance, swappable base style. `positron` is the calm light default and
+// `streets` its detailed sibling — both OpenFreeMap vector, so both morph
+// globe→mercator natively; `satellite` is the Esri World Imagery raster for the
+// deep-zoom photographic payoff; `topo` is a keyless OpenTopoMap raster for terrain
+// context. All keyless.
+//
+// WHY OPENFREEMAP AND NOT CARTO. `positron` pointed at basemaps.cartocdn.com until
+// 2026-09-03. CARTO's basemaps are free to use but ToS-bound and volume-limited, and
+// this project's own research approved OpenFreeMap as the way out in June
+// (docs/superpowers/research/coordinator-notes.md:131) without ever wiring it.
+// OpenFreeMap serves the same OpenStreetMap data with no key, no registration, no
+// rate limit, and can be self-hosted if it ever has to be. It also unlocks the thing
+// CARTO could not give us: `streets` (Liberty) carries the OpenMapTiles `building`
+// layer with render_height, which is what the 3D buildings extrusion reads.
+//
+// ATTRIBUTION IS AUTOMATIC HERE, and only because of how the styles are written.
+// Neither OpenFreeMap style declares `attribution` on its sources; both point their
+// `openmaptiles` source at a TileJSON via `url:`, and that document carries the
+// OpenFreeMap + OpenMapTiles + OpenStreetMap credit (verified 2026-09-03). MapLibre
+// resolves it and the AttributionControl renders it. Anything that swaps a `url:`
+// for a literal `tiles:` array drops that credit silently — which is an ODbL
+// problem, not a cosmetic one. See CLAUDE.md: every upstream feed keeps its own
+// terms, and the repo's own AGPL does not satisfy them.
 //
 // Switching a basemap (`map.setStyle`) wipes every source/layer/image/terrain, so
 // WorldMap re-adds the app layers on the `style.load` event — see addAppLayers().
 
 import type { StyleSpecification } from "maplibre-gl";
 
-export type BasemapKey = "dark" | "positron" | "satellite" | "topo";
+export type BasemapKey = "dark" | "positron" | "streets" | "satellite" | "topo";
 
 export interface BasemapDef {
   key: BasemapKey;
@@ -21,10 +40,15 @@ export interface BasemapDef {
   vector: boolean;
 }
 
-// Keyless CARTO glyph server (the same one the Positron vector style uses) so
-// our own symbol-text layers — the cluster count badges — render on the raster
-// basemaps too, which otherwise ship no `glyphs`. "Open Sans Regular" is served
-// by this endpoint and by Positron's glyphs, so one font works on all basemaps.
+// Keyless CARTO glyph server, used ONLY by the three inline raster styles below —
+// a raster style ships no `glyphs` of its own, and without one every symbol layer we
+// add drops its text silently. The vector entries never touch this: they carry
+// OpenFreeMap's own glyph endpoint inside their style document.
+//
+// So this is now the one place CARTO is still in the stack, and it is here for fonts
+// rather than for tiles. It serves MAP_LABEL_FONT ("Noto Sans Regular"), which is the
+// point — see the measurement beside that constant for why the two glyph servers
+// force that particular stack.
 const CARTO_GLYPHS = "https://tiles.basemaps.cartocdn.com/fonts/{fontstack}/{range}.pbf";
 
 // The fontstack every symbol layer WE add asks for, and the one measurement that
@@ -158,6 +182,18 @@ const TOPO_STYLE: StyleSpecification = {
   ],
 };
 
+/**
+ * OpenFreeMap Positron, as a URL rather than only as a registry entry.
+ *
+ * The small detail-view insets (components/InsetMap, used by eleven widget detail
+ * views) build their own MapLibre map and need a style URL, not a BasemapDef. That
+ * file used to carry its own hardcoded copy of the CARTO Positron URL, which is how
+ * it would have quietly stayed on CARTO after the registry moved off it: the console
+ * globe on OpenFreeMap, eleven insets still on CARTO, and a /privacy page describing
+ * neither correctly. One exported constant, used in both places, cannot drift.
+ */
+export const POSITRON_STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
+
 // Order matters twice over, so it is set here rather than at any call site: every
 // basemap switcher iterates `Object.keys(BASEMAPS)` (the Terminal stage bar, the old
 // MapControls, the ⌘K palette), and `fallbackBasemap()` walks the same order looking
@@ -169,10 +205,30 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
     style: DARK_STYLE,
     vector: false,
   },
+  // KEY STAYS `positron` even though the tiles are no longer CARTO's. It is a
+  // published contract: it is the value of `?base=` in every shared link ever minted,
+  // basemapForSkin("light") returns it, and tests/unit/terminal-skin.test.ts pins it
+  // against DEFAULT_TERMINAL_SKIN. Renaming the key to `light` would break old links
+  // to save nothing. OpenFreeMap's own style is also called positron, so the name is
+  // still accurate — it is the same Positron design over the same OSM data.
   positron: {
     key: "positron",
     label: "Light",
-    style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+    style: POSITRON_STYLE_URL,
+    vector: true,
+  },
+  // Liberty — the detailed street map, and the only OpenFreeMap style that ships its
+  // own `building-3d` fill-extrusion layer (55 layers on positron, 111 here).
+  //
+  // That last fact is a TRAP for the 3D buildings work, not a feature to lean on: we
+  // add our own extrusion layer so buildings appear over EVERY basemap including Esri
+  // satellite, and `map.addLayer` throws on a duplicate id. Ours is therefore
+  // namespaced `tn-buildings-3d`, and Liberty's own `building-3d` gets hidden so the
+  // two cannot z-fight or double their opacity.
+  streets: {
+    key: "streets",
+    label: "Streets",
+    style: "https://tiles.openfreemap.org/styles/liberty",
     vector: true,
   },
   satellite: {
@@ -204,8 +260,8 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
 // tests/unit/terminal-skin.test.ts pins the two together, so the next person to
 // change either one finds out from a red test rather than from a screenshot.
 //
-// Dark, Satellite and Topographic all stay one tap away in the view controls;
-// nothing was removed.
+// Dark, Streets, Satellite and Topographic all stay one tap away in the view
+// controls; nothing was removed.
 //
 // This does NOT reintroduce the persistence hazard lib/mapView.ts warns about. The
 // basemap is still deliberately unpersisted: this constant is the value the store

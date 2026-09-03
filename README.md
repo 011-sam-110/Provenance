@@ -39,7 +39,7 @@ Every figure above will drift, which is why each one is dated and pinned to a co
 
 ## ✨ Features
 
-- **One continuous globe-to-map engine** - a single MapLibre `projection: 'globe'` instance morphs a spinning satellite Earth into a flat satellite, light or topographic map as you zoom. No cross-fade seam, one WebGL context. 3D mode calls `map.setTerrain()` against AWS `terrarium` raster-DEM tiles, engaging at zoom 6 where the globe projection hands over to mercator.
+- **One continuous globe-to-map engine** - a single MapLibre `projection: 'globe'` instance morphs a spinning satellite Earth into a flat satellite, light, street or topographic map as you zoom. No cross-fade seam, one WebGL context. 3D mode calls `map.setTerrain()` against AWS `terrarium` raster-DEM tiles, engaging at zoom 6 where the globe projection hands over to mercator.
 - **41 layers, each independently attributed** - four core layers (cameras, webcams, aircraft, satellites) plus 37 global-signal layers, each opt-in and drawn as its own hazard pin: a composite Country Instability Index, earthquakes (USGS and EMSC), wildfires, volcanoes, storms and floods (NASA EONET), GDACS disaster alerts, tropical cyclones, NASA FIRMS active fires, aurora and space weather (NOAA), rocket launches, undersea cables and their landing stations, GPS jamming, nuclear plants, airports, ports, national internet outages (IODA), FAA airspace status, cloud-provider outages, GDELT conflict and protests, ACLED events, weather and air quality (Open-Meteo plus OpenAQ stations), UK street crime, cyber command-and-control and ransomware (abuse.ch, Ransomware.live), forced displacement (UNHCR), food security (WFP), ReliefWeb emergencies, ENTSO-E grid load, military ADS-B and AIS ships.
 - **Every layer says how it knows** - each of the 37 carries a provenance card: what a single pin actually *is*, the method behind it, a confidence class (today 11 official, 10 reported, 7 measured, 7 modelled, 2 derived) and a limitation that is never allowed to be empty. There is no "not documented yet" fallback, because `tests/unit/signals-explain.test.ts` fails the build when a layer is registered without one.
 - **Truncation is declared, not hidden** - an endpoint that caps its response says so in a coverage record: how many rows existed upstream, how many are here, and how the survivors were chosen. Active fires returned 1,500 of 23,185 that way, UK crime 1,500 of 10,504, aircraft 3,000 of 5,306 and GPS jamming 400 of 546.
@@ -68,7 +68,7 @@ Each tile also states the conditions where its camera stands, and the interestin
 
 Next.js 15 (App Router) · TypeScript · React 19 · MapLibre GL JS v5 · hls.js · satellite.js (SGP4) · h3-js · react-grid-layout · zod · Vitest · Playwright · deployed on Vercel.
 
-Data and tiles are keyless-first: TfL · Caltrans · SCDOT · Finland Digitraffic · Castle Rock 511 · Oregon TripCheck · DriveBC · NZTA · Iceland · Estonia · Traffic Scotland · CET-SP (Sao Paulo) · MUP Srbije · JP Putevi Srbije · OpenSky Network · adsb.lol · adsbdb · CelesTrak · USGS · EMSC · NASA EONET · GDACS · NOAA · IODA · Open-Meteo · GDELT · data.police.uk · abuse.ch · Ransomware.live · UNHCR · WFP · UK FCDO (gov.uk) · CoinGecko · Frankfurter/ECB · Esri World Imagery · CARTO Positron · OpenTopoMap · Natural Earth · AWS Terrain Tiles.
+Data and tiles are keyless-first: TfL · Caltrans · SCDOT · Finland Digitraffic · Castle Rock 511 · Oregon TripCheck · DriveBC · NZTA · Iceland · Estonia · Traffic Scotland · CET-SP (Sao Paulo) · MUP Srbije · JP Putevi Srbije · OpenSky Network · adsb.lol · adsbdb · CelesTrak · USGS · EMSC · NASA EONET · GDACS · NOAA · IODA · Open-Meteo · GDELT · data.police.uk · abuse.ch · Ransomware.live · UNHCR · WFP · UK FCDO (gov.uk) · CoinGecko · Frankfurter/ECB · Esri World Imagery · OpenFreeMap (OpenMapTiles) · CARTO Dark Matter · OpenTopoMap · Natural Earth · AWS Terrain Tiles.
 
 ## 🚀 Run
 
@@ -90,7 +90,7 @@ app/(site)/page.tsx ─── the landing page: hero globe, source wall and live
                         generated from SOURCE_CATALOG (no marketing-side list to update)
 app/(console)/app/ ──── the console shell
   └── components/WorldMap.tsx ─ one maplibregl.Map (projection: 'globe')
-        basemap registry (satellite / light / topographic) + 3D terrain
+        basemap registry (dark / light / streets / satellite / topo) + 3D terrain
         per-hazard signal icons + clickable Natural Earth country layer
   ├── lib/sources/*      one adapter per camera feed -> Camera (zod), merged + last-good
   ├── lib/signals/*      one adapter + one registry entry per signal layer (37)
@@ -120,7 +120,7 @@ Concretely, the running app links to this repository from the console header and
 
 ### The data is not covered by this licence
 
-The AGPL covers **this codebase only**. Every upstream feed keeps its own separate terms, and some require attribution that is reproduced in the app: TfL Open Data, Windy.com webcams, CARTO and OpenStreetMap basemaps, NASA EONET and FIRMS, USGS, GDACS, TeleGeography, adsb.lol and OpenSky, among others. Redistributing this code does not grant you any right to their data, so check each source before relying on it.
+The AGPL covers **this codebase only**. Every upstream feed keeps its own separate terms, and some require attribution that is reproduced in the app: TfL Open Data, Windy.com webcams, OpenFreeMap, OpenMapTiles, CARTO and OpenStreetMap basemaps, NASA EONET and FIRMS, USGS, GDACS, TeleGeography, adsb.lol and OpenSky, among others. Redistributing this code does not grant you any right to their data, so check each source before relying on it.
 
 ### Third-party code
 

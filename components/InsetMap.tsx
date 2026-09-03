@@ -1,13 +1,18 @@
 // components/InsetMap.tsx
 "use client";
 // A small, single-layer MapLibre map for detail views: renders one set of point
-// features on the keyless CARTO Positron basemap, auto-fits to their bounds, and
+// features on the keyless OpenFreeMap Positron basemap, auto-fits to their bounds, and
 // calls onSelect(id) when a point is clicked. Dependency-free beyond maplibre-gl
 // (already used by the globe). NOT the 1379-line WorldMap — deliberately minimal.
 import { useEffect, useRef } from "react";
 import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { pointsToFC, boundsOf, type InsetPoint } from "@/lib/map/inset";
+// The SAME style the console's Light basemap uses, read from the registry rather
+// than re-typed. This file held its own copy of the old CARTO URL, which is exactly
+// how eleven detail-view insets would have stayed on CARTO after the globe moved off
+// it. See POSITRON_STYLE_URL for the full reasoning.
+import { POSITRON_STYLE_URL } from "@/lib/basemaps";
 
 const SRC = "inset-points";
 const LAYER = "inset-point-circles";
@@ -16,7 +21,7 @@ const TRACK_LAYER = "inset-track-line";
 // Literal accent (the satellite layer's violet). Map layers use literal colours,
 // consistent with the circle layer's literal "#0b1220" stroke below.
 const TRACK_COLOR = "#7c3aed";
-const POSITRON = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+
 
 export default function InsetMap({
   points,
@@ -56,7 +61,7 @@ export default function InsetMap({
     if (!boxRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: boxRef.current,
-      style: POSITRON,
+      style: POSITRON_STYLE_URL,
       center: [0, 20],
       zoom: 1,
       attributionControl: { compact: true },

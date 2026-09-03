@@ -90,7 +90,8 @@
 // .tnx-stage-foot .tn-worldclock { display:flex; }   /* undo the <900px display:none if the
 //                                  Terminal footer should keep the clocks on narrow screens */
 //
-// ATTRIBUTION — a licensing requirement (Esri / OpenTopoMap / CARTO), and it is
+// ATTRIBUTION — a licensing requirement (OpenFreeMap/OpenMapTiles/OSM, Esri,
+// OpenTopoMap, CARTO), and it is
 // MapLibre's own AttributionControl (WorldMap.tsx:1322), not text we write, so it
 // stays correct when the basemap changes. It shares one bottom-right container with
 // the NavigationControl, so both are raised clear of the 24px clock bar:
@@ -306,8 +307,8 @@ export default function StageBar() {
         <span className="tnx-stage-spacer" />
         {/*
           The right-hand slot is deliberately EMPTY. The design puts the attribution
-          here, but attribution is a licensing requirement for Esri, OpenTopoMap and
-          CARTO and it changes with the basemap — so it stays MapLibre's own
+          here, but attribution is a licensing requirement for OpenFreeMap, Esri,
+          OpenTopoMap and CARTO and it changes with the basemap — so it stays MapLibre's own
           AttributionControl (added in WorldMap.tsx:1322 and still mounted), raised by
           CSS to sit just above this bar. Re-typing it as static text would be a
           licence notice that goes stale the first time someone switches basemap.
