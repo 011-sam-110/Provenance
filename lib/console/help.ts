@@ -121,9 +121,9 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
   {
     id: "camslot",
     whatItShows:
-      "One live view at a time from a list you built yourself — a public road camera, a city webcam, or a YouTube stream you pasted. With more than one in the list, the slot cycles through them on a timer.",
+      "One live view at a time from a list you built yourself — a public road camera, a city webcam, or a YouTube stream you pasted. With more than one in the list, the slot cycles through them on a timer. Each frame carries a corner line saying what the surface is doing, what the air is doing, and what time it is where the camera stands.",
     method:
-      "Still images are re-fetched on the interval their own operator publishes — 60s for most highway agencies, 300s for TfL and the Nordic road-weather cameras, 600s for Windy webcams — and always through our own proxy, never a raw upstream URL. Rotation only changes which already-fetched frame is on screen; it never pulls a new one, and a slot scrolled out of view stops fetching altogether.",
+      "Still images are re-fetched on the interval their own operator publishes — 60s for most highway agencies, 300s for TfL and the Nordic road-weather cameras, 600s for Windy webcams — and always through our own proxy, never a raw upstream URL. Rotation only changes which already-fetched frame is on screen; it never pulls a new one, and a slot scrolled out of view stops fetching altogether. The surface line is a MEASURED road-weather station reading where the operator publishes one and it survives every disqualification rule, in the operator's own wording; everywhere else it is derived from air weather and says \"from air\" in the line itself. Local time comes from the weather lookup's own IANA zone and is labelled by UTC offset, never by a city name.",
     confidence: "official",
     coverage:
       "The same seven countries the road-camera registry covers, plus a partial global sample of Windy webcams. Anywhere else, there is nothing to add.",
@@ -133,6 +133,10 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
       "These cameras are run by transport authorities and private webcam owners for their own purposes. They get re-pointed, go dark for days, and freeze on an old frame while still reporting as available.",
       "A YouTube stream in the list stops that slot rotating, because an embed takes seconds to start and would never finish loading at a rotation interval.",
       "Rotation means you are looking at one camera at a time. The others in the list are not being watched while they are off screen, and nothing is recorded.",
+      "Almost no camera has a real surface measurement. Measured live on 2026-09-03: of 19,808 cameras, 912 carry a surface field and 649 survive every rule — 3.3%. Only Estonia and Finland publish one at all. Every other tile's surface line is derived from air weather, which describes the air and not the ground.",
+      "A derived line reports rainfall, not a road state. It says \"rain 1h\" and never \"wet\", because an hour of rain does not tell you whether a surface is wet, frozen or already dry, and the figure behind it is a sum over the preceding hour rather than a reading at this instant.",
+      "A measured reading is REFUSED rather than downgraded when the station is over 10 km away, is older than two hours, or the operator reports it stale or faulty — the tile then says \"no data\". The consequence is deliberate and worth knowing: a camera whose station is 12 km away shows LESS than one that never had a station at all. Open the slot to see the refused reading and which rule refused it; the 10 km limit is ours, the staleness verdicts are the operator's.",
+      "The Finnish camera-to-station pairing is a committed snapshot taken on 2026-09-03, read from the operator's own nearestWeatherStationId rather than guessed by proximity. A station added since then reads as derived until the table is regenerated, and nothing in the app can detect that it has gone out of date.",
     ],
   },
 
