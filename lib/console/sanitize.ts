@@ -1,9 +1,8 @@
 import {
-  createDefaultLayout, MAX_WIDGETS, STAGE_ID,
+  createDefaultLayout, MAX_WIDGETS,
   type GridRect, type ShellLayout, type SegmentId, type StageId, type WidgetInstance,
 } from "@/lib/console/types";
-import { clampSpan } from "@/lib/console/resize";
-import { clampRect, fromLegacy, settle, type GridItem } from "@/lib/terminal/layoutGrid";
+import { clampRailSize, railsFromRects } from "@/lib/terminal/rails";
 import { sanitizeCamslotConfig } from "@/lib/console/widgets/camslot.model";
 
 const SEGMENTS: SegmentId[] = ["left", "right", "bottom"];
@@ -11,62 +10,21 @@ const STAGES: StageId[] = ["map3d", "map2d", "clock"];
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
-/** A rect only if the input is a complete, finite one — a half-written rect is
- *  treated as absent so the board falls back to the legacy migration rather than
- *  rendering one widget at a corrupt position. */
+/**
+ * A rect only if the input is a complete, finite one — a half-written rect is
+ * treated as absent. LEGACY ONLY: nothing in the modern type carries a rect, but
+ * a `?c=` link minted by an older build, or a `tn.console.v1` blob written
+ * before rails shipped, still can. `railsFromRects` (lib/terminal/rails.ts) is
+ * the only thing that reads what this returns.
+ */
 function readRect(v: unknown): GridRect | null {
   if (!v || typeof v !== "object") return null;
   const r = v as Record<string, unknown>;
   const nums = [r.x, r.y, r.w, r.h];
   if (!nums.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
-  return clampRect({ x: r.x as number, y: r.y as number, w: r.w as number, h: r.h as number });
+  return { x: r.x as number, y: r.y as number, w: r.w as number, h: r.h as number };
 }
 
-/**
- * Give every widget a rect, and guarantee the board is legal.
- *
- * ALL-OR-NOTHING on purpose. If even one widget arrives without a rect the whole
- * board is re-seeded from the legacy segment/order/width/height fields, rather
- * than migrating that one widget and leaving the rest. A half-migrated board mixes
- * two coordinate systems — positions that were relative to a segment sitting
- * beside positions relative to the grid — and lands widgets on top of each other
- * with no way to tell which reading was intended.
- *
- * The cases that reach the legacy path: the first load after this feature ships, a
- * `?c=` share link written by an older build, and all six built-in presets (which
- * stay authored in segments, because that is a far more readable way to write a
- * board by hand than a table of x/y/w/h).
- */
-function withRects(widgets: WidgetInstance[], stageRect: GridRect | null): {
-  widgets: WidgetInstance[];
-  stageRect: GridRect | undefined;
-} {
-  const everyoneHasOne = widgets.every((w) => w.rect);
-  const items: GridItem[] = everyoneHasOne
-    ? [
-        ...(stageRect ? [{ id: STAGE_ID, ...stageRect }] : []),
-        ...widgets.map((w) => ({ id: w.id, ...w.rect! })),
-      ]
-    : fromLegacy(widgets, stageRect ? STAGE_ID : null);
-
-  // Settle regardless of provenance: persisted rects are user-editable JSON and a
-  // hand-edited (or older-build) board can overlap.
-  const byId = new Map(settle(items, null).map((i) => [i.id, i]));
-  const stage = byId.get(STAGE_ID);
-
-  return {
-    widgets: widgets.map((w) => {
-      const r = byId.get(w.id);
-      return r ? { ...w, rect: { x: r.x, y: r.y, w: r.w, h: r.h } } : w;
-    }),
-    stageRect: stage ? { x: stage.x, y: stage.y, w: stage.w, h: stage.h } : undefined,
-  };
-}
-
-/** Coerce arbitrary/untrusted input into a valid ShellLayout, or null if unrecoverable.
- *  Guarantees: all three segment keys present; sizes clamped [0,900]; each widget has a
- *  valid segment, clamped height [120,1200], object config, and a legal non-overlapping
- *  grid rect; total widgets <= MAX_WIDGETS. */
 /**
  * Per-type config coercion.
  *
@@ -87,6 +45,11 @@ function readConfig(type: unknown, raw: unknown): Record<string, unknown> {
   return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 }
 
+/** Coerce arbitrary/untrusted input into a valid ShellLayout, or null if unrecoverable.
+ *  Guarantees: all three segment keys present; sizes clamped per rail via
+ *  `clampRailSize`; each widget has a valid segment, a dense per-rail `order`
+ *  starting at 0, a clamped height [120,1200], and an object config; total
+ *  widgets <= MAX_WIDGETS. */
 export function sanitizeLayout(raw: unknown): ShellLayout | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -100,43 +63,64 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
   for (const id of SEGMENTS) {
     const s = segsIn[id] && typeof segsIn[id] === "object" ? (segsIn[id] as Record<string, unknown>) : {};
     segments[id] = {
-      size: clamp(num(s.size, base.segments[id].size), 0, 900),
+      size: clampRailSize(id, num(s.size, base.segments[id].size)),
       collapsed: s.collapsed === true,
     };
   }
 
-  const widgets: WidgetInstance[] = [];
+  interface Parsed {
+    id: string; type: string; segment: SegmentId; order: number; height: number;
+    rect: GridRect | null; collapsed: boolean; config: Record<string, unknown>;
+  }
+  const parsed: Parsed[] = [];
   for (const w of r.widgets as unknown[]) {
-    if (widgets.length >= MAX_WIDGETS) break;
+    if (parsed.length >= MAX_WIDGETS) break;
     if (!w || typeof w !== "object") continue;
     const o = w as Record<string, unknown>;
     if (typeof o.id !== "string" || typeof o.type !== "string") continue;
-    const rect = readRect(o.rect);
-    widgets.push({
+    parsed.push({
       id: o.id,
       type: o.type,
       segment: SEGMENTS.includes(o.segment as SegmentId) ? (o.segment as SegmentId) : "left",
-      order: num(o.order, widgets.length),
-      width: clampSpan(num(o.width, 12)),
+      order: num(o.order, parsed.length),
       height: clamp(num(o.height, 240), 120, 1200),
-      ...(rect ? { rect } : {}),
+      rect: readRect(o.rect), // legacy only — see readRect
       collapsed: o.collapsed === true,
       config: readConfig(o.type, o.config),
     });
   }
+
+  // Legacy stageRect, if the input carries one. `createDefaultLayout` no longer
+  // has one to fall back to — a fresh layout has no rects at all, which is
+  // exactly rule 1 of `railsFromRects`: no rect means trust the stored segment.
+  const legacyStageRect = readRect(r.stageRect);
+  const placements = railsFromRects(
+    parsed.map((p) => ({ id: p.id, segment: p.segment, order: p.order, height: p.height, rect: p.rect })),
+    legacyStageRect,
+  );
+
+  const widgets: WidgetInstance[] = parsed.map((p) => {
+    // `railsFromRects` is total — every id handed in comes back with a placement.
+    const placed = placements.get(p.id)!;
+    return {
+      id: p.id,
+      type: p.type,
+      segment: placed.segment,
+      order: placed.order,
+      height: placed.height,
+      collapsed: p.collapsed,
+      config: p.config,
+    };
+  });
+
   const ids = new Set(widgets.map((w) => w.id));
   const focusedWidgetId =
     typeof r.focusedWidgetId === "string" && ids.has(r.focusedWidgetId) ? r.focusedWidgetId : null;
 
-  // The stage always has a cell. Its absence in the input means "not written yet",
-  // never "no map" — the Terminal has no state in which the stage is not on the board.
-  const placed = withRects(widgets, readRect(r.stageRect) ?? base.stageRect ?? null);
-
   return {
     segments,
     stage: r.stage as StageId,
-    widgets: placed.widgets,
-    stageRect: placed.stageRect,
+    widgets,
     focusedWidgetId,
   };
 }
