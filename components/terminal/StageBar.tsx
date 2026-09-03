@@ -3,21 +3,25 @@
 // inside the stage cell: the centred search box, the right-hand stack (layer
 // legend + the area filter), and the 24px bottom clock bar.
 //
-// THE 22px TOP BAR IS GONE, and with it three things. Two moved, one was deleted:
+// THE 22px TOP BAR WENT FIRST, AND THE FEED HEALTH ROW IT EMPTIED INTO HAS NOW GONE
+// TOO. Between them they took every view control off the screen:
 //
-//   * the projection switch, the basemap picker and Export had already moved to the
-//     FEED HEALTH row (components/terminal/StageControls.tsx);
-//   * SOLO moved there too rather than dying with the bar. It is the control that
-//     hands the whole board to the map, it shipped one release ago, and a band
-//     being removed is not a reason to delete a feature — so it now sits with the
-//     other stage controls, which is where a reader looking for "make the map
-//     bigger" would go next;
-//   * STAGE·FLAT and the cursor coordinate readout were DELETED. The label
-//     duplicated the 3D/2D switch, which shows the same fact by which segment is
-//     lit; the coordinate readout had no second home and is simply gone. Say so
-//     out loud rather than implying it moved — WorldMap's `tn-map-cursor` dispatch
-//     was removed in the same change, because a window event with no listener is
-//     work done every mousemove for nobody.
+//   * the projection switch, the basemap picker, Export (Report + Image) and Solo
+//     moved from this bar to the FEED HEALTH row (StageControls.tsx), and were
+//     deleted when that row was deleted. StageControls.tsx and ExportView.tsx are
+//     gone from the tree, and so is StageSwitch.tsx, which nothing else rendered.
+//   * SOLO IS A REAL REMOVAL, not a relocation. It was the only control that could
+//     set the solo flag, so lib/terminal/solo.ts went with it — leaving the store
+//     behind would have stranded anyone whose `solo: true` was already persisted
+//     with no button left to switch it off, and a hidden board with no way back is
+//     worse than a missing feature.
+//   * the projection and the basemaps ARE still reachable, from ⌘K only
+//     ("Stage → 3D map", "Basemap → …"), because CommandPalette iterates the same
+//     registries the buttons used to.
+//   * STAGE·FLAT and the cursor coordinate readout were DELETED earlier, with the
+//     22px bar. The label duplicated the 3D/2D switch; the coordinate readout had
+//     no second home. WorldMap's `tn-map-cursor` dispatch went with it, because a
+//     window event with no listener is work done every mousemove for nobody.
 //
 // TWO EXISTING COMPONENTS ARE RE-SKINNED, NOT REBUILT: MapSearch (geocode → drop a
 // pin → fly) and WorldClock. They are rendered inside this file's frames and
@@ -302,17 +306,19 @@ export default function StageBar() {
           empty and picking is off. */}
       <CameraTray />
 
+      {/*
+        THE CLOCKS ARE CENTRED UNDER THE GLOBE, and the flex spacer that used to sit
+        beside them is gone rather than kept at width zero. It existed to push the
+        clock hard left and reserve the right-hand end for an attribution that was
+        never typed there — attribution is a licensing requirement for OpenFreeMap,
+        Esri, OpenTopoMap and CARTO and it changes with the basemap, so it stays
+        MapLibre's own AttributionControl (WorldMap.tsx, raised by CSS to sit just
+        above this bar). With nothing to reserve, a spacer is just an off-centre
+        clock: `justify-content: center` on `.tnx-stage-foot` does the centring and
+        this element has no second job to justify keeping it.
+      */}
       <div className="tnx-stage-foot">
         <WorldClock />
-        <span className="tnx-stage-spacer" />
-        {/*
-          The right-hand slot is deliberately EMPTY. The design puts the attribution
-          here, but attribution is a licensing requirement for OpenFreeMap, Esri,
-          OpenTopoMap and CARTO and it changes with the basemap — so it stays MapLibre's own
-          AttributionControl (added in WorldMap.tsx:1322 and still mounted), raised by
-          CSS to sit just above this bar. Re-typing it as static text would be a
-          licence notice that goes stale the first time someone switches basemap.
-        */}
       </div>
     </>
   );

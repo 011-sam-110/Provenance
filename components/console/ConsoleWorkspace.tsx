@@ -18,7 +18,6 @@ import RailSplitter from "@/components/console/RailSplitter";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
-import { useStageSolo } from "@/lib/terminal/solo";
 import { railSizes } from "@/lib/terminal/rails";
 import { useRailSplitter } from "@/lib/terminal/useRailSplitter";
 import { useTerminalSkin } from "@/lib/terminal/skin";
@@ -96,14 +95,16 @@ export default function ConsoleWorkspace() {
   const skin = useTerminalSkin();
   const gridRef = useRef<HTMLDivElement>(null);
   const split = useRailSplitter(gridRef);
-  const solo = useStageSolo();
 
   // The workspace's own box, measured. Rail sizes are clamped against it so two
   // wide rails can never squeeze the map below STAGE_MIN_PX — the clamp needs a
   // container width, and this is the element the rails actually hang off.
   const box = useShellBox(gridRef);
 
-  const sizes = useMemo(() => railSizes(layout, box, solo), [layout, box, solo]);
+  // `false` is the only value the solo flag can take now: the Solo button was the
+  // one control that set it and it has been removed, along with its store. The
+  // parameter stays on the pure rails function, where it is still unit-tested.
+  const sizes = useMemo(() => railSizes(layout, box, false), [layout, box]);
 
   /** Every rail's widgets, already ordered — `order` is dense and 0-based. */
   const byRail = useMemo(() => {
@@ -213,12 +214,6 @@ export default function ConsoleWorkspace() {
           gridRow: rail === "bottom" ? 3 : 1,
         }}
       >
-        {/* HIDDEN while solo, not removed — `hidden` is display:none, so the
-            slots take no space, leave the accessibility tree and drop out of the
-            tab order, while the widgets stay MOUNTED. That distinction is the
-            point: dropping them would throw away every widget's fetched rows and
-            scroll position, so coming back from solo would repopulate an empty
-            board feed by feed. Returning is meant to give you the board you left. */}
         {widgets.map((w) => (
           <div
             key={w.id}
@@ -227,7 +222,6 @@ export default function ConsoleWorkspace() {
             data-segment={w.segment}
             className="tn-seg-slot"
             style={{ height: `${w.height}px` }}
-            hidden={solo}
           >
             <WidgetFrame instance={w} onNudgeKey={(e) => onRailKey(e, w.id)} />
           </div>
@@ -292,7 +286,7 @@ export default function ConsoleWorkspace() {
           <h2 id="tn-cw-stage-h" className="tn-sr-only">{stageLabel}</h2>
           <StageHost stage={layout.stage} />
           {/* The Terminal's stage chrome — top bar (projection, basemaps,
-              cursor), search, legend, clock bar. It REPLACES MapControls /
+              cursor), search, legend, clock bar. It REPLACED MapControls /
               MapSearch / WorldClock, which must not also be mounted or the app
               gets two geocoders, two clock timers and two projection switches. */}
           <StageBar />

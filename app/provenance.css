@@ -620,21 +620,6 @@
   pointer-events: auto;
 }
 
-.pv-hero-eyebrow {
-  font-family: var(--pv-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #3fb4ce;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6em;
-}
-.pv-hero-eyebrow span + span {
-  color: #7a8892;
-}
-
 .pv-hero .pv-h1 {
   /* Capped against the VIEWPORT height as well as its width: the headline now
      shares the stage with the globe, and a purely vw-scaled size pushed the
@@ -681,29 +666,6 @@
   border-color: #e8eef1;
 }
 
-/* The legend that used to float over the aperture, now a line of the copy. */
-.pv-hero-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.1rem 1.6rem;
-  font-family: var(--pv-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.7);
-}
-.pv-hero-legend span {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-.pv-hero-legend i {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  display: block;
-  flex: none;
-}
 
 /* ── the status rail along the foot of the stage ── */
 .pv-hero-foot {
@@ -827,9 +789,6 @@
 .pv-hero.pv-intro .pv-hero-stage > .pv-hero-stars {
   animation: pv-fade 1.4s ease both;
 }
-.pv-hero.pv-intro .pv-hero-eyebrow {
-  animation: pv-fade 0.9s ease 0.35s both;
-}
 .pv-hero.pv-intro .pv-h1 > span {
   animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -845,9 +804,12 @@
 .pv-hero.pv-intro .pv-cta-row {
   animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
 }
-.pv-hero.pv-intro .pv-hero-legend {
-  animation: pv-fade 1s ease 1.35s both;
-}
+/* The eyebrow (0.35s) and the legend (1.35s) were steps in this sequence and both
+   elements are gone from the hero. The remaining delays are ABSOLUTE and
+   independent, not chained, so the choreography still plays in order — it simply
+   has two fewer things arriving. Left at their original timings rather than
+   re-spaced: re-timing the survivors would be a redesign of the launch, and the
+   gaps read as breathing room rather than as a stall. */
 .pv-hero.pv-intro .pv-hero-foot {
   animation: pv-fade 1s ease 1.5s both;
 }

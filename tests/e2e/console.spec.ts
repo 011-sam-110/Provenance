@@ -55,23 +55,22 @@ test("⌘K adds a widget instance", async ({ page }) => {
   await expect(page.locator(".tn-cw")).toHaveCount(before + 1);
 });
 
-test("the stage switch swaps the map projection", async ({ page }) => {
-  // WAS "stage switch swaps to the world clock", clicking a 🕐 button and expecting
-  // `.tn-clock`. That stage was retired before this change — StageSwitch has offered
-  // only 3D/2D since, and the world clock became a map overlay (it is now the
-  // Terminal stage's bottom bar) — so the test could not pass at any commit on this
-  // branch. Rewritten to assert what the control actually does: the projection, read
-  // back off the Terminal stage bar's own live readout rather than off the button we
-  // just clicked, so a button that highlights without driving the map still fails.
-  await page.goto("/");
-  await expect(page.locator(".tnx-stage-bar")).toBeVisible();
-
-  await page.locator(".tn-stage-switch button", { hasText: "3D" }).click();
-  await expect(page.locator(".tnx-stage-label")).toHaveText(/GLOBE/);
-
-  await page.locator(".tn-stage-switch button", { hasText: "2D" }).click();
-  await expect(page.locator(".tnx-stage-label")).toHaveText(/FLAT/);
-});
+// THE "stage switch swaps the map projection" TEST IS DELETED, not rewritten.
+//
+// It drove `.tn-stage-switch`, the 3D/2D projection control. That control has been
+// removed from the console along with the FEED HEALTH band it sat in, and
+// components/console/StageSwitch.tsx was deleted with it — there is no button left
+// for this test to click, so no selector change could save it.
+//
+// NOT REPLACED WITH A ⌘K EQUIVALENT, deliberately. The projection is still
+// changeable from the command palette ("Stage → 3D map" / "Stage → 2D map", see
+// CommandPalette.tsx), so the CAPABILITY is intact and a palette-driven test could
+// be written. It is not written here because this spec was already failing before
+// this change for reasons that have nothing to do with it: it navigates to "/",
+// which is the marketing site rather than the console at "/app", and it asserted on
+// `.tnx-stage-bar` and `.tnx-stage-label`, two classes the stage's 22px top bar took
+// with it when that band was removed. Adding a green test beside that rot would
+// disguise it. The e2e suite needs a pass of its own, and this note is the marker.
 
 test("WALL and CONSOLE re-lay the board without losing a widget", async ({ page }) => {
   // WAS "collapsing the left segment hides its widgets", which dragged `.tn-grip`.

@@ -33,7 +33,6 @@
 import { BRAND } from "@/lib/brand";
 import { SIGNALS } from "@/lib/signals/registry";
 import { BUILTIN_PRESETS } from "@/lib/console/presets";
-import { BASEMAPS } from "@/lib/basemaps";
 
 /**
  * Counts are DERIVED, never typed. A tour whose sixth chapter is about not being
@@ -62,20 +61,13 @@ const BOARD_WORD = ["no", "one", "two", "three", "four", "five", "six", "seven",
  *  so a new board appears in the tour the moment it appears in the switcher. */
 const BOARD_LIST = BUILTIN_PRESETS.map((p) => `${p.title} (${p.blurb})`).join(" · ");
 
-/**
- * The basemap count, derived for exactly the reason BOARD_COUNT is. Two steps below
- * used to say "the four basemaps" and then name four of them in prose, which was
- * true until a fifth (Streets, on OpenFreeMap) was added and nothing failed. The
- * registry is already in the client bundle - the stage bar maps over it to draw the
- * buttons - so reading the number from it costs nothing and cannot rot.
- */
-const BASEMAP_COUNT = Object.keys(BASEMAPS).length;
-const BASEMAP_WORD = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"][BASEMAP_COUNT] ?? String(BASEMAP_COUNT);
-/** "Dark, Light, Streets, Satellite and Topographic" - straight from the registry. */
-const BASEMAP_LIST = (() => {
-  const labels = Object.values(BASEMAPS).map((b) => b.label);
-  return labels.length > 1 ? `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}` : labels[0];
-})();
+// THE BASEMAP CONSTANTS ARE GONE with the steps that used them. BASEMAP_COUNT,
+// BASEMAP_WORD and BASEMAP_LIST existed for the two steps that named the basemap
+// buttons; those buttons have been removed from the console, so a tour step
+// pointing at them would have no target and TourOverlay silently drops a step whose
+// target it cannot find. Deriving a count nobody prints is not harmless — it is the
+// kind of dead constant that gets re-wired into new copy years later and starts
+// asserting something the UI no longer offers.
 
 // There is deliberately NO camera-feed constant here. `SOURCES` holds twelve
 // adapters and `CAMERA_REGIONS` eleven entries — the São Paulo feed has no region
@@ -149,14 +141,25 @@ export interface TourChapter {
  * 1 → 2: the eight-step run became this chaptered walkthrough, and one of its
  * targets had been dead for a while. Everyone deserves the re-invite.
  * 2 → 3: the chrome moved, then most of it was removed. The projection switch, the
- * basemaps, Export and Solo are all in the FEED HEALTH row now; search is centred;
+ * basemaps, Export and Solo all moved into the FEED HEALTH row; search is centred;
  * the area filter has a name, a home under the key and a step of its own. Three
  * whole bands went — the breaking strip, the 24px footer and the stage's own top
- * bar — taking six steps with them, and CONSOLE/WALL went with its buttons. The
- * console is three bands, not four-plus-one, and a tour that walks someone to a
- * band that is not there is worse than no tour.
+ * bar — taking six steps with them, and CONSOLE/WALL went with its buttons.
+ * 3 → 4: the FEED HEALTH band itself is gone, and everything that had moved into it
+ * went with it — Solo (and its store, since it was the only control that set it),
+ * the 3D/2D switch, the five basemap buttons and the Report/Image exports. Six more
+ * steps went with them: orientation-health, map-projection, map-basemaps, map-solo,
+ * trust-health and trust-cells. Deleting them is not optional bookkeeping —
+ * TourOverlay drops a step whose target it cannot find WITHOUT SAYING SO, so a
+ * stale step is an invisible hole in the walkthrough rather than a visible error.
+ * The console is two bands now: the header, and the stage.
+ *
+ * NOTHING THE DELETED STEPS TAUGHT IS UNREACHABLE. Every basemap and both map
+ * stages are still in ⌘K (CommandPalette.tsx iterates the same registries), which
+ * is why the palette step still says "change basemap" and is still true. Solo is
+ * the one exception and it is a real removal, not a relocation.
  */
-export const TOUR_VERSION = 3;
+export const TOUR_VERSION = 4;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Reusable actions. Named because several chapters need the same surface, and a
@@ -217,7 +220,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Start with the shape of it",
         body:
-          `${BRAND.name} is one screen in three horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
+          `${BRAND.name} is one screen in two horizontal bands. Learn the bands and everything else has an address. There is no login and no payment; most sources are keyless, and the few that need a free API key are labelled as such rather than left looking broken.`,
         placement: "center",
       },
       {
@@ -229,17 +232,9 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         placement: "bottom",
       },
       {
-        id: "orientation-health",
-        target: [".tnx-feed-cells", ".tnx-feed"],
-        title: "Band 2 — feed health",
-        body:
-          `One cell per data layer, coloured by whether its last fetch worked. Hover a cell to name the layer and read its state. The right-hand end of this band holds the map's own controls: Solo, the 3D/2D switch, the ${BASEMAP_WORD} basemaps and the two exports. Cells are also switches: clicking one turns that layer on or off, the same as its switch in the Sources rail — so a click here changes the map, it does not just inspect it.`,
-        placement: "bottom",
-      },
-      {
         id: "orientation-stage",
         target: ".tn-cw-stage",
-        title: "Band 3 — the stage",
+        title: "Band 2 — the stage",
         body:
           "The map. Drag to pan, scroll to zoom, click anything on it to select it. Every layer you switch on paints here, and it is the one panel that is always present.",
         placement: "center",
@@ -247,7 +242,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       {
         id: "orientation-widgets",
         target: [".tn-seg-slot", ".tn-cw"],
-        title: "Band 3 also — the widgets",
+        title: "Band 2 also — the widgets",
         body:
           "The stage shares a twelve-column grid with the widgets around it. Most watch a single source; a few combine several. All of them can be moved, resized, duplicated or removed, and a later chapter takes one apart.",
         placement: "left",
@@ -259,7 +254,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "map",
     title: "The map",
-    summary: "Projection, basemaps, search, the legend and pins",
+    summary: "Search, the legend, the area filter and pins",
     icon: "◉",
     steps: [
       {
@@ -269,22 +264,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         body:
           "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution, plus a ⬇ Export for that one record and an ✕ to close. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
         placement: "center",
-      },
-      {
-        id: "map-projection",
-        target: ".tnx-stage-proj",
-        title: "3D globe ⇄ 2D flat",
-        body:
-          "The same data, two projections. The globe is better for orbital and long-haul context; flat is better for reading dense regions and for anything you want to compare side by side. STAGE·GLOBE or STAGE·FLAT, in the corner of the map itself, tells you which you are in.",
-        placement: "bottom",
-      },
-      {
-        id: "map-basemaps",
-        target: ".tnx-basemaps",
-        title: "Basemaps",
-        body:
-          `${BASEMAP_LIST}. Pick by task: imagery to see what a place actually looks like, topographic for elevation, Streets for named roads and 3D buildings, light or dark to let the data layers carry the colour.`,
-        placement: "bottom",
       },
       {
         id: "map-search",
@@ -301,14 +280,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         body:
           "It lists the layers that are on right now, in the colours the map is actually painting them. Cameras are coloured by source region, aircraft by type, satellites by category, and each signal layer brings its own — so the key is built from what is on screen rather than fixed in advance.",
         placement: "left",
-      },
-      {
-        id: "map-solo",
-        target: ".tn-solo-btn",
-        title: "Give the board to the map",
-        body:
-          "First control in the FEED HEALTH band. Solo hides every widget and lets the map fill the workspace; the same button then reads Board and puts them all back exactly as they were. Nothing is closed and nothing is lost — it is a view of the same board, for when the panels around the edge are the thing in your way.",
-        placement: "bottom",
       },
       {
         id: "map-area",
@@ -374,7 +345,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: ".tnx-hdr-skin",
         title: "Dark or light",
         body:
-          "The button names the skin you would get, not the one you are in. The basemap follows it — dark chrome pairs with the dark map, light with the light one — unless you have deliberately chosen satellite or topographic, which is left alone.",
+          "The button names the skin you would get, not the one you are in. The basemap follows it — dark chrome pairs with the dark map, light with the light one — unless you have deliberately chosen another, which is left alone. The console ships no basemap buttons; ⌘K is where you change one.",
         placement: "bottom",
       },
     ],
@@ -643,24 +614,8 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "How to tell what to trust",
         body:
-          "Everything on this map is drawn at the same visual weight, whether an instrument measured it or a machine guessed it from a news wire. These are the four places the console tells you which is which.",
+          "Everything on this map is drawn at the same visual weight, whether an instrument measured it or a machine guessed it from a news wire. These are the three places the console tells you which is which.",
         placement: "center",
-      },
-      {
-        id: "trust-health",
-        target: [".tnx-feed-cells", ".tnx-feed"],
-        title: "Five states, not two",
-        body:
-          "Each cell is one of five states, and the colour is the whole readout — there is no numeric tally anywhere, on purpose, because a total is the thing that hides one dead feed among thirty-six healthy ones. LIVE means the last fetch worked, including layers that are connected and genuinely have nothing to report. LAG is behind. DOWN failed, or has gone quiet for hours, or had a credential refused. NEEDS KEY is never fetched at all because this deployment holds no key for it. DORMANT is switched off, which is neither a fault nor a clean bill of health. Hover any cell for that layer's state in words.",
-        placement: "bottom",
-      },
-      {
-        id: "trust-cells",
-        target: [".tnx-feed-cells", ".tnx-feed"],
-        title: "Per-layer, not just a total",
-        body:
-          "Each cell is one layer's current state, so a single dead feed is visible rather than averaged away into a reassuring summary. Hover for its name and the full wording; click to switch that layer on or off.",
-        placement: "bottom",
       },
       {
         id: "trust-counts",

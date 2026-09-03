@@ -245,8 +245,12 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
   },
 };
 
-// POSITRON by default, and it has to be: this constant is the map half of a PAIR
-// whose chrome half is DEFAULT_TERMINAL_SKIN, and that is now light.
+// STREETS by default. It was positron, chosen as the map half of a PAIR whose
+// chrome half is DEFAULT_TERMINAL_SKIN — and that pairing still holds, because
+// Liberty is a light vector style: the constraint the pair exists to satisfy is
+// "do not wrap light chrome around a near-black map", and Streets satisfies it as
+// well as positron did. What Streets adds is named roads and 3D buildings, which
+// is what the landing globe is now showing instead of four widgets.
 //
 // The pairing is the whole point, and it used to read the other way round. When the
 // Terminal opened as near-black chrome, Esri's photographic imagery under it made
@@ -260,8 +264,12 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
 // tests/unit/terminal-skin.test.ts pins the two together, so the next person to
 // change either one finds out from a red test rather than from a screenshot.
 //
-// Dark, Streets, Satellite and Topographic all stay one tap away in the view
-// controls; nothing was removed.
+// NOTHING IS ONE TAP AWAY ANY MORE, and that is why this constant now carries the
+// whole decision. The view-control cluster — the 3D/2D switch, the five basemap
+// buttons and the two exports — has been removed from the console, so a visitor
+// cannot change the basemap from the UI at all. Every other entry in BASEMAPS is
+// still reachable, but only by deep link (`?base=dark`), and the registry keeps
+// them for exactly that reason rather than out of momentum.
 //
 // This does NOT reintroduce the persistence hazard lib/mapView.ts warns about. The
 // basemap is still deliberately unpersisted: this constant is the value the store
@@ -269,4 +277,4 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
 // the async style.load the way a localStorage read after first paint would. A
 // deep-link `?base=satellite` still wins (readInitialViewState runs before the map
 // is built).
-export const DEFAULT_BASEMAP: BasemapKey = "positron";
+export const DEFAULT_BASEMAP: BasemapKey = "streets";

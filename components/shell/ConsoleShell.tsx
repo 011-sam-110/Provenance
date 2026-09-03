@@ -24,7 +24,6 @@ import TerminalHeader from "@/components/terminal/TerminalHeader";
 import BootSequence from "@/components/terminal/BootSequence";
 import { BOOT_MS, bootOverrideFromSearch, loadBootSeen, shouldPlayBoot } from "@/lib/terminal/boot";
 import { SIGNALS } from "@/lib/signals/registry";
-import FeedHealthStrip from "@/components/terminal/FeedHealthStrip";
 import { focusStageSearch } from "@/components/terminal/StageBar";
 import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
 import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
@@ -40,7 +39,6 @@ import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
 import { viewModeStore } from "@/lib/shell/viewMode";
-import { soloStore } from "@/lib/terminal/solo";
 import { assetsStore } from "@/lib/events/assets";
 import { alertingStore } from "@/lib/events/alerting";
 import ConsoleWorkspace from "@/components/console/ConsoleWorkspace";
@@ -92,7 +90,6 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     langStore.hydrate();
     scopeStore.hydrate();
     viewModeStore.hydrate();
-    soloStore.hydrate();
     assetsStore.hydrate();
     alertingStore.hydrate();
     shellLayoutStore.hydrate();
@@ -289,7 +286,6 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           targets. Mounting both would duplicate all of those in the DOM and make
           getByTestId("stat-line") strict-mode ambiguous in the e2e suite. */}
       <TerminalHeader onOpenPalette={() => setPaletteOpen(true)} />
-      <FeedHealthStrip />
       <ConsoleWorkspace />
       {/*
         WHAT THE FOOTER USED TO ANNOUNCE, KEPT WITHOUT THE BAND.

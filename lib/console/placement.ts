@@ -6,7 +6,7 @@
 // shell. Threading "which widget wants to be placed" through props would mean
 // plumbing state through every intermediate layer that has nothing to do with
 // placement. A one-request store lets any ＋ ask a question and one picker
-// instance answer it, exactly like lib/terminal/solo.ts does for stage solo —
+// instance answer it, the way lib/terminal/solo.ts used to for stage solo —
 // same shape (module state + listener Set + useSyncExternalStore), deliberately.
 //
 // WHY NOT PERSISTED. A pending "where should this go?" question is mid-gesture

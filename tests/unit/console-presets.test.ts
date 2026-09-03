@@ -3,26 +3,40 @@ import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
 import { effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
+import { listWidgetTypes } from "@/lib/console/registry";
+import "@/lib/console/widgets";
 
 const CORE_WIDGETS = new Set(["events", "news", "aviation", "satellites", "markets", "headlines", "locate", "anomaly", "camslot"]);
 const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
 
-// Deliberately FEW: six broad boards, one per navbar-pill slot. Ids are stable (used by
-// the first-run seed, the ⌘K Profiles section, the central preset pill, and shared URLs).
-const BOARD_IDS = ["overview", "situation", "earth", "mobility", "markets", "tools", "streets"];
+// TWO boards, down from seven. Conflict, Hazards, Transit, Markets & Cyber and Recon
+// were removed outright and Brief was emptied and renamed Globe. Ids are stable (used
+// by the first-run seed, the ⌘K Profiles section, the central preset pill, and shared
+// URLs), which is why the landing board kept the id "overview" through the rename.
+const BOARD_IDS = ["overview", "streets"];
 
-// The seven core monitoring cards the union of boards must all surface (the "use all our
-// widgets" intent). `locate` is a utility card, not a monitoring board card, so it's exempt.
+// THE LANDING BOARD IS DELIBERATELY EMPTY, so "every board has at least one widget" is
+// no longer true and must not be asserted. What replaces it is narrower and still
+// catches the thing that mattered: a board may not exceed the widget cap, and only the
+// landing board may be empty. A second empty board would be a build() that silently
+// stopped composing, which is the bug the old assertion was really guarding.
+const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID]);
+
+// The seven core monitoring cards that must stay REGISTERED (and so addable from ⌘K)
+// even though no board features them any more. `locate` is a utility card, not a
+// monitoring card, so it is exempt.
 const CORE_MONITORS = ["events", "news", "camslot", "aviation", "satellites", "markets", "headlines"];
 
-test("the board lineup is exactly the seven boards, each non-empty and within the cap", () => {
+test("the board lineup is exactly the two boards, each within the cap", () => {
   const ids = BUILTIN_PRESETS.map((p) => p.id);
   expect(ids).toEqual(BOARD_IDS);
   for (const p of BUILTIN_PRESETS) {
     const l = p.build();
-    expect(l.widgets.length).toBeGreaterThan(0);
+    if (!MAY_BE_EMPTY.has(p.id)) {
+      expect(l.widgets.length, `board "${p.id}" composed no widgets`).toBeGreaterThan(0);
+    }
     expect(l.widgets.length).toBeLessThanOrEqual(MAX_WIDGETS);
   }
 });
@@ -203,10 +217,21 @@ test("no board asks for a rail wider than a rail is allowed to be", () => {
   }
 });
 
-test("the default landing preset exists and seeds a real board", () => {
+test("the default landing preset exists, and seeds an EMPTY board on the globe", () => {
   const def = BUILTIN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID);
   expect(def, `DEFAULT_PRESET_ID "${DEFAULT_PRESET_ID}" must be a built-in`).toBeDefined();
-  expect(def!.build().widgets.length).toBeGreaterThan(0);
+
+  // INVERTED ON PURPOSE. This used to assert the landing board had widgets; the product
+  // decision is now that it has none — /app opens on a bare rotating globe. Asserting
+  // the zero rather than deleting the test keeps the direction pinned: if a widget ever
+  // creeps back onto the landing board, this goes red and someone has to mean it.
+  const l = def!.build();
+  expect(l.widgets, "the landing board must stay empty").toEqual([]);
+
+  // The stage is the other half of "just the rotating globe". WorldMap only runs its
+  // idle spin in the 3D projection, and with the 3D/2D switch removed from the console
+  // this literal is the only thing that can choose it for a new visitor.
+  expect(l.stage, "the landing board must open on the 3D globe").toBe("map3d");
 });
 
 test("every preset carries a persona blurb (who it's for)", () => {
@@ -215,10 +240,14 @@ test("every preset carries a persona blurb (who it's for)", () => {
   }
 });
 
-test("the mobility board puts an aviation widget on the canvas with a stage", () => {
-  const l = BUILTIN_PRESETS.find((p) => p.id === "mobility")!.build();
-  expect(l.widgets.some((w) => w.type === "aviation")).toBe(true);
-  expect(["map2d", "map3d", "clock"]).toContain(l.stage);
+// The "mobility board puts an aviation widget on the canvas" test is GONE because the
+// Transit board is gone. What it actually protected — that a board declares a stage the
+// shell can render — applies to every board, so it is asserted for all of them here
+// rather than for one board that no longer exists.
+test("every board declares a stage the shell can render", () => {
+  for (const p of BUILTIN_PRESETS) {
+    expect(["map2d", "map3d", "clock"], `board "${p.id}"`).toContain(p.build().stage);
+  }
 });
 
 test("every preset references only real core widgets, signal widgets or recon tools", () => {
@@ -230,10 +259,14 @@ test("every preset references only real core widgets, signal widgets or recon to
   }
 });
 
-test("the Tools board carries the six recon widgets", () => {
-  const l = BUILTIN_PRESETS.find((p) => p.id === "tools")!.build();
+// The "Tools board carries the six recon widgets" test is GONE with the Recon board.
+// The recon widgets themselves are NOT gone — they are still registered and still
+// addable from ⌘K — so the guarantee moves to the registry, which is now the only thing
+// standing between them and being unreachable.
+test("the recon widgets survive the loss of the board that showcased them", () => {
+  const registered = new Set(listWidgetTypes().map((t) => t.id));
   for (const id of RECON_WIDGETS) {
-    expect(l.widgets.some((w) => w.type === id), `tools board missing "${id}"`).toBe(true);
+    expect(registered.has(id), `recon widget "${id}" is no longer registered`).toBe(true);
   }
 });
 
@@ -242,18 +275,29 @@ test("the Tools board carries the six recon widgets", () => {
 // signal group must be surfaced by at least one board.
 const EXEMPT_GROUPS = new Set(["Civic safety"]);
 
-test("the boards together exercise the whole catalogue (all core cards + every global signal group)", () => {
-  const used = new Set(BUILTIN_PRESETS.flatMap((p) => p.build().widgets.map((w) => w.type)));
+// THE COVERAGE GUARANTEE MOVED FROM THE BOARDS TO THE REGISTRY, and that is a real
+// weakening rather than a rename — say so plainly. The old test asserted that the seven
+// boards, between them, put every core card and every signal group in front of a user
+// who never opened a menu. Two boards cannot do that and are not trying to: the landing
+// board is empty by design and Streets is four camera slots.
+//
+// What is still worth pinning is the thing that would make the removal DESTRUCTIVE
+// rather than merely narrowing: a widget that no board mentions must still be reachable.
+// Every core card and every non-exempt signal group must therefore still have a
+// registered widget type, because the ⌘K palette builds itself from that registry
+// (CommandPalette.tsx) and it is now the only route to most of these.
+//
+// If this goes red, a widget has become genuinely unreachable — not merely unfeatured.
+test("every core card and signal group is still REACHABLE, even with no board featuring it", () => {
+  const registered = new Set(listWidgetTypes().map((t) => t.id));
 
-  // All seven core monitoring cards appear across the lineup.
   for (const core of CORE_MONITORS) {
-    expect(used.has(core), `no board uses the core "${core}" widget`).toBe(true);
+    expect(registered.has(core), `core widget "${core}" is no longer registered`).toBe(true);
   }
 
-  // At least one signal from every non-exempt registered signal group is surfaced somewhere.
   for (const { group, sources } of signalsByGroup()) {
     if (EXEMPT_GROUPS.has(group)) continue;
-    const covered = sources.some((s) => used.has(`signal:${s.id}`));
-    expect(covered, `no board surfaces any signal from the "${group}" group`).toBe(true);
+    const covered = sources.some((s) => registered.has(`signal:${s.id}`));
+    expect(covered, `no registered widget for any signal in the "${group}" group`).toBe(true);
   }
 });

@@ -245,20 +245,8 @@ a { color: var(--tn-accent); }
    The note is a live region: it reports the outcome, including the failures
    (see components/console/ExportView), so an empty capture is something the
    user is TOLD about rather than something they discover on opening the file. */
-.tn-export { display: flex; align-items: center; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
-.tn-export-btn {
-  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--tn-text-muted);
-  background: transparent; border: none; border-radius: 7px; padding: 5px 9px; cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.tn-export-btn:hover:not(:disabled) { background: var(--tn-surface-solid); color: var(--tn-accent); }
-.tn-export-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Empty until something happens, and it must not reserve width while empty or the
    control cluster shifts every time a message appears and expires. */
-.tn-export-note:not(:empty) {
-  font-size: 11px; color: var(--tn-text-muted); padding: 0 8px 0 4px; max-width: 22ch;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
 
 .tn-icon-btn {
   font: inherit; font-size: 13px; color: var(--tn-text-muted);
@@ -272,7 +260,6 @@ a { color: var(--tn-accent); }
 @media (max-width: 860px) { .tn-tagline { display: none; } }
 @media (max-width: 720px) { .tn-basemap { display: none; } }
 /* The export note is the first thing to go on a narrow stage; the buttons stay. */
-@media (max-width: 720px) { .tn-export-note { display: none; } }
 
 /* ── Compact live-data pulse (replaces the three tall Metric blocks) ────────── */
 .tn-top-pulse {
@@ -1415,9 +1402,6 @@ a { color: var(--tn-accent); }
 
 /* ====================================================================   StageHost + WorldClock + StageSwitch — Task 8
    =========================================================================== */
-.tn-stage-switch{display:inline-flex;gap:2px;background:#fff;border:1px solid #d7dee6;border-radius:7px;padding:2px}
-.tn-stage-switch button{border:0;background:none;font-size:11px;font-weight:700;color:#5a6470;padding:2px 8px;border-radius:5px;cursor:pointer}
-.tn-stage-switch button.is-on{background:#27313b;color:#fff}
 
 /* ====================================================================   ConsoleWorkspace + Segment — Task 7
    =========================================================================== */
@@ -1639,7 +1623,6 @@ a { color: var(--tn-accent); }
 .tn-detail-title { font-weight: 600; font-size: 15px; }
 .tn-detail-body { flex: 1 1 auto; overflow: auto; padding: 14px; }
 .tn-detail-generic { max-width: 900px; margin: 0 auto; }
-.tn-stage-focus { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 12px; }
 
 .tn-evd { max-width: 1100px; margin: 0 auto; }
 .tn-evd-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; }
@@ -3001,7 +2984,6 @@ a.tn-w-place { display: flex; align-items: center; }
 /* ---- (a) small pill controls -------------------------------------------------- */
 .tn-ev-tab, .tn-ev-hidden { min-height: 26px; }
 .tn-ev-tab { padding: 2px 12px; }
-.tn-stage-switch button { min-height: 26px; min-width: 34px; }
 .tn-mapsearch-input { min-height: 26px; }
 
 @media (max-width: 900px) {
@@ -3017,7 +2999,6 @@ a.tn-w-place { display: flex; align-items: center; }
   .tn-mapsearch { padding: 0 12px; }
   .tn-mapsearch-input { min-height: 44px; }
 
-  .tn-stage-switch button { min-height: 44px; min-width: 44px; }
 
   /* ---- (a)+(b) widget header: 40px box, 44px hit, 20px painted ring ------- */
   .tn-cw-help, .tn-cw-bell, .tn-cw-expand, .tn-cw-menu {
@@ -3213,8 +3194,13 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-fs-lg: calc(var(--tnx-fs) + 4px);
 
   --tnx-hdr-h: 38px;
-  /* --tn-topbar-h is calc(hdr + feed) and follows these two to 64px unedited. */
-  --tnx-feed-h: 26px;
+  /* --tn-topbar-h IS NOW JUST THE HEADER. It used to be calc(hdr + feed) = 64px,
+     and --tnx-feed-h is gone with the FEED HEALTH band it measured. This is the
+     load-bearing half of removing that band: --tn-topbar-h is what every fixed
+     overlay in this file offsets itself by (the Sources rail, the command palette,
+     the settings drawer, the coverage panel, .tn-cw-shell's inset), so leaving the
+     26px in would have dropped all of them 26px down the page and left a gap under
+     the header where the band used to be. */
 
   /* ── Radius, gutter and shadow ────────────────────────────────────────────
      The 1px gutter is REVERSED here, deliberately, and the reasoning it
@@ -3304,7 +3290,7 @@ a.tn-w-place { display: flex; align-items: center; }
      explicitly to `bottom: 28px` further down this file, clear of the stage's own
      24px world-clock bar, precisely because it must not depend on a band that can
      be removed. It is a licensing requirement (Esri / OpenTopoMap / CARTO). */
-  --tn-topbar-h: calc(var(--tnx-hdr-h) + var(--tnx-feed-h));
+  --tn-topbar-h: var(--tnx-hdr-h);
   --tn-ticker-h: 0px;
 
   font-family: var(--tnx-font-mono);
@@ -3846,8 +3832,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   overflow: hidden;
   background: var(--tnx-bg);
 }
-.tn-shell.tn-terminal > .tnx-hdr,
-.tn-shell.tn-terminal > .tnx-feed { flex: 0 0 auto; }
+.tn-shell.tn-terminal > .tnx-hdr { flex: 0 0 auto; }
 
 /* ── The workspace band ────────────────────────────────────────────────────
    `.tn-cw-shell` stops being an absolute canvas, so `inset` is reset explicitly.
@@ -4525,92 +4510,38 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
 .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: var(--tnx-fs-sm); border-radius: var(--tnx-r-sm); }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
    resting outline for a focus ring to thicken. */
-.tn-terminal .tnx-hdr :focus-visible,
-.tn-terminal .tnx-feed :focus-visible {
+.tn-terminal .tnx-hdr :focus-visible {
   outline: 2px solid var(--tnx-accent); outline-offset: -2px;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   2. FEED HEALTH STRIP — 22px, one cell per REGISTERED signal layer (37 today)
+   2. (GONE) FEED HEALTH STRIP — the band, its cells and the view controls it held
+   ════════════════════════════════════════════════════════════════════════════
+   The whole section is deleted rather than commented out. It styled .tnx-feed,
+   .tnx-feed-label, .tnx-feed-cells, .tnx-feed-cell, .tnx-view-controls and
+   .tnx-num, and every component that rendered those classes has been removed:
+   FeedHealthStrip, StageControls and ExportView. The five LIVE/LAG/DOWN/NEEDS
+   KEY/OFF tallies the band used to summarise are still printed by the footer
+   ticker from the same feedCounts() (TickerLine.tsx), so no number was lost with
+   the paint — but per-layer state is now read from the Sources rail, which was
+   always the labelled, keyboard-reachable version of this strip.
    ════════════════════════════════════════════════════════════════════════════ */
-.tn-terminal .tnx-feed {
-  height: var(--tnx-feed-h); display: flex; align-items: stretch;
-  /* WAS `--tnx-panel`, which made this the brightest full-width band in the
-     console — for the row nobody reads. That is an inverted hierarchy: the
-     loudest surface on screen was carrying the least important content, while
-     the widgets it sat above were the same white and therefore could not
-     out-rank it. It is chrome, so it wears `--tnx-chrome` and reads as one unit
-     with `.tnx-hdr` directly above it, which already did. */
-  background: var(--tnx-chrome); border-bottom: 1px solid var(--tnx-line-strong);
-  font-size: var(--tnx-fs-xs); user-select: none;
-}
-.tn-terminal .tnx-feed-label {
-  display: flex; align-items: center; padding: 0 9px; letter-spacing: 0.12em;
-  /* `--tnx-ink-dim`, not `--tnx-ink-faint`, and this is required rather than
-     preferred: once the strip moved onto `--tnx-chrome`, ink-faint measured
-     2.66:1 there — under AA for small text, and this label is 10px. ink-dim
-     gives 4.72:1. `.tnx-hdr-board` already reaches for ink-dim over chrome for
-     exactly this reason. */
-  color: var(--tnx-ink-dim); border-right: 1px solid var(--tnx-line); flex: none;
-}
-.tn-terminal .tnx-feed-cells { flex: 1; display: flex; gap: 2px; padding: 4px 8px; min-width: 0; }
-.tn-terminal .tnx-feed-cell {
-  flex: 1; min-width: 3px; border: 0; padding: 0; border-radius: 1px; cursor: pointer;
-}
-.tn-terminal .tnx-feed-cell:hover { outline: 1px solid var(--tnx-ink); outline-offset: 0; }
-/* The right-hand end of the strip, where the hover readout and the five tallies
-   used to print. It holds the map's VIEW controls now — projection, basemap,
-   export. Those numbers were not deleted: the footer ticker prints all five from
-   the same feedCounts() this strip used to call. */
-.tn-terminal .tnx-view-controls {
-  display: flex; align-items: stretch; flex: none;
-  border-left: 1px solid var(--tnx-line);
-}
-.tn-terminal .tnx-num { font-variant-numeric: tabular-nums; }
+/* ONE CONFLICT WAS RESOLVED HERE, IN FAVOUR OF DELETION. #152 ("Open the light
+   skin's value range") had just restyled this band: it moved the strip onto
+   `--tnx-chrome` because a bright full-width band for the row nobody reads is an
+   inverted hierarchy, and lifted the label to `--tnx-ink-dim` because
+   `--tnx-ink-faint` measured 2.66:1 on that surface, under AA for 10px text.
+   Both fixes were real and both are moot: the band they corrected no longer
+   renders. Nothing else from #152 was dropped — the rest of its light-skin work
+   merged cleanly and is untouched. */
 
 /* ════════════════════════════════════════════════════════════════════════════
    3. STAGE CHROME — bars, search, legend, clocks (all inside the stage cell)
    ════════════════════════════════════════════════════════════════════════════ */
-.tn-terminal .tnx-stage-spacer { flex: 1; min-width: 0; }
-.tn-terminal .tnx-basemaps { display: flex; align-items: stretch; }
-.tn-terminal .tnx-basemap-btn,
-.tn-terminal .tnx-stage-proj .tn-stage-switch button {
-  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
-}
-.tn-terminal .tnx-basemap-btn:hover,
-.tn-terminal .tnx-stage-proj .tn-stage-switch button:hover { color: var(--tnx-ink); }
-.tn-terminal .tnx-basemap-btn[aria-pressed="true"],
-.tn-terminal .tnx-stage-proj .tn-stage-switch button.is-on {
-  background: var(--tnx-accent); color: var(--tnx-bg);
-}
-.tn-terminal .tnx-stage-proj { display: flex; align-items: stretch; }
-.tn-terminal .tnx-stage-proj .tn-stage-switch {
-  display: flex; align-items: stretch; gap: 0;
-  background: none; border: 0; padding: 0; border-radius: var(--tnx-r-sm); box-shadow: none;
-}
-.tn-terminal .tnx-stage-proj .tn-stage-focus {
-  display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: var(--tnx-fs-xs);
-}
-
-/* Export this view. Same button family as the basemaps to its left — it is a
-   property of the view, so it belongs on the view's own bar. The note is a live
-   region carrying the OUTCOME, including the refusals (see ExportView): a capture
-   that came back empty is something the user is told about, not something they
-   discover on opening the file. */
-/* Area-of-interest control. Same button family as export and the basemaps —
-   these are all properties of the view, and they share one bar. */
-/* Solo — gives the board to the map. Same family as the rest of the bar. */
-.tn-terminal .tn-solo-btn {
-  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
-}
-.tn-terminal .tn-solo-btn:hover { color: var(--tnx-ink); }
-.tn-terminal .tn-solo-btn[aria-pressed="true"] { background: var(--tnx-accent); color: var(--tnx-bg); }
+/* The basemap buttons, the 3D/2D projection switch and Solo were all styled here
+   as one button family. All three are gone from the console: the basemaps and the
+   projection are still changeable from ⌘K, and Solo is a real removal. The area
+   filter below kept its own rules because it is still on screen. */
 
 /* Area filter — under the legend in the right-hand stack. It reads as a panel
    rather than a chip because it is no longer in a row of chips: it is a full-width
@@ -4655,40 +4586,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
 .tn-terminal .tn-aoi-live {
   font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--tnx-accent); line-height: 1.35;
-}
-
-/* The terminal override has to UNDO the chip, not just re-flex it.
-   `.tn-export` outside this scope is a rounded pill — `background:var(--tn-chip-bg);
-   border-radius:9px; padding:2px; gap:2px` — which is right in the old control
-   cluster and wrong here. Overriding only `display` and `align-items` left the
-   background, the radius, the padding and the gap in force, so REPORT and IMAGE
-   rendered as a grey rounded pill inset in a bar of flush square segments, and
-   the 2px padding made them 17px tall against their neighbours' 21px, so their
-   divider rules stopped short of the bar's edges. Every property the chip sets is
-   reset here rather than left to the cascade: a partial override is what caused
-   this in the first place. */
-.tn-terminal .tn-export {
-  display: flex; align-items: stretch;
-  background: none; border-radius: var(--tnx-r); padding: 0; gap: 0;
-}
-.tn-terminal .tn-export-btn {
-  border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
-}
-.tn-terminal .tn-export-btn:hover:not(:disabled) { color: var(--tnx-ink); }
-.tn-terminal .tn-export-btn:disabled { opacity: 0.45; cursor: progress; }
-/* Export is the last cluster on the row, so its final divider would be a rule
-   drawn against the window edge. `:last-of-type` and not `:last-child` — the live
-   region span is the last child and is a sibling of these buttons. */
-.tn-terminal .tnx-view-controls .tn-export-btn:last-of-type { border-right: 0; }
-/* Empty until something happens, and it must not reserve width while empty or the
-   bar reflows every time a message appears and expires. */
-.tn-terminal .tn-export-note:not(:empty) {
-  display: flex; align-items: center; padding: 0 10px; font-size: var(--tnx-fs-xs);
-  letter-spacing: 0.04em; color: var(--tnx-ink-dim); max-width: 30ch;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
@@ -4750,7 +4647,11 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    flatten it into this frame rather than forking the component (one clock timer). */
 .tn-terminal .tnx-stage-foot {
   position: absolute; left: 0; right: 0; bottom: 0; height: 24px; z-index: 6;
-  display: flex; align-items: center; padding: 0 8px;
+  /* CENTRED under the globe. The bar spans the full stage width and the clock is a
+     flex child, so centring is `justify-content` on the bar rather than a margin on
+     the clock — the clock keeps its own internal cell dividers either way. The
+     spacer that used to force it left was deleted from StageBar with this change. */
+  display: flex; align-items: center; justify-content: center; padding: 0 8px;
   background: var(--tnx-glass-bar);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   pointer-events: none;
@@ -4856,7 +4757,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   /* Strip: the 37 cells are the payload. The view controls keep the projection
      switch and Export — the two that have no equal in the ⌘K palette's reach on a
      phone — and shed the basemap names, which do (palette → "Basemap"). */
-  .tn-terminal .tnx-view-controls .tnx-basemaps { display: none; }
 
   /* Stage chrome: the key and the clock ribbon crowd a ~300px map, and the clock
      is already hidden below 900px for the old shell. The area filter goes with the
@@ -4886,31 +4786,23 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   .tn-terminal .tn-cw-shell > .tn-rail-fab { top: auto; bottom: 12px; left: 12px; z-index: 26; }
 }
 
-/* The first thing to go as the strip tightens. 37 cells and the projection switch
-   survive; the basemap names are the widest thing in the row and the same choice is
-   one keystroke away in the ⌘K palette. */
-@media (max-width: 1100px) {
-  .tn-terminal .tnx-view-controls .tnx-basemap-btn { padding: 0 6px; }
-}
-
 /* ── Touch targets for the new chrome ─────────────────────────────────────
    The existing ≤900px pass grew every control in the OLD shell to a 44px hit box
-   (measured with elementFromPoint, not getBoundingClientRect), and it reaches the
-   Terminal's controls only where they reuse an old class — `.tn-stage-switch
-   button` and the widget-header cluster. The bars below are new classes, so they
-   need the same treatment or the pass silently stops at the header.
+   (measured with elementFromPoint, not getBoundingClientRect), and it reached the
+   Terminal's controls only where they reused an old class. The bars below are new
+   classes, so they need the same treatment or the pass silently stops at the header.
 
    Two techniques, chosen per control, exactly as that pass documents:
    (a) real size where a control sits in a row with space around it;
    (b) a transparent ::before overlay where the painted box must stay small.
 
-   Where 44px is not reachable it is said so rather than fudged: a 22px stage bar
-   physically cannot hold a 44px button without eating the map, so it grows to 34px
-   on touch — the largest honest value — and the same controls remain available at
-   full size in the ⌘K palette ("Basemap", "Stage") and the Source Catalog rail. */
+   THE 34px COMPROMISE IS GONE WITH THE CONTROLS THAT NEEDED IT. This note used to
+   explain why the basemap and projection buttons grew to 34px rather than 44px: a
+   22px bar could not hold a 44px button without eating the map. Both button
+   families have been removed from the console, so nothing here settles for less
+   than 44px any more, and both choices remain available at full size in the ⌘K
+   palette ("Basemap", "Stage") and the Source Catalog rail. */
 @media (max-width: 900px) {
-  .tn-terminal .tnx-basemap-btn,
-  .tn-terminal .tnx-stage-proj .tn-stage-switch button { min-height: 34px; padding: 0 12px; }
   .tn-terminal .tnx-stage-search { top: 42px; }
   .tn-terminal .tnx-stage-right { top: 42px; }
   /* (a) Real size: the area filter is a full-width control in a column, so it has

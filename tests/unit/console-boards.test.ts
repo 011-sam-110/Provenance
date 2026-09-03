@@ -52,31 +52,31 @@ function layoutWith(height: number): ShellLayout {
 
 test("a board with no edits has no slot, and reads back as null", async () => {
   const { readBoardLayout, isBoardEdited } = await import("@/lib/console/boards");
-  expect(readBoardLayout("earth")).toBeNull();
-  expect(isBoardEdited("earth")).toBe(false);
+  expect(readBoardLayout("streets")).toBeNull();
+  expect(isBoardEdited("streets")).toBe(false);
 });
 
 test("each board keeps its own layout — they do not share one slot", async () => {
   const { writeBoardLayout, readBoardLayout } = await import("@/lib/console/boards");
-  writeBoardLayout("earth", layoutWith(360));
-  writeBoardLayout("situation", layoutWith(180));
+  writeBoardLayout("streets", layoutWith(360));
+  writeBoardLayout("overview", layoutWith(180));
 
-  expect(readBoardLayout("earth")!.widgets[0].height).toBe(360);
-  expect(readBoardLayout("situation")!.widgets[0].height).toBe(180);
+  expect(readBoardLayout("streets")!.widgets[0].height).toBe(360);
+  expect(readBoardLayout("overview")!.widgets[0].height).toBe(180);
 });
 
 test("a corrupt slot degrades to null rather than rendering a broken board", async () => {
   const { readBoardLayout } = await import("@/lib/console/boards");
-  store.set("tn.console.boards.v1", JSON.stringify({ v: 1, d: { earth: { widgets: "not an array" } } }));
-  expect(readBoardLayout("earth")).toBeNull();
+  store.set("tn.console.boards.v1", JSON.stringify({ v: 1, d: { streets: { widgets: "not an array" } } }));
+  expect(readBoardLayout("streets")).toBeNull();
 });
 
 test("forgetting a board's layout is what makes Reset mean something", async () => {
   const { writeBoardLayout, forgetBoardLayout, isBoardEdited } = await import("@/lib/console/boards");
-  writeBoardLayout("earth", layoutWith(360));
-  expect(isBoardEdited("earth")).toBe(true);
-  forgetBoardLayout("earth");
-  expect(isBoardEdited("earth")).toBe(false);
+  writeBoardLayout("streets", layoutWith(360));
+  expect(isBoardEdited("streets")).toBe(true);
+  forgetBoardLayout("streets");
+  expect(isBoardEdited("streets")).toBe(false);
 });
 
 // ── layoutSignature — the trap this milestone exists to avoid ───────────────
@@ -127,18 +127,24 @@ test("layoutSignature: an unedited board's freshly-built layout matches its own 
 // rail has no free x/y to drag to — only a height to change, a rail to move
 // between (`move`), or a place in the rail to move to.
 
+// THE BOARD IDS HERE CHANGED WITH THE LINEUP, and only the ids. These tests exercise
+// the board-archive machinery (applyPreset / resetActiveBoard / isBoardEdited), never
+// the identity of a particular board — they only need one board that HAS widgets to
+// resize and a second board to switch away to. "earth" (Hazards) and "situation"
+// (Conflict) were removed, so the non-empty board is now Streets and the away-board is
+// the landing globe, which is empty and therefore cannot be the one being resized.
 test("REGRESSION: a board switch no longer destroys the board you came from", async () => {
   const { applyPreset } = await import("@/lib/console/presets");
   const { shellLayoutStore } = await import("@/lib/console/store");
 
-  applyPreset("earth");
+  applyPreset("streets");
   const moved = shellLayoutStore.get().widgets[0];
   // Stand in for a drag: the store's write path for a height change.
   shellLayoutStore.resizeWidget(moved.id, 620);
   const edited = shellLayoutStore.get().widgets.find((w) => w.id === moved.id)!.height;
 
   applyPreset("overview");
-  applyPreset("earth");
+  applyPreset("streets");
 
   expect(
     shellLayoutStore.get().widgets.find((w) => w.id === moved.id)?.height,
@@ -150,11 +156,11 @@ test("opening a board is not editing it — an untouched board stays clean", asy
   const { applyPreset } = await import("@/lib/console/presets");
   const { isBoardEdited } = await import("@/lib/console/boards");
 
-  applyPreset("earth");
+  applyPreset("streets");
   applyPreset("overview");
-  applyPreset("earth");
+  applyPreset("streets");
 
-  expect(isBoardEdited("earth"), "merely viewing a board must not mark it edited").toBe(false);
+  expect(isBoardEdited("streets"), "merely viewing a board must not mark it edited").toBe(false);
 });
 
 test("a drag marks the board edited; Reset puts the template back and clears the mark", async () => {
@@ -162,15 +168,15 @@ test("a drag marks the board edited; Reset puts the template back and clears the
   const { shellLayoutStore } = await import("@/lib/console/store");
   const { isBoardEdited } = await import("@/lib/console/boards");
 
-  applyPreset("earth");
+  applyPreset("streets");
   const template = shellLayoutStore.get().widgets.map((w) => w.height);
   shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
-  expect(isBoardEdited("earth")).toBe(true);
+  expect(isBoardEdited("streets")).toBe(true);
 
   resetActiveBoard();
 
   expect(shellLayoutStore.get().widgets.map((w) => w.height)).toEqual(template);
-  expect(isBoardEdited("earth"), "a reset board must not still read as edited").toBe(false);
+  expect(isBoardEdited("streets"), "a reset board must not still read as edited").toBe(false);
 });
 
 test("edits to one board do not leak into another board's slot", async () => {
@@ -178,10 +184,10 @@ test("edits to one board do not leak into another board's slot", async () => {
   const { shellLayoutStore } = await import("@/lib/console/store");
   const { isBoardEdited } = await import("@/lib/console/boards");
 
-  applyPreset("earth");
+  applyPreset("streets");
   shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
-  applyPreset("situation");
+  applyPreset("overview");
 
-  expect(isBoardEdited("earth")).toBe(true);
-  expect(isBoardEdited("situation"), "the board just opened was never touched").toBe(false);
+  expect(isBoardEdited("streets")).toBe(true);
+  expect(isBoardEdited("overview"), "the board just opened was never touched").toBe(false);
 });
