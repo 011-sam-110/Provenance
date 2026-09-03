@@ -166,7 +166,7 @@ export const TOUR_VERSION = 3;
 const OPEN_RAIL: TourAction = { kind: "ensure", want: ".tn-rail", click: ".tn-rail-fab" };
 const SHUT_RAIL: TourAction = { kind: "close", want: ".tn-rail", click: ".tn-rail-collapse" };
 
-const OPEN_SIGNALS: TourAction = { kind: "ensure", want: ".tn-signals-body", click: ".tn-signals-header" };
+const OPEN_POP: TourAction = { kind: "ensure", want: ".tn-src-pop", click: ".tn-src-label" };
 
 const OPEN_HELP: TourAction = { kind: "ensure", want: ".tn-cw-help-pop", click: ".tn-cw-help" };
 const SHUT_HELP: TourAction = { kind: "close", want: ".tn-cw-help-pop", click: ".tn-cw-help-x" };
@@ -492,13 +492,12 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
     title: "The Source Catalog",
     summary: "Every feed, its map toggle, and turning any of them into a widget",
     icon: "≡",
-    // Collapse the camera row before the rail, not after: closing the rail unmounts
-    // the row and takes its open state with it, so the explicit close would find
-    // nothing to click and the invariant "what a chapter opens, it closes" would be
-    // true only by accident.
+    // Close the popover before the rail, not after: closing the rail unmounts the
+    // row and takes the popover with it, so the explicit close would find nothing
+    // to click and the invariant "what a chapter opens, it closes" would be true
+    // only by accident.
     cleanup: [
-      { kind: "close", want: ".tn-cam-filters", click: ".tn-layer-head" },
-      { kind: "close", want: ".tn-signals-body", click: ".tn-signals-header" },
+      { kind: "close", want: ".tn-src-pop", click: ".tn-src-label" },
       SHUT_RAIL,
     ],
     steps: [
@@ -548,25 +547,25 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "sources-row",
-        target: ".tn-layer-row",
+        target: ".tn-src-row",
         title: "Reading a source row",
         body:
-          "A coloured dot matching the map, the name, who supplies it, and how long ago it last answered. On the right: the live count, a ＋ that puts this source on your board as a widget, and the switch that puts it on the map. A dimmed row with an \"in signals\" pill has no map layer of its own — the pill is a label, not a button, and it tells you the data is further down under Global signals.",
+          "One line per source: a coloured dot matching the map, the name, a ＋ that puts it on your board as a widget, and the switch that puts it on the map. The rest — who supplies it, how it knows what it knows, and whether it needs a key — is one hover, one tap or one keyboard focus away, so the list stays scannable.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
       {
         id: "sources-widget-toggle",
-        target: [".tn-widget-toggle", ".tn-layer-row"],
+        target: [".tn-src-add", ".tn-src-row"],
         title: "＋ — any source becomes a widget",
         body:
-          "This is the shortcut worth knowing. ＋ docks that feed onto your workspace as its own live tile; ▦ means it is already there. Each signal GROUP heading has one too, which docks a single roll-up tile for the whole theme instead of one per layer. The counter at the top of the rail tracks how many you have open.",
+          "This is the shortcut worth knowing. ＋ asks which rail to put the feed on — left, right or bottom — and docks it there as its own live tile; a filled ＋ means it is already on your board. You can also drag the row straight into a rail if you would rather point than pick. The counter at the top of the rail tracks how many you have open.",
         placement: "right",
         setup: [OPEN_RAIL],
       },
       {
         id: "sources-toggle",
-        target: [".tn-toggle", ".tn-layer-row"],
+        target: [".tn-src-toggle", ".tn-src-row"],
         title: "Off means off",
         body:
           "A layer that is switched off is not fetched at all — no background requests, no quota burned, and nothing pretending to be current. That is also why a hidden layer reports \"off\" rather than a zero.",
@@ -575,50 +574,50 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "sources-cameras",
-        target: [".tn-cam-filters", ".tn-layer-row"],
+        target: [".tn-cam-filters", ".tn-rail"],
         title: "Camera filters — and where the cameras are",
         body:
-          "Open the Cameras row and you can hide whole regions with the region chips, or show only cameras serving genuine live video rather than a still that refreshes. The two chips under \"Feed\" are labels for those two kinds, not buttons. This region list is also the honest answer to \"which places have cameras?\" — they come from road agencies that publish openly, so London, California, Finland and British Columbia are covered and most of the world is not.",
+          "While Cameras is switched on, the filters sit under the Ground section: hide whole regions with the region chips, or show only cameras serving genuine live video rather than a still that refreshes. The two chips under \"Feed\" are labels for those two kinds, not buttons. This region list is also the honest answer to \"which places have cameras?\" — they come from road agencies that publish openly, so London, California, Finland and British Columbia are covered and most of the world is not.",
         placement: "right",
-        setup: [OPEN_RAIL, { kind: "ensure", want: ".tn-cam-filters", click: ".tn-layer-head" }],
+        setup: [OPEN_RAIL],
         settleMs: 160,
       },
       {
         id: "sources-signals",
-        target: [".tn-signals-header", ".tn-signals"],
-        title: "Global signals",
+        target: [".tn-src-sec-head", ".tn-rail"],
+        title: "Six sections, not sixteen",
         body:
-          `${SIGNAL_COUNT} intelligence layers grouped by theme — hazards, conflict, cyber, maritime, infrastructure, humanitarian — including a Country Instability Index computed from four of the others. Your board decides which start on: Brief opens with four. To add one, expand its group and flip its switch; the badge beside this header counts how many are on.`,
+          `Every source sits under one of six headings — ground, air and space, hazards and weather, infrastructure, conflict and security, human cost — covering ${SIGNAL_COUNT} intelligence layers, including a Country Instability Index computed from four of the others. Nothing is collapsed, so flipping a switch never needs a heading opened first. The count beside a heading is how many sources it holds; an "on" reading appears beside it only when some of them are painting the map.`,
         placement: "right",
         setup: [OPEN_RAIL],
       },
       {
         id: "sources-timewindow",
-        target: [".tn-timewindow-chips", ".tn-signals-body"],
+        target: [".tn-timewindow-chips", ".tn-rail"],
         title: "Time window",
         body:
           "Limits every time-stamped signal to the last hour, six hours, day, week, or everything held. Layers that are monthly aggregates rather than events are deliberately left out of it instead of being filtered to nothing.",
         placement: "right",
-        setup: [OPEN_RAIL, OPEN_SIGNALS],
+        setup: [OPEN_RAIL],
         settleMs: 160,
       },
       {
         id: "sources-provenance",
-        target: [".tn-layer-prov", ".tn-signals-body"],
+        target: [".tn-layer-prov", ".tn-src-pop"],
         title: "How each layer knows",
         body:
           "The small chip beside a source grades it, and there are five: MEASURED by an instrument, OFFICIAL from an agency, REPORTED and checked by people, MODELLED by a forecast or index, or DERIVED — computed here from other layers, the most caveated of the five. Everything on this map draws the same coloured dot, so without this a seismometer and a news-wire guess would look equally authoritative.",
         placement: "right",
-        setup: [OPEN_RAIL, OPEN_SIGNALS],
+        setup: [OPEN_RAIL, OPEN_POP],
       },
       {
         id: "sources-locked",
-        target: [".tn-layer-locked", ".tn-signals-body"],
+        target: [".tn-layer-locked", ".tn-src-pop"],
         title: "Locked layers",
         body:
           "A few sources need a free API key this deployment does not hold. They are badged as locked rather than left showing zero, because \"needs a key\" and \"nothing happened\" are different facts with different fixes.",
         placement: "right",
-        setup: [OPEN_RAIL, OPEN_SIGNALS],
+        setup: [OPEN_RAIL, OPEN_POP],
       },
       {
         id: "sources-panels",
@@ -665,7 +664,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
       },
       {
         id: "trust-counts",
-        target: [".tn-layer-count", ".tn-cw-count", ".tn-cw-head"],
+        target: [".tn-cw-count", ".tn-cw-head"],
         title: "Counts say what they cover",
         body:
           "A widget's number is what it is holding. Where we know we are seeing only part of a source, the freshness chip beside it carries the fraction — \"LIVE · 7/8\" means seven of the eight feeds behind this widget answered. Check that chip before reading the count as the whole picture.",

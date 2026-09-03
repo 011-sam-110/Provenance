@@ -22,7 +22,60 @@ import "@/lib/console/widgets";
 import { getWidgetType } from "@/lib/console/registry";
 import { placementStore } from "@/lib/console/placement";
 import { widgetTypeForSource } from "@/lib/console/sourceWidgets";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import { explainerFor, confidenceChip, confidenceLabel } from "@/lib/signals/explain";
+import { capabilityBadge } from "@/lib/console/widgets/signals";
 import type { SourceRowModel } from "@/lib/console/sources/sections";
+
+/**
+ * How this layer knows what it knows — one of five grades.
+ *
+ * It moved into the popover with the rest of the detail, and it had to come with
+ * it rather than be dropped: every layer draws the same coloured dot on the map,
+ * so without this a seismometer and a news-wire guess look equally authoritative.
+ */
+function ProvenanceChip({ id }: { id: string }) {
+  const e = explainerFor(id);
+  if (!e) return null;
+  return (
+    <span
+      className={`tn-layer-prov tn-conf-${e.confidence}`}
+      title={`${confidenceLabel(e.confidence)} — ${e.method}`}
+      data-confidence={e.confidence}
+    >
+      {confidenceChip(e.confidence)}
+    </span>
+  );
+}
+
+/**
+ * "Locked — needs a key", or "credential refused", for a layer this deployment
+ * cannot use right now.
+ *
+ * Without it a key-gated or refused layer renders zero and is indistinguishable
+ * from a dead upstream or a genuinely quiet feed — the visitor concludes the
+ * product is broken. The state → badge decision stays the shared capabilityBadge()
+ * so this row and the widget's own empty state never disagree.
+ */
+function LockedBadge({ id }: { id: string }) {
+  const status = useCapabilityStatus(id);
+  const badge = capabilityBadge(status);
+  if (!badge) return null;
+  return (
+    <span
+      className="tn-layer-locked"
+      data-state={badge.kind}
+      style={
+        badge.kind === "refused"
+          ? { color: "var(--tn-down-ink)", borderColor: "var(--tn-down)" }
+          : undefined
+      }
+      title={badge.long}
+    >
+      {badge.icon} {badge.short}
+    </span>
+  );
+}
 
 export default function SourceRow({
   row,
@@ -106,6 +159,10 @@ export default function SourceRow({
       />
       {open ? (
         <div className="tn-src-pop" id={popId} role="tooltip">
+          <div className="tn-src-pop-grades">
+            <ProvenanceChip id={row.id} />
+            <LockedBadge id={row.id} />
+          </div>
           <div className="tn-src-pop-attr">{row.attribution}</div>
           <div className="tn-src-pop-hint">
             {widgetTitle === null ? `${row.group} · map layer only` : `Places: ${widgetTitle}`}

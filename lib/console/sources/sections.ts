@@ -50,7 +50,10 @@ export interface SourceSectionModel {
  * from the physical world to the human one.
  */
 export const SECTIONS: readonly SectionDef[] = [
-  { id: "ground", title: "Ground", groups: ["Cameras"] },
+  // "Reference" is not a catalog group — it is the borders-and-names map layer,
+  // joined in by lib/console/sources/railSources.ts. It sits here because it is
+  // the other thing you see looking down at the ground.
+  { id: "ground", title: "Ground", groups: ["Cameras", "Reference"] },
   { id: "air-space", title: "Air & space", groups: ["Aviation", "Space", "Space weather", "Military"] },
   { id: "hazards", title: "Natural hazards & weather", groups: ["Natural hazards", "Weather"] },
   { id: "infrastructure", title: "Infrastructure & networks", groups: ["Infrastructure", "Maritime"] },
