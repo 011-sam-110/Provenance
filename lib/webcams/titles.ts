@@ -19,6 +19,13 @@ export interface WebcamRow {
   title: string;
   country?: string;
   region?: string;
+  /** Carried so a camera slot can answer "where is this one?" without a second
+   *  fetch. /api/webcams has always shipped these - this file simply dropped them,
+   *  which is why a slot could name a webcam and not point at it. Optional because
+   *  an older cached body, or a row with a malformed position, must not take the
+   *  title down with it: a missing position means "we don't know", never 0,0. */
+  lat?: number;
+  lon?: number;
 }
 
 let rows: WebcamRow[] | null = null;
@@ -52,6 +59,8 @@ function load(): void {
           title: w.title.trim(),
           country: typeof w.country === "string" ? w.country : undefined,
           region: typeof w.region === "string" ? w.region : undefined,
+          lat: typeof w.lat === "number" && Number.isFinite(w.lat) ? w.lat : undefined,
+          lon: typeof w.lon === "number" && Number.isFinite(w.lon) ? w.lon : undefined,
         });
       }
       commit(next);

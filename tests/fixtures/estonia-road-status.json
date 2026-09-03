@@ -1,0 +1,105 @@
+{
+  "_provenance": "Captured live 2026-09-03 from the Tark Tee ArcGIS query lib/sources/estonia.ts already calls (outFields=*). Attribute VALUES are verbatim; only the choice of which five of the 180 rows to keep is ours - one per branch normalizeEstoniaSurface has to take: a healthy DRY reading with the station on site, MOIST, WET under a COLD_WET_SURFACE qualifier, a null reading the operator flagged OVER_2_HOURS, and the worst station gap in the network (36.8 km). Re-capture by GETting the QUERY_URL in lib/sources/estonia.ts.",
+  "features": [
+    {
+      "attributes": {
+        "objectid": 11,
+        "site_name": "Jõhvi",
+        "weather_station_id": 56,
+        "closest_weather_station": "Jõhvi",
+        "distance": 0.0,
+        "air_temp": 13.0,
+        "road_temp": 14.1,
+        "road_status_aggregate": "OK",
+        "road_status": "DRY",
+        "weather_time": 1788405600000,
+        "image_time": 1788406001000,
+        "image_path": "94/94_202609030626.jpg"
+      },
+      "geometry": {
+        "x": 27.440670000618645,
+        "y": 59.36535999924768
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 20,
+        "site_name": "Kärevere",
+        "weather_station_id": 93,
+        "closest_weather_station": "Kärevere",
+        "distance": 0.0,
+        "air_temp": 13.6,
+        "road_temp": 14.7,
+        "road_status_aggregate": "OK",
+        "road_status": "MOIST",
+        "weather_time": 1788405600000,
+        "image_time": 1788406240000,
+        "image_path": "44/44_202609030630.jpg"
+      },
+      "geometry": {
+        "x": 26.431889999949107,
+        "y": 58.44767999953261
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 266,
+        "site_name": "Riisipere",
+        "weather_station_id": 92,
+        "closest_weather_station": "Riisipere",
+        "distance": 0.0,
+        "air_temp": 14.8,
+        "road_temp": 15.2,
+        "road_status_aggregate": "COLD_WET_SURFACE",
+        "road_status": "WET",
+        "weather_time": 1788405600000,
+        "image_time": 1788405986000,
+        "image_path": "64/64_202609030626.jpg"
+      },
+      "geometry": {
+        "x": 24.329515000840907,
+        "y": 59.13792899914401
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 115,
+        "site_name": "Ikla",
+        "weather_station_id": 49,
+        "closest_weather_station": "Ikla",
+        "distance": 0.0,
+        "air_temp": 16.6,
+        "road_temp": null,
+        "road_status_aggregate": "OVER_2_HOURS",
+        "road_status": null,
+        "weather_time": 1788405600000,
+        "image_time": 1788406217000,
+        "image_path": "86/86_202609030630.jpg"
+      },
+      "geometry": {
+        "x": 24.412220000458394,
+        "y": 57.90174999936181
+      }
+    },
+    {
+      "attributes": {
+        "objectid": 482,
+        "site_name": "Liivi laht",
+        "weather_station_id": 116,
+        "closest_weather_station": "Mändjala",
+        "distance": 36.8,
+        "air_temp": 15.2,
+        "road_temp": 14.0,
+        "road_status_aggregate": "OK",
+        "road_status": "MOIST",
+        "weather_time": 1788405600000,
+        "image_time": 1788404539000,
+        "image_path": "992/992_202609030602.jpg"
+      },
+      "geometry": {
+        "x": 22.0583699996717,
+        "y": 57.91326999893982
+      }
+    }
+  ]
+}

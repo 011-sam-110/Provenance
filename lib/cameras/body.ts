@@ -65,6 +65,10 @@ export function camerasBody(cams: Camera[]): string {
     // and /api/hls?id= (SSRF allowlist by id), never a raw upstream URL.
     region: c.region, road: c.road, refreshSeconds: c.refreshSeconds,
     attribution: c.attribution, license: c.license, lastSampledAt: c.lastSampledAt,
+    // Present on ~992 of ~18,300 rows (Estonia + Finland), absent on the rest, and
+    // the absence is the honest answer: nobody measured this road. Undefined is
+    // dropped by JSON.stringify, so the body only grows for rows that have one.
+    surface: c.surface,
   }));
   const body = JSON.stringify({ count: cameras.length, cameras });
   serialised = { from: cams, body };
