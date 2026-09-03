@@ -226,17 +226,25 @@ export default function WidgetFrame({
           title={rule.enabled ? "Notifications on" : "Notify me"} onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}>🔔</button>
         <button className="tn-cw-expand" aria-label="Expand widget" title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
         {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
-            LAST of nineteen entries in a scrolling panel, so on a short card it
-            sits below an internal scroll — a control you have to already know is
-            there. The menu entry stays: this is a second route, not a move, and
-            the menu also holds the nudge buttons that let the 10px resize handles
-            claim the WCAG 2.5.8 equivalent-alternative exemption. */}
-        {/* Sits INBOARD of the menu button on purpose. The 16x16 .tn-rz-ne
-            resize handle is pinned to the card corner at z-index 20 and covers
-            the top-right of the header, so a control placed last here is drawn
-            but not clickable — Playwright caught the handle swallowing the
-            click. Raising this above the handle instead would take the corner
-            away from resizing, which is a real control, not dead space. */}
+            last entry in a scrolling panel, so on a short card it sits below an
+            internal scroll — a control you have to already know is there. The
+            menu entry stays: this is a second route, not a move.
+
+            The WCAG 2.5.8 clause that used to be argued here is no longer this
+            file's to claim. It said the menu's nudge buttons were the
+            equivalent alternative to the 10px drag handles. Those handles are
+            gone with the grid, and the control that replaced them — the rail
+            splitter — carries its own keyboard path and announces its value,
+            so it does not need cover from here.
+
+            ORDERING: ✕ sits inboard of ⋯, and the hazard that forced that is
+            also gone. A 16x16 .tn-rz-ne handle used to be pinned over the
+            header's top-right corner at z-index 20, so a control placed last
+            was drawn but not clickable — Playwright caught it swallowing the
+            click. Nothing renders that handle now. The order is left alone
+            because it reads fine and changing it buys nothing, NOT because the
+            corner is still taken. Note the CSS rules for those handles are
+            still in globals.css with nothing to attach to. */}
         <button className="tn-cw-close" aria-label={`Remove ${frameTitle}`} title="Remove from board"
           onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
         <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
@@ -408,13 +416,20 @@ export default function WidgetFrame({
               <ReportCtx.Provider value={onReport}><Body instanceId={instance.id} config={cfg} /></ReportCtx.Provider>
             </WidgetErrorBoundary>
           </div>
-          {/* The three old resize handles used to live here. They are gone, not
-              moved: they resized a widget by writing `width`/`height`, which the
-              Terminal never read, and globals.css hid them outright on top of
-              that. Resizing is now eight handles on the SLOT, owned by
-              ConsoleWorkspace — they have to sit outside this frame's overflow
-              so an edge stays grabbable, and the board is the only thing that
-              knows what a resize does to a widget's neighbours. */}
+          {/* Nothing resizes a card from its own edges any more, and this note
+              has now been wrong twice in the same place, so it is worth stating
+              what the file actually does rather than what the last rewrite
+              intended. It first described three handles on the frame. It was
+              then rewritten to describe eight handles on the SLOT, owned by
+              ConsoleWorkspace — true for exactly as long as there was a grid to
+              resize a card inside.
+
+              There is no width to resize now: a card is as wide as its rail, so
+              width is a property of the RAIL and belongs to the splitter between
+              them, which is one control for the whole column rather than one per
+              card. Height is per-card and lives in the ⋯ menu, where it can be
+              driven from a keyboard and speak its new value. Both are above; no
+              handle is rendered here. */}
         </>
       )}
     </div>

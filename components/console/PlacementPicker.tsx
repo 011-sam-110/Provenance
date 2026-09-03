@@ -54,9 +54,11 @@ export default function PlacementPicker() {
     // The capacity cap is reported HERE because the add happens here. Every
     // caller used to check `ok` itself and raise this toast; now they only ask
     // a question and never see the answer, so dropping the result would make
-    // the 50-widget cap silent — at the cap the user picks a rail, the modal
-    // closes, and nothing appears, with nothing said. That reads as a broken
-    // button rather than a full workspace.
+    // the cap silent — at the cap the user picks a rail, the modal closes, and
+    // nothing appears, with nothing said. That reads as a broken button rather
+    // than a full workspace. The wording comes from WIDGET_LIMIT_MESSAGE, which
+    // is derived from MAX_WIDGETS; do not retype the number here, that is the
+    // exact mistake tests/unit/widget-limit-copy.test.ts exists to catch.
     const r = shellLayoutStore.add(type, { segment, config, height });
     if (!r.ok && typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
