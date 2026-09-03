@@ -169,6 +169,7 @@ function ConditionsPanel({ stream, refreshSeconds }: { stream: StreamRef; refres
     weather,
     pending: place.pending,
     weatherFailed,
+    lookupFailed: stream.k === "cam" && camerasStatus === "error",
     lastSampledAt: row?.lastSampledAt,
     refreshSeconds,
     now,
@@ -191,7 +192,11 @@ function ConditionsPanel({ stream, refreshSeconds }: { stream: StreamRef; refres
         )}
       </div>
 
-      <p className="tn-csd-prov-basis">{report.claim.title}</p>
+      {/* On a refusal these are the SAME SENTENCE — `claim.title` is `refused.reason`,
+          by design, so the tile's tooltip and the panel cannot drift. Rendering both
+          printed it twice, one paragraph under the other. The refusal block states it
+          with its context, so the bare basis line stands down. */}
+      {!report.refused && <p className="tn-csd-prov-basis">{report.claim.title}</p>}
 
       {report.refused && (
         <div className="tn-csd-prov-refused">

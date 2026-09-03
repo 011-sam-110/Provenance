@@ -13,7 +13,7 @@
 // we are willing to claim. It is NOT a decision to pretend the reading does not exist —
 // hiding the evidence would leave a user unable to tell "nobody measures this road"
 // apart from "somebody measures it and we did not like the number". So `refused` carries
-// the operator's own words, the reason, and — the part that makes it act on able — WHOSE
+// the operator's own words, the reason, and — the part that makes it actionable — WHOSE
 // rule refused it. A reader who thinks 10 km is too strict can disagree with us using
 // the same figure we used, and a reader looking at a stale flag can see that the
 // operator, not us, called it stale.
@@ -49,6 +49,8 @@ export interface ProvenanceInput {
   weather?: PointWeather;
   pending?: boolean;
   weatherFailed?: boolean;
+  /** True when the camera registry itself did not load. See ClaimInput.lookupFailed. */
+  lookupFailed?: boolean;
   /** The operator's own capture stamp for the frame on screen, where it publishes one. */
   lastSampledAt?: string;
   /** How often this stream's operator republishes, used to bound an unstamped frame. */
@@ -203,8 +205,8 @@ function weatherRows(pw: PointWeather): ProvenanceRow[] {
  * ever ADDS the basis underneath it.
  */
 export function provenanceReport(input: ProvenanceInput): ProvenanceReport {
-  const { kind, surface, weather, pending, weatherFailed, now } = input;
-  const claim = roadClaim({ kind, surface, weather, pending, weatherFailed, now });
+  const { kind, surface, weather, pending, weatherFailed, lookupFailed, now } = input;
+  const claim = roadClaim({ kind, surface, weather, pending, weatherFailed, lookupFailed, now });
 
   // Two states with nothing to evidence. Pending is not an absence — we have not
   // finished asking — and a stream with no place has no conditions to have a basis for.

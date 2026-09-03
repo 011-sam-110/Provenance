@@ -159,6 +159,13 @@ export interface ClaimInput {
   pending?: boolean;
   /** True when the weather lookup itself failed. */
   weatherFailed?: boolean;
+  /** True when the DIRECTORY that would describe this camera did not load — an
+   *  /api/cameras that answered with an error rather than with rows.
+   *
+   *  Distinct from `pending`, which means we are still asking, and distinct from a
+   *  successful lookup that simply found no measurement. Without it a failed request
+   *  of ours becomes a statement about what the operator publishes. */
+  lookupFailed?: boolean;
   now: number;
 }
 
@@ -176,7 +183,7 @@ export interface ClaimInput {
  * to `derived` if that trade is ever judged the wrong way round.
  */
 export function roadClaim(input: ClaimInput): Claim {
-  const { kind, surface, weather, pending, weatherFailed, now } = input;
+  const { kind, surface, weather, pending, weatherFailed, lookupFailed, now } = input;
 
   if (pending) return { tier: "pending", label: "", text: "…", title: "Still looking this camera up." };
 
@@ -217,6 +224,23 @@ export function roadClaim(input: ClaimInput): Claim {
     }
     // Refused. Say so, and say what was refused.
     return { tier: "none", label, text: "no data", title: refusalTitle(surface, why, now) };
+  }
+
+  // OUR REQUEST FAILED, WHICH IS NOT A FACT ABOUT THE OPERATOR. Checked after the
+  // surface block on purpose: a reading we already hold is still a reading, and a
+  // stale directory does not erase it. Only when we have nothing does the reason for
+  // having nothing matter — and "we could not look it up" and "there is nothing to
+  // look up" are different sentences that were being printed as one.
+  if (lookupFailed) {
+    return {
+      tier: "none",
+      label,
+      text: "no data",
+      title:
+        "We could not load the camera registry, so we do not know whether a road-surface " +
+        "measurement is published for this camera. This is our own lookup failing, not the " +
+        "operator reporting nothing.",
+    };
   }
 
   if (weatherFailed || !weather) {

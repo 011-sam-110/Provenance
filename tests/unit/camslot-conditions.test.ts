@@ -36,6 +36,47 @@ function base(over: Partial<ClaimInput> = {}): ClaimInput {
   return { kind: "camera", now: NOW, ...over };
 }
 
+describe("roadClaim — a failed lookup is not a negative answer", () => {
+  // THE SAME BUG THE WEBCAM-PLACE FIX KILLED, one function away and for a different
+  // upstream. useCameras has three states, not two: loading, idle and error. Every
+  // caller asked only `status === "loading"`, so a FAILED /api/cameras produced
+  // pending:false and the tile explained itself with "No road-surface measurement is
+  // published for this camera" — a claim about what the operator publishes, made from
+  // our own failed request. Found by looking at a rendered board, not by a test.
+  it("does not claim the operator publishes nothing when our own lookup failed", () => {
+    const r = roadClaim(base({ lookupFailed: true }));
+
+    expect(r.tier).toBe("none");
+    // "no data" stays true — we have none. It is the EXPLANATION that was false.
+    expect(r.text).toBe("no data");
+    // The ASSERTION of absence is what must go. "we do not know whether a measurement
+    // is published" is allowed to mention publishing; "No measurement is published" is
+    // not, because that is the sentence we cannot support.
+    expect(r.title).not.toMatch(/no road-surface measurement is published/i);
+    expect(r.title).toMatch(/could not load/i);
+    expect(r.title).toMatch(/our own lookup failing/i);
+  });
+
+  it("still reports a real absence when the lookup succeeded", () => {
+    const r = roadClaim(base({ lookupFailed: false }));
+
+    expect(r.title).toMatch(/no road-surface measurement is published/i);
+  });
+
+  it("prefers a reading it actually has over reporting the failure", () => {
+    // A stale directory does not erase a surface reading that arrived by another
+    // route. If we can say something measured, say it.
+    const r = roadClaim(
+      base({
+        lookupFailed: true,
+        surface: { state: "Dry", km: 0.2, observedAt: NOW - 60_000 },
+      }),
+    );
+
+    expect(r.tier).toBe("measured");
+  });
+});
+
 describe("placeNoun", () => {
   it("says Road for a road camera and Ground for a webcam", () => {
     // A Windy webcam on a pedestrian square has no road in frame.

@@ -381,6 +381,10 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         weather: currentWeather,
         pending: currentPlaceState!.pending,
         weatherFailed,
+        // A registry that ERRORED is not a registry that answered "nothing". Without
+        // this the tile explains itself with a claim about what the operator
+        // publishes, made entirely from our own failed request.
+        lookupFailed: current.k === "cam" && camerasStatus === "error",
         now: conditionsNow,
       })
     : null;
