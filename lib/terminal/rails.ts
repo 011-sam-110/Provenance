@@ -37,7 +37,15 @@ const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n
 export function clampRailSize(rail: SegmentId, px: number): number {
   const min = RAIL_MIN[rail];
   const max = RAIL_MAX[rail];
-  const n = Number.isFinite(px) ? Math.round(px) : min;
+  // NaN and non-numbers fall back to the minimum, because they carry NO
+  // information about what was wanted. The INFINITIES are not junk in the same
+  // sense and are deliberately not lumped in with them: they say "as far as it
+  // goes" in a direction, so they clamp naturally to max and min respectively.
+  // Treating +Infinity as "junk, therefore the narrowest possible rail" is the
+  // opposite of what it asked for, and it is the kind of surprise that only
+  // shows up in a persisted layout nobody can reproduce by hand.
+  const junk = typeof px !== "number" || Number.isNaN(px);
+  const n = junk ? min : Math.round(px);
   return clamp(n, min, max);
 }
 
@@ -165,16 +173,64 @@ export function railVars(
  * is worse than a tight one.
  */
 export function splitSpan(weights: readonly number[], total: number, min: number): number[] {
-  if (weights.length === 0) return [];
+  const n = weights.length;
+  if (n === 0) return [];
   const safe = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 1));
-  const sum = safe.reduce((a, b) => a + b, 0);
-  const out = safe.map((w) => Math.max(min, Math.round((total * w) / sum)));
+  const floor = Math.max(0, min);
 
+  // Not even the floor fits. Everything gets the floor and the result honestly
+  // overflows — a missing card is worse than a tight one.
+  if (n * floor >= total) return safe.map(() => floor);
+
+  // ── THE FLOOR HAS TO BE PAID FOR OUT OF THE OTHER ITEMS' SHARE ─────────────
+  // A single proportional pass plus one drift correction is not enough, and the
+  // failure it produced was real rather than theoretical. The Hazards board is
+  // seven cards weighted 3,2,2,1,1,1,1 into an 820px window. One pass gives the
+  // four ones a 75px share, which the floor lifts to 120 — so 180px appears out
+  // of nowhere and the total comes to 1002. Absorbing all of that into the
+  // largest card alone drove it from 224px to its own floor and STILL left the
+  // column at 891px, overflowing a window it could have fitted: the correct
+  // answer pins the four small cards at 120 (480px) and shares the remaining
+  // 340px among the other three.
+  //
+  // So pinning is iterative. Each pass allocates the budget that is left after
+  // the already-pinned items have taken their floor, and anything that still
+  // comes out below the floor is pinned in turn. It terminates because every
+  // pass either pins at least one more item or stops.
+  const out = new Array<number>(n).fill(floor);
+  const pinned = new Array<boolean>(n).fill(false);
+
+  for (;;) {
+    const free: number[] = [];
+    for (let i = 0; i < n; i++) if (!pinned[i]) free.push(i);
+    if (free.length === 0) break;
+
+    let taken = 0;
+    for (let i = 0; i < n; i++) if (pinned[i]) taken += floor;
+    const budget = total - taken;
+    const sum = free.reduce((a, i) => a + safe[i], 0);
+
+    let pinnedMore = false;
+    for (const i of free) {
+      const share = Math.round((budget * safe[i]) / sum);
+      if (share < floor) {
+        pinned[i] = true;
+        out[i] = floor;
+        pinnedMore = true;
+      } else {
+        out[i] = share;
+      }
+    }
+    if (!pinnedMore) break;
+  }
+
+  // Whatever rounding is left lands on the LARGEST item, which is the one that
+  // can least notice gaining or losing a pixel. Never below the floor.
   const drift = total - out.reduce((a, b) => a + b, 0);
   if (drift !== 0) {
     let biggest = 0;
-    for (let i = 1; i < out.length; i++) if (out[i] > out[biggest]) biggest = i;
-    out[biggest] = Math.max(min, out[biggest] + drift);
+    for (let i = 1; i < n; i++) if (out[i] > out[biggest]) biggest = i;
+    out[biggest] = Math.max(floor, out[biggest] + drift);
   }
   return out;
 }
