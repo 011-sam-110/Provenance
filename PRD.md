@@ -217,7 +217,7 @@ Legend — **Access:** JSON / GeoJSON / XML / DATEX (DATEX II XML) / CSV / scrap
 
 ### Homepage — the globe *is* the product
 - **Globe.GL** textured Earth, gentle auto-rotation, ~10k points from the cached registry tiles.
-- **Aggregation:** 10k individual points is too many at world zoom — points **cluster into glowing country/region nodes with counts** when zoomed out, resolving to individual cameras as you zoom in.
+- **Aggregation: none, and that is the decision.** This originally called for points to cluster into glowing country/region nodes with counts when zoomed out. Superseded 2026-09-03: every camera is its own dot at every zoom. The badges were measured covering 51.9% of the Europe rectangle at world zoom, so the aggregation intended to make the map readable was the thing making it unreadable. ~19k circles are cheap; what is expensive is ~19k symbols, so the detailed icon layer hands over from the dots at z11 instead of z5.
 - **Colour = congestion heat** (blue → red) **only where live data exists; neutral grey otherwise** (honest about partial coverage).
 - **Hover** → tooltip (name · road · source). **Click** → camera flies to centre, detail panel opens.
 - **Live stat overlay:** *"10,4xx cameras · 23 sources · 14 countries · live."*

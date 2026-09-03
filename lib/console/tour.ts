@@ -267,7 +267,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: "",
         title: "Everything on the map is clickable",
         body:
-          "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution, plus a ⬇ Export for that one record and an ✕ to close. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Numbered bubbles are clusters; click one to zoom into what it is holding. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
+          "Before the controls, the thing worth knowing: click any pin and a dossier slides in from the right with that item's detail, its source and its attribution, plus a ⬇ Export for that one record and an ✕ to close. Click a camera and you get its picture — a live video stream where the agency provides one, otherwise a still that refreshes. Whatever you pick is named in the bar along the bottom, and Esc clears it.",
         placement: "center",
       },
       {

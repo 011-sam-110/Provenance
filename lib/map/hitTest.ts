@@ -43,8 +43,8 @@ export const COUNTRY_HIT_LAYER = "country-fill";
  * behind it (or vice versa).
  */
 export const PIN_HIT_LAYERS: readonly string[] = [
-  "camera-markers", "camera-dots", "camera-clusters", "camera-cluster-count",
-  "webcam-markers", "webcam-dots", "webcam-clusters", "webcam-cluster-count",
+  "camera-markers", "camera-dots",
+  "webcam-markers", "webcam-dots",
   "plane-markers", "satellite-core",
   "signal-dots", "signal-icons", "signal-line-paths", "signal-fill-areas",
   "user-pin-dots",
