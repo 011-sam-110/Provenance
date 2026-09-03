@@ -13,27 +13,34 @@
 // panel, and the screen never changed. That is the bug this rewrite fixes; the
 // dead dock components have been removed so it cannot come back.
 
+import { placementStore } from "@/lib/console/placement";
 import { shellLayoutStore } from "@/lib/console/store";
 import { widgetTypeForGroup, widgetTypeForSource } from "@/lib/console/sourceWidgets";
-import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
-
-function toast(message: string): void {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("tn-toast", { detail: message }));
-}
 
 /** Every widget type currently on the console workspace. */
 export function openWidgetTypes(): Set<string> {
   return new Set(shellLayoutStore.get().widgets.map((w) => w.type));
 }
 
-/** Add a widget of `type` unless one is already up. Reports the capacity cap. */
-function addOnce(type: string, label: string): void {
+/**
+ * Ask where a widget of `type` should go, unless one is already up.
+ *
+ * This used to call `shellLayoutStore.add()` and toast "<label> added to your
+ * workspace". It could, because the free grid chose the spot itself: a ＋ was a
+ * complete instruction. Rails have no free space to scan, so the same click is
+ * now only half an instruction and the rail is the missing half. Supplying a
+ * default here would compile and would quietly reinstate the thing the rails
+ * exist to remove — a widget landing somewhere the user did not choose.
+ *
+ * The toast goes with it rather than being kept: at this point nothing has been
+ * added, so announcing that something was is a claim about an event that has not
+ * happened yet. The capacity toast moves to the picker's commit, which is where
+ * the add now lives — see components/console/PlacementPicker.tsx.
+ */
+function askOnce(type: string, label: string): void {
   const open = shellLayoutStore.get().widgets.filter((w) => w.type === type);
   if (open.length > 0) return;
-  const r = shellLayoutStore.add(type);
-  if (!r.ok) toast(WIDGET_LIMIT_MESSAGE);
-  else toast(`${label} added to your workspace`);
+  placementStore.ask({ type, label });
 }
 
 /** Remove EVERY widget of `type` (the rail's toggle is "is this on screen at all"). */
@@ -57,12 +64,12 @@ export function isGroupWidgetOpen(group: string, openTypes: Set<string>): boolea
 export function toggleSourceWidget(sourceId: string, label: string): void {
   const type = widgetTypeForSource(sourceId);
   if (openWidgetTypes().has(type)) removeAll(type);
-  else addOnce(type, label);
+  else askOnce(type, label);
 }
 
 /** Toggle a category roll-up widget on/off the workspace. */
 export function toggleGroupWidget(group: string): void {
   const type = widgetTypeForGroup(group);
   if (openWidgetTypes().has(type)) removeAll(type);
-  else addOnce(type, `${group} roll-up`);
+  else askOnce(type, `${group} roll-up`);
 }

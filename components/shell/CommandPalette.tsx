@@ -15,6 +15,7 @@ import "@/lib/console/widgets";
 import { widgetsByCategory, getWidgetType } from "@/lib/console/registry";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import type { StageId } from "@/lib/console/types";
+import { placementStore } from "@/lib/console/placement";
 import { listPresets, applyPreset, saveCustomPreset, resetActiveBoard } from "@/lib/console/presets";
 import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
 import { encodeLayout } from "@/lib/console/share";
@@ -35,7 +36,6 @@ import {
   type PaletteSnapshot,
 } from "@/lib/console/paletteGroups";
 import type { GeocodeResult } from "@/lib/geo/geocode";
-import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 // Pick a fly-to zoom from a geocode result's extent (wider areas frame out).
 function zoomForResult(r: GeocodeResult): number {
@@ -58,10 +58,6 @@ const LAYER_NAMES: Record<LayerKey, string> = {
   weather: "Weather",
   countries: "Borders & names",
 };
-
-function alertCapacity() {
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
-}
 
 function buildCommands(close: () => void): Command[] {
   const cmds: Command[] = [];
@@ -122,7 +118,11 @@ function buildCommands(close: () => void): Command[] {
       label: `Add ${meta.title}${openCount ? ` (${openCount} open)` : ""}`,
       hint: meta.category.toLowerCase(),
       group: assignWidgetSection({ id, category: meta.category }, POPULAR_WIDGET_IDS),
-      run: () => { const r = shellLayoutStore.add(id, { config: { ...meta.defaultConfig }, height: meta.defaultHeight }); if (!r.ok) alertCapacity(); close(); },
+      // Asks which rail, like every other add path — the palette closes first so
+      // the picker is not left behind a modal that is dismissing itself. The
+      // capacity cap is raised by the picker's commit now that the add lives
+      // there, so the local alertCapacity() helper went with the add it served.
+      run: () => { close(); placementStore.ask({ type: id, label: meta.title, config: { ...meta.defaultConfig }, height: meta.defaultHeight }); },
     });
   };
   // Popular first, in the curated order; then everything else in category order.

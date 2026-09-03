@@ -20,7 +20,7 @@
 //    it goes away (commit, cancel, or Escape all funnel through the same cleanup).
 
 import { useEffect, useRef, useState } from "react";
-import type { SegmentId } from "@/lib/console/types";
+import { WIDGET_LIMIT_MESSAGE, type SegmentId } from "@/lib/console/types";
 import { SEGMENT_LABEL, SEGMENT_ORDER } from "@/lib/console/move";
 import { placementStore, usePlacementRequest } from "@/lib/console/placement";
 import { shellLayoutStore } from "@/lib/console/store";
@@ -51,7 +51,16 @@ export default function PlacementPicker() {
   const { type, label, config, height } = request;
 
   function commit(segment: SegmentId) {
-    shellLayoutStore.add(type, { segment, config, height });
+    // The capacity cap is reported HERE because the add happens here. Every
+    // caller used to check `ok` itself and raise this toast; now they only ask
+    // a question and never see the answer, so dropping the result would make
+    // the 50-widget cap silent — at the cap the user picks a rail, the modal
+    // closes, and nothing appears, with nothing said. That reads as a broken
+    // button rather than a full workspace.
+    const r = shellLayoutStore.add(type, { segment, config, height });
+    if (!r.ok && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
+    }
     placementStore.cancel();
   }
 
