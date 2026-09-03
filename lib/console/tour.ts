@@ -577,7 +577,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         target: [".tn-cam-filters", ".tn-rail"],
         title: "Camera filters — and where the cameras are",
         body:
-          "While Cameras is switched on, the filters sit under the Ground section: hide whole regions with the region chips, or show only cameras serving genuine live video rather than a still that refreshes. The two chips under \"Feed\" are labels for those two kinds, not buttons. This region list is also the honest answer to \"which places have cameras?\" — they come from road agencies that publish openly, so London, California, Finland and British Columbia are covered and most of the world is not.",
+          "While Cameras is switched on, the filters sit below the six sections: hide whole regions with the region chips, or show only cameras serving genuine live video rather than a still that refreshes. The two chips under \"Feed\" are labels for those two kinds, not buttons. This region list is also the honest answer to \"which places have cameras?\" — they come from road agencies that publish openly, so London, California, Finland and British Columbia are covered and most of the world is not.",
         placement: "right",
         setup: [OPEN_RAIL],
         settleMs: 160,

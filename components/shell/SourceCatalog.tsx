@@ -212,20 +212,30 @@ export default function SourceCatalog() {
         <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
       ) : (
         visible.map((section) => (
-          <div key={section.id}>
-            <SourceSection
-              section={section}
-              isOn={isOn}
-              isPlaced={isPlaced}
-              onToggle={onToggle}
-              onDragHandle={onDragHandle}
-            />
-            {/* The camera filters belong to the camera rows, so they sit under the
-                section that holds them, and only while that layer is actually on. */}
-            {section.id === "ground" && layers.cameras ? <CameraFilters /> : null}
-          </div>
+          <SourceSection
+            key={section.id}
+            section={section}
+            isOn={isOn}
+            isPlaced={isPlaced}
+            onToggle={onToggle}
+            onDragHandle={onDragHandle}
+          />
         ))
       )}
+
+      {/* AFTER the six sections, not inside them. These filters belong to the
+          Cameras row, so the obvious place was under the section holding it —
+          but seen in the browser that injects ~220px of feed and region chips
+          between Ground and Air & space and breaks the run of six headings the
+          rail exists to give you. They are a refinement of one source rather
+          than a source, so they read better as a trailing panel. Shown only
+          while the layer they filter is actually on. */}
+      {layers.cameras ? (
+        <>
+          <div className="tn-rail-divider" />
+          <CameraFilters />
+        </>
+      ) : null}
 
       <div className="tn-rail-divider" />
 
