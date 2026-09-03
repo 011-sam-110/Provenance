@@ -115,6 +115,21 @@ obligations and are not satisfied by the licence.
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
+- **Camera-tile conditions** — `lib/console/widgets/camslot.conditions.ts` (pure: what may be
+  SAID), `camslot.provenance.ts` (pure: what may be SHOWN as the basis), `camslot.overlay.tsx`
+  (the corner scrim), `camslot.conditions.store.ts` (one board-wide weather subscription).
+  Surface state rides on `Camera.surface` from the adapters; `lib/cameras/surface.ts` owns the
+  five disqualification rules. Air weather comes from `/api/point-weather` (Open-Meteo), which
+  is a per-coordinate route and **cannot be a signal layer** — `SignalSource.fetch()` takes no
+  arguments. The route is named `point-weather` and not `conditions` on purpose: it is
+  incapable of returning a road-surface state, so nothing downstream can mistake it for one.
+  **Three rules that are not style preferences.** (a) A refused measurement does NOT fall
+  through to derived — it says "no data", so a camera with a 12 km station shows LESS than one
+  with no station at all. Flip the `return none(...)` in `roadClaim`'s refusal branch if that
+  trade is ever judged the wrong way round. (b) A derived line may never contain a surface word
+  — `BANNED_IN_DERIVED` is enforced over every string the tile AND the panel can render.
+  (c) Open-Meteo's `current.precipitation` is a preceding-hour SUM, so every derived phrase says
+  "1h"; writing "now" would be a factual regression, not a rewording.
 
 ## Conventions
 - Adding a signal layer = one adapter file + one `SIGNALS` entry + a fixture unit test. No edits to WorldMap/route/dossier/rail (all data-driven).
@@ -169,6 +184,20 @@ Re-measure before putting a number in a README, a CV or a PR description.
   anonymous credit cap appears to be hit on the deployment's IP, and there is no last-good
   snapshot to fall back on. The honest fix is a persisted last-good snapshot and/or
   credentials — not a louder error. Still open.
+- **Road-surface readings are rare, and the Finland join table rots silently (2026-09-03).**
+  Measured live through the real code path against both upstreams: **19,808 cameras, 912 carry
+  a surface field, 649 survive every disqualification rule — 3.3%**. Only Estonia (180 cameras,
+  the field was always in the `outFields=*` response and was simply being discarded) and
+  Finland publish one. Of the Finnish readings, 89 sensors report their own fault and 147 of 742
+  come from a station past the 10 km cap; the worst operator-declared pairing is 89 km, against
+  Estonia's 37 — which is why the cap is applied to Finland too rather than trusting the
+  operator's own idea of "nearest". The camera-to-station pairing lives in the committed
+  `lib/sources/digitraffic.join.data.ts` because the field is only on the per-station detail
+  endpoint: building it took 813 live requests, doing it per refresh would blow the feed budget,
+  and doing it lazily would make a tile visibly change tier a second after it rendered. **No test
+  can detect this table going stale** — a station added since the capture reads as derived, which
+  is the right failure direction but still needs `scripts/gen-digitraffic-join.mjs` re-run
+  occasionally.
 - Key-gated layers dormant in prod: ACLED, ReliefWeb, ENTSO-E grid, AIS. Live with keys:
   NASA FIRMS, OpenAQ stations. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is

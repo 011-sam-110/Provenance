@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { MIN_INTERVAL_MS, MAX_STREAMS } from "@/lib/console/widgets/camslot.model";
+import { layoutSignature } from "@/lib/console/boards";
+import { setWidgetConfig } from "@/lib/console/reducers";
+import type { ShellLayout } from "@/lib/console/types";
 
 function layoutWith(config: unknown, type = "camslot") {
   return {
@@ -66,5 +69,45 @@ describe("sanitizeLayout — camslot config from a share link", () => {
   it("leaves other widget types' config untouched", () => {
     const l = sanitizeLayout(layoutWith({ symbol: "^FTSE", anything: [1, 2, 3] }, "markets"));
     expect(l?.widgets[0].config).toEqual({ symbol: "^FTSE", anything: [1, 2, 3] });
+  });
+
+  describe("conditions — the overlay's on/off switch survives round-trip encoded as absence", () => {
+    it('keeps conditions:"off" through a share-link round trip', () => {
+      const l = sanitizeLayout(layoutWith({ streams: [], conditions: "off" }));
+      expect(l?.widgets[0].config.conditions).toBe("off");
+    });
+
+    it.each([true, 1, "yes", {}, [], null, "on", "ON", "OFF"])(
+      "drops any non-literal value entirely: %j",
+      (bad) => {
+        const l = sanitizeLayout(layoutWith({ streams: [], conditions: bad }));
+        expect("conditions" in (l?.widgets[0].config as object)).toBe(false);
+      },
+    );
+
+    it("emits no key at all for an untouched config — the default must be byte-identical for layoutSignature", () => {
+      const l = sanitizeLayout(layoutWith({ streams: [] }));
+      const out = l?.widgets[0].config as object;
+      expect("conditions" in out).toBe(false);
+    });
+
+    // This is the claim the whole "default = absence" encoding exists to make, and
+    // it rests on a JSON.stringify subtlety (a key whose value is `undefined` is
+    // dropped) rather than on anything visible in the reducer. Pin it here, because
+    // the failure mode is silent: the board's "customised" dot lights up for a user
+    // who turned the overlay off and back on, i.e. who changed nothing.
+    it("turning the overlay off and back on restores a byte-identical layout signature", () => {
+      const base = sanitizeLayout(layoutWith({ streams: [], intervalMs: 5000 }));
+      expect(base).not.toBeNull();
+      const before = layoutSignature(base as ShellLayout);
+
+      const off = setWidgetConfig(base as ShellLayout, "w1", { conditions: "off" });
+      expect(layoutSignature(off)).not.toBe(before);
+
+      // What the toggle actually writes when switching back on — `undefined`, not
+      // a deletion and not the string "on".
+      const backOn = setWidgetConfig(off, "w1", { conditions: undefined });
+      expect(layoutSignature(backOn)).toBe(before);
+    });
   });
 });

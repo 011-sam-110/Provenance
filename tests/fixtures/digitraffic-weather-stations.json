@@ -1,0 +1,228 @@
+{
+  "_provenance": "Captured live 2026-09-03 from https://tie.digitraffic.fi/api/weather/v1/stations/data (406s without Accept-Encoding: gzip). Trimmed to the sensors the normaliser reads and to one station per KELI_1 branch observed that day: 1.0 Dry, 2.0 Moist, 3.0 Wet, 0.0 sensor fault, and a station publishing no KELI at all. Station 999999 is SYNTHETIC and labelled as such - a winter state this September capture could not contain, present solely so that hardcoding a value-to-label map fails the suite.",
+  "dataUpdatedTime": "2026-09-03T03:35:35Z",
+  "stations": [
+    {
+      "id": 1001,
+      "dataUpdatedTime": "2026-09-03T03:31:35Z",
+      "sensorValues": [
+        {
+          "name": "ILMA",
+          "unit": "°C",
+          "value": 13.6
+        },
+        {
+          "name": "TIE_1",
+          "unit": "°C",
+          "value": 14.3
+        },
+        {
+          "name": "SADE",
+          "sensorValueDescriptionEn": "Dry weather",
+          "unit": "///",
+          "value": 0.0
+        },
+        {
+          "name": "NÄKYVYYS_KM",
+          "unit": "km",
+          "value": 20.0
+        },
+        {
+          "name": "KELI_1",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        },
+        {
+          "name": "KELI_2",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        },
+        {
+          "name": "VAROITUS_1",
+          "sensorValueDescriptionEn": "OK",
+          "unit": "???",
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "id": 1022,
+      "dataUpdatedTime": "2026-09-03T03:31:35Z",
+      "sensorValues": [
+        {
+          "name": "ILMA",
+          "unit": "°C",
+          "value": 14.3
+        },
+        {
+          "name": "TIE_1",
+          "unit": "°C",
+          "value": 13.4
+        },
+        {
+          "name": "SADE",
+          "sensorValueDescriptionEn": "Dry weather",
+          "unit": "///",
+          "value": 0.0
+        },
+        {
+          "name": "NÄKYVYYS_KM",
+          "unit": "km",
+          "value": 20.0
+        },
+        {
+          "name": "KELI_1",
+          "sensorValueDescriptionEn": "Moist",
+          "unit": "***",
+          "value": 2.0
+        },
+        {
+          "name": "KELI_2",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        },
+        {
+          "name": "VAROITUS_1",
+          "sensorValueDescriptionEn": "OK",
+          "unit": "???",
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "id": 1011,
+      "dataUpdatedTime": "2026-09-03T03:34:35Z",
+      "sensorValues": [
+        {
+          "name": "ILMA",
+          "unit": "°C",
+          "value": 15.3
+        },
+        {
+          "name": "TIE_1",
+          "unit": "°C",
+          "value": 14.1
+        },
+        {
+          "name": "SADE",
+          "sensorValueDescriptionEn": "Dry weather",
+          "unit": "///",
+          "value": 0.0
+        },
+        {
+          "name": "NÄKYVYYS_KM",
+          "unit": "km",
+          "value": 16.36
+        },
+        {
+          "name": "KELI_1",
+          "sensorValueDescriptionEn": "Wet",
+          "unit": "***",
+          "value": 3.0
+        },
+        {
+          "name": "KELI_2",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        },
+        {
+          "name": "VAROITUS_1",
+          "sensorValueDescriptionEn": "OK",
+          "unit": "???",
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "id": 1005,
+      "dataUpdatedTime": "2026-09-03T03:32:35Z",
+      "sensorValues": [
+        {
+          "name": "ILMA",
+          "unit": "°C",
+          "value": 13.0
+        },
+        {
+          "name": "SADE",
+          "sensorValueDescriptionEn": "Dry weather",
+          "unit": "///",
+          "value": 0.0
+        },
+        {
+          "name": "NÄKYVYYS_KM",
+          "unit": "km",
+          "value": 17.11
+        },
+        {
+          "name": "KELI_1",
+          "sensorValueDescriptionEn": "The sensor has a fault",
+          "unit": "***",
+          "value": 0.0
+        },
+        {
+          "name": "KELI_2",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        },
+        {
+          "name": "VAROITUS_1",
+          "sensorValueDescriptionEn": "OK",
+          "unit": "???",
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "id": 1042,
+      "dataUpdatedTime": "2026-09-03T03:33:35Z",
+      "sensorValues": [
+        {
+          "name": "ILMA",
+          "unit": "°C",
+          "value": 11.2
+        },
+        {
+          "name": "SADE",
+          "sensorValueDescriptionEn": "Dry weather",
+          "unit": "///",
+          "value": 0.0
+        },
+        {
+          "name": "NÄKYVYYS_KM",
+          "unit": "km",
+          "value": 14.18
+        },
+        {
+          "name": "KELI_2",
+          "sensorValueDescriptionEn": "Dry",
+          "unit": "***",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "id": 999999,
+      "dataUpdatedTime": "2026-09-03T03:30:00Z",
+      "_synthetic": "NOT captured. A hand-written winter row: a KELI value and wording this September probe could not observe. If a value->label map is ever hardcoded, this is the row that fails.",
+      "sensorValues": [
+        {
+          "name": "KELI_1",
+          "value": 4.0,
+          "unit": "***",
+          "sensorValueDescriptionEn": "Snow-covered"
+        },
+        {
+          "name": "TIE_1",
+          "value": -3.4,
+          "unit": "°C",
+          "sensorValueDescriptionEn": null
+        }
+      ]
+    }
+  ]
+}

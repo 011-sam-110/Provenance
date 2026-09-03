@@ -1,5 +1,23 @@
 import { z } from "zod";
 
+// A road-surface reading published by the network that owns the camera.
+//
+// `state` is the OPERATOR'S wording, never ours, which is why it is a free string and
+// not an enum: Estonia sends DRY/MOIST/WET today and Fintraffic sends whole sentences
+// that change with the season ("Snow-covered" appears in winter and not in a September
+// capture). An enum here would silently drop every state we had not met yet — the exact
+// failure mode a fixture cannot catch, because the fixture is also a September capture.
+export const SurfaceSchema = z.object({
+  state: z.string().min(1),
+  roadTempC: z.number().optional(),
+  airTempC: z.number().optional(),
+  station: z.string().optional(),
+  km: z.number().nonnegative().optional(),
+  observedAt: z.number().optional(),
+  /** Set only when the operator itself qualifies the reading (stale, sensor fault). */
+  operatorFlag: z.string().optional(),
+});
+
 export const CameraSchema = z.object({
   id: z.string(),                       // `${source}:${nativeId}`
   source: z.string(),
@@ -18,6 +36,13 @@ export const CameraSchema = z.object({
   attribution: z.string().min(1),
   available: z.boolean(),
   lastSampledAt: z.string().optional(),
+  // A MEASURED road-surface state, present only where the network publishes one.
+  // Two of seventeen feeds do (Estonia, Finland), so this is absent on most rows and
+  // its absence is meaningful: it means nobody measured, NOT that the road is clear.
+  // Everything that reads it must go through `surfaceValidity` in lib/cameras/surface.ts,
+  // because a reading can be present and still unusable (stale, faulty, or measured at
+  // a station too far away to be describing this road).
+  surface: SurfaceSchema.optional(),
 });
 
 export type Camera = z.infer<typeof CameraSchema>;
