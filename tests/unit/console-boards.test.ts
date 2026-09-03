@@ -13,6 +13,7 @@
 
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { createDefaultLayout, type ShellLayout } from "@/lib/console/types";
+import { layoutSignature } from "@/lib/console/boards";
 
 function installStorage(): Map<string, string> {
   const map = new Map<string, string>();
@@ -37,14 +38,14 @@ beforeEach(async () => {
 });
 afterEach(() => { delete (globalThis as { window?: unknown }).window; });
 
-/** A layout with one identifiable widget at an identifiable rect. */
-function layoutWith(rect: { x: number; y: number; w: number; h: number }): ShellLayout {
+/** A layout with one identifiable widget at an identifiable rail placement. */
+function layoutWith(height: number): ShellLayout {
   const base = createDefaultLayout();
   return {
     ...base,
     widgets: [{
       id: "w-test", type: "events", segment: "left", order: 0,
-      width: 12, height: 260, rect, collapsed: false, config: {},
+      height, collapsed: false, config: {},
     }],
   };
 }
@@ -57,16 +58,11 @@ test("a board with no edits has no slot, and reads back as null", async () => {
 
 test("each board keeps its own layout — they do not share one slot", async () => {
   const { writeBoardLayout, readBoardLayout } = await import("@/lib/console/boards");
-  // Both rects are already SETTLED against the default stage cell ({x:3,y:0,w:6,h:14}):
-  // one sits directly below it, one beside it in columns the stage does not use. A
-  // rect that overlapped the stage, or that floated when compacted, would come back
-  // moved — legally — and the test would then be asserting against the collision
-  // resolver rather than against storage.
-  writeBoardLayout("earth", layoutWith({ x: 0, y: 14, w: 6, h: 6 }));
-  writeBoardLayout("situation", layoutWith({ x: 0, y: 0, w: 3, h: 9 }));
+  writeBoardLayout("earth", layoutWith(360));
+  writeBoardLayout("situation", layoutWith(180));
 
-  expect(readBoardLayout("earth")!.widgets[0].rect).toEqual({ x: 0, y: 14, w: 6, h: 6 });
-  expect(readBoardLayout("situation")!.widgets[0].rect).toEqual({ x: 0, y: 0, w: 3, h: 9 });
+  expect(readBoardLayout("earth")!.widgets[0].height).toBe(360);
+  expect(readBoardLayout("situation")!.widgets[0].height).toBe(180);
 });
 
 test("a corrupt slot degrades to null rather than rendering a broken board", async () => {
@@ -77,13 +73,59 @@ test("a corrupt slot degrades to null rather than rendering a broken board", asy
 
 test("forgetting a board's layout is what makes Reset mean something", async () => {
   const { writeBoardLayout, forgetBoardLayout, isBoardEdited } = await import("@/lib/console/boards");
-  writeBoardLayout("earth", layoutWith({ x: 0, y: 14, w: 6, h: 6 }));
+  writeBoardLayout("earth", layoutWith(360));
   expect(isBoardEdited("earth")).toBe(true);
   forgetBoardLayout("earth");
   expect(isBoardEdited("earth")).toBe(false);
 });
 
+// ── layoutSignature — the trap this milestone exists to avoid ───────────────
+//
+// layoutSignature used to fingerprint `w.rect` and `l.stageRect`. Left alone
+// once rects left the type, every board would report "edited" forever the
+// instant it was opened — the customised dot lighting on all seven built-ins
+// and Reset no longer meaning anything. These pin the replacement directly,
+// independent of `presets.ts` (a rail-order difference is constructed by hand
+// rather than through a board template).
+
+test("layoutSignature: two layouts differing only in rail order produce different signatures", () => {
+  const base = createDefaultLayout();
+  const a: ShellLayout = {
+    ...base,
+    widgets: [
+      { id: "x", type: "events", segment: "left", order: 0, height: 260, collapsed: false, config: {} },
+      { id: "y", type: "aviation", segment: "left", order: 1, height: 260, collapsed: false, config: {} },
+    ],
+  };
+  // Same two widgets, same rail, swapped order — nothing else differs.
+  const b: ShellLayout = {
+    ...base,
+    widgets: [
+      { id: "x", type: "events", segment: "left", order: 1, height: 260, collapsed: false, config: {} },
+      { id: "y", type: "aviation", segment: "left", order: 0, height: 260, collapsed: false, config: {} },
+    ],
+  };
+  expect(layoutSignature(a)).not.toBe(layoutSignature(b));
+});
+
+test("layoutSignature: an unedited board's freshly-built layout matches its own template", () => {
+  const l = layoutWith(260);
+  // Rebuilding the identical layout (as re-opening an unedited board does)
+  // must sign identically — that identity is what lets "opening a board is not
+  // editing it" hold.
+  const rebuilt: ShellLayout = { ...l, widgets: l.widgets.map((w) => ({ ...w })) };
+  expect(layoutSignature(l)).toBe(layoutSignature(rebuilt));
+});
+
 // ── The regression itself ───────────────────────────────────────────────────
+//
+// These exercise the board-archive machinery through `applyPreset` /
+// `resetActiveBoard`, which live in `lib/console/presets.ts` — out of scope for
+// this change (it is still authored against the deleted grid and is being
+// converted separately). They are left in the rail vocabulary they should use
+// once that conversion lands: `resizeWidget` standing in for a drag, since a
+// rail has no free x/y to drag to — only a height to change, a rail to move
+// between (`move`), or a place in the rail to move to.
 
 test("REGRESSION: a board switch no longer destroys the board you came from", async () => {
   const { applyPreset } = await import("@/lib/console/presets");
@@ -91,15 +133,15 @@ test("REGRESSION: a board switch no longer destroys the board you came from", as
 
   applyPreset("earth");
   const moved = shellLayoutStore.get().widgets[0];
-  // Stand in for a drag: the store's single write path for every pointer gesture.
-  shellLayoutStore.placeItem(moved.id, { x: 0, y: 14, w: 6, h: 6 });
-  const edited = shellLayoutStore.get().widgets.find((w) => w.id === moved.id)!.rect;
+  // Stand in for a drag: the store's write path for a height change.
+  shellLayoutStore.resizeWidget(moved.id, 620);
+  const edited = shellLayoutStore.get().widgets.find((w) => w.id === moved.id)!.height;
 
   applyPreset("overview");
   applyPreset("earth");
 
   expect(
-    shellLayoutStore.get().widgets.find((w) => w.id === moved.id)?.rect,
+    shellLayoutStore.get().widgets.find((w) => w.id === moved.id)?.height,
     "the card came back where the template puts it, not where the user left it",
   ).toEqual(edited);
 });
@@ -121,13 +163,13 @@ test("a drag marks the board edited; Reset puts the template back and clears the
   const { isBoardEdited } = await import("@/lib/console/boards");
 
   applyPreset("earth");
-  const template = shellLayoutStore.get().widgets.map((w) => w.rect);
-  shellLayoutStore.placeItem(shellLayoutStore.get().widgets[0].id, { x: 0, y: 14, w: 6, h: 6 });
+  const template = shellLayoutStore.get().widgets.map((w) => w.height);
+  shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
   expect(isBoardEdited("earth")).toBe(true);
 
   resetActiveBoard();
 
-  expect(shellLayoutStore.get().widgets.map((w) => w.rect)).toEqual(template);
+  expect(shellLayoutStore.get().widgets.map((w) => w.height)).toEqual(template);
   expect(isBoardEdited("earth"), "a reset board must not still read as edited").toBe(false);
 });
 
@@ -137,7 +179,7 @@ test("edits to one board do not leak into another board's slot", async () => {
   const { isBoardEdited } = await import("@/lib/console/boards");
 
   applyPreset("earth");
-  shellLayoutStore.placeItem(shellLayoutStore.get().widgets[0].id, { x: 0, y: 14, w: 6, h: 6 });
+  shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
   applyPreset("situation");
 
   expect(isBoardEdited("earth")).toBe(true);

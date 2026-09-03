@@ -51,8 +51,18 @@ test("the widget slots are hidden by solo, not dropped from the tree", () => {
   // empty board feed by feed. Verified in the browser: content identical across
   // a solo round trip.
   expect(src).toContain("hidden={solo}");
-  // The map must actually get the board, or solo is just a widget-hiding button.
-  expect(src).toMatch(/solo\s*\n?\s*\?\s*\{ x: 0, y: 0, w: COLS/);
+  // THE SECOND HALF OF THIS TEST MOVED, and it moved because it was the weaker
+  // kind of assertion. It used to read the source for `solo ? { x: 0, y: 0, w:
+  // COLS ...}` — the literal that gave the map the whole board. That pinned one
+  // spelling of one implementation: it would have gone green on a stage that was
+  // full-width and still had three rails sitting on top of it, and it went red on
+  // a rename that changed nothing.
+  //
+  // The claim it was making — "the map must actually get the board, or solo is
+  // just a widget-hiding button" — is now made behaviourally in
+  // terminal-rails.test.ts, by `effectiveRailSize(..., solo) === 0` for all three
+  // rails and by the rail vars all collapsing to 0px. That is the same claim
+  // against the function that decides it, so it cannot be satisfied by a string.
 });
 
 test("`hidden` on a slot cannot be silently defeated by a display rule", () => {

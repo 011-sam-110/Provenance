@@ -1,8 +1,8 @@
 "use client";
 import { createDefaultLayout, STAGE_ID, type ShellLayout } from "@/lib/console/types";
-import { addWidget, applyItems, setStage } from "@/lib/console/reducers";
-import { arrangeHouse, arrangeWall, DEFAULT_BOARD_ROWS, RAIL_CAPACITY } from "@/lib/terminal/layoutGrid";
-import { visibleRows } from "@/lib/terminal/rowBudget";
+import { addWidget, setStage, setSegmentSize, setWidgetHeight } from "@/lib/console/reducers";
+import { splitSpan } from "@/lib/terminal/rails";
+import { visibleShell } from "@/lib/terminal/rowBudget";
 import { shellLayoutStore } from "@/lib/console/store";
 import { layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
@@ -29,10 +29,18 @@ export interface ConsolePreset {
    *  because a core layer is otherwise only ever implied by a widget, and webcams
    *  has no widget to imply it. */
   mapCore?: LayerKey[];
-  /** `rows` is the board's height budget — see the note on WEIGHTS below. Defaults
-   *  to DEFAULT_BOARD_ROWS so tests and any off-DOM caller still get a real board. */
-  build(rows?: number): ShellLayout;
+  /** `shell` is the workspace box the board is composed against — see the note
+   *  on WEIGHTS below. Defaults to DEFAULT_SHELL so tests and any off-DOM caller
+   *  still get a real board. It was a row COUNT until the grid was deleted; it is
+   *  a px box now, because a rail's cards are sized in px and there is no row
+   *  pitch left to divide by. */
+  build(shell?: { w: number; h: number }): ShellLayout;
 }
+
+/** The workspace box a board is composed against when nobody measured one — an
+ *  off-DOM caller, a unit test, SSR. Matches `rowBudget.ts`'s own fallback, and
+ *  the two are the same measurement of the same element. */
+const DEFAULT_SHELL = { w: 1440, h: 820 };
 
 /** The board a fresh visitor lands on (ConsoleShell first-run seed + "Reset to default"). */
 export const DEFAULT_PRESET_ID = "overview";
@@ -53,19 +61,27 @@ export const DEFAULT_PRESET_ID = "overview";
 // on this board sat at rows 40-50 and never drew at all. The second effect was a
 // ~470x400px empty rectangle under the 4-column map — larger in area than the map.
 //
-// Both are gone by construction. A board now declares cards in PRIORITY order with
-// a WEIGHT, and `arrangeHouse` fits them to a measured row budget beside a map that
-// runs the full height of the board. Weight is a claim about attention, not size:
+// Both are gone TWICE OVER now, and the second time is structural. A board
+// declares cards in PRIORITY order with a WEIGHT, and `composeRail` fits them to
+// the measured shell beside a map that runs the full height of the board. But
+// the clipping above cannot recur even if that fitting is wrong, because the
+// RAIL ITSELF SCROLLS: a board too tall for the window is a scroll, not a card
+// nobody can reach. The measurement is now about opening in good shape rather
+// than about staying inside a hard ceiling.
+//
+// Weight is a claim about attention, not size:
 //
 //   3 — the card this board exists for. First thing the eye should land on.
 //   2 — a card that is read.
-//   1 — a card that is checked. Lands ~3 rows: a header and a line. That is the
-//       right size for a feed that is usually empty or key-gated (ACLED, floods),
-//       and it is deliberate — a dormant feed used to hold a full 250px card to
-//       say "Nothing in World.", on the most valuable slot of the board.
+//   1 — a card that is checked. Lands at the floor: a header and a line. That is
+//       the right size for a feed that is usually empty or key-gated (ACLED,
+//       floods), and it is deliberate — a dormant feed used to hold a full 250px
+//       card to say "Nothing in World.", on the most valuable slot of the board.
 //
-// Cards past the sixth dock in a strip beneath the map rather than squeezing the
-// rail into a column of headers.
+// THE SIXTH-CARD OVERFLOW IS GONE. Cards past the sixth used to dock in a strip
+// beneath the map, because a rail could not scroll and card seven had to go
+// somewhere. Card seven now goes under card six, which is where someone looking
+// for it would look.
 
 let seed = 0;
 const id = () => `p${(seed += 1).toString(36)}`;
@@ -79,47 +95,94 @@ interface CardSpec {
   config?: Record<string, unknown>;
 }
 
-function compose(stage: ShellLayout["stage"], rows: number, cards: CardSpec[]): ShellLayout {
-  let l = setStage(createDefaultLayout(), stage);
-  // `segment` is legacy, but `?c=` share links and the migration path still read it,
-  // so it is kept truthful: the rail is "left", the dock beneath the map is "bottom".
-  cards.forEach((c, i) => {
-    l = addWidget(l, c.type, id(), {
-      segment: i < RAIL_CAPACITY ? "left" : "bottom",
-      ...(c.config ? { config: c.config } : {}),
-    });
-  });
-  const ids = l.widgets.map((w) => w.id);
-  return applyItems(
-    l,
-    arrangeHouse(cards.map((c, i) => ({ id: ids[i], weight: c.weight })), STAGE_ID, rows),
-  );
+/** A standard board's left rail, in px. Matches `createDefaultLayout`, so a
+ *  built-in board and a board built by hand from an empty console agree. */
+const RAIL_PX = 320;
+
+/** A camera board's left rail. Wider than RAIL_PX for one reason, kept below:
+ *  a camera frame is 16:9 and a 320px rail letterboxes it. */
+const WALL_RAIL_PX = 480;
+
+/** No card is composed shorter than this. A card below it is a header and a
+ *  clipped first row, which reads as broken rather than as small. */
+const MIN_CARD_PX = 120;
+
+/**
+ * Build a board: every card in the left rail, in priority order, with the
+ * weights spent on HEIGHT.
+ *
+ * ── THE WEIGHT VOCABULARY SURVIVED THE GRID; ITS UNITS DID NOT ──────────────
+ * A weight has always been a claim about attention rather than about size, and
+ * that claim is unchanged (3 = the card this board exists for, 2 = a card that
+ * is read, 1 = a card that is checked). What changed is what it buys: it used
+ * to buy grid ROWS from `arrangeHouse`, and now it buys PIXELS from
+ * `splitSpan`, which moved into `lib/terminal/rails.ts` unchanged for exactly
+ * this caller. Same proportions, same exact-total guarantee, same absorb-the-
+ * rounding-drift-into-the-largest-card rule.
+ *
+ * There is no longer an overflow into a bottom dock past the sixth card, and
+ * that deletion is the point rather than a simplification: `RAIL_CAPACITY`
+ * existed because a rail could not scroll, so card seven had to go somewhere.
+ * A rail scrolls now. Card seven goes under card six, where a reader looking
+ * for it would look.
+ */
+function compose(stage: ShellLayout["stage"], shell: { w: number; h: number }, cards: CardSpec[]): ShellLayout {
+  return composeRail(stage, shell, cards, RAIL_PX);
 }
 
 /**
- * A WALL board: equal cards tiled three across, with the map taking one card's
- * width over two bands.
+ * A CAMERA board. Identical machinery to `compose`, one number different.
  *
- * `compose()` above cannot express this. It calls `arrangeHouse`, which hardcodes
- * `mapCols = COLS - RAIL_COLS` — the map always takes 8 of 12 columns and the cards
- * land in a 4-column rail. Measured at 1400px that rail gives cards aspect ratios
- * from 2.68 to 6.30; none is near the 16:9 a camera frame actually is, so a board
- * whose entire purpose is showing pictures would show letterboxed slivers.
+ * ── WHAT THIS USED TO BE, AND WHY IT IS NOT A REDESIGN ──────────────────────
+ * `composeWall` called `arrangeWall`, which tiled equal cards three across and
+ * gave the map one card's width over two bands. It existed because
+ * `arrangeHouse` hardcoded a 4-of-12-column rail, and measured at 1400px that
+ * rail gave camera cards aspect ratios from 2.68 to 6.30 — nowhere near the
+ * 16:9 a camera frame actually is, so a board whose whole purpose is showing
+ * pictures showed letterboxed slivers.
  *
- * `arrangeWall` already existed for exactly this shape. The only thing it costs is
- * that the map is 4 columns rather than 8, which is why the Streets board is
- * explicitly exempted from the `stage.w >= 8` assertion in
- * tests/unit/console-presets.test.ts rather than quietly failing it.
+ * That is a statement about WIDTH, and width is now one number rather than a
+ * separate arrangement function. So the wall becomes a wider rail: the cards
+ * keep their equal weights, their order and their configs, and nothing is
+ * rearranged. The `stage.w >= 8` exemption the Streets board needed in
+ * `console-presets.test.ts` goes with it — a wider rail still leaves the map
+ * more than half the window, so Streets now passes the same assertion as every
+ * other board instead of being written out of it.
+ *
+ * Deliberately NOT redesigned here (Sam's call, 2026-09-03). Its final shape is
+ * a separate job after the camslot overlay lands, because the overlay's own
+ * measurements — a stage of at least 300x170 CSS px for the full two-row
+ * readout, 240x135 compact, self-hiding below 90px — are the numbers to design
+ * against, and they belong to whoever owns that tile.
  */
-function composeWall(stage: ShellLayout["stage"], rows: number, cards: CardSpec[]): ShellLayout {
+function composeWall(stage: ShellLayout["stage"], shell: { w: number; h: number }, cards: CardSpec[]): ShellLayout {
+  return composeRail(stage, shell, cards, WALL_RAIL_PX);
+}
+
+function composeRail(
+  stage: ShellLayout["stage"],
+  shell: { w: number; h: number },
+  cards: CardSpec[],
+  railPx: number,
+): ShellLayout {
   let l = setStage(createDefaultLayout(), stage);
-  cards.forEach((c, i) => {
+  // `segment` is no longer legacy authoring input that something else overrides
+  // — it IS the widget's position. Every built-in board opens with one rail; the
+  // other two are empty and therefore take no space at all.
+  for (const c of cards) {
     l = addWidget(l, c.type, id(), {
-      segment: i < RAIL_CAPACITY ? "left" : "bottom",
+      segment: "left",
       ...(c.config ? { config: c.config } : {}),
     });
-  });
-  return applyItems(l, arrangeWall(l.widgets.map((w) => w.id), STAGE_ID, rows));
+  }
+  l = setSegmentSize(l, "left", railPx);
+
+  // The rail scrolls, so this is a starting shape rather than a hard budget: it
+  // is the height at which the board opens with everything visible on THIS
+  // window, not a promise that it can never exceed it.
+  const heights = splitSpan(cards.map((c) => c.weight), shell.h, MIN_CARD_PX);
+  l.widgets.forEach((w, i) => { l = setWidgetHeight(l, w.id, heights[i]); });
+  return l;
 }
 
 // SIX broad boards — deliberately few. The *union* still touches every widget group
@@ -155,7 +218,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   { id: "overview", title: "Brief", icon: "🌐", blurb: "what changed since you last looked",
     mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"],
     mapCore: ["webcams"],
-    build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { type: "anomaly", weight: 3 },
       { type: "events", weight: 3 },
       { type: "headlines", weight: 2 },
@@ -167,7 +230,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // every board is a situation and every report is a sitrep, so the label carried
   // no information. ACLED is key-gated and dormant in production, so it takes the
   // smallest slot rather than the top-right corner it used to hold empty.
-  { id: "situation", title: "Conflict", icon: "🎯", blurb: "armed events, protest & military movement", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+  { id: "situation", title: "Conflict", icon: "🎯", blurb: "armed events, protest & military movement", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { type: "signal:conflict", weight: 3 },
       { type: "signal:military-air", weight: 2 },
       { type: "signal:protests", weight: 2 },
@@ -192,7 +255,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // slot goes to the card that reliably has something in it, and GDACS keeps the
   // second — restore the order once the empty state distinguishes "no alerts" from
   // "filtered out" from "no key".
-  { id: "earth", title: "Hazards", icon: "🌍", blurb: "quakes, fire, flood & storm", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+  { id: "earth", title: "Hazards", icon: "🌍", blurb: "quakes, fire, flood & storm", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { type: "signal:earthquakes", weight: 3 },
       { type: "signal:gdacs", weight: 2 },
       { type: "signal:wildfires", weight: 2 },
@@ -205,7 +268,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // ── Transit — things that move, and the lanes they move in (globe stage) ─
   // Was "Air · Sea · Space": three domains and two separators in one tab. One
   // word, and it survives rail or road being added later.
-  { id: "mobility", title: "Transit", icon: "🛰", blurb: "aircraft, vessels & orbit", build: (rows = DEFAULT_BOARD_ROWS) => compose("map3d", rows, [
+  { id: "mobility", title: "Transit", icon: "🛰", blurb: "aircraft, vessels & orbit", build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
       { type: "aviation", weight: 3 },
       { type: "satellites", weight: 2 },
       { type: "signal:ais", weight: 2 },
@@ -218,7 +281,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // ── Markets & Cyber — the economy and the infrastructure under it ───────
   // Was "MKT·CYBER" in the tab strip. Abbreviating one half of a pair and not the
   // other reads as a rendering fault, and the header band has the room.
-  { id: "markets", title: "Markets & Cyber", icon: "📈", blurb: "economy, outages & intrusions", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+  { id: "markets", title: "Markets & Cyber", icon: "📈", blurb: "economy, outages & intrusions", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { type: "markets", weight: 3 },
       { type: "signal:internet-outages", weight: 2 },
       { type: "signal:cyber-ransomware", weight: 2 },
@@ -233,7 +296,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // monitors, this one is queried — so it takes the two other query surfaces:
   // photo geolocation, and displacement, which is an annual stock figure that was
   // sitting on a live conflict board looking like it moved.
-  { id: "tools", title: "Recon", icon: "🔎", blurb: "domain & IP intel, photo geolocation", build: (rows = DEFAULT_BOARD_ROWS) => compose("map2d", rows, [
+  { id: "tools", title: "Recon", icon: "🔎", blurb: "domain & IP intel, photo geolocation", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { type: "recon:dns", weight: 2 },
       { type: "recon:whois", weight: 2 },
       { type: "recon:certs", weight: 2 },
@@ -285,7 +348,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // a 6-column stage leaves 6 columns that 4-wide cards cannot tile.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     mapCore: ["cameras", "webcams"],
-    build: (rows = DEFAULT_BOARD_ROWS) => composeWall("map2d", rows, [
+    build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [
       { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641", t: "London: Trafalgar Square" }] } },
       { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744", t: "Madrid: Cortes: Plaza Canalejas" }] } },
       { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762", t: "Prague: Wenceslas Square" }] } },
@@ -311,7 +374,7 @@ function loadCustom(): CustomPreset[] { return loadPersisted<CustomPreset[]>(KEY
  */
 function templateFor(presetId: string): ShellLayout | null {
   const built = BUILTIN_PRESETS.find((p) => p.id === presetId);
-  if (built) return built.build(visibleRows());
+  if (built) return built.build(visibleShell());
   return loadCustom().find((p) => p.id === presetId)?.layout ?? null;
 }
 
@@ -373,7 +436,7 @@ export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): v
   // Only the TEMPLATE is fitted to the window. A saved layout is the user's own
   // arrangement and is restored verbatim — re-flowing someone's board because they
   // unplugged a monitor is how a workspace loses trust.
-  const layout = saved ?? (built ? built.build(visibleRows()) : custom!.layout);
+  const layout = saved ?? (built ? built.build(visibleShell()) : custom!.layout);
   // `archive: false` — opening a board is not editing it. See store.ts's emit().
   shellLayoutStore.replace(layout, { archive: Boolean(saved) });
   // Drive the globe to match the board: the persona's widgets decide which core +

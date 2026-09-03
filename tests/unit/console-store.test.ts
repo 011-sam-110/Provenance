@@ -11,8 +11,8 @@ test("add returns the new id and lands the widget", () => {
 });
 
 test("add past the widget cap is rejected with ok:false", () => {
-  for (let i = 0; i < MAX_WIDGETS; i++) shellLayoutStore.add("aviation");
-  const r = shellLayoutStore.add("aviation");
+  for (let i = 0; i < MAX_WIDGETS; i++) shellLayoutStore.add("aviation", { segment: "left" });
+  const r = shellLayoutStore.add("aviation", { segment: "left" });
   expect(r.ok).toBe(false);
   expect(shellLayoutStore.get().widgets.length).toBe(MAX_WIDGETS);
 });
@@ -20,9 +20,9 @@ test("add past the widget cap is rejected with ok:false", () => {
 test("subscribers fire on mutation", () => {
   let n = 0;
   const unsub = shellLayoutStore.subscribe(() => n++);
-  shellLayoutStore.add("events");
+  shellLayoutStore.add("events", { segment: "left" });
   shellLayoutStore.stage("clock");
   unsub();
-  shellLayoutStore.add("events"); // not counted
+  shellLayoutStore.add("events", { segment: "left" }); // not counted
   expect(n).toBe(2);
 });

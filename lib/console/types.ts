@@ -2,7 +2,14 @@ export type SegmentId = "left" | "right" | "bottom";
 export type StageId = "map3d" | "map2d" | "clock";
 export type WidgetTypeId = string;
 
-/** A widget's rectangle on the Terminal grid, in CELLS. See lib/terminal/layoutGrid. */
+/**
+ * A widget's rectangle on the old Terminal grid, in CELLS. The grid itself is
+ * gone — three resizable rails replaced it — but the shape is kept exported
+ * because `sanitize.ts` still has to read it off LEGACY input: a `?c=` link
+ * minted by an older build, or a `tn.console.v1` blob written before this
+ * migration, can still carry `rect`/`stageRect`. `lib/terminal/rails.ts`'s
+ * `railsFromRects` is the only thing left that constructs one.
+ */
 export interface GridRect {
   x: number;
   y: number;
@@ -13,18 +20,9 @@ export interface GridRect {
 export interface WidgetInstance {
   id: string;
   type: WidgetTypeId;
-  /** LEGACY. Kept because all six built-in presets, every `?c=` share link and
-   *  every persisted `tn.console.v1` layout are authored in these four fields.
-   *  They are the input `fromLegacy()` seeds `rect` from on first load, and the
-   *  authoring vocabulary presets still use — they are NOT what gets rendered. */
-  segment: SegmentId;
-  order: number;
-  width: number;        // column span 1..12
-  height: number;       // px
-  /** What the Terminal actually draws. Absent only until the first sanitize pass
-   *  fills it — `sanitizeLayout` guarantees every widget has one after load, so
-   *  render paths can treat a missing rect as a bug rather than a state. */
-  rect?: GridRect;
+  segment: SegmentId;   // which rail
+  order: number;        // place in that rail, 0-based, contiguous
+  height: number;       // px, its own height in the rail; the rail scrolls
   collapsed: boolean;   // header-only
   config: Record<string, unknown>;
 }
@@ -32,9 +30,12 @@ export interface WidgetInstance {
 export interface SegmentState { size: number; collapsed: boolean }
 
 /**
- * The map stage's id on the grid. It is a grid item like any widget — draggable
- * and resizable — so it needs an id in the same namespace. Widget ids are minted
- * as `w<base36>` (see store.nextId), so a leading underscore cannot collide.
+ * The map stage's id. It predates the rail model, when the stage was a grid item
+ * like any widget — draggable and resizable — and needed an id in the same
+ * namespace. It survives as the FLIP key (`lib/terminal/flip.ts`) and the stage's
+ * `data-grid-id` / DOM id, and `sanitize.ts` still keys legacy `rect` migration
+ * off it. Widget ids are minted as `w<base36>` (see store.nextId), so a leading
+ * underscore cannot collide.
  */
 export const STAGE_ID = "__stage";
 
@@ -42,8 +43,6 @@ export interface ShellLayout {
   segments: Record<SegmentId, SegmentState>;
   stage: StageId;
   widgets: WidgetInstance[];
-  /** The map stage's cell on the Terminal grid. Same units as WidgetInstance.rect. */
-  stageRect?: GridRect;
   /** The widget expanded onto the center stage, or null when the map is shown. */
   focusedWidgetId: string | null;
 }
@@ -75,18 +74,16 @@ export const WIDGET_LIMIT_MESSAGE = `${MAX_WIDGETS}-widget limit — remove one 
 export function createDefaultLayout(): ShellLayout {
   return {
     segments: {
-      left: { size: 300, collapsed: false },
-      right: { size: 300, collapsed: false },
-      bottom: { size: 220, collapsed: false },
+      // The map is the hero: it fills whatever the rails do not take. A fresh
+      // layout opens with only the left rail sized — right and bottom are empty
+      // and `effectiveRailSize` reports 0 for them regardless, but 0 here is
+      // also the honest starting value rather than a size nothing occupies yet.
+      left: { size: 320, collapsed: false },
+      right: { size: 0, collapsed: false },
+      bottom: { size: 0, collapsed: false },
     },
     stage: "map2d",
     widgets: [],
-    // The stage's opening cell: the middle six of twelve columns, leaving a rail
-    // either side for the first widgets to land in. Kept as a literal rather than
-    // read from layoutGrid's arrangeConsole so this module stays dependency-free —
-    // createDefaultLayout is imported by sanitize, which layoutGrid must not import
-    // back.
-    stageRect: { x: 3, y: 0, w: 6, h: 14 },
     focusedWidgetId: null,
   };
 }

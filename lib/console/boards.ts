@@ -98,12 +98,20 @@ export function editedBoardIds(): string[] {
  * a module-level counter on every `build()`, so the same board built twice is never
  * id-identical and an id-sensitive comparison would report every board as edited.
  * Widgets are compared as a sorted multiset because two boards holding the same
- * cards in the same cells are the same board however the array happens to be
+ * cards in the same rail slots are the same board however the array happens to be
  * ordered.
+ *
+ * THE TRAP THIS REPLACED: this used to fingerprint `w.rect` and `l.stageRect`.
+ * Once rects left the type, that would have made every board compare unequal to
+ * itself forever — the customised dot lighting on all seven built-ins the moment
+ * they were opened, and Reset no longer meaning anything. `segment`/`order` are
+ * the rail equivalent of position, `height` of size; `segments` (sizes and
+ * collapsed state) is included at the top level because dragging a splitter is
+ * exactly the kind of edit this signature exists to catch.
  */
 export function layoutSignature(l: ShellLayout): string {
   const widgets = l.widgets
-    .map((w) => JSON.stringify({ t: w.type, r: w.rect, c: w.collapsed, g: w.config }))
+    .map((w) => JSON.stringify({ t: w.type, s: w.segment, o: w.order, h: w.height, c: w.collapsed, g: w.config }))
     .sort();
-  return JSON.stringify({ stage: l.stage, stageRect: l.stageRect, widgets });
+  return JSON.stringify({ stage: l.stage, segments: l.segments, widgets });
 }

@@ -3,12 +3,6 @@ import { addWidget, widgetsInSegment } from "@/lib/console/reducers";
 import { moveWidget } from "@/lib/console/reducers";
 import { createDefaultLayout, type ShellLayout } from "@/lib/console/types";
 import { nudgeTarget, otherSegments, sendToTarget, SEGMENT_LABEL, SEGMENT_ORDER } from "@/lib/console/move";
-import {
-  activePreset,
-  HEIGHT_PRESETS,
-  HEIGHT_PRESET_TOLERANCE_PX,
-  WIDTH_PRESETS,
-} from "@/lib/console/resize";
 
 // Moving a widget used to require an HTML5 drag from an unmarked header to an
 // invisible drop index. These cover the destinations behind the ⋯ → Move buttons
@@ -81,39 +75,5 @@ describe("sending a widget to another column", () => {
 
   it("names every segment it can offer", () => {
     for (const s of SEGMENT_ORDER) expect(SEGMENT_LABEL[s]).toBeTruthy();
-  });
-});
-
-describe("one-click sizes", () => {
-  it("marks the preset a value currently matches", () => {
-    expect(activePreset(WIDTH_PRESETS, 6)).toBe(6);
-    expect(activePreset(HEIGHT_PRESETS, 280, HEIGHT_PRESET_TOLERANCE_PX)).toBe(280);
-  });
-
-  it("claims no preset for a hand-dragged size that matches none", () => {
-    // 9 columns is between ⅔ (8) and Full (12) — lighting up either would tell
-    // the user their widget is a size it is not.
-    expect(activePreset(WIDTH_PRESETS, 9)).toBeNull();
-    expect(activePreset(HEIGHT_PRESETS, 350, HEIGHT_PRESET_TOLERANCE_PX)).toBeNull();
-  });
-
-  it("tolerates a near-miss from a drag, in pixels only", () => {
-    expect(activePreset(HEIGHT_PRESETS, 285, HEIGHT_PRESET_TOLERANCE_PX)).toBe(280);
-    // Column spans are discrete: 7 is not "half", however close it looks.
-    expect(activePreset(WIDTH_PRESETS, 7)).toBeNull();
-  });
-
-  it("offers only spans the grid can actually render", () => {
-    for (const p of WIDTH_PRESETS) {
-      expect(p.value).toBeGreaterThanOrEqual(3);
-      expect(p.value).toBeLessThanOrEqual(12);
-    }
-  });
-
-  it("offers only heights the store will not clamp away", () => {
-    for (const p of HEIGHT_PRESETS) {
-      expect(p.value).toBeGreaterThanOrEqual(120);
-      expect(p.value).toBeLessThanOrEqual(1200);
-    }
   });
 });

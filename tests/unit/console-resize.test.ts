@@ -1,28 +1,36 @@
 import { expect, test } from "vitest";
-import { clampSpan, spanFromPointer, dropIndex, WIDGET_COLS, MIN_WIDGET_SPAN } from "@/lib/console/resize";
+import { activePreset, HEIGHT_PRESETS, HEIGHT_PRESET_TOLERANCE_PX } from "@/lib/console/resize";
 
-test("clampSpan rounds and clamps into [MIN_WIDGET_SPAN, 12]", () => {
-  expect(clampSpan(6.4)).toBe(6);
-  expect(clampSpan(6.6)).toBe(7);
-  expect(clampSpan(0)).toBe(MIN_WIDGET_SPAN);
-  expect(clampSpan(99)).toBe(WIDGET_COLS);
-  expect(clampSpan(NaN)).toBe(WIDGET_COLS);
+// resize.ts used to also hold the WIDTH half of this — WIDGET_COLS, clampSpan,
+// spanFromPointer, WIDTH_PRESETS, dropIndex — deleted along with the free grid:
+// a rail has one column, and a widget fills it, so there is no width to offer a
+// preset for any more. Only the one-click HEIGHT sizes survive.
+
+test("marks the preset a value currently matches", () => {
+  expect(activePreset(HEIGHT_PRESETS, 280, HEIGHT_PRESET_TOLERANCE_PX)).toBe(280);
 });
 
-test("spanFromPointer snaps a right-edge drag to a column span", () => {
-  expect(spanFromPointer({ pointerX: 600, slotLeft: 0, segWidth: 1200 })).toBe(6);  // half
-  expect(spanFromPointer({ pointerX: 1200, slotLeft: 0, segWidth: 1200 })).toBe(12); // full
-  expect(spanFromPointer({ pointerX: 40, slotLeft: 0, segWidth: 1200 })).toBe(MIN_WIDGET_SPAN); // tiny → min
-  expect(spanFromPointer({ pointerX: 100, slotLeft: 0, segWidth: 0 })).toBe(12); // zero-width guard
+test("claims no preset for a hand-dragged size that matches none", () => {
+  expect(activePreset(HEIGHT_PRESETS, 350, HEIGHT_PRESET_TOLERANCE_PX)).toBeNull();
 });
 
-test("dropIndex returns reading-order insertion index over a wrap grid", () => {
-  const A = { top: 0, bottom: 100, left: 0, right: 100 };
-  const B = { top: 0, bottom: 100, left: 108, right: 208 };
-  const C = { top: 108, bottom: 208, left: 0, right: 100 };
-  const rects = [A, B, C];
-  expect(dropIndex({ x: 10, y: 50 }, rects)).toBe(0);   // left of A center → before A
-  expect(dropIndex({ x: 130, y: 50 }, rects)).toBe(1);  // between A and B centers → before B
-  expect(dropIndex({ x: 300, y: 50 }, rects)).toBe(2);  // right of B (end of row 1) → before C
-  expect(dropIndex({ x: 10, y: 300 }, rects)).toBe(3);  // below all → append
+test("tolerates a near-miss from a drag, within the pixel tolerance", () => {
+  expect(activePreset(HEIGHT_PRESETS, 285, HEIGHT_PRESET_TOLERANCE_PX)).toBe(280);
+  expect(activePreset(HEIGHT_PRESETS, 280 + HEIGHT_PRESET_TOLERANCE_PX + 1, HEIGHT_PRESET_TOLERANCE_PX)).not.toBe(280);
+});
+
+test("offers only heights the reducer will not clamp away", () => {
+  for (const p of HEIGHT_PRESETS) {
+    expect(p.value).toBeGreaterThanOrEqual(120);
+    expect(p.value).toBeLessThanOrEqual(1200);
+  }
+});
+
+test("with no tolerance given, only an exact match counts", () => {
+  expect(activePreset(HEIGHT_PRESETS, 280)).toBe(280);
+  expect(activePreset(HEIGHT_PRESETS, 281)).toBeNull();
+});
+
+test("returns null for an empty preset list rather than throwing", () => {
+  expect(activePreset([], 280)).toBeNull();
 });

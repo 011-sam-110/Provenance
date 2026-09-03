@@ -5,14 +5,14 @@
 // click closes it. All controls drive the existing stores, so nothing here owns state
 // beyond the transient "copied" flash.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LANGS } from "@/lib/i18n/catalog";
 import { useLang, langStore } from "@/lib/i18n/store";
 import { uiStore, useUI } from "@/lib/shell/ui";
 import { buildShareUrl } from "@/lib/share/deepLink";
 import { encodeLayout } from "@/lib/console/share";
 import { shellLayoutStore } from "@/lib/console/store";
-import { BUILTIN_PRESETS, applyPreset } from "@/lib/console/presets";
+import { BUILTIN_PRESETS, applyPreset, listPresets, saveCustomPreset } from "@/lib/console/presets";
 import { useActivePreset } from "@/lib/console/activePreset";
 import { useTelegram, telegramStore, sendTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
 import {
@@ -58,6 +58,14 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
   const [copied, setCopied] = useState(false);
   const [tgStatus, setTgStatus] = useState<{ kind: "idle" | "sending" | "ok" | "err"; msg?: string }>({ kind: "idle" });
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // listPresets() reads localStorage directly (no reactive store — see
+  // lib/console/presets.ts), so a save from THIS panel needs an explicit nudge to
+  // reappear in the list below. Bumping presetTick forces the memo to re-read.
+  const [presetTick, setPresetTick] = useState(0);
+  const customPresets = useMemo(
+    () => listPresets().filter((p) => !BUILTIN_PRESETS.some((b) => b.id === p.id)),
+    [presetTick],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -76,6 +84,16 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
     setCopied(true);
     if (copyTimer.current) clearTimeout(copyTimer.current);
     copyTimer.current = setTimeout(() => setCopied(false), 1800);
+  };
+
+  // Same working implementation the ⌘K palette used ("save-preset"): a plain
+  // window.prompt for the name, then saveCustomPreset(). Kept identical rather
+  // than built into a dialog — see lib/console/presets.ts's saveCustomPreset.
+  const onSaveAsPreset = () => {
+    const t = window.prompt("Preset name?");
+    if (!t) return;
+    saveCustomPreset(t);
+    setPresetTick((n) => n + 1);
   };
 
   const onSendTest = async () => {
@@ -139,6 +157,30 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
                 </button>
               ))}
             </div>
+            {/* Custom boards, saved from this same panel (or from ⌘K before it moved
+                here) — the ⌘K palette's "Profiles" group has always listed these
+                alongside the built-ins via listPresets(); this list did not. */}
+            {customPresets.length > 0 && (
+              <>
+                <h3 className="tn-settings-sec-title">Saved by you</h3>
+                <div className="tn-settings-boards">
+                  {customPresets.map((p) => (
+                    <button key={p.id} type="button"
+                      className={`tn-settings-board${p.id === activeId ? " is-active" : ""}`}
+                      aria-pressed={p.id === activeId} onClick={() => applyPreset(p.id)}>
+                      <span className="tn-settings-board-icon" aria-hidden>{p.icon}</span>
+                      <span className="tn-settings-board-text">
+                        <span className="tn-settings-board-title">{p.title}</span>
+                        <span className="tn-settings-board-blurb">{p.blurb}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <button type="button" className="tn-settings-tg-test" onClick={onSaveAsPreset}>
+              Save current layout as a new board…
+            </button>
           </section>
 
           {/* Share ----------------------------------------------------------- */}

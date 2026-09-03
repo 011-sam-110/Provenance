@@ -16,15 +16,15 @@ describe("focus reducer", () => {
   });
 
   it("removing the focused widget clears focus", () => {
-    let l = addWidget(createDefaultLayout(), "events", "w1");
+    let l = addWidget(createDefaultLayout(), "events", "w1", { segment: "left" });
     l = setFocus(l, "w1");
     l = removeWidget(l, "w1");
     expect(l.focusedWidgetId).toBeNull();
   });
 
   it("removing a different widget leaves focus intact", () => {
-    let l = addWidget(createDefaultLayout(), "events", "w1");
-    l = addWidget(l, "markets", "w2");
+    let l = addWidget(createDefaultLayout(), "events", "w1", { segment: "left" });
+    l = addWidget(l, "markets", "w2", { segment: "left" });
     l = setFocus(l, "w1");
     l = removeWidget(l, "w2");
     expect(l.focusedWidgetId).toBe("w1");

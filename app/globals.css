@@ -3095,8 +3095,17 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-line-strong: rgba(255, 255, 255, 0.14);
   --tnx-row-rule: rgba(255, 255, 255, 0.05);
 
-  --tnx-accent: #ffb020;
-  --tnx-accent-soft: rgba(255, 176, 32, 0.13);
+  /* Blue, not amber, and the reason is measured rather than aesthetic — see the
+     light block, where the old accent failed AA outright. Dark did not have that
+     problem (#ffb020 was 10.64:1 on --tnx-panel) but the two skins have to mean
+     the same thing, and amber had a second job here: --tnx-lag is amber, so a
+     feed that had fallen behind rendered identically to a control you had
+     selected. #5cb1ff measures 8.51 on --tnx-panel, 8.77 on --tnx-bg, 8.16 on
+     --tnx-panel-head, and sits ~207deg from the warn/critical ramp instead of
+     the 15deg amber managed. --tnx-lag KEEPS the amber; that separation is the
+     point. */
+  --tnx-accent: #5cb1ff;
+  --tnx-accent-soft: rgba(92, 177, 255, 0.13);
 
   /* ── The ALERT ramp — deliberately NOT the accent ───────────────────────
      An OSINT analyst reviewing the console read the left column as "a visual
@@ -3141,10 +3150,45 @@ a.tn-w-place { display: flex; align-items: center; }
 
   /* Geometry. --tnx-rh is the standard row height; a widget body that wants the
      compact 19px variant sets --tnx-rh on itself and every row below follows. */
-  --tnx-rh: 22px;
-  --tnx-fs: 11.5px;
-  --tnx-hdr-h: 34px;
-  --tnx-feed-h: 22px;
+  --tnx-rh: 26px;
+
+  /* ── The type scale ───────────────────────────────────────────────────────
+     Five steps, all derived from --tnx-fs, so the console has ONE number.
+     Before this there were fifteen distinct hard-coded sizes between 8.5px and
+     18px across 84 declarations, and --tnx-fs had five consumers — so the token
+     was decorative and the real scale was whatever each rule happened to say.
+     The steps are the buckets those fifteen values collapse into, not an
+     invention: xs took 8.5/9/9.5, sm took 10/10.5/11, md took 12/12.5/13/13.5
+     and lg took 15/16/16.5/18.
+
+     11.5px was too small to begin with and Sam browses at about 80% zoom, so it
+     rendered at roughly 9.2 device pixels. 13px renders at about 10.4. If it is
+     still tight, it is now ONE number rather than 84.
+     tests/unit/terminal-tokens.test.ts fails if a px literal comes back. */
+  --tnx-fs: 13px;
+  --tnx-fs-xs: calc(var(--tnx-fs) - 2px);
+  --tnx-fs-sm: calc(var(--tnx-fs) - 1px);
+  --tnx-fs-md: calc(var(--tnx-fs) + 1px);
+  --tnx-fs-lg: calc(var(--tnx-fs) + 4px);
+
+  --tnx-hdr-h: 38px;
+  /* --tn-topbar-h is calc(hdr + feed) and follows these two to 64px unedited. */
+  --tnx-feed-h: 26px;
+
+  /* ── Radius, gutter and shadow ────────────────────────────────────────────
+     The 1px gutter is REVERSED here, deliberately, and the reasoning it
+     replaces is kept at the .tn-grid rule rather than deleted. That reasoning —
+     the gaps between panels ARE the rules, so no panel needs a border and two
+     neighbours can never make a 2px double rule — is a good terminal idea and
+     it is incompatible with a rounded corner: a card with a 6px radius cannot
+     sit flush against a 1px rule without the rule showing through the corner.
+     8px of --tnx-bg reads as ground instead, which is what makes the cards read
+     as cards. Square corners were the old identity; that is the trade. */
+  --tnx-r: 6px;
+  --tnx-r-sm: 4px;
+  --tnx-r-lg: 10px;
+  --tnx-gap: 8px;
+  --tnx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.22);
   /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
      width and the shell's reserved left padding, so the two can never disagree
      and let the tab sit on top of the first widget. */
@@ -3179,13 +3223,13 @@ a.tn-w-place { display: flex; align-items: center; }
   --tn-text-dim: var(--tnx-ink-faint);
   --tn-hover: rgba(255, 255, 255, 0.06);
   --tn-accent: var(--tnx-accent);
-  --tn-accent-strong: #ffc457;
+  --tn-accent-strong: #8cc7ff;
   --tn-accent-soft: var(--tnx-accent-soft);
   --tn-chip-bg: #141a22;
   --tn-toggle-off: rgba(255, 255, 255, 0.16);
   /* The terminal separates surfaces with hairlines, not elevation. A shadow
      survives only where a popover has to detach from the panel behind it. */
-  --tn-shadow-sm: none;
+  --tn-shadow-sm: var(--tnx-shadow-1);
   --tn-shadow: 0 14px 40px rgba(0, 0, 0, 0.66);
 
   --tn-live: var(--tnx-live);
@@ -3263,8 +3307,16 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-line-strong: rgba(16, 22, 29, 0.22);
   --tnx-row-rule: rgba(16, 22, 29, 0.07);
 
-  --tnx-accent: #b8690a;
-  --tnx-accent-soft: rgba(184, 105, 10, 0.12);
+  /* THIS is the token that made the retune necessary. #b8690a measures 4.15:1
+     on --tnx-panel (white) and 3.66:1 on --tnx-bg, it is used as a TEXT colour
+     by 92 rules, and light is DEFAULT_TERMINAL_SKIN — so the default console
+     failed AA for every one of them. The block above used to claim the deepened
+     amber "keeps the identity and the contrast"; it kept the identity.
+     #0f5c9c measures 6.93 on --tnx-panel, 6.12 on --tnx-bg, 6.51 on
+     --tnx-panel-head. --tnx-lag stays #b8690a, so lagging keeps the amber and
+     stops rendering as selected. */
+  --tnx-accent: #0f5c9c;
+  --tnx-accent-soft: rgba(15, 92, 156, 0.12);
 
   /* The alert ramp, re-derived on paper — NOT the dark values dimmed. Same rule
      as the status hues above: the badge prints --tnx-bg (#eef1f5) ON these, so
@@ -3299,10 +3351,13 @@ a.tn-w-place { display: flex; align-items: center; }
   --tn-topbar-fill: rgba(255, 255, 255, 0.74);
   --tn-topbar-pill: rgba(255, 255, 255, 0.94);
   --tn-hover: rgba(16, 22, 29, 0.05);
-  --tn-accent-strong: #8f5107;
+  --tn-accent-strong: #0b4a7d;
   --tn-chip-bg: #eaeef3;
   --tn-toggle-off: rgba(16, 22, 29, 0.20);
   --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
+  /* Inherited from the dark block otherwise, where the alphas are tuned for
+     near-black and read as grime on paper. */
+  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.10), 0 2px 8px rgba(16, 22, 29, 0.08);
   --tn-stale: #b5521a;
   --tn-stale-ink: #b5521a;
 
@@ -3462,7 +3517,7 @@ a.tn-w-place { display: flex; align-items: center; }
 .tnx-boot-stamp {
   position: absolute; top: 26px;
   font-family: var(--tnx-font-mono);
-  font-size: 9.5px; letter-spacing: 0.22em;
+  font-size: var(--tnx-fs-xs); letter-spacing: 0.22em;
   color: var(--tnx-ink-faint);
   opacity: 0;
 }
@@ -3474,7 +3529,7 @@ a.tn-w-place { display: flex; align-items: center; }
   position: absolute; left: 30px; right: 30px; bottom: 26px;
   display: flex; align-items: center; gap: 18px;
   font-family: var(--tnx-font-mono);
-  font-size: 9.5px; letter-spacing: 0.2em;
+  font-size: var(--tnx-fs-xs); letter-spacing: 0.2em;
   color: var(--tnx-ink-ghost);
   opacity: 0;
 }
@@ -3555,7 +3610,7 @@ a.tn-w-place { display: flex; align-items: center; }
 .tnx-boot-sub {
   margin-top: 16px;
   font-family: var(--tnx-font-mono);
-  font-size: clamp(9px, 1.35vmin, 12px);
+  font-size: clamp(var(--tnx-fs-xs), 1.35vmin, var(--tnx-fs-md));
   letter-spacing: 0.5em; text-indent: 0.5em;
   color: var(--tnx-ink-faint);
   opacity: 0;
@@ -3568,7 +3623,7 @@ a.tn-w-place { display: flex; align-items: center; }
   width: min(560px, 84vw); margin-top: 34px;
   min-height: calc(6 * 1.62em);
   font-family: var(--tnx-font-mono);
-  font-size: clamp(9.5px, 1.3vmin, 12px);
+  font-size: clamp(var(--tnx-fs-xs), 1.3vmin, var(--tnx-fs-md));
   line-height: 1.62;
 }
 .tnx-boot-check {
@@ -3583,7 +3638,7 @@ a.tn-w-place { display: flex; align-items: center; }
 .tnx-boot-ready {
   margin-top: 30px; min-height: 1.4em;
   font-family: var(--tnx-font-mono);
-  font-size: clamp(10.5px, 1.6vmin, 14px);
+  font-size: clamp(var(--tnx-fs-sm), 1.6vmin, var(--tnx-fs-md));
   letter-spacing: 0.44em; text-indent: 0.44em;
   color: var(--tnx-live);
   opacity: 0;
@@ -3733,21 +3788,44 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-bg);
 }
 
-/* The grid itself. Background = the hairline colour and gap = 1px, so the gutters
-   between panels ARE the rules: no panel needs a border, and two adjacent panels
-   can never produce a 2px double rule. */
+/* The workspace frame.
+
+   THE 1px GUTTER IS REVERSED HERE, and the reasoning it replaces is kept rather
+   than deleted because it was right on its own terms. It ran: background = the
+   hairline colour and gap = 1px, so the gutters between panels ARE the rules —
+   no panel needs a border, and two adjacent panels can never produce a 2px
+   double rule. That is a good terminal idea and it is exactly incompatible with
+   a rounded corner. A card with a 6px radius cannot sit flush against a 1px
+   rule: the rule runs on past the corner and shows through the gap the radius
+   opens, so every card gets four little hairline spurs. The choice is a square
+   card or a gutter, not both.
+
+   So the gap becomes --tnx-gap and the background becomes --tnx-bg. The gutters
+   are ground now, not rules, and each card carries its own edge. What is lost is
+   real and worth naming: the guarantee against a 2px double rule moves from
+   being structural to being a thing each card's own border has to not do.
+
+   `overflow: hidden`, NOT `auto`. This element is the fixed frame the hero map
+   is measured against; if it scrolls, the map scrolls with it and stops being a
+   hero. Scrolling belongs to each rail (`.tn-rail-col`) individually, which is
+   what lets a long left rail scroll past a stationary map instead of dragging
+   the map up out of view — the behaviour the old single-scroller grid could not
+   express, and the reason a card at the bottom of a tall board used to be
+   unreachable at any scroll position.
+
+   grid-template-columns / -rows arrive as an inline style from
+   ConsoleWorkspace, because two of the five tracks are CSS variables the
+   splitters write and the rest have to sit around them. */
 .tn-terminal .tn-seg {
   display: grid;
-  gap: 1px;
+  gap: var(--tnx-gap);
   padding: 0;
   height: 100%;
   min-height: 0;
   align-items: stretch;
   align-content: stretch;
-  overflow: auto;
-  background: var(--tnx-line);
-  /* grid-template-areas / -columns / -rows arrive as an inline style from
-     lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
+  overflow: hidden;
+  background: var(--tnx-bg);
 }
 /* `hidden` has to actually hide. `[hidden]{display:none}` is a UA rule and the
    lowest-specificity thing in the cascade, so ANY `display` added to this
@@ -3756,13 +3834,19 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-seg-slot[hidden] { display: none !important; }
 
 .tn-terminal .tn-seg-slot {
-  /* MANDATORY, not stylistic: the eight `.tn-rz` resize handles are
-     position:absolute and pin themselves to this box's edges. Without a
-     positioned ancestor here they resolve against `.tn-grid` instead, so every
-     card's handles pile up in the corners of the whole board — the handles are
-     invisible at rest, so this fails as "resizing does nothing" rather than as
-     anything you can see. */
+  /* Still MANDATORY, for a different reason than it used to be. It was here to
+     anchor eight resize handles per card; those went with the grid, and their
+     rules went with them. It stays because the widget's three popovers (help, notify, ⋯) are
+     positioned against this box — see the `:has()` rule below, which is what
+     lets them escape it. Without a positioned ancestor they resolve against the
+     whole workspace and land in its corner.
+
+     `flex: 0 0 auto` keeps a card at exactly the height the rail gave it:
+     the rail is a flex column that scrolls, and without this a short rail would
+     stretch its cards to fill and a tall one would squash them, so the height
+     the ⋯ menu writes would be advisory rather than real. */
   position: relative;
+  flex: 0 0 auto;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -3832,50 +3916,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   cursor: grabbing;
 }
 
-/* ── Resize handles ────────────────────────────────────────────────────────
-   Eight of them, invisible at rest and revealed by the slot's own hover. The
-   old three were 6px targets with no resting appearance, so you had to already
-   know they were there and then hit them. These are 10px edges and 16px
-   corners, which is the most that can be given without eating into a 22px
-   header row; the ⋯ menu's nudge buttons and the arrow keys are the no-aim
-   route for anyone who does not want to chase an edge. */
-.tn-terminal .tn-rz {
-  position: absolute; z-index: 20;
-  opacity: 0;
-  transition: opacity 120ms ease;
-  touch-action: none;
-}
-.tn-terminal .tn-seg-slot:hover .tn-rz,
-.tn-terminal .tn-cw-stage:hover .tn-rz,
-.tn-terminal .is-held .tn-rz { opacity: 1; }
-
-.tn-terminal .tn-rz::after {
-  content: ""; position: absolute; inset: 0;
-  background: var(--tnx-accent);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-.tn-terminal .tn-rz:hover::after { opacity: 0.45; }
-
-.tn-terminal .tn-rz-n  { top: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-.tn-terminal .tn-rz-s  { bottom: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-.tn-terminal .tn-rz-w  { left: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
-.tn-terminal .tn-rz-e  { right: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
-.tn-terminal .tn-rz-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-.tn-terminal .tn-rz-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
-.tn-terminal .tn-rz-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
-.tn-terminal .tn-rz-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-
-/* The south-east corner gets the only resting mark — the universal "this
-   resizes" tell, and the handle people reach for first. */
-.tn-terminal .tn-rz-se::before {
-  content: ""; position: absolute; right: 2px; bottom: 2px;
-  width: 6px; height: 6px;
-  border-right: 1.5px solid var(--tnx-ink-ghost);
-  border-bottom: 1.5px solid var(--tnx-ink-ghost);
-}
-.tn-terminal .tn-seg-slot:hover .tn-rz-se::before { border-color: var(--tnx-accent); }
-
 /* The stage's drag grip. The map owns click, drag and wheel for panning and
    zooming, so the stage cannot be draggable by its surface the way a widget's
    header is — it gets one explicit grip instead, tucked into the corner the map
@@ -3887,7 +3927,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: color-mix(in srgb, var(--tnx-panel) 88%, transparent);
   border: 1px solid var(--tnx-line-strong);
   color: var(--tnx-ink-faint);
-  font-size: 10px; line-height: 1;
+  font-size: var(--tnx-fs-sm); line-height: 1;
   cursor: grab;
   touch-action: none;
 }
@@ -3901,9 +3941,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    helper already resolves its duration to 0, and these cover the CSS-only fades
    so nothing is left half-transitioned. */
 @media (prefers-reduced-motion: reduce) {
-  .tn-terminal .tn-grid-guides,
-  .tn-terminal .tn-rz,
-  .tn-terminal .tn-rz::after { transition: none; }
+  .tn-terminal .tn-grid-guides { transition: none; }
 }
 
 /* Below this width a twelve-column drag is not a real interaction — a column is
@@ -3924,7 +3962,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     flex: 0 0 auto;
     min-height: 220px;
   }
-  .tn-terminal .tn-rz,
   .tn-terminal .tn-grid-guides,
   .tn-terminal .tn-grid-ghost,
   .tn-terminal .tn-stage-grip { display: none; }
@@ -3942,8 +3979,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   inset: auto;
   min-width: 0;
   min-height: 180px;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: var(--tnx-r);
+  box-shadow: var(--tnx-shadow-1);
   overflow: hidden;
   background: var(--tnx-bg);
 }
@@ -3955,14 +3992,20 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-panel);
   color: var(--tnx-ink-faint);
   font-family: var(--tnx-font-mono);
-  font-size: 10px;
+  font-size: var(--tnx-fs-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 /* ── Widget frames ─────────────────────────────────────────────────────────
-   Colour comes from the token remap above; only GEOMETRY is restated here, because
-   there is no token for "square, flush, filling its cell".
+   Colour comes from the token remap above; only GEOMETRY is restated here.
+
+   This block used to open by saying there is no token for "square, flush,
+   filling its cell", which was true and is now the description of a console
+   that no longer exists. A card is rounded, it sits on 8px of ground rather
+   than flush against its neighbour, and it is lifted off that ground rather
+   than being a differently-coloured region of it. The shadow is what makes the
+   gutter read as space instead of as a gap someone forgot to fill.
 
    `max-height: none !important` is the one !important in this section and it is
    unavoidable: WidgetFrame writes `style.maxHeight = instance.height` inline on
@@ -3972,8 +4015,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   max-height: none !important;
   height: 100%;
   border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: var(--tnx-r);
+  box-shadow: var(--tnx-shadow-1);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background: var(--tnx-panel);
@@ -3985,16 +4028,16 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   gap: 7px;
   background: var(--tnx-panel-head);
   border-bottom: 1px solid var(--tnx-line);
-  font-size: 10px;
+  font-size: var(--tnx-fs-sm);
 }
-.tn-terminal .tn-cw-icon { font-size: 10px; opacity: 0.75; }
+.tn-terminal .tn-cw-icon { font-size: var(--tnx-fs-sm); opacity: 0.75; }
 .tn-terminal .tn-cw-title {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tn-terminal .tn-cw-count { font-size: 10px; font-variant-numeric: tabular-nums; }
+.tn-terminal .tn-cw-count { font-size: var(--tnx-fs-sm); font-variant-numeric: tabular-nums; }
 .tn-terminal .tn-cw-badge {
-  border-radius: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.04em;
+  border-radius: var(--tnx-r-sm); font-size: var(--tnx-fs-xs); font-weight: 800; letter-spacing: 0.04em;
   padding: 1px 4px; color: var(--tnx-bg); background: var(--tnx-ink-dim);
 }
 /* The alert ramp, not the accent and not the status hues. `warn` pointed straight
@@ -4014,17 +4057,18 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-cw-alert.tn-sev-warn { border-left-color: var(--tnx-alert-warn); background: var(--tnx-panel-head); }
 .tn-terminal .tn-cw-alert.tn-sev-info { border-left-color: var(--tnx-alert-none); background: var(--tnx-panel-head); }
 .tn-terminal .tn-cw-fresh {
-  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+  font-size: var(--tnx-fs-xs); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
 }
 .tn-terminal .tn-cw-help::after { box-shadow: inset 0 0 0 1px var(--tnx-line-strong); }
 
 /* The three old `.tn-cw-resize*` handles used to be hidden here, because a widget
    owned exactly one template cell and its size came from the template — so a
-   resize control was a control that lied. Widgets own a rectangle now, and
-   resizing lives on the SLOT as eight handles (`.tn-rz-*` below) rather than
-   inside the frame: an edge has to stay grabbable, and `.tn-cw` clips its
-   overflow. The handles no longer exist in WidgetFrame's markup, so there is
-   nothing left to hide. */
+   resize control was a control that lied. That note was then rewritten to say
+   resizing had moved to eight handles on the SLOT, which was true only while
+   there was a grid. A card has no width of its own in a rail: width belongs to
+   the rail and is dragged on the splitter between rails, height is per-card and
+   lives in the widget menu. No handle exists in any markup, and no rule here
+   hides one. */
 
 /* The grab handle. A real button now — it carries the keyboard path to moving and
    resizing, so it has to be focusable and announced. */
@@ -4033,7 +4077,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   width: 14px; height: 100%; flex: 0 0 auto;
   padding: 0; border: 0; background: transparent;
   color: var(--tnx-ink-ghost);
-  font: inherit; font-size: 10px; line-height: 1;
+  font: inherit; font-size: var(--tnx-fs-sm); line-height: 1;
   cursor: grab;
   touch-action: none;
 }
@@ -4060,7 +4104,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-w-mag,
 .tn-terminal .tn-w-bar-num,
 .tn-terminal .tn-num { font-variant-numeric: tabular-nums; }
-.tn-terminal .tn-w-sev { border-radius: 0; font-size: 9px; }
+.tn-terminal .tn-w-sev { border-radius: var(--tnx-r-sm); font-size: var(--tnx-fs-xs); }
 
 /* The render half of rowState() in lib/terminal/selection: the selected row, and
    rows LINKED to it by country code. Currently UNUSED — the selection store, the
@@ -4090,21 +4134,21 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   top: 0; bottom: 0; left: 0;
   width: 304px;
   max-height: none;
-  border-radius: 0;
+  border-radius: var(--tnx-r);
   border-top: 0; border-bottom: 0; border-left: 0;
   border-right: 1px solid var(--tnx-line-strong);
   background: var(--tnx-panel);
   backdrop-filter: none; -webkit-backdrop-filter: none;
-  box-shadow: none;
+  box-shadow: var(--tnx-shadow-1);
   z-index: 26;
 }
 .tn-terminal .tn-cw-shell > .tn-rail-fab {
   position: absolute;
   top: 8px; left: 8px; bottom: auto;
-  border-radius: 0;
+  border-radius: var(--tnx-r-sm);
   border: 1px solid var(--tnx-line-strong);
   background: var(--tnx-glass);
-  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   z-index: 6;
 }
 @media (min-width: 901px) {
@@ -4166,11 +4210,11 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-glass-soft) !important;
   color: var(--tnx-ink-ghost);
   font-family: var(--tnx-font-mono);
-  font-size: 9px;
+  font-size: var(--tnx-fs-xs);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
 .tn-terminal .maplibregl-ctrl-group {
-  border-radius: 0;
+  border-radius: var(--tnx-r);
   background: var(--tnx-glass);
   box-shadow: 0 0 0 1px var(--tnx-line-strong);
 }
@@ -4180,7 +4224,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    the free bottom-left corner, above the clock bar. */
 .tn-terminal .tn-pinnav {
   top: auto; right: auto; bottom: 30px; left: 8px;
-  border-radius: 0; border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r); border: 1px solid var(--tnx-line-strong);
   background: var(--tnx-glass); box-shadow: none;
 }
 
@@ -4190,9 +4234,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    a "you are following BA117" readout wants to be anyway. */
 .tn-terminal .tn-track-chip {
   top: 30px; left: 50%; transform: translateX(-50%);
-  border-radius: 0; border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r-sm); border: 1px solid var(--tnx-line-strong);
   background: var(--tnx-glass); box-shadow: none;
-  font-size: 10px;
+  font-size: var(--tnx-fs-sm);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -4210,7 +4254,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 }
 .tn-terminal .tnx-hdr-mark { width: 24px; height: 24px; display: block; }
 .tn-terminal .tnx-hdr-h1 {
-  margin: 0; font-family: var(--tnx-font-title); font-size: 12px; font-weight: 800;
+  margin: 0; font-family: var(--tnx-font-title); font-size: var(--tnx-fs-md); font-weight: 800;
   letter-spacing: 0.14em; line-height: 1; text-transform: uppercase; color: var(--tnx-ink);
   white-space: nowrap;
 }
@@ -4225,7 +4269,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   display: flex; align-items: stretch; min-width: 0;
 }
 .tn-terminal .tnx-hdr-board {
-  font: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em;
   padding: 0 13px; background: none; cursor: pointer; white-space: nowrap;
   border: 0; border-right: 1px solid var(--tnx-line);
   border-bottom: 2px solid transparent; color: var(--tnx-ink-faint);
@@ -4244,7 +4288,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    a colour-only signal, so it survives both a greyscale screen and deuteranopia. */
 .tn-terminal .tnx-hdr-board { color: var(--tnx-ink-dim); }
 .tn-terminal .tnx-hdr-board-dot {
-  margin-left: 5px; font-size: 13px; line-height: 0; vertical-align: middle;
+  margin-left: 5px; font-size: var(--tnx-fs-md); line-height: 0; vertical-align: middle;
   color: var(--tnx-accent);
 }
 .tn-terminal .tnx-hdr-board.is-edited { color: var(--tnx-ink); }
@@ -4255,7 +4299,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-hdr-board-reset {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 24px; min-height: 24px; align-self: center; margin: 0 6px;
-  font: inherit; font-size: 12px; line-height: 1; cursor: pointer;
+  font: inherit; font-size: var(--tnx-fs-md); line-height: 1; cursor: pointer;
   border: 1px solid var(--tnx-line-strong); background: none; color: var(--tnx-ink-dim);
 }
 .tn-terminal .tnx-hdr-board-reset:hover {
@@ -4267,9 +4311,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   display: flex; align-items: center; gap: 6px; padding: 0 10px;
   border-left: 1px solid var(--tnx-line); flex: none;
 }
-.tn-terminal .tnx-hdr-utc-label { font-size: 9.5px; color: var(--tnx-ink-faint); }
+.tn-terminal .tnx-hdr-utc-label { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); }
 .tn-terminal .tnx-hdr-utc-time {
-  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tnx-ink);
+  font-size: var(--tnx-fs-md); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--tnx-ink);
 }
 .tn-terminal .tnx-hdr-right {
   display: flex; align-items: stretch; padding: 0;
@@ -4285,7 +4329,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    any appearance. */
 .tn-terminal .tnx-hdr-btn {
   display: inline-flex; align-items: center; gap: 5px;
-  font: inherit; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  font: inherit; font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em;
   padding: 0 10px; border: 0; border-right: 1px solid var(--tnx-line);
   background: none; cursor: pointer; color: var(--tnx-ink-dim);
   text-decoration: none; white-space: nowrap;
@@ -4295,11 +4339,11 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    it is the only one that changes the page rather than opening something. */
 .tn-terminal .tnx-hdr-btn[aria-pressed="true"] { color: var(--tnx-ink); }
 .tn-terminal .tnx-hdr-kbd {
-  font-size: 9.5px; font-weight: 700; padding: 1px 5px;
+  font-size: var(--tnx-fs-xs); font-weight: 700; padding: 1px 5px;
   border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink);
 }
 .tn-terminal .tnx-hdr-btn-label { color: inherit; }
-.tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: 10px; border-radius: 0; }
+.tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: var(--tnx-fs-sm); border-radius: var(--tnx-r-sm); }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
    resting outline for a focus ring to thicken. */
 .tn-terminal .tnx-hdr :focus-visible,
@@ -4313,7 +4357,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-feed {
   height: var(--tnx-feed-h); display: flex; align-items: stretch;
   background: var(--tnx-panel); border-bottom: 1px solid var(--tnx-line-strong);
-  font-size: 9.5px; user-select: none;
+  font-size: var(--tnx-fs-xs); user-select: none;
 }
 .tn-terminal .tnx-feed-label {
   display: flex; align-items: center; padding: 0 9px; letter-spacing: 0.12em;
@@ -4342,9 +4386,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-basemap-btn,
 .tn-terminal .tnx-stage-proj .tn-stage-switch button {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
 }
 .tn-terminal .tnx-basemap-btn:hover,
 .tn-terminal .tnx-stage-proj .tn-stage-switch button:hover { color: var(--tnx-ink); }
@@ -4355,10 +4399,10 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-stage-proj { display: flex; align-items: stretch; }
 .tn-terminal .tnx-stage-proj .tn-stage-switch {
   display: flex; align-items: stretch; gap: 0;
-  background: none; border: 0; padding: 0; border-radius: 0; box-shadow: none;
+  background: none; border: 0; padding: 0; border-radius: var(--tnx-r-sm); box-shadow: none;
 }
 .tn-terminal .tnx-stage-proj .tn-stage-focus {
-  display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: 9px;
+  display: flex; align-items: center; padding: 0 8px; color: var(--tnx-accent); font-size: var(--tnx-fs-xs);
 }
 
 /* Export this view. Same button family as the basemaps to its left — it is a
@@ -4371,9 +4415,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 /* Solo — gives the board to the map. Same family as the rest of the bar. */
 .tn-terminal .tn-solo-btn {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
 }
 .tn-terminal .tn-solo-btn:hover { color: var(--tnx-ink); }
 .tn-terminal .tn-solo-btn[aria-pressed="true"] { background: var(--tnx-accent); color: var(--tnx-bg); }
@@ -4390,15 +4434,15 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-aoi-btn {
   border: 1px solid var(--tnx-line-strong); background: none; padding: 4px 6px;
   cursor: pointer; font: inherit; text-align: left;
-  font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--tnx-ink-dim); line-height: 1.35; border-radius: 0;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--tnx-ink-dim); line-height: 1.35; border-radius: var(--tnx-r-sm);
   min-height: 0; min-width: 0;
 }
 .tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
 /* The vertex count while drawing. Accent, because it is the only feedback that
    the gesture is being received at all. */
 .tn-terminal .tn-aoi-live {
-  font-size: 8.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
   color: var(--tnx-accent); line-height: 1.35;
 }
 
@@ -4414,13 +4458,13 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    this in the first place. */
 .tn-terminal .tn-export {
   display: flex; align-items: stretch;
-  background: none; border-radius: 0; padding: 0; gap: 0;
+  background: none; border-radius: var(--tnx-r); padding: 0; gap: 0;
 }
 .tn-terminal .tn-export-btn {
   border: 0; background: none; padding: 0 10px; cursor: pointer; font: inherit;
-  font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line);
-  white-space: nowrap; border-radius: 0; min-height: 0; min-width: 0;
+  white-space: nowrap; border-radius: var(--tnx-r-sm); min-height: 0; min-width: 0;
 }
 .tn-terminal .tn-export-btn:hover:not(:disabled) { color: var(--tnx-ink); }
 .tn-terminal .tn-export-btn:disabled { opacity: 0.45; cursor: progress; }
@@ -4431,7 +4475,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 /* Empty until something happens, and it must not reserve width while empty or the
    bar reflows every time a message appears and expires. */
 .tn-terminal .tn-export-note:not(:empty) {
-  display: flex; align-items: center; padding: 0 10px; font-size: 9px;
+  display: flex; align-items: center; padding: 0 10px; font-size: var(--tnx-fs-xs);
   letter-spacing: 0.04em; color: var(--tnx-ink-dim); max-width: 30ch;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
@@ -4446,26 +4490,26 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-glass); border: 1px solid var(--tnx-line-strong);
   pointer-events: auto;
 }
-.tn-terminal .tnx-stage-search-pfx { font-size: 11px; font-weight: 700; color: var(--tnx-accent); flex: none; }
+.tn-terminal .tnx-stage-search-pfx { font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tnx-accent); flex: none; }
 .tn-terminal .tnx-stage-search .tn-mapsearch {
   position: static; transform: none; width: 100%; max-width: none; flex: 1; min-width: 0; padding: 0;
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-bar {
-  background: none; border: 0; box-shadow: none; border-radius: 0; padding: 4px 0; gap: 0;
+  background: none; border: 0; box-shadow: none; border-radius: var(--tnx-r); padding: 4px 0; gap: 0;
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-icon { display: none; }
 .tn-terminal .tnx-stage-search .tn-mapsearch-input {
-  font-size: 10.5px; color: var(--tnx-ink); font-family: inherit; min-height: 0;
+  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); font-family: inherit; min-height: 0;
 }
 .tn-terminal .tnx-stage-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
 .tn-terminal .tnx-stage-search .tn-mapsearch-results {
-  margin-top: 5px; border-radius: 0; background: var(--tnx-glass-solid);
+  margin-top: 5px; border-radius: var(--tnx-r); background: var(--tnx-glass-solid);
   border: 1px solid var(--tnx-line-strong); box-shadow: none;
 }
-.tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: 10.5px; color: var(--tnx-ink); padding: 5px 8px; }
+.tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: var(--tnx-fs-sm); color: var(--tnx-ink); padding: 5px 8px; }
 .tn-terminal .tnx-stage-search .tn-mapsearch-item:hover { background: var(--tnx-accent-soft); }
 .tn-terminal .tnx-stage-search .tn-mapsearch-item-meta,
-.tn-terminal .tnx-stage-search .tn-mapsearch-status { font-size: 9px; color: var(--tnx-ink-faint); }
+.tn-terminal .tnx-stage-search .tn-mapsearch-status { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); }
 
 /* The right-hand stack. It is the positioned element now, and the legend inside it
    is in normal flow — the legend's height is DERIVED (one row per layer that is on,
@@ -4478,7 +4522,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   pointer-events: none;
 }
 .tn-terminal .tnx-stage-legend {
-  padding: 5px 7px; font-size: 8.5px; letter-spacing: 0.05em;
+  padding: 5px 7px; font-size: var(--tnx-fs-xs); letter-spacing: 0.05em;
   background: var(--tnx-glass-soft); border: 1px solid var(--tnx-line);
   color: var(--tnx-ink-dim); pointer-events: auto;
 }
@@ -4500,7 +4544,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 }
 .tn-terminal .tnx-stage-foot .tn-worldclock {
   position: static; transform: none; display: flex; padding: 0;
-  border: 0; border-radius: 0; background: none; box-shadow: none;
+  border: 0; border-radius: var(--tnx-r); background: none; box-shadow: none;
   backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .tn-terminal .tnx-stage-foot .tn-wc-cell {
@@ -4509,11 +4553,11 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tnx-stage-foot .tn-wc-cell + .tn-wc-cell::before { background: var(--tnx-line); }
 .tn-terminal .tnx-stage-foot .tn-wc-glyph { display: none; }
 .tn-terminal .tnx-stage-foot .tn-wc-city {
-  order: -1; font-size: 9px; font-weight: 400; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
+  order: -1; font-size: var(--tnx-fs-xs); font-weight: 400; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
 }
 .tn-terminal .tnx-stage-foot .tn-wc-time,
 .tn-terminal .tnx-stage-foot .tn-wc-cell.is-night .tn-wc-time {
-  font-size: 11px; font-weight: 700; letter-spacing: 0; color: var(--tnx-ink);
+  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0; color: var(--tnx-ink);
   font-variant-numeric: tabular-nums;
 }
 /* London tinted accent. POSITIONAL, and knowingly so: WorldClock renders one cell
@@ -4725,22 +4769,15 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   }
 
   /* A slot clipped to its desktop grid row re-creates the porthole one level
-     down. `position: relative` is deliberately NOT touched — the .tn-rz handles
-     resolve against it (see the note on .tn-terminal .tn-seg-slot above). */
+     down. `position: relative` is deliberately NOT touched — the widget's three
+     popovers resolve against it (see the note on .tn-terminal .tn-seg-slot). */
   .tn-terminal .tn-seg-slot { overflow: visible; }
-
-  /* Resize handles are eight invisible 10px drag bands pinned to every card
-     edge. There is no hover on touch, so they never reveal themselves, and card
-     height is CSS-derived here anyway — they are dead controls that sit exactly
-     where a thumb starts a swipe. Hidden for the same reason .tn-grip and
-     .tn-cw-resize* already are in the 900px block. */
-  .tn-terminal .tn-rz { display: none; }
 
   /* iOS Safari zooms the page in on focus of any field under 16px and does not
      zoom back out. The skin set 10.5px and `min-height: 0`, which also cancelled
      the 44px target the 900px block gives this same input. */
   .tn-terminal .tnx-stage-search .tn-mapsearch-input {
-    font-size: 16px;
+    font-size: var(--tnx-fs-lg);
     min-height: 44px;
   }
 }
@@ -4758,37 +4795,37 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-cs-stage[data-fit="contain"] .tn-cs-view img { object-fit: contain; }
 .tn-cs-view figcaption { position: absolute; right: 4px; bottom: 4px; }
 .tn-cs-bar { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; min-width: 0; }
-.tn-cs-name { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-cs-pos { font-family: var(--tn-mono); font-variant-numeric: tabular-nums; font-size: 10px; color: var(--tn-text-faint); }
+.tn-cs-name { flex: 1; min-width: 0; font-size: var(--tnx-fs); font-weight: 620; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-cs-pos { font-family: var(--tn-mono); font-variant-numeric: tabular-nums; font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
 .tn-cs-ctl { position: absolute; top: 6px; right: 6px; display: flex; gap: 3px; opacity: 0; transition: opacity 120ms; }
 .tn-cs:hover .tn-cs-ctl, .tn-cs:focus-within .tn-cs-ctl { opacity: 1; }
-.tn-cs-ctl button { font-size: 11px; line-height: 1; padding: 3px 6px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-topbar-pill); color: var(--tn-text); cursor: pointer; }
+.tn-cs-ctl button { font-size: var(--tnx-fs-sm); line-height: 1; padding: 3px 6px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-topbar-pill); color: var(--tn-text); cursor: pointer; }
 .tn-cs-ctl button:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
-.tn-cs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 100%; color: var(--tn-text-faint); font-size: 11.5px; text-align: center; padding: 8px; }
-.tn-cs-add { font-size: 12px; padding: 6px 12px; border: 1px solid var(--tn-border-strong); border-radius: 4px; background: var(--tn-surface-solid); color: var(--tn-accent-strong); cursor: pointer; }
+.tn-cs-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; height: 100%; color: var(--tn-text-faint); font-size: var(--tnx-fs); text-align: center; padding: 8px; }
+.tn-cs-add { font-size: var(--tnx-fs-md); padding: 6px 12px; border: 1px solid var(--tn-border-strong); border-radius: 4px; background: var(--tn-surface-solid); color: var(--tn-accent-strong); cursor: pointer; }
 .tn-cs-add:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
-.tn-cs-dead, .tn-cam-dead { display: flex; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center; font-size: 11px; color: var(--tn-text-faint); background: var(--tn-chip-bg); }
+.tn-cs-dead, .tn-cam-dead { display: flex; align-items: center; justify-content: center; height: 100%; padding: 10px; text-align: center; font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); background: var(--tn-chip-bg); }
 .tn-cs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .tn-cs-picker { position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; gap: 6px; padding: 8px; background: var(--tn-surface-solid); border: 1px solid var(--tn-border-strong); border-radius: 4px; overflow: auto; }
 .tn-cs-picker-head { display: flex; gap: 6px; }
-.tn-cs-picker-head input, .tn-cs-picker-paste input { flex: 1; min-width: 0; font-size: 12px; padding: 5px 8px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-surface-2); color: var(--tn-text); }
-.tn-cs-picker-head button, .tn-cs-picker-paste button { font-size: 11px; padding: 5px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-cs-picker-head input, .tn-cs-picker-paste input { flex: 1; min-width: 0; font-size: var(--tnx-fs-md); padding: 5px 8px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-surface-2); color: var(--tn-text); }
+.tn-cs-picker-head button, .tn-cs-picker-paste button { font-size: var(--tnx-fs-sm); padding: 5px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
 .tn-cs-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 46%; overflow: auto; }
 .tn-cs-hit { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 5px 7px; border: 0; border-radius: 3px; background: transparent; text-align: left; cursor: pointer; }
 .tn-cs-hit:hover:not(:disabled) { background: var(--tn-accent-soft); }
 .tn-cs-hit:disabled { opacity: 0.5; cursor: default; }
-.tn-cs-hit-name { font-size: 12px; font-weight: 600; }
-.tn-cs-hit-sub { font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); }
+.tn-cs-hit-name { font-size: var(--tnx-fs-md); font-weight: 600; }
+.tn-cs-hit-sub { font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
 .tn-cs-picker-paste { display: flex; gap: 6px; }
-.tn-cs-picker-err { font-size: 11px; color: var(--tn-down-ink); }
+.tn-cs-picker-err { font-size: var(--tnx-fs-sm); color: var(--tn-down-ink); }
 .tn-cs-picker-chosen { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-.tn-cs-picker-label { font-family: var(--tn-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tn-text-faint); }
-.tn-cs-picker-chosen button { font-family: var(--tn-mono); font-size: 9.5px; padding: 2px 6px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.tn-cs-picker-label { font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--tn-text-faint); }
+.tn-cs-picker-chosen button { font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); padding: 2px 6px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 @media (prefers-reduced-motion: reduce) { .tn-cs-ctl { transition: none; } }
 .tn-cs-picker-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.tn-cs-chip { font-family: var(--tn-mono); font-size: 9.5px; letter-spacing: 0.04em; padding: 3px 7px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-cs-chip { font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); letter-spacing: 0.04em; padding: 3px 7px; border: 1px solid var(--tn-border); border-radius: 2px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
 .tn-cs-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
 .tn-cs-chip.is-on { background: var(--tn-accent-soft); border-color: var(--tn-accent); color: var(--tn-accent-strong); font-weight: 700; }
 .tn-cs-chip:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
@@ -4855,22 +4892,22 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    serialised through streets-lead. Every token it references already existed. */
 .tn-csd { display: flex; flex-direction: column; gap: 10px; padding: 4px; }
 .tn-csd-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-.tn-csd-tabs button { font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
+.tn-csd-tabs button { font-size: var(--tnx-fs-sm); padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text-muted); cursor: pointer; }
 .tn-csd-tabs button.active { background: var(--tn-accent-soft); color: var(--tn-text); border-color: var(--tn-border-strong); }
 .tn-csd-stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: var(--tn-surface-2); overflow: hidden; border-radius: 4px; }
 .tn-csd-stage img, .tn-csd-stage .tn-cs-frame { width: 100%; height: 100%; object-fit: contain; border: 0; display: block; }
-.tn-csd-name { font-size: 12.5px; font-weight: 620; }
+.tn-csd-name { font-size: var(--tnx-fs-md); font-weight: 620; }
 .tn-csd-scrub-label { font-weight: 400; color: var(--tn-text-faint); }
 .tn-csd-strip { display: flex; flex-direction: column; gap: 4px; }
-.tn-csd-strip-head { display: flex; justify-content: space-between; font-family: var(--tn-mono); font-size: 9.5px; color: var(--tn-text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+.tn-csd-strip-head { display: flex; justify-content: space-between; font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
 .tn-csd-strip-row { display: flex; gap: 1px; height: 28px; }
 .tn-csd-bucket { flex: 1; min-width: 2px; border: 0; border-radius: 1px; background: var(--tn-accent); cursor: pointer; padding: 0; }
 .tn-csd-bucket.gap { background: var(--tn-border); cursor: default; }
 .tn-csd-bucket.active { outline: 2px solid var(--tn-accent-strong); outline-offset: 1px; }
 .tn-csd-bucket:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
-.tn-csd-live { align-self: flex-start; font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
-.tn-csd-full { font-size: 11px; color: var(--tn-down-ink); }
-.tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
+.tn-csd-live { align-self: flex-start; font-size: var(--tnx-fs-sm); padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
+.tn-csd-full { font-size: var(--tnx-fs-sm); color: var(--tn-down-ink); }
+.tn-csd-caveat { font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
 
 /* --- Camera slot focus: where the tile's conditions claim comes from -------
    The wall tile gets three strings in a corner and a hover title. This is the
@@ -4885,28 +4922,28 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    sits on the console surface and must follow the theme. */
 .tn-csd-prov { display: flex; flex-direction: column; gap: 7px; padding: 9px 10px; border: 1px solid var(--tn-border); border-radius: 4px; background: var(--tn-surface-2); }
 .tn-csd-prov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.tn-csd-prov-claim { display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--tn-mono); font-size: 11px; letter-spacing: .02em; color: var(--tn-unknown-ink); }
-.tn-csd-prov-claim b { font-size: 9.5px; font-weight: 620; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-claim { display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--tn-mono); font-size: var(--tnx-fs-sm); letter-spacing: .02em; color: var(--tn-unknown-ink); }
+.tn-csd-prov-claim b { font-size: var(--tnx-fs-xs); font-weight: 620; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
 .tn-csd-prov-claim[data-tier="measured"] { color: var(--tn-live-ink); }
 .tn-csd-prov-claim[data-tier="derived"] { color: var(--tn-lagging-ink); }
-.tn-csd-prov-clock { font-family: var(--tn-mono); font-size: 11px; color: var(--tn-text-muted); }
+.tn-csd-prov-clock { font-family: var(--tn-mono); font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
 .tn-csd-prov-clock span { color: var(--tn-text-faint); }
-.tn-csd-prov-basis { margin: 0; font-size: 11px; line-height: 1.45; color: var(--tn-text-dim); }
+.tn-csd-prov-basis { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-dim); }
 
 /* The one block on this panel that is allowed to draw the eye. It is a
    disclosure, and a disclosure nobody notices has not disclosed anything. */
 .tn-csd-prov-refused { display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; border-left: 2px solid var(--tn-stale-ink); border-radius: 0 3px 3px 0; background: var(--tn-chip-bg); }
-.tn-csd-prov-refused p { margin: 0; font-size: 11px; line-height: 1.45; color: var(--tn-text-dim); }
+.tn-csd-prov-refused p { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-dim); }
 .tn-csd-prov-refused b { font-weight: 620; color: var(--tn-text); }
 .tn-csd-prov-refused p.tn-csd-prov-owner { color: var(--tn-text-faint); }
 
 .tn-csd-prov-rows { display: grid; grid-template-columns: minmax(8em, max-content) 1fr; gap: 4px 12px; margin: 0; }
 .tn-csd-prov-rows > div { display: contents; }
-.tn-csd-prov-rows dt { padding-top: 2px; font-family: var(--tn-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
-.tn-csd-prov-rows dd { display: flex; flex-direction: column; gap: 2px; margin: 0; font-size: 11px; color: var(--tn-text); }
-.tn-csd-prov-note { font-size: 10.5px; line-height: 1.4; color: var(--tn-text-faint); }
-.tn-csd-prov-credit { margin: 0; font-size: 10px; color: var(--tn-text-faint); }
-.tn-cs-note { padding: 3px 8px 5px; font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink); }
+.tn-csd-prov-rows dt { padding-top: 2px; font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-rows dd { display: flex; flex-direction: column; gap: 2px; margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-csd-prov-note { font-size: var(--tnx-fs-sm); line-height: 1.4; color: var(--tn-text-faint); }
+.tn-csd-prov-credit { margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
+.tn-cs-note { padding: 3px 8px 5px; font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-lagging-ink); }
 .tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }
 
 /* ── Map arming (Streets M4) ───────────────────────────────────────────────
@@ -4929,9 +4966,9 @@ border-radius:10px;box-shadow:inset 0 0 0 2px var(--tn-accent)}
 .tn-arm-hint{position:absolute;left:50%;transform:translateX(-50%);top:12px;z-index:30;
 display:flex;align-items:center;gap:8px;max-width:min(560px,calc(100% - 32px));
 padding:6px 14px;border-radius:999px;border:1px solid var(--tn-accent);
-background:var(--tn-surface-solid);color:var(--tn-text);font-size:13px;
+background:var(--tn-surface-solid);color:var(--tn-text);font-size: var(--tnx-fs-md);
 box-shadow:0 6px 22px rgba(20,28,38,.18)}
-.tn-arm-hint kbd{font:inherit;font-size:11px;padding:1px 6px;border-radius:4px;
+.tn-arm-hint kbd{font:inherit;font-size: var(--tnx-fs-sm);padding:1px 6px;border-radius:4px;
 border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-arm-box{border:1px solid var(--tn-accent);background:var(--tn-accent-soft);border-radius:2px}
 
@@ -4966,23 +5003,23 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-fb-card.is-thanks { align-items: center; text-align: center; gap: 8px; padding: 34px 24px; }
 .tn-fb-tick {
   width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
-  border: 1px solid var(--tn-live); color: var(--tn-live); font-size: 18px;
+  border: 1px solid var(--tn-live); color: var(--tn-live); font-size: var(--tnx-fs-lg);
 }
 .tn-fb-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px 13px; border-bottom: 1px solid var(--tn-border); }
-.tn-fb-title { margin: 0; font-size: 16.5px; font-weight: 700; color: var(--tn-text); }
-.tn-fb-sub { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--tn-text-muted); }
+.tn-fb-title { margin: 0; font-size: var(--tnx-fs-lg); font-weight: 700; color: var(--tn-text); }
+.tn-fb-sub { margin: 3px 0 0; font-size: var(--tnx-fs-md); line-height: 1.5; color: var(--tn-text-muted); }
 .tn-fb-x {
   margin-left: auto; flex: none; width: 28px; height: 28px; border-radius: 7px;
   border: 1px solid transparent; background: none; color: var(--tn-text-faint);
-  font-size: 18px; line-height: 1; cursor: pointer;
+  font-size: var(--tnx-fs-lg); line-height: 1; cursor: pointer;
 }
 .tn-fb-x:hover { color: var(--tn-text); border-color: var(--tn-border-strong); }
 .tn-fb-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 15px; }
 .tn-fb-field { display: flex; flex-direction: column; gap: 6px; }
-.tn-fb-label { font-size: 13px; font-weight: 700; color: var(--tn-text); }
+.tn-fb-label { font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tn-text); }
 .tn-fb-optional { font-weight: 400; color: var(--tn-text-faint); }
 .tn-fb-input {
-  font: inherit; font-size: 13.5px; width: 100%; padding: 8px 10px;
+  font: inherit; font-size: var(--tnx-fs-md); width: 100%; padding: 8px 10px;
   color: var(--tn-text); background: var(--tn-surface-2);
   border: 1px solid var(--tn-border-strong); border-radius: 8px;
 }
@@ -4990,7 +5027,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-fb-area { min-height: 68px; line-height: 1.5; resize: vertical; }
 .tn-fb-rating { display: flex; gap: 4px; }
 .tn-fb-rate {
-  flex: 1 1 0; min-width: 0; padding: 8px 0; font: inherit; font-size: 13px;
+  flex: 1 1 0; min-width: 0; padding: 8px 0; font: inherit; font-size: var(--tnx-fs-md);
   font-variant-numeric: tabular-nums; cursor: pointer;
   color: var(--tn-text-muted); background: var(--tn-surface-2);
   border: 1px solid var(--tn-border-strong); border-radius: 7px;
@@ -4998,19 +5035,19 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 }
 .tn-fb-rate:hover:not(:disabled) { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
 .tn-fb-rate.is-on { background: var(--tn-accent); border-color: var(--tn-accent); color: #fff; font-weight: 700; }
-.tn-fb-scale { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--tn-text-faint); }
+.tn-fb-scale { display: flex; justify-content: space-between; font-size: var(--tnx-fs-sm); color: var(--tn-text-faint); }
 .tn-fb-privacy {
-  margin: 2px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--tn-text-muted);
+  margin: 2px 0 0; font-size: var(--tnx-fs); line-height: 1.55; color: var(--tn-text-muted);
   border-left: 2px solid var(--tn-accent); padding-left: 9px;
 }
-.tn-fb-error { margin: 0; font-size: 12.5px; color: var(--tn-down-ink); }
+.tn-fb-error { margin: 0; font-size: var(--tnx-fs-md); color: var(--tn-down-ink); }
 /* Off-screen rather than display:none — some bots skip hidden fields, and skipping
    is exactly what a human does, so hiding it that way would blunt the trap. */
 .tn-fb-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .tn-fb-foot { display: flex; align-items: center; gap: 10px; padding: 13px 18px 16px; border-top: 1px solid var(--tn-border); }
 .tn-fb-spacer { flex: 1; }
 .tn-fb-btn {
-  font: inherit; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  font: inherit; font-size: var(--tnx-fs-md); font-weight: 600; padding: 8px 16px; border-radius: 8px;
   border: 1px solid var(--tn-border-strong); background: var(--tn-surface-2); color: var(--tn-text);
   cursor: pointer;
 }
@@ -5070,7 +5107,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    thing that gets squeezed. */
 .tn-tray-count {
   flex: none;
-  font-family: var(--tn-mono); font-size: 10px; font-weight: 700;
+  font-family: var(--tn-mono); font-size: var(--tnx-fs-sm); font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--tn-text-muted); white-space: nowrap;
 }
@@ -5094,7 +5131,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tn-chip-bg); color: var(--tn-text);
 }
 .tn-tray-chip-label {
-  font-size: 11.5px; line-height: 1.3; max-width: 130px;
+  font-size: var(--tnx-fs); line-height: 1.3; max-width: 130px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Which network it came from. A road camera and a Windy webcam behave differently
@@ -5102,14 +5139,14 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    them apart before committing. */
 .tn-tray-chip-src {
   flex: none;
-  font-family: var(--tn-mono); font-size: 9px; letter-spacing: 0.04em;
+  font-family: var(--tn-mono); font-size: var(--tnx-fs-xs); letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--tn-text-faint); white-space: nowrap;
 }
 .tn-tray-chip-x {
   flex: none; width: 17px; height: 17px; padding: 0;
   display: grid; place-items: center;
   border: 0; border-radius: 3px; background: none;
-  color: var(--tn-text-faint); font: inherit; font-size: 13px; line-height: 1;
+  color: var(--tn-text-faint); font: inherit; font-size: var(--tnx-fs-md); line-height: 1;
   cursor: pointer;
   transition: color 120ms, background 120ms;
 }
@@ -5119,7 +5156,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-tray-actions { flex: none; display: flex; align-items: center; gap: 6px; }
 .tn-tray-menu-wrap { position: relative; }
 .tn-tray-btn {
-  font: inherit; font-size: 11.5px; font-weight: 600; white-space: nowrap;
+  font: inherit; font-size: var(--tnx-fs); font-weight: 600; white-space: nowrap;
   padding: 5px 10px; cursor: pointer;
   border: 1px solid var(--tn-border-strong); border-radius: 4px;
   background: var(--tn-surface-solid); color: var(--tn-text);
@@ -5143,7 +5180,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-tray-menu-item {
   display: flex; align-items: baseline; gap: 8px; width: 100%;
   padding: 6px 8px; text-align: left; cursor: pointer;
-  font: inherit; font-size: 12px;
+  font: inherit; font-size: var(--tnx-fs-md);
   border: 0; border-radius: 4px; background: none; color: var(--tn-text);
 }
 .tn-tray-menu-item:hover { background: var(--tn-accent-soft); color: var(--tn-accent-strong); }
@@ -5152,7 +5189,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-tray-menu-count {
   flex: none;
   font-family: var(--tn-mono); font-variant-numeric: tabular-nums;
-  font-size: 10px; color: var(--tn-text-faint);
+  font-size: var(--tnx-fs-sm); color: var(--tn-text-faint);
 }
 .tn-tray-menu-sep { height: 1px; margin: 4px 2px; background: var(--tn-border); }
 
@@ -5161,7 +5198,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    .tn-cs-note uses for a slot reporting what it could not show. */
 .tn-tray-note {
   margin: 0; padding: 0 1px;
-  font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink);
+  font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-lagging-ink);
 }
 
 /* Below 900px the stage is short and a chip strip plus two buttons will not sit on
@@ -5185,7 +5222,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    picked. Stack on it instead of over it. The bottom radius goes with the offset —
    it was there to meet the stage's rounded corner, and the tray no longer touches
    one. */
-.tn-terminal .tn-tray { bottom: 24px; border-radius: 0; }
+.tn-terminal .tn-tray { bottom: 24px; border-radius: var(--tnx-r); }
 @media (max-width: 900px) {
   /* The clock strip is display:none below this width (globals.css:4607), so the
      24px it was standing on has gone with it. */
@@ -5221,3 +5258,190 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
     transform: none;
   }
 }
+/* ── Placement picker ─────────────────────────── */
+.tn-place-back {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(6, 8, 11, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: tn-fade-in 0.15s ease;
+}
+.tn-place {
+  position: relative;
+  width: min(420px, 92vw);
+  background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 14px;
+  padding: 18px;
+  color: var(--tnx-ink);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  animation: tn-pop 0.16s ease;
+}
+.tn-place-h {
+  margin: 0 0 14px;
+  font-size: var(--tnx-fs-lg);
+  font-weight: 600;
+  color: var(--tnx-ink);
+}
+/* Cards, not chips — three-up grid borrowing .tn-settings-board's shape
+   language: a bordered panel per option rather than a pill. */
+.tn-place-opts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+.tn-place-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 8px 10px;
+  background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 8px;
+  color: var(--tnx-ink-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+.tn-place-opt:hover { border-color: var(--tnx-ink-ghost); color: var(--tnx-ink); }
+.tn-place-opt svg { width: 100%; max-width: 44px; height: auto; color: var(--tnx-ink-dim); }
+.tn-place-opt.is-checked {
+  border-color: var(--tnx-accent);
+  background: var(--tnx-accent-soft);
+  color: var(--tnx-ink);
+  box-shadow: inset 0 0 0 1px var(--tnx-accent);
+}
+.tn-place-opt.is-checked svg { color: var(--tnx-accent); }
+.tn-place-opt:focus-visible {
+  outline: 2px solid var(--tnx-accent);
+  outline-offset: 2px;
+}
+.tn-place-opt-label {
+  font-size: var(--tnx-fs-sm);
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-place-back, .tn-place { animation: none; }
+  .tn-place-opt { transition: none; }
+}
+/* ── end placement picker ─────────────────────── */
+
+/* ── begin rails: .tn-rail-col, .tn-rail-split ───────────────────────────────
+   The three docks around the hero map, and the seams that resize them.
+
+   REWRITTEN, NOT REVIVED. There was a three-rail block in this file before the
+   free grid replaced it, and reusing it would have been wrong in a way that is
+   easy to miss: those rules were `position: absolute`, offset from
+   `--tn-lw` / `--tn-rw` / `--tn-bh`, and they floated the rails OVER a
+   full-bleed map. The stage is now a grid SIBLING of the rails, not a surface
+   they hover on, so the old rules would put the map underneath them — the rails
+   would look right and the map would be missing a strip down each side.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.tn-terminal .tn-rail-col {
+  display: flex;
+  flex-direction: column;
+  /* THE GUTTER LIVES HERE, not on `.tn-seg`. This rule was written at M2, before
+     the retune, and it carried the old idea: gap 1px over a `--tnx-line` ground,
+     so the gutter between two cards WAS the rule between them. M7 reversed that
+     on `.tn-seg` — which in the rails layout is the outer grid holding rail |
+     seam | stage, and so spaces the rails off the map but never touches two
+     cards stacked inside one rail. Measured in Chrome: 8px between rail and map,
+     1px between neighbouring cards. Every card carries a 6px radius, which is
+     exactly what a 1px rule cannot sit against — the rule runs past the corner
+     and shows through as four hairline spurs.
+     Found by looking at a screenshot, not by a test: the guard covers font sizes
+     and radii, and a gap is neither. */
+  gap: var(--tnx-gap);
+  min-width: 0;
+  min-height: 0;
+  /* Each rail scrolls ITSELF. This is the whole reason a widget can be taller
+     than the window without becoming unreachable: the frame is fixed, the rail
+     moves inside it, and the map never leaves the screen. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--tnx-bg);
+  overscroll-behavior: contain;
+}
+
+/* The seam. A 1px rule with an 7px invisible grab area either side of it, so it
+   is a comfortable pointer target without drawing a thick bar: the visible line
+   stays exactly as wide as every other gutter in the console, which is what
+   keeps the "gaps are the rules" idea intact while still being grabbable. */
+.tn-terminal .tn-rail-split {
+  position: relative;
+  z-index: 6;
+  background: var(--tnx-line);
+  touch-action: none;
+  transition: background 120ms ease;
+}
+.tn-terminal .tn-rail-split-left,
+.tn-terminal .tn-rail-split-right {
+  width: 1px;
+  margin: 0 -7px;
+  padding: 0 7px;
+  background-clip: content-box;
+  cursor: col-resize;
+}
+.tn-terminal .tn-rail-split-bottom {
+  height: 1px;
+  margin: -7px 0;
+  padding: 7px 0;
+  background-clip: content-box;
+  cursor: row-resize;
+}
+
+.tn-terminal .tn-rail-split:hover,
+.tn-terminal .tn-rail-split.is-active { background-color: var(--tnx-accent); }
+
+/* Focus has to be VISIBLE on a 1px element, and an outline on a 1px box is a
+   hairline nobody sees. The grip below grows instead, which is also the hover
+   affordance — so keyboard focus and pointer hover show the same thing. */
+.tn-terminal .tn-rail-split:focus-visible {
+  outline: none;
+  background-color: var(--tnx-accent);
+}
+
+.tn-terminal .tn-rail-split-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--tnx-ink-ghost);
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  pointer-events: none;
+}
+.tn-terminal .tn-rail-split-left .tn-rail-split-grip,
+.tn-terminal .tn-rail-split-right .tn-rail-split-grip { width: 3px; height: 34px; }
+.tn-terminal .tn-rail-split-bottom .tn-rail-split-grip { width: 34px; height: 3px; }
+
+.tn-terminal .tn-rail-split:hover .tn-rail-split-grip,
+.tn-terminal .tn-rail-split:focus-visible .tn-rail-split-grip,
+.tn-terminal .tn-rail-split.is-active .tn-rail-split-grip {
+  opacity: 1;
+  background: var(--tnx-accent);
+}
+
+/* While a seam is being dragged the cursor must not flicker as the pointer
+   crosses the map, and nothing on the way may select text. Pointer capture
+   keeps the EVENTS coming; this keeps the appearance steady. */
+.tn-terminal .tn-rails.is-splitting,
+.tn-terminal .tn-rails.is-splitting * { user-select: none; }
+.tn-terminal .tn-rails.is-splitting { cursor: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-rail-split,
+  .tn-terminal .tn-rail-split-grip { transition: none; }
+}
+/* ── end rails ────────────────────────────────── */

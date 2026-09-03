@@ -1,11 +1,10 @@
 "use client";
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
-import { createDefaultLayout, type GridRect, type ShellLayout, type SegmentId, type StageId } from "@/lib/console/types";
+import { createDefaultLayout, type ShellLayout, type SegmentId, type StageId } from "@/lib/console/types";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { activePresetStore } from "@/lib/console/activePreset";
 import { writeBoardLayout } from "@/lib/console/boards";
-import { visibleRows } from "@/lib/terminal/rowBudget";
 import * as R from "@/lib/console/reducers";
 
 const KEY = "tn.console.v1";
@@ -55,7 +54,10 @@ export const shellLayoutStore = {
   },
   subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
   hydrate() { const s = loadPersisted<ShellLayout>(KEY, VERSION); const clean = s ? sanitizeLayout(s) : null; if (clean) { state = clean; emit(); } },
-  add(type: string, opts: { segment?: SegmentId; config?: Record<string, unknown>; height?: number; width?: number } = {}) {
+  /** `segment` is required — the picker (or a caller standing in for it) always
+   *  knows which rail a widget is going into; there is no free-drag drop point
+   *  left to fall back to a guess from. */
+  add(type: string, opts: { segment: SegmentId; config?: Record<string, unknown>; height?: number }) {
     if (R.isAtCapacity(state)) return { ok: false as const };
     const id = nextId();
     state = R.addWidget(state, type, id, opts); emit();
@@ -64,12 +66,6 @@ export const shellLayoutStore = {
   remove(id: string) { state = R.removeWidget(state, id); emit(); },
   move(id: string, seg: SegmentId, idx: number) { state = R.moveWidget(state, id, seg, idx); emit(); },
   resizeWidget(id: string, h: number) { state = R.setWidgetHeight(state, id, h); emit(); },
-  resizeWidth(id: string, span: number) { state = R.setWidgetWidth(state, id, span); emit(); },
-  /** Move or resize a grid item — a widget, or STAGE_ID for the map. The single
-   *  write path for every drag, resize and keyboard nudge. */
-  placeItem(id: string, rect: GridRect, prevRect: GridRect | null = null) { state = R.setItemRect(state, id, rect, prevRect); emit(); },
-  /** Re-seed every position from CONSOLE or WALL, fitted to the window. */
-  arrange(mode: "console" | "wall") { state = R.arrangeBoard(state, mode, visibleRows()); emit(); },
   collapseWidget(id: string, c: boolean) { state = R.setWidgetCollapsed(state, id, c); emit(); },
   configure(id: string, patch: Record<string, unknown>) { state = R.setWidgetConfig(state, id, patch); emit(); },
   setSegment(seg: SegmentId, size: number) { state = R.setSegmentSize(state, seg, size); emit(); },

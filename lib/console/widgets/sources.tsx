@@ -23,7 +23,7 @@ import { useCountHistory, deltaOf, trendOf } from "@/lib/widgets/history";
 import { constituentIds } from "@/lib/widgets/rollup";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
-import { shellLayoutStore } from "@/lib/console/store";
+import { placementStore } from "@/lib/console/placement";
 import { useMetrics } from "@/lib/metrics";
 import { useSignalCounts } from "@/lib/signals/store";
 import { rollupCount } from "@/lib/widgets/rollup";
@@ -35,7 +35,6 @@ import {
 } from "@/lib/console/sourceWidgets";
 import { rollupHelp, sourceHelp } from "@/lib/console/sourceCards";
 import type { FreshKind } from "@/lib/sources/freshKind";
-import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
 const FRESH_LABEL: Record<FreshKind, string> = {
   off: "off",
@@ -156,12 +155,10 @@ function RollupRow({ id }: { id: string }) {
         title={`Open ${source.label} as its own widget`}
         aria-label={`Open ${source.label} as its own widget`}
         onClick={() => {
-          const r = shellLayoutStore.add(widgetTypeForSource(id));
-          if (!r.ok) {
-            window.dispatchEvent(
-              new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }),
-            );
-          }
+          // Asks which rail rather than adding outright — same front door as the
+          // Source Catalog's ＋ (lib/widgets/dock.ts), and the capacity cap is
+          // reported by the picker's commit, which is where the add now happens.
+          placementStore.ask({ type: widgetTypeForSource(id), label: source.label });
         }}
       >
         ⤢
