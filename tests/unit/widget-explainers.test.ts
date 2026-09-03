@@ -168,10 +168,14 @@ describe("the widget caveats we most need to be right about", () => {
     expect(lims("aviation")).toMatch(/receiver coverage, not empty sky/i);
   });
 
-  it("admits the camera network covers seven countries, not the world", () => {
-    const e = widgetExplainerFor("cameras")!;
+  // This guard moved with the claim rather than retiring with the widget. The
+  // grid it used to describe is gone; the seven-country limit it was written to
+  // stop anyone softening is a fact about the registry, and the camera wall
+  // inherited it word for word.
+  it("admits the camera wall covers seven countries plus a partial sample, not the world", () => {
+    const e = widgetExplainerFor("camslot")!;
     expect(e.coverage).toMatch(/seven countries/i);
-    expect(e.limitations.join(" ")).toMatch(/not global CCTV|no coverage at all/i);
+    expect(e.limitations.join(" ")).toMatch(/not evidence that none exists|partial sample/i);
   });
 
   it("admits satellite positions are propagated in-browser, not observed", () => {

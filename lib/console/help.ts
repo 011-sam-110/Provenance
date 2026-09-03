@@ -99,25 +99,6 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     ],
   },
 
-  // --- Cameras --------------------------------------------------------------
-  {
-    id: "cameras",
-    whatItShows:
-      "A tile is one public road or street camera the map has loaded, showing its current picture. The count in the header is every camera in the merged registry, not the six tiles on screen.",
-    method:
-      "Eleven public transport-agency feeds are merged server-side into one registry; each tile then pulls that camera's own snapshot or stream through our proxy, and a feed the operator marks unavailable raises an offline alert.",
-    confidence: "official",
-    coverage:
-      "Seven countries: the UK (TfL, Traffic Scotland), the US (Caltrans, SCDOT, Castle Rock, TripCheck), Canada (DriveBC), Finland, Estonia, Iceland and New Zealand. Nowhere else has a single camera.",
-    limitations: [
-      "This is a road-camera network, not global CCTV. Most of the world has no coverage at all, so an empty region means we have no feed there — never that nothing is happening there.",
-      "A tile is a still refreshed on the operator's cadence, or a stream that runs seconds behind. It is not a guaranteed view of the instant you are looking at it.",
-      "\"Went offline\" is the operator's own availability flag, copied through unmodified. A camera flagged available can still serve a frozen, black or hours-old frame.",
-      "The grid shows the first six cameras in registry order — not the six nearest you, not the six most interesting, and not a sample of anything.",
-      "The cameras map layer owns the fetch, and switching it off stops the refresh WITHOUT clearing what was already loaded — so the grid keeps showing the last tiles it had, with no indication they have stopped updating.",
-    ],
-  },
-
   {
     id: "camslot",
     whatItShows:
