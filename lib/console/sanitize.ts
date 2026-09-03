@@ -10,6 +10,9 @@ const STAGES: StageId[] = ["map3d", "map2d", "clock"];
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
+/** Widget types that no longer exist, and what a stored one loads as instead. */
+const RETIRED_TYPES: Record<string, string> = { cameras: "camslot" };
+
 /**
  * A rect only if the input is a complete, finite one — a half-written rect is
  * treated as absent. LEGACY ONLY: nothing in the modern type carries a rect, but
@@ -78,15 +81,24 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
     if (!w || typeof w !== "object") continue;
     const o = w as Record<string, unknown>;
     if (typeof o.id !== "string" || typeof o.type !== "string") continue;
+    // The `cameras` widget was retired in favour of `camslot`. An unmigrated type is
+    // not an error anyone can see: WidgetFrame renders null for an unregistered type,
+    // so a board or a ?c= link written before the swap would show a HOLE where a tile
+    // used to be — it keeps its place in the grid, reports nothing, and cannot be
+    // clicked. Renaming it here lands it on camslot's empty state instead.
+    // `type` and not `o.type` is passed to readConfig below, and that is the
+    // load-bearing half: it routes the old `{}` through sanitizeCamslotConfig, so a
+    // migrated tile IS a freshly-added one rather than merely resembling one.
+    const type = RETIRED_TYPES[o.type] ?? o.type;
     parsed.push({
       id: o.id,
-      type: o.type,
+      type,
       segment: SEGMENTS.includes(o.segment as SegmentId) ? (o.segment as SegmentId) : "left",
       order: num(o.order, parsed.length),
       height: clamp(num(o.height, 240), 120, 1200),
       rect: readRect(o.rect), // legacy only — see readRect
       collapsed: o.collapsed === true,
-      config: readConfig(o.type, o.config),
+      config: readConfig(type, o.config),
     });
   }
 
