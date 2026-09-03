@@ -2,14 +2,13 @@
 "use client";
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import type { WidgetInstance } from "@/lib/console/types";
-import { shellLayoutStore } from "@/lib/console/store";
+import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import {
   activePreset,
   HEIGHT_PRESETS,
   HEIGHT_PRESET_TOLERANCE_PX,
-  WIDTH_PRESETS,
 } from "@/lib/console/resize";
-import { ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
+import { nudgeTarget, sendToTarget, otherSegments, SEGMENT_LABEL } from "@/lib/console/move";
 import { getWidgetType } from "@/lib/console/registry";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
@@ -45,19 +44,22 @@ export function useWidgetReport() { return useContext(ReportCtx); }
 
 export default function WidgetFrame({
   instance,
-  onGrab,
   onNudgeKey,
-  onNudge,
 }: {
   instance: WidgetInstance;
-  /** Starts a grid drag. Supplied by ConsoleWorkspace, which owns the board. */
-  onGrab?: (e: React.PointerEvent) => void;
-  /** Arrow-key move, Shift+arrow resize — the keyboard path to the same result. */
+  /** Arrow keys on the grip, with RAIL meanings: up/down reorder within the
+   *  rail, left/right send the card to another rail. Supplied by
+   *  ConsoleWorkspace, which owns the layout. `onGrab` and `onNudge` are gone
+   *  with the grid drag they served — there is no free-form drag left to start
+   *  and no grid cell left to nudge into. */
   onNudgeKey?: (e: React.KeyboardEvent) => void;
-  /** One-cell move/resize, for the ⋯ menu's buttons. */
-  onNudge?: (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => void;
 }) {
   const type = getWidgetType(instance.type);
+  // Subscribed, not read off the store during render: the move controls need
+  // to know about the OTHER cards in this rail (is this one already at the
+  // top? which rails is it not in?), and that is state this component does not
+  // receive through `instance`.
+  const layout = useShellLayout();
   const [report, setReport] = useState<Report>({ alerts: [] });
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -123,59 +125,71 @@ export default function WidgetFrame({
   // The header used to carry `draggable` + an HTML5 dataTransfer payload
   // ("text/tn-widget"). Both are gone, and removing them was not optional: a
   // `draggable` element starts a NATIVE drag on pointerdown, which cancels the
-  // pointer capture the grid drag depends on — the two cannot coexist on one
+  // pointer capture the grid drag depended on — the two could not coexist on one
   // element. The only consumer of that payload was components/console/Segment.tsx,
   // which nothing has imported since the Terminal replaced the three segment
-  // containers with one grid; it is deleted in the same change rather than left
-  // behind implementing a protocol no one sends.
+  // containers with one grid; it is deleted rather than left behind implementing
+  // a protocol no one sends.
 
   // ── Explicit move + size, so neither needs a drag ────────────────────────
-  // Dragging works, but a draggable header with no alternative is a feature most
-  // people never find — and one nobody without a pointer can use at all.
   //
-  // The "send to left / right / bottom" buttons that used to live here are GONE.
-  // They moved a widget between three fixed segments, and on a free-form grid
-  // those segments no longer describe where anything is: a widget's `segment`
-  // survives only as preset-authoring and migration input. A button offering to
-  // send a card "to the bottom dock" when there is no bottom dock would be a
-  // control that lies, which is the exact fault this whole change is fixing.
-  // Directional nudges replace them — same one-click, no-aim, keyboard-reachable
-  // promise, in coordinates the board actually has.
-  const rect = instance.rect;
-  const nudgeBy = (d: { dx?: number; dy?: number; dw?: number; dh?: number }) => onNudge?.(d);
-  const activeWidth = activePreset(WIDTH_PRESETS, rect?.w ?? instance.width);
-  // Height, like width, has to come off the GRID RECT when there is one.
-  // `instance.height` is the legacy px field: the preset buttons write it, but a
-  // drag-resize writes rect.h and never touches it, so reading it alone left the
-  // S/M/L/XL chips showing whatever was last chosen from this menu no matter how
-  // far the card had since been dragged. Width was already correct because it
-  // reads rect.w first; this is the same rule applied to the other axis.
-  // Rows convert at the grid's own pitch rather than a retyped 25.
-  const activeHeight = activePreset(
-    HEIGHT_PRESETS,
-    rect ? rect.h * (ROW_PX + GAP_PX) : instance.height,
-    HEIGHT_PRESET_TOLERANCE_PX,
-  );
+  // ── THE COMMENT THAT USED TO SIT HERE ARGUED THE OPPOSITE. IT WAS RIGHT AT
+  //    THE TIME AND IS NOW WRONG, SO IT IS REWRITTEN RATHER THAN DELETED. ────
+  //
+  // It said the "send to left / right / bottom" buttons had to go, because on a
+  // free-form grid the three segments "no longer describe where anything is",
+  // and a button offering to send a card "to the bottom dock" when there is no
+  // bottom dock "would be a control that lies".
+  //
+  // That reasoning was sound and its premise has been deleted. There IS a bottom
+  // dock again. A widget's `segment` is no longer migration residue — it is the
+  // widget's actual and only position, and the rail it names is a thing on
+  // screen with a visible seam you can drag. So the send-to buttons come BACK,
+  // and it is the directional nudges that now lie: `dx: -1` meant "one grid
+  // column left", and there are no grid columns.
+  //
+  // Up/down keep their meaning, narrowed honestly from "move past the card
+  // above" to "one place up THIS RAIL". Left/right are replaced by named
+  // destinations rather than directions, because from the bottom rail "left" is
+  // a place, not a direction, and only the destination form survives being read
+  // out loud by a screen reader without the user having to know the layout.
+  const railTargets = otherSegments(layout, instance.id);
+  const canNudge = (dir: -1 | 1) => nudgeTarget(layout, instance.id, dir) !== null;
+  const doNudge = (dir: -1 | 1) => {
+    const t = nudgeTarget(layout, instance.id, dir);
+    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
+  };
+  const doSend = (seg: (typeof railTargets)[number]) => {
+    const t = sendToTarget(layout, instance.id, seg);
+    if (t) shellLayoutStore.move(instance.id, t.segment, t.index);
+    setMenuOpen(false);
+  };
+
+  // Height is the only size a rail has. `instance.height` is now the single
+  // source of truth for it — there is no rect to disagree with, which is what
+  // made the old two-source read necessary and fragile.
+  const activeHeight = activePreset(HEIGHT_PRESETS, instance.height, HEIGHT_PRESET_TOLERANCE_PX);
+  /** One step of height, in px. Matches the splitter's fine arrow step. */
+  const HEIGHT_STEP = 40;
+  const bumpHeight = (d: number) => shellLayoutStore.resizeWidget(instance.id, instance.height + d);
 
   return (
     <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
-      <header className="tn-cw-head" onPointerDown={onGrab}>
-        {/* The grab affordance. The whole header is the drag source; this is the
-            signpost, because without something that LOOKS draggable the drag may
-            as well not exist.
+      <header className="tn-cw-head">
+        {/* The move affordance. It is NO LONGER A DRAG SOURCE — there is nothing
+            to drag a card to, because a card's position is which rail it is in
+            and where in that rail's stack it sits. It stays a real, focusable
+            button carrying the keyboard path to both.
 
-            It is a real button now rather than an aria-hidden decoration: it
-            carries the KEYBOARD path to moving and resizing (arrows, and Shift
-            with arrows). It used to be safe to hide because the ⋯ menu offered
-            "send to left/right/bottom" as ordinary buttons — but those segments
-            no longer describe where anything is on a free-form grid, so this is
-            the accessible route and it has to be announced. */}
+            The label says what the keys DO rather than naming a gesture. It used
+            to promise "shift with arrow keys resizes", which was true on the
+            grid; size now belongs to the rail's own splitter (which can announce
+            the new size, as this never could) and to the ⋯ menu's height chips. */}
         <button
           type="button"
           className="tn-cw-grip"
-          aria-label={`Move ${frameTitle}. Arrow keys move, shift with arrow keys resizes.`}
-          title="Drag to move · arrows to nudge · shift+arrows to resize"
-          onPointerDown={onGrab}
+          aria-label={`Move ${frameTitle}. Up and down reorder it in this rail; left and right send it to another rail.`}
+          title="Arrows reorder in this rail · left/right send it to another rail"
           onKeyDown={onNudgeKey}
         >
           ⠿
@@ -288,37 +302,42 @@ export default function WidgetFrame({
         // a contradiction most screen readers announce badly. A labelled group of
         // ordinary buttons describes what this actually is.
         <div className="tn-cw-menu-pop" role="group" aria-label={`${frameTitle} options`}>
-          {/* MOVE — the drag, as buttons. One click, no aim, keyboard-reachable. */}
-          <div className="tn-cw-menu-sec">Move</div>
+          {/* ORDER WITHIN THE RAIL. Disabled at the ends rather than hidden:
+              a control that vanishes at the top of a list makes the row jump
+              under the pointer, and "why did that button move?" is a worse
+              question than "why is that button grey?". */}
+          <div className="tn-cw-menu-sec">Order</div>
           <div className="tn-cw-menu-row">
-            <button className="tn-cw-chip" title="Move one column left" onClick={() => nudgeBy({ dx: -1 })}>◀</button>
-            <button className="tn-cw-chip" title="Move up past the card above" onClick={() => nudgeBy({ dy: -1 })}>▲</button>
-            <button className="tn-cw-chip" title="Move down past the card below" onClick={() => nudgeBy({ dy: 1 })}>▼</button>
-            <button className="tn-cw-chip" title="Move one column right" onClick={() => nudgeBy({ dx: 1 })}>▶</button>
-          </div>
-          <div className="tn-cw-menu-sec">Grow / shrink</div>
-          <div className="tn-cw-menu-row">
-            <button className="tn-cw-chip" title="One column narrower" onClick={() => nudgeBy({ dw: -1 })}>−W</button>
-            <button className="tn-cw-chip" title="One column wider" onClick={() => nudgeBy({ dw: 1 })}>+W</button>
-            <button className="tn-cw-chip" title="One row shorter" onClick={() => nudgeBy({ dh: -1 })}>−H</button>
-            <button className="tn-cw-chip" title="One row taller" onClick={() => nudgeBy({ dh: 1 })}>+H</button>
+            <button
+              className="tn-cw-chip"
+              title="One place up this rail"
+              aria-label="Move one place up this rail"
+              disabled={!canNudge(-1)}
+              onClick={() => doNudge(-1)}
+            >▲</button>
+            <button
+              className="tn-cw-chip"
+              title="One place down this rail"
+              aria-label="Move one place down this rail"
+              disabled={!canNudge(1)}
+              onClick={() => doNudge(1)}
+            >▼</button>
           </div>
 
-          {/* SIZE — the same sizes the drag handles snap to, as named targets. */}
-          <div className="tn-cw-menu-sec">Width</div>
+          {/* DESTINATIONS, not directions. Only the two rails it is not in. */}
+          <div className="tn-cw-menu-sec">Send to</div>
+          {railTargets.map((seg) => (
+            <button key={seg} onClick={() => doSend(seg)}>
+              {SEGMENT_LABEL[seg]}
+            </button>
+          ))}
+
+          {/* SIZE. There is no width in a rail — the rail's own splitter owns
+              that, for every card in it at once. Height is per-card. */}
+          <div className="tn-cw-menu-sec">Grow / shrink</div>
           <div className="tn-cw-menu-row">
-            {WIDTH_PRESETS.map((p) => (
-              <button
-                key={p.label}
-                className="tn-cw-chip"
-                aria-pressed={activeWidth === p.value}
-                data-on={activeWidth === p.value}
-                title={p.hint}
-                onClick={() => shellLayoutStore.resizeWidth(instance.id, p.value)}
-              >
-                {p.label}
-              </button>
-            ))}
+            <button className="tn-cw-chip" title="Shorter" aria-label="Make shorter" onClick={() => bumpHeight(-HEIGHT_STEP)}>−H</button>
+            <button className="tn-cw-chip" title="Taller" aria-label="Make taller" onClick={() => bumpHeight(HEIGHT_STEP)}>+H</button>
           </div>
           <div className="tn-cw-menu-sec">Height</div>
           <div className="tn-cw-menu-row">
@@ -337,7 +356,23 @@ export default function WidgetFrame({
           </div>
 
           <div className="tn-cw-menu-sep" />
-          <button onClick={() => { const r = shellLayoutStore.add(instance.type, { config: { ...cfg } }); if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE })); setMenuOpen(false); }}>⧉ Duplicate</button>
+          {/* DUPLICATE DOES NOT ASK WHERE. Every other add-path opens the
+              placement picker, and this one deliberately does not: a copy
+              belongs directly beneath its original. That is a fact about what
+              the word means, not a preference the user should have to restate
+              each time. It lands at order + 1 in the same rail — `add` appends
+              to the end of the rail, so the move is what puts it under its
+              source rather than at the bottom of a long column. */}
+          <button onClick={() => {
+            const r = shellLayoutStore.add(instance.type, {
+              segment: instance.segment,
+              config: { ...cfg },
+              height: instance.height,
+            });
+            if (!r.ok) window.dispatchEvent(new CustomEvent("tn-toast", { detail: WIDGET_LIMIT_MESSAGE }));
+            else if (r.id) shellLayoutStore.move(r.id, instance.segment, instance.order + 1);
+            setMenuOpen(false);
+          }}>⧉ Duplicate</button>
           <button onClick={() => { shellLayoutStore.configure(instance.id, { alertStyle: alertStyle === "top" ? "feed" : "top" }); setMenuOpen(false); }}>
             ⚡ Alerts: {alertStyle === "top" ? "on top" : "in feed"}
           </button>

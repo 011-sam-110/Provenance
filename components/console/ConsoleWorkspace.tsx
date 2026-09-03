@@ -2,34 +2,43 @@
 "use client";
 import { useMemo, useRef, type CSSProperties } from "react";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
-import { STAGE_ID, type GridRect, type WidgetInstance } from "@/lib/console/types";
+import { STAGE_ID, type SegmentId } from "@/lib/console/types";
+import { widgetsInSegment } from "@/lib/console/reducers";
+import { nudgeTarget, sendToTarget, SEGMENT_ORDER, SEGMENT_LABEL } from "@/lib/console/move";
 import WidgetFrame from "@/components/console/WidgetFrame";
 import StageHost from "@/components/console/StageHost";
 import StageBar from "@/components/terminal/StageBar";
 import PinNavigator from "@/components/console/PinNavigator";
 import PanelHost from "@/components/shell/PanelHost";
+import PlacementPicker from "@/components/console/PlacementPicker";
 import CoveragePanel from "@/components/shell/CoveragePanel";
 import MarketsPanel from "@/components/shell/MarketsPanel";
 import WatchlistPanel from "@/components/shell/WatchlistPanel";
+import RailSplitter from "@/components/console/RailSplitter";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
-import { readingOrder, rowsUsed, findFreeSpot, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
-import { createCamslot, CAMSLOT_SIZE } from "@/lib/console/widgets/camslot.create";
 import { useStageSolo } from "@/lib/terminal/solo";
-import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
+import { railSizes } from "@/lib/terminal/rails";
+import { useRailSplitter } from "@/lib/terminal/useRailSplitter";
 import { useTerminalSkin } from "@/lib/terminal/skin";
+import { useShellBox } from "@/lib/terminal/rowBudget";
 
-// The OpenData Terminal workspace: ONE twelve-column grid holding the map stage and
-// every widget, each at its own rectangle.
+// The Provenance console: a FIXED HERO MAP with three resizable rails around it.
 //
-// ── WHAT THIS REPLACED ───────────────────────────────────────────────────────
-// Until now the template came from lib/terminal/grid.ts, which generated a
-// `grid-template-areas` string from segment membership and IGNORED every widget's
-// stored width and height. That is why resizing was impossible: the drag handles,
-// the ⋯ menu's Width/Height chips and their aria-pressed state were all writing
-// values nothing on screen read. Position now comes from `widget.rect`, so those
-// controls mean something again and the handles can come back.
+// ── WHAT THIS REPLACED, AND WHY ──────────────────────────────────────────────
+// Until now this rendered ONE free twelve-column grid in which the map was just
+// another tile — with its own drag grip and eight resize handles, competing for
+// cells with every widget. You could shove the map into a corner and leave it
+// there, and nothing stopped you. Adding a widget dropped it wherever a
+// free-space scan happened to reach, so the honest answer to "where will this
+// land?" was "somewhere". That is what "crowded and hard to use" was describing.
+//
+// The map is now the hero and takes whatever the rails do not. A widget's only
+// position is WHICH RAIL it is in and WHERE IN THAT RAIL'S STACK it sits, which
+// is a position a person can predict, name and undo. The map is resized by
+// dragging a rail seam and in no other way — it has no grip and no handles,
+// because it is not a tile any more.
 //
 // ── WHAT IS UNCHANGED, ON PURPOSE (each of these is load-bearing) ────────────
 //   • `.tn-cw-shell` survives as the outer element. `.tn-alert ~ .tn-cw-shell`
@@ -40,207 +49,103 @@ import { useTerminalSkin } from "@/lib/terminal/skin";
 //     tabindex the skip link scrolls and leaves focus behind, which is how most
 //     skip links quietly fail and why no test would catch it.
 //   • <StageHost> is mounted in ONE stable React position and is never keyed on
-//     anything that changes. A remount costs a WebGL context, a full basemap style
-//     fetch, the countries geojson, ~18 re-rasterised sprites and ~19k camera
-//     features. Dragging the stage changes its grid-area and nothing else —
-//     that is why the stage is a normal grid item rather than a special case.
+//     anything that changes. A remount costs a WebGL context, a full basemap
+//     style fetch, the countries geojson, ~18 re-rasterised sprites and ~19k
+//     camera features. THIS IS THE CONSTRAINT THE WHOLE FILE BENDS AROUND: the
+//     stage sits in one fixed grid cell and only the cell's TRACK SIZE changes
+//     when a rail moves, so a resize never touches the element.
 //   • Each widget wrapper is `.tn-seg-slot` carrying data-widget-id, inside a
-//     container carrying `.tn-seg`. WidgetFrame.measureSeg() does
-//     closest(".tn-seg") / closest(".tn-seg-slot") at pointer-down.
+//     container carrying `.tn-seg`.
+//   • `data-grid-id` survives on the stage and every slot: lib/terminal/flip.ts
+//     keys its reorder animation off it, and without it reordering a card within
+//     a rail is a teleport rather than a movement.
 //   • PanelHost / CoveragePanel / MarketsPanel / WatchlistPanel stay mounted, and
 //     PanelHost stays a DIRECT child of `.tn-cw-shell`. The three panels render
 //     null while closed; without them the rail's three footer buttons are dead.
+//
+// ── WHAT WENT, AND WHAT REPLACED IT ──────────────────────────────────────────
+// Gone: `.tn-stage-grip`, all eight `.tn-rz` handles per card AND per stage,
+// `.tn-grid-guides`, `.tn-grid-ghost`, `gridArea`, `drawnRect`, the frozen
+// DOM-order machinery, and the free-spot scan behind the "add a camera wall"
+// ghost tile.
+//
+// DOM order is now LITERAL — left rail, stage, right rail, bottom rail, each
+// rail top to bottom — which IS reading order. The old file needed a whole
+// mechanism to compute reading order from rectangles and then freeze it for the
+// duration of a drag, because after a free drag the only honest answer to "what
+// comes next?" was "whatever is next on screen", and that changed mid-gesture.
+// Rails have no such problem: the structure is the order.
+//
+// THE EMPTY-BOARD RESCUE IS GONE TOO, and that is a deletion worth justifying.
+// It existed because removing the last camera wall left you looking at an empty
+// grid with no way back. Under rails an empty board is not a dead end, it is the
+// intended resting state: a full-bleed hero map with the Source Catalog rail
+// still sitting beside it, one click from adding anything. Keeping a panel that
+// says "this board has no camera walls" would be scolding the user for being in
+// the default state.
+//   NOTE: that panel was also a real add-path for the camslot widget. Its
+//   replacement is the widget catalogue in the Source Catalog rail, which is the
+//   only other door camslot has. Do not delete the command palette until that
+//   catalogue is live, or camslot becomes uncreatable.
 
-/** The eight resize handles, in the order they are painted. */
-const HANDLES: ResizeDir[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
+/** The rails, in the order they are laid out and read. */
+const RAILS: SegmentId[] = ["left", "right", "bottom"];
 
 export default function ConsoleWorkspace() {
   const layout = useShellLayout();
   const skin = useTerminalSkin();
   const gridRef = useRef<HTMLDivElement>(null);
-  const drag = useGridDrag(gridRef);
-
-  const boardRect: GridRect = layout.stageRect ?? { x: 3, y: 0, w: 6, h: 14 };
-
-  /**
-   * SOLO gives the whole board to the map and stands the widgets down.
-   *
-   * The height is the stage's OWN height, not a taller full-board guess: the grid
-   * is `alignContent: start` over fixed 24px rows, so a rect taller than the
-   * fitted row budget introduces a scrollbar on a view whose entire purpose is
-   * that there is nothing else to look at.
-   *
-   * The widgets are not unmounted, only skipped — see the note on domOrder below.
-   */
+  const split = useRailSplitter(gridRef);
   const solo = useStageSolo();
-  const stageRect: GridRect = solo
-    ? { x: 0, y: 0, w: COLS, h: boardRect.h }
-    : boardRect;
 
-  /**
-   * DOM order is READING order — top to bottom, then left to right — not the order
-   * widgets happen to sit in the array. Grid areas do the visual placement, so DOM
-   * order is purely tab and screen-reader order, and after a free-form drag the
-   * only honest answer to "what comes next?" is "whatever is next on screen".
-   */
-  const ordered = useMemo(() => {
-    const placed = layout.widgets.filter(
-      (w): w is WidgetInstance & { rect: GridRect } => Boolean(w.rect),
-    );
-    return readingOrder(placed.map((w) => ({ ...w.rect, widget: w }))).map((e) => e.widget);
-  }, [layout.widgets]);
+  // The workspace's own box, measured. Rail sizes are clamped against it so two
+  // wide rails can never squeeze the map below STAGE_MIN_PX — the clamp needs a
+  // container width, and this is the element the rails actually hang off.
+  const box = useShellBox(gridRef);
 
-  /**
-   * DOM order is FROZEN for the duration of a gesture.
-   *
-   * Reading order changes the moment a card crosses a cell boundary, and letting
-   * React act on that mid-drag means it reorders the grid's children under the
-   * pointer — dozens of times in one drag. That churns the tab order while the
-   * user is mid-gesture, and it used to break the drag outright: moving a node in
-   * the DOM releases its pointer capture. (The capture is gone now, but the
-   * churn is still pointless work and still moves focus around.) The order
-   * catches up on release, which is the only moment it is meaningful anyway.
-   */
-  // Only the ORDER is frozen, never the widgets themselves — the ids are held and
-  // re-resolved against the live layout every render, so cards keep moving while
-  // their positions in the DOM stay put.
-  const frozenIds = useRef<string[] | null>(null);
-  if (!drag.activeId) frozenIds.current = null;
-  else if (!frozenIds.current) frozenIds.current = ordered.map((w) => w.id);
+  const sizes = useMemo(() => railSizes(layout, box, solo), [layout, box, solo]);
 
-  const domOrder = useMemo(() => {
-    const ids = frozenIds.current;
-    if (!ids) return ordered;
-    const byId = new Map(ordered.map((w) => [w.id, w]));
-    // Anything added mid-drag falls in at the end rather than being dropped.
-    const held = ids.map((id) => byId.get(id)).filter((w): w is (typeof ordered)[number] => Boolean(w));
-    const heldIds = new Set(held.map((w) => w.id));
-    return [...held, ...ordered.filter((w) => !heldIds.has(w.id))];
-  }, [ordered, drag.activeId]);
+  /** Every rail's widgets, already ordered — `order` is dense and 0-based. */
+  const byRail = useMemo(() => {
+    const out = {} as Record<SegmentId, ReturnType<typeof widgetsInSegment>>;
+    for (const rail of RAILS) out[rail] = widgetsInSegment(layout, rail);
+    return out;
+  }, [layout]);
 
-  /**
-   * How many rows the board actually occupies — its lowest bottom edge.
-   *
-   * Solo counts the stage alone: the widgets are `hidden`, which is `display:none`,
-   * so they hold no tracks and a board sized to include them would leave the exact
-   * dead strip this is here to remove.
-   */
-  const boardRows = useMemo(() => {
-    const rects: GridRect[] = [stageRect];
-    if (!solo) for (const w of ordered) if (w.rect) rects.push(w.rect);
-    return Math.max(1, rowsUsed(rects));
-  }, [solo, stageRect, ordered]);
-
-  /**
-   * Where the next camera wall would land, or null when there is nowhere obvious.
-   *
-   * findFreeSpot is the SAME scan the store runs when a card is actually added, so
-   * the ghost tile marks the real destination rather than a guess. Withheld once the
-   * spot falls past the rows the board already occupies: drawing it there would add a
-   * permanent empty row to a surface whose whole argument is that it has no dead
-   * strips, and the board would grow a row taller the moment you stopped using it.
-   */
-  const addSpot = useMemo(() => {
-    if (solo) return null;
-    const rects: GridRect[] = [stageRect];
-    for (const w of ordered) if (w.rect) rects.push(w.rect);
-    const { x, y } = findFreeSpot(rects, CAMSLOT_SIZE.w, CAMSLOT_SIZE.h);
-    if (y + CAMSLOT_SIZE.h > boardRows) return null;
-    return { x, y, w: CAMSLOT_SIZE.w, h: CAMSLOT_SIZE.h } as GridRect;
-  }, [solo, stageRect, ordered, boardRows]);
-
-  /** True when the board carries no widgets at all — the dead end this rescues. */
-  const boardIsEmpty = !solo && ordered.length === 0;
-
-  const addWall = () => {
-    const r = createCamslot();
-    if (!r.ok && r.reason) {
-      window.dispatchEvent(new CustomEvent("tn-toast", { detail: r.reason }));
-    }
-  };
-
-  const gridStyle = {
-    gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
-    // THE LAST ROW ABSORBS THE REMAINDER, and that is the whole reason this is a
-    // template rather than `gridAutoRows` alone.
-    //
-    // Rows are a fixed 24px on a 1px gap — a 25px pitch — and `alignContent:start`
-    // pins them to the top. A band whose height is not an exact multiple of 25 is
-    // therefore left with 0-24px of unused track at the bottom, and `.tn-seg`'s
-    // background is `var(--tnx-line)`: the hairline colour, chosen so the 1px
-    // gutters between panels ARE the rules. Leftover track paints in that colour,
-    // full width, so it reads as a grey bar sitting under the board rather than as
-    // slack. Measured in the running app at 1600x900: band 844px, 33 rows x 25px =
-    // 824px, 20px of bar. Sampo circled it and asked what it was for. Nothing.
-    //
-    // So the last row is `minmax(ROW_PX, 1fr)` and eats the remainder: the map and
-    // the bottom-most cards get those pixels instead. It is not a repaint — there
-    // is no leftover track left to colour.
-    //
-    // WHY THE FLOOR MATTERS. When the board is TALLER than the band there is no
-    // free space, `1fr` collapses to its minimum, the tracks overflow and the
-    // grid's own `overflow:auto` scrolls — which is the behaviour the removed
-    // `min-height` note below exists to protect. Without the `minmax` floor the
-    // final row would flatten to nothing on exactly those tall boards.
-    //
-    // `gridAutoRows` STAYS, and is not redundant: a drag can put a card past the
-    // template's last row mid-gesture, and those implicit rows still need a height.
-    gridTemplateRows:
-      boardRows > 1
-        ? `repeat(${boardRows - 1}, ${ROW_PX}px) minmax(${ROW_PX}px, 1fr)`
-        : `minmax(${ROW_PX}px, 1fr)`,
-    gridAutoRows: `${ROW_PX}px`,
-    gap: `${GAP_PX}px`,
-    alignContent: "start",
-    // NO min-height. It used to carry `boardHeightPx(gridItems(layout))` under the
-    // comment "tall boards scroll; they never squeeze their rows" — and it was the
-    // reason tall boards did NOT scroll. Measured in the running app at 1440x900:
-    //
-    //   .tn-cw-shell (the band)   clientHeight   820px   overflow: hidden
-    //   .tn-seg      (this grid)  scrollHeight  1249px   overflow: auto
-    //
-    // Growing the grid to its own content means the grid never overflows ITSELF,
-    // so its `overflow: auto` never engages, and the excess is clipped by the
-    // band above it instead. `seg.scrollTop = 400` did nothing. 429px of the
-    // landing board — including a whole Headlines card at rows 40-50 — was not
-    // merely below the fold, it was unreachable at any scroll position.
-    //
-    // The rows cannot squeeze without it: `gridAutoRows` is a fixed 24px and
-    // `alignContent: start` pins the tracks to the top, so a short board still
-    // sits up against the header and a tall one now genuinely scrolls. Verified
-    // in the browser — dropping the declaration made scrollHeight exceed
-    // clientHeight, `scrollTop` take effect, and a card stay exactly 249px.
-    //
-    // Defaults are fitted to the window (lib/terminal/rowBudget) so this should
-    // stay a safety net rather than a scrollbar anyone meets — but a user can
-    // always drag a card past the fold, and content you cannot reach is worse
-    // than a scrollbar.
-    // The guide overlay's column pitch, derived rather than measured: percentages
-    // in a `to right` gradient resolve against the element's own width, so this
-    // stays correct at any container size, including while the rail animates open.
-    "--tn-col-step": `calc((100% - ${(COLS - 1) * GAP_PX}px) / ${COLS} + ${GAP_PX}px)`,
+  const railVars = {
+    "--tn-lw": `${sizes.left}px`,
+    "--tn-rw": `${sizes.right}px`,
+    "--tn-bh": `${sizes.bottom}px`,
   } as CSSProperties;
 
-  // --tn-lw / --tn-rw / --tn-bh are legacy: nothing in the Terminal layout positions
-  // itself off them any more. They are still published because several rules OUTSIDE
-  // the `.tn-terminal` scope compute `calc(… + var(--tn-lw))`, and a var with no value
-  // makes the whole declaration invalid rather than falling back — a silent way to
-  // lose a rule we have not thought to override yet.
-  const legacyVars = {
-    "--tn-lw": `${layout.segments.left.collapsed ? 0 : layout.segments.left.size}px`,
-    "--tn-rw": `${layout.segments.right.collapsed ? 0 : layout.segments.right.size}px`,
-    "--tn-bh": "0px",
+  /**
+   * The frame. Five columns and three rows, and every splitter track is `auto`
+   * so an unrendered splitter collapses the track to zero rather than leaving a
+   * seam floating beside a rail that is not there.
+   *
+   *   cols:  [left rail] [split] [ MAP 1fr ] [split] [right rail]
+   *   rows:  [ the above, 1fr ] [split] [bottom rail]
+   *
+   * The bottom rail spans all five columns, so it sits under the side rails as
+   * well as the map. That is deliberate: a bottom rail inset between two side
+   * rails reads as a third column that happens to be short, not as a dock.
+   */
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: "var(--tn-lw) auto minmax(0, 1fr) auto var(--tn-rw)",
+    gridTemplateRows: "minmax(0, 1fr) auto var(--tn-bh)",
+    minHeight: 0,
   } as CSSProperties;
 
   // Ambient stage chrome shows only over a live map — never when a widget is
-  // fullscreened onto the stage. StageBar applies the same gate internally, so it is
-  // mounted unconditionally; PinNavigator does not, so it is gated here.
+  // fullscreened onto the stage. StageBar applies the same gate internally, so it
+  // is mounted unconditionally; PinNavigator does not, so it is gated here.
   const showMapOverlays =
     layout.focusedWidgetId == null && (layout.stage === "map3d" || layout.stage === "map2d");
 
-  // The stage heading is derived, not fixed: the stage is the 2D map, the 3D globe,
-  // or a widget expanded onto it, and a hard-coded "Map" would be a false claim in
-  // two of those three states. Pure — see components/shell/a11y.ts.
+  // The stage heading is derived, not fixed: the stage is the 2D map, the 3D
+  // globe, or a widget expanded onto it, and a hard-coded "Map" would be a false
+  // claim in two of those three states. Pure — see components/shell/a11y.ts.
   const focusedType = layout.focusedWidgetId
     ? getWidgetType(layout.widgets.find((x) => x.id === layout.focusedWidgetId)?.type ?? "")
     : undefined;
@@ -250,22 +155,107 @@ export default function ConsoleWorkspace() {
     stage: layout.stage,
   });
 
-  /** Where an item is DRAWN: its own cell, unless it is the one being held. */
-  const drawnRect = (id: string, rect: GridRect): GridRect =>
-    drag.activeId === id && drag.pinnedRect ? drag.pinnedRect : rect;
+  /**
+   * Arrow keys on a card's grip, with RAIL meanings.
+   *
+   * Up/down reorder within the rail; left/right send the card to the previous or
+   * next rail. Both are `lib/console/move.ts`'s pure, already-tested destination
+   * functions — that module has had unit tests and no product caller since free
+   * dragging shipped, and this is its first one.
+   *
+   * Left/right are a CYCLE rather than a direction, because from the bottom rail
+   * "left" is a destination, not a direction, and there is no fourth rail to
+   * travel to. Cycling means every rail is reachable from every other rail with
+   * at most two presses and no dead key.
+   */
+  const onRailKey = (e: React.KeyboardEvent, id: string) => {
+    const l = shellLayoutStore.get();
 
-  const isHeld = (id: string) => drag.activeId === id;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      const t = nudgeTarget(l, id, e.key === "ArrowUp" ? -1 : 1);
+      if (!t) return; // at the end of the rail — do nothing rather than wrap
+      e.preventDefault();
+      e.stopPropagation();
+      shellLayoutStore.move(id, t.segment, t.index);
+      return;
+    }
 
-  const handlesFor = (id: string, rect: GridRect) =>
-    HANDLES.map((dir) => (
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      const w = l.widgets.find((x) => x.id === id);
+      if (!w) return;
+      const at = SEGMENT_ORDER.indexOf(w.segment);
+      const step = e.key === "ArrowLeft" ? -1 : 1;
+      const next = SEGMENT_ORDER[(at + step + SEGMENT_ORDER.length) % SEGMENT_ORDER.length];
+      const t = sendToTarget(l, id, next);
+      if (!t) return;
+      e.preventDefault();
+      e.stopPropagation();
+      shellLayoutStore.move(id, t.segment, t.index);
+    }
+  };
+
+  /** One rail column, or nothing at all when it has no size. */
+  const renderRail = (rail: SegmentId) => {
+    const widgets = byRail[rail];
+    // A rail with no size is not rendered rather than rendered empty: an empty
+    // scroll container still takes a border, still takes a focus stop, and would
+    // put a seam on screen for a rail nobody can see.
+    if (sizes[rail] === 0) return null;
+    return (
       <div
-        key={dir}
-        className={`tn-rz tn-rz-${dir}`}
-        data-resize={dir}
-        aria-hidden="true"
-        onPointerDown={(e) => drag.start(e, id, rect, "resize", dir)}
-      />
-    ));
+        id={`tn-rail-${rail}`}
+        className={`tn-rail-col tn-rail-col-${rail}`}
+        data-segment={rail}
+        role="region"
+        aria-label={SEGMENT_LABEL[rail]}
+        style={{
+          gridColumn: rail === "left" ? 1 : rail === "right" ? 5 : "1 / -1",
+          gridRow: rail === "bottom" ? 3 : 1,
+        }}
+      >
+        {/* HIDDEN while solo, not removed — `hidden` is display:none, so the
+            slots take no space, leave the accessibility tree and drop out of the
+            tab order, while the widgets stay MOUNTED. That distinction is the
+            point: dropping them would throw away every widget's fetched rows and
+            scroll position, so coming back from solo would repopulate an empty
+            board feed by feed. Returning is meant to give you the board you left. */}
+        {widgets.map((w) => (
+          <div
+            key={w.id}
+            data-widget-id={w.id}
+            data-grid-id={w.id}
+            data-segment={w.segment}
+            className="tn-seg-slot"
+            style={{ height: `${w.height}px` }}
+            hidden={solo}
+          >
+            <WidgetFrame instance={w} onNudgeKey={(e) => onRailKey(e, w.id)} />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  /** A rail's seam, on the side that faces the map. */
+  const renderSplit = (rail: SegmentId) => {
+    if (sizes[rail] === 0) return null;
+    return (
+      <div
+        style={{
+          gridColumn: rail === "left" ? 2 : rail === "right" ? 4 : "1 / -1",
+          gridRow: rail === "bottom" ? 2 : 1,
+          display: "grid",
+        }}
+      >
+        <RailSplitter
+          rail={rail}
+          size={sizes[rail]}
+          active={split.activeRail === rail}
+          onPointerDown={(e) => split.start(e, rail)}
+        />
+      </div>
+    );
+  };
 
   return (
     // data-tnx-skin is repeated here, not inherited. This element carries
@@ -273,160 +263,71 @@ export default function ConsoleWorkspace() {
     // palette — so without the attribute the inner scope would override the
     // light values cascading down from the shell and only the chrome would
     // change skin.
-    <div className="tn-cw-shell tn-terminal" data-tnx-skin={skin} style={legacyVars}>
+    <div className="tn-cw-shell tn-terminal" data-tnx-skin={skin} style={railVars}>
       {/* The grid is a separate element from `.tn-cw-shell`, and that is not
-          incidental: grid areas only apply to DIRECT children of the grid container,
-          while the rail (PanelHost) has to stay a direct child of `.tn-cw-shell` for
-          `.tn-cw-shell > .tn-rail` to match. One element cannot be both without the
-          rail becoming an auto-placed grid item.
+          incidental: grid placement only applies to DIRECT children of the grid
+          container, while the rail (PanelHost) has to stay a direct child of
+          `.tn-cw-shell` for `.tn-cw-shell > .tn-rail` to match. One element
+          cannot be both without the Source Catalog rail becoming an auto-placed
+          grid item in the middle of the console.
 
-          It carries `.tn-seg` so WidgetFrame's closest(".tn-seg") still resolves —
-          to a real, distinct ancestor of `.tn-seg-slot`, not to the slot itself. */}
+          It carries `.tn-seg` so it stays a real, distinct ancestor of every
+          `.tn-seg-slot`. */}
       <div
         ref={gridRef}
-        className={`tn-seg tn-grid${drag.activeId ? " is-dragging" : ""}`}
+        className={`tn-seg tn-rails${split.activeRail ? " is-splitting" : ""}`}
         style={gridStyle}
       >
-        {/* The snap guides. A gradient overlay rather than 12 elements: it costs no
-            DOM, cannot be hit-tested by accident, and fades in only while a gesture
-            is live — a permanently visible grid would be noise on a surface whose
-            whole job is reading data. */}
-        <div className="tn-grid-guides" aria-hidden="true" />
-
-        {/* Where the held item will land. */}
-        {drag.ghostRect && (
-          <div className="tn-grid-ghost" aria-hidden="true" style={gridArea(drag.ghostRect)} />
-        )}
+        {renderRail("left")}
+        {renderSplit("left")}
 
         <section
-          className={`tn-cw-stage${isHeld(STAGE_ID) ? " is-held" : ""}`}
+          className="tn-cw-stage"
           id={SKIP_TARGET_ID}
           tabIndex={-1}
           aria-labelledby="tn-cw-stage-h"
           data-grid-id={STAGE_ID}
-          style={gridArea(drawnRect(STAGE_ID, stageRect))}
+          style={{ gridColumn: 3, gridRow: 1 }}
         >
           <h2 id="tn-cw-stage-h" className="tn-sr-only">{stageLabel}</h2>
           <StageHost stage={layout.stage} />
-          {/* The Terminal's stage chrome — top bar (projection, basemaps, cursor),
-              search, legend, clock bar. It REPLACES MapControls / MapSearch /
-              WorldClock, which must not also be mounted or the app gets two
-              geocoders, two clock timers and two projection switches. */}
+          {/* The Terminal's stage chrome — top bar (projection, basemaps,
+              cursor), search, legend, clock bar. It REPLACES MapControls /
+              MapSearch / WorldClock, which must not also be mounted or the app
+              gets two geocoders, two clock timers and two projection switches. */}
           <StageBar />
           {showMapOverlays && <PinNavigator />}
-          {/* The stage is dragged by a dedicated grip, not by its whole surface:
-              the map owns click, drag and wheel for panning and zooming, so a
-              drag-anywhere stage would make the map unusable. */}
-          <div
-            className="tn-stage-grip"
-            role="button"
-            tabIndex={0}
-            aria-label="Move or resize the map"
-            title="Drag to move the map panel"
-            onPointerDown={(e) => drag.start(e, STAGE_ID, stageRect, "move", null)}
-            onKeyDown={(e) => onNudgeKey(e, STAGE_ID, stageRect, drag.nudge)}
-          >
-            ⠿
-          </div>
-          {handlesFor(STAGE_ID, stageRect)}
         </section>
 
-        {/* HIDDEN while solo, not removed — `hidden` is display:none, so the slots
-            take no grid space, leave the accessibility tree and drop out of the
-            tab order, while the widgets stay MOUNTED. That distinction is the
-            point: dropping them from the tree would throw away every widget's
-            fetched rows and scroll position, and coming back from solo would
-            repopulate an empty board feed by feed. Returning is meant to give you
-            the board you left. */}
-        {domOrder.map((w) => (
-          <div
-            key={w.id}
-            data-widget-id={w.id}
-            data-grid-id={w.id}
-            data-segment={w.segment}
-            className={`tn-seg-slot${isHeld(w.id) ? " is-held" : ""}`}
-            style={gridArea(drawnRect(w.id, w.rect))}
-            hidden={solo}
-          >
-            <WidgetFrame
-              instance={w}
-              onGrab={(e) => drag.start(e, w.id, w.rect, "move", null)}
-              onNudgeKey={(e) => onNudgeKey(e, w.id, w.rect, drag.nudge)}
-              onNudge={(d) => drag.nudge(w.id, w.rect, d)}
-            />
-            {handlesFor(w.id, w.rect)}
-          </div>
-        ))}
+        {renderSplit("right")}
+        {renderRail("right")}
 
-        {/* THE DEAD END THIS FIXES: remove the last camera wall and the board is an
-            empty grid with no way back. The stage bar's control only answers it while
-            the map is on screen, so the rescue lives on the board itself. */}
-        {boardIsEmpty && (
-          <div className="tn-cw-rescue" style={addSpot ? gridArea(addSpot) : undefined}>
-            <p className="tn-cw-rescue-t">This board has no camera walls</p>
-            <p className="tn-cw-rescue-b">A wall shows live pictures side by side. Add one, then pick cameras on the map to fill it.</p>
-            <button type="button" className="tn-cw-rescue-btn" onClick={addWall}>
-              Add a camera wall
-            </button>
-          </div>
-        )}
-
-        {/* The ghost tile sits in the cell the next wall will actually occupy. Hidden
-            during a gesture: it is not a drop target, and a phantom card appearing
-            beside the one you are holding reads as the board reflowing under you. */}
-        {!boardIsEmpty && addSpot && !drag.activeId && (
-          <button
-            type="button"
-            className="tn-cw-add"
-            style={gridArea(addSpot)}
-            onClick={addWall}
-            title="Add a camera wall here"
-          >
-            <span className="tn-cw-add-plus" aria-hidden="true">+</span>
-            <span className="tn-cw-add-l">Add camera wall</span>
-          </button>
-        )}
+        {renderSplit("bottom")}
+        {renderRail("bottom")}
       </div>
 
       {/* The variant's persistent chrome — the Source Catalog rail, and the ONLY
           surface in the product with per-layer map toggles for all 37 signal
           layers, the per-layer freshness dot and the "needs a key" badge. It must
-          stay a DIRECT child of this element: `.tn-cw-shell > .tn-rail` re-homes it
-          and `.tn-cw-shell:has(> .tn-rail)` makes it PUSH the grid instead of
-          covering it. Nest it one level deeper and it silently reverts to the fixed
-          base rule — the exact regression that removed it from the product once
-          already. */}
+          stay a DIRECT child of this element: `.tn-cw-shell > .tn-rail` re-homes
+          it and `.tn-cw-shell:has(> .tn-rail)` makes it PUSH the grid instead of
+          covering it. Nest it one level deeper and it silently reverts to the
+          fixed base rule — the exact regression that removed it from the product
+          once already. */}
       <PanelHost />
 
+      {/* Where a new widget goes. Mounted HERE, once, rather than inside the
+          Source Catalog rail next to the ＋ that opens it: the rail is
+          position:fixed with its own scroller, so a popover rendered inside it
+          would clip at the rail's edge and scroll away from its own button. */}
+      <PlacementPicker />
+
       {/* The three slide-ins the rail's footer buttons open. Each reads its own
-          open-store and renders null while closed, so mounting them costs nothing —
-          but without them those buttons are dead controls. */}
+          open-store and renders null while closed, so mounting them costs
+          nothing — but without them those buttons are dead controls. */}
       <CoveragePanel />
       <MarketsPanel />
       <WatchlistPanel />
     </div>
   );
-}
-
-/**
- * Arrow keys move a card by one cell; with Shift they resize it. The keyboard
- * equivalent of the drag, and not optional — a pointer-only way to lay out the
- * board would put the whole feature out of reach for anyone who cannot use one,
- * and it would be a regression besides: the controls this replaces (the ⋯ menu's
- * segment buttons) were ordinary, operable buttons.
- */
-function onNudgeKey(
-  e: React.KeyboardEvent,
-  id: string,
-  rect: GridRect,
-  nudge: (id: string, rect: GridRect, d: { dx?: number; dy?: number; dw?: number; dh?: number }) => void,
-) {
-  const step = e.shiftKey
-    ? { ArrowLeft: { dw: -1 }, ArrowRight: { dw: 1 }, ArrowUp: { dh: -1 }, ArrowDown: { dh: 1 } }
-    : { ArrowLeft: { dx: -1 }, ArrowRight: { dx: 1 }, ArrowUp: { dy: -1 }, ArrowDown: { dy: 1 } };
-  const d = step[e.key as keyof typeof step];
-  if (!d) return;
-  e.preventDefault();
-  e.stopPropagation();
-  nudge(id, rect, d);
 }

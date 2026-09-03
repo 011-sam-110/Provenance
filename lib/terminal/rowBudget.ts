@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState, type RefObject } from "react";
 // How much room the workspace actually has on this screen.
 //
 // ── WHY THIS HAS TO BE MEASURED ──────────────────────────────────────────────
@@ -55,4 +56,48 @@ export function visibleShell(): { w: number; h: number } {
     return { w: window.innerWidth, h: Math.max(1, window.innerHeight - CHROME_PX) };
   }
   return FALLBACK;
+}
+
+/**
+ * The live size of the workspace grid, tracked as it changes.
+ *
+ * `visibleShell()` answers "how big is it right now?" once, which is all a board
+ * preset needs when it composes itself. The rail clamp needs the answer to keep
+ * arriving: `railSizes` divides the container width between the two side rails
+ * and the map, so a window the user drags narrower has to push the rails in
+ * rather than let them push the map below `STAGE_MIN_PX`.
+ *
+ * ── WHY THIS CANNOT LOOP ─────────────────────────────────────────────────────
+ * A resize observer that feeds a value which changes the observed element is the
+ * classic infinite render. It is safe here for a structural reason rather than a
+ * lucky one: the observed element is the GRID CONTAINER, which fills its parent
+ * band. Rail sizes redistribute space INSIDE it and never change its own box,
+ * so a rail drag cannot re-trigger this. The identity check below is a second
+ * belt — React bails out of a re-render when the state object is unchanged, so
+ * a sub-pixel jitter cannot produce a render either.
+ */
+export function useShellBox(ref: RefObject<HTMLElement | null>): { w: number; h: number } {
+  const [box, setBox] = useState<{ w: number; h: number }>(visibleShell);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const read = () => {
+      const r = el.getBoundingClientRect();
+      const w = Math.round(r.width);
+      const h = Math.round(r.height);
+      // A zero box is a layout that has not happened yet, not a real size. The
+      // authored fallback is better than dividing a stage into nothing.
+      if (w <= 0 || h <= 0) return;
+      setBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+    };
+
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+
+  return box;
 }

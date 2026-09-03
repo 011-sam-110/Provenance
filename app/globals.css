@@ -3733,9 +3733,21 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   background: var(--tnx-bg);
 }
 
-/* The grid itself. Background = the hairline colour and gap = 1px, so the gutters
-   between panels ARE the rules: no panel needs a border, and two adjacent panels
-   can never produce a 2px double rule. */
+/* The workspace frame. Background = the hairline colour and gap = 1px, so the
+   gutters between panels ARE the rules: no panel needs a border, and two
+   adjacent panels can never produce a 2px double rule.
+
+   `overflow: hidden`, NOT `auto`. This element is the fixed frame the hero map
+   is measured against; if it scrolls, the map scrolls with it and stops being a
+   hero. Scrolling belongs to each rail (`.tn-rail-col`) individually, which is
+   what lets a long left rail scroll past a stationary map instead of dragging
+   the map up out of view — the behaviour the old single-scroller grid could not
+   express, and the reason a card at the bottom of a tall board used to be
+   unreachable at any scroll position.
+
+   grid-template-columns / -rows arrive as an inline style from
+   ConsoleWorkspace, because two of the five tracks are CSS variables the
+   splitters write and the rest have to sit around them. */
 .tn-terminal .tn-seg {
   display: grid;
   gap: 1px;
@@ -3744,10 +3756,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   min-height: 0;
   align-items: stretch;
   align-content: stretch;
-  overflow: auto;
+  overflow: hidden;
   background: var(--tnx-line);
-  /* grid-template-areas / -columns / -rows arrive as an inline style from
-     lib/terminal/grid — the one genuinely runtime-computed value in the layout. */
 }
 /* `hidden` has to actually hide. `[hidden]{display:none}` is a UA rule and the
    lowest-specificity thing in the cascade, so ANY `display` added to this
@@ -3756,13 +3766,19 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-terminal .tn-seg-slot[hidden] { display: none !important; }
 
 .tn-terminal .tn-seg-slot {
-  /* MANDATORY, not stylistic: the eight `.tn-rz` resize handles are
-     position:absolute and pin themselves to this box's edges. Without a
-     positioned ancestor here they resolve against `.tn-grid` instead, so every
-     card's handles pile up in the corners of the whole board — the handles are
-     invisible at rest, so this fails as "resizing does nothing" rather than as
-     anything you can see. */
+  /* Still MANDATORY, for a different reason than it used to be. It was here to
+     anchor the eight `.tn-rz` resize handles, which are gone with the grid.
+     It stays because the widget's three popovers (help, notify, ⋯) are
+     positioned against this box — see the `:has()` rule below, which is what
+     lets them escape it. Without a positioned ancestor they resolve against the
+     whole workspace and land in its corner.
+
+     `flex: 0 0 auto` keeps a card at exactly the height the rail gave it:
+     the rail is a flex column that scrolls, and without this a short rail would
+     stretch its cards to fill and a tall one would squash them, so the height
+     the ⋯ menu writes would be advisory rather than real. */
   position: relative;
+  flex: 0 0 auto;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -5205,3 +5221,103 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   .tn-place-opt { transition: none; }
 }
 /* ── end placement picker ─────────────────────── */
+
+/* ── begin rails: .tn-rail-col, .tn-rail-split ───────────────────────────────
+   The three docks around the hero map, and the seams that resize them.
+
+   REWRITTEN, NOT REVIVED. There was a three-rail block in this file before the
+   free grid replaced it, and reusing it would have been wrong in a way that is
+   easy to miss: those rules were `position: absolute`, offset from
+   `--tn-lw` / `--tn-rw` / `--tn-bh`, and they floated the rails OVER a
+   full-bleed map. The stage is now a grid SIBLING of the rails, not a surface
+   they hover on, so the old rules would put the map underneath them — the rails
+   would look right and the map would be missing a strip down each side.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.tn-terminal .tn-rail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  min-height: 0;
+  /* Each rail scrolls ITSELF. This is the whole reason a widget can be taller
+     than the window without becoming unreachable: the frame is fixed, the rail
+     moves inside it, and the map never leaves the screen. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--tnx-line);
+  overscroll-behavior: contain;
+}
+
+/* The seam. A 1px rule with an 7px invisible grab area either side of it, so it
+   is a comfortable pointer target without drawing a thick bar: the visible line
+   stays exactly as wide as every other gutter in the console, which is what
+   keeps the "gaps are the rules" idea intact while still being grabbable. */
+.tn-terminal .tn-rail-split {
+  position: relative;
+  z-index: 6;
+  background: var(--tnx-line);
+  touch-action: none;
+  transition: background 120ms ease;
+}
+.tn-terminal .tn-rail-split-left,
+.tn-terminal .tn-rail-split-right {
+  width: 1px;
+  margin: 0 -7px;
+  padding: 0 7px;
+  background-clip: content-box;
+  cursor: col-resize;
+}
+.tn-terminal .tn-rail-split-bottom {
+  height: 1px;
+  margin: -7px 0;
+  padding: 7px 0;
+  background-clip: content-box;
+  cursor: row-resize;
+}
+
+.tn-terminal .tn-rail-split:hover,
+.tn-terminal .tn-rail-split.is-active { background-color: var(--tnx-accent); }
+
+/* Focus has to be VISIBLE on a 1px element, and an outline on a 1px box is a
+   hairline nobody sees. The grip below grows instead, which is also the hover
+   affordance — so keyboard focus and pointer hover show the same thing. */
+.tn-terminal .tn-rail-split:focus-visible {
+  outline: none;
+  background-color: var(--tnx-accent);
+}
+
+.tn-terminal .tn-rail-split-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 2px;
+  background: var(--tnx-ink-ghost);
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease;
+  pointer-events: none;
+}
+.tn-terminal .tn-rail-split-left .tn-rail-split-grip,
+.tn-terminal .tn-rail-split-right .tn-rail-split-grip { width: 3px; height: 34px; }
+.tn-terminal .tn-rail-split-bottom .tn-rail-split-grip { width: 34px; height: 3px; }
+
+.tn-terminal .tn-rail-split:hover .tn-rail-split-grip,
+.tn-terminal .tn-rail-split:focus-visible .tn-rail-split-grip,
+.tn-terminal .tn-rail-split.is-active .tn-rail-split-grip {
+  opacity: 1;
+  background: var(--tnx-accent);
+}
+
+/* While a seam is being dragged the cursor must not flicker as the pointer
+   crosses the map, and nothing on the way may select text. Pointer capture
+   keeps the EVENTS coming; this keeps the appearance steady. */
+.tn-terminal .tn-rails.is-splitting,
+.tn-terminal .tn-rails.is-splitting * { user-select: none; }
+.tn-terminal .tn-rails.is-splitting { cursor: inherit; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-rail-split,
+  .tn-terminal .tn-rail-split-grip { transition: none; }
+}
+/* ── end rails ────────────────────────────────── */
