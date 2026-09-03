@@ -5258,7 +5258,18 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-terminal .tn-rail-col {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  /* THE GUTTER LIVES HERE, not on `.tn-seg`. This rule was written at M2, before
+     the retune, and it carried the old idea: gap 1px over a `--tnx-line` ground,
+     so the gutter between two cards WAS the rule between them. M7 reversed that
+     on `.tn-seg` — which in the rails layout is the outer grid holding rail |
+     seam | stage, and so spaces the rails off the map but never touches two
+     cards stacked inside one rail. Measured in Chrome: 8px between rail and map,
+     1px between neighbouring cards. Every card carries a 6px radius, which is
+     exactly what a 1px rule cannot sit against — the rule runs past the corner
+     and shows through as four hairline spurs.
+     Found by looking at a screenshot, not by a test: the guard covers font sizes
+     and radii, and a gap is neither. */
+  gap: var(--tnx-gap);
   min-width: 0;
   min-height: 0;
   /* Each rail scrolls ITSELF. This is the whole reason a widget can be taller
@@ -5266,7 +5277,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
      moves inside it, and the map never leaves the screen. */
   overflow-y: auto;
   overflow-x: hidden;
-  background: var(--tnx-line);
+  background: var(--tnx-bg);
   overscroll-behavior: contain;
 }
 
