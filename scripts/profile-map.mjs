@@ -6,8 +6,18 @@
 // one suspect at a time at RUNTIME, so every run is the same build and the numbers
 // are comparable.
 //
-// Run:  node scripts/profile-map.mjs [baseUrl] [--ablate=a,b] [--label=name]
-//       node scripts/profile-map.mjs http://localhost:3080 --ablate=terrain-guard
+// Run:  node scripts/profile-map.mjs [baseUrl] [--headed] [--start=z] [--ablate=a,b] [--label=name]
+//       node scripts/profile-map.mjs http://localhost:3080 --headed
+//       node scripts/profile-map.mjs http://localhost:3080 --headed --start=11
+//
+// USE --headed FOR ANYTHING YOU INTEND TO BELIEVE. Headless Chromium falls back to
+// SwiftShader, which rasterises WebGL on the CPU: it reported ~33 s of long tasks
+// that do not exist on a real GPU, and it completely hid a WebGL context loss that
+// was the actual bug. renderMode is recorded in every JSON for that reason — never
+// compare a headless run to a headed one.
+//
+// --start=z sets the zoom the gesture begins at (default 4). Use --start=11 to land
+// inside the live-thumbnail regime (z12+), which a run from z4 may never reach.
 //
 // Ablations:
 //   terrain-guard  apply the proposed syncTerrain fix at runtime (skip a no-op setTerrain)
@@ -67,7 +77,7 @@ const chromium = await loadChromium();
 // London, and a zoom span that crosses BOTH thresholds that matter:
 // TERRAIN_MIN_ZOOM (6) and the live-thumbnail floor (12).
 const CENTER = [-0.1276, 51.5072];
-const START_ZOOM = 4;
+const START_ZOOM = Number((argv.find((a) => a.startsWith("--start=")) || "--start=4").replace("--start=", ""));
 const WHEEL_STEPS = 24;
 const WHEEL_DELTA = -120; // negative = zoom in
 const WHEEL_GAP_MS = 60;
@@ -160,8 +170,21 @@ await page.evaluate((ablations) => {
     return origSetTerrain(opts);
   };
 
+  P.qrfByLayer = {};
+  P.qrfMs = 0;
   const origQrf = m.queryRenderedFeatures.bind(m);
-  m.queryRenderedFeatures = (...a) => { P.qrf++; return origQrf(...a); };
+  m.queryRenderedFeatures = (...a) => {
+    P.qrf++;
+    // Attribute the call. A viewport-wide query (no point argument) is the
+    // expensive shape, so record that separately from a point hit-test.
+    const opts = a.find((x) => x && !Array.isArray(x) && typeof x === "object" && "layers" in x);
+    const layers = opts && opts.layers ? opts.layers.join(",") : "(point-hit-test)";
+    const wide = a.length === 1 && opts ? "wide:" : "pt:";
+    const key = wide + layers;
+    P.qrfByLayer[key] = (P.qrfByLayer[key] || 0) + 1;
+    const t = performance.now();
+    try { return origQrf(...a); } finally { P.qrfMs += performance.now() - t; }
+  };
 
   m.on("sourcedata", () => { P.sourcedata++; });
   m.on("render", () => { P.frames.push(performance.now()); });
@@ -213,8 +236,8 @@ const raw = await page.evaluate(() => {
   const P = window.__prof;
   return {
     setTerrain: P.setTerrain, setTerrainSkipped: P.setTerrainSkipped,
-    qrf: P.qrf, sourcedata: P.sourcedata,
-    frames: P.frames.slice(), longtasks: P.longtasks.slice(),
+    qrf: P.qrf, qrfMs: P.qrfMs, qrfByLayer: { ...P.qrfByLayer }, sourcedata: P.sourcedata,
+    frames: P.frames.slice(), longtasks: P.longtasks.slice(), t0: P.t0,
     contextLost: P.contextLost,
     zoom: window.__map.getZoom(),
     heap: performance.memory ? performance.memory.usedJSHeapSize : null,
@@ -242,6 +265,8 @@ const result = {
   setTerrainCalls: raw.setTerrain,
   setTerrainSkipped: raw.setTerrainSkipped,
   queryRenderedFeatures: raw.qrf,
+  queryRenderedFeaturesMs: +raw.qrfMs.toFixed(1),
+  queryRenderedFeaturesByLayer: raw.qrfByLayer,
   sourcedataEvents: raw.sourcedata,
   frames: raw.frames.length,
   frameGapMeanMs: mean === null ? null : +mean.toFixed(1),
@@ -251,6 +276,11 @@ const result = {
   longTaskCount: raw.longtasks.length,
   longTaskTotalMs: +ltTotal.toFixed(1),
   longTaskWorstMs: +ltWorst.toFixed(1),
+  // When each stall landed, relative to the first wheel event. A stall at t~0 is
+  // setup bleeding in; one in the middle is the gesture's own cost.
+  longTaskTimeline: raw.longtasks
+    .map((t) => ({ atMs: +(t.start - raw.t0).toFixed(0), durMs: +t.dur.toFixed(0) }))
+    .filter((t) => t.durMs >= 80),
   heapBeforeMB: before.heap === null ? null : +(before.heap / 1048576).toFixed(1),
   heapAfterMB: raw.heap === null ? null : +(raw.heap / 1048576).toFixed(1),
   heapGrowthMB: before.heap === null || raw.heap === null ? null : +((raw.heap - before.heap) / 1048576).toFixed(1),
@@ -264,7 +294,10 @@ writeFileSync(file, JSON.stringify(result, null, 2));
 const row = (k, v) => console.log(`  ${k.padEnd(26)} ${v}`);
 console.log(`  zoom ${result.zoom.from.toFixed(2)} → ${result.zoom.to.toFixed(2)}  in ${wallMs} ms`);
 row("setTerrain calls", `${result.setTerrainCalls}${result.setTerrainSkipped ? `  (${result.setTerrainSkipped} skipped by guard)` : ""}`);
-row("queryRenderedFeatures", result.queryRenderedFeatures);
+row("queryRenderedFeatures", `${result.queryRenderedFeatures}  (${result.queryRenderedFeaturesMs} ms total)`);
+for (const [k, v] of Object.entries(result.queryRenderedFeaturesByLayer).sort((a, b) => b[1] - a[1]).slice(0, 4)) {
+  row(`   ${k}`, v);
+}
 row("sourcedata events", result.sourcedataEvents);
 row("frames rendered", result.frames);
 row("frame gap mean / p95 / max", `${result.frameGapMeanMs} / ${result.frameGapP95Ms} / ${result.frameGapMaxMs} ms`);
