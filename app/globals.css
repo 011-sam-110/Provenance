@@ -3767,8 +3767,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 
 .tn-terminal .tn-seg-slot {
   /* Still MANDATORY, for a different reason than it used to be. It was here to
-     anchor the eight `.tn-rz` resize handles, which are gone with the grid.
-     It stays because the widget's three popovers (help, notify, ⋯) are
+     anchor eight resize handles per card; those went with the grid, and their
+     rules went with them. It stays because the widget's three popovers (help, notify, ⋯) are
      positioned against this box — see the `:has()` rule below, which is what
      lets them escape it. Without a positioned ancestor they resolve against the
      whole workspace and land in its corner.
@@ -3848,50 +3848,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   cursor: grabbing;
 }
 
-/* ── Resize handles ────────────────────────────────────────────────────────
-   Eight of them, invisible at rest and revealed by the slot's own hover. The
-   old three were 6px targets with no resting appearance, so you had to already
-   know they were there and then hit them. These are 10px edges and 16px
-   corners, which is the most that can be given without eating into a 22px
-   header row; the ⋯ menu's nudge buttons and the arrow keys are the no-aim
-   route for anyone who does not want to chase an edge. */
-.tn-terminal .tn-rz {
-  position: absolute; z-index: 20;
-  opacity: 0;
-  transition: opacity 120ms ease;
-  touch-action: none;
-}
-.tn-terminal .tn-seg-slot:hover .tn-rz,
-.tn-terminal .tn-cw-stage:hover .tn-rz,
-.tn-terminal .is-held .tn-rz { opacity: 1; }
-
-.tn-terminal .tn-rz::after {
-  content: ""; position: absolute; inset: 0;
-  background: var(--tnx-accent);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-.tn-terminal .tn-rz:hover::after { opacity: 0.45; }
-
-.tn-terminal .tn-rz-n  { top: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-.tn-terminal .tn-rz-s  { bottom: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-.tn-terminal .tn-rz-w  { left: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
-.tn-terminal .tn-rz-e  { right: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
-.tn-terminal .tn-rz-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-.tn-terminal .tn-rz-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
-.tn-terminal .tn-rz-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
-.tn-terminal .tn-rz-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
-
-/* The south-east corner gets the only resting mark — the universal "this
-   resizes" tell, and the handle people reach for first. */
-.tn-terminal .tn-rz-se::before {
-  content: ""; position: absolute; right: 2px; bottom: 2px;
-  width: 6px; height: 6px;
-  border-right: 1.5px solid var(--tnx-ink-ghost);
-  border-bottom: 1.5px solid var(--tnx-ink-ghost);
-}
-.tn-terminal .tn-seg-slot:hover .tn-rz-se::before { border-color: var(--tnx-accent); }
-
 /* The stage's drag grip. The map owns click, drag and wheel for panning and
    zooming, so the stage cannot be draggable by its surface the way a widget's
    header is — it gets one explicit grip instead, tucked into the corner the map
@@ -3917,9 +3873,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    helper already resolves its duration to 0, and these cover the CSS-only fades
    so nothing is left half-transitioned. */
 @media (prefers-reduced-motion: reduce) {
-  .tn-terminal .tn-grid-guides,
-  .tn-terminal .tn-rz,
-  .tn-terminal .tn-rz::after { transition: none; }
+  .tn-terminal .tn-grid-guides { transition: none; }
 }
 
 /* Below this width a twelve-column drag is not a real interaction — a column is
@@ -3940,7 +3894,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
     flex: 0 0 auto;
     min-height: 220px;
   }
-  .tn-terminal .tn-rz,
   .tn-terminal .tn-grid-guides,
   .tn-terminal .tn-grid-ghost,
   .tn-terminal .tn-stage-grip { display: none; }
@@ -4036,11 +3989,12 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 
 /* The three old `.tn-cw-resize*` handles used to be hidden here, because a widget
    owned exactly one template cell and its size came from the template — so a
-   resize control was a control that lied. Widgets own a rectangle now, and
-   resizing lives on the SLOT as eight handles (`.tn-rz-*` below) rather than
-   inside the frame: an edge has to stay grabbable, and `.tn-cw` clips its
-   overflow. The handles no longer exist in WidgetFrame's markup, so there is
-   nothing left to hide. */
+   resize control was a control that lied. That note was then rewritten to say
+   resizing had moved to eight handles on the SLOT, which was true only while
+   there was a grid. A card has no width of its own in a rail: width belongs to
+   the rail and is dragged on the splitter between rails, height is per-card and
+   lives in the widget menu. No handle exists in any markup, and no rule here
+   hides one. */
 
 /* The grab handle. A real button now — it carries the keyboard path to moving and
    resizing, so it has to be focusable and announced. */
@@ -4741,16 +4695,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   }
 
   /* A slot clipped to its desktop grid row re-creates the porthole one level
-     down. `position: relative` is deliberately NOT touched — the .tn-rz handles
-     resolve against it (see the note on .tn-terminal .tn-seg-slot above). */
+     down. `position: relative` is deliberately NOT touched — the widget's three
+     popovers resolve against it (see the note on .tn-terminal .tn-seg-slot). */
   .tn-terminal .tn-seg-slot { overflow: visible; }
-
-  /* Resize handles are eight invisible 10px drag bands pinned to every card
-     edge. There is no hover on touch, so they never reveal themselves, and card
-     height is CSS-derived here anyway — they are dead controls that sit exactly
-     where a thumb starts a swipe. Hidden for the same reason .tn-grip and
-     .tn-cw-resize* already are in the 900px block. */
-  .tn-terminal .tn-rz { display: none; }
 
   /* iOS Safari zooms the page in on focus of any field under 16px and does not
      zoom back out. The skin set 10.5px and `min-height: 0`, which also cancelled
