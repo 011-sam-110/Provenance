@@ -50,6 +50,8 @@ import {
   nextRecoveryStep,
   type MapLoadStatus,
 } from "@/lib/map/resilience";
+import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
+import { terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
   COUNTRY_HIT_LAYER,
@@ -603,8 +605,17 @@ export default function WorldMap() {
   // a normal layer and is safe at any zoom, so it follows the toggle directly.
   const syncTerrain = useCallback((map: maplibregl.Map) => {
     const on = terrainRef.current && map.getZoom() >= TERRAIN_MIN_ZOOM;
+    const wanted = wantedTerrain(on, DEM_SRC);
+    // This runs from map.on("zoom"), which MapLibre fires once per RENDER FRAME
+    // for the whole of a wheel/pinch/easeTo/flyTo. setTerrain is NOT idempotent:
+    // its add branch builds a new Terrain + RenderToTexture and never destroys the
+    // pair it replaces, so calling it per frame orphaned a 30-slot render pool per
+    // frame until the GPU ran out and the WebGL context was LOST. Measured before
+    // this guard: 53 calls and a lost context in one wheel-zoom over London.
+    // See lib/map/terrain.ts for the full before/after.
+    if (!terrainChanged(map.getTerrain(), wanted)) return;
     try {
-      map.setTerrain(on ? { source: DEM_SRC, exaggeration: 1.3 } : null);
+      map.setTerrain(wanted);
     } catch {
       /* terrain can briefly fight a freshly-swapped style; harmless */
     }
@@ -1599,6 +1610,11 @@ export default function WorldMap() {
     (window as unknown as { __pick?: typeof pickStore }).__pick = pickStore;
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    // ...and collapse it. { compact: true } alone still mounts EXPANDED — MapLibre
+    // adds maplibregl-compact-show alongside maplibregl-compact, and only a drag
+    // ever takes it off again. See lib/map/attribution.ts (the credit stays, and
+    // stays reachable through the info button — that part is a licence obligation).
+    collapseAttribution(map.getContainer().querySelector("." + ATTRIB_CONTROL_CLASS));
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
 
     wireInteractions(map);
