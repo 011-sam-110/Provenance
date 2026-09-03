@@ -44,9 +44,25 @@ export interface DiveView {
 export interface MapViewState {
   basemap: BasemapKey;
   terrain: boolean;
+  /**
+   * 3D buildings (the fill-extrusion layer WorldMap raises at street level).
+   *
+   * It lives HERE and not in lib/layers.ts, which is the question that took the
+   * longest to settle. `buildings` looks like a layer toggle, but LayerKey describes
+   * DATA FEEDS: each one has an adapter, a fetch, a SOURCE_CATALOG entry, a refresh
+   * cadence and a row in the Sources rail. Buildings have none of those. They are a
+   * property of how the base map is DRAWN, which is exactly what `terrain` above is,
+   * and the two belong together. Putting it in LayerKey would also have given it a
+   * slot in presetState(), so a one-tap layer preset would silently reach across and
+   * change a basemap property.
+   *
+   * Consequence worth knowing: this store is deliberately unpersisted, so buildings
+   * come back on every visit. That is the same contract `terrain` already has.
+   */
+  buildings: boolean;
 }
 
-let state: MapViewState = { basemap: DEFAULT_BASEMAP, terrain: true };
+let state: MapViewState = { basemap: DEFAULT_BASEMAP, terrain: true, buildings: true };
 let flyToFn: ((view: RegionView) => void) | null = null;
 let flyToPointFn: ((view: PointView) => void) | null = null;
 let diveToFn: ((view: DiveView, animate: boolean, onArrive: () => void) => void) | null = null;
@@ -65,6 +81,11 @@ export const mapViewStore = {
   setTerrain(on: boolean) {
     if (state.terrain === on) return;
     state = { ...state, terrain: on };
+    emit();
+  },
+  setBuildings(on: boolean) {
+    if (state.buildings === on) return;
+    state = { ...state, buildings: on };
     emit();
   },
   get(): MapViewState {

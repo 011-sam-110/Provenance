@@ -38,7 +38,7 @@ export interface ViewState {
 const LAT_MAX = 90;
 const LON_MAX = 180;
 const ZOOM_MIN = 0;
-const ZOOM_MAX = 18; // mirrors WorldMap's maxZoom
+const ZOOM_MAX = 19; // mirrors WorldMap maxZoom (raised for street-level buildings)
 const OBJ_MAX_LEN = 96; // opaque internal key — keep shared links sane
 
 const VALID_LAYERS = new Set<string>(ACTIVE_LAYERS);

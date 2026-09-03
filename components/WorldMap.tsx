@@ -33,6 +33,18 @@ import { cameraFeed } from "@/lib/cameras/classify";
 import { CAMERA_FEED_META, cameraRegionColor, WEBCAM_COLOR } from "@/lib/icons/svg";
 import { BASEMAPS, MAP_LABEL_FONT, usesOwnLabels, type BasemapKey } from "@/lib/basemaps";
 import {
+  BUILDINGS_MIN_ZOOM,
+  BUILDING_LAYER,
+  BUILDING_SRC,
+  BUILDING_TILEJSON,
+  STYLE_OWN_BUILDING_3D,
+  buildingsBeforeId,
+  buildingsFilter,
+  buildingsPaint,
+  buildingsSourceId,
+  needsOwnBuildingSource,
+} from "@/lib/map/buildings";
+import {
   STYLE_LOAD_TIMEOUT_MS,
   classifyMapError,
   nextRecoveryStep,
@@ -513,6 +525,7 @@ export default function WorldMap() {
   const rafRef = useRef(0);
   const interactUntilRef = useRef(0);
   const terrainRef = useRef(true);
+  const buildingsRef = useRef(true);
   // Plane-tracking (see lib/planes/track). trackingRef mirrors the store for the
   // spin loop + input handlers (no re-render); trackedObjectRef holds the tracked
   // plane's latest WorldObject so addAppLayers can re-seed the ring after a restyle;
@@ -556,6 +569,7 @@ export default function WorldMap() {
   const view = useMapView();
   const basemap = view.basemap;
   const terrainOn = view.terrain;
+  const buildingsOn = view.buildings;
   const layers = useLayers();
   const track = useTrack();
   trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
@@ -778,6 +792,42 @@ export default function WorldMap() {
         });
       }
       applyTerrain(map, terrainRef.current);
+
+      // 3D buildings. Added BEFORE every app layer below, so pins, cameras and
+      // signals draw on top of the massing rather than inside it. See
+      // lib/map/buildings.ts for why the layer is ours and not the basemap's.
+      const styleNow = map.getStyle();
+      const sourceIds = Object.keys(styleNow?.sources ?? {});
+      if (needsOwnBuildingSource(sourceIds) && !map.getSource(BUILDING_SRC)) {
+        map.addSource(BUILDING_SRC, {
+          type: "vector",
+          // `url:` and NOT `tiles:`. The OpenStreetMap / OpenMapTiles / OpenFreeMap
+          // credit lives in the TileJSON this resolves to, and MapLibre reads it
+          // from there; a literal tiles array draws the same buildings with the
+          // attribution silently dropped.
+          url: BUILDING_TILEJSON,
+        });
+      }
+      if (!map.getLayer(BUILDING_LAYER)) {
+        map.addLayer(
+          {
+            id: BUILDING_LAYER,
+            type: "fill-extrusion",
+            source: buildingsSourceId(Object.keys(map.getStyle()?.sources ?? {})),
+            "source-layer": "building",
+            minzoom: BUILDINGS_MIN_ZOOM,
+            filter: buildingsFilter() as never,
+            layout: { visibility: vis(buildingsRef.current) },
+            paint: buildingsPaint(mapViewStore.get().basemap) as never,
+          },
+          buildingsBeforeId(styleNow?.layers),
+        );
+      }
+      // Liberty ships its own `building-3d`. Ours is the single source of truth here,
+      // so hide theirs rather than let two extrusions stack their opacity.
+      if (map.getLayer(STYLE_OWN_BUILDING_3D)) {
+        map.setLayoutProperty(STYLE_OWN_BUILDING_3D, "visibility", "none");
+      }
 
       // Symbol icons are wiped by setStyle — re-rasterise/register them.
       await Promise.all([
@@ -1709,7 +1759,7 @@ export default function WorldMap() {
       style: BASEMAPS[mapViewStore.get().basemap].style,
       center,
       zoom,
-      maxZoom: 18,
+      maxZoom: 19, // headroom for street-level buildings (OFM tiles stop at z14 and overzoom)
       renderWorldCopies: false,
       attributionControl: false,
     });
@@ -1910,6 +1960,18 @@ export default function WorldMap() {
     if (!map || !readyRef.current) return;
     applyTerrain(map, terrainOn);
   }, [terrainOn, applyTerrain]);
+
+  // 3D buildings toggle. Visibility only, deliberately: MapLibre does not fetch
+  // tiles for a hidden layer, so hiding is enough to stop the ~569 KB z14 tiles
+  // being pulled, and the layer does not have to be torn down and rebuilt.
+  useEffect(() => {
+    buildingsRef.current = buildingsOn;
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    if (map.getLayer(BUILDING_LAYER)) {
+      map.setLayoutProperty(BUILDING_LAYER, "visibility", vis(buildingsOn));
+    }
+  }, [buildingsOn]);
 
   // Layer visibility toggles.
   useEffect(() => {
