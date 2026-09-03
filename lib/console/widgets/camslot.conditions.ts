@@ -122,8 +122,11 @@ export function derivedRoad(pw: PointWeather): { text: string; title: string } |
   return { text, title };
 }
 
-/** Why a measured reading was refused, worded for a human and naming the station. */
-function refusalTitle(reading: SurfaceReading, why: SurfaceValidity, now: number): string {
+/** Why a measured reading was refused, worded for a human and naming the station.
+ *  EXPORTED so camslot.provenance.ts's panel reuses the exact sentence the tile's
+ *  tooltip shows. Two surfaces explaining the same refusal in two different sets of
+ *  words is how one of them quietly becomes wrong. */
+export function refusalTitle(reading: SurfaceReading, why: SurfaceValidity, now: number): string {
   const who = reading.station ? `The nearest road-weather station (${reading.station})` : "The nearest road-weather station";
   const says = `reports ${reading.state}`;
   switch (why) {

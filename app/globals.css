@@ -4871,6 +4871,41 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 .tn-csd-live { align-self: flex-start; font-size: 11px; padding: 4px 9px; border: 1px solid var(--tn-border); border-radius: 3px; background: var(--tn-chip-bg); color: var(--tn-text); cursor: pointer; }
 .tn-csd-full { font-size: 11px; color: var(--tn-down-ink); }
 .tn-csd-caveat { font-size: 10.5px; color: var(--tn-text-faint); }
+
+/* --- Camera slot focus: where the tile's conditions claim comes from -------
+   The wall tile gets three strings in a corner and a hover title. This is the
+   same claim with its basis laid out under it, and it is the only place a
+   REFUSED reading is disclosed — see camslot.provenance.ts on why refusing to
+   assert a reading is not the same as hiding that one exists.
+
+   Tier colour reuses the feed-health ink vocabulary rather than inventing a
+   second one: a station reading is "live", an air-derived line is a step
+   removed, and no data is unknown. The tile's own overlay hardcodes greens and
+   oranges because it always sits on a dark scrim over a photograph; this panel
+   sits on the console surface and must follow the theme. */
+.tn-csd-prov { display: flex; flex-direction: column; gap: 7px; padding: 9px 10px; border: 1px solid var(--tn-border); border-radius: 4px; background: var(--tn-surface-2); }
+.tn-csd-prov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tn-csd-prov-claim { display: inline-flex; align-items: baseline; gap: 6px; font-family: var(--tn-mono); font-size: 11px; letter-spacing: .02em; color: var(--tn-unknown-ink); }
+.tn-csd-prov-claim b { font-size: 9.5px; font-weight: 620; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-claim[data-tier="measured"] { color: var(--tn-live-ink); }
+.tn-csd-prov-claim[data-tier="derived"] { color: var(--tn-lagging-ink); }
+.tn-csd-prov-clock { font-family: var(--tn-mono); font-size: 11px; color: var(--tn-text-muted); }
+.tn-csd-prov-clock span { color: var(--tn-text-faint); }
+.tn-csd-prov-basis { margin: 0; font-size: 11px; line-height: 1.45; color: var(--tn-text-dim); }
+
+/* The one block on this panel that is allowed to draw the eye. It is a
+   disclosure, and a disclosure nobody notices has not disclosed anything. */
+.tn-csd-prov-refused { display: flex; flex-direction: column; gap: 5px; padding: 8px 9px; border-left: 2px solid var(--tn-stale-ink); border-radius: 0 3px 3px 0; background: var(--tn-chip-bg); }
+.tn-csd-prov-refused p { margin: 0; font-size: 11px; line-height: 1.45; color: var(--tn-text-dim); }
+.tn-csd-prov-refused b { font-weight: 620; color: var(--tn-text); }
+.tn-csd-prov-refused p.tn-csd-prov-owner { color: var(--tn-text-faint); }
+
+.tn-csd-prov-rows { display: grid; grid-template-columns: minmax(8em, max-content) 1fr; gap: 4px 12px; margin: 0; }
+.tn-csd-prov-rows > div { display: contents; }
+.tn-csd-prov-rows dt { padding-top: 2px; font-family: var(--tn-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--tn-text-faint); }
+.tn-csd-prov-rows dd { display: flex; flex-direction: column; gap: 2px; margin: 0; font-size: 11px; color: var(--tn-text); }
+.tn-csd-prov-note { font-size: 10.5px; line-height: 1.4; color: var(--tn-text-faint); }
+.tn-csd-prov-credit { margin: 0; font-size: 10px; color: var(--tn-text-faint); }
 .tn-cs-note { padding: 3px 8px 5px; font-size: 10.5px; line-height: 1.35; color: var(--tn-lagging-ink); }
 .tn-cs-empty .tn-cs-note { padding: 0 8px; text-align: center; }
 
