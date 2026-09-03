@@ -3334,13 +3334,41 @@ a.tn-w-place { display: flex; align-items: center; }
    text at all, so light gets a deepened amber that keeps the identity and the
    contrast. */
 .tn-terminal[data-tnx-skin="light"] {
-  --tnx-bg: #eef1f5;
+  /* THE DEPTH LADDER. Measured on production before this change: the card
+     (#ffffff, L* 100.0), the map's own land (Positron serves rgb(242,243,240),
+     L* 95.7) and the console ground (L* 95.0) all sat inside FIVE points of
+     lightness, and the ground was 0.66 L* — 1.02:1 — from the map. At that
+     distance there is no edge. That is why the map did not appear to end
+     anywhere, and why a rail of white cards read as one continuous column
+     rather than as four separate widgets.
+
+     The fix is range, not hue. The card stays pure white and every surface
+     BEHIND it steps down, so the ladder spans sixteen points instead of five:
+     card 100.0 / map 95.7 / card head 94.2 / ground 87.8 / chrome 83.8.
+     Card-to-ground goes 1.13:1 -> 1.37:1, map-to-ground 1.02:1 -> 1.23:1, and
+     the card header band 2.5 L* -> 5.8 L*.
+
+     The map is untouched. Positron is a remote style we do not own, it is the
+     evidence rather than the chrome, and tinting a data surface to solve a
+     chrome problem is the wrong fix. Everything that moves is ours.
+
+     --tnx-chrome has to travel with the ground. It was already DARKER than the
+     ground (93.2 against 95.0); leaving it while the ground fell to 87.8 would
+     have inverted the pair and made the header lighter than the workspace
+     beneath it. */
+  --tnx-bg: #d6dde6;
   --tnx-panel: #ffffff;
-  --tnx-panel-head: #f6f8fa;
-  --tnx-chrome: #e8ecf1;
+  --tnx-panel-head: #eaeff5;
+  --tnx-chrome: #c9d2dd;
 
   --tnx-ink: #10161d;
-  --tnx-ink-dim: #5a6673;
+  /* Darkened from #5a6673 along with the ground. Two pairings that use this
+     token were about to fall under AA: the widget badge prints --tnx-bg as TEXT
+     on a fill of this colour (4.36:1 at the new ground), and the feed-health
+     and board labels print this colour ON --tnx-chrome (3.96:1). #4e5866
+     restores both — 5.27:1 and 4.72:1 — and still measures 7.21:1 on
+     --tnx-panel, clear of the 4.5 floor terminal-tokens holds it to. */
+  --tnx-ink-dim: #4e5866;
   --tnx-ink-faint: #7d8894;
   --tnx-ink-ghost: #a3adb8;
 
@@ -3353,23 +3381,34 @@ a.tn-w-place { display: flex; align-items: center; }
      by 92 rules, and light is DEFAULT_TERMINAL_SKIN — so the default console
      failed AA for every one of them. The block above used to claim the deepened
      amber "keeps the identity and the contrast"; it kept the identity.
-     #0f5c9c measures 6.93 on --tnx-panel, 6.12 on --tnx-bg, 6.51 on
+     #0f5c9c measures 6.93 on --tnx-panel, 5.06 on --tnx-bg, 5.99 on
      --tnx-panel-head. --tnx-lag stays #b8690a, so lagging keeps the amber and
-     stops rendering as selected. */
+     stops rendering as selected.
+     The bg and panel-head figures fell from 6.12 and 6.51 when the depth ladder
+     deepened those two grounds; the accent itself did not move, and both stay
+     comfortably over the 4.5 floor terminal-tokens holds it to. */
   --tnx-accent: #0f5c9c;
   --tnx-accent-soft: rgba(15, 92, 156, 0.12);
 
   /* The alert ramp, re-derived on paper — NOT the dark values dimmed. Same rule
-     as the status hues above: the badge prints --tnx-bg (#eef1f5) ON these, so
-     each fill has to clear 4.5:1 against near-white, and the dark ramp is far too
-     light to. Measured text-on-fill: 4.79 / 5.22 / 5.36.
-     `warn` is #a8460f, NOT the #a35c0c this would otherwise inherit from the base
-     sheet: #a35c0c sits 1° of hue from the light accent #b8690a, which would have
-     rebuilt on paper exactly the collision this ramp exists to break. #a8460f
-     sits 11° off the accent and 20° off critical. */
-  --tnx-alert-none: #5f6b7a;
-  --tnx-alert-warn: #a8460f;
-  --tnx-alert-critical: #b5322e;
+     as the status hues above: the badge prints --tnx-bg ON these, so each fill
+     has to clear 4.5:1 against the ground, and the dark ramp is far too light to.
+
+     RE-DERIVED A SECOND TIME for the depth ladder at the top of this block.
+     Dropping the ground to L* 87.8 pulled the previous trio (#5f6b7a / #a8460f /
+     #b5322e, which measured 4.79 / 5.22 / 5.36 against the old near-white) down
+     to 3.96 / 4.33 / 4.43, and severity-ramp went red — the guard reading the
+     new ground rather than a stale comment, which is exactly its job. Measured
+     again after this move: 4.53 / 4.53 / 4.59.
+
+     The hue separations the ramp exists to hold are unchanged. `warn` is still
+     deliberately NOT the #a35c0c it would inherit from the base sheet, which
+     sits 1° of hue from the amber --tnx-lag and would rebuild on paper the very
+     collision this ramp breaks; it stays ~11° off the accent and ~20° off
+     critical. */
+  --tnx-alert-none: #576270;
+  --tnx-alert-warn: #a3440f;
+  --tnx-alert-critical: #b1312d;
 
   /* The glass family, on paper. Same alphas, opposite ground. */
   --tnx-glass: rgba(255, 255, 255, 0.92);
@@ -3398,7 +3437,7 @@ a.tn-w-place { display: flex; align-items: center; }
   --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
   /* Inherited from the dark block otherwise, where the alphas are tuned for
      near-black and read as grime on paper. */
-  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.10), 0 2px 8px rgba(16, 22, 29, 0.08);
+  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.12), 0 3px 10px rgba(16, 22, 29, 0.10);
   --tn-stale: #b5521a;
   --tn-stale-ink: #b5521a;
 
@@ -3791,7 +3830,7 @@ a.tn-w-place { display: flex; align-items: center; }
    dependency of this sheet (the rail's inset rule); browsers without it simply keep
    the light overscroll, which is a cosmetic degradation, not a broken layout. */
 body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
-body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #10161d; }
+body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
@@ -3890,7 +3929,26 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   flex: 0 0 auto;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  /* WAS `overflow: hidden`, and that had been quietly deleting the card's
+     elevation since the rails landed. `.tn-cw` is `height: 100%` inside this
+     box and this box has no padding, so the card fills it EXACTLY — which means
+     every pixel of the card's outward `--tnx-shadow-1` fell outside the clip
+     and never painted at all. Not "a weak shadow": no shadow, at every width
+     above 900px. Below that the two rules further down already set
+     `overflow: visible`, which is the only reason it was ever visible anywhere
+     and the reason this went unnoticed on a phone-sized check.
+
+     The radius is here for the second half of the same bug. This element paints
+     its own square white `--tnx-panel` background behind the card, so it filled
+     the four notches the card's 6px radius opens and the cards did not read as
+     rounded either. `border-radius` clips a background regardless of `overflow`,
+     so matching the card's radius fixes that without re-clipping the shadow.
+
+     Nothing new escapes: `.tn-cw` still clips its own content (see the base
+     `.tn-cw` rule), and the three popovers that DO need to escape are already
+     handled by the `:has()` rule below. */
+  overflow: visible;
+  border-radius: var(--tnx-r);
   background: var(--tnx-panel);
 }
 
@@ -4021,12 +4079,59 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   min-width: 0;
   min-height: 180px;
   border-radius: var(--tnx-r);
-  box-shadow: var(--tnx-shadow-1);
+  /* Explicitly NONE, not merely absent. This rule used to carry
+     `box-shadow: var(--tnx-shadow-1)`; deleting that line is not the same as
+     removing the shadow, because the BASE `.tn-cw-stage` rule further up the
+     sheet still declares `0 6px 22px rgba(20,28,38,.16)` from the retired
+     absolute layout, and it would simply cascade back in. Caught by the
+     computed-style check, not by eye. */
+  box-shadow: none;
   overflow: hidden;
   background: var(--tnx-bg);
 }
-.tn-terminal .tn-cw-stage:focus-visible {
-  outline: none;
+/* THE MAP'S EDGE — a pseudo-element, because neither of the obvious mechanisms
+   can reach the pixels that matter.
+
+   The outward `--tnx-shadow-1` this rule used to carry has been DELETED. It
+   could never show: the stage's shadow falls on the workspace ground, and until
+   the depth ladder above those two were 1.02:1 apart. It was drawing a shadow
+   the colour of the thing it fell on.
+
+   And an `inset` box-shadow on this element would be no better, for a structural
+   reason: `WorldMap` renders `.world-map` / `.map-canvas` at `position:absolute;
+   inset:0` as CHILDREN, and an inset shadow paints above the element's own
+   background but BELOW its children. So the bezel would sit under the map.
+
+   That is not hypothetical — it is a live bug this rule already had. The
+   `:focus-visible` ring below used to be `inset 0 0 0 2px` on this element, and
+   it has therefore been invisible under the canvas for as long as it has
+   existed. This element is `SKIP_TARGET_ID`, the skip link's landing target, so
+   the one control a keyboard user lands on first had no visible focus state.
+   Moving the ring onto the same pseudo fixes that in passing.
+
+   `z-index: 5` is chosen, not arbitrary: above the canvas, below the three
+   stage overlays (search / right stack / clock bar, all `z-index: 6`) so the
+   bezel never draws over a control. */
+.tn-terminal .tn-cw-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--tnx-line-strong);
+}
+/* The recess itself is LIGHT-ONLY. An ink-coloured inner shadow over a near-
+   black basemap does not read as depth, it reads as grime in the corners; dark
+   keeps the ring alone. A dark equivalent would have to be an inner LIGHT glow,
+   which is a different design decision and not this change. */
+.tn-terminal[data-tnx-skin="light"] .tn-cw-stage::after {
+  box-shadow:
+    inset 0 0 0 1px var(--tnx-line-strong),
+    inset 0 7px 10px -7px rgba(16, 22, 29, 0.20);
+}
+.tn-terminal .tn-cw-stage:focus-visible { outline: none; }
+.tn-terminal .tn-cw-stage:focus-visible::after {
   box-shadow: inset 0 0 0 2px var(--tnx-accent);
 }
 .tn-terminal .tn-stage-loading {
@@ -4062,7 +4167,40 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   -webkit-backdrop-filter: none;
   background: var(--tnx-panel);
   font-size: var(--tnx-fs);
+  /* THE CARD'S EDGE, and it has to be an `outline`. Three mechanisms were
+     available and two of them do not work here:
+
+       `border`    — no. `border: 0` above is load-bearing: this card is
+                     `height: 100%` against a slot height the ⋯ menu writes, so
+                     a border would add a 2px layout box and push every widget
+                     body in against a height that did not grow to match.
+       `box-shadow` spread ring — no. It paints OUTSIDE the border box, which is
+                     the exact region the slot was clipping (see `.tn-seg-slot`);
+                     and an `inset` one paints below children, so `.tn-cw-head`'s
+                     opaque `--tnx-panel-head` band would cover the top of it.
+       `outline`   — yes. It takes no layout box, it is painted last within the
+                     stacking context so it sits over the header band, it follows
+                     `border-radius`, and at a NEGATIVE offset it is drawn inside
+                     the border box where no ancestor's `overflow` can reach it.
+
+     `--tnx-line-strong` (22%), not `--tnx-line` (12%), and that is measured
+     rather than taste. Hairlines here render sub-pixel — 1px resolves to about
+     0.571px on the target display — and the antialiased line's effective alpha
+     scales with that coverage. `--tnx-line` at full strength is 1.285:1 against
+     the panel; at 0.571px it collapses to 1.149:1. `--tnx-line-strong` at the
+     same sub-pixel coverage still measures 1.297:1, i.e. a half-strength
+     `line-strong` beats a full-strength `line`. That is the whole reason the
+     old 12% hairlines kept disappearing, and it needs no 0.5px/1.5px hack. */
+  outline: 1px solid var(--tnx-line-strong);
+  outline-offset: -1px;
 }
+/* Which widget you are actually driving. Nothing indicated this before. The
+   accent is spent on ~92 text rules elsewhere; letting it own ONE structural
+   role is what gives it force. Note `:focus-within` fires on a focusable
+   DESCENDANT — the header's ⋯ / bell / ? buttons and any body control — not on
+   a click into the card's dead space, because `.tn-cw` is not itself a tab
+   stop. */
+.tn-terminal .tn-cw:focus-within { outline-color: var(--tnx-accent); }
 .tn-terminal .tn-cw-head {
   height: var(--tnx-rh);
   padding: 0 8px;
@@ -4397,12 +4535,23 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    ════════════════════════════════════════════════════════════════════════════ */
 .tn-terminal .tnx-feed {
   height: var(--tnx-feed-h); display: flex; align-items: stretch;
-  background: var(--tnx-panel); border-bottom: 1px solid var(--tnx-line-strong);
+  /* WAS `--tnx-panel`, which made this the brightest full-width band in the
+     console — for the row nobody reads. That is an inverted hierarchy: the
+     loudest surface on screen was carrying the least important content, while
+     the widgets it sat above were the same white and therefore could not
+     out-rank it. It is chrome, so it wears `--tnx-chrome` and reads as one unit
+     with `.tnx-hdr` directly above it, which already did. */
+  background: var(--tnx-chrome); border-bottom: 1px solid var(--tnx-line-strong);
   font-size: var(--tnx-fs-xs); user-select: none;
 }
 .tn-terminal .tnx-feed-label {
   display: flex; align-items: center; padding: 0 9px; letter-spacing: 0.12em;
-  color: var(--tnx-ink-faint); border-right: 1px solid var(--tnx-line); flex: none;
+  /* `--tnx-ink-dim`, not `--tnx-ink-faint`, and this is required rather than
+     preferred: once the strip moved onto `--tnx-chrome`, ink-faint measured
+     2.66:1 there — under AA for small text, and this label is 10px. ink-dim
+     gives 4.72:1. `.tnx-hdr-board` already reaches for ink-dim over chrome for
+     exactly this reason. */
+  color: var(--tnx-ink-dim); border-right: 1px solid var(--tnx-line); flex: none;
 }
 .tn-terminal .tnx-feed-cells { flex: 1; display: flex; gap: 2px; padding: 4px 8px; min-width: 0; }
 .tn-terminal .tnx-feed-cell {
@@ -4467,10 +4616,31 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
    rather than a chip because it is no longer in a row of chips: it is a full-width
    control the width of the key above it, and its label is a sentence, so
    `white-space:nowrap` (correct for a 22px bar) would now clip it. */
+/* OPAQUE, not glass. This rule and the two below it (the place search and the
+   legend) are the panels that sit ON the map, and translucency over a data
+   surface is a legibility bug rather than a style.
+
+   Measured on production before this change: `--tnx-glass-soft` composites to
+   about 1.09:1 against Positron's land, and in 2D over Europe you could read the
+   words "Belarus" and "Беларусь" straight through the DRAW AN AREA button, with
+   "Smolensk" through the panel above it and roads crossing all four. A control
+   you can see the map through is not a control, it is a watermark.
+
+   Three things carry the separation instead, and the fill is the least of them:
+   an opaque `--tnx-panel`, `--tnx-line-strong` rather than `--tnx-line` (same
+   sub-pixel reasoning as the card outline), and a real shadow. These also gain
+   the 6px radius every card already had — they were the only square surfaces
+   left in the console.
+
+   Deliberately NOT done by editing `--tnx-glass*`: those tokens have eight other
+   consumers, including the rail FAB and the MapLibre attribution and zoom
+   chrome, and moving the token would drag all of them along. `.tn-campick` needs
+   no rule of its own — it is a co-class on `.tn-aoi`. */
 .tn-terminal .tn-aoi {
   display: flex; flex-direction: column; align-items: stretch; gap: 4px;
-  padding: 5px 7px; background: var(--tnx-glass-soft);
-  border: 1px solid var(--tnx-line); pointer-events: auto;
+  padding: 5px 7px; background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r);
+  box-shadow: var(--tnx-shadow-1); pointer-events: auto;
 }
 .tn-terminal .tn-aoi-btn {
   border: 1px solid var(--tnx-line-strong); background: none; padding: 4px 6px;
@@ -4528,7 +4698,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
   position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
   width: min(420px, calc(100% - 16px));
   z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
-  background: var(--tnx-glass); border: 1px solid var(--tnx-line-strong);
+  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r); box-shadow: var(--tnx-shadow-1);
   pointer-events: auto;
 }
 .tn-terminal .tnx-stage-search-pfx { font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tnx-accent); flex: none; }
@@ -4564,7 +4735,8 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #eef1f5; color: #101
 }
 .tn-terminal .tnx-stage-legend {
   padding: 5px 7px; font-size: var(--tnx-fs-xs); letter-spacing: 0.05em;
-  background: var(--tnx-glass-soft); border: 1px solid var(--tnx-line);
+  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r); box-shadow: var(--tnx-shadow-1);
   color: var(--tnx-ink-dim); pointer-events: auto;
 }
 .tn-terminal .tnx-legend-row {
