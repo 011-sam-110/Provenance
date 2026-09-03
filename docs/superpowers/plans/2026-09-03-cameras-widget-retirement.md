@@ -20,6 +20,14 @@
 - The word `cameras` names a **map layer key**, a **catalogue source id**, a **widget category** and a **⌘K palette section** as well as the widget type. Only the widget type is being removed. Read every grep hit before changing it.
 - Line numbers below were read against `0596d6e`. `main` moves fast. If a number does not match, find the code by its content and carry on — a moved line is not a design error.
 
+**Four other agents are working this repo right now. These boundaries were negotiated on the bus (`#trafficnerd-v2`), not assumed:**
+
+- **Do not open `components/shell/SourceCatalog.tsx`.** `sources-menu` is replacing it. This branch owns the mapping in `lib/console/sourceWidgets.ts`; they own the presentation and call `widgetTypeForSource()` rather than naming widget types, so the one-line change reaches their new UI with no edit from them.
+- **`lib/console/presets.ts` is shared, four lines apart.** This branch edits line 225. `basemap-globe` edits line 221 (`compose("map2d"` to `compose("map3d"` on the same `overview` entry). Agreed: neither carries the other's change, because flipping the console's default stage does not belong in a PR titled "retire the cameras widget". **Whoever lands second rebases** — it is a one-line conflict.
+- **`coverage()` and `byWallPriority()` are confirmed clear to delete.** `basemap-globe` grepped independently and needs neither.
+- **The cluster-badge arming gesture is being deleted** by `basemap-globe`, and it does not affect this work. `pickClusterLeaves`/`getClusterLeaves` live only in `components/WorldMap.tsx`; the camslot empty state's "Pick cameras on the map" calls `pickStore.setMode("picking")`, the selection-surface path that survives.
+- Still open at time of writing: whether `conditions` is rewording the `camslot` entry in `lib/console/help.ts` (Task 3 Step 5 asserts against its text), and whether `rails-reskin` is touching `lib/console/sanitize.ts` or `presets.ts`. **Ask on the bus before starting Task 1 or Task 3.**
+
 ---
 
 ### Task 1: The sanitize migration
@@ -468,7 +476,6 @@ git commit -m "Remove the coverage maths and the HLS cap, which lost their only 
 
 **Files:**
 - Create: `persona-shots/camslot-brief-empty.png`
-- Create: `persona-shots/camslot-sources-add.png`
 
 **Interfaces:**
 - Consumes: everything above.
@@ -476,9 +483,21 @@ git commit -m "Remove the coverage maths and the HLS cap, which lost their only 
 
 - [ ] **Step 1: Run the full gate**
 
+**BLOCKED as of 2026-09-03 18:35 — check the disk before you run anything in this task.**
+
+```bash
+df -h /c
+```
+
+`C:` was measured at 100% full — 732 MB free of 807 GB, and still falling (a peer measured 584 MB four minutes later). `npm run build` and any Playwright browser download fail on that, **and the error may not mention disk**. `npx playwright install` has already failed for another agent with a write syscall error. Do not start this task until `df` shows real headroom, and do not delete a shared cache to make room — that is Sampo's call, not yours.
+
+Tasks 1 to 4 are unaffected: `npx tsc --noEmit && npm test` writes almost nothing.
+
+Once there is space:
+
 Run: `npx tsc --noEmit && npm test && npm run build`
 
-Expected: all green. `npm run build` is memory-hungry on this machine — if it is killed, close other work and run it alone rather than assuming it failed on this change.
+Expected: all green. `npm run build` is also memory-hungry on this machine — if it is killed, close other work and run it alone rather than assuming it failed on this change.
 
 - [ ] **Step 2: Sweep for any surviving reference to the widget type**
 
@@ -492,7 +511,9 @@ Expected: every remaining hit is a **map layer key**, a **catalogue source id** 
 
 - [ ] **Step 3: Write the evidence spec**
 
-This is a real regression test, not a screenshot script. The Brief board opening empty was a deliberate decision (spec §7.2), and the Sources ＋ adding a camera wall is the whole point of the change. Both deserve to stay pinned.
+This is a real regression test, not a screenshot script. The Brief board opening empty was a deliberate decision (spec §7.2) and deserves to stay pinned.
+
+**There is deliberately no test here for the Sources rail ＋.** An earlier draft of this plan had one. It was wrong in kind: it was this branch testing another agent's presentation. `sources-menu` is replacing `components/shell/SourceCatalog.tsx` with a per-row placement control, so the `aria-label="Add Cameras as a widget"` that test clicked stops existing, and a single click will open a menu rather than add a widget. What this branch actually owns is the **mapping**, and Task 2 already asserts it (`widgetTypeForSource("cameras") === "camslot"`). The rail's own e2e belongs in their PR against their own `[data-source-add=<id>]` hook. **Do not open `components/shell/SourceCatalog.tsx`.**
 
 **Two full-screen overlays will eat your clicks if you skip the init script.** The first-visit guided tour auto-opens ~900ms after load and `.tn-tour-veil` is `position:fixed; inset:0`, so from that moment every click lands on the veil. The launch sequence (`components/terminal/BootSequence.tsx`) is the same problem again and owns the screen for five seconds. `tests/e2e/console.spec.ts:21-29` already solves both by stamping the "seen" flags before the app boots. Copy that, do not invent a `waitForTimeout`.
 
@@ -527,38 +548,23 @@ test("the Brief board's camera wall opens empty, and offers both ways to fill it
   // capture reframes the page to catch it mid-flight.
   await page.screenshot({ path: "persona-shots/camslot-brief-empty.png" });
 });
-
-test("the Sources rail + on Cameras adds a camera wall, not the retired grid", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator(".tn-cw").first()).toBeVisible();
-
-  const before = await page.locator(".tn-cs").count();
-  await page.getByRole("button", { name: "Add Cameras as a widget" }).click();
-
-  // One more camera wall than there was. The retired widget rendered `.tn-cam-grid`
-  // and never `.tn-cs`, so this assertion fails if the rail is still wired to it.
-  await expect(page.locator(".tn-cs")).toHaveCount(before + 1);
-  await expect(page.locator(".tn-cam-grid")).toHaveCount(0);
-
-  await page.screenshot({ path: "persona-shots/camslot-sources-add.png" });
-});
 ```
 
-- [ ] **Step 4: Run it and watch both shots land**
+- [ ] **Step 4: Run it and watch the shot land**
 
 Run: `npx playwright test tests/e2e/camslot-shots.spec.ts`
 
-Expected: 2 passed, and both PNGs present in `persona-shots/`.
+Expected: 1 passed, and `persona-shots/camslot-brief-empty.png` present.
 
-The Playwright config runs `npm run build && npm run start` as its web server (`playwright.config.ts:6-7`). Step 1 already built, so this is a rebuild — if the machine is under load it can be killed. Run it alone rather than reading a kill as a test failure.
+The Playwright config runs `npm run build && npm run start` as its web server (`playwright.config.ts:6-7`). See the disk warning on Step 1 — on a full disk this fails, and the error may not mention disk.
 
-**Open both PNGs and look at them.** The Brief shot is the first thing a visitor now sees on the landing board, and shipping it empty was a decision made in design rather than discovered here. If it looks wrong, say so — that is a finding for Sampo, not something to fix silently.
+**Open the PNG and look at it.** It is the first thing a visitor now sees on the landing board, and shipping it empty was decided in design rather than discovered here. If it looks wrong, say so — that is a finding for Sampo, not something to fix silently.
 
 - [ ] **Step 5: Commit the spec and the evidence**
 
 ```bash
-git add tests/e2e/camslot-shots.spec.ts persona-shots/camslot-brief-empty.png persona-shots/camslot-sources-add.png
-git commit -m "Pin the Brief board's empty camera wall, and the Sources button adding one"
+git add tests/e2e/camslot-shots.spec.ts persona-shots/camslot-brief-empty.png
+git commit -m "Pin the Brief board's camera wall opening empty"
 ```
 
 - [ ] **Step 6: Open the PR**
