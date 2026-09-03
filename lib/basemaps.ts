@@ -27,6 +27,53 @@ export interface BasemapDef {
 // by this endpoint and by Positron's glyphs, so one font works on all basemaps.
 const CARTO_GLYPHS = "https://tiles.basemaps.cartocdn.com/fonts/{fontstack}/{range}.pbf";
 
+// The fontstack every symbol layer WE add asks for, and the one measurement that
+// picks it.
+//
+// Our label layers (country names, signal labels, pin labels) are drawn on top of
+// whichever basemap is active, so they resolve their glyphs against THAT style
+// glyphs endpoint, not against a font we control. Two endpoints are now in play and
+// they do not serve the same fonts. Measured 2026-09-03 against both, live:
+//
+//   CARTO        Open Sans Regular 200 | Noto Sans Regular 200 | Noto Sans Bold 404
+//   OpenFreeMap  Open Sans Regular 404 | Noto Sans Regular 200 | Noto Sans Bold 200
+//
+// So "Noto Sans Regular" is the only stack BOTH answer, and it is therefore the only
+// safe choice while the registry mixes CARTO rasters with OpenFreeMap vector styles.
+// A composite fallback stack does not rescue this: OpenFreeMap 404s
+// "Open Sans Regular,Noto Sans Regular" as one unit rather than falling through.
+//
+// KEEP IT A SINGLE ELEMENT for that reason, and note that the failure it prevents is
+// silent: a symbol layer whose fontstack 404s does not throw and does not warn. It
+// draws the icon and drops the text. tests/unit/map-font.test.ts pins the value and
+// fails if an Open Sans literal returns to WorldMap.
+export const MAP_LABEL_FONT = ["Noto Sans Regular"] as const;
+
+/**
+ * Does this basemap draw its OWN place labels?
+ *
+ * Every vector style in the registry ships a full label set (OpenFreeMap positron
+ * and liberty both carry label_country_1/2/3, label_state, label_city and the rest);
+ * the inline raster styles ship none, which is why we draw our own country names
+ * over them. Drawing ours over a style that already has its own doubles every name.
+ *
+ * This lived in WorldMap.tsx as `isRasterBasemap = (b) => b !== "positron"`, which
+ * was correct only while positron was the single vector entry. It is now here, and
+ * reads the registry flag, for two reasons: a second vector basemap breaks the
+ * hardcoded form, and WorldMap.tsx cannot be imported by the test suite at all (it is
+ * a client component that imports maplibre CSS, and vitest runs in a node
+ * environment) so a predicate living there is structurally untestable.
+ *
+ * NOTE it also stands in for a second question at its call site - whether the ground
+ * is dark enough to need a light country border. Those two happen to split on the
+ * same line today, because every vector entry is light paper and every raster entry
+ * is photographic or near-black. Add a DARK vector style and they come apart; that
+ * wants a second flag on BasemapDef, not a looser reading of this one.
+ */
+export function usesOwnLabels(b: BasemapKey): boolean {
+  return BASEMAPS[b].vector;
+}
+
 // Esri World Imagery — the photographic deep-zoom layer (also used pre-rewrite).
 const ESRI_STYLE: StyleSpecification = {
   version: 8,
@@ -55,13 +102,15 @@ const ESRI_STYLE: StyleSpecification = {
 //
 // RASTER, not the vector dark-matter style URL, and that is a deliberate choice with
 // two consequences worth stating:
-//   • `isRasterBasemap()` in WorldMap.tsx is `b !== "positron"`, so a raster DARK is
-//     correctly classified and our own country-name labels are drawn over it (the
-//     vector style would ship its own and we would double-label). A VECTOR dark entry
-//     would need that predicate changed to read `BASEMAPS[b].vector`.
-//   • `glyphs` is mandatory. Every symbol layer we add — cluster counts, country
-//     labels, signal labels, pin labels — asks for "Open Sans Regular", and a style
-//     with no glyphs endpoint drops all of them silently rather than erroring.
+//   • `usesOwnLabels()` above reads `vector`, so a raster DARK is correctly classified
+//     and our own country-name labels are drawn over it (a vector style ships its own
+//     and we would double-label). That predicate used to be spelled `b !== "positron"`
+//     inside WorldMap and this comment predicted it would need changing; adding the
+//     OpenFreeMap styles is what forced it, and it now reads the flag.
+//   • `glyphs` is mandatory. Every symbol layer we add — country labels, signal labels,
+//     pin labels — asks for MAP_LABEL_FONT, and a style with no glyphs endpoint drops
+//     all of them silently rather than erroring. CARTO_GLYPHS serves that stack; see
+//     the measurement beside MAP_LABEL_FONT for why the stack is Noto and not Open Sans.
 //   • An inline style also cannot fail the way a remote style URL can, so DARK is a
 //     legal fallback target for lib/map/resilience.ts (see fallbackBasemap).
 const DARK_STYLE: StyleSpecification = {

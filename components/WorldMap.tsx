@@ -31,7 +31,7 @@ import { freshnessStore } from "@/lib/freshness";
 import { mapViewStore, useMapView, type RegionView, type PointView, type DiveView } from "@/lib/mapView";
 import { cameraFeed } from "@/lib/cameras/classify";
 import { CAMERA_FEED_META, cameraRegionColor, WEBCAM_COLOR } from "@/lib/icons/svg";
-import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
+import { BASEMAPS, MAP_LABEL_FONT, usesOwnLabels, type BasemapKey } from "@/lib/basemaps";
 import {
   STYLE_LOAD_TIMEOUT_MS,
   classifyMapError,
@@ -227,10 +227,6 @@ function toPinFC(pins: MapPin[], activeId: string | null): GeoJSON.FeatureCollec
     })),
   };
 }
-
-// The Light (Positron) vector basemap ships its own country names; the Satellite
-// and Topographic rasters don't. Our name labels show only on the rasters.
-const isRasterBasemap = (b: BasemapKey): boolean => b !== "positron";
 
 // Every layer that takes part in the pin-vs-country arbitration (see
 // lib/map/hitTest). Filtered to existing layers at call time — a layer id that is
@@ -718,7 +714,7 @@ export default function WorldMap() {
     // Countries: borders + click everywhere; name labels only on the raster basemaps.
     set(COUNTRY_FILL_LAYER, l.countries);
     set(COUNTRY_BORDER_LAYER, l.countries);
-    set(COUNTRY_LABEL_LAYER, l.countries && isRasterBasemap(mapViewStore.get().basemap));
+    set(COUNTRY_LABEL_LAYER, l.countries && !usesOwnLabels(mapViewStore.get().basemap));
   }, []);
 
   const ensureGeoJSON = useCallback(
@@ -809,7 +805,7 @@ export default function WorldMap() {
       // Clickable countries — added FIRST so borders/labels sit beneath every pin.
       // generateId powers the hover feature-state; the polygons stream in via the
       // fetch in the init effect (empty until then). Name labels: raster basemaps only.
-      const countryRaster = isRasterBasemap(mapViewStore.get().basemap);
+      const countryRaster = !usesOwnLabels(mapViewStore.get().basemap);
       if (!map.getSource(COUNTRY_SRC)) {
         map.addSource(COUNTRY_SRC, {
           type: "geojson",
@@ -858,7 +854,7 @@ export default function WorldMap() {
           maxzoom: 6.5, // a country name belongs to the overview, not the street level
           layout: {
             "text-field": ["get", "name"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": ["interpolate", ["linear"], ["zoom"], 1, 9, 3, 11, 5, 13],
             "text-transform": "uppercase",
             "text-letter-spacing": 0.08,
@@ -991,7 +987,7 @@ export default function WorldMap() {
           filter: ["has", "point_count"],
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.cameras),
@@ -1059,7 +1055,7 @@ export default function WorldMap() {
           filter: ["has", "point_count"],
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Open Sans Regular"],
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": CLUSTER_TEXT_PAINT as never,
             "text-allow-overlap": true,
             visibility: vis(layersRef.current.webcams),
@@ -1239,7 +1235,7 @@ export default function WorldMap() {
           minzoom: 4, // declutter — labels only once zoomed past the globe overview
           layout: {
             "text-field": ["get", "label"],
-            "text-font": ["Open Sans Regular"], // served by CARTO_GLYPHS on every basemap
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": 11,
             "text-offset": [0, 1.1],
             "text-anchor": "top",
@@ -1311,7 +1307,7 @@ export default function WorldMap() {
           source: PIN_SRC,
           layout: {
             "text-field": ["get", "label"],
-            "text-font": ["Open Sans Regular"],
+            "text-font": [...MAP_LABEL_FONT],
             "text-size": 12,
             "text-offset": [0, 1.2],
             "text-anchor": "top",
