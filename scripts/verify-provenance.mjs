@@ -185,6 +185,79 @@ fill === null || (fill > 0.9 && fill <= 1)
   ? pass("globe fills its box without clipping", fill === null ? "(no readback)" : `fill=${fill}`)
   : fail("globe framing is off — recalibrate GLOBE_FIT_PX", `fill=${fill}`);
 
+// ── 3c. the star field is a LIVENESS check only — read the comment before
+// touching this ────────────────────────────────────────────────────────────
+// This proves the sky is PRESENT (it painted pixels) and ALIVE (those pixels
+// change over time, whether from twinkle or from the globe's rotation carrying
+// it). It does NOT prove the stars are astronomically correct — right
+// constellations, right orientation for the render date, right precession.
+// That correctness lives in tests/unit/sky-astro.test.ts, not here. A gate
+// that quietly checked less than it claims would be worse than a narrow one
+// that says so up front — same principle as this repo's own
+// tests/unit/client-bundle-node-builtins.test.ts.
+//
+// Unlike the MapLibre canvas above, `.pv-hero-stars` is a 2D canvas
+// (getContext("2d")), so no preserveDrawingBuffer dance is needed — its pixels
+// can be read back directly at any time.
+async function sampleSkyCanvas() {
+  return page.evaluate(() => {
+    const cv = document.querySelector(".pv-hero-stars");
+    if (!(cv instanceof HTMLCanvasElement) || cv.width === 0 || cv.height === 0) return null;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return null;
+    // Downsample onto a small offscreen canvas before reading it back: a few
+    // thousand bytes instead of the several million a HiDPI backing store
+    // holds, and — because drawImage averages as it scales down — a change
+    // ANYWHERE in the frame shows up in the sum, rather than depending on a
+    // sparse sample happening to land on a star.
+    const small = document.createElement("canvas");
+    small.width = 48;
+    small.height = 48;
+    const sctx = small.getContext("2d");
+    if (!sctx) return null;
+    sctx.drawImage(cv, 0, 0, small.width, small.height);
+    const { data } = sctx.getImageData(0, 0, small.width, small.height);
+    let opaque = 0;
+    let sum = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] > 0) opaque++;
+      sum += data[i] + data[i + 1] + data[i + 2] + data[i + 3];
+    }
+    return { pixels: data.length / 4, opaque, sum };
+  });
+}
+
+// The threshold is a NOT-BLANK floor, deliberately, and it is low on purpose.
+// The old procedural field painted a full-canvas gradient wash, so almost every
+// pixel came back opaque and a majority threshold would have held. The real sky
+// does not: it clears to transparent and paints stars, a thin Milky Way band and
+// some faint lines onto it. How many downsampled cells catch a star depends on
+// viewport size and on how much sky the composition leaves visible, so anything
+// near a majority would be measuring density — a number nobody has calibrated —
+// while claiming to measure presence. Blank is 0. A working sky is hundreds.
+const SKY_MIN_OPAQUE_FRACTION = 0.05;
+const sky1 = await sampleSkyCanvas();
+sky1 && sky1.pixels > 0 && sky1.opaque / sky1.pixels > SKY_MIN_OPAQUE_FRACTION
+  ? pass("sky canvas has drawn something", `${sky1.opaque}/${sky1.pixels} downsampled px opaque, sum=${sky1.sum}`)
+  : fail("sky canvas is blank", sky1 ? JSON.stringify(sky1) : "(no .pv-hero-stars canvas found)");
+
+// Give the globe real time to turn (0.035deg/frame is visibly different inside
+// a couple of seconds at 60fps) with the pointer well away from the stage —
+// pointerenter pauses the rotation, and a paused globe would make "frozen"
+// pass for the wrong reason.
+//
+// This check assumes motion is ALLOWED. Under prefers-reduced-motion the globe
+// stops spinning and the twinkle is switched off by design, so a correct sky
+// would sit perfectly still and this would report it frozen. Do not run the gate
+// with that preference forced; if it ever needs to, skip this assertion rather
+// than loosening it, because "still" is the right answer in that mode.
+await page.mouse.move(2, 2);
+await page.waitForTimeout(3000);
+const sky2 = await sampleSkyCanvas();
+sky1 && sky2 && sky2.sum !== sky1.sum
+  ? pass("sky canvas is alive — pixels changed while the globe turned")
+  : fail("sky canvas is frozen", `sum ${sky1 ? sky1.sum : "?"} → ${sky2 ? sky2.sum : "?"}`);
+
 // give the layers a moment to land, then screenshot the hero
 await page.waitForTimeout(22000);
 await shot(page, "pv-01-hero.png");

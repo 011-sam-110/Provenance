@@ -16,6 +16,11 @@ next-env.d.ts
 # Isolated verification builds (TN_DIST_DIR)
 .next-*/
 
+# The raw 34 MB HYG download that scripts/gen-sky.mjs caches so a re-run costs
+# nothing. The COMMITTED artefact is public/sky/naked-eye.json, which is generated
+# from it; this is just the working copy and must never reach the repo.
+.sky-cache/
+
 # Never let an ad-hoc credential probe land in the repo
 tok.json
 login_out.json
