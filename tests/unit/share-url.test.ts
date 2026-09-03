@@ -25,7 +25,12 @@ test("lat/lon/zoom are clamped to bounds on decode", () => {
   const out = rt("lat=200&lon=-999&z=50");
   expect(out.lat).toBe(90);
   expect(out.lon).toBe(-180);
-  expect(out.zoom).toBe(18);
+  // 19 MIRRORS WorldMap's maxZoom and must move with it. It was 18 until 3D
+  // buildings needed street-level headroom (OpenFreeMap tiles stop at z14 and
+  // MapLibre overzooms past that, so you cannot stand in a street at 18). If these
+  // two ever disagree, a shared link silently lands at a different zoom than the
+  // one it was minted at -- which is the whole job of this codec.
+  expect(out.zoom).toBe(19);
 });
 
 test("coordinates round to sane precision on encode", () => {
