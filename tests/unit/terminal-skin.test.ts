@@ -32,14 +32,28 @@ describe("basemapForSkin", () => {
     expect(basemapForSkin("dark")).toBe("dark");
   });
 
-  it("the DEFAULT basemap is the one the DEFAULT skin implies", () => {
+  it("the DEFAULT basemap is never the OPPOSITE skin's basemap", () => {
     // The two constants live in different files and neither imports the other, so
     // nothing but this line stops them drifting apart. Drift is not a crash: it is
     // a first-time visitor getting light chrome wrapped around CARTO Dark Matter,
     // which is the exact render ConsoleShell's skin⇄basemap effect exists to
     // prevent and cannot, because that effect deliberately skips its first run so
     // a deep-linked `?base=` is never clobbered.
-    expect(DEFAULT_BASEMAP).toBe(basemapForSkin(DEFAULT_TERMINAL_SKIN));
+    //
+    // THIS USED TO BE A STRICT EQUALITY and it was weakened deliberately, not
+    // because it started failing. DEFAULT_BASEMAP is now `streets`, which is
+    // neither skin's implied basemap — so equality would reject a default that is
+    // perfectly correct. What actually has to hold is the thing the strict form
+    // was standing in for: the default must not be the basemap belonging to the
+    // skin we are NOT shipping. Liberty is a light vector style, so light chrome
+    // wraps it happily; `dark` is the value this must never take while the default
+    // skin is light.
+    //
+    // If a future default is a raster style with no obvious brightness (satellite,
+    // topo), this assertion stops being enough and the pairing needs a real
+    // light/dark property on the registry rather than a name comparison.
+    expect(DEFAULT_BASEMAP).not.toBe(basemapForSkin(DEFAULT_TERMINAL_SKIN === "light" ? "dark" : "light"));
+    expect(Object.keys(BASEMAPS)).toContain(DEFAULT_BASEMAP);
   });
 
   it("names basemaps that actually exist", () => {

@@ -1,14 +1,8 @@
 import { expect, test } from "vitest";
 import { layersForLayout } from "@/lib/console/presetLayers";
-import { BUILTIN_PRESETS } from "@/lib/console/presets";
+import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { createDefaultLayout } from "@/lib/console/types";
 import { addWidget } from "@/lib/console/reducers";
-
-function buildById(id: string) {
-  const p = BUILTIN_PRESETS.find((x) => x.id === id);
-  if (!p) throw new Error(`no preset ${id}`);
-  return p.build();
-}
 
 // signal ids that are ON, and core layer keys that are ON (excluding the always-on
 // `countries` base layer, which is geography, not a data layer).
@@ -22,35 +16,45 @@ function onLayers(layout: ReturnType<typeof createDefaultLayout>) {
   return { core, signals, onSignals, onCore };
 }
 
-test("Conflict board → conflict/intel signals ON, all core layers OFF", () => {
-  const { onSignals, onCore, core } = onLayers(buildById("situation"));
-  // `displacement` left this board deliberately: it is an annual stock figure, and
-  // sitting on a live conflict board it read as something that had just moved. It
-  // now lives on Recon with the other reference lookups.
-  expect(onSignals).toEqual(["acled", "conflict", "instability", "military-air", "protests"]);
-  expect(onCore).toEqual([]); // no planes/cameras/satellites on an analyst board
-  expect(core.countries).toBe(true); // base geography is never stripped
-});
+// THE CONFLICT AND TRANSIT BOARD CASES ARE GONE with those boards. Both were really
+// testing one thing — that widget types map to map layers through WIDGET_TO_SIGNAL /
+// WIDGET_TO_CORE — using whichever board happened to feature those widgets. That
+// mapping is unchanged, so it is asserted directly from a hand-built layout instead of
+// borrowing a board, which is also why this no longer breaks the next time a board is
+// retired.
+test("widget types imply their map layers, board or no board", () => {
+  let l = createDefaultLayout();
+  l = addWidget(l, "signal:conflict", "a", { segment: "left" });
+  l = addWidget(l, "signal:protests", "b", { segment: "left" });
+  const conflict = onLayers(l);
+  expect(conflict.onSignals).toEqual(["conflict", "protests"]);
+  expect(conflict.onCore).toEqual([]); // signal cards imply no core layer
 
-test("Air·Sea·Space board → planes+satellites core layers ON plus its signal layers", () => {
-  const { onSignals, onCore } = onLayers(buildById("mobility"));
-  expect(onCore).toEqual(["planes", "satellites"]); // aviation widget → planes, satellites widget → satellites
-  expect(onSignals).toEqual(["ais", "aurora", "cables", "launches", "ports"]);
+  let m = createDefaultLayout();
+  m = addWidget(m, "aviation", "c", { segment: "left" });
+  m = addWidget(m, "satellites", "d", { segment: "left" });
+  m = addWidget(m, "signal:ais", "e", { segment: "left" });
+  const transit = onLayers(m);
+  expect(transit.onCore).toEqual(["planes", "satellites"]);
+  expect(transit.onSignals).toEqual(["ais"]);
+
+  expect(onLayers(createDefaultLayout()).core.countries).toBe(true); // base geography is never stripped
 });
 
 test("list-only widgets (events/markets/headlines/locate) imply no map layer", () => {
-  // The Brief board is the case that forced `extraSignals` to exist. Its cards are
-  // merged lists — anomalies, an event log, headlines — not one card per source, so
-  // deriving layers from cards alone would light nothing but cameras and leave the
-  // landing map empty of everything the lists beside it are describing.
-  const board = BUILTIN_PRESETS.find((p) => p.id === "overview")!;
-  const { core, signals } = layersForLayout(board.build(), board.mapSignals ?? []);
+  // The `extraSignals` escape hatch is still exercised, just not through a board any
+  // more. The Brief board used to be the live case: its cards were merged lists, so
+  // deriving layers from cards alone lit nothing and left the landing map empty of
+  // everything the lists beside it described. The landing board is now empty of both
+  // cards AND declared layers, so the mechanism is tested on its own terms.
+  const { core, signals } = layersForLayout(
+    createDefaultLayout(),
+    ["conflict", "earthquakes", "gdacs", "wildfires"],
+    ["cameras"],
+  );
   expect(Object.entries(core).filter(([k, v]) => v && k !== "countries").map(([k]) => k).sort()).toEqual(["cameras"]);
   expect(Object.entries(signals).filter(([, v]) => v).map(([k]) => k).sort())
     .toEqual(["conflict", "earthquakes", "gdacs", "wildfires"]);
-
-  // Without the declared map layers, the same board lights only its camera wall.
-  expect(onLayers(board.build()).onSignals).toEqual([]);
 
   // A board of pure list widgets lights up nothing.
   let l = createDefaultLayout();
@@ -62,24 +66,32 @@ test("list-only widgets (events/markets/headlines/locate) imply no map layer", (
   expect(empty.onSignals).toEqual([]);
 });
 
-test("Recon board → recon widgets imply no layer, no core", () => {
-  const { onSignals, onCore } = onLayers(buildById("tools"));
+test("recon widgets imply no layer and no core", () => {
   // recon:* widgets are query→response tools, not map layers, so they light nothing.
-  // The three cyber/infra cards that used to sit here as a live backdrop moved to
-  // Markets & Cyber, where they are the subject rather than the wallpaper — this
-  // board was carrying nine widgets, five of them in one column, so the recon
-  // results a user came here to read were the ones falling off the bottom.
-  expect(onSignals).toEqual(["displacement"]);
+  // Asserted from a hand-built layout now that the Recon board is gone — the property
+  // belongs to the widget type, never to the board that happened to carry it.
+  let l = createDefaultLayout();
+  const RECON = ["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"];
+  RECON.forEach((id, i) => { l = addWidget(l, id, "r" + i, { segment: "left" }); });
+  const { onSignals, onCore } = onLayers(l);
+  expect(onSignals).toEqual([]);
   expect(onCore).toEqual([]);
 });
 
-test("every built-in persona lights up at least one data layer (no blank-map board)", () => {
+// THE "NO BLANK-MAP BOARD" RULE IS DELIBERATELY BROKEN, by exactly one board.
+// The landing board is now a bare rotating globe: no widgets, no mapSignals, no
+// mapCore, and therefore no data layers at all. That is the product decision, so the
+// rule is narrowed rather than deleted — a SECOND blank board would still be a bug,
+// because every other board exists to show something.
+test("no board except the landing globe opens on a blank map", () => {
   for (const p of BUILTIN_PRESETS) {
     const { onCore, onSignals } = onLayers(p.build());
-    expect(
-      onCore.length + onSignals.length,
-      `persona "${p.id}" must switch on at least one map layer`,
-    ).toBeGreaterThan(0);
+    const lit = onCore.length + onSignals.length;
+    if (p.id === DEFAULT_PRESET_ID) {
+      expect(lit, "the landing globe must stay blank").toBe(0);
+    } else {
+      expect(lit, `persona "${p.id}" must switch on at least one map layer`).toBeGreaterThan(0);
+    }
   }
 });
 
@@ -102,20 +114,12 @@ test("an explicit core request wins over the reset, and leaves the others alone"
   expect(core.satellites).toBe(false);
 });
 
-test("the Brief board turns webcams on", () => {
-  const brief = BUILTIN_PRESETS.find((p) => p.id === "overview")!;
-  expect(brief.mapCore).toContain("webcams");
-  const { core } = layersForLayout(brief.build(), brief.mapSignals ?? [], brief.mapCore ?? []);
-  expect(core.webcams).toBe(true);
-});
-
-// Two boards light webcams, and only two. Brief, because its job is "what changed
-// since you last looked" and a ground-level view is exactly that. Streets, because
-// the webcam layer IS the pedestrian-zone content that board exists to show — the
-// road-camera feeds are junctions and carriageways, and a Streets board without
-// webcams would be a camera board with none of the cameras people asked for.
-// Everywhere else it stays off, which is the point of this test.
-const WEBCAM_BOARDS = new Set(["overview", "streets"]);
+// ONE board lights webcams now, not two. The landing board dropped its `mapCore` with
+// its widgets, so Streets is the only one left — and it is the one that always had the
+// stronger claim: the webcam layer IS the pedestrian-zone content that board exists to
+// show, since the road-camera feeds are junctions and carriageways. Everywhere else it
+// stays off, which is the point of this test.
+const WEBCAM_BOARDS = new Set(["streets"]);
 
 test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
   for (const p of BUILTIN_PRESETS) {

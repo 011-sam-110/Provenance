@@ -109,15 +109,21 @@ describe("coverage — no widget ships without a trust card", () => {
 });
 
 describe("the default board — the panels a first-time visitor actually sees", () => {
-  it("gives every one of them a real card, not two of them", () => {
+  it("shows a first-time visitor NO panels at all", () => {
     const board = BUILTIN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!.build();
-    // Deliberately not pinned to a count. This used to assert `.toBe(8)`, which
-    // described the old landing board rather than any property worth keeping — and
-    // four of those eight were widgets reviewers asked to have removed. What has to
-    // hold is that the board is real and every card on it can explain itself.
-    expect(board.widgets.length).toBeGreaterThan(0);
-    const bare = board.widgets.map((w) => w.type).filter((type) => !widgetExplainerFor(type));
-    expect(bare, `default-board widgets with no trust card: ${bare.join(", ")}`).toEqual([]);
+    // THE ANSWER IS NOW ZERO, AND THE TEST SAYS SO RATHER THAN BEING DELETED.
+    // This assertion has been walked down twice. It first pinned `.toBe(8)`, which
+    // described one particular landing board rather than a property worth keeping.
+    // It was then loosened to "greater than zero". The landing board is now empty
+    // by design — /app opens on a bare rotating globe — so "greater than zero" is
+    // not merely unmet, it asserts the opposite of the product decision.
+    //
+    // Pinning the zero is what keeps this test honest instead of vacuous: a widget
+    // reappearing on the landing board turns this red, and someone has to decide
+    // whether they meant it. The trust-card guarantee it used to carry has not been
+    // dropped — the very next test applies it to every widget on every board, which
+    // is strictly stronger and never depended on the landing board being populated.
+    expect(board.widgets, "the landing board must stay empty").toEqual([]);
   });
 
   it("gives every widget on every built-in board a real card", () => {

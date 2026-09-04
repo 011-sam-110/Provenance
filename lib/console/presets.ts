@@ -201,124 +201,43 @@ function composeRail(
 // first-run seed and the saved-board archive; changing them would silently
 // orphan every layout anyone has saved. Only what the user reads changes.
 export const BUILTIN_PRESETS: ConsolePreset[] = [
-  // ── Brief — what changed since you last looked. The landing board ────────
-  // Was "World Overview": an anomaly list, a country risk index, London traffic
-  // cameras and crypto prices. Reviewers called it "miscellaneous" and "the tab
-  // I'd have designed last, and it's the one you land on". Markets moved to its
-  // own board and the photo-geolocation tool moved to Recon, which is where the
-  // other query-and-answer surfaces live — it had been holding a 250px card on
-  // the landing board every day to show an empty dropzone.
-  // Webcams is ON here and nowhere else. The Brief board is the one a fresh
-  // visitor lands on, and its job is "what changed since you last looked" — a
-  // ground-level view of somewhere is exactly that, and the webcam layer is the
-  // only one that covers the places our government camera feeds do not (Brazil,
-  // Belgium, most of the southern hemisphere). It stays opt-in on every other
-  // board and in lib/layers.ts's defaults; this is a per-board choice, not a
-  // change to what the layer does by default.
+  // ── Globe — the landing board, and deliberately empty ────────────────
+  // Was "Brief": an anomaly list, an events feed, headlines and a camera slot. All
+  // four are gone and the board now composes NO cards at all, which is the whole
+  // point — /app opens on a bare rotating globe and nothing else.
+  //
+  // WHY AN EMPTY BOARD RATHER THAN A DELETED ONE. It is still a real preset because
+  // "Reset to default" and the first-run seed both resolve through DEFAULT_PRESET_ID,
+  // and because the ⌘K palette has to be able to put you back here after you have
+  // dragged widgets onto the board yourself. An empty board is a destination; no
+  // board is a crash.
+  //
   // THE STAGE IS map3d, and this one line is what makes /app open on the globe.
   //
   // Not lib/shell/viewMode.ts. DEFAULT_VIEW_MODE reads like the switch and is not:
   // StageHost.tsx has a mount effect that sets viewModeStore from the board's stage,
   // so whatever viewMode hydrates to is overwritten by the literal below before the
   // map is built. Editing that constant alone changes nothing on screen, which is a
-  // good way to spend an afternoon.
+  // good way to spend an afternoon. That matters more now than it did: the 3D/2D
+  // switch has been removed, so this literal is the ONLY thing choosing the
+  // projection for a new visitor.
+  //
+  // The globe SPINS ON ITS OWN, and that is existing behaviour rather than something
+  // added here: WorldMap runs an idle rotation while the camera is zoomed out past
+  // SPIN_MAX_ZOOM and no pointer has touched it for IDLE_RESUME_MS. An empty board
+  // simply stops putting four cards in front of it.
+  //
+  // NO mapSignals AND NO mapCore, both deleted with the widgets. The globe opens on
+  // the basemap and borders alone; every layer is one switch away in the Sources
+  // rail, which is where that choice belongs now the board is not making it for you.
   //
   // Returning visitors are NOT migrated. `stage` is part of the persisted shell
   // layout, so anyone with a saved board keeps the stage they had. Bumping the
   // layout version to force this would wipe every saved board - widgets, sizes and
   // all - to change a default, and someone who deliberately chose 2D is not a
   // regression to fix. New visitors and anyone who resets their board get the globe.
-  { id: "overview", title: "Brief", icon: "🌐", blurb: "what changed since you last looked",
-    mapSignals: ["gdacs", "earthquakes", "conflict", "wildfires"],
-    mapCore: ["webcams"],
-    build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
-      { type: "anomaly", weight: 3 },
-      { type: "events", weight: 3 },
-      { type: "headlines", weight: 2 },
-      { type: "camslot", weight: 2 },
-  ]) },
-
-  // ── Conflict — armed events, protest, military movement ─────────────────
-  // Was "Situation Room". "Situation" is the most overloaded word in this trade:
-  // every board is a situation and every report is a sitrep, so the label carried
-  // no information. ACLED is key-gated and dormant in production, so it takes the
-  // smallest slot rather than the top-right corner it used to hold empty.
-  { id: "situation", title: "Conflict", icon: "🎯", blurb: "armed events, protest & military movement", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { type: "signal:conflict", weight: 3 },
-      { type: "signal:military-air", weight: 2 },
-      { type: "signal:protests", weight: 2 },
-      { type: "news", weight: 2 },
-      { type: "signal:instability", weight: 2 },
-      { type: "signal:acled", weight: 1 },
-  ]) },
-
-  // ── Hazards — quakes, fire, flood, storm ────────────────────────────────
-  // Was "Earth Systems". Floods and air quality are frequently empty and sized
-  // accordingly; weather docks under the map as a strip.
-  //
-  // GDACS is second, not first, and that is a reversal worth writing down. A
-  // humanitarian duty officer reviewing this asked for GDACS as the board's spine,
-  // on the good argument that it is the alerting layer OVER the others rather than
-  // a peer feed — it is the card that answers "does this need anyone to do
-  // something". It was built that way, and the first screenshot showed the largest
-  // card on the board reading "Nothing in World." while its own badge said 8: the
-  // card carries a recency filter that its header does not mention. Until that is
-  // fixed (see the widget-level follow-ups), giving the top slot to a feed that is
-  // routinely blank ships exactly the failure the same reviewer described. So the
-  // slot goes to the card that reliably has something in it, and GDACS keeps the
-  // second — restore the order once the empty state distinguishes "no alerts" from
-  // "filtered out" from "no key".
-  { id: "earth", title: "Hazards", icon: "🌍", blurb: "quakes, fire, flood & storm", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { type: "signal:earthquakes", weight: 3 },
-      { type: "signal:gdacs", weight: 2 },
-      { type: "signal:wildfires", weight: 2 },
-      { type: "signal:tropical-cyclones", weight: 2 },
-      { type: "signal:floods", weight: 1 },
-      { type: "signal:airquality", weight: 1 },
-      { type: "signal:weather", weight: 1 },
-  ]) },
-
-  // ── Transit — things that move, and the lanes they move in (globe stage) ─
-  // Was "Air · Sea · Space": three domains and two separators in one tab. One
-  // word, and it survives rail or road being added later.
-  { id: "mobility", title: "Transit", icon: "🛰", blurb: "aircraft, vessels & orbit", build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
-      { type: "aviation", weight: 3 },
-      { type: "satellites", weight: 2 },
-      { type: "signal:ais", weight: 2 },
-      { type: "signal:launches", weight: 2 },
-      { type: "signal:ports", weight: 1 },
-      { type: "signal:aurora", weight: 1 },
-      { type: "signal:cables", weight: 1 },
-  ]) },
-
-  // ── Markets & Cyber — the economy and the infrastructure under it ───────
-  // Was "MKT·CYBER" in the tab strip. Abbreviating one half of a pair and not the
-  // other reads as a rendering fault, and the header band has the room.
-  { id: "markets", title: "Markets & Cyber", icon: "📈", blurb: "economy, outages & intrusions", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { type: "markets", weight: 3 },
-      { type: "signal:internet-outages", weight: 2 },
-      { type: "signal:cyber-ransomware", weight: 2 },
-      { type: "signal:cyber-c2", weight: 2 },
-      { type: "signal:grid-load", weight: 1 },
-      { type: "headlines", weight: 1 },
-  ]) },
-
-  // ── Recon — passive lookups: you ask, it answers ────────────────────────
-  // Was "Tools", the only tab naming a UI category rather than a subject. It is
-  // also the one board with a different contract from the rest — every other board
-  // monitors, this one is queried — so it takes the two other query surfaces:
-  // photo geolocation, and displacement, which is an annual stock figure that was
-  // sitting on a live conflict board looking like it moved.
-  { id: "tools", title: "Recon", icon: "🔎", blurb: "domain & IP intel, photo geolocation", build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { type: "recon:dns", weight: 2 },
-      { type: "recon:whois", weight: 2 },
-      { type: "recon:certs", weight: 2 },
-      { type: "recon:ports", weight: 2 },
-      { type: "recon:threat", weight: 2 },
-      { type: "recon:bgp", weight: 2 },
-      { type: "locate", weight: 2 },
-      { type: "signal:displacement", weight: 1 },
-  ]) },
+  { id: "overview", title: "Globe", icon: "🌍", blurb: "the world, and nothing in front of it",
+    build: (shell = DEFAULT_SHELL) => compose("map3d", shell, []) },
 
   // ── Streets — the places people actually walk ────────────────────────────
   // Built for a user request: "custom dashboards so I can see images from major

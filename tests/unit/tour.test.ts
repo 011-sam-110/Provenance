@@ -172,31 +172,41 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "profile avatar", via: ".tn-profile-avatar" },
   { control: "profile popover: name, Sign in, Take the tour", via: ".tn-profile-menu" },
 
-  // Feed health strip
-  // Two entries, not one: the cells are a readout AND a toggle. An independent
-  // review found the tour describing them as telemetry only, which made every
-  // cell an undocumented control that silently switches a data layer.
-  { control: "per-layer health cells (hover to name)", via: ".tnx-feed-cells" },
-  { control: "health cell click = toggle that layer", via: ".tnx-feed-cells" },
-  // No numeric tally anywhere any more. The five STATES still have to be taught,
-  // because the colour is now the whole readout — so the entry stays and points at
-  // the cells that carry it.
-  { control: "the five feed states (colour = state)", via: ".tnx-feed-cells" },
-
   // The breaking banner and the 24px footer are both gone, and with them: the
   // banner's Read-article/dismiss pair, SEL, the live ticker and the key hints.
   // Removed from this manifest rather than re-pointed, because a manifest that
   // lists controls the product does not have is the padding the test below guards
   // against.
-
-  // Stage. The first three are painted in the FEED HEALTH row rather than on the
-  // stage bar, but they act on the stage, which is what the tour has to explain.
-  { control: "3D / 2D projection switch", via: ".tnx-stage-proj" },
-  { control: "basemap buttons", via: ".tnx-basemaps" },
-  { control: "Solo — hide the widgets", via: ".tn-solo-btn" },
+  //
+  // THE FEED HEALTH BAND HAS NOW GONE THE SAME WAY, and it took six entries with
+  // it, under the same rule. Deleted from this manifest, NOT re-pointed:
+  //
+  //   * "per-layer health cells (hover to name)"      (.tnx-feed-cells)
+  //   * "health cell click = toggle that layer"       (.tnx-feed-cells)
+  //   * "the five feed states (colour = state)"       (.tnx-feed-cells)
+  //   * "3D / 2D projection switch"                   (.tnx-stage-proj)
+  //   * "basemap buttons"                             (.tnx-basemaps)
+  //   * "Solo — hide the widgets"                     (.tn-solo-btn)
+  //
+  // AND A SEVENTH, in the same change and for the same reason: the stage's layer
+  // key ("map legend", .tnx-stage-legend). That one is NOT a button that moved to
+  // ⌘K — the key is simply gone, and nothing replaces what it did. See StageBar.tsx
+  // for what that costs. It is the seventh entry, which is what takes 44 to 43.
+  //
+  // The first three went with the band itself. The next three were painted in that
+  // band and went with it too — Solo is a genuine removal (its store went with the
+  // button, since nothing else could set it), while the projection switch and the
+  // basemaps merely lost their on-screen buttons and are still reachable from ⌘K.
+  //
+  // THAT DISTINCTION IS WHY THEY LEAVE THIS LIST RATHER THAN GETTING A NEW `via`.
+  // This manifest is a list of things a user can SEE AND CLICK in the console shell,
+  // and the test below asks whether the tour walks them to each one. A ⌘K command is
+  // not one of those: it is already covered by the "command palette contents" entry
+  // near the bottom, whose tour step names "change basemap" and "choose what the
+  // stage shows" in so many words. Re-pointing these three at `.tn-palette-root`
+  // would double-count that single step and quietly inflate the coverage figure.
   { control: "restrict results to area", via: ".tn-aoi" },
   { control: "map search box", via: ".tnx-stage-search" },
-  { control: "map legend", via: ".tnx-stage-legend" },
   // The cursor coordinate readout went with the stage's 22px bar and has no second
   // home, so it is not listed. WorldMap's `tn-map-cursor` publisher went with it.
   { control: "world-clock bar", via: ".tnx-stage-foot" },
@@ -253,19 +263,28 @@ test("the coverage manifest is not padded with selectors the tour never uses", (
   // Guards the inverse failure: a manifest that agrees with the tour because both
   // were edited to agree, rather than because the tour covers the product.
   //
-  // THE FLOOR CAME DOWN FROM 54 TO 50, and that is the one edit this test exists to
-  // make someone justify. It is not a manifest that was trimmed to go green — it is
-  // six controls that no longer exist in the product: CONSOLE/WALL and its two
-  // single-key shortcuts, the breaking banner's Read-article and dismiss pair, SEL,
+  // THE FLOOR CAME DOWN FROM 54 TO 50, AND HAS NOW COME DOWN AGAIN TO 44. Each drop
+  // is the one edit this test exists to make someone justify, so each is written down.
+  //
+  // 54 → 50: six controls that no longer existed in the product — CONSOLE/WALL and its
+  // two single-key shortcuts, the breaking banner's Read-article and dismiss pair, SEL,
   // the live ticker, the keyboard-hint strip, and the cursor coordinate readout.
-  // Their bands were removed. A manifest still listing them would fail the test
-  // ABOVE this one, which checks every entry against a class the app actually
-  // renders — so the two guards were doing opposite jobs and both had to be
-  // satisfied honestly. Measured after the fact, not chosen to pass: 50 entries,
-  // 45 distinct selectors.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(50);
+  //
+  // 50 → 43: the FEED HEALTH band was removed, taking six more — the three health-cell
+  // entries, the 3D/2D projection switch, the basemap buttons and Solo. Three of those
+  // six are true removals of capability (Solo); the other three lost only their
+  // on-screen buttons and remain reachable from ⌘K, which is already represented by the
+  // "command palette contents" entry. See the note in the manifest for why they were
+  // not re-pointed at the palette selector — doing so would have held this number up
+  // artificially, which is the exact dishonesty this guard exists to catch.
+  //
+  // A manifest still listing removed controls would fail the test ABOVE this one, which
+  // checks every entry against a class the app actually renders — the two guards do
+  // opposite jobs and both have to be satisfied honestly. Measured after the fact, not
+  // chosen to pass: 43 entries, 40 distinct selectors.
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(43);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
-  expect(vias.size).toBeGreaterThanOrEqual(45);
+  expect(vias.size).toBeGreaterThanOrEqual(40);
 });
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */

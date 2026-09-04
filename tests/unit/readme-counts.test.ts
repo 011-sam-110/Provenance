@@ -218,9 +218,9 @@ describe("README console figures", () => {
   });
 
   // Spelled as a word in prose, so this asserts the word rather than parsing a digit.
-  it("still describes seven boards, matching the preset list", () => {
-    expect(README).toContain("seven boards");
-    expect(BUILTIN_PRESETS.length).toBe(7);
+  it("still describes two boards, matching the preset list", () => {
+    expect(README).toContain("two boards");
+    expect(BUILTIN_PRESETS.length).toBe(2);
   });
 });
 

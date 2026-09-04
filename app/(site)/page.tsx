@@ -59,17 +59,9 @@ export default async function Landing() {
     color: s.color,
   }));
 
-  // Four exemplars for the hero's key. Looked up rather than typed, so the swatch
-  // is the colour the globe is actually painting that layer — a legend that has
-  // drifted from its map is worse than no legend.
-  //
-  // Chosen to span the registry AND the palette: infrastructure, space, a hazard,
-  // and the synthesis layer. Wildfires was the obvious fourth and is the wrong
-  // one — its registry colour sits a few degrees from the earthquake orange, so
-  // the two swatches were indistinguishable at 0.45rem.
-  const legend = ["cables", "satellites", "earthquakes", "instability"]
-    .map((id) => SOURCE_CATALOG.find((s) => s.id === id))
-    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+  // The hero's four-swatch key is gone, and with it the `legend` lookup that fed
+  // it. `satColor` stays: HeroStage paints the satellite arcs with it, so it is a
+  // property of the globe rather than of the caption that used to sit under it.
   const satColor = SOURCE_CATALOG.find((s) => s.id === "satellites")?.color ?? "#7c3aed";
 
   return (
@@ -88,10 +80,6 @@ export default async function Landing() {
         <HeroStage layers={heroLayers} satColor={satColor} />
 
         <div className="pv-hero-copy">
-          <p className="pv-hero-eyebrow">
-            <span>Live · no key · no login</span>
-            <span>{total} adapters, one per source</span>
-          </p>
           {/* Two spans, not a <br>: each line wipes up under its own clip, and a
               line break cannot carry an animation. */}
           <h1 className="pv-h1">
@@ -110,16 +98,6 @@ export default async function Landing() {
             <a className="pv-cta pv-cta-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
               Read the source
             </a>
-          </div>
-          {/* The globe's key: four of the {total} layers on it, named and coloured
-              from the same registry the globe renders from. */}
-          <div className="pv-hero-legend">
-            {legend.map((s) => (
-              <span key={s.id}>
-                <i style={{ background: s.color }} />
-                {s.label}
-              </span>
-            ))}
           </div>
         </div>
       </header>

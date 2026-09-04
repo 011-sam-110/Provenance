@@ -109,7 +109,7 @@ obligations and are not satisfied by the licence.
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
 - `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
-- `lib/console/*` — widget registry, presets (**7 boards** in `presets.ts`), store, share (`?c=` layout URL).
+- `lib/console/*` — widget registry, presets (**2 boards** in `presets.ts`), store, share (`?c=` layout URL).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
@@ -147,7 +147,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
 | Camera feeds | 17 feeds (16 adapters + 1 discovered), 25 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). |
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
-| Console boards | 7 (2026-08-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. `tests/unit/console-presets.test.ts` pins the exact id list, and `tests/unit/tour-board-copy.test.ts` fails if the guided tour states a different number — so this row cannot silently rot. |
+| Console boards | 2 (2026-09-04) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. Was 7 until Conflict, Hazards, Transit, Markets & Cyber and Recon were removed and Brief was emptied and renamed **Globe** — the landing board is now a bare rotating globe with no widgets, so `console-presets.test.ts` pins the empty widget list and the `map3d` stage as well as the id list. `tour-board-copy.test.ts` still fails if the guided tour states a different number; the tour derives its count and its board list from `BUILTIN_PRESETS`, so it followed the rename with no edit. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 70 registered (2026-09-03) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |

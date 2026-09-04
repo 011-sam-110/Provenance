@@ -4,7 +4,9 @@ import { BUILTIN_PRESETS } from "@/lib/console/presets";
 import { createDefaultLayout, MAX_WIDGETS, type ShellLayout } from "@/lib/console/types";
 
 test("encode→decode round-trips a layout", () => {
-  const l = BUILTIN_PRESETS.find((p) => p.id === "earth")!.build();
+  // Was the Hazards board, which no longer exists. Streets is now the only built-in
+  // with widgets on it, and a round-trip needs widgets to be worth anything.
+  const l = BUILTIN_PRESETS.find((p) => p.id === "streets")!.build();
   const round = decodeLayout(encodeLayout(l));
   expect(round?.stage).toBe(l.stage);
   expect(round?.widgets.map((w) => w.type)).toEqual(l.widgets.map((w) => w.type));
