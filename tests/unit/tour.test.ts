@@ -205,8 +205,14 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   // near the bottom, whose tour step names "change basemap" and "choose what the
   // stage shows" in so many words. Re-pointing these three at `.tn-palette-root`
   // would double-count that single step and quietly inflate the coverage figure.
-  { control: "restrict results to area", via: ".tn-aoi" },
-  { control: "map search box", via: ".tnx-stage-search" },
+  // The map's controls are one rail now (components/console/maprail/MapRail.tsx).
+  // Each group is a click-to-open flyout, so each entry points at the PANEL rather
+  // than the icon: a step that spotlighted the button would claim coverage of
+  // controls the reader never saw.
+  { control: "stage rail", via: ".tnx-maprail" },
+  { control: "map search box", via: ".tnx-maprail-pop-search" },
+  { control: "restrict results to area", via: ".tnx-maprail-pop-draw" },
+  { control: "basemap / 2D-3D / terrain / buildings", via: ".tnx-maprail-pop-view" },
   // The cursor coordinate readout went with the stage's 22px bar and has no second
   // home, so it is not listed. WorldMap's `tn-map-cursor` publisher went with it.
   { control: "world-clock bar", via: ".tnx-stage-foot" },
@@ -246,7 +252,13 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "locked (needs a key) badge", via: ".tn-layer-locked" },
   { control: "Coverage / Markets / Saved panels", via: ".tn-coverage-open" },
   { control: "rail collapse ‹", via: ".tn-rail-fab" },
-  { control: "map zoom + / − / compass", via: ".tn-pinnav" },
+  // MAP ZOOM + / − / COMPASS IS GONE, not merely unlisted. MapLibre's
+  // NavigationControl was removed with the stage rail work — zoom is now a scroll,
+  // a pinch, a double-click or the +/- keys, and none of those is a control a
+  // manifest entry can point at. The `map-pins` step's body was rewritten in the
+  // same change, because it used to promise the buttons in as many words.
+  // Attribution is untouched: MapLibre's own ⓘ still carries it, which is a licence
+  // obligation rather than chrome.
 
   // Overlays
   { control: "command palette contents", via: ".tn-palette-root" },
