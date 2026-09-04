@@ -51,7 +51,8 @@ import {
   type MapLoadStatus,
 } from "@/lib/map/resilience";
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
-import { terrainChanged, wantedTerrain } from "@/lib/map/terrain";
+import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
+import { layersToTrim } from "@/lib/map/styleTrim";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
   COUNTRY_HIT_LAYER,
@@ -256,7 +257,6 @@ const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
 const SPIN_MAX_ZOOM = 4; // only auto-rotate while zoomed out this far
 const SPIN_DEG_PER_SEC = 4; // calm rotation
 const IDLE_RESUME_MS = 4000; // resume spin this long after the last user input
-const TERRAIN_MIN_ZOOM = 6; // 3D terrain only engages in the mercator regime (setTerrain crashes on globe projection)
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
 
@@ -616,8 +616,14 @@ export default function WorldMap() {
 
   // 3D terrain (setTerrain) CRASHES MapLibre's depth pass on globe projection
   // ("Cannot read properties of undefined (reading 'shaderPreludeCode')"), so only
-  // engage true 3D once we've zoomed into the mercator regime. Hillshade relief is
-  // a normal layer and is safe at any zoom, so it follows the toggle directly.
+  // engage true 3D once we've zoomed into the mercator regime.
+  //
+  // Hillshade relief is a normal layer and is LEGAL at any zoom, which is what this
+  // comment used to say — and that is exactly how it came to be added with no
+  // `minzoom` at all, fetching a megabyte of DEM for a globe that cannot show it.
+  // Legal is not free. The layer now carries HILLSHADE_MIN_ZOOM, so `visibility`
+  // here is the user's toggle and the zoom range is the bandwidth gate; the two
+  // compose, and neither replaces the other.
   const syncTerrain = useCallback((map: maplibregl.Map) => {
     const on = terrainRef.current && map.getZoom() >= TERRAIN_MIN_ZOOM;
     const wanted = wantedTerrain(on, DEM_SRC);
@@ -633,6 +639,28 @@ export default function WorldMap() {
       map.setTerrain(wanted);
     } catch {
       /* terrain can briefly fight a freshly-swapped style; harmless */
+    }
+  }, []);
+
+  // Narrow the zoom range of the basemap layers that cost the most and show the
+  // least while the camera is out at globe zoom: Liberty's Natural Earth relief
+  // (1,306 KB of PNG) and its own country / water labels (866 KB of Noto Sans Bold
+  // and Italic glyph ranges). lib/map/styleTrim.ts holds the decision, the
+  // measurements and the reason this reads the tile URL instead of the layer type.
+  //
+  // Runs on EVERY style.load, so it covers the first paint and every basemap swap
+  // with one registration. Idempotent by construction — a layer already at the
+  // target minzoom is not returned a second time.
+  const trimBasemapForGlobe = useCallback((map: maplibregl.Map) => {
+    for (const t of layersToTrim(map.getStyle())) {
+      // Guarded because the style can be swapped out from under a queued handler
+      // during a basemap change; a missing layer here is normal, not an error.
+      if (!map.getLayer(t.id)) continue;
+      try {
+        map.setLayerZoomRange(t.id, t.minzoom, t.maxzoom);
+      } catch {
+        /* style torn down mid-swap — the next style.load will redo this */
+      }
     }
   }, []);
 
@@ -704,6 +732,10 @@ export default function WorldMap() {
         map.addLayer({
           id: HILLSHADE_LAYER,
           type: "hillshade",
+          // The DEM behind this layer is a megabyte, and none of it can be resolved
+          // on a globe at HOME.zoom. `visibility` alone never gated it — see
+          // HILLSHADE_MIN_ZOOM in lib/map/terrain.ts for the measurement.
+          minzoom: HILLSHADE_MIN_ZOOM,
           source: DEM_SRC,
           layout: { visibility: vis(terrainRef.current) },
           paint: {
@@ -1708,6 +1740,17 @@ export default function WorldMap() {
     map.on("zoomend", onThumbRefresh);
     map.on("sourcedata", onThumbSource);
 
+    // TWO style.load handlers, and the order between them is the whole point.
+    //
+    // This first one is SYNCHRONOUS and must stay that way. MapLibre creates a
+    // style's sources when the style document arrives — which is what fires this
+    // event — but it does not request a single tile until the next render, and
+    // render is rAF-scheduled. So a zoom range narrowed here lands before any
+    // request goes out, and the tiles are never asked for at all. Move this into
+    // addAppLayers, or put an `await` in front of it, and it degrades silently from
+    // "never fetched" to "fetched once, then stopped" — the bytes come back, the map
+    // still looks right, and nothing fails.
+    map.on("style.load", () => trimBasemapForGlobe(map));
     map.on("style.load", () => {
       void addAppLayers(map).then(onStyleSettled, onStyleSettled);
     });

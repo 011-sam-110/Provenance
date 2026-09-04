@@ -56,3 +56,39 @@ export function terrainChanged(
   if (current.source !== wanted.source) return true;
   return (current.exaggeration ?? DEFAULT_EXAGGERATION) !== (wanted.exaggeration ?? DEFAULT_EXAGGERATION);
 }
+
+/**
+ * Zoom at or above which true 3D terrain (setTerrain) may engage.
+ *
+ * setTerrain crashes MapLibre's depth pass on globe projection
+ * ("Cannot read properties of undefined (reading 'shaderPreludeCode')"), so it is
+ * held back until the camera has descended into the mercator regime.
+ */
+export const TERRAIN_MIN_ZOOM = 6;
+
+/**
+ * Zoom at or above which the hillshade RELIEF layer is drawn.
+ *
+ * This is a bandwidth gate, not a correctness one, and it was missing for the whole
+ * of the globe-first console's life. The hillshade layer shares the Terrarium DEM
+ * source with 3D terrain, but unlike setTerrain it is a normal layer that is legal
+ * at any zoom — so it was added with no `minzoom` and only a `visibility` gate that
+ * follows the terrain toggle, and that toggle defaults ON (lib/mapView.ts, an
+ * unpersisted store) on every cold load.
+ *
+ * The result, measured against production on 2026-09-04: a globe resting at
+ * HOME.zoom = 1.4 fetched 1,018 KB of Terrarium DEM PNGs across 11 requests to
+ * shade relief that cannot be resolved on a sphere that size. On a Slow-4G / 4x-CPU
+ * profile, blocking exactly those tiles moved time-to-map-load from 25.7 s to
+ * 21.4 s. Nothing visible changes at globe zoom.
+ *
+ * It is deliberately the SAME value as TERRAIN_MIN_ZOOM: the DEM is worth
+ * downloading once the camera is low enough for either feature to use it, and two
+ * numbers that must agree are better written as two names in one file than as two
+ * literals in two.
+ *
+ * MapLibre does not request tiles for a layer outside its zoom range — the same
+ * mechanism the 3D-buildings layer already relies on to avoid pulling its z14
+ * tiles on approach.
+ */
+export const HILLSHADE_MIN_ZOOM = TERRAIN_MIN_ZOOM;
