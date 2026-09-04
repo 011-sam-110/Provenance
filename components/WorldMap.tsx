@@ -1734,8 +1734,11 @@ export default function WorldMap() {
     // Pause auto-spin on any direct user input (native events, not programmatic
     // camera moves) — keeps the calm idle rotation from fighting interaction.
     const el = map.getCanvasContainer();
-    const markInteract = () => {
+    const holdSpin = () => {
       interactUntilRef.current = performance.now() + IDLE_RESUME_MS;
+    };
+    const markInteract = () => {
+      holdSpin();
       // Grabbing the map "breaks" a live follow → drop to manual recenter so we stop
       // chasing the plane out from under the user (a Recenter affordance re-arms it).
       const t = trackingRef.current;
@@ -1743,6 +1746,17 @@ export default function WorldMap() {
     };
     const inputs: (keyof HTMLElementEventMap)[] = ["mousedown", "wheel", "touchstart", "pointerdown"];
     for (const ev of inputs) el.addEventListener(ev, markInteract, { passive: true });
+
+    // Hovering counts as engagement, but ONLY for the spin — it must not break a
+    // follow, which is why it calls `holdSpin` and not `markInteract`. Before this,
+    // `inputs` carried press events only: sweeping the pointer across the map to read
+    // a label left the globe rotating underneath the cursor, so the dot you were
+    // aiming at drifted out from under you while the hit-test chased it. It is also
+    // the moment smoothness is most visible, and the moment the main thread can least
+    // afford to be re-rendering the whole globe 60 times a second (measured on prod at
+    // 4x CPU throttle: 99.5% main-thread busy while spinning, 44.8% with the spin
+    // neutralised on the same bundle at the same zoom).
+    el.addEventListener("pointermove", holdSpin, { passive: true });
 
     // The `tn-map-cursor` publisher used to live here: a rAF-coalesced window
     // CustomEvent carrying lat/lon on every mousemove, read by the stage bar's
@@ -1757,10 +1771,17 @@ export default function WorldMap() {
     // replaceState — no history spam, no reload). moveend writes are skipped while
     // the calm idle spin is running so the URL doesn't churn on its own; deliberate
     // moves (user pan/zoom, region fly-to) and store changes always persist.
+    // ONE predicate, read by both the spin loop and the URL writer below. They used
+    // to carry separate copies of the same four clauses, which is a standing invitation
+    // for the two to drift: the moment they disagree, either the URL churns on its own
+    // or a deliberate move stops being shareable.
+    const prefersLessMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const isAutoSpinning = () =>
+      !prefersLessMotion.matches &&
+      !document.hidden &&
       performance.now() > interactUntilRef.current &&
       !overlay.get().object &&
-      !trackingRef.current.id &&
+      !trackingRef.current.id && // a tracked plane owns the camera; don't spin away from it
       map.getZoom() < SPIN_MAX_ZOOM;
     const onMoveEnd = () => {
       // Our own follow easeTo shouldn't churn the shareable URL every poll.
@@ -1777,12 +1798,7 @@ export default function WorldMap() {
     const spin = (t: number) => {
       const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
-      if (
-        performance.now() > interactUntilRef.current &&
-        !overlay.get().object &&
-        !trackingRef.current.id && // a tracked plane owns the camera; don't spin away from it
-        map.getZoom() < SPIN_MAX_ZOOM
-      ) {
+      if (isAutoSpinning()) {
         const c = map.getCenter();
         map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt, c.lat]);
       }
@@ -1793,6 +1809,7 @@ export default function WorldMap() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
+      el.removeEventListener("pointermove", holdSpin);
       cancelUrlWrite();
       unsubLayers();
       unsubView();
