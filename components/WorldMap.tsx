@@ -51,7 +51,10 @@ import {
   type MapLoadStatus,
 } from "@/lib/map/resilience";
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
-import { terrainChanged, wantedTerrain } from "@/lib/map/terrain";
+import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
+import { layersToTrim } from "@/lib/map/styleTrim";
+import { spinEnvelope } from "@/lib/map/spin";
+import { markMapReady } from "@/lib/terminal/mapReady";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
   COUNTRY_HIT_LAYER,
@@ -256,7 +259,6 @@ const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
 const SPIN_MAX_ZOOM = 4; // only auto-rotate while zoomed out this far
 const SPIN_DEG_PER_SEC = 4; // calm rotation
 const IDLE_RESUME_MS = 4000; // resume spin this long after the last user input
-const TERRAIN_MIN_ZOOM = 6; // 3D terrain only engages in the mercator regime (setTerrain crashes on globe projection)
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
 
@@ -616,8 +618,14 @@ export default function WorldMap() {
 
   // 3D terrain (setTerrain) CRASHES MapLibre's depth pass on globe projection
   // ("Cannot read properties of undefined (reading 'shaderPreludeCode')"), so only
-  // engage true 3D once we've zoomed into the mercator regime. Hillshade relief is
-  // a normal layer and is safe at any zoom, so it follows the toggle directly.
+  // engage true 3D once we've zoomed into the mercator regime.
+  //
+  // Hillshade relief is a normal layer and is LEGAL at any zoom, which is what this
+  // comment used to say — and that is exactly how it came to be added with no
+  // `minzoom` at all, fetching a megabyte of DEM for a globe that cannot show it.
+  // Legal is not free. The layer now carries HILLSHADE_MIN_ZOOM, so `visibility`
+  // here is the user's toggle and the zoom range is the bandwidth gate; the two
+  // compose, and neither replaces the other.
   const syncTerrain = useCallback((map: maplibregl.Map) => {
     const on = terrainRef.current && map.getZoom() >= TERRAIN_MIN_ZOOM;
     const wanted = wantedTerrain(on, DEM_SRC);
@@ -633,6 +641,28 @@ export default function WorldMap() {
       map.setTerrain(wanted);
     } catch {
       /* terrain can briefly fight a freshly-swapped style; harmless */
+    }
+  }, []);
+
+  // Narrow the zoom range of the basemap layers that cost the most and show the
+  // least while the camera is out at globe zoom: Liberty's Natural Earth relief
+  // (1,306 KB of PNG) and its own country / water labels (866 KB of Noto Sans Bold
+  // and Italic glyph ranges). lib/map/styleTrim.ts holds the decision, the
+  // measurements and the reason this reads the tile URL instead of the layer type.
+  //
+  // Runs on EVERY style.load, so it covers the first paint and every basemap swap
+  // with one registration. Idempotent by construction — a layer already at the
+  // target minzoom is not returned a second time.
+  const trimBasemapForGlobe = useCallback((map: maplibregl.Map) => {
+    for (const t of layersToTrim(map.getStyle())) {
+      // Guarded because the style can be swapped out from under a queued handler
+      // during a basemap change; a missing layer here is normal, not an error.
+      if (!map.getLayer(t.id)) continue;
+      try {
+        map.setLayerZoomRange(t.id, t.minzoom, t.maxzoom);
+      } catch {
+        /* style torn down mid-swap — the next style.load will redo this */
+      }
     }
   }, []);
 
@@ -704,6 +734,10 @@ export default function WorldMap() {
         map.addLayer({
           id: HILLSHADE_LAYER,
           type: "hillshade",
+          // The DEM behind this layer is a megabyte, and none of it can be resolved
+          // on a globe at HOME.zoom. `visibility` alone never gated it — see
+          // HILLSHADE_MIN_ZOOM in lib/map/terrain.ts for the measurement.
+          minzoom: HILLSHADE_MIN_ZOOM,
           source: DEM_SRC,
           layout: { visibility: vis(terrainRef.current) },
           paint: {
@@ -1715,9 +1749,28 @@ export default function WorldMap() {
     map.on("zoomend", onThumbRefresh);
     map.on("sourcedata", onThumbSource);
 
+    // TWO style.load handlers, and the order between them is the whole point.
+    //
+    // This first one is SYNCHRONOUS and must stay that way. MapLibre creates a
+    // style's sources when the style document arrives — which is what fires this
+    // event — but it does not request a single tile until the next render, and
+    // render is rAF-scheduled. So a zoom range narrowed here lands before any
+    // request goes out, and the tiles are never asked for at all. Move this into
+    // addAppLayers, or put an `await` in front of it, and it degrades silently from
+    // "never fetched" to "fetched once, then stopped" — the bytes come back, the map
+    // still looks right, and nothing fails.
+    map.on("style.load", () => trimBasemapForGlobe(map));
     map.on("style.load", () => {
       void addAppLayers(map).then(onStyleSettled, onStyleSettled);
     });
+
+    // Tell the boot overlay the map is usable, so it can stop covering a finished
+    // map. `idle` and not `load`: `load` fires when the style and the first frame
+    // are up, which on a cold globe is several seconds before the tiles have
+    // actually arrived, and a plate that lifts onto a half-drawn world is worse
+    // than one that waits. `once` — the publisher is idempotent anyway, but a
+    // per-idle call would put a listener notification on every pan.
+    map.once("idle", () => markMapReady());
 
     // MapLibre reports a dead style CDN and a single missing tile through the SAME
     // event, so classify before acting — raster basemaps 404 tiles routinely (poles,
@@ -1783,7 +1836,13 @@ export default function WorldMap() {
     // for the two to drift: the moment they disagree, either the URL churns on its own
     // or a deliberate move stops being shareable.
     const prefersLessMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Time the globe has actually SPENT turning, which is not time since load. A
+    // visitor who grabs the map, opens a dossier or switches tabs pauses the budget
+    // instead of burning it, so the globe they come back to still has its turn left.
+    let spinSpentMs = 0;
+    const spinSettled = () => spinEnvelope(spinSpentMs).settled;
     const isAutoSpinning = () =>
+      !spinSettled() &&
       !prefersLessMotion.matches &&
       !document.hidden &&
       performance.now() > interactUntilRef.current &&
@@ -1800,21 +1859,52 @@ export default function WorldMap() {
     const unsubView = mapViewStore.subscribe(() => scheduleUrlWrite(map));
     const unsubOverlay = overlay.subscribe(() => scheduleUrlWrite(map));
 
-    // Calm idle rotation: nudge centre longitude while zoomed out + idle.
+    // Calm idle rotation: nudge centre longitude while zoomed out + idle, then SETTLE.
+    //
+    // The globe used to turn for as long as the tab was open, and that is the single
+    // most expensive thing this page does at rest: 60.8% of the main thread over a
+    // 10 s idle window on a desktop, ~101% at a 4x CPU throttle, against 3.4% with
+    // the spin neutralised. It cannot be made cheap by slowing it down — 30 fps and
+    // 20 fps caps both measured ~99% — because a moving camera forces a full
+    // MapLibre re-render whatever the update rate. Only not moving is cheaper.
+    // So it turns for a while, eases to a stop, and hands the thread back.
+    //
+    // STOPPING MEANS STOPPING. Once settled the loop does not reschedule itself,
+    // rather than rescheduling and returning early. The early-return version is what
+    // both of this app's animation loops already did and it still costs a callback
+    // per compositor frame forever — cheap, but not zero, and it is the difference
+    // between the 3.4% target and something above it.
     let last = performance.now();
     const spin = (t: number) => {
       const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
       if (isAutoSpinning()) {
+        const { factor } = spinEnvelope(spinSpentMs);
+        spinSpentMs += dt * 1000;
         const c = map.getCenter();
-        map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt, c.lat]);
+        map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt * factor, c.lat]);
+      }
+      if (spinSettled()) {
+        rafRef.current = 0;
+        return;
       }
       rafRef.current = requestAnimationFrame(spin);
     };
-    rafRef.current = requestAnimationFrame(spin);
+    // Reduced motion never starts the loop at all, rather than starting it and
+    // declining every frame. If the setting is turned off mid-session the change
+    // handler starts it, so the globe is not dead for the rest of the visit.
+    const startSpin = () => {
+      if (rafRef.current || spinSettled() || prefersLessMotion.matches) return;
+      last = performance.now();
+      rafRef.current = requestAnimationFrame(spin);
+    };
+    const onMotionPreference = () => startSpin();
+    prefersLessMotion.addEventListener("change", onMotionPreference);
+    startSpin();
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      prefersLessMotion.removeEventListener("change", onMotionPreference);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
       el.removeEventListener("pointermove", holdSpin);
       cancelUrlWrite();

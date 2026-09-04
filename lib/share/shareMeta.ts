@@ -1,19 +1,29 @@
 // Pure derivation of social-share metadata (page <title>, og/twitter title +
-// description, and the OG-card query) from a decoded deep-link ViewState. Kept
-// pure + dependency-light (only the static variant registry + brand constant) so
-// it round-trips in the node vitest env, exactly like lib/share/url.ts. The impure
-// wiring (generateMetadata reading request searchParams, the ImageResponse route)
-// consumes this.
+// description, and the OG-card query). Kept pure + dependency-light (only the
+// static variant registry + brand constant) so it round-trips in the node vitest
+// env, exactly like lib/share/url.ts.
 //
-// Why derive from the view: every shared/deep link already encodes which board the
-// viewer is looking at (?v=aviation …). Turning that into "Live flight tracking"
-// instead of a generic title is what makes a pasted link unfurl into something
-// worth clicking. An explicit event headline (from the future auto-poster) can
-// still override this by passing t=/s= straight to /api/og.
+// NOTHING IN THE APP PASSES A BOARD TODAY, AND NOTHING SHOULD. `/app` calls this
+// with `{}` at build time and ships one static card for every link. Deriving the
+// card from `?v=` is what it used to do, and taking that param in
+// `generateMetadata` opted the console into a per-request server render — the same
+// defect `/` shipped with for an entire launch. If per-board cards are ever wanted
+// back, the route has to be per-board too (`/app/aviation`), so each one can be
+// statically rendered; a query param cannot be.
+//
+// The per-board branch below is therefore reachable only from a caller that knows
+// the board by other means. It is kept because the headline table is the only place
+// those thirteen strings live, and because /api/og still accepts an explicit
+// headline via t=/s= for the auto-poster.
 
-import type { ViewState } from "@/lib/share/url";
 import { BUILTIN_BY_ID } from "@/lib/variants/builtins";
 import { BRAND } from "@/lib/brand";
+
+/** What the card is derived from. Not a deep-link ViewState — see the note above. */
+export interface ShareView {
+  /** Built-in board id, when the caller already knows it. */
+  v?: string;
+}
 
 // Marketing headline per built-in board. Falls back to the variant's own title,
 // then to the brand tagline, so an unknown/absent variant still yields a sane card.
@@ -50,8 +60,8 @@ function accentHex(hex: string): string {
   return /^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(h) ? h : BRAND.accent.replace(/^#/, "");
 }
 
-/** Derive share metadata from a decoded view. Never throws; always returns a card. */
-export function viewToShareMeta(view: ViewState): ShareMeta {
+/** Derive share metadata from a view. Never throws; always returns a card. */
+export function viewToShareMeta(view: ShareView): ShareMeta {
   const variant = view.v ? BUILTIN_BY_ID[view.v] : undefined;
   const headline = (variant && (VARIANT_HEADLINE[variant.id] ?? variant.title)) || BRAND.headline;
   const subtitle = variant ? `${variant.title} board` : BRAND.pitch;

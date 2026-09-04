@@ -15,14 +15,43 @@
 
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
-/** The one number. Every beat below is an absolute offset inside it, and the
- *  dissolve is carved out of the end rather than added after — so this is the
- *  whole cost of the sequence, mount to gone. */
+/** The CEILING. The plate is never up for longer than this, however slow the map
+ *  is — so a bad connection cannot make the launch sequence worse than it used to
+ *  be. It is also the length the sequence ran at unconditionally before it learned
+ *  to end when the map was ready, which is why the unscaled timeline below still
+ *  fits it exactly. */
 export const BOOT_MS = 5000;
 
-/** The dissolve, taken out of BOOT_MS's tail. The handoff starts at
- *  BOOT_MS - BOOT_FADE_MS and the overlay is unmounted at BOOT_MS exactly. */
+/** The FLOOR: the whole sequence, mount to gone, when the map is ready first.
+ *
+ *  The plate used to hold for a flat five seconds while the map behind it had
+ *  finished at 4.2 s — measured on desktop, and ~70% of sessions see the boot, so
+ *  it was the gate on the first visit rather than the network. Compressing to this
+ *  is a VISIBLE change: the sequence still plays in full, at
+ *  `timelineScale(BOOT_MIN_MS)` ≈ 0.43 of its designed speed. It is one constant,
+ *  and it is a design call — raise it and the animation slows back down. */
+export const BOOT_MIN_MS = 2600;
+
+/** The dissolve, taken out of the tail. The handoff starts BOOT_FADE_MS before the
+ *  end and the overlay is unmounted at the end exactly. */
 export const BOOT_FADE_MS = 420;
+
+/** How long TERMINAL READY stays legible before the dissolve begins. Reserved out
+ *  of the total by `timelineScale`, so the last beat can never be squeezed into
+ *  zero frames by lowering BOOT_MIN_MS. */
+export const BOOT_READY_HOLD_MS = 400;
+
+/** The mark's own assemble timeline in app/globals.css, measured from the moment
+ *  the `assemble` beat sets `is-playing`. Longest chain: `.mk-book`, 700ms delay +
+ *  480ms.
+ *
+ *  IT IS A DURATION IN CSS AND A NUMBER HERE, WHICH IS THE ONE COUPLING THIS FILE
+ *  EXISTS TO AVOID — so it is scaled by the same factor as the beats (via
+ *  `--tn-mark-scale`, published by BootSequence) and pinned by
+ *  tests/unit/mark-timeline.test.ts, which reads the stylesheet. Without the
+ *  scaling, compressing the sequence would set `identify` while the mark was still
+ *  drawing, and the logo would visibly snap to its finished state mid-animation. */
+export const MARK_ASSEMBLE_MS = 1180;
 
 /** prefers-reduced-motion: one static final frame, then out. Not zero — a hard cut
  *  from a full-screen plate to the terminal is its own kind of jolt — but short
@@ -77,16 +106,20 @@ export interface BootCounts {
 }
 
 /**
- * The sequence, as data.
+ * The sequence, as data, at its designed speed.
  *
  * Read down the `at` column to see the shape: a dark instrument powers up (0), the
- * mark draws itself (240 — its own CSS timeline runs ~1180ms from there), the
- * identity resolves (1460), six subsystems check in one every 260ms (2000–3300),
- * a scan sweep lights the 12-column grid the workspace is actually built on
- * (3620), and the terminal reports ready (4180) with ~400ms to read it before the
- * dissolve begins at BOOT_MS - BOOT_FADE_MS.
+ * mark draws itself (240 — its own CSS timeline runs MARK_ASSEMBLE_MS from there),
+ * the identity resolves (1460, just after the mark lands), six subsystems check in
+ * one every 260ms (2000–3300), a scan sweep lights the 12-column grid the workspace
+ * is actually built on (3620), and the terminal reports ready (4180) with
+ * BOOT_READY_HOLD_MS to read it before the dissolve begins.
+ *
+ * These are the SOURCE offsets. Nothing schedules them directly — `bootTimeline`
+ * scales them to whatever total the boot is running at, and at BOOT_MS the scale
+ * is exactly 1, so this table is still literally what a five-second boot plays.
  */
-export function bootTimeline(counts: BootCounts): BootBeat[] {
+function unscaledBeats(counts: BootCounts): BootBeat[] {
   return [
     { at: 0, stage: "power" },
     { at: 240, stage: "assemble" },
@@ -106,6 +139,65 @@ export function bootTimeline(counts: BootCounts): BootBeat[] {
     { at: 3620, stage: "sweep" },
     { at: 4180, stage: "ready" },
   ];
+}
+
+/** The last beat of the unscaled sequence, derived rather than typed — the counts
+ *  do not move any offset, so any BootCounts gives the same answer. */
+const UNSCALED_END_MS = (() => {
+  const b = unscaledBeats({ layers: 0, feeds: 0 });
+  return b[b.length - 1].at;
+})();
+
+/**
+ * How fast to play the sequence to fit `totalMs`, dissolve and read-time included.
+ *
+ * Reserving BOOT_FADE_MS and BOOT_READY_HOLD_MS out of the total is what stops a
+ * smaller BOOT_MIN_MS silently squeezing TERMINAL READY into zero frames — the
+ * exact rot tests/unit/terminal-boot.test.ts was written to catch. Capped at 1:
+ * a longer total holds the finished plate for longer, it never plays SLOWER than
+ * the design.
+ */
+export function timelineScale(totalMs: number): number {
+  const room = totalMs - BOOT_FADE_MS - BOOT_READY_HOLD_MS;
+  return Math.min(1, Math.max(0.1, room / UNSCALED_END_MS));
+}
+
+/**
+ * The sequence, scaled to the total it is running at. `totalMs` defaults to the
+ * floor because that is what the component schedules: the boot cannot know at mount
+ * how long the map will take, so it always plays at the compressed speed and then
+ * waits at the finished frame if the map is still coming.
+ *
+ * The mark's own CSS is scaled by the same factor (`--tn-mark-scale`), so the
+ * relationship the sequence depends on — the mark finishes drawing before the
+ * identity resolves — holds at every speed rather than only at 1.
+ */
+export function bootTimeline(counts: BootCounts, totalMs: number = BOOT_MIN_MS): BootBeat[] {
+  const scale = timelineScale(totalMs);
+  if (scale === 1) return unscaledBeats(counts);
+  return unscaledBeats(counts).map((b) => ({ ...b, at: Math.round(b.at * scale) }));
+}
+
+/**
+ * When the plate should go, in ms from the boot's own mount.
+ *
+ * `mapIdleMs` is the map's first `idle` on the same clock, or null if it has not
+ * happened. NULL MEANS THE CEILING, not the floor: a page with no map, a WebGL
+ * context that never comes up, or a map that simply has not finished must all
+ * behave exactly as the boot did before it learned to listen — five seconds and
+ * out. Ending early on silence would turn a broken map into a shorter animation.
+ */
+export function bootEndMs({
+  minMs = BOOT_MIN_MS,
+  maxMs = BOOT_MS,
+  mapIdleMs,
+}: {
+  minMs?: number;
+  maxMs?: number;
+  mapIdleMs: number | null;
+}): number {
+  if (mapIdleMs == null || !Number.isFinite(mapIdleMs)) return maxMs;
+  return Math.min(maxMs, Math.max(minMs, mapIdleMs));
 }
 
 /** The stage in force at `t` ms. Used to paint the single static frame that

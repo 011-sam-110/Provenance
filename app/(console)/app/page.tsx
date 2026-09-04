@@ -4,27 +4,23 @@ import { viewToShareMeta } from "@/lib/share/shareMeta";
 import { BRAND } from "@/lib/brand";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 
-// The board id (?v=…) is the only shared param the social card derives from, so we
-// parse it inline rather than importing the client-oriented deep-link codec
-// (lib/share/url.ts). That codec builds Sets over the layer/basemap/signal
-// registries at module load, and dragging those into the SSR/RSC graph is both
-// unnecessary here and fragile. Pattern kept in sync with url.ts's VARIANT_RE.
-const VARIANT_RE = /^[a-z0-9-]{1,32}$/;
-
-// Server component (ConsoleShell is the "use client" boundary) so it can derive
-// per-view social metadata from the shared deep-link params. A link to a specific
-// board then unfurls as "Live flight tracking · OpenData" with a matching OG card
-// instead of the generic default. Reading searchParams makes this route dynamic
-// (SSR per request) — intended, so crawlers get the right card.
-export async function generateMetadata({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}): Promise<Metadata> {
-  const sp = await searchParams;
-  const raw = sp.v;
-  const v = typeof raw === "string" && VARIANT_RE.test(raw) ? raw : undefined;
-  const meta = viewToShareMeta({ v });
+// DO NOT TAKE `searchParams` HERE. It is the one-word change that makes this route
+// dynamic — and Next does it for EVERY request, not only the ones carrying a query.
+// There is no local symptom: tsc passes, the suite passes, dev looks identical, and
+// the only evidence is on production, where /app answered
+//   Cache-Control: private, no-cache, no-store   X-Vercel-Cache: MISS
+// to all ~150 console requests a day, each one waking a Node function to render
+// byte-identical HTML. The body below is one component and a prop; the board is
+// resolved on the client after mount by variantStore.bootstrap.
+//
+// This page used to read `?v=` to mint a per-board OG card ("Live flight tracking ·
+// OpenData"). That feature is gone by decision, not by accident: per-board cards
+// need a per-board ROUTE (/app/aviation) to be statically rendered. `/` shipped the
+// identical defect for a whole launch; its shim now lives in redirects() in
+// next.config.ts, which the routing layer applies with no function invocation at
+// all. Guarded by tests/unit/console-static.test.ts.
+export function generateMetadata(): Metadata {
+  const meta = viewToShareMeta({});
   const ogImage = `/api/og?${meta.ogQuery}`;
   return {
     title: meta.title,

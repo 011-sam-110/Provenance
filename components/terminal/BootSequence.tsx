@@ -43,9 +43,11 @@ import Mark from "@/components/brand/Mark";
 import { BRAND } from "@/lib/brand";
 import {
   BOOT_FADE_MS,
+  BOOT_MIN_MS,
   BOOT_MS,
   BOOT_REDUCED_MS,
   BOOT_STAGES,
+  bootEndMs,
   bootOverrideFromSearch,
   bootTimeline,
   checksAt,
@@ -54,9 +56,11 @@ import {
   shouldPlayBoot,
   stageAt,
   stageIndex,
+  timelineScale,
   type BootCheck,
   type BootStage,
 } from "@/lib/terminal/boot";
+import { onMapReady } from "@/lib/terminal/mapReady";
 
 /** UTC, off the visitor's own clock — the only other real value on the plate.
  *  toISOString() is already UTC, so there is no timezone maths to get wrong. */
@@ -65,7 +69,12 @@ function utcClock(now = new Date()): string {
 }
 
 export default function BootSequence({ layers, feeds }: { layers: number; feeds: number }) {
-  const beats = useMemo(() => bootTimeline({ layers, feeds }), [layers, feeds]);
+  // Scheduled at the FLOOR, always. The boot cannot know at mount how long the map
+  // will take, so it plays at the compressed speed and holds the finished plate if
+  // the map is still coming — rather than pacing itself to a five-second worst case
+  // it usually beats.
+  const beats = useMemo(() => bootTimeline({ layers, feeds }, BOOT_MIN_MS), [layers, feeds]);
+  const markScale = timelineScale(BOOT_MIN_MS);
 
   // Starts "pending", not "running": rendering the overlay on the server and
   // removing it on the client is a hydration mismatch, and localStorage cannot be
@@ -75,15 +84,31 @@ export default function BootSequence({ layers, feeds }: { layers: number; feeds:
   const [checks, setChecks] = useState<BootCheck[]>([]);
   const [clock, setClock] = useState("");
   const timers = useRef<number[]>([]);
+  // The end timer is held apart from the beat timers so the map can move it without
+  // cancelling the sequence that is still playing.
+  const endTimer = useRef<number>(0);
+  const startedAt = useRef<number>(0);
 
   const finish = () => {
     for (const t of timers.current) window.clearTimeout(t);
     timers.current = [];
+    window.clearTimeout(endTimer.current);
+    endTimer.current = 0;
     setState((s) => (s === "done" || s === "leaving" ? s : "leaving"));
     timers.current.push(window.setTimeout(() => setState("done"), BOOT_FADE_MS));
   };
 
+  /** (Re)arm the dissolve for an end `endMs` from mount. The handoff starts
+   *  BOOT_FADE_MS early so the overlay is gone at `endMs` exactly, not endMs plus a
+   *  fade nobody counted. */
+  const scheduleEnd = (endMs: number) => {
+    window.clearTimeout(endTimer.current);
+    const delay = Math.max(0, endMs - BOOT_FADE_MS - (performance.now() - startedAt.current));
+    endTimer.current = window.setTimeout(finish, delay);
+  };
+
   useEffect(() => {
+    let unsubscribeMap: (() => void) | undefined;
     const seen = loadBootSeen();
     const override = bootOverrideFromSearch(window.location.search);
     if (!shouldPlayBoot(seen, override)) {
@@ -95,6 +120,7 @@ export default function BootSequence({ layers, feeds }: { layers: number; feeds:
 
     setState("running");
     setClock(utcClock());
+    startedAt.current = performance.now();
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       // The end of the sequence as one static frame — the assembled mark, the
@@ -111,14 +137,22 @@ export default function BootSequence({ layers, feeds }: { layers: number; feeds:
           }, beat.at),
         );
       }
-      // The dissolve is carved out of BOOT_MS's tail, so the overlay is gone at
-      // BOOT_MS exactly rather than BOOT_MS plus a fade nobody counted.
-      timers.current.push(window.setTimeout(finish, BOOT_MS - BOOT_FADE_MS));
+      // Arm the CEILING first, then let the map bring it forward. Armed in this
+      // order the plate is never left without an exit: if the map never reports —
+      // no WebGL, a context that never comes up, a page with no map at all — this
+      // is the timer that runs, and it is exactly the five seconds the boot used to
+      // take unconditionally.
+      scheduleEnd(bootEndMs({ mapIdleMs: null }));
+      unsubscribeMap = onMapReady((atMs) => {
+        scheduleEnd(bootEndMs({ mapIdleMs: atMs - startedAt.current }));
+      });
     }
 
     return () => {
       for (const t of timers.current) window.clearTimeout(t);
       timers.current = [];
+      window.clearTimeout(endTimer.current);
+      unsubscribeMap?.();
     };
     // Mount only. Re-running would restart the sequence when a count updates.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,8 +192,19 @@ export default function BootSequence({ layers, feeds }: { layers: number; feeds:
   return (
     <div
       className={className}
-      // The two durations, handed to the sheet. Nothing in globals.css restates them.
-      style={{ "--tnx-boot-ms": `${BOOT_MS}ms`, "--tnx-boot-fade": `${BOOT_FADE_MS}ms` } as CSSProperties}
+      // The durations, handed to the sheet. Nothing in globals.css restates them.
+      // `--tnx-boot-ms` is the SEQUENCE's length, not the plate's: the rail fills as
+      // the beats play, and if the map is still coming the plate holds at a full
+      // rail rather than a rail that stretches to fit an unknown wait.
+      // `--tn-mark-scale` carries the same factor into the mark's own assemble
+      // animation, which is the only timing this component does not schedule itself.
+      style={
+        {
+          "--tnx-boot-ms": `${BOOT_MIN_MS}ms`,
+          "--tnx-boot-fade": `${BOOT_FADE_MS}ms`,
+          "--tn-mark-scale": markScale,
+        } as CSSProperties
+      }
       // Decorative, and not a dialog: it steals no focus, and the shell behind it is
       // already mounted and readable to a screen reader. Announcing it would
       // interrupt that for no information.

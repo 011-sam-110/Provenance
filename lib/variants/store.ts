@@ -70,14 +70,21 @@ function captureOverride() {
 }
 
 export const variantStore = {
-  /** The ONLY load-time hydration path. Call once from ConsoleShell. */
+  /**
+   * The ONLY load-time hydration path. Call once from ConsoleShell.
+   *
+   * `params` is still read — for `sig`, the signal divergence a shared link carries.
+   * It is NOT read for the board: `?v=` was removed from the deep-link codec because
+   * the server had to read it to mint a per-board social card, which made the whole
+   * `/app` route dynamic. The board now comes from persisted state or the default,
+   * so a legacy `/app?v=aviation` link opens the default board.
+   */
   bootstrap(params: URLSearchParams) {
     const saved = loadPersisted<VariantStoreState>(PERSIST_KEY, PERSIST_VERSION);
     if (saved) state = { ...state, ...saved };
     const url = decodeViewState(params);
-    const id = url.v
-      ? (resolveVariant(url.v).id === url.v ? url.v : DEFAULT_VARIANT_ID)
-      : (BUILTIN_BY_ID[state.activeId] || state.userVariants.find((v) => v.id === state.activeId))
+    const id =
+      (BUILTIN_BY_ID[state.activeId] || state.userVariants.find((v) => v.id === state.activeId))
         ? state.activeId
         : DEFAULT_VARIANT_ID;
     state = { ...state, activeId: id };

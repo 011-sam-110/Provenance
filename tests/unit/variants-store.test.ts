@@ -12,14 +12,41 @@ describe("variantStore", () => {
     expect(layersStore.get().cameras).toBe(true);
     expect(layersStore.get().satellites).toBe(false);
   });
-  it("URL v= picks the variant and seeds its signals", () => {
+  // A legacy /app?v=cyber link opens the default board. `?v=` stopped being a deep
+  // link when reading it on the server turned the console into a per-request render
+  // — see lib/share/url.ts. It is ignored rather than redirected away, because Next
+  // spreads the incoming query into a redirect destination, so /app?v=x -> /app would
+  // re-emit ?v=x and loop.
+  it("ignores a legacy URL v=", () => {
     variantStore.bootstrap(new URLSearchParams("v=cyber"));
-    expect(variantStore.get().activeId).toBe("cyber");
+    expect(variantStore.get().activeId).toBe("explore");
+  });
+  it("still seeds signal divergence from the URL", () => {
+    variantStore.bootstrap(new URLSearchParams("sig=cyber-c2"));
     expect(signalsStore.isOn("cyber-c2")).toBe(true);
   });
-  it("falls back to explore for an unknown variant id", () => {
-    variantStore.bootstrap(new URLSearchParams("v=does-not-exist"));
-    expect(variantStore.get().activeId).toBe("explore");
+  // The fallback used to be reachable through `?v=does-not-exist`. With the board out
+  // of the URL, PERSISTED state is the only way to hold an id that no longer resolves
+  // — a board removed in a release, or a user variant deleted on another tab — so
+  // that is what this stubs. `setActive` cannot produce one: it stores the RESOLVED
+  // id, so it can only ever write a valid one.
+  it("falls back to explore for an unresolvable persisted variant id", () => {
+    const store = new Map<string, string>([
+      ["tn.variant.v1", JSON.stringify({ v: 1, d: { activeId: "deleted-board" } })],
+    ]);
+    (globalThis as { window?: unknown }).window = {
+      localStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+      },
+    };
+    try {
+      variantStore.bootstrap(new URLSearchParams(""));
+      expect(variantStore.get().activeId).toBe("explore");
+    } finally {
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
   it("resolveVariant returns a builtin by id", () => {
     expect(resolveVariant("intel").title).toBe("Intel");

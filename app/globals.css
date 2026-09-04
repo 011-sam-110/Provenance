@@ -3478,21 +3478,39 @@ a.tn-w-place { display: flex; align-items: center; }
 .tn-mark .mk-dot { fill: currentColor; opacity: 0.75; }
 
 /* The assemble timeline. `pathLength: 100` on the circles is what lets the
-   dasharray be a plain 100 here instead of a circumference per radius. */
+   dasharray be a plain 100 here instead of a circumference per radius.
+
+   EVERY DURATION HERE IS SCALED, and none of them may be written bare. The boot
+   sequence no longer runs at a fixed length — it plays compressed and ends when the
+   map is ready — and its beats are scaled by one factor in lib/terminal/boot.ts.
+   This animation is the one piece of that timeline the component does not schedule
+   itself, so it takes the same factor through `--tn-mark-scale`, published on the
+   boot overlay. Left unscaled, a compressed sequence would reach the `identify`
+   stage while the rings were still drawing and the logo would snap to its finished
+   state mid-animation.
+
+   The default of 1 is what the header and the marketing bar get: they only ever
+   pass `idle`, never `playing`, so nothing outside the boot reads these rules at
+   all. MARK_ASSEMBLE_MS in lib/terminal/boot.ts is the longest chain below
+   (`.mk-book`, 700 + 480), and tests/unit/mark-timeline.test.ts reads this file to
+   keep the two honest. */
 .tn-mark.is-playing .mk-ring {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: tnx-mark-draw 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  animation: tnx-mark-draw calc(700ms * var(--tn-mark-scale, 1)) cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
-.tn-mark.is-playing .mk-ring-2 { animation-delay: 110ms; }
-.tn-mark.is-playing .mk-dots { opacity: 0; animation: tnx-mark-in 400ms 620ms forwards; }
+.tn-mark.is-playing .mk-ring-2 { animation-delay: calc(110ms * var(--tn-mark-scale, 1)); }
+.tn-mark.is-playing .mk-dots {
+  opacity: 0;
+  animation: tnx-mark-in calc(400ms * var(--tn-mark-scale, 1)) calc(620ms * var(--tn-mark-scale, 1)) forwards;
+}
 .tn-mark.is-playing .mk-glass {
   opacity: 0; transform-origin: 50% 44%;
-  animation: tnx-mark-pop 520ms 380ms cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+  animation: tnx-mark-pop calc(520ms * var(--tn-mark-scale, 1)) calc(380ms * var(--tn-mark-scale, 1)) cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
 }
 .tn-mark.is-playing .mk-book {
   opacity: 0; transform-origin: 50% 78%;
-  animation: tnx-mark-unfold 480ms 700ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  animation: tnx-mark-unfold calc(480ms * var(--tn-mark-scale, 1)) calc(700ms * var(--tn-mark-scale, 1)) cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
 
 /* The ambient "system is live" tell on the header mark. Deliberately 22s: fast
