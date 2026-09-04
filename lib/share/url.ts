@@ -15,6 +15,15 @@
 //              lib/basemaps.ts deep-links with no edit here (dark | positron |
 //              streets | satellite | topo)
 //   obj      — namespaced WorldObject id of the open dossier (opaque internal key)
+//   sig      — csv of signal ids diverging from the board's defaults
+//
+// THE BOARD (`?v=`) IS DELIBERATELY NOT HERE. It used to be, and reading it back on
+// the SERVER — `generateMetadata` picking a per-board social card — is what made the
+// whole `/app` route dynamic for every visitor, cached nowhere. The board is now
+// in-session UI state: it persists per browser (lib/variants/persist), it is never
+// read from or written to the URL, and a legacy `/app?v=aviation` link lands on the
+// default board with the param falling out of the address bar on the first write.
+// Same defect, same fix as `/` — see tests/unit/console-static.test.ts.
 
 import { ACTIVE_LAYERS, type LayerKey } from "@/lib/layers";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
@@ -29,8 +38,6 @@ export interface ViewState {
   basemap?: BasemapKey;
   /** Namespaced id of the open dossier object, if any. */
   obj?: string;
-  /** Active variant id. */
-  v?: string;
   /** On-signal ids (divergence from the variant's defaults). */
   sig?: string[];
 }
@@ -44,7 +51,6 @@ const OBJ_MAX_LEN = 96; // opaque internal key — keep shared links sane
 const VALID_LAYERS = new Set<string>(ACTIVE_LAYERS);
 const VALID_BASEMAPS = new Set<string>(Object.keys(BASEMAPS));
 const VALID_SIGNALS = new Set<string>(SIGNALS.map((s) => s.id));
-const VARIANT_RE = /^[a-z0-9-]{1,32}$/;
 const SIG_MAX = 40;
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -84,7 +90,6 @@ export function encodeViewState(state: ViewState): string {
   if (state.obj && state.obj.length <= OBJ_MAX_LEN) {
     p.set("obj", state.obj);
   }
-  if (state.v && VARIANT_RE.test(state.v)) p.set("v", state.v);
   if (state.sig?.length) {
     const ids = state.sig.filter((s) => VALID_SIGNALS.has(s)).slice(0, SIG_MAX);
     p.set("sig", ids.join(","));
@@ -117,8 +122,8 @@ export function decodeViewState(params: URLSearchParams): ViewState {
   const obj = params.get("obj");
   if (obj && obj.length <= OBJ_MAX_LEN) out.obj = obj;
 
-  const v = params.get("v");
-  if (v && VARIANT_RE.test(v)) out.v = v;
+  // `v` is read by nothing and re-emitted by nothing: a legacy board link decodes to
+  // the same view as one without it.
   if (params.has("sig")) {
     out.sig = (params.get("sig") ?? "")
       .split(",").map((s) => s.trim())
