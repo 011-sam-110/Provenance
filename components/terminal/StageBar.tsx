@@ -100,14 +100,13 @@
 // .tn-terminal .maplibregl-ctrl-attrib a     { color:var(--tnx-ink-faint); }
 
 import { useShellLayout } from "@/lib/console/store";
-import AoiControl from "@/components/console/AoiControl";
-import CameraPickControl from "@/components/console/CameraPickControl";
 import CameraTray from "@/components/console/CameraTray";
-import MapSearch from "@/components/console/MapSearch";
+import MapRail, { MAP_RAIL_ID } from "@/components/console/maprail/MapRail";
+import { mapRailStore } from "@/lib/console/mapRail";
+export { STAGE_SEARCH_ID } from "@/components/console/maprail/SearchFlyout";
+import { STAGE_SEARCH_ID as SEARCH_ID } from "@/components/console/maprail/SearchFlyout";
 import WorldClock from "@/components/console/WorldClock";
 
-/** The id on the search frame, so the shell's "/" shortcut can find it. */
-export const STAGE_SEARCH_ID = "stage-search";
 
 /**
  * Focus the stage search box. Returns false when it is not on screen — the stage
@@ -118,10 +117,25 @@ export const STAGE_SEARCH_ID = "stage-search";
  * frame wraps a component whose input it would otherwise have to guess at.
  */
 export function focusStageSearch(): boolean {
-  const input = document.getElementById(STAGE_SEARCH_ID)?.querySelector("input");
-  if (!(input instanceof HTMLInputElement)) return false;
-  input.focus();
-  input.select();
+  // Is the rail on screen at all? The stage chrome unmounts while a widget is
+  // expanded onto the stage, and returning false there is the existing contract:
+  // ConsoleShell does NOT preventDefault, so "/" types a literal slash and
+  // Firefox's quick-find still opens.
+  if (!document.getElementById(MAP_RAIL_ID)) return false;
+
+  // Already open — focus and select, so a second "/" types over an old query.
+  const input = document.getElementById(SEARCH_ID)?.querySelector("input");
+  if (input instanceof HTMLInputElement) {
+    input.focus();
+    input.select();
+    return true;
+  }
+
+  // Closed. Open it and let SearchFlyout focus its own input on mount: React has
+  // not rendered the input yet on this tick, so there is nothing to focus here.
+  // Returning true before the focus lands is correct — the return value answers
+  // "did we act on this keystroke", and we did.
+  mapRailStore.open("search");
   return true;
 }
 
@@ -159,24 +173,13 @@ export default function StageBar() {
 
   return (
     <>
-      <div className="tnx-stage-search" id={STAGE_SEARCH_ID}>
-        <span className="tnx-stage-search-pfx" aria-hidden>
-          /
-        </span>
-        <MapSearch />
-      </div>
-
       {/*
-        The right-hand stack. It used to lead with the layer key, and the area filter
-        sat under it because "what is on screen" and "what the feeds answer with" are
-        the same question asked twice. The key is gone, so AREA now leads the stack —
-        it keeps its place rather than moving elsewhere, because it is still a
-        property of the view and this is still where a reader looks for one.
+        THE STAGE RAIL replaces both things that used to live here: the centred
+        search box, and the right-hand text stack (AoiControl + CameraPickControl).
+        Four icon groups on the right edge, one flyout open at a time, expanding
+        leftward into the map. See components/console/maprail/MapRail.tsx.
       */}
-      <div className="tnx-stage-right">
-        <AoiControl />
-        <CameraPickControl />
-      </div>
+      <MapRail />
 
       {/* The tray. Bottom of the STAGE, not of the viewport — it is about the map,
           and a bar pinned to the window would sit over whichever widget happened to

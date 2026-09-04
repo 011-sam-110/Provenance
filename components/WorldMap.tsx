@@ -1665,7 +1665,14 @@ export default function WorldMap() {
     // ever takes it off again. See lib/map/attribution.ts (the credit stays, and
     // stays reachable through the info button — that part is a licence obligation).
     collapseAttribution(map.getContainer().querySelector("." + ATTRIB_CONTROL_CLASS));
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
+    // NO NavigationControl. The zoom ± and the compass-reset are gone: the stage
+    // rail is the map's one control surface now, and a second cluster in the
+    // opposite corner was the thing it exists to remove. Zoom is the wheel, a
+    // pinch, a double-tap and the +/- keys; MapLibre's own keyboard handler still
+    // rotates and pitches.
+    //
+    // The AttributionControl two lines up STAYS, and it is not the same kind of
+    // thing. It is a licence obligation — see lib/map/attribution.ts.
 
     wireInteractions(map);
 

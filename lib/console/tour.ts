@@ -171,6 +171,25 @@ const SHUT_RAIL: TourAction = { kind: "close", want: ".tn-rail", click: ".tn-rai
 
 const OPEN_POP: TourAction = { kind: "ensure", want: ".tn-src-pop", click: ".tn-src-label" };
 
+// The stage rail groups. Each one is a click-to-open flyout, so a step that wants
+// to spotlight the CONTENTS has to open the group first — pointing at the icon and
+// calling the panel covered would be the tour lying about its own coverage.
+// Each group carries a per-group class as well as data-group, because
+// tests/unit/tour.test.ts checks every selector here against the class names the
+// source actually renders and an attribute selector is not a class.
+//
+// Closing matters as much as opening: only one group is open at a time, so
+// opening Draw already puts Search away — but the chapter still has to close the
+// last one explicitly, or the tour walks off leaving a panel over the map.
+const OPEN_SEARCH: TourAction = { kind: "ensure", want: ".tnx-maprail-pop-search", click: ".tnx-maprail-btn-search" };
+const SHUT_SEARCH: TourAction = { kind: "close", want: ".tnx-maprail-pop-search", click: ".tnx-maprail-btn-search" };
+
+const OPEN_DRAW: TourAction = { kind: "ensure", want: ".tnx-maprail-pop-draw", click: ".tnx-maprail-btn-draw" };
+const SHUT_DRAW: TourAction = { kind: "close", want: ".tnx-maprail-pop-draw", click: ".tnx-maprail-btn-draw" };
+
+const OPEN_VIEW: TourAction = { kind: "ensure", want: ".tnx-maprail-pop-view", click: ".tnx-maprail-btn-view" };
+const SHUT_VIEW: TourAction = { kind: "close", want: ".tnx-maprail-pop-view", click: ".tnx-maprail-btn-view" };
+
 const OPEN_HELP: TourAction = { kind: "ensure", want: ".tn-cw-help-pop", click: ".tn-cw-help" };
 const SHUT_HELP: TourAction = { kind: "close", want: ".tn-cw-help-pop", click: ".tn-cw-help-x" };
 
@@ -254,8 +273,12 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "map",
     title: "The map",
-    summary: "Search, the area filter and pins",
+    summary: "The rail: search, area, cameras and view",
     icon: "◉",
+    // Only one rail group is open at a time, so each OPEN_* here already closes the
+    // one before it. The chapter still closes the last one explicitly, or the tour
+    // ends with a panel sitting over the map it just finished explaining.
+    cleanup: [SHUT_SEARCH, SHUT_DRAW, SHUT_VIEW],
     steps: [
       {
         id: "map-lead",
@@ -266,28 +289,47 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         placement: "center",
       },
       {
+        id: "map-rail",
+        target: ".tnx-maprail",
+        title: "One rail for the map",
+        body:
+          "Every map control lives here: search, area filter, camera picking and view settings. Click an icon and its controls slide out to the left; click it again, or press Esc, to put them away. One group is open at a time, so the map is never buried under its own chrome.",
+        placement: "left",
+      },
+      {
         id: "map-search",
-        target: ".tnx-stage-search",
+        target: ".tnx-maprail-pop-search",
+        setup: [OPEN_SEARCH],
         title: "Search anywhere",
         body:
-          "Type any place name — a city, a street, an airport — and pick a result to fly there and drop a pin. Press / from anywhere in the console to jump into this box.",
-        placement: "bottom",
+          "Type any place name — a city, a street, an airport — and pick a result to fly there and drop a pin. Press / from anywhere in the console to jump straight into this box, wherever the rail is.",
+        placement: "left",
       },
       {
         id: "map-area",
-        target: ".tn-aoi",
+        target: ".tnx-maprail-pop-draw",
+        setup: [OPEN_DRAW],
         title: "Restrict results to area",
         body:
-          "Under the key: draw a zone on the map and every scoped panel narrows to what is inside it. Click to place each corner, Enter to close the ring once you have three, Esc to abandon it. It filters the FEEDS rather than moving the camera — the map stays where you left it, and the counts in the panels change. Clear brings the whole world back.",
+          "Draw a zone on the map and every scoped panel narrows to what is inside it. Click to place each corner, Enter to close the ring once you have three, Esc to abandon it. It filters the FEEDS rather than moving the camera — the map stays where you left it, and the counts in the panels change. Clear brings the whole world back.",
+        placement: "left",
+      },
+      {
+        id: "map-view",
+        target: ".tnx-maprail-pop-view",
+        setup: [OPEN_VIEW],
+        title: "How the map is drawn",
+        body:
+          "3D is the globe and 2D is the flat map. Five basemaps sit beside it — Dark, Light, Streets, Satellite and Topographic — and the last two switches raise 3D terrain and buildings once you are zoomed in far enough to see them. None of it is persisted: every visit opens on the calm default.",
         placement: "left",
       },
       {
         id: "map-pins",
         target: [".tn-pinnav", ".tnx-stage-foot"],
         reactive: true, // the pin navigator exists only once a pin has been dropped
-        title: "Pins, zoom and world clocks",
+        title: "Pins and world clocks",
         body:
-          "Searching drops a pin, and the pin navigator steps between them, flies back to any one, and clears them. The + and − in the bottom-right corner zoom without a scroll wheel, and the compass under them resets the tilt. The bar along the bottom of the stage carries local time in several cities, so an event has a human hour attached.",
+          "Searching drops a pin, and the pin navigator steps between them, flies back to any one, and clears them. Zoom with a scroll, a pinch, a double-click or the + and − keys. The bar along the bottom of the stage carries local time in several cities, so an event has a human hour attached.",
         placement: "top",
       },
       {

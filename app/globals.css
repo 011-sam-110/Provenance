@@ -2423,8 +2423,6 @@ a { color: var(--tn-accent); }
 .tn-settings-notify-chs { font-size: 11px; color: var(--tn-text-faint); white-space: nowrap; }
 
 /* ── Floated map-view controls (top-right of the centre stage) ────────────── */
-.tn-map-controls { position: absolute; top: 10px; right: 10px; z-index: 7; display: flex; align-items: center; gap: 8px; }
-
 /* ── Cinematic world clock (ambient ribbon over the map, top-centre) ──────── */
 .tn-worldclock {
   position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); z-index: 4;
@@ -3037,7 +3035,18 @@ a.tn-w-place { display: flex; align-items: center; }
      wins on specificity instead of relying on load order. */
   .maplibregl-ctrl.maplibregl-ctrl-group button { width: 44px; height: 44px; }
   .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
-  .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { width: 44px; height: 44px; }
+  .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+    width: 44px; height: 44px;
+    /* AND THE BACKGROUND HAS TO BE PINNED, or growing the box TILES the icon.
+       MapLibre paints the i as a 24px background-image and never sets
+       background-repeat, so the default `repeat` took over the moment this rule
+       made the button 44px: measured on the console at 390px wide, one control,
+       one button, FOUR i marks in a 2x2 grid. It reads as four broken buttons
+       rather than one. The width fix above has shipped like this; the icon is
+       just easier to notice now that it is the only control left in that corner. */
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -4512,12 +4521,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   font-size: var(--tnx-fs-xs);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
-.tn-terminal .maplibregl-ctrl-group {
-  border-radius: var(--tnx-r);
-  background: var(--tnx-glass);
-  box-shadow: 0 0 0 1px var(--tnx-line-strong);
-}
-
 /* Pin navigator: the stage has a search box at top-left and a legend at top-right,
    and the navigator's default top-right slot lands underneath the legend. Moved to
    the free bottom-left corner, above the clock bar. */
@@ -4699,73 +4702,16 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    left in the console.
 
    Deliberately NOT done by editing `--tnx-glass*`: those tokens have eight other
-   consumers, including the rail FAB and the MapLibre attribution and zoom
-   chrome, and moving the token would drag all of them along. `.tn-campick` needs
-   no rule of its own — it is a co-class on `.tn-aoi`. */
-.tn-terminal .tn-aoi {
-  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
-  padding: 5px 7px; background: var(--tnx-panel);
-  border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r);
-  box-shadow: var(--tnx-shadow-1); pointer-events: auto;
-}
-.tn-terminal .tn-aoi-btn {
-  border: 1px solid var(--tnx-line-strong); background: none; padding: 4px 6px;
-  cursor: pointer; font: inherit; text-align: left;
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--tnx-ink-dim); line-height: 1.35; border-radius: var(--tnx-r-sm);
-  min-height: 0; min-width: 0;
-}
-.tn-terminal .tn-aoi-btn:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
-/* The vertex count while drawing. Accent, because it is the only feedback that
-   the gesture is being received at all. */
-.tn-terminal .tn-aoi-live {
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--tnx-accent); line-height: 1.35;
-}
-
+   consumers, including the rail FAB and the MapLibre attribution chrome, and
+   moving the token would drag all of them along. */
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
    translateX(-50%)`, so it has to be flattened or it re-centres itself inside this
    frame instead of filling it. Restyled, never forked — one geocoder in the app. */
-.tn-terminal .tnx-stage-search {
-  position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
-  width: min(420px, calc(100% - 16px));
-  z-index: 6; display: flex; align-items: center; gap: 6px; padding: 0 8px;
-  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r); box-shadow: var(--tnx-shadow-1);
-  pointer-events: auto;
-}
-.tn-terminal .tnx-stage-search-pfx { font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tnx-accent); flex: none; }
-.tn-terminal .tnx-stage-search .tn-mapsearch {
-  position: static; transform: none; width: 100%; max-width: none; flex: 1; min-width: 0; padding: 0;
-}
-.tn-terminal .tnx-stage-search .tn-mapsearch-bar {
-  background: none; border: 0; box-shadow: none; border-radius: var(--tnx-r); padding: 4px 0; gap: 0;
-}
-.tn-terminal .tnx-stage-search .tn-mapsearch-icon { display: none; }
-.tn-terminal .tnx-stage-search .tn-mapsearch-input {
-  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); font-family: inherit; min-height: 0;
-}
-.tn-terminal .tnx-stage-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
-.tn-terminal .tnx-stage-search .tn-mapsearch-results {
-  margin-top: 5px; border-radius: var(--tnx-r); background: var(--tnx-glass-solid);
-  border: 1px solid var(--tnx-line-strong); box-shadow: none;
-}
-.tn-terminal .tnx-stage-search .tn-mapsearch-item { font-size: var(--tnx-fs-sm); color: var(--tnx-ink); padding: 5px 8px; }
-.tn-terminal .tnx-stage-search .tn-mapsearch-item:hover { background: var(--tnx-accent-soft); }
-.tn-terminal .tnx-stage-search .tn-mapsearch-item-meta,
-.tn-terminal .tnx-stage-search .tn-mapsearch-status { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); }
-
 /* The right-hand stack. It is the positioned element now, and the legend inside it
    is in normal flow — the legend's height is DERIVED (one row per layer that is on,
    up to nine) so anything under it has to be laid out by the stack rather than
    pinned to a guessed offset. `pointer-events:none` on the column with `auto` back
    on each child keeps the gap between them clickable map. */
-.tn-terminal .tnx-stage-right {
-  position: absolute; top: 30px; right: 8px; z-index: 6; width: 200px;
-  display: flex; flex-direction: column; align-items: stretch; gap: 6px;
-  pointer-events: none;
-}
-
 /* Clock bar. WorldClock's root is an absolutely-positioned rounded glass ribbon;
    flatten it into this frame rather than forking the component (one clock timer). */
 .tn-terminal .tnx-stage-foot {
@@ -4881,21 +4827,16 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
      switch and Export — the two that have no equal in the ⌘K palette's reach on a
      phone — and shed the basemap names, which do (palette → "Basemap"). */
 
-  /* Stage chrome: the key and the clock ribbon crowd a ~300px map, and the clock
-     is already hidden below 900px for the old shell. The area filter goes with the
-     key it now sits under — drawing a polygon by finger on a 300px map is not the
-     gesture this control was built for, and it stays in the ⌘K palette. */
-  .tn-terminal .tnx-stage-right,
+  /* The clock ribbon crowds a ~300px map, and it was already hidden below 900px
+     for the old shell.
+
+     THE MAP CONTROLS ARE NO LONGER HIDDEN HERE. `.tnx-stage-right` used to go with
+     this rule, which meant restrict-to-area, pick cameras, draw an area and new
+     wall did not exist on a phone at all. They live in `.tnx-maprail` now, which is
+     a 44px column rather than a 200px stack of text buttons, and hiding it would
+     also take the basemap picker and the 2D/3D switch with it. See the stage-rail
+     block at the end of this sheet. */
   .tn-terminal .tnx-stage-foot { display: none; }
-  /* Un-centre it. Below this width the stage is the whole console, so "centred on
-     the map" and "spanning the map" are the same box — and a translateX(-50%) on a
-     stage that has been squeezed to nothing puts the box at a NEGATIVE x, half off
-     the screen, where left/right insets simply collapse to nothing instead.
-     (The squeeze itself is a pre-existing mobile-grid bug: `.tn-cw-stage` measures
-     0px wide at 760px on main too. Not fixed here — but not made worse either.) */
-  .tn-terminal .tnx-stage-search {
-    left: 8px; right: 8px; width: auto; transform: none;
-  }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
@@ -4926,11 +4867,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    than 44px any more, and both choices remain available at full size in the ⌘K
    palette ("Basemap", "Stage") and the Source Catalog rail. */
 @media (max-width: 900px) {
-  .tn-terminal .tnx-stage-search { top: 42px; }
-  .tn-terminal .tnx-stage-right { top: 42px; }
-  /* (a) Real size: the area filter is a full-width control in a column, so it has
-     the room to reach a genuine 44px box rather than a transparent overlay. */
-  .tn-terminal .tn-aoi-btn { min-height: 44px; padding: 6px 8px; }
 
   /* Board tabs get real height — they are the console's main menu, and a 26px tab
      in a horizontally-scrolling strip is the easiest thing on the page to miss. */
@@ -5001,13 +4937,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
      popovers resolve against it (see the note on .tn-terminal .tn-seg-slot). */
   .tn-terminal .tn-seg-slot { overflow: visible; }
 
-  /* iOS Safari zooms the page in on focus of any field under 16px and does not
-     zoom back out. The skin set 10.5px and `min-height: 0`, which also cancelled
-     the 44px target the 900px block gives this same input. */
-  .tn-terminal .tnx-stage-search .tn-mapsearch-input {
-    font-size: var(--tnx-fs-lg);
-    min-height: 44px;
-  }
 }
 
 /* ── Camera slot (Streets M1) ─────────────────────────────────────────────
@@ -5457,43 +5386,17 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   .tn-terminal .tn-tray { bottom: 0; }
 }
 
-/* ── Stage chrome on a narrow stage ──────────────────────────────────────────
-   The search box is centred and 420px wide; the right-hand stack is 200px and
-   pinned to the right edge. Together they need 628px. The STREETS board gives
-   the map four of twelve columns, so the stage is 471px — and the two were
-   painted on top of each other: measured on the live board, 182px of horizontal
-   overlap and 25px of vertical, the geocoder input running underneath the layer
-   key.
+/* The stage can be NARROW INSIDE A WIDE WINDOW. The Streets board sets the
+   stage's `gridColumn` inline, so its width is set by the board rather than by
+   the viewport, and a viewport media query cannot see the difference. That is why
+   this container is declared, and why the stage rail's own narrow-stage rule (in
+   the stage-rail block at the end of this sheet) is `@container tnstage` too.
 
-   There is already an un-centring rule for this, and it does not fire here: it
-   is a VIEWPORT media query, and Streets has a narrow stage inside a wide
-   window. That is the whole bug — the constraint is the stage's width, so the
-   query has to be about the stage. Hence a container query on `.tn-cw-stage`,
-   which is already the positioned ancestor both children resolve against.
-
-   Un-centring rather than narrowing, because narrowing cannot work: a CENTRED
-   box of width W on a 471px stage reaches (471+W)/2, so keeping it clear of a
-   stack that starts at 263 would cap it at 55px. Below the threshold the search
-   spans the space to the LEFT of the stack instead. */
+   The centred search box this used to un-centre is gone — it is a flyout on the
+   rail now, and a flyout that already emerges from the right edge has nothing to
+   be un-centred from. Its width cap lives with the rest of its family. */
 .tn-terminal .tn-cw-stage { container-type: inline-size; container-name: tnstage; }
 
-@container tnstage (max-width: 640px) {
-  .tn-terminal .tnx-stage-search {
-    left: 8px;
-    /* 200px stack + 8px its right inset + 8px gutter. */
-    right: 216px;
-    width: auto;
-    transform: none;
-  }
-}
-
-/* The world clock is SEVEN cities on one row and it does not fold — measured in
-   the dock at 1440x900: a 567px strip centred in a 400px stage, spilling 84px past
-   each edge. `@media (max-width: 900px)` already hides it for the same reason at
-   the window level, and the same reasoning applies here: the constraint is the
-   STAGE's width, which the wall's dock can set independently of the window.
-   Hidden rather than folded because the strip is ambient — a dock open to pick
-   cameras has nothing to gain from three of seven timezones. */
 @container tnstage (max-width: 600px) {
   .tn-terminal .tnx-stage-foot { display: none; }
 }
@@ -5846,3 +5749,268 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    instead of moving with the length of each heading. */
 .tn-src-sec-on { margin-left: auto; color: var(--tn-accent); font-weight: 600; }
 /* ── end sources rail sections ────────────────── */
+
+/* ══ STAGE RAIL — prefix .tnx-maprail ══════════════════════════════════════════
+   Four icon groups on the RIGHT edge of the map stage, one flyout open at a time,
+   expanding LEFTWARD into the map.
+
+   NOT `.tn-rail*`. That family (.tn-rail, .tn-rail-col, .tn-rail-fab,
+   --tnx-rail-tab-w and thirteen more) belongs to the Sources rail and the widget
+   rail columns, and a `.tnx-rail-btn` sitting next to `--tnx-rail-tab-w` is a grep
+   hazard for whoever comes next. `maprail` appears nowhere else in this sheet.
+
+   REPLACES `.tnx-stage-search` (the centred geocoder) and `.tnx-stage-right`
+   (AoiControl + CameraPickControl). Both families are deleted below this block.
+
+   CENTRED AND CONTENT-HEIGHT, not full-height. A rail down the whole edge would put
+   its ends over `.tnx-stage-foot` (the clock strip) and over MapLibre's attribution
+   button at `bottom:28px; right:8px` — and that button is a licence obligation, not
+   chrome we may cover. See lib/map/attribution.ts.
+
+   Z-INDEX 8 AND 9, CHOSEN. Every other stage overlay sits at 6, and the collision
+   documented around line 2483 happened precisely because two of them SHARED that
+   value with overlapping boxes, so paint order decided which was clickable and the
+   3D button was dead at five widths. Its own tier makes "the rail is above ambient
+   chrome" a rule instead of a DOM-order accident. Both stay BELOW `.tn-tray` (25)
+   and `.tn-arm-hint` (30): the tray is the receipt for work in flight, and a panel
+   the user can close must never cover it.
+
+   MOBILE IS THE LAST THING IN THIS BLOCK AND MUST STAY THERE. See the
+   `MOBILE — RE-ASSERTED OVER THE TERMINAL SKIN` banner earlier in this sheet: a
+   media query adds no specificity, so any `.tn-terminal .tnx-maprail` rule appended
+   AFTER the @media below silently kills it.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Metrics as tokens on the shared positioned ancestor, so the mobile pass changes
+   ONE value and every derived measure follows. Declared on `.tn-cw-stage` rather
+   than `.tn-terminal` deliberately: it is the common positioned ancestor of the rail
+   and its flyouts, and it keeps these out of the `.tn-terminal` rule block that
+   tests/unit/terminal-tokens.test.ts parses. */
+.tn-terminal .tn-cw-stage {
+  --tnx-maprail-btn: 30px;
+  --tnx-maprail-gap: 6px;
+}
+
+.tn-terminal .tnx-maprail {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  right: 8px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tnx-maprail-gap);
+  /* The column is `none` and every child re-enables it, so the gaps between the
+     buttons stay clickable map — the convention `.tnx-stage-right` established. */
+  pointer-events: none;
+}
+
+.tn-terminal .tnx-maprail-group {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tn-terminal .tnx-maprail-btn {
+  pointer-events: auto;
+  width: var(--tnx-maprail-btn);
+  height: var(--tnx-maprail-btn);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  background: var(--tnx-panel);
+  color: var(--tnx-ink-dim);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r-sm);
+  box-shadow: var(--tnx-shadow-1);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.tn-terminal .tnx-maprail-btn:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+.tn-terminal .tnx-maprail-btn[aria-expanded="true"] {
+  color: var(--tnx-accent);
+  border-color: var(--tnx-accent);
+  background: var(--tnx-accent-soft);
+}
+.tn-terminal .tnx-maprail-btn:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
+/* One rule sizes all four glyphs, which is why RailIcons takes no size prop. */
+.tn-terminal .tnx-maprail-btn svg { width: 18px; height: 18px; display: block; }
+
+/* The flyout. A SIBLING of the button it belongs to, inside a relatively-positioned
+   group, so it emerges from its own row with no measurement, no ResizeObserver and
+   no map-level pointer listeners — which is how the hit-test budget set by the
+   one-shared-hit-test work stays intact.
+
+   `width: max-content` is what keeps the strip LATERAL. The group box is only as
+   wide as its button, so without it an absolutely-positioned flex row shrink-wraps
+   to that width and the View strip folds into a vertical column. */
+.tn-terminal .tnx-maprail-pop {
+  pointer-events: auto;
+  position: absolute;
+  right: calc(100% + var(--tnx-maprail-gap));
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: max-content;
+  max-width: min(560px, 70cqw);
+  padding: 5px;
+  min-height: var(--tnx-maprail-btn);
+  background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r);
+  box-shadow: var(--tnx-shadow-1);
+  animation: tnx-maprail-sweep 0.16s cubic-bezier(0.2, 0.7, 0.3, 1);
+  transform-origin: right center;
+}
+@keyframes tnx-maprail-sweep {
+  from { opacity: 0; transform: scaleX(0.82); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tnx-maprail-pop { animation: none; }
+}
+
+/* The button face inside a flyout. Carried over from `.tn-aoi-btn`, which this
+   replaces — same uppercase micro-label, same weight and tracking — plus the
+   painted pressed state `.tn-aoi-btn.is-on` never actually had. "Picking cameras"
+   used to rely on a glyph swap alone to say it was on. */
+.tn-terminal .tnx-maprail-act {
+  font: inherit;
+  font-size: var(--tnx-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  white-space: nowrap;
+  padding: 4px 8px;
+  cursor: pointer;
+  background: none;
+  color: var(--tnx-ink-dim);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r-sm);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.tn-terminal .tnx-maprail-act:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
+.tn-terminal .tnx-maprail-act[aria-pressed="true"],
+.tn-terminal .tnx-maprail-act[aria-checked="true"] {
+  color: var(--tnx-accent);
+  border-color: var(--tnx-accent);
+  background: var(--tnx-accent-soft);
+}
+.tn-terminal .tnx-maprail-act:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+
+.tn-terminal .tnx-maprail-seg { display: flex; align-items: center; gap: 4px; }
+.tn-terminal .tnx-maprail-rule {
+  width: 1px;
+  align-self: stretch;
+  background: var(--tnx-line-strong);
+  margin: 0 2px;
+  flex: none;
+}
+.tn-terminal .tnx-maprail-label {
+  font-size: var(--tnx-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--tnx-ink-ghost);
+  padding-left: 3px;
+}
+.tn-terminal .tnx-maprail-live {
+  font-size: var(--tnx-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tnx-accent);
+  line-height: 1.35;
+  padding: 0 3px;
+}
+.tn-terminal .tnx-maprail-note {
+  font-size: var(--tnx-fs-xs);
+  color: var(--tnx-ink-faint);
+  line-height: 1.35;
+  padding: 0 3px;
+  max-width: 26ch;
+}
+
+/* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
+   translateX(-50%)`, so it has to be flattened or it re-centres itself inside the
+   flyout instead of filling it. Restyled, never forked — one geocoder in the app.
+   Lifted from the deleted `.tnx-stage-search` rules. */
+.tn-terminal .tnx-maprail-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  width: min(360px, 60cqw);
+}
+.tn-terminal .tnx-maprail-search-pfx {
+  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tnx-accent); flex: none;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch {
+  position: static; transform: none; width: 100%; max-width: none; flex: 1; min-width: 0; padding: 0;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch-bar {
+  background: none; border: 0; box-shadow: none; border-radius: var(--tnx-r); padding: 4px 0; gap: 0;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch-icon { display: none; }
+.tn-terminal .tnx-maprail-search .tn-mapsearch-input {
+  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); font-family: inherit; min-height: 0;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
+.tn-terminal .tnx-maprail-search .tn-mapsearch-results {
+  margin-top: 5px; border-radius: var(--tnx-r); background: var(--tnx-glass-solid);
+  border: 1px solid var(--tnx-line-strong); box-shadow: none;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch-item {
+  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); padding: 5px 8px;
+}
+.tn-terminal .tnx-maprail-search .tn-mapsearch-item:hover { background: var(--tnx-accent-soft); }
+.tn-terminal .tnx-maprail-search .tn-mapsearch-item-meta,
+.tn-terminal .tnx-maprail-search .tn-mapsearch-status {
+  font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint);
+}
+
+/* A CONTAINER query, not a viewport one, and the difference is the whole point:
+   the Streets board sets the stage's `gridColumn` INLINE, so the stage can be
+   narrow inside a wide window. A viewport query cannot tell those apart and would
+   leave a 560px strip inside a 400px stage. The stage already declares
+   `container-type: inline-size; container-name: tnstage`. */
+@container tnstage (max-width: 620px) {
+  .tn-terminal .tnx-maprail-pop {
+    max-width: calc(100cqw - var(--tnx-maprail-btn) - 26px);
+  }
+  .tn-terminal .tnx-maprail-search { width: auto; flex: 1; min-width: 0; }
+}
+
+/* MOBILE — and the rail STAYS. `.tnx-stage-right` was hidden below 900px, which
+   meant restrict-to-area, pick cameras, draw an area and new wall did not exist on
+   a phone at all. The rail is four 44px buttons; hiding it would now also take the
+   basemap picker and the 2D/3D switch with it, which is a strictly bigger loss.
+   The polygon gesture is still awkward with a thumb — that is worth saying rather
+   than hiding the control, because hiding a control because it is awkward is
+   exactly how the area filter became unreachable the first time.
+
+   44px is the measured target from the touch pass, technique (a): real size, since
+   the rail is a column with room around it and does not need a transparent ::before.
+   THIS @media IS LAST IN THE BLOCK ON PURPOSE — see the header. */
+@media (max-width: 900px) {
+  .tn-terminal .tn-cw-stage { --tnx-maprail-btn: 44px; }
+  .tn-terminal .tnx-maprail { right: 6px; }
+  .tn-terminal .tnx-maprail-pop {
+    max-width: calc(100vw - var(--tnx-maprail-btn) - 24px);
+  }
+  .tn-terminal .tnx-maprail-act { min-height: 34px; }
+  .tn-terminal .tnx-maprail-search { width: auto; flex: 1; min-width: 0; }
+  /* iOS zooms the page when a focused input is under 16px. Carried over from the
+     deleted `.tnx-stage-search` mobile rule, where it was load-bearing. */
+  .tn-terminal .tnx-maprail-search .tn-mapsearch-input {
+    font-size: var(--tnx-fs-lg); min-height: 44px;
+  }
+}
+/* ── end stage rail ──────────────────────────────── */
