@@ -79,8 +79,16 @@ const chromium = await loadChromium();
 const CENTER = [-0.1276, 51.5072];
 const START_ZOOM = Number((argv.find((a) => a.startsWith("--start=")) || "--start=4").replace("--start=", ""));
 const WHEEL_STEPS = 24;
-const WHEEL_DELTA = -120; // negative = zoom in
+const DIR = (argv.find((a) => a.startsWith("--dir=")) || "--dir=in").replace("--dir=", "");
+if (DIR !== "in" && DIR !== "out") { console.error("--dir must be in|out"); process.exit(2); }
+const WHEEL_DELTA = DIR === "out" ? 120 : -120; // negative = zoom in
 const WHEEL_GAP_MS = 60;
+// Reproduce Blink re-firing hover as the map slides under a STATIONARY cursor.
+// Without this the profiler cannot see the delegated-listener storm at all: it
+// moves the mouse once, so every baseline in profile-out/ recorded ~26 queries
+// where production does thousands. Per-FRAME, not per-notch — the live capture
+// showed ~140 pointer events across a ~6 s gesture (~24/s), not 60.
+const HOVER = argv.includes("--hover");
 
 // Headless Chromium falls back to SwiftShader, which rasterises WebGL on the CPU and
 // manufactures long tasks that do not exist on a real GPU. --headed uses the actual
@@ -120,7 +128,7 @@ if (layerOff.satellites || layerOff.planes || layerOff.cameras) {
 // PerformanceObserver has to exist before the work happens, not after.
 await page.addInitScript(() => {
   window.__prof = {
-    setTerrain: 0, setTerrainSkipped: 0, qrf: 0, sourcedata: 0,
+    setTerrain: 0, setTerrainSkipped: 0, qrf: 0, sourcedata: 0, mousemoves: 0,
     frames: [], longtasks: [], contextLost: false, patched: false,
   };
   try {
@@ -211,7 +219,7 @@ const before = await page.evaluate(() => ({
 // Reset counters so we measure the GESTURE, not the setup.
 await page.evaluate(() => {
   const P = window.__prof;
-  P.setTerrain = 0; P.setTerrainSkipped = 0; P.qrf = 0; P.sourcedata = 0;
+  P.setTerrain = 0; P.setTerrainSkipped = 0; P.qrf = 0; P.sourcedata = 0; P.mousemoves = 0;
   P.frames.length = 0; P.longtasks.length = 0;
   P.t0 = performance.now();
 });
@@ -219,11 +227,26 @@ await page.evaluate(() => {
 // The gesture. Real wheel events through the input pipeline — a scripted easeTo
 // would not reproduce the per-frame `zoom` storm a user's wheel actually causes.
 const ceiling = ABLATIONS.includes("low-zoom") ? 11.5 : 99;
+const floor = 1.3;
 await page.mouse.move(720, 450);
+if (HOVER) {
+  await page.evaluate(() => {
+    const P = window.__prof;
+    const el = window.__map.getCanvasContainer();
+    P.hoverStop = false;
+    const pump = () => {
+      if (P.hoverStop) return;
+      el.dispatchEvent(new MouseEvent("mousemove", { clientX: 720, clientY: 450, bubbles: true }));
+      P.mousemoves++;
+      requestAnimationFrame(pump);
+    };
+    requestAnimationFrame(pump);
+  });
+}
 const wallStart = Date.now();
 for (let i = 0; i < WHEEL_STEPS; i++) {
   const z = await page.evaluate(() => window.__map.getZoom());
-  if (z >= ceiling) break;
+  if (DIR === "out" ? z <= floor : z >= ceiling) break;
   await page.mouse.wheel(0, WHEEL_DELTA);
   await page.waitForTimeout(WHEEL_GAP_MS);
 }
@@ -231,12 +254,14 @@ for (let i = 0; i < WHEEL_STEPS; i++) {
 await page.waitForFunction(() => window.__map.isMoving() === false, { timeout: 20000 }).catch(() => {});
 await page.waitForTimeout(1500);
 const wallMs = Date.now() - wallStart;
+if (HOVER) await page.evaluate(() => { window.__prof.hoverStop = true; });
 
 const raw = await page.evaluate(() => {
   const P = window.__prof;
   return {
     setTerrain: P.setTerrain, setTerrainSkipped: P.setTerrainSkipped,
     qrf: P.qrf, qrfMs: P.qrfMs, qrfByLayer: { ...P.qrfByLayer }, sourcedata: P.sourcedata,
+    mousemoves: P.mousemoves,
     frames: P.frames.slice(), longtasks: P.longtasks.slice(), t0: P.t0,
     contextLost: P.contextLost,
     zoom: window.__map.getZoom(),
@@ -260,7 +285,11 @@ const result = {
   base: BASE,
   renderMode: HEADED ? "headed-gpu" : "headless-swiftshader",
   at: new Date().toISOString(),
-  gesture: { wheelSteps: WHEEL_STEPS, delta: WHEEL_DELTA, gapMs: WHEEL_GAP_MS, wallMs },
+  gesture: { wheelSteps: WHEEL_STEPS, delta: WHEEL_DELTA, gapMs: WHEEL_GAP_MS, wallMs, dir: DIR, hover: HOVER },
+  mousemoveEvents: raw.mousemoves,
+  // THE number for the hover fix: 26 before (13 layers x enter+leave), <=1 after.
+  // Null without --hover, because a run with no pointer stream cannot measure it.
+  qrfPerMousemove: HOVER && raw.mousemoves > 0 ? +(raw.qrf / raw.mousemoves).toFixed(2) : null,
   zoom: { from: before.zoom, to: raw.zoom },
   setTerrainCalls: raw.setTerrain,
   setTerrainSkipped: raw.setTerrainSkipped,
@@ -295,6 +324,7 @@ const row = (k, v) => console.log(`  ${k.padEnd(26)} ${v}`);
 console.log(`  zoom ${result.zoom.from.toFixed(2)} → ${result.zoom.to.toFixed(2)}  in ${wallMs} ms`);
 row("setTerrain calls", `${result.setTerrainCalls}${result.setTerrainSkipped ? `  (${result.setTerrainSkipped} skipped by guard)` : ""}`);
 row("queryRenderedFeatures", `${result.queryRenderedFeatures}  (${result.queryRenderedFeaturesMs} ms total)`);
+if (HOVER) row("qRF per mousemove", `${result.qrfPerMousemove}  (${result.mousemoveEvents} pointer events)`);
 for (const [k, v] of Object.entries(result.queryRenderedFeaturesByLayer).sort((a, b) => b[1] - a[1]).slice(0, 4)) {
   row(`   ${k}`, v);
 }

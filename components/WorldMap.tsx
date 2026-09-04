@@ -61,6 +61,15 @@ import {
   resolveMapClickTarget,
   type MapClickHit,
 } from "@/lib/map/hitTest";
+import {
+  HOVER_QUERY_LAYERS,
+  HOVER_SETTLE_MS,
+  NO_HOVER,
+  hoverChanged,
+  resolveHover,
+  shouldHitTest,
+  type HoverState,
+} from "@/lib/map/hover";
 import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/geo/country";
 // The Terminal chrome owns both of these contracts, so they are imported rather than
 // re-declared here: the cursor event NAME (a second literal would drift the day one
@@ -460,7 +469,13 @@ export default function WorldMap() {
   // The cable route under the cursor — name + where to float it. Paired with the
   // SIGNAL_LINE_HOVER highlight so "which of these 697 lines am I about to open?"
   // is answered before the click rather than by it.
-  const [lineHover, setLineHover] = useState<{ x: number; y: number; label: string } | null>(null);
+  //
+  // Deliberately a ref and a direct DOM write, NOT React state. This is written
+  // from a pointer handler, and a setState here re-renders all of WorldMap — every
+  // <…Feed> child, every layer effect, the thumbnail pool — at pointer rate. The
+  // comment further down this file records a previous publisher removed for exactly
+  // that reason; this is the same hazard, so the tip owns one node and mutates it.
+  const lineTipRef = useRef<HTMLDivElement | null>(null);
 
   // Live-layer data is lifted into state from gating <…Feed> children so that a
   // hidden layer's hook (and its fetch/tick) is unmounted entirely — see the
@@ -1293,10 +1308,7 @@ export default function WorldMap() {
       const hit = pinsRef.current.pins.find((p) => Math.abs(p.lat - lat) < 1e-6 && Math.abs(p.lon - lon) < 1e-6);
       if (hit) pinsStore.setActive(hit.id);
     });
-    const pinEnter = () => { map.getCanvas().style.cursor = "pointer"; };
-    const pinLeave = () => { map.getCanvas().style.cursor = ""; };
-    map.on("mouseenter", PIN_DOT_LAYER, pinEnter);
-    map.on("mouseleave", PIN_DOT_LAYER, pinLeave);
+    // (cursor for user pins is owned by the shared hit-test at the end of this fn)
     map.on("click", SAT_LAYER, (e) => {
       const id = (e.features?.[0]?.properties as { id?: string })?.id;
       const sat = satsRef.current.find((s) => s.id === id);
@@ -1383,23 +1395,7 @@ export default function WorldMap() {
         overCountry: hits.some((h) => h.layer === COUNTRY_FILL_LAYER),
       });
     };
-    const clearLineHover = () => {
-      if (map.getLayer(SIGNAL_LINE_HOVER)) map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], "__none__"]);
-      setLineHover(null);
-    };
-    map.on("mousemove", SIGNAL_LINE_HIT, (e) => {
-      const f = lineFeatureAt(e.point);
-      const props = f?.properties as { id?: string; label?: string } | undefined;
-      if (!f || !props?.id) {
-        clearLineHover();
-        return;
-      }
-      map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], props.id]);
-      map.getCanvas().style.cursor = "pointer";
-      setLineHover({ x: e.point.x, y: e.point.y, label: props.label ?? "Cable" });
-    });
-    map.on("mouseleave", SIGNAL_LINE_HIT, clearLineHover);
-    map.on("movestart", clearLineHover);
+    // (cable highlight + tip are owned by the shared hit-test at the end of this fn)
     map.on("click", SIGNAL_LINE_HIT, (e) => {
       // The drawn-line handler above already owns a click that landed on the
       // geometry; this one exists for the near-misses it cannot see.
@@ -1422,38 +1418,92 @@ export default function WorldMap() {
       if (!f) return;
       overlay.open(buildCountryObject(f.properties as CountryProps, e.lngLat.lat, e.lngLat.lng));
     });
-    let hoveredCountry: number | string | undefined;
-    const clearCountryHover = () => {
-      if (hoveredCountry !== undefined) {
-        map.setFeatureState({ source: COUNTRY_SRC, id: hoveredCountry }, { hover: false });
-        hoveredCountry = undefined;
-      }
+    // ── ONE shared pointer hit-test ─────────────────────────────────────────
+    // This replaces 13 layer-scoped mouseenter/mouseleave/mousemove handlers.
+    // MapLibre implements those as DELEGATED mousemove listeners that each run a
+    // queryRenderedFeatures before deciding whether your handler fires, so a layer
+    // wired for enter+leave cost two queries on every pointer move — 26 per move
+    // across 13 layers. Blink re-fires hover as the map slides under a stationary
+    // cursor, so one wheel-zoom measured 3,653 queries / 10,665 ms of blocked main
+    // thread on production, in BOTH directions. See lib/map/hover.ts.
+    //
+    // Three reductions multiply here: 26 queries become 1, a rAF coalesces a burst
+    // of pointer events into a single test, and nothing runs at all while the
+    // camera is moving.
+    let hover: HoverState = NO_HOVER;
+    let hoverRaf = 0;
+    let pendingPoint: maplibregl.MapMouseEvent["point"] | null = null;
+    let movingUntil = 0;
+
+    const moveTip = (at: maplibregl.MapMouseEvent["point"]) => {
+      const tip = lineTipRef.current;
+      if (tip) tip.style.transform = "translate(" + at.x + "px," + at.y + "px)";
     };
-    map.on("mousemove", COUNTRY_FILL_LAYER, (e) => {
-      const f = e.features?.[0];
-      if (!f || f.id == null) return;
-      if (hoveredCountry !== f.id) {
-        clearCountryHover();
-        hoveredCountry = f.id;
-        map.setFeatureState({ source: COUNTRY_SRC, id: hoveredCountry }, { hover: true });
+
+    const applyHover = (next: HoverState, at: maplibregl.MapMouseEvent["point"] | null) => {
+      if (next.cursor !== hover.cursor) map.getCanvas().style.cursor = next.cursor;
+
+      if (next.country !== hover.country) {
+        if (hover.country !== null) map.setFeatureState({ source: COUNTRY_SRC, id: hover.country }, { hover: false });
+        if (next.country !== null) map.setFeatureState({ source: COUNTRY_SRC, id: next.country }, { hover: true });
       }
+
+      const tip = lineTipRef.current;
+      if (next.line === null) {
+        if (map.getLayer(SIGNAL_LINE_HOVER)) map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], "__none__"]);
+        if (tip) tip.hidden = true;
+      } else {
+        if (map.getLayer(SIGNAL_LINE_HOVER)) map.setFilter(SIGNAL_LINE_HOVER, ["==", ["get", "id"], next.line.id]);
+        if (tip) {
+          tip.textContent = next.line.label;
+          if (at) moveTip(at);
+          tip.hidden = false;
+        }
+      }
+      hover = next;
+    };
+
+    const clearHover = () => {
+      if (hoverRaf) { cancelAnimationFrame(hoverRaf); hoverRaf = 0; }
+      pendingPoint = null;
+      if (hoverChanged(hover, NO_HOVER)) applyHover(NO_HOVER, null);
+    };
+
+    const runHitTest = () => {
+      hoverRaf = 0;
+      const pt = pendingPoint;
+      pendingPoint = null;
+      if (!pt) return;
+      const layers = HOVER_QUERY_LAYERS.filter((id) => map.getLayer(id));
+      if (!layers.length) {
+        if (hoverChanged(hover, NO_HOVER)) applyHover(NO_HOVER, null);
+        return;
+      }
+      const next = resolveHover(map.queryRenderedFeatures(pt, { layers }).map((f) => {
+        const p = f.properties as { signalId?: unknown; id?: unknown; label?: unknown } | undefined;
+        return {
+          layer: f.layer.id,
+          signalId: typeof p?.signalId === "string" ? p.signalId : undefined,
+          featureId: typeof f.id === "string" || typeof f.id === "number" ? f.id : undefined,
+          id: typeof p?.id === "string" ? p.id : undefined,
+          label: typeof p?.label === "string" ? p.label : undefined,
+        };
+      }));
+      if (hoverChanged(hover, next)) applyHover(next, pt);
+      else if (next.line) moveTip(pt); // same cable, new cursor — move, do not re-decide
+    };
+
+    map.on("mousemove", (e) => {
+      if (!shouldHitTest({ moving: map.isMoving(), nowMs: performance.now(), movingUntilMs: movingUntil })) {
+        clearHover();
+        return;
+      }
+      pendingPoint = e.point;
+      if (!hoverRaf) hoverRaf = requestAnimationFrame(runHitTest);
     });
-    map.on("mouseleave", COUNTRY_FILL_LAYER, clearCountryHover);
-
-
-    const hoverLayers = [
-      CAM_LAYER, CAM_DOT_LAYER,
-      WEBCAM_LAYER, WEBCAM_DOT_LAYER,
-      PLANE_LAYER, SAT_LAYER, SIGNAL_LAYER, SIGNAL_ICON_LAYER, SIGNAL_LINE_LAYER, SIGNAL_FILL_LAYER,
-    ];
-    for (const layer of hoverLayers) {
-      map.on("mouseenter", layer, () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", layer, () => {
-        map.getCanvas().style.cursor = "";
-      });
-    }
+    map.on("mouseout", clearHover);
+    map.on("movestart", clearHover);
+    map.on("moveend", () => { movingUntil = performance.now() + HOVER_SETTLE_MS; });
   }, []);
 
   // --- Basemap load resilience ---------------------------------------------
@@ -2130,11 +2180,7 @@ export default function WorldMap() {
       {/* The hovered cable's name, floating at the cursor. Presentational only —
           the dossier it opens is the accessible surface, and a tooltip that
           tracks a pointer has no keyboard equivalent to announce. */}
-      {lineHover && (
-        <div className="tn-linetip" style={{ left: lineHover.x, top: lineHover.y }} aria-hidden>
-          {lineHover.label}
-        </div>
-      )}
+      <div ref={lineTipRef} className="tn-linetip" hidden aria-hidden />
 
       {/* Right-click "Add pin here" menu, positioned at the cursor over the map. */}
       {pinMenu && (

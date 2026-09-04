@@ -2568,8 +2568,13 @@ a { color: var(--tn-accent); }
    aim and one you gamble on. pointer-events:none so it can never eat the click
    it exists to enable; translated up-left of the cursor so it does not sit under
    the pointer tip. */
+/* The cursor offset lives in the margins, NOT in `transform`: the tip is positioned
+   by a direct `transform` write from the pointer handler (see lineTipRef in
+   WorldMap), so transform has to be free to carry the coordinates and compositing
+   them costs no layout. */
 .tn-linetip {
-  position: absolute; z-index: 7; pointer-events: none; transform: translate(14px, -34px);
+  position: absolute; z-index: 7; pointer-events: none;
+  left: 0; top: 0; margin: -34px 0 0 14px; will-change: transform;
   max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 4px 9px; border-radius: 8px; font-size: 12px; font-weight: 600;
   color: var(--tn-text); background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
