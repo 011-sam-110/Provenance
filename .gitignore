@@ -30,3 +30,5 @@ read*.json
 # Local perf profiling output (scripts/profile-map.mjs) and its isolated build dir
 profile-out/
 .next-perf/
+
+.env*

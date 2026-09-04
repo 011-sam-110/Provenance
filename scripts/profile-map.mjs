@@ -99,7 +99,27 @@ const browser = await chromium.launch({
   // Without this, performance.memory is bucketed to 5 MB and heap growth is unreadable.
   args: ["--enable-precise-memory-info"],
 });
+// A protected Vercel preview needs the caller's own short-lived development
+// token as an origin header. Read from the environment only — never a flag, so
+// the value cannot land in a shell history or a profile-out JSON.
+// Usage: npx vercel env pull, then run this script through `vercel env run`.
+const OIDC = process.env.VERCEL_OIDC_TOKEN;
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+if (OIDC) {
+  // Scope the header to the deployment ORIGIN ONLY. A context-wide
+  // extraHTTPHeaders sends it to every host, which makes the tile CDN requests
+  // non-simple, fails their CORS preflight, and silently profiles a map with no
+  // basemap - flattering, and wrong.
+  const origin = new URL(BASE).origin;
+  await context.route("**/*", (route) => {
+    const url = route.request().url();
+    if (url.startsWith(origin)) {
+      route.continue({ headers: { ...route.request().headers(), "x-vercel-trusted-oidc-idp-token": OIDC } });
+    } else {
+      route.continue();
+    }
+  });
+}
 const page = await context.newPage();
 
 // The boot veil and the guided tour both intercept input, and a gesture dispatched
