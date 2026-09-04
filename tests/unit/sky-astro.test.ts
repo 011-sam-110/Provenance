@@ -5,6 +5,7 @@ import {
   gmstDegrees,
   precessFromJ2000,
   projectSky,
+  projectSkyInto,
   skyBasis,
   stereographicScale,
   vectorToEquatorial,
@@ -298,5 +299,67 @@ describe("precessFromJ2000", () => {
   it("does nothing at J2000 itself", () => {
     const v = equatorialToVector(123, 45);
     expect(angularSeparationDeg(v, precessFromJ2000(v, J2000))).toBeLessThan(1e-4);
+  });
+});
+
+/**
+ * `projectSkyInto` exists ONLY to take the allocation out of the per-frame path —
+ * Starfield calls it once per catalogue star per tick.
+ *
+ * BE CLEAR ABOUT WHAT THIS DOES AND DOES NOT CATCH. `projectSky` is currently a
+ * thin wrapper over `projectSkyInto`, so for as long as that holds, this compares
+ * one implementation with itself and CANNOT see a bug in the shared body. That was
+ * checked rather than assumed: perturbing `out.x` by one part in 10^7 leaves these
+ * two cases green and is caught instead by "scales so the requested angle lands on
+ * the requested radius" above. The maths is guarded by those tests, not by this one.
+ *
+ * What this pins is the WRAPPER RELATIONSHIP, which is the thing most likely to be
+ * broken by a future edit: give `projectSky` its own copy of the maths again — an
+ * easy-looking revert, or a well-meant "inline it for speed" — and the two drift
+ * apart with only the hero's sky to show for it. It also covers two boundaries the
+ * cases above do not reach: the behind-the-camera cull and the zero-length
+ * direction. Equality is exact, not approximate: sharing an implementation means
+ * any difference at all is a divergence rather than drift.
+ */
+describe("projectSkyInto (the allocation-free path)", () => {
+  it("returns exactly what projectSky returns, across the sphere and past the cull", () => {
+    const basis = skyBasis({ lngDeg: 12, latDeg: 41, gmstDeg: 233, bearingDeg: 27 });
+    const scale = stereographicScale(60, 220);
+    const out = { x: 0, y: 0 };
+    let culled = 0;
+    let projected = 0;
+
+    for (let ra = 0; ra < 360; ra += 7) {
+      for (let dec = -87; dec <= 87; dec += 6) {
+        const v = equatorialToVector(ra, dec);
+        const want = projectSky(v, basis, scale);
+        const ok = projectSkyInto(v[0], v[1], v[2], basis, scale, out);
+
+        expect(ok).toBe(want !== null);
+        if (!want) {
+          culled += 1;
+          continue;
+        }
+        projected += 1;
+        expect(out.x).toBe(want.x);
+        expect(out.y).toBe(want.y);
+      }
+    }
+    // Guard the guard: a sweep that never projected anything, or never hit the
+    // behind-the-camera cull, would pass while proving nothing.
+    expect(projected).toBeGreaterThan(500);
+    expect(culled).toBeGreaterThan(0);
+  });
+
+  it("matches projectSky's degenerate branch for a zero-length direction", () => {
+    const basis = skyBasis({ lngDeg: 0, latDeg: 0, gmstDeg: 0 });
+    const scale = stereographicScale(60, 100);
+    const out = { x: 0, y: 0 };
+    const want = projectSky([0, 0, 0], basis, scale);
+    expect(projectSkyInto(0, 0, 0, basis, scale, out)).toBe(want !== null);
+    if (want) {
+      expect(out.x).toBe(want.x);
+      expect(out.y).toBe(want.y);
+    }
   });
 });

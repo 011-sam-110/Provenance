@@ -240,14 +240,48 @@ export function stereographicScale(degrees: number, pixels: number): number {
  * folding the far half of the sky back into the frame.
  */
 export function projectSky(v: Vec3, basis: SkyBasis, scale: number): SkyPoint | null {
-  const n = normalise(v);
-  const f = dot(n, basis.forward);
-  if (f <= -0.999) return null; // at or past the projection pole
+  const out = { x: 0, y: 0 };
+  return projectSkyInto(v[0], v[1], v[2], basis, scale, out) ? out : null;
+}
+
+/**
+ * `projectSky` with no allocation, for per-frame loops over a whole catalogue.
+ *
+ * Same maths, same cull, same numbers — `projectSky` is now a thin wrapper over
+ * this, so the unit tests covering it cover both. The difference is only what the
+ * heap sees. The tuple form allocates THREE objects per call: the `Vec3` the
+ * caller packs, the fresh unit vector `normalise` returns, and the `SkyPoint`
+ * result. Starfield.tsx calls it once per catalogue star per tick — 8,920 stars at
+ * its 30fps cap is ~268k calls and ~800k short-lived objects a second, which is GC
+ * pressure on the main thread for the whole time the hero is on screen.
+ *
+ * Takes loose components rather than a `Vec3` because the callers hold their data
+ * in a flat `Float64Array`; packing a tuple to pass it would put back the very
+ * allocation this exists to remove. Writes into a caller-owned `out` and returns
+ * false where `projectSky` returns null.
+ */
+export function projectSkyInto(
+  vx: number,
+  vy: number,
+  vz: number,
+  basis: SkyBasis,
+  scale: number,
+  out: { x: number; y: number },
+): boolean {
+  const m = Math.hypot(vx, vy, vz);
+  // Matches `normalise`'s degenerate branch: a zero-length direction becomes +x.
+  const nx = m > 0 ? vx / m : 1;
+  const ny = m > 0 ? vy / m : 0;
+  const nz = m > 0 ? vz / m : 0;
+  const fwd = basis.forward;
+  const f = nx * fwd[0] + ny * fwd[1] + nz * fwd[2];
+  if (f <= -0.999) return false; // at or past the projection pole
   const k = (2 * scale) / (1 + f);
-  return {
-    x: k * dot(n, basis.right),
-    // Screen y grows downward; the basis is in world orientation, so flip here and
-    // only here.
-    y: -k * dot(n, basis.up),
-  };
+  const r = basis.right;
+  const u = basis.up;
+  out.x = k * (nx * r[0] + ny * r[1] + nz * r[2]);
+  // Screen y grows downward; the basis is in world orientation, so flip here and
+  // only here.
+  out.y = -k * (nx * u[0] + ny * u[1] + nz * u[2]);
+  return true;
 }

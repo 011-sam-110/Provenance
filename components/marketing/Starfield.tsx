@@ -7,7 +7,7 @@ import {
   precessFromJ2000,
   skyBasis,
   stereographicScale,
-  projectSky,
+  projectSkyInto,
   type Vec3,
   type SkyBasis,
 } from "@/lib/sky/astro";
@@ -289,6 +289,32 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
     let w = 0;
     let h = 0;
 
+    // WHY THIS GATE EXISTS. `draw` projects all 8,920 catalogue stars and fills a
+    // path (plus a radial-gradient halo for the bright ones) on every tick. That is
+    // the single most expensive thing on the landing page, and none of it is worth
+    // anything once the hero has scrolled away. Measured on prod before this gate,
+    // at 4x CPU throttle: parked at the FOOT of the page — hero entirely off screen
+    // — the main thread was still 98% busy, and this file was still the top frame at
+    // 17.9% of self time. Every one of those pixels was painted into a canvas nobody
+    // could see. The observer costs one callback per intersection change.
+    //
+    // `onScreen` starts false: the first IntersectionObserver callback fires before
+    // paint and flips it, so a hero that IS in view loses nothing.
+    let onScreen = false;
+    const io = new IntersectionObserver(
+      (entries) => { for (const e of entries) onScreen = e.isIntersecting; },
+      // A whole viewport of margin: start drawing just before the hero scrolls back
+      // in, so it is never caught mid-fade with an empty sky.
+      { rootMargin: "100% 0px" },
+    );
+    io.observe(canvas);
+
+    // rAF alone already throttles a background tab to ~1fps, but that still wakes the
+    // whole projection loop once a second on a machine the user has walked away from.
+    // HeroGlobe.tsx pauses on the same signal (see its `onVis`); this matches it.
+    const onVis = () => { if (!document.hidden) last = 0; };
+    document.addEventListener("visibilitychange", onVis);
+
     function resize() {
       if (!canvas) return;
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -421,9 +447,26 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       refreshPrecession(new Date());
     }
 
-    function projectAt(dirs: Float64Array, i: number, basis: SkyBasis, scale: number) {
-      const v: Vec3 = [dirs[i * 3], dirs[i * 3 + 1], dirs[i * 3 + 2]];
-      return projectSky(v, basis, scale);
+    // Two scratch points, reused for the whole frame. The pair exists because the
+    // Milky Way and the constellation lines each need two projected ends live at
+    // once; the star loop only ever uses the first.
+    const ptA = { x: 0, y: 0 };
+    const ptB = { x: 0, y: 0 };
+
+    // Reads the direction straight out of the flat Float64Array and writes the
+    // result into `out`. The old form packed a `Vec3` tuple per call and returned a
+    // fresh `SkyPoint`, which — across 8,920 stars at the 30fps cap below — was
+    // roughly 800k short-lived objects a second of GC pressure on the main thread,
+    // for the entire time the hero was on screen. `projectSkyInto` is the same
+    // maths; `projectSky` is now a wrapper over it, so the astro tests cover both.
+    function projectAt(
+      dirs: Float64Array,
+      i: number,
+      basis: SkyBasis,
+      scale: number,
+      out: { x: number; y: number },
+    ): boolean {
+      return projectSkyInto(dirs[i * 3], dirs[i * 3 + 1], dirs[i * 3 + 2], basis, scale, out);
     }
 
     function drawMilkyWay(basis: SkyBasis, scale: number, cx: number, cy: number) {
@@ -436,13 +479,12 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       const maxJump = Math.max(w, h) * 2 + 400;
       for (let i = 0; i < mwCount; i++) {
         const j = (i + 1) % mwCount;
-        const p0 = projectAt(milkyDirs, i, basis, scale);
-        const p1 = projectAt(milkyDirs, j, basis, scale);
-        if (!p0 || !p1) continue;
-        const x0 = cx + p0.x;
-        const y0 = cy + p0.y;
-        const x1 = cx + p1.x;
-        const y1 = cy + p1.y;
+        if (!projectAt(milkyDirs, i, basis, scale, ptA)) continue;
+        if (!projectAt(milkyDirs, j, basis, scale, ptB)) continue;
+        const x0 = cx + ptA.x;
+        const y0 = cy + ptA.y;
+        const x1 = cx + ptB.x;
+        const y1 = cy + ptB.y;
         if (Math.abs(x1 - x0) > maxJump || Math.abs(y1 - y0) > maxJump) continue;
         // Both ends off the same side, well past it — skip drawing a segment
         // that never touches the visible canvas at all.
@@ -473,10 +515,9 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       const reduceMotion = reduce.matches;
       const margin = 3;
       for (let i = 0; i < count; i++) {
-        const p = projectAt(starDirs, i, basis, scale);
-        if (!p) continue;
-        const x = cx + p.x;
-        const y = cy + p.y;
+        if (!projectAt(starDirs, i, basis, scale, ptA)) continue;
+        const x = cx + ptA.x;
+        const y = cy + ptA.y;
         if (x < -margin || x > w + margin || y < -margin || y > h + margin) continue;
 
         const twinkle = reduceMotion ? 1 : 0.72 + 0.28 * Math.sin(timeSec * speed[i] + phase[i]);
@@ -511,13 +552,12 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       ctx.strokeStyle = `rgba(210, 224, 255, ${CONSTELLATION_LINE_ALPHA})`;
       ctx.lineWidth = CONSTELLATION_LINE_WIDTH;
       for (const [a, b] of lines) {
-        const pa = projectAt(starDirs, a, basis, scale);
-        const pb = projectAt(starDirs, b, basis, scale);
-        if (!pa || !pb) continue;
-        const xa = cx + pa.x;
-        const ya = cy + pa.y;
-        const xb = cx + pb.x;
-        const yb = cy + pb.y;
+        if (!projectAt(starDirs, a, basis, scale, ptA)) continue;
+        if (!projectAt(starDirs, b, basis, scale, ptB)) continue;
+        const xa = cx + ptA.x;
+        const ya = cy + ptA.y;
+        const xb = cx + ptB.x;
+        const yb = cy + ptB.y;
         const aOn = xa > -margin && xa < w + margin && ya > -margin && ya < h + margin;
         const bOn = xb > -margin && xb < w + margin && yb > -margin && yb < h + margin;
         if (!aOn || !bOn) continue;
@@ -531,6 +571,9 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
     let last = 0;
     function draw(t: number) {
       raf = window.requestAnimationFrame(draw);
+      // Off screen or in a hidden tab: keep the loop alive so it resumes instantly,
+      // but do no projection, no fill and — the expensive part — no layout read.
+      if (!onScreen || document.hidden) return;
       if (t - last < 33) return; // ~30fps is plenty for a twinkle
       last = t;
       if (!ctx || !canvas) return;
@@ -602,6 +645,8 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       disposed = true;
       window.cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, []);
 

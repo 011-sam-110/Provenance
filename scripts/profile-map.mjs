@@ -9,6 +9,7 @@
 // Run:  node scripts/profile-map.mjs [baseUrl] [--headed] [--start=z] [--ablate=a,b] [--label=name]
 //       node scripts/profile-map.mjs http://localhost:3080 --headed
 //       node scripts/profile-map.mjs http://localhost:3080 --headed --start=11
+//       node scripts/profile-map.mjs --headed --idle=14 --ablate=no-spin   (idle cost)
 //
 // USE --headed FOR ANYTHING YOU INTEND TO BELIEVE. Headless Chromium falls back to
 // SwiftShader, which rasterises WebGL on the CPU: it reported ~33 s of long tasks
@@ -27,6 +28,31 @@
 //   no-satellites  satellites layer off (kills the 1 Hz re-render)
 //   no-planes      planes layer off
 //   no-cameras     cameras layer off
+//   no-spin        neutralise the calm idle rotation (WorldMap's setCenter rAF loop)
+//
+// `no-spin` is the ablation for "why does the map feel heavy when I am not touching
+// it". The idle rotation moves the camera every frame, and a moving camera means
+// MapLibre re-renders continuously — matrices, style-expression evaluation, the lot.
+// Measured against prod, `--idle=14 --start=3`, headed on an Arc iGPU:
+//
+//                      frames rendered   sourcedata   long tasks
+//     baseline                     810          123    1 (62 ms)
+//     --ablate=no-spin               0            0            0
+//
+// 810 full renders in fourteen seconds with nobody touching the map. Main-thread
+// BUSY over the same window: 99.5% -> 44.8% at 4x CPU throttle, 26.1% -> 6.2%
+// unthrottled. So on a mid-range machine the console has no headroom left at rest,
+// which is why interaction feels rough rather than the interaction itself being slow.
+//
+// It does NOT scale with how often setCenter is called: throttling the loop to 30fps
+// and 20fps measured 99.4% and 99.6% busy, i.e. unchanged. Movement is the cost, not
+// the call, and only not-moving is cheaper.
+//
+// USE --start=3 (OR LOWER) WITH THIS ABLATION. The default start zoom is 4 and
+// WorldMap's guard is `getZoom() < SPIN_MAX_ZOOM` with SPIN_MAX_ZOOM = 4, so the
+// default parks the camera exactly ON the boundary where the spin is already off.
+// The first run of this ablation was done that way and reported 0 frames for BOTH
+// arms — a real null result in appearance, and measuring nothing in fact.
 //
 // Output: one JSON per run under profile-out/, plus a terminal summary.
 
@@ -45,7 +71,7 @@ mkdirSync(OUT, { recursive: true });
 
 const KNOWN = new Set([
   "terrain-guard", "terrain-off", "no-blur", "low-zoom",
-  "no-satellites", "no-planes", "no-cameras",
+  "no-satellites", "no-planes", "no-cameras", "no-spin",
 ]);
 for (const a of ABLATIONS) {
   if (!KNOWN.has(a)) {
@@ -89,6 +115,12 @@ const WHEEL_GAP_MS = 60;
 // where production does thousands. Per-FRAME, not per-notch — the live capture
 // showed ~140 pointer events across a ~6 s gesture (~24/s), not 60.
 const HOVER = argv.includes("--hover");
+// --idle=<seconds> replaces the wheel gesture with a do-nothing window. The console
+// spends most of its life here — nobody touching it, the calm rotation running — and
+// it is the ONLY gesture on which `no-spin` means anything: every wheel step calls
+// markInteract, which suppresses the spin for IDLE_RESUME_MS anyway, so a zoom run
+// ablates something that was already switched off and honestly reports no difference.
+const IDLE_S = Number((argv.find((a) => a.startsWith("--idle=")) || "").replace("--idle=", "")) || 0;
 
 // Headless Chromium falls back to SwiftShader, which rasterises WebGL on the CPU and
 // manufactures long tasks that do not exist on a real GPU. --headed uses the actual
@@ -143,6 +175,30 @@ if (layerOff.satellites || layerOff.planes || layerOff.cameras) {
       ships: false, webcams: false, weather: false, countries: true };
     localStorage.setItem("tn.layers.v1", JSON.stringify({ v: 1, d }));
   }, layerOff);
+}
+
+// Neutralise the idle spin by refusing to SCHEDULE it. WorldMap's loop re-arms
+// itself from inside its own callback, so declining the first rAF ends it for good,
+// and nothing else on the page is touched — same build, same bundle, one behaviour
+// removed. Matching on `setCenter(` survives minification because it is a property
+// access on the MapLibre map, not a local the minifier may rename.
+if (ABLATIONS.includes("no-spin")) {
+  await page.addInitScript(() => {
+    const raf = window.requestAnimationFrame.bind(window);
+    let fakeId = 1e7;
+    window.__spinBlocked = 0;
+    window.requestAnimationFrame = (cb) => {
+      try {
+        if (typeof cb === "function" && /setCenter\(/.test(Function.prototype.toString.call(cb))) {
+          window.__spinBlocked += 1;
+          return fakeId++;
+        }
+      } catch {
+        /* a cross-origin or native callback cannot be stringified; let it through */
+      }
+      return raf(cb);
+    };
+  });
 }
 
 // PerformanceObserver has to exist before the work happens, not after.
@@ -264,21 +320,36 @@ if (HOVER) {
   });
 }
 const wallStart = Date.now();
-for (let i = 0; i < WHEEL_STEPS; i++) {
-  const z = await page.evaluate(() => window.__map.getZoom());
-  if (DIR === "out" ? z <= floor : z >= ceiling) break;
-  await page.mouse.wheel(0, WHEEL_DELTA);
-  await page.waitForTimeout(WHEEL_GAP_MS);
+if (IDLE_S > 0) {
+  // Park the pointer off the map first: `pointermove` over the canvas holds the spin
+  // off, so measuring idle with the cursor sitting on the map measures the opposite
+  // of what it claims to. Then wait out IDLE_RESUME_MS before the window opens.
+  await page.mouse.move(4, 4);
+  await page.waitForTimeout(5000);
+  await page.evaluate(() => { const P = window.__prof; P.frames.length = 0; P.longtasks.length = 0; });
+  await page.waitForTimeout(IDLE_S * 1000);
+} else {
+  for (let i = 0; i < WHEEL_STEPS; i++) {
+    const z = await page.evaluate(() => window.__map.getZoom());
+    if (DIR === "out" ? z <= floor : z >= ceiling) break;
+    await page.mouse.wheel(0, WHEEL_DELTA);
+    await page.waitForTimeout(WHEEL_GAP_MS);
+  }
+  // Let the last inertial zoom and its tile/cluster work finish.
+  await page.waitForFunction(() => window.__map.isMoving() === false, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1500);
 }
-// Let the last inertial zoom and its tile/cluster work finish.
-await page.waitForFunction(() => window.__map.isMoving() === false, { timeout: 20000 }).catch(() => {});
-await page.waitForTimeout(1500);
 const wallMs = Date.now() - wallStart;
 if (HOVER) await page.evaluate(() => { window.__prof.hoverStop = true; });
 
 const raw = await page.evaluate(() => {
   const P = window.__prof;
   return {
+    // Reported ALWAYS, not only under the ablation, so `no-spin: 0` on an ablated run
+    // reads as "this ablation matched nothing" rather than as a genuine null result.
+    // The match is on minified output; a MapLibre or bundler change could quietly stop
+    // it hitting, and the numbers would then look like a finding instead of a no-op.
+    spinBlocked: window.__spinBlocked ?? null,
     setTerrain: P.setTerrain, setTerrainSkipped: P.setTerrainSkipped,
     qrf: P.qrf, qrfMs: P.qrfMs, qrfByLayer: { ...P.qrfByLayer }, sourcedata: P.sourcedata,
     mousemoves: P.mousemoves,
@@ -302,10 +373,13 @@ const ltWorst = raw.longtasks.reduce((a, t) => Math.max(a, t.dur), 0);
 const result = {
   label: LABEL,
   ablations: ABLATIONS,
+  spinBlocked: raw.spinBlocked,
   base: BASE,
   renderMode: HEADED ? "headed-gpu" : "headless-swiftshader",
   at: new Date().toISOString(),
-  gesture: { wheelSteps: WHEEL_STEPS, delta: WHEEL_DELTA, gapMs: WHEEL_GAP_MS, wallMs, dir: DIR, hover: HOVER },
+  gesture: IDLE_S > 0
+    ? { kind: "idle", idleSeconds: IDLE_S, wallMs, hover: HOVER }
+    : { kind: "wheel", wheelSteps: WHEEL_STEPS, delta: WHEEL_DELTA, gapMs: WHEEL_GAP_MS, wallMs, dir: DIR, hover: HOVER },
   mousemoveEvents: raw.mousemoves,
   // THE number for the hover fix: 26 before (13 layers x enter+leave), <=1 after.
   // Null without --hover, because a run with no pointer stream cannot measure it.

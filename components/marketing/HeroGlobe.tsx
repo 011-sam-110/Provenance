@@ -455,10 +455,26 @@ export default function HeroGlobe({
     function spinLoop() {
       if (disposed) return;
       spin = window.requestAnimationFrame(spinLoop);
-      if (paused || reduce.matches || !map.loaded()) return;
+      if (paused || offScreen || reduce.matches || !map.loaded()) return;
       const c = map.getCenter();
       map.jumpTo({ center: [c.lng + 0.035, c.lat] });
     }
+
+    // Scrolled past the hero, a drifting globe is a full MapLibre re-render per frame
+    // that nobody can see. Measured on prod at the FOOT of the landing page, before
+    // this gate: `calculatePosMatrix` was still 5.2% of main-thread self time with the
+    // hero entirely off screen.
+    //
+    // This is a SEPARATE flag from `paused` on purpose. `paused` is owned by the
+    // pointer/drag/visibility handlers, and `release()` resets it to `document.hidden`
+    // — so parking the off-screen state in it would let a stray pointerleave restart
+    // the drift under a hero that is nowhere near the viewport.
+    let offScreen = false;
+    const vis = new IntersectionObserver(
+      (entries) => { for (const e of entries) offScreen = !e.isIntersecting; },
+      { rootMargin: "100% 0px" },
+    );
+    vis.observe(el);
 
     // Pause the drift while the tab is hidden or the pointer is on the globe, so a
     // backgrounded hero costs nothing and hovering to read a label does not fight
@@ -496,11 +512,24 @@ export default function HeroGlobe({
       const title = hits[0]?.properties?.title;
       if (typeof title === "string" && title) say(title);
     });
-    map.on("mousemove", (e) => {
-      const hits = map.queryRenderedFeatures(e.point, {
+    // Coalesced to one hit-test per FRAME, not one per pointer event. A mouse
+    // delivers moves faster than the compositor paints, and each of these is a
+    // queryRenderedFeatures across four layers — the same storm that was taken out of
+    // the console's map in #154. Only the newest point matters for a cursor shape, so
+    // dropping the intermediate ones changes nothing a user can see.
+    let hoverPt: maplibregl.Point | null = null;
+    let hoverRaf = 0;
+    const runHover = () => {
+      hoverRaf = 0;
+      if (disposed || !hoverPt) return;
+      const hits = map.queryRenderedFeatures(hoverPt, {
         layers: DATA_LAYERS.filter((id) => map.getLayer(id)),
       });
       map.getCanvas().style.cursor = hits.length ? "pointer" : touch ? "" : "grab";
+    };
+    map.on("mousemove", (e) => {
+      hoverPt = e.point;
+      if (!hoverRaf) hoverRaf = window.requestAnimationFrame(runHover);
     });
 
     return () => {
@@ -511,6 +540,8 @@ export default function HeroGlobe({
       if (satTimer) clearInterval(satTimer);
       if (resume) clearTimeout(resume);
       if (spin) cancelAnimationFrame(spin);
+      if (hoverRaf) cancelAnimationFrame(hoverRaf);
+      vis.disconnect();
       el.removeEventListener("pointerenter", onEnter);
       el.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVis);
