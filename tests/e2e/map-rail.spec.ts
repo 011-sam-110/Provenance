@@ -232,8 +232,16 @@ test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page })
 test("shots", async ({ page }) => {
   // Viewport, not fullPage: the map animates behind the board and a fullPage
   // capture reframes the page to catch it mid-flight.
+  //
+  // AND WAIT FOR THE MAP FIRST, which the earlier version of this test did not.
+  // It only ever ran against a local dev server, where the tiles were already
+  // warm; run against a remote deployment it captured the app's own "Basemap is
+  // slow to load — retrying" state, which dims the whole stage, and produced a
+  // blank map with the flyout faded almost to nothing. The assertions still
+  // passed, because the flyout WAS there — it was the screenshot that lied.
   const rail = page.locator(RAIL);
   await page.setViewportSize({ width: 1440, height: 900 });
+  await mapReady(page);
   await rail.getByRole("button", { name: VIEW }).click();
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-desktop.png" });
