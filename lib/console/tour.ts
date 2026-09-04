@@ -254,7 +254,7 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
   {
     id: "map",
     title: "The map",
-    summary: "Search, the legend, the area filter and pins",
+    summary: "Search, the area filter and pins",
     icon: "◉",
     steps: [
       {
@@ -272,14 +272,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         body:
           "Type any place name — a city, a street, an airport — and pick a result to fly there and drop a pin. Press / from anywhere in the console to jump into this box.",
         placement: "bottom",
-      },
-      {
-        id: "map-legend",
-        target: ".tnx-stage-legend",
-        title: "The legend",
-        body:
-          "It lists the layers that are on right now, in the colours the map is actually painting them. Cameras are coloured by source region, aircraft by type, satellites by category, and each signal layer brings its own — so the key is built from what is on screen rather than fixed in advance.",
-        placement: "left",
       },
       {
         id: "map-area",

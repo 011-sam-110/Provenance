@@ -188,6 +188,11 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   //   * "basemap buttons"                             (.tnx-basemaps)
   //   * "Solo — hide the widgets"                     (.tn-solo-btn)
   //
+  // AND A SEVENTH, in the same change and for the same reason: the stage's layer
+  // key ("map legend", .tnx-stage-legend). That one is NOT a button that moved to
+  // ⌘K — the key is simply gone, and nothing replaces what it did. See StageBar.tsx
+  // for what that costs. It is the seventh entry, which is what takes 44 to 43.
+  //
   // The first three went with the band itself. The next three were painted in that
   // band and went with it too — Solo is a genuine removal (its store went with the
   // button, since nothing else could set it), while the projection switch and the
@@ -202,7 +207,6 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   // would double-count that single step and quietly inflate the coverage figure.
   { control: "restrict results to area", via: ".tn-aoi" },
   { control: "map search box", via: ".tnx-stage-search" },
-  { control: "map legend", via: ".tnx-stage-legend" },
   // The cursor coordinate readout went with the stage's 22px bar and has no second
   // home, so it is not listed. WorldMap's `tn-map-cursor` publisher went with it.
   { control: "world-clock bar", via: ".tnx-stage-foot" },
@@ -266,7 +270,7 @@ test("the coverage manifest is not padded with selectors the tour never uses", (
   // two single-key shortcuts, the breaking banner's Read-article and dismiss pair, SEL,
   // the live ticker, the keyboard-hint strip, and the cursor coordinate readout.
   //
-  // 50 → 44: the FEED HEALTH band was removed, taking six more — the three health-cell
+  // 50 → 43: the FEED HEALTH band was removed, taking six more — the three health-cell
   // entries, the 3D/2D projection switch, the basemap buttons and Solo. Three of those
   // six are true removals of capability (Solo); the other three lost only their
   // on-screen buttons and remain reachable from ⌘K, which is already represented by the
@@ -277,10 +281,10 @@ test("the coverage manifest is not padded with selectors the tour never uses", (
   // A manifest still listing removed controls would fail the test ABOVE this one, which
   // checks every entry against a class the app actually renders — the two guards do
   // opposite jobs and both have to be satisfied honestly. Measured after the fact, not
-  // chosen to pass: 44 entries, 41 distinct selectors.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(44);
+  // chosen to pass: 43 entries, 40 distinct selectors.
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(43);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
-  expect(vias.size).toBeGreaterThanOrEqual(41);
+  expect(vias.size).toBeGreaterThanOrEqual(40);
 });
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */

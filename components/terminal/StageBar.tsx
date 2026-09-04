@@ -56,17 +56,12 @@
 // .tnx-stage-search .tn-mapsearch-item-meta,
 // .tnx-stage-search .tn-mapsearch-status { font-size:9px; color:var(--tnx-ink-faint); }
 //
-// RIGHT-HAND STACK — legend, then the area filter under it
+// RIGHT-HAND STACK — the area filter, and the camera picker under it
 // .tnx-stage-right      position:absolute; top:30px; right:8px; z-index:6; width:200px;
 //                       display:flex; flex-direction:column; align-items:stretch; gap:6px;
 //                       pointer-events:none;   /* children re-enable it */
-// .tnx-stage-legend     padding:5px 7px; font-size:8.5px; letter-spacing:.05em;
-//                       background:rgba(8,11,15,.85); border:1px solid var(--tnx-line);
-//                       color:var(--tnx-ink-dim); pointer-events:auto;
-// .tnx-legend-row       display:flex; align-items:center; gap:6px; line-height:14px;
-//                       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-// .tnx-legend-swatch    width:6px; height:6px; flex:none;   /* background set inline */
-// .tnx-legend-more      color:var(--tnx-ink-ghost);
+//   /* The .tnx-stage-legend / .tnx-legend-* rules that used to be specified here are
+//      deleted from globals.css along with the key itself. */
 //
 // CLOCK BAR (restyle of components/console/WorldClock)
 // .tnx-stage-foot       position:absolute; left:0; right:0; bottom:0; height:24px; z-index:6;
@@ -104,18 +99,7 @@
 //                                              color:var(--tnx-ink-ghost); }
 // .tn-terminal .maplibregl-ctrl-attrib a     { color:var(--tnx-ink-faint); }
 
-import { useMemo } from "react";
 import { useShellLayout } from "@/lib/console/store";
-import { useLayers } from "@/lib/layers";
-import { SIGNALS } from "@/lib/signals/registry";
-import { useSignals } from "@/lib/signals/store";
-import {
-  CAMERA_OFFLINE_COLOR,
-  CAMERA_REGIONS,
-  PLANE_META,
-  SAT_META,
-  WEBCAM_COLOR,
-} from "@/lib/icons/svg";
 import AoiControl from "@/components/console/AoiControl";
 import CameraPickControl from "@/components/console/CameraPickControl";
 import CameraTray from "@/components/console/CameraTray";
@@ -141,128 +125,24 @@ export function focusStageSearch(): boolean {
   return true;
 }
 
-interface LegendRow {
-  key: string;
-  label: string;
-  /** A CSS background value — a solid colour, or a hard-stop gradient for a family. */
-  swatch: string;
-  tip: string;
-}
-
-/**
- * A swatch for a class the map paints in MORE than one colour.
- *
- * Hard stops, not a blend: a gradient that fades reads as one hue with an artefact,
- * while three flat bands read as "this class is colour-coded". Every stop is a real
- * colour taken from the same table the map's icons are built from, so the legend
- * cannot claim a colour the map does not use.
- */
-function familySwatch(colors: readonly string[]): string {
-  const step = 100 / colors.length;
-  const stops = colors.map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`);
-  return `linear-gradient(90deg, ${stops.join(", ")})`;
-}
-
-/** How many rows the legend shows before collapsing the rest into a "+N MORE". */
-const MAX_LEGEND_ROWS = 9;
-
-/**
- * The legend is DERIVED, not decorative.
- *
- * The obvious build — a fixed list of classes with fixed swatches — would be wrong
- * within a week and misleading immediately: cameras are coloured by region (11
- * feeds), satellites by category, planes by aircraft type, and every signal layer
- * carries its own colour in the registry. A static swatch would assert a colour the
- * map does not paint. So the legend lists the layers that are ON right now, with the
- * colours those layers are actually drawn in.
- */
-function useLegendRows(): LegendRow[] {
-  const layers = useLayers();
-  const signals = useSignals();
-  return useMemo(() => {
-    const rows: LegendRow[] = [];
-    if (layers.cameras) {
-      rows.push({
-        key: "cameras",
-        label: "CAMERAS",
-        swatch: familySwatch(CAMERA_REGIONS.slice(0, 4).map((r) => r.color)),
-        tip: "Road CCTV. Dot colour encodes the source region — a cyan/green family across 11 feeds.",
-      });
-      rows.push({
-        key: "cameras-offline",
-        label: "— OFFLINE",
-        swatch: CAMERA_OFFLINE_COLOR,
-        tip: "A camera whose feed is not answering renders in muted slate rather than its region colour, so a dead feed reads as dead.",
-      });
-    }
-    if (layers.planes) {
-      rows.push({
-        key: "planes",
-        label: "AIRCRAFT",
-        swatch: familySwatch(Object.values(PLANE_META).map((m) => m.color)),
-        tip: "Aircraft, coloured by type: airliner, regional, light, helicopter, on-ground.",
-      });
-    }
-    if (layers.satellites) {
-      rows.push({
-        key: "satellites",
-        label: "SATELLITES",
-        swatch: familySwatch([
-          SAT_META.starlink.color,
-          SAT_META.navigation.color,
-          SAT_META.weather.color,
-          SAT_META["earth-observation"].color,
-        ]),
-        tip: "Satellites, coloured by category across a violet→blue family; the ISS is picked out in white.",
-      });
-    }
-    if (layers.webcams) {
-      rows.push({
-        key: "webcams",
-        label: "WEBCAMS",
-        swatch: WEBCAM_COLOR,
-        tip: "Public webcams — a distinct layer from road CCTV, hence its own rose hue.",
-      });
-    }
-    for (const s of SIGNALS) {
-      if (signals[s.id] !== true) continue;
-      rows.push({
-        key: `signal:${s.id}`,
-        label: s.label.toUpperCase(),
-        swatch: s.color,
-        tip: `${s.label} — ${s.group}. ${s.attribution}`,
-      });
-    }
-    return rows;
-  }, [layers, signals]);
-}
-
-function StageLegend() {
-  const rows = useLegendRows();
-  const shown = rows.slice(0, MAX_LEGEND_ROWS);
-  const hidden = rows.length - shown.length;
-  return (
-    <div className="tnx-stage-legend">
-      {shown.length === 0 ? (
-        <div className="tnx-legend-row tnx-legend-more" title="No data layers are switched on, so the stage is showing the basemap and borders only.">
-          NO LAYERS ON
-        </div>
-      ) : (
-        shown.map((r) => (
-          <div key={r.key} className="tnx-legend-row" title={r.tip}>
-            <span className="tnx-legend-swatch" style={{ background: r.swatch }} />
-            {r.label}
-          </div>
-        ))
-      )}
-      {hidden > 0 && (
-        <div className="tnx-legend-row tnx-legend-more" title="More layers are on than fit here — the Source Catalog rail lists every one.">
-          +{hidden} MORE
-        </div>
-      )}
-    </div>
-  );
-}
+// THE STAGE LEGEND IS GONE — the key that listed CAMERAS, — OFFLINE, SATELLITES,
+// WEBCAMS and every signal layer that was switched on, in the colours the map was
+// painting them.
+//
+// It took a component (StageLegend), a hook (useLegendRows) and two helpers
+// (familySwatch, MAX_LEGEND_ROWS) with it, and with those the only reason this file
+// imported useLayers, useSignals, SIGNALS and five colour tables from lib/icons/svg.
+// Those imports are removed too: the legend was the single consumer, and a stage bar
+// that still subscribed to every layer store in order to render nothing would re-run
+// on each toggle for no output.
+//
+// WHAT IS LOST IS REAL, and is worth stating rather than glossing. The legend was
+// DERIVED — it listed the layers that were actually on, in the colours the map
+// actually used, which is why it could not assert a colour the map did not paint.
+// Nothing else on the stage names a layer's colour now. The Sources rail still lists
+// every layer and its on/off state, and clicking a pin still opens a dossier naming
+// its source, so no layer is unidentifiable; but reading the map by colour alone is
+// no longer something the console teaches.
 
 export default function StageBar() {
   const { stage, focusedWidgetId } = useShellLayout();
@@ -287,15 +167,13 @@ export default function StageBar() {
       </div>
 
       {/*
-        The right-hand stack: the key, and directly under it the area filter.
-        AREA used to sit on the bar above with the basemaps, on the reasoning that
-        everything up there was "a property of the view". It is not the same kind of
-        thing — a basemap changes how the world is drawn, while an area changes WHAT
-        THE FEEDS ANSWER WITH, which is the same job the legend is describing. Under
-        the key is where a reader is already looking to find out what is on screen.
+        The right-hand stack. It used to lead with the layer key, and the area filter
+        sat under it because "what is on screen" and "what the feeds answer with" are
+        the same question asked twice. The key is gone, so AREA now leads the stack —
+        it keeps its place rather than moving elsewhere, because it is still a
+        property of the view and this is still where a reader looks for one.
       */}
       <div className="tnx-stage-right">
-        <StageLegend />
         <AoiControl />
         <CameraPickControl />
       </div>

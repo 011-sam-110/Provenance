@@ -4630,18 +4630,6 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   display: flex; flex-direction: column; align-items: stretch; gap: 6px;
   pointer-events: none;
 }
-.tn-terminal .tnx-stage-legend {
-  padding: 5px 7px; font-size: var(--tnx-fs-xs); letter-spacing: 0.05em;
-  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r); box-shadow: var(--tnx-shadow-1);
-  color: var(--tnx-ink-dim); pointer-events: auto;
-}
-.tn-terminal .tnx-legend-row {
-  display: flex; align-items: center; gap: 6px; line-height: 14px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.tn-terminal .tnx-legend-swatch { width: 6px; height: 6px; flex: none; }
-.tn-terminal .tnx-legend-more { color: var(--tnx-ink-ghost); }
 
 /* Clock bar. WorldClock's root is an absolutely-positioned rounded glass ribbon;
    flatten it into this frame rather than forking the component (one clock timer). */
