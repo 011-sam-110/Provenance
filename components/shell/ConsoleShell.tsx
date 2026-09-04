@@ -116,12 +116,18 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     tourStore.hydrate();
 
     // WAIT FOR THE BOOT SEQUENCE. Both of these are first-visit-only surfaces, and
-    // they were racing: the boot overlay holds the screen for BOOT_MS while the tour
+    // they were racing: the boot overlay holds the screen while the tour
     // invited itself at 900ms underneath it. The visitor saw the launch animation,
     // then a modal already half-open behind it — and it is the one visit where the
     // product gets to explain itself. shouldPlayBoot() is the same predicate
     // BootSequence uses, including the ?boot= override, so the two cannot disagree
     // about whether a boot is happening.
+    //
+    // BOOT_MS is the boot's CEILING, not its length: the plate now leaves when the
+    // map is ready, anywhere from BOOT_MIN_MS to here. Waiting out the ceiling is
+    // deliberate rather than lazy — being late costs a beat of dead air on one
+    // visit, being early puts a modal under a full-screen plate, and the tour has
+    // no way to know when the boot actually went without the boot telling it.
     const bootPlaying = shouldPlayBoot(loadBootSeen(), bootOverrideFromSearch(window.location.search));
     const tourTimer = setTimeout(() => tourStore.maybeAutoStart(), bootPlaying ? BOOT_MS + 500 : 900);
     return () => clearTimeout(tourTimer);

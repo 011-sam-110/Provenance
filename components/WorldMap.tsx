@@ -54,6 +54,7 @@ import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution
 import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { layersToTrim } from "@/lib/map/styleTrim";
 import { spinEnvelope } from "@/lib/map/spin";
+import { markMapReady } from "@/lib/terminal/mapReady";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
   COUNTRY_HIT_LAYER,
@@ -1755,6 +1756,14 @@ export default function WorldMap() {
     map.on("style.load", () => {
       void addAppLayers(map).then(onStyleSettled, onStyleSettled);
     });
+
+    // Tell the boot overlay the map is usable, so it can stop covering a finished
+    // map. `idle` and not `load`: `load` fires when the style and the first frame
+    // are up, which on a cold globe is several seconds before the tiles have
+    // actually arrived, and a plate that lifts onto a half-drawn world is worse
+    // than one that waits. `once` — the publisher is idempotent anyway, but a
+    // per-idle call would put a listener notification on every pan.
+    map.once("idle", () => markMapReady());
 
     // MapLibre reports a dead style CDN and a single missing tile through the SAME
     // event, so classify before acting — raster basemaps 404 tiles routinely (poles,

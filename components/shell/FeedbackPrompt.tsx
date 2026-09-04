@@ -38,7 +38,9 @@ import {
   validateFeedback,
 } from "@/lib/shell/feedback";
 
-/** Long enough for the cold-start plate and its fade to be gone. */
+/** Long enough for the cold-start plate and its fade to be gone. BOOT_MS is the
+ *  boot's ceiling — the plate usually leaves sooner, when the map is ready — so
+ *  this holds for the worst case and is never early. */
 const INITIAL_HOLD_MS = BOOT_MS + BOOT_FADE_MS + 500;
 /** How often visible time is banked and the gate re-checked. Small enough that a
  *  first-time visitor who crosses fifteen minutes is asked during THAT visit. */
