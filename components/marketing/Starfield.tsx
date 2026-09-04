@@ -569,18 +569,26 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
     }
 
     let last = 0;
-    function draw(t: number) {
-      raf = window.requestAnimationFrame(draw);
-      // Off screen or in a hidden tab: keep the loop alive so it resumes instantly,
-      // but do no projection, no fill and — the expensive part — no layout read.
-      if (!onScreen || document.hidden) return;
-      if (t - last < 33) return; // ~30fps is plenty for a twinkle
+    /**
+     * Paints one frame. Returns whether it drew a sky ALIGNED TO A REAL HERO GLOBE,
+     * which is not the same question as "did it draw" — see `frame` below, where the
+     * difference decides when the loop is allowed to stop.
+     *
+     * It no longer schedules the next frame. That used to be the first statement in
+     * this function, above every gate, which meant the loop could not be stopped by
+     * anything short of unmounting.
+     */
+    function draw(t: number): boolean {
+      // Off screen or in a hidden tab: do no projection, no fill and — the expensive
+      // part — no layout read.
+      if (!onScreen || document.hidden) return false;
+      if (t - last < 33) return false; // ~30fps is plenty for a twinkle
       last = t;
-      if (!ctx || !canvas) return;
+      if (!ctx || !canvas) return false;
 
       ctx.clearRect(0, 0, w, h);
       // No catalogue, no sky. See the DEGRADATION note in the file header.
-      if (!catalogue || !starDirs || !milkyDirs || !milkyBrightness || !radius || !alpha) return;
+      if (!catalogue || !starDirs || !milkyDirs || !milkyBrightness || !radius || !alpha) return false;
 
       const now = new Date();
       if (now.getTime() - lastPrecessionMs >= ONE_HOUR_MS) refreshPrecession(now);
@@ -618,7 +626,7 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
         latDeg = FALLBACK_LAT_DEG;
         bearingDeg = FALLBACK_BEARING_DEG;
       }
-      if (!(R > 0)) return;
+      if (!(R > 0)) return false;
 
       const basis = skyBasis({ lngDeg, latDeg, gmstDeg: gmst, bearingDeg });
       const scale = stereographicScale(SKY_DEGREES_PER_GLOBE_RADIUS, R);
@@ -627,18 +635,120 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       drawMilkyWay(basis, scale, cx, cy);
       drawStars(basis, scale, cx, cy, t / 1000);
       drawConstellations(basis, scale, cx, cy);
+      // True only on the globe-aligned branch. A frame drawn from the fallback
+      // geometry is a real frame, but it is not the one worth freezing.
+      return Boolean(view && globeEl);
     }
 
-    resize();
-    raf = window.requestAnimationFrame(draw);
+    /**
+     * REDUCED MOTION: paint the settled sky, then stop for good.
+     *
+     * `reduce` was already read here, and it did one thing — flattened the twinkle to
+     * a constant. Everything else carried on: the 30fps loop, ~1,080 Milky Way
+     * strokes, 8,920 star projections, a radial gradient per glowing star per frame,
+     * and two getBoundingClientRect calls. Measured over a 10 s idle window, that is
+     * why the landing page still sat at 18.9% main-thread busy with motion off, where
+     * the console reached 3.4%. A user who asks for less motion was getting all of
+     * the cost and none of the movement.
+     *
+     * lib/terminal/boot.ts already states the contract this follows: under reduced
+     * motion, one static final frame, then out.
+     *
+     * WHY IT IS NOT SIMPLY "DRAW ONCE AND STOP". Three things arrive late or change
+     * afterwards, and each one would freeze the wrong picture:
+     *
+     *  1. The star catalogue is fetched. Until it resolves, draw() bails before it
+     *     paints anything, so a single frame at mount paints a black canvas.
+     *  2. The hero globe is a dynamic ssr:false import and publishes its camera only
+     *     once MapLibre's style loads. The catalogue usually wins that race, so the
+     *     first paintable frame takes the FALLBACK geometry — a sky centred on the
+     *     canvas rather than on the globe — and under reduced motion nothing would
+     *     ever repaint it. That is why `draw` reports which branch it took, and the
+     *     loop keeps going until it gets a globe-aligned frame.
+     *  3. There may legitimately be NO globe: the closing section of the landing page
+     *     shows this same sky with nothing in front of it. So the wait for a globe is
+     *     bounded — otherwise case 3 spins forever waiting for something that is
+     *     never coming, which is the exact bug this change exists to remove.
+     *
+     * Resizing and dragging are handled below; both blank or invalidate the frozen
+     * frame, and both wake the loop for as long as they need it.
+     */
+    const HERO_PUBLISH_GRACE_MS = 4000;
+    let aligned = false;
+    let paintedAt = 0;
+    let dragging = false;
 
-    const ro = new ResizeObserver(resize);
+    function readyToFreeze(t: number): boolean {
+      if (!reduce.matches || dragging) return false;
+      if (aligned) return true;
+      // No globe-aligned frame yet. Give the dynamically-imported globe a bounded
+      // chance to publish, then accept the fallback sky rather than loop forever.
+      return paintedAt > 0 && t - paintedAt > HERO_PUBLISH_GRACE_MS;
+    }
+
+    function frame(t: number) {
+      raf = 0;
+      if (disposed) return;
+      if (draw(t)) aligned = true;
+      if (!paintedAt && last) paintedAt = last;
+      if (readyToFreeze(t)) return;
+      raf = window.requestAnimationFrame(frame);
+    }
+
+    function schedule() {
+      if (disposed || raf) return;
+      raf = window.requestAnimationFrame(frame);
+    }
+
+    /** Wake for at least one more frame after something invalidated the sky. */
+    function repaint() {
+      if (disposed) return;
+      last = 0; // bypass the 30fps throttle so the very next frame paints
+      schedule();
+    }
+
+    // The globe stays hand-draggable under reduced motion (HeroGlobe keeps dragPan
+    // and dragRotate on for non-touch), so a frozen sky would sit still while the
+    // Earth turned under it. Wake for the drag and settle again on release.
+    //
+    // Deliberately NOT a subscription on lib/marketing/heroView.ts: that module's
+    // docblock is explicit that it is a poll-only store with no listeners to leak,
+    // and the camera it holds changes up to 60 times a second. A pointer gesture is
+    // the honest signal here, and it is two listeners rather than a new API.
+    const onPointerDown = (e: PointerEvent) => {
+      if (!(e.target instanceof Element) || !e.target.closest(".pv-hero-globe")) return;
+      dragging = true;
+      repaint();
+    };
+    const onPointerUp = () => {
+      if (!dragging) return;
+      dragging = false;
+      repaint(); // one final frame at the resting orientation, then freeze
+    };
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerUp, { passive: true });
+
+    resize();
+    schedule();
+
+    // resize() reassigns canvas.width, which BLANKS the backing store. Without a
+    // repaint here a frozen sky would be erased permanently by any window resize.
+    const ro = new ResizeObserver(() => {
+      resize();
+      aligned = false; // the geometry moved; re-confirm against the new box
+      paintedAt = 0;
+      repaint();
+    });
     ro.observe(canvas);
 
     loadSkyCatalogue().then((cat) => {
       if (disposed) return;
       catalogue = cat;
       if (cat) buildStarState(cat);
+      // The frame that can finally paint something. Under reduced motion the loop
+      // may already have frozen on an empty canvas by now.
+      repaint();
     });
 
     return () => {
@@ -647,6 +757,9 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       ro.disconnect();
       io.disconnect();
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
     };
   }, []);
 

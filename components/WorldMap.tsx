@@ -53,6 +53,7 @@ import {
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
 import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { layersToTrim } from "@/lib/map/styleTrim";
+import { spinEnvelope } from "@/lib/map/spin";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
   COUNTRY_HIT_LAYER,
@@ -1819,7 +1820,13 @@ export default function WorldMap() {
     // for the two to drift: the moment they disagree, either the URL churns on its own
     // or a deliberate move stops being shareable.
     const prefersLessMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    // Time the globe has actually SPENT turning, which is not time since load. A
+    // visitor who grabs the map, opens a dossier or switches tabs pauses the budget
+    // instead of burning it, so the globe they come back to still has its turn left.
+    let spinSpentMs = 0;
+    const spinSettled = () => spinEnvelope(spinSpentMs).settled;
     const isAutoSpinning = () =>
+      !spinSettled() &&
       !prefersLessMotion.matches &&
       !document.hidden &&
       performance.now() > interactUntilRef.current &&
@@ -1836,21 +1843,52 @@ export default function WorldMap() {
     const unsubView = mapViewStore.subscribe(() => scheduleUrlWrite(map));
     const unsubOverlay = overlay.subscribe(() => scheduleUrlWrite(map));
 
-    // Calm idle rotation: nudge centre longitude while zoomed out + idle.
+    // Calm idle rotation: nudge centre longitude while zoomed out + idle, then SETTLE.
+    //
+    // The globe used to turn for as long as the tab was open, and that is the single
+    // most expensive thing this page does at rest: 60.8% of the main thread over a
+    // 10 s idle window on a desktop, ~101% at a 4x CPU throttle, against 3.4% with
+    // the spin neutralised. It cannot be made cheap by slowing it down — 30 fps and
+    // 20 fps caps both measured ~99% — because a moving camera forces a full
+    // MapLibre re-render whatever the update rate. Only not moving is cheaper.
+    // So it turns for a while, eases to a stop, and hands the thread back.
+    //
+    // STOPPING MEANS STOPPING. Once settled the loop does not reschedule itself,
+    // rather than rescheduling and returning early. The early-return version is what
+    // both of this app's animation loops already did and it still costs a callback
+    // per compositor frame forever — cheap, but not zero, and it is the difference
+    // between the 3.4% target and something above it.
     let last = performance.now();
     const spin = (t: number) => {
       const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
       if (isAutoSpinning()) {
+        const { factor } = spinEnvelope(spinSpentMs);
+        spinSpentMs += dt * 1000;
         const c = map.getCenter();
-        map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt, c.lat]);
+        map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt * factor, c.lat]);
+      }
+      if (spinSettled()) {
+        rafRef.current = 0;
+        return;
       }
       rafRef.current = requestAnimationFrame(spin);
     };
-    rafRef.current = requestAnimationFrame(spin);
+    // Reduced motion never starts the loop at all, rather than starting it and
+    // declining every frame. If the setting is turned off mid-session the change
+    // handler starts it, so the globe is not dead for the rest of the visit.
+    const startSpin = () => {
+      if (rafRef.current || spinSettled() || prefersLessMotion.matches) return;
+      last = performance.now();
+      rafRef.current = requestAnimationFrame(spin);
+    };
+    const onMotionPreference = () => startSpin();
+    prefersLessMotion.addEventListener("change", onMotionPreference);
+    startSpin();
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      prefersLessMotion.removeEventListener("change", onMotionPreference);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
       el.removeEventListener("pointermove", holdSpin);
       cancelUrlWrite();

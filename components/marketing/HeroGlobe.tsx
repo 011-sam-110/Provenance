@@ -7,6 +7,7 @@ import { BASEMAPS } from "@/lib/basemaps";
 import { buildSatrec, propagateAt } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
 import { setHeroView } from "@/lib/marketing/heroView";
+import { spinEnvelope } from "@/lib/map/spin";
 
 /**
  * The hero globe: the product's own MapLibre engine, its own registry, and its own
@@ -289,7 +290,7 @@ export default function HeroGlobe({
       });
 
       void hydrate();
-      spinLoop();
+      startSpin();
 
       // The globe's entrance is keyed to the FIRST PAINTED FRAME, not to the map
       // being finished. Both of the obvious events are wrong here:
@@ -444,7 +445,19 @@ export default function HeroGlobe({
         tick();
         // 2s, not the app's 1s: this is ambient motion in a hero, and halving the
         // rate halves the propagation cost for no visible difference at this zoom.
-        satTimer = setInterval(tick, 2000);
+        //
+        // GATED, and it was not before. Every tick propagates each satellite and
+        // calls setData, which forces a full MapLibre re-render — so this timer alone
+        // kept the hero repainting twice a second with the page scrolled away, the
+        // tab hidden, or reduced motion on. PR #156 gated the spin and the sky on
+        // exactly those signals and missed this one, which is why the landing page
+        // stayed 18.9% busy under reduced motion where the console reached 3.4%.
+        // Settling the spin without this would have left a timer re-rendering the
+        // map underneath a globe that had stopped.
+        satTimer = setInterval(() => {
+          if (paused || offScreen || reduce.matches) return;
+          tick();
+        }, 2000);
         return built.length;
       } catch {
         /* dormant-safe */
@@ -452,13 +465,54 @@ export default function HeroGlobe({
       }
     }
 
-    function spinLoop() {
+    // The hero globe settles for the same reason the console globe does, measured on
+    // the same day: this page was 83.1% main-thread busy over a 10 s idle window, and
+    // 46% of the sampled profile was MapLibre rendering this globe. The drift is the
+    // opening impression, so it is kept — for about eight seconds, then eased out.
+    // lib/map/spin.ts holds the budget so the two globes cannot drift apart.
+    //
+    // `spinSpentMs` counts time SPENT DRIFTING, so the seconds a visitor spends
+    // scrolled past the hero, or with the tab hidden, or holding the globe, are not
+    // deducted from a turn they never saw.
+    let spinSpentMs = 0;
+    let lastSpin = 0;
+    function spinLoop(t: number) {
       if (disposed) return;
-      spin = window.requestAnimationFrame(spinLoop);
-      if (paused || offScreen || reduce.matches || !map.loaded()) return;
+      if (paused || offScreen || reduce.matches || !map.loaded()) {
+        // Not drifting, so the budget does not advance and neither does the clock —
+        // otherwise a long scroll away would silently spend the whole eight seconds.
+        lastSpin = t;
+        spin = window.requestAnimationFrame(spinLoop);
+        return;
+      }
+      const dt = lastSpin ? Math.min(t - lastSpin, 50) : 0;
+      lastSpin = t;
+      const { factor, settled } = spinEnvelope(spinSpentMs);
+      spinSpentMs += dt;
+      if (settled) {
+        // Stop scheduling entirely rather than rescheduling and returning early.
+        // A loop that re-arms before its own gate — which is what this was, and what
+        // Starfield still was — can never stop, and costs a callback per compositor
+        // frame for the life of the page.
+        spin = 0;
+        return;
+      }
       const c = map.getCenter();
-      map.jumpTo({ center: [c.lng + 0.035, c.lat] });
+      map.jumpTo({ center: [c.lng + 0.035 * factor, c.lat] });
+      spin = window.requestAnimationFrame(spinLoop);
     }
+
+    // Reduced motion does not start the loop at all. The paused / offScreen cases
+    // still need a live loop because they resume on their own, but reduced motion is
+    // a standing answer — a loop kept alive only to decline every frame is the exact
+    // shape this change exists to remove.
+    function startSpin() {
+      if (spin || disposed || reduce.matches || spinEnvelope(spinSpentMs).settled) return;
+      lastSpin = 0;
+      spin = window.requestAnimationFrame(spinLoop);
+    }
+    const onMotionPreference = () => startSpin();
+    reduce.addEventListener("change", onMotionPreference);
 
     // Scrolled past the hero, a drifting globe is a full MapLibre re-render per frame
     // that nobody can see. Measured on prod at the FOOT of the landing page, before
@@ -545,6 +599,7 @@ export default function HeroGlobe({
       el.removeEventListener("pointerenter", onEnter);
       el.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVis);
+      reduce.removeEventListener("change", onMotionPreference);
       map.remove();
       mapRef.current = null;
       delete (window as unknown as { __pvMap?: MlMap }).__pvMap;
