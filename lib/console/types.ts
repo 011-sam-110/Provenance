@@ -3,12 +3,16 @@ export type StageId = "map3d" | "map2d" | "clock";
 export type WidgetTypeId = string;
 
 /**
- * A widget's rectangle on the old Terminal grid, in CELLS. The grid itself is
- * gone — three resizable rails replaced it — but the shape is kept exported
- * because `sanitize.ts` still has to read it off LEGACY input: a `?c=` link
- * minted by an older build, or a `tn.console.v1` blob written before this
- * migration, can still carry `rect`/`stageRect`. `lib/terminal/rails.ts`'s
- * `railsFromRects` is the only thing left that constructs one.
+ * A widget's rectangle on the twelve-column grid, in CELLS. x/y are 0-based.
+ *
+ * This was legacy-only between #146 and now: the rails reskin deleted the grid,
+ * and the shape survived purely so `sanitize.ts` could read a rect off an older
+ * `?c=` link or `tn.console.v1` blob and migrate it away. It is load-bearing
+ * again for `mode: "wall"` boards, where it IS the widget's position — but the
+ * legacy read is unchanged and still runs for every rails-mode layout.
+ *
+ * `lib/terminal/layoutGrid.ts` owns the arithmetic over this shape and re-exports
+ * the type rather than declaring a second one.
  */
 export interface GridRect {
   x: number;
@@ -16,6 +20,24 @@ export interface GridRect {
   w: number;
   h: number;
 }
+
+/**
+ * Which engine lays a board out.
+ *
+ * `"rails"` — a fixed hero map with three resizable rails around it. A widget's
+ * position is which rail it is in and where in that rail's stack it sits. This is
+ * every board, and it is what a layout with no `mode` at all means.
+ *
+ * `"wall"` — a free twelve-column grid of tiles with the map moved out of it into
+ * a dock. A widget's position is its `rect`. Exactly one board ships this today:
+ * Streets, whose entire purpose is a camera wall the user arranges.
+ *
+ * THE DEFAULT IS LOAD-BEARING. Reading an absent `mode` as `"rails"` is what lets
+ * every layout already in localStorage, every archived board and every `?c=` link
+ * minted before this change keep behaving exactly as it does now, with no layout
+ * version bump and therefore nobody's saved board wiped to add a field.
+ */
+export type LayoutMode = "rails" | "wall";
 
 export interface WidgetInstance {
   id: string;
@@ -25,6 +47,16 @@ export interface WidgetInstance {
   height: number;       // px, its own height in the rail; the rail scrolls
   collapsed: boolean;   // header-only
   config: Record<string, unknown>;
+  /**
+   * Its rectangle on a `mode: "wall"` board. Absent in rails mode.
+   *
+   * `segment`, `order` and `height` stay populated and valid in BOTH modes — a
+   * wall simply does not read them for placement. That is deliberate rather than
+   * lazy: it means switching a board between modes needs no migration in either
+   * direction, because `railsFromRects` can already derive a rail placement from
+   * a rect and `arrangeWall` can derive rects from an ordered list.
+   */
+  rect?: GridRect;
 }
 
 export interface SegmentState { size: number; collapsed: boolean }
@@ -45,6 +77,8 @@ export interface ShellLayout {
   widgets: WidgetInstance[];
   /** The widget expanded onto the center stage, or null when the map is shown. */
   focusedWidgetId: string | null;
+  /** Which engine lays this board out. Absent on stored input means "rails". */
+  mode: LayoutMode;
 }
 
 /**
@@ -85,6 +119,7 @@ export function createDefaultLayout(): ShellLayout {
     stage: "map2d",
     widgets: [],
     focusedWidgetId: null,
+    mode: "rails",
   };
 }
 

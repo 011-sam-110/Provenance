@@ -24,6 +24,32 @@ export const RAIL_MAX: Record<SegmentId, number> = { left: 720, right: 720, bott
  *  the basemap's own controls (zoom, search, scope) start colliding. */
 export const STAGE_MIN_PX = 360;
 
+/** The wall never shrinks below this either, for the same reason in reverse: on a
+ *  `mode: "wall"` board the tiles are the hero and the map is the dock, so it is
+ *  the WALL that has to keep a floor. Same number, because it is the same
+ *  question about how narrow a pane can get before its own controls collide. */
+export const WALL_MIN_PX = STAGE_MIN_PX;
+
+/**
+ * The map dock's width on a wall board.
+ *
+ * NOT `railSizes`, and the difference is the whole reason this exists. A rail is
+ * 0 when it holds no widgets — a rule that is right for rails and would close
+ * this dock permanently, because the dock holds the STAGE and never holds a
+ * widget at all.
+ *
+ * `collapsed` is the open/closed flag, used for exactly what its name says
+ * rather than repurposed: a closed dock is a collapsed right rail. It is
+ * `setSegmentCollapsed`'s first product caller — that reducer and
+ * `store.collapseSegment` have existed with no caller since before the rails
+ * reskin.
+ */
+export function dockSize(l: ShellLayout, container: { w: number; h: number }): number {
+  if (l.segments.right.collapsed) return 0;
+  const want = clampRailSize("right", l.segments.right.size);
+  return Math.max(0, Math.min(want, container.w - WALL_MIN_PX));
+}
+
 /** Arrow-key resize step for a rail splitter, in px. */
 export const RAIL_STEP = 16;
 /** Shift+arrow resize step — a coarse jump for covering distance fast. */

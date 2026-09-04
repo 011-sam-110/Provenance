@@ -2,7 +2,8 @@ import { expect, test } from "vitest";
 import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
-import { effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
+import { dockSize, effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
+import { COLS, MIN_H, MIN_W, overlaps } from "@/lib/terminal/layoutGrid";
 import { listWidgetTypes } from "@/lib/console/registry";
 import "@/lib/console/widgets";
 
@@ -100,6 +101,13 @@ test("no board overflows its rail by more than the card floor forces", () => {
   for (const shell of SHELLS) {
     for (const p of BUILTIN_PRESETS) {
       const l = p.build(shell);
+      // A WALL IS NOT A STACK, so this measurement does not describe one. Its
+      // tiles are laid out three across on a grid and their `height` is the
+      // height of the cell they occupy, not a contribution to a column — summing
+      // them asks "how tall would this board be if it were a rail?", which is a
+      // question about a board that is not being rendered. The wall's own
+      // invariants are asserted further down instead.
+      if (l.mode === "wall") continue;
       for (const rail of RAILS) {
         const n = l.widgets.filter((w) => w.segment === rail).length;
         if (n === 0) continue;
@@ -192,17 +200,91 @@ test("an empty rail takes no space at all", () => {
   }
 });
 
-test("no built-in board carries a grid rectangle — catches a half-converted preset", () => {
-  // `rect`, `stageRect` and `width` were deleted from the types, so a preset that
-  // still authors one is a TypeScript error today. It would stop being one the
-  // moment anybody widens a signature to `Record<string, unknown>`, and the
-  // symptom would be a board that silently ignores half of what it was told.
+test("a rails board carries no rectangle, and a wall board carries nothing else", () => {
+  // `stageRect` and `width` are deleted from the types, so a preset that still
+  // authors one is a TypeScript error today. It would stop being one the moment
+  // anybody widens a signature to `Record<string, unknown>`, and the symptom
+  // would be a board that silently ignores half of what it was told.
+  //
+  // `rect` is no longer in that list unconditionally — it is load-bearing on a
+  // wall — so the guard is now two-sided and BOTH sides matter. A rails board
+  // authoring a rect is the half-converted preset this test was written for; a
+  // wall board NOT authoring one is the failure that has no symptom you can see,
+  // because a tile with no rect is mounted, holds its config and its fetches,
+  // and draws nothing at all.
   for (const p of BUILTIN_PRESETS) {
-    const json = JSON.stringify(p.build({ w: 1440, h: 820 }));
-    for (const dead of ["rect", "stageRect", "width"]) {
+    const l = p.build({ w: 1440, h: 820 });
+    const json = JSON.stringify(l);
+
+    for (const dead of ["stageRect", "width"]) {
       expect(json.includes(`"${dead}"`), `board "${p.id}" still authors "${dead}"`).toBe(false);
     }
+
+    if (l.mode === "wall") {
+      expect(l.widgets.length, `wall board "${p.id}" is empty`).toBeGreaterThan(0);
+      for (const w of l.widgets) {
+        expect(w.rect, `wall board "${p.id}" leaves ${w.type} unplaced`).toBeTruthy();
+      }
+    } else {
+      expect(json.includes('"rect"'), `rails board "${p.id}" still authors "rect"`).toBe(false);
+    }
   }
+});
+
+// ── The wall's own invariants ───────────────────────────────────────────────
+// The rail assertions above skip these boards, so everything a wall board has to
+// guarantee is asserted here rather than nowhere.
+test("a wall board tiles inside twelve columns without overlapping itself", () => {
+  for (const shell of SHELLS) {
+    for (const p of BUILTIN_PRESETS) {
+      const l = p.build(shell);
+      if (l.mode !== "wall") continue;
+      const rects = l.widgets.map((w) => w.rect!);
+
+      for (const r of rects) {
+        expect(r.x, `"${p.id}" places a tile at x=${r.x}`).toBeGreaterThanOrEqual(0);
+        expect(r.x + r.w, `"${p.id}" runs a tile off the right edge`).toBeLessThanOrEqual(COLS);
+        expect(r.y, `"${p.id}" places a tile above the board`).toBeGreaterThanOrEqual(0);
+        expect(r.w, `"${p.id}" composes a tile ${r.w} columns wide`).toBeGreaterThanOrEqual(MIN_W);
+        expect(r.h, `"${p.id}" composes a tile ${r.h} rows tall`).toBeGreaterThanOrEqual(MIN_H);
+      }
+
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          expect(
+            overlaps(rects[i], rects[j]),
+            `"${p.id}" overlaps two tiles at ${shell.w}x${shell.h}`,
+          ).toBe(false);
+        }
+      }
+    }
+  }
+});
+
+test("a wall board opens with its map dock closed", () => {
+  // The map is the picker, not the hero, and the wall gets the window until the
+  // user asks for the map. A dock that opened open would be the rails board with
+  // extra steps.
+  for (const p of BUILTIN_PRESETS) {
+    const l = p.build({ w: 1440, h: 820 });
+    if (l.mode !== "wall") continue;
+    expect(l.segments.right.collapsed, `wall board "${p.id}" opens with the dock showing`).toBe(true);
+    expect(
+      dockSize(l, { w: 1440, h: 820 }),
+      `wall board "${p.id}" reserves width for a closed dock`,
+    ).toBe(0);
+    // …and it still remembers a width to reopen to, or the first click on the
+    // control gives a sliver clamped up from zero rather than a usable map.
+    expect(l.segments.right.size, `wall board "${p.id}" forgets its dock width`).toBeGreaterThan(0);
+  }
+});
+
+test("exactly one built-in board is a wall, and the landing board is not", () => {
+  const walls = BUILTIN_PRESETS.filter((p) => p.build({ w: 1440, h: 820 }).mode === "wall");
+  expect(walls.map((p) => p.id)).toEqual(["streets"]);
+  expect(
+    BUILTIN_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID)!.build({ w: 1440, h: 820 }).mode,
+  ).toBe("rails");
 });
 
 test("no board asks for a rail wider than a rail is allowed to be", () => {

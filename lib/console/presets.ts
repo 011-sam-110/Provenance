@@ -1,7 +1,8 @@
 "use client";
 import { createDefaultLayout, STAGE_ID, type ShellLayout } from "@/lib/console/types";
-import { addWidget, setStage, setSegmentSize, setWidgetHeight } from "@/lib/console/reducers";
+import { addWidget, arrangeBoard, setStage, setSegmentCollapsed, setSegmentSize, setWidgetHeight } from "@/lib/console/reducers";
 import { splitSpan } from "@/lib/terminal/rails";
+import { GAP_PX, ROW_PX } from "@/lib/terminal/layoutGrid";
 import { visibleShell } from "@/lib/terminal/rowBudget";
 import { shellLayoutStore } from "@/lib/console/store";
 import { layersStore, type LayerKey } from "@/lib/layers";
@@ -99,9 +100,10 @@ interface CardSpec {
  *  built-in board and a board built by hand from an empty console agree. */
 const RAIL_PX = 320;
 
-/** A camera board's left rail. Wider than RAIL_PX for one reason, kept below:
- *  a camera frame is 16:9 and a 320px rail letterboxes it. */
-const WALL_RAIL_PX = 480;
+/** The map dock's width on a wall board, when it is open. Wider than RAIL_PX
+ *  because it holds a MAP with its own search, zoom and scope controls, not a
+ *  column of cards — and it is only ever on screen when the user asked for it. */
+const WALL_DOCK_PX = 400;
 
 /** No card is composed shorter than this. A card below it is a header and a
  *  clipped first row, which reads as broken rather than as small. */
@@ -131,32 +133,67 @@ function compose(stage: ShellLayout["stage"], shell: { w: number; h: number }, c
 }
 
 /**
- * A CAMERA board. Identical machinery to `compose`, one number different.
+ * A CAMERA WALL board — `mode: "wall"`, and the only shape that uses it.
  *
- * ── WHAT THIS USED TO BE, AND WHY IT IS NOT A REDESIGN ──────────────────────
- * `composeWall` called `arrangeWall`, which tiled equal cards three across and
- * gave the map one card's width over two bands. It existed because
- * `arrangeHouse` hardcoded a 4-of-12-column rail, and measured at 1400px that
- * rail gave camera cards aspect ratios from 2.68 to 6.30 — nowhere near the
- * 16:9 a camera frame actually is, so a board whose whole purpose is showing
- * pictures showed letterboxed slivers.
+ * ── WHAT THIS WAS BETWEEN #146 AND NOW ─────────────────────────────────────
+ * A wider rail. #146 turned the wall into `composeRail(..., 480)`, so Streets
+ * opened as ONE VERTICAL COLUMN of camera cards beside the map — a list, not a
+ * wall — and the note left here said its final shape was a separate job. This
+ * is that job.
  *
- * That is a statement about WIDTH, and width is now one number rather than a
- * separate arrangement function. So the wall becomes a wider rail: the cards
- * keep their equal weights, their order and their configs, and nothing is
- * rearranged. The `stage.w >= 8` exemption the Streets board needed in
- * `console-presets.test.ts` goes with it — a wider rail still leaves the map
- * more than half the window, so Streets now passes the same assertion as every
- * other board instead of being written out of it.
+ * The tiles are laid out by `arrangeWall` on the twelve-column grid and the map
+ * moves into a dock that opens closed. WEIGHTS DO NOTHING HERE and are left
+ * equal to say so: `arrangeWall` tiles uniform 4-column cards and takes no
+ * weights at all. A board that wants a hero tile gets one by the user dragging
+ * it, which is the entire point of the mode.
  *
- * Deliberately NOT redesigned here (Sam's call, 2026-09-03). Its final shape is
- * a separate job after the camslot overlay lands, because the overlay's own
- * measurements — a stage of at least 300x170 CSS px for the full two-row
- * readout, 240x135 compact, self-hiding below 90px — are the numbers to design
- * against, and they belong to whoever owns that tile.
+ * ── THE COMMENT THIS REPLACED, KEPT FOR ITS FACTS ──────────────────────────
+ * It recorded that `arrangeHouse` hardcoded a 4-of-12-column rail and that,
+ * measured at 1400px, that rail gave camera cards aspect ratios from 2.68 to
+ * 6.30 — nowhere near the 16:9 a camera frame actually is, so a board whose
+ * whole purpose is showing pictures showed letterboxed slivers. That
+ * measurement is why a wall tile is 4 columns wide and three across, and it is
+ * the reason this is a grid rather than a wider rail.
+ *
+ * ── THE TILE'S OWN MEASUREMENTS, WHICH THIS HAS TO RESPECT ─────────────────
+ * The camslot overlay needs a stage of at least 300x170 CSS px for its full
+ * two-row readout, 240x135 for the compact one, and hides itself below 90px.
+ * A 4-column tile on a 1440px board is ~355px wide and 6 rows is 144px, so the
+ * OPENING size clears the compact threshold and a user who wants the full
+ * readout drags the tile bigger — which is a thing they can now do, and could
+ * not before.
  */
 function composeWall(stage: ShellLayout["stage"], shell: { w: number; h: number }, cards: CardSpec[]): ShellLayout {
-  return composeRail(stage, shell, cards, WALL_RAIL_PX);
+  let l: ShellLayout = { ...setStage(createDefaultLayout(), stage), mode: "wall" };
+
+  // `mode` is set BEFORE the widgets go in, and that ordering is load-bearing:
+  // `addWidget` mints a rect only on a wall, so seeding first and flipping the
+  // mode afterwards would produce four tiles with no rects — mounted, holding
+  // their configs, drawing nothing.
+  for (const c of cards) {
+    l = addWidget(l, c.type, id(), {
+      segment: "left",
+      ...(c.config ? { config: c.config } : {}),
+    });
+  }
+
+  // Then lay them out properly. `addWidget` places each tile in the first free
+  // cell it finds, which packs them but takes no view on how tall a band should
+  // be; `arrangeWall` fits the bands to the window this board is opening on.
+  l = arrangeBoard(l, Math.floor(shell.h / (ROW_PX + GAP_PX)));
+
+  // THE MAP DOCK OPENS CLOSED, and its width is remembered anyway. `collapsed`
+  // is the open/closed flag and `size` is the width it returns to, so the first
+  // click on the dock control gives a usable panel rather than a 220px sliver.
+  l = setSegmentSize(l, "right", WALL_DOCK_PX);
+  l = setSegmentCollapsed(l, "right", true);
+
+  // `segments.left` is left at its default rather than zeroed. A wall does not
+  // render rails at all, so the value is invisible here — but the tiles keep
+  // `segment: "left"`, so it is the width they would land in if this board were
+  // ever switched back to rails, and 0 would clamp to RAIL_MIN and mean nothing
+  // anyway.
+  return l;
 }
 
 function composeRail(
@@ -247,9 +284,12 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // ⌘K palette section and a map layer key, and a fifth meaning would make the
   // palette ambiguous.
   //
-  // Authored with composeWall, NOT compose — see the note on composeWall for why a
-  // camera board cannot live in arrangeHouse's 4-column rail. Exactly four cards,
-  // which is what tiles the 3-across grid beside the map with no uncovered cell.
+  // THE ONLY `mode: "wall"` BOARD. Authored with composeWall, which is now a
+  // different shape rather than a wider rail: the tiles sit on a free twelve-column
+  // grid the user can drag and resize, and the map moves into a dock that opens
+  // closed. Everything else on the console stays on rails, and a stored layout with
+  // no `mode` at all reads as rails — which is what leaves every saved board and
+  // every `?c=` link behaving exactly as it does today.
   //
   // mapCore is REQUIRED. presetLayers hard-resets cameras/webcams to false on every
   // board switch and only maps a handful of widget types back on; without this the
@@ -269,15 +309,14 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // makes these three strings load-bearing rather than decorative.
   //
   // THE WEIGHTS BELOW DO NOTHING ON THIS BOARD, and they are left equal to say so.
-  // `composeWall` hands `arrangeWall` a bare id list; `arrangeWall` takes no weights
-  // at all and tiles fixed 4-column cards with the map pinned at 4 columns by
-  // `CARD_W`. Measured over the whole ROWS ladder the preset test uses (24/28/32/40),
-  // weights of 9/3/3/1 produce rects identical to 3/3/3/3 — stage {0,0,4,rows}, four
-  // cards 4 x rows/2. So the stage cannot be widened from here: it needs `arrangeWall`
-  // (shared with `arrangeConsole` and the reducers' wall mode, and pinned by
-  // tests/unit/terminal-layout-grid.test.ts) or `composeWall` to change, and widening
-  // it also has to keep the "no uncovered cell right of the stage" assertion true —
-  // a 6-column stage leaves 6 columns that 4-wide cards cannot tile.
+  // `composeWall` hands `arrangeWall` a bare id list and `arrangeWall` takes no
+  // weights at all — it tiles uniform 4-column cards, three across. That is not a
+  // gap to be filled in later: a wall's whole proposition is that the user sizes it,
+  // so an opening size that already claimed one tile mattered more than another
+  // would be a preference the board had made on their behalf.
+  //
+  // FOUR CARDS FILLS TWO BANDS EXACTLY (3 across, then 1). The fourth is
+  // deliberately empty — see the note above.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     mapCore: ["cameras", "webcams"],
     build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [
