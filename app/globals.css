@@ -3035,7 +3035,18 @@ a.tn-w-place { display: flex; align-items: center; }
      wins on specificity instead of relying on load order. */
   .maplibregl-ctrl.maplibregl-ctrl-group button { width: 44px; height: 44px; }
   .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
-  .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button { width: 44px; height: 44px; }
+  .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+    width: 44px; height: 44px;
+    /* AND THE BACKGROUND HAS TO BE PINNED, or growing the box TILES the icon.
+       MapLibre paints the i as a 24px background-image and never sets
+       background-repeat, so the default `repeat` took over the moment this rule
+       made the button 44px: measured on the console at 390px wide, one control,
+       one button, FOUR i marks in a 2x2 grid. It reads as four broken buttons
+       rather than one. The width fix above has shipped like this; the icon is
+       just easier to notice now that it is the only control left in that corner. */
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

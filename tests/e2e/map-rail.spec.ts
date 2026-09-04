@@ -43,6 +43,12 @@ async function mapReady(page: import("@playwright/test").Page) {
   await expect(page.locator(".maplibregl-ctrl-attrib-inner")).toContainText(/\S/, {
     timeout: 30_000,
   });
+  // And then the tiles. `startDraw` returns false unless `map.isStyleLoaded()` —
+  // see ensureLayers in lib/map/aoi.ts — which a resolved credit line does not
+  // yet guarantee, so the flyout would say "The map is still loading" and the
+  // outside-click guard would correctly not be armed. This was measured, not
+  // guessed: it is what made the draw case fail on its first run.
+  await page.waitForLoadState("networkidle");
 }
 
 /** The four groups, by the accessible name each button actually carries. */
@@ -155,8 +161,14 @@ test("Search: the group opens focused, and / opens it from anywhere", async ({ p
   // "/" is the shortcut the search field advertises with its own prefix chip. It
   // has to open the group AND land in the input — before the rail there was
   // nothing to open, so this is a new path, not a preserved one.
-  await page.locator(".map-canvas").click({ position: { x: 40, y: 40 } });
-  await page.keyboard.press("/");
+  //
+  // Pressed at the BODY rather than after clicking the map, and that is not
+  // squeamishness. A bare map click selects whatever is under it and opens a
+  // country dossier, which is `role="dialog"` — and ConsoleShell hands Escape and
+  // "/" back to any mounted dialog on purpose. The first version of this test
+  // clicked the globe, landed on Mexico, and failed on the app behaving exactly
+  // as documented. Body is the honest "anywhere outside a text field".
+  await page.locator("body").press("/");
   await expect(input).toBeFocused();
   // And the "/" itself must not be typed into the field it just opened.
   await expect(input).toHaveValue("");
@@ -166,11 +178,19 @@ test("Draw: clicking the map does not close the flyout that armed the gesture", 
   // The §1 regression guard. Draw exists to make the user click ON the map; a
   // plain close-on-outside-click would shut the panel on the very first vertex and
   // take the live counter and Cancel with it.
+  await mapReady(page);
   const rail = page.locator(RAIL);
   await rail.getByRole("button", { name: DRAW }).click();
 
   const pop = page.locator(".tnx-maprail-pop");
   await pop.getByRole("button", { name: "Restrict results to area" }).click();
+
+  // Assert the draw ARMED before clicking the map, so a failure names the real
+  // cause. startDraw returns false while the style is still loading and the
+  // flyout says so in a note; without this line that shows up further down as a
+  // confusing "the flyout closed", which is the guard behaving correctly on a
+  // gesture that never started.
+  await expect(pop.getByRole("status")).toContainText(/points/);
 
   const canvas = page.locator(".map-canvas");
   await canvas.click({ position: { x: 300, y: 200 } });
@@ -196,6 +216,17 @@ test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page })
   // regression that no other test would notice.
   await expect(page.locator(".maplibregl-ctrl-group")).toHaveCount(0);
   await expect(page.locator(".maplibregl-ctrl-attrib-button")).toBeVisible();
+
+  // On a phone the mobile pass grows that button to a 44px tap target, and
+  // MapLibre paints its mark as a 24px background-image with no
+  // `background-repeat` of its own — so the default `repeat` tiled ONE icon into
+  // a 2x2 grid of them. Caught in a screenshot, confirmed by reading the
+  // computed style, and it is pinned here because it is invisible to every other
+  // kind of test: the DOM is identical either way.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const btn = page.locator(".maplibregl-ctrl-attrib-button");
+  await expect(btn).toHaveCount(1);
+  await expect(btn).toHaveCSS("background-repeat", "no-repeat");
 });
 
 test("shots", async ({ page }) => {
@@ -207,7 +238,32 @@ test("shots", async ({ page }) => {
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-desktop.png" });
 
+  // The other skin. The header toggle is labelled with its TARGET, so "DARK" is
+  // the button that turns the dark skin on — the same convention the View
+  // group's own pair button follows. Worth a shot of its own: the rail is
+  // token-only, and a token that resolves in one skin and not the other is the
+  // classic way a control goes invisible on half the users.
+  //
+  // The group is REOPENED after each skin click, and that is the rail working
+  // rather than a workaround: the header toggle is outside the rail, so clicking
+  // it is an outside click and the flyout closes on it. Anything else would mean
+  // a panel that survives a click on the far side of the screen.
+  //
+  // SCOPED TO THE BANNER, and that is not incidental either. The header's skin
+  // button and the View group's basemap pair button can both read "Light" at the
+  // same moment — one is the console skin, the other is the map's basemap, and
+  // they are genuinely different things. An unscoped getByRole matched both and
+  // failed on strict mode, which is Playwright telling the truth about the page.
+  const header = page.getByRole("banner");
+  await header.getByRole("button", { name: "DARK" }).click();
+  await expect(header.getByRole("button", { name: "LIGHT" })).toBeVisible();
+  await rail.getByRole("button", { name: VIEW }).click();
+  await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
+  await page.screenshot({ path: "persona-shots/map-rail-view-desktop-dark.png" });
+
+  await header.getByRole("button", { name: "LIGHT" }).click();
   await page.setViewportSize({ width: 390, height: 844 });
+  await rail.getByRole("button", { name: VIEW }).click();
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-phone.png" });
 });
