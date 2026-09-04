@@ -1,13 +1,30 @@
 // Idle main-thread cost of a page at rest, headed, with optional ablations.
 // usage: node idleprof.mjs <url> [--settle=5000] [--window=10000] [--cpu=1] [--reduced-motion] [--scroll=N] [--mobile]
+//
+// Against a Vercel PREVIEW, which is a production build this machine did not have to
+// make and cannot always afford to:
+//   vercel env run --project traffic-nerd-v2 -- node scripts/idleprof.mjs <preview-url>/app
+// `vercel env run` puts VERCEL_OIDC_TOKEN in the environment without it ever appearing
+// in a command line or in output, and the header below is what gets past Deployment
+// Protection. It is `x-vercel-trusted-oidc-idp-token`, NOT `x-vercel-oidc-token` —
+// different header, different purpose. Never disable Deployment Protection to make a
+// run pass, and never print the token.
 import { loadPlaywright } from "./playwright.mjs";
 const { chromium, devices } = await loadPlaywright();
 const args = Object.fromEntries(process.argv.slice(3).map((a) => { const m = a.match(/^--([^=]+)(?:=(.*))?$/); return m ? [m[1], m[2] ?? true] : [a, true]; }));
 const url = process.argv[2];
 const settle = Number(args.settle || 5000), win = Number(args.window || 10000), cpu = Number(args.cpu || 1);
 
+// Scoped to the target's own origin so the token cannot ride along to a third party
+// if the page fetches one.
+const oidc = process.env.VERCEL_OIDC_TOKEN;
+const auth = oidc ? { extraHTTPHeaders: { "x-vercel-trusted-oidc-idp-token": oidc } } : {};
+
 const browser = await chromium.launch({ headless: false });
-const ctx = await browser.newContext(args.mobile ? { ...devices["Pixel 7"] } : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+const ctx = await browser.newContext({
+  ...(args.mobile ? { ...devices["Pixel 7"] } : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }),
+  ...auth,
+});
 const page = await ctx.newPage();
 if (args["reduced-motion"]) await page.emulateMedia({ reducedMotion: "reduce" });
 await page.addInitScript(() => {
