@@ -15,16 +15,26 @@ const args = Object.fromEntries(process.argv.slice(3).map((a) => { const m = a.m
 const url = process.argv[2];
 const settle = Number(args.settle || 5000), win = Number(args.window || 10000), cpu = Number(args.cpu || 1);
 
-// Scoped to the target's own origin so the token cannot ride along to a third party
-// if the page fetches one.
+// THE HEADER MUST BE SCOPED TO THE TARGET ORIGIN, and a route handler is the only way
+// to do it. This block previously CLAIMED to be scoped while using `extraHTTPHeaders`,
+// which applies to every request the page makes, cross-origin ones included. A
+// non-simple header forces a CORS preflight, and `tiles.openfreemap.org` answers 405
+// to any OPTIONS — verified: plain GET 200, OPTIONS 405. The Liberty style then fails,
+// WorldMap falls back to Satellite, arcgisonline refuses the preflight too, and the run
+// reports entirely plausible idle numbers for a map that never loaded. "Zero map
+// renders" is exactly what a dead map produces, which is why this was not obvious.
 const oidc = process.env.VERCEL_OIDC_TOKEN;
-const auth = oidc ? { extraHTTPHeaders: { "x-vercel-trusted-oidc-idp-token": oidc } } : {};
 
 const browser = await chromium.launch({ headless: false });
 const ctx = await browser.newContext({
   ...(args.mobile ? { ...devices["Pixel 7"] } : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }),
-  ...auth,
 });
+if (oidc) {
+  const targetOrigin = new URL(url).origin;
+  await ctx.route((u) => u.origin === targetOrigin, (route) =>
+    route.continue({ headers: { ...route.request().headers(), "x-vercel-trusted-oidc-idp-token": oidc } }),
+  );
+}
 const page = await ctx.newPage();
 if (args["reduced-motion"]) await page.emulateMedia({ reducedMotion: "reduce" });
 await page.addInitScript(() => {
