@@ -15,10 +15,11 @@ import CoveragePanel from "@/components/shell/CoveragePanel";
 import MarketsPanel from "@/components/shell/MarketsPanel";
 import WatchlistPanel from "@/components/shell/WatchlistPanel";
 import RailSplitter from "@/components/console/RailSplitter";
+import WallWorkspace from "@/components/console/WallWorkspace";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
-import { railSizes } from "@/lib/terminal/rails";
+import { railSizes, dockSize } from "@/lib/terminal/rails";
 import { useRailSplitter } from "@/lib/terminal/useRailSplitter";
 import { useTerminalSkin } from "@/lib/terminal/skin";
 import { useShellBox } from "@/lib/terminal/rowBudget";
@@ -106,6 +107,27 @@ export default function ConsoleWorkspace() {
   // parameter stays on the pure rails function, where it is still unit-tested.
   const sizes = useMemo(() => railSizes(layout, box, false), [layout, box]);
 
+  // ── WALL MODE ──────────────────────────────────────────────────────────────
+  //
+  // The frame does not change. Five columns, three rows, same element, same
+  // children in the same order. What changes is which cell each occupant sits
+  // in: the WALL takes the hero cell (column 3) and the STAGE moves to the
+  // right-hand track (column 5), where it is the map dock.
+  //
+  // THE STAGE SECTION KEEPS ITS REACT POSITION IN BOTH MODES, and that is the
+  // constraint this whole file already bends around. A `StageHost` remount costs
+  // a WebGL context, a full basemap style fetch, the countries geojson, ~18
+  // re-rasterised sprites and ~19k camera features. Rendering the map "somewhere
+  // else" for a wall board would remount it on every board switch. So the section
+  // below is emitted unconditionally, at a fixed index among its siblings, and
+  // only its inline `gridColumn` differs — exactly the trick that lets a rail
+  // splitter resize the map without touching the element.
+  //
+  // The other slots become `null` rather than disappearing, which keeps every
+  // sibling index stable for React's positional reconciliation.
+  const wall = layout.mode === "wall";
+  const dock = wall ? dockSize(layout, box) : 0;
+
   /** Every rail's widgets, already ordered — `order` is dense and 0-based. */
   const byRail = useMemo(() => {
     const out = {} as Record<SegmentId, ReturnType<typeof widgetsInSegment>>;
@@ -114,9 +136,9 @@ export default function ConsoleWorkspace() {
   }, [layout]);
 
   const railVars = {
-    "--tn-lw": `${sizes.left}px`,
-    "--tn-rw": `${sizes.right}px`,
-    "--tn-bh": `${sizes.bottom}px`,
+    "--tn-lw": `${wall ? 0 : sizes.left}px`,
+    "--tn-rw": `${wall ? dock : sizes.right}px`,
+    "--tn-bh": `${wall ? 0 : sizes.bottom}px`,
   } as CSSProperties;
 
   /**
@@ -230,9 +252,13 @@ export default function ConsoleWorkspace() {
     );
   };
 
-  /** A rail's seam, on the side that faces the map. */
+  /** A rail's seam, on the side that faces the map — or, in wall mode, the map
+   *  dock's own seam. Same component and the same store write, because the dock
+   *  IS the right rail: it simply holds the stage instead of widgets, so its
+   *  width persists in `segments.right.size` like every other rail's. */
   const renderSplit = (rail: SegmentId) => {
-    if (sizes[rail] === 0) return null;
+    const size = wall ? (rail === "right" ? dock : 0) : sizes[rail];
+    if (size === 0) return null;
     return (
       <div
         style={{
@@ -243,7 +269,7 @@ export default function ConsoleWorkspace() {
       >
         <RailSplitter
           rail={rail}
-          size={sizes[rail]}
+          size={size}
           active={split.activeRail === rail}
           onPointerDown={(e) => split.start(e, rail)}
         />
@@ -272,16 +298,44 @@ export default function ConsoleWorkspace() {
         className={`tn-seg tn-rails${split.activeRail ? " is-splitting" : ""}`}
         style={gridStyle}
       >
-        {renderRail("left")}
-        {renderSplit("left")}
+        {/* SLOT 0 — the hero cell's occupant. On rails that is the left rail; on
+            a wall it is the wall itself. Every slot below keeps its index in
+            both modes (a `null` still counts), because React reconciles these
+            children POSITIONALLY and a shifting index would remount the stage. */}
+        {wall
+          ? <WallWorkspace style={{ gridColumn: 3, gridRow: 1 }} skipTarget />
+          : renderRail("left")}
+        {wall ? null : renderSplit("left")}
 
+        {/* SLOT 2 — the stage. Emitted unconditionally and never keyed, in both
+            modes. Only `gridColumn` differs: the hero cell on rails, the dock's
+            track on a wall. See the WALL MODE note at the top of the component
+            for what a remount here would cost. */}
         <section
-          className="tn-cw-stage"
-          id={SKIP_TARGET_ID}
-          tabIndex={-1}
+          // A CLOSED DOCK IS NOT `hidden` AND NOT `aria-hidden`, and both of
+          // those were tried and are wrong. `hidden` is display:none, which does
+          // not unmount but would tear down the map's layout box entirely.
+          // `aria-hidden` on its own is worse than useless here: the stage holds
+          // StageBar's real buttons, and aria-hidden over focusable controls
+          // leaves them tabbable but unannounced, which is the one combination
+          // WCAG calls out by name.
+          //
+          // `.is-stowed` sets `visibility: hidden`, which removes the subtree
+          // from BOTH the accessibility tree and the tab order in one move,
+          // while leaving the element laid out — so the map keeps its WebGL
+          // context, its style and its sources, and WorldMap's own
+          // ResizeObserver fires `map.resize()` when the track widens again.
+          // Reopening the dock is a resize, never a rebuild.
+          className={`tn-cw-stage${wall && dock === 0 ? " is-stowed" : ""}`}
+          // The skip link points at the MAIN thing on the board, and on a wall
+          // that is the wall — see WallWorkspace's `skipTarget`. Leaving the
+          // target on a stowed dock is how a skip link silently sends a keyboard
+          // user to an invisible region.
+          id={wall ? undefined : SKIP_TARGET_ID}
+          tabIndex={wall ? undefined : -1}
           aria-labelledby="tn-cw-stage-h"
           data-grid-id={STAGE_ID}
-          style={{ gridColumn: 3, gridRow: 1 }}
+          style={{ gridColumn: wall ? 5 : 3, gridRow: 1 }}
         >
           <h2 id="tn-cw-stage-h" className="tn-sr-only">{stageLabel}</h2>
           <StageHost stage={layout.stage} />
@@ -294,10 +348,10 @@ export default function ConsoleWorkspace() {
         </section>
 
         {renderSplit("right")}
-        {renderRail("right")}
+        {wall ? null : renderRail("right")}
 
-        {renderSplit("bottom")}
-        {renderRail("bottom")}
+        {wall ? null : renderSplit("bottom")}
+        {wall ? null : renderRail("bottom")}
       </div>
 
       {/* The variant's persistent chrome — the Source Catalog rail, and the ONLY

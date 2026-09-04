@@ -3990,6 +3990,128 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   outline-offset: -1px;
 }
 
+/* ── The wall's tiles ──────────────────────────────────────────────────────
+   Scoped to `> .tn-grid`, so none of this reaches a rails board. A rail card is
+   sized by `flex: 0 0 auto` and its own px height; a wall tile is sized by its
+   GRID CELL, so it has to fill the slot instead of standing at its content
+   height inside it. WidgetFrame stops emitting an inline `max-height` in wall
+   mode for the same reason — an inline style would beat this rule and clip the
+   tile to a px height the drag never updates. */
+.tn-terminal .tn-grid > .tn-seg-slot > .tn-cw { height: 100%; max-height: none; }
+
+/* The wall SCROLLS; `.tn-seg` is `overflow: hidden` for the rails frame, where
+   each rail owns its own scroller. A wall has one surface and a user can always
+   drag a tile past the fold, and content you cannot reach is worse than a
+   scrollbar — this is the same failure that once left 429px of a 1249px board
+   unreachable inside an 820px band. */
+.tn-terminal .tn-seg.tn-grid { overflow: auto; }
+
+/* ── The wall's frame and its toolbar ──────────────────────────────────────
+   The hero cell on a wall board holds two rows: a fixed toolbar and the grid,
+   which takes everything else and scrolls. `min-height: 0` on both is what lets
+   the grid actually shrink to its track instead of forcing the row taller — the
+   default `min-height: auto` on a grid item is the reason a nested scroller so
+   often refuses to scroll at all. */
+.tn-terminal .tn-wall {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+}
+
+.tn-terminal .tn-wall-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--tnx-line);
+  background: var(--tnx-panel);
+  min-height: 0;
+}
+.tn-terminal .tn-wall-sp { flex: 1; }
+
+.tn-terminal .tn-wall-btn {
+  font: inherit;
+  font-size: var(--tnx-fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tnx-ink-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.tn-terminal .tn-wall-btn:hover {
+  color: var(--tnx-ink);
+  border-color: var(--tnx-line);
+}
+/* The dock control is a TOGGLE and says so at rest, not only on hover — it is
+   the one button here whose meaning depends on a state you cannot otherwise
+   see once the dock is closed. */
+.tn-terminal .tn-wall-btn[aria-pressed="true"] {
+  color: var(--tnx-accent);
+  border-color: var(--tnx-accent);
+}
+.tn-terminal .tn-wall-btn:focus-visible {
+  outline: 2px solid var(--tnx-accent);
+  outline-offset: 1px;
+}
+
+/* A STOWED MAP DOCK — the stage on a wall board whose dock is closed.
+   `visibility: hidden` and not `display: none`, because the two differ in exactly
+   the way that matters here: `visibility` removes the subtree from the
+   accessibility tree AND the tab order (so StageBar's buttons stop being
+   tabbable) while leaving the element LAID OUT, so MapLibre keeps its WebGL
+   context and its sources and only has to `resize()` when the dock reopens.
+   `display: none` would tear the layout box down and make reopening a rebuild. */
+.tn-terminal .tn-cw-stage.is-stowed { visibility: hidden; }
+
+/* ── The eight resize handles ──────────────────────────────────────────────
+   Restored from 368f1c8. These are the ONLY rules #146 actually deleted from
+   this file — `.tn-grid`, `.tn-grid-guides`, `.tn-grid-ghost` and
+   `.tn-stage-grip` all survived it and have been sitting here dead ever since,
+   which is why this block is a restore rather than a rewrite.
+
+   Invisible at rest and revealed on hover. That is deliberate: eight visible
+   bands per tile on a wall of twelve is a cage, and the south-east corner below
+   carries a resting mark so the affordance is still discoverable without them. */
+.tn-terminal .tn-rz {
+  position: absolute; z-index: 20;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  touch-action: none;
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz,
+.tn-terminal .is-held .tn-rz { opacity: 1; }
+
+.tn-terminal .tn-rz::after {
+  content: ""; position: absolute; inset: 0;
+  background: var(--tnx-accent);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.tn-terminal .tn-rz:hover::after { opacity: 0.45; }
+
+.tn-terminal .tn-rz-n  { top: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-s  { bottom: 0; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+.tn-terminal .tn-rz-w  { left: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-e  { right: 0; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+.tn-terminal .tn-rz-nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.tn-terminal .tn-rz-ne { top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+.tn-terminal .tn-rz-se { bottom: 0; right: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+
+/* The south-east corner gets the only resting mark — the universal "this
+   resizes" tell, and the handle people reach for first. */
+.tn-terminal .tn-rz-se::before {
+  content: ""; position: absolute; right: 2px; bottom: 2px;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--tnx-ink-ghost);
+  border-bottom: 1.5px solid var(--tnx-ink-ghost);
+}
+.tn-terminal .tn-seg-slot:hover .tn-rz-se::before { border-color: var(--tnx-accent); }
+
 /* The held card. It leaves the flat, hairline-separated surface for as long as
    it is held — the one place the Terminal spends a shadow, because "this one is
    in your hand" is exactly what elevation is for. `transition: none` matters:

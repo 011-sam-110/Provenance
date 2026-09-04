@@ -45,14 +45,19 @@ export function useWidgetReport() { return useContext(ReportCtx); }
 export default function WidgetFrame({
   instance,
   onNudgeKey,
+  onGrab,
 }: {
   instance: WidgetInstance;
-  /** Arrow keys on the grip, with RAIL meanings: up/down reorder within the
-   *  rail, left/right send the card to another rail. Supplied by
-   *  ConsoleWorkspace, which owns the layout. `onGrab` and `onNudge` are gone
-   *  with the grid drag they served — there is no free-form drag left to start
-   *  and no grid cell left to nudge into. */
+  /** Arrow keys on the grip. The MEANING depends on the board's mode, and the
+   *  workspace that owns the layout supplies the handler rather than this frame
+   *  guessing: on rails, up/down reorder within the rail and left/right send the
+   *  card to another rail; on a wall, arrows move it a cell and shift+arrows
+   *  resize it. */
   onNudgeKey?: (e: React.KeyboardEvent) => void;
+  /** Starts a free drag from the grip. Supplied by WallWorkspace ONLY — a rails
+   *  card has nowhere to be dragged to, so on those boards this is undefined and
+   *  the grip stays a keyboard-only control exactly as it is today. */
+  onGrab?: (e: React.PointerEvent) => void;
 }) {
   const type = getWidgetType(instance.type);
   // Subscribed, not read off the store during render: the move controls need
@@ -173,8 +178,26 @@ export default function WidgetFrame({
   const HEIGHT_STEP = 40;
   const bumpHeight = (d: number) => shellLayoutStore.resizeWidget(instance.id, instance.height + d);
 
+  // ── Wall mode ────────────────────────────────────────────────────────────
+  // A wall tile is sized by its GRID CELL and positioned by its rect, so three
+  // things about this frame change and nothing else does.
+  const wall = layout.mode === "wall";
+  /** One step of width, in columns. */
+  const bumpWidth = (d: number) =>
+    shellLayoutStore.resizeWidth(instance.id, (instance.rect?.w ?? 4) + d);
+
   return (
-    <div className="tn-cw" data-widget-type={instance.type} style={{ maxHeight: instance.collapsed ? undefined : instance.height }}>
+    // NO INLINE max-height ON A WALL. The tile's height is its cell, and a drag
+    // on the south edge changes the cell without touching `instance.height` — so
+    // an inline max-height would clip the tile to a px value that stops being
+    // true the first time anyone resizes it, and inline beats the stylesheet.
+    // The CSS rule scoped to `.tn-grid > .tn-seg-slot > .tn-cw` fills the cell
+    // instead.
+    <div
+      className="tn-cw"
+      data-widget-type={instance.type}
+      style={{ maxHeight: instance.collapsed || wall ? undefined : instance.height }}
+    >
       <header className="tn-cw-head">
         {/* The move affordance. It is NO LONGER A DRAG SOURCE — there is nothing
             to drag a card to, because a card's position is which rail it is in
@@ -188,9 +211,14 @@ export default function WidgetFrame({
         <button
           type="button"
           className="tn-cw-grip"
-          aria-label={`Move ${frameTitle}. Up and down reorder it in this rail; left and right send it to another rail.`}
-          title="Arrows reorder in this rail · left/right send it to another rail"
+          aria-label={wall
+            ? `Move ${frameTitle}. Drag it, or use the arrow keys to move it one cell and shift with the arrow keys to resize it.`
+            : `Move ${frameTitle}. Up and down reorder it in this rail; left and right send it to another rail.`}
+          title={wall
+            ? "Drag to move · arrows move one cell · shift+arrows resize"
+            : "Arrows reorder in this rail · left/right send it to another rail"}
           onKeyDown={onNudgeKey}
+          onPointerDown={onGrab}
         >
           ⠿
         </button>
@@ -315,35 +343,55 @@ export default function WidgetFrame({
               under the pointer, and "why did that button move?" is a worse
               question than "why is that button grey?". */}
           <div className="tn-cw-menu-sec">Order</div>
-          <div className="tn-cw-menu-row">
-            <button
-              className="tn-cw-chip"
-              title="One place up this rail"
-              aria-label="Move one place up this rail"
-              disabled={!canNudge(-1)}
-              onClick={() => doNudge(-1)}
-            >▲</button>
-            <button
-              className="tn-cw-chip"
-              title="One place down this rail"
-              aria-label="Move one place down this rail"
-              disabled={!canNudge(1)}
-              onClick={() => doNudge(1)}
-            >▼</button>
-          </div>
+          {/* Rail reordering. On a wall a tile has no place in a stack to move
+              up or down — its position is its cell — and the grip's arrow keys
+              are the pointer-free path there instead. */}
+          {!wall && (
+            <div className="tn-cw-menu-row">
+              <button
+                className="tn-cw-chip"
+                title="One place up this rail"
+                aria-label="Move one place up this rail"
+                disabled={!canNudge(-1)}
+                onClick={() => doNudge(-1)}
+              >▲</button>
+              <button
+                className="tn-cw-chip"
+                title="One place down this rail"
+                aria-label="Move one place down this rail"
+                disabled={!canNudge(1)}
+                onClick={() => doNudge(1)}
+              >▼</button>
+            </div>
+          )}
 
-          {/* DESTINATIONS, not directions. Only the two rails it is not in. */}
-          <div className="tn-cw-menu-sec">Send to</div>
-          {railTargets.map((seg) => (
-            <button key={seg} onClick={() => doSend(seg)}>
-              {SEGMENT_LABEL[seg]}
-            </button>
-          ))}
+          {/* DESTINATIONS, not directions. Only the two rails it is not in.
+              Hidden on a wall: the rails are not on screen there, so "send to
+              the bottom rail" would move the tile somewhere the user cannot
+              see it — the exact "control that lies" this menu has already been
+              corrected for once, in the other direction. */}
+          {!wall && (
+            <>
+              <div className="tn-cw-menu-sec">Send to</div>
+              {railTargets.map((seg) => (
+                <button key={seg} onClick={() => doSend(seg)}>
+                  {SEGMENT_LABEL[seg]}
+                </button>
+              ))}
+            </>
+          )}
 
-          {/* SIZE. There is no width in a rail — the rail's own splitter owns
-              that, for every card in it at once. Height is per-card. */}
+          {/* SIZE. A rail card has no width to set — the rail's own splitter owns
+              that, for every card in it at once. A WALL tile does: it spans
+              columns of the board, so the width chips come back with it. */}
           <div className="tn-cw-menu-sec">Grow / shrink</div>
           <div className="tn-cw-menu-row">
+            {wall && (
+              <>
+                <button className="tn-cw-chip" title="Narrower" aria-label="Make narrower" onClick={() => bumpWidth(-1)}>−W</button>
+                <button className="tn-cw-chip" title="Wider" aria-label="Make wider" onClick={() => bumpWidth(1)}>+W</button>
+              </>
+            )}
             <button className="tn-cw-chip" title="Shorter" aria-label="Make shorter" onClick={() => bumpHeight(-HEIGHT_STEP)}>−H</button>
             <button className="tn-cw-chip" title="Taller" aria-label="Make taller" onClick={() => bumpHeight(HEIGHT_STEP)}>+H</button>
           </div>

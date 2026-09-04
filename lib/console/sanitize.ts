@@ -3,10 +3,19 @@ import {
   type GridRect, type ShellLayout, type SegmentId, type StageId, type WidgetInstance,
 } from "@/lib/console/types";
 import { clampRailSize, railsFromRects } from "@/lib/terminal/rails";
+import { clampRect } from "@/lib/terminal/layoutGrid";
+import { seedWallRects } from "@/lib/console/reducers";
 import { sanitizeCamslotConfig } from "@/lib/console/widgets/camslot.model";
 
 const SEGMENTS: SegmentId[] = ["left", "right", "bottom"];
 const STAGES: StageId[] = ["map3d", "map2d", "clock"];
+
+/** One widget as read off untrusted input, before either mode decides what its
+ *  `rect` means. Module-scoped so both placement paths below can take it. */
+interface Parsed {
+  id: string; type: string; segment: SegmentId; order: number; height: number;
+  rect: GridRect | null; collapsed: boolean; config: Record<string, unknown>;
+}
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
 
@@ -15,10 +24,18 @@ const RETIRED_TYPES: Record<string, string> = { cameras: "camslot" };
 
 /**
  * A rect only if the input is a complete, finite one — a half-written rect is
- * treated as absent. LEGACY ONLY: nothing in the modern type carries a rect, but
- * a `?c=` link minted by an older build, or a `tn.console.v1` blob written
- * before rails shipped, still can. `railsFromRects` (lib/terminal/rails.ts) is
- * the only thing that reads what this returns.
+ * treated as absent.
+ *
+ * WHAT READS THIS DEPENDS ENTIRELY ON `mode`, and getting that wrong is silent:
+ *
+ *  • rails — the rect is LEGACY. It can only have come from a `?c=` link minted
+ *    by an older build or a `tn.console.v1` blob written before rails shipped, and
+ *    `railsFromRects` converts it into a rail placement and discards it. Unchanged
+ *    from before this file learned about walls.
+ *  • wall — the rect IS the widget's position and is KEPT. Running the rails
+ *    migration over it here is the bug this branch exists to prevent: it does not
+ *    throw and it does not warn, it just quietly turns a wall back into a stack on
+ *    the next page load.
  */
 function readRect(v: unknown): GridRect | null {
   if (!v || typeof v !== "object") return null;
@@ -71,10 +88,6 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
     };
   }
 
-  interface Parsed {
-    id: string; type: string; segment: SegmentId; order: number; height: number;
-    rect: GridRect | null; collapsed: boolean; config: Record<string, unknown>;
-  }
   const parsed: Parsed[] = [];
   for (const w of r.widgets as unknown[]) {
     if (parsed.length >= MAX_WIDGETS) break;
@@ -102,16 +115,48 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
     });
   }
 
-  // Legacy stageRect, if the input carries one. `createDefaultLayout` no longer
-  // has one to fall back to — a fresh layout has no rects at all, which is
-  // exactly rule 1 of `railsFromRects`: no rect means trust the stored segment.
-  const legacyStageRect = readRect(r.stageRect);
+  // An ABSENT mode reads as "rails", and that default is the whole compatibility
+  // story: every layout already in localStorage, every archived board and every
+  // `?c=` link minted before walls existed lands here and takes the identical path
+  // it took before. No layout VERSION bump, so no saved board is wiped to add a
+  // field.
+  const mode = r.mode === "wall" ? "wall" : "rails";
+
+  const widgets: WidgetInstance[] =
+    mode === "wall" ? wallWidgets(parsed) : railWidgets(parsed, readRect(r.stageRect));
+
+  const ids = new Set(widgets.map((w) => w.id));
+  const focusedWidgetId =
+    typeof r.focusedWidgetId === "string" && ids.has(r.focusedWidgetId) ? r.focusedWidgetId : null;
+
+  const layout: ShellLayout = {
+    segments,
+    stage: r.stage as StageId,
+    widgets,
+    focusedWidgetId,
+    mode,
+  };
+
+  // Repair, not decoration. A wall tile with no rect is MOUNTED BUT NEVER DRAWN —
+  // it holds its config and its fetches and shows nothing — which reads as data
+  // loss and is impossible to diagnose from the screen. Tiles can legitimately
+  // arrive that way: a rails `?c=` link opened on a wall board, or a rect that
+  // failed readRect's completeness check.
+  return mode === "wall" ? seedWallRects(layout) : layout;
+}
+
+/** RAILS — unchanged. The rect is legacy input and `railsFromRects` converts it
+ *  into a rail placement, which is what every stored layout expects today.
+ *
+ *  `createDefaultLayout` has no stageRect to fall back to — a fresh layout has no
+ *  rects at all, which is exactly rule 1 of `railsFromRects`: no rect means trust
+ *  the stored segment. */
+function railWidgets(parsed: Parsed[], legacyStageRect: GridRect | null): WidgetInstance[] {
   const placements = railsFromRects(
     parsed.map((p) => ({ id: p.id, segment: p.segment, order: p.order, height: p.height, rect: p.rect })),
     legacyStageRect,
   );
-
-  const widgets: WidgetInstance[] = parsed.map((p) => {
+  return parsed.map((p) => {
     // `railsFromRects` is total — every id handed in comes back with a placement.
     const placed = placements.get(p.id)!;
     return {
@@ -124,15 +169,28 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
       config: p.config,
     };
   });
+}
 
-  const ids = new Set(widgets.map((w) => w.id));
-  const focusedWidgetId =
-    typeof r.focusedWidgetId === "string" && ids.has(r.focusedWidgetId) ? r.focusedWidgetId : null;
-
-  return {
-    segments,
-    stage: r.stage as StageId,
-    widgets,
-    focusedWidgetId,
-  };
+/** WALL — the rect is kept and clamped onto the board.
+ *
+ *  `segment` / `order` / `height` are still densified and kept valid even though
+ *  nothing on a wall reads them for placement. That is what makes a mode change a
+ *  no-op rather than a migration in either direction: `railsFromRects` can derive
+ *  a rail placement from these the moment a board goes back to rails. */
+function wallWidgets(parsed: Parsed[]): WidgetInstance[] {
+  const seen = new Map<SegmentId, number>();
+  return parsed.map((p) => {
+    const order = seen.get(p.segment) ?? 0;
+    seen.set(p.segment, order + 1);
+    return {
+      id: p.id,
+      type: p.type,
+      segment: p.segment,
+      order,
+      height: p.height,
+      collapsed: p.collapsed,
+      config: p.config,
+      ...(p.rect ? { rect: clampRect({ ...p.rect }) } : {}),
+    };
+  });
 }
