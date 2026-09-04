@@ -209,3 +209,29 @@ Browser, in the running app, at 1440×900:
 - `map.resize()` on reveal produces a correctly sized canvas rather than a stretched one;
 - a drag and a resize both land where the ghost said they would;
 - a reload restores the wall as a wall, which is hazard 5.1 caught in the act.
+
+### 8.1 What the browser run actually found
+
+`scripts/verify-wall.mjs` runs all four as measured PASS/FAIL checks against a live dev server and
+exits non-zero on any failure, so this section is a gate rather than a note. It is at ten checks and
+passes ten, three runs in a row, with shots in `persona-shots/wall/`. Two of those checks exist
+because the first run failed them, and both defects were invisible to the unit suite:
+
+- **The north-west resize handle covered the drag grip.** Restoring the grid put `onGrab` on the
+  14px grip alone, where before #146 the whole header carried it. Measured: the grip occupies
+  x50..64 of a tile, `.tn-rz-nw` covers x42..58, and `elementFromPoint` at the grip's own centre
+  returned the handle. Every pointer aimed at the thing that looks draggable resized the tile
+  instead — the first live drag came back as `4x17 → 2x13`, which is exactly `resizeRect(…, "nw")`.
+  Fixed by giving the header the handler back (as it had) and lifting the grip above the handles.
+  Pinned by a hit test, because nothing about the stylesheet reads wrong.
+- **The world clock spilled out of the dock.** A 567px seven-city row centred in a 400px stage,
+  84px past each edge. `@media (max-width: 900px)` already hides it when the WINDOW is narrow; the
+  dock makes the STAGE narrow independently, so the same rule now applies through the `tnstage`
+  container query that is already there for the search field. Pinned by a check that nothing inside
+  `.tn-cw-stage` paints outside it.
+
+One thing the run reports and does not explain: an intermittent dev-only React hydration warning,
+about one per full run, tagged `[reload]`. It did not reproduce in four targeted probes of the same
+flow on either board (load, board switch, reload, a 30-second poll all came back clean), and React
+regenerates the tree client-side when it fires. Left as an open observation rather than claimed as
+either caused or cleared by this branch.

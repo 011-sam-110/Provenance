@@ -4372,6 +4372,14 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   cursor: grab;
   touch-action: none;
 }
+/* Above the eight `.tn-rz` handles (z-index 20), because the north-west one lands
+   squarely on top of this button — measured at 1440x900: the grip occupies
+   x50..64 of the tile and `.tn-rz-nw` covers x42..58, so `elementFromPoint` at
+   the grip's centre returned the handle, not the grip. Without this, the one
+   element in the header that LOOKS draggable is the one element that resizes.
+   The corner keeps the 8px to the grip's left, which is where it reads as a
+   corner anyway. */
+.tn-terminal .tn-cw-grip { position: relative; z-index: 21; }
 .tn-terminal .tn-cw-grip:hover { color: var(--tnx-accent); }
 .tn-terminal .tn-cw-grip:focus-visible {
   outline: none; color: var(--tnx-accent);
@@ -5477,6 +5485,17 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
     width: auto;
     transform: none;
   }
+}
+
+/* The world clock is SEVEN cities on one row and it does not fold — measured in
+   the dock at 1440x900: a 567px strip centred in a 400px stage, spilling 84px past
+   each edge. `@media (max-width: 900px)` already hides it for the same reason at
+   the window level, and the same reasoning applies here: the constraint is the
+   STAGE's width, which the wall's dock can set independently of the window.
+   Hidden rather than folded because the strip is ambient — a dock open to pick
+   cameras has nothing to gain from three of seven timezones. */
+@container tnstage (max-width: 600px) {
+  .tn-terminal .tnx-stage-foot { display: none; }
 }
 /* ── Placement picker ─────────────────────────── */
 .tn-place-back {

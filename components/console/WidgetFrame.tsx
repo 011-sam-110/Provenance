@@ -198,16 +198,28 @@ export default function WidgetFrame({
       data-widget-type={instance.type}
       style={{ maxHeight: instance.collapsed || wall ? undefined : instance.height }}
     >
-      <header className="tn-cw-head">
-        {/* The move affordance. It is NO LONGER A DRAG SOURCE — there is nothing
-            to drag a card to, because a card's position is which rail it is in
-            and where in that rail's stack it sits. It stays a real, focusable
-            button carrying the keyboard path to both.
+      {/* THE WHOLE HEADER IS THE DRAG SOURCE on a wall, and the grip below is the
+          signpost — which is how this worked before #146 and is not a stylistic
+          preference. Measured in the browser at 1440x900 with the grip as the only
+          drag surface: the grip's box is x50..64, the tile's north-west resize
+          handle covers x42..58, and `elementFromPoint` at the grip's own centre
+          returns `.tn-rz-nw`. Every pointer aimed at the thing that looks
+          draggable resized the tile from its top-left corner instead. Handing the
+          header the same handler gives the gesture a 400px-wide target again.
 
-            The label says what the keys DO rather than naming a gesture. It used
-            to promise "shift with arrow keys resizes", which was true on the
-            grid; size now belongs to the rail's own splitter (which can announce
-            the new size, as this never could) and to the ⋯ menu's height chips. */}
+          `onGrab` is undefined on a rails board, so this is a no-op there and the
+          header stays inert exactly as it is today. */}
+      <header className="tn-cw-head" onPointerDown={onGrab}>
+        {/* The move affordance. On a wall it is the visible signpost for the drag
+            AND the keyboard path to moving and resizing. On a rails board there is
+            nothing to drag a card to — a card's position is which rail it is in
+            and where in that rail's stack it sits — so there it is the keyboard
+            path alone.
+
+            The label says what the keys DO rather than naming a gesture, and it
+            says something different per mode: on a rail, size belongs to the
+            rail's own splitter (which can announce the new size, as this never
+            could) and to the ⋯ menu's height chips. */}
         <button
           type="button"
           className="tn-cw-grip"
