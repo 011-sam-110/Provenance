@@ -1,0 +1,114 @@
+[
+  {
+    "DT_RowId": "1",
+    "tooltipUrl": "/tooltip/Cameras/1?lang=%7Blang%7D&noCss=true",
+    "agencyLogoEnabled": false,
+    "visible": true,
+    "isDefault": false,
+    "images": [
+      {
+        "id": 1,
+        "cameraSiteId": 1,
+        "sortOrder": 0,
+        "description": "Traffic closest to this camera is traveling eastbound on I-20.",
+        "imageUrl": "/map/Cctv/1",
+        "imageType": 0,
+        "refreshRateMs": null,
+        "videoUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-030.streams/playlist.m3u8",
+        "videoType": "application/x-mpegURL",
+        "isVideoAuthRequired": false,
+        "videoDisabled": false,
+        "disabled": false,
+        "blocked": false,
+        "language": "en"
+      }
+    ],
+    "id": 1,
+    "sourceId": "100",
+    "source": "LADOTD",
+    "type": null,
+    "areaId": null,
+    "area": null,
+    "sortOrder": 0,
+    "roadway": "I-20",
+    "direction": "Unknown",
+    "location": "I-20 at I-220 Off Ramp",
+    "latLng": {
+      "geography": {
+        "coordinateSystemId": 4326,
+        "wellKnownText": "POINT (-93.630833 32.538889)"
+      }
+    },
+    "linkId1": "1162998590F",
+    "linkId2": null,
+    "created": "2019-10-22T15:14:52.5866667+00:00",
+    "lastUpdated": "2019-10-22T15:14:52.5866667+00:00",
+    "lastEditedBy": "rosalinda.deville@la.gov",
+    "defaultCameraSite": false,
+    "nickname": null,
+    "language": "en",
+    "jsonData": {},
+    "jsonDataSerialized": null,
+    "region": null,
+    "state": null,
+    "county": null,
+    "city": null,
+    "dotDistrict": null
+  },
+  {
+    "DT_RowId": "2",
+    "tooltipUrl": "/tooltip/Cameras/2?lang=%7Blang%7D&noCss=true",
+    "agencyLogoEnabled": false,
+    "visible": true,
+    "isDefault": false,
+    "images": [
+      {
+        "id": 2,
+        "cameraSiteId": 2,
+        "sortOrder": 0,
+        "description": "Traffic closest to this camera is traveling eastbound on I-20.",
+        "imageUrl": "/map/Cctv/2",
+        "imageType": 0,
+        "refreshRateMs": null,
+        "videoUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-002.streams/playlist.m3u8",
+        "videoType": "application/x-mpegURL",
+        "isVideoAuthRequired": false,
+        "videoDisabled": false,
+        "disabled": false,
+        "blocked": false,
+        "language": "en"
+      }
+    ],
+    "id": 2,
+    "sourceId": "101",
+    "source": "LADOTD",
+    "type": null,
+    "areaId": null,
+    "area": null,
+    "sortOrder": 0,
+    "roadway": "I-20",
+    "direction": "Unknown",
+    "location": "I-20 at Monkhouse Drive",
+    "latLng": {
+      "geography": {
+        "coordinateSystemId": 4326,
+        "wellKnownText": "POINT (-93.83 32.4609)"
+      }
+    },
+    "linkId1": "24982783T",
+    "linkId2": "24982784F",
+    "created": "2019-11-13T13:55:27.7666667+00:00",
+    "lastUpdated": "2019-11-13T13:55:27.7666667+00:00",
+    "lastEditedBy": "kathy.zhang@ibigroup.com",
+    "defaultCameraSite": false,
+    "nickname": null,
+    "language": "en",
+    "jsonData": {},
+    "jsonDataSerialized": null,
+    "region": null,
+    "state": null,
+    "county": null,
+    "city": null,
+    "dotDistrict": null
+  }
+]
