@@ -9,8 +9,8 @@ import { mapViewStore } from "@/lib/mapView";
  *
  * THE COMPARISON THIS FILE COMES FROM. Measured 2026-09-05 against
  * simplifaisoul/osiris, which runs the SAME MapLibre 5.24 on the same machine and
- * drops zero frames on the same scripted zoom gesture while this map dropped five,
- * worst gap 383 ms. It does not win by being lighter overall — it parses a 7.9 MB
+ * drops zero frames on the same scripted zoom gesture while this map dropped seven,
+ * worst gap 533 ms (re-measured preview-against-preview, 2026-09-05). It does not win by being lighter overall — it parses a 7.9 MB
  * camera JSON at load and its canvas appears LATER than ours on throttled mobile.
  * It wins on what it declines to do at rest: no terrain, no hillshade, no DEM
  * source, no opening rotation, and buildings only once the user turns them on.
@@ -23,8 +23,14 @@ import { mapViewStore } from "@/lib/mapView";
  * These are the parts of that decision that survive in a node environment. The
  * frame numbers themselves cannot be asserted here (vitest has no DOM and no GPU),
  * so they are re-measured against a deployment; what is pinned here is the shape
- * that made them: the defaults, the absence of the rotation loop, and the fact that
- * the basemap warm-up is DERIVED from the registry rather than typed out again.
+ * that made them: the defaults, and the fact that the basemap warm-up is DERIVED
+ * from the registry rather than typed out again.
+ *
+ * THE ROTATION IS PINNED ELSEWHERE. This file used to assert that WorldMap had no
+ * spin loop; `tests/unit/console-globe-still.test.ts` arrived on main in #159 doing
+ * the same job properly — it strips comments before searching, names the one rAF
+ * that is allowed to remain, and bans `setCenter` outright. Two guards over one fact
+ * is how one of them ends up quietly asserting nothing, so this one gave way.
  */
 
 const src = (rel: string) => readFileSync(resolve(__dirname, "../..", rel), "utf8");
@@ -37,35 +43,6 @@ describe("the map opens cheap", () => {
     const view = mapViewStore.get();
     expect(view.terrain).toBe(false);
     expect(view.buildings).toBe(false);
-  });
-});
-
-describe("the console globe does not rotate on its own", () => {
-  const world = src("components/WorldMap.tsx");
-
-  /**
-   * Sam's own words, from the channel log: "can we remove the globe spinning in the
-   * dashboard entirely". PR #158 shipped a compromise instead — the spin settles
-   * after 8 s — and that still re-renders the whole globe every frame for those 8 s,
-   * which is exactly the window in which the first tiles are arriving and the main
-   * thread is least able to afford it.
-   *
-   * A source read, because the decision cannot be reached any other way from here:
-   * vitest runs in the node environment in this repo, so WorldMap cannot be mounted
-   * and a rotation loop cannot be observed. The spin ENVELOPE keeps its own unit
-   * test (tests/unit/spin.test.ts) — lib/map/spin.ts is still the landing hero's,
-   * and this says nothing about that globe.
-   */
-  it("does not import the spin envelope", () => {
-    // The IMPORT, not the string. WorldMap's own comment names lib/map/spin.ts to
-    // say the landing hero still owns it, and a bare substring match on the path
-    // failed on that sentence the first time this ran.
-    expect(world).not.toMatch(/^import[^\n]*lib\/map\/spin/m);
-  });
-
-  it("has no rotation loop and no rate to run it at", () => {
-    expect(world).not.toMatch(/SPIN_DEG_PER_SEC|SPIN_MAX_ZOOM|IDLE_RESUME_MS/);
-    expect(world).not.toMatch(/requestAnimationFrame\(spin\)/);
   });
 });
 

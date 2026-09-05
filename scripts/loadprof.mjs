@@ -24,7 +24,25 @@ const browser = await chromium.launch({
   headless: !headed,
   args: headed ? [] : ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
 });
+// Against a Vercel PREVIEW — see the note in idleprof.mjs for the token and the header.
+// Worth preferring over localhost for anything TIMED: Chrome does not apply CDP network
+// emulation to loopback traffic, so `--net=slow4g` against localhost silently measures an
+// unthrottled load. An 18 ms TTFB under a "slow 4G" profile is the tell. A preview is a real
+// remote origin, so the throttle actually applies.
+//
+// THE HEADER MUST BE SCOPED TO THE TARGET ORIGIN. `extraHTTPHeaders` on a context applies to
+// EVERY request the page makes, including cross-origin ones. A non-simple header forces the
+// browser to send a CORS preflight, and `tiles.openfreemap.org` answers 405 to any OPTIONS —
+// so the Liberty style 405s, the basemap never loads, and the run measures a dead map while
+// reporting plausible numbers. Routing it per-origin keeps third-party tile hosts untouched.
+const oidc = process.env.VERCEL_OIDC_TOKEN;
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+if (oidc) {
+  const targetOrigin = new URL(url).origin;
+  await ctx.route((u) => u.origin === targetOrigin, (route) =>
+    route.continue({ headers: { ...route.request().headers(), "x-vercel-trusted-oidc-idp-token": oidc } }),
+  );
+}
 const page = await ctx.newPage();
 await page.addInitScript(() => {
   window.__lt = [];

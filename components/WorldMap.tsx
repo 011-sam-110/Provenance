@@ -253,8 +253,12 @@ function hitsAt(map: maplibregl.Map, point: maplibregl.MapLayerMouseEvent["point
   });
 }
 
-// Start zoomed out, so the whole world is the opening frame. It does not turn:
-// the console's globe is still, and the palette / rail fly inward from here.
+// Start zoomed out so the whole globe is the opening view. The palette / rail fly inward.
+//
+// THE CONSOLE GLOBE DOES NOT ROTATE. It used to turn on load and, after #158, turn
+// for 8 s and settle. Both are gone: it is now still from the first frame. See the
+// note on the removed spin loop further down for what came out with it, and
+// `lib/map/spin.ts`, which still drives the LANDING hero and only that.
 const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
@@ -502,7 +506,7 @@ export default function WorldMap() {
   const buildingsOn = view.buildings;
   const layers = useLayers();
   const track = useTrack();
-  trackingRef.current = track; // keep the input handlers current without a re-subscribe
+  trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
   const pins = useMapPins();
   pinsRef.current = pins;
   // Subscribing the map to the selection is cheap in the way the cursor readout is
@@ -1709,6 +1713,10 @@ export default function WorldMap() {
     const center: [number, number] =
       initial.lat != null && initial.lon != null ? [initial.lon, initial.lat] : HOME.center;
     const zoom = initial.zoom ?? HOME.zoom;
+    // A deep-linked camera/zoom used to need protecting here, because the idle spin
+    // would drag it away on first paint. Nothing moves the camera on its own now, so
+    // the view a link asks for is simply the view it gets.
+
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASEMAPS[mapViewStore.get().basemap].style,
@@ -1835,25 +1843,25 @@ export default function WorldMap() {
     // Engage/disengage 3D terrain as we cross the mercator threshold (see syncTerrain).
     map.on("zoom", () => syncTerrain(map));
 
-    // Grabbing the map "breaks" a live follow → drop to manual recenter so we stop
-    // chasing the plane out from under the user (a Recenter affordance re-arms it).
+    // Direct user input (native events, not programmatic camera moves) breaks a live
+    // plane follow. That is now the ONLY thing these listeners do.
     //
-    // This used to do two jobs. The other one was holding off the idle spin on any
-    // direct input, which is why it listened for native events rather than camera
-    // moves; the spin is gone and only the follow break remains.
+    // They used to also hold off the idle spin, and a `pointermove` listener was
+    // attached to the canvas container for the same purpose — hovering counted as
+    // engagement so the globe would not rotate out from under the cursor while you
+    // were reading a label. With no spin there is nothing to hold off, so the
+    // pointermove listener is gone entirely rather than left running to set a value
+    // nothing reads. That also takes a per-move handler off the map container, which
+    // is the listener class this app has been bitten by before.
     const el = map.getCanvasContainer();
     const markInteract = () => {
+      // Grabbing the map "breaks" a live follow → drop to manual recenter so we stop
+      // chasing the plane out from under the user (a Recenter affordance re-arms it).
       const t = trackingRef.current;
       if (t.id && t.mode === "follow") trackStore.setMode("recenter");
     };
     const inputs: (keyof HTMLElementEventMap)[] = ["mousedown", "wheel", "touchstart", "pointerdown"];
     for (const ev of inputs) el.addEventListener(ev, markInteract, { passive: true });
-
-    // A `pointermove` listener lived here whose only job was to hold the spin off
-    // while the pointer swept the map — otherwise the globe turned under the cursor
-    // and the dot you were aiming at drifted away from it. A still globe cannot do
-    // that, so the listener is gone rather than kept as a per-pointer-event write to
-    // a value nothing reads. The hover hit-test in wireInteractions is unaffected.
 
     // The `tn-map-cursor` publisher used to live here: a rAF-coalesced window
     // CustomEvent carrying lat/lon on every mousemove, read by the stage bar's
@@ -1867,12 +1875,11 @@ export default function WorldMap() {
     // Shareable deep links: mirror the live view into the URL (debounced,
     // replaceState — no history spam, no reload).
     //
-    // Every `moveend` is now a deliberate move, so every one of them is worth
-    // writing. This used to skip the writes the idle spin generated, through a
-    // shared `isAutoSpinning()` predicate that existed so the URL writer and the
-    // spin loop could not drift about what "the map is moving on its own" meant.
-    // With the spin gone the map only moves when someone moves it, and the
-    // predicate went with the loop it was arbitrating.
+    // This used to be guarded by `isAutoSpinning()`, a six-clause predicate shared
+    // with the spin loop, because a self-moving camera would otherwise rewrite the
+    // URL on its own for as long as the tab was open. Every `moveend` now comes from
+    // a deliberate move — a user pan/zoom, a region fly-to, a dive — so all of them
+    // are worth persisting and the predicate has no second reader left.
     const onMoveEnd = () => {
       // Our own follow easeTo shouldn't churn the shareable URL every poll.
       if (followMoveRef.current) { followMoveRef.current = false; return; }
@@ -1883,27 +1890,25 @@ export default function WorldMap() {
     const unsubView = mapViewStore.subscribe(() => scheduleUrlWrite(map));
     const unsubOverlay = overlay.subscribe(() => scheduleUrlWrite(map));
 
-    // THE CONSOLE GLOBE DOES NOT TURN. There is no rotation loop here, and that is
-    // the point of this comment: it is the third time this has been narrowed and it
-    // should not come back a fourth.
+    // THE IDLE ROTATION IS GONE. There is deliberately no animation loop here.
     //
-    // The globe used to turn for as long as the tab was open — the single most
-    // expensive thing this page did at rest: 60.8% of the main thread over a 10 s
-    // idle window on desktop, ~101% at a 4x CPU throttle, against 3.4% with the
-    // rotation neutralised. #156 gated it on hover, #158 made it ease to a stop
-    // after 8 s (lib/map/spin.ts), and both left the expensive part intact: the
-    // first 8 s of every visit, which is exactly the window in which the style,
-    // the sprite, the glyphs and the first tiles are all arriving.
+    // History, so nobody reintroduces it by accident. The globe originally turned for
+    // as long as the tab was open, and that was the single most expensive thing this
+    // page did at rest: 60.8% of the main thread over a 10 s idle window on a desktop,
+    // ~101% at a 4x CPU throttle, against 3.4% with the spin neutralised. #158 replaced
+    // "forever" with an 8 s budget and an ease-out. Prod then measured 7.2% busy with
+    // zero map renders once it had settled — so the settle worked, and the remaining
+    // question was only whether the opening turn was worth anything. It was removed.
     //
-    // Slowing it down does not work and nobody should try it a fourth time — 30 fps
-    // measured 99.4% busy and 20 fps 99.6%, because a moving camera re-renders the
-    // whole globe however rarely the centre is updated. Only NOT MOVING is cheaper.
-    // Sam asked for this directly: "can we remove the globe spinning in the
-    // dashboard entirely".
+    // If it ever comes back, three things were measured and are not worth re-deriving:
+    // slowing it down does NOT help (30 fps and 20 fps caps both measured ~99% busy,
+    // because a moving camera forces a full MapLibre re-render whatever the update
+    // rate — only not moving is cheaper); a settled loop must stop SCHEDULING rather
+    // than reschedule and return early, or it still costs a callback per compositor
+    // frame forever; and the budget has to count time actually spent spinning, not
+    // wall-clock, or a slow first paint delivers an already-motionless globe.
     //
-    // lib/map/spin.ts STAYS. The landing hero (components/marketing/HeroGlobe.tsx)
-    // is a different globe on a different page and still uses the envelope; this
-    // says nothing about that one.
+    // `lib/map/spin.ts` still holds that envelope and still drives the landing hero.
 
     return () => {
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
