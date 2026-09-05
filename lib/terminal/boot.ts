@@ -28,9 +28,30 @@ export const BOOT_MS = 5000;
  *  finished at 4.2 s — measured on desktop, and ~70% of sessions see the boot, so
  *  it was the gate on the first visit rather than the network. Compressing to this
  *  is a VISIBLE change: the sequence still plays in full, at
- *  `timelineScale(BOOT_MIN_MS)` ≈ 0.43 of its designed speed. It is one constant,
- *  and it is a design call — raise it and the animation slows back down. */
-export const BOOT_MIN_MS = 2600;
+ *  `timelineScale(BOOT_MIN_MS)` of its designed speed. It is one constant, and it
+ *  is a design call — raise it and the animation slows back down.
+ *
+ *  2600 → 2000 on 2026-09-05, because at 2600 THE FLOOR WAS STILL THE GATE. Measured
+ *  against two Vercel previews of the same build system, cold cache, desktop, with
+ *  the plate's own clock taken from the frame it first appears on:
+ *
+ *                          map first idle    plate gone    floor binding by
+ *    origin/main                 2201 ms       2639 ms          438 ms
+ *    perf/map-smooth             1938 ms       2602 ms          664 ms
+ *
+ *  Both plates left at BOOT_MIN_MS + the fade, not when the map was ready — so the
+ *  660 ms the terrain, spin and preconnect work had just taken off the map's load
+ *  was being handed straight back to a full-screen overlay. Every millisecond a
+ *  faster map earns is invisible until this number moves with it.
+ *
+ *  WHAT IT COSTS, SAID PLAINLY. The sequence is scaled to fit, so it now plays at
+ *  ≈0.28 of its designed speed rather than ≈0.43, and the six subsystem checks land
+ *  about 67 ms apart instead of 112 ms. It reads as fast. It is one constant and one
+ *  test line to put back, and 2300 is the middle setting (≈0.36, checks ~94 ms
+ *  apart, plate gone ~300 ms earlier than today rather than ~600 ms). The floor only
+ *  binds where the map is ready first: on a slow connection `bootEndMs` still tracks
+ *  the map and the 5 s ceiling is unchanged. */
+export const BOOT_MIN_MS = 2000;
 
 /** The dissolve, taken out of the tail. The handoff starts BOOT_FADE_MS before the
  *  end and the overlay is unmounted at the end exactly. */

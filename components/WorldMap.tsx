@@ -447,8 +447,13 @@ export default function WorldMap() {
   const styleAttemptsRef = useRef(0);
   const styleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadStatus, setLoadStatus] = useState<MapLoadStatus>({ kind: "ok" });
-  const terrainRef = useRef(true);
-  const buildingsRef = useRef(true);
+  // Seeded FROM the store, not from a literal. These are read by addAppLayers on
+  // `style.load`, which can land before the effects that sync them, so a hard-coded
+  // starting value is a second copy of a default that must agree with lib/mapView.ts
+  // — and when the defaults flipped to off, the copy is what would have kept
+  // fetching DEM on the first style of every visit.
+  const terrainRef = useRef(mapViewStore.get().terrain);
+  const buildingsRef = useRef(mapViewStore.get().buildings);
   // Plane-tracking (see lib/planes/track). trackingRef mirrors the store for the
   // spin loop + input handlers (no re-render); trackedObjectRef holds the tracked
   // plane's latest WorldObject so addAppLayers can re-seed the ring after a restyle;
@@ -706,6 +711,60 @@ export default function WorldMap() {
     [],
   );
 
+  // Rasterise the 33 hand-drawn SVG pictograms and register them with the style.
+  const rasteriseIcons = useCallback(
+    (map: maplibregl.Map) =>
+      Promise.all([
+        loadCameraIcons(map),
+        loadPlaneIcons(map),
+        loadSatelliteIcons(map),
+        loadWebcamIcons(map),
+        loadSignalIcons(map),
+      ]).then(() => {}),
+    [],
+  );
+
+  /**
+   * The same work, but off the first style load's critical path.
+   *
+   * WHAT IT IS WORTH, AND WHAT IT IS NOT. Measured against a preview, cold cache,
+   * desktop: `style.load` at 827 ms, the app layers in place at 1376 ms, first idle
+   * at 2590 ms — and the long task inside that first window is 133 ms. Deferring
+   * does NOT make the map ready sooner: first idle is gated by tile arrival, not by
+   * this. What it does is move a 133 ms block of main-thread time out of the window
+   * where the basemap's own tiles are being decoded, which is the window a visitor
+   * is watching.
+   *
+   * ONLY ON THE FIRST STYLE. A basemap swap wipes every registered image while the
+   * sources still hold real data, so there the work is awaited exactly as before —
+   * deferring it would blank every pin on screen for as long as it took.
+   *
+   * `styleimagemissing` IS THE SAFETY, and it is what makes this safe rather than a
+   * gamble on timing. MapLibre fires it the moment a symbol layer wants an icon that
+   * is not registered, so if camera or signal data arrives before the map goes idle,
+   * the rasterisation is pulled forward by the map itself instead of leaving pins
+   * drawn without their pictograms.
+   */
+  const firstStyleRef = useRef(true);
+  const ensureIcons = useCallback(
+    async (map: maplibregl.Map) => {
+      if (!firstStyleRef.current) {
+        await rasteriseIcons(map);
+        return;
+      }
+      firstStyleRef.current = false;
+      let started = false;
+      const run = () => {
+        if (started) return;
+        started = true;
+        void rasteriseIcons(map);
+      };
+      map.once("idle", run);
+      map.once("styleimagemissing", run);
+    },
+    [rasteriseIcons],
+  );
+
   // Re-add every app source/layer onto the current style. Idempotent, so it runs
   // safely on the first load AND after each basemap swap (setStyle wipes them).
   const addAppLayers = useCallback(
@@ -784,14 +843,10 @@ export default function WorldMap() {
         map.setLayoutProperty(STYLE_OWN_BUILDING_3D, "visibility", "none");
       }
 
-      // Symbol icons are wiped by setStyle — re-rasterise/register them.
-      await Promise.all([
-        loadCameraIcons(map),
-        loadPlaneIcons(map),
-        loadSatelliteIcons(map),
-        loadWebcamIcons(map),
-        loadSignalIcons(map),
-      ]);
+      // Symbol icons are wiped by setStyle — re-rasterise/register them. Awaited on
+      // a swap, deferred to the map's first idle on the very first style: see
+      // ensureIcons for why that is safe and what it is measured to be worth.
+      await ensureIcons(map);
 
       // Sources, seeded from the latest refs. NOTHING clusters: every camera and
       // every webcam is its own feature at every zoom (see CAM_DOT_LAYER).
@@ -1272,7 +1327,7 @@ export default function WorldMap() {
       applyVisibility(map, layersRef.current);
       readyRef.current = true;
     },
-    [applyTerrain, applyVisibility, ensureGeoJSON],
+    [applyTerrain, applyVisibility, ensureGeoJSON, ensureIcons],
   );
 
   // Click + cursor handlers, wired ONCE. Layer-scoped handlers survive basemap
