@@ -1,8 +1,8 @@
 @import "./console-chrome.css";
 
 /* ====================================================================   TrafficNerd v2 — calm light console shell.
-   Light is the default identity; dark survives as an optional [data-theme]
-   toggle. Real typography for text; monospace (.tn-num) reserved for numerics.
+   Light is the ONLY identity. Real typography for text; monospace (.tn-num)
+   reserved for numerics.
    =========================================================================== */
 
 :root {
@@ -80,41 +80,13 @@
   --tn-title: var(--tn-font-sans, ui-sans-serif), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-[data-theme="dark"] {
-  --tn-bg: #0a0e16;
-  --tn-surface: rgba(17, 23, 34, 0.88);
-  --tn-surface-solid: #161d2a;
-  --tn-surface-2: #141b27;
-  --tn-glass: rgba(14, 19, 29, 0.80);
-  /* Top bar, dark theme. 0.86 rather than light's 0.93 because the dark ink
-     (#8e9bab) starts further from mid-grey, so it clears 4.52:1 sooner. */
-  --tn-topbar-fill: rgba(14, 19, 29, 0.45);
-  --tn-topbar-pill: rgba(14, 19, 29, 0.86);
-  --tn-border: rgba(255, 255, 255, 0.10);
-  --tn-border-strong: rgba(255, 255, 255, 0.16);
-  --tn-text: #e6ebf2;
-  --tn-text-muted: #aab4c2;
-  /* Dark inverts the problem: #6b7787 measured 3.72:1 on --tn-surface-solid.
-     Lightening to #8e9bab gives 5.98:1 and keeps faint below muted. */
-  --tn-text-faint: #8e9bab;
-  --tn-accent: #38bdf8;
-  --tn-accent-strong: #7dd3fc;
-  --tn-accent-soft: rgba(56, 189, 248, 0.14);
-  --tn-chip-bg: #1b2332;
-  --tn-toggle-off: rgba(255, 255, 255, 0.16);
-  --tn-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
-  --tn-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
-
-  /* On a dark surface the vivid status colours are already the accessible ones
-     (--tn-live 5.13:1, --tn-lagging 5.31:1, --tn-stale 4.75:1, --tn-unknown
-     6.60:1 on --tn-surface-solid), so dark maps the inks straight back onto them.
-     The exception is red: --tn-down measures 3.50:1 there, so dark lifts it. */
-  --tn-live-ink: #16a34a;
-  --tn-lagging-ink: #d97706;
-  --tn-stale-ink: #ea580c;
-  --tn-down-ink: #f87171;
-  --tn-unknown-ink: #94a3b8;
-}
+/* THE DARK THEME IS GONE. `[data-theme="dark"]` redefined all 30 tokens above and
+   was reachable from two doors — a Settings segment and a palette command — both of
+   which went with it. Every built-in variant already declared `theme: "light"`, so
+   nothing else was asking for it, and `Theme` is now the single-member union "light"
+   so nothing can ask again. app/layout.tsx still stamps data-theme="light" on <html>:
+   the attribute is now decoration, but removing it would change the SSR markup for no
+   gain. The console skin folded the same way in the commit before this one. */
 
 * { box-sizing: border-box; }
 html, body {

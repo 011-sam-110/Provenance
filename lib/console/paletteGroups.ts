@@ -154,7 +154,6 @@ export function groupCommands(commands: Command[], query: string): GroupedComman
 export interface PaletteSnapshot {
   basemap: string;
   stage: string;
-  theme: string; // "light" | "dark"
   lang: string;
   /** Core map-layer key → on. */
   layers: Record<string, boolean>;
@@ -180,7 +179,6 @@ export function decorateCommand(c: Command, s: PaletteSnapshot): Command {
   if (c.id.startsWith("lang-")) return sel(c, c.id.slice(5) === s.lang);
   if (c.id.startsWith("preset-")) return sel(c, c.id.slice(7) === s.activeLayerSet);
   if (c.id.startsWith("toggle-")) return on(c, !!s.layers[c.id.slice(7)]);
-  if (c.id === "theme-toggle") return { ...c, state: s.theme === "dark" ? "DARK" : "LIGHT" };
   return c;
 }
 

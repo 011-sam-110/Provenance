@@ -8,7 +8,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LANGS } from "@/lib/i18n/catalog";
 import { useLang, langStore } from "@/lib/i18n/store";
-import { uiStore, useUI } from "@/lib/shell/ui";
 import { buildShareUrl } from "@/lib/share/deepLink";
 import { encodeLayout } from "@/lib/console/share";
 import { shellLayoutStore } from "@/lib/console/store";
@@ -109,7 +108,6 @@ async function copyLayoutLink(): Promise<boolean> {
 }
 
 export default function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const ui = useUI();
   const lang = useLang();
   const keymap = useKeymap();
   const [keyErr, setKeyErr] = useState<string | null>(null);
@@ -173,19 +171,10 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
         </header>
 
         <div className="tn-settings-body">
-          {/* Appearance ------------------------------------------------------ */}
-          <section className="tn-settings-sec">
-            <h3 className="tn-settings-sec-title">Appearance</h3>
-            <div className="tn-settings-row">
-              <span className="tn-settings-label">Theme</span>
-              <div className="tn-settings-seg" role="group" aria-label="Theme">
-                <button type="button" className="tn-settings-seg-btn" aria-pressed={ui.theme === "light"}
-                  onClick={() => uiStore.setTheme("light")}>☀ Light</button>
-                <button type="button" className="tn-settings-seg-btn" aria-pressed={ui.theme === "dark"}
-                  onClick={() => uiStore.setTheme("dark")}>☾ Dark</button>
-              </div>
-            </div>
-          </section>
+          {/* NO APPEARANCE SECTION. It held one row, a Light|Dark segment, and the
+              dark half is gone from the product: there is one palette now. A segment
+              with a single option left in it is a control that cannot do anything,
+              which is worse than no control. */}
 
           {/* Language -------------------------------------------------------- */}
           <section className="tn-settings-sec">
