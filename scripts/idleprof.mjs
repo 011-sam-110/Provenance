@@ -15,16 +15,31 @@ const args = Object.fromEntries(process.argv.slice(3).map((a) => { const m = a.m
 const url = process.argv[2];
 const settle = Number(args.settle || 5000), win = Number(args.window || 10000), cpu = Number(args.cpu || 1);
 
-// Scoped to the target's own origin so the token cannot ride along to a third party
-// if the page fetches one.
 const oidc = process.env.VERCEL_OIDC_TOKEN;
-const auth = oidc ? { extraHTTPHeaders: { "x-vercel-trusted-oidc-idp-token": oidc } } : {};
 
 const browser = await chromium.launch({ headless: false });
-const ctx = await browser.newContext({
-  ...(args.mobile ? { ...devices["Pixel 7"] } : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }),
-  ...auth,
-});
+const ctx = await browser.newContext(
+  args.mobile ? { ...devices["Pixel 7"] } : { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
+);
+
+// SCOPED TO THE TARGET ORIGIN, and it has to be. This said "scoped" while passing
+// the token as a context-level `extraHTTPHeaders`, which is not the same thing and
+// is not harmless: those headers go on EVERY request the page makes, cross-origin
+// included, a non-simple header forces a CORS preflight, and
+// `tiles.openfreemap.org` answers 405 to ANY OPTIONS (plain GET 200, OPTIONS 405).
+// The style request fails, WorldMap falls back to Satellite, arcgisonline's
+// preflight is refused too, and the map loads NOTHING — while the run reports
+// entirely plausible idle numbers, because a page with no map really is quiet.
+// Every preview measurement taken through this script before 2026-09-05 was of a
+// dead map: "/app 9.0% busy, ZERO map renders" is what that looks like. The tell in
+// a dump is `Image=64/0KB`, no `.pbf` at all, and net::ERR_FAILED on the style URL.
+if (oidc) {
+  const targetOrigin = new URL(url).origin;
+  await ctx.route(
+    (u) => u.origin === targetOrigin,
+    (route) => route.continue({ headers: { ...route.request().headers(), "x-vercel-trusted-oidc-idp-token": oidc } }),
+  );
+}
 const page = await ctx.newPage();
 if (args["reduced-motion"]) await page.emulateMedia({ reducedMotion: "reduce" });
 await page.addInitScript(() => {
