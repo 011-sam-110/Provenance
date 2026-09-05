@@ -9,6 +9,14 @@
 //                                 competitor's (already fixed pre-existing; guarded here)
 //   4. lib/events/alerting.ts   — outbound webhook source line carries OUR
 //                                 brand, not the competitor's (already fixed pre-existing; guarded here)
+//   5. lib/console/widgets/aviation.tsx + lib/console/help.ts — the aviation
+//                                 widget's own help popover and trust card still
+//                                 credited "OpenSky" (a single global snapshot, an
+//                                 anonymous credit cap) two places after #1 fixed
+//                                 the short catalog attribution string. Same root
+//                                 cause, later found: OpenSky was removed from the
+//                                 live fetch path entirely (lib/sources/opensky.ts),
+//                                 adsb.lol's bounded grid sweep is the sole source.
 import { afterEach, expect, test } from "vitest";
 import { getCatalogSource } from "@/lib/sources/catalog";
 import {
@@ -23,6 +31,8 @@ import { readCoverage } from "@/lib/signals/coverage";
 import { exportFilename } from "@/lib/export";
 import { postWebhook, type AlertHit } from "@/lib/events/alerting";
 import { BRAND } from "@/lib/brand";
+import { AVIATION_WIDGET } from "@/lib/console/widgets/aviation";
+import { widgetExplainerFor } from "@/lib/console/help";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -44,6 +54,39 @@ test("the planes catalog entry credits adsb.lol, its real current source", () =>
   expect(planes).toBeDefined();
   expect(planes!.attribution.toLowerCase()).toContain("adsb.lol");
   expect(planes!.attribution).not.toContain("OpenSky");
+});
+
+// --- 1b. aviation widget help + trust card: same fix, two places found later ---
+//
+// #1 above fixed the short catalog attribution string. Two more places credited
+// the same removed feed: the aviation widget's own "?" popover source line, and
+// three sentences in its trust card describing OpenSky-specific mechanism (a
+// single global /states/all snapshot, an anonymous credit cap) that do not
+// describe how adsb.lol's bounded grid sweep actually works. Guard both so
+// neither can drift back to naming the removed feed.
+
+test("the aviation widget's help.source credits adsb.lol, not OpenSky", () => {
+  const source = AVIATION_WIDGET.help?.source ?? "";
+  expect(source.toLowerCase()).toContain("adsb.lol");
+  expect(source).not.toContain("OpenSky");
+});
+
+test("the aviation trust card describes adsb.lol's real mechanism, not OpenSky's", () => {
+  const e = widgetExplainerFor("aviation");
+  expect(e).toBeDefined();
+  const text = [e!.method, e!.coverage, ...e!.limitations].join(" ");
+  expect(text).not.toContain("OpenSky");
+  expect(text.toLowerCase()).toContain("adsb.lol");
+  // The false "single global snapshot" claim must not survive as a description
+  // of how data is currently gathered — it's a bounded grid sweep instead.
+  expect(e!.method).toMatch(/grid sweep/i);
+  expect(e!.coverage).toMatch(/grid sweep/i);
+  // The false "OpenSky anonymous credit cap" reason for the shared cadence must
+  // not survive; the real constraint is adsb.lol's own rate limit.
+  expect(e!.limitations.join(" ")).toMatch(/adsb\.lol rate-limits/i);
+  // These structural facts are unchanged by the fix and must still hold.
+  expect(e!.limitations.join(" ")).toMatch(/no military flag/i);
+  expect(e!.limitations.join(" ")).toMatch(/refreshed roughly every four minutes/i);
 });
 
 // --- 2. windy.ts: undisclosed cap --------------------------------------------
