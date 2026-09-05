@@ -17,6 +17,13 @@
 //                                 cause, later found: OpenSky was removed from the
 //                                 live fetch path entirely (lib/sources/opensky.ts),
 //                                 adsb.lol's bounded grid sweep is the sole source.
+//   6. lib/console/help.ts's aviation TYPE sentence claimed TYPE is "not broadcast
+//                                 and not looked up" — true for OpenSky (no category
+//                                 field at all) but not for adsb.lol, which broadcasts
+//                                 a real ADS-B emitter `category` that lib/planes/
+//                                 classify.ts trusts as a fact when present, only
+//                                 falling back to the altitude/speed/on-ground guess
+//                                 when it is absent or unrecognised.
 import { afterEach, expect, test } from "vitest";
 import { getCatalogSource } from "@/lib/sources/catalog";
 import {
@@ -87,6 +94,24 @@ test("the aviation trust card describes adsb.lol's real mechanism, not OpenSky's
   // These structural facts are unchanged by the fix and must still hold.
   expect(e!.limitations.join(" ")).toMatch(/no military flag/i);
   expect(e!.limitations.join(" ")).toMatch(/refreshed roughly every four minutes/i);
+});
+
+// --- 6. aviation trust card: TYPE is sometimes broadcast, not always guessed ---
+//
+// The TYPE sentence used to say TYPE is "not broadcast and not looked up" —
+// unconditionally a guess. That was true of OpenSky (no category field at all)
+// but is not true of adsb.lol: lib/planes/classify.ts trusts a broadcast ADS-B
+// emitter `category` as a fact when the row carries one it recognises, and only
+// falls back to the altitude/speed/on-ground heuristic otherwise. The sentence
+// must state both paths, not just the fallback.
+
+test("the aviation trust card's TYPE sentence states both the broadcast path and the guess fallback", () => {
+  const e = widgetExplainerFor("aviation");
+  expect(e).toBeDefined();
+  const method = e!.method;
+  expect(method).toMatch(/broadcast/i);
+  expect(method).not.toMatch(/type is not broadcast/i);
+  expect(method).toMatch(/guess/i);
 });
 
 // --- 2. windy.ts: undisclosed cap --------------------------------------------

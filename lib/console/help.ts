@@ -127,7 +127,7 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     whatItShows:
       "A row is an aircraft that was broadcasting an ADS-B position in the last snapshot, with its callsign, a guessed type and its reported altitude in kilometres.",
     method:
-      "Read from adsb.lol, a community ADS-B receiver network reached as a bounded grid sweep of point+radius queries rather than one global snapshot. Altitude and squawk are the aircraft's own reported values, and squawks 7500/7600/7700 raise a critical alert. The TYPE is not broadcast and not looked up — it is our own guess from altitude, speed and on-ground state, which is why the dossier renders it as \"· est.\".",
+      "Read from adsb.lol, a community ADS-B receiver network reached as a bounded grid sweep of point+radius queries rather than one global snapshot. Altitude and squawk are the aircraft's own reported values, and squawks 7500/7600/7700 raise a critical alert. TYPE is adsb.lol's own broadcast ADS-B emitter category when the aircraft transmits one we recognise — a transmitted fact, not a guess. Only when no usable category is present does it fall back to our own guess from altitude, speed and on-ground state; either way the dossier renders it with a \"· est.\" badge.",
     confidence: "measured",
     coverage:
       "NOT worldwide by construction — a bounded grid sweep of point+radius queries over the busiest airspace, capped by adsb.lol's rate limit to whichever cells answer inside the time budget, and only where volunteer receivers hear the aircraft. Dense over North America and Europe, thin to empty over oceans, deserts and much of Africa, Asia, South America and Oceania.",
