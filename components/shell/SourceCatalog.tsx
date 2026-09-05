@@ -200,7 +200,7 @@ export default function SourceCatalog() {
   return (
     <aside className="tn-rail" aria-label="Sources">
       <div className="tn-rail-header">
-        <span className="tn-rail-title">Sources</span>
+        <h2 className="tn-rail-title">Sources</h2>
         <span className="tn-cat-count" title="Widgets on your workspace right now">
           {consoleLayout.widgets.length} ▦
         </span>
@@ -234,6 +234,15 @@ export default function SourceCatalog() {
         ))}
       </div>
 
+      {/* KEPT, and this is not a style preference. TimeWindowControl is the ONLY
+          caller of timeWindowStore.set anywhere in the app -- ConsoleTopBar.tsx also
+          renders one but nothing renders ConsoleTopBar, so it is dead code. The
+          window is persisted (`tn.timewindow.v1`) and hydrated on mount, so deleting
+          this leaves anyone who ever picked "1h" filtered to 1h forever, with events
+          silently missing from the Events widget and no control anywhere to undo it.
+          If it should leave the rail, it has to arrive somewhere else in the same
+          change -- the Events widget is the honest home, since that is what it
+          filters. */}
       <TimeWindowControl />
 
       {visible.length === 0 ? (

@@ -266,10 +266,29 @@ a { color: var(--tn-accent); }
   overflow-y: auto;
   background: var(--tn-surface); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow);
-  padding: 12px 12px 10px; color: var(--tn-text);
+  /* NO TOP PADDING, and that is load-bearing for the sticky header below: this
+     element is its own scrollport, and a scroll container's padding box is what
+     clips, so scrolled rows are painted THROUGH the top padding. With 12px here a
+     source row was visible in the strip above the pinned header (measured in the
+     browser: `elementsFromPoint` at the rail's top + 6px returned `.tn-src-row`).
+     The 12px moved onto the header itself, which is always the first child. */
+  padding: 0 12px 10px; color: var(--tn-text);
 }
-.tn-rail-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.tn-rail-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--tn-text-faint); }
+/* STICKY, because the header is INSIDE .tn-rail's own `overflow-y: auto`. Scroll the
+   source list and the title and the close chevron leave together, which is the
+   complaint this rule answers. Three details, each of which was a visible bug first:
+   the negative SIDE margins let it span the rail's 12px padding so the list does not
+   show through beside it; it carries the rail's TOP padding itself so nothing shows
+   through above it either (see .tn-rail); and the background is the token
+   (`--tn-surface` remaps to `--tnx-panel` inside `.tn-terminal`) rather than a
+   literal, so it stays opaque in both the console and the legacy shell. */
+.tn-rail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 2;
+  margin: 0 -12px 10px; padding: 12px 12px 8px;
+  background: var(--tn-surface);
+}
+.tn-rail-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--tn-text); }
 .tn-rail-collapse { background: transparent; border: none; cursor: pointer; color: var(--tn-text-faint); font-size: 18px; line-height: 1; padding: 0 4px; }
 .tn-rail-collapse:hover { color: var(--tn-text); }
 
@@ -366,7 +385,7 @@ a { color: var(--tn-accent); }
 .tn-toggle-knob { position: absolute; top: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
 .tn-cam-filters { grid-column: 1 / -1; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--tn-border); }
-.tn-subhead { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tn-text-faint); margin: 6px 0 5px; }
+.tn-subhead { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tn-text); margin: 6px 0 5px; }
 .tn-feed-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
 .tn-feed-chip { font-size: 11px; color: var(--tn-text-muted); }
 .tn-liveonly { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 11px; color: var(--tn-text-muted); background: none; border: none; cursor: pointer; padding: 0; }
@@ -5647,6 +5666,12 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   border: none;
   padding: 0;
   cursor: pointer;
+  /* DIM, and deliberately not `--tnx-ink`. A legibility pass raised it to full ink
+     and that is a net loss: `--tnx-ink-dim` measures 8.19:1 on this white, which is
+     past AAA at any size, while the on-state below is `--tn-text` (= `--tnx-ink`).
+     Flattening the two makes an ON source and an OFF source the same colour, so the
+     state survives only in the dot's opacity and a 400/500 weight step. The colour
+     step is carrying information here; contrast was never the problem on this row. */
   color: var(--tn-text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -5744,11 +5769,11 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   gap: 7px;
   margin: 0 0 3px;
   padding: 0 6px;
-  font-size: var(--tnx-fs-xs);
-  font-weight: 600;
+  font-size: var(--tnx-fs-md);
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--tn-text-faint);
+  color: var(--tnx-ink);
 }
 .tn-src-sec-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-src-sec-n { font-weight: 500; opacity: 0.7; }
