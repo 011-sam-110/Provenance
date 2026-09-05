@@ -39,12 +39,14 @@ export type RowState = "selected" | "linked" | "idle";
 /**
  * Fly-to zoom for a selection.
  *
- * Two constraints pin this, and they pin it from both ends:
- *  - Low end: WorldMap's calm idle globe spin runs whenever zoom < SPIN_MAX_ZOOM
- *    (4) and nothing is in the OVERLAY store. A Terminal selection is not an
- *    overlay object, so the spin resumes ~800 ms after the fly settles
- *    (flyToPoint suppresses input for 2400 ms against a 1600 ms flight). Land
- *    below 4 and the globe quietly drifts off the thing the user just clicked.
+ * Two constraints pinned this, and they pinned it from both ends. THE LOW END NO
+ * LONGER BINDS:
+ *  - Low end, GONE: WorldMap's idle globe spin used to run whenever zoom was under
+ *    SPIN_MAX_ZOOM (4) and nothing was in the OVERLAY store. A Terminal selection is
+ *    not an overlay object, so the spin resumed ~800 ms after the fly settled and
+ *    quietly drifted off the thing the user had just clicked. The console globe no
+ *    longer rotates at all, so landing below 4 is now safe. The value is unchanged
+ *    anyway, because the high end below is a real constraint and still holds it.
  *  - High end: the point of the fly is CONTEXT — the neighbouring quakes, the
  *    rest of the border, the other cameras in the city — not a rooftop. 5 is the
  *    same zoom openSignalFeature() already uses for a signal row click, so a row
