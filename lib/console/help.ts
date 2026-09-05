@@ -127,15 +127,15 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     whatItShows:
       "A row is an aircraft that was broadcasting an ADS-B position in the last snapshot, with its callsign, a guessed type and its reported altitude in kilometres.",
     method:
-      "Read from OpenSky's single global /states/all snapshot, which aircraft transponders feed. Altitude and squawk are the aircraft's own reported values, and squawks 7500/7600/7700 raise a critical alert. The TYPE is not broadcast and not looked up — it is our own guess from altitude, speed and on-ground state, which is why the dossier renders it as \"· est.\".",
+      "Read from adsb.lol, a community ADS-B receiver network reached as a bounded grid sweep of point+radius queries rather than one global snapshot. Altitude and squawk are the aircraft's own reported values, and squawks 7500/7600/7700 raise a critical alert. The TYPE is not broadcast and not looked up — it is our own guess from altitude, speed and on-ground state, which is why the dossier renders it as \"· est.\".",
     confidence: "measured",
     coverage:
-      "Worldwide by construction — one global snapshot rather than a swept grid — but only where volunteer receivers hear the aircraft. Good over Europe and North America, thin over oceans, deserts and much of Africa and Asia.",
+      "NOT worldwide by construction — a bounded grid sweep of point+radius queries over the busiest airspace, capped by adsb.lol's rate limit to whichever cells answer inside the time budget, and only where volunteer receivers hear the aircraft. Dense over North America and Europe, thin to empty over oceans, deserts and much of Africa, Asia, South America and Oceania.",
     limitations: [
       "Gaps are receiver coverage, not empty sky. An aircraft with no receiver in range does not exist in this feed, and there is no way to tell that case from an aircraft that is not flying.",
       "Aircraft that do not want to be seen switch the transponder off or broadcast a false identity, so the flights most worth watching are the ones most likely to be missing.",
-      "There is NO military flag on this panel. The alert rule supports one, but OpenSky carries no military classification, so that alert can never fire here — military traffic appears only on the separate Military aircraft signal layer.",
-      "OpenSky's anonymous tier is credit-capped, so one snapshot is shared across the whole deployment and refreshed roughly every four minutes. Rows are minutes old by design, and on a bad day the panel serves the last good snapshot rather than nothing.",
+      "There is NO military flag on this panel. The alert rule supports one, but adsb.lol carries no military classification, so that alert can never fire here — military traffic appears only on the separate Military aircraft signal layer.",
+      "adsb.lol rate-limits the sweep, so one snapshot is cached and shared across the whole deployment and refreshed roughly every four minutes. Rows are minutes old by design, and on a bad day the panel serves the last good snapshot rather than nothing.",
       "The list is capped at 200 rows out of everything airborne, sorted by altitude or callsign. It is a slice, never a census.",
       "No origin, destination, registration or operator is carried here; the aircraft dossier fetches those separately when you open one.",
     ],
