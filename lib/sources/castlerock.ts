@@ -1,7 +1,7 @@
 import { Camera, CameraArray, Source } from "@/lib/types";
 
-// Castle Rock Associates "511" platform — ONE adapter fans out to the nine
-// traveler-information systems that share its software (US: FL/GA/NY/ID +
+// Castle Rock Associates "511" platform — ONE adapter fans out to the ten
+// traveler-information systems that share its software (US: FL/GA/NY/ID/LA +
 // New England ME-NH-VT; Canada: ON/AB/NS/NB). All keyless. Each system serves
 // a DataTables endpoint at `POST https://{site}/List/GetData/Cameras` (a GET
 // returns an empty table — it MUST be POST). Per camera we surface the JPEG
@@ -17,13 +17,25 @@ import { Camera, CameraArray, Source } from "@/lib/types";
 // (A single capped request would silently surface only ~100 cams/system.)
 // Live-verified 2026-06-27 (recordsTotal per system): FL=4881 GA=4043 NY=2293
 // ON=932 ID=457 NewEngland=403 AB=356 NS=57 NB=57 (~13,479 cameras total).
+// LA (Louisiana DOTD) added 2026-09-05, live-verified the same way: recordsTotal
+// =336, every row `source: "LADOTD"`, and `/map/Cctv/1` answers 200 image/jpeg
+// with no cookie or referer. NOTE FOR THE NEXT READER: `511la.org` is LOUISIANA,
+// not Los Angeles — the site is branded "Louisiana DOTD" and its assets live
+// under `/Content/LU/`. It was added here rather than as a module of its own
+// because it is the same Castle Rock software: `POST /List/GetData/Cameras`
+// returns the identical DataTables shape, down to the WKT `latLng` and the
+// relative `/map/Cctv/{id}` snapshot. Louisiana is also the first system whose
+// `videoUrl` is NOT auth-gated (`isVideoAuthRequired: false`, an HLS playlist on
+// `ITSStreamingBR2.dotd.la.gov`); we still drop it, because `mediaType` is a
+// per-adapter constant here and promoting one system to video would make the
+// feed inconsistent. Revisit deliberately, not by accident.
 
 export const CASTLEROCK_SOURCE: Source = {
   id: "castlerock",
   name: "Castle Rock 511 (US & Canada DOT cameras)",
   license: "511 DOT Traveler Information — Terms of Use",
   attribution:
-    "Live traffic camera data © state & provincial 511 systems (FL/GA/NY/ID/New England · ON/AB/NS/NB)",
+    "Live traffic camera data © state & provincial 511 systems (FL/GA/NY/ID/LA/New England · ON/AB/NS/NB)",
   refreshSeconds: 60, // live traffic snapshots refresh frequently
   needsKey: false,
 };
@@ -44,6 +56,9 @@ export const CASTLEROCK_SYSTEMS: CastleRockSystem[] = [
   { system: "ny", site: "511ny.org", country: "US", region: "New York", agency: "NYSDOT (511NY)" },
   { system: "id", site: "511.idaho.gov", country: "US", region: "Idaho", agency: "Idaho Transportation Dept (511)" },
   { system: "newengland", site: "newengland511.org", country: "US", region: "New England", agency: "New England 511 (ME/NH/VT)" },
+  // Louisiana, not Los Angeles. Its rows carry `state: null`, so `region` falls
+  // back to this table's label — which is why the label has to be right.
+  { system: "la", site: "511la.org", country: "US", region: "Louisiana", agency: "Louisiana DOTD (511LA)" },
   { system: "on", site: "511on.ca", country: "CA", region: "Ontario", agency: "Ontario MTO (511ON)" },
   { system: "ab", site: "511.alberta.ca", country: "CA", region: "Alberta", agency: "Alberta 511" },
   { system: "ns", site: "511.novascotia.ca", country: "CA", region: "Nova Scotia", agency: "Nova Scotia 511" },

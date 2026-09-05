@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/castlerock.json";
+import laFixture from "@/tests/fixtures/castlerock-la.json";
 import {
   normalizeCastleRock,
   parseWktPoint,
@@ -10,6 +11,7 @@ import { CameraArray } from "@/lib/types";
 
 const FL = CASTLEROCK_SYSTEMS.find((s) => s.system === "fl")!;
 const ON = CASTLEROCK_SYSTEMS.find((s) => s.system === "on")!;
+const LA = CASTLEROCK_SYSTEMS.find((s) => s.system === "la")!;
 
 test("parseWktPoint reads 'POINT (lon lat)' as longitude-first", () => {
   const pt = parseWktPoint("POINT (-80.892882 26.17325)");
@@ -79,4 +81,43 @@ test("the same record set re-namespaces and re-flags country per system", () => 
   expect(a.id).toBe("castlerock:on:1"); // namespace switches with the system
   expect(a.country).toBe("CA"); // Canadian systems map to CA, US systems to US
   expect(a.imageUrl).toBe("https://511on.ca/map/Cctv/1"); // snapshot host follows the site
+});
+
+// ── Louisiana (511la.org), added 2026-09-05 ────────────────────────────────────
+// The fixture is two VERBATIM rows from a live `POST /List/GetData/Cameras`, kept
+// so the "it is the same Castle Rock software" claim is checked rather than
+// asserted. It was first shipped as a separate `la511` adapter aimed at a
+// non-existent `POST https://511la.org/cctv` (that path 302s to /NotFound), and
+// described as Los Angeles. Both of those are what these tests exist to stop.
+test("Louisiana rides the existing Castle Rock adapter, not a module of its own", () => {
+  const cams = normalizeCastleRock(laFixture as never, LA);
+  expect(() => CameraArray.parse(cams)).not.toThrow();
+  expect(cams).toHaveLength(2);
+
+  const [a] = cams;
+  expect(a.id).toBe("castlerock:la:1");
+  expect(a.source).toBe("castlerock"); // NOT a "la511" source id
+  expect(a.imageUrl).toBe("https://511la.org/map/Cctv/1");
+  expect(a.road).toBe("I-20");
+  expect(a.name).toBe("I-20 at I-220 Off Ramp");
+  expect(a.mediaType).toBe("jpeg"); // LADOTD's HLS is open, but we still ship the still
+});
+
+// The rows carry `state: null`, so `region` can only come from the system table.
+// This is the assertion that fails if anyone re-reads "LA" as Los Angeles: a
+// California label here would be wrong by ~2,000 km and nothing else would catch it.
+test("Louisiana is Louisiana, not Los Angeles", () => {
+  const [a] = normalizeCastleRock(laFixture as never, LA);
+  expect(LA.site).toBe("511la.org");
+  expect(a.country).toBe("US");
+  expect(a.region).toBe("Louisiana");
+  expect(a.region).not.toBe("California");
+  // Shreveport, LA. California would put lon near -118 and lat near 34.
+  expect(a.lat).toBeCloseTo(32.538889, 4);
+  expect(a.lon).toBeCloseTo(-93.630833, 4);
+});
+
+// 336 rows over a 100-row cap = page 0 plus three more.
+test("Louisiana's measured total pages correctly", () => {
+  expect(pageStarts(336)).toEqual([100, 200, 300]);
 });

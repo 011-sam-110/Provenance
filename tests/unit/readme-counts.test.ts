@@ -86,7 +86,7 @@ function feedAdapterModules(): Map<string, string> {
 /**
  * How many distinct agency networks the camera feeds actually cover.
  *
- * A feed is not a network. Castle Rock is ONE feed carrying NINE 511 deployments,
+ * A feed is not a network. Castle Rock is ONE feed carrying TEN 511 deployments,
  * which is the whole reason the README states both numbers, and a reader who
  * conflates them gets a different answer.
  *
@@ -126,7 +126,7 @@ describe("README camera figures", () => {
   // "14 camera feeds, 22 agency networks, 9 countries". All three terms are
   // separately checkable, which is the only reason the sentence is allowed to state
   // three numbers: feeds != networks here, because castlerock is ONE feed carrying
-  // NINE 511 deployments, and a reader who conflates them gets a different number.
+  // TEN 511 deployments, and a reader who conflates them gets a different number.
   it("states the feed, agency and country counts the code actually ships", () => {
     const m = README.match(
       /\*\*(\d+) camera feeds, (\d+) agency networks, (\d+) countries/,
@@ -145,11 +145,39 @@ describe("README camera figures", () => {
     expect(feedAdapterModules().size).toBe(CAMERA_FEED_COUNT);
   });
 
+  // The count is spelled out in prose, so the assertion has to cross the
+  // word/number boundary. It used to pin the literal "nine" AND a literal 9, which
+  // meant adding Louisiana (2026-09-05) failed here twice over and had to be fixed
+  // in two places that could drift apart. Derive the word from the code instead:
+  // now the sentence is checked against whatever CASTLEROCK_SYSTEMS actually holds,
+  // and only the README needs the edit when a system is added.
+  const NUMBER_WORDS = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "eleven", "twelve",
+  ];
+
   it("states the number of 511 deployments castlerock really fans out to", () => {
-    const m = README.match(/Castle Rock alone carries nine separate 511 deployments/);
-    expect(m, "the castlerock fan-out sentence is gone").not.toBeNull();
-    // The word is spelled out in prose, so assert the code still matches the word.
-    expect(CASTLEROCK_SYSTEMS.length).toBe(9);
+    const word = NUMBER_WORDS[CASTLEROCK_SYSTEMS.length];
+    expect(
+      word,
+      `castlerock now has ${CASTLEROCK_SYSTEMS.length} systems — extend NUMBER_WORDS`,
+    ).toBeDefined();
+    const m = README.match(
+      new RegExp(`Castle Rock alone carries ${word} separate 511 deployments`),
+    );
+    expect(
+      m,
+      `the README should say "Castle Rock alone carries ${word} separate 511 deployments"`,
+    ).not.toBeNull();
+  });
+
+  // Each deployment is named in that same sentence, so a system added to the table
+  // without being named in the prose is caught rather than silently under-reported.
+  it("names every 511 deployment it claims to carry", () => {
+    for (const system of CASTLEROCK_SYSTEMS) {
+      expect(README, `the README never names the ${system.region} 511 deployment`)
+        .toContain(system.region);
+    }
   });
 });
 

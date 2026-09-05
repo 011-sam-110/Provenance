@@ -145,7 +145,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Claim | Value | How it was checked (2026-08-10) |
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
-| Camera feeds | 17 feeds (16 adapters + 1 discovered), 25 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). |
+| Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
 | Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
 | Console boards | 2 (2026-09-04) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. Was 7 until Conflict, Hazards, Transit, Markets & Cyber and Recon were removed and Brief was emptied and renamed **Globe** — the landing board is now a bare rotating globe with no widgets, so `console-presets.test.ts` pins the empty widget list and the `map3d` stage as well as the id list. `tour-board-copy.test.ts` still fails if the guided tour states a different number; the tour derives its count and its board list from `BUILTIN_PRESETS`, so it followed the rename with no edit. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
@@ -198,6 +198,20 @@ Re-measure before putting a number in a README, a CV or a PR description.
   can detect this table going stale** — a station added since the capture reads as derived, which
   is the right failure direction but still needs `scripts/gen-digitraffic-join.mjs` re-run
   occasionally.
+- **Ventusky cannot be a camera feed, and the reason is not taste (2026-09-05).** It was
+  asked for by URL (`ventusky.com/webcam-943487903`) and an adapter was written against a
+  guessed `https://www.ventusky.com/api/webcams`. That URL 302s to the homepage; it does
+  not exist. The only public webcam endpoint the site's own bundle calls is
+  `https://webcams.ventusky.com/api/api.get_nearest_camera.php?lat={lat}&lon={lon}&count={count}`,
+  which is **nearest-by-coordinate** — the same structural wall as `/api/point-weather`,
+  because `fetchRegistry()` takes no arguments and must return a global list. Two things
+  settle it beyond the plumbing: that endpoint returns rows stamped `"source":"bihamk.ba"`,
+  so the camera in the pasted URL is a **re-host of BIHAMK**, which `lib/sources/bihamk.ts`
+  already serves operator-primary (the fixture even names "Sarajevo-Skenderija"); and
+  aggregation is what the operator-primary policy exists to refuse. Do not re-add it. The
+  image CDN, if it is ever needed for something else, is
+  `https://webcams.ventusky.com/data/{last 2 digits of id}/{id}/latest_thumb.jpg`, **not**
+  `images.ventusky.com/{id}.jpg`.
 - Key-gated layers dormant in prod: ACLED, ReliefWeb, ENTSO-E grid, AIS. Live with keys:
   NASA FIRMS, OpenAQ stations. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
