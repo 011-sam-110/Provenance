@@ -4358,29 +4358,47 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   z-index: 6;
 }
 
-/* THE FIRST-VISIT HINT. The Sources tab is thin, sits on an edge that is otherwise
-   a widget column, and reviewers did not find it. It nudges a few times and then
-   stops for good — see lib/console/sourcesRail.ts for when the state is set, and
-   `shouldHintRail` for the rule.
+/* THE FRESH-LAUNCH HINT. The Sources tab is thin, sits on an edge that is otherwise
+   a widget column, and reviewers did not find it. It jumps a few times and then
+   stops — see lib/console/sourcesRail.ts for when the state is set, why the scope is
+   a launch rather than a browser, and `shouldHintRail` for the rule.
 
    FINITE, NOT INFINITE. `3` iterations, not `infinite`: a control that never stops
    moving stops reading as a hint and starts reading as a fault, and it would pull
-   the eye away from the map for the whole session rather than for the two seconds
+   the eye away from the map for the whole session rather than for the few seconds
    it takes to notice a tab. The delay lets the console finish arriving first —
-   a thing that bounces before the page has settled looks like a layout jump.
+   a thing that moves before the page has settled looks like a layout jump.
 
    IT MOVES ON THE X AXIS, toward the middle of the screen, because that is the
    direction the rail opens. A vertical bounce would be motion; this is a gesture
    that shows you what the control does.
 
+   IT DOES NOT OVERSHOOT PAST ITS ORIGIN, and that was the first thing tried. A
+   curve that dips to -3px before settling is the textbook way to make a move read as
+   a jump rather than a slide — and it is invisible here. At >=901px this tab is not
+   a pill: it is a full-height 26px strip pinned to `left:0` of `.tn-cw-shell`, which
+   is `overflow:hidden` with its left edge at exactly that origin. Every negative
+   pixel is clipped, so the strip's left edge stays pinned while its right edge moves
+   and the gesture reads as the tab getting NARROWER. Measured in the browser, not
+   reasoned about. The spring is built out of decaying hops in positive X instead:
+   out far, back, out less, back. Same signature, all of it on screen.
+
+   THERE IS NO `scale` EITHER, for the same reason: the strip is ~870px tall, so the
+   1.06 that looked right on a pill grew it by 52px and read as the tab stretching
+   down the page. On an element this shape, translate is the only honest axis.
+
+   The travel was 7px and is now 16px — on a 26px-wide strip that is a lunge of more
+   than half its own width, where 7px was inside the noise floor of the peripheral
+   glance that is the only kind of glance a hint gets.
+
    `translate` is used rather than `transform` so a future hover/active transform on
    this button cannot silently cancel the animation, and vice versa. */
 @keyframes tnx-rail-fab-hint {
-  0%, 100% { translate: 0 0; }
-  12% { translate: 7px 0; }
-  26% { translate: 0 0; }
-  38% { translate: 5px 0; }
-  50% { translate: 0 0; }
+  0%        { translate: 0 0; }
+  7%        { translate: 16px 0; }
+  18%       { translate: 0 0; }
+  27%       { translate: 7px 0; }
+  38%, 100% { translate: 0 0; }
 }
 .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] {
   animation: tnx-rail-fab-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;

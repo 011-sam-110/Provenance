@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-// The Sources rail: its two keyboard doors, and the first-visit hint on its tab.
+// The Sources rail: its two keyboard doors, and the fresh-launch hint on its tab.
 //
 // WHY E2E AND NOT A UNIT TEST. The rule about when the hint fires is pure and lives
 // in tests/unit/sources-rail.test.ts. What cannot be tested there is everything that
 // makes it real: vitest here is `environment: "node"`, so there is no keydown to
-// dispatch, no CSS to resolve an animation from, and no localStorage round trip
-// across a reload. All three are the substance of this feature.
+// dispatch, no CSS to resolve an animation from, and no second launch. The third one
+// is the whole point of this file now — the hint's scope is one visit, and a suite
+// that never reloads cannot tell that apart from a hint that never comes back.
 //
 // The localStorage stamp is copied from map-rail.spec.ts for the reason stated there:
 // the launch sequence is a `position:fixed; inset:0` layer, and without it a click
@@ -62,40 +63,63 @@ test("the SHORTCUTS button still opens the palette, now that ⌘K does not", asy
   await expect(page.locator(".tn-palette-root")).toBeVisible();
 });
 
-test("the tab bounces on a first visit, and never again after the rail is opened", async ({ page }) => {
-  // THE HINT, END TO END: it is armed with clean storage, it is a FINITE animation,
-  // opening the rail earns it out, and the flag survives a reload.
+test("the tab jumps on a fresh launch, stops once opened, and IS BACK NEXT LAUNCH", async ({ page }) => {
+  // THE HINT, END TO END: armed on arrival, actually animating, ended by opening the
+  // rail, and armed again on the next launch.
   await stampSeen(page);
   await page.goto("/app");
 
   const fab = page.locator(FAB);
   await expect(fab).toHaveAttribute("data-hint", "");
 
+  // That the attribute is set is not evidence that anything moves. The CSS hangs off
+  // `.tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint]`, a DIRECT-child selector, so
+  // any future wrapper around the tab silently kills the animation while leaving the
+  // attribute and every unit test green. Resolving the animation is what catches that.
+  const anim = await fab.evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return { name: cs.animationName, iterations: cs.animationIterationCount };
+  });
+  expect(anim.name).not.toBe("none");
   // Finite, not infinite. A control that never stops moving reads as a fault rather
   // than as a hint, and it would pull the eye off the map for the whole session.
-  const iterations = await fab.evaluate((el) => getComputedStyle(el).animationIterationCount);
-  expect(iterations).not.toBe("infinite");
-  expect(Number(iterations)).toBeGreaterThan(0);
+  expect(anim.iterations).not.toBe("infinite");
+  expect(Number(anim.iterations)).toBeGreaterThan(0);
 
   await fab.click();
   await expect(page.locator(RAIL)).toBeVisible();
 
-  // Earned out, and it stays earned out across a reload — this is a first-visit hint,
-  // not a per-load one.
-  await page.reload();
+  // Ended for the rest of THIS visit. Closing the rail again does not bring it back:
+  // someone who opened Sources and shut it has found the control.
+  //
+  // The collapse button, not Escape. Escape was the obvious guess and it does not
+  // close this rail — ConsoleShell sequences Escape for picking mode and the current
+  // selection, and the rail is not in that ladder. Written down because the failure
+  // looks nothing like the cause: the rail stays open, so the tab never re-renders,
+  // so the assertion below fails with "element not found" rather than with a hint
+  // that would not go away.
+  await page.getByRole("button", { name: "Collapse sources" }).click();
   await expect(page.locator(FAB)).not.toHaveAttribute("data-hint", "");
+
+  // AND BACK ON THE NEXT LAUNCH. This assertion is the inverse of the one it replaces,
+  // which read "it stays earned out across a reload — this is a first-visit hint, not
+  // a per-load one". That rule was the reported bug: the flag lived in localStorage, so
+  // opening Sources once, ever, retired the hint on every later launch and the console
+  // then looked exactly like one where the hint had never been built.
+  await page.reload();
+  await expect(page.locator(FAB)).toHaveAttribute("data-hint", "");
 });
 
-test("opening by keyboard earns the hint out too, not just clicking the tab", async ({ page }) => {
-  // The flag is written in the store's setOpen, so every door earns it out. If it
-  // were written in the tab's onClick instead, a ⌘K user would be nagged forever.
+test("opening by keyboard ends the hint too, not just clicking the tab", async ({ page }) => {
+  // The flag is set in the store's setOpen, so every door ends it. If it were set in
+  // the tab's onClick instead, a Ctrl+K user would be nagged for the whole visit.
   await stampSeen(page);
   await page.goto("/app");
   await expect(page.locator(FAB)).toHaveAttribute("data-hint", "");
 
   await page.keyboard.press("ControlOrMeta+k");
   await expect(page.locator(RAIL)).toBeVisible();
-
-  await page.reload();
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.locator(RAIL)).toHaveCount(0);
   await expect(page.locator(FAB)).not.toHaveAttribute("data-hint", "");
 });

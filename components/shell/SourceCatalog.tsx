@@ -23,7 +23,7 @@
 // search box, MonitorBar, the layer presets, the camera feed/region filters, the
 // signal time window, and the coverage / markets / watchlist launchers.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLayers, layersStore, LAYER_PRESETS, type LayerKey } from "@/lib/layers";
 import { signalsStore, useSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
@@ -114,9 +114,8 @@ export default function SourceCatalog() {
   const keymap = useKeymap();
   const railOpen = rail.open;
   const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
-  // One read of the persisted "have you ever opened this" flag, in an effect so the
-  // server render and the first client pass agree.
-  useEffect(() => sourcesRailStore.hydrate(), []);
+  // No hydrate effect: the hint is scoped to one launch and nothing about it is
+  // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
   const t = useT();
   const layers = useLayers();
@@ -174,12 +173,13 @@ export default function SourceCatalog() {
         className="tn-rail-fab"
         onClick={() => setRailOpen(true)}
         title={`Show sources${keymap.sources[0] ? ` (${formatChord(keymap.sources[0], isMac())})` : ""}`}
-        // THE HINT. On a first visit this tab bounces a few times and then stops,
+        // THE HINT. On every fresh launch this tab jumps a few times and then stops,
         // because in review nobody found it — it is a thin tab on an edge that is
         // otherwise a widget column. It is an attribute rather than a class so the
-        // CSS reads as a state and one grep finds both halves, and it goes out for
-        // good the first time the rail is opened by ANY route. `shouldHintRail` is
-        // the whole rule and is unit-tested.
+        // CSS reads as a state and one grep finds both halves, and it ends for the
+        // rest of the visit the first time the rail is opened by ANY route.
+        // `shouldHintRail` is the whole rule and is unit-tested; see
+        // lib/console/sourcesRail.ts for why the scope is a launch and not a browser.
         data-hint={shouldHintRail(rail) ? "" : undefined}
       >
         <span className="tn-rail-fab-bars" aria-hidden>≡</span>

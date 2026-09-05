@@ -1,5 +1,5 @@
 "use client";
-// The Sources rail's open state, and the one-time hint that says it is there.
+// The Sources rail's open state, and the hint that says it is there.
 //
 // WHY A STORE AND NOT `useState` IN SourceCatalog. It was local state, and that was
 // correct while the only thing that could open the rail was the tab you clicked to
@@ -9,61 +9,63 @@
 // useSyncExternalStore — so it reads like lib/shell/scope.ts rather than introducing
 // a third way to hold shell state.
 //
-// THE HINT IS FINITE AND IT IS EARNED-OUT, NOT TIMED. The rail collapses to a thin
-// tab on the left edge, and in review nobody found it — which is the same complaint
-// that produced the light skin, and the same class of bug this codebase has already
+// THE HINT PLAYS ONCE PER LAUNCH, AND NOTHING ABOUT IT IS WRITTEN DOWN. The rail
+// collapses to a thin tab on the left edge, and in review nobody found it — the same
+// complaint that produced the light skin, and the same class of bug this codebase has
 // argued about twice ("dead controls that sit exactly where a thumb starts a swipe").
-// So the tab bounces on a first visit. It stops the first time the rail is opened by
-// ANY route — the tab, the keymap's Sources chord, or the command palette — because
-// at that point the user
-// has demonstrably found it, and a hint that keeps playing after it has worked is
-// just motion. The flag persists, so it is a first-visit hint and not a per-load one.
+// So the tab jumps, and it stops the instant the rail is opened by ANY route — the
+// tab, the keymap's Sources chord, or the command palette — because at that point the
+// user has demonstrably found it.
 //
-// Nothing here touches window/document at module scope. `hydrate()` is called from an
-// effect, so importing this on the server or under the node vitest environment is
-// inert — the same contract lib/shell/keymap.ts states.
+// IT USED TO BE ONCE PER BROWSER, and that is the part that changed. A
+// `tn.sources.opened.v1` flag was written to localStorage the first time the rail was
+// opened, and after that the tab never moved again on any later visit. The reasoning
+// was sound in the abstract — a hint that keeps playing after it has worked is just
+// motion — and it did not survive contact. Opening Sources once, including on the
+// visit where you were only looking around, silently retired the hint for good; the
+// console then looked to its owner exactly like a console where the hint had never
+// been built. "On a fresh launch the tab does not move" was the report, and the flag
+// was the whole reason.
+//
+// So the scope is now one visit. The cost is real and worth stating: someone who
+// launches the console every day and never uses Sources gets the same nudge every
+// day. That is the trade — the alternative failed in the direction where the feature
+// silently does not exist, and this one fails in the direction where it is slightly
+// insistent about the console's main data-source control. A bounded animation the
+// user can end at any moment by opening the thing it points at is the cheaper failure.
+//
+// Nothing here touches window/document at all, at module scope or otherwise, so
+// importing this on the server or under the node vitest environment is inert. That is
+// also why there is no `hydrate()` any more: with nothing persisted there is nothing
+// to read back, the initial state and the server snapshot are the same value, and
+// hydration has nothing to reconcile.
 
 import { useSyncExternalStore } from "react";
-import { loadPersisted, savePersisted } from "@/lib/shell/persist";
-
-const PERSIST_KEY = "tn.sources.opened.v1";
-const PERSIST_VERSION = 1;
 
 interface RailState {
   /** Is the rail expanded? */
   open: boolean;
   /**
-   * Has the rail EVER been opened, on any visit? Drives the hint, and nothing else.
-   * Starts true so that the hint cannot flash during the render before `hydrate()`
-   * has read localStorage — a returning user seeing one bounce of a hint they
-   * already earned out of is worse than a first-time user seeing it a beat late.
+   * Has the rail been opened at any point in THIS visit? Drives the hint, and
+   * nothing else. Starts false, which is the honest answer on a fresh launch.
    */
-  everOpened: boolean;
+  openedThisVisit: boolean;
 }
-
-let state: RailState = { open: false, everOpened: true };
-const listeners = new Set<() => void>();
-const emit = () => listeners.forEach((l) => l());
 
 /**
- * Pure: what a persisted value means.
+ * The state a launch starts in, and the server snapshot.
  *
- * ONLY AN EXPLICIT `true` COUNTS AS OPENED. The first version of this asked whether
- * the value was `!== false`, which is the same sentence read the wrong way round:
- * `loadPersisted` returns `null` when there is nothing stored, `null?.opened` is
- * `undefined`, and `undefined !== false` is `true` — so a first-time visitor, the
- * only person the hint exists for, was classified as having already opened the rail
- * and never saw it. Caught by opening the app with clean storage and reading the
- * attribute back off the tab, which is the only way it could have been caught: every
- * assertion about it passed, because they all fed it a value that was actually there.
- *
- * Junk that is not `{ opened: true }` therefore replays the hint once. That is the
- * right direction to fail — a stray bounce costs a second, a hint that can never
- * appear costs the feature.
+ * ONE FROZEN VALUE, NOT TWO LITERALS. `useSyncExternalStore` compares snapshots by
+ * identity, so the server snapshot getter has to return the same object every call or
+ * React re-renders forever. Sharing it with the initial state also makes the SSR and
+ * first-client renders agree by construction rather than by two literals that happen
+ * to match today.
  */
-export function coerceEverOpened(saved: unknown): boolean {
-  return (saved as { opened?: unknown } | null)?.opened === true;
-}
+const FRESH: RailState = Object.freeze({ open: false, openedThisVisit: false });
+
+let state: RailState = FRESH;
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
 
 export const sourcesRailStore = {
   get: (): RailState => state,
@@ -72,20 +74,11 @@ export const sourcesRailStore = {
     return () => listeners.delete(l);
   },
 
-  /** Read the persisted flag. Call from an effect, once. */
-  hydrate(): void {
-    const everOpened = coerceEverOpened(loadPersisted(PERSIST_KEY, PERSIST_VERSION));
-    if (everOpened === state.everOpened) return;
-    state = { ...state, everOpened };
-    emit();
-  },
-
   setOpen(open: boolean): void {
-    // Opening is what earns the hint out, so the write happens here rather than in
-    // each of the four callers. Closing does not un-earn it.
-    const everOpened = state.everOpened || open;
-    if (open && !state.everOpened) savePersisted(PERSIST_KEY, PERSIST_VERSION, { opened: true });
-    state = { open, everOpened };
+    // Opening is what ends the hint, so it happens here rather than in each of the
+    // callers. Closing does not bring it back: someone who opened the rail and shut
+    // it again has found the control.
+    state = { open, openedThisVisit: state.openedThisVisit || open };
     emit();
   },
 
@@ -95,20 +88,17 @@ export const sourcesRailStore = {
 };
 
 export function useSourcesRail(): RailState {
-  return useSyncExternalStore(sourcesRailStore.subscribe, sourcesRailStore.get, () => ({
-    open: false,
-    everOpened: true,
-  }));
+  return useSyncExternalStore(sourcesRailStore.subscribe, sourcesRailStore.get, () => FRESH);
 }
 
 /**
- * Pure: should the tab be bouncing?
+ * Pure: should the tab be jumping?
  *
  * Split out and exported so the rule is testable without a DOM. It is deliberately
- * narrow — the hint plays only when the rail is CLOSED and has never been opened.
- * A hint on an open rail would be pointing at something the user is already looking
- * at.
+ * narrow — the hint plays only when the rail is CLOSED and has not been opened this
+ * visit. A hint on an open rail would be pointing at something the user is already
+ * looking at.
  */
 export function shouldHintRail(s: RailState): boolean {
-  return !s.open && !s.everOpened;
+  return !s.open && !s.openedThisVisit;
 }
