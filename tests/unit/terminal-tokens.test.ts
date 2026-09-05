@@ -148,24 +148,28 @@ describe("terminal tokens — colour", () => {
   it("the ink ramp holds the ratio its ROLE requires, on --tnx-panel", () => {
     // Thresholds are per role, and they record what each ink is FOR rather than a
     // uniform aspiration that would fail today and teach the next reader to
-    // loosen the test. Measured on the current ramp:
-    //   ink    16.40 dark / 18.19 light — body text
-    //   dim     7.32 dark /  5.86 light — secondary text, still text
-    //   faint   4.10 dark /  3.61 light — de-emphasised
-    //   ghost   2.75 dark /  2.28 light — NOT a text colour (RailGlyph fills,
-    //                                     disabled chrome); a text threshold here
-    //                                     would be a false claim about its job
+    // loosen the test. Measured on the current ramp, all on --tnx-panel #ffffff:
+    //   ink    14.60 — body text
+    //   dim     8.19 — secondary text, still text
+    //   faint   5.88 — de-emphasised, and STILL TEXT
+    //   ghost   2.35 — NOT a text colour (RailGlyph fills, disabled chrome); a
+    //                  text threshold here would be a false claim about its job
     //
-    // NOTE, and it is a real gap rather than a rounding: --tnx-ink-faint sits
-    // between 3 and 4.5, so it only clears AA as LARGE text (>=24px, or 18.66px
-    // bold). The console has nothing that size — the type scale tops out well
-    // below it — so any small text painted --tnx-ink-faint is below AA today.
-    // Pinned at 3 to stop it drifting further while that is decided; raising it
-    // is a change to the ramp, not to this test.
+    // THE FAINT FLOOR WENT UP, from 3 to 4.5, and this note replaces the one that
+    // explained why it could not. That one read: "--tnx-ink-faint sits between 3
+    // and 4.5, so it only clears AA as LARGE text… any small text painted
+    // --tnx-ink-faint is below AA today. Pinned at 3 to stop it drifting further
+    // while that is decided; raising it is a change to the ramp, not to this
+    // test." The ramp changed. #7d8894 measured 3.61 and the olive palette's
+    // #636657 measures 5.88, so every small label painted faint — the world
+    // clock's city codes, the attribution, the settings hints — clears AA at its
+    // own size for the first time. The floor moves with it so the gap cannot
+    // silently reopen: a future palette that puts faint back under 4.5 now fails
+    // here rather than quietly reintroducing the same shortfall.
     const FLOOR: Record<string, number> = {
       "--tnx-ink": 4.5,
       "--tnx-ink-dim": 4.5,
-      "--tnx-ink-faint": 3,
+      "--tnx-ink-faint": 4.5,
       "--tnx-ink-ghost": 1.5,
     };
     for (const [name, sel] of SKINS) {
