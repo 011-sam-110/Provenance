@@ -80,8 +80,10 @@ export const FIXED_KEYS: {
     label: "Leaves camera-picking mode, then clears the selection",
     where: "console",
   },
-  { keys: "↑↓", chords: ["arrowup", "arrowdown"], short: "in column", label: "Move within a palette column", where: "palette" },
-  { keys: "←→", chords: ["arrowleft", "arrowright"], short: "columns", label: "Move between palette columns", where: "palette" },
+  // SPACED. Set adjacently, "←→" renders as one long arrow rather than as two keys —
+  // measured in the shipped font at 11.5px. The pair is spaced for the same reason.
+  { keys: "↑ ↓", chords: ["arrowup", "arrowdown"], short: "in column", label: "Move within a palette column", where: "palette" },
+  { keys: "← →", chords: ["arrowleft", "arrowright"], short: "columns", label: "Move between palette columns", where: "palette" },
   { keys: "↵", chords: ["enter"], short: "run", label: "Run the highlighted palette item", where: "palette" },
   { keys: "Esc", chords: ["escape"], short: "close", label: "Close the palette", where: "palette" },
 ];
