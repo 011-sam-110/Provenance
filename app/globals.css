@@ -3047,11 +3047,17 @@ a.tn-w-place { display: flex; align-items: center; }
      in that test moves up to 4.5 with it. Measured, WCAG 2.x relative luminance,
      all on --tnx-panel #ffffff:
 
-       --tnx-ink        #262b15  14.60   body text
-       --tnx-ink-dim    #4d513f   8.19   secondary text            (was 5.86)
-       --tnx-ink-faint  #636657   5.88   de-emphasised text        (was 3.61)
+       --tnx-ink        #262b15  14.60   body text                 (was 18.19)
+       --tnx-ink-dim    #4d513f   8.19   secondary text            (was  7.21)
+       --tnx-ink-faint  #636657   5.88   de-emphasised text        (was  3.61)
        --tnx-ink-ghost  #a8aaa1   2.35   NOT text — glyph fills, disabled chrome
-       --tnx-accent     #464b37   9.04   identity, selection, focus
+       --tnx-accent     #464b37   9.04   identity, selection, focus (was  6.93)
+
+     The `was` column is the SAME measurement on the SAME surface, so it is a like
+     for like comparison and it does not all move one way. Body ink gives up 3.6
+     points of a ratio that was already four times AAA, and faint and accent take
+     the gain — which is the trade worth making, because nothing was ever unreadable
+     at 18:1 and small faint labels genuinely were at 3.61.
 
      --tnx-bg IS NOW WHITE, and that is the change with the widest blast radius.
      The ground between cards used to be #d6dde6, so a card was defined by being
