@@ -204,18 +204,17 @@ const SHUT_MENU: TourAction = { kind: "close", want: ".tn-cw-menu-pop", click: "
 const OPEN_PALETTE: TourAction = { kind: "ensure", want: ".tn-palette-root", click: ".tn-palette-trigger" };
 const SHUT_PALETTE: TourAction = { kind: "close", want: ".tn-palette-root", click: ".tn-palette-backdrop" };
 
-// `.tn-settings-trigger` moved into the profile popover when the header's ⚙ icon
-// was removed, so the popover has to be open before the click can land. Two
-// actions, in order — every step that opens Settings now carries both.
+// `.tn-settings-trigger` IS BACK IN THE HEADER, so this is one action again.
+//
+// It was two: the trigger had moved into the profile popover, so the popover had to
+// be opened before the click could land. The popover was removed with the header's
+// "?" avatar, the ⚙ button returned to the header as the only door to Settings, and
+// the extra step went with it. Kept as an ARRAY so the twelve `setup: [...OPEN_SETTINGS]`
+// call sites did not all have to change shape for a detail of where the button lives.
 const OPEN_SETTINGS: TourAction[] = [
-  { kind: "ensure", want: ".tn-profile-menu", click: ".tn-profile-avatar" },
   { kind: "ensure", want: ".tn-settings", click: ".tn-settings-trigger" },
 ];
 const SHUT_SETTINGS: TourAction = { kind: "close", want: ".tn-settings", click: ".tn-settings-close" };
-
-// The profile popover toggles from the avatar, so the same control opens and closes it.
-const OPEN_PROFILE: TourAction = { kind: "ensure", want: ".tn-profile-menu", click: ".tn-profile-avatar" };
-const SHUT_PROFILE: TourAction = { kind: "close", want: ".tn-profile-menu", click: ".tn-profile-avatar" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The walkthrough.
@@ -372,14 +371,6 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         title: "Your changes survive a switch",
         body:
           "Move or resize anything and that board is marked customised with a dot. Switching away and back brings your arrangement with you — and a ⟲ appears beside the tabs to put the board back to its template when you want the original.",
-        placement: "bottom",
-      },
-      {
-        id: "boards-skin",
-        target: ".tnx-hdr-skin",
-        title: "Dark or light",
-        body:
-          "The button names the skin you would get, not the one you are in. The basemap follows it — dark chrome pairs with the dark map, light with the light one — unless you have deliberately chosen another, which is left alone. The console ships no basemap buttons; ⌘K is where you change one.",
         placement: "bottom",
       },
     ],
@@ -734,19 +725,15 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
     title: "Settings & finishing up",
     summary: "Theme, language, alert channels and your profile",
     icon: "⚙",
-    cleanup: [SHUT_PROFILE, SHUT_SETTINGS],
+    cleanup: [SHUT_SETTINGS],
     steps: [
       {
         id: "settings-trigger",
-        target: [".tn-settings-trigger", ".tn-profile-menu"],
+        target: ".tn-settings-trigger",
         title: "⚙ — settings",
         body:
-          "It lives in the profile menu rather than as its own header icon: one door to a room, not two. Open the avatar and it is the last item. Behind it is the drawer holding everything that is a preference rather than a view.",
+          "The last button in the header, and the only door to it. Behind it is the drawer holding everything that is a preference rather than a view.",
         placement: "bottom",
-        // The trigger is INSIDE the popover now, so the popover has to be open
-        // before there is anything to spotlight. A step whose target is missing is
-        // dropped silently, which is how this would have failed.
-        setup: [OPEN_PROFILE],
         settleMs: 140,
       },
       {
@@ -760,21 +747,11 @@ const AUTHORED_CHAPTERS: TourChapter[] = [
         settleMs: 200,
       },
       {
-        id: "settings-profile",
-        target: [".tn-profile-menu", ".tn-profile-avatar", ".tnx-hdr-profile"],
-        title: "Your profile",
-        body:
-          "Set a display name for this browser, and replay this tour from here — 🧭 Take the tour is the second way in, alongside ⌘K. The Sign in button is a placeholder for accounts that do not exist yet: it opens a form that cannot be submitted. Nothing is uploaded — your boards, pins, watchlist and alert credentials all live in this browser only.",
-        placement: "bottom",
-        setup: [SHUT_SETTINGS, OPEN_PROFILE],
-        settleMs: 140,
-      },
-      {
         id: "settings-done",
         target: "",
         title: "That is the whole console",
         body:
-          "No login, no payment, and nothing you have to configure to start. Replay this tour, or any single chapter, from ⌘K → \"Take the tour\" or the profile menu. Start with the Brief board if you want the short version of what changed today.",
+          "No login, no payment, and nothing you have to configure to start. Replay this tour, or any single chapter, from the SHORTCUTS palette → \"Take the tour\". Start with the Globe board if you want the short version of what changed today.",
         placement: "center",
       },
     ],

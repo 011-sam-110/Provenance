@@ -112,7 +112,7 @@ test("the flyout expands LATERALLY, to the left of the button that opened it", a
   expect(Math.abs(p.y + p.height / 2 - (b.y + b.height / 2))).toBeLessThan(4);
 });
 
-test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", async ({ page }) => {
+test("View: 2D/3D is ONE button, three basemaps are radios, and the map follows", async ({ page }) => {
   const rail = page.locator(RAIL);
   await rail.getByRole("button", { name: VIEW }).click();
   const pop = page.locator(".tnx-maprail-pop");
@@ -122,11 +122,12 @@ test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", asyn
   await expect(pop.getByRole("button", { name: /^(2D|3D)$/ })).toHaveCount(1);
   await expect(pop.getByRole("button", { name: "2D" })).toBeVisible();
 
-  // Exactly one light/dark chip, likewise labelled with the target.
-  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveCount(1);
+  // THE DARK/LIGHT PAIR CHIP IS GONE, and its absence is asserted rather than just
+  // dropped: Dark and Positron left the basemap registry with the console's dark
+  // skin, so a chip offering either of them would mean the removal was incomplete.
+  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveCount(0);
 
-  // Three standalone basemaps beside it. Five basemaps are reachable; two of them
-  // share the pair chip.
+  // Three basemaps, all of them radios now. There were five, two sharing a pair chip.
   for (const n of ["Streets", "Sat", "Topo"]) {
     await expect(pop.getByRole("radio", { name: n })).toBeVisible();
   }
@@ -143,11 +144,9 @@ test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", asyn
     timeout: 15_000,
   });
 
-  // The pair chip is not part of that radio group, and says so.
-  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
+  // Every basemap in the strip is a radio in ONE group — there is no longer a chip
+  // sitting outside it, which is what the pair button used to be.
+  await expect(pop.getByRole("radio")).toHaveCount(3);
 });
 
 test("Search: the group opens focused, and / opens it from anywhere", async ({ page }) => {
@@ -287,31 +286,23 @@ test("shots", async ({ page }) => {
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-desktop.png" });
 
-  // The other skin. The header toggle is labelled with its TARGET, so "DARK" is
-  // the button that turns the dark skin on — the same convention the View
-  // group's own pair button follows. Worth a shot of its own: the rail is
-  // token-only, and a token that resolves in one skin and not the other is the
-  // classic way a control goes invisible on half the users.
+  // THE DARK-SKIN SHOT IS GONE, and so is the skin click that produced it.
   //
-  // The group is REOPENED after each skin click, and that is the rail working
-  // rather than a workaround: the header toggle is outside the rail, so clicking
-  // it is an outside click and the flyout closes on it. Anything else would mean
-  // a panel that survives a click on the far side of the screen.
-  //
-  // SCOPED TO THE BANNER, and that is not incidental either. The header's skin
-  // button and the View group's basemap pair button can both read "Light" at the
-  // same moment — one is the console skin, the other is the map's basemap, and
-  // they are genuinely different things. An unscoped getByRole matched both and
-  // failed on strict mode, which is Playwright telling the truth about the page.
-  const header = page.getByRole("banner");
-  await header.getByRole("button", { name: "DARK" }).click();
-  await expect(header.getByRole("button", { name: "LIGHT" })).toBeVisible();
-  await rail.getByRole("button", { name: VIEW }).click();
-  await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
-  await page.screenshot({ path: "persona-shots/map-rail-view-desktop-dark.png" });
+  // It existed because the rail is token-only, and a token that resolves in one skin
+  // and not the other is the classic way a control goes invisible for half the users.
+  // There is one palette now — the light values were folded into `.tn-terminal` and
+  // the header toggle removed — so there is no second skin to check and no button to
+  // click. tests/unit/terminal-tokens.test.ts still holds the contrast floors that
+  // shot was really guarding.
 
-  await header.getByRole("button", { name: "LIGHT" }).click();
+  // The phone. CLOSED FIRST, THEN OPENED, rather than clicked once: the desktop shot
+  // above leaves the group open, and the rail's own rule is that clicking the open
+  // group closes it — so a single click here shut the flyout and screenshotted a bare
+  // rail. Escape is the close that does not depend on where the button has moved to
+  // at 390px.
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".tnx-maprail-pop")).toHaveCount(0);
   await rail.getByRole("button", { name: VIEW }).click();
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-phone.png" });

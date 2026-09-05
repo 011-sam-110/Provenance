@@ -3114,22 +3114,22 @@ a.tn-w-place { display: flex; align-items: center; }
      width:auto, so this value stops applying entirely on a phone. */
   --tn-rail-w: clamp(316px, calc(100vw - 820px), 602px);
   /* ── The design palette, verbatim ──────────────────────────────────────── */
-  --tnx-bg: #06080b;
-  --tnx-panel: #0a0d12;
-  --tnx-panel-head: #0e1319;
+  --tnx-bg: #d6dde6;
+  --tnx-panel: #ffffff;
+  --tnx-panel-head: #eaeff5;
   /* The header/footer band. A THIRD value between --tnx-bg and --tnx-panel, not a
      rounding of either: substituting --tnx-bg makes the chrome disappear into the
      page and leaves the hairline under it doing all the work. */
-  --tnx-chrome: #080b0f;
+  --tnx-chrome: #c9d2dd;
 
-  --tnx-ink: #e8ecf1;
-  --tnx-ink-dim: #93a0b0;
-  --tnx-ink-faint: #67757f;
-  --tnx-ink-ghost: #4d5a66;
+  --tnx-ink: #10161d;
+  --tnx-ink-dim: #4e5866;
+  --tnx-ink-faint: #7d8894;
+  --tnx-ink-ghost: #a3adb8;
 
-  --tnx-line: rgba(255, 255, 255, 0.08);
-  --tnx-line-strong: rgba(255, 255, 255, 0.14);
-  --tnx-row-rule: rgba(255, 255, 255, 0.05);
+  --tnx-line: rgba(16, 22, 29, 0.12);
+  --tnx-line-strong: rgba(16, 22, 29, 0.22);
+  --tnx-row-rule: rgba(16, 22, 29, 0.07);
 
   /* Blue, not amber, and the reason is measured rather than aesthetic — see the
      light block, where the old accent failed AA outright. Dark did not have that
@@ -3140,8 +3140,8 @@ a.tn-w-place { display: flex; align-items: center; }
      --tnx-panel-head, and sits ~207deg from the warn/critical ramp instead of
      the 15deg amber managed. --tnx-lag KEEPS the amber; that separation is the
      point. */
-  --tnx-accent: #5cb1ff;
-  --tnx-accent-soft: rgba(92, 177, 255, 0.13);
+  --tnx-accent: #0f5c9c;
+  --tnx-accent-soft: rgba(15, 92, 156, 0.12);
 
   /* ── The ALERT ramp — deliberately NOT the accent ───────────────────────
      An OSINT analyst reviewing the console read the left column as "a visual
@@ -3164,25 +3164,25 @@ a.tn-w-place { display: flex; align-items: center; }
      ≥5.39 for each as a fill on --tnx-panel. `warn` is #ff8a3d rather than a
      tweak of the accent because 15° of hue separation is what makes the two
      legibly different at 9px; #ffb020 sits at 39°, this at 24°. */
-  --tnx-alert-none: #7c8896;
-  --tnx-alert-warn: #ff8a3d;
-  --tnx-alert-critical: #ff5449;
+  --tnx-alert-none: #576270;
+  --tnx-alert-warn: #a3440f;
+  --tnx-alert-critical: #b1312d;
 
   /* Glass: the translucent near-black the stage chrome, the rail tab and the
      MapLibre controls float on. It was written as a literal rgba(8,11,15,a) in
      thirteen places, which is exactly why the light skin first shipped with dark
      panels carrying dark ink on top — unreadable, and invisible to any check that
      only looks at the token block. Tokenised so a skin can move it. */
-  --tnx-glass: rgba(8, 11, 15, 0.90);
-  --tnx-glass-soft: rgba(8, 11, 15, 0.85);
-  --tnx-glass-bar: rgba(8, 11, 15, 0.88);
-  --tnx-glass-solid: rgba(8, 11, 15, 0.96);
+  --tnx-glass: rgba(255, 255, 255, 0.92);
+  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
+  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
+  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
 
-  --tnx-live: #35c46a;
-  --tnx-lag: #ffb020;
-  --tnx-down: #ff5449;
-  --tnx-dormant: #3a4550;
-  --tnx-key: #5b6673;
+  --tnx-live: #1a8f4c;
+  --tnx-lag: #b8690a;
+  --tnx-down: #c8352a;
+  --tnx-dormant: #b3bcc5;
+  --tnx-key: #8a94a0;
 
   /* Geometry. --tnx-rh is the standard row height; a widget body that wants the
      compact 19px variant sets --tnx-rh on itself and every row below follows. */
@@ -3229,7 +3229,7 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-r-sm: 4px;
   --tnx-r-lg: 10px;
   --tnx-gap: 8px;
-  --tnx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.12), 0 3px 10px rgba(16, 22, 29, 0.10);
   /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
      width and the shell's reserved left padding, so the two can never disagree
      and let the tab sit on top of the first widget. */
@@ -3247,10 +3247,10 @@ a.tn-w-place { display: flex; align-items: center; }
   --tn-bg: var(--tnx-bg);
   --tn-surface: var(--tnx-panel);
   --tn-surface-solid: var(--tnx-panel-head);
-  --tn-surface-2: #11161d;
-  --tn-glass: rgba(8, 11, 15, 0.90);
-  --tn-topbar-fill: rgba(8, 11, 15, 0.72);
-  --tn-topbar-pill: rgba(8, 11, 15, 0.92);
+  --tn-surface-2: #e9edf2;
+  --tn-glass: rgba(255, 255, 255, 0.92);
+  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
+  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
   --tn-border: var(--tnx-line);
   --tn-border-strong: var(--tnx-line-strong);
   --tn-text: var(--tnx-ink);
@@ -3262,20 +3262,20 @@ a.tn-w-place { display: flex; align-items: center; }
      unchanged on near-black. Defining them here is the fix; chasing the fallbacks
      rule by rule would not have been. */
   --tn-text-dim: var(--tnx-ink-faint);
-  --tn-hover: rgba(255, 255, 255, 0.06);
+  --tn-hover: rgba(16, 22, 29, 0.05);
   --tn-accent: var(--tnx-accent);
-  --tn-accent-strong: #8cc7ff;
+  --tn-accent-strong: #0b4a7d;
   --tn-accent-soft: var(--tnx-accent-soft);
-  --tn-chip-bg: #141a22;
-  --tn-toggle-off: rgba(255, 255, 255, 0.16);
+  --tn-chip-bg: #eaeef3;
+  --tn-toggle-off: rgba(16, 22, 29, 0.20);
   /* The terminal separates surfaces with hairlines, not elevation. A shadow
      survives only where a popover has to detach from the panel behind it. */
   --tn-shadow-sm: var(--tnx-shadow-1);
-  --tn-shadow: 0 14px 40px rgba(0, 0, 0, 0.66);
+  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
 
   --tn-live: var(--tnx-live);
   --tn-lagging: var(--tnx-lag);
-  --tn-stale: #ff8a3d;
+  --tn-stale: #b5521a;
   --tn-down: var(--tnx-down);
   --tn-unknown: var(--tnx-ink-ghost);
   --tn-paused: var(--tnx-dormant);
@@ -3284,7 +3284,7 @@ a.tn-w-place { display: flex; align-items: center; }
      the same measured reason. */
   --tn-live-ink: var(--tnx-live);
   --tn-lagging-ink: var(--tnx-lag);
-  --tn-stale-ink: #ff8a3d;
+  --tn-stale-ink: #b5521a;
   --tn-down-ink: var(--tnx-down);
   --tn-unknown-ink: var(--tnx-ink-faint);
 
@@ -3315,151 +3315,34 @@ a.tn-w-place { display: flex; align-items: center; }
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
-/* ── LIGHT SKIN ────────────────────────────────────────────────────────────
-   The second palette, selected by `data-tnx-skin="light"` on the same element.
-   It redefines the SAME --tnx-* tokens the block above sets, and nothing else —
-   the ~40 --tn-* remaps below it are written in terms of --tnx-*, so re-skinning
-   the entire widget system is this one block and no rule downstream changes.
+/* ── ONE PALETTE ───────────────────────────────────────────────────────────
+   There WAS a second palette here — a `[data-tnx-skin="light"]` block that redefined
+   the same --tnx-* tokens the block above sets. The dark skin has been removed, so
+   the light values were folded INTO that block and this one deleted. Every value
+   above is the value the light skin was serving; nothing was re-picked while folding.
 
-   NOT a `[data-theme]` and not a `prefers-color-scheme` block, deliberately.
-   lib/variants/store.ts re-asserts a variant's theme on every board switch, so a
-   theme-based skin would be yanked back the first time a tab is clicked; and a
-   media query would take the choice away from anyone whose OS disagrees with
-   them. See the note at the top of this section, and lib/terminal/skin.ts.
+   WHY THAT MATTERS TO ANYONE READING THE COLOURS. They were not derived from the
+   dark set and they are not tints of it. The status hues in particular were
+   re-derived: --tnx-live #35c46a sits at about 2.1:1 on white — fine as a 5px LED,
+   unreadable as text, and the Terminal spends those tokens on both — so each clears
+   4.5:1 on --tnx-panel. The accent moved furthest: #ffb020 is ~1.9:1 on white and
+   cannot be used for text at all, which is why the accent here is a deepened amber
+   that keeps the identity and the contrast. Do not "restore" a brighter one.
 
-   The status hues are NOT the dark ones carried over. --tnx-live #35c46a sits at
-   about 2.1:1 on white — fine as a 5px LED, unreadable as text, and the Terminal
-   spends those tokens on both. Each is re-derived to clear 4.5:1 on --tnx-panel.
-   The accent moves furthest: #ffb020 is ~1.9:1 on white and cannot be used for
-   text at all, so light gets a deepened amber that keeps the identity and the
-   contrast. */
-.tn-terminal[data-tnx-skin="light"] {
-  /* THE DEPTH LADDER. Measured on production before this change: the card
-     (#ffffff, L* 100.0), the map's own land (Positron serves rgb(242,243,240),
-     L* 95.7) and the console ground (L* 95.0) all sat inside FIVE points of
-     lightness, and the ground was 0.66 L* — 1.02:1 — from the map. At that
-     distance there is no edge. That is why the map did not appear to end
-     anywhere, and why a rail of white cards read as one continuous column
-     rather than as four separate widgets.
-
-     The fix is range, not hue. The card stays pure white and every surface
-     BEHIND it steps down, so the ladder spans sixteen points instead of five:
-     card 100.0 / map 95.7 / card head 94.2 / ground 87.8 / chrome 83.8.
-     Card-to-ground goes 1.13:1 -> 1.37:1, map-to-ground 1.02:1 -> 1.23:1, and
-     the card header band 2.5 L* -> 5.8 L*.
-
-     The map is untouched. Positron is a remote style we do not own, it is the
-     evidence rather than the chrome, and tinting a data surface to solve a
-     chrome problem is the wrong fix. Everything that moves is ours.
-
-     --tnx-chrome has to travel with the ground. It was already DARKER than the
-     ground (93.2 against 95.0); leaving it while the ground fell to 87.8 would
-     have inverted the pair and made the header lighter than the workspace
-     beneath it. */
-  --tnx-bg: #d6dde6;
-  --tnx-panel: #ffffff;
-  --tnx-panel-head: #eaeff5;
-  --tnx-chrome: #c9d2dd;
-
-  --tnx-ink: #10161d;
-  /* Darkened from #5a6673 along with the ground. Two pairings that use this
-     token were about to fall under AA: the widget badge prints --tnx-bg as TEXT
-     on a fill of this colour (4.36:1 at the new ground), and the feed-health
-     and board labels print this colour ON --tnx-chrome (3.96:1). #4e5866
-     restores both — 5.27:1 and 4.72:1 — and still measures 7.21:1 on
-     --tnx-panel, clear of the 4.5 floor terminal-tokens holds it to. */
-  --tnx-ink-dim: #4e5866;
-  --tnx-ink-faint: #7d8894;
-  --tnx-ink-ghost: #a3adb8;
-
-  --tnx-line: rgba(16, 22, 29, 0.12);
-  --tnx-line-strong: rgba(16, 22, 29, 0.22);
-  --tnx-row-rule: rgba(16, 22, 29, 0.07);
-
-  /* THIS is the token that made the retune necessary. #b8690a measures 4.15:1
-     on --tnx-panel (white) and 3.66:1 on --tnx-bg, it is used as a TEXT colour
-     by 92 rules, and light is DEFAULT_TERMINAL_SKIN — so the default console
-     failed AA for every one of them. The block above used to claim the deepened
-     amber "keeps the identity and the contrast"; it kept the identity.
-     #0f5c9c measures 6.93 on --tnx-panel, 5.06 on --tnx-bg, 5.99 on
-     --tnx-panel-head. --tnx-lag stays #b8690a, so lagging keeps the amber and
-     stops rendering as selected.
-     The bg and panel-head figures fell from 6.12 and 6.51 when the depth ladder
-     deepened those two grounds; the accent itself did not move, and both stay
-     comfortably over the 4.5 floor terminal-tokens holds it to. */
-  --tnx-accent: #0f5c9c;
-  --tnx-accent-soft: rgba(15, 92, 156, 0.12);
-
-  /* The alert ramp, re-derived on paper — NOT the dark values dimmed. Same rule
-     as the status hues above: the badge prints --tnx-bg ON these, so each fill
-     has to clear 4.5:1 against the ground, and the dark ramp is far too light to.
-
-     RE-DERIVED A SECOND TIME for the depth ladder at the top of this block.
-     Dropping the ground to L* 87.8 pulled the previous trio (#5f6b7a / #a8460f /
-     #b5322e, which measured 4.79 / 5.22 / 5.36 against the old near-white) down
-     to 3.96 / 4.33 / 4.43, and severity-ramp went red — the guard reading the
-     new ground rather than a stale comment, which is exactly its job. Measured
-     again after this move: 4.53 / 4.53 / 4.59.
-
-     The hue separations the ramp exists to hold are unchanged. `warn` is still
-     deliberately NOT the #a35c0c it would inherit from the base sheet, which
-     sits 1° of hue from the amber --tnx-lag and would rebuild on paper the very
-     collision this ramp breaks; it stays ~11° off the accent and ~20° off
-     critical. */
-  --tnx-alert-none: #576270;
-  --tnx-alert-warn: #a3440f;
-  --tnx-alert-critical: #b1312d;
-
-  /* The glass family, on paper. Same alphas, opposite ground. */
-  --tnx-glass: rgba(255, 255, 255, 0.92);
-  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
-  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
-  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
-
-  --tnx-live: #1a8f4c;
-  --tnx-lag: #b8690a;
-  --tnx-down: #c8352a;
-  --tnx-dormant: #b3bcc5;
-  --tnx-key: #8a94a0;
-
-  /* The remaps that are not a straight pass-through of a --tnx-* value. Anything
-     the dark block hard-codes a hex or an rgba() for has to be restated, or it
-     stays dark: a white overlay on white, a black-on-black shadow, a chip fill
-     that was picked against near-black. */
-  --tn-surface-2: #e9edf2;
-  --tn-glass: rgba(255, 255, 255, 0.92);
-  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
-  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
-  --tn-hover: rgba(16, 22, 29, 0.05);
-  --tn-accent-strong: #0b4a7d;
-  --tn-chip-bg: #eaeef3;
-  --tn-toggle-off: rgba(16, 22, 29, 0.20);
-  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
-  /* Inherited from the dark block otherwise, where the alphas are tuned for
-     near-black and read as grime on paper. */
-  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.12), 0 3px 10px rgba(16, 22, 29, 0.10);
-  --tn-stale: #b5521a;
-  --tn-stale-ink: #b5521a;
-
-  scrollbar-color: rgba(16, 22, 29, 0.22) transparent;
-}
-
+   STILL NOT a `[data-theme]` block and still not `prefers-color-scheme`. That has
+   nothing to do with the skin toggle going away: lib/variants/store.ts re-asserts a
+   variant's theme on every board switch, so a theme-based console palette would be
+   yanked back the first time a tab is clicked. The tokens stay scoped to
+   `.tn-terminal`. */
 /* The five status INKS collapse onto their fills on near-black because the vivid
    hue is the legible one there. On white the opposite is true, so they are pointed
    at the light ramp rather than left inheriting the dark one. */
-.tn-terminal[data-tnx-skin="light"] {
-  --tn-live-ink: var(--tnx-live);
-  --tn-lagging-ink: var(--tnx-lag);
-  --tn-down-ink: var(--tnx-down);
-  --tn-unknown-ink: var(--tnx-ink-faint);
-}
-
 /* WebKit scrollbars are set on the dark block with literal rgba(255,255,255,…);
    they need the mirror or the light skin gets white-on-white thumbs. */
-.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb {
+.tn-terminal ::-webkit-scrollbar-thumb {
   background: rgba(16, 22, 29, 0.20);
 }
-.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb:hover {
+.tn-terminal ::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 22, 29, 0.30);
 }
 
@@ -3837,8 +3720,8 @@ a.tn-w-place { display: flex; align-items: center; }
 }
 
 /* The lifted card's shadow is tuned for near-black and disappears on paper. */
-.tn-terminal[data-tnx-skin="light"] .tn-seg-slot.is-held,
-.tn-terminal[data-tnx-skin="light"] .tn-cw-stage.is-held {
+.tn-terminal .tn-seg-slot.is-held,
+.tn-terminal .tn-cw-stage.is-held {
   box-shadow: 0 16px 44px rgba(16, 22, 29, 0.22);
 }
 
@@ -3848,7 +3731,7 @@ a.tn-w-place { display: flex; align-items: center; }
    dependency of this sheet (the rail's inset rule); browsers without it simply keep
    the light overscroll, which is a cosmetic degradation, not a broken layout. */
 body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
-body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #10161d; }
+body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
@@ -4264,7 +4147,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    black basemap does not read as depth, it reads as grime in the corners; dark
    keeps the ring alone. A dark equivalent would have to be an inner LIGHT glow,
    which is a different design decision and not this change. */
-.tn-terminal[data-tnx-skin="light"] .tn-cw-stage::after {
+.tn-terminal .tn-cw-stage::after {
   box-shadow:
     inset 0 0 0 1px var(--tnx-line-strong),
     inset 0 7px 10px -7px rgba(16, 22, 29, 0.20);
@@ -4476,6 +4359,42 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   background: var(--tnx-glass);
   font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   z-index: 6;
+}
+
+/* THE FIRST-VISIT HINT. The Sources tab is thin, sits on an edge that is otherwise
+   a widget column, and reviewers did not find it. It nudges a few times and then
+   stops for good — see lib/console/sourcesRail.ts for when the state is set, and
+   `shouldHintRail` for the rule.
+
+   FINITE, NOT INFINITE. `3` iterations, not `infinite`: a control that never stops
+   moving stops reading as a hint and starts reading as a fault, and it would pull
+   the eye away from the map for the whole session rather than for the two seconds
+   it takes to notice a tab. The delay lets the console finish arriving first —
+   a thing that bounces before the page has settled looks like a layout jump.
+
+   IT MOVES ON THE X AXIS, toward the middle of the screen, because that is the
+   direction the rail opens. A vertical bounce would be motion; this is a gesture
+   that shows you what the control does.
+
+   `translate` is used rather than `transform` so a future hover/active transform on
+   this button cannot silently cancel the animation, and vice versa. */
+@keyframes tnx-rail-fab-hint {
+  0%, 100% { translate: 0 0; }
+  12% { translate: 7px 0; }
+  26% { translate: 0 0; }
+  38% { translate: 5px 0; }
+  50% { translate: 0 0; }
+}
+.tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] {
+  animation: tnx-rail-fab-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;
+  border-color: var(--tnx-accent);
+  color: var(--tnx-accent);
+}
+/* A hint is the definition of decorative motion, so this one is not merely reduced —
+   it is dropped. The tab keeps the accent border, which is the non-moving half of
+   the same "look here" and is what a reduced-motion user gets instead. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { animation: none; }
 }
 @media (min-width: 901px) {
   /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on

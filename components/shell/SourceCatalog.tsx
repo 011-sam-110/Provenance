@@ -23,7 +23,7 @@
 // search box, MonitorBar, the layer presets, the camera feed/region filters, the
 // signal time window, and the coverage / markets / watchlist launchers.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLayers, layersStore, LAYER_PRESETS, type LayerKey } from "@/lib/layers";
 import { signalsStore, useSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
@@ -42,6 +42,7 @@ import { widgetTypeForSource } from "@/lib/console/sourceWidgets";
 import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 import { buildSourceSections, type SourceRowModel } from "@/lib/console/sources/sections";
 import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
+import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/sourcesRail";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 
@@ -100,7 +101,16 @@ export default function SourceCatalog() {
   // left edge; in the widget console that edge is a widget column, and a panel
   // opening over it on every page load would hide the seeded widgets on desktop and
   // eat two-thirds of a phone screen. One click opens it — see ConsoleWorkspace.
-  const [railOpen, setRailOpen] = useState(false);
+  // OPEN STATE LIVES IN A STORE, not here. ⌘K and Ctrl+Space open this rail from
+  // ConsoleShell's global keydown handler, which is nowhere near this tree — see
+  // lib/console/sourcesRail.ts. The mount-closed rule below is unchanged; the store
+  // starts closed for exactly the reasons stated here.
+  const rail = useSourcesRail();
+  const railOpen = rail.open;
+  const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
+  // One read of the persisted "have you ever opened this" flag, in an effect so the
+  // server render and the first client pass agree.
+  useEffect(() => sourcesRailStore.hydrate(), []);
   const [query, setQuery] = useState("");
   const t = useT();
   const layers = useLayers();
@@ -153,7 +163,19 @@ export default function SourceCatalog() {
 
   if (!railOpen) {
     return (
-      <button type="button" className="tn-rail-fab" onClick={() => setRailOpen(true)} title="Show sources">
+      <button
+        type="button"
+        className="tn-rail-fab"
+        onClick={() => setRailOpen(true)}
+        title="Show sources (⌘K)"
+        // THE HINT. On a first visit this tab bounces a few times and then stops,
+        // because in review nobody found it — it is a thin tab on an edge that is
+        // otherwise a widget column. It is an attribute rather than a class so the
+        // CSS reads as a state and one grep finds both halves, and it goes out for
+        // good the first time the rail is opened by ANY route. `shouldHintRail` is
+        // the whole rule and is unit-tested.
+        data-hint={shouldHintRail(rail) ? "" : undefined}
+      >
         <span className="tn-rail-fab-bars" aria-hidden>≡</span>
         Sources
       </button>

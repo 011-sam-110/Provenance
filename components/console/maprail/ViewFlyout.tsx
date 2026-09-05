@@ -21,19 +21,18 @@
 // returns <WorldMap/> for both stages, so this is a projection change, not a
 // WebGL rebuild.
 //
-// SKIN NOTE, so nobody "fixes" it later: ConsoleShell swaps the basemap on a skin
-// change only when the current basemap is the other skin's default. A basemap
-// chosen here therefore survives a light/dark toggle. That is intended.
+// THE DARK/LIGHT PAIR BUTTON HAS GONE, and so has the skin note that used to sit
+// here about ConsoleShell swapping the basemap when the skin changed. There is no
+// skin to change any more and no Dark or Light basemap to swap to — the console is
+// light, and the strip offers the three basemaps that are actually different maps.
 
 import { BASEMAPS } from "@/lib/basemaps";
 import { mapViewStore, useMapView } from "@/lib/mapView";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import {
   RAIL_BASEMAP_LABEL,
-  isPairBasemap,
   modeForStage,
-  nextPairBasemap,
-  railStandaloneBasemaps,
+  railBasemapKeys,
   stageForMode,
 } from "@/lib/console/mapRail";
 
@@ -67,29 +66,11 @@ export default function ViewFlyout() {
 
       <span className="tnx-maprail-rule" aria-hidden />
 
-      {/* Dark and Light share one button, for the same reason 2D/3D does: they are
-          the same map in two values, and nobody weighs them against each other the
-          way they weigh Streets against Satellite. Labelled with the target, and
-          `aria-pressed` says whether either of the two is the current basemap. */}
-      <button
-        type="button"
-        className="tnx-maprail-act"
-        aria-pressed={isPairBasemap(view.basemap)}
-        onClick={() => mapViewStore.setBasemap(nextPairBasemap(view.basemap))}
-        title={
-          isPairBasemap(view.basemap)
-            ? `Showing ${BASEMAPS[view.basemap].label}. Switch to ${BASEMAPS[nextPairBasemap(view.basemap)].label}.`
-            : `Switch to the ${BASEMAPS[nextPairBasemap(view.basemap)].label} basemap`
-        }
-      >
-        {RAIL_BASEMAP_LABEL[nextPairBasemap(view.basemap)]}
-      </button>
-
-      {/* The rest, iterated from the registry and never hand-listed: lib/basemaps.ts
+      {/* Iterated from the registry and never hand-listed: lib/basemaps.ts
           states that its key order is load-bearing. A sixth basemap appears here
           with no edit, and tests/unit/map-rail.test.ts fails if it has no label. */}
       <span className="tnx-maprail-seg" role="radiogroup" aria-label="Basemap">
-        {railStandaloneBasemaps().map((k) => (
+        {railBasemapKeys().map((k) => (
           <button
             key={k}
             type="button"

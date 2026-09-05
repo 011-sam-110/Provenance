@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { BASEMAPS } from "@/lib/basemaps";
+import { POSITRON_STYLE_URL } from "@/lib/basemaps";
 import { useGeolocate } from "@/lib/geolocate/useGeolocate";
 import type { ResolvedCandidate, GeolocateMethod } from "@/lib/geolocate/types";
 import "./locate.css";
@@ -222,7 +222,9 @@ function ResultMap(props: {
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: BASEMAPS.positron.style,
+      // POSITRON_STYLE_URL by name: Positron left the basemap registry with the
+      // Dark/Light pair, but this small locate map still wants the calm light style.
+      style: POSITRON_STYLE_URL,
       center: [0, 20],
       zoom: 1.2,
       attributionControl: { compact: true },

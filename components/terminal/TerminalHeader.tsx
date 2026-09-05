@@ -104,9 +104,7 @@ import { BUILTIN_PRESETS, applyPreset, listPresets, resetActiveBoard } from "@/l
 import { isBoardEdited } from "@/lib/console/boards";
 import { useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
-import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import Mark from "@/components/brand/Mark";
-import ProfileMenu from "@/components/shell/ProfileMenu";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 import { BRAND } from "@/lib/brand";
 
@@ -129,45 +127,16 @@ import { BRAND } from "@/lib/brand";
  */
 const boardLabel = (title: string) => title.toUpperCase();
 
-/**
- * The live UTC readout.
- *
- * Its own component on purpose: the interval sets state once a second, and state
- * lives where it is read, so the tick re-renders ~30 characters instead of the whole
- * header (which would drag the six board tabs, the Ko-fi link and — through
- * TerminalHeader's own subscriptions — nothing useful along with it every second).
- *
- * Renders a placeholder until the first effect runs. `new Date()` during render would
- * make the server HTML and React's first client pass disagree, which is a hydration
- * error; and the server has no business claiming a clock time anyway.
- */
-function UtcClock() {
-  const [time, setTime] = useState<string | null>(null);
-
-  useEffect(() => {
-    // toISOString() is UTC by definition, so this needs no timezone maths and cannot
-    // drift with the viewer's locale. Slice 11..19 is exactly HH:MM:SS.
-    const tick = () => setTime(new Date().toISOString().slice(11, 19));
-    tick();
-    const handle = window.setInterval(tick, 1000);
-    return () => window.clearInterval(handle);
-  }, []);
-
-  return (
-    // Not in any live region — a polite region on a per-second value would make a
-    // screen reader recite the time forever (the same failure the pulse line below
-    // is kept out of). The group label makes it readable on demand instead.
-    <div className="tnx-hdr-utc" aria-label="Coordinated Universal Time">
-      <span className="tnx-hdr-utc-label" aria-hidden>UTC</span>
-      <span className="tnx-hdr-utc-time">{time ?? "--:--:--"}</span>
-    </div>
-  );
-}
+// THE UTC CLOCK IS GONE. It was a live per-second readout in its own component,
+// kept out of a live region so a screen reader would not recite it forever. Removed
+// on request as part of thinning the header — the world-clock strip along the bottom
+// of the stage (`.tnx-stage-foot`) already carries LA/NYC/LDN/DXB/SGP/TYO/SYD, so UTC
+// in the top bar was the second clock on the page.
 
 /**
  * The board tabs, and the edited/reset state that belongs with them.
  *
- * Its own component for the same reason UtcClock is: it subscribes to the console
+ * Its own component, for the reason the clock above used to be: it subscribes to the console
  * layout so the "customised" dot is live, and the layout changes on every cell
  * crossing of every drag. Keeping that subscription here re-renders six buttons
  * instead of dragging SettingsPanel and ProfileMenu along with it.
@@ -237,7 +206,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const m = useMetrics();
   const layers = useLayers();
   const activePresetId = useActivePreset();
-  const skin = useTerminalSkin();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
@@ -312,8 +280,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
 
         <div className="tnx-hdr-spacer" />
 
-        <UtcClock />
-
         {/* ── Entry points + identity ──────────────────────────────────────── */}
         {/*
           ONE BUTTON FAMILY, not four styles in a row. The skin toggle, Support,
@@ -337,21 +303,6 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           would have dropped two tour steps in silence.
         */}
         <div className="tnx-hdr-right">
-          {/* Skin. Deliberately a two-state toggle rather than a pair of segments:
-              the label names the skin you would GET, which is what a single button
-              has to do to be unambiguous. It does not touch [data-theme]; see
-              lib/terminal/skin.ts for why a Terminal skin cannot be a theme. */}
-          <button
-            type="button"
-            className="tnx-hdr-btn tnx-hdr-skin"
-            onClick={() => terminalSkinStore.toggle()}
-            aria-pressed={skin === "light"}
-            title={skin === "dark" ? "Switch to the light skin" : "Switch to the dark skin"}
-          >
-            <span aria-hidden>{skin === "dark" ? "☀" : "☾"}</span>
-            <span>{skin === "dark" ? "LIGHT" : "DARK"}</span>
-          </button>
-
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. */}
           <a
@@ -394,19 +345,38 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             className="tnx-hdr-btn tn-palette-trigger"
             onClick={onOpenPalette}
             aria-label="Shortcuts and command palette"
-            title="Shortcuts (⌘K)"
+            // NO ⌘K CAP, AND NO ⌘K IN THE TITLE. That chord opens the Sources rail
+            // now (ConsoleShell's keydown handler says why), so the cap would have
+            // been an instruction that does something else. This button is the
+            // palette's door; it does not have a chord of its own.
+            title="Shortcuts and commands"
           >
-            <span className="tnx-hdr-kbd" aria-hidden>⌘K</span>
             <span className="tnx-hdr-btn-label">SHORTCUTS</span>
           </button>
 
-          {/* Not in the design's header, kept anyway: this popover is the ONLY UI for
-              the display name (profileStore) and the "Sign in" seam, and one of two
-              ways into the tour. Dropping it would delete a control, not restyle one.
-              Its own light-token popover is a known cosmetic mismatch — see report. */}
-          <span className="tnx-hdr-profile">
-            <ProfileMenu onOpenSettings={() => setSettingsOpen(true)} />
-          </span>
+          {/* ⚙ IS BACK, AND IT IS THE ONLY DOOR AGAIN.
+
+              It was removed when Settings moved into the profile popover, on the
+              grounds that a header icon was "a second door to a room that already
+              had one". The popover has now gone with the "?" avatar, so that
+              reasoning inverts: without this button the settings drawer — theme,
+              language, board loading, sharing, Telegram and the whole notifications
+              section — has no way in at all.
+
+              `.tn-settings-trigger` is carried over VERBATIM. It is both a
+              TourOverlay spotlight target and the selector the tour's OPEN_SETTINGS
+              action clicks, and in this codebase a missing tour target drops its
+              step in silence rather than failing. */}
+          <button
+            type="button"
+            className="tnx-hdr-btn tn-settings-trigger"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <span aria-hidden>⚙</span>
+            <span className="tnx-hdr-btn-label">SETTINGS</span>
+          </button>
         </div>
       </header>
 

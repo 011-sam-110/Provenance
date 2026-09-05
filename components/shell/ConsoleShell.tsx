@@ -6,7 +6,7 @@
 // persisted stores (including the console layout + ?c= shared-layout / first-run
 // seed), and the global capacity toast.
 //
-// `tn-terminal` on the root is where the near-black --tnx-* palette starts. It is a
+// `tn-terminal` on the root is where the console's --tnx-* palette starts. It is a
 // SCOPED token block, not a theme: app/layout.tsx still hard-codes
 // data-theme="light", and variantStore re-asserts a variant's theme on every switch,
 // so a global dark default would be yanked back to light by the first board change.
@@ -26,7 +26,6 @@ import { BOOT_MS, bootOverrideFromSearch, loadBootSeen, shouldPlayBoot } from "@
 import { SIGNALS } from "@/lib/signals/registry";
 import { focusStageSearch } from "@/components/terminal/StageBar";
 import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
-import { basemapForSkin, terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
 import { pickStore } from "@/lib/console/widgets/camslot.pick";
@@ -52,6 +51,7 @@ import { pinsStore } from "@/lib/map/pins";
 import { applyPreset, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { decodeLayout } from "@/lib/console/share";
 import "@/lib/console/widgets";
+import { sourcesRailStore } from "@/lib/console/sourcesRail";
 
 /**
  * `feeds` — how many camera feeds the registry holds, for the boot screen's one
@@ -76,7 +76,6 @@ import "@/lib/console/widgets";
 export default function ConsoleShell({ feeds }: { feeds: number }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const skin = useTerminalSkin();
 
   // Re-hydrate persisted view state once, client-side (render defaults on the
   // server, reconcile after mount → no hydration mismatch).
@@ -99,12 +98,6 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     notificationsStore.hydrate();
     trackStore.hydrate();
     pinsStore.hydrate();
-    // APPENDED, not inserted. The calls above are order-dependent (uiStore.hydrate
-    // applies the persisted data-theme before paint; variantStore then re-asserts
-    // the variant's theme). The skin owns `tn.terminal.skin.v1`
-    // and touches neither theme nor layout. Without this the persisted DARK/LIGHT
-    // choice is silently ignored on every reload.
-    terminalSkinStore.hydrate();
     const c = new URLSearchParams(window.location.search).get("c");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
@@ -133,28 +126,17 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     return () => clearTimeout(tourTimer);
   }, []);
 
-  // ── Skin ⇄ basemap ───────────────────────────────────────────────────────
-  // The Terminal pins CARTO Dark Matter, and a near-white console wrapped around
-  // a near-black map is the most obviously wrong thing a light skin could ship
-  // with. Positron is the light counterpart and already exists in lib/basemaps.ts,
-  // described there as "the calm light default".
+// THE SKIN⇄BASEMAP EFFECT IS GONE, with the skin it followed.
   //
-  // It only swaps when the current basemap is the OTHER skin's default. Someone
-  // who deliberately chose Satellite or Topographic keeps it — a skin toggle is a
-  // statement about chrome, not a licence to throw away a map choice. The first
-  // run is skipped so a deep-linked `?base=` is never clobbered; the skin's own
-  // hydrate() then counts as a real change, which is what gives a returning
-  // light-skin user positron on load.
-  const skinSettled = useRef(false);
-  useEffect(() => {
-    if (!skinSettled.current) { skinSettled.current = true; return; }
-    const other = basemapForSkin(skin === "dark" ? "light" : "dark");
-    if (mapViewStore.get().basemap === other) mapViewStore.setBasemap(basemapForSkin(skin));
-  }, [skin]);
+  // It swapped the basemap when the console skin changed — dark chrome with CARTO
+  // Dark Matter, light chrome with Positron — but only when the current basemap was
+  // the other skin's default, so a deliberate choice of Satellite or Topographic
+  // survived. There is no skin to change now, and neither of those two basemaps is
+  // in the registry any more, so there is nothing left for it to do.
 
-  // Global shortcuts. One listener, because they share two guards that have to agree.
+    // Global shortcuts. One listener, because they share two guards that have to agree.
   //
-  //   ⌘K / Ctrl-K  toggle the command palette
+  //   ⌘K / Ctrl-K, Ctrl-Space  toggle the Sources rail
   //   /            focus the stage search
   //   Escape       clear the terminal selection
   //
@@ -177,9 +159,29 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // back to that surface.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      // ⌘K / Ctrl+K AND Ctrl+Space OPEN SOURCES, NOT THE PALETTE.
+      //
+      // ⌘K used to toggle the command palette, which is the convention everywhere
+      // else and is why it is worth writing down that it deliberately does not here:
+      // Sources is the panel that adds layers and widgets, it is the thing people
+      // reach for, and it collapses to a tab nobody found. The palette keeps its own
+      // door — the SHORTCUTS button in the header, which is still labelled and still
+      // spotlit by the tour.
+      //
+      // TOGGLE, NOT OPEN. A key that only opens is a dead key the second time you
+      // press it, and ⌘K toggled before this change; keeping that half means the
+      // gesture people already have still works in both directions.
+      //
+      // `e.code === "Space"`, not `e.key`, because `key` for that chord is a plain
+      // " " and comparing a space character reads as a typo. Note Ctrl+Space is an
+      // IME switch on some systems, so it is the SECOND binding and never the only
+      // one.
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        (e.key === "k" || e.key === "K" || e.code === "Space")
+      ) {
         e.preventDefault();
-        setPaletteOpen((o) => !o);
+        sourcesRailStore.toggle();
         return;
       }
       // A modifier means the user is aiming at the browser or the OS, not at us.
@@ -275,7 +277,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   }, []);
 
   return (
-    <div className="tn-shell tn-terminal" data-tnx-skin={skin}>
+    <div className="tn-shell tn-terminal">
       {/* First Tab stop on the page — see components/shell/SkipLink.tsx. */}
       {/* The cold-start overlay. Mounted INSIDE the shell as a sibling, never
           wrapping it: the app is already mounted and fetching behind this, so the

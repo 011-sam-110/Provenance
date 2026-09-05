@@ -10,7 +10,7 @@ import {
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 
 // The REAL registry, not a mirror of it. Two entries are remote style URLs that can
-// fail to load (the OpenFreeMap vector styles, positron + streets); three are inline
+// fail to load (the OpenFreeMap vector style, streets); two are inline
 // StyleSpecifications that cannot (dark, satellite, topo).
 const STYLES = BASEMAPS as unknown as Record<BasemapKey, { style: string | object }>;
 const ALL_KEYS = Object.keys(BASEMAPS) as BasemapKey[];
@@ -46,7 +46,7 @@ describe("isRemoteStyle / fallbackBasemap", () => {
   // Every basemap in the registry, classified DELIBERATELY, and the reason this is a
   // table rather than a handful of named assertions.
   //
-  // This file used to assert isRemoteStyle for positron/satellite/topo and nothing
+  // This file used to assert isRemoteStyle for streets/satellite/topo and nothing
   // else. `streets` was then added as a SECOND remote style — a second thing that can
   // fail to load and strand the user — and every test here stayed green, because
   // nothing had ever looked at it. `dark` had been invisible the same way for longer.
@@ -56,8 +56,6 @@ describe("isRemoteStyle / fallbackBasemap", () => {
   // can fail. That is the assertion that goes red on the next person, and it is the
   // one this file was missing.
   const EXPECTED_REMOTE: Record<BasemapKey, boolean> = {
-    dark: false, // inline CARTO Dark Matter raster
-    positron: true, // OpenFreeMap Positron — style URL
     streets: true, // OpenFreeMap Liberty — style URL
     satellite: false, // inline Esri World Imagery raster
     topo: false, // inline OpenTopoMap raster
@@ -71,7 +69,7 @@ describe("isRemoteStyle / fallbackBasemap", () => {
   });
 
   it("falls back from the remote Light basemap to inline satellite", () => {
-    expect(fallbackBasemap("positron", STYLES)).toBe("satellite");
+    expect(fallbackBasemap("streets", STYLES)).toBe("satellite");
   });
 
   // A different failure from the one above: not "a new basemap went unnoticed" but
@@ -100,7 +98,7 @@ describe("isRemoteStyle / fallbackBasemap", () => {
     const allRemote = Object.fromEntries(
       ALL_KEYS.map((k) => [k, { style: `https://example.invalid/${k}.json` }]),
     ) as Record<BasemapKey, { style: string | object }>;
-    expect(fallbackBasemap("positron", allRemote)).toBeNull();
+    expect(fallbackBasemap("streets", allRemote)).toBeNull();
     expect(fallbackBasemap("streets", allRemote)).toBeNull();
   });
 });
@@ -120,12 +118,12 @@ describe("retryDelayMs", () => {
 
 describe("nextRecoveryStep", () => {
   it("retries while attempts remain", () => {
-    expect(nextRecoveryStep(1, "positron", STYLES)).toEqual({ action: "retry", delayMs: 600 });
-    expect(nextRecoveryStep(2, "positron", STYLES)).toEqual({ action: "retry", delayMs: 1800 });
+    expect(nextRecoveryStep(1, "streets", STYLES)).toEqual({ action: "retry", delayMs: 600 });
+    expect(nextRecoveryStep(2, "streets", STYLES)).toEqual({ action: "retry", delayMs: 1800 });
   });
 
   it("falls back once the attempts are spent", () => {
-    expect(nextRecoveryStep(MAX_STYLE_ATTEMPTS, "positron", STYLES)).toEqual({
+    expect(nextRecoveryStep(MAX_STYLE_ATTEMPTS, "streets", STYLES)).toEqual({
       action: "fallback",
       to: "satellite",
     });

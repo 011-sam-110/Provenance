@@ -2,16 +2,12 @@ import { describe, expect, it } from "vitest";
 import { BASEMAPS } from "@/lib/basemaps";
 import {
   RAIL_BASEMAP_LABEL,
-  RAIL_PAIR,
   RAIL_GROUPS,
   mapRailStore,
   modeForStage,
   railBasemapKeys,
-  isPairBasemap,
-  nextPairBasemap,
   railEdge,
   railHoldsOpen,
-  railStandaloneBasemaps,
   railStep,
   stageForMode,
   toggleGroup,
@@ -150,26 +146,22 @@ describe("mapRailStore", () => {
   });
 });
 
-describe("the Dark/Light pair button", () => {
-  // Dark and Light share one chip so the strip stays lateral. The guard that
-  // matters is that collapsing them loses nothing: the pair plus the standalone
-  // chips must still account for every registered basemap.
-  it("the pair and the standalone chips together cover every basemap exactly once", () => {
-    const shown = [...RAIL_PAIR, ...railStandaloneBasemaps()].sort();
-    expect(shown).toEqual(Object.keys(BASEMAPS).sort());
+describe("the basemap chips", () => {
+  // THIS BLOCK USED TO GUARD A DARK/LIGHT PAIR BUTTON. Dark and Light shared one
+  // chip so the strip stayed lateral, and the guard that mattered was that
+  // collapsing them lost nothing — the pair plus the standalone chips had to account
+  // for every registered basemap. Both of those basemaps have left the registry with
+  // the console's dark skin, so there is no pair; what survives is the half of that
+  // guard which still means something.
+  it("every registered basemap gets a chip, and the strip invents none", () => {
+    expect(railBasemapKeys().sort()).toEqual(Object.keys(BASEMAPS).sort());
   });
 
-  it("keeps the pair out of the standalone chips", () => {
-    for (const k of railStandaloneBasemaps()) expect(isPairBasemap(k)).toBe(false);
-  });
-
-  it("flips between the two members", () => {
-    expect(nextPairBasemap("positron")).toBe("dark");
-    expect(nextPairBasemap("dark")).toBe("positron");
-  });
-
-  it("lands on the calm light default from anywhere outside the pair", () => {
-    // Never strands a reader on a basemap the product does not open on.
-    for (const k of railStandaloneBasemaps()) expect(nextPairBasemap(k)).toBe("positron");
+  it("no basemap the pair button used to hide is still in the registry", () => {
+    // Pins the removal itself. `?base=dark` and `?base=positron` were published
+    // values in shared links; they are meant to fail lib/share/url.ts's guard now and
+    // fall back to the default, which only works while these two are genuinely gone.
+    expect(Object.keys(BASEMAPS)).not.toContain("dark");
+    expect(Object.keys(BASEMAPS)).not.toContain("positron");
   });
 });

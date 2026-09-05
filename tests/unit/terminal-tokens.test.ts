@@ -4,8 +4,8 @@ import { join } from "node:path";
 
 /**
  * The console's token block had no guard, which is exactly how a 4.15:1 accent
- * shipped as the default skin's TEXT colour in 92 rules while the block's own
- * comment claimed light "keeps the identity and the contrast".
+ * shipped as the TEXT colour in 92 rules while the block's own comment claimed the
+ * palette "keeps the identity and the contrast".
  *
  * Two of these assertions are about colour and three are about drift. The drift
  * ones matter as much: `--tnx-fs` has five consumers, while the console region
@@ -29,10 +29,18 @@ function blockAfter(needle: string): string {
   return BARE.slice(open, close);
 }
 
-const SKINS = [
-  ["dark", "\n.tn-terminal {"],
-  ["light", '.tn-terminal[data-tnx-skin="light"] {'],
-] as const;
+/**
+ * ONE PALETTE, WHERE THERE WERE TWO.
+ *
+ * This held both skins and every colour assertion below walks it, which is why they
+ * are still worded "in BOTH skins" in places. The dark skin was removed and the light
+ * values were folded into `.tn-terminal` itself, so there is one entry now — and it
+ * stays a LIST rather than being inlined, because the assertions it feeds are the
+ * ones that caught a 4.15:1 accent shipping as the default text colour in 92 rules,
+ * and unrolling six loops into six straight-line tests to save one array is how a
+ * guard like that gets weakened by accident.
+ */
+const SKINS = [["light", "\n.tn-terminal {"]] as const;
 
 function token(block: string, name: string): string {
   const hex = new RegExp(`${name}:\\s*(#[0-9a-f]{3,8})`, "i").exec(block)?.[1];

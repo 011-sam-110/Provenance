@@ -163,14 +163,12 @@ const CONSOLE_CONTROLS: { control: string; via: string }[] = [
   { control: "reset-board ⟲", via: ".tnx-hdr-boards" },
   // CONSOLE / WALL is gone — the control, its two keyboard shortcuts and the step
   // that explained them. Nothing left to cover.
-  { control: "DARK / LIGHT skin toggle", via: ".tnx-hdr-skin" },
   { control: "☕ SUPPORT + <> SOURCE links", via: ".tnx-hdr-right" },
-  { control: "⌘K SHORTCUTS trigger", via: ".tn-palette-trigger" },
-  // Moved out of the header and into the profile popover; the class travelled with
-  // the control, which is the only reason its two steps still resolve.
-  { control: "⚙ settings trigger (in the profile menu)", via: ".tn-settings-trigger" },
-  { control: "profile avatar", via: ".tn-profile-avatar" },
-  { control: "profile popover: name, Sign in, Take the tour", via: ".tn-profile-menu" },
+  { control: "SHORTCUTS palette trigger", via: ".tn-palette-trigger" },
+  // BACK IN THE HEADER as the only door to Settings, after the profile popover was
+  // removed with the "?" avatar. The class travelled both times, because it is a
+  // tour target and the tour clicks it by name.
+  { control: "⚙ settings trigger (in the header)", via: ".tn-settings-trigger" },
 
   // The breaking banner and the 24px footer are both gone, and with them: the
   // banner's Read-article/dismiss pair, SEL, the live ticker and the key hints.
@@ -290,13 +288,30 @@ test("the coverage manifest is not padded with selectors the tour never uses", (
   // not re-pointed at the palette selector — doing so would have held this number up
   // artificially, which is the exact dishonesty this guard exists to catch.
   //
+  // 43 → 41: the header was thinned on request. THREE controls left the product and
+  // one arrived, which is a net two.
+  //
+  //   * the DARK / LIGHT skin toggle (.tnx-hdr-skin) — the dark skin is gone, so this
+  //     is a true removal of capability rather than a control that moved.
+  //   * the profile avatar (.tn-profile-avatar) and its popover (.tn-profile-menu) —
+  //     removed together. THIS ONE COSTS SOMETHING AND IT IS WRITTEN DOWN RATHER THAN
+  //     ROUNDED OFF: the popover was the only UI for the display name and the only
+  //     home of the "Sign in" seam, and both went with it. What did NOT go is
+  //     Settings or the tour: ⚙ returned to the header as .tn-settings-trigger, and
+  //     "Take the tour" is in the palette, which the manifest already covers.
+  //
+  // The UTC clock was also removed in the same change and is NOT part of this drop —
+  // it was a readout, never an interactive control, so it was never in this manifest.
+  //
   // A manifest still listing removed controls would fail the test ABOVE this one, which
   // checks every entry against a class the app actually renders — the two guards do
   // opposite jobs and both have to be satisfied honestly. Measured after the fact, not
-  // chosen to pass: 43 entries, 40 distinct selectors.
-  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(43);
+  // chosen to pass: 41 entries, 39 distinct selectors. The selector count falls by one
+  // more than the entry count does, because .tn-settings-trigger was already in the
+  // manifest before â came back to the header â the entry moved, the selector did not.
+  expect(CONSOLE_CONTROLS.length).toBeGreaterThanOrEqual(41);
   const vias = new Set(CONSOLE_CONTROLS.map((c) => c.via));
-  expect(vias.size).toBeGreaterThanOrEqual(40);
+  expect(vias.size).toBeGreaterThanOrEqual(39);
 });
 
 /* ── Pure helpers ──────────────────────────────────────────────────────── */
