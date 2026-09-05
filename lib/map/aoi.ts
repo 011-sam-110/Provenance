@@ -17,6 +17,7 @@
 
 import type { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 import { useSyncExternalStore } from "react";
+import { haversineKm } from "@/lib/geo/haversine";
 import { aoiScope, scopeStore, WORLD_SCOPE, type Scope } from "@/lib/shell/scope";
 
 const AOI_SRC = "aoi-scope";
@@ -31,14 +32,33 @@ export const MIN_VERTICES = 3;
 
 // --- draw state (a store, because the button has to reflect it) --------------
 
+/**
+ * Which gesture is running.
+ *
+ * BOTH TOOLS END IN THE SAME PLACE: a ring handed to `aoiScope`. A radius is not a
+ * second kind of scope — `Scope` already has a `radiusKm` field, and reusing it
+ * would have meant a second branch in `withinScope`, a second thing for
+ * `coerceSavedScope` to sanitise, and a second thing every scoped widget could get
+ * wrong. A circle approximated as a 64-point ring costs one extra pure function
+ * and changes nothing downstream. The circle is what the user drew; the ring is
+ * how it is stored, drawn and filtered.
+ */
+export type DrawTool = "polygon" | "radius";
+
 export interface DrawState {
-  /** True while the user is placing vertices. */
+  /** True while the user is placing vertices, or placing a centre and an edge. */
   active: boolean;
-  /** Vertices placed so far, [lon, lat]. */
+  /** Which gesture is running. Meaningless while `active` is false. */
+  tool: DrawTool;
+  /** Polygon: vertices placed so far, [lon, lat]. Empty for a radius. */
   vertices: [number, number][];
+  /** Radius: the centre, once the first click has landed. */
+  center?: [number, number];
+  /** Radius: the live distance from the centre to the pointer, in km. */
+  radiusKm?: number;
 }
 
-const IDLE: DrawState = { active: false, vertices: [] };
+const IDLE: DrawState = { active: false, tool: "polygon", vertices: [] };
 let draw: DrawState = IDLE;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -98,6 +118,117 @@ export function draftCollection(ring: readonly [number, number][]): GeoJSON.Feat
  */
 export function aoiLabel(ring: readonly [number, number][]): string {
   return `Drawn area (${ring.length} points)`;
+}
+
+/** How many segments approximate a drawn circle. */
+export const RADIUS_RING_STEPS = 64;
+
+/**
+ * A radius smaller than this is treated as a mis-click and abandoned, exactly as a
+ * two-vertex polygon is. Sub-metre is not a gesture anyone makes on purpose, and a
+ * ring that tight filters every scoped panel to nothing with no visible cause.
+ *
+ * NOT `MIN_RADIUS_KM`. lib/shell/scope.ts has a module-private constant of that
+ * name meaning something else entirely — the floor a GEOCODER extent is widened to,
+ * 10 km — and two constants with one name and a factor of ten thousand between them
+ * is the kind of thing that reads as correct in a diff.
+ */
+export const MIN_DRAWN_RADIUS_KM = 0.001;
+
+const R_EARTH_KM = 6371;
+const toRad = (d: number) => (d * Math.PI) / 180;
+const toDeg = (r: number) => (r * 180) / Math.PI;
+
+/**
+ * Pure: a centre and a radius → the ring that approximates that circle.
+ *
+ * SPHERICAL, NOT `lon + km / (111 * cos(lat))`. The flat approximation is one line
+ * and is wrong in the two places this product is most used: it degenerates as
+ * cos(lat) → 0, so a circle drawn over northern Norway comes out as a lens tens of
+ * kilometres wide in the wrong direction, and any circle large enough to matter is
+ * visibly an ellipse. This is the standard destination-point formula, so every
+ * vertex is genuinely `radiusKm` from the centre by the same haversine metric
+ * `withinScope` uses to filter — which is what makes the drawn ring and the filter
+ * agree at the edge instead of merely nearly agreeing.
+ *
+ * The ring is returned OPEN (no repeated first vertex), matching what `startDraw`
+ * stores and what `ringToFeature` expects to close.
+ */
+export function circleRing(
+  center: readonly [number, number],
+  radiusKm: number,
+  steps: number = RADIUS_RING_STEPS,
+): [number, number][] {
+  const [lon, lat] = center;
+  const φ1 = toRad(lat);
+  const λ1 = toRad(lon);
+  const δ = radiusKm / R_EARTH_KM;
+  const sinφ1 = Math.sin(φ1);
+  const cosφ1 = Math.cos(φ1);
+  const sinδ = Math.sin(δ);
+  const cosδ = Math.cos(δ);
+
+  const ring: [number, number][] = [];
+  for (let i = 0; i < steps; i++) {
+    const θ = (2 * Math.PI * i) / steps;
+    const φ2 = Math.asin(sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ));
+    const λ2 =
+      λ1 + Math.atan2(Math.sin(θ) * sinδ * cosφ1, cosδ - sinφ1 * Math.sin(φ2));
+    // Normalised to [-180, 180]. A ring drawn across the antimeridian still has
+    // its own vertices on both sides of it — that is a real limitation shared with
+    // the polygon tool and with bboxOfRing, not something wrapping here would fix.
+    ring.push([((toDeg(λ2) + 540) % 360) - 180, toDeg(φ2)]);
+  }
+  return ring;
+}
+
+/**
+ * Pure: how a drawn radius is written. Metres under a kilometre, one decimal under
+ * ten, whole kilometres above — a "0.4 km" ring and a "437 km" ring should not be
+ * printed with the same precision, and "0.4 km" hides the difference between 400 m
+ * and 449 m at exactly the zoom where that difference is the whole point.
+ */
+export function formatRadius(radiusKm: number): string {
+  if (radiusKm < 1) return `${Math.round(radiusKm * 1000)} m`;
+  if (radiusKm < 10) return `${radiusKm.toFixed(1)} km`;
+  return `${Math.round(radiusKm)} km`;
+}
+
+/**
+ * Pure: the label a radius scope carries. Same rule as `aoiLabel` — it states the
+ * gesture, never a place name it would have to invent.
+ */
+export function radiusLabel(radiusKm: number): string {
+  return `Drawn radius (${formatRadius(radiusKm)})`;
+}
+
+/**
+ * Pure: the in-progress radius → the same shapes the polygon draft uses, so it
+ * paints through the SAME two draft layers with no third layer and no new paint
+ * rules. The centre is the Point (DRAFT_DOTS filters on geometry-type), the ring is
+ * the LineString (DRAFT_LINE, dashed). A zero radius is centre-only — there is no
+ * circle to draw until the pointer has moved.
+ */
+export function radiusDraft(
+  center: readonly [number, number],
+  radiusKm: number,
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [
+    {
+      type: "Feature",
+      properties: {},
+      geometry: { type: "Point", coordinates: center as [number, number] },
+    },
+  ];
+  if (radiusKm >= MIN_DRAWN_RADIUS_KM) {
+    const ring = circleRing(center, radiusKm);
+    features.push({
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates: [...ring, ring[0]] },
+    });
+  }
+  return { type: "FeatureCollection", features };
 }
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -261,41 +392,67 @@ export interface DrawOptions {
   onFinish?: (ring: [number, number][]) => void;
 }
 
-/**
- * Begin drawing. Click to place a vertex, Enter or double-click to finish, Escape
- * to abandon. Finishing with fewer than three vertices abandons instead: two
- * points is a line, and a line as an "area" would filter the console to nothing.
- */
-export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
-  if (draw.active) return false;
-  if (!ensureLayers(map)) return false; // style not up: nothing to draw on yet
-  setDraw({ active: true, vertices: [] });
+/** What a gesture wants told to it. See beginGesture. */
+interface Gesture {
+  /**
+   * A real click on the map — not the tail of a pan. `finish` is handed in rather
+   * than left for the tool to improvise, so "the second click ends a radius" runs
+   * the identical path Enter and double-click run: snapshot, tear down, commit.
+   */
+  onPlace: (at: [number, number], finish: () => void) => void;
+  /** Pointer moved over the map. Only bound when supplied. */
+  onMove?: (at: [number, number]) => void;
+  /**
+   * Enter or double-click. Given the draw state as it was the instant BEFORE
+   * teardown, because teardown resets the store and the finished shape only lives
+   * there — reading `draw` afterwards would always find IDLE.
+   */
+  onFinish: (state: DrawState) => void;
+}
 
+/**
+ * The plumbing both tools need: the crosshair, custody of double-click zoom, the
+ * document-capture listeners, and a teardown that cannot be half-done.
+ *
+ * ONE COPY, because this is the part that was hard to get right and the part where
+ * a divergence would be invisible. The polygon tool and the radius tool differ only
+ * in what a click MEANS; they agree on every line below, and a second copy of this
+ * would be two chances to forget the drag slop or to leave doubleClickZoom disabled.
+ *
+ * WHY THE CLICKS ARE TAKEN AT DOCUMENT CAPTURE RATHER THAN FROM map.on("click").
+ *
+ * The map already binds click handlers to a dozen layers, and they fire on the
+ * same physical click as a vertex placement. Measured while testing the first
+ * version: drawing a four-point ring over the North Sea also opened a GDACS
+ * dossier and rewrote the URL to `&obj=gdacs:1030534:5`, because one of the
+ * vertices landed on a disaster marker. Every vertex placed on top of anything
+ * was also a selection.
+ *
+ * Listening on `document` in the CAPTURE phase runs before MapLibre's own
+ * handlers on the canvas container, so stopping propagation there means the map
+ * never sees the click at all — no dossier, no pin menu, no camera dive. Only
+ * `click`/`dblclick` are taken, so drag-panning and the scroll wheel keep
+ * working and the analyst can still move around mid-gesture.
+ *
+ * `mousemove` is deliberately NOT in that list even when a tool asks for it: it is
+ * bound in the bubble phase and stops nothing, so hover on the map keeps working
+ * while a radius is being sized.
+ */
+function beginGesture(map: MapLibreMap, g: Gesture): boolean {
   const container = map.getCanvasContainer();
   const canvas = map.getCanvas();
   const priorCursor = canvas.style.cursor;
   canvas.style.cursor = "crosshair";
-  // Otherwise the double-click that FINISHES the ring also zooms the map.
+  // Otherwise the double-click that FINISHES the shape also zooms the map.
   const hadDoubleClickZoom = map.doubleClickZoom.isEnabled();
   map.doubleClickZoom.disable();
 
-  const redraw = () => setData(map, DRAFT_SRC, draftCollection(draw.vertices));
-
-  // WHY THE CLICKS ARE TAKEN AT DOCUMENT CAPTURE RATHER THAN FROM map.on("click").
-  //
-  // The map already binds click handlers to a dozen layers, and they fire on the
-  // same physical click as a vertex placement. Measured while testing the first
-  // version: drawing a four-point ring over the North Sea also opened a GDACS
-  // dossier and rewrote the URL to `&obj=gdacs:1030534:5`, because one of the
-  // vertices landed on a disaster marker. Every vertex placed on top of anything
-  // was also a selection.
-  //
-  // Listening on `document` in the CAPTURE phase runs before MapLibre's own
-  // handlers on the canvas container, so stopping propagation there means the map
-  // never sees the click at all — no dossier, no pin menu, no camera dive. Only
-  // `click`/`dblclick` are taken, so drag-panning and the scroll wheel keep
-  // working and the analyst can still move around mid-ring.
   const inMap = (t: EventTarget | null) => t instanceof Node && container.contains(t);
+  const at = (e: MouseEvent): [number, number] => {
+    const rect = canvas.getBoundingClientRect();
+    const ll = map.unproject([e.clientX - rect.left, e.clientY - rect.top]);
+    return [ll.lng, ll.lat];
+  };
 
   // A pan ends in a click too. Placing a vertex on every drag-release would drop
   // a point every time the user repositioned the map, so movement disqualifies it.
@@ -313,18 +470,18 @@ export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
       downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > DRAG_SLOP_PX;
     downAt = null;
     if (moved) return; // that was a pan, not a placement
-    const rect = canvas.getBoundingClientRect();
-    const ll = map.unproject([e.clientX - rect.left, e.clientY - rect.top]);
-    setDraw({ active: true, vertices: [...draw.vertices, [ll.lng, ll.lat]] });
-    redraw();
+    g.onPlace(at(e), finish);
+  };
+
+  const onMove = (e: MouseEvent) => {
+    if (!inMap(e.target)) return;
+    g.onMove!(at(e));
   };
 
   const finish = () => {
-    const ring = draw.vertices;
+    const state = draw;
     teardown();
-    if (ring.length < MIN_VERTICES) return; // not an area - abandon, never filter
-    if (opts.onFinish) { opts.onFinish(ring); return; }
-    scopeStore.set(aoiScope(ring, aoiLabel(ring)));
+    g.onFinish(state);
   };
 
   const abandon = () => teardown();
@@ -346,6 +503,7 @@ export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
     document.removeEventListener("click", onClick, true);
     document.removeEventListener("dblclick", onDblClick, true);
     document.removeEventListener("keydown", onKey);
+    if (g.onMove) document.removeEventListener("mousemove", onMove);
     canvas.style.cursor = priorCursor;
     if (hadDoubleClickZoom) map.doubleClickZoom.enable();
     setData(map, DRAFT_SRC, EMPTY);
@@ -357,8 +515,84 @@ export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
   document.addEventListener("click", onClick, true);
   document.addEventListener("dblclick", onDblClick, true);
   document.addEventListener("keydown", onKey);
+  if (g.onMove) document.addEventListener("mousemove", onMove);
   cancelActive = abandon;
   return true;
+}
+
+/**
+ * Begin drawing a polygon. Click to place a vertex, Enter or double-click to
+ * finish, Escape to abandon. Finishing with fewer than three vertices abandons
+ * instead: two points is a line, and a line as an "area" would filter the console
+ * to nothing.
+ */
+export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
+  if (draw.active) return false;
+  if (!ensureLayers(map)) return false; // style not up: nothing to draw on yet
+  setDraw({ active: true, tool: "polygon", vertices: [] });
+
+  return beginGesture(map, {
+    onPlace: (p) => {
+      setDraw({ active: true, tool: "polygon", vertices: [...draw.vertices, p] });
+      setData(map, DRAFT_SRC, draftCollection(draw.vertices));
+    },
+    onFinish: ({ vertices: ring }) => {
+      if (ring.length < MIN_VERTICES) return; // not an area - abandon, never filter
+      if (opts.onFinish) { opts.onFinish(ring); return; }
+      scopeStore.set(aoiScope(ring, aoiLabel(ring)));
+    },
+  });
+}
+
+/**
+ * Begin drawing a radius. Click the centre, move to size it, click again (or Enter,
+ * or double-click) to set it. Escape abandons.
+ *
+ * TWO CLICKS, NOT A DRAG. It matches the polygon tool's gesture, so the whole rail
+ * has one grammar — click to commit a point — and it inherits the drag-slop guard
+ * for free: a drag would have to be told apart from a pan, and a pan is how you
+ * reach the place you want to draw around.
+ *
+ * A radius under MIN_RADIUS_KM abandons rather than filtering, for the same reason
+ * a two-vertex polygon does: it is a mis-click, and honouring it would empty every
+ * scoped panel with nothing on screen to explain why.
+ */
+export function startRadius(map: MapLibreMap, opts: DrawOptions = {}): boolean {
+  if (draw.active) return false;
+  if (!ensureLayers(map)) return false;
+  setDraw({ active: true, tool: "radius", vertices: [] });
+
+  const size = (p: [number, number]) => {
+    const [clon, clat] = draw.center!;
+    setDraw({ ...draw, radiusKm: haversineKm(clat, clon, p[1], p[0]) });
+    setData(map, DRAFT_SRC, radiusDraft(draw.center!, draw.radiusKm ?? 0));
+  };
+
+  return beginGesture(map, {
+    onPlace: (p, finish) => {
+      // First click sets the centre. The second sizes it and then ends the gesture
+      // through beginGesture's own finish, so a committed radius is committed by
+      // one code path whether it was ended by a click, by Enter or by a
+      // double-click.
+      if (!draw.center) {
+        setDraw({ active: true, tool: "radius", vertices: [], center: p, radiusKm: 0 });
+        setData(map, DRAFT_SRC, radiusDraft(p, 0));
+        return;
+      }
+      size(p);
+      finish();
+    },
+    onMove: (p) => {
+      if (!draw.center) return;
+      size(p);
+    },
+    onFinish: ({ center, radiusKm }) => {
+      if (!center || radiusKm == null || radiusKm < MIN_DRAWN_RADIUS_KM) return;
+      const ring = circleRing(center, radiusKm);
+      if (opts.onFinish) { opts.onFinish(ring); return; }
+      scopeStore.set(aoiScope(ring, radiusLabel(radiusKm)));
+    },
+  });
 }
 
 /** Abandon an in-progress draw from outside (the Cancel button). */

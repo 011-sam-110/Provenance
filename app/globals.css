@@ -5805,7 +5805,8 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    and its flyouts, and it keeps these out of the `.tn-terminal` rule block that
    tests/unit/terminal-tokens.test.ts parses. */
 .tn-terminal .tn-cw-stage {
-  --tnx-maprail-btn: 30px;
+  --tnx-maprail-btn: 44px;
+  --tnx-maprail-glyph: 27px;
   --tnx-maprail-gap: 6px;
 }
 
@@ -5853,8 +5854,76 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tnx-accent-soft);
 }
 .tn-terminal .tnx-maprail-btn:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
-/* One rule sizes all four glyphs, which is why RailIcons takes no size prop. */
-.tn-terminal .tnx-maprail-btn svg { width: 18px; height: 18px; display: block; }
+
+/* The hover/focus label beside a rail button. Four icons with no words needed one:
+   the accessible name was there from the start, and a sighted mouse user had only
+   the native `title`, which takes about a second, paints in OS chrome that ignores
+   the skin, and cannot be told which side of the button to appear on.
+
+   POSITIONED ON THE BUTTON, NOT THE GROUP. `.tnx-maprail-group` is also the
+   flyout's positioning context, and anchoring both to it put the tip and the panel
+   in the same place with the tip on top. The button gets `position: relative` here
+   for that reason — it is the row's own box and nothing else is positioned against
+   it.
+
+   HIDDEN WHILE THE GROUP IS OPEN. The flyout occupies exactly this space, so a tip
+   that stayed would sit over the panel the click just opened — and by then the
+   panel names the group anyway.
+
+   `pointer-events: none` because a label that swallows a click on its way to the
+   map would be worse than no label at all. */
+.tn-terminal .tnx-maprail-btn { position: relative; }
+.tn-terminal .tnx-maprail-tip {
+  pointer-events: none;
+  position: absolute;
+  right: calc(100% + var(--tnx-maprail-gap));
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 9;
+  white-space: nowrap;
+  font-size: var(--tnx-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  padding: 4px 8px;
+  color: var(--tnx-ink);
+  background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r-sm);
+  box-shadow: var(--tnx-shadow-1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+}
+.tn-terminal .tnx-maprail-btn:hover .tnx-maprail-tip,
+.tn-terminal .tnx-maprail-btn:focus-visible .tnx-maprail-tip {
+  opacity: 1;
+  visibility: visible;
+}
+.tn-terminal .tnx-maprail-btn[aria-expanded="true"] .tnx-maprail-tip {
+  opacity: 0;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tnx-maprail-tip { transition: none; }
+}
+/* No hover on touch, so the tip can only ever be a focus artefact there — and a
+   label wide enough to name a group would run off a 390px screen from a rail
+   already pinned to the right edge. The button keeps its accessible name. */
+@media (hover: none) {
+  .tn-terminal .tnx-maprail-tip { display: none; }
+}
+/* One rule sizes all four glyphs, which is why RailIcons takes no size prop.
+   The glyph and its button are ONE ratio (27/44 = 0.61), so the token pair above
+   moves together: shrinking the button without the glyph is what pushes stroke
+   geometry into the 1px border. RailIcons draws at strokeWidth 1.9-2 on a 24-unit
+   viewBox, which at 27px is a ~2.1px stroke — still a hairline, not a slab. */
+.tn-terminal .tnx-maprail-btn svg {
+  width: var(--tnx-maprail-glyph);
+  height: var(--tnx-maprail-glyph);
+  display: block;
+}
 
 /* The flyout. A SIBLING of the button it belongs to, inside a relatively-positioned
    group, so it emerges from its own row with no measurement, no ResizeObserver and
@@ -5922,6 +5991,22 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tnx-accent-soft);
 }
 .tn-terminal .tnx-maprail-act:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+
+/* A flyout button that carries a glyph as well as its word — the Draw group's two
+   tools. The glyph is 18px, NOT the rail's 27px: a mark inside a panel is labelled
+   by the word beside it, whereas a mark on the rail is the only thing identifying
+   its button, so they are different jobs and deliberately different sizes.
+   `--tnx-maprail-glyph` is not reused here for that reason.
+
+   `flex: none` because these sit in the flyout's flex row and the strip must stay
+   lateral; without it a long adjacent label squeezes the glyph into an ellipse. */
+.tn-terminal .tnx-maprail-act-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.tn-terminal .tnx-maprail-act-icon svg { width: 18px; height: 18px; display: block; flex: none; }
 
 .tn-terminal .tnx-maprail-seg { display: flex; align-items: center; gap: 4px; }
 .tn-terminal .tnx-maprail-rule {
@@ -6016,6 +6101,12 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 
    44px is the measured target from the touch pass, technique (a): real size, since
    the rail is a column with room around it and does not need a transparent ::before.
+
+   THE 44px RE-DECLARATION BELOW NOW MATCHES DESKTOP AND IS DELIBERATELY KEPT. The
+   desktop button was 30px when this pass was written; the glyph rescale took it to
+   44px, so the two agree today. It stays as an explicit floor: it is the line that
+   fails a future desktop shrink loudly here rather than silently taking the touch
+   target under 44px on a phone.
    THIS @media IS LAST IN THE BLOCK ON PURPOSE — see the header. */
 @media (max-width: 900px) {
   .tn-terminal .tn-cw-stage { --tnx-maprail-btn: 44px; }

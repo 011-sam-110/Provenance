@@ -57,6 +57,10 @@ const DRAW = /Restrict results to an area/;
 const CAMERAS = /Pick cameras for a wall/;
 const VIEW = /View settings/;
 
+/** The two tools inside the Draw group, by their accessible names. */
+const AREA_TOOL = /Restrict results to a drawn area/;
+const RADIUS_TOOL = /Restrict results to a radius/;
+
 test("the rail is one toolbar of four groups, and opens one at a time", async ({ page }) => {
   const rail = page.locator(RAIL);
   await expect(rail).toBeVisible();
@@ -183,7 +187,7 @@ test("Draw: clicking the map does not close the flyout that armed the gesture", 
   await rail.getByRole("button", { name: DRAW }).click();
 
   const pop = page.locator(".tnx-maprail-pop");
-  await pop.getByRole("button", { name: "Restrict results to area" }).click();
+  await pop.getByRole("button", { name: AREA_TOOL }).click();
 
   // Assert the draw ARMED before clicking the map, so a failure names the real
   // cause. startDraw returns false while the style is still loading and the
@@ -205,7 +209,44 @@ test("Draw: clicking the map does not close the flyout that armed the gesture", 
   // idle state.
   await page.keyboard.press("Escape");
   await expect(pop).toBeVisible();
-  await expect(pop.getByRole("button", { name: "Restrict results to area" })).toBeVisible();
+  await expect(pop.getByRole("button", { name: AREA_TOOL })).toBeVisible();
+});
+
+test("Radius: two clicks set a circular scope, and the readout names the radius", async ({ page }) => {
+  // The second tool in the Draw group. It is worth a case of its own rather than a
+  // variant of the polygon one, because the gesture is genuinely different: the
+  // FIRST click commits a centre and does not end anything, and the second both
+  // sizes and finishes. A tool where click one silently did nothing visible would
+  // be indistinguishable from a dead control.
+  await mapReady(page);
+  const rail = page.locator(RAIL);
+  await rail.getByRole("button", { name: DRAW }).click();
+
+  const pop = page.locator(".tnx-maprail-pop");
+  await pop.getByRole("button", { name: RADIUS_TOOL }).click();
+  await expect(pop.getByRole("status")).toContainText(/Click the centre/);
+
+  const canvas = page.locator(".map-canvas");
+  await canvas.click({ position: { x: 300, y: 220 } });
+
+  // Centre placed. The panel must still be open — Radius, like Area, exists to make
+  // you click ON the map, so railHoldsOpen has to cover it too. This is the §1
+  // regression guard for the new tool.
+  await expect(pop).toBeVisible();
+  await expect(pop.getByRole("status")).toContainText(/click the edge/);
+  await expect(pop.getByRole("button", { name: "Cancel" })).toBeVisible();
+
+  // Second click sizes and commits. A radius is stored as a ring, so the scope this
+  // leaves behind is an AOI — what must NOT happen is the panel reporting it as a
+  // point count, which is why the set state renders the scope's own label.
+  await canvas.click({ position: { x: 420, y: 300 } });
+  await expect(pop.getByText(/Drawn radius \(/)).toBeVisible();
+  await expect(pop.getByRole("button", { name: "Clear" })).toBeVisible();
+
+  // And Clear puts the world back, from a radius exactly as from a polygon.
+  await pop.getByRole("button", { name: "Clear" }).click();
+  await expect(pop.getByText(/Drawn radius \(/)).toHaveCount(0);
+  await expect(pop.getByRole("button", { name: RADIUS_TOOL })).toBeVisible();
 });
 
 test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page }) => {

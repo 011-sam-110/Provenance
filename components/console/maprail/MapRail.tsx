@@ -39,7 +39,7 @@ import {
   railStep,
   useMapRail,
 } from "@/lib/console/mapRail";
-import { CameraBracketGlyph, PinGearGlyph, PolygonGlyph, SearchGlyph } from "./RailIcons";
+import { CameraBracketGlyph, MapPenGlyph, PinGearGlyph, SearchGlyph } from "./RailIcons";
 import SearchFlyout from "./SearchFlyout";
 import DrawFlyout from "./DrawFlyout";
 import CamerasFlyout from "./CamerasFlyout";
@@ -72,10 +72,14 @@ const GROUPS: {
   },
   {
     id: "draw",
+    // The group holds TWO tools now (a drawn area and a radius), so the button
+    // names the outcome they share rather than either gesture. "Restrict results
+    // to an area" is still the sentence — a radius IS an area — and keeping the
+    // wording is what lets the tour copy and the e2e names stay put.
     label: "Restrict results to an area",
     btnClass: "tnx-maprail-btn-draw",
     popClass: "tnx-maprail-pop-draw",
-    glyph: PolygonGlyph,
+    glyph: MapPenGlyph,
     body: DrawFlyout,
   },
   {
@@ -215,6 +219,26 @@ export default function MapRail() {
               onKeyDown={(e) => onKeyDown(e, id)}
             >
               <Glyph />
+              {/* The hover/focus label. `aria-hidden`, because `aria-label` above
+                  already gives a screen reader this exact string and a visible copy
+                  would have it announced twice.
+
+                  THIS IS NOT THE HOVER-REVEAL THIS FILE ARGUES AGAINST. That rule
+                  is about CONTROLS that only exist on hover — the arm control in a
+                  card, the resize handles on touch. A label that names a control
+                  which is already visible, already clickable and already has an
+                  accessible name adds no dead control: on a phone it simply never
+                  appears, and nothing is lost, because the button is still there.
+
+                  It also replaces the native `title` tooltip as the thing you
+                  actually see. `title` is kept on the button — it is what a
+                  hover-capable user gets if CSS fails, and some assistive tooling
+                  reads it — but it takes about a second to appear, renders in OS
+                  chrome that ignores the skin, and cannot be positioned, which is
+                  why four icons with no words needed something better. */}
+              <span className="tnx-maprail-tip" aria-hidden="true">
+                {label}
+              </span>
             </button>
             {isOpen ? (
               // The flyout is a SIBLING of the button, positioned off its own row,
