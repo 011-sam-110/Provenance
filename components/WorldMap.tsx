@@ -53,7 +53,6 @@ import {
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
 import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { layersToTrim } from "@/lib/map/styleTrim";
-import { spinEnvelope } from "@/lib/map/spin";
 import { markMapReady } from "@/lib/terminal/mapReady";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
@@ -254,11 +253,13 @@ function hitsAt(map: maplibregl.Map, point: maplibregl.MapLayerMouseEvent["point
   });
 }
 
-// Start zoomed out so the spinning globe is the hero. The palette / rail fly inward.
+// Start zoomed out so the whole globe is the opening view. The palette / rail fly inward.
+//
+// THE CONSOLE GLOBE DOES NOT ROTATE. It used to turn on load and, after #158, turn
+// for 8 s and settle. Both are gone: it is now still from the first frame. See the
+// note on the removed spin loop further down for what came out with it, and
+// `lib/map/spin.ts`, which still drives the LANDING hero and only that.
 const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
-const SPIN_MAX_ZOOM = 4; // only auto-rotate while zoomed out this far
-const SPIN_DEG_PER_SEC = 4; // calm rotation
-const IDLE_RESUME_MS = 4000; // resume spin this long after the last user input
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
 
@@ -446,10 +447,13 @@ export default function WorldMap() {
   const styleAttemptsRef = useRef(0);
   const styleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadStatus, setLoadStatus] = useState<MapLoadStatus>({ kind: "ok" });
-  const rafRef = useRef(0);
-  const interactUntilRef = useRef(0);
-  const terrainRef = useRef(true);
-  const buildingsRef = useRef(true);
+  // Seeded FROM the store, not from a literal. These are read by addAppLayers on
+  // `style.load`, which can land before the effects that sync them, so a hard-coded
+  // starting value is a second copy of a default that must agree with lib/mapView.ts
+  // — and when the defaults flipped to off, the copy is what would have kept
+  // fetching DEM on the first style of every visit.
+  const terrainRef = useRef(mapViewStore.get().terrain);
+  const buildingsRef = useRef(mapViewStore.get().buildings);
   // Plane-tracking (see lib/planes/track). trackingRef mirrors the store for the
   // spin loop + input handlers (no re-render); trackedObjectRef holds the tracked
   // plane's latest WorldObject so addAppLayers can re-seed the ring after a restyle;
@@ -707,6 +711,60 @@ export default function WorldMap() {
     [],
   );
 
+  // Rasterise the 33 hand-drawn SVG pictograms and register them with the style.
+  const rasteriseIcons = useCallback(
+    (map: maplibregl.Map) =>
+      Promise.all([
+        loadCameraIcons(map),
+        loadPlaneIcons(map),
+        loadSatelliteIcons(map),
+        loadWebcamIcons(map),
+        loadSignalIcons(map),
+      ]).then(() => {}),
+    [],
+  );
+
+  /**
+   * The same work, but off the first style load's critical path.
+   *
+   * WHAT IT IS WORTH, AND WHAT IT IS NOT. Measured against a preview, cold cache,
+   * desktop: `style.load` at 827 ms, the app layers in place at 1376 ms, first idle
+   * at 2590 ms — and the long task inside that first window is 133 ms. Deferring
+   * does NOT make the map ready sooner: first idle is gated by tile arrival, not by
+   * this. What it does is move a 133 ms block of main-thread time out of the window
+   * where the basemap's own tiles are being decoded, which is the window a visitor
+   * is watching.
+   *
+   * ONLY ON THE FIRST STYLE. A basemap swap wipes every registered image while the
+   * sources still hold real data, so there the work is awaited exactly as before —
+   * deferring it would blank every pin on screen for as long as it took.
+   *
+   * `styleimagemissing` IS THE SAFETY, and it is what makes this safe rather than a
+   * gamble on timing. MapLibre fires it the moment a symbol layer wants an icon that
+   * is not registered, so if camera or signal data arrives before the map goes idle,
+   * the rasterisation is pulled forward by the map itself instead of leaving pins
+   * drawn without their pictograms.
+   */
+  const firstStyleRef = useRef(true);
+  const ensureIcons = useCallback(
+    async (map: maplibregl.Map) => {
+      if (!firstStyleRef.current) {
+        await rasteriseIcons(map);
+        return;
+      }
+      firstStyleRef.current = false;
+      let started = false;
+      const run = () => {
+        if (started) return;
+        started = true;
+        void rasteriseIcons(map);
+      };
+      map.once("idle", run);
+      map.once("styleimagemissing", run);
+    },
+    [rasteriseIcons],
+  );
+
   // Re-add every app source/layer onto the current style. Idempotent, so it runs
   // safely on the first load AND after each basemap swap (setStyle wipes them).
   const addAppLayers = useCallback(
@@ -785,14 +843,10 @@ export default function WorldMap() {
         map.setLayoutProperty(STYLE_OWN_BUILDING_3D, "visibility", "none");
       }
 
-      // Symbol icons are wiped by setStyle — re-rasterise/register them.
-      await Promise.all([
-        loadCameraIcons(map),
-        loadPlaneIcons(map),
-        loadSatelliteIcons(map),
-        loadWebcamIcons(map),
-        loadSignalIcons(map),
-      ]);
+      // Symbol icons are wiped by setStyle — re-rasterise/register them. Awaited on
+      // a swap, deferred to the map's first idle on the very first style: see
+      // ensureIcons for why that is safe and what it is measured to be worth.
+      await ensureIcons(map);
 
       // Sources, seeded from the latest refs. NOTHING clusters: every camera and
       // every webcam is its own feature at every zoom (see CAM_DOT_LAYER).
@@ -1273,7 +1327,7 @@ export default function WorldMap() {
       applyVisibility(map, layersRef.current);
       readyRef.current = true;
     },
-    [applyTerrain, applyVisibility, ensureGeoJSON],
+    [applyTerrain, applyVisibility, ensureGeoJSON, ensureIcons],
   );
 
   // Click + cursor handlers, wired ONCE. Layer-scoped handlers survive basemap
@@ -1659,11 +1713,9 @@ export default function WorldMap() {
     const center: [number, number] =
       initial.lat != null && initial.lon != null ? [initial.lon, initial.lat] : HOME.center;
     const zoom = initial.zoom ?? HOME.zoom;
-    // A deep-linked camera/zoom means the user wants that exact view — don't let
-    // the idle spin immediately drag it away on first paint.
-    if (initial.lat != null || initial.zoom != null) {
-      interactUntilRef.current = performance.now() + IDLE_RESUME_MS;
-    }
+    // A deep-linked camera/zoom used to need protecting here, because the idle spin
+    // would drag it away on first paint. Nothing moves the camera on its own now, so
+    // the view a link asks for is simply the view it gets.
 
     const map = new maplibregl.Map({
       container: containerRef.current,
@@ -1791,14 +1843,18 @@ export default function WorldMap() {
     // Engage/disengage 3D terrain as we cross the mercator threshold (see syncTerrain).
     map.on("zoom", () => syncTerrain(map));
 
-    // Pause auto-spin on any direct user input (native events, not programmatic
-    // camera moves) — keeps the calm idle rotation from fighting interaction.
+    // Direct user input (native events, not programmatic camera moves) breaks a live
+    // plane follow. That is now the ONLY thing these listeners do.
+    //
+    // They used to also hold off the idle spin, and a `pointermove` listener was
+    // attached to the canvas container for the same purpose — hovering counted as
+    // engagement so the globe would not rotate out from under the cursor while you
+    // were reading a label. With no spin there is nothing to hold off, so the
+    // pointermove listener is gone entirely rather than left running to set a value
+    // nothing reads. That also takes a per-move handler off the map container, which
+    // is the listener class this app has been bitten by before.
     const el = map.getCanvasContainer();
-    const holdSpin = () => {
-      interactUntilRef.current = performance.now() + IDLE_RESUME_MS;
-    };
     const markInteract = () => {
-      holdSpin();
       // Grabbing the map "breaks" a live follow → drop to manual recenter so we stop
       // chasing the plane out from under the user (a Recenter affordance re-arms it).
       const t = trackingRef.current;
@@ -1806,17 +1862,6 @@ export default function WorldMap() {
     };
     const inputs: (keyof HTMLElementEventMap)[] = ["mousedown", "wheel", "touchstart", "pointerdown"];
     for (const ev of inputs) el.addEventListener(ev, markInteract, { passive: true });
-
-    // Hovering counts as engagement, but ONLY for the spin — it must not break a
-    // follow, which is why it calls `holdSpin` and not `markInteract`. Before this,
-    // `inputs` carried press events only: sweeping the pointer across the map to read
-    // a label left the globe rotating underneath the cursor, so the dot you were
-    // aiming at drifted out from under you while the hit-test chased it. It is also
-    // the moment smoothness is most visible, and the moment the main thread can least
-    // afford to be re-rendering the whole globe 60 times a second (measured on prod at
-    // 4x CPU throttle: 99.5% main-thread busy while spinning, 44.8% with the spin
-    // neutralised on the same bundle at the same zoom).
-    el.addEventListener("pointermove", holdSpin, { passive: true });
 
     // The `tn-map-cursor` publisher used to live here: a rAF-coalesced window
     // CustomEvent carrying lat/lon on every mousemove, read by the stage bar's
@@ -1828,85 +1873,45 @@ export default function WorldMap() {
     // chain and the thumbnail pool, at pointer rate.
 
     // Shareable deep links: mirror the live view into the URL (debounced,
-    // replaceState — no history spam, no reload). moveend writes are skipped while
-    // the calm idle spin is running so the URL doesn't churn on its own; deliberate
-    // moves (user pan/zoom, region fly-to) and store changes always persist.
-    // ONE predicate, read by both the spin loop and the URL writer below. They used
-    // to carry separate copies of the same four clauses, which is a standing invitation
-    // for the two to drift: the moment they disagree, either the URL churns on its own
-    // or a deliberate move stops being shareable.
-    const prefersLessMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    // Time the globe has actually SPENT turning, which is not time since load. A
-    // visitor who grabs the map, opens a dossier or switches tabs pauses the budget
-    // instead of burning it, so the globe they come back to still has its turn left.
-    let spinSpentMs = 0;
-    const spinSettled = () => spinEnvelope(spinSpentMs).settled;
-    const isAutoSpinning = () =>
-      !spinSettled() &&
-      !prefersLessMotion.matches &&
-      !document.hidden &&
-      performance.now() > interactUntilRef.current &&
-      !overlay.get().object &&
-      !trackingRef.current.id && // a tracked plane owns the camera; don't spin away from it
-      map.getZoom() < SPIN_MAX_ZOOM;
+    // replaceState — no history spam, no reload).
+    //
+    // This used to be guarded by `isAutoSpinning()`, a six-clause predicate shared
+    // with the spin loop, because a self-moving camera would otherwise rewrite the
+    // URL on its own for as long as the tab was open. Every `moveend` now comes from
+    // a deliberate move — a user pan/zoom, a region fly-to, a dive — so all of them
+    // are worth persisting and the predicate has no second reader left.
     const onMoveEnd = () => {
       // Our own follow easeTo shouldn't churn the shareable URL every poll.
       if (followMoveRef.current) { followMoveRef.current = false; return; }
-      if (!isAutoSpinning()) scheduleUrlWrite(map);
+      scheduleUrlWrite(map);
     };
     map.on("moveend", onMoveEnd);
     const unsubLayers = layersStore.subscribe(() => scheduleUrlWrite(map));
     const unsubView = mapViewStore.subscribe(() => scheduleUrlWrite(map));
     const unsubOverlay = overlay.subscribe(() => scheduleUrlWrite(map));
 
-    // Calm idle rotation: nudge centre longitude while zoomed out + idle, then SETTLE.
+    // THE IDLE ROTATION IS GONE. There is deliberately no animation loop here.
     //
-    // The globe used to turn for as long as the tab was open, and that is the single
-    // most expensive thing this page does at rest: 60.8% of the main thread over a
-    // 10 s idle window on a desktop, ~101% at a 4x CPU throttle, against 3.4% with
-    // the spin neutralised. It cannot be made cheap by slowing it down — 30 fps and
-    // 20 fps caps both measured ~99% — because a moving camera forces a full
-    // MapLibre re-render whatever the update rate. Only not moving is cheaper.
-    // So it turns for a while, eases to a stop, and hands the thread back.
+    // History, so nobody reintroduces it by accident. The globe originally turned for
+    // as long as the tab was open, and that was the single most expensive thing this
+    // page did at rest: 60.8% of the main thread over a 10 s idle window on a desktop,
+    // ~101% at a 4x CPU throttle, against 3.4% with the spin neutralised. #158 replaced
+    // "forever" with an 8 s budget and an ease-out. Prod then measured 7.2% busy with
+    // zero map renders once it had settled — so the settle worked, and the remaining
+    // question was only whether the opening turn was worth anything. It was removed.
     //
-    // STOPPING MEANS STOPPING. Once settled the loop does not reschedule itself,
-    // rather than rescheduling and returning early. The early-return version is what
-    // both of this app's animation loops already did and it still costs a callback
-    // per compositor frame forever — cheap, but not zero, and it is the difference
-    // between the 3.4% target and something above it.
-    let last = performance.now();
-    const spin = (t: number) => {
-      const dt = Math.min((t - last) / 1000, 0.05);
-      last = t;
-      if (isAutoSpinning()) {
-        const { factor } = spinEnvelope(spinSpentMs);
-        spinSpentMs += dt * 1000;
-        const c = map.getCenter();
-        map.setCenter([c.lng + SPIN_DEG_PER_SEC * dt * factor, c.lat]);
-      }
-      if (spinSettled()) {
-        rafRef.current = 0;
-        return;
-      }
-      rafRef.current = requestAnimationFrame(spin);
-    };
-    // Reduced motion never starts the loop at all, rather than starting it and
-    // declining every frame. If the setting is turned off mid-session the change
-    // handler starts it, so the globe is not dead for the rest of the visit.
-    const startSpin = () => {
-      if (rafRef.current || spinSettled() || prefersLessMotion.matches) return;
-      last = performance.now();
-      rafRef.current = requestAnimationFrame(spin);
-    };
-    const onMotionPreference = () => startSpin();
-    prefersLessMotion.addEventListener("change", onMotionPreference);
-    startSpin();
+    // If it ever comes back, three things were measured and are not worth re-deriving:
+    // slowing it down does NOT help (30 fps and 20 fps caps both measured ~99% busy,
+    // because a moving camera forces a full MapLibre re-render whatever the update
+    // rate — only not moving is cheaper); a settled loop must stop SCHEDULING rather
+    // than reschedule and return early, or it still costs a callback per compositor
+    // frame forever; and the budget has to count time actually spent spinning, not
+    // wall-clock, or a slow first paint delivers an already-motionless globe.
+    //
+    // `lib/map/spin.ts` still holds that envelope and still drives the landing hero.
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      prefersLessMotion.removeEventListener("change", onMotionPreference);
       for (const ev of inputs) el.removeEventListener(ev, markInteract);
-      el.removeEventListener("pointermove", holdSpin);
       cancelUrlWrite();
       unsubLayers();
       unsubView();
@@ -2077,8 +2082,6 @@ export default function WorldMap() {
   const flyToRegion = useCallback((target: RegionView) => {
     const map = mapRef.current;
     if (!map) return;
-    // Suppress the idle spin through the fly animation.
-    interactUntilRef.current = performance.now() + 2400;
     const zoom = Math.max(3, Math.min(9, 9.5 - target.altitude * 4));
     map.flyTo({ center: [target.lng, target.lat], zoom, duration: 1600, essential: true });
   }, []);
@@ -2092,7 +2095,6 @@ export default function WorldMap() {
   const flyToPoint = useCallback((target: PointView) => {
     const map = mapRef.current;
     if (!map) return;
-    interactUntilRef.current = performance.now() + 2400; // suppress idle spin through the fly
     const zoom = Math.max(2, Math.min(15, target.zoom ?? 11));
     map.flyTo({ center: [target.lon, target.lat], zoom, duration: 1600, essential: true });
   }, []);
@@ -2131,8 +2133,6 @@ export default function WorldMap() {
     const map = mapRef.current;
     if (!map) { onArrive(); return; }
     const p = computeDive({ lat: view.lat, lon: view.lon });
-    // Suppress the idle spin through the dive (+ a little slack).
-    interactUntilRef.current = performance.now() + p.duration + 600;
     if (!animate) {
       map.jumpTo({ center: p.center, zoom: p.zoom, pitch: p.pitch, bearing: p.bearing });
       onArrive();

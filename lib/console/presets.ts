@@ -259,10 +259,10 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // switch has been removed, so this literal is the ONLY thing choosing the
   // projection for a new visitor.
   //
-  // The globe SPINS ON ITS OWN, and that is existing behaviour rather than something
-  // added here: WorldMap runs an idle rotation while the camera is zoomed out past
-  // SPIN_MAX_ZOOM and no pointer has touched it for IDLE_RESUME_MS. An empty board
-  // simply stops putting four cards in front of it.
+  // The globe is STILL. It used to rotate on its own — an idle rotation in WorldMap
+  // while the camera was zoomed out and no pointer had touched it — and that spin was
+  // removed outright, so an empty board is a motionless globe rather than a turning
+  // one. An empty board simply stops putting four cards in front of it.
   //
   // NO mapSignals AND NO mapCore, both deleted with the widgets. The globe opens on
   // the basemap and borders alone; every layer is one switch away in the Sources

@@ -22,10 +22,13 @@
 // the main thread handed back a few seconds later — rather than a choice between an
 // animation that never stops and a dead sphere.
 //
-// The envelope is shared by both globes deliberately. They are two separate spin
-// implementations in two files (WorldMap's setCenter loop and HeroGlobe's jumpTo
-// loop) and there is no prospect of merging them, so the least that can be done is
-// give them one definition of when to stop.
+// THIS NOW DRIVES THE LANDING HERO AND NOTHING ELSE. The envelope was written for
+// both globes — WorldMap's setCenter loop and HeroGlobe's jumpTo loop — but the
+// console's spin was removed outright afterwards: its globe is motionless from the
+// first frame, and `components/WorldMap.tsx` no longer imports this module. The
+// numbers above are kept because they are the measurements that justify the hero's
+// budget too, and because they are the argument against anyone reintroducing a
+// permanently rotating globe on either page.
 
 /** How long the globe turns, in total, before it has settled. */
 export const SPIN_SETTLE_MS = 8000;

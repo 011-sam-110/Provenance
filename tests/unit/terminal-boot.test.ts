@@ -35,7 +35,11 @@ const TOTALS = [BOOT_MIN_MS, 3200, 4000, BOOT_MS];
 describe("boot timeline", () => {
   it("runs between the floor and the ceiling", () => {
     expect(BOOT_MS).toBe(5000);
-    expect(BOOT_MIN_MS).toBe(2600);
+    // 2600 until 2026-09-05, when the floor was measured to be the gate: the map
+    // was first idle 1938 ms into the plate and the plate held to 2602 ms. Moving
+    // it is a design call, so it is pinned rather than left free — see the comment
+    // on the constant for what the compression costs and what 2300 would buy.
+    expect(BOOT_MIN_MS).toBe(2000);
     expect(BOOT_MIN_MS).toBeLessThan(BOOT_MS);
     expect(BOOT_FADE_MS + BOOT_READY_HOLD_MS).toBeLessThan(BOOT_MIN_MS);
     expect(BOOT_REDUCED_MS).toBeLessThan(1000);

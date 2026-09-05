@@ -62,7 +62,32 @@ export interface MapViewState {
   buildings: boolean;
 }
 
-let state: MapViewState = { basemap: DEFAULT_BASEMAP, terrain: true, buildings: true };
+/**
+ * Both draw-time extras start OFF, and that is the single largest thing this map
+ * stopped paying for at rest.
+ *
+ * They were ON here until 2026-09-05, unpersisted, on every cold load — so every
+ * visitor bought relief shading and a building extrusion whether or not they ever
+ * descended to a zoom where either could be seen. Measured on one scripted z8
+ * zoom-in over London: 4.3 MB of tiles, of which 2.4 MB in 23 requests was
+ * Terrarium DEM from `elevation-tiles-prod.s3.amazonaws.com` — S3 direct, no CDN,
+ * HTTP/1.1, 410–610 ms TTFB per 60 KB tile from the UK, and the browser will only
+ * run six of those at a time. The same gesture on simplifaisoul/osiris, the same
+ * MapLibre 5.24 on the same machine, dropped zero frames against our five (worst
+ * gap 383 ms). It has no DEM source at all.
+ *
+ * WHAT DOES THE WORK IS THE DEFAULT, not the absence of the source. WorldMap still
+ * declares the DEM source and the hillshade layer on every style load, because an
+ * unused source costs nothing: MapLibre marks a SourceCache `used` only when a
+ * visible layer inside its zoom range reads from it (or terrain does), and an
+ * unused cache issues no requests. Creating it lazily on the toggle would have
+ * bought nothing measurable and cost the layer its position — added later it would
+ * append above the camera pins instead of sitting under them.
+ *
+ * The rail toggles (components/console/maprail/ViewFlyout.tsx) are untouched: this
+ * is a change to what an untouched map costs, not to what the map can do.
+ */
+let state: MapViewState = { basemap: DEFAULT_BASEMAP, terrain: false, buildings: false };
 let flyToFn: ((view: RegionView) => void) | null = null;
 let flyToPointFn: ((view: PointView) => void) | null = null;
 let diveToFn: ((view: DiveView, animate: boolean, onArrive: () => void) => void) | null = null;
