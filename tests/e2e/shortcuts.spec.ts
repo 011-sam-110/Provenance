@@ -17,6 +17,12 @@ async function stampSeen(page: import("@playwright/test").Page) {
 const SEARCH_INPUT = "#stage-search input";
 const RAIL = ".tn-rail";
 
+/** The keymap lives on the Shortcuts tab now, and the drawer always opens on Main. */
+async function openShortcuts(page: import("@playwright/test").Page) {
+  await page.locator(".tn-settings-trigger").click();
+  await page.getByRole("tab", { name: "Shortcuts" }).click();
+}
+
 /** Copied from map-rail.spec.ts: `startDraw` refuses while the style is still
  *  loading, so a Ctrl+Q fired before the tiles land arms nothing and looks like a
  *  broken binding. The credit line is not enough on its own — that was measured
@@ -73,7 +79,7 @@ test("a rebound key works, and it is still bound after a reload", async ({ page 
   // user has to set every time, which is worse than no preference at all.
   await stampSeen(page);
   await page.goto("/app");
-  await page.locator(".tn-settings-trigger").click();
+  await openShortcuts(page);
 
   const chip = page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ });
   await chip.click();
@@ -103,7 +109,7 @@ test("taking the only key off another action is REFUSED, and says which one", as
   // be visible — a rejected keystroke that looks like a dropped one is the same bug.
   await stampSeen(page);
   await page.goto("/app");
-  await page.locator(".tn-settings-trigger").click();
+  await openShortcuts(page);
 
   await page.getByRole("button", { name: /^Draw an area: Ctrl\+Q/ }).click();
   await page.keyboard.press("Control+k");
@@ -114,10 +120,62 @@ test("taking the only key off another action is REFUSED, and says which one", as
   await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ })).toBeVisible();
 });
 
-test("Restore puts every default back", async ({ page }) => {
+test("an armed chip owns the arrow keys — they do not switch tab", async ({ page }) => {
+  // The one regression the tabbed drawer can actually ship broken. The strip binds
+  // ←/→/Home/End, and an armed shortcut chip claims every key it receives; if the arrow
+  // handler ever moves onto `window` instead of the tablist element, arming a chip and
+  // reaching for ← would silently change tab and unmount the row you were editing.
+  //
+  // Asserting the TAB, not the binding: whether ArrowRight ends up bound or refused is
+  // keymap.ts's business and pinning it here would couple this test to RESERVED_CHORDS.
+  await stampSeen(page);
+  await page.goto("/app");
+  await openShortcuts(page);
+
+  await page.getByRole("button", { name: /^Draw an area: Ctrl\+Q/ }).click(); // arms
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Shortcuts" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("Escape cancels arming without closing the drawer", async ({ page }) => {
+  // Escape is ambiguous here by design, and the resolution is load-bearing: the chip's
+  // stopPropagation is what keeps SettingsPanel's window listener from seeing it. Nothing
+  // covered this before, and it is exactly the kind of thing a refactor quietly breaks.
+  await stampSeen(page);
+  await page.goto("/app");
+  await openShortcuts(page);
+
+  await page.getByRole("button", { name: /^Draw an area: Ctrl\+Q/ }).click();
+  await page.keyboard.press("Escape");
+
+  await expect(page.locator(".tn-settings")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Draw an area: Ctrl\+Q/ })).toBeVisible();
+
+  // A second Escape, with nothing armed, closes it as it always did.
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".tn-settings")).toHaveCount(0);
+});
+
+test("the drawer opens on Main, and the tabs are reachable by keyboard", async ({ page }) => {
   await stampSeen(page);
   await page.goto("/app");
   await page.locator(".tn-settings-trigger").click();
+
+  await expect(page.getByRole("tab", { name: "Main" })).toHaveAttribute("aria-selected", "true");
+  // Focus lands on the active tab, so the strip is one arrow press from anywhere.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Display" })).toHaveAttribute("aria-selected", "true");
+  // Wraps at both ends rather than stopping dead.
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByRole("tab", { name: "Shortcuts" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ })).toBeVisible();
+});
+
+test("Restore puts every default back", async ({ page }) => {
+  await stampSeen(page);
+  await page.goto("/app");
+  await openShortcuts(page);
 
   await page.getByRole("button", { name: /^Draw an area: Ctrl\+Q/ }).click();
   await page.keyboard.press("Control+g");

@@ -25,6 +25,7 @@ import { langStore, useLang } from "@/lib/i18n/store";
 import { LANGS } from "@/lib/i18n/catalog";
 import { variantStore, useVariant } from "@/lib/variants/store";
 import { BUILTIN_VARIANTS } from "@/lib/variants/builtins";
+import { FIXED_KEYS } from "@/lib/shell/keymap";
 import {
   groupCommands,
   columnize,
@@ -420,11 +421,16 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
             ))}
           </div>
         )}
+        {/* GENERATED, NOT TYPED. These four were four hardcoded chips, and the Settings
+            drawer's Shortcuts tab now prints the same facts — so they come from one
+            table (lib/shell/keymap.ts's FIXED_KEYS) and the two surfaces cannot drift.
+            The filter is what keeps the console's own Escape out of a palette footer. */}
         <div className="tn-palette-foot">
-          <span><span className="tn-kbd">↑↓</span> in column</span>
-          <span><span className="tn-kbd">←→</span> columns</span>
-          <span><span className="tn-kbd">↵</span> run</span>
-          <span><span className="tn-kbd">esc</span> close</span>
+          {FIXED_KEYS.filter((k) => k.where === "palette").map((k) => (
+            <span key={`${k.keys}-${k.short}`}>
+              <span className="tn-kbd">{k.keys}</span> {k.short}
+            </span>
+          ))}
         </div>
       </div>
     </div>

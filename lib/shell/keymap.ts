@@ -49,6 +49,44 @@ export const KEY_ACTIONS: { id: KeyAction; label: string; hint: string }[] = [
 ];
 
 /**
+ * The keys the console does NOT let you rebind, and what each one does.
+ *
+ * WHY THIS EXISTS AT ALL. The command palette already printed these four facts in its own
+ * footer as four hardcoded chips, and the Settings drawer now prints them too. Two copies
+ * of "←→ moves between columns" is how one of them becomes a lie — the same reasoning
+ * KEY_ACTIONS is held here for. So this is the source, and CommandPalette's footer renders
+ * from it rather than the other way round.
+ *
+ * `keys` IS WHAT GETS PRINTED, and it is a literal rather than something formatChord()
+ * produces: that function would render "arrowup" as "Arrowup". None of these carries a
+ * modifier, so isMac() has nothing to say about them either.
+ *
+ * `chords` IS THE CANONICAL FORM, and it is here for exactly one reason — a test asserts
+ * that nothing in this table is also a bound chord in DEFAULT_KEYMAP. The day someone
+ * defaults a binding to Enter, this table starts advertising as unchangeable a key the
+ * user can see in the rebindable list two inches above it.
+ */
+export const FIXED_KEYS: {
+  keys: string;
+  chords: string[];
+  short: string;
+  label: string;
+  where: "console" | "palette";
+}[] = [
+  {
+    keys: "Esc",
+    chords: ["escape"],
+    short: "leave, then clear",
+    label: "Leaves camera-picking mode, then clears the selection",
+    where: "console",
+  },
+  { keys: "↑↓", chords: ["arrowup", "arrowdown"], short: "in column", label: "Move within a palette column", where: "palette" },
+  { keys: "←→", chords: ["arrowleft", "arrowright"], short: "columns", label: "Move between palette columns", where: "palette" },
+  { keys: "↵", chords: ["enter"], short: "run", label: "Run the highlighted palette item", where: "palette" },
+  { keys: "Esc", chords: ["escape"], short: "close", label: "Close the palette", where: "palette" },
+];
+
+/**
  * The defaults.
  *
  * SEARCH HAS TWO, and that is not indecision. Ctrl+Space is an IME switch on some

@@ -60,12 +60,35 @@ const shots = [
   {
     name: "08-command-palette",
     note: "The command palette.",
-    act: async (p) => { await p.keyboard.press("Control+k"); await p.waitForTimeout(800); },
+    // CLICKS THE BUTTON, DOES NOT PRESS Ctrl+K. That chord has opened the Sources rail
+    // since #162 reassigned it, so this shot had been quietly capturing the wrong surface
+    // under the right name — which is the one failure a screenshot inventory cannot
+    // tolerate. The palette has no chord of its own; .tn-palette-trigger is its only door.
+    act: async (p) => { await p.click(".tn-palette-trigger"); await p.waitForTimeout(800); },
+  },
+  // THREE SHOTS, NOT ONE. The drawer became tabbed, so a single picture of it now shows
+  // a third of the surface — and "enumerate every pressable control from pictures alone"
+  // is this script's whole job.
+  {
+    name: "09-settings-main",
+    note: "Settings → Main: notifications, the Discord webhook, Telegram.",
+    act: async (p) => { await p.click(".tn-settings-trigger"); await p.waitForTimeout(700); },
   },
   {
-    name: "09-settings",
-    note: "The settings drawer.",
-    act: async (p) => { await p.click(".tn-settings-trigger"); await p.waitForTimeout(700); },
+    name: "09b-settings-display",
+    note: "Settings → Display: language, boards, share this layout.",
+    act: async (p) => {
+      await p.click(".tn-settings-trigger"); await p.waitForTimeout(500);
+      await p.getByRole("tab", { name: "Display" }).click(); await p.waitForTimeout(500);
+    },
+  },
+  {
+    name: "09c-settings-shortcuts",
+    note: "Settings → Shortcuts: the rebindable keys, then the fixed ones.",
+    act: async (p) => {
+      await p.click(".tn-settings-trigger"); await p.waitForTimeout(500);
+      await p.getByRole("tab", { name: "Shortcuts" }).click(); await p.waitForTimeout(500);
+    },
   },
   {
     name: "10-profile",
