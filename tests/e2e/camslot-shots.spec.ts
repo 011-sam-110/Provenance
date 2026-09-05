@@ -1,13 +1,10 @@
 import { test, expect } from "@playwright/test";
 
 // Both stamps are copied from tests/e2e/console.spec.ts, and for the reason given
-// there: the guided tour and the launch sequence are each a `position:fixed;
-// inset:0` layer, so without these a click lands on an overlay instead of the
-// control under it. The tour version is deliberately far above the current one, so
-// that bumping the tour does not silently re-arm the overlay and break this file.
+// there: the launch sequence is a `position:fixed; inset:0` layer, so without this
+// a click lands on the plate instead of the control under it.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
 });

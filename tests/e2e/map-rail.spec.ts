@@ -9,14 +9,11 @@ import { test, expect } from "@playwright/test";
 // anywhere else. tests/unit/map-rail.test.ts holds the pure reducers; everything
 // that needs a DOM, a focus ring or a real map is here.
 //
-// Both localStorage stamps are copied from camslot-shots.spec.ts, for the reason
-// stated there: the guided tour and the launch sequence are each a
-// `position:fixed; inset:0` layer, so without them a click lands on an overlay
-// instead of the control under it. The tour version is deliberately far above the
-// current one so bumping the tour cannot silently re-arm the veil.
+// The localStorage stamp is copied from camslot-shots.spec.ts, for the reason
+// stated there: the launch sequence is a `position:fixed; inset:0` layer, so
+// without it a click lands on the plate instead of the control under it.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
   // `/app`, not `/`. CLAUDE.md is explicit that `/` is the marketing site and
@@ -149,7 +146,7 @@ test("View: 2D/3D is ONE button, three basemaps are radios, and the map follows"
   await expect(pop.getByRole("radio")).toHaveCount(3);
 });
 
-test("Search: the group opens focused, and / opens it from anywhere", async ({ page }) => {
+test("Search: the group opens focused, and ; opens it from anywhere", async ({ page }) => {
   const rail = page.locator(RAIL);
   const input = page.locator("#stage-search input");
 
@@ -161,19 +158,22 @@ test("Search: the group opens focused, and / opens it from anywhere", async ({ p
   await expect(input).toHaveCount(0);
   await expect(rail.getByRole("button", { name: SEARCH })).toBeFocused();
 
-  // "/" is the shortcut the search field advertises with its own prefix chip. It
-  // has to open the group AND land in the input — before the rail there was
-  // nothing to open, so this is a new path, not a preserved one.
+  // ";" is the search shortcut, and it has to open the group AND land in the input.
+  // It was "/" until the keymap landed; "/" shadows Firefox's quick-find, which is a
+  // browser default worth leaving alone now that a plain ";" does the job.
+  // tests/e2e/shortcuts.spec.ts owns the rest of the keymap; this case stays here
+  // because it is about the RAIL — that the shortcut reaches the group, not just the
+  // store.
   //
   // Pressed at the BODY rather than after clicking the map, and that is not
   // squeamishness. A bare map click selects whatever is under it and opens a
-  // country dossier, which is `role="dialog"` — and ConsoleShell hands Escape and
-  // "/" back to any mounted dialog on purpose. The first version of this test
-  // clicked the globe, landed on Mexico, and failed on the app behaving exactly
-  // as documented. Body is the honest "anywhere outside a text field".
-  await page.locator("body").press("/");
+  // country dossier, which is `role="dialog"` — and ConsoleShell hands Escape back
+  // to any mounted dialog on purpose. The first version of this test clicked the
+  // globe, landed on Mexico, and failed on the app behaving exactly as documented.
+  // Body is the honest "anywhere outside a text field".
+  await page.locator("body").press(";");
   await expect(input).toBeFocused();
-  // And the "/" itself must not be typed into the field it just opened.
+  // And the ";" itself must not be typed into the field it just opened.
   await expect(input).toHaveValue("");
 });
 

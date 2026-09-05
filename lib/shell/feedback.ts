@@ -101,9 +101,6 @@ export function qualifies(state: FeedbackState): boolean {
 export interface GateContext {
   /** The cold-start plate is still on screen. */
   bootPlaying: boolean;
-  /** The guided tour is open — landing a modal on a first-run walkthrough is the
-   *  worst possible first impression. */
-  tourOpen: boolean;
   /** A cinematic dive is flying or landed. */
   diveActive: boolean;
 }
@@ -111,7 +108,6 @@ export interface GateContext {
 export function blockedBy(state: FeedbackState, ctx: GateContext): string | null {
   if (state.resolved) return state.resolved;
   if (ctx.bootPlaying) return "boot";
-  if (ctx.tourOpen) return "tour";
   if (ctx.diveActive) return "dive";
   return null;
 }

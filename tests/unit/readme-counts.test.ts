@@ -20,8 +20,8 @@ import { DISCOVERED_FEEDS } from "@/lib/sources/discovered";
 //
 // CLAUDE.md already carries the rule - "Never quote a count from memory, every
 // figure below was measured, and each rots" - and the repo has solved this shape
-// twice: console-presets + tour-board-copy pin the board count, and
-// claude-md-counts pins the camera row of CLAUDE.md's table. Nothing was watching
+// twice: console-presets pins the board count, and claude-md-counts pins the
+// camera row of CLAUDE.md's table. Nothing was watching
 // the README, which is the document with the widest audience of the three.
 //
 // WHAT THIS FILE DELIBERATELY DOES NOT PIN, because getting this wrong would be

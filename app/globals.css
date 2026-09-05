@@ -454,7 +454,7 @@ a { color: var(--tn-accent); }
 @media (prefers-reduced-motion: reduce) { .tn-dossier { animation: none; } }
 @media (max-width: 520px) { .tn-dossier { left: 10px; width: auto; } }
 
-/* ===================== ⌘K command palette ===================== */
+/* ===================== command palette ===================== */
 .tn-palette-root { position: fixed; inset: 0; z-index: 60; display: grid; place-items: start center; padding-top: 12vh; }
 .tn-palette-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.28); backdrop-filter: blur(2px); }
 .tn-palette {
@@ -665,7 +665,7 @@ a { color: var(--tn-accent); }
    stores/components — no component rebuild.
    =========================================================================== */
 @media (max-width: 768px) {
-  /* Top bar compacts; the ⌘K trigger is desktop-only (no mobile palette). */
+  /* Top bar compacts; the palette trigger is desktop-only (no mobile palette). */
   .tn-topbar { gap: 10px; padding: 0 10px; }
   .tn-topbar-metrics { gap: 8px; }
   .tn-palette-trigger { display: none; }
@@ -2390,6 +2390,27 @@ a { color: var(--tn-accent); }
 .tn-settings-seg { display: inline-flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
 .tn-settings-seg-btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 .tn-settings-seg-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
+/* Rebindable shortcuts. A chip is a KEY CAP, not a button that happens to hold text:
+   monospace, a raised edge and a fixed minimum width, so a row of them reads as
+   "these are the keys" before any label is read. The armed state widens to fit
+   "Press a key…" without the row reflowing around it. */
+.tn-keymap-row { align-items: flex-start; }
+.tn-keymap-chords { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.tn-keymap-chip {
+  font-family: var(--tn-mono); font-size: 11.5px; font-weight: 600;
+  min-width: 62px; padding: 5px 10px; color: var(--tn-text);
+  background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
+  border-bottom-width: 2px; border-radius: 7px; cursor: pointer;
+}
+.tn-keymap-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+/* Armed. It reuses aria-pressed, so the seg-btn rule above also fires — this one wins
+   on order and gives it a border the flat pressed state does not have, because an
+   armed row is capturing every keystroke and must not look like a mere selection. */
+.tn-keymap-chip[aria-pressed="true"] {
+  color: var(--tn-accent); border-color: var(--tn-accent);
+  background: var(--tn-accent-soft); box-shadow: 0 0 0 3px var(--tn-accent-soft);
+}
+.tn-keymap-err { color: var(--tn-down-ink); }
 .tn-settings-boards { display: flex; flex-direction: column; gap: 6px; }
 .tn-settings-board { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; background: var(--tn-surface-2); border: 1px solid transparent; border-radius: 11px; padding: 10px 12px; cursor: pointer; color: var(--tn-text); }
 .tn-settings-board:hover { border-color: var(--tn-border); }
@@ -2577,8 +2598,9 @@ a { color: var(--tn-accent); }
 @media (max-width: 640px) { .tn-mapsearch { width: min(70vw, 320px); } }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Onboarding chrome — Ko-fi support button, widget "?" help popover, and the
-   first-visit guided tour. All additive, token-driven (light + dark), calm.
+   Onboarding chrome — the Ko-fi support button and the widget "?" help popover.
+   The first-visit guided tour lived here too. It is gone, and took the spotlight
+   veil, the coach-mark card and the chapter menu with it.
    ════════════════════════════════════════════════════════════════════════ */
 
 /* ── Ko-fi "Support" button (StatusBar) — present but not shouty ──────── */
@@ -2650,87 +2672,6 @@ a { color: var(--tn-accent); }
 .tn-cw-help-what { font-size: 11.5px; line-height: 1.5; color: var(--tn-text-muted); margin: 0; }
 .tn-cw-help-src { font-size: 11px; line-height: 1.45; color: var(--tn-text-faint); margin: 0; }
 .tn-cw-help-src-k { font-weight: 700; color: var(--tn-text-muted); text-transform: uppercase; letter-spacing: .05em; font-size: 9px; margin-right: 5px; }
-
-/* ── Guided tour — spotlight veil + ring + coach-mark card ────────────── */
-.tn-tour { position: fixed; inset: 0; z-index: 1000; }
-.tn-tour-veil { position: fixed; inset: 0; background: transparent; }
-.tn-tour-veil.is-plain { background: rgba(15, 23, 42, .55); }
-.tn-tour-ring {
-  position: fixed; border-radius: 10px; pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(15, 23, 42, .55);
-  outline: 2px solid var(--tn-accent); outline-offset: 0;
-  transition: left .2s ease, top .2s ease, width .2s ease, height .2s ease;
-}
-.tn-tour-card {
-  position: fixed; width: min(340px, calc(100vw - 24px));
-  background: var(--tn-surface-solid); color: var(--tn-text);
-  border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow);
-  padding: 15px 16px 14px; display: flex; flex-direction: column; gap: 8px;
-  animation: tn-fade-in .16s ease;
-}
-.tn-tour-meta { display: flex; align-items: center; justify-content: space-between; }
-.tn-tour-count { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--tn-text-faint); font-weight: 700; }
-.tn-tour-skip { border: 0; background: none; cursor: pointer; color: var(--tn-text-faint); font-size: 11.5px; padding: 2px 4px; }
-.tn-tour-skip:hover { color: var(--tn-text-muted); text-decoration: underline; }
-.tn-tour-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--tn-text); }
-.tn-tour-body { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--tn-text-muted); }
-.tn-tour-dots { display: flex; gap: 5px; padding: 3px 0 1px; }
-.tn-tour-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tn-toggle-off); transition: background .15s ease; }
-.tn-tour-dot.is-on { background: var(--tn-accent); }
-.tn-tour-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
-.tn-tour-btn {
-  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--tn-border); background: var(--tn-surface-2); color: var(--tn-text);
-  border-radius: 8px; padding: 6px 15px;
-}
-.tn-tour-btn:hover:not(:disabled) { border-color: var(--tn-border-strong); }
-.tn-tour-btn:disabled { opacity: .4; cursor: default; }
-.tn-tour-btn.is-primary { background: var(--tn-accent); color: #fff; border-color: transparent; }
-.tn-tour-btn.is-primary:hover { background: var(--tn-accent-strong); }
-
-/* Chapter menu — the first thing a new visitor sees, and the "Chapters" button's
-   destination from inside a run. Wider than a coach-mark because it is a list of
-   eight choices rather than one paragraph, and capped in height so the card never
-   runs off a short laptop screen. */
-.tn-tour-card.is-menu { width: min(420px, calc(100vw - 24px)); max-height: min(86vh, 720px); overflow: auto; }
-.tn-tour-btn.is-block {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  width: 100%; padding: 10px 14px; margin-top: 2px;
-}
-.tn-tour-btn-sub { font-size: 10.5px; font-weight: 500; opacity: .8; letter-spacing: .02em; }
-
-.tn-tour-chapters { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.tn-tour-chapter {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 9px;
-  background: none; color: var(--tn-text); padding: 7px 9px;
-}
-.tn-tour-chapter:hover { background: var(--tn-surface-2); border-color: var(--tn-border); }
-.tn-tour-chapter:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
-.tn-tour-chapter-icon {
-  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
-  border-radius: 7px; background: var(--tn-surface-2); color: var(--tn-accent); font-size: 12px;
-}
-.tn-tour-chapter-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.tn-tour-chapter-title { font-size: 12.5px; font-weight: 650; color: var(--tn-text); }
-.tn-tour-chapter-sum {
-  font-size: 11px; line-height: 1.35; color: var(--tn-text-faint);
-  overflow: hidden; text-overflow: ellipsis;
-}
-.tn-tour-chapter-n { flex: none; font-size: 10px; font-weight: 700; color: var(--tn-text-faint); }
-
-/* Progress line: chapter name + where you are inside it. */
-.tn-tour-count { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
-.tn-tour-chip { color: var(--tn-accent); font-size: 11px; }
-.tn-tour-of { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--tn-text-faint); opacity: .85; }
-
-.tn-tour-sp { flex: 1; }
-.tn-tour-link {
-  font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
-  border: 0; background: none; color: var(--tn-text-faint); padding: 6px 2px;
-}
-.tn-tour-link:hover { color: var(--tn-accent); text-decoration: underline; }
-.tn-tour-actions { align-items: center; }
 
 /* ════════════════════════════════════════════════════════════════════════
    Mobile console — the widget columns STACK instead of overlapping.
@@ -3735,7 +3676,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
-   (.tn-palette-root, .tn-dossier, .tn-dive, .tn-tour, .tn-toast,
+   (.tn-palette-root, .tn-dossier, .tn-dive, .tn-toast,
    .tn-settings-scrim) is position:fixed and therefore out of flow, so a flex
    column needs no grid-row bookkeeping to stop one of them claiming a band.
    100dvh rather than 100vh: on iOS/Android 100vh is taller than the visible area
@@ -4615,7 +4556,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    ════════════════════════════════════════════════════════════════════════════ */
 /* The basemap buttons, the 3D/2D projection switch and Solo were all styled here
    as one button family. All three are gone from the console: the basemaps and the
-   projection are still changeable from ⌘K, and Solo is a real removal. The area
+   projection are still changeable from the command palette, and Solo is a real removal. The area
    filter below kept its own rules because it is still on screen. */
 
 /* Area filter — under the legend in the right-hand stack. It reads as a panel
@@ -4761,7 +4702,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
   /* Strip: the 37 cells are the payload. The view controls keep the projection
-     switch and Export — the two that have no equal in the ⌘K palette's reach on a
+     switch and Export — the two that have no equal in the command palette's reach on a
      phone — and shed the basemap names, which do (palette → "Basemap"). */
 
   /* The clock ribbon crowds a ~300px map, and it was already hidden below 900px
@@ -4801,7 +4742,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    explain why the basemap and projection buttons grew to 34px rather than 44px: a
    22px bar could not hold a 44px button without eating the map. Both button
    families have been removed from the console, so nothing here settles for less
-   than 44px any more, and both choices remain available at full size in the ⌘K
+   than 44px any more, and both choices remain available at full size in the command
    palette ("Basemap", "Stage") and the Source Catalog rail. */
 @media (max-width: 900px) {
 
@@ -5082,8 +5023,8 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 
 /* ── Feedback prompt ────────────────────────────────────────────────────────
    A centred card over a dimmed console, shown once to a sampled third of the
-   people who have actually used the thing. Mirrors .tn-tour-card's surface and
-   radius so it reads as part of the console rather than a bolted-on widget; it
+   people who have actually used the thing. Takes the console's own card surface
+   and radius so it reads as part of it rather than a bolted-on widget; it
    is wider only because it carries a four-field form rather than a sentence. */
 .tn-fb { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 16px; }
 .tn-fb-veil { position: fixed; inset: 0; background: rgba(15, 23, 42, .55); }

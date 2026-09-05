@@ -3,24 +3,25 @@
 //
 // WHY A STORE AND NOT `useState` IN SourceCatalog. It was local state, and that was
 // correct while the only thing that could open the rail was the tab you clicked to
-// open it. ⌘K and Ctrl+Space now open it from ConsoleShell's global keydown
+// open it. The keymap's Sources chord now opens it from ConsoleShell's global keydown
 // handler, which is not in SourceCatalog's tree and cannot reach a hook inside it.
 // Same shape as every other shell store here — module state, a listener set, and
-// useSyncExternalStore — so it reads like lib/shell/scope.ts and lib/terminal/skin.ts
-// rather than introducing a third way to hold shell state.
+// useSyncExternalStore — so it reads like lib/shell/scope.ts rather than introducing
+// a third way to hold shell state.
 //
 // THE HINT IS FINITE AND IT IS EARNED-OUT, NOT TIMED. The rail collapses to a thin
 // tab on the left edge, and in review nobody found it — which is the same complaint
 // that produced the light skin, and the same class of bug this codebase has already
 // argued about twice ("dead controls that sit exactly where a thumb starts a swipe").
 // So the tab bounces on a first visit. It stops the first time the rail is opened by
-// ANY route — the tab, ⌘K, Ctrl+Space or the tour — because at that point the user
+// ANY route — the tab, the keymap's Sources chord, or the command palette — because
+// at that point the user
 // has demonstrably found it, and a hint that keeps playing after it has worked is
 // just motion. The flag persists, so it is a first-visit hint and not a per-load one.
 //
 // Nothing here touches window/document at module scope. `hydrate()` is called from an
 // effect, so importing this on the server or under the node vitest environment is
-// inert — the same contract lib/terminal/skin.ts states.
+// inert — the same contract lib/shell/keymap.ts states.
 
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";

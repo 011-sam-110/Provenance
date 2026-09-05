@@ -7,7 +7,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { profileStore, useProfile, avatarInitial, avatarColor } from "@/lib/shell/profile";
-import { tourStore } from "@/lib/shell/tour";
 
 export default function ProfileMenu({ onOpenSettings }: { onOpenSettings: () => void }) {
   const profile = useProfile();
@@ -64,12 +63,13 @@ export default function ProfileMenu({ onOpenSettings }: { onOpenSettings: () => 
                   placeholder="Add your name" onChange={(e) => profileStore.setName(e.target.value)} />
               </label>
               <button type="button" className="tn-profile-btn is-primary" onClick={() => setSignIn(true)}>Sign in</button>
-              <button type="button" className="tn-profile-btn" onClick={() => { setOpen(false); tourStore.start(); }}>🧭 Take the tour</button>
-              {/* `tn-settings-trigger` lives HERE now, not on a header icon. It is both a
-                  TourOverlay spotlight target and the selector OPEN_SETTINGS clicks
-                  (lib/console/tour.ts:167), and a tour step whose target is missing is
-                  dropped SILENTLY — so the class had to travel with the control. */}
-              <button type="button" className="tn-profile-btn tn-settings-trigger" onClick={() => { setOpen(false); onOpenSettings(); }}>⚙ Settings</button>
+              {/* `tn-settings-trigger` is back on the header's own ⚙ button and is NOT
+                  duplicated here. It travelled to this menu when the header had no
+                  settings icon and a guided-tour step had to be able to click one;
+                  the tour is gone, the header has the icon again, and two elements
+                  carrying the selector the e2e suite drives would be an ambiguous
+                  match the day anything renders this menu. */}
+              <button type="button" className="tn-profile-btn" onClick={() => { setOpen(false); onOpenSettings(); }}>⚙ Settings</button>
             </>
           )}
         </div>

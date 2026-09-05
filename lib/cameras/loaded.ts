@@ -1,5 +1,5 @@
 "use client";
-// A snapshot of the cameras the map has loaded, so the ⌘K "Dive to a live feed"
+// A snapshot of the cameras the map has loaded, so the palette's "Dive to a live feed"
 // command and the console widgets can use them without re-fetching the full
 // /api/cameras payload. WorldMap publishes here whenever CamerasFeed lands.
 // Reactive: subscribe() lets widgets rerender on updates.

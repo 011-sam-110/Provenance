@@ -15,7 +15,7 @@
 //     behind would have stranded anyone whose `solo: true` was already persisted
 //     with no button left to switch it off, and a hidden board with no way back is
 //     worse than a missing feature.
-//   * the projection and the basemaps ARE still reachable, from ⌘K only
+//   * the projection and the basemaps ARE still reachable, from the command palette only
 //     ("Stage → 3D map", "Basemap → …"), because CommandPalette iterates the same
 //     registries the buttons used to.
 //   * STAGE·FLAT and the cursor coordinate readout were DELETED earlier, with the

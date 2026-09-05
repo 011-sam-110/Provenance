@@ -154,12 +154,9 @@ if (OIDC) {
 }
 const page = await context.newPage();
 
-// The boot veil and the guided tour both intercept input, and a gesture dispatched
-// under them never begins, reports no error, and looks exactly like a broken map.
-// The 99 is deliberate: seeding the CURRENT tour version means a later version bump
-// silently re-arms the overlay and this harness starts lying.
+// The boot veil intercepts input, and a gesture dispatched under it never begins,
+// reports no error, and looks exactly like a broken map.
 await page.addInitScript(() => {
-  localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
   localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
 });
 

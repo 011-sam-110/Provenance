@@ -45,15 +45,16 @@ import DrawFlyout from "./DrawFlyout";
 import CamerasFlyout from "./CamerasFlyout";
 import ViewFlyout from "./ViewFlyout";
 
-/** The id the shell's "/" shortcut looks for to decide whether the rail is on screen. */
+/** The id focusStageSearch() looks for to decide whether the rail is on screen. */
 export const MAP_RAIL_ID = "map-rail";
 
-// The per-group class names are WRITTEN OUT, not built with `tnx-maprail-btn-${id}`,
-// and that is load-bearing rather than verbose. The guided tour points at these
-// classes, and tests/unit/tour.test.ts checks every tour selector against the class
-// names it can find in the source — a template literal produces a class that exists
-// at runtime and is invisible to any grep, so the guard would go quiet exactly when
-// a rename broke the tour. Spelled out, a rename here fails that test loudly.
+// The per-group class names are WRITTEN OUT, not built with `tnx-maprail-btn-${id}`.
+// It was the guided tour's unit guard that made this load-bearing — it grepped this
+// source for every selector the tour pointed at, and a template literal produces a
+// class that exists at runtime and is invisible to a grep, so the guard would have
+// gone quiet exactly when a rename broke the tour. The tour is gone and that guard
+// with it, but the reason to keep spelling them out survives: tests/e2e/map-rail.spec.ts
+// and the CSS both name these strings, and neither can find a class that is assembled.
 const GROUPS: {
   id: RailGroup;
   label: string;
@@ -75,7 +76,7 @@ const GROUPS: {
     // The group holds TWO tools now (a drawn area and a radius), so the button
     // names the outcome they share rather than either gesture. "Restrict results
     // to an area" is still the sentence — a radius IS an area — and keeping the
-    // wording is what lets the tour copy and the e2e names stay put.
+    // wording is what lets the e2e accessible names stay put.
     label: "Restrict results to an area",
     btnClass: "tnx-maprail-btn-draw",
     popClass: "tnx-maprail-pop-draw",

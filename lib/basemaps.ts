@@ -216,7 +216,7 @@ export const POSITRON_STYLE_URL = "https://tiles.openfreemap.org/styles/positron
 
 // Order matters twice over, so it is set here rather than at any call site: every
 // basemap switcher iterates `Object.keys(BASEMAPS)` (the Terminal stage bar, the old
-// MapControls, the ⌘K palette), and `fallbackBasemap()` walks the same order looking
+// MapControls, the command palette), and `fallbackBasemap()` walks the same order looking
 // for the first INLINE style to recover onto. DARK used to lead on both counts; with
 // it removed STREETS leads the switchers and SATELLITE is the first inline style, so
 // a remote-style failure now recovers onto Esri imagery rather than CARTO Dark.

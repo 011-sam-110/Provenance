@@ -20,6 +20,65 @@ import {
 } from "@/lib/shell/notifications";
 import { getWidgetType } from "@/lib/console/registry";
 import { BRAND } from "@/lib/brand";
+import {
+  KEY_ACTIONS, chordOf, formatChord, isMac, keymapStore, useKeymap, type KeyAction,
+} from "@/lib/shell/keymap";
+
+/**
+ * One rebindable shortcut.
+ *
+ * PRESS-TO-BIND, NOT A TEXT FIELD. Typing "ctrl+q" into a box means parsing prose and
+ * means the user can write a chord their keyboard cannot produce. Listening for the
+ * real keydown is the only way the stored value is guaranteed to be a chord that
+ * actually arrives — and it is captured on THIS element, so arming one row cannot
+ * swallow keys meant for the rest of the app.
+ *
+ * The button says what it is doing ("Press a key…") and Escape cancels, because a
+ * control that silently eats the next keystroke is a trap.
+ */
+function ShortcutRow({
+  action, label, hint, chords, onError,
+}: {
+  action: KeyAction; label: string; hint: string; chords: string[];
+  onError: (m: string | null) => void;
+}) {
+  const [arming, setArming] = useState<number | null>(null);
+  const mac = isMac();
+
+  return (
+    <div className="tn-settings-row tn-keymap-row">
+      <span className="tn-settings-label" title={hint}>{label}</span>
+      <div className="tn-keymap-chords">
+        {chords.map((c, i) => (
+          <button
+            key={`${c}-${i}`}
+            type="button"
+            className="tn-settings-seg-btn tn-keymap-chip"
+            aria-pressed={arming === i}
+            aria-label={arming === i ? `Press a key for ${label}` : `${label}: ${formatChord(c, mac)}. Click to change.`}
+            onClick={() => { onError(null); setArming(arming === i ? null : i); }}
+            onKeyDown={(e) => {
+              if (arming !== i) return;
+              // Everything, including Tab and Enter — while armed, this row owns the
+              // keyboard. Escape is the way out and is never bound.
+              e.preventDefault();
+              e.stopPropagation();
+              if (e.key === "Escape") { setArming(null); return; }
+              const chord = chordOf(e);
+              if (!chord) return; // a bare modifier: keep waiting for the real key
+              const r = keymapStore.bind(action, i, chord);
+              if (!r.ok) { onError(r.reason); return; }
+              onError(null);
+              setArming(null);
+            }}
+          >
+            {arming === i ? "Press a key…" : formatChord(c, mac)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /** A "Browser · Telegram" style summary of a rule's armed channels. */
 function channelSummary(r: NotifyRule): string {
@@ -52,6 +111,8 @@ async function copyLayoutLink(): Promise<boolean> {
 export default function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ui = useUI();
   const lang = useLang();
+  const keymap = useKeymap();
+  const [keyErr, setKeyErr] = useState<string | null>(null);
   const activeId = useActivePreset();
   const tg = useTelegram();
   const notif = useNotifications();
@@ -86,7 +147,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
     copyTimer.current = setTimeout(() => setCopied(false), 1800);
   };
 
-  // Same working implementation the ⌘K palette used ("save-preset"): a plain
+  // Same working implementation the command palette used ("save-preset"): a plain
   // window.prompt for the name, then saveCustomPreset(). Kept identical rather
   // than built into a dialog — see lib/console/presets.ts's saveCustomPreset.
   const onSaveAsPreset = () => {
@@ -140,6 +201,39 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
             </div>
           </section>
 
+          {/* Shortcuts ------------------------------------------------------- */}
+          <section className="tn-settings-sec">
+            <h3 className="tn-settings-sec-title">Keyboard shortcuts</h3>
+            {KEY_ACTIONS.map((a) => (
+              <ShortcutRow
+                key={a.id}
+                action={a.id}
+                label={a.label}
+                hint={a.hint}
+                chords={keymap[a.id]}
+                onError={setKeyErr}
+              />
+            ))}
+            {keyErr ? (
+              <p className="tn-settings-note tn-keymap-err" role="alert">{keyErr}</p>
+            ) : (
+              <p className="tn-settings-note">
+                Click a shortcut, then press the keys you want. Escape cancels. Taking a key
+                from another action moves it rather than sharing it.
+              </p>
+            )}
+            <div className="tn-settings-row">
+              <span className="tn-settings-label">Defaults</span>
+              <button
+                type="button"
+                className="tn-settings-seg-btn"
+                onClick={() => { keymapStore.reset(); setKeyErr(null); }}
+              >
+                Restore
+              </button>
+            </div>
+          </section>
+
           {/* Boards ---------------------------------------------------------- */}
           <section className="tn-settings-sec">
             <h3 className="tn-settings-sec-title">Load a board</h3>
@@ -157,8 +251,8 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
                 </button>
               ))}
             </div>
-            {/* Custom boards, saved from this same panel (or from ⌘K before it moved
-                here) — the ⌘K palette's "Profiles" group has always listed these
+            {/* Custom boards, saved from this same panel (or from the palette before it moved
+                here) — the command palette's "Profiles" group has always listed these
                 alongside the built-ins via listPresets(); this list did not. */}
             {customPresets.length > 0 && (
               <>

@@ -2,8 +2,11 @@
 // The OpenData Terminal's 34px top chrome — the replacement for
 // components/shell/StatusBar.tsx.
 //
-// Left → right: brand block (logo · h1) │ board tabs │ ——— │ UTC clock │
-// CONSOLE|WALL │ ☕ · ⌘K COMMAND · ⚙ · avatar.
+// Left → right: brand block (logo · h1) │ board tabs │ ——— │
+// ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS.
+//
+// The UTC clock, the CONSOLE|WALL pair, the ⌘K cap and the avatar were all here and
+// are all gone; each entry below that still names one is describing what it replaced.
 //
 // It is a *replacement*, not an addition, so everything StatusBar carried that has
 // no second home in the app is carried here verbatim:
@@ -12,10 +15,10 @@
 //    into a sentence a screen reader can use),
 //  * `stat-line` — the machine-readable pulse asserted by tests/e2e/globe.spec.ts,
 //  * `a11y-status-line` — the polite live region fed by appStatusLine(),
-//  * `.tn-preset-pill`, `.tn-palette-trigger`, `.tn-settings-trigger` — three of the
-//    six TourOverlay spotlight selectors. resolveTourSteps() silently DROPS a step
-//    whose target is missing, so dropping a class here shortens the tour with no
-//    error and no failing test (lib/console/tour.ts:63-79).
+//  * `.tn-preset-pill`, `.tn-palette-trigger`, `.tn-settings-trigger` — the classes
+//    the e2e suite drives to reach the boards, the palette and settings. These were
+//    guided-tour spotlight targets too, and the tour's unit guard failed loudly on a
+//    rename; the tour is gone, so a rename now only fails in Playwright.
 //
 // The third live region, `a11y-alert-live`, is NOT here: it belongs to BreakingBanner
 // and stays there. Moving it would break `.tn-alert ~ .tn-cw-shell` in globals.css.
@@ -92,7 +95,7 @@
 //
 // ONE EXISTING RULE TO REVIEW (in globals.css, outside the scoped block):
 //   `@media (max-width: 768px) { .tn-palette-trigger { display: none } }` (globals.css:602)
-//   still hides the ⌘K control on phones. That was deliberate for the old shell; it
+//   still hides the palette trigger on phones. That was deliberate for the old shell; it
 //   now also applies here. Left alone — changing it is the integrator's call.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -269,9 +272,9 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
         {/* ── Board tabs ───────────────────────────────────────────────────── */}
         {/* A <nav aria-label="Boards"> carrying `.tn-preset-pill`, exactly as the old
             centred PresetPill did. Two reasons, both load-bearing: the class is a
-            TourOverlay spotlight target (a rename shortens the tour silently), and
-            picking a board swaps every widget AND the map overlays, which makes this
-            the console's main menu rather than a group of buttons.
+            selector the e2e suite clicks to change board, and picking a board swaps
+            every widget AND the map overlays, which makes this the console's main
+            menu rather than a group of buttons.
 
             aria-pressed rather than role="tab"/aria-selected: these tabs control the
             whole workspace — widgets, map layers, stage — not one tabpanel, and a
@@ -295,12 +298,10 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           segments apart at a glance, and each is aria-hidden so nothing is read out
           as a symbol.
 
-          ⚙ IS NOT HERE ANY MORE. Settings opens from the profile popover, which
-          already carried a "⚙ Settings" item — the header icon was a second door to
-          a room that already had one. `.tn-settings-trigger` moved with it (see
-          components/shell/ProfileMenu.tsx) because that class is BOTH a TourOverlay
-          spotlight target and the selector OPEN_SETTINGS clicks; leaving it behind
-          would have dropped two tour steps in silence.
+          ⚙ IS BACK. It left when settings opened from the profile popover, and it
+          returned when that popover did not survive the header trim — a drawer
+          holding theme, language, boards, sharing, notifications and the keymap
+          cannot be a room with no door. `.tn-settings-trigger` came back with it.
         */}
         <div className="tnx-hdr-right">
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
@@ -336,9 +337,8 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             SHORTCUTS, not COMMAND. The palette is a command bar, but "COMMAND" told
             a first-time reader nothing about what was behind it, and the ⌘K cap
             beside it was doing all the explaining on its own. "Shortcuts" names what
-            people open it for. `.tn-palette-trigger` is unchanged — it is a
-            TourOverlay spotlight target AND the selector OPEN_PALETTE clicks, and
-            renaming it would silently shorten the tour (lib/console/tour.ts:164).
+            people open it for. `.tn-palette-trigger` is unchanged — it is the
+            selector the e2e suite opens the palette with.
           */}
           <button
             type="button"
@@ -363,10 +363,8 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               language, board loading, sharing, Telegram and the whole notifications
               section — has no way in at all.
 
-              `.tn-settings-trigger` is carried over VERBATIM. It is both a
-              TourOverlay spotlight target and the selector the tour's OPEN_SETTINGS
-              action clicks, and in this codebase a missing tour target drops its
-              step in silence rather than failing. */}
+              `.tn-settings-trigger` is carried over VERBATIM: it is the selector
+              tests/e2e/shortcuts.spec.ts opens the drawer with to rebind a key. */}
           <button
             type="button"
             className="tnx-hdr-btn tn-settings-trigger"

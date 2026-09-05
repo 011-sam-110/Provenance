@@ -1,5 +1,7 @@
 "use client";
-// ⌘K / Ctrl-K command palette — search-and-jump plus quick layer control. A calm,
+// The command palette — search-and-jump plus quick layer control. A calm,
+// keyboardless door now: it opens from the header's SHORTCUTS button. ⌘K used to
+// open it and belongs to the Sources rail since the keymap landed (lib/shell/keymap.ts).
 // keyboard-first way to compose the view: toggle a layer, apply a preset, switch
 // basemap, or fly to a covered region. Open/close is owned by ConsoleShell.
 
@@ -19,7 +21,6 @@ import { placementStore } from "@/lib/console/placement";
 import { listPresets, applyPreset, saveCustomPreset, resetActiveBoard } from "@/lib/console/presets";
 import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
 import { encodeLayout } from "@/lib/console/share";
-import { tourStore } from "@/lib/shell/tour";
 import { uiStore, useUI } from "@/lib/shell/ui";
 import { langStore, useLang } from "@/lib/i18n/store";
 import { LANGS } from "@/lib/i18n/catalog";
@@ -205,7 +206,6 @@ function buildCommands(close: () => void): Command[] {
   for (const l of LANGS) cmds.push({ id: `lang-${l.code}`, label: `Language: ${l.name}`, hint: "language", group: "Appearance", run: () => { langStore.set(l.code); close(); } });
 
   // ── Workspace: reset / save / share the current composition ─────────────
-  cmds.push({ id: "take-tour", label: "Take the tour", hint: "guide", group: "Workspace", run: () => { tourStore.start(); close(); } });
   // Names the board it will actually reset. The old command ran
   // `applyPreset(DEFAULT_PRESET_ID)`, so on any board but the landing one it did not
   // reset anything — it navigated you to a different board. Now that boards restore

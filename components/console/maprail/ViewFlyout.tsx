@@ -3,7 +3,7 @@
 //
 // These controls used to live in a row on the stage and were deleted wholesale
 // when the console was stripped to a bare globe (#153), which routed the basemap
-// and the 2D/3D switch into the ⌘K palette and nothing else. That left the map's
+// and the 2D/3D switch into the command palette and nothing else. That left the map's
 // own view settings with no on-screen home at all. This puts them back.
 //
 // TERRAIN AND 3D BUILDINGS HAVE NEVER HAD A CONTROL. Both live in mapViewStore,

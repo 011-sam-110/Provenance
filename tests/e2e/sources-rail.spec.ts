@@ -8,12 +8,11 @@ import { test, expect } from "@playwright/test";
 // dispatch, no CSS to resolve an animation from, and no localStorage round trip
 // across a reload. All three are the substance of this feature.
 //
-// The two localStorage stamps are copied from map-rail.spec.ts for the reason stated
-// there: the guided tour and the launch sequence are each a `position:fixed; inset:0`
-// layer, and without them a click lands on an overlay instead of the control under it.
+// The localStorage stamp is copied from map-rail.spec.ts for the reason stated there:
+// the launch sequence is a `position:fixed; inset:0` layer, and without it a click
+// lands on the plate instead of the control under it.
 async function stampSeen(page: import("@playwright/test").Page) {
   await page.addInitScript(() => {
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
 }
@@ -41,22 +40,22 @@ test("⌘K opens Sources — NOT the command palette", async ({ page }) => {
   await expect(page.locator(RAIL)).toHaveCount(0);
 });
 
-test("Ctrl+Space is the second door, and it is the same door", async ({ page }) => {
+test("Ctrl+Space is SEARCH now, and it does not touch the rail", async ({ page }) => {
+  // Ctrl+Space opened Sources in the first cut of this feature. The keymap gave every
+  // action one job, and the half of that worth pinning is the NEGATIVE: a chord that
+  // still opened the rail as a side effect would be a second door nobody documented.
   await stampSeen(page);
   await page.goto("/app");
   await expect(page.locator(".map-canvas")).toHaveCount(1);
 
   await page.keyboard.press("Control+Space");
-  await expect(page.locator(RAIL)).toBeVisible();
-
-  // Opened by one chord, closed by the other — they drive one store, not two states.
-  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.locator("#stage-search input")).toBeFocused();
   await expect(page.locator(RAIL)).toHaveCount(0);
 });
 
 test("the SHORTCUTS button still opens the palette, now that ⌘K does not", async ({ page }) => {
   // The palette did not lose its door, it lost its chord. If this ever fails, the
-  // palette is unreachable and the tour's OPEN_PALETTE action is broken with it.
+  // palette is unreachable from anywhere.
   await stampSeen(page);
   await page.goto("/app");
   await page.locator(".tn-palette-trigger").click();

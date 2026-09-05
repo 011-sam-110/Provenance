@@ -43,6 +43,7 @@ import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 import { buildSourceSections, type SourceRowModel } from "@/lib/console/sources/sections";
 import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
 import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/sourcesRail";
+import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 
@@ -101,11 +102,16 @@ export default function SourceCatalog() {
   // left edge; in the widget console that edge is a widget column, and a panel
   // opening over it on every page load would hide the seeded widgets on desktop and
   // eat two-thirds of a phone screen. One click opens it — see ConsoleWorkspace.
-  // OPEN STATE LIVES IN A STORE, not here. ⌘K and Ctrl+Space open this rail from
+  // OPEN STATE LIVES IN A STORE, not here. The keymap's Sources chord opens this rail from
   // ConsoleShell's global keydown handler, which is nowhere near this tree — see
   // lib/console/sourcesRail.ts. The mount-closed rule below is unchanged; the store
   // starts closed for exactly the reasons stated here.
   const rail = useSourcesRail();
+  // THE TOOLTIP NAMES THE USER'S OWN KEY, not a hardcoded one. This said "(⌘K)"
+  // while ⌘K opened the command palette, which was simply wrong; it is right today
+  // by coincidence and would be wrong again the moment anyone rebinds Sources in
+  // Settings. Reading the keymap is the only version that cannot go stale.
+  const keymap = useKeymap();
   const railOpen = rail.open;
   const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
   // One read of the persisted "have you ever opened this" flag, in an effect so the
@@ -167,7 +173,7 @@ export default function SourceCatalog() {
         type="button"
         className="tn-rail-fab"
         onClick={() => setRailOpen(true)}
-        title="Show sources (⌘K)"
+        title={`Show sources${keymap.sources[0] ? ` (${formatChord(keymap.sources[0], isMac())})` : ""}`}
         // THE HINT. On a first visit this tab bounces a few times and then stops,
         // because in review nobody found it — it is a thin tab on an edge that is
         // otherwise a widget column. It is an attribute rather than a class so the

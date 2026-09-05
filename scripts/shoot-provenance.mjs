@@ -27,10 +27,6 @@ const page = await browser.newPage({
 await page.goto(`http://localhost:${PORT}/app`, { waitUntil: "domcontentloaded", timeout: 90_000 });
 await page.waitForTimeout(9000); // dev-mode first compile + store hydration
 
-const skip = page.locator("text=Skip tour").first();
-if (await skip.count()) await skip.click().catch(() => {});
-await page.waitForTimeout(600);
-
 await page.locator("text=SOURCES").first().click({ force: true }).catch(() => {});
 await page.waitForTimeout(1800);
 

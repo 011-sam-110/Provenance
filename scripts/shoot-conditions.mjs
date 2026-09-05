@@ -27,11 +27,8 @@ const only = process.argv[4] ?? "";
 // measured in CSS pixels rather than inferred from the image.
 const dpr = Number(process.env.TN_DSF ?? 1) || 1;
 
-// Both overlays that own the screen on a first visit. Same envelope shape, different
-// keys; see tests/e2e/console.spec.ts for why the tour version is seeded far above the
-// current one rather than at it.
+// The launch plate owns the screen on a first visit; see tests/e2e/console.spec.ts.
 const SUPPRESS = () => {
-  window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
   window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
 };
 

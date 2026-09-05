@@ -13,7 +13,7 @@ import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 // was measured, and each rots. Re-measure before putting a number in a README, a
 // CV or a PR description." Sampo's CV and the YC application draw on it, so this
 // is not a doc nit. The repo already solved this shape once for the console
-// boards (console-presets + tour-board-copy pin that row); this does the same
+// boards (console-presets.test.ts pins that row); this does the same
 // for the camera row so the third person to notice never has to raise it.
 
 const ROOT = process.cwd();

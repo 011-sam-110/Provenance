@@ -39,7 +39,7 @@ function memoryStorage() {
   };
 }
 
-const CLEAR = { bootPlaying: false, tourOpen: false, diveActive: false };
+const CLEAR = { bootPlaying: false, diveActive: false };
 const state = (over: Partial<FeedbackState> = {}): FeedbackState => ({ ...EMPTY_FEEDBACK_STATE, ...over });
 
 /* ── The qualifying arms ──────────────────────────────────────────────────── */
@@ -136,13 +136,12 @@ describe("the permanent stop", () => {
 describe("what blocks the prompt", () => {
   const qualified = state({ visits: 3 });
 
-  test("the boot plate, the tour and a cinematic dive each block it", () => {
+  // The guided tour was a third blocker here and is gone with the tour itself.
+  test("the boot plate and a cinematic dive each block it", () => {
     expect(blockedBy(qualified, { ...CLEAR, bootPlaying: true })).toBe("boot");
-    expect(blockedBy(qualified, { ...CLEAR, tourOpen: true })).toBe("tour");
     expect(blockedBy(qualified, { ...CLEAR, diveActive: true })).toBe("dive");
     for (const ctx of [
       { ...CLEAR, bootPlaying: true },
-      { ...CLEAR, tourOpen: true },
       { ...CLEAR, diveActive: true },
     ]) {
       expect(shouldPrompt(qualified, ctx, true)).toBe(false);
