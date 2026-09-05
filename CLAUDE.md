@@ -108,6 +108,14 @@ obligations and are not satisfied by the licence.
   file and the README state the new figures. That is the guard working — and note that
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
+- **Windy webcams are a harvested static catalogue, not a live sample.** `public/webcams/`
+  holds 196 committed tiles with **70,698 webcams** (8.2 MB raw / 2.0 MB gzipped), built by
+  `scripts/harvest-webcams.mjs` and streamed in by `lib/webcams/tileLoad.ts` — static CDN
+  files, so the layer costs no serverless invocation. This replaced a live 18-region sample
+  that served **1,567** rows, 2.2% of the catalogue. The layer stays OUTSIDE the camera
+  registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
+  Tile rows are POSITIONAL and read by index — never add a column on one side only; see
+  `TILE_VERSION` and the parity test.
 - `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
 - `lib/console/*` — widget registry, presets (**2 boards** in `presets.ts`), store, share (`?c=` layout URL).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
@@ -212,6 +220,15 @@ Re-measure before putting a number in a README, a CV or a PR description.
   image CDN, if it is ever needed for something else, is
   `https://webcams.ventusky.com/data/{last 2 digits of id}/{id}/latest_thumb.jpg`, **not**
   `images.ventusky.com/{id}.jpg`.
+- **Windy's free tier caps offset at 1,000, and that is what shapes the webcam harvest
+  (measured 2026-09-05).** `limit>50` is a 400; `offset=2000` is a 400 reading
+  `"Offset is over API tier limit 1000!"`. So one bbox yields at most **1,050 rows**, and
+  the catalogue is read by an adaptive quadtree that splits any box over that capacity —
+  285 probes resolve the planet into 196 leaves covering 100% of a 70,686-webcam
+  inventory. Professional (offset 10,000) costs **€9,990/year** and buys nothing the
+  quadtree does not already deliver. **Windy publishes no daily request quota and returns
+  no rate-limit headers**, so the per-cycle budget is a precaution against an unknown
+  ceiling, not a measured limit — lower it before anything else if refusals appear.
 - Key-gated layers dormant in prod: ACLED, ReliefWeb, ENTSO-E grid, AIS. Live with keys:
   NASA FIRMS, OpenAQ stations. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is

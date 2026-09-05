@@ -1,0 +1,81 @@
+# Keeps the harvested webcam catalogue in public/webcams/ current.
+#
+# WHY DAILY AND NOT EVERY 30 MINUTES. The 30-minute figure is right for the HARVEST
+# CYCLE and wrong for the COMMIT. A cycle at the default budget rewrites ~8 tiles of
+# ~40 KB; committing that 48 times a day is ~15 MB of git growth per day against data
+# whose content barely moves, because what a tile holds is a webcam's id, title and
+# coordinate. This job therefore runs several cycles back to back, on a schedule, and
+# commits once.
+#
+# What genuinely does need 30-minute freshness is a camera's IMAGE and its up/down
+# state, and neither is stored here: free-tier image URLs are tokened and expire in 15
+# minutes, so /api/webcam-image re-resolves one per view. Committing them would ship
+# dead links.
+#
+# DORMANT UNTIL A SECRET EXISTS. Without WINDY_WEBCAMS_API_KEY in the repo's secrets
+# this job runs, finds no key and exits 0 having changed nothing — the same
+# keyless-first, dormant-safe contract every upstream in this repo follows. Add the
+# secret to switch it on.
+
+name: Refresh webcam catalogue
+
+on:
+  schedule:
+    # 04:12 UTC — off the hour, because everybody schedules on the hour.
+    - cron: "12 4 * * *"
+  workflow_dispatch:
+    inputs:
+      cycles:
+        description: "Harvest cycles to run"
+        default: "8"
+      budget:
+        description: "Upstream requests per cycle"
+        default: "220"
+
+permissions:
+  contents: write
+
+concurrency:
+  # A long refresh must never overlap the next scheduled one, or two runs fight over
+  # the same cursor in data/webcams/plan.json and both write partial tiles.
+  group: webcams-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Harvest
+        env:
+          WINDY_WEBCAMS_API_KEY: ${{ secrets.WINDY_WEBCAMS_API_KEY }}
+        run: |
+          if [ -z "$WINDY_WEBCAMS_API_KEY" ]; then
+            echo "WINDY_WEBCAMS_API_KEY is not set — nothing to refresh."
+            exit 0
+          fi
+          for i in $(seq 1 "${{ inputs.cycles || 8 }}"); do
+            echo "--- cycle $i ---"
+            node scripts/harvest-webcams.mjs --cycle --budget "${{ inputs.budget || 220 }}"
+            sleep 15
+          done
+          node scripts/harvest-webcams.mjs --status
+
+      - name: Commit whatever moved
+        run: |
+          # Explicit paths only. This repo holds untracked local files and an
+          # uncommitted .env.local; `git add -A` here would be a way to leak one.
+          git add public/webcams data/webcams
+          if git diff --cached --quiet; then
+            echo "No change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh the Windy webcam catalogue"
+          git push
