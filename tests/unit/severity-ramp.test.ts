@@ -97,12 +97,14 @@ describe("real events land in the band their own community would call them", () 
 });
 
 describe("the alert ramp is not the accent (the whole point)", () => {
-  it("defines all three alert tokens in BOTH skins", () => {
-    const dark = blockAfter("\n.tn-terminal {");
-    const light = blockAfter('.tn-terminal[data-tnx-skin="light"] {');
+  // WAS "in BOTH skins". The dark skin is gone and its light values were folded into
+  // `.tn-terminal`, so there is one block to check rather than two. The assertion is
+  // unchanged in substance: all three alert tokens must exist, or a severity badge
+  // falls back to whatever it happens to inherit.
+  it("defines all three alert tokens", () => {
+    const block = blockAfter("\n.tn-terminal {");
     for (const t of ["--tnx-alert-none", "--tnx-alert-warn", "--tnx-alert-critical"]) {
-      expect(dark, `dark skin is missing ${t}`).toContain(`${t}:`);
-      expect(light, `light skin is missing ${t}`).toContain(`${t}:`);
+      expect(block, `the palette is missing ${t}`).toContain(`${t}:`);
     }
   });
 
@@ -117,10 +119,7 @@ describe("the alert ramp is not the accent (the whole point)", () => {
   it("no alert token resolves to the same hex as its skin's accent", () => {
     // Pointing at a different token is not enough if the token holds the same
     // colour — that would pass the rule above and change nothing on screen.
-    for (const [name, sel] of [
-      ["dark", "\n.tn-terminal {"],
-      ["light", '.tn-terminal[data-tnx-skin="light"] {'],
-    ] as const) {
+    for (const [name, sel] of [["light", "\n.tn-terminal {"]] as const) {
       const block = blockAfter(sel);
       const accent = /--tnx-accent:\s*(#[0-9a-f]{3,8})/i.exec(block)?.[1]?.toLowerCase();
       expect(accent, `${name}: no --tnx-accent hex`).toBeTruthy();
@@ -134,8 +133,9 @@ describe("the alert ramp is not the accent (the whole point)", () => {
 
   it("every alert fill clears 4.5:1 against the text the badge prints on it", () => {
     // .tn-terminal .tn-cw-badge sets `color: var(--tnx-bg)`, so the FILL carries the
-    // contrast. Both skins, or the light one ships unreadable counts — which is
-    // exactly how the light skin first shipped dark ink on dark panels.
+    // contrast. This used to run over both skins, because the light one shipped
+    // unreadable counts the first time — dark ink on dark panels. One palette now,
+    // same requirement.
     const ratio = (a: string, b: string) => {
       const lum = (h: string) => {
         const n = h.replace("#", "");
@@ -149,7 +149,7 @@ describe("the alert ramp is not the accent (the whole point)", () => {
       return (x + 0.05) / (y + 0.05);
     };
 
-    for (const sel of ["\n.tn-terminal {", '.tn-terminal[data-tnx-skin="light"] {'] as const) {
+    for (const sel of ["\n.tn-terminal {"] as const) {
       const block = blockAfter(sel);
       const bg = /--tnx-bg:\s*(#[0-9a-f]{6})/i.exec(block)?.[1] as string;
       expect(bg).toBeTruthy();

@@ -57,18 +57,20 @@ export const BUILDING_TILEJSON = "https://tiles.openfreemap.org/planet";
 export const BUILDINGS_MIN_ZOOM = 14;
 
 /**
- * Per-basemap extrusion colour. Buildings are drawn over five very different
+ * Per-basemap extrusion colour. Buildings are drawn over three very different
  * grounds, and one colour cannot serve all of them: a pale grey that reads as
- * massing on Positron paper disappears into Esri imagery, and a light block on the
- * near-black Dark basemap is the only bright thing on screen.
+ * massing on Liberty's paper disappears into Esri imagery.
+ *
+ * WAS FIVE. Positron and Dark left the registry with the console's dark skin; their
+ * two entries went with them rather than being kept "in case", because a
+ * Record<BasemapKey, …> with a key that is not a BasemapKey does not compile, and a
+ * commented-out one is a value nobody can see is stale.
  *
  * `colour` is a real field on the OMT building layer (a per-building colour, mostly
  * null), so it wins where OSM has one and these are the fallback.
  */
 const BUILDING_COLOR: Record<BasemapKey, string> = {
-  positron: "#d8dee6",
   streets: "#d5d8cf",
-  dark: "#243044",
   satellite: "#c8ccd2",
   topo: "#cfc9bd",
 };
@@ -79,9 +81,7 @@ const BUILDING_COLOR: Record<BasemapKey, string> = {
  * than to cover it.
  */
 const BUILDING_OPACITY: Record<BasemapKey, number> = {
-  positron: 0.9,
   streets: 0.9,
-  dark: 0.85,
   satellite: 0.72,
   topo: 0.8,
 };

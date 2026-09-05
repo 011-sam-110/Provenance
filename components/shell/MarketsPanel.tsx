@@ -1,6 +1,6 @@
 "use client";
 // Markets — a calm right-side slide-in showing live crypto prices. Opt-in (opened
-// from the layer rail or ⌘K), so it never clutters the globe. Reuses the dossier /
+// from the layer rail or the command palette), so it never clutters the globe. Reuses the dossier /
 // coverage idioms: a small external open store, /api/markets behind a ≥60s server
 // cache, and the .tn-* light tokens. Honest by construction: it is labelled
 // "Crypto markets · CoinGecko" and shows when the snapshot was last refreshed.

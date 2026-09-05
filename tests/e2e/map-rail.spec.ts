@@ -9,14 +9,11 @@ import { test, expect } from "@playwright/test";
 // anywhere else. tests/unit/map-rail.test.ts holds the pure reducers; everything
 // that needs a DOM, a focus ring or a real map is here.
 //
-// Both localStorage stamps are copied from camslot-shots.spec.ts, for the reason
-// stated there: the guided tour and the launch sequence are each a
-// `position:fixed; inset:0` layer, so without them a click lands on an overlay
-// instead of the control under it. The tour version is deliberately far above the
-// current one so bumping the tour cannot silently re-arm the veil.
+// The localStorage stamp is copied from camslot-shots.spec.ts, for the reason
+// stated there: the launch sequence is a `position:fixed; inset:0` layer, so
+// without it a click lands on the plate instead of the control under it.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
   // `/app`, not `/`. CLAUDE.md is explicit that `/` is the marketing site and
@@ -56,6 +53,10 @@ const SEARCH = /Search for a place/;
 const DRAW = /Restrict results to an area/;
 const CAMERAS = /Pick cameras for a wall/;
 const VIEW = /View settings/;
+
+/** The two tools inside the Draw group, by their accessible names. */
+const AREA_TOOL = /Restrict results to a drawn area/;
+const RADIUS_TOOL = /Restrict results to a radius/;
 
 test("the rail is one toolbar of four groups, and opens one at a time", async ({ page }) => {
   const rail = page.locator(RAIL);
@@ -108,7 +109,7 @@ test("the flyout expands LATERALLY, to the left of the button that opened it", a
   expect(Math.abs(p.y + p.height / 2 - (b.y + b.height / 2))).toBeLessThan(4);
 });
 
-test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", async ({ page }) => {
+test("View: 2D/3D is ONE button, three basemaps are radios, and the map follows", async ({ page }) => {
   const rail = page.locator(RAIL);
   await rail.getByRole("button", { name: VIEW }).click();
   const pop = page.locator(".tnx-maprail-pop");
@@ -118,11 +119,12 @@ test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", asyn
   await expect(pop.getByRole("button", { name: /^(2D|3D)$/ })).toHaveCount(1);
   await expect(pop.getByRole("button", { name: "2D" })).toBeVisible();
 
-  // Exactly one light/dark chip, likewise labelled with the target.
-  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveCount(1);
+  // THE DARK/LIGHT PAIR CHIP IS GONE, and its absence is asserted rather than just
+  // dropped: Dark and Positron left the basemap registry with the console's dark
+  // skin, so a chip offering either of them would mean the removal was incomplete.
+  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveCount(0);
 
-  // Three standalone basemaps beside it. Five basemaps are reachable; two of them
-  // share the pair chip.
+  // Three basemaps, all of them radios now. There were five, two sharing a pair chip.
   for (const n of ["Streets", "Sat", "Topo"]) {
     await expect(pop.getByRole("radio", { name: n })).toBeVisible();
   }
@@ -139,14 +141,12 @@ test("View: 2D/3D and Dark/Light are ONE button each, and the map follows", asyn
     timeout: 15_000,
   });
 
-  // The pair chip is not part of that radio group, and says so.
-  await expect(pop.getByRole("button", { name: /^(Dark|Light)$/ })).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
+  // Every basemap in the strip is a radio in ONE group — there is no longer a chip
+  // sitting outside it, which is what the pair button used to be.
+  await expect(pop.getByRole("radio")).toHaveCount(3);
 });
 
-test("Search: the group opens focused, and / opens it from anywhere", async ({ page }) => {
+test("Search: the group opens focused, and ; opens it from anywhere", async ({ page }) => {
   const rail = page.locator(RAIL);
   const input = page.locator("#stage-search input");
 
@@ -158,19 +158,22 @@ test("Search: the group opens focused, and / opens it from anywhere", async ({ p
   await expect(input).toHaveCount(0);
   await expect(rail.getByRole("button", { name: SEARCH })).toBeFocused();
 
-  // "/" is the shortcut the search field advertises with its own prefix chip. It
-  // has to open the group AND land in the input — before the rail there was
-  // nothing to open, so this is a new path, not a preserved one.
+  // ";" is the search shortcut, and it has to open the group AND land in the input.
+  // It was "/" until the keymap landed; "/" shadows Firefox's quick-find, which is a
+  // browser default worth leaving alone now that a plain ";" does the job.
+  // tests/e2e/shortcuts.spec.ts owns the rest of the keymap; this case stays here
+  // because it is about the RAIL — that the shortcut reaches the group, not just the
+  // store.
   //
   // Pressed at the BODY rather than after clicking the map, and that is not
   // squeamishness. A bare map click selects whatever is under it and opens a
-  // country dossier, which is `role="dialog"` — and ConsoleShell hands Escape and
-  // "/" back to any mounted dialog on purpose. The first version of this test
-  // clicked the globe, landed on Mexico, and failed on the app behaving exactly
-  // as documented. Body is the honest "anywhere outside a text field".
-  await page.locator("body").press("/");
+  // country dossier, which is `role="dialog"` — and ConsoleShell hands Escape back
+  // to any mounted dialog on purpose. The first version of this test clicked the
+  // globe, landed on Mexico, and failed on the app behaving exactly as documented.
+  // Body is the honest "anywhere outside a text field".
+  await page.locator("body").press(";");
   await expect(input).toBeFocused();
-  // And the "/" itself must not be typed into the field it just opened.
+  // And the ";" itself must not be typed into the field it just opened.
   await expect(input).toHaveValue("");
 });
 
@@ -183,7 +186,7 @@ test("Draw: clicking the map does not close the flyout that armed the gesture", 
   await rail.getByRole("button", { name: DRAW }).click();
 
   const pop = page.locator(".tnx-maprail-pop");
-  await pop.getByRole("button", { name: "Restrict results to area" }).click();
+  await pop.getByRole("button", { name: AREA_TOOL }).click();
 
   // Assert the draw ARMED before clicking the map, so a failure names the real
   // cause. startDraw returns false while the style is still loading and the
@@ -205,7 +208,44 @@ test("Draw: clicking the map does not close the flyout that armed the gesture", 
   // idle state.
   await page.keyboard.press("Escape");
   await expect(pop).toBeVisible();
-  await expect(pop.getByRole("button", { name: "Restrict results to area" })).toBeVisible();
+  await expect(pop.getByRole("button", { name: AREA_TOOL })).toBeVisible();
+});
+
+test("Radius: two clicks set a circular scope, and the readout names the radius", async ({ page }) => {
+  // The second tool in the Draw group. It is worth a case of its own rather than a
+  // variant of the polygon one, because the gesture is genuinely different: the
+  // FIRST click commits a centre and does not end anything, and the second both
+  // sizes and finishes. A tool where click one silently did nothing visible would
+  // be indistinguishable from a dead control.
+  await mapReady(page);
+  const rail = page.locator(RAIL);
+  await rail.getByRole("button", { name: DRAW }).click();
+
+  const pop = page.locator(".tnx-maprail-pop");
+  await pop.getByRole("button", { name: RADIUS_TOOL }).click();
+  await expect(pop.getByRole("status")).toContainText(/Click the centre/);
+
+  const canvas = page.locator(".map-canvas");
+  await canvas.click({ position: { x: 300, y: 220 } });
+
+  // Centre placed. The panel must still be open — Radius, like Area, exists to make
+  // you click ON the map, so railHoldsOpen has to cover it too. This is the §1
+  // regression guard for the new tool.
+  await expect(pop).toBeVisible();
+  await expect(pop.getByRole("status")).toContainText(/click the edge/);
+  await expect(pop.getByRole("button", { name: "Cancel" })).toBeVisible();
+
+  // Second click sizes and commits. A radius is stored as a ring, so the scope this
+  // leaves behind is an AOI — what must NOT happen is the panel reporting it as a
+  // point count, which is why the set state renders the scope's own label.
+  await canvas.click({ position: { x: 420, y: 300 } });
+  await expect(pop.getByText(/Drawn radius \(/)).toBeVisible();
+  await expect(pop.getByRole("button", { name: "Clear" })).toBeVisible();
+
+  // And Clear puts the world back, from a radius exactly as from a polygon.
+  await pop.getByRole("button", { name: "Clear" }).click();
+  await expect(pop.getByText(/Drawn radius \(/)).toHaveCount(0);
+  await expect(pop.getByRole("button", { name: RADIUS_TOOL })).toBeVisible();
 });
 
 test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page }) => {
@@ -246,31 +286,23 @@ test("shots", async ({ page }) => {
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-desktop.png" });
 
-  // The other skin. The header toggle is labelled with its TARGET, so "DARK" is
-  // the button that turns the dark skin on — the same convention the View
-  // group's own pair button follows. Worth a shot of its own: the rail is
-  // token-only, and a token that resolves in one skin and not the other is the
-  // classic way a control goes invisible on half the users.
+  // THE DARK-SKIN SHOT IS GONE, and so is the skin click that produced it.
   //
-  // The group is REOPENED after each skin click, and that is the rail working
-  // rather than a workaround: the header toggle is outside the rail, so clicking
-  // it is an outside click and the flyout closes on it. Anything else would mean
-  // a panel that survives a click on the far side of the screen.
-  //
-  // SCOPED TO THE BANNER, and that is not incidental either. The header's skin
-  // button and the View group's basemap pair button can both read "Light" at the
-  // same moment — one is the console skin, the other is the map's basemap, and
-  // they are genuinely different things. An unscoped getByRole matched both and
-  // failed on strict mode, which is Playwright telling the truth about the page.
-  const header = page.getByRole("banner");
-  await header.getByRole("button", { name: "DARK" }).click();
-  await expect(header.getByRole("button", { name: "LIGHT" })).toBeVisible();
-  await rail.getByRole("button", { name: VIEW }).click();
-  await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
-  await page.screenshot({ path: "persona-shots/map-rail-view-desktop-dark.png" });
+  // It existed because the rail is token-only, and a token that resolves in one skin
+  // and not the other is the classic way a control goes invisible for half the users.
+  // There is one palette now — the light values were folded into `.tn-terminal` and
+  // the header toggle removed — so there is no second skin to check and no button to
+  // click. tests/unit/terminal-tokens.test.ts still holds the contrast floors that
+  // shot was really guarding.
 
-  await header.getByRole("button", { name: "LIGHT" }).click();
+  // The phone. CLOSED FIRST, THEN OPENED, rather than clicked once: the desktop shot
+  // above leaves the group open, and the rail's own rule is that clicking the open
+  // group closes it — so a single click here shut the flyout and screenshotted a bare
+  // rail. Escape is the close that does not depend on where the button has moved to
+  // at 390px.
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".tnx-maprail-pop")).toHaveCount(0);
   await rail.getByRole("button", { name: VIEW }).click();
   await expect(page.locator(".tnx-maprail-pop")).toBeVisible();
   await page.screenshot({ path: "persona-shots/map-rail-view-phone.png" });

@@ -14,7 +14,7 @@
 import { useEffect, useRef } from "react";
 import MapSearch from "@/components/console/MapSearch";
 
-/** The id on the search frame, so the shell's "/" shortcut can find the input. */
+/** The id on the search frame, so focusStageSearch() can find the input. */
 export const STAGE_SEARCH_ID = "stage-search";
 
 export default function SearchFlyout() {

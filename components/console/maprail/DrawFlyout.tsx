@@ -7,9 +7,17 @@
 // lived in a top bar the Terminal does not render. The feature was complete apart
 // from any way to use it. Do not let it become unreachable again.
 //
-// THE LABEL IS A SENTENCE, NOT A NOUN. "Area" told a first-time reader nothing
-// about which way the filter runs. "Restrict results to area" says it: the feeds
-// narrow to the zone, the map does not zoom to it.
+// TWO TOOLS, ONE FILTER. Area draws a ring vertex by vertex; Radius draws a circle
+// from a centre. Both end as the same AOI scope — see the DrawTool note in
+// lib/map/aoi.ts for why a radius is stored as a ring rather than as a second kind
+// of scope. So this panel has one "set" state, not two, and Clear clears either.
+//
+// THE LABEL IS A SENTENCE, NOT A NOUN, AND THE ICON DOES NOT REPLACE IT. "Area"
+// told a first-time reader nothing about which way the filter runs. Each tool
+// button therefore carries its glyph AND its word, with the full sentence on the
+// title and the accessible name — an icon-only pair here would have re-made the
+// exact mistake this file's first version was written to fix, and there is no
+// hover to explain a glyph on a phone.
 //
 // Three states, and they are mutually exclusive — idle, drawing, set. CLEAR IS
 // RENDERED ONLY WHEN A SCOPE IS SET. A Clear button sitting beside a filter that
@@ -17,9 +25,18 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { useScope } from "@/lib/shell/scope";
-import { MIN_VERTICES, cancelDraw, clearAoi, startDraw, useAoiDraw } from "@/lib/map/aoi";
+import {
+  MIN_VERTICES,
+  cancelDraw,
+  clearAoi,
+  formatRadius,
+  startDraw,
+  startRadius,
+  useAoiDraw,
+} from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
 import { areaPickStore } from "@/lib/console/widgets/camslot.area";
+import { PolygonGlyph, RadiusGlyph } from "./RailIcons";
 
 export default function DrawFlyout() {
   const scope = useScope();
@@ -40,25 +57,41 @@ export default function DrawFlyout() {
     return () => clearTimeout(t);
   }, [note]);
 
-  const onDraw = useCallback(() => {
+  // One arm path for both tools. The failure messages are the tool's own, because
+  // "The map is still loading" is the honest answer for either and inventing a
+  // second wording per tool would be two strings to keep in step for no gain.
+  const arm = useCallback((start: typeof startDraw) => {
     const map = getMapInstance();
     if (!map) return setNote("No map on the stage to draw on.");
     // No options, so the finished ring becomes the scope rather than being handed
     // to a caller — see the onFinish branch in lib/map/aoi.ts.
-    if (!startDraw(map)) setNote("The map is still loading.");
+    if (!start(map)) setNote("The map is still loading.");
   }, []);
+
+  const onArea = useCallback(() => arm(startDraw), [arm]);
+  const onRadius = useCallback(() => arm(startRadius), [arm]);
 
   const drawingHere = drawing.active && !theirs;
   const hasScope = scope.mode === "aoi" && scope.polygon != null;
+
+  // The live readout, per tool. A radius has no vertex count to report and a
+  // polygon has no radius, so the two gestures narrate themselves rather than
+  // sharing a phrase that would be wrong for one of them.
+  const live =
+    drawing.tool === "radius"
+      ? drawing.center == null
+        ? "Click the centre"
+        : `${formatRadius(drawing.radiusKm ?? 0)} — click the edge`
+      : drawing.vertices.length >= MIN_VERTICES
+        ? `${drawing.vertices.length} points — Enter to close`
+        : `${drawing.vertices.length}/${MIN_VERTICES} points`;
 
   return (
     <>
       {drawingHere ? (
         <>
           <span className="tnx-maprail-live" role="status" aria-live="polite">
-            {drawing.vertices.length >= MIN_VERTICES
-              ? `${drawing.vertices.length} points — Enter to close`
-              : `${drawing.vertices.length}/${MIN_VERTICES} points`}
+            {live}
           </span>
           <button
             type="button"
@@ -69,35 +102,54 @@ export default function DrawFlyout() {
             Cancel
           </button>
         </>
-      ) : hasScope ? (
+      ) : (
         <>
-          <span className="tnx-maprail-live">Area · {scope.polygon!.length} pts</span>
+          {hasScope ? (
+            <>
+              {/* The scope's OWN label, not a count assembled here. A radius is
+                  stored as a 64-point ring, so "Area · 64 pts" would be true of the
+                  storage and a lie about the gesture. */}
+              <span className="tnx-maprail-live">{scope.label}</span>
+              <button
+                type="button"
+                className="tnx-maprail-act"
+                onClick={clearAoi}
+                title="Show the whole world again"
+              >
+                Clear
+              </button>
+              <span className="tnx-maprail-rule" aria-hidden="true" />
+            </>
+          ) : null}
           <button
             type="button"
-            className="tnx-maprail-act"
-            onClick={clearAoi}
-            title="Show the whole world again"
+            className="tnx-maprail-act tnx-maprail-act-icon"
+            onClick={onArea}
+            aria-label="Restrict results to a drawn area"
+            title={
+              hasScope
+                ? "Draw a new area, replacing this one"
+                : "Draw an area; the feeds narrow to what is inside it"
+            }
           >
-            Clear
+            <PolygonGlyph />
+            <span>Area</span>
           </button>
           <button
             type="button"
-            className="tnx-maprail-act"
-            onClick={onDraw}
-            title="Draw a new area, replacing this one"
+            className="tnx-maprail-act tnx-maprail-act-icon"
+            onClick={onRadius}
+            aria-label="Restrict results to a radius"
+            title={
+              hasScope
+                ? "Draw a new radius, replacing this area"
+                : "Click a centre, then click to size the circle; the feeds narrow to what is inside it"
+            }
           >
-            Redraw
+            <RadiusGlyph />
+            <span>Radius</span>
           </button>
         </>
-      ) : (
-        <button
-          type="button"
-          className="tnx-maprail-act"
-          onClick={onDraw}
-          title="Draw an area; the feeds narrow to what is inside it"
-        >
-          Restrict results to area
-        </button>
       )}
 
       {note ? (

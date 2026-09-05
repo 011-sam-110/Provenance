@@ -1,8 +1,8 @@
 @import "./console-chrome.css";
 
 /* ====================================================================   TrafficNerd v2 — calm light console shell.
-   Light is the default identity; dark survives as an optional [data-theme]
-   toggle. Real typography for text; monospace (.tn-num) reserved for numerics.
+   Light is the ONLY identity. Real typography for text; monospace (.tn-num)
+   reserved for numerics.
    =========================================================================== */
 
 :root {
@@ -80,41 +80,13 @@
   --tn-title: var(--tn-font-sans, ui-sans-serif), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-[data-theme="dark"] {
-  --tn-bg: #0a0e16;
-  --tn-surface: rgba(17, 23, 34, 0.88);
-  --tn-surface-solid: #161d2a;
-  --tn-surface-2: #141b27;
-  --tn-glass: rgba(14, 19, 29, 0.80);
-  /* Top bar, dark theme. 0.86 rather than light's 0.93 because the dark ink
-     (#8e9bab) starts further from mid-grey, so it clears 4.52:1 sooner. */
-  --tn-topbar-fill: rgba(14, 19, 29, 0.45);
-  --tn-topbar-pill: rgba(14, 19, 29, 0.86);
-  --tn-border: rgba(255, 255, 255, 0.10);
-  --tn-border-strong: rgba(255, 255, 255, 0.16);
-  --tn-text: #e6ebf2;
-  --tn-text-muted: #aab4c2;
-  /* Dark inverts the problem: #6b7787 measured 3.72:1 on --tn-surface-solid.
-     Lightening to #8e9bab gives 5.98:1 and keeps faint below muted. */
-  --tn-text-faint: #8e9bab;
-  --tn-accent: #38bdf8;
-  --tn-accent-strong: #7dd3fc;
-  --tn-accent-soft: rgba(56, 189, 248, 0.14);
-  --tn-chip-bg: #1b2332;
-  --tn-toggle-off: rgba(255, 255, 255, 0.16);
-  --tn-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.4);
-  --tn-shadow: 0 16px 44px rgba(0, 0, 0, 0.5);
-
-  /* On a dark surface the vivid status colours are already the accessible ones
-     (--tn-live 5.13:1, --tn-lagging 5.31:1, --tn-stale 4.75:1, --tn-unknown
-     6.60:1 on --tn-surface-solid), so dark maps the inks straight back onto them.
-     The exception is red: --tn-down measures 3.50:1 there, so dark lifts it. */
-  --tn-live-ink: #16a34a;
-  --tn-lagging-ink: #d97706;
-  --tn-stale-ink: #ea580c;
-  --tn-down-ink: #f87171;
-  --tn-unknown-ink: #94a3b8;
-}
+/* THE DARK THEME IS GONE. `[data-theme="dark"]` redefined all 30 tokens above and
+   was reachable from two doors — a Settings segment and a palette command — both of
+   which went with it. Every built-in variant already declared `theme: "light"`, so
+   nothing else was asking for it, and `Theme` is now the single-member union "light"
+   so nothing can ask again. app/layout.tsx still stamps data-theme="light" on <html>:
+   the attribute is now decoration, but removing it would change the SSR markup for no
+   gain. The console skin folded the same way in the commit before this one. */
 
 * { box-sizing: border-box; }
 html, body {
@@ -454,7 +426,7 @@ a { color: var(--tn-accent); }
 @media (prefers-reduced-motion: reduce) { .tn-dossier { animation: none; } }
 @media (max-width: 520px) { .tn-dossier { left: 10px; width: auto; } }
 
-/* ===================== ⌘K command palette ===================== */
+/* ===================== command palette ===================== */
 .tn-palette-root { position: fixed; inset: 0; z-index: 60; display: grid; place-items: start center; padding-top: 12vh; }
 .tn-palette-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.28); backdrop-filter: blur(2px); }
 .tn-palette {
@@ -665,7 +637,7 @@ a { color: var(--tn-accent); }
    stores/components — no component rebuild.
    =========================================================================== */
 @media (max-width: 768px) {
-  /* Top bar compacts; the ⌘K trigger is desktop-only (no mobile palette). */
+  /* Top bar compacts; the palette trigger is desktop-only (no mobile palette). */
   .tn-topbar { gap: 10px; padding: 0 10px; }
   .tn-topbar-metrics { gap: 8px; }
   .tn-palette-trigger { display: none; }
@@ -2390,6 +2362,27 @@ a { color: var(--tn-accent); }
 .tn-settings-seg { display: inline-flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
 .tn-settings-seg-btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 .tn-settings-seg-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
+/* Rebindable shortcuts. A chip is a KEY CAP, not a button that happens to hold text:
+   monospace, a raised edge and a fixed minimum width, so a row of them reads as
+   "these are the keys" before any label is read. The armed state widens to fit
+   "Press a key…" without the row reflowing around it. */
+.tn-keymap-row { align-items: flex-start; }
+.tn-keymap-chords { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.tn-keymap-chip {
+  font-family: var(--tn-mono); font-size: 11.5px; font-weight: 600;
+  min-width: 62px; padding: 5px 10px; color: var(--tn-text);
+  background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
+  border-bottom-width: 2px; border-radius: 7px; cursor: pointer;
+}
+.tn-keymap-chip:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+/* Armed. It reuses aria-pressed, so the seg-btn rule above also fires — this one wins
+   on order and gives it a border the flat pressed state does not have, because an
+   armed row is capturing every keystroke and must not look like a mere selection. */
+.tn-keymap-chip[aria-pressed="true"] {
+  color: var(--tn-accent); border-color: var(--tn-accent);
+  background: var(--tn-accent-soft); box-shadow: 0 0 0 3px var(--tn-accent-soft);
+}
+.tn-keymap-err { color: var(--tn-down-ink); }
 .tn-settings-boards { display: flex; flex-direction: column; gap: 6px; }
 .tn-settings-board { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; background: var(--tn-surface-2); border: 1px solid transparent; border-radius: 11px; padding: 10px 12px; cursor: pointer; color: var(--tn-text); }
 .tn-settings-board:hover { border-color: var(--tn-border); }
@@ -2577,8 +2570,9 @@ a { color: var(--tn-accent); }
 @media (max-width: 640px) { .tn-mapsearch { width: min(70vw, 320px); } }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Onboarding chrome — Ko-fi support button, widget "?" help popover, and the
-   first-visit guided tour. All additive, token-driven (light + dark), calm.
+   Onboarding chrome — the Ko-fi support button and the widget "?" help popover.
+   The first-visit guided tour lived here too. It is gone, and took the spotlight
+   veil, the coach-mark card and the chapter menu with it.
    ════════════════════════════════════════════════════════════════════════ */
 
 /* ── Ko-fi "Support" button (StatusBar) — present but not shouty ──────── */
@@ -2650,87 +2644,6 @@ a { color: var(--tn-accent); }
 .tn-cw-help-what { font-size: 11.5px; line-height: 1.5; color: var(--tn-text-muted); margin: 0; }
 .tn-cw-help-src { font-size: 11px; line-height: 1.45; color: var(--tn-text-faint); margin: 0; }
 .tn-cw-help-src-k { font-weight: 700; color: var(--tn-text-muted); text-transform: uppercase; letter-spacing: .05em; font-size: 9px; margin-right: 5px; }
-
-/* ── Guided tour — spotlight veil + ring + coach-mark card ────────────── */
-.tn-tour { position: fixed; inset: 0; z-index: 1000; }
-.tn-tour-veil { position: fixed; inset: 0; background: transparent; }
-.tn-tour-veil.is-plain { background: rgba(15, 23, 42, .55); }
-.tn-tour-ring {
-  position: fixed; border-radius: 10px; pointer-events: none;
-  box-shadow: 0 0 0 9999px rgba(15, 23, 42, .55);
-  outline: 2px solid var(--tn-accent); outline-offset: 0;
-  transition: left .2s ease, top .2s ease, width .2s ease, height .2s ease;
-}
-.tn-tour-card {
-  position: fixed; width: min(340px, calc(100vw - 24px));
-  background: var(--tn-surface-solid); color: var(--tn-text);
-  border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow);
-  padding: 15px 16px 14px; display: flex; flex-direction: column; gap: 8px;
-  animation: tn-fade-in .16s ease;
-}
-.tn-tour-meta { display: flex; align-items: center; justify-content: space-between; }
-.tn-tour-count { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--tn-text-faint); font-weight: 700; }
-.tn-tour-skip { border: 0; background: none; cursor: pointer; color: var(--tn-text-faint); font-size: 11.5px; padding: 2px 4px; }
-.tn-tour-skip:hover { color: var(--tn-text-muted); text-decoration: underline; }
-.tn-tour-title { margin: 0; font-size: 15px; font-weight: 700; color: var(--tn-text); }
-.tn-tour-body { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--tn-text-muted); }
-.tn-tour-dots { display: flex; gap: 5px; padding: 3px 0 1px; }
-.tn-tour-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tn-toggle-off); transition: background .15s ease; }
-.tn-tour-dot.is-on { background: var(--tn-accent); }
-.tn-tour-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
-.tn-tour-btn {
-  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--tn-border); background: var(--tn-surface-2); color: var(--tn-text);
-  border-radius: 8px; padding: 6px 15px;
-}
-.tn-tour-btn:hover:not(:disabled) { border-color: var(--tn-border-strong); }
-.tn-tour-btn:disabled { opacity: .4; cursor: default; }
-.tn-tour-btn.is-primary { background: var(--tn-accent); color: #fff; border-color: transparent; }
-.tn-tour-btn.is-primary:hover { background: var(--tn-accent-strong); }
-
-/* Chapter menu — the first thing a new visitor sees, and the "Chapters" button's
-   destination from inside a run. Wider than a coach-mark because it is a list of
-   eight choices rather than one paragraph, and capped in height so the card never
-   runs off a short laptop screen. */
-.tn-tour-card.is-menu { width: min(420px, calc(100vw - 24px)); max-height: min(86vh, 720px); overflow: auto; }
-.tn-tour-btn.is-block {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  width: 100%; padding: 10px 14px; margin-top: 2px;
-}
-.tn-tour-btn-sub { font-size: 10.5px; font-weight: 500; opacity: .8; letter-spacing: .02em; }
-
-.tn-tour-chapters { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.tn-tour-chapter {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 9px;
-  background: none; color: var(--tn-text); padding: 7px 9px;
-}
-.tn-tour-chapter:hover { background: var(--tn-surface-2); border-color: var(--tn-border); }
-.tn-tour-chapter:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
-.tn-tour-chapter-icon {
-  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
-  border-radius: 7px; background: var(--tn-surface-2); color: var(--tn-accent); font-size: 12px;
-}
-.tn-tour-chapter-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.tn-tour-chapter-title { font-size: 12.5px; font-weight: 650; color: var(--tn-text); }
-.tn-tour-chapter-sum {
-  font-size: 11px; line-height: 1.35; color: var(--tn-text-faint);
-  overflow: hidden; text-overflow: ellipsis;
-}
-.tn-tour-chapter-n { flex: none; font-size: 10px; font-weight: 700; color: var(--tn-text-faint); }
-
-/* Progress line: chapter name + where you are inside it. */
-.tn-tour-count { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
-.tn-tour-chip { color: var(--tn-accent); font-size: 11px; }
-.tn-tour-of { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--tn-text-faint); opacity: .85; }
-
-.tn-tour-sp { flex: 1; }
-.tn-tour-link {
-  font: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
-  border: 0; background: none; color: var(--tn-text-faint); padding: 6px 2px;
-}
-.tn-tour-link:hover { color: var(--tn-accent); text-decoration: underline; }
-.tn-tour-actions { align-items: center; }
 
 /* ════════════════════════════════════════════════════════════════════════
    Mobile console — the widget columns STACK instead of overlapping.
@@ -3113,35 +3026,80 @@ a.tn-w-place { display: flex; align-items: center; }
      Below 901px a separate rule re-homes the rail as a bottom sheet with
      width:auto, so this value stops applying entirely on a phone. */
   --tn-rail-w: clamp(316px, calc(100vw - 820px), 602px);
-  /* ── The design palette, verbatim ──────────────────────────────────────── */
-  --tnx-bg: #06080b;
-  --tnx-panel: #0a0d12;
-  --tnx-panel-head: #0e1319;
-  /* The header/footer band. A THIRD value between --tnx-bg and --tnx-panel, not a
-     rounding of either: substituting --tnx-bg makes the chrome disappear into the
-     page and leaves the hairline under it doing all the work. */
-  --tnx-chrome: #080b0f;
+  /* ── The design palette: THREE COLOURS AND WHITE ────────────────────────
+     #262b15 ink · #464b37 accent · #afb4ad edge · #ffffff everything else.
 
-  --tnx-ink: #e8ecf1;
-  --tnx-ink-dim: #93a0b0;
-  --tnx-ink-faint: #67757f;
-  --tnx-ink-ghost: #4d5a66;
+     Chosen from a five-swatch set (#262b15 #3f3f3f #464b37 #848871 #afb4ad) with
+     "two or three" as the brief, so #3f3f3f and #848871 are DELIBERATELY unused:
+     #3f3f3f is a neutral grey that would have made the scheme two-temperature
+     against the olives, and #848871 sits between the accent and the edge closely
+     enough that a reader could not tell which one a given element meant.
 
-  --tnx-line: rgba(255, 255, 255, 0.08);
-  --tnx-line-strong: rgba(255, 255, 255, 0.14);
-  --tnx-row-rule: rgba(255, 255, 255, 0.05);
+     The intermediate inks below are not a fourth and fifth hue. They are #262b15
+     composited over white at 82% and 72%, so the whole ramp is one colour at four
+     strengths and there is nothing to keep in sync when the ink changes.
 
-  /* Blue, not amber, and the reason is measured rather than aesthetic — see the
-     light block, where the old accent failed AA outright. Dark did not have that
-     problem (#ffb020 was 10.64:1 on --tnx-panel) but the two skins have to mean
-     the same thing, and amber had a second job here: --tnx-lag is amber, so a
-     feed that had fallen behind rendered identically to a control you had
-     selected. #5cb1ff measures 8.51 on --tnx-panel, 8.77 on --tnx-bg, 8.16 on
-     --tnx-panel-head, and sits ~207deg from the warn/critical ramp instead of
-     the 15deg amber managed. --tnx-lag KEEPS the amber; that separation is the
-     point. */
-  --tnx-accent: #5cb1ff;
-  --tnx-accent-soft: rgba(92, 177, 255, 0.13);
+     WHAT THIS RAMP FIXES, and it was a stated gap rather than a side effect.
+     tests/unit/terminal-tokens.test.ts pinned --tnx-ink-faint at a floor of 3 with
+     a note saying it "only clears AA as LARGE text… any small text painted
+     --tnx-ink-faint is below AA today". The old value measured 3.61 on white. The
+     new one measures 5.88, so that text now clears AA at any size and the floor
+     in that test moves up to 4.5 with it. Measured, WCAG 2.x relative luminance,
+     all on --tnx-panel #ffffff:
+
+       --tnx-ink        #262b15  14.60   body text                 (was 18.19)
+       --tnx-ink-dim    #4d513f   8.19   secondary text            (was  7.21)
+       --tnx-ink-faint  #636657   5.88   de-emphasised text        (was  3.61)
+       --tnx-ink-ghost  #a8aaa1   2.35   NOT text — glyph fills, disabled chrome
+       --tnx-accent     #464b37   9.04   identity, selection, focus (was  6.93)
+
+     The `was` column is the SAME measurement on the SAME surface, so it is a like
+     for like comparison and it does not all move one way. Body ink gives up 3.6
+     points of a ratio that was already four times AAA, and faint and accent take
+     the gain — which is the trade worth making, because nothing was ever unreadable
+     at 18:1 and small faint labels genuinely were at 3.61.
+
+     --tnx-bg IS NOW WHITE, and that is the change with the widest blast radius.
+     The ground between cards used to be #d6dde6, so a card was defined by being
+     lighter than the page. It is defined by its own 1px edge now. That edge is
+     therefore load-bearing rather than decorative: drop a card's border and the
+     card disappears, where before it merely lost its outline. */
+  --tnx-bg: #ffffff;
+  --tnx-panel: #ffffff;
+  /* The one surface that is NOT white. A card header has to read as a header, and
+     with a white page, a white card and a white header there is nothing left to
+     say where the title bar ends. A 4% wash of the edge colour is the least that
+     does it — the accent still measures 8.26 on this. */
+  --tnx-panel-head: #f4f5f1;
+  /* The header band. It WAS a third value between --tnx-bg and --tnx-panel so the
+     chrome would not disappear into the page. With a white page there is no third
+     value to have; the band is white and the hairline under it does the work,
+     which is exactly what that old comment warned about. It is the right trade
+     here because the map card below now floats on a gutter rather than butting
+     against the header, so the separation is a GAP and not only a line. */
+  --tnx-chrome: #ffffff;
+
+  --tnx-ink: #262b15;
+  --tnx-ink-dim: #4d513f;
+  --tnx-ink-faint: #636657;
+  --tnx-ink-ghost: #a8aaa1;
+
+  /* Rules are the ink at low alpha, not the #afb4ad swatch as a flat fill. Alpha
+     is what lets one rule sit correctly on white, on --tnx-panel-head and on a
+     photograph; #afb4ad composites to roughly --tnx-line-strong on white anyway. */
+  --tnx-line: rgba(38, 43, 21, 0.13);
+  --tnx-line-strong: rgba(38, 43, 21, 0.26);
+  --tnx-row-rule: rgba(38, 43, 21, 0.07);
+
+  /* Olive, and it keeps the two properties the blue before it was chosen for.
+     (a) It clears AA on every surface it lands on: 9.04 on --tnx-panel and
+     --tnx-bg, 8.26 on --tnx-panel-head. (b) It is nowhere near the urgency ramp.
+     --tnx-lag is amber and --tnx-down is red, so a feed that has fallen behind
+     still cannot render as a control you have selected — the separation the
+     severity work bought is unchanged, and the accent moving hue does not spend
+     it. Blue was fine; the brief asked for this palette. */
+  --tnx-accent: #464b37;
+  --tnx-accent-soft: rgba(70, 75, 55, 0.10);
 
   /* ── The ALERT ramp — deliberately NOT the accent ───────────────────────
      An OSINT analyst reviewing the console read the left column as "a visual
@@ -3164,25 +3122,25 @@ a.tn-w-place { display: flex; align-items: center; }
      ≥5.39 for each as a fill on --tnx-panel. `warn` is #ff8a3d rather than a
      tweak of the accent because 15° of hue separation is what makes the two
      legibly different at 9px; #ffb020 sits at 39°, this at 24°. */
-  --tnx-alert-none: #7c8896;
-  --tnx-alert-warn: #ff8a3d;
-  --tnx-alert-critical: #ff5449;
+  --tnx-alert-none: #576270;
+  --tnx-alert-warn: #a3440f;
+  --tnx-alert-critical: #b1312d;
 
   /* Glass: the translucent near-black the stage chrome, the rail tab and the
      MapLibre controls float on. It was written as a literal rgba(8,11,15,a) in
      thirteen places, which is exactly why the light skin first shipped with dark
      panels carrying dark ink on top — unreadable, and invisible to any check that
      only looks at the token block. Tokenised so a skin can move it. */
-  --tnx-glass: rgba(8, 11, 15, 0.90);
-  --tnx-glass-soft: rgba(8, 11, 15, 0.85);
-  --tnx-glass-bar: rgba(8, 11, 15, 0.88);
-  --tnx-glass-solid: rgba(8, 11, 15, 0.96);
+  --tnx-glass: rgba(255, 255, 255, 0.92);
+  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
+  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
+  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
 
-  --tnx-live: #35c46a;
-  --tnx-lag: #ffb020;
-  --tnx-down: #ff5449;
-  --tnx-dormant: #3a4550;
-  --tnx-key: #5b6673;
+  --tnx-live: #1a8f4c;
+  --tnx-lag: #b8690a;
+  --tnx-down: #c8352a;
+  --tnx-dormant: #b3bcc5;
+  --tnx-key: #8a94a0;
 
   /* Geometry. --tnx-rh is the standard row height; a widget body that wants the
      compact 19px variant sets --tnx-rh on itself and every row below follows. */
@@ -3225,11 +3183,17 @@ a.tn-w-place { display: flex; align-items: center; }
      sit flush against a 1px rule without the rule showing through the corner.
      8px of --tnx-bg reads as ground instead, which is what makes the cards read
      as cards. Square corners were the old identity; that is the trade. */
-  --tnx-r: 6px;
-  --tnx-r-sm: 4px;
-  --tnx-r-lg: 10px;
+  --tnx-r: 8px;
+  --tnx-r-sm: 6px;
+  --tnx-r-lg: 14px;
   --tnx-gap: 8px;
-  --tnx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.22);
+  /* The grid under the globe. Step and line are tokens because they are read by
+     two rules (the stage ground and the empty-stage placeholder) and because the
+     line has to stay under the map's own hairlines — a grid that competes with a
+     coastline is a texture, not a ground. */
+  --tnx-grid-line: rgba(38, 43, 21, 0.10);
+  --tnx-grid-step: 44px;
+  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.12), 0 3px 10px rgba(16, 22, 29, 0.10);
   /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
      width and the shell's reserved left padding, so the two can never disagree
      and let the tab sit on top of the first widget. */
@@ -3247,10 +3211,10 @@ a.tn-w-place { display: flex; align-items: center; }
   --tn-bg: var(--tnx-bg);
   --tn-surface: var(--tnx-panel);
   --tn-surface-solid: var(--tnx-panel-head);
-  --tn-surface-2: #11161d;
-  --tn-glass: rgba(8, 11, 15, 0.90);
-  --tn-topbar-fill: rgba(8, 11, 15, 0.72);
-  --tn-topbar-pill: rgba(8, 11, 15, 0.92);
+  --tn-surface-2: #e9edf2;
+  --tn-glass: rgba(255, 255, 255, 0.92);
+  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
+  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
   --tn-border: var(--tnx-line);
   --tn-border-strong: var(--tnx-line-strong);
   --tn-text: var(--tnx-ink);
@@ -3262,20 +3226,20 @@ a.tn-w-place { display: flex; align-items: center; }
      unchanged on near-black. Defining them here is the fix; chasing the fallbacks
      rule by rule would not have been. */
   --tn-text-dim: var(--tnx-ink-faint);
-  --tn-hover: rgba(255, 255, 255, 0.06);
+  --tn-hover: rgba(16, 22, 29, 0.05);
   --tn-accent: var(--tnx-accent);
-  --tn-accent-strong: #8cc7ff;
+  --tn-accent-strong: #0b4a7d;
   --tn-accent-soft: var(--tnx-accent-soft);
-  --tn-chip-bg: #141a22;
-  --tn-toggle-off: rgba(255, 255, 255, 0.16);
+  --tn-chip-bg: #eaeef3;
+  --tn-toggle-off: rgba(16, 22, 29, 0.20);
   /* The terminal separates surfaces with hairlines, not elevation. A shadow
      survives only where a popover has to detach from the panel behind it. */
   --tn-shadow-sm: var(--tnx-shadow-1);
-  --tn-shadow: 0 14px 40px rgba(0, 0, 0, 0.66);
+  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
 
   --tn-live: var(--tnx-live);
   --tn-lagging: var(--tnx-lag);
-  --tn-stale: #ff8a3d;
+  --tn-stale: #b5521a;
   --tn-down: var(--tnx-down);
   --tn-unknown: var(--tnx-ink-ghost);
   --tn-paused: var(--tnx-dormant);
@@ -3284,7 +3248,7 @@ a.tn-w-place { display: flex; align-items: center; }
      the same measured reason. */
   --tn-live-ink: var(--tnx-live);
   --tn-lagging-ink: var(--tnx-lag);
-  --tn-stale-ink: #ff8a3d;
+  --tn-stale-ink: #b5521a;
   --tn-down-ink: var(--tnx-down);
   --tn-unknown-ink: var(--tnx-ink-faint);
 
@@ -3315,151 +3279,34 @@ a.tn-w-place { display: flex; align-items: center; }
   scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
 }
 
-/* ── LIGHT SKIN ────────────────────────────────────────────────────────────
-   The second palette, selected by `data-tnx-skin="light"` on the same element.
-   It redefines the SAME --tnx-* tokens the block above sets, and nothing else —
-   the ~40 --tn-* remaps below it are written in terms of --tnx-*, so re-skinning
-   the entire widget system is this one block and no rule downstream changes.
+/* ── ONE PALETTE ───────────────────────────────────────────────────────────
+   There WAS a second palette here — a `[data-tnx-skin="light"]` block that redefined
+   the same --tnx-* tokens the block above sets. The dark skin has been removed, so
+   the light values were folded INTO that block and this one deleted. Every value
+   above is the value the light skin was serving; nothing was re-picked while folding.
 
-   NOT a `[data-theme]` and not a `prefers-color-scheme` block, deliberately.
-   lib/variants/store.ts re-asserts a variant's theme on every board switch, so a
-   theme-based skin would be yanked back the first time a tab is clicked; and a
-   media query would take the choice away from anyone whose OS disagrees with
-   them. See the note at the top of this section, and lib/terminal/skin.ts.
+   WHY THAT MATTERS TO ANYONE READING THE COLOURS. They were not derived from the
+   dark set and they are not tints of it. The status hues in particular were
+   re-derived: --tnx-live #35c46a sits at about 2.1:1 on white — fine as a 5px LED,
+   unreadable as text, and the Terminal spends those tokens on both — so each clears
+   4.5:1 on --tnx-panel. The accent moved furthest: #ffb020 is ~1.9:1 on white and
+   cannot be used for text at all, which is why the accent here is a deepened amber
+   that keeps the identity and the contrast. Do not "restore" a brighter one.
 
-   The status hues are NOT the dark ones carried over. --tnx-live #35c46a sits at
-   about 2.1:1 on white — fine as a 5px LED, unreadable as text, and the Terminal
-   spends those tokens on both. Each is re-derived to clear 4.5:1 on --tnx-panel.
-   The accent moves furthest: #ffb020 is ~1.9:1 on white and cannot be used for
-   text at all, so light gets a deepened amber that keeps the identity and the
-   contrast. */
-.tn-terminal[data-tnx-skin="light"] {
-  /* THE DEPTH LADDER. Measured on production before this change: the card
-     (#ffffff, L* 100.0), the map's own land (Positron serves rgb(242,243,240),
-     L* 95.7) and the console ground (L* 95.0) all sat inside FIVE points of
-     lightness, and the ground was 0.66 L* — 1.02:1 — from the map. At that
-     distance there is no edge. That is why the map did not appear to end
-     anywhere, and why a rail of white cards read as one continuous column
-     rather than as four separate widgets.
-
-     The fix is range, not hue. The card stays pure white and every surface
-     BEHIND it steps down, so the ladder spans sixteen points instead of five:
-     card 100.0 / map 95.7 / card head 94.2 / ground 87.8 / chrome 83.8.
-     Card-to-ground goes 1.13:1 -> 1.37:1, map-to-ground 1.02:1 -> 1.23:1, and
-     the card header band 2.5 L* -> 5.8 L*.
-
-     The map is untouched. Positron is a remote style we do not own, it is the
-     evidence rather than the chrome, and tinting a data surface to solve a
-     chrome problem is the wrong fix. Everything that moves is ours.
-
-     --tnx-chrome has to travel with the ground. It was already DARKER than the
-     ground (93.2 against 95.0); leaving it while the ground fell to 87.8 would
-     have inverted the pair and made the header lighter than the workspace
-     beneath it. */
-  --tnx-bg: #d6dde6;
-  --tnx-panel: #ffffff;
-  --tnx-panel-head: #eaeff5;
-  --tnx-chrome: #c9d2dd;
-
-  --tnx-ink: #10161d;
-  /* Darkened from #5a6673 along with the ground. Two pairings that use this
-     token were about to fall under AA: the widget badge prints --tnx-bg as TEXT
-     on a fill of this colour (4.36:1 at the new ground), and the feed-health
-     and board labels print this colour ON --tnx-chrome (3.96:1). #4e5866
-     restores both — 5.27:1 and 4.72:1 — and still measures 7.21:1 on
-     --tnx-panel, clear of the 4.5 floor terminal-tokens holds it to. */
-  --tnx-ink-dim: #4e5866;
-  --tnx-ink-faint: #7d8894;
-  --tnx-ink-ghost: #a3adb8;
-
-  --tnx-line: rgba(16, 22, 29, 0.12);
-  --tnx-line-strong: rgba(16, 22, 29, 0.22);
-  --tnx-row-rule: rgba(16, 22, 29, 0.07);
-
-  /* THIS is the token that made the retune necessary. #b8690a measures 4.15:1
-     on --tnx-panel (white) and 3.66:1 on --tnx-bg, it is used as a TEXT colour
-     by 92 rules, and light is DEFAULT_TERMINAL_SKIN — so the default console
-     failed AA for every one of them. The block above used to claim the deepened
-     amber "keeps the identity and the contrast"; it kept the identity.
-     #0f5c9c measures 6.93 on --tnx-panel, 5.06 on --tnx-bg, 5.99 on
-     --tnx-panel-head. --tnx-lag stays #b8690a, so lagging keeps the amber and
-     stops rendering as selected.
-     The bg and panel-head figures fell from 6.12 and 6.51 when the depth ladder
-     deepened those two grounds; the accent itself did not move, and both stay
-     comfortably over the 4.5 floor terminal-tokens holds it to. */
-  --tnx-accent: #0f5c9c;
-  --tnx-accent-soft: rgba(15, 92, 156, 0.12);
-
-  /* The alert ramp, re-derived on paper — NOT the dark values dimmed. Same rule
-     as the status hues above: the badge prints --tnx-bg ON these, so each fill
-     has to clear 4.5:1 against the ground, and the dark ramp is far too light to.
-
-     RE-DERIVED A SECOND TIME for the depth ladder at the top of this block.
-     Dropping the ground to L* 87.8 pulled the previous trio (#5f6b7a / #a8460f /
-     #b5322e, which measured 4.79 / 5.22 / 5.36 against the old near-white) down
-     to 3.96 / 4.33 / 4.43, and severity-ramp went red — the guard reading the
-     new ground rather than a stale comment, which is exactly its job. Measured
-     again after this move: 4.53 / 4.53 / 4.59.
-
-     The hue separations the ramp exists to hold are unchanged. `warn` is still
-     deliberately NOT the #a35c0c it would inherit from the base sheet, which
-     sits 1° of hue from the amber --tnx-lag and would rebuild on paper the very
-     collision this ramp breaks; it stays ~11° off the accent and ~20° off
-     critical. */
-  --tnx-alert-none: #576270;
-  --tnx-alert-warn: #a3440f;
-  --tnx-alert-critical: #b1312d;
-
-  /* The glass family, on paper. Same alphas, opposite ground. */
-  --tnx-glass: rgba(255, 255, 255, 0.92);
-  --tnx-glass-soft: rgba(255, 255, 255, 0.88);
-  --tnx-glass-bar: rgba(255, 255, 255, 0.90);
-  --tnx-glass-solid: rgba(255, 255, 255, 0.97);
-
-  --tnx-live: #1a8f4c;
-  --tnx-lag: #b8690a;
-  --tnx-down: #c8352a;
-  --tnx-dormant: #b3bcc5;
-  --tnx-key: #8a94a0;
-
-  /* The remaps that are not a straight pass-through of a --tnx-* value. Anything
-     the dark block hard-codes a hex or an rgba() for has to be restated, or it
-     stays dark: a white overlay on white, a black-on-black shadow, a chip fill
-     that was picked against near-black. */
-  --tn-surface-2: #e9edf2;
-  --tn-glass: rgba(255, 255, 255, 0.92);
-  --tn-topbar-fill: rgba(255, 255, 255, 0.74);
-  --tn-topbar-pill: rgba(255, 255, 255, 0.94);
-  --tn-hover: rgba(16, 22, 29, 0.05);
-  --tn-accent-strong: #0b4a7d;
-  --tn-chip-bg: #eaeef3;
-  --tn-toggle-off: rgba(16, 22, 29, 0.20);
-  --tn-shadow: 0 14px 40px rgba(16, 22, 29, 0.18);
-  /* Inherited from the dark block otherwise, where the alphas are tuned for
-     near-black and read as grime on paper. */
-  --tnx-shadow-1: 0 1px 2px rgba(16, 22, 29, 0.12), 0 3px 10px rgba(16, 22, 29, 0.10);
-  --tn-stale: #b5521a;
-  --tn-stale-ink: #b5521a;
-
-  scrollbar-color: rgba(16, 22, 29, 0.22) transparent;
-}
-
+   STILL NOT a `[data-theme]` block and still not `prefers-color-scheme`. That has
+   nothing to do with the skin toggle going away: lib/variants/store.ts re-asserts a
+   variant's theme on every board switch, so a theme-based console palette would be
+   yanked back the first time a tab is clicked. The tokens stay scoped to
+   `.tn-terminal`. */
 /* The five status INKS collapse onto their fills on near-black because the vivid
    hue is the legible one there. On white the opposite is true, so they are pointed
    at the light ramp rather than left inheriting the dark one. */
-.tn-terminal[data-tnx-skin="light"] {
-  --tn-live-ink: var(--tnx-live);
-  --tn-lagging-ink: var(--tnx-lag);
-  --tn-down-ink: var(--tnx-down);
-  --tn-unknown-ink: var(--tnx-ink-faint);
-}
-
 /* WebKit scrollbars are set on the dark block with literal rgba(255,255,255,…);
    they need the mirror or the light skin gets white-on-white thumbs. */
-.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb {
+.tn-terminal ::-webkit-scrollbar-thumb {
   background: rgba(16, 22, 29, 0.20);
 }
-.tn-terminal[data-tnx-skin="light"] ::-webkit-scrollbar-thumb:hover {
+.tn-terminal ::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 22, 29, 0.30);
 }
 
@@ -3837,8 +3684,8 @@ a.tn-w-place { display: flex; align-items: center; }
 }
 
 /* The lifted card's shadow is tuned for near-black and disappears on paper. */
-.tn-terminal[data-tnx-skin="light"] .tn-seg-slot.is-held,
-.tn-terminal[data-tnx-skin="light"] .tn-cw-stage.is-held {
+.tn-terminal .tn-seg-slot.is-held,
+.tn-terminal .tn-cw-stage.is-held {
   box-shadow: 0 16px 44px rgba(16, 22, 29, 0.22);
 }
 
@@ -3848,11 +3695,11 @@ a.tn-w-place { display: flex; align-items: center; }
    dependency of this sheet (the rail's inset rule); browsers without it simply keep
    the light overscroll, which is a cosmetic degradation, not a broken layout. */
 body:has(.tn-terminal) { background: #06080b; color: #e8ecf1; }
-body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #10161d; }
+body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
 /* ── Shell: five stacked bands ─────────────────────────────────────────────
    Flex column, not grid, and deliberately: every overlay in the app
-   (.tn-palette-root, .tn-dossier, .tn-dive, .tn-tour, .tn-toast,
+   (.tn-palette-root, .tn-dossier, .tn-dive, .tn-toast,
    .tn-settings-scrim) is position:fixed and therefore out of flow, so a flex
    column needs no grid-row bookkeeping to stop one of them claiming a band.
    100dvh rather than 100vh: on iOS/Android 100vh is taller than the visible area
@@ -3916,7 +3763,13 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
 .tn-terminal .tn-seg {
   display: grid;
   gap: var(--tnx-gap);
-  padding: 0;
+  /* WAS 0, and the top edge is the reason it changed. The stage butted straight
+     against the header's hairline, so the map card had a rounded corner on three
+     sides and a straight join on the fourth — it read as the page continuing
+     rather than as a card sitting on it. One gutter on all four sides is also
+     what lets --tnx-chrome be white: the separation between header and map is a
+     GAP now, not only a line. */
+  padding: var(--tnx-gap);
   height: 100%;
   min-height: 0;
   align-items: stretch;
@@ -4217,7 +4070,9 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   inset: auto;
   min-width: 0;
   min-height: 180px;
-  border-radius: var(--tnx-r);
+  /* --tnx-r-lg, not --tnx-r. Radius reads as a function of a surface's size: the
+     6px that makes a 26px-tall row look rounded disappears on a 1862px-wide card. */
+  border-radius: var(--tnx-r-lg);
   /* Explicitly NONE, not merely absent. This rule used to carry
      `box-shadow: var(--tnx-shadow-1)`; deleting that line is not the same as
      removing the shadow, because the BASE `.tn-cw-stage` rule further up the
@@ -4226,7 +4081,32 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
      computed-style check, not by eye. */
   box-shadow: none;
   overflow: hidden;
-  background: var(--tnx-bg);
+  /* THE GROUND UNDER THE GLOBE, in four layers, top to bottom.
+     1. a radial white fade centred just above the middle of the stage,
+     2 + 3. the grid, one repeating-linear-gradient per axis,
+     4. white underneath, so the grid never sits on nothing.
+
+     WHY THIS WORKS AT ALL: MapLibre's canvas is TRANSPARENT outside the sphere —
+     the style carries no background layer — so in globe projection this element's
+     own background is what fills the corners. Measured in the running app before
+     it was written: setting a gradient here shows through around the globe with
+     no change to the map style, which is the only reason this is CSS and not a
+     style-layer edit that every basemap would have to repeat.
+
+     THE FADE IS WHAT KEEPS IT A GROUND RATHER THAN GRAPH PAPER. Behind the globe
+     the grid is invisible; it emerges toward the corners. A flat grid across the
+     whole stage competes with the map's own coastlines and country hairlines at
+     exactly the weight those are drawn at.
+
+     In 2D (mercator) the basemap covers this element completely, so all four
+     layers are painted and then hidden. That is the correct cost: the alternative
+     is a rule that has to know which projection is live, and lib/console/store's
+     stage id is not on this element. */
+  background:
+    radial-gradient(58% 62% at 50% 46%, #ffffff 0%, rgba(255, 255, 255, 0.94) 46%, rgba(255, 255, 255, 0) 100%),
+    repeating-linear-gradient(0deg, var(--tnx-grid-line) 0 1px, transparent 1px var(--tnx-grid-step)),
+    repeating-linear-gradient(90deg, var(--tnx-grid-line) 0 1px, transparent 1px var(--tnx-grid-step)),
+    var(--tnx-bg);
 }
 /* THE MAP'S EDGE — a pseudo-element, because neither of the obvious mechanisms
    can reach the pixels that matter.
@@ -4264,7 +4144,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    black basemap does not read as depth, it reads as grime in the corners; dark
    keeps the ring alone. A dark equivalent would have to be an inner LIGHT glow,
    which is a different design decision and not this change. */
-.tn-terminal[data-tnx-skin="light"] .tn-cw-stage::after {
+.tn-terminal .tn-cw-stage::after {
   box-shadow:
     inset 0 0 0 1px var(--tnx-line-strong),
     inset 0 7px 10px -7px rgba(16, 22, 29, 0.20);
@@ -4477,6 +4357,60 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   z-index: 6;
 }
+
+/* THE FRESH-LAUNCH HINT. The Sources tab is thin, sits on an edge that is otherwise
+   a widget column, and reviewers did not find it. It jumps a few times and then
+   stops — see lib/console/sourcesRail.ts for when the state is set, why the scope is
+   a launch rather than a browser, and `shouldHintRail` for the rule.
+
+   FINITE, NOT INFINITE. `3` iterations, not `infinite`: a control that never stops
+   moving stops reading as a hint and starts reading as a fault, and it would pull
+   the eye away from the map for the whole session rather than for the few seconds
+   it takes to notice a tab. The delay lets the console finish arriving first —
+   a thing that moves before the page has settled looks like a layout jump.
+
+   IT MOVES ON THE X AXIS, toward the middle of the screen, because that is the
+   direction the rail opens. A vertical bounce would be motion; this is a gesture
+   that shows you what the control does.
+
+   IT DOES NOT OVERSHOOT PAST ITS ORIGIN, and that was the first thing tried. A
+   curve that dips to -3px before settling is the textbook way to make a move read as
+   a jump rather than a slide — and it is invisible here. At >=901px this tab is not
+   a pill: it is a full-height 26px strip pinned to `left:0` of `.tn-cw-shell`, which
+   is `overflow:hidden` with its left edge at exactly that origin. Every negative
+   pixel is clipped, so the strip's left edge stays pinned while its right edge moves
+   and the gesture reads as the tab getting NARROWER. Measured in the browser, not
+   reasoned about. The spring is built out of decaying hops in positive X instead:
+   out far, back, out less, back. Same signature, all of it on screen.
+
+   THERE IS NO `scale` EITHER, for the same reason: the strip is ~870px tall, so the
+   1.06 that looked right on a pill grew it by 52px and read as the tab stretching
+   down the page. On an element this shape, translate is the only honest axis.
+
+   The travel was 7px and is now 16px — on a 26px-wide strip that is a lunge of more
+   than half its own width, where 7px was inside the noise floor of the peripheral
+   glance that is the only kind of glance a hint gets.
+
+   `translate` is used rather than `transform` so a future hover/active transform on
+   this button cannot silently cancel the animation, and vice versa. */
+@keyframes tnx-rail-fab-hint {
+  0%        { translate: 0 0; }
+  7%        { translate: 16px 0; }
+  18%       { translate: 0 0; }
+  27%       { translate: 7px 0; }
+  38%, 100% { translate: 0 0; }
+}
+.tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] {
+  animation: tnx-rail-fab-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;
+  border-color: var(--tnx-accent);
+  color: var(--tnx-accent);
+}
+/* A hint is the definition of decorative motion, so this one is not merely reduced —
+   it is dropped. The tab keeps the accent border, which is the non-moving half of
+   the same "look here" and is what a reduced-motion user gets instead. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { animation: none; }
+}
 @media (min-width: 901px) {
   /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
      the shell, not `left:` — the shell is `position:relative` here (see the
@@ -4532,13 +4466,49 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    than a token change alone. */
 .tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
 .tn-terminal .maplibregl-ctrl-bottom-left { left: 8px; bottom: 28px; }
+/* THE MAP'S ⓘ — restyled, never removed. It is the door to the basemap credits,
+   which are a licence obligation of the upstream tiles and not ours to drop; what
+   changes here is only how it looks.
+
+   MapLibre paints the mark as a black background-image SVG on a half-white disc,
+   so the one control that has to sit on a photograph was the only dark round chip
+   in a console of white capsules. Swapping the background-image for our own — the
+   same stroke weight and the same 24px box as the rail glyphs, in --tnx-accent —
+   is the only way to recolour it: the glyph is an image, so `color` cannot reach
+   it and there is no element inside the button to style.
+
+   `!important` and the doubled class both come from the rule further up this file
+   that first fought maplibre-gl.css: that stylesheet is injected AFTER globals.css
+   at equal specificity, so anything not doubled up loses on source order. */
 .tn-terminal .maplibregl-ctrl-attrib {
-  background: var(--tnx-glass-soft) !important;
+  background: var(--tnx-panel) !important;
   color: var(--tnx-ink-ghost);
   font-family: var(--tnx-font-mono);
   font-size: var(--tnx-fs-xs);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 999px !important;
+  box-shadow: var(--tnx-shadow-1);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+.tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
+.tn-terminal .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  background-color: transparent !important;
+  /* Stroked, not filled, and 1.9 — the same weight components/console/maprail/
+     RailIcons.tsx draws every rail glyph at, so the two controls on this stage
+     look like they came from one set. */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23464b37' stroke-width='1.9' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E") !important;
+  background-size: 17px 17px !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+/* Expanded, the control becomes a credit line rather than a mark, so the pill
+   relaxes back to the console's own radius and stops pretending to be a button. */
+.tn-terminal .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
+  border-radius: var(--tnx-r) !important;
+}
 /* Pin navigator: the stage has a search box at top-left and a legend at top-right,
    and the navigator's default top-right slot lands underneath the legend. Moved to
    the free bottom-left corner, above the clock bar. */
@@ -4696,7 +4666,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    ════════════════════════════════════════════════════════════════════════════ */
 /* The basemap buttons, the 3D/2D projection switch and Solo were all styled here
    as one button family. All three are gone from the console: the basemaps and the
-   projection are still changeable from ⌘K, and Solo is a real removal. The area
+   projection are still changeable from the command palette, and Solo is a real removal. The area
    filter below kept its own rules because it is still on screen. */
 
 /* Area filter — under the legend in the right-hand stack. It reads as a panel
@@ -4732,20 +4702,39 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    on each child keeps the gap between them clickable map. */
 /* Clock bar. WorldClock's root is an absolutely-positioned rounded glass ribbon;
    flatten it into this frame rather than forking the component (one clock timer). */
+/* THE CLOCK IS A PILL NOW, NOT A BAR.
+   It was a full-width translucent strip glued to the bottom edge of the stage,
+   which cost 24px of map across the whole width to show seven readings that
+   occupy about a third of it — and it cut the map card's bottom corners off,
+   because a square strip cannot sit inside a 14px radius.
+
+   The frame keeps its job (centring) and gives up its paint: the bar is now an
+   invisible positioning row and the CHROME lives on the clock itself. It floats
+   10px clear of the stage floor so the map runs underneath it, which is what
+   makes it read as something resting on the map rather than a band taken out of
+   it.
+
+   `pointer-events` stays `none` on the row and comes back on the pill, so the
+   map either side of it is still draggable — the same reasoning the rail used
+   before it became a solid toolbar, and here it still applies because the row
+   really is mostly empty. */
 .tn-terminal .tnx-stage-foot {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 24px; z-index: 6;
-  /* CENTRED under the globe. The bar spans the full stage width and the clock is a
-     flex child, so centring is `justify-content` on the bar rather than a margin on
-     the clock — the clock keeps its own internal cell dividers either way. The
-     spacer that used to force it left was deleted from StageBar with this change. */
+  position: absolute; left: 0; right: 0; bottom: 10px; height: auto; z-index: 6;
   display: flex; align-items: center; justify-content: center; padding: 0 8px;
-  background: var(--tnx-glass-bar);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  background: none;
+  backdrop-filter: none; -webkit-backdrop-filter: none;
   pointer-events: none;
 }
 .tn-terminal .tnx-stage-foot .tn-worldclock {
-  position: static; transform: none; display: flex; padding: 0;
-  border: 0; border-radius: var(--tnx-r); background: none; box-shadow: none;
+  position: static; transform: none; display: flex;
+  pointer-events: auto;
+  padding: 5px 6px;
+  border: 1px solid var(--tnx-line-strong);
+  /* A true pill, not --tnx-r-lg: the shape is short and wide and reads as a
+     capsule at any width, which is what stops seven times looking like a table. */
+  border-radius: 999px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
   backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .tn-terminal .tnx-stage-foot .tn-wc-cell {
@@ -4842,7 +4831,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
   /* Strip: the 37 cells are the payload. The view controls keep the projection
-     switch and Export — the two that have no equal in the ⌘K palette's reach on a
+     switch and Export — the two that have no equal in the command palette's reach on a
      phone — and shed the basemap names, which do (palette → "Basemap"). */
 
   /* The clock ribbon crowds a ~300px map, and it was already hidden below 900px
@@ -4882,7 +4871,7 @@ body:has(.tn-terminal[data-tnx-skin="light"]) { background: #d6dde6; color: #101
    explain why the basemap and projection buttons grew to 34px rather than 44px: a
    22px bar could not hold a 44px button without eating the map. Both button
    families have been removed from the console, so nothing here settles for less
-   than 44px any more, and both choices remain available at full size in the ⌘K
+   than 44px any more, and both choices remain available at full size in the command
    palette ("Basemap", "Stage") and the Source Catalog rail. */
 @media (max-width: 900px) {
 
@@ -5163,8 +5152,8 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 
 /* ── Feedback prompt ────────────────────────────────────────────────────────
    A centred card over a dimmed console, shown once to a sampled third of the
-   people who have actually used the thing. Mirrors .tn-tour-card's surface and
-   radius so it reads as part of the console rather than a bolted-on widget; it
+   people who have actually used the thing. Takes the console's own card surface
+   and radius so it reads as part of it rather than a bolted-on widget; it
    is wider only because it carries a four-field form rather than a sentence. */
 .tn-fb { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 16px; }
 .tn-fb-veil { position: fixed; inset: 0; background: rgba(15, 23, 42, .55); }
@@ -5805,8 +5794,15 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    and its flyouts, and it keeps these out of the `.tn-terminal` rule block that
    tests/unit/terminal-tokens.test.ts parses. */
 .tn-terminal .tn-cw-stage {
-  --tnx-maprail-btn: 30px;
-  --tnx-maprail-gap: 6px;
+  --tnx-maprail-btn: 40px;
+  --tnx-maprail-glyph: 25px;
+  /* ZERO, and the rail is one capsule now rather than four floating chips. The
+     token stays because the flyout and the hover label both offset themselves by
+     it, and at 0 they would have opened flush against the toolbar's edge — so
+     that offset is its own number. */
+  --tnx-maprail-gap: 0px;
+  --tnx-maprail-pad: 5px;
+  --tnx-maprail-out: 10px;
 }
 
 .tn-terminal .tnx-maprail {
@@ -5818,9 +5814,27 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   display: flex;
   flex-direction: column;
   gap: var(--tnx-maprail-gap);
-  /* The column is `none` and every child re-enables it, so the gaps between the
-     buttons stay clickable map — the convention `.tnx-stage-right` established. */
-  pointer-events: none;
+  /* ONE CONTROL, NOT FOUR. The chrome — surface, edge, radius and shadow — moved
+     from each button up to the column, so the rail reads as a single toolbar.
+     Two consequences worth stating:
+
+     POINTER-EVENTS IS NOW `auto`, reversing the `.tnx-stage-right` convention
+     this rule used to follow. That convention exists so the gaps between floating
+     controls stay clickable map; with no gaps there is nothing to click through
+     to, and leaving it `none` would have meant a painted, shadowed, opaque
+     toolbar that a click passed straight through into the globe underneath.
+
+     THE BUTTONS LOSE THEIR OWN BORDERS, so hover is doing the work four outlines
+     used to: it fills the button with --tnx-accent-soft, which is the only thing
+     on screen that says where one button ends and the next begins. A hairline
+     divider was tried and dropped — it argues with "connected", and at 1px on
+     white it was invisible anyway. */
+  pointer-events: auto;
+  padding: var(--tnx-maprail-pad);
+  background: var(--tnx-panel);
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: var(--tnx-r-lg);
+  box-shadow: var(--tnx-shadow-1);
 }
 
 .tn-terminal .tnx-maprail-group {
@@ -5839,22 +5853,94 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   justify-content: center;
   padding: 0;
   cursor: pointer;
-  background: var(--tnx-panel);
+  background: transparent;
   color: var(--tnx-ink-dim);
+  border: 0;
+  /* Inset by the rail's own padding, so a button's corner is concentric with the
+     capsule's rather than a second, tighter curve inside it. */
+  border-radius: calc(var(--tnx-r-lg) - var(--tnx-maprail-pad));
+  box-shadow: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.tn-terminal .tnx-maprail-btn:hover { color: var(--tnx-ink); background: var(--tnx-accent-soft); }
+/* OPEN IS A FILL, NOT AN OUTLINE. With no border left to tint, a soft wash would
+   have read the same as hover and nothing would say which group is open. White on
+   --tnx-accent measures 9.04, so the glyph is legible reversed. */
+.tn-terminal .tnx-maprail-btn[aria-expanded="true"] {
+  color: #ffffff;
+  background: var(--tnx-accent);
+}
+.tn-terminal .tnx-maprail-btn:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
+
+/* The hover/focus label beside a rail button. Four icons with no words needed one:
+   the accessible name was there from the start, and a sighted mouse user had only
+   the native `title`, which takes about a second, paints in OS chrome that ignores
+   the skin, and cannot be told which side of the button to appear on.
+
+   POSITIONED ON THE BUTTON, NOT THE GROUP. `.tnx-maprail-group` is also the
+   flyout's positioning context, and anchoring both to it put the tip and the panel
+   in the same place with the tip on top. The button gets `position: relative` here
+   for that reason — it is the row's own box and nothing else is positioned against
+   it.
+
+   HIDDEN WHILE THE GROUP IS OPEN. The flyout occupies exactly this space, so a tip
+   that stayed would sit over the panel the click just opened — and by then the
+   panel names the group anyway.
+
+   `pointer-events: none` because a label that swallows a click on its way to the
+   map would be worse than no label at all. */
+.tn-terminal .tnx-maprail-btn { position: relative; }
+.tn-terminal .tnx-maprail-tip {
+  pointer-events: none;
+  position: absolute;
+  right: calc(100% + var(--tnx-maprail-out));
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 9;
+  white-space: nowrap;
+  font-size: var(--tnx-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  padding: 4px 8px;
+  color: var(--tnx-ink);
+  background: var(--tnx-panel);
   border: 1px solid var(--tnx-line-strong);
   border-radius: var(--tnx-r-sm);
   box-shadow: var(--tnx-shadow-1);
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
 }
-.tn-terminal .tnx-maprail-btn:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
-.tn-terminal .tnx-maprail-btn[aria-expanded="true"] {
-  color: var(--tnx-accent);
-  border-color: var(--tnx-accent);
-  background: var(--tnx-accent-soft);
+.tn-terminal .tnx-maprail-btn:hover .tnx-maprail-tip,
+.tn-terminal .tnx-maprail-btn:focus-visible .tnx-maprail-tip {
+  opacity: 1;
+  visibility: visible;
 }
-.tn-terminal .tnx-maprail-btn:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
-/* One rule sizes all four glyphs, which is why RailIcons takes no size prop. */
-.tn-terminal .tnx-maprail-btn svg { width: 18px; height: 18px; display: block; }
+.tn-terminal .tnx-maprail-btn[aria-expanded="true"] .tnx-maprail-tip {
+  opacity: 0;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tnx-maprail-tip { transition: none; }
+}
+/* No hover on touch, so the tip can only ever be a focus artefact there — and a
+   label wide enough to name a group would run off a 390px screen from a rail
+   already pinned to the right edge. The button keeps its accessible name. */
+@media (hover: none) {
+  .tn-terminal .tnx-maprail-tip { display: none; }
+}
+/* One rule sizes all four glyphs, which is why RailIcons takes no size prop.
+   The glyph and its button are ONE ratio (27/44 = 0.61), so the token pair above
+   moves together: shrinking the button without the glyph is what pushes stroke
+   geometry into the 1px border. RailIcons draws at strokeWidth 1.9-2 on a 24-unit
+   viewBox, which at 27px is a ~2.1px stroke — still a hairline, not a slab. */
+.tn-terminal .tnx-maprail-btn svg {
+  width: var(--tnx-maprail-glyph);
+  height: var(--tnx-maprail-glyph);
+  display: block;
+}
 
 /* The flyout. A SIBLING of the button it belongs to, inside a relatively-positioned
    group, so it emerges from its own row with no measurement, no ResizeObserver and
@@ -5867,7 +5953,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-terminal .tnx-maprail-pop {
   pointer-events: auto;
   position: absolute;
-  right: calc(100% + var(--tnx-maprail-gap));
+  right: calc(100% + var(--tnx-maprail-out));
   top: 50%;
   translate: 0 -50%;
   z-index: 9;
@@ -5881,7 +5967,10 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   min-height: var(--tnx-maprail-btn);
   background: var(--tnx-panel);
   border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r);
+  /* The same radius as the toolbar it grows out of, not --tnx-r. The two sit
+     10px apart on the same stage, and a 8px corner beside a 14px one reads as
+     two components that happen to be adjacent rather than one control opening. */
+  border-radius: var(--tnx-r-lg);
   box-shadow: var(--tnx-shadow-1);
   animation: tnx-maprail-sweep 0.16s cubic-bezier(0.2, 0.7, 0.3, 1);
   transform-origin: right center;
@@ -5922,6 +6011,22 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tnx-accent-soft);
 }
 .tn-terminal .tnx-maprail-act:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+
+/* A flyout button that carries a glyph as well as its word — the Draw group's two
+   tools. The glyph is 18px, NOT the rail's 27px: a mark inside a panel is labelled
+   by the word beside it, whereas a mark on the rail is the only thing identifying
+   its button, so they are different jobs and deliberately different sizes.
+   `--tnx-maprail-glyph` is not reused here for that reason.
+
+   `flex: none` because these sit in the flyout's flex row and the strip must stay
+   lateral; without it a long adjacent label squeezes the glyph into an ellipse. */
+.tn-terminal .tnx-maprail-act-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.tn-terminal .tnx-maprail-act-icon svg { width: 18px; height: 18px; display: block; flex: none; }
 
 .tn-terminal .tnx-maprail-seg { display: flex; align-items: center; gap: 4px; }
 .tn-terminal .tnx-maprail-rule {
@@ -6016,6 +6121,12 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 
    44px is the measured target from the touch pass, technique (a): real size, since
    the rail is a column with room around it and does not need a transparent ::before.
+
+   THE 44px RE-DECLARATION BELOW NOW MATCHES DESKTOP AND IS DELIBERATELY KEPT. The
+   desktop button was 30px when this pass was written; the glyph rescale took it to
+   44px, so the two agree today. It stays as an explicit floor: it is the line that
+   fails a future desktop shrink loudly here rather than silently taking the touch
+   target under 44px on a phone.
    THIS @media IS LAST IN THE BLOCK ON PURPOSE — see the header. */
 @media (max-width: 900px) {
   .tn-terminal .tn-cw-stage { --tnx-maprail-btn: 44px; }

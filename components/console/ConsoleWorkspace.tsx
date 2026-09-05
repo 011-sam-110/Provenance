@@ -21,7 +21,6 @@ import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { railSizes, dockSize } from "@/lib/terminal/rails";
 import { useRailSplitter } from "@/lib/terminal/useRailSplitter";
-import { useTerminalSkin } from "@/lib/terminal/skin";
 import { useShellBox } from "@/lib/terminal/rowBudget";
 
 // The Provenance console: a FIXED HERO MAP with three resizable rails around it.
@@ -93,7 +92,6 @@ const RAILS: SegmentId[] = ["left", "right", "bottom"];
 
 export default function ConsoleWorkspace() {
   const layout = useShellLayout();
-  const skin = useTerminalSkin();
   const gridRef = useRef<HTMLDivElement>(null);
   const split = useRailSplitter(gridRef);
 
@@ -278,12 +276,13 @@ export default function ConsoleWorkspace() {
   };
 
   return (
-    // data-tnx-skin is repeated here, not inherited. This element carries
-    // `.tn-terminal` too, and that block re-declares the whole dark --tnx-*
-    // palette — so without the attribute the inner scope would override the
-    // light values cascading down from the shell and only the chrome would
-    // change skin.
-    <div className="tn-cw-shell tn-terminal" data-tnx-skin={skin} style={railVars}>
+    // `.tn-terminal` is repeated here, not inherited, and that is still deliberate
+    // even though there is only one palette now: this element re-declares the whole
+    // --tnx-* block, and it has to, because the widget bodies below it read those
+    // tokens. It used to carry a `data-tnx-skin` attribute alongside — without it,
+    // the inner scope re-declared the DARK palette and only the outer chrome went
+    // light. That failure mode died with the dark skin.
+    <div className="tn-cw-shell tn-terminal" style={railVars}>
       {/* The grid is a separate element from `.tn-cw-shell`, and that is not
           incidental: grid placement only applies to DIRECT children of the grid
           container, while the rail (PanelHost) has to stay a direct child of

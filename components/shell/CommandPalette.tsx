@@ -1,5 +1,7 @@
 "use client";
-// ⌘K / Ctrl-K command palette — search-and-jump plus quick layer control. A calm,
+// The command palette — search-and-jump plus quick layer control. A calm,
+// keyboardless door now: it opens from the header's SHORTCUTS button. ⌘K used to
+// open it and belongs to the Sources rail since the keymap landed (lib/shell/keymap.ts).
 // keyboard-first way to compose the view: toggle a layer, apply a preset, switch
 // basemap, or fly to a covered region. Open/close is owned by ConsoleShell.
 
@@ -19,8 +21,6 @@ import { placementStore } from "@/lib/console/placement";
 import { listPresets, applyPreset, saveCustomPreset, resetActiveBoard } from "@/lib/console/presets";
 import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
 import { encodeLayout } from "@/lib/console/share";
-import { tourStore } from "@/lib/shell/tour";
-import { uiStore, useUI } from "@/lib/shell/ui";
 import { langStore, useLang } from "@/lib/i18n/store";
 import { LANGS } from "@/lib/i18n/catalog";
 import { variantStore, useVariant } from "@/lib/variants/store";
@@ -201,11 +201,9 @@ function buildCommands(close: () => void): Command[] {
   for (const v of BUILTIN_VARIANTS) cmds.push({ id: `variant-${v.id}`, label: `${v.title}`, hint: "scenario", group: "Scenarios", run: () => { variantStore.setActive(v.id); close(); } });
 
   // ── Appearance: theme + language ────────────────────────────────────────
-  cmds.push({ id: "theme-toggle", label: "Toggle light / dark theme", hint: "theme", group: "Appearance", run: () => { uiStore.toggleTheme(); close(); } });
   for (const l of LANGS) cmds.push({ id: `lang-${l.code}`, label: `Language: ${l.name}`, hint: "language", group: "Appearance", run: () => { langStore.set(l.code); close(); } });
 
   // ── Workspace: reset / save / share the current composition ─────────────
-  cmds.push({ id: "take-tour", label: "Take the tour", hint: "guide", group: "Workspace", run: () => { tourStore.start(); close(); } });
   // Names the board it will actually reset. The old command ran
   // `applyPreset(DEFAULT_PRESET_ID)`, so on any board but the landing one it did not
   // reset anything — it navigated you to a different board. Now that boards restore
@@ -236,9 +234,8 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   // Every stateful choice the palette can reflect, read reactively so the ✓/ON/OFF
   // pills always show what's currently live. The palette closes on any action, so a
   // fresh snapshot per open is enough — but subscribing keeps it correct if state
-  // changes underneath (e.g. a variant flips theme while the palette is open).
+  // changes underneath (e.g. a variant flips a layer while the palette is open).
   const mapView = useMapView();
-  const ui = useUI();
   const lang = useLang();
   const activePreset = useActivePreset();
   const variant = useVariant();
@@ -247,13 +244,12 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   const snapshot = useMemo<PaletteSnapshot>(() => ({
     basemap: mapView.basemap,
     stage: layout.stage,
-    theme: ui.theme,
     lang,
     layers: layerState as unknown as Record<string, boolean>,
     activePresetId: activePreset,
     activeVariantId: variant.activeId,
     activeLayerSet: null, // Layer sets were removed from the palette — nothing to mark active.
-  }), [mapView.basemap, layout.stage, ui.theme, lang, layerState, activePreset, variant.activeId]);
+  }), [mapView.basemap, layout.stage, lang, layerState, activePreset, variant.activeId]);
 
   // Stamp active/ON/OFF/current-choice onto each command from the live snapshot.
   const decorated = useMemo(() => decorate(commands, snapshot), [commands, snapshot]);

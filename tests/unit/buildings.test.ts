@@ -46,13 +46,13 @@ describe("buildingsPaint", () => {
   test("height and base default rather than reading a missing field raw", () => {
     // render_min_height is absent on most buildings. Without the coalesce the
     // extrusion base is null and MapLibre draws nothing at all.
-    const paint = buildingsPaint("positron");
+    const paint = buildingsPaint("streets");
     expect(paint["fill-extrusion-base"]).toEqual(["coalesce", ["get", "render_min_height"], 0]);
     expect(paint["fill-extrusion-height"]).toEqual(["coalesce", ["get", "render_height"], 0]);
   });
 
   test("opacity fades in from zero at the minzoom rather than popping", () => {
-    const ramp = buildingsPaint("positron")["fill-extrusion-opacity"] as unknown[];
+    const ramp = buildingsPaint("streets")["fill-extrusion-opacity"] as unknown[];
     expect(ramp[0]).toBe("interpolate");
     expect(ramp[3]).toBe(BUILDINGS_MIN_ZOOM);
     expect(ramp[4]).toBe(0);
@@ -158,7 +158,7 @@ describe("the real style validator", () => {
     // Proves the validator actually bites, so the passes above mean something. A
     // zoom expression may only be the top-level input to step/interpolate, and this
     // is the exact shape that silently cost the cluster badges their layer once.
-    const style = styleWithBuildings("positron");
+    const style = styleWithBuildings("streets");
     style.layers[0].paint = {
       ...style.layers[0].paint,
       "fill-extrusion-opacity": ["*", ["interpolate", ["linear"], ["zoom"], 14, 0, 15, 1], 0.9],

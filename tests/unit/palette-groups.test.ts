@@ -133,7 +133,6 @@ test("every POPULAR_WIDGET_IDS entry resolves to the Popular section", () => {
 const snap: PaletteSnapshot = {
   basemap: "satellite",
   stage: "map2d",
-  theme: "dark",
   lang: "es",
   layers: { cameras: true, planes: false, satellites: true, webcams: false },
   activePresetId: "overview",
@@ -166,10 +165,11 @@ test("decorate stamps ON/OFF + active for map-layer toggles", () => {
   expect(d("toggle-satellites").state).toBe("ON");
 });
 
-test("decorate shows the current theme as a state pill", () => {
-  expect(d("theme-toggle").state).toBe("DARK");
-  expect(decorateCommand(cmd("theme-toggle", "", "", "X"), { ...snap, theme: "light" }).state).toBe("LIGHT");
-});
+// THE THEME PILL TEST IS GONE, with the command it decorated. "Toggle light / dark
+// theme" was removed from the palette when dark was removed from the product, and a
+// state pill for a command nobody can run is not a behaviour worth pinning. The
+// `appear-1` fixture below still exercises the Appearance group, so the grouping
+// path this file exists for is unchanged.
 
 test("decorate leaves stateless commands untouched", () => {
   const a = d("add-events");

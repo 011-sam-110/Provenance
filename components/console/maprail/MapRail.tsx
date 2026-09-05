@@ -39,21 +39,22 @@ import {
   railStep,
   useMapRail,
 } from "@/lib/console/mapRail";
-import { CameraBracketGlyph, PinGearGlyph, PolygonGlyph, SearchGlyph } from "./RailIcons";
+import { CameraBracketGlyph, MapPenGlyph, PinGearGlyph, SearchGlyph } from "./RailIcons";
 import SearchFlyout from "./SearchFlyout";
 import DrawFlyout from "./DrawFlyout";
 import CamerasFlyout from "./CamerasFlyout";
 import ViewFlyout from "./ViewFlyout";
 
-/** The id the shell's "/" shortcut looks for to decide whether the rail is on screen. */
+/** The id focusStageSearch() looks for to decide whether the rail is on screen. */
 export const MAP_RAIL_ID = "map-rail";
 
-// The per-group class names are WRITTEN OUT, not built with `tnx-maprail-btn-${id}`,
-// and that is load-bearing rather than verbose. The guided tour points at these
-// classes, and tests/unit/tour.test.ts checks every tour selector against the class
-// names it can find in the source — a template literal produces a class that exists
-// at runtime and is invisible to any grep, so the guard would go quiet exactly when
-// a rename broke the tour. Spelled out, a rename here fails that test loudly.
+// The per-group class names are WRITTEN OUT, not built with `tnx-maprail-btn-${id}`.
+// It was the guided tour's unit guard that made this load-bearing — it grepped this
+// source for every selector the tour pointed at, and a template literal produces a
+// class that exists at runtime and is invisible to a grep, so the guard would have
+// gone quiet exactly when a rename broke the tour. The tour is gone and that guard
+// with it, but the reason to keep spelling them out survives: tests/e2e/map-rail.spec.ts
+// and the CSS both name these strings, and neither can find a class that is assembled.
 const GROUPS: {
   id: RailGroup;
   label: string;
@@ -72,10 +73,14 @@ const GROUPS: {
   },
   {
     id: "draw",
+    // The group holds TWO tools now (a drawn area and a radius), so the button
+    // names the outcome they share rather than either gesture. "Restrict results
+    // to an area" is still the sentence — a radius IS an area — and keeping the
+    // wording is what lets the e2e accessible names stay put.
     label: "Restrict results to an area",
     btnClass: "tnx-maprail-btn-draw",
     popClass: "tnx-maprail-pop-draw",
-    glyph: PolygonGlyph,
+    glyph: MapPenGlyph,
     body: DrawFlyout,
   },
   {
@@ -215,6 +220,26 @@ export default function MapRail() {
               onKeyDown={(e) => onKeyDown(e, id)}
             >
               <Glyph />
+              {/* The hover/focus label. `aria-hidden`, because `aria-label` above
+                  already gives a screen reader this exact string and a visible copy
+                  would have it announced twice.
+
+                  THIS IS NOT THE HOVER-REVEAL THIS FILE ARGUES AGAINST. That rule
+                  is about CONTROLS that only exist on hover — the arm control in a
+                  card, the resize handles on touch. A label that names a control
+                  which is already visible, already clickable and already has an
+                  accessible name adds no dead control: on a phone it simply never
+                  appears, and nothing is lost, because the button is still there.
+
+                  It also replaces the native `title` tooltip as the thing you
+                  actually see. `title` is kept on the button — it is what a
+                  hover-capable user gets if CSS fails, and some assistive tooling
+                  reads it — but it takes about a second to appear, renders in OS
+                  chrome that ignores the skin, and cannot be positioned, which is
+                  why four icons with no words needed something better. */}
+              <span className="tnx-maprail-tip" aria-hidden="true">
+                {label}
+              </span>
             </button>
             {isOpen ? (
               // The flyout is a SIBLING of the button, positioned off its own row,

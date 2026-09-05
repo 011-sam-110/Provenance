@@ -4,7 +4,7 @@
 // instead of one inflated headline number. Counts come from /api/coverage (a tiny
 // grouped rollup of the registry); camera freshness comes from the existing store.
 //
-// Reachable from the layer rail's "Coverage details" button and the ⌘K palette.
+// Reachable from the layer rail's "Coverage details" button and the command palette.
 
 import { useEffect, useState } from "react";
 import { coverageStore, useCoverageOpen } from "@/lib/shell/coverage";

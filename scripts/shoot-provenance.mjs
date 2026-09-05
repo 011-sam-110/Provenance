@@ -34,15 +34,12 @@ const page = await browser.newPage({
 await page.goto(`http://localhost:${PORT}/app`, { waitUntil: "domcontentloaded", timeout: 90_000 });
 await page.waitForTimeout(9000); // dev-mode first compile + store hydration
 
-// A bare text=Skip locator collides with the unrelated a11y "Skip to the map"
-// link (components/shell/SkipLink.tsx) that sits earlier in the DOM, and the
-// tour's own button text is now just "Skip" (not "Skip tour") — so `.first()`
-// used to click the wrong element and the tour overlay never closed. The tour
-// button carries a dedicated class, `.tn-tour-skip` (TourOverlay.tsx), that the
-// skip-nav link does not, so scope to it instead.
-const skip = page.locator(".tn-tour-skip").first();
-if (await skip.count()) await skip.click().catch(() => {});
-await page.waitForTimeout(600);
+// NO TOUR SKIP HERE ANY MORE. #161 pointed this at `.tn-tour-skip` to stop a bare
+// text=Skip locator hitting the a11y "Skip to the map" link. That fix was right for
+// main and is dead on this branch: the guided tour is removed entirely, TourOverlay.tsx
+// is gone, and `.tn-tour-skip` can never be in the DOM. A `if (await skip.count())`
+// guard would have made it silently no-op forever, which is worse than absent -- the
+// next person to debug this script would read it as a step that runs.
 
 // `text=SOURCES` used to open the rail but is now ambiguous post-reskin: the
 // literal text "SOURCES" is also the bottom-bar freshness ticker's label

@@ -1,50 +1,49 @@
 // tests/e2e/console.spec.ts
 import { test, expect } from "@playwright/test";
 
-// The first-visit guided tour auto-opens ~900ms after load, and `.tn-tour-veil` is a
-// `position:fixed; inset:0` transparent layer — so from that moment every click in
-// the page lands on the veil instead of the control under it. Two of the tests below
-// need real clicks and real key presses, and a test whose outcome depends on beating
-// a 900ms timer is a flake, not a test.
+// The launch sequence (components/terminal/BootSequence.tsx) is a
+// `position:fixed; inset:0` plate that owns the screen for five seconds on a first
+// visit, so from load every click in the page lands on the plate instead of the
+// control under it. Two of the tests below need real clicks and real key presses,
+// and a test whose outcome depends on beating a five-second timer is a flake.
 //
 // Stamping the "seen" flag before the app boots is the deterministic fix: it is the
-// same envelope lib/shell/persist writes ({ v, d }) under the key lib/shell/tour
-// reads, so tourStore.hydrate() finds TOUR_VERSION already seen and
-// maybeAutoStart() returns without opening anything. The tour itself is unaffected
-// and still reachable from ⌘K and the profile menu; this only declines the auto-run.
+// envelope lib/shell/persist writes ({ v, d }) under the key lib/terminal/boot.ts
+// reads, so the app is interactive from the first frame.
 //
-// The launch sequence (components/terminal/BootSequence.tsx) is the same problem
-// twice over: it is a `position:fixed; inset:0` plate that owns the screen for five
-// seconds on a first visit. Its "seen" flag uses the identical envelope under the
-// key lib/terminal/boot.ts reads, so stamping it here means the app is interactive
-// from the first frame instead of five seconds in.
+// There was a second stamp here, for the first-visit guided tour, which auto-opened
+// ~900ms after load behind its own transparent veil. The tour is gone.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    // A number far above TOUR_VERSION, deliberately: seeding the CURRENT version
-    // means every bump of the tour silently re-arms this overlay and breaks the
-    // suite in a way that looks like a console regression.
-    window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
 });
 
-test("first-run seeds the World preset with widgets in segments", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.locator(".tn-cw").first()).toBeVisible();
-  await expect(page.locator('[data-segment="left"] .tn-cw')).not.toHaveCount(0);
+test("/app opens on a bare globe — the landing board seeds NO widgets", async ({ page }) => {
+  // INVERTED, not repaired. This asserted that the first run seeded a "World" preset
+  // full of cards in segments, and it had been failing on two counts: it navigated to
+  // "/", which is the marketing site rather than the console at "/app", and the
+  // landing board it described no longer exists. Globe replaced it and is
+  // DELIBERATELY empty (lib/console/presets.ts: "/app opens on a bare rotating globe
+  // and nothing else"), so the honest test is the opposite of the one that was here.
+  await page.goto("/app");
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
+  await expect(page.locator(".tn-cw")).toHaveCount(0);
+  await expect(page.locator(".tnx-hdr-board.is-active")).toContainText("GLOBE");
 });
 
-test("⌘K adds a widget instance", async ({ page }) => {
-  await page.goto("/");
-  // Wait for the seeded board before counting. `count()` does NOT retry — it is a
-  // one-shot query — so reading it straight after goto() captured 0 on a cold load
-  // and the assertion below then demanded exactly 1 widget while the first-run
-  // preset was busy rendering its eight. Anchoring on the first widget being
-  // visible is the same gate the seeding test above uses.
-  await expect(page.locator(".tn-cw").first()).toBeVisible();
+test("the palette adds a widget instance", async ({ page }) => {
+  // WAS "⌘K adds a widget instance", and ⌘K is not the palette's chord any more —
+  // the keymap gave it to the Sources rail (lib/shell/keymap.ts), so pressing it
+  // here would open a panel and never reach the palette. The palette kept its door,
+  // it lost its shortcut; tests/e2e/sources-rail.spec.ts pins that trade from the
+  // other side.
+  await page.goto("/app");
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
   const before = await page.locator(".tn-cw").count();
-  await page.keyboard.press("Control+k");
-  // WAS getByPlaceholder(/Search/), which is a strict-mode violation: three inputs on
+
+  await page.locator(".tn-palette-trigger").click();
+  // NOT getByPlaceholder(/Search/), which is a strict-mode violation: three inputs on
   // this page have a placeholder containing "Search" — the palette's "Search
   // actions…", the stage's "Search a place — drop a pin", and the Source Catalog
   // rail's "Search sources…". Narrowed to the palette's own copy rather than
@@ -52,6 +51,15 @@ test("⌘K adds a widget instance", async ({ page }) => {
   // order between three unrelated components.
   await page.getByPlaceholder(/Search actions/).fill("Add Aviation");
   await page.keyboard.press("Enter");
+
+  // The palette does not place the widget itself any more — it closes and hands over
+  // to the placement picker, which asks which rail the card belongs in. Pressing
+  // Enter and expecting a card was the second thing stale about this test: the
+  // command ran, the palette shut, and nothing appeared, which reads exactly like a
+  // dead command.
+  await expect(page.locator(".tn-place")).toBeVisible();
+  await page.getByRole("radio", { name: "Left column" }).click();
+
   await expect(page.locator(".tn-cw")).toHaveCount(before + 1);
 });
 
@@ -65,37 +73,40 @@ test("⌘K adds a widget instance", async ({ page }) => {
 // NOT REPLACED WITH A ⌘K EQUIVALENT, deliberately. The projection is still
 // changeable from the command palette ("Stage → 3D map" / "Stage → 2D map", see
 // CommandPalette.tsx), so the CAPABILITY is intact and a palette-driven test could
-// be written. It is not written here because this spec was already failing before
-// this change for reasons that have nothing to do with it: it navigates to "/",
-// which is the marketing site rather than the console at "/app", and it asserted on
-// `.tnx-stage-bar` and `.tnx-stage-label`, two classes the stage's 22px top bar took
-// with it when that band was removed. Adding a green test beside that rot would
-// disguise it. The e2e suite needs a pass of its own, and this note is the marker.
+// be written. It is not written here because this spec was rotten in ways that had
+// nothing to do with it: every test navigated to "/", the marketing site rather than
+// the console at "/app", and it asserted on `.tnx-stage-bar` and `.tnx-stage-label`,
+// two classes the stage's 22px top bar took with it when that band was removed.
+//
+// The three surviving tests were repaired when the guided tour came out, because one
+// of them pressed ⌘K for the palette and that chord now belongs to the Sources rail.
+// A projection test still is not written here.
 
-test("WALL and CONSOLE re-lay the board without losing a widget", async ({ page }) => {
-  // WAS "collapsing the left segment hides its widgets", which dragged `.tn-grip`.
-  // The Terminal grid has fixed column tracks (lib/terminal/grid), so the column
-  // splitters are gone — a splitter that cannot move anything is a control that
-  // lies. The mode toggle is what re-lays the board now, and the property worth
-  // pinning is the one a layout rewrite is most likely to break quietly: no widget
-  // may be dropped on the way between the two templates.
-  //
-  // Worth noting what the old assertion actually checked: `toHaveCSS("width",
-  // /0px|(\d|10|20)px/)` matches "300px" too, because "300px" contains "0px" — so it
-  // passed whether or not the drag did anything.
-  await page.goto("/");
+// THE "WALL and CONSOLE re-lay the board" TEST IS REPLACED, and it is worth saying
+// what it lost. It pressed "w" and "c" to drive a CONSOLE|WALL toggle in the header
+// and asserted no widget was dropped between the two templates. That toggle is gone:
+// `mode` is a property of the BOARD now (lib/console/presets.ts — Streets is the only
+// `mode: "wall"` one), so there is no user control left to press and no pair of
+// templates for one board to move between. The reducers that own a wall layout are
+// covered by unit tests; what only a browser can still see is below.
+
+test("switching boards keeps ONE map instance and lays out the new board", async ({ page }) => {
+  // The invariant the old test asserted last and cared about least: the map is a
+  // single mounted MapLibre instance across every board, never a remount. A board
+  // switch that quietly tore the map down and rebuilt it would cost a full style and
+  // tile load, lose the camera position, and look — from the outside — like a slow
+  // board rather than a bug.
+  await page.goto("/app");
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
+  await expect(page.locator(".tn-cw")).toHaveCount(0); // Globe is deliberately empty
+
+  await page.getByRole("button", { name: /STREETS board/ }).click();
   await expect(page.locator(".tn-cw").first()).toBeVisible();
-  const before = await page.locator(".tn-cw").count();
-  expect(before).toBeGreaterThan(0);
+  const streets = await page.locator(".tn-cw").count();
+  expect(streets).toBeGreaterThan(0);
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
 
-  await page.keyboard.press("w");
-  await expect(page.locator(".tnx-hdr-mode-btn.is-active")).toHaveText("WALL");
-  await expect(page.locator(".tn-cw")).toHaveCount(before);
-
-  await page.keyboard.press("c");
-  await expect(page.locator(".tnx-hdr-mode-btn.is-active")).toHaveText("CONSOLE");
-  await expect(page.locator(".tn-cw")).toHaveCount(before);
-  // The map is a single mounted instance across both modes — the mode switch is a
-  // style change on the grid container, never a remount.
+  await page.getByRole("button", { name: /GLOBE board/ }).click();
+  await expect(page.locator(".tn-cw")).toHaveCount(0);
   await expect(page.locator(".map-canvas")).toHaveCount(1);
 });

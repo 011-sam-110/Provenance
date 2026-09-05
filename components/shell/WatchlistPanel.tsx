@@ -1,6 +1,6 @@
 "use client";
 // Saved places — a calm right-side slide-in for bookmarking + recalling map views.
-// Opt-in (opened from the rail or ⌘K), so it never clutters the globe. Reuses the
+// Opt-in (opened from the rail or the command palette), so it never clutters the globe. Reuses the
 // Markets/dossier surface tokens and the watchlist store (persisted list + pure
 // ops). "Save current view" captures the live camera (or the focused object); a
 // row click flies the globe back there via mapViewStore (no map logic duplicated).

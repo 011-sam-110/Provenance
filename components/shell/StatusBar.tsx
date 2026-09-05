@@ -1,7 +1,7 @@
 "use client";
 // Top status bar — the global chrome that recedes while the map stays the hero.
 //
-// Layout (left → right):  OpenData wordmark · [ central board pill ] · ⌘K | settings | profile
+// Layout (left → right):  OpenData wordmark · [ central board pill ] · palette | settings | profile
 //
 // The live-data pulse (camera/plane/sat counts) was removed from the visible bar for
 // calm; the canonical machine-readable count line survives as a visually-hidden span
@@ -77,7 +77,8 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
         <PresetPill />
 
         {/* ── Entry points + identity ──────────────────────────────────────── */}
-        {/* Support · ⌘K · Settings · Profile — the avatar sits at the very edge. */}
+        {/* Support · palette · Settings · Profile — the avatar sits at the very edge.
+            NOTE: nothing renders StatusBar any more; TerminalHeader replaced it. */}
         <div className="tn-topbar-right">
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. Present but not shouty. */}
@@ -96,9 +97,9 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
             type="button"
             className="tn-icon-btn tn-palette-trigger"
             onClick={onOpenPalette}
-            title="Command palette (⌘K)"
+            title="Command palette"
           >
-            <span className="tn-kbd">⌘K</span>
+            <span className="tn-kbd">⇧⌘P</span>
           </button>
 
           <button

@@ -89,8 +89,6 @@ export function modeForStage(stage: StageId): "2d" | "3d" | null {
  * none of its own — a sixth basemap must fail there rather than render a blank chip.
  */
 export const RAIL_BASEMAP_LABEL: Record<BasemapKey, string> = {
-  dark: "Dark",
-  positron: "Light",
   streets: "Streets",
   satellite: "Sat",
   topo: "Topo",
@@ -101,36 +99,17 @@ export function railBasemapKeys(): BasemapKey[] {
   return Object.keys(BASEMAPS) as BasemapKey[];
 }
 
-/**
- * Dark and Light share ONE button on the strip.
- *
- * They are the only two basemaps that are the same map in two values, so a reader
- * never weighs them against each other the way they weigh Streets against
- * Satellite — they just want the other one. Collapsing them buys a chip of width
- * back for a strip whose whole job is to stay lateral, and it matches the console
- * header, which has carried a single light/dark button all along.
- */
-export const RAIL_PAIR: readonly BasemapKey[] = ["positron", "dark"];
-
-export function isPairBasemap(b: BasemapKey): boolean {
-  return RAIL_PAIR.includes(b);
-}
-
-/** The basemaps that get a chip of their own — everything outside the pair. */
-export function railStandaloneBasemaps(): BasemapKey[] {
-  return railBasemapKeys().filter((k) => !isPairBasemap(k));
-}
-
-/**
- * What the pair button selects next.
- *
- * From one member, the other. From anywhere else, the calm light default — the
- * same value DEFAULT_BASEMAP starts the app at, so the button never lands
- * somewhere the product does not already open on.
- */
-export function nextPairBasemap(current: BasemapKey): BasemapKey {
-  return current === "positron" ? "dark" : "positron";
-}
+// THE DARK/LIGHT PAIR BUTTON IS GONE, along with RAIL_PAIR, isPairBasemap(),
+// railStandaloneBasemaps() and nextPairBasemap().
+//
+// It existed because Dark and Light were "the same map in two values", so one button
+// could offer the other one and buy back a chip of width on a strip whose job is to
+// stay lateral. Both of those basemaps have now left the registry with the console's
+// dark skin, so the pair has no members: every remaining basemap — Streets, Sat,
+// Topo — is a genuinely different map that a reader does weigh against the others,
+// which is what the radiogroup was always for. `railStandaloneBasemaps()` is not kept
+// as an alias for `railBasemapKeys()`, because "standalone" only means anything when
+// something else is paired.
 
 // ── the store ────────────────────────────────────────────────────────────────
 

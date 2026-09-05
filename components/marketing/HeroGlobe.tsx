@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { BASEMAPS } from "@/lib/basemaps";
+import { DARK_STYLE } from "@/lib/basemaps";
 import { buildSatrec, propagateAt } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
 import { setHeroView } from "@/lib/marketing/heroView";
@@ -187,7 +187,10 @@ export default function HeroGlobe({
 
     const map = new maplibregl.Map({
       container: el,
-      style: BASEMAPS.dark.style,
+      // DARK_STYLE by name, not BASEMAPS.dark. Dark is no longer a registry entry —
+      // it left with the console's dark skin — but this hero is a night stage and
+      // the style itself is still exported for exactly this caller.
+      style: DARK_STYLE,
       // MapLibre v5 moved this under canvasContextAttributes (it was a top-level
       // MapOptions field in v4).
       canvasContextAttributes: { preserveDrawingBuffer: capture },

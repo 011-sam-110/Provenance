@@ -20,7 +20,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOOT_FADE_MS, BOOT_MS } from "@/lib/terminal/boot";
 import { cinematic } from "@/lib/cinematic/store";
-import { tourStore } from "@/lib/shell/tour";
 import {
   CAP_EMAIL,
   CAP_OCCUPATION,
@@ -108,14 +107,13 @@ export default function FeedbackPrompt() {
 
       const ctx = {
         bootPlaying: false, // held out by INITIAL_HOLD_MS above, not by a racy read
-        tourOpen: tourStore.isActive(),
         diveActive: cinematic.get().phase !== "idle",
       };
 
       // The override forces the prompt for review but still respects a recorded
       // dismissal, so a review pass cannot silently undo a visitor's "no".
       const show = forced.current
-        ? !cur.resolved && !ctx.tourOpen && !ctx.diveActive
+        ? !cur.resolved && !ctx.diveActive
         : shouldPrompt(cur, ctx, rollWon.current);
 
       if (show) {

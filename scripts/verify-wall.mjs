@@ -24,9 +24,8 @@ const outDir = process.argv[3] ?? "persona-shots/wall";
 // grid is fluid — so the nominal size is the honest one to assert at.
 const VIEWPORT = { width: 1440, height: 900 };
 
-// Both overlays that own the screen on a first visit; a boot veil eats clicks.
+// The launch plate owns the screen on a first visit, and a boot veil eats clicks.
 const SUPPRESS = () => {
-  window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
   window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
 };
 

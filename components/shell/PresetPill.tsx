@@ -3,7 +3,7 @@
 // drops down the five broad boards; picking one calls applyPreset(), which swaps
 // BOTH the widgets and the map overlays in one shot (see lib/console/presets.ts).
 // Replaces the old top-left variant switcher as the app's primary "what am I looking
-// at" control. Custom saved boards (⌘K "Save workspace") are appended below a rule.
+// at" control. Custom saved boards (the palette's "Save workspace") are appended below a rule.
 
 import { useEffect, useRef, useState } from "react";
 import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";

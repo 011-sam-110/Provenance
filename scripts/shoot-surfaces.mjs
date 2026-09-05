@@ -1,11 +1,11 @@
 // Capture the console with each of its hidden surfaces open, so a reviewer can
 // enumerate every pressable control from pictures alone.
 //
-// The tour's own verification (verify-tour.mjs) proves each step lands on
-// something. It cannot prove the reverse — that nothing on screen is left
-// unexplained — because it only ever looks where the tour points. These shots are
-// the other direction: the app as a user meets it, tour dismissed, every drawer
-// and popover open in turn.
+// Nothing else in the repo proves that nothing on screen is left unexplained. The
+// guided tour used to be a partial answer, and its verifier walked the steps the
+// tour pointed at — but that only ever looked where the tour looked, and the tour
+// is gone. These shots are the app as a user meets it, every drawer and popover
+// open in turn.
 //
 //   node scripts/shoot-surfaces.mjs [baseUrl] <outDir>
 
@@ -127,11 +127,10 @@ const run = async () => {
 
   for (const shot of shots) {
     const page = await browser.newPage({ viewport: { width: 1512, height: 945 } });
-    // Suppress BOTH first-run surfaces: these shots are of the product, not of its
-    // onboarding, and the tour veil would sit over every control being catalogued.
+    // Suppress the launch plate: these shots are of the product, not of its
+    // onboarding, and the plate would sit over every control being catalogued.
     await page.addInitScript(() => {
       try {
-        window.localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
         window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
       } catch { /* private mode */ }
     });

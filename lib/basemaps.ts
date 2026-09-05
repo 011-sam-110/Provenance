@@ -29,7 +29,19 @@
 
 import type { StyleSpecification } from "maplibre-gl";
 
-export type BasemapKey = "dark" | "positron" | "streets" | "satellite" | "topo";
+// NO `dark`, AND NO `positron`. The console is light-only now, so the Dark basemap
+// had no chrome to pair with, and the Dark/Light pair button that was the only way to
+// reach either of them went with it. Positron's STYLE URL is still exported below and
+// still used by the inset map and /locate — what is gone is its place in the registry,
+// i.e. its place in every basemap switcher.
+//
+// OLD SHARED LINKS DEGRADE, THEY DO NOT BREAK. `?base=positron` was a published value
+// in every link ever minted. lib/share/url.ts builds VALID_BASEMAPS from
+// `Object.keys(BASEMAPS)`, so those two values now simply fail the guard and the link
+// opens on the default basemap with its view, layers and selection intact. That is the
+// reason the key was never renamed while it existed, and it is the reason removing it
+// is survivable.
+export type BasemapKey = "streets" | "satellite" | "topo";
 
 export interface BasemapDef {
   key: BasemapKey;
@@ -137,7 +149,15 @@ const ESRI_STYLE: StyleSpecification = {
 //     the measurement beside MAP_LABEL_FONT for why the stack is Noto and not Open Sans.
 //   • An inline style also cannot fail the way a remote style URL can, so DARK is a
 //     legal fallback target for lib/map/resilience.ts (see fallbackBasemap).
-const DARK_STYLE: StyleSpecification = {
+// EXPORTED, THOUGH IT IS NO LONGER A BASEMAP. Dark left the registry with the
+// console's dark skin, so it is not offered in any basemap switcher — but the
+// LANDING page's hero is a deliberate night stage (`.pv-night`, server-rendered so a
+// cold load does not flash daylight) and CARTO Dark Matter is the map half of it.
+// Removing the style along with the registry entry would have turned the hero white,
+// which is a marketing-page regression nothing in the console suite would have
+// caught. Same treatment as POSITRON_STYLE_URL below: the style is still available to
+// a caller that names it, it is just not something a user can pick.
+export const DARK_STYLE: StyleSpecification = {
   version: 8,
   glyphs: CARTO_GLYPHS,
   sources: {
@@ -196,27 +216,11 @@ export const POSITRON_STYLE_URL = "https://tiles.openfreemap.org/styles/positron
 
 // Order matters twice over, so it is set here rather than at any call site: every
 // basemap switcher iterates `Object.keys(BASEMAPS)` (the Terminal stage bar, the old
-// MapControls, the ⌘K palette), and `fallbackBasemap()` walks the same order looking
-// for the first INLINE style to recover onto. DARK leads on both counts.
+// MapControls, the command palette), and `fallbackBasemap()` walks the same order looking
+// for the first INLINE style to recover onto. DARK used to lead on both counts; with
+// it removed STREETS leads the switchers and SATELLITE is the first inline style, so
+// a remote-style failure now recovers onto Esri imagery rather than CARTO Dark.
 export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
-  dark: {
-    key: "dark",
-    label: "Dark",
-    style: DARK_STYLE,
-    vector: false,
-  },
-  // KEY STAYS `positron` even though the tiles are no longer CARTO's. It is a
-  // published contract: it is the value of `?base=` in every shared link ever minted,
-  // basemapForSkin("light") returns it, and tests/unit/terminal-skin.test.ts pins it
-  // against DEFAULT_TERMINAL_SKIN. Renaming the key to `light` would break old links
-  // to save nothing. OpenFreeMap's own style is also called positron, so the name is
-  // still accurate — it is the same Positron design over the same OSM data.
-  positron: {
-    key: "positron",
-    label: "Light",
-    style: POSITRON_STYLE_URL,
-    vector: true,
-  },
   // Liberty — the detailed street map, and the only OpenFreeMap style that ships its
   // own `building-3d` fill-extrusion layer (55 layers on positron, 111 here).
   //

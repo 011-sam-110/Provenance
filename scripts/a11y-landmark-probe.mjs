@@ -2,10 +2,9 @@
 //
 //   node scripts/a11y-landmark-probe.mjs http://127.0.0.1:3981
 //
-// Measures exactly the properties the accessibility judge measured (1440x900),
-// with the first-run tour pre-dismissed so its modal veil does not sit over the
-// page and swallow the skip-link hit test. Also drives the skip link with a real
-// keyboard (Tab, Enter) and reports document.activeElement afterwards.
+// Measures exactly the properties the accessibility judge measured (1440x900).
+// Also drives the skip link with a real keyboard (Tab, Enter) and reports
+// document.activeElement afterwards.
 import { chromium } from "@playwright/test";
 
 const url = process.argv[2] || "http://127.0.0.1:3981";
@@ -13,11 +12,6 @@ const settle = Number(process.argv[3] || 9000);
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-await ctx.addInitScript(() => {
-  try {
-    localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
-  } catch {}
-});
 const page = await ctx.newPage();
 await page.goto(url, { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(settle);

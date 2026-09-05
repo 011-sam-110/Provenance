@@ -9,12 +9,11 @@ import { test, expect } from "@playwright/test";
 // `?feedback=1` is the review override the component reads (same precedent as
 // `?boot=1`). Without it these tests would have to fake fifteen minutes.
 
-/** Suppress the first-run tour, which is modal and would intercept every click.
+/** Suppress the launch plate, which is modal and would intercept every click.
  *  `d`, not `data` — that is the key PersistEnvelope actually writes. */
 async function seedSeen(page: import("@playwright/test").Page) {
   await page.goto("/app");
   await page.evaluate(() => {
-    localStorage.setItem("tn.tour.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 99 } }));
     localStorage.removeItem("tn.feedback.v1");
   });

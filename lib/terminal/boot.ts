@@ -80,7 +80,7 @@ export const MARK_ASSEMBLE_MS = 1180;
 export const BOOT_REDUCED_MS = 260;
 
 /** Bumping this replays the sequence once for everyone who has already seen it.
- *  Same idea as TOUR_VERSION: a redesign is worth showing again, a bug fix is not. */
+ *  A redesign is worth showing again, a bug fix is not. */
 export const BOOT_VERSION = 1;
 
 export const BOOT_PERSIST_KEY = "tn.terminal.boot.v1";

@@ -96,7 +96,9 @@ describe("layersToTrim against the real Liberty style", () => {
  * opens. There would be no error, just a black sphere.
  */
 describe("the inline raster basemaps are left completely alone", () => {
-  const inlineKeys: BasemapKey[] = ["dark", "satellite", "topo"];
+  // Dark left the registry with the console's dark skin; Esri and OpenTopoMap are
+  // the inline styles that remain.
+  const inlineKeys: BasemapKey[] = ["satellite", "topo"];
 
   for (const key of inlineKeys) {
     test(`${key} is untouched`, () => {

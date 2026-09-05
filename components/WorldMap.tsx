@@ -2078,7 +2078,7 @@ export default function WorldMap() {
     ).__worldmap = { setBasemap: mapViewStore.setBasemap, setTerrain: mapViewStore.setTerrain };
   }, []);
 
-  // Fly the globe to a region (called from the ⌘K palette via mapView.flyTo).
+  // Fly the globe to a region (called from the command palette via mapView.flyTo).
   const flyToRegion = useCallback((target: RegionView) => {
     const map = mapRef.current;
     if (!map) return;
