@@ -67,8 +67,8 @@ export function altitudeBand(o: WorldObject): AltBand {
 }
 
 // Coarse continent buckets for the region filter/column. Derived purely from
-// lat/lon — the aircraft grid is now worldwide, so "region" means the continent a
-// flight is over, independent of which harvest cells fetched it.
+// lat/lon — the aircraft pull is worldwide, so "region" means the continent a
+// flight is over, independent of which type batch fetched it.
 export const REGION_LABELS = [
   "North America", "South America", "Europe", "Middle East", "Africa", "Asia", "Oceania",
 ];

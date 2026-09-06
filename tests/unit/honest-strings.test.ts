@@ -16,7 +16,8 @@
 //                                 the short catalog attribution string. Same root
 //                                 cause, later found: OpenSky was removed from the
 //                                 live fetch path entirely (lib/sources/opensky.ts),
-//                                 adsb.lol's bounded grid sweep is the sole source.
+//                                 adsb.lol is the sole source (a 40-cell sweep then,
+//                                 a worldwide pull by ICAO type since 2026-09-06).
 //   6. lib/console/help.ts's aviation TYPE sentence claimed TYPE is "not broadcast
 //                                 and not looked up" — true for OpenSky (no category
 //                                 field at all) but not for adsb.lol, which broadcasts
@@ -72,22 +73,27 @@ test("the planes catalog entry credits adsb.lol, its real current source", () =>
 // describe how adsb.lol's bounded grid sweep actually works. Guard both so
 // neither can drift back to naming the removed feed.
 
-test("the aviation widget's help.source credits adsb.lol, not OpenSky", () => {
+test("the aviation widget's help.source credits adsb.lol, not OpenSky, and not the retired sweep", () => {
   const source = AVIATION_WIDGET.help?.source ?? "";
   expect(source.toLowerCase()).toContain("adsb.lol");
   expect(source).not.toContain("OpenSky");
+  expect(source).not.toMatch(/sweep/i);
 });
 
-test("the aviation trust card describes adsb.lol's real mechanism, not OpenSky's", () => {
+test("the aviation trust card describes adsb.lol's real mechanism, not OpenSky's or the retired sweep's", () => {
   const e = widgetExplainerFor("aviation");
   expect(e).toBeDefined();
   const text = [e!.method, e!.coverage, ...e!.limitations].join(" ");
   expect(text).not.toContain("OpenSky");
   expect(text.toLowerCase()).toContain("adsb.lol");
-  // The false "single global snapshot" claim must not survive as a description
-  // of how data is currently gathered — it's a bounded grid sweep instead.
-  expect(e!.method).toMatch(/grid sweep/i);
-  expect(e!.coverage).toMatch(/grid sweep/i);
+  // Neither the removed "single global snapshot" nor the retired 40-cell "grid
+  // sweep" may survive as a description of how data is gathered. Since 2026-09-06
+  // it is a worldwide pull by ICAO type designator, and the card must say which
+  // aircraft that leaves out (unlisted types, no type code).
+  expect(text).not.toMatch(/grid sweep/i);
+  expect(e!.method).toMatch(/type designator/i);
+  expect(e!.coverage).toMatch(/worldwide/i);
+  expect(e!.coverage).toMatch(/type code/i);
   // The false "OpenSky anonymous credit cap" reason for the shared cadence must
   // not survive; the real constraint is adsb.lol's own rate limit.
   expect(e!.limitations.join(" ")).toMatch(/adsb\.lol rate-limits/i);

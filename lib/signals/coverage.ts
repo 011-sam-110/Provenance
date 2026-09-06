@@ -205,11 +205,22 @@ export function coverageNote(coverage: SignalCoverage | undefined): string | und
   const kept = coverage.rule ? ` Kept: ${coverage.rule}.` : "";
 
   if (!coverage.availableExact) {
-    const limit = groupDigits(coverage.upstreamLimit ?? coverage.available);
-    const capPart = coverage.cap != null ? ` and a cap of ${groupDigits(coverage.cap)}` : "";
+    // Two reasons a total can be a lower bound, and they read differently. A
+    // saturated request limit is a fact about the request ("limited to 50"). A
+    // source that can only ever see part of the world (a volunteer receiver
+    // network) has no such limit, and printing "limited to 1,311" for it — which
+    // prod did — described a request that never happened.
+    if (coverage.upstreamLimit != null) {
+      const capPart = coverage.cap != null ? ` and a cap of ${groupDigits(coverage.cap)}` : "";
+      return (
+        `Showing ${shown} ${noun} — not all of them. The upstream request is limited to ` +
+        `${groupDigits(coverage.upstreamLimit)}${capPart}, so the real total is higher and unknown.${kept}`
+      );
+    }
+    const capPart = coverage.cap != null ? `, and a cap of ${groupDigits(coverage.cap)} applies` : "";
     return (
-      `Showing ${shown} ${noun} — not all of them. The upstream request is limited to ` +
-      `${limit}${capPart}, so the real total is higher and unknown.${kept}`
+      `Showing ${shown} ${noun} — not all of them. At least ${groupDigits(coverage.available)} ${noun} ` +
+      `were seen upstream${capPart}, so the real total is higher and unknown.${kept}`
     );
   }
 

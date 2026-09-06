@@ -1,24 +1,24 @@
 /**
- * The aircraft layer. The sole source is a bounded adsb.lol grid sweep
- * (lib/sources/adsb.ts). See `fetchAircraftOnce` for why OpenSky was removed —
- * the reason is its licence, not its reliability — and what the change costs in
- * coverage (in practice: nothing, because the sweep was already serving prod alone).
+ * The aircraft layer. The sole source is an adsb.lol pull by ICAO type designator
+ * (lib/sources/adsb.ts): four paced requests that together cover the whole receiver
+ * network, capped as a proportional spatial sample. See `fetchAircraftOnce` for why
+ * OpenSky was removed — the reason is its licence, not its reliability.
  *
  * FILENAME. This module is still called `opensky.ts` even though it no longer
  * contacts OpenSky, because renaming it touches eight importers and would bury a
  * licensing fix inside a rename diff. That rename is a named follow-up, not an
  * oversight.
  *
- * WHY A SWEEP IS AWKWARD, retained because it still shapes the code below:
- * adsb.lol is point+radius only (max 250 nm, no global query), so worldwide coverage
- * means sweeping ~50 cells and stitching them. On Vercel serverless that stitching
- * cannot accumulate across the cold, independent lambdas that handle each cache
- * revalidation, so the union is whatever one sweep collects inside its own budget —
- * dense over North America and Europe, thin elsewhere. That limit is real and is
- * declared through the coverage record rather than hidden. OpenSky's `/states/all`
- * did not have it, which is why it was preferred until the terms were read.
+ * HISTORY THAT STILL SHAPES THE CODE: between 2026-08-13 and 2026-09-06 this layer
+ * was a sweep of 40 point+radius cells, and on Vercel the shared egress IP tripped
+ * adsb.lol's per-IP rate limit so hard that prod served 1 of 40 cells. The type
+ * pull replaced it: `/v2/type/{list}` answers worldwide in one request, so the
+ * layer needs four requests per snapshot instead of forty, and the cap became a
+ * spatial sample instead of a prefix (which is what had drawn two dense discs on
+ * the globe). Coverage is still a lower bound — receivers are where volunteers put
+ * them, and only listed types are asked for — and the coverage record says so.
  *
- * CADENCE: the sweep is wrapped in Next's Data Cache (`unstable_cache`,
+ * CADENCE: the pull is wrapped in Next's Data Cache (`unstable_cache`,
  * revalidate = REVALIDATE_S), so upstream is hit at most once per window for the
  * ENTIRE deployment (stale-while-revalidate) rather than per visitor. On failure
  * `fetchAircraftOnce` THROWS rather than returning empty, so the Data Cache keeps
@@ -48,7 +48,7 @@ import {
   withCoverage,
   type SignalCoverage,
 } from "@/lib/signals/coverage";
-import { fetchAdsbSweep, sweepToObjects } from "@/lib/sources/adsb";
+import { fetchAdsbTypePull, pullToObjects } from "@/lib/sources/adsb";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -193,8 +193,19 @@ export function planeToWorldObject(p: Plane): WorldObject {
 // Cap — bounds the served set (client payload + Data Cache 2 MB entry limit)
 // ---------------------------------------------------------------------------
 
-// A global snapshot is ~10k aircraft; capping keeps the cached entry under the
-// Data Cache 2 MB limit and the client payload reasonable.
+/**
+ * The served cap. The type pull returns ~9,700 positioned aircraft (2026-09-06),
+ * and this is how many of them leave the server, chosen as a proportional spatial
+ * sample (lib/planes/sample.ts) so every region keeps its share.
+ *
+ * TWO COSTS BOUND IT, both measured on the same day; raise it with both in view:
+ *   - The capped WorldObject array is what `unstable_cache` stores, and the Vercel
+ *     Data Cache allows 2 MB per entry. Prod served 571,124 bytes for 1,311 aircraft
+ *     (~436 B each), so 3,000 ≈ 1.3 MB and ~4,500 is the ceiling.
+ *   - Every open console downloads it every 12 s (lib/planes/usePlanes.ts), edge
+ *     cached for 20 s. 3,000 aircraft is ~1.3 MB before compression per poll.
+ * The uncapped pool exists only inside the revalidation invocation.
+ */
 export const MAX_PLANES = 3000;
 
 /**
@@ -288,11 +299,11 @@ export function toAircraftSnapshot(planes: WorldObject[]): AircraftSnapshot {
 
 // Deployment-wide revalidate, unchanged at 240 s. This used to be sized against
 // OpenSky's ~400-credits/day anonymous budget; adsb.lol publishes no such cap, so
-// the number now exists only to bound how often the 14 s sweep runs.
+// the number now exists only to bound how often the four-request pull runs.
 const REVALIDATE_S = 240;
 
 /**
- * One aircraft snapshot, from a bounded adsb.lol grid sweep (lib/sources/adsb.ts).
+ * One aircraft snapshot, from the adsb.lol type pull (lib/sources/adsb.ts).
  *
  * WHY OPENSKY IS GONE, AND WHY THIS IS NOT A REGRESSION.
  *
@@ -313,12 +324,10 @@ const REVALIDATE_S = 240;
  * attributable one, which is more squarely the licensed act, not less.
  *
  * NOTHING IS LOST OPERATIONALLY. The OpenSky call had already been failing from the
- * deployment for months, and this sweep has been carrying the layer alone: prod
- * `/api/planes` measured 3,000 aircraft with `source: "adsb.lol"` on 2026-08-14. The
+ * deployment for months, and adsb.lol has been carrying the layer alone since. The
  * coverage difference is real and is still declared — OpenSky was worldwide in one
- * call, the sweep sees only where volunteers run receivers, dense over North America
- * and Europe and thin elsewhere — but that difference was already what production
- * was serving. This change makes the code match it.
+ * call, adsb.lol sees only where volunteers run receivers and only the types we
+ * list — and the coverage record says so on every response.
  *
  * adsb.lol carries no equivalent restriction: its feeders waive rights under CC0 and
  * no term on its site restricts API use, commercial use or redistribution. Verified
@@ -326,17 +335,31 @@ const REVALIDATE_S = 240;
  * That is "no restriction exists", which is a slightly weaker claim than "a licence
  * expressly grants this" — worth knowing before anyone builds a paid product on it.
  *
- * THROWS on a sweep that returns nothing, deliberately. `unstable_cache` commits
- * whatever this returns, so returning an empty snapshot on failure would overwrite a
- * good cached one and empty the layer for the rest of the revalidate window. Throwing
- * leaves the previous Data Cache entry in place for the staleness gate to judge —
- * see `decideStaleness`.
+ * THROWS, deliberately, on a pull that returns nothing OR that lost its mainline
+ * batch. `unstable_cache` commits whatever this returns, so returning a poor
+ * snapshot on failure would overwrite a good cached one for the rest of the
+ * revalidate window while reading as "fresh": a general-aviation-only sky of a few
+ * hundred aircraft standing in for 3,000. Throwing leaves the previous Data Cache
+ * entry in place for the staleness gate to judge — see `decideStaleness`.
  */
 async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
-  const sweep = await fetchAdsbSweep();
-  if (!sweep.objects.length) throw new Error("adsb.lol sweep returned zero positioned aircraft");
-  const objects = sweepToObjects(sweep, MAX_PLANES);
-  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+  const pull = await fetchAdsbTypePull();
+  if (!pull.mainlineSucceeded) {
+    throw new Error(
+      `adsb.lol mainline batch did not answer (${pull.batchesSucceeded} of ${pull.batchesPlanned} batches); ` +
+        "refusing to cache a snapshot without the airline fleet",
+    );
+  }
+  if (!pull.objects.length) throw new Error("adsb.lol type pull returned zero positioned aircraft");
+  const objects = pullToObjects(pull, MAX_PLANES);
+  const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+  // One line per revalidation so runtime logs show the pool, the served set and the
+  // cached entry's size against the Data Cache's 2 MB limit.
+  console.info(
+    `adsb.lol snapshot: serving ${objects.length} of ${pull.objects.length} aircraft ` +
+      `from ${pull.batchesSucceeded}/${pull.batchesPlanned} batches, ${JSON.stringify(snapshot).length} bytes`,
+  );
+  return snapshot;
 }
 
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
@@ -433,31 +456,39 @@ export function gateSnapshot(snapshot: AircraftSnapshot, now: number = Date.now(
  * — cache hit or fallback — passes through `gateSnapshot` before it leaves this
  * function, so nothing older than STALE_CEILING_MS is ever returned.
  *
- * CACHE KEY: `planes-aircraft-v4`. Renamed off `planes-opensky-global-v3` because
- * the entry is no longer OpenSky-specific — it now holds whichever provider
- * answered — and bumped for the shape change (added `source`). The rename also
- * guarantees a clean start: a v3 entry on prod can only hold what the exhausted
- * credit cap produced, and reusing that key would serve it until it revalidated.
+ * CACHE KEY: `planes-aircraft-v5`, bumped from v4 when the sweep became the type
+ * pull so the first deploy starts clean rather than serving a sweep-era entry until
+ * it revalidated. (`unstable_cache` also folds the callback's source text into the
+ * key, so in practice every deploy that touches `fetchAircraftOnce` starts cold.)
+ *
+ * ONE ATTEMPT PER REQUEST. A cold cache (first request after a deploy) runs the pull
+ * inline and, if it throws, serves an empty snapshot — the next request tries again
+ * and the edge cache coalesces those retries to one per 20 s. The old code made a
+ * second, direct attempt on failure, which put two full pulls inside one function
+ * invocation: 14 + 14 s against a 30 s ceiling then, and 20 + 20 s against 60 now.
+ * The direct path survives only for the no-Data-Cache case (unit tests, or a
+ * runtime without `next/cache`).
  */
 export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
+  let cache: typeof import("next/cache") | null;
+  try {
+    cache = await import("next/cache");
+  } catch {
+    cache = null;
+  }
   let snapshot: AircraftSnapshot;
   try {
-    const { unstable_cache } = await import("next/cache");
-    snapshot = rehydrate(
-      await unstable_cache(fetchAircraftOnce, ["planes-aircraft-v4"], {
-        revalidate: REVALIDATE_S,
-      })(),
-    );
+    snapshot = cache
+      ? rehydrate(
+          await cache.unstable_cache(fetchAircraftOnce, ["planes-aircraft-v5"], {
+            revalidate: REVALIDATE_S,
+          })(),
+        )
+      : await fetchAircraftOnce();
   } catch {
-    // Either outside the Next runtime (unit tests — no Data Cache to speak of),
-    // or the Data Cache has never held a successful snapshot and this attempt
-    // failed too. One direct attempt; if that also fails, there is genuinely
-    // nothing to serve.
-    try {
-      snapshot = await fetchAircraftOnce();
-    } catch {
-      snapshot = { planes: [] };
-    }
+    // The Data Cache has never held a successful snapshot and this attempt failed
+    // too (or, with no cache, the one direct attempt failed). Nothing to serve.
+    snapshot = { planes: [] };
   }
   return gateSnapshot(snapshot);
 }

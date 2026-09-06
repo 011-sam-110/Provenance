@@ -64,10 +64,10 @@ function AviationBody({ config }: WidgetBodyProps) {
   // POLL_INTERVAL_MS in lib/planes/usePlanes.ts, mirrored in lib/freshness.ts's
   // seed() and lib/sources/catalog.ts's "planes" entry. That is NOT an upstream
   // cadence, and it is not OpenSky's — opensky.ts no longer contacts OpenSky at
-  // all; the sole source is adsb.lol's grid sweep (lib/sources/adsb.ts). It also
+  // all; the sole source is adsb.lol's type pull (lib/sources/adsb.ts). It also
   // only catches a poll that stops SUCCEEDING (e.g. /api/planes starts erroring),
   // within ~24-72s of that happening. It does NOT catch a poll that keeps
-  // returning 200 with an unchanged snapshot: the sweep is cached for the whole
+  // returning 200 with an unchanged snapshot: the pull is cached for the whole
   // deployment and revalidated at most every REVALIDATE_S=240s (4 min, see
   // opensky.ts), so up to ~4 minutes of real staleness can hide behind an
   // unbroken "live" chip.
@@ -110,13 +110,13 @@ export const AVIATION_WIDGET = {
   detail: AviationDetail,
   // NOTE: this used to promise "military types … are flagged". It never happened —
   // the PlaneLite mapping above sets no isMilitary because this general planes feed
-  // (adsb.lol's grid sweep via lib/sources/adsb.ts, formerly OpenSky) carries no
-  // military classification either way; military traffic is a separate adsb.lol
-  // feed (lib/signals/military-air.ts), not this one. The ? note now says where
-  // military traffic actually lives.
+  // (adsb.lol's type pull via lib/sources/adsb.ts, formerly OpenSky) carries no
+  // military classification and does not ask for military types; military traffic
+  // is a separate adsb.lol feed (lib/signals/military-air.ts), not this one. The ?
+  // note now says where military traffic actually lives.
   help: {
     what: "Aircraft airborne right now, from open ADS-B, listed by altitude. An emergency squawk (7500/7600/7700) raises a critical alert; military traffic is its own signal layer, not this one.",
-    source: "adsb.lol community ADS-B receiver sweep (keyless)",
+    source: "adsb.lol community ADS-B receivers, pulled worldwide by aircraft type (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };

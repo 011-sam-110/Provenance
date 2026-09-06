@@ -189,6 +189,34 @@ describe("count labels and notes", () => {
     expect(coverageNote(c)).toContain("the real total is higher and unknown");
   });
 
+  test("the note names the upstream limit when a request limit really was saturated", () => {
+    const c = readCoverage(markCoverage(items, { noun: "events", upstream: { limit: 50, count: 50 } }))!;
+    expect(coverageNote(c)).toContain("The upstream request is limited to 50");
+  });
+
+  test("the note does not invent an upstream limit when the total is simply unknown", () => {
+    // A receiver network sees only where volunteers point antennas: the pool is a
+    // lower bound, but no request limit was saturated. The old wording printed
+    // "The upstream request is limited to 1,311" for exactly this case on prod.
+    const c = readCoverage(
+      withCoverage(items.slice(0, 10), {
+        available: 9700,
+        availableExact: false,
+        capped: true,
+        cap: 10,
+        noun: "aircraft",
+        rule: "a spatial sample",
+      }),
+    )!;
+    const note = coverageNote(c)!;
+    expect(note).not.toContain("limited to");
+    expect(note).toContain("At least 9,700 aircraft were seen upstream");
+    expect(note).toContain("a cap of 10");
+    expect(note).toContain("not all of them");
+    expect(note).toContain("the real total is higher and unknown");
+    expect(note).toContain("Kept: a spatial sample.");
+  });
+
   test("no note when nothing was truncated", () => {
     expect(coverageNote(readCoverage(applyCap(items, 500)))).toBeUndefined();
     expect(coverageNote(undefined)).toBeUndefined();

@@ -161,12 +161,11 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
 
 ## Live-source notes (verified 2026-08-10, these change)
-- **Aircraft come from OpenSky, not adsb.lol.** `lib/sources/opensky.ts` pulls one global
-  `/states/all` snapshot behind Next's Data Cache. adsb.lol is still used, but only for
-  the `military-air` signal layer. On the 2026-08-10 check prod `/api/planes` returned
-  `{"count":0}` twice while OpenSky `/states/all` answered 200 with ~1 MB of state
-  vectors from a home IP — consistent with the anonymous credit cap being hit on the
-  deployment's IP and there being no last-good snapshot to serve. Worth a look.
+- **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
+  (`lib/sources/opensky.ts` `fetchAircraftOnce` keeps the reasoning; the filename is a
+  named follow-up). The live path is `lib/sources/adsb.ts` `fetchAdsbTypePull` behind
+  Next's Data Cache (`planes-aircraft-v5`, revalidate 240 s). adsb.lol also serves the
+  `military-air` signal layer, from the same per-IP rate-limit bucket.
 - **GDELT is FIXED and live again** (was 404ing on `/api/v2/geo/geo`). The layer now reads
   the GCS event export instead. Prod check 2026-08-11: `/api/signals/conflict` returns
   `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare
@@ -187,11 +186,16 @@ Re-measure before putting a number in a README, a CV or a PR description.
   the residue (a court report about a shooting has real police actors and survives
   everything). The layer is labelled **"Conflict coverage"**, not "Conflict". Regression
   fixture: `tests/fixtures/gdelt-bristol-miscoding.export.tsv` (verbatim rows).
-- **`/api/planes` still returns `{"count":0}` in prod** (re-checked 2026-08-11, after the
-  coverage work landed). The cap is now honest, but the layer is empty: OpenSky's
-  anonymous credit cap appears to be hit on the deployment's IP, and there is no last-good
-  snapshot to fall back on. The honest fix is a persisted last-good snapshot and/or
-  credentials — not a louder error. Still open.
+- **`/api/planes` is worldwide (2026-09-06).** Until then the layer was a 40-cell
+  point+radius sweep of adsb.lol, and from Vercel's shared egress IP the per-IP rate limit
+  let 1 of 40 cells through: prod served 1,311 aircraft, all between 2° and 15° E, drawn
+  as one or two dense discs. `lib/sources/adsb.ts` now pulls `/v2/type/{list}` in four
+  paced batches (226 designators, ~9,100 positioned aircraft) and `lib/planes/sample.ts`
+  caps to 3,000 as a proportional spatial sample. Measured through the code path on
+  2026-09-06: 131 ten-degree cells, largest 7.1%, all seven continents. Re-measure with
+  `node scripts/probe-planes.mjs` (under `vercel env run` against a preview). Two honest
+  limits remain and the coverage `rule` states both: receivers are where volunteers put
+  them, and only listed types are asked for.
 - **Road-surface readings are rare, and the Finland join table rots silently (2026-09-03).**
   Measured live through the real code path against both upstreams: **19,808 cameras, 912 carry
   a surface field, 649 survive every disqualification rule — 3.3%**. Only Estonia (180 cameras,
