@@ -7,10 +7,13 @@ import { FIXED_KEYS, DEFAULT_KEYMAP, KEY_ACTIONS } from "@/lib/shell/keymap";
 // test can own is the arrow arithmetic and the claim the Fixed table makes.
 
 describe("SETTINGS_TABS", () => {
-  it("has unique ids and a label for every one", () => {
+  it("has unique ids, and a label and a blurb for every one", () => {
     const ids = SETTINGS_TABS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const t of SETTINGS_TABS) expect(t.label.trim().length).toBeGreaterThan(0);
+    // The panel header renders the blurb unconditionally, so a tab added without one
+    // would ship an empty bar rather than fail anywhere a person would notice.
+    for (const t of SETTINGS_TABS) expect(t.blurb.trim().length).toBeGreaterThan(0);
   });
 
   it("opens on Main", () => {
@@ -26,13 +29,20 @@ describe("nextTabId", () => {
   const first = ids[0];
   const last = ids[ids.length - 1];
 
-  it("steps right and left", () => {
+  it("steps on BOTH axes", () => {
+    // The list is a vertical rail on the left of the drawer and a horizontal strip below
+    // 540px, so ↑/↓ and ←/→ are both live and both mean the same step. Losing either axis
+    // leaves the arrows dead at one of the two widths.
+    expect(nextTabId(SETTINGS_TABS, ids[0], "ArrowDown")).toBe(ids[1]);
+    expect(nextTabId(SETTINGS_TABS, ids[1], "ArrowUp")).toBe(ids[0]);
     expect(nextTabId(SETTINGS_TABS, ids[0], "ArrowRight")).toBe(ids[1]);
     expect(nextTabId(SETTINGS_TABS, ids[1], "ArrowLeft")).toBe(ids[0]);
   });
 
   it("wraps at BOTH ends", () => {
     // Stopping dead on the last tab reads as a key that failed, not a boundary reached.
+    expect(nextTabId(SETTINGS_TABS, last, "ArrowDown")).toBe(first);
+    expect(nextTabId(SETTINGS_TABS, first, "ArrowUp")).toBe(last);
     expect(nextTabId(SETTINGS_TABS, last, "ArrowRight")).toBe(first);
     expect(nextTabId(SETTINGS_TABS, first, "ArrowLeft")).toBe(last);
   });
@@ -42,10 +52,10 @@ describe("nextTabId", () => {
     expect(nextTabId(SETTINGS_TABS, first, "End")).toBe(last);
   });
 
-  it("returns null for a key that is not the strip's", () => {
+  it("returns null for a key that is not the rail's", () => {
     // The null is what the handler reads to decide whether to preventDefault. A tablist
     // that answered every key would swallow Tab and Escape along with the arrows.
-    for (const k of ["Tab", "Escape", "Enter", "a", " ", "ArrowUp", "ArrowDown"]) {
+    for (const k of ["Tab", "Escape", "Enter", "a", " ", "PageDown", "ArrowLeftFoo"]) {
       expect(nextTabId(SETTINGS_TABS, first, k)).toBeNull();
     }
   });
