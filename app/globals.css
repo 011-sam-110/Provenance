@@ -2365,17 +2365,57 @@ a { color: var(--tn-accent); }
 
 /* ── Settings drawer ──────────────────────────────────────────────────────── */
 .tn-settings-scrim { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .28); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); display: flex; justify-content: flex-end; animation: tn-fade-in .15s ease; }
-.tn-settings { width: min(384px, 92vw); height: 100%; background: var(--tn-surface-solid); border-left: 1px solid var(--tn-border); box-shadow: var(--tn-shadow); display: flex; flex-direction: column; animation: tn-slide-in .2s ease; }
+/* FOUR CELLS, TWO COLUMNS. Reading order down the DOM is railhead, head, rail, body, which
+   is also the grid order, so nothing needs `order` and the tab sequence is the visual one.
+   536px, AND THE NUMBER IS ADDITION RATHER THAN TASTE: 150 rail + 1 divider + 385 panel,
+   and 385 less the body's 2×18 padding leaves 349px of measure against the 347px the
+   single 384px column actually had. Both figures were read out of a live browser rather
+   than derived, which is the only reason they are trustworthy: the arithmetic says the old
+   one was 348 and it was not, because the drawer's own border-left takes a pixel first.
+   The first cut of this was 520px, which measured 333 and would have made every field,
+   hint and key-cap row narrower than before the rail existed. The rail is paid for in
+   drawer width, never out of the content.
+   `auto 1fr` on the rows is what keeps the divider straight — the head row is as tall as
+   the taller of its two cells, so the rail's title and the panel's ✕ cannot drift apart. */
+.tn-settings {
+  --tn-settings-rail-w: 150px;
+  width: min(536px, 92vw); height: 100%;
+  background: var(--tn-surface-solid); border-left: 1px solid var(--tn-border);
+  box-shadow: var(--tn-shadow);
+  display: grid;
+  grid-template-columns: var(--tn-settings-rail-w) 1fr;
+  grid-template-rows: auto 1fr;
+  animation: tn-slide-in .2s ease;
+}
 @keyframes tn-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tn-slide-in { from { transform: translateX(28px); opacity: .5; } to { transform: translateX(0); opacity: 1; } }
 /* Every other animated panel in this sheet has one of these (:445, :651, :700, :780,
    :5500). The settings drawer was the exception and simply slid in regardless. */
 @media (prefers-reduced-motion: reduce) { .tn-settings-scrim, .tn-settings { animation: none; } }
-.tn-settings-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--tn-border); flex: none; }
+/* The head row. Both cells carry the same bottom border so it crosses the drawer as one
+   line, and the rail's half carries the vertical one so the divider turns a corner rather
+   than starting halfway down. */
+.tn-settings-railhead {
+  grid-column: 1; grid-row: 1;
+  display: flex; align-items: center; padding: 15px 16px;
+  background: var(--tn-surface-2);
+  border-right: 1px solid var(--tn-border); border-bottom: 1px solid var(--tn-border);
+}
+.tn-settings-head {
+  grid-column: 2; grid-row: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 15px 18px; border-bottom: 1px solid var(--tn-border);
+}
 .tn-settings-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--tn-text); }
-.tn-settings-close { font: inherit; font-size: 14px; color: var(--tn-text-muted); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
+/* One line, and it must stay one line: the header row sets the divider's height for the
+   whole drawer, so a blurb that wrapped would move the rail's first tab down with it. */
+.tn-settings-blurb { margin: 0; min-width: 0; font-size: 12.5px; color: var(--tn-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-settings-close { font: inherit; font-size: 14px; color: var(--tn-text-muted); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 8px; width: 30px; height: 30px; flex: none; cursor: pointer; }
 .tn-settings-close:hover { color: var(--tn-text); }
-.tn-settings-body { padding: 6px 18px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+/* min-height/min-width: 0 — a grid item's automatic minimum is its content, which would
+   let the long Main tab push the drawer's own scrollbar onto the page instead of scrolling
+   here, and would let the api.telegram.org line in the Telegram hint widen the column. */
+.tn-settings-body { grid-column: 2; grid-row: 2; min-height: 0; min-width: 0; padding: 6px 18px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
 .tn-settings-sec { display: flex; flex-direction: column; gap: 10px; }
 .tn-settings-sec-title { margin: 12px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tn-text-faint); }
 .tn-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -2390,23 +2430,47 @@ a { color: var(--tn-accent); }
 .tn-settings-seg { display: inline-flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
 .tn-settings-seg-btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 .tn-settings-seg-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
-/* The three tabs. A segmented pill rather than an underline strip, because it is the same
-   shape as the Language segment three rules up and reuses its selected treatment
-   (--tn-surface-solid lifted on --tn-shadow-sm), so the strip reads as the same family as
-   the control it now sits above.
-   `flex: 1` on the buttons, not intrinsic width: the drawer is min(384px, 92vw), so at
-   360px the strip divides ~330px three ways and cannot overflow.
-   aria-selected, NOT aria-pressed — these switch the panel below, which is the distinction
-   TerminalHeader.tsx:279 draws in the other direction for the board tabs. Styling off the
-   ARIA attribute also means there is no .is-active class that can drift out of sync.
-   `flex: none` is load-bearing: .tn-settings is a flex column, so without it the strip
-   shrinks as the body grows. */
-.tn-settings-tabs { display: flex; gap: 2px; flex: none; margin: 12px 18px 0; padding: 2px; background: var(--tn-chip-bg); border-radius: 10px; }
-.tn-settings-tab { flex: 1 1 0; min-width: 0; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 8px; padding: 7px 6px; cursor: pointer; white-space: nowrap; }
-.tn-settings-tab:hover { color: var(--tn-text); }
+/* THE RAIL. The second neutral layer product UI gives a sidebar: --tn-surface-2 against
+   the panel's --tn-surface-solid, so the two columns separate on tone and the 1px divider
+   only has to confirm it.
+   `--tn-settings-axis` IS PUBLISHED FOR JAVASCRIPT. SettingsPanel's useRailAxis reads this
+   property back off the element to set aria-orientation, so the breakpoint below is the
+   only place the rail's direction is decided. Do not mirror it into the component.
+   overflow-y on three items looks like paranoia and is not: the rail is a grid row of
+   1fr, and this is what stops a future fourth and fifth tab from pushing the drawer.
+   min-height: 0 for the same reason .tn-settings-body has it. */
+.tn-settings-rail {
+  --tn-settings-axis: vertical;
+  grid-column: 1; grid-row: 2; min-height: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 8px; overflow-y: auto;
+  background: var(--tn-surface-2); border-right: 1px solid var(--tn-border);
+}
+/* A NAV ROW, NOT A SEGMENT. Left-aligned and full-width, because a centred label in a
+   column reads as a button and the point of the move was that these are three places.
+   The SELECTED TREATMENT IS CARRIED OVER UNCHANGED from the strip this replaced — a
+   --tn-surface-solid plate lifted on --tn-shadow-sm with accent text, the same pairing
+   .tn-settings-seg-btn uses — so the drawer's vocabulary survived the relayout even though
+   its axis did not. The plate is the panel's own colour, which is the quiet part of the
+   idea: the selected row is a piece of the panel sitting in the rail.
+   aria-selected, NOT aria-pressed — these switch the panel beside them, which is the
+   distinction TerminalHeader.tsx:279 draws in the other direction for the board tabs.
+   Styling off the ARIA attribute also means there is no .is-active class that can drift. */
+.tn-settings-tab {
+  width: 100%; min-width: 0; text-align: left;
+  font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 8px;
+  padding: 9px 12px; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: background-color .14s ease, color .14s ease;
+}
+/* --tn-hover is only defined inside the skin scope, so it carries the same literal
+   fallback every other consumer of it in this file does (:900, :946, :1017). */
+.tn-settings-tab:hover { color: var(--tn-text); background: var(--tn-hover, #f1f5f9); }
 .tn-settings-tab[aria-selected="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
-/* Inset, on both: a 2px ring drawn outside the strip would sit on the drawer's edge, and
-   on the body it would paint over the border-left of the drawer itself. */
+@media (prefers-reduced-motion: reduce) { .tn-settings-tab { transition: none; } }
+/* Inset, on both: a 2px ring drawn outside a rail row would sit on the divider, and on the
+   body it would paint over the border-left of the drawer itself. */
 .tn-settings-tab:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
 .tn-settings-body:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
 /* Rebindable shortcuts. A chip is a KEY CAP, not a button that happens to hold text:
@@ -2469,6 +2533,40 @@ a { color: var(--tn-accent); }
 .tn-settings-notify-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; }
 .tn-settings-notify-name { font-size: 13px; color: var(--tn-text); }
 .tn-settings-notify-chs { font-size: 11px; color: var(--tn-text-faint); white-space: nowrap; }
+
+/* THE RAIL FOLDS BACK INTO A STRIP, and 540px is derived, not chosen for roundness. Below
+   the 536px cap the drawer is 92vw, so the panel is (0.92 × viewport) − 151 − 36. A
+   full-width credential input and a label-plus-key-cap row stop being comfortable at about
+   300px of measure, and 540 is where that lands: 540 × 0.92 = 497, panel 310. Under it the
+   column costs more than it gives, so it lies down.
+   THIS IS A RE-ADDRESSING, NOT A REBUILD. Every cell keeps its DOM position and simply
+   takes a new grid slot: the title cell and the ✕ cell come back together as the one-line
+   header the drawer has always had, the rail spans both columns as a strip, and the panel
+   spans both underneath. `--tn-settings-axis` flips with it, which is the whole reason
+   SettingsPanel reads the property rather than repeating 520 in TypeScript. */
+@media (max-width: 540px) {
+  .tn-settings { grid-template-columns: 1fr auto; grid-template-rows: auto auto 1fr; }
+  /* The tint goes with the column. Keeping --tn-surface-2 here once the rail has lain
+     down leaves the title cell shaded and the ✕ cell white, which reads as a header that
+     failed to paint rather than as two cells — it is one bar at this width, so it is one
+     colour. The rail keeps the tint, because down here the tint is what makes the strip
+     a band instead of three loose buttons. */
+  .tn-settings-railhead { grid-column: 1; grid-row: 1; background: transparent; border-right: 0; padding-right: 0; }
+  .tn-settings-head { grid-column: 2; grid-row: 1; }
+  /* The blurb is the first thing to go: at this width the tab it describes is a strip
+     button two centimetres away, and the ✕ needs the room more than the sentence does. */
+  .tn-settings-blurb { display: none; }
+  .tn-settings-rail {
+    --tn-settings-axis: horizontal;
+    grid-column: 1 / -1; grid-row: 2;
+    flex-direction: row; padding: 8px 12px;
+    overflow-x: auto; overflow-y: hidden;
+    border-right: 0; border-bottom: 1px solid var(--tn-border);
+  }
+  /* Back to dividing the width three ways, which is what the strip always did. */
+  .tn-settings-tab { flex: 1 1 0; width: auto; text-align: center; }
+  .tn-settings-body { grid-column: 1 / -1; grid-row: 3; }
+}
 
 /* ── Floated map-view controls (top-right of the centre stage) ────────────── */
 /* ── Cinematic world clock (ambient ribbon over the map, top-centre) ──────── */
@@ -2961,9 +3059,10 @@ a.tn-w-place { display: flex; align-items: center; }
   /* ---- (a) lists and pills: 44px for real -------------------------------- */
   .tn-ev-row, .tn-evd-rowbtn, a.tn-w-place, .tn-ev-group-h, .tn-anom-row,
   .tn-ev-tab, .tn-ev-hidden, .tn-mapsearch-item, .tn-rail-fab, .tn-cw-shell > .tn-rail-fab,
-  /* The settings tabs, which is where the drawer is 92vw and the strip is the first
-     thing a thumb reaches. Width is fine at 360px — three labels are ~180px of ink in
-     ~330px — so only the height needs the bump. */
+  /* The settings tabs, which is where the drawer is 92vw and the rail is the first
+     thing a thumb reaches. Height is the only axis that needs the bump in either
+     orientation: as a column the row is already full-width, and below 520px the rail
+     folds to a strip that divides ~330px three ways, which three labels clear. */
   .tn-settings-tab {
     min-height: 44px;
   }
@@ -4841,6 +4940,17 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 .tn-terminal ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); }
 .tn-terminal .sc::-webkit-scrollbar-thumb:hover,
 .tn-terminal ::-webkit-scrollbar-thumb:hover { background: rgba(255, 176, 32, 0.5); }
+
+/* THE SETTINGS DRAWER OPTS BACK OUT, and it has to be here rather than beside the drawer's
+   own rules: the selector above is `.tn-terminal ::-webkit-scrollbar-thumb`, which is the
+   same specificity as anything scoped to .tn-settings, so only source order can win.
+   The literals above are a dark-skin leftover — white at 14% — and the drawer is the one
+   scroller in the shell painted on white, so its thumb has been invisible since the light
+   fold. Tokens, not literals, so it follows both palettes. The rail gets it too: three
+   tabs never overflow, but the rule is on the drawer so a fourth cannot reintroduce this. */
+.tn-settings { scrollbar-color: var(--tn-border-strong) transparent; }
+.tn-settings ::-webkit-scrollbar-thumb { background: var(--tn-border-strong); }
+.tn-settings ::-webkit-scrollbar-thumb:hover { background: var(--tn-text-faint); }
 
 /* ════════════════════════════════════════════════════════════════════════════
    6. RESPONSIVE

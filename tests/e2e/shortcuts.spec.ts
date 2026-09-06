@@ -162,14 +162,42 @@ test("the drawer opens on Main, and the tabs are reachable by keyboard", async (
   await page.locator(".tn-settings-trigger").click();
 
   await expect(page.getByRole("tab", { name: "Main" })).toHaveAttribute("aria-selected", "true");
-  // Focus lands on the active tab, so the strip is one arrow press from anywhere.
-  await page.keyboard.press("ArrowRight");
+  // Focus lands on the active tab, so the rail is one arrow press from anywhere.
+  await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("tab", { name: "Display" })).toHaveAttribute("aria-selected", "true");
   // Wraps at both ends rather than stopping dead.
-  await page.keyboard.press("ArrowLeft");
-  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowUp");
+  await page.keyboard.press("ArrowUp");
   await expect(page.getByRole("tab", { name: "Shortcuts" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("button", { name: /^Sources rail: Ctrl\+K/ })).toBeVisible();
+
+  // ←/→ still step, because below 540px this same list is a horizontal strip and a user
+  // who learned one axis must not find it dead at the other width.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Main" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("the rail is a vertical tablist, and says so only while it is one", async ({ page }) => {
+  await stampSeen(page);
+  await page.goto("/app");
+  await page.locator(".tn-settings-trigger").click();
+
+  const rail = page.getByRole("tablist", { name: "Settings sections" });
+  await expect(rail).toHaveAttribute("aria-orientation", "vertical");
+  // The rail sits BESIDE the panel, not above it — the whole point of the layout. Comparing
+  // boxes rather than asserting a width is what makes this survive a retune of either.
+  const railBox = await rail.boundingBox();
+  const panel = await page.locator("#tn-settings-panel").boundingBox();
+  expect(railBox!.x + railBox!.width).toBeLessThanOrEqual(panel!.x + 1);
+
+  // Under the fold it lies down, and aria-orientation follows the CSS rather than lying.
+  // SettingsPanel reads --tn-settings-axis back off the element for exactly this reason,
+  // so this assertion is what proves the property and the @media block stayed in step.
+  await page.setViewportSize({ width: 420, height: 900 });
+  await expect(rail).toHaveAttribute("aria-orientation", "horizontal");
+  const narrowRail = await rail.boundingBox();
+  const narrowPanel = await page.locator("#tn-settings-panel").boundingBox();
+  expect(narrowRail!.y + narrowRail!.height).toBeLessThanOrEqual(narrowPanel!.y + 1);
 });
 
 test("Restore puts every default back", async ({ page }) => {

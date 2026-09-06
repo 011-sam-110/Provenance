@@ -63,9 +63,16 @@ export default function ShortcutsTab() {
         )}
         <div className="tn-settings-row">
           <span className="tn-settings-label">Defaults</span>
+          {/* .tn-settings-tg-test, NOT .tn-settings-seg-btn. The seg-btn is transparent
+              until aria-pressed, which is right for a segment where the selected half
+              carries the ink and wrong for a lone button that is never pressed: Restore
+              rendered as bare text opposite its own label, indistinguishable from it. This
+              is the drawer's existing outlined-button class, the one "Send test message"
+              and "Save current layout…" already use — no new vocabulary, just the right
+              member of it. */}
           <button
             type="button"
-            className="tn-settings-seg-btn"
+            className="tn-settings-tg-test"
             onClick={() => { keymapStore.reset(); setKeyErr(null); }}
           >
             Restore
