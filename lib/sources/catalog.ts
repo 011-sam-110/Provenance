@@ -30,9 +30,10 @@ const CORE_SOURCES: CatalogSource[] = [
   { id: "webcams",    kind: "core", label: "Webcams",    group: "Cameras",  color: "#ec4899", attribution: "Windy.com — global webcams", refreshMs: 600_000 },
   // adsb.lol, not OpenSky: OpenSky's global /states/all was the source until it was
   // removed on licensing grounds (app/api/planes/route.ts, lib/sources/opensky.ts
-  // fetchAircraftOnce). Production has been served entirely by the adsb.lol grid
-  // sweep for months — this descriptor just said the wrong thing about it. Same
-  // string, same fix, in components/shell/SourceCatalog.tsx's LAYER_META.
+  // fetchAircraftOnce). Everything since has come from adsb.lol — a 40-cell sweep
+  // until 2026-09-06, a worldwide pull by ICAO type after — and this descriptor
+  // used to credit the wrong feed. Same string, same fix, in
+  // components/shell/SourceCatalog.tsx's LAYER_META.
   { id: "planes",     kind: "core", label: "Planes",     group: "Aviation", color: "#d97706", attribution: ADSB_ATTRIBUTION, refreshMs: 12_000 },
   { id: "satellites", kind: "core", label: "Satellites", group: "Space",    color: "#7c3aed", attribution: "CelesTrak TLE · SGP4 (local)", refreshMs: 1_000 },
 ];

@@ -349,7 +349,7 @@ export default function AviationDetail({ instanceId, config }: WidgetDetailProps
       )}
 
       <footer className="tn-av-foot">
-        <span className="tn-av-attr">Aircraft: adsb.lol · enrichment: adsbdb · worldwide grid (cached snapshot)</span>
+        <span className="tn-av-attr">Aircraft: adsb.lol · enrichment: adsbdb · pulled by type, worldwide (cached snapshot)</span>
         <span className="tn-av-actions">
           <button
             disabled={exportRows.length === 0}
