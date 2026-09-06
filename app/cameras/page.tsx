@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getDirectory } from "@/lib/seo/registrySnapshot";
 import { CAMERAS_ROOT, countryPath, formatCount, regionPath } from "@/lib/seo/paths";
 import { BRAND } from "@/lib/brand";
+import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 
 export const revalidate = 86_400;
 
@@ -17,58 +18,61 @@ export default async function CamerasIndex() {
   const { groups, total, available, regionCount } = await getDirectory();
 
   return (
-    <main className="tn-dir">
-      <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
-        <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Cameras</span>
-      </nav>
+    <>
+      <main className="tn-dir">
+        <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
+          <Link href="/">Home</Link> <span aria-hidden="true">/</span> <span>Cameras</span>
+        </nav>
 
-      <h1>Live traffic cameras by country</h1>
+        <h1>Live traffic cameras by country</h1>
 
-      <p className="tn-dir-lede">
-        {formatCount(total)} public road cameras from {groups.length} countries and{" "}
-        {formatCount(regionCount)} regions, read directly from the transport authorities that
-        operate them. {formatCount(available)} were answering at the last check.
-      </p>
+        <p className="tn-dir-lede">
+          {formatCount(total)} public road cameras from {groups.length} countries and{" "}
+          {formatCount(regionCount)} regions, read directly from the transport authorities that
+          operate them. {formatCount(available)} were answering at the last check.
+        </p>
 
-      <p className="tn-dir-note">
-        Every camera below has its own page showing the current image, who operates the feed, how
-        often it refreshes and the nearest other cameras. Nothing here is stored or re-hosted: each
-        frame is fetched from its operator when you open the page.
-      </p>
+        <p className="tn-dir-note">
+          Every camera below has its own page showing the current image, who operates the feed, how
+          often it refreshes and the nearest other cameras. Nothing here is stored or re-hosted: each
+          frame is fetched from its operator when you open the page.
+        </p>
 
-      <ul className="tn-dir-grid">
-        {groups.map((country) => (
-          <li key={country.iso2} className="tn-dir-card">
-            <h2>
-              <Link href={countryPath(country.iso2)}>{country.name}</Link>
-            </h2>
-            <p className="tn-dir-count">
-              {formatCount(country.count)} cameras across {country.regions.length}{" "}
-              {country.regions.length === 1 ? "region" : "regions"}
-            </p>
-            <ul className="tn-dir-sub">
-              {country.regions.slice(0, 6).map((region) => (
-                <li key={region.slug}>
-                  <Link href={regionPath(country.iso2, region.region)}>{region.region}</Link>{" "}
-                  <span className="tn-dir-dim">{formatCount(region.count)}</span>
-                </li>
-              ))}
-              {country.regions.length > 6 && (
-                <li>
-                  <Link href={countryPath(country.iso2)}>
-                    and {country.regions.length - 6} more
-                  </Link>
-                </li>
-              )}
-            </ul>
-          </li>
-        ))}
-      </ul>
+        <ul className="tn-dir-grid">
+          {groups.map((country) => (
+            <li key={country.iso2} className="tn-dir-card">
+              <h2>
+                <Link href={countryPath(country.iso2)}>{country.name}</Link>
+              </h2>
+              <p className="tn-dir-count">
+                {formatCount(country.count)} cameras across {country.regions.length}{" "}
+                {country.regions.length === 1 ? "region" : "regions"}
+              </p>
+              <ul className="tn-dir-sub">
+                {country.regions.slice(0, 6).map((region) => (
+                  <li key={region.slug}>
+                    <Link href={regionPath(country.iso2, region.region)}>{region.region}</Link>{" "}
+                    <span className="tn-dir-dim">{formatCount(region.count)}</span>
+                  </li>
+                ))}
+                {country.regions.length > 6 && (
+                  <li>
+                    <Link href={countryPath(country.iso2)}>
+                      and {country.regions.length - 6} more
+                    </Link>
+                  </li>
+                )}
+              </ul>
+            </li>
+          ))}
+        </ul>
 
-      <p className="tn-dir-note">
-        Prefer the map? <Link href="/app">Open the console</Link> to see these cameras alongside
-        flights, earthquakes and the other live layers.
-      </p>
-    </main>
+        <p className="tn-dir-note">
+          Prefer the map? <Link href="/app">Open the console</Link> to see these cameras alongside
+          flights, earthquakes and the other live layers.
+        </p>
+      </main>
+      <DirectoryFooter />
+    </>
   );
 }

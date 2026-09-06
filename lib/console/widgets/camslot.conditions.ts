@@ -142,7 +142,9 @@ export function refusalTitle(reading: SurfaceReading, why: SurfaceValidity, now:
       const age = Number.isFinite(reading.observedAt as number)
         ? shortAge(now - (reading.observedAt as number))
         : "over two hours";
-      return `${who} ${says}, but that reading is ${age} old — past the two-hour window the operator itself treats as expired.`;
+      // No em dash: this sentence used to be a console tooltip and is now rendered as
+      // body copy on /camera/[id], where the directory's plain-language style applies.
+      return `${who} ${says}, but that reading is ${age} old, past the two-hour window the operator itself treats as expired.`;
     }
     default:
       return "";

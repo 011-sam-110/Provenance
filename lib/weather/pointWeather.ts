@@ -19,6 +19,7 @@
 // (Asia/Kathmandu +05:45, Pacific/Chatham +12:45).
 
 import { degraded, observed } from "@/lib/signals/outcome";
+import { haversineKm } from "@/lib/cameras/surface";
 
 const ENDPOINT = "https://api.open-meteo.com/v1/forecast";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
@@ -118,6 +119,16 @@ export interface PointWeather {
    */
   sunrise?: string;
   sunset?: string;
+  /**
+   * How far the model's grid cell is from the coordinate asked for, in km.
+   *
+   * Open-Meteo answers with the latitude/longitude of the cell it actually read, which
+   * is not the point requested — the forecast grid is ~11 km. Carrying that distance
+   * lets a page say how far away the reading is from, which is the difference between
+   * presenting a modelled value honestly and presenting it as a measurement at the
+   * roadside. Absent when the upstream did not echo a coordinate.
+   */
+  gridKm?: number;
 }
 
 /** A coordinate rounded and rendered as its own cache key. Stable and canonical, so
@@ -182,6 +193,9 @@ export function planBatches<T>(items: T[], size = MAX_POINTS): T[][] {
 interface MeteoPoint {
   timezone?: string;
   utc_offset_seconds?: number;
+  /** The grid cell the model actually read, which is not the coordinate asked for. */
+  latitude?: number;
+  longitude?: number;
   current?: {
     temperature_2m?: number | null;
     weather_code?: number | null;
@@ -255,6 +269,13 @@ export function normalizePointWeather(points: MeteoPoint[], coords: Coord[]): Po
       ...(num(cur.wind_gusts_10m) !== undefined && { gustKmh: num(cur.wind_gusts_10m) }),
       ...(firstDaily(pt.daily?.sunrise) && { sunrise: firstDaily(pt.daily?.sunrise) }),
       ...(firstDaily(pt.daily?.sunset) && { sunset: firstDaily(pt.daily?.sunset) }),
+      ...(num(pt.latitude) !== undefined &&
+        num(pt.longitude) !== undefined && {
+          gridKm:
+            Math.round(
+              haversineKm(c.lat, c.lon, num(pt.latitude) as number, num(pt.longitude) as number) * 10,
+            ) / 10,
+        }),
     });
   });
   return out;

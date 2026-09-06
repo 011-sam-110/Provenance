@@ -15,15 +15,20 @@
 import type { Camera } from "@/lib/types";
 import {
   REGION_PAGE_SIZE,
+  RESERVED_FACET_SEGMENTS,
   SITEMAP_MAX_URLS,
   absoluteUrl,
   cameraPath,
   countryName,
   countryPath,
+  placePath,
   regionPageCount,
   regionPath,
+  roadPath,
   slugify,
 } from "@/lib/seo/paths";
+import { allRoadGroups } from "@/lib/seo/roads";
+import { allPlaceGroups } from "@/lib/seo/places";
 
 export interface RegionGroup {
   /** The region string exactly as the upstream feed gave it. */
@@ -137,6 +142,29 @@ export function slugCollisions(cameras: Camera[]): { iso2: string; slug: string;
     });
 }
 
+/**
+ * Regions whose slug collides with a literal segment under `/cameras/[country]/`.
+ *
+ * A region named "Road" would slugify to "road", and Next resolves the static
+ * `road` segment before the dynamic `[region]` one — so that region's listing would be
+ * silently replaced by the road facet, while still returning a valid 200. Nothing else
+ * can see that happen, which is why it is checked rather than assumed.
+ *
+ * Empty is the expected value. Same contract as `slugCollisions`: cheap to re-run
+ * against live data, and a non-empty result is a page that has quietly disappeared.
+ */
+export function reservedSegmentCollisions(cameras: Camera[]): { iso2: string; region: string }[] {
+  const reserved = new Set<string>(RESERVED_FACET_SEGMENTS);
+  const out = new Map<string, { iso2: string; region: string }>();
+  for (const cam of cameras) {
+    const iso2 = cam.country.toUpperCase();
+    const region = cam.region?.trim() || countryName(iso2);
+    const slug = slugify(region);
+    if (reserved.has(slug)) out.set(`${iso2}/${slug}`, { iso2, region });
+  }
+  return [...out.values()].sort((a, b) => a.iso2.localeCompare(b.iso2) || a.region.localeCompare(b.region));
+}
+
 export type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
 
 export interface SitemapEntry {
@@ -192,6 +220,35 @@ export function buildSitemap(cameras: Camera[], origin: string, staticPaths: str
           url: abs(regionPath(country.iso2, region.region, page)),
           changeFrequency: "daily",
           priority: page === 1 ? 0.6 : 0.4,
+        });
+      }
+    }
+  }
+
+  // Road and place listings. These are CROSS-CUTS of the same cameras rather than extra
+  // content — a camera on I-95 in Florida is already reachable through its region — so
+  // they sit at a lower priority than the region pages that form the main hierarchy.
+  // Measured on the 2026-09-06 registry they add 852 road URLs and 1,013 place URLs to a
+  // sitemap of ~20.3k, comfortably inside the 50k protocol cap.
+  for (const { iso2, roads } of allRoadGroups(cameras)) {
+    for (const road of roads) {
+      for (let page = 1; page <= road.pages; page++) {
+        entries.push({
+          url: abs(roadPath(iso2, road.road, page)),
+          changeFrequency: "daily",
+          priority: page === 1 ? 0.5 : 0.3,
+        });
+      }
+    }
+  }
+
+  for (const { iso2, places } of allPlaceGroups(cameras)) {
+    for (const place of places) {
+      for (let page = 1; page <= place.pages; page++) {
+        entries.push({
+          url: abs(placePath(iso2, place.name, page)),
+          changeFrequency: "daily",
+          priority: page === 1 ? 0.5 : 0.3,
         });
       }
     }

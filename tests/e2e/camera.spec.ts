@@ -10,7 +10,7 @@ test("a camera detail page shows a proxied image and TfL attribution", async ({ 
   await page.goto(`/camera/${encodeURIComponent(id)}`);
   await expect(page.getByTestId("attribution")).toContainText("Powered by TfL Open Data");
 
-  const img = page.locator(".camera-detail img");
+  const img = page.locator(".tn-cam-frame img");
   await expect(img).toBeVisible();
   // The proxy actually serves image bytes:
   const proxyRes = await request.get(`/api/proxy?id=${encodeURIComponent(id)}`);

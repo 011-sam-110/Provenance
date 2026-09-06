@@ -106,6 +106,30 @@ export function regionPath(iso2: string, region: string, page = 1): string {
   return page > 1 ? `${base}/${page}` : base;
 }
 
+/**
+ * The two literal segments that sit beside `[region]` under `/cameras/[country]/`.
+ *
+ * Next resolves a static segment before a dynamic one, so `/cameras/us/road/i-95` reaches
+ * the road route and never `[region]`. The hazard is the mirror image: a region whose
+ * name slugified to "road" or "place" would become unreachable, its page silently
+ * replaced by an empty facet listing. There is no such region today across the 45 in the
+ * registry, and `seo-facets.test.ts` fails if one ever appears — which is the only
+ * warning anyone would get, because the broken page still returns a valid 200.
+ */
+export const RESERVED_FACET_SEGMENTS = ["road", "place"] as const;
+
+/** Road listing. Page 1 is the bare path, matching `regionPath`. */
+export function roadPath(iso2: string, road: string, page = 1): string {
+  const base = `${countryPath(iso2)}/road/${slugify(road)}`;
+  return page > 1 ? `${base}/${page}` : base;
+}
+
+/** Place listing. Page 1 is the bare path, matching `regionPath`. */
+export function placePath(iso2: string, place: string, page = 1): string {
+  const base = `${countryPath(iso2)}/place/${slugify(place)}`;
+  return page > 1 ? `${base}/${page}` : base;
+}
+
 /** Absolute URL against a known origin, for sitemap entries and canonicals. */
 export function absoluteUrl(origin: string, path: string): string {
   return `${origin.replace(/\/+$/, "")}${path}`;
@@ -114,6 +138,25 @@ export function absoluteUrl(origin: string, path: string): string {
 /** How many pages a region of `count` cameras needs (always at least 1). */
 export function regionPageCount(count: number, pageSize = REGION_PAGE_SIZE): number {
   return Math.max(1, Math.ceil(count / pageSize));
+}
+
+/**
+ * Reads the page number out of a listing route's optional catch-all segment.
+ *
+ * Returns null for anything that is not a plain page number, so the route 404s instead
+ * of quietly serving page 1 at an unlimited number of junk URLs — which would be an
+ * infinite crawl space pointing at duplicate content.
+ *
+ * Shared by the region, road and place listings. It was written once per route until
+ * there were three of them, and three copies of a crawl-space guard is three chances
+ * for one of them to be relaxed on its own.
+ */
+export function parsePageParam(paging: string[] | undefined): number | null {
+  if (!paging || paging.length === 0) return 1;
+  if (paging.length > 1) return null;
+  const raw = paging[0];
+  if (!/^[1-9][0-9]*$/.test(raw)) return null;
+  return Number(raw);
 }
 
 /** "London, United Kingdom" - the place line reused across titles and headings. */
@@ -171,4 +214,35 @@ export function countryTitle(iso2: string, count: number): string {
 export function regionTitle(iso2: string, region: string, count: number, page: number): string {
   const suffix = page > 1 ? ` - page ${page}` : "";
   return `Live traffic cameras in ${region}, ${countryName(iso2)} (${formatCount(count)})${suffix} | ${BRAND.name}`;
+}
+
+export function roadTitle(iso2: string, road: string, count: number, page: number): string {
+  const suffix = page > 1 ? ` - page ${page}` : "";
+  return `${road} traffic cameras (${formatCount(count)}), ${countryName(iso2)}${suffix} | ${BRAND.name}`;
+}
+
+/**
+ * "near", never "in".
+ *
+ * A place page collects every camera within PLACE_RADIUS_KM of the town centre, so some
+ * of them are outside the town. "in" would be a claim the radius cannot support, and it
+ * is the kind of overclaim a crawler is happy with and a reader is not.
+ */
+export function placeTitle(iso2: string, place: string, count: number, page: number): string {
+  const suffix = page > 1 ? ` - page ${page}` : "";
+  return `Live traffic cameras near ${place}, ${countryName(iso2)} (${formatCount(count)})${suffix} | ${BRAND.name}`;
+}
+
+export function roadDescription(iso2: string, road: string, count: number): string {
+  return (
+    `Live views from ${formatCount(count)} traffic ${count === 1 ? "camera" : "cameras"} on ${road} ` +
+    `in ${countryName(iso2)}, each refreshed direct from the agency that operates it.`
+  );
+}
+
+export function placeDescription(iso2: string, place: string, count: number, radiusKm: number): string {
+  return (
+    `Live views from ${formatCount(count)} traffic ${count === 1 ? "camera" : "cameras"} within ` +
+    `${radiusKm} km of ${place}, ${countryName(iso2)}, each refreshed direct from the agency that operates it.`
+  );
 }

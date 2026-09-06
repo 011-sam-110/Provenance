@@ -12,7 +12,9 @@ import {
   regionPageCount,
   regionPath,
   regionTitle,
+  parsePageParam,
 } from "@/lib/seo/paths";
+import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 
 export const revalidate = 86_400;
 
@@ -21,21 +23,6 @@ interface RouteParams {
   region: string;
   /** Optional trailing page number: /cameras/us/florida/2. Absent means page 1. */
   paging?: string[];
-}
-
-/**
- * Reads the page number out of the optional catch-all.
- *
- * Returns null for anything that is not a plain page number, so the route 404s
- * instead of quietly serving page 1 at an unlimited number of junk URLs - which
- * would be an infinite crawl space pointing at duplicate content.
- */
-function parsePage(paging: string[] | undefined): number | null {
-  if (!paging || paging.length === 0) return 1;
-  if (paging.length > 1) return null;
-  const raw = paging[0];
-  if (!/^[1-9][0-9]*$/.test(raw)) return null;
-  return Number(raw);
 }
 
 /**
@@ -56,7 +43,7 @@ export async function generateMetadata({
   params: Promise<RouteParams>;
 }): Promise<Metadata> {
   const { country, region, paging } = await params;
-  const page = parsePage(paging);
+  const page = parsePageParam(paging);
   if (page === null) return { title: "Region not found" };
   const hit = await getRegionPage(country, region, page);
   if (!hit) return { title: "Region not found" };
@@ -82,7 +69,7 @@ export async function generateMetadata({
 
 export default async function RegionPage({ params }: { params: Promise<RouteParams> }) {
   const { country, region, paging } = await params;
-  const page = parsePage(paging);
+  const page = parsePageParam(paging);
   if (page === null) notFound();
 
   // /cameras/us/florida/1 is the same page as /cameras/us/florida. Send it to the
@@ -101,64 +88,67 @@ export default async function RegionPage({ params }: { params: Promise<RoutePara
   const countryLabel = countryName(country);
 
   return (
-    <main className="tn-dir">
-      <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
-        <Link href="/">Home</Link> <span aria-hidden="true">/</span>{" "}
-        <Link href={CAMERAS_ROOT}>Cameras</Link> <span aria-hidden="true">/</span>{" "}
-        <Link href={countryPath(country)}>{countryLabel}</Link> <span aria-hidden="true">/</span>{" "}
-        <span>{hit.region}</span>
-      </nav>
-
-      <h1>
-        Live traffic cameras in {hit.region}, {countryLabel}
-      </h1>
-
-      <p className="tn-dir-lede">
-        {formatCount(hit.total)} public road cameras.{" "}
-        {pages > 1 && (
-          <>
-            Showing {formatCount(first)}&ndash;{formatCount(last)}, page {page} of {pages}.
-          </>
-        )}
-      </p>
-
-      <ul className="tn-dir-cams">
-        {slice.map((c) => (
-          <li key={c.id}>
-            <Link href={cameraPath(c.id)}>{c.name}</Link>
-            {c.road && <span className="tn-dir-dim">{c.road}</span>}
-            {!c.available && (
-              <span className="tn-dir-down" title="This feed was not answering at the last check">
-                not answering
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
-
-      {pages > 1 && (
-        <nav className="tn-dir-pager" aria-label="Pagination">
-          {page > 1 && (
-            <Link href={regionPath(country, hit.region, page - 1)} rel="prev">
-              &larr; Previous
-            </Link>
-          )}
-          <span className="tn-dir-dim">
-            Page {page} of {pages}
-          </span>
-          {page < pages && (
-            <Link href={regionPath(country, hit.region, page + 1)} rel="next">
-              Next &rarr;
-            </Link>
-          )}
+    <>
+      <main className="tn-dir">
+        <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
+          <Link href="/">Home</Link> <span aria-hidden="true">/</span>{" "}
+          <Link href={CAMERAS_ROOT}>Cameras</Link> <span aria-hidden="true">/</span>{" "}
+          <Link href={countryPath(country)}>{countryLabel}</Link> <span aria-hidden="true">/</span>{" "}
+          <span>{hit.region}</span>
         </nav>
-      )}
 
-      <p className="tn-dir-note">
-        <Link href={countryPath(country)}>All regions in {countryLabel}</Link> &middot;{" "}
-        <Link href={CAMERAS_ROOT}>All countries</Link> &middot;{" "}
-        <Link href="/app">Open the console</Link>
-      </p>
-    </main>
+        <h1>
+          Live traffic cameras in {hit.region}, {countryLabel}
+        </h1>
+
+        <p className="tn-dir-lede">
+          {formatCount(hit.total)} public road cameras.{" "}
+          {pages > 1 && (
+            <>
+              Showing {formatCount(first)}&ndash;{formatCount(last)}, page {page} of {pages}.
+            </>
+          )}
+        </p>
+
+        <ul className="tn-dir-cams">
+          {slice.map((c) => (
+            <li key={c.id}>
+              <Link href={cameraPath(c.id)}>{c.name}</Link>
+              {c.road && <span className="tn-dir-dim">{c.road}</span>}
+              {!c.available && (
+                <span className="tn-dir-down" title="This feed was not answering at the last check">
+                  not answering
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        {pages > 1 && (
+          <nav className="tn-dir-pager" aria-label="Pagination">
+            {page > 1 && (
+              <Link href={regionPath(country, hit.region, page - 1)} rel="prev">
+                &larr; Previous
+              </Link>
+            )}
+            <span className="tn-dir-dim">
+              Page {page} of {pages}
+            </span>
+            {page < pages && (
+              <Link href={regionPath(country, hit.region, page + 1)} rel="next">
+                Next &rarr;
+              </Link>
+            )}
+          </nav>
+        )}
+
+        <p className="tn-dir-note">
+          <Link href={countryPath(country)}>All regions in {countryLabel}</Link> &middot;{" "}
+          <Link href={CAMERAS_ROOT}>All countries</Link> &middot;{" "}
+          <Link href="/app">Open the console</Link>
+        </p>
+      </main>
+      <DirectoryFooter />
+    </>
   );
 }
