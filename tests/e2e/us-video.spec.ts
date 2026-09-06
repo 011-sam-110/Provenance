@@ -8,6 +8,6 @@ test("a US camera detail shows live video (or gracefully falls back to a still)"
   await page.goto(`/camera/${encodeURIComponent(us.id)}`);
   await expect(page.getByTestId("attribution")).toBeVisible();
   // Either a <video> mounts, or (offline stream) the still-image fallback appears.
-  const media = page.locator(".camera-detail video, .camera-detail img");
+  const media = page.locator(".tn-cam-frame video, .tn-cam-frame img");
   await expect(media.first()).toBeVisible();
 });

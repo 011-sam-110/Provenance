@@ -30,6 +30,7 @@ export default function InsetMap({
   onMapClick,
   track,
   selectedId,
+  maxZoom = 6,
 }: {
   points: InsetPoint[];
   height?: number;
@@ -40,6 +41,16 @@ export default function InsetMap({
   track?: [number, number][][];
   /** Highlights the matching point (enlarged, accent ring) — kept in sync with a row selection. */
   selectedId?: string;
+  /**
+   * How far the auto-fit is allowed to zoom in. Default 6 is what every existing caller
+   * has always had, and it is right for them: a satellite's ground track spans continents
+   * and a tight fit on one aircraft position tells a reader nothing.
+   *
+   * It is wrong for a set of points that are genuinely close together. The camera page's
+   * neighbour map fits six cameras 0.6 km apart and rendered the whole of southern
+   * England, because the fit wanted zoom ~15 and was capped at 6.
+   */
+  maxZoom?: number;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -51,6 +62,7 @@ export default function InsetMap({
   // it would paint the INITIAL selection if props changed during the style fetch.
   const pointsRef = useRef(points); pointsRef.current = points;
   const trackRef = useRef(track); trackRef.current = track;
+  const maxZoomRef = useRef(maxZoom); maxZoomRef.current = maxZoom;
   // Auto-fit ONLY when the set of points changes (a new selection), not on every
   // position update — a moving caller (satellites re-propagate every 5s) would otherwise
   // re-snap the camera each tick and discard the user's manual pan/zoom.
@@ -94,7 +106,7 @@ export default function InsetMap({
       map.on("mouseenter", LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", LAYER, () => { map.getCanvas().style.cursor = ""; });
       syncTrack(map, trackRef.current);
-      fit(map, pointsRef.current, trackRef.current);
+      fit(map, pointsRef.current, trackRef.current, maxZoomRef.current);
       fitKeyRef.current = pointsKey(pointsRef.current);
     });
     return () => { map.remove(); mapRef.current = null; };
@@ -112,9 +124,9 @@ export default function InsetMap({
       // Re-fit only when the point set changes — preserves the user's pan/zoom while a
       // moving caller updates positions in place.
       const key = pointsKey(points);
-      if (key !== fitKeyRef.current) { fit(map, points, track); fitKeyRef.current = key; }
+      if (key !== fitKeyRef.current) { fit(map, points, track, maxZoom); fitKeyRef.current = key; }
     }
-  }, [points, track]);
+  }, [points, track, maxZoom]);
 
   // Highlight the selected point (enlarged + accent ring) whenever the selection changes.
   // Data-driven paint keyed off the feature id; an empty id matches nothing → all default.
@@ -135,10 +147,10 @@ function pointsKey(points: InsetPoint[]): string {
   return points.map((p) => p.id ?? `${p.lat.toFixed(4)},${p.lon.toFixed(4)}`).join("|");
 }
 
-function fit(map: maplibregl.Map, points: InsetPoint[], track?: [number, number][][]) {
+function fit(map: maplibregl.Map, points: InsetPoint[], track: [number, number][][] | undefined, maxZoom: number) {
   const extra: InsetPoint[] = track ? track.flat().map(([lon, lat]) => ({ lat, lon })) : [];
   const b = boundsOf([...points, ...extra]);
-  if (b) map.fitBounds(b, { padding: 40, maxZoom: 6, duration: 0 });
+  if (b) map.fitBounds(b, { padding: 40, maxZoom, duration: 0 });
 }
 
 // The optional ground-track polyline. Added LAZILY the first time a non-empty

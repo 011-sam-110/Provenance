@@ -584,10 +584,25 @@ a { color: var(--tn-accent); }
 .cam-detail .cam-loading { display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: 10px; background: var(--tn-surface-2); color: var(--tn-text-faint); font-size: 13px; }
 
 /* ===================== Standalone /camera/[id] page ===================== */
-.camera-detail { max-width: 760px; margin: 0 auto; padding: 24px; color: var(--tn-text); }
-.camera-detail img { width: 100%; border-radius: 8px; background: var(--tn-surface-2); }
-.camera-detail dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; }
-.camera-detail dt { color: var(--tn-text-faint); }
+/* `.camera-detail` was the whole of /camera/[id] until the page was rebuilt on the
+   shared `.tn-dir` shell. Only the <img> rule survives, because <CameraImage> is used
+   by the console too and still relies on a width. Everything else lives under
+   `.tn-cam-*` below. */
+.tn-cam-frame img,
+.tn-cam-frame video {
+  width: 100%; border-radius: 8px; background: var(--tn-surface-2); display: block;
+  /* `auto <ratio>` means "the media's OWN ratio once it has one, this before it does",
+     which is the whole reason the auto keyword exists. Without it the img is 21px tall
+     until the frame arrives and the page jumps: measured on the preview 2026-09-06,
+     the conditions block started at y=326 and landed at y=1020, a 694px shift on the
+     one element the page is about. With it the shift is 60px, and zero for a feed that
+     is natively 4:3.
+     4/3 is the MEDIAN of the 10 feeds that answered when asked (tripcheck 1.112, tfl and
+     bihamk 1.222, castlerock/trafficscotland/iceland 1.333, scdot 1.500, drivebc 1.709,
+     digitraffic and putevi-rs 1.778) - not a house style. Nothing is cropped or
+     letterboxed either way, because the loaded image overrides the fallback outright. */
+  aspect-ratio: auto 4 / 3;
+}
 .attribution { font-size: 12px; color: var(--tn-text-muted); }
 
 /* ===================== Crawlable camera directory (/cameras) =====================
@@ -622,6 +637,131 @@ a { color: var(--tn-accent); }
 .tn-dir-cams li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 
 .tn-dir-pager { display: flex; gap: 16px; align-items: center; margin-top: 24px; font-size: 14px; }
+
+/* ===================== Camera page (/camera/[id]) =====================
+   Everything here is scoped under a directory page, uses only --tn-* tokens and the
+   system stack, and ships no webfont. The landing page's `.pv-*` equivalents are not
+   reusable here: they are scoped to `.pv-root` and their layout loads three marketing
+   typefaces, which would be three font downloads per camera page across ~20k of them.
+
+   Type is a step larger than the rest of the directory on purpose. These pages are
+   mostly opened from a search result on a phone, and the numbers in the conditions grid
+   are the content rather than a caption. */
+
+.tn-cam { padding-bottom: 8px; }
+
+.tn-cam-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; }
+.tn-cam-chip {
+  font-size: 12.5px; line-height: 1; padding: 6px 10px; border-radius: 999px;
+  background: var(--tn-chip-bg); color: var(--tn-text-muted); white-space: nowrap;
+}
+.tn-cam-chip-mono { font-family: var(--tn-mono); font-variant-numeric: tabular-nums; }
+/* Status colours come from the shared freshness inks, which are tuned for contrast on
+   --tn-chip-bg — the raw --tn-live/--tn-down are map colours and fail against it. */
+.tn-cam-chip-live { color: var(--tn-live-ink); font-weight: 600; }
+.tn-cam-chip-down { color: var(--tn-down-ink); font-weight: 600; }
+
+.tn-cam-frame { border: 1px solid var(--tn-border); border-radius: 10px; overflow: hidden; background: var(--tn-surface-2); }
+.tn-cam-frame figure { margin: 0; }
+.tn-cam-frame figcaption { padding: 8px 12px; font-size: 12px; color: var(--tn-text-muted); }
+
+.tn-cam-underframe {
+  display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between;
+  align-items: baseline; margin: 8px 0 28px; font-size: 13px; color: var(--tn-text-muted);
+}
+
+/* ---- Conditions grid ---- */
+.tn-cd { margin: 0 0 30px; }
+.tn-cd-head {
+  display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline;
+  justify-content: space-between; margin-bottom: 10px;
+}
+.tn-cd-head h2 { margin: 0; }
+.tn-cd-meta { font-size: 12.5px; color: var(--tn-text-faint); }
+
+.tn-cd-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.tn-cd-card {
+  display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--tn-border); border-radius: 8px; padding: 12px 14px;
+  background: var(--tn-surface-solid);
+}
+.tn-cd-label {
+  font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--tn-text-faint); font-weight: 600;
+}
+.tn-cd-value {
+  font-family: var(--tn-mono); font-variant-numeric: tabular-nums;
+  font-size: 21px; line-height: 1.15; color: var(--tn-text);
+}
+.tn-cd-sub { font-size: 12.5px; line-height: 1.45; color: var(--tn-text-muted); }
+
+/* The "not measured" row is deliberately quieter than the cards above it: it is the
+   answer for roughly 97% of cameras, and a loud empty state reads as a fault. */
+.tn-cd-surface {
+  margin-top: 10px; padding: 12px 14px; border-radius: 8px;
+  background: var(--tn-chip-bg); border: 1px solid transparent;
+}
+.tn-cd-surface p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--tn-text-muted); max-width: 78ch; }
+/* A real, current operator measurement is the one case worth promoting. */
+.tn-cd-surface[data-tier="measured"] { background: var(--tn-surface-solid); border-color: var(--tn-border-strong); }
+.tn-cd-surface[data-tier="measured"] p { color: var(--tn-text); }
+
+/* ---- Nearby cameras ---- */
+.tn-nb { margin: 0 0 30px; }
+.tn-nb-body { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; align-items: start; }
+.tn-nb-map { border: 1px solid var(--tn-border); border-radius: 8px; overflow: hidden; min-height: 340px; }
+.tn-nb-map-skeleton { height: 340px; background: var(--tn-surface-2); }
+
+.tn-nb-tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.tn-nb-tiles a {
+  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: inherit;
+  border: 1px solid var(--tn-border); border-radius: 8px; overflow: hidden;
+  background: var(--tn-surface-solid);
+}
+.tn-nb-tiles a:hover { border-color: var(--tn-border-strong); }
+.tn-nb-tiles img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--tn-surface-2); display: block; }
+.tn-nb-dead {
+  display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9;
+  background: var(--tn-chip-bg); color: var(--tn-text-faint); font-size: 12px;
+}
+.tn-nb-name { font-size: 13px; line-height: 1.3; padding: 8px 10px 0; }
+.tn-nb-dim {
+  font-family: var(--tn-mono); font-size: 11.5px; color: var(--tn-text-faint);
+  padding: 0 10px 9px; font-variant-numeric: tabular-nums;
+}
+
+/* ---- About / More cameras ---- */
+.tn-cam-cols { display: grid; gap: 26px; grid-template-columns: 1fr 1fr; align-items: start; }
+.tn-cam-dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; font-size: 14px; margin: 8px 0 0; }
+.tn-cam-dl dt { color: var(--tn-text-faint); }
+.tn-cam-dl dd { margin: 0; }
+.tn-cam-mono { font-family: var(--tn-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.tn-cam-links { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; font-size: 14px; line-height: 1.5; }
+
+/* ---- Directory footer ---- */
+.tn-dir-footer {
+  border-top: 1px solid var(--tn-border); margin-top: 40px;
+  padding: 28px clamp(16px, 4vw, 32px) 36px; color: var(--tn-text-muted); font-size: 13.5px;
+}
+.tn-dir-footer-cols {
+  max-width: 940px; margin: 0 auto; display: grid; gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.tn-dir-footer h2 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--tn-text-faint); margin: 0 0 10px; }
+.tn-dir-footer a { display: block; margin-bottom: 6px; color: var(--tn-text-muted); }
+.tn-dir-footer p { margin: 0 0 8px; line-height: 1.6; }
+/* Inline links inside a paragraph must not become blocks. */
+.tn-dir-footer p a { display: inline; margin: 0; }
+.tn-dir-footer-base {
+  max-width: 940px; margin: 22px auto 0; padding-top: 16px;
+  border-top: 1px solid var(--tn-border); font-size: 12.5px; color: var(--tn-text-faint);
+}
+
+@media (max-width: 720px) {
+  .tn-nb-body { grid-template-columns: 1fr; }
+  .tn-cam-cols { grid-template-columns: 1fr; }
+  .tn-cd-value { font-size: 19px; }
+}
 
 /* ===================== Share button (deep links) ===================== */
 .tn-share-btn { font-size: 12px; font-weight: 600; padding: 0 10px; white-space: nowrap; }

@@ -10,6 +10,7 @@ import {
   formatCount,
   regionPath,
 } from "@/lib/seo/paths";
+import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 
 export const revalidate = 86_400;
 
@@ -55,35 +56,38 @@ export default async function CountryPage({ params }: { params: Promise<{ countr
   if (!group) notFound();
 
   return (
-    <main className="tn-dir">
-      <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
-        <Link href="/">Home</Link> <span aria-hidden="true">/</span>{" "}
-        <Link href={CAMERAS_ROOT}>Cameras</Link> <span aria-hidden="true">/</span>{" "}
-        <span>{group.name}</span>
-      </nav>
+    <>
+      <main className="tn-dir">
+        <nav className="tn-dir-crumbs" aria-label="Breadcrumb">
+          <Link href="/">Home</Link> <span aria-hidden="true">/</span>{" "}
+          <Link href={CAMERAS_ROOT}>Cameras</Link> <span aria-hidden="true">/</span>{" "}
+          <span>{group.name}</span>
+        </nav>
 
-      <h1>Live traffic cameras in {group.name}</h1>
+        <h1>Live traffic cameras in {group.name}</h1>
 
-      <p className="tn-dir-lede">
-        {formatCount(group.count)} public road cameras across {group.regions.length}{" "}
-        {group.regions.length === 1 ? "region" : "regions"}. Pick a region to see its cameras.
-      </p>
+        <p className="tn-dir-lede">
+          {formatCount(group.count)} public road cameras across {group.regions.length}{" "}
+          {group.regions.length === 1 ? "region" : "regions"}. Pick a region to see its cameras.
+        </p>
 
-      <ul className="tn-dir-regions">
-        {group.regions.map((region) => (
-          <li key={region.slug}>
-            <Link href={regionPath(group.iso2, region.region)}>{region.region}</Link>
-            <span className="tn-dir-dim">
-              {formatCount(region.count)} {region.count === 1 ? "camera" : "cameras"}
-            </span>
-          </li>
-        ))}
-      </ul>
+        <ul className="tn-dir-regions">
+          {group.regions.map((region) => (
+            <li key={region.slug}>
+              <Link href={regionPath(group.iso2, region.region)}>{region.region}</Link>
+              <span className="tn-dir-dim">
+                {formatCount(region.count)} {region.count === 1 ? "camera" : "cameras"}
+              </span>
+            </li>
+          ))}
+        </ul>
 
-      <p className="tn-dir-note">
-        <Link href={CAMERAS_ROOT}>All countries</Link> &middot;{" "}
-        <Link href="/app">Open the console</Link>
-      </p>
-    </main>
+        <p className="tn-dir-note">
+          <Link href={CAMERAS_ROOT}>All countries</Link> &middot;{" "}
+          <Link href="/app">Open the console</Link>
+        </p>
+      </main>
+      <DirectoryFooter />
+    </>
   );
 }

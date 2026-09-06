@@ -1,0 +1,105 @@
+[
+  {
+    "latitude": 51.5,
+    "longitude": -0.10000038,
+    "generationtime_ms": 0.5674362182617188,
+    "utc_offset_seconds": 3600,
+    "timezone": "Europe/London",
+    "timezone_abbreviation": "GMT+1",
+    "elevation": 29,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "european_aqi": "EAQI",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-06T22:00",
+      "interval": 3600,
+      "european_aqi": 38,
+      "us_aqi": 43,
+      "pm2_5": 7.1,
+      "pm10": 10.7
+    }
+  },
+  {
+    "latitude": 27.700005,
+    "longitude": 85.30002,
+    "generationtime_ms": 0.18894672393798828,
+    "utc_offset_seconds": 20700,
+    "timezone": "Asia/Kathmandu",
+    "timezone_abbreviation": "GMT+5:45",
+    "elevation": 1312,
+    "location_id": 1,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "european_aqi": "EAQI",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-07T02:45",
+      "interval": 3600,
+      "european_aqi": 47,
+      "us_aqi": 65,
+      "pm2_5": 26.6,
+      "pm10": 27
+    }
+  },
+  {
+    "latitude": 60.2,
+    "longitude": 24.600002,
+    "generationtime_ms": 0.3337860107421875,
+    "utc_offset_seconds": 10800,
+    "timezone": "Europe/Helsinki",
+    "timezone_abbreviation": "GMT+3",
+    "elevation": 49,
+    "location_id": 2,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "european_aqi": "EAQI",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-07T00:00",
+      "interval": 3600,
+      "european_aqi": 17,
+      "us_aqi": 27,
+      "pm2_5": 1.9,
+      "pm10": 2.3
+    }
+  },
+  {
+    "latitude": -43.899998,
+    "longitude": -176.6,
+    "generationtime_ms": 0.6256103515625,
+    "utc_offset_seconds": 45900,
+    "timezone": "Pacific/Chatham",
+    "timezone_abbreviation": "GMT+12:45",
+    "elevation": 0,
+    "location_id": 3,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "european_aqi": "EAQI",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-07T09:45",
+      "interval": 3600,
+      "european_aqi": 21,
+      "us_aqi": 47,
+      "pm2_5": 3.9,
+      "pm10": 6.7
+    }
+  }
+]

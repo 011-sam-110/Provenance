@@ -70,6 +70,8 @@ import type { Camera } from "@/lib/types";
 import { REGISTRY_TTL_MS, getRegistry } from "@/lib/sources/registry";
 import { findById, nearest } from "@/lib/sources/select";
 import { camerasInRegion, groupByCountry, pageSlice, type CountryGroup } from "@/lib/seo/directory";
+import { camerasOnRoad, groupByRoad } from "@/lib/seo/roads";
+import { camerasInPlace, groupByPlace } from "@/lib/seo/places";
 import { REGION_PAGE_SIZE } from "@/lib/seo/paths";
 
 /** Matches `revalidate` on app/cameras/**. The directory moves at the speed of a feed being added. */
@@ -163,16 +165,123 @@ export const getRegionPage = unstable_cache(
   { revalidate: DIRECTORY_TTL_SECONDS },
 );
 
-/** A neighbour link on a camera page: the two fields it prints, and the distance. */
+/**
+ * A road or place listing.
+ *
+ * Same rows, page size and TTL as `RegionPageSnapshot`, but with `label` rather than
+ * `region` — a road name sitting in a field called `region` is the kind of thing that
+ * reads as correct for a year and then gets rendered as a region by someone who trusted
+ * the name.
+ */
+export interface ListingPageSnapshot {
+  /** The upstream's own wording for the road, or GeoNames' for the place. */
+  label: string;
+  total: number;
+  cameras: RegionCameraRow[];
+}
+
+/**
+ * One page of one road, and one page of one place. Both mirror `getRegionPage`, so the
+ * three listings are one page written three times rather than three designs.
+ */
+export const getRoadPage = unstable_cache(
+  async (country: string, roadSlug: string, page: number): Promise<ListingPageSnapshot | null> => {
+    const cameras = await getRegistry().catch(() => []);
+    const hit = camerasOnRoad(cameras, country, roadSlug);
+    if (!hit) return null;
+    return {
+      label: hit.road,
+      total: hit.cameras.length,
+      cameras: pageSlice(hit.cameras, page, REGION_PAGE_SIZE).map((c) => ({
+        id: c.id,
+        name: c.name,
+        road: c.road,
+        available: c.available,
+      })),
+    };
+  },
+  ["seo", "road"],
+  { revalidate: DIRECTORY_TTL_SECONDS },
+);
+
+export const getPlacePage = unstable_cache(
+  async (country: string, placeSlug: string, page: number): Promise<ListingPageSnapshot | null> => {
+    const cameras = await getRegistry().catch(() => []);
+    const hit = camerasInPlace(cameras, country, placeSlug);
+    if (!hit) return null;
+    return {
+      label: hit.place.name,
+      total: hit.cameras.length,
+      cameras: pageSlice(hit.cameras, page, REGION_PAGE_SIZE).map((c) => ({
+        id: c.id,
+        name: c.name,
+        road: c.road,
+        available: c.available,
+      })),
+    };
+  },
+  ["seo", "place"],
+  { revalidate: DIRECTORY_TTL_SECONDS },
+);
+
+/** One road or place a camera page can link to, with the size of what it links to. */
+export interface FacetCount {
+  /** The upstream's own wording (a road) or GeoNames' (a place). */
+  label: string;
+  slug: string;
+  count: number;
+}
+
+export interface CountryFacets {
+  roads: FacetCount[];
+  places: FacetCount[];
+  /** Every camera in the country, so a page can say how big the country listing is. */
+  total: number;
+}
+
+/**
+ * Every pageable road and place in one country, with counts.
+ *
+ * Keyed by COUNTRY rather than by camera, and that is the whole reason it exists as its
+ * own reader. A camera page needs to say "1,140 cameras on this road", and computing
+ * that inside `getCameraPage` would repeat a ~150 ms grouping pass for every one of
+ * ~20k cameras. Keyed this way, the ~11 countries share ~11 cache entries.
+ *
+ * Sized for the 2 MB `unstable_cache` item limit: measured on the 2026-09-06 registry
+ * the largest country carries a few hundred roads and places at three small fields each,
+ * which is tens of kilobytes.
+ */
+export const getCountryFacets = unstable_cache(
+  async (country: string): Promise<CountryFacets> => {
+    const cameras = await getRegistry().catch(() => []);
+    const iso2 = country.toUpperCase();
+    return {
+      roads: groupByRoad(cameras, iso2).map((r) => ({ label: r.road, slug: r.slug, count: r.count })),
+      places: groupByPlace(cameras, iso2).map((p) => ({ label: p.name, slug: p.slug, count: p.count })),
+      total: cameras.filter((c) => c.country.toUpperCase() === iso2).length,
+    };
+  },
+  ["seo", "facets"],
+  { revalidate: DIRECTORY_TTL_SECONDS },
+);
+
+/** A neighbour link on a camera page: what it prints, and the distance. */
 export interface NearbyCamera {
   id: string;
   name: string;
   km: number;
+  /** Needed by the inset map, which plots the neighbours around this camera. */
+  lat: number;
+  lon: number;
+  road?: string;
+  available: boolean;
 }
 
 export interface CameraPageSnapshot {
   camera: Camera;
   nearby: NearbyCamera[];
+  /** How many cameras this camera's own region holds, for the cross-link column. */
+  regionCount: number;
 }
 
 /**
@@ -194,8 +303,24 @@ export const getCameraPage = unstable_cache(
     const nearby = nearest(cameras, camera.lat, camera.lon, 8)
       .filter((n) => n.camera.id !== camera.id)
       .slice(0, 6)
-      .map((n) => ({ id: n.camera.id, name: n.camera.name, km: n.km }));
-    return { camera, nearby };
+      .map((n) => ({
+        id: n.camera.id,
+        name: n.camera.name,
+        km: n.km,
+        lat: n.camera.lat,
+        lon: n.camera.lon,
+        road: n.camera.road,
+        available: n.camera.available,
+      }));
+    // Counted here rather than through `getCountryFacets` because a region is not a
+    // facet — it is the camera's own place in the main hierarchy, and it is one filter
+    // over an array already in hand.
+    const iso2 = camera.country.toUpperCase();
+    const region = camera.region?.trim();
+    const regionCount = region
+      ? cameras.filter((c) => c.country.toUpperCase() === iso2 && c.region?.trim() === region).length
+      : 0;
+    return { camera, nearby, regionCount };
   },
   ["seo", "camera"],
   { revalidate: CAMERA_TTL_SECONDS },
