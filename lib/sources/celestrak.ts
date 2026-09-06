@@ -13,7 +13,9 @@ export interface TleRecord {
 const url = (group: string) =>
   `https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(group)}&FORMAT=tle`;
 
-const TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+/** How long a TLE set is held. Exported so /api/satellites derives its edge TTL
+ *  from this rather than inventing a second number that can drift out of step. */
+export const TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const cache = new Map<string, { at: number; records: TleRecord[] }>();
 
 /** Parse classic 3-line TLE text (name / line1 / line2 triplets). Robust to
