@@ -2368,6 +2368,9 @@ a { color: var(--tn-accent); }
 .tn-settings { width: min(384px, 92vw); height: 100%; background: var(--tn-surface-solid); border-left: 1px solid var(--tn-border); box-shadow: var(--tn-shadow); display: flex; flex-direction: column; animation: tn-slide-in .2s ease; }
 @keyframes tn-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tn-slide-in { from { transform: translateX(28px); opacity: .5; } to { transform: translateX(0); opacity: 1; } }
+/* Every other animated panel in this sheet has one of these (:445, :651, :700, :780,
+   :5500). The settings drawer was the exception and simply slid in regardless. */
+@media (prefers-reduced-motion: reduce) { .tn-settings-scrim, .tn-settings { animation: none; } }
 .tn-settings-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--tn-border); flex: none; }
 .tn-settings-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--tn-text); }
 .tn-settings-close { font: inherit; font-size: 14px; color: var(--tn-text-muted); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; }
@@ -2377,10 +2380,35 @@ a { color: var(--tn-accent); }
 .tn-settings-sec-title { margin: 12px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tn-text-faint); }
 .tn-settings-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tn-settings-label { font-size: 13px; color: var(--tn-text); }
-.tn-settings-hint { margin: -2px 0 2px; font-size: 12px; color: var(--tn-text-faint); line-height: 1.4; }
+/* .tn-settings-note had NO rule at all and had been rendering at the browser default
+   16px with default <p> margins inside a 384px drawer. It shares the hint's treatment;
+   the one thing that differs is the top margin — a hint sits directly under a section
+   title and pulls up into the flex gap, while a note sits under a LIST of rows, where a
+   negative top margin crowds it. */
+.tn-settings-hint, .tn-settings-note { margin: -2px 0 2px; font-size: 12px; color: var(--tn-text-faint); line-height: 1.4; }
+.tn-settings-note { margin-top: 4px; }
 .tn-settings-seg { display: inline-flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
 .tn-settings-seg-btn { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 .tn-settings-seg-btn[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
+/* The three tabs. A segmented pill rather than an underline strip, because it is the same
+   shape as the Language segment three rules up and reuses its selected treatment
+   (--tn-surface-solid lifted on --tn-shadow-sm), so the strip reads as the same family as
+   the control it now sits above.
+   `flex: 1` on the buttons, not intrinsic width: the drawer is min(384px, 92vw), so at
+   360px the strip divides ~330px three ways and cannot overflow.
+   aria-selected, NOT aria-pressed — these switch the panel below, which is the distinction
+   TerminalHeader.tsx:279 draws in the other direction for the board tabs. Styling off the
+   ARIA attribute also means there is no .is-active class that can drift out of sync.
+   `flex: none` is load-bearing: .tn-settings is a flex column, so without it the strip
+   shrinks as the body grows. */
+.tn-settings-tabs { display: flex; gap: 2px; flex: none; margin: 12px 18px 0; padding: 2px; background: var(--tn-chip-bg); border-radius: 10px; }
+.tn-settings-tab { flex: 1 1 0; min-width: 0; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text-muted); background: transparent; border: 0; border-radius: 8px; padding: 7px 6px; cursor: pointer; white-space: nowrap; }
+.tn-settings-tab:hover { color: var(--tn-text); }
+.tn-settings-tab[aria-selected="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
+/* Inset, on both: a 2px ring drawn outside the strip would sit on the drawer's edge, and
+   on the body it would paint over the border-left of the drawer itself. */
+.tn-settings-tab:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
+.tn-settings-body:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
 /* Rebindable shortcuts. A chip is a KEY CAP, not a button that happens to hold text:
    monospace, a raised edge and a fixed minimum width, so a row of them reads as
    "these are the keys" before any label is read. The armed state widens to fit
@@ -2401,7 +2429,15 @@ a { color: var(--tn-accent); }
   color: var(--tn-accent); border-color: var(--tn-accent);
   background: var(--tn-accent-soft); box-shadow: 0 0 0 3px var(--tn-accent-soft);
 }
+/* A cap that CANNOT be pressed. The Fixed reference reuses the key-cap shape so the two
+   halves of the Shortcuts tab read as one vocabulary, then takes the affordances back: a
+   dashed edge, no raised bottom border, no pointer, no hover. A cap that looks pressable
+   and does nothing is the same trap as a dead key. */
+.tn-keymap-chip.is-fixed { border-style: dashed; border-bottom-width: 1px; color: var(--tn-text-muted); background: transparent; cursor: default; text-align: center; }
 .tn-keymap-err { color: var(--tn-down-ink); }
+/* Groups the Fixed rows by where the key applies. Lighter than .tn-settings-sec-title,
+   which is the section heading this sits underneath. */
+.tn-settings-subhead { margin: 10px 0 0; font-size: 11px; font-weight: 600; color: var(--tn-text-muted); }
 .tn-settings-boards { display: flex; flex-direction: column; gap: 6px; }
 .tn-settings-board { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; background: var(--tn-surface-2); border: 1px solid transparent; border-radius: 11px; padding: 10px 12px; cursor: pointer; color: var(--tn-text); }
 .tn-settings-board:hover { border-color: var(--tn-border); }
@@ -2924,7 +2960,11 @@ a.tn-w-place { display: flex; align-items: center; }
 @media (max-width: 900px) {
   /* ---- (a) lists and pills: 44px for real -------------------------------- */
   .tn-ev-row, .tn-evd-rowbtn, a.tn-w-place, .tn-ev-group-h, .tn-anom-row,
-  .tn-ev-tab, .tn-ev-hidden, .tn-mapsearch-item, .tn-rail-fab, .tn-cw-shell > .tn-rail-fab {
+  .tn-ev-tab, .tn-ev-hidden, .tn-mapsearch-item, .tn-rail-fab, .tn-cw-shell > .tn-rail-fab,
+  /* The settings tabs, which is where the drawer is 92vw and the strip is the first
+     thing a thumb reaches. Width is fine at 360px — three labels are ~180px of ink in
+     ~330px — so only the height needs the bump. */
+  .tn-settings-tab {
     min-height: 44px;
   }
   .tn-anom-row { padding: 5px 6px; }
