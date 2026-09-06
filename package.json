@@ -14,7 +14,10 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "webcams:plan": "node scripts/harvest-webcams.mjs --plan",
+    "webcams:cycle": "node scripts/harvest-webcams.mjs --cycle",
+    "webcams:status": "node scripts/harvest-webcams.mjs --status"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

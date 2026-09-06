@@ -20,6 +20,7 @@ import { cinematic } from "@/lib/cinematic/store";
 import { computeDive } from "@/lib/cinematic/dive";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
 import { loadedWebcamsStore } from "@/lib/webcams/loaded";
+import { loadWebcamCatalogue } from "@/lib/webcams/tileLoad";
 import { useSatellites } from "@/lib/satellites/useSatellites";
 import { usePlanes, type PlaneTrail, type PlanesLayer } from "@/lib/planes/usePlanes";
 import { trackStore, useTrack, type TrackState } from "@/lib/planes/track";
@@ -2462,9 +2463,23 @@ function SatellitesFeed({ onData }: { onData: (sats: WorldObject[]) => void }) {
   return null;
 }
 
-// Windy webcams — a one-shot global sample (the API is rate-limited, so this is a
-// fetched snapshot, not a poll). Thin markers only; the dossier re-resolves the
-// short-lived image URL on click. Mirrors CamerasFeed's hidden-doesn't-fetch gate.
+// Windy webcams. Thin markers only; the dossier re-resolves the short-lived image URL
+// on click. Mirrors CamerasFeed's hidden-doesn't-fetch gate.
+//
+// TWO SOURCES, IN PREFERENCE ORDER.
+//
+// 1. The harvested catalogue in public/webcams/ — 196 static tiles holding 70,698
+//    webcams (2.0 MB gzipped), built by scripts/harvest-webcams.mjs. Static files on
+//    the CDN, so this costs no serverless invocation, and tiles stream in so the map
+//    paints before the whole catalogue has arrived.
+// 2. /api/webcams — the live 18-region sample. Measured on prod 2026-09-05 it answered
+//    `count: 1567` against a global total of 70,686, i.e. 2.2%, and an unranked 2.2%.
+//
+// The fallback is not decoration: a deployment built before the first harvest, or a
+// checkout with no tiles committed, has no manifest, and an empty layer would look
+// exactly like "there are no webcams" — the failure mode lib/webcams/loaded.ts already
+// warns about. loadWebcamCatalogue returns null (rather than an empty result) for
+// precisely that case, which is what makes the two paths distinguishable here.
 type WebcamMarker = {
   id: string;
   title: string;
@@ -2476,42 +2491,65 @@ type WebcamMarker = {
   detailUrl?: string;
 };
 
+function toWebcamObjects(markers: WebcamMarker[]): WorldObject[] {
+  return markers.map((w) => ({
+    kind: "webcam",
+    id: w.id,
+    lat: w.lat,
+    lon: w.lon,
+    label: w.title,
+    color: WEBCAM_COLOR,
+    icon: "webcam",
+    typeLabel: "Webcam",
+    meta: {
+      available: w.available ?? true,
+      region: w.region,
+      country: w.country,
+      detailUrl: w.detailUrl,
+    },
+  }));
+}
+
 function WebcamsFeed({ onData }: { onData: (webcams: WorldObject[]) => void }) {
   useEffect(() => {
     let alive = true;
-    fetch("/api/webcams")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!alive) return;
-        const markers = (d.webcams as WebcamMarker[]) ?? [];
-        const objects: WorldObject[] = markers.map((w) => ({
-          kind: "webcam",
-          id: w.id,
-          lat: w.lat,
-          lon: w.lon,
-          label: w.title,
-          color: WEBCAM_COLOR,
-          icon: "webcam",
-          typeLabel: "Webcam",
-          meta: {
-            available: w.available ?? true,
-            region: w.region,
-            country: w.country,
-            detailUrl: w.detailUrl,
-          },
-        }));
-        onData(objects);
-        // Publish alongside onData so anything outside the map — the area picker on
-        // the stage bar, in particular — can read what is drawn without a refetch.
-        loadedWebcamsStore.set(objects.map((o) => ({ id: o.id, label: o.label, lat: o.lat, lon: o.lon })));
-        freshnessStore.record("webcams", { count: objects.length, ok: true });
-      })
-      .catch(() => {
-        if (!alive) return;
-        onData([]);
-        loadedWebcamsStore.set([]);
-        freshnessStore.record("webcams", { count: 0, ok: false });
+
+    // Publish alongside onData so anything outside the map — the area picker on the
+    // stage bar, in particular — can read what is drawn without a refetch.
+    const publish = (objects: WorldObject[], ok: boolean) => {
+      onData(objects);
+      loadedWebcamsStore.set(objects.map((o) => ({ id: o.id, label: o.label, lat: o.lat, lon: o.lon })));
+      freshnessStore.record("webcams", { count: objects.length, ok });
+    };
+
+    const fetchJson = async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    };
+
+    (async () => {
+      const harvested = await loadWebcamCatalogue({
+        fetchJson,
+        alive: () => alive,
+        onProgress: (p) => {
+          if (!alive) return;
+          publish(toWebcamObjects(p.webcams as WebcamMarker[]), true);
+        },
       });
+      if (!alive || harvested) return;
+
+      // No manifest — fall back to the live sample.
+      try {
+        const d = await fetchJson("/api/webcams");
+        if (!alive) return;
+        publish(toWebcamObjects(((d as { webcams?: WebcamMarker[] }).webcams ?? [])), true);
+      } catch {
+        if (!alive) return;
+        publish([], false);
+      }
+    })();
+
     return () => {
       alive = false;
     };
