@@ -82,7 +82,11 @@ export function NearbyCameras({
       <div className="tn-nb-body">
         <div className="tn-nb-map" ref={boxRef}>
           {mapWanted ? (
-            <InsetMap points={points} height={340} selectedId={self.id} />
+            // maxZoom 15, against the shared default of 6. These points are neighbours by
+            // construction — the whole set is inside a few km — so the default cap made
+            // the fit render a country. 15 stops short of building level, which keeps the
+            // surrounding street names on screen and is what makes the map worth having.
+            <InsetMap points={points} height={340} selectedId={self.id} maxZoom={15} />
           ) : (
             <div className="tn-nb-map-skeleton" aria-hidden="true" />
           )}

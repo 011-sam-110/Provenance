@@ -589,7 +589,20 @@ a { color: var(--tn-accent); }
    by the console too and still relies on a width. Everything else lives under
    `.tn-cam-*` below. */
 .tn-cam-frame img,
-.tn-cam-frame video { width: 100%; border-radius: 8px; background: var(--tn-surface-2); display: block; }
+.tn-cam-frame video {
+  width: 100%; border-radius: 8px; background: var(--tn-surface-2); display: block;
+  /* `auto <ratio>` means "the media's OWN ratio once it has one, this before it does",
+     which is the whole reason the auto keyword exists. Without it the img is 21px tall
+     until the frame arrives and the page jumps: measured on the preview 2026-09-06,
+     the conditions block started at y=326 and landed at y=1020, a 694px shift on the
+     one element the page is about. With it the shift is 60px, and zero for a feed that
+     is natively 4:3.
+     4/3 is the MEDIAN of the 10 feeds that answered when asked (tripcheck 1.112, tfl and
+     bihamk 1.222, castlerock/trafficscotland/iceland 1.333, scdot 1.500, drivebc 1.709,
+     digitraffic and putevi-rs 1.778) - not a house style. Nothing is cropped or
+     letterboxed either way, because the loaded image overrides the fallback outright. */
+  aspect-ratio: auto 4 / 3;
+}
 .attribution { font-size: 12px; color: var(--tn-text-muted); }
 
 /* ===================== Crawlable camera directory (/cameras) =====================
