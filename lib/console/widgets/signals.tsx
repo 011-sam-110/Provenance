@@ -260,7 +260,14 @@ function makeSignalBody(source: SignalSource) {
                   label, where there is no value column and the magnitude has to
                   stay. In the row it was said twice. See lib/console/signals/signalCard. */}
               <span className="tn-w-place">{rowLabel(r.title, r.metric)}</span>
-              {rel && <span className="tn-w-muted"> · {rel}</span>}
+              {/* Right-anchored, not trailing. This was `<span class="tn-w-muted">
+                  · 4m</span>` immediately after the title, so the age sat wherever
+                  that title happened to end and no two rows agreed — on a card of
+                  ten rows the one column you scan for "is any of this recent?" was
+                  the one column that did not line up. .tn-w-age pushes itself to
+                  the row's end with tabular figures. The separator goes with it:
+                  a gap between two columns does not need a bullet. */}
+              {rel && <span className="tn-w-age">{rel}</span>}
             </li>
           );
         })}

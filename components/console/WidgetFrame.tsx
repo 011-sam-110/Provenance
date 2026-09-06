@@ -23,7 +23,11 @@ import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
 import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
-interface Report {
+/** What a widget body tells its container about itself.
+ *  Exported because BOTH containers need it now: the card frame below, and
+ *  components/console/WidgetDetail.tsx, whose masthead reads `count`, `fresh`
+ *  and `export` from the very same report rather than inventing its own. */
+export interface Report {
   alerts: Alert[];
   count?: number;
   /** A REAL observation of when this widget's data last arrived. Preferred over
@@ -39,7 +43,9 @@ interface Report {
    *  frame menu offers CSV / GeoJSON downloads. */
   export?: { rows?: Record<string, unknown>[]; geo?: GeoPoint[]; name?: string };
 }
-const ReportCtx = createContext<(r: Report) => void>(() => {});
+/** Exported for WidgetDetail, which provides it around the expanded body. The
+ *  default stays a no-op so a body rendered outside either container is safe. */
+export const ReportCtx = createContext<(r: Report) => void>(() => {});
 export function useWidgetReport() { return useContext(ReportCtx); }
 
 export default function WidgetFrame({
@@ -69,7 +75,16 @@ export default function WidgetFrame({
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const helpBtnRef = useRef<HTMLButtonElement>(null);
+  /** Where focus goes when the help popover closes.
+   *
+   *  It used to be the header's own ? button. That button is now an entry in the
+   *  ⋯ menu, and opening help CLOSES that menu — so a ref to it is null by the
+   *  time the popover is dismissed, and focus would land on <body>: the user
+   *  presses Escape and loses their place on the board entirely. The ⋯ button is
+   *  the right anchor precisely because it is the one control in this header
+   *  that is always mounted, and it is also the route back to the entry they
+   *  just used. */
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const onReport = useCallback((r: Report) => setReport(r), []);
 
   // What this CARD is called, which is not always what its TYPE is called. A widget
@@ -178,6 +193,43 @@ export default function WidgetFrame({
   const HEIGHT_STEP = 40;
   const bumpHeight = (d: number) => shellLayoutStore.resizeWidget(instance.id, instance.height + d);
 
+  // ── Drag the bottom edge to set the card's height ────────────────────────
+  //
+  // The console lost per-card dragging when the free grid became rails, and
+  // height moved into the ⋯ menu. The chips work and they stay — they are the
+  // keyboard path and the only one that can ANNOUNCE the new value — but they
+  // are three interactions to make a card one notch taller, and the reference
+  // resizes from the edge.
+  //
+  // Pointer capture, not a window listener: capture keeps the move events
+  // coming to this element even when the pointer leaves it (which it will, on
+  // any fast drag), and it releases automatically if the gesture is cancelled.
+  // A window-level mousemove would also have to be torn down on unmount, and a
+  // card being dragged is exactly the card most likely to unmount mid-gesture.
+  const [rzDragging, setRzDragging] = useState(false);
+  const onResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation(); // never let the header's onGrab see this
+    const el = e.currentTarget;
+    const startY = e.clientY;
+    const startH = instance.height;
+    el.setPointerCapture(e.pointerId);
+    setRzDragging(true);
+    const onMove = (ev: PointerEvent) => {
+      shellLayoutStore.resizeWidget(instance.id, startH + (ev.clientY - startY));
+    };
+    const onUp = () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", onUp);
+      setRzDragging(false);
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+  };
+
   // ── Wall mode ────────────────────────────────────────────────────────────
   // A wall tile is sized by its GRID CELL and positioned by its rect, so three
   // things about this frame change and nothing else does.
@@ -255,16 +307,34 @@ export default function WidgetFrame({
         <h3 className="tn-cw-title" style={{ margin: 0, fontSize: "inherit" }} title={frameTitle}>{frameTitle}</h3>
         {report.count != null && <span className="tn-cw-count">{report.count}</span>}
         <span className="tn-cw-sp" />
-        {report.alerts.length > 0 && <span className={`tn-cw-badge tn-sev-${sev}`}>{report.alerts.length}</span>}
-        {report.fresh
-          ? <FreshChip obs={report.fresh} />
-          : report.freshLabel && <span className="tn-cw-fresh">{report.freshLabel}</span>}
-        <button ref={helpBtnRef} className={`tn-cw-help${helpOpen ? " is-on" : ""}`} aria-label={`What is ${type.title}?`}
-          aria-haspopup="dialog" aria-expanded={helpOpen} title="What is this?"
-          onClick={() => { setHelpOpen((o) => !o); setMenuOpen(false); setBellOpen(false); }}>?</button>
-        <button className={`tn-cw-bell${rule.enabled ? " is-on" : ""}`} aria-label="Notifications" aria-pressed={rule.enabled}
-          title={rule.enabled ? "Notifications on" : "Notify me"} onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}>🔔</button>
-        <button className="tn-cw-expand" aria-label="Expand widget" title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
+        {/* ONE pill, not two. The severity badge and the freshness chip used to
+            sit side by side, both claiming "this card's state" in different
+            visual languages — a solid coloured count and a bare coloured word.
+            An alert count is the more urgent of the two and takes the slot when
+            there is one; freshness resumes it when the card is quiet. Nothing is
+            lost: the alerts themselves are listed below the header either way
+            (`alertStyle`), so the badge was never the only route to them.
+            `title` says what the number counts, because a bare "3" on a pill
+            does not, and the severity class still carries the hue. */}
+        {report.alerts.length > 0 ? (
+          <span
+            className={`tn-cw-fresh tn-cw-badge tn-sev-${sev}`}
+            title={`${report.alerts.length} ${report.alerts.length === 1 ? "alert" : "alerts"} on this widget`}
+          >
+            {report.alerts.length} {report.alerts.length === 1 ? "alert" : "alerts"}
+          </span>
+        ) : report.fresh ? (
+          <FreshChip obs={report.fresh} />
+        ) : report.freshLabel ? (
+          <span className="tn-cw-fresh">{report.freshLabel}</span>
+        ) : null}
+        {/* THREE buttons. ? and 🔔 are not deleted — they are the first two
+            entries in the ⋯ menu below, where they are full-width labelled rows
+            rather than 14px glyphs, and Notify additionally becomes a real
+            toggle in the expanded view. What is left here is the set a card
+            actually needs at a glance: see it bigger, get rid of it, everything
+            else. */}
+        <button className="tn-cw-btn tn-cw-expand" aria-label={`Expand ${frameTitle}`} title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
         {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
             last entry in a scrolling panel, so on a short card it sits below an
             internal scroll — a control you have to already know is there. The
@@ -285,18 +355,24 @@ export default function WidgetFrame({
             because it reads fine and changing it buys nothing, NOT because the
             corner is still taken. Note the CSS rules for those handles are
             still in globals.css with nothing to attach to. */}
-        <button className="tn-cw-close" aria-label={`Remove ${frameTitle}`} title="Remove from board"
-          onClick={() => shellLayoutStore.remove(instance.id)}>✕</button>
-        <button className="tn-cw-menu" aria-label="Widget menu" onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
+        {/* ✕ → 🗑. The glyph now matches what the control does: ✕ reads as
+            "close this panel" (recoverable), and this is a removal from the
+            board. It keeps its inboard position and gains a hit box it never
+            had — .tn-cw-close was the one header control missing from the
+            touch-target block in globals.css at every viewport. */}
+        <button className="tn-cw-btn tn-cw-close tn-cw-danger-btn" aria-label={`Remove ${frameTitle}`} title="Remove from board"
+          onClick={() => shellLayoutStore.remove(instance.id)}>🗑</button>
+        <button ref={menuBtnRef} className="tn-cw-btn tn-cw-menu" aria-label={`${frameTitle} options`} aria-haspopup="true" aria-expanded={menuOpen}
+          onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
       </header>
 
       {helpOpen && (
         <div className="tn-cw-help-pop" role="dialog" aria-label={`About ${type.title}`}
-          onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setHelpOpen(false); helpBtnRef.current?.focus(); } }}>
+          onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setHelpOpen(false); menuBtnRef.current?.focus(); } }}>
           <div className="tn-cw-help-head">
             <span className="tn-cw-help-title">{help.title}</span>
             <button className="tn-cw-help-x" aria-label="Close help" autoFocus
-              onClick={() => { setHelpOpen(false); helpBtnRef.current?.focus(); }}>✕</button>
+              onClick={() => { setHelpOpen(false); menuBtnRef.current?.focus(); }}>✕</button>
           </div>
           <p className="tn-cw-help-what">{help.what}</p>
           {help.source && <p className="tn-cw-help-src"><span className="tn-cw-help-src-k">Source</span> {help.source}</p>}
@@ -350,6 +426,27 @@ export default function WidgetFrame({
         // a contradiction most screen readers announce badly. A labelled group of
         // ordinary buttons describes what this actually is.
         <div className="tn-cw-menu-pop" role="group" aria-label={`${frameTitle} options`}>
+          {/* THE TWO CONTROLS THE HEADER GAVE UP. They open exactly the same two
+              popovers as before — same state, same components, same content — so
+              this is a change of route, not of capability. They come FIRST
+              because "what is this?" and "tell me when it changes" are the two
+              questions a card raises, and everything below is board arrangement.
+
+              The bell keeps its is-on styling as a trailing mark rather than a
+              filled icon: in a text menu the row's LABEL can say the state
+              outright, which the glyph never could. */}
+          <button
+            aria-haspopup="dialog"
+            aria-expanded={helpOpen}
+            onClick={() => { setHelpOpen((o) => !o); setMenuOpen(false); setBellOpen(false); }}
+          >? About this widget</button>
+          <button
+            aria-haspopup="dialog"
+            aria-expanded={bellOpen}
+            onClick={() => { setBellOpen((o) => !o); setMenuOpen(false); setHelpOpen(false); }}
+          >🔔 Notify me{rule.enabled ? " · on" : "…"}</button>
+          <div className="tn-cw-menu-sep" />
+
           {/* ORDER WITHIN THE RAIL. Disabled at the ends rather than hidden:
               a control that vanishes at the top of a list makes the row jump
               under the pointer, and "why did that button move?" is a worse
@@ -476,6 +573,22 @@ export default function WidgetFrame({
               <ReportCtx.Provider value={onReport}><Body instanceId={instance.id} config={cfg} /></ReportCtx.Provider>
             </WidgetErrorBoundary>
           </div>
+          {/* Rails only. A wall tile's height IS its grid cell — writing an
+              `instance.height` from a drag here would set a number the next cell
+              recalculation silently throws away, which is the "control that
+              lies" this file has already been corrected for twice.
+              aria-hidden + no tab stop is deliberate and is NOT an unlabelled
+              control: this is a redundant pointer shortcut whose keyboard
+              equivalents (−H / +H and the height presets) are in the ⋯ menu and
+              can speak their new value, which a drag handle cannot. */}
+          {!wall && (
+            <div
+              className={`tn-cw-rz${rzDragging ? " is-dragging" : ""}`}
+              onPointerDown={onResizeDown}
+              aria-hidden="true"
+              title="Drag to resize · or use the ⋯ menu for exact heights"
+            ><i /></div>
+          )}
           {/* Nothing resizes a card from its own edges any more, and this note
               has now been wrong twice in the same place, so it is worth stating
               what the file actually does rather than what the last rewrite

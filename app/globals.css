@@ -78,6 +78,39 @@
      headline titles only. The Terminal block at the end of this file is the only
      consumer. */
   --tn-title: var(--tn-font-sans, ui-sans-serif), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* ── Widget anatomy (M1) ────────────────────────────────────────────────
+     One card shape and one row rhythm for all 63 widget types. These are
+     tokens rather than literals because the row height is the only thing a
+     density control has to move, and it has to move for every widget on the
+     board at once — see .tn-terminal below, which already proves the pattern
+     with --tnx-rh. */
+  --tn-cw-radius: 12px;
+  --tn-cw-head-h: 40px;
+  /** Header button box. 28px is the painted box AND the hit box, which is why
+      the ::before overlay hack further down loses two of its four selectors:
+      a real box does not need a pseudo-element to manufacture one. */
+  --tn-cw-btn: 28px;
+  --tn-row-h: 34px;
+  --tn-row-px: 10px;
+  --tn-row-fs: 13px;
+
+  /* Status-pill grounds — 8% alpha of the SAME hue as the ink they carry.
+     The tint LOWERS contrast, it does not raise it: the ink is dark, so tinting
+     the ground with it moves the ground toward the text. Measured on the solid
+     surface, ink against its own 8% ground:
+         live 4.86 · lagging 4.60 · stale 4.87 · down 5.03   (min 4.60)
+     The alpha is 8% and not the 10% this was first written at because 10%
+     measured lagging at 4.479 — under AA, by a margin invisible on screen.
+     tests/unit/widget-pill-contrast.test.ts caught it and now pins all four, so
+     nudging one hex here fails a test instead of quietly failing a user.
+     The inks themselves are UNCHANGED: they carry their own measurements against
+     three other surfaces and re-tuning them to suit the pill would invalidate
+     those. The tint moved instead. */
+  --tn-live-bg: rgba(20, 122, 55, 0.08);
+  --tn-lagging-bg: rgba(168, 89, 7, 0.08);
+  --tn-stale-bg: rgba(180, 71, 10, 0.08);
+  --tn-down-bg: rgba(200, 30, 30, 0.08);
 }
 
 /* THE DARK THEME IS GONE. `[data-theme="dark"]` redefined all 30 tokens above and
@@ -1306,9 +1339,28 @@ a { color: var(--tn-accent); }
    =========================================================================== */
 /* Translucent glass card — theme-aware surface + ink so widgets read in dark too
    (the body's .tn-w-* rows already use tokens; the frame chrome now matches). */
-.tn-cw{position:relative;display:flex;flex-direction:column;background:var(--tn-surface);backdrop-filter:blur(14px) saturate(1.05);-webkit-backdrop-filter:blur(14px) saturate(1.05);border:1px solid var(--tn-border);border-radius:10px;overflow:hidden;box-shadow:var(--tn-shadow-sm);color:var(--tn-text)}
-.tn-cw-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--tn-border);cursor:grab;font-size:12px}
-.tn-cw-title{font-weight:700;color:var(--tn-text)}.tn-cw-count{font-size:11px;color:var(--tn-text-faint)}.tn-cw-sp{flex:1}
+.tn-cw{position:relative;display:flex;flex-direction:column;background:var(--tn-surface);backdrop-filter:blur(14px) saturate(1.05);-webkit-backdrop-filter:blur(14px) saturate(1.05);border:1px solid var(--tn-border);border-radius:var(--tn-cw-radius);overflow:hidden;box-shadow:var(--tn-shadow-sm);color:var(--tn-text)}
+/* A FIXED-HEIGHT header, not a padded one. The old rule was `padding:6px 8px`
+   with no height, so the header grew and shrank by a pixel or two depending on
+   whether the widget happened to be reporting a badge, a freshness chip or
+   neither — on a rail of eight cards, eight slightly different header heights.
+   The height is now the token and the children centre inside it. */
+.tn-cw-head{display:flex;align-items:center;gap:8px;height:var(--tn-cw-head-h);flex:none;padding:0 6px 0 11px;border-bottom:1px solid var(--tn-border);cursor:grab;font-size:12px}
+.tn-cw-icon{flex:none;font-size:14px;line-height:1;opacity:.85}
+.tn-cw-title{font-weight:600;font-size:13.5px;letter-spacing:-.005em;color:var(--tn-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tn-cw-count{flex:none;font-size:12px;color:var(--tn-text-faint);font-variant-numeric:tabular-nums}
+.tn-cw-sp{flex:1 1 auto;min-width:4px}
+/* ── The three header buttons ────────────────────────────────────────────
+   Expand, remove, menu. Each is a real 28px box with a hover ground, which is
+   the whole reason the header can afford to be quiet: a bare glyph has to stay
+   visible to be findable, a button in a box does not.
+   NOTE .tn-cw-close is included here and was NOT in the old touch-target
+   block further down — the ✕ was the one header control with no enlarged hit
+   area at any viewport. That is fixed by giving all three the same box. */
+.tn-cw-btn{flex:none;width:var(--tn-cw-btn);height:var(--tn-cw-btn);display:grid;place-items:center;border:0;border-radius:7px;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:13px;line-height:1;padding:0;font-family:inherit}
+.tn-cw-btn:hover{color:var(--tn-text);background:var(--tn-surface-2)}
+.tn-cw-btn:focus-visible{outline:2px solid var(--tn-accent);outline-offset:-1px}
+.tn-cw-btn.tn-cw-danger-btn:hover{color:var(--tn-down-ink)}
 /* Severity badge — white 10px/800 text, so the FILL is what has to carry the 4.5:1.
    Measured before: neutral #8a97a6 2.73:1, critical #d9534f 3.96:1, warn #d9882f
    2.80:1, info #4a78c9 4.36:1 — all four failed, on a count that is pure data.
@@ -1318,11 +1370,47 @@ a { color: var(--tn-accent); }
 /* The widget-header freshness chip. It used to be unconditionally green because every
    widget hardcoded the string "live"; now the state class carries the colour, and the
    two-class selectors below beat this base rule regardless of source order. */
-.tn-cw-fresh{font-size:10px;color:var(--tn-text-faint);white-space:nowrap;cursor:help}
-.tn-cw-fresh.tn-fresh-live{color:var(--tn-live-ink)}
-.tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging-ink)}
-.tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale-ink)}
-.tn-cw-fresh.tn-fresh-down{color:var(--tn-down-ink)}
+/* ── The status pill ─────────────────────────────────────────────────────
+   Was bare coloured text at 10px, which meant a feed going stale changed only
+   the HUE of a short word — the one signal a user scanning eight cards is
+   least likely to catch, and the one that matters most on a console whose whole
+   claim is that it tells you when a source stopped answering. It is now a pill:
+   a dot, a word, and a 10%-alpha ground of its own ink.
+   The INK values are untouched. They were measured to clear 4.5:1 on three
+   surfaces and that work stands; the pill introduces a FOURTH surface — a tint
+   of the ink's own hue, which moves the ground TOWARD the text and so costs
+   contrast rather than adding it. Each pair is measured against its own ground
+   in tests/unit/widget-pill-contrast.test.ts rather than assumed to carry over;
+   that test is what set the tint alpha to 8%.
+   `cursor:help` stays — the title attribute still carries chipTitle()'s two
+   clocks (when we last fetched, how old the payload in it is). */
+/* NOT uppercased, which is the one place this deviates from the reference. Its
+   pill only ever says "LIVE"; ours says "4m old", "stale · 2h", "none now" —
+   and `4M OLD` reads as four MILLION on a console whose other numbers are
+   counts. The pill earns its emphasis from weight and ground instead. */
+.tn-cw-fresh{display:inline-flex;align-items:center;gap:5px;flex:none;height:20px;padding:0 8px;border-radius:10px;font-size:10.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap;cursor:help;background:var(--tn-chip-bg);color:var(--tn-text-faint)}
+/* The dot is drawn from currentColor, so a state only has to set `color` and the
+   dot follows it. One declaration per state instead of two that can disagree. */
+.tn-cw-fresh::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+/* ── The alert pill ──────────────────────────────────────────────────────
+   Same slot, same shape, louder: when a widget is reporting alerts the pill
+   says so INSTEAD of saying how fresh the feed is, because "3 alerts" outranks
+   "live" and two pills side by side both meaning "state" was the thing this
+   header set out to remove.
+   Specificity, not source order, is what makes this work. `.tn-cw-badge` is
+   declared ABOVE `.tn-cw-fresh` in this file, so at equal weight the fresh
+   rule's `color: var(--tn-text-faint)` would win and paint faint grey text on
+   a dark red fill. The compound selector (0,2,0) settles it in both directions
+   and cannot be reordered into a bug by a later edit. The FILLS are unchanged —
+   they are the ones already chosen so that white text clears AA on each. */
+.tn-cw-fresh.tn-cw-badge{color:#fff;font-weight:800;letter-spacing:.01em;background:#5f6b7a}
+.tn-cw-fresh.tn-cw-badge.tn-sev-critical{background:#b5322e}
+.tn-cw-fresh.tn-cw-badge.tn-sev-warn{background:#a35c0c}
+.tn-cw-fresh.tn-cw-badge.tn-sev-info{background:#2f5aa8}
+.tn-cw-fresh.tn-fresh-live{color:var(--tn-live-ink);background:var(--tn-live-bg)}
+.tn-cw-fresh.tn-fresh-lagging{color:var(--tn-lagging-ink);background:var(--tn-lagging-bg)}
+.tn-cw-fresh.tn-fresh-stale{color:var(--tn-stale-ink);background:var(--tn-stale-bg)}
+.tn-cw-fresh.tn-fresh-down{color:var(--tn-down-ink);background:var(--tn-down-bg)}
 /* `refused` (credential held, upstream said no) reuses --tn-down-ink rather
    than a new hue: components/shell/SourceCatalog.tsx already made this call
    for the rail badge ("the same red the freshness chip uses for 'down'... it
@@ -1332,9 +1420,14 @@ a { color: var(--tn-accent); }
    --tn-surface — the composited background .tn-cw-fresh actually sits on,
    since --tn-surface is translucent: light 5.67:1, dark 6.56:1. Both clear
    4.5:1 with room to spare. */
-.tn-cw-fresh.tn-fresh-refused{color:var(--tn-down-ink)}
+.tn-cw-fresh.tn-fresh-refused{color:var(--tn-down-ink);background:var(--tn-down-bg)}
+/* `empty`, `off` and `unknown` keep the NEUTRAL chip ground from the base rule.
+   None of the three is a fault — a dormant source with no key, a source still
+   connecting, and a live source with nothing in scope right now all deserve to
+   recede rather than colour a card. Only `off`/`unknown` stay italic, which is
+   the existing distinction between "not running" and "has nothing to say". */
 .tn-cw-fresh.tn-fresh-empty{color:var(--tn-text-faint)}
-.tn-cw-fresh.tn-fresh-off,.tn-cw-fresh.tn-fresh-unknown{color:var(--tn-text-faint);font-style:italic}
+.tn-cw-fresh.tn-fresh-off,.tn-cw-fresh.tn-fresh-unknown{color:var(--tn-text-faint);font-style:italic;letter-spacing:.03em}
 .tn-cw-menu,.tn-cw-expand{border:0;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:14px}
 .tn-cw-menu:hover,.tn-cw-expand:hover{color:var(--tn-text)}
 .tn-cw-menu-pop{display:flex;flex-direction:column;border-bottom:1px solid var(--tn-border);background:var(--tn-surface-solid)}
@@ -1380,8 +1473,30 @@ a { color: var(--tn-accent); }
 .tn-cw-resize-xy:hover::after{opacity:1;border-color:var(--tn-accent)}
 
 /* The header's drag affordance + the explicit move/size controls in the ⋯ menu. */
-.tn-cw-grip{color:var(--tn-text-faint);font-size:11px;line-height:1;cursor:grab;letter-spacing:-1px;opacity:.5;transition:opacity .12s}
-.tn-cw:hover .tn-cw-grip{opacity:1}
+/* The move grip. Base opacity goes 0.5 → 0: it is a redundant convenience, not
+   the only path. Its two jobs both survive being invisible at rest — it is the
+   wall's drag SOURCE (and the whole header carries that handler too, so the
+   drag target is 400px wide either way) and it is the keyboard path, which
+   reveals itself on :focus-visible below. The pointer-free equivalents live in
+   the ⋯ menu as named destinations, which is where WCAG 2.5.8 is actually
+   satisfied. It keeps its box at all times, so nothing reflows on hover. */
+.tn-cw-grip{flex:none;border:0;background:none;padding:0;color:var(--tn-text-faint);font-size:11px;line-height:1;cursor:grab;letter-spacing:-1px;opacity:0;transition:opacity .12s}
+.tn-cw:hover .tn-cw-grip,.tn-cw:focus-within .tn-cw-grip{opacity:1}
+.tn-cw-grip:focus-visible{opacity:1;outline:2px solid var(--tn-accent);outline-offset:2px;border-radius:3px}
+
+/* ── Bottom-edge resize ──────────────────────────────────────────────────
+   The reference resizes a card from its own bottom edge, and the console has
+   had no per-card drag since the grid was replaced by rails — height moved to
+   the ⋯ menu's chips, which work but are three clicks and a guess.
+   This is a RAILS-ONLY control. On a wall a tile's height is its grid cell, so
+   WidgetFrame does not render it there; dragging it would write a px height
+   that the next cell recalculation silently discards.
+   The keyboard path is NOT here: it is the ⋯ menu's −H/+H chips and the height
+   presets, which can announce their new value as this cannot. */
+.tn-cw-rz{flex:none;height:15px;display:grid;place-items:center;cursor:row-resize;border-top:1px solid var(--tn-border);background:var(--tn-surface);touch-action:none}
+.tn-cw-rz i{display:block;width:26px;height:2px;border-radius:2px;background:var(--tn-text-faint);opacity:0;transition:opacity .12s}
+.tn-cw:hover .tn-cw-rz i{opacity:.5}
+.tn-cw-rz:hover i,.tn-cw-rz.is-dragging i{opacity:1;background:var(--tn-accent)}
 .tn-cw-head:active .tn-cw-grip{cursor:grabbing}
 .tn-cw-menu-sec{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--tn-text-faint);padding:6px 10px 2px}
 .tn-cw-menu-row{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px 4px}
@@ -1489,7 +1604,28 @@ a { color: var(--tn-accent); }
 /* ====================================================================   Widget body — list primitives (Task 10 Disasters & Events widget)
    =========================================================================== */
 .tn-w-list{list-style:none;margin:0;padding:0;font-size:12px}
-.tn-w-list li{display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--tn-border);line-height:1.4}
+/* ── THE ROW PRIMITIVE ───────────────────────────────────────────────────
+   Four slots, in this order, and a widget that has nothing for a slot omits it
+   rather than rendering an empty one:
+       [ mark ] [ value ]  title …………………  [ source ]  [ age ]
+   `mark` is a bar-track, a dot or a severity chip; `value` rides inside the bar
+   group. `source` is OPT-IN and deliberately unpopulated for the ~33 generic
+   signal widgets — SignalRow carries no per-row source because for those the
+   WIDGET is the source, and repeating it down every row would be noise. It is
+   the widgets whose rows genuinely differ in origin (outages per provider,
+   headlines per publisher) that fill it.
+   min-height rather than padding: a row that contains a link (a.tn-w-place sets
+   its own 30px further down) and a row that contains plain text have to be the
+   same height, and padding on the li made them differ. */
+.tn-w-list li{display:flex;align-items:center;gap:10px;min-height:var(--tn-row-h);padding:0 var(--tn-row-px);border-bottom:1px solid var(--tn-border);line-height:1.35;font-size:var(--tn-row-fs)}
+.tn-w-list li:last-child{border-bottom:0}
+/* Age, right-anchored and tabular so 12m / 51m / 2h / 4d form a column instead
+   of a ragged edge. It replaces an inline `<span class="tn-w-muted"> · 4m</span>`
+   that trailed the title and moved with its length. */
+.tn-w-age{flex:none;margin-left:auto;min-width:38px;text-align:right;font-family:var(--tn-mono);font-size:calc(var(--tn-row-fs) - 1px);font-variant-numeric:tabular-nums;color:var(--tn-text-faint);white-space:nowrap}
+/* The opt-in source slot. Capped so a long publisher name cannot eat the title
+   it is meant to annotate — the same failure --tn-w-bar's max-width exists for. */
+.tn-w-src{flex:none;max-width:34%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tn-text-faint);font-size:calc(var(--tn-row-fs) - 1px)}
 .tn-w-sev{flex:none;font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.03em;background:var(--tn-border);color:var(--tn-text-muted)}
 .tn-w-kind{flex:none;font-size:11px;color:var(--tn-text-muted);font-weight:500}
 .tn-w-place{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tn-text)}
@@ -1607,11 +1743,43 @@ a { color: var(--tn-accent); }
 
 /* Focus window — a widget expanded onto the center stage */
 .tn-detail { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--tn-surface-solid); color: var(--tn-text); overflow: hidden; }
-.tn-detail-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--tn-border, #1e293b); flex: 0 0 auto; }
-.tn-detail-back { font: inherit; font-size: 13px; background: transparent; border: 1px solid var(--tn-border, #1e293b); border-radius: 6px; padding: 4px 10px; color: var(--tn-accent, #38bdf8); cursor: pointer; }
-.tn-detail-back:hover { background: var(--tn-surface-2, #111a2e); }
-.tn-detail-icon { font-size: 16px; }
-.tn-detail-title { font-weight: 600; font-size: 15px; }
+/* ── The expanded view's masthead ────────────────────────────────────────
+   One bar for all 70 widget types. The 14 with a bespoke detail render inside
+   it and no longer draw their own chrome; the 56 without one gain a real
+   fullscreen instead of a card stretched sideways. */
+.tn-detail-head { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border-bottom: 1px solid var(--tn-border); flex: 0 0 auto; flex-wrap: wrap; }
+.tn-detail-back { font: inherit; font-size: 13px; font-weight: 500; background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 12px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-back:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+.tn-detail-chip { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--tn-surface-2); border: 1px solid var(--tn-border); font-size: 15px; }
+/* An h2 with the UA margin reset inline-free: the heading is real so a screen
+   reader gets a stop for the expanded widget, but browser heading margins would
+   break this flex bar. */
+.tn-detail-title { margin: 0; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: var(--tn-text); }
+.tn-detail-count { flex: none; font-size: 14px; color: var(--tn-text-faint); font-variant-numeric: tabular-nums; }
+.tn-detail-sp { flex: 1 1 auto; min-width: 4px; }
+.tn-detail-act { font: inherit; font-size: 12.5px; background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 10px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-act:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+/* Notify me — a switch, not a button that opens a panel. role="switch" carries
+   the state to a screen reader; the track below is its visual half only. */
+.tn-detail-notify { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12.5px; background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 10px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-notify:hover { border-color: var(--tn-accent); }
+.tn-detail-notify.is-on { color: var(--tn-accent); border-color: var(--tn-accent); }
+.tn-detail-sw { position: relative; flex: none; width: 28px; height: 16px; border-radius: 8px; background: var(--tn-toggle-off); transition: background .12s; }
+.tn-detail-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .12s; }
+.tn-detail-notify.is-on .tn-detail-sw { background: var(--tn-accent); }
+.tn-detail-notify.is-on .tn-detail-sw::after { transform: translateX(12px); }
+@media (prefers-reduced-motion: reduce) { .tn-detail-sw, .tn-detail-sw::after { transition: none; } }
+
+/* ── The hero ────────────────────────────────────────────────────────────
+   A figure and where it came from. Both are omitted rather than faked when the
+   widget publishes neither — see the comment in WidgetDetail.tsx. */
+.tn-detail-hero { flex: 0 0 auto; padding: 18px 16px 14px; border-bottom: 1px solid var(--tn-border); }
+.tn-detail-fig { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tn-detail-fig b { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--tn-text); }
+.tn-detail-fig span { font-size: 15px; color: var(--tn-text-muted); }
+.tn-detail-prov { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--tn-text-faint); max-width: 78ch; }
+.tn-detail-prov-k { font-weight: 700; color: var(--tn-text-muted); text-transform: uppercase; letter-spacing: .05em; font-size: 9.5px; margin-right: 6px; }
+
 .tn-detail-body { flex: 1 1 auto; overflow: auto; padding: 14px; }
 .tn-detail-generic { max-width: 900px; margin: 0 auto; }
 
@@ -2867,9 +3035,11 @@ a { color: var(--tn-accent); }
 
   /* Widget header on a narrow card: the title yields first so the controls stay on
      the card, and the icon buttons get a real touch target. */
-  .tn-cw-head { gap: 4px; }
+  .tn-cw-head { gap: 4px; padding: 0 4px 0 8px; }
   .tn-cw-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tn-cw-menu, .tn-cw-expand, .tn-cw-bell {
+  /* .tn-cw-btn already centres its own content in a real box; only .tn-cw-bell
+     (now a ⋯ menu entry, kept for any other consumer) still needs the shim. */
+  .tn-cw-bell {
     min-width: 26px; min-height: 26px;
     display: inline-flex; align-items: center; justify-content: center;
   }
@@ -3014,14 +3184,23 @@ a { color: var(--tn-accent); }
    cannot manufacture width the row does not have. The fix is to give each button a
    24px BOX (pitch 24+6=30, so the 26px overlays now tile without fighting) while the
    only button with a visible outline keeps its small painted ring via ::after. */
-.tn-cw-help, .tn-cw-bell, .tn-cw-expand, .tn-cw-menu {
+/* SUPERSEDED for the header cluster, and deliberately not deleted outright.
+   The measurement above still describes a real trap, but the header no longer
+   has the shape that caused it: ? and 🔔 are no longer header buttons at all
+   (they are entries in the ⋯ menu, where they are full-width rows), and the
+   three that remain — ⛶ 🗑 ⋯ — are .tn-cw-btn, a REAL 28px box on a 28+8=36px
+   pitch. A painted box that is already the hit box cannot be out-reached by its
+   neighbour's overlay, which was the entire failure mode.
+   What is left here is the overlay for any OTHER consumer of these class names
+   outside the widget header; .tn-cw-btn sets its own box and is not in the list. */
+.tn-cw-help, .tn-cw-bell {
   position: relative;
   /* the header is a flex row: without this the 16px help button was squeezed to
      11.9px and its ring painted as an ellipse */
   flex: 0 0 auto;
   min-width: 24px; min-height: 24px;
 }
-.tn-cw-help::before, .tn-cw-bell::before, .tn-cw-expand::before, .tn-cw-menu::before {
+.tn-cw-help::before, .tn-cw-bell::before {
   content: ""; position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
   width: 26px; height: 26px;
@@ -3074,13 +3253,18 @@ a.tn-w-place { display: flex; align-items: center; }
   .tn-mapsearch-input { min-height: 44px; }
 
 
-  /* ---- (a)+(b) widget header: 40px box, 44px hit, 20px painted ring ------- */
-  .tn-cw-help, .tn-cw-bell, .tn-cw-expand, .tn-cw-menu {
+  /* ---- (a)+(b) widget header: 40px box, 44px hit, 20px painted ring -------
+     The three header buttons are now .tn-cw-btn and grow their REAL box to 40px
+     rather than growing a 24px box and overlaying a 44px pseudo-element on it.
+     The header also grows, or a 40px control does not fit inside a 40px bar. */
+  .tn-cw-head { height: 48px; }
+  .tn-cw-btn { --tn-cw-btn: 40px; }
+  .tn-cw-help, .tn-cw-bell {
     width: 40px; height: 40px; min-width: 40px; min-height: 40px;
   }
   /* pitch is 40 + the header's 4px gap = 44, so a 44px overlay tiles exactly:
      every button owns a full 44x44 and none of them overlaps its neighbour */
-  .tn-cw-help::before, .tn-cw-bell::before, .tn-cw-expand::before, .tn-cw-menu::before {
+  .tn-cw-help::before, .tn-cw-bell::before {
     width: 44px; height: 44px;
   }
   /* Ring stays small (it is drawn by ::after at every width); only the box grows. */
