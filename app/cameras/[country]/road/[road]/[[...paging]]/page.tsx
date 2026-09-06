@@ -12,6 +12,7 @@ import {
   parsePageParam,
   regionPageCount,
   roadDescription,
+  roadHeading,
   roadPath,
   roadTitle,
 } from "@/lib/seo/paths";
@@ -91,7 +92,7 @@ export default async function RoadPage({ params }: { params: Promise<RouteParams
         </nav>
 
         <h1>
-          {hit.label} traffic cameras, {countryLabel}
+          {roadHeading(hit.label)}, {countryLabel}
         </h1>
 
         <CameraListing

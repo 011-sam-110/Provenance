@@ -19,7 +19,17 @@ import {
 } from "@/lib/seo/places";
 import { PLACES } from "@/lib/seo/place.data";
 import { reservedSegmentCollisions } from "@/lib/seo/directory";
-import { RESERVED_FACET_SEGMENTS, parsePageParam, placePath, roadPath } from "@/lib/seo/paths";
+import {
+  RESERVED_FACET_SEGMENTS,
+  isBareNumberRoad,
+  parsePageParam,
+  placePath,
+  roadDescription,
+  roadHeading,
+  roadPath,
+  roadTitle,
+} from "@/lib/seo/paths";
+import { BRAND } from "@/lib/brand";
 import type { Camera } from "@/lib/types";
 
 function cam(over: Partial<Camera> & { id: string }): Camera {
@@ -277,6 +287,49 @@ describe("facet paths", () => {
 
   it("folds a road name the same way every other slug is folded", () => {
     expect(roadPath("IS", "Þjóðvegur 1")).toBe("/cameras/is/road/thjodvegur-1");
+  });
+});
+
+describe("roadHeading — a road whose whole name is a number", () => {
+  it("recognises the shapes DriveBC actually publishes", () => {
+    // Measured on the 2026-09-06 registry: 48 of 860 road groups, 1,146 cameras.
+    // "1" is the Trans-Canada, "97C" the Okanagan Connector — the fixture rows carry
+    // `highway` and `highway_display` BOTH reading "1", so there is nothing to recover.
+    for (const bare of ["1", "99", "97C", "3A", "347", " 25 "]) {
+      expect(isBareNumberRoad(bare)).toBe(true);
+    }
+    for (const named of ["I-95", "Highway 401", "M8", "QEW", "Floridas Turnpike", "A406"]) {
+      expect(isBareNumberRoad(named)).toBe(false);
+    }
+  });
+
+  it("never lets a number sit where a count sits", () => {
+    // "1 traffic cameras (236)" is the H1, the <title> and the tab label at once, and
+    // every one of them reads as a count of one.
+    expect(roadHeading("1")).toBe("Traffic cameras on 1");
+    expect(roadTitle("CA", "1", 236, 1)).toBe(
+      `Traffic cameras on 1 (236), Canada | ${BRAND.name}`,
+    );
+    expect(roadTitle("CA", "1", 236, 1)).not.toMatch(/^1 traffic/);
+  });
+
+  it("leaves a named road leading its own title, which is the phrase people type", () => {
+    expect(roadHeading("I-95")).toBe("I-95 traffic cameras");
+    expect(roadTitle("US", "I-95", 840, 1)).toBe(
+      `I-95 traffic cameras (840), United States | ${BRAND.name}`,
+    );
+  });
+
+  it("does not invent a designation for either shape", () => {
+    // "Highway 25" would be a made-up name for a US state route its own agency calls
+    // something else. The number is passed through untouched in both branches.
+    expect(roadHeading("25")).toContain("25");
+    expect(roadHeading("25")).not.toContain("Highway");
+    expect(roadHeading("25")).not.toContain("Route");
+  });
+
+  it("keeps the description prepositional, so it needed no branch at all", () => {
+    expect(roadDescription("CA", "1", 236)).toContain("cameras on 1 in Canada");
   });
 });
 

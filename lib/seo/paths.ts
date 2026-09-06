@@ -216,9 +216,39 @@ export function regionTitle(iso2: string, region: string, count: number, page: n
   return `Live traffic cameras in ${region}, ${countryName(iso2)} (${formatCount(count)})${suffix} | ${BRAND.name}`;
 }
 
+/**
+ * True when a road's published name is nothing but a number.
+ *
+ * Not a hypothetical. DriveBC publishes `highway_display: "1"` for the Trans-Canada and
+ * `"97C"` for the Okanagan Connector, where Ontario's 511 publishes "Highway 401" and
+ * Caltrans publishes "I-5". Measured on the 2026-09-06 registry: 48 of 860 road groups
+ * are bare numbers, covering 1,146 cameras — 39 Canadian and 9 American.
+ *
+ * There is nothing to recover and nothing safe to prepend: the number IS the whole
+ * upstream value (the fixture rows carry `highway` and `highway_display` both reading
+ * "1"), and "Highway 25" would be an invented designation for a US state route that its
+ * own agency calls something else. So the copy changes shape instead — see `roadHeading`.
+ */
+export function isBareNumberRoad(road: string): boolean {
+  return /^[0-9]+[A-Za-z]?$/.test(road.trim());
+}
+
+/**
+ * The road's name in the position a sentence starts from.
+ *
+ * "I-95" leads, because "I-95 traffic cameras" is the phrase somebody types. A bare
+ * number cannot lead: "1 traffic cameras (236)" reads as a count of one, and it is the
+ * H1, the <title> and the tab label all at once. Moving it behind a preposition costs
+ * the 48 numeric roads their first-word position and keeps the other 812 exactly as they
+ * were, which is the right way round.
+ */
+export function roadHeading(road: string): string {
+  return isBareNumberRoad(road) ? `Traffic cameras on ${road}` : `${road} traffic cameras`;
+}
+
 export function roadTitle(iso2: string, road: string, count: number, page: number): string {
   const suffix = page > 1 ? ` - page ${page}` : "";
-  return `${road} traffic cameras (${formatCount(count)}), ${countryName(iso2)}${suffix} | ${BRAND.name}`;
+  return `${roadHeading(road)} (${formatCount(count)}), ${countryName(iso2)}${suffix} | ${BRAND.name}`;
 }
 
 /**
