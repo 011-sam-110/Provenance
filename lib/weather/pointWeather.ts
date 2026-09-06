@@ -35,6 +35,29 @@ export const CURRENT_FIELDS = [
 ] as const;
 
 /**
+ * The extra `current=` fields a DETAIL request adds, and the `daily=` fields it asks for.
+ *
+ * These exist for the camera page's conditions grid and for nothing else. They are opt-in
+ * rather than always-on because of who the two callers are: the console camera wall asks
+ * for up to MAX_POINTS coordinates at a time and renders none of this, while the camera
+ * page asks for exactly one and renders all of it. Open-Meteo prices a request by how many
+ * variables it carries, so making the wall pay for wind and sunset on 60 points to serve a
+ * page that asks for 1 is the wrong way round on a keyless free tier.
+ *
+ * The cost of the split is that `PointWeather`'s detail fields are all optional and every
+ * reader has to cope with their absence — which it would have had to anyway, because
+ * Open-Meteo omits a field it cannot compute.
+ */
+export const DETAIL_CURRENT_FIELDS = [
+  "apparent_temperature",
+  "wind_speed_10m",
+  "wind_direction_10m",
+  "wind_gusts_10m",
+] as const;
+
+export const DETAIL_DAILY_FIELDS = ["sunrise", "sunset"] as const;
+
+/**
  * How many points one upstream request may carry.
  *
  * Matches MAX_STREAMS in camslot.model.ts: a single wall cannot hold more streams than
@@ -71,6 +94,30 @@ export interface PointWeather {
    *  does not know the zone — it is a snapshot and goes wrong across a DST boundary,
    *  so the zone name is always preferred. */
   utcOffsetSeconds: number;
+
+  // ---- DETAIL fields. Present only on a detail request, and only when the upstream
+  // returned a usable number. Absent means "not asked for, or not answered" — never zero.
+
+  /** Open-Meteo's `apparent_temperature`: what the air is supposed to feel like. */
+  feelsC?: number;
+  /** Sustained wind at 10 m, km/h (Open-Meteo's default unit for this field). */
+  windKmh?: number;
+  /** Meteorological wind direction: the compass bearing the wind blows FROM. */
+  windFromDeg?: number;
+  /** Gust speed at 10 m, km/h. */
+  gustKmh?: number;
+  /**
+   * Today's sunrise and sunset as the upstream sent them: LOCAL wall-clock ISO with no
+   * offset, e.g. "2026-09-06T06:21", because the request carries `timezone=auto`.
+   *
+   * Kept as the upstream's own strings rather than parsed to epoch. `new Date()` on an
+   * offset-less string reads it in the RUNTIME's zone, which would put a London sunset
+   * into a Vercel container's UTC and a reader's browser zone into a third — three
+   * answers to one question. The only thing anything needs from these is the clock face
+   * at the camera, and that is already the substring.
+   */
+  sunrise?: string;
+  sunset?: string;
 }
 
 /** A coordinate rounded and rendered as its own cache key. Stable and canonical, so
@@ -142,11 +189,28 @@ interface MeteoPoint {
     rain?: number | null;
     snowfall?: number | null;
     is_day?: number | null;
+    // Detail request only.
+    apparent_temperature?: number | null;
+    wind_speed_10m?: number | null;
+    wind_direction_10m?: number | null;
+    wind_gusts_10m?: number | null;
+  } | null;
+  /** Detail request only. Parallel arrays, one entry per forecast day; we ask for one. */
+  daily?: {
+    time?: unknown[] | null;
+    sunrise?: unknown[] | null;
+    sunset?: unknown[] | null;
   } | null;
 }
 
 function num(v: unknown): number | undefined {
   return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+/** First entry of one of `daily`'s parallel arrays, when it is a non-empty string. */
+function firstDaily(arr: unknown[] | null | undefined): string | undefined {
+  const v = Array.isArray(arr) ? arr[0] : undefined;
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
 }
 
 /**
@@ -182,19 +246,32 @@ export function normalizePointWeather(points: MeteoPoint[], coords: Coord[]): Po
       snowMm: num(cur.snowfall) ?? NaN,
       timeZone: zone,
       utcOffsetSeconds: num(pt.utc_offset_seconds) ?? 0,
+      // Detail fields. Spread conditionally so a base request produces the exact object
+      // it always did — `feelsC: undefined` and no `feelsC` at all serialise differently,
+      // and the route caches these by value.
+      ...(num(cur.apparent_temperature) !== undefined && { feelsC: num(cur.apparent_temperature) }),
+      ...(num(cur.wind_speed_10m) !== undefined && { windKmh: num(cur.wind_speed_10m) }),
+      ...(num(cur.wind_direction_10m) !== undefined && { windFromDeg: num(cur.wind_direction_10m) }),
+      ...(num(cur.wind_gusts_10m) !== undefined && { gustKmh: num(cur.wind_gusts_10m) }),
+      ...(firstDaily(pt.daily?.sunrise) && { sunrise: firstDaily(pt.daily?.sunrise) }),
+      ...(firstDaily(pt.daily?.sunset) && { sunset: firstDaily(pt.daily?.sunset) }),
     });
   });
   return out;
 }
 
 /** Build the upstream URL for a batch. Exported so a test can assert the shape without
- *  a network call. */
-export function pointWeatherUrl(coords: Coord[]): string {
+ *  a network call. `detail` adds the camera-page fields; see DETAIL_CURRENT_FIELDS. */
+export function pointWeatherUrl(coords: Coord[], detail = false): string {
   const latitude = coords.map((c) => c.lat).join(",");
   const longitude = coords.map((c) => c.lon).join(",");
+  const current = detail ? [...CURRENT_FIELDS, ...DETAIL_CURRENT_FIELDS] : CURRENT_FIELDS;
+  // `forecast_days=1` because the only daily values asked for are today's sunrise and
+  // sunset; the default of 7 would return six days nothing reads.
+  const daily = detail ? `&daily=${DETAIL_DAILY_FIELDS.join(",")}&forecast_days=1` : "";
   return (
     `${ENDPOINT}?latitude=${latitude}&longitude=${longitude}` +
-    `&current=${CURRENT_FIELDS.join(",")}&timezone=auto`
+    `&current=${current.join(",")}${daily}&timezone=auto`
   );
 }
 
@@ -202,10 +279,10 @@ export function pointWeatherUrl(coords: Coord[]): string {
  * Fetch one batch. Dormant-safe: every failure path resolves to `degraded(reason)` with
  * an empty feature list, never a throw and never a partial guess.
  */
-export async function fetchPointWeather(coords: Coord[]) {
+export async function fetchPointWeather(coords: Coord[], detail = false) {
   if (coords.length === 0) return observed([] as PointWeather[]);
   try {
-    const res = await fetch(pointWeatherUrl(coords), {
+    const res = await fetch(pointWeatherUrl(coords, detail), {
       headers: { "User-Agent": UA },
       signal: AbortSignal.timeout(8_000),
     });

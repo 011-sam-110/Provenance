@@ -23,10 +23,20 @@ const MAX_ENTRIES = 400;
 type CacheEntry = { at: number; value: PointWeather };
 const cache = new Map<string, CacheEntry>();
 
+/** Cache key for one coordinate at one detail level. `|d` marks the richer entry. */
+function cacheKey(c: Coord, detail: boolean): string {
+  const base = coordKey(c.lat, c.lon);
+  return detail ? `${base}|d` : base;
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const coords = parsePointsParam(url.searchParams.get("points"));
+    // `detail=1` adds wind, apparent temperature and today's sunrise/sunset — the camera
+    // page's conditions grid. The console camera wall does not pass it, so it keeps
+    // paying for the small request. See DETAIL_CURRENT_FIELDS.
+    const detail = url.searchParams.get("detail") === "1";
 
     if (coords.length === 0) {
       return Response.json(
@@ -39,7 +49,11 @@ export async function GET(req: Request) {
     const hits: PointWeather[] = [];
     const misses: Coord[] = [];
     for (const c of coords) {
-      const entry = cache.get(coordKey(c.lat, c.lon));
+      // The cache key carries `detail`, because a base entry for a coordinate does not
+      // satisfy a detail request for the same coordinate — it is missing exactly the
+      // fields the caller asked for. Without this the first wall request to touch a
+      // coordinate would starve every later camera page on it for the whole TTL.
+      const entry = cache.get(cacheKey(c, detail));
       if (entry && now - entry.at < TTL_MS) hits.push(entry.value);
       else misses.push(c);
     }
@@ -54,7 +68,7 @@ export async function GET(req: Request) {
       // (degraded<T>'s T has nothing to infer from at its call sites inside
       // pointWeather.ts) — cast at this boundary rather than editing that file.
       const results = await Promise.all(
-        batches.map((batch) => fetchPointWeather(batch) as Promise<PointWeather[]>),
+        batches.map((batch) => fetchPointWeather(batch, detail) as Promise<PointWeather[]>),
       );
       for (const result of results) {
         const outcome = readOutcome(result);
@@ -64,7 +78,7 @@ export async function GET(req: Request) {
         }
         for (const pw of result) {
           fresh.push(pw);
-          cache.set(pw.key, { at: now, value: pw });
+          cache.set(detail ? `${pw.key}|d` : pw.key, { at: now, value: pw });
           if (cache.size > MAX_ENTRIES) {
             const oldest = cache.keys().next().value; // Map preserves insertion order
             if (oldest !== undefined) cache.delete(oldest);

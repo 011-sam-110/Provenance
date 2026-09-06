@@ -9,6 +9,8 @@ import {
   fetchPointWeather,
   MAX_POINTS,
   COORD_DP,
+  DETAIL_CURRENT_FIELDS,
+  DETAIL_DAILY_FIELDS,
 } from "@/lib/weather/pointWeather";
 import { readOutcome } from "@/lib/signals/outcome";
 import {
@@ -16,6 +18,7 @@ import {
   zoneOffsetLabel,
 } from "@/lib/console/widgets/camslot.conditions";
 import fixture from "@/tests/fixtures/open-meteo-points.json";
+import detailFixture from "@/tests/fixtures/open-meteo-points-detail.json";
 
 // open-meteo-points.json was captured live on 2026-09-03 from
 // api.open-meteo.com/v1/forecast with these four coordinates and `&timezone=auto`. It is
@@ -117,6 +120,25 @@ describe("pointWeatherUrl", () => {
     expect(url).toContain("precipitation");
     expect(url).toContain("snowfall");
   });
+
+  it("keeps the base request small — the camera wall pays for this one", () => {
+    // The whole point of the detail split. If any of these leak into the default
+    // request, 60-point wall requests start carrying variables nothing renders.
+    const url = pointWeatherUrl(COORDS);
+    for (const field of [...DETAIL_CURRENT_FIELDS, ...DETAIL_DAILY_FIELDS]) {
+      expect(url).not.toContain(field);
+    }
+    expect(url).not.toContain("daily=");
+  });
+
+  it("adds wind, apparent temperature and sunrise/sunset only on a detail request", () => {
+    const url = pointWeatherUrl(COORDS, true);
+    for (const field of DETAIL_CURRENT_FIELDS) expect(url).toContain(field);
+    expect(url).toContain("daily=sunrise,sunset");
+    // One day, because only today's sunrise and sunset are read. The upstream default
+    // is seven, and six unread days is six days of payload on every camera page.
+    expect(url).toContain("forecast_days=1");
+  });
 });
 
 describe("normalizePointWeather", () => {
@@ -152,6 +174,84 @@ describe("normalizePointWeather", () => {
   it("refuses a point with no timezone rather than guessing one", () => {
     const noZone = [{ ...(points as never as Record<string, unknown>[])[0], timezone: "" }];
     expect(normalizePointWeather(noZone as never, [COORDS[0]])).toHaveLength(0);
+  });
+
+  it("leaves every detail field OFF a base response", () => {
+    // NOTE the reshaping. open-meteo-points.json was captured on 2026-09-03 with
+    // `apparent_temperature` and `wind_speed_10m` in it, which the base request has
+    // never asked for — the capture was simply wider than the code. So a base-shaped
+    // response is built here rather than assumed, or this would assert nothing.
+    //
+    // The parser reading those fields when they ARE present is correct and deliberate:
+    // it maps what the upstream sent, it does not police what was asked for.
+    const baseShaped = (points as unknown as Record<string, Record<string, unknown>>[]).map((p) => {
+      const cur = { ...p.current };
+      for (const f of DETAIL_CURRENT_FIELDS) delete cur[f];
+      return { ...p, current: cur, daily: undefined };
+    });
+    const out = normalizePointWeather(baseShaped as never, COORDS);
+    expect(out).toHaveLength(4);
+    for (const p of out) {
+      // Absent, not present-and-undefined: the route caches these objects by value.
+      expect("windKmh" in p).toBe(false);
+      expect("feelsC" in p).toBe(false);
+      expect("sunset" in p).toBe(false);
+    }
+  });
+});
+
+describe("normalizePointWeather — the detail fields", () => {
+  // open-meteo-points-detail.json was captured live on 2026-09-06 from the same four
+  // coordinates with `&current=…apparent_temperature,wind_speed_10m,wind_direction_10m,
+  // wind_gusts_10m&daily=sunrise,sunset&forecast_days=1&timezone=auto`. Same bare-array
+  // shape and same reason as the base fixture.
+  const points = detailFixture as never as Parameters<typeof normalizePointWeather>[0];
+
+  it("carries wind, gusts and apparent temperature", () => {
+    const out = normalizePointWeather(points, COORDS);
+    expect(out).toHaveLength(4);
+    for (const p of out) {
+      expect(Number.isFinite(p.windKmh as number)).toBe(true);
+      expect(Number.isFinite(p.gustKmh as number)).toBe(true);
+      expect(Number.isFinite(p.feelsC as number)).toBe(true);
+      expect(p.windFromDeg).toBeGreaterThanOrEqual(0);
+      expect(p.windFromDeg).toBeLessThanOrEqual(360);
+    }
+  });
+
+  it("keeps sunrise/sunset as the upstream's own local wall-clock strings", () => {
+    const out = normalizePointWeather(points, COORDS);
+    // No offset and no trailing Z — parsing these with `new Date()` would resolve them
+    // in the runtime's zone, which is the bug the raw string exists to avoid.
+    for (const p of out) {
+      expect(p.sunrise).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+      expect(p.sunset).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    }
+  });
+
+  it("omits a detail field the upstream did not answer, rather than zeroing it", () => {
+    // 0 km/h is a real, still evening. Absent means nobody said. The card has to be
+    // able to tell them apart, so an absent field must not arrive as a number.
+    const stripped = (points as unknown as Record<string, Record<string, unknown>>[]).map((p) => ({
+      ...p,
+      current: { ...p.current, wind_speed_10m: null },
+    }));
+    const out = normalizePointWeather(stripped as never, COORDS);
+    expect(out).toHaveLength(4);
+    for (const p of out) {
+      expect("windKmh" in p).toBe(false);
+      expect(Number.isFinite(p.gustKmh as number)).toBe(true); // the others survive
+    }
+  });
+
+  it("survives a detail response whose daily block never arrived", () => {
+    const noDaily = (points as unknown as Record<string, unknown>[]).map((p) => ({
+      ...p,
+      daily: null,
+    }));
+    const out = normalizePointWeather(noDaily as never, COORDS);
+    expect(out).toHaveLength(4);
+    for (const p of out) expect("sunset" in p).toBe(false);
   });
 });
 
