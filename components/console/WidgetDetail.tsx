@@ -41,6 +41,7 @@ import { resolveWidgetHelp } from "@/lib/console/help";
 import { notificationsStore, useRule, requestNotifyPermission } from "@/lib/shell/notifications";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
 import FreshChip from "@/components/console/FreshChip";
+import { Icon } from "@/components/console/WidgetIcons";
 import { ReportCtx, type Report } from "@/components/console/WidgetFrame";
 
 export default function WidgetDetail({ instance }: { instance: WidgetInstance }) {
@@ -66,7 +67,7 @@ export default function WidgetDetail({ instance }: { instance: WidgetInstance })
   return (
     <div className="tn-detail" role="region" aria-label={`${title} — expanded`}>
       <header className="tn-detail-head">
-        <button className="tn-detail-back" onClick={() => shellLayoutStore.unfocus()}>‹ Map</button>
+        <button className="tn-detail-back" onClick={() => shellLayoutStore.unfocus()}><Icon name="back" /> Map</button>
         <span className="tn-detail-chip" aria-hidden>{type.icon}</span>
         <h2 className="tn-detail-title">{title}</h2>
         {report.count != null && <span className="tn-detail-count">{report.count}</span>}
@@ -89,14 +90,14 @@ export default function WidgetDetail({ instance }: { instance: WidgetInstance })
             if (next) void requestNotifyPermission();
           }}
         >
-          <span aria-hidden>🔔</span> Notify me
+          <Icon name="bell" /> Notify me
           <span className="tn-detail-sw" aria-hidden />
         </button>
         {rows && rows.length > 0 && (
-          <button className="tn-detail-act" onClick={() => doExport("csv")}>⬇ CSV</button>
+          <button className="tn-detail-act" onClick={() => doExport("csv")}><Icon name="download" /> CSV</button>
         )}
         {geo && geo.length > 0 && (
-          <button className="tn-detail-act" onClick={() => doExport("geojson")}>⬇ GeoJSON</button>
+          <button className="tn-detail-act" onClick={() => doExport("geojson")}><Icon name="download" /> GeoJSON</button>
         )}
       </header>
 
