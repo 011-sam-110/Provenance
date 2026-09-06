@@ -1,5 +1,5 @@
 import { getWebcams } from "@/lib/webcams/registry";
-import { webcamsBody, webcamsCacheControl } from "@/lib/webcams/body";
+import { webcamsBody, webcamsCacheHeaders } from "@/lib/webcams/body";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function GET() {
   return new Response(webcamsBody(await getWebcams()), {
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": webcamsCacheControl(),
+      ...webcamsCacheHeaders(),
     },
   });
 }

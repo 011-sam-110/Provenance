@@ -1,6 +1,6 @@
 import type { Camera } from "@/lib/types";
 import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 // The body of GET /api/cameras, and its edge-cache policy.
 //
@@ -80,7 +80,7 @@ export function __resetCamerasBody(): void {
   serialised = null;
 }
 
-/** The Cache-Control this route answers with. Lives beside the TTL it is derived from. */
-export function camerasCacheControl(): string {
-  return edgeCacheControl(CAMERAS_TTL_MS, 300_000);
+/** The cache headers this route answers with. Live beside the TTL they are derived from. */
+export function camerasCacheHeaders(): Record<string, string> {
+  return edgeCacheHeaders(CAMERAS_TTL_MS, 300_000);
 }

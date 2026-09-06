@@ -2,7 +2,7 @@ import { getSignal } from "@/lib/signals/registry";
 import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
 import type { SignalFeature } from "@/lib/signals/types";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 import { publishOutcome } from "@/lib/signals/outcome";
 
 export const dynamic = "force-dynamic";
@@ -86,9 +86,7 @@ function cacheHeaders(refreshMs: number, features: SignalFeature[], ok: boolean)
   // minutes after it ended. no-store means the next request re-asks upstream and the
   // layer recovers as soon as the upstream does.
   if (!ok) return { "Cache-Control": "no-store" };
-  return {
-    "Cache-Control": edgeCacheControl(cacheTtlMs(refreshMs, features.length === 0)),
-  };
+  return edgeCacheHeaders(cacheTtlMs(refreshMs, features.length === 0));
 }
 
 export async function GET(

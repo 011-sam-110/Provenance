@@ -1,7 +1,7 @@
 import { describeWebcamSample, type WebcamSample } from "@/lib/webcams/fetch";
 import { WINDY_SOURCE } from "@/lib/sources/windy";
 import { describeCoverage } from "@/lib/signals/coverage";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 // The body of GET /api/webcams, and its edge-cache policy.
 //
@@ -130,7 +130,7 @@ export function __resetWebcamsBody(): void {
   serialised = null;
 }
 
-/** The Cache-Control this route answers with. Lives beside the TTL it is derived from. */
-export function webcamsCacheControl(): string {
-  return edgeCacheControl(WEBCAMS_TTL_MS, 300_000);
+/** The cache headers this route answers with. Live beside the TTL they are derived from. */
+export function webcamsCacheHeaders(): Record<string, string> {
+  return edgeCacheHeaders(WEBCAMS_TTL_MS, 300_000);
 }

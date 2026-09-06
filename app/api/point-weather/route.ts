@@ -7,7 +7,7 @@ import {
   type Coord,
 } from "@/lib/weather/pointWeather";
 import { readOutcome } from "@/lib/signals/outcome";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
 
 export const dynamic = "force-dynamic";
@@ -84,7 +84,7 @@ export async function GET(req: Request) {
 
     return Response.json(
       { ok: true, observedAt: now, count: points.length, points },
-      { headers: { "Cache-Control": edgeCacheControl(cacheTtlMs(TTL_MS, points.length === 0), TTL_MS) } },
+      { headers: edgeCacheHeaders(cacheTtlMs(TTL_MS, points.length === 0), TTL_MS) },
     );
   } catch (err) {
     console.warn("[point-weather] handler threw:", err);

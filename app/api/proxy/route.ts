@@ -3,6 +3,7 @@ import { getCameraById } from "@/lib/sources/registry";
 import { isAllowed } from "@/lib/proxy/allowlist";
 import { extractScotlandImage } from "@/lib/sources/trafficscotland";
 import { needsH2, h2Fetch } from "@/lib/http/h2";
+import { frameCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest) {
     headers: {
       "Content-Type": contentType,
       // Never serve a camera faster than the source refresh (TfL = 300s).
-      "Cache-Control": `public, max-age=${cam.refreshSeconds}, s-maxage=${cam.refreshSeconds}`,
+      ...frameCacheHeaders(cam.refreshSeconds),
     },
   });
 }
@@ -80,7 +81,7 @@ async function proxyOverH2(target: URL, refreshSeconds: number): Promise<Respons
     status: 200,
     headers: {
       "Content-Type": ct && ct.startsWith("image/") ? ct : "image/jpeg",
-      "Cache-Control": `public, max-age=${refreshSeconds}, s-maxage=${refreshSeconds}`,
+      ...frameCacheHeaders(refreshSeconds),
     },
   });
 }
@@ -108,7 +109,7 @@ async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promis
     status: 200,
     headers: {
       "Content-Type": img.contentType,
-      "Cache-Control": `public, max-age=${refreshSeconds}, s-maxage=${refreshSeconds}`,
+      ...frameCacheHeaders(refreshSeconds),
     },
   });
 }

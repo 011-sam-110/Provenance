@@ -1,5 +1,5 @@
 import { getRegistry } from "@/lib/sources/registry";
-import { camerasBody, camerasCacheControl } from "@/lib/cameras/body";
+import { camerasBody, camerasCacheHeaders } from "@/lib/cameras/body";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function GET() {
   return new Response(camerasBody(await getRegistry()), {
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": camerasCacheControl(),
+      ...camerasCacheHeaders(),
     },
   });
 }

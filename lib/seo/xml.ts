@@ -17,6 +17,7 @@
 // rather than something you have to deploy to inspect.
 
 import type { SitemapEntry } from "@/lib/seo/directory";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 /** Where the browser-facing stylesheet lives (served from `public/`). */
 export const SITEMAP_STYLESHEET_PATH = "/sitemap.xsl";
@@ -138,6 +139,6 @@ ${body}
 export function sitemapHeaders(): HeadersInit {
   return {
     "Content-Type": "application/xml; charset=utf-8",
-    "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+    ...edgeCacheHeaders(86_400_000, 604_800_000),
   };
 }
