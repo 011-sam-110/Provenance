@@ -167,6 +167,55 @@ const report = await page.evaluate(() => {
     rowHeight: (() => { const r = card?.querySelector(".tn-w-list li")?.getBoundingClientRect();
                         return r ? Math.round(r.height) : null; })(),
     resizeBar: card ? card.querySelectorAll(".tn-cw-rz").length : 0,
+
+    // The icon cluster, measured rather than eyeballed. Sampo's report was that the
+    // three controls were "spaced weirdly", and a screenshot cannot settle that on
+    // its own: the numbers that decide it are the gap BETWEEN each pair (equal?),
+    // the button's height against the header's (does the control fit its bar?), and
+    // each icon's own box (do the three drawn glyphs agree, where three FONTS did
+    // not?). All three are read off the live DOM here so a regression fails loudly.
+    acts: (() => {
+      const acts = card?.querySelector(".tn-cw-acts");
+      if (!acts) return null;
+      const btns = [...acts.querySelectorAll(".tn-cw-btn")];
+      const r = btns.map((b) => b.getBoundingClientRect());
+      const gaps = r.slice(1).map((b, i) => +(b.left - r[i].right).toFixed(2));
+      const svgs = btns.map((b) => {
+        const g = b.querySelector("svg")?.getBoundingClientRect();
+        return g ? `${Math.round(g.width)}x${Math.round(g.height)}` : "NO-SVG";
+      });
+      const hr = card.querySelector(".tn-cw-head").getBoundingClientRect();
+      return {
+        count: btns.length,
+        boxes: r.map((b) => `${Math.round(b.width)}x${Math.round(b.height)}`),
+        gapsPx: gaps,
+        gapsEqual: gaps.every((g) => Math.abs(g - gaps[0]) < 0.51),
+        iconBoxes: svgs,
+        iconsAgree: new Set(svgs).size === 1 && !svgs.includes("NO-SVG"),
+        // A control taller than the bar it sits in paints its hover fill across
+        // the header's bottom border. This was true before this pass: 28 in 26.
+        fitsHeader: r.every((b) => b.height <= hr.height),
+        headerH: Math.round(hr.height),
+        // Vertically centred — against the header's CONTENT box, not its border
+        // box. `getBoundingClientRect` counts the 1px bottom border, which sits on
+        // ONE side only, so measuring against the border box reports every centred
+        // child as 1px high. The question that matters is whether the cluster sits
+        // on the same optical line as the title and pill beside it, so both are
+        // reported and `agreesWithRow` is the real check.
+        insets: (() => {
+          const bw = parseFloat(getComputedStyle(head).borderBottomWidth) || 0;
+          const ins = (el) => { const b = el.getBoundingClientRect();
+            return +((b.top - hr.top) - (hr.bottom - bw - b.bottom)).toFixed(2); };
+          const t = card.querySelector(".tn-cw-title");
+          const pl = card.querySelector(".tn-cw-head .tn-cw-fresh");
+          return {
+            buttons: btns.map(ins),
+            title: t ? ins(t) : null,
+            pill: pl ? ins(pl) : null,
+          };
+        })(),
+      };
+    })(),
   };
 });
 console.log("MEASURED:", JSON.stringify(report, null, 2));

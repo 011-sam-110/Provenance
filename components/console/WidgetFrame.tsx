@@ -19,6 +19,7 @@ import {
 } from "@/lib/shell/notifications";
 import { useTelegram, isTelegramConfigured } from "@/lib/shell/telegram";
 import FreshChip from "@/components/console/FreshChip";
+import { Icon } from "@/components/console/WidgetIcons";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
 import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
@@ -328,13 +329,21 @@ export default function WidgetFrame({
         ) : report.freshLabel ? (
           <span className="tn-cw-fresh">{report.freshLabel}</span>
         ) : null}
-        {/* THREE buttons. ? and 🔔 are not deleted — they are the first two
-            entries in the ⋯ menu below, where they are full-width labelled rows
-            rather than 14px glyphs, and Notify additionally becomes a real
-            toggle in the expanded view. What is left here is the set a card
+        {/* THREE buttons, in ONE cluster. ? and 🔔 are not deleted — they are the
+            first two entries in the ⋯ menu below, where they are full-width
+            labelled rows rather than 14px glyphs, and Notify additionally becomes
+            a real toggle in the expanded view. What is left here is the set a card
             actually needs at a glance: see it bigger, get rid of it, everything
-            else. */}
-        <button className="tn-cw-btn tn-cw-expand" aria-label={`Expand ${frameTitle}`} title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}>⤢</button>
+            else.
+
+            The .tn-cw-acts wrapper exists because the header is a flex row with
+            ONE gap (7px in the terminal skin), and that gap has to be big enough
+            to separate the title from the count — which made the three buttons
+            read as three separate header items rather than one control group.
+            The wrapper gives the set its own 2px gap, so the cluster reads as a
+            unit and the space before it reads as the boundary. */}
+        <span className="tn-cw-acts">
+        <button className="tn-cw-btn tn-cw-expand" aria-label={`Expand ${frameTitle}`} title="Expand to main window" onClick={() => shellLayoutStore.focus(instance.id)}><Icon name="expand" /></button>
         {/* Remove is on the card, not only in the ⋯ menu. In the menu it is the
             last entry in a scrolling panel, so on a short card it sits below an
             internal scroll — a control you have to already know is there. The
@@ -361,9 +370,10 @@ export default function WidgetFrame({
             had — .tn-cw-close was the one header control missing from the
             touch-target block in globals.css at every viewport. */}
         <button className="tn-cw-btn tn-cw-close tn-cw-danger-btn" aria-label={`Remove ${frameTitle}`} title="Remove from board"
-          onClick={() => shellLayoutStore.remove(instance.id)}>🗑</button>
+          onClick={() => shellLayoutStore.remove(instance.id)}><Icon name="trash" /></button>
         <button ref={menuBtnRef} className="tn-cw-btn tn-cw-menu" aria-label={`${frameTitle} options`} aria-haspopup="true" aria-expanded={menuOpen}
-          onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}>⋯</button>
+          onClick={() => { setMenuOpen((o) => !o); setBellOpen(false); setHelpOpen(false); }}><Icon name="more" /></button>
+        </span>
       </header>
 
       {helpOpen && (

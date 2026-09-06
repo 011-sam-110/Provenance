@@ -1357,7 +1357,19 @@ a { color: var(--tn-accent); }
    NOTE .tn-cw-close is included here and was NOT in the old touch-target
    block further down — the ✕ was the one header control with no enlarged hit
    area at any viewport. That is fixed by giving all three the same box. */
+/* The three header controls sit in their own flex box rather than directly in the
+   header. The header's `gap` has to be large enough to separate the title from the
+   count beside it, and at that size the three buttons read as three separate items
+   in the header rather than one group of controls. */
+.tn-cw-acts{display:flex;align-items:center;gap:2px;flex:none;margin-left:2px}
 .tn-cw-btn{flex:none;width:var(--tn-cw-btn);height:var(--tn-cw-btn);display:grid;place-items:center;border:0;border-radius:7px;background:none;cursor:pointer;color:var(--tn-text-faint);font-size:13px;line-height:1;padding:0;font-family:inherit}
+/* Drawn, not typed. These were `⤢`, `🗑` and `⋯` — an arrow glyph, a COLOUR EMOJI
+   and a text ellipsis, i.e. three different fonts with three different advance
+   widths and optical weights, which is why no amount of `gap` made them sit evenly.
+   Sizing the icon here rather than on the <svg> lets a denser skin scale the whole
+   set from one token, and `display:block` kills the inline-baseline gap that would
+   otherwise push each icon off the button's optical centre. */
+.tn-cw-btn svg{display:block;width:var(--tn-cw-ico,15px);height:var(--tn-cw-ico,15px)}
 .tn-cw-btn:hover{color:var(--tn-text);background:var(--tn-surface-2)}
 .tn-cw-btn:focus-visible{outline:2px solid var(--tn-accent);outline-offset:-1px}
 .tn-cw-btn.tn-cw-danger-btn:hover{color:var(--tn-down-ink)}
@@ -1768,6 +1780,23 @@ a { color: var(--tn-accent); }
 .tn-detail-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .12s; }
 .tn-detail-notify.is-on .tn-detail-sw { background: var(--tn-accent); }
 .tn-detail-notify.is-on .tn-detail-sw::after { transform: translateX(12px); }
+
+/* The expanded view draws from the SAME set as the card — `‹`, `🔔` and `⬇` were a
+   guillemet, a colour emoji and a text arrow, i.e. the identical mismatch the card
+   header had. `flex` + `gap` rather than a space in the markup, because an inline
+   SVG beside a text label sits on the TEXT BASELINE, which drops the icon a couple
+   of px below the label's optical centre.
+
+   Declared here, below `.tn-detail-notify`, and not up beside `.tn-cw-btn svg`
+   where it was first written: that rule and this one are both (0,1,0), so source
+   order decides, and from up there `gap: 6px` lost to the `gap: 8px` this button
+   sets at line 1782 — leaving one of the three controls spaced differently from
+   the other two. `.tn-detail-notify` keeps its own 8px on purpose: it carries a
+   switch as well as an icon, so it has three children where the others have two. */
+.tn-detail-back, .tn-detail-act { display: inline-flex; align-items: center; gap: 6px; }
+.tn-detail-back svg, .tn-detail-notify svg, .tn-detail-act svg {
+  display: block; width: 14px; height: 14px; flex: none;
+}
 @media (prefers-reduced-motion: reduce) { .tn-detail-sw, .tn-detail-sw::after { transition: none; } }
 
 /* ── The hero ────────────────────────────────────────────────────────────
@@ -3257,8 +3286,14 @@ a.tn-w-place { display: flex; align-items: center; }
      The three header buttons are now .tn-cw-btn and grow their REAL box to 40px
      rather than growing a 24px box and overlaying a 44px pseudo-element on it.
      The header also grows, or a 40px control does not fit inside a 40px bar. */
-  .tn-cw-head { height: 48px; }
-  .tn-cw-btn { --tn-cw-btn: 40px; }
+  /* Both selectors, because the console renders inside `.tn-terminal`, whose own
+     `.tn-terminal .tn-cw-head { height: var(--tnx-rh) }` (0,2,0) outranks a bare
+     `.tn-cw-head` (0,1,0). Without the compound selector the header stayed at 26px
+     while the buttons grew to 40px — a tap target overflowing its own bar by 7px at
+     top and bottom, on the one viewport where the size bump exists to help. The
+     comment above claimed the header grows; it did not. */
+  .tn-cw-head, .tn-terminal .tn-cw-head { height: 48px; }
+  .tn-cw-btn { --tn-cw-btn: 40px; --tn-cw-ico: 18px; }
   .tn-cw-help, .tn-cw-bell {
     width: 40px; height: 40px; min-width: 40px; min-height: 40px;
   }
@@ -4571,6 +4606,15 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   font-size: var(--tnx-fs-sm);
 }
 .tn-terminal .tn-cw-icon { font-size: var(--tnx-fs-sm); opacity: 0.75; }
+/* The control has to fit the bar. This skin sets the header to `--tnx-rh` (26px)
+   and does NOT re-size `.tn-cw-btn`, so the base 28px box was 2px TALLER than the
+   header containing it: the hover fill bled across the bottom border and the three
+   buttons could not centre on a row they overflowed. Declared on the header so the
+   value inherits down to the buttons, which keeps the mobile block's own
+   `--tn-cw-btn` on `.tn-cw-btn` winning where it is set. 22px in a 26px bar leaves
+   a symmetric 2px, and the icon drops to 13px to keep the same optical margin. */
+.tn-terminal .tn-cw-head { --tn-cw-btn: 22px; --tn-cw-ico: 13px; }
+.tn-terminal .tn-cw-btn { border-radius: var(--tnx-r-sm); }
 .tn-terminal .tn-cw-title {
   font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
