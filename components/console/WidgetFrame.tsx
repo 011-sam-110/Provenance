@@ -23,7 +23,11 @@ import LayerExplainerCard from "@/components/LayerExplainerCard";
 import type { FreshObservation } from "@/lib/console/freshChip";
 import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 
-interface Report {
+/** What a widget body tells its container about itself.
+ *  Exported because BOTH containers need it now: the card frame below, and
+ *  components/console/WidgetDetail.tsx, whose masthead reads `count`, `fresh`
+ *  and `export` from the very same report rather than inventing its own. */
+export interface Report {
   alerts: Alert[];
   count?: number;
   /** A REAL observation of when this widget's data last arrived. Preferred over
@@ -39,7 +43,9 @@ interface Report {
    *  frame menu offers CSV / GeoJSON downloads. */
   export?: { rows?: Record<string, unknown>[]; geo?: GeoPoint[]; name?: string };
 }
-const ReportCtx = createContext<(r: Report) => void>(() => {});
+/** Exported for WidgetDetail, which provides it around the expanded body. The
+ *  default stays a no-op so a body rendered outside either container is safe. */
+export const ReportCtx = createContext<(r: Report) => void>(() => {});
 export function useWidgetReport() { return useContext(ReportCtx); }
 
 export default function WidgetFrame({

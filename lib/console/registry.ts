@@ -32,6 +32,16 @@ export interface WidgetType {
    * empty string: that would replace a real name with a blank header.
    */
   titleOf?: (config: Record<string, unknown>) => string | undefined;
+  /**
+   * What the expanded view's hero figure counts, e.g. "tracked objects".
+   *
+   * Optional and unset everywhere today. WidgetDetail falls back to "rows in
+   * view", which is true of every widget; a noun is only worth setting where the
+   * widget knows something more specific, and setting a WRONG one is worse than
+   * the generic fallback because the hero is the largest text on the screen.
+   * Written singular-or-plural as it should read for n > 1.
+   */
+  countNoun?: string;
   capabilities?: { filter?: boolean; sort?: boolean };
 }
 

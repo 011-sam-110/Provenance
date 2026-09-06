@@ -1743,11 +1743,43 @@ a { color: var(--tn-accent); }
 
 /* Focus window — a widget expanded onto the center stage */
 .tn-detail { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--tn-surface-solid); color: var(--tn-text); overflow: hidden; }
-.tn-detail-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--tn-border, #1e293b); flex: 0 0 auto; }
-.tn-detail-back { font: inherit; font-size: 13px; background: transparent; border: 1px solid var(--tn-border, #1e293b); border-radius: 6px; padding: 4px 10px; color: var(--tn-accent, #38bdf8); cursor: pointer; }
-.tn-detail-back:hover { background: var(--tn-surface-2, #111a2e); }
-.tn-detail-icon { font-size: 16px; }
-.tn-detail-title { font-weight: 600; font-size: 15px; }
+/* ── The expanded view's masthead ────────────────────────────────────────
+   One bar for all 70 widget types. The 14 with a bespoke detail render inside
+   it and no longer draw their own chrome; the 56 without one gain a real
+   fullscreen instead of a card stretched sideways. */
+.tn-detail-head { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 14px; border-bottom: 1px solid var(--tn-border); flex: 0 0 auto; flex-wrap: wrap; }
+.tn-detail-back { font: inherit; font-size: 13px; font-weight: 500; background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 12px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-back:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+.tn-detail-chip { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--tn-surface-2); border: 1px solid var(--tn-border); font-size: 15px; }
+/* An h2 with the UA margin reset inline-free: the heading is real so a screen
+   reader gets a stop for the expanded widget, but browser heading margins would
+   break this flex bar. */
+.tn-detail-title { margin: 0; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: var(--tn-text); }
+.tn-detail-count { flex: none; font-size: 14px; color: var(--tn-text-faint); font-variant-numeric: tabular-nums; }
+.tn-detail-sp { flex: 1 1 auto; min-width: 4px; }
+.tn-detail-act { font: inherit; font-size: 12.5px; background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 10px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-act:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
+/* Notify me — a switch, not a button that opens a panel. role="switch" carries
+   the state to a screen reader; the track below is its visual half only. */
+.tn-detail-notify { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-size: 12.5px; background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 10px; color: var(--tn-text); cursor: pointer; flex: none; }
+.tn-detail-notify:hover { border-color: var(--tn-accent); }
+.tn-detail-notify.is-on { color: var(--tn-accent); border-color: var(--tn-accent); }
+.tn-detail-sw { position: relative; flex: none; width: 28px; height: 16px; border-radius: 8px; background: var(--tn-toggle-off); transition: background .12s; }
+.tn-detail-sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .12s; }
+.tn-detail-notify.is-on .tn-detail-sw { background: var(--tn-accent); }
+.tn-detail-notify.is-on .tn-detail-sw::after { transform: translateX(12px); }
+@media (prefers-reduced-motion: reduce) { .tn-detail-sw, .tn-detail-sw::after { transition: none; } }
+
+/* ── The hero ────────────────────────────────────────────────────────────
+   A figure and where it came from. Both are omitted rather than faked when the
+   widget publishes neither — see the comment in WidgetDetail.tsx. */
+.tn-detail-hero { flex: 0 0 auto; padding: 18px 16px 14px; border-bottom: 1px solid var(--tn-border); }
+.tn-detail-fig { margin: 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tn-detail-fig b { font-size: 38px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--tn-text); }
+.tn-detail-fig span { font-size: 15px; color: var(--tn-text-muted); }
+.tn-detail-prov { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--tn-text-faint); max-width: 78ch; }
+.tn-detail-prov-k { font-weight: 700; color: var(--tn-text-muted); text-transform: uppercase; letter-spacing: .05em; font-size: 9.5px; margin-right: 6px; }
+
 .tn-detail-body { flex: 1 1 auto; overflow: auto; padding: 14px; }
 .tn-detail-generic { max-width: 900px; margin: 0 auto; }
 
