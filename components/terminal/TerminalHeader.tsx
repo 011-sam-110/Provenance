@@ -108,6 +108,7 @@ import { isBoardEdited } from "@/lib/console/boards";
 import { useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
 import Mark from "@/components/brand/Mark";
+import DiscordMark from "@/components/brand/DiscordMark";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 import { BRAND } from "@/lib/brand";
 
@@ -304,6 +305,25 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           cannot be a room with no door. `.tn-settings-trigger` came back with it.
         */}
         <div className="tnx-hdr-right">
+          {/* THE PERMANENT DOOR TO THE DISCORD, and the reason CommunityNote's
+              dismissal is allowed to be permanent. That card asks once and then
+              never again; without a standing link, "No thanks" would close the
+              only route rather than just the prompt. It joins this cluster because
+              it is the same kind of control as the two beside it — a way OUT of the
+              console — and it uses `.tnx-hdr-btn-label` (as SHORTCUTS and SETTINGS
+              do, and SUPPORT and SOURCE do not) so it collapses to the mark alone
+              under 720px and adds no width on a phone. */}
+          <a
+            className="tnx-hdr-btn"
+            href={BRAND.discordUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            title={`Join the ${BRAND.name} Discord`}
+          >
+            <DiscordMark size={12} />
+            <span className="tnx-hdr-btn-label">DISCORD</span>
+          </a>
+
           {/* Buy Me a Coffee (Ko-fi) — the app is free + keyless; this is a calm,
               opt-in way to support it. */}
           <a

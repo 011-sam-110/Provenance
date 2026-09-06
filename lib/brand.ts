@@ -23,6 +23,23 @@ export const BRAND = {
   ink: "#0b1016",
   /** Ko-fi support link (the calm, opt-in "Support" button). */
   kofiUrl: "https://ko-fi.com/opendata",
+  /**
+   * The Discord server.
+   *
+   * A DISCORD INVITE CAN EXPIRE, AND THAT IS THE ONLY DANGEROUS THING ABOUT THIS
+   * LINE. Invites are created with an expiry by default (7 days, or a custom one),
+   * and an expired invite does not fail loudly — it serves a normal-looking
+   * "Invite Invalid" page, so the console, the site footer and every shared link
+   * keep pointing at a dead end with nothing in this repo going red. Nothing here
+   * can detect it either: no test can reach discord.gg, and a link check would only
+   * tell you it was already broken.
+   *
+   * So the rule is a SETTING on Discord's side, not a check on ours: this must be a
+   * "never expire" invite (server → Invites → Edit → Expire After: Never, max uses
+   * unlimited). Verified against Discord's invite API on 2026-09-07 — server
+   * "Provenance", guild 1539313032801423441.
+   */
+  discordUrl: "https://discord.gg/H5vB8TsVK",
   /** Canonical public repository. */
   repo: "011-sam-110/Provenance",
   repoUrl: "https://github.com/011-sam-110/Provenance",
