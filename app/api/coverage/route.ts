@@ -1,6 +1,6 @@
 import { getRegistry, feedHealth, CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { groupCoverage } from "@/lib/coverage";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +42,6 @@ export async function GET() {
         detail: health,
       },
     },
-    { headers: { "Cache-Control": edgeCacheControl(COVERAGE_TTL_MS, 300_000) } },
+    { headers: edgeCacheHeaders(COVERAGE_TTL_MS, 300_000) },
   );
 }

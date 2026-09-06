@@ -1,5 +1,5 @@
 import { fetchWebcamById } from "@/lib/sources/windy";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +19,10 @@ type Place = { id: string; lat: number | null; lon: number | null };
 type CacheEntry = { at: number; value: Place };
 const cache = new Map<string, CacheEntry>();
 
-function placeCacheControl(place: Place): string {
-  return place.lat !== null && place.lon !== null ? edgeCacheControl(TTL_MS, TTL_MS) : "no-store";
+function placeCacheHeaders(place: Place): Record<string, string> {
+  return place.lat !== null && place.lon !== null
+    ? edgeCacheHeaders(TTL_MS, TTL_MS)
+    : { "Cache-Control": "no-store" };
 }
 
 export async function GET(req: Request) {
@@ -36,7 +38,7 @@ export async function GET(req: Request) {
 
     const hit = cache.get(id);
     if (hit && Date.now() - hit.at < TTL_MS) {
-      return Response.json(hit.value, { headers: { "Cache-Control": placeCacheControl(hit.value) } });
+      return Response.json(hit.value, { headers: placeCacheHeaders(hit.value) });
     }
 
     const webcam = await fetchWebcamById(id);
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
       if (oldest !== undefined) cache.delete(oldest);
     }
 
-    return Response.json(value, { headers: { "Cache-Control": placeCacheControl(value) } });
+    return Response.json(value, { headers: placeCacheHeaders(value) });
   } catch (err) {
     console.warn("[webcam-place] handler threw:", err);
     return Response.json({ id: "", lat: null, lon: null }, { headers: { "Cache-Control": "no-store" } });

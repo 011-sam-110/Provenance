@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { fetchWebcamById, WINDY_SOURCE } from "@/lib/sources/windy";
 import { isAllowed } from "@/lib/proxy/allowlist";
+import { frameCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
     headers: {
       "Content-Type": contentType,
       // Bounded by the source refresh — never re-pull faster than the token cadence.
-      "Cache-Control": `public, max-age=${WINDY_SOURCE.refreshSeconds}, s-maxage=${WINDY_SOURCE.refreshSeconds}`,
+      ...frameCacheHeaders(WINDY_SOURCE.refreshSeconds),
     },
   });
 }

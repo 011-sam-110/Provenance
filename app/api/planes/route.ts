@@ -1,6 +1,6 @@
 import { fetchAircraftSnapshot } from "@/lib/sources/opensky";
 import { describeCoverage } from "@/lib/signals/coverage";
-import { edgeCacheControl } from "@/lib/http/cache";
+import { edgeCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +84,6 @@ export async function GET() {
       ...(staleness ? { staleness } : {}),
       planes,
     },
-    { headers: { "Cache-Control": edgeCacheControl(PLANES_TTL_MS) } },
+    { headers: edgeCacheHeaders(PLANES_TTL_MS) },
   );
 }

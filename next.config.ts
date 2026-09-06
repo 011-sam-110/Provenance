@@ -33,6 +33,50 @@ const nextConfig: NextConfig = {
   },
   // Allow an isolated build dir so a verification `next build` doesn't fight a
   // concurrently-running `next dev` over `.next` (defaults to `.next`).
+  /**
+   * CACHE POLICY FOR `public/`.
+   *
+   * MEASURED, 2026-09-06, one production day: 1,083,357 static-asset requests against
+   * 8,717 `/app` loads — 124 per page load, and 78% of ALL traffic to the site.
+   * `/icons/icon-192.png` alone was fetched 22,242 times.
+   *
+   * The cause is that Vercel serves `public/` with `max-age=0, must-revalidate`, so a
+   * browser re-asks for every asset on every load. It gets a 304 and no bytes move,
+   * which is why this never showed up as bandwidth — but each conditional request is
+   * still a billed edge request AND a billed observability event, and observability
+   * was 46% of the bill.
+   *
+   * WHY `stale-while-revalidate` AND NOT `immutable`. Nothing under `public/` is
+   * content-hashed — `/webcams/t/r01332311.json` keeps its name when the harvest is
+   * re-run — so `immutable` would pin a stale file for the whole max-age with no way
+   * to push a correction. SWR gets essentially the same saving (the traffic is repeat
+   * loads and long-lived tabs, all inside a day) while a change still propagates.
+   *
+   * `/sw.js` is deliberately ABSENT: a service worker that a browser will not re-check
+   * cannot be updated, and this one owns the offline shell.
+   */
+  async headers() {
+    // Assets that change only on deploy and whose staleness is cosmetic.
+    const assets = "public, max-age=86400, stale-while-revalidate=604800";
+    // Harvested data. Same mechanism, shorter leash: a re-harvest should land the
+    // same day, not the same week.
+    const data = "public, max-age=3600, stale-while-revalidate=86400";
+
+    const rule = (source: string, value: string) => ({
+      source,
+      headers: [{ key: "Cache-Control", value }],
+    });
+
+    return [
+      rule("/icons/:path*", assets),
+      rule("/textures/:path*", assets),
+      rule("/sky/:path*", assets),
+      rule("/brand/:path*", assets),
+      rule("/favicon.svg", assets),
+      rule("/geo/:path*", data),
+      rule("/webcams/:path*", data),
+    ];
+  },
   distDir: process.env.TN_DIST_DIR || ".next",
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {

@@ -9,6 +9,7 @@
 import { ImageResponse } from "next/og";
 import type { ReactElement } from "react";
 import { BRAND, siteUrl } from "@/lib/brand";
+import { browserAndEdgeHeaders } from "@/lib/http/cache";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ const HEIGHT = 630;
 // Identical params always render the identical card and the route is CPU-heavy
 // (Satori + rasterise), so cache hard: stops load amplification via varied t/s/c and
 // lets the CDN serve crawlers instantly.
-const CACHE = "public, max-age=86400, s-maxage=604800";
+const CACHE = browserAndEdgeHeaders(86_400, 604_800);
 
 /** Code-point-aware clamp so truncating never splits an emoji / surrogate pair. */
 function clamp(s: string, n: number): string {
@@ -118,7 +119,7 @@ export function GET(req: Request): ImageResponse {
     /* keep fallback host */
   }
 
-  const opts = { width: WIDTH, height: HEIGHT, headers: { "Cache-Control": CACHE } };
+  const opts = { width: WIDTH, height: HEIGHT, headers: CACHE };
   try {
     return new ImageResponse(card(title, subtitle, accent, host), opts);
   } catch {

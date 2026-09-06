@@ -1,0 +1,2 @@
+# The Vercel ignore step runs this on Linux; CRLF would break the shebang line.
+*.sh text eol=lf
