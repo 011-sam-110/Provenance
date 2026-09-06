@@ -9,6 +9,7 @@ import {
   countryName,
   countryPath,
   formatCount,
+  placeLabel,
   regionPageCount,
   regionPath,
   regionTitle,
@@ -50,7 +51,9 @@ export async function generateMetadata({
 
   const pages = regionPageCount(hit.total);
   const title = regionTitle(country, hit.region, hit.total, page);
-  const where = `${hit.region}, ${countryName(country)}`;
+  // Not a join: five feeds fill `region` with the country's own name, and this sentence
+  // read "in Finland, Finland". See placeLabel.
+  const where = placeLabel({ region: hit.region, country });
 
   return {
     title,
@@ -97,15 +100,13 @@ export default async function RegionPage({ params }: { params: Promise<RoutePara
           <span>{hit.region}</span>
         </nav>
 
-        <h1>
-          Live traffic cameras in {hit.region}, {countryLabel}
-        </h1>
+        <h1>Live traffic cameras in {placeLabel({ region: hit.region, country })}</h1>
 
         <p className="tn-dir-lede">
           {formatCount(hit.total)} public road cameras.{" "}
           {pages > 1 && (
             <>
-              Showing {formatCount(first)}&ndash;{formatCount(last)}, page {page} of {pages}.
+              Showing {formatCount(first)}-{formatCount(last)}, page {page} of {pages}.
             </>
           )}
         </p>

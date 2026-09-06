@@ -21,9 +21,12 @@ import { PLACES } from "@/lib/seo/place.data";
 import { reservedSegmentCollisions } from "@/lib/seo/directory";
 import {
   RESERVED_FACET_SEGMENTS,
+  cameraTitle,
   isBareNumberRoad,
   parsePageParam,
+  placeLabel,
   placePath,
+  regionTitle,
   roadDescription,
   roadHeading,
   roadPath,
@@ -287,6 +290,41 @@ describe("facet paths", () => {
 
   it("folds a road name the same way every other slug is folded", () => {
     expect(roadPath("IS", "Þjóðvegur 1")).toBe("/cameras/is/road/thjodvegur-1");
+  });
+});
+
+describe("placeLabel — five feeds put the country in the region field", () => {
+  it("says the country once when the region repeats it", () => {
+    // Measured on the 2026-09-06 registry: 1,215 of 20,588 cameras, and it is EVERY
+    // camera in these five countries — each has exactly one "region", its own name.
+    // It rendered in the H1, the <title> and the meta description at once.
+    expect(placeLabel({ region: "Finland", country: "FI" })).toBe("Finland");
+    expect(placeLabel({ region: "Iceland", country: "IS" })).toBe("Iceland");
+    expect(placeLabel({ region: "Estonia", country: "EE" })).toBe("Estonia");
+    expect(placeLabel({ region: "Bosnia and Herzegovina", country: "BA" })).toBe("Bosnia and Herzegovina");
+    expect(placeLabel({ region: "Puerto Rico", country: "PR" })).toBe("Puerto Rico");
+  });
+
+  it("still joins a real region to its country", () => {
+    expect(placeLabel({ region: "London", country: "GB" })).toBe("London, United Kingdom");
+    expect(placeLabel({ region: "California", country: "US" })).toBe("California, United States");
+  });
+
+  it("falls back to the country alone when there is no region at all", () => {
+    expect(placeLabel({ region: undefined, country: "GB" })).toBe("United Kingdom");
+  });
+
+  it("matches on case and surrounding space, not on an exact byte match", () => {
+    expect(placeLabel({ region: " finland ", country: "FI" })).toBe("Finland");
+  });
+
+  it("carries through to the title, which is where it was seen", () => {
+    expect(cameraTitle({ name: "kt51_Inkoo", region: "Finland", country: "FI" })).toBe(
+      `kt51_Inkoo - live traffic camera, Finland | ${BRAND.name}`,
+    );
+    expect(regionTitle("FI", "Finland", 812, 1)).toBe(
+      `Live traffic cameras in Finland (812) | ${BRAND.name}`,
+    );
   });
 });
 

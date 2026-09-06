@@ -36,7 +36,10 @@ export function CameraListing({
         {formatCount(total)} public road {total === 1 ? "camera" : "cameras"}.{" "}
         {pages > 1 && (
           <>
-            Showing {formatCount(first)}&ndash;{formatCount(last)}, page {page} of {pages}.
+            {/* A plain hyphen. An en dash is correct typography for a numeric range, but
+                it was the only dash of any kind left in the rendered copy after the em
+                dashes came out, and one exception is worse than the rule. */}
+            Showing {formatCount(first)}-{formatCount(last)}, page {page} of {pages}.
           </>
         )}
       </p>

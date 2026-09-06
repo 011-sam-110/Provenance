@@ -159,10 +159,23 @@ export function parsePageParam(paging: string[] | undefined): number | null {
   return Number(raw);
 }
 
-/** "London, United Kingdom" - the place line reused across titles and headings. */
+/**
+ * "London, United Kingdom" - the place line reused across titles and headings.
+ *
+ * Says the country ONCE. Five adapters have no region to publish and fill the field with
+ * the country instead, so the naive join produced "Finland, Finland" in an H1, a <title>
+ * and a meta description. Measured on the 2026-09-06 registry: 1,215 of 20,588 cameras,
+ * every camera in FI, IS, EE, BA and PR — each of those countries has exactly one
+ * "region" and it is its own name.
+ *
+ * Fixed here rather than in the five adapters because `region` is doing its job for the
+ * listing pages: /cameras/fi/finland is a real page and it needs a non-empty segment.
+ * This is a display concern, so it is settled in the display helper.
+ */
 export function placeLabel(cam: Pick<Camera, "region" | "country">): string {
   const country = countryName(cam.country);
-  return cam.region ? `${cam.region}, ${country}` : country;
+  if (!cam.region) return country;
+  return cam.region.trim().toLowerCase() === country.toLowerCase() ? country : `${cam.region}, ${country}`;
 }
 
 /**
@@ -213,7 +226,9 @@ export function countryTitle(iso2: string, count: number): string {
 
 export function regionTitle(iso2: string, region: string, count: number, page: number): string {
   const suffix = page > 1 ? ` - page ${page}` : "";
-  return `Live traffic cameras in ${region}, ${countryName(iso2)} (${formatCount(count)})${suffix} | ${BRAND.name}`;
+  // placeLabel, not a join — /cameras/fi/finland said "in Finland, Finland" for 812 cameras.
+  const where = placeLabel({ region, country: iso2 });
+  return `Live traffic cameras in ${where} (${formatCount(count)})${suffix} | ${BRAND.name}`;
 }
 
 /**
