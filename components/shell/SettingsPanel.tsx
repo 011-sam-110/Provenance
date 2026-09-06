@@ -6,8 +6,9 @@
 // peers you flick between and the wrong one for a nav: it read as a filter over one page
 // rather than as three places, and it spent the drawer's scarcest axis — width — on
 // something a column gives away for free. The drawer grew 384px → 536px to pay for the
-// rail out of its own width rather than out of the panel's: the measured panel measure is
-// 349px against the old 348px, so not one field, hint or key-cap row got tighter.
+// rail out of its own width rather than out of the panel's: the panel measures 349px
+// against the old 347px, both read out of a live browser, so not one field, hint or
+// key-cap row got tighter.
 //
 // THE FOUR CELLS ARE A GRID, AND THE REASON IS ALIGNMENT. The rail's title cell and the
 // panel's header sit side by side with a divider between them; as a flex row they would

@@ -2368,11 +2368,13 @@ a { color: var(--tn-accent); }
 /* FOUR CELLS, TWO COLUMNS. Reading order down the DOM is railhead, head, rail, body, which
    is also the grid order, so nothing needs `order` and the tab sequence is the visual one.
    536px, AND THE NUMBER IS ADDITION RATHER THAN TASTE: 150 rail + 1 divider + 385 panel,
-   where 385 less the body's 2×18 padding is the 349px measure the single 384px column
-   always had. Measured, not assumed — the first cut of this was 520px, which quietly cost
-   the panel 15px and would have made every field, hint and key-cap row narrower than
-   before the rail existed. The rail has to be paid for in drawer width, not out of the
-   content.
+   and 385 less the body's 2×18 padding leaves 349px of measure against the 347px the
+   single 384px column actually had. Both figures were read out of a live browser rather
+   than derived, which is the only reason they are trustworthy: the arithmetic says the old
+   one was 348 and it was not, because the drawer's own border-left takes a pixel first.
+   The first cut of this was 520px, which measured 333 and would have made every field,
+   hint and key-cap row narrower than before the rail existed. The rail is paid for in
+   drawer width, never out of the content.
    `auto 1fr` on the rows is what keeps the divider straight — the head row is as tall as
    the taller of its two cells, so the rail's title and the panel's ✕ cannot drift apart. */
 .tn-settings {
