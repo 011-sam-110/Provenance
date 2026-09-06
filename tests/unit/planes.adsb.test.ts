@@ -1,15 +1,16 @@
 /**
- * Unit tests for the adsb.lol aircraft provider (lib/sources/adsb.ts) — the
- * fallback that keeps /api/planes alive when OpenSky's anonymous credit cap is
- * exhausted on the deployment's IP.
+ * Unit tests for the adsb.lol aircraft provider (lib/sources/adsb.ts) — the sole
+ * source behind /api/planes: a worldwide pull by ICAO type designator, capped as a
+ * spatial sample and carrying an honest coverage record.
  *
  * FIXTURE PROVENANCE: every row in ADSB_FIXTURE was captured live from
  * `https://api.adsb.lol/v2/lat/51.5/lon/-0.1/dist/250` on 2026-08-13 (481 rows in
  * that response, all positioned) and pasted verbatim apart from dropping receiver
  * telemetry fields the adapter never reads (rssi, messages, nic/rc/sil, mlat…).
- * Nothing here is invented: the awkward cases are awkward because the network
- * really returns them that way — notably the on-ground row, which carries
- * `true_heading` but NO `track`.
+ * The `/v2/type/` endpoint returns the same row shape (probed 2026-09-06; it only
+ * leaves `desc` empty). Nothing here is invented: the awkward cases are awkward
+ * because the network really returns them that way — notably the on-ground row,
+ * which carries `true_heading` but NO `track`.
  */
 
 import { describe, expect, it } from "vitest";
@@ -17,12 +18,13 @@ import {
   adsbRowToWorldObject,
   dedupeById,
   normalizeAdsbRows,
-  sweepToObjects,
-  SWEEP_CELLS,
-  cellUrl,
+  pullToObjects,
+  TYPE_BATCHES,
+  typeBatchUrl,
   type AdsbRow,
-  type SweepResult,
+  type PullResult,
 } from "@/lib/sources/adsb";
+import { BIZJET_TYPES } from "@/lib/planes/bizjet";
 import { readCoverage, coverageCountLabel, coverageNote } from "@/lib/signals/coverage";
 
 // --- live-captured fixture --------------------------------------------------
@@ -264,30 +266,38 @@ describe("dedupeById", () => {
 
 // --- the coverage record ----------------------------------------------------
 
-const sweep = (
+/** n seeded aircraft, positioned by `at(i)` (default: all over London). */
+const seeded = (n: number, at: (i: number) => [number, number] = () => [51.5, -0.1]) =>
+  Array.from({ length: n }, (_, i) => {
+    const [lat, lon] = at(i);
+    return { ...normalizeAdsbRows([ADSB_FIXTURE[0]])[0], id: `plane:seed${i}`, lat, lon };
+  });
+
+const pull = (
   n: number,
-  succeeded = SWEEP_CELLS.length,
-  attempted = SWEEP_CELLS.length,
-): SweepResult => ({
-  objects: Array.from({ length: n }, (_, i) => ({
-    ...normalizeAdsbRows([ADSB_FIXTURE[0]])[0],
-    id: `plane:seed${i}`,
-  })),
-  cellsPlanned: SWEEP_CELLS.length,
-  cellsAttempted: attempted,
-  cellsSucceeded: succeeded,
+  succeeded = TYPE_BATCHES.length,
+  attempted = TYPE_BATCHES.length,
+  extra: Partial<PullResult> = {},
+): PullResult => ({
+  objects: seeded(n),
+  batchesPlanned: TYPE_BATCHES.length,
+  batchesAttempted: attempted,
+  batchesSucceeded: succeeded,
+  mainlineSucceeded: succeeded > 0,
+  typesPlanned: TYPE_BATCHES.reduce((t, b) => t + b.length, 0),
+  ...extra,
 });
 
-describe("sweepToObjects — coverage honesty", () => {
+describe("pullToObjects — coverage honesty", () => {
   it("never claims an exact total, because a receiver network is a lower bound", () => {
-    const cov = readCoverage(sweepToObjects(sweep(120), 3000));
+    const cov = readCoverage(pullToObjects(pull(120), 3000));
     expect(cov?.availableExact).toBe(false);
   });
 
   it("declares capped even under the render cap, so the count never prints bare", () => {
     // coverageCountLabel and coverageNote both return early on !capped, so a
     // false here would publish "120" with no caveat — read as "that is all of them".
-    const objs = sweepToObjects(sweep(120), 3000);
+    const objs = pullToObjects(pull(120), 3000);
     const cov = readCoverage(objs);
     expect(cov?.capped).toBe(true);
     expect(coverageCountLabel(cov)).toBe("120 of 120+");
@@ -295,7 +305,7 @@ describe("sweepToObjects — coverage honesty", () => {
   });
 
   it("applies the render cap and reports what it hid", () => {
-    const objs = sweepToObjects(sweep(4200), 3000);
+    const objs = pullToObjects(pull(4200), 3000);
     expect(objs).toHaveLength(3000);
     const cov = readCoverage(objs);
     expect(cov?.returned).toBe(3000);
@@ -303,59 +313,87 @@ describe("sweepToObjects — coverage honesty", () => {
     expect(cov?.cap).toBe(3000);
   });
 
-  it("does not stamp an upstreamLimit, because no request limit was saturated", () => {
-    expect(readCoverage(sweepToObjects(sweep(120), 3000))?.upstreamLimit).toBeUndefined();
+  it("caps as a spatial sample, never a prefix: a region at the end of the list survives", () => {
+    // 3,000 aircraft over London followed by 1,200 over Sydney. The old prefix cap
+    // kept London whole and dropped Sydney entirely — the two-clumps bug on the globe.
+    const result = { ...pull(0), objects: seeded(4200, (i) => (i < 3000 ? [51.5, -0.1] : [-33.9, 151.2])) };
+    const objs = pullToObjects(result, 3000);
+    expect(objs).toHaveLength(3000);
+    const sydney = objs.filter((o) => o.lat < 0).length;
+    // Proportional share is 1,200 × 3,000 / 4,200 ≈ 857.
+    expect(sydney).toBeGreaterThanOrEqual(850);
+    expect(sydney).toBeLessThanOrEqual(865);
   });
 
-  it("says in words that this is not a global count", () => {
-    const rule = readCoverage(sweepToObjects(sweep(120), 3000))?.rule ?? "";
+  it("does not stamp an upstreamLimit unless a response was saturated", () => {
+    expect(readCoverage(pullToObjects(pull(120), 3000))?.upstreamLimit).toBeUndefined();
+    expect(readCoverage(pullToObjects(pull(120, 4, 4, { upstreamLimit: 3 }), 3000))?.upstreamLimit).toBe(3);
+  });
+
+  it("says in words that this is a sample of listed types, not a global count", () => {
+    const rule = readCoverage(pullToObjects(pull(4200), 3000))?.rule ?? "";
     expect(rule).toContain("lower bound, not a global count");
-    expect(rule).toContain("North America and Europe");
+    expect(rule).toMatch(/spatial sample/i);
+    expect(rule).toMatch(/type designators/i);
+    expect(rule).toMatch(/without a type code/i);
   });
 
-  it("discloses regions that were asked and refused", () => {
-    const full = readCoverage(sweepToObjects(sweep(120), 3000))?.rule ?? "";
-    const refused = readCoverage(sweepToObjects(sweep(120, 30), 3000))?.rule ?? "";
+  it("discloses batches that were asked and refused", () => {
+    const full = readCoverage(pullToObjects(pull(120), 3000))?.rule ?? "";
+    const refused = readCoverage(pullToObjects(pull(120, 3), 3000))?.rule ?? "";
     expect(full).not.toContain("did not answer");
-    expect(refused).toContain(`${SWEEP_CELLS.length - 30} did not answer`);
-    expect(refused).toContain(`30 of ${SWEEP_CELLS.length}`);
+    expect(refused).toContain("1 did not answer");
+    expect(refused).toContain(`3 of ${TYPE_BATCHES.length}`);
   });
 
-  it("counts against the PLANNED grid, so a truncated sweep cannot read as complete", () => {
-    // The rate limit routinely stops the sweep after ~9 cells. Comparing succeeded
-    // to attempted would print "9 of 9" — indistinguishable from full coverage.
-    const rule = readCoverage(sweepToObjects(sweep(400, 9, 9), 3000))?.rule ?? "";
-    expect(rule).toContain(`9 of ${SWEEP_CELLS.length}`);
-    expect(rule).toContain(`${SWEEP_CELLS.length - 9} not reached within the time budget`);
+  it("counts against the PLANNED batches, so a truncated pull cannot read as complete", () => {
+    const rule = readCoverage(pullToObjects(pull(400, 2, 2), 3000))?.rule ?? "";
+    expect(rule).toContain(`2 of ${TYPE_BATCHES.length}`);
+    expect(rule).toContain("2 not reached within the time budget");
   });
 
-  it("separates regions never asked from regions that refused", () => {
-    // 12 asked of 40 planned, 9 answered ⇒ 28 unreached AND 3 refused.
-    const rule = readCoverage(sweepToObjects(sweep(400, 9, 12), 3000))?.rule ?? "";
-    expect(rule).toContain(`${SWEEP_CELLS.length - 12} not reached within the time budget`);
-    expect(rule).toContain("3 did not answer");
+  it("separates batches never asked from batches that refused", () => {
+    const rule = readCoverage(pullToObjects(pull(400, 2, 3), 3000))?.rule ?? "";
+    expect(rule).toContain("1 not reached within the time budget");
+    expect(rule).toContain("1 did not answer");
   });
 });
 
-// --- the grid itself --------------------------------------------------------
+// --- the type lists ---------------------------------------------------------
 
-describe("SWEEP_CELLS", () => {
-  it("holds only valid coordinates", () => {
-    for (const c of SWEEP_CELLS) {
-      expect(Math.abs(c.lat)).toBeLessThanOrEqual(90);
-      expect(Math.abs(c.lon)).toBeLessThanOrEqual(180);
-      expect(c.label.length).toBeGreaterThan(0);
+describe("TYPE_BATCHES", () => {
+  const all = TYPE_BATCHES.flat();
+
+  it("holds only ICAO type designators: two to four upper-case alphanumerics", () => {
+    for (const t of all) expect(t, t).toMatch(/^[A-Z0-9]{2,4}$/);
+  });
+
+  it("lists every type once across all batches, so dedupe is a guard and not a dependency", () => {
+    expect(new Set(all).size).toBe(all.length);
+  });
+
+  it("keeps each batch small enough for one URL: at most 75 types, under 400 characters", () => {
+    for (const b of TYPE_BATCHES) {
+      expect(b.length).toBeLessThanOrEqual(75);
+      expect(typeBatchUrl(b).length).toBeLessThanOrEqual(400);
     }
   });
 
-  it("has no duplicate centres", () => {
-    const keys = SWEEP_CELLS.map((c) => `${c.lat},${c.lon}`);
-    expect(new Set(keys).size).toBe(keys.length);
+  it("puts the mainline fleet first, so a truncated pull still holds the global backbone", () => {
+    expect(TYPE_BATCHES).toHaveLength(4);
+    expect(TYPE_BATCHES[0]).toContain("B738");
+    expect(TYPE_BATCHES[0]).toContain("A320");
+    expect(TYPE_BATCHES[0]).toContain("A21N");
   });
 
-  it("builds the documented point+radius URL at the endpoint's 250 nm maximum", () => {
-    expect(cellUrl({ lat: 51.5, lon: -0.1, label: "London" })).toBe(
-      "https://api.adsb.lol/v2/lat/51.5/lon/-0.1/dist/250",
-    );
+  it("asks for every valid business-jet type the bizjet detector knows, or that detector is blind", () => {
+    const union = new Set(all);
+    const valid = [...BIZJET_TYPES].filter((t) => /^[A-Z0-9]{2,4}$/.test(t));
+    expect(valid.length).toBeGreaterThan(50);
+    for (const t of valid) expect(union.has(t), t).toBe(true);
+  });
+
+  it("builds the documented comma-separated type URL", () => {
+    expect(typeBatchUrl(["A320", "B738"])).toBe("https://api.adsb.lol/v2/type/A320,B738");
   });
 });

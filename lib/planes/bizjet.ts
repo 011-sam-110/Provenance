@@ -25,13 +25,16 @@ export const BIZJET_TYPES: ReadonlySet<string> = new Set([
   // Bombardier — Global + Challenger + Learjet
   "GL5T", "GLEX", "GL7T", "GL8T", "CL30", "CL35", "CL60",
   "LJ23", "LJ24", "LJ25", "LJ31", "LJ35", "LJ40", "LJ45", "LJ55", "LJ60", "LJ70", "LJ75",
-  // Dassault Falcon
-  "FA10", "FA20", "FA50", "FA7X", "FA8X", "F900", "F2TH", "F2000", "FA5X",
+  // Dassault Falcon. F2TH is the Falcon 2000 family; "F2000" was never a designator
+  // and the Falcon 5X was never certified, so neither can match a broadcast type.
+  "FA10", "FA20", "FA50", "FA6X", "FA7X", "FA8X", "F900", "F2TH",
   // Cessna Citation
   "C500", "C501", "C510", "C525", "C526", "C550", "C551", "C560", "C56X", "C55B",
   "C650", "C680", "C68A", "C700", "C750", "C25A", "C25B", "C25C", "C25M",
-  // Embraer executive
-  "E50P", "E55P", "E545", "E550", "E135", "LEG1", "PHEN", "PRAE",
+  // Embraer executive. The Legacy 600/650 broadcasts E35L, the Phenoms E50P/E55P
+  // and the Praetors E545/E550; "LEG1", "PHEN" and "PRAE" are marketing names, not
+  // designators, and could never match.
+  "E50P", "E55P", "E545", "E550", "E135", "E35L",
   // Hawker / Beechjet / Premier
   "H25A", "H25B", "H25C", "HDJT", "PRM1", "BE40",
   // Pilatus / HondaJet / others
