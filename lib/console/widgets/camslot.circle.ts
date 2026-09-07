@@ -181,23 +181,38 @@ export function startCircleDraw(
     if (done.length >= 3) opts.onFinish(done);
   };
 
+  // The browser fires `pointercancel` — not `pointerup` — when it takes the
+  // pointer away mid-gesture: a tab switch, a touch reinterpreted as a system
+  // gesture, a stylus leaving range. Route it through `cancelCircleDraw()`, the
+  // same path Escape uses, so there is exactly one teardown for every
+  // non-completing exit: full cleanup, no `onFinish` — a cancelled pointer did
+  // not produce an area the user chose. Without this the gesture never ends:
+  // `center` stays set, the preview stays painted, and `dragPan` stays disabled,
+  // so the map cannot be panned until Escape or another `cancelCircleDraw()`.
+  const onCancel = () => cancelCircleDraw();
+
   // Escape only — this gesture never ENDS on a key, and that is deliberate.
-  // `aoi.ts` had to add `preventDefault` on Enter because a focused button turns
-  // Enter into a click as its default action, so arming a draw from a button and
-  // pressing Enter to finish re-armed it on the same keystroke. A gesture that
-  // ends on pointerup cannot hit that trap. If a key ever ends this one, it needs
-  // the same preventDefault.
+  // `aoi.ts` hit the trap this avoids: its `onKey` finishes the draw on Enter
+  // with no `preventDefault`, so a focused button's default Enter-as-click can
+  // fire in the same keystroke as the draw-finishing handler (arm from a button,
+  // press Enter, the click re-arms what Enter just tried to finish). That fix
+  // lives on a peer branch that has not merged (the same branch that introduces
+  // the `aoi-areas*` layer ids), not in `aoi.ts` on this branch today. A gesture
+  // that ends on pointerup/pointercancel rather than a key cannot hit that trap
+  // at all. If a key ever ends this one, it needs the same preventDefault.
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cancelCircleDraw(); };
 
   canvas.addEventListener("pointerdown", onDown);
   canvas.addEventListener("pointermove", onMove);
   canvas.addEventListener("pointerup", onUp);
+  canvas.addEventListener("pointercancel", onCancel);
   window.addEventListener("keydown", onKey);
 
   const stop = () => {
     canvas.removeEventListener("pointerdown", onDown);
     canvas.removeEventListener("pointermove", onMove);
     canvas.removeEventListener("pointerup", onUp);
+    canvas.removeEventListener("pointercancel", onCancel);
     window.removeEventListener("keydown", onKey);
     canvas.style.cursor = "";
     map.dragPan.enable();
