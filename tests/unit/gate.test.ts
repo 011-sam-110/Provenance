@@ -246,9 +246,13 @@ describe("the curtain", () => {
     expect(noJs).not.toMatch(/last commit[^<]*\d/);
   });
 
-  it("says why the site is down, not just that it is", () => {
+  // Two things a visitor needs and cannot infer: WHY it is down, and WHEN it returns.
+  // The window is stated as a commitment ("within two weeks"), which is the point -
+  // if it slips, this test is the thing that makes changing the page a deliberate act
+  // rather than something everyone forgets is still on the only page the site serves.
+  it("says why the site is down and when it comes back, not just that it is down", () => {
     expect(html).toContain("running cost");
-    expect(html).toContain("about a month");
+    expect(html).toContain("two weeks");
   });
 
   it("shows a refusal only when the code was refused", () => {
