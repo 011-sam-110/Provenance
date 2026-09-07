@@ -179,8 +179,13 @@ export function PinGearGlyph() {
  * Pick cameras — a camera with a ＋ badge. The flyout mark for arming the picker.
  *
  * Traced from Sam's reference (selectcamerasicon.png). Same redraw-don't-embed
- * rule this file opens with: the reference is an opaque black raster, and the
- * flyout sits on --tnx-panel, so a PNG would be a black square on a dark skin.
+ * rule this file opens with, though NOT for the reason that rule was written: the
+ * console is light now (--tnx-panel is #ffffff), so a black raster would be
+ * visible rather than invisible. Two things still make stroke geometry the only
+ * option. The mark has to take --tnx-accent (#464b37) when the button is pressed,
+ * and a raster cannot be recoloured; and at rest it has to be the same olive ink
+ * as the word beside it, not pure black, or the two halves of one button are
+ * different colours. currentColor gives both for free.
  *
  * THE BODY IS AN OPEN PATH, NOT A RECT, and that is the whole trick. The badge
  * overlaps the camera's bottom-right corner, so the outline STOPS on both sides
@@ -205,7 +210,8 @@ export function CameraPlusGlyph() {
 /**
  * By area — a bounding box with square corner handles.
  *
- * Traced from Sam's reference (pickcamerasbyarea.png). Deliberately built on
+ * Traced from Sam's reference (pickcamerasbyarea.png), redrawn for the same
+ * currentColor reasons as CameraPlusGlyph above. Deliberately built on
  * PolygonGlyph's geometry — same corner centres (4/20), same trimmed edges — so
  * the two area marks read as one family. It is told apart from PolygonGlyph by
  * the two things the references themselves differ on: SQUARE handles rather than
