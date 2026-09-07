@@ -49,10 +49,13 @@ export function dockSize(l: ShellLayout, container: { w: number; h: number }): n
 
   // AN EMPTY WALL GIVES THE MAP THE WHOLE BOARD.
   //
-  // The two bounds below exist for one reason each, and neither reason is present
-  // when there are no tiles: RAIL_MAX stops a rail crowding the map out, and
-  // WALL_MIN_PX keeps the WALL's own controls from colliding. A wall with nothing
-  // in it has no controls to collide and nothing to be crowded out of.
+  // The two bounds below exist for one reason each: RAIL_MAX stops a rail
+  // crowding the map out, and WALL_MIN_PX keeps the WALL's own controls from
+  // colliding. Neither applies to a board with nothing on it — but only because
+  // WallWorkspace RETURNS NULL at zero tiles, its toolbar included. That is a
+  // dependency this line rests on, not an observation about it: leave that
+  // toolbar mounted and this exception squeezes it to 0px, taking "+ Wall" and
+  // "Map" — the visible way back — with it.
   //
   // This is what lets the Streets board open as a full-bleed map asking for an
   // area. If a future empty wall grows chrome of its own, this exception is wrong
