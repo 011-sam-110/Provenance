@@ -74,6 +74,12 @@ describe("key requirements table", () => {
       "NEXT_RUNTIME",
       "VERCEL_URL",
       "VERCEL_ENV",
+      // SITE_ENV is VERCEL_ENV's platform-neutral replacement, and belongs in the same
+      // category for the same reason: it names WHICH deployment this is, and unlocks
+      // nothing. It exists because VERCEL_ENV is absent off Vercel, which turned
+      // robots.ts's "keep previews out of the index" guard into a no-op on a
+      // self-hosted preview — the one place it most needed to fire.
+      "SITE_ENV",
       // Deployment identity, not a capability credential: these only decide which
       // absolute origin the OG cards and metadataBase resolve against.
       "NEXT_PUBLIC_SITE_URL",
