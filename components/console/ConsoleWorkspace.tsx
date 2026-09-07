@@ -241,7 +241,14 @@ export default function ConsoleWorkspace() {
             data-grid-id={w.id}
             data-segment={w.segment}
             className="tn-seg-slot"
-            style={{ height: `${w.height}px` }}
+            // `height` is the card's size ALONG ITS RAIL'S MAIN AXIS, and the
+            // bottom rail's axis is horizontal (see the `.tn-rail-col-bottom`
+            // rule in globals.css). So the same stored number is written as a
+            // width there and a height in the side rails. It is one field
+            // because it is one concept — a second one would need migrating in
+            // sanitize.ts, in the `?c=` codec and in every persisted layout to
+            // mean what this one already means.
+            style={rail === "bottom" ? { width: `${w.height}px` } : { height: `${w.height}px` }}
           >
             <WidgetFrame instance={w} onNudgeKey={(e) => onRailKey(e, w.id)} />
           </div>

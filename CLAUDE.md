@@ -43,11 +43,12 @@ obligations and are not satisfied by the licence.
 > Events"` as an alert source) were **fixed in `18a9de8`**.
 >
 > Verified 2026-08-11: `grep -rn "worldmonitor\|World Monitor" lib/ app/ components/`
-> returns 4 hits and **all four are comments** naming the competitor as a fact — in
-> `i18n/catalog.ts`, `monitors.ts`, `sources/keyRequirements.ts` and `api/og/route.tsx`
-> (that last one documents the literal it replaced). Those are allowed. What is banned is
-> the name in a **user-visible string**, and there are none. Expect the grep to be noisy;
-> read each hit before "fixing" it.
+> returns 3 hits and **all three are comments** naming the competitor as a fact — in
+> `i18n/catalog.ts`, `sources/keyRequirements.ts` and `api/og/route.tsx`
+> (that last one documents the literal it replaced). It was 4 until 2026-09-07, when
+> `monitors.ts` was deleted into `lib/console/presets.ts` and took its comment with it.
+> Those are allowed. What is banned is the name in a **user-visible string**, and there
+> are none. Expect the grep to be noisy; read each hit before "fixing" it.
 
 ## Build gate
 - Roadmap: `ROADMAP.md` (driven by the `/goal` milestone loop — one gated milestone per invocation)
@@ -122,7 +123,10 @@ obligations and are not satisfied by the licence.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
   `SIGNALS`. Importing `SIGNALS` into something that draws or lists layers silently turns every
   data-only source back into a layer. Today the only one is the Country Instability Index.
-- `lib/console/*` — widget registry, presets (**2 boards** in `presets.ts`), store, share (`?c=` layout URL).
+- `lib/console/*` — widget registry, presets (**7 presets** in `presets.ts`), store, share (`?c=` layout URL).
+  **A preset is the whole workspace**: core layers + signal layers + the board that reads
+  them, and the Sources rail's tiles and the ⌘K Profiles list drive the same seven. There is
+  no `lib/monitors.ts` any more — its six layer-only "monitors" merged in here.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
@@ -160,7 +164,8 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
 | Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
 | Signal layers | **33 registered (32 map layers + 1 data-only); 31 returning data, 2 empty** (2026-09-05) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. The 2 empties are ReliefWeb and ENTSO-E grid load, both waiting on a key — not broken adapters. |
-| Console boards | 2 (2026-09-04) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. Was 7 until Conflict, Hazards, Transit, Markets & Cyber and Recon were removed and Brief was emptied and renamed **Globe** — the landing board is now a bare rotating globe with no widgets, so `console-presets.test.ts` pins the empty widget list and the `map3d` stage as well as the id list. The guided tour used to pin this row a second time — `tour-board-copy.test.ts` failed if the tour's copy stated a different number — and that guard went with the tour. |
+| Console presets | 7 (2026-09-07) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "seven presets"). Went 7 → 2 on 2026-09-04 and back to 7 now, but they are not the same seven and not the same kind of thing: a preset is the whole workspace (core layers + signal layers + board), because `lib/monitors.ts` merged into this file. Globe is still deliberately empty. **Ground** and **Calm** — two of the six old monitors — are retired rather than converted; both were subtractive layer states meaning "cameras", which is what Streets already is. |
+| Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling — Infrastructure is left+right, Intel and World are two rails each. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 63 registered (2026-09-05) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |

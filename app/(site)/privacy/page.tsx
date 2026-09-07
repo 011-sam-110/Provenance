@@ -56,9 +56,21 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     /_vercel/insights exists only on Vercel's edge, so self-hosted it would have
  *     posted a 404 per page view — the appearance of collection with none of the
  *     substance. A repo-wide grep for gtag / GA / Plausible / PostHog / Segment /
- *     Hotjar / Sentry / Clarity returns no runtime hit either. Nothing counts a visit.
+ *     Hotjar / Sentry / Clarity returns no runtime hit either.
  *     IF AN EXTERNAL COUNTER IS EVER ADDED, THIS SECTION AND THE THREE PLACES BELOW
  *     THAT SAY "no analytics" HAVE TO MOVE WITH IT.
+ *     ONE FIRST-PARTY COUNTER NOW EXISTS, added 2026-09-07, and the copy moved with
+ *     it: `/api/presence` + lib/presence/store.ts, which count how many browsers
+ *     have the site open in a three-minute window so the console header can show
+ *     "N online". It is the reason the summary card no longer says "nothing counts
+ *     your visit" and the cookies section is no longer headed "No counter either".
+ *     It is worth being precise about why it is still not analytics: it holds a
+ *     random per-tab string and a timestamp IN MEMORY, evicts after three minutes,
+ *     writes nothing to disk, records no IP, user agent, referrer or route, and
+ *     answers `null` below a threshold so a small number never leaves the server.
+ *     There is no history, so there is nothing to query — it can say how many
+ *     browsers are here and literally nothing else. ANY CHANGE THAT GIVES IT A
+ *     DISK, A LOG LINE, OR A SECOND FIELD MAKES THAT PARAGRAPH FALSE.
  *   • persistence — package.json ships nine runtime deps and not one is a database
  *     client. `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/ components/
  *     now returns TWO files, lib/discovery/store.ts and app/api/admin/promote/route.ts,
@@ -146,8 +158,10 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h2 className="pv-h3">No analytics</h2>
               <p>
-                Nothing counts your visit. No Google Analytics, no ad pixel, no session recording,
-                and since the move off Vercel, no page-view counter of any kind.
+                No Google Analytics, no ad pixel, no session recording, and since the move off
+                Vercel, no page-view counter. The one thing that does count is a live tally of how
+                many browsers have the site open right now, which forgets you three minutes after
+                you close the tab.
               </p>
             </div>
           </div>
@@ -302,6 +316,14 @@ export default function PrivacyPage() {
                   <td>Watchlists, dropped pins, tracked aircraft, market alerts</td>
                   <td>Local storage</td>
                   <td>No</td>
+                </tr>
+                <tr>
+                  <td>
+                    A random string, so the live &ldquo;online&rdquo; count does not count this tab
+                    twice
+                  </td>
+                  <td>Session storage &mdash; erased when you close the tab</td>
+                  <td>Yes, every 45 seconds. It is all the counter gets, and it means nothing else</td>
                 </tr>
                 <tr>
                   <td>A display name, if you type one into settings</td>
@@ -547,19 +569,21 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h3 className="pv-h3">OpenFreeMap</h3>
               <p>
-                <span className="pv-num">tiles.openfreemap.org</span> serves the default Light map
-                and the Streets map, along with their fonts, icons and the building shapes the 3D
-                buildings are drawn from. It is the map you get in the console unless you pick
-                another one, so it sees you on almost every visit to the console.
+                <span className="pv-num">tiles.openfreemap.org</span> serves the Streets map, the
+                small inset maps on a pin&rsquo;s detail card, the map on the Locate page, and the
+                building shapes the 3D buildings are drawn from. It was the console&rsquo;s default
+                map until 7 September 2026; the default is now Satellite, so OpenFreeMap only sees
+                you if you open a detail card, the Locate page, or the Streets map itself.
               </p>
             </div>
             <div className="pv-card">
               <h3 className="pv-h3">CARTO</h3>
               <p>
                 <span className="pv-num">basemaps.cartocdn.com</span> serves the Dark map, and the
-                label fonts the Dark, Satellite and Topographic maps use. That includes the globe on
-                the front page, so CARTO sees you whether or not you open the console. It used to
-                serve the default map as well; that moved to OpenFreeMap on 3 September 2026.
+                label fonts the Dark, Satellite and Topographic maps use. Satellite is the
+                console&rsquo;s default map, so those fonts load on almost every visit to the
+                console. The Dark map is also the globe on the front page, so CARTO sees you whether
+                or not you open the console.
               </p>
             </div>
             <div className="pv-card">
@@ -573,10 +597,12 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h3 className="pv-h3">Esri and OpenTopoMap</h3>
               <p>
-                <span className="pv-num">server.arcgisonline.com</span> serves the satellite basemap
-                and one aerial image on a satellite&rsquo;s detail card.{" "}
-                <span className="pv-num">tile.opentopomap.org</span> serves the topographic basemap.
-                Both load only if you pick them.
+                <span className="pv-num">server.arcgisonline.com</span> serves the Satellite map and
+                one aerial image on a satellite&rsquo;s detail card. Satellite became the
+                console&rsquo;s default map on 7 September 2026, so Esri now sees you on almost
+                every visit to the console rather than only when you pick it.{" "}
+                <span className="pv-num">tile.opentopomap.org</span> serves the topographic basemap,
+                which loads only if you pick it.
               </p>
             </div>
             <div className="pv-card">
@@ -616,7 +642,7 @@ export default function PrivacyPage() {
               <span>Cookies</span>
               <span>Analytics</span>
             </p>
-            <h2 className="pv-h2">No cookies of ours. No counter either.</h2>
+            <h2 className="pv-h2">No cookies of ours. One counter, and it forgets.</h2>
           </div>
           <div className="pv-prose">
             <p>
@@ -631,6 +657,20 @@ export default function PrivacyPage() {
               package were removed in the move, and nothing replaced them. A search of the
               repository finds no Google Analytics, no gtag, no Meta pixel, no PostHog, no
               Plausible, no session recorder and no fingerprinting library.
+            </p>
+            <p>
+              <strong>The one counter there is</strong> answers a single question: how many browsers
+              have the site open at this moment. While a tab is open it sends{" "}
+              <span className="pv-num">/api/presence</span> a random string every 45 seconds &mdash;
+              a string your own browser invents, keeps in{" "}
+              <span className="pv-num">sessionStorage</span> only until you close the tab, and which
+              means nothing anywhere else. The server holds that string and the time it last arrived,
+              in memory, and deletes it three minutes later. No IP address, no browser name, no page
+              address and no cookie is recorded with it, nothing is written to disk, and a restart of
+              the server erases the lot. It cannot say who you are, where you came from, or what you
+              looked at &mdash; only that some browser was here in the last three minutes. The number
+              is shown in the console header when it is above a threshold; below that the server does
+              not answer with it at all, so a quiet site does not report a small number to anyone.
             </p>
             <p>
               The page-view counts collected while the site ran on Vercel still sit in Vercel&rsquo;s

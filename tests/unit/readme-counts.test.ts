@@ -262,9 +262,14 @@ describe("README console figures", () => {
   });
 
   // Spelled as a word in prose, so this asserts the word rather than parsing a digit.
-  it("still describes two boards, matching the preset list", () => {
-    expect(README).toContain("two boards");
-    expect(BUILTIN_PRESETS.length).toBe(2);
+  //
+  // "Presets", not "boards", and the word matters: lib/monitors.ts merged into
+  // lib/console/presets.ts, so one preset is now the layers AND the board that
+  // reads them. The README used to have to describe those as two separate
+  // features in the same sentence.
+  it("still describes seven presets, matching the preset list", () => {
+    expect(README).toContain("seven presets");
+    expect(BUILTIN_PRESETS.length).toBe(7);
   });
 });
 
