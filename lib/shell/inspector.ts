@@ -262,10 +262,19 @@ export function areaSummary(area: InspectorArea): string {
 let state: InspectorState = { ...EMPTY };
 const listeners = new Set<() => void>();
 
+/** Nothing persists before hydrate() has read what is already saved. See commit(). */
+let hydrated = false;
+
 function commit(next: InspectorState) {
   state = next;
   for (const l of listeners) l();
-  savePersisted(PERSIST_KEY, PERSIST_VERSION, state);
+  // THE GATE IS LOAD-BEARING. variantStore.bootstrap() runs BEFORE hydrate() by
+  // design, and it writes World through this store (layersStore.applyExact and
+  // signalsStore.applyExact are views onto the loaded context). Persisting that
+  // write would save the pre-hydrate state — areas: [] — over the user's saved
+  // areas, and the hydrate that follows then reads back the file it just
+  // destroyed. Measured on a preview: one reload emptied the Inspector.
+  if (hydrated) savePersisted(PERSIST_KEY, PERSIST_VERSION, state);
 }
 
 export const inspectorStore = {
@@ -296,6 +305,8 @@ export const inspectorStore = {
    */
   hydrate() {
     const saved = coerceState(loadPersisted<InspectorState>(PERSIST_KEY, PERSIST_VERSION));
+    // Read BEFORE the gate opens, write after: from here on every change persists.
+    hydrated = true;
     commit({ ...saved, world: state.world });
   },
 
