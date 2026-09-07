@@ -118,6 +118,13 @@ describe("key requirements table", () => {
       // The deployment never holds either, and no capability turns on them.
       "VERCEL_OIDC_TOKEN",
       "PREVIEW_URL",
+      // The second way past deployment protection, a `_vercel_share` link, added to
+      // playwright.preview.config.ts after this list first learned to read root-level
+      // files. Same category as the two above: it is an input to the LOCAL runner, the
+      // deployment never holds it, and no capability turns on it. It is a credential in
+      // the ordinary sense — anyone with the link is through — which is exactly why it
+      // is listed here rather than left to be caught later by a stranger.
+      "PREVIEW_SHARE_URL",
     ]);
     const declared = new Set(KEY_REQUIREMENTS.flatMap((r) => r.env));
 
