@@ -225,6 +225,9 @@ export default async function Landing() {
             <a href="/app">Open the map</a>
             <a href="#sources">All {total} sources</a>
             <a href="#ledger">Live layer status</a>
+            <a href={BRAND.discordUrl} target="_blank" rel="noreferrer noopener">
+              Discord
+            </a>
             <a href="/privacy">Privacy</a>
           </div>
           <div>

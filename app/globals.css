@@ -5759,6 +5759,93 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-fb-btn.is-ghost:hover:not(:disabled) { color: var(--tn-text); background: var(--tn-surface-2); }
 @media (prefers-reduced-motion: reduce) { .tn-fb-card { animation: none; } }
 
+/* ── The Discord invitation ─────────────────────────────────────────────────
+   A corner note, not a banner and not a modal: no veil, no focus trap, nothing
+   behind it goes inert. It takes the console's own card surface, border and
+   radius so it reads as a panel that appeared rather than an ad that arrived.
+
+   BOTTOM-LEFT, ABOVE THE ATTRIBUTION. Every other corner is spoken for — the map
+   rail is centred on the right, the toast is bottom-centre at z 1200, and the
+   header owns the top. Bottom-left holds only MapLibre's attribution control,
+   which `.tn-terminal` pins at `left: 8px; bottom: 28px`, so the note sits above
+   it on the same left margin and the two read as one stack rather than a
+   collision.
+
+   Z-INDEX 1050 IS DELIBERATE AND SITS BELOW `.tn-fb` (1100). If the feedback
+   modal opens while this is still up, the modal's veil covers this card too and
+   the modal is unambiguously the live thing. See CommunityNote.tsx. */
+/* The always-mounted live region. It carries no box of its own — the card inside
+   is itself position:fixed — so it is zero-sized whether or not it holds anything,
+   and needs no `:empty` rule. It must NOT be display:none or visibility:hidden,
+   which would take it out of the accessibility tree and lose the announcement. */
+.tn-note-live { position: fixed; left: 0; bottom: 0; z-index: 1050; }
+.tn-note {
+  position: fixed; left: 8px; bottom: 52px;
+  /* 400, not 360. At 360 the text column is ~269px after the mark, the gutters and
+     the ✕, which wrapped two short sentences onto five lines — a wall of reading
+     for something that has to be taken in at a glance. 400 takes it to four and
+     still leaves the note plainly a corner card rather than a panel. */
+  width: min(400px, calc(100vw - 16px));
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 13px 14px;
+  background: var(--tn-surface-solid); color: var(--tn-text);
+  border: 1px solid var(--tn-border); border-radius: 14px; box-shadow: var(--tn-shadow);
+  animation: tn-note-in .2s ease-out;
+}
+/* Discord blurple, and the ONE place in the console it is allowed. The calm
+   olive identity carries everything else; a chat server is recognised by its
+   colour and its mark before it is read, and this note has about a second to be
+   recognised. Measured: #ffffff on #5865f2 is 4.61:1, which clears AA for normal
+   text — so the button below can carry white copy without an exception. */
+.tn-note-icon {
+  flex: none; width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: #5865f2; color: #fff;
+}
+.tn-note-body { flex: 1; min-width: 0; }
+/* fs-lg over fs-md, and the reason is Sam's ~80% browser zoom rather than taste:
+   this card has about a second to be recognised, and at that zoom fs-md lands near
+   11 device pixels — legible, but not a headline. fs-lg renders at roughly 13.6 and
+   gives the two lines an actual hierarchy instead of a flat block. */
+.tn-note-title { margin: 0; font-size: var(--tnx-fs-lg); font-weight: 700; color: var(--tn-text); }
+.tn-note-text { margin: 5px 0 0; font-size: var(--tnx-fs-md); line-height: 1.5; color: var(--tn-text-muted); }
+.tn-note-actions { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
+.tn-note-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: var(--tnx-fs-md); font-weight: 600;
+  padding: 7px 13px; border-radius: 8px; border: 1px solid transparent;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.tn-note-btn.is-primary { background: #5865f2; color: #fff; }
+.tn-note-btn.is-primary:hover { background: #4752c4; }
+.tn-note-btn.is-ghost { background: none; color: var(--tn-text-faint); font-weight: 400; }
+.tn-note-btn.is-ghost:hover { color: var(--tn-text); background: var(--tn-surface-2); }
+.tn-note-btn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-note-x {
+  flex: none; width: 24px; height: 24px; margin: -3px -4px 0 0; border-radius: 7px;
+  border: 1px solid transparent; background: none; color: var(--tn-text-faint);
+  font-size: var(--tnx-fs-lg); line-height: 1; cursor: pointer;
+}
+.tn-note-x:hover { color: var(--tn-text); border-color: var(--tn-border-strong); }
+.tn-note-x:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+@keyframes tn-note-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tn-note { animation: none; } }
+/* On a phone the note spans the width it can get, and it has to sit ABOVE the
+   Sources FAB rather than on top of it.
+
+   THAT OVERLAP WAS REAL AND IT MATTERED. `.tn-rail-fab` is pinned to
+   `bottom: calc(var(--tn-ticker-h) + 12px)` under 720px and measures 44px tall, so
+   a note at the bottom margin covered its top half — and on a phone that button is
+   the console's main menu, the only way into the sources rail and the board list.
+   An invitation that hides the navigation is worse than no invitation.
+
+   The offset is written in the FAB's own terms (its 12px inset + its 44px height +
+   a 16px gap) so it tracks `--tn-ticker-h` instead of freezing one measurement
+   taken on one screen. Measured at 390 wide: note bottom 772, FAB top 788. */
+@media (max-width: 720px) {
+  .tn-note { left: 8px; right: 8px; width: auto; bottom: calc(var(--tn-ticker-h) + 72px); }
+}
+
 /* ── A widget that has just been added ───────────────────────────────────────
    Adding a camera wall to a full board places it below the fold (the wall is
    tiled to cover every column, so findFreeSpot falls through to the row under

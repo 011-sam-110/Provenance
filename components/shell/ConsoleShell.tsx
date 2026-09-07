@@ -31,6 +31,7 @@ import { pickStore } from "@/lib/console/widgets/camslot.pick";
 import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
+import CommunityNote from "@/components/shell/CommunityNote";
 import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
@@ -322,6 +323,11 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       {/* Gates itself entirely (lib/shell/feedback.ts) and renders null until it
           decides to ask, so mounting it unconditionally costs one interval. */}
       <FeedbackPrompt />
+      {/* Gates itself the same way (lib/shell/community.ts) and renders an empty
+          live region until it decides to ask, so this also costs one interval.
+          Mounted AFTER FeedbackPrompt for readability only — the two are ordered by
+          z-index (1050 under 1100), not by DOM position. */}
+      <CommunityNote />
       {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
           disappearing with its text. A live region has to already be in the
           accessibility tree when its content changes for the change to be
