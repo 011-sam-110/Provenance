@@ -48,3 +48,23 @@ describe("dockSize", () => {
     expect(dockSize(rails, box)).not.toBe(box.w);
   });
 });
+
+// ConsoleWorkspace and WallWorkspace are React components, and this repo has
+// no React testing library and runs vitest in the node environment — neither
+// "an empty wall renders nothing" (WallWorkspace) nor "the dock splitter does
+// not render in the full-bleed state" (ConsoleWorkspace's renderSplit) can be
+// exercised from a unit test. What IS pure and testable is the numeric
+// precondition that makes the splitter suppression necessary: the full-bleed
+// dock width has to be capable of exceeding RAIL_MAX.right, because that is
+// exactly what would make a rendered splitter report an aria-valuenow outside
+// its own aria-valuemax on a control that dockSize has already stopped
+// listening to.
+describe("why the dock splitter must not render in the full-bleed state", () => {
+  it("the full-bleed dock width can exceed RAIL_MAX.right", () => {
+    expect(dockSize(layout([]), box)).toBeGreaterThan(RAIL_MAX.right);
+  });
+
+  it("stays within RAIL_MAX.right once a tile exists, for the same container", () => {
+    expect(dockSize(layout([tile("a")], false, 9999), box)).toBeLessThanOrEqual(RAIL_MAX.right);
+  });
+});

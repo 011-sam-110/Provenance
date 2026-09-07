@@ -1,81 +1,79 @@
-# Widget Console Redesign — Progress Ledger
+# Streets Monitor Area — Progress Ledger
 
-Plan: docs/superpowers/plans/2026-06-28-widget-console-redesign.md
-Spec: docs/superpowers/specs/2026-06-28-widget-console-redesign-design.md
-Branch: feat/widget-console-redesign (spec 10238b3 · plan 425e9a8)
-Execution: subagent-driven-development. BASE for Task 1 = 425e9a8.
-(Prior ground-truth-console-phase1 ledger is COMPLETE; superseded by this file. See git history for it.)
+Plan: docs/superpowers/plans/2026-09-07-streets-monitor-area.md
+Spec: docs/superpowers/specs/2026-09-07-streets-monitor-area-design.md
+Branch: feat/streets-monitor-area  (worktree C:\Users\sampo\Desktop\tn-streets-area)
+Execution: subagent-driven-development, SONNET implementers and reviewers (Sam, 2026-09-07).
+BASE for Task 1 = c35c037.
+Baseline test count on this branch BEFORE any task: 3223 (npx vitest list). An OOM.d
+vitest worker DROPS a file and still prints green -- check the count, not the colour.
+NOTE: the previous ledger here was for the 2026-06-28 widget-console-redesign plan and was
+COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT this plan's.
+
+## Pre-flight decisions (Sam, 2026-09-07)
+- tilesToLayout takes a `mintId: () => string` PARAMETER; store.ts exports nextWidgetId.
+- Task 11 check 9 CALIBRATES over 3 runs, worst-of-three, then asserts. Raw figures to Sam
+  BEFORE thresholds are written.
+- Task 12 gate is `grep setExternalDraw lib/map/aoi.ts`, waiting on PR #187 (NOT #186 --
+  #186 merged without the export).
 
 ## Status
-- [x] Task 1: layout types + defaults (lib/console/types.ts)
-- [x] Task 2: pure layout reducers
-- [x] Task 3: shellLayoutStore
-- [x] Task 4: widget registry
-- [x] Task 5: alert model
-- [x] Task 6: WidgetFrame component
-- [x] Task 8: StageHost + StageSwitch + WorldClock  (ran before 7)
-- [x] Task 7: Segment + ConsoleWorkspace  ← Phase C (shell) DONE
-- [x] Task 9: Aviation widget + rules  ← Phase D start
-- [x] Task 10: Disasters & Events widget + rules  (alerts fire on real data)
-- [x] Task 11: Cameras widget + rules  (+made loadedCamerasStore reactive)
-- [x] Task 12: Live Video News + provider catalogue  ← Phase D done
-- [x] Task 13: widget index + ⌘K catalog upgrade  ← Phase E start
-- [x] Task 14: presets + URL share
-- [x] Task 15: mount console + reconcile chrome + e2e  ← SLICE COMPLETE
+- [x] Task 1: circle geometry (lib/map/circle.ts)
+- [x] Task 2: watch field + sanitize
+- [x] Task 3: nine-way fan-out
+- [ ] Task 4: full-bleed dock exception
+- [ ] Task 5: ring -> planned wall (camslot.monitor.ts)
+- [ ] Task 6: circle gesture + rubber band
+- [ ] Task 7: Streets preset opens on an area
+- [ ] Task 8: prompt + apply
+- [ ] Task 9: monitored marks
+- [ ] Task 10: video in a tile
+- [ ] Task 11: browser + perf gate
+- [ ] Task 12: adopt setExternalDraw (BLOCKED on #187)
 
 ## Completed
-Task 1: complete (commit 6b5f398, review clean — spec ✅, quality Approved)
-Task 2: complete (commits 8220237..d550c65, review ✅ Approved after 1 fix: removeWidget dense reindex + upper-clamp tests)
-Task 3: complete (commit 8798caf, review ✅ Approved; Important "nextSeq missing" ADJUDICATED → vestigial spec entry, 0 consumers, dropped from plan, no code change)
-Task 4: complete (commits eaa2ac7..50f7c5e, review ✅ Approved + 1 test top-up: listWidgetTypes order + getWidgetType miss)
-Task 5: complete (commit 4117b28, review ✅ Approved, Minors only)
-Task 6: complete (commit 8c5de0c, review ✅ Approved all 12 constraints, Minors only; first UI component, e2e-gated at T15)
-NOTE: executing order swapped to 8→7 (Task 7 ConsoleWorkspace imports Task 8 StageHost; Task 8 is standalone, keeps each tsc-clean).
-Task 8: complete (commit 8f703dc, review ✅ Approved all 14 constraints, Minors only)
-Task 7: complete (commit 0227af4, review ✅ Approved; drop-index/listener-teardown/resize-signs all correct, Minors only) — PHASE C done
-Task 9: complete (commit f724d23, review ✅ Approved; rules exact+tested, body adapted to WorldObject shape; squawk/military alerts DORMANT — see Follow-ups)
-Task 10: complete (commit 7ac6378, review ✅ Approved; nested r.severity.tier + r.magnitude.value mapped right, projectEventFeed matches EventFeed.tsx; S3+/M5+ alerts LIVE)
-Task 11: complete (commits 6d166a4..69f8b1e, review ✅ Approved after 1 fix: loadedCamerasStore made reactive [subscribe], widget uses useSyncExternalStore + empty-state; offline alert LIVE)
-Task 12: complete (commits 1362eb3..f542088, review ✅ Approved after 1 fix: YT id regex {6,}→{11} + playsinline test assertion; fix self-verified via the pinning test [4/4 green] + diff inspection, no scope creep) — PHASE D done
-Task 13: complete (commit b37dd99, review ✅ Spec ✅ + quality Approved, 1 Minor; barrel registers 4 widgets + ⌘K "Add <widget>" catalog w/ open-counts + 3 stage cmds, matches brief verbatim; the LSP "unused import" diagnostics were STALE mid-edit snapshots — git diff confirms all 3 imports ARE used) — PHASE E start
-Task 14: complete (commit 837a975, review ✅ Spec ✅ + quality Approved, 4 Minors all benign/deferred; presets.ts [built-ins World/Aviation-Ops/Disaster-Response + save-your-own + listPresets] + share.ts [URL-safe base64 encode/decode, null-on-garbage] TDD'd 4/4 green, palette wired WITHOUT the duplicate shellLayoutStore import; stale red-phase "cannot find module" + mid-edit "unused import" diagnostics DISPROVEN by fresh filtered tsc [clean] + git diff)
-Task 15: complete (commit e49faf3, gates ALL GREEN — tsc clean, vitest 489 pass, `npm run build` SUCCESS [eslint clean → all removed imports verified gone], e2e 4/4 pass [Chromium ran]; ConsoleShell REWRITTEN — mounts ConsoleWorkspace + console hydrate/?c=/world-seed + inline onClose + tn-toast listener & pill, no props; page.tsx→<main><ConsoleShell/></main> [WorldMap gone, now in StageHost]; StageSwitch added to StatusBar; .tn-toast CSS; e2e spec; 1st dispatch was a 0-tool no-op, re-nudged → succeeded; self-verified final ConsoleShell + 5-file stat) — SLICE COMPLETE, next = final whole-branch review (opus)
+Task 1: implemented (bda54fc, 3223->3231). Review: spec OK. Quality found ONE CRITICAL,
+  PLAN-MANDATED (my geometry, not the implementer's): ringFromCircle wraps each vertex's
+  longitude independently, and pointInRing ray-casts on raw lon with no seam handling, so a
+  circle across +/-180 INVERTS. Verified independently: 50km circle at 179.9E gives bbox
+  -179.969..179.988 (near-global), the CENTRE tests outside, a point 111km away tests inside.
+  San Diego control correct. Escalated to Sam -> DECISION: refuse a straddling circle now,
+  fix pointInRing properly as its own task later. Fix dispatched.
+  NOTE: pointInRing is SHARED, so the existing POLYGON tool has the same flaw.
+Task 1: COMPLETE (commits bda54fc..a72e9b8, re-review clean -- spec OK, quality Approved).
+  Fix a72e9b8 added crossesAntimeridian (computed from the circle's own extents, NOT from
+  wrapped output) + ringFromCircle returns [] for a straddling or globe-spanning circle.
+  Re-review verified: correct both sides of the seam, at the pole (cos(lat)<1e-6 guard),
+  globe-spanning at multiple lons, and NOT over-eager (170E/50km and 179.998 both false).
+  Tests 3231->3237. NOTE: one npm test run OOM'd and printed all-green at 3225 -- a whole
+  file dropped silently. The count check caught it. Keep checking the number, not the colour.
 
-## Follow-ups (post-slice — SURFACE TO USER)
-- [DONE in Task 15, commit e49faf3] TOAST LISTENER: ConsoleShell now hosts a global tn-toast listener +
-  calm pill (3.2s auto-dismiss), so the 50-widget-cap feedback surfaces. Wiring point (alertCapacity in the
-  palette) + UI both live.
-- AVIATION ALERTS DORMANT: usePlanes()→WorldObject has no squawk/military fields, so the flagship "squawk 7700"
-  alert never fires on live data. Rules are correct+tested. To activate: extend parseAdsb() to surface squawk
-  onto WorldObject + add a military category to classifyPlane(). (Events + Cameras alerts DO fire on real data.)
+Task 2: COMPLETE (commit 3154fcf, review clean -- spec OK, quality Approved, ZERO findings).
+  ShellLayout.watch + MAX_WATCH_VERTICES=256 + readWatch in sanitize. Tests 3237->3245.
+  Reviewer probed the parser adversarially in node: proto-pollution sibling key inert,
+  sparse holes rejected, 3-tuples rejected, numeric strings rejected, NaN/Infinity rejected,
+  256 accepted / 257 rejected. ALSO verified seedWallRects PRESERVES watch by reading
+  reducers.ts (both paths spread) -- a silent data-loss risk I had not flagged.
+  Known-inherent: a transposed but in-range [lat,lon] pair cannot be detected structurally.
+
+Task 3: COMPLETE (commit 17db8b4, review clean -- spec OK, quality Approved, ZERO findings).
+  camslot.fanout.ts (orderForWall + planFanOut) + live?:boolean on PickedCamera.
+  Tests 3245->3256. Reviewer verified: strict ===true/!==true so absent reads not-live;
+  Array.sort is spec-stable since ES2019 so equidistant order is deterministic; remainder
+  always lands on the FIRST buckets and spread never exceeds 1 (10000/9 -> [1112,1111x8]);
+  tiles=0/negative collapses to 1 rather than crashing; no bucket can be empty so the
+  "N cameras" header can never mislabel. camslot.area.ts/send.ts untouched as required.
+
+## Follow-ups (SURFACE TO USER)
+- [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
+  planar ray-casting with no seam unwrapping. Affects the EXISTING polygon AOI tool as well
+  as the circle. Deferred by Sam 2026-09-07 in favour of refusing a straddling circle.
+  Needs its own task + coordination with console-ux (filterToScopes consumes the same path).
 
 ## Minor findings rollup (for final review)
-- T1-m1: newInstanceId exported but untested (lib/console/types.ts) — add later if reducers don't cover it.
-- T1-m2: console-reducers.test.ts asserts left/bottom but not segments.right value explicitly.
-- T2-m1: removeWidget segSorted .sort() is on a fresh filtered array (safe); a comment would make purity self-evident.
-- T2-m2: setWidgetCollapsed/setWidgetConfig/setSegmentCollapsed untested; moveWidget dest-segment order not asserted.
-- T3-m1: store.hydrate() emits even when nothing was loaded (spurious save+notify on first boot); guard `if(s){state=s;emit()}`.
-- T3-m2: store.set() and replace() are identical (both spec-listed; acceptable).
-- T5-m1: alertCount() exported but untested + likely unused (WidgetFrame uses alerts.length directly) — consider dropping later.
-- T5-m2: topSeverity tested only for info+critical; warn-only path uncovered.
-- T6-m1: WidgetFrame unmount-mid-drag pointer-listener leak (negligible; inherited from brief).
-- T6-m2: tn-cw-* CSS hardcodes hex instead of --tn-* tokens (theming drift risk; affects later widget CSS too).
-- T8-m1: WorldClock ticks every 1s but only shows HH:MM (60x excess re-renders); use 60s or show seconds.
-- T8-m2: .tn-clock-cell class used in WorldClock JSX but unstyled (cells lay out ok but not column-centered); add flex-col rule.
-- T7-m1: globals.css Task 7 block sits after Task 8 block (cosmetic ordering).
-- T7-m2: VGrip subscribes to full store redundantly (ConsoleWorkspace already does); harmless re-render churn.
-- T7-m3: Segment stays mounted+subscribed when its column is collapsed (width:0); harmless at current scale.
-- T9-m1: aviation.tsx effect dep `planes.length` redundant (lite already memoized on planes); remove.
-- T9-m2: aviation flights table has no <thead> (columns unlabeled) — UX polish.
-- T9-note: reviewer worried report() ref stability → CONFIRMED stable (Task 6 onReport is useCallback []), no loop. (Applies to all widget bodies.)
-- T10-m1: console-events.test.ts asserts S3→warn but only implicitly S4→critical; add explicit `expect(...severity).toBe("critical")`.
-- T10-m2: events.tsx freshLabel hardcoded "5m" (could reflect the active time window).
-- T10-note: config in widget effect deps is fine — instance.config ref is stable across unrelated store updates (reducers only clone on change).
-- T11-m1: cameras.tsx effect reads cams.length but only lite in deps (covered by lite memo; switch to lite.length for exhaustive-deps lint cleanliness).
-- T13-m1 (Task 15 WATCH-ITEM): CommandPalette open-counts come from useMemo(()=>buildCommands(onClose),[onClose]); counts only refresh when onClose identity changes. CURRENTLY CORRECT — ConsoleShell passes inline onClose={()=>setPaletteOpen(false)}, so it re-renders + recomputes on every open. LATENT: if Task 15 wraps onClose in useCallback the counts freeze → then add `open` to the palette useMemo deps (or subscribe the palette to shellLayoutStore). [Task 14's listPresets-staleness Minor is the SAME root cause — fixing this covers both.]
-- T14-m1: share.ts uses deprecated escape/unescape (browser path only; node test path uses Buffer). Works; decode is try/catch-safe. Modernize via TextEncoder/TextDecoder if the file is touched.
-- T14-m2: decodeLayout calls atob on padding-stripped base64 without re-padding. BENIGN — our encode never yields len%4==1, atob is forgiving of missing padding, and try/catch returns null on any failure. Node path uses lenient Buffer.
-- T14-m3: presets.ts module-level `seed` counter is shared across all build() calls (monotonic widget ids). Benign — ids are internal-only, no test asserts on them.
-- T15-m1 (FINAL-REVIEW CLEANUP): palette commands coverage / markets / toggle-workspace are now dead no-ops — their panels/dock were removed from ConsoleShell, but CommandPalette was intentionally left untouched. Prune those commands + their now-unused store imports (coverageStore/marketsStore/workspaceStore) in the final fix wave.
-- T15-m2: StatusBar still renders VariantSwitcher + WorkspaceBar, now partly orphaned (variant-driven PanelHost + DockableWorkspace were removed). Harmless; consider removing in cleanup.
-- T15-note: implementer left a stray `next start` on :3000 — kill it before any local `npm run dev`.
+- T1-m1: the pole clamp Math.max(-90,Math.min(90,degLat)) is inert -- Math.asin already
+  returns [-pi/2,pi/2]. Plan-mandated, harmless, could be dropped.
+- T1-m2: ringFromCircle's `vertices` param undertested (no case < 3 or fractional).
+- T1-m3: the pole-clamp test (lat 89.9, radiusKm 200) now hits the refusal path, so its
+  loop runs over [] VACUOUSLY -- it asserts nothing. Reported honestly by the fixer rather
+  than hidden. Either give it a radius that does not wrap 360 of longitude, or delete it.

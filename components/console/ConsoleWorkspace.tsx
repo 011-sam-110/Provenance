@@ -255,6 +255,12 @@ export default function ConsoleWorkspace() {
    *  IS the right rail: it simply holds the stage instead of widgets, so its
    *  width persists in `segments.right.size` like every other rail's. */
   const renderSplit = (rail: SegmentId) => {
+    // In the full-bleed state (an empty wall — see `dockSize`) the dock owns
+    // the entire container width and stops reading `segments.right.size`
+    // altogether, so this seam would report a bogus size on a control that
+    // moves nothing. Suppress it for that state only; every other case below
+    // is unchanged.
+    if (wall && rail === "right" && layout.widgets.length === 0) return null;
     const size = wall ? (rail === "right" ? dock : 0) : sizes[rail];
     if (size === 0) return null;
     return (
