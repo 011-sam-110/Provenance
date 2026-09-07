@@ -10,7 +10,7 @@
 //
 // WHY THIS OWNS ITS OWN LAYERS. WorldMap re-adds every app layer on `style.load`
 // because a basemap switch throws the style away. Rather than thread AOI state
-// through that 2,000-line component, this module re-asserts its own two layers
+// through that 2,000-line component, this module re-asserts its own layers
 // on `styledata` — same guarantee, no edit to the map. The layers sit above
 // everything else and are non-interactive, so nothing about clicking the map
 // changes when an AOI is showing.
@@ -19,10 +19,15 @@ import type { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 import { useSyncExternalStore } from "react";
 import { haversineKm } from "@/lib/geo/haversine";
 import { aoiScope, scopeStore, WORLD_SCOPE, type Scope } from "@/lib/shell/scope";
+import { inspectorStore, type InspectorArea } from "@/lib/shell/inspector";
 
 const AOI_SRC = "aoi-scope";
 const AOI_FILL = "aoi-scope-fill";
 const AOI_LINE = "aoi-scope-line";
+const AREAS_SRC = "aoi-areas";
+const AREAS_FILL = "aoi-areas-fill";
+const AREAS_LINE = "aoi-areas-line";
+const AREAS_LINE_EDIT = "aoi-areas-line-editing";
 const DRAFT_SRC = "aoi-draft";
 const DRAFT_LINE = "aoi-draft-line";
 const DRAFT_DOTS = "aoi-draft-dots";
@@ -43,7 +48,7 @@ export const MIN_VERTICES = 3;
  * and changes nothing downstream. The circle is what the user drew; the ring is
  * how it is stored, drawn and filtered.
  */
-export type DrawTool = "polygon" | "radius";
+export type DrawTool = "polygon" | "radius" | "circle";
 
 export interface DrawState {
   /** True while the user is placing vertices, or placing a centre and an edge. */
@@ -73,6 +78,33 @@ export const aoiDrawStore = {
 
 export function useAoiDraw(): DrawState {
   return useSyncExternalStore(aoiDrawStore.subscribe, aoiDrawStore.get, () => IDLE);
+}
+
+/**
+ * Publish a draw gesture that this module does not own. `null` returns to idle.
+ *
+ * WHY THIS EXISTS. The Streets board draws a circle with a press-centre-and-drag
+ * gesture, which is a different interaction from the two here (both are click-to-
+ * commit) and does not belong bolted onto `startDraw`. But "a draw is running" has to
+ * stay ONE truth: `isDrawing()` guards against two gestures arming at once, and
+ * components/shell/DrawBanner.tsx is the only always-mounted sign that the map is
+ * swallowing clicks. A second gesture with its own private flag would be invisible to
+ * both — the banner would not appear, and the polygon tool would happily arm on top
+ * of it.
+ *
+ * So an external tool reports itself here rather than forking the store, and gets the
+ * banner and the guard for free. `circle` is in DrawTool for the same reason: the
+ * banner switches on the tool, and an unlisted value would fall through to the
+ * polygon copy and narrate the wrong gesture.
+ *
+ * IT DOES NOT PAINT. The draft layers belong to this module's own gestures; an
+ * external tool owns its own geometry on the map and this only publishes the STATE.
+ * It also does not touch `cancelActive`, so `cancelDraw()` reaches the tool that
+ * armed it — an external caller must wire its own Cancel to its own teardown and then
+ * call this with `null`.
+ */
+export function setExternalDraw(next: DrawState | null): void {
+  setDraw(next ?? IDLE);
 }
 
 function setDraw(next: DrawState) {
@@ -273,6 +305,36 @@ export function radiusDraft(
   return { type: "FeatureCollection", features };
 }
 
+/**
+ * Every drawn area as one collection, flagged with which one is being edited.
+ *
+ * SEPARATE FROM THE SCOPE RING, and they are not the same thing. The scope is the
+ * map rail's "restrict results to an area" — one ring at a time, a filter over the
+ * whole console. These are the Inspector's areas: all of them live at once, each
+ * carrying its own sources. Painting them through the scope source would mean only
+ * one could show, which is what the scope source is for.
+ *
+ * WHY IT EXISTS AT ALL. Editing an area used to set the scope as a side effect, so
+ * the ring appeared because the FILTER appeared. Areas stopped narrowing the console
+ * when they became additive, and the rings went with it: you could draw an area,
+ * watch it vanish, and find it only in a list in the rail. "See areas you have
+ * drawn" was half the feature.
+ */
+export function areasCollection(
+  areas: readonly InspectorArea[],
+  editingId: string | null,
+): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: areas
+      .filter((a) => a.polygon.length >= MIN_VERTICES)
+      .map((a) => {
+        const f = ringToFeature(a.polygon);
+        return { ...f, properties: { id: a.id, editing: a.id === editingId } };
+      }),
+  };
+}
+
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
 // --- map plumbing -----------------------------------------------------------
@@ -299,14 +361,19 @@ const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: 
 function ensureLayers(map: MapLibreMap): boolean {
   const haveAll =
     map.getSource(AOI_SRC) &&
+    map.getSource(AREAS_SRC) &&
     map.getSource(DRAFT_SRC) &&
     map.getLayer(AOI_FILL) &&
     map.getLayer(AOI_LINE) &&
+    map.getLayer(AREAS_FILL) &&
+    map.getLayer(AREAS_LINE) &&
+    map.getLayer(AREAS_LINE_EDIT) &&
     map.getLayer(DRAFT_LINE) &&
     map.getLayer(DRAFT_DOTS);
   if (haveAll) return true;
   if (!map.isStyleLoaded()) return false;
   if (!map.getSource(AOI_SRC)) map.addSource(AOI_SRC, { type: "geojson", data: EMPTY });
+  if (!map.getSource(AREAS_SRC)) map.addSource(AREAS_SRC, { type: "geojson", data: EMPTY });
   if (!map.getSource(DRAFT_SRC)) map.addSource(DRAFT_SRC, { type: "geojson", data: EMPTY });
 
   if (!map.getLayer(AOI_FILL)) {
@@ -325,6 +392,44 @@ function ensureLayers(map: MapLibreMap): boolean {
       type: "line",
       source: AOI_SRC,
       paint: { "line-color": "#0ea5e9", "line-width": 1.5, "line-opacity": 0.9 },
+    });
+  }
+  // THREE LAYERS FOR TWO STATES, because line-dasharray is not data-driven in
+  // MapLibre — a `case` expression on it is dropped silently, along with the layer.
+  // So the dash is carried by which layer a feature lands in, and the filter picks.
+  if (!map.getLayer(AREAS_FILL)) {
+    map.addLayer({
+      id: AREAS_FILL,
+      type: "fill",
+      source: AREAS_SRC,
+      // Only the edited one is filled. With every area live at once, filling them all
+      // stacks washes over the basemap and says "these are more important than the
+      // map" — they are a reference, not the subject.
+      filter: ["==", ["get", "editing"], true],
+      paint: { "fill-color": "#0ea5e9", "fill-opacity": 0.06 },
+    });
+  }
+  if (!map.getLayer(AREAS_LINE)) {
+    map.addLayer({
+      id: AREAS_LINE,
+      type: "line",
+      source: AREAS_SRC,
+      filter: ["!=", ["get", "editing"], true],
+      paint: {
+        "line-color": "#0ea5e9",
+        "line-width": 1.25,
+        "line-opacity": 0.5,
+        "line-dasharray": [3, 2],
+      },
+    });
+  }
+  if (!map.getLayer(AREAS_LINE_EDIT)) {
+    map.addLayer({
+      id: AREAS_LINE_EDIT,
+      type: "line",
+      source: AREAS_SRC,
+      filter: ["==", ["get", "editing"], true],
+      paint: { "line-color": "#0ea5e9", "line-width": 2, "line-opacity": 0.95 },
     });
   }
   if (!map.getLayer(DRAFT_LINE)) {
@@ -380,6 +485,14 @@ export function paintScope(map: MapLibreMap, scope: Scope): boolean {
   return true;
 }
 
+/** Paint the Inspector's areas. Same contract as paintScope. */
+export function paintAreas(map: MapLibreMap): boolean {
+  if (!ensureLayers(map)) return false;
+  const state = inspectorStore.get();
+  setData(map, AREAS_SRC, areasCollection(state.areas, state.editing));
+  return true;
+}
+
 /**
  * Attach the AOI painter to a map. Returns a teardown.
  *
@@ -393,18 +506,27 @@ export function attachAoi(map: MapLibreMap): () => void {
   // exactly how the polygon went missing while the filter worked.
   let painted = false;
   const repaint = () => {
-    painted = paintScope(map, scopeStore.get());
+    // Both, and `&&` would be wrong: it short-circuits, so a scope repaint that
+    // could not act would skip the areas and the retry flag would then be the only
+    // thing left holding them.
+    const scope = paintScope(map, scopeStore.get());
+    const areas = paintAreas(map);
+    painted = scope && areas;
   };
   const onStyle = () => {
-    if (!painted || !map.getLayer(AOI_FILL)) repaint();
+    if (!painted || !map.getLayer(AOI_FILL) || !map.getLayer(AREAS_FILL)) repaint();
   };
   repaint(); // no-op if the style is not up yet — onStyle picks it up
   const unsub = scopeStore.subscribe(repaint);
+  // A third subscription: drawing an area, deleting one, or switching which one is
+  // edited all change what should be on the map, and none of them touch the scope.
+  const unsubAreas = inspectorStore.subscribe(repaint);
   map.on("styledata", onStyle);
   map.on("load", repaint);
   map.on("idle", onStyle); // last-resort retry once the map has settled
   return () => {
     unsub();
+    unsubAreas();
     map.off("styledata", onStyle);
     map.off("load", repaint);
     map.off("idle", onStyle);
@@ -544,7 +666,21 @@ function beginGesture(map: MapLibreMap, g: Gesture): boolean {
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape") abandon();
-    if (e.key === "Enter") finish();
+    if (e.key === "Enter") {
+      // preventDefault, or Enter finishes the area and IMMEDIATELY starts another.
+      // Seen in the browser: press the rail button to arm the tool, place three
+      // vertices, press Enter — the area commits, and the banner comes straight back
+      // reading "Click the map to place your first point". The button that armed the
+      // tool still holds focus, and a focused <button> turns Enter into a click as its
+      // DEFAULT ACTION, which runs after this listener has already torn the gesture
+      // down. So the finish and the re-arm are the same keystroke.
+      //
+      // This listener is on document during the gesture only, so suppressing Enter
+      // costs nothing outside a live draw — and inside one, finishing the area is the
+      // only thing Enter should be doing.
+      e.preventDefault();
+      finish();
+    }
   };
 
   function teardown() {
