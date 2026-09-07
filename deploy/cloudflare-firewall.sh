@@ -141,6 +141,17 @@ else
   exit 1
 fi
 
+# READ THE RANGES WITH 'awk NF', NEVER 'cat'. Cloudflare serves ips-v4 and ips-v6 with
+# NO TRAILING NEWLINE, so 'cat v4 v6' glues the last v4 range onto the first v6 one and
+# emits a single malformed token: "131.0.72.0/222400:cb00::/32". awk treats each file's
+# final partial line as a record, so it separates them correctly.
+#
+# THIS ALREADY HAPPENED, and the failure was worse than a crash. ufw rejected the glued
+# token, set -e aborted mid-loop, and the box was left half-configured: 14 of 15 IPv4
+# ranges allowed, NO IPv6 ranges at all, and the world-open rules still in place -- so
+# the firewall looked tightened while the origin stayed reachable by anyone. The
+# per-file CIDR validation above did not catch it either, because grep reads each file
+# separately and both files are individually well-formed.
 count=0
 while read -r cidr; do
   [[ -n "$cidr" ]] || continue
@@ -148,20 +159,42 @@ while read -r cidr; do
   # so re-running this after a range is added upstream only adds the new one.
   ufw allow proto tcp from "$cidr" to any port 80,443 comment 'cloudflare edge' >/dev/null
   count=$((count + 1))
-done < <(cat "$tmp/v4" "$tmp/v6" | tr -d '\r')
+done < <(awk 'NF' "$tmp/v4" "$tmp/v6" | tr -d '\r')
 
 echo "cloudflare-firewall: allowed $count Cloudflare ranges on 80,443"
 
-# Now drop the world-open rules. `ufw delete` returns non-zero when the rule is already
-# gone, which is the normal case on a second run, so these are tolerated individually
-# rather than being allowed to kill the script under `set -e`.
+# Now drop the world-open rules.
+# ufw delete exits non-zero when the rule is already gone, which is the normal case on
+# a second run, so each is tolerated individually rather than allowed to kill the script
+# under set -e. Do NOT gate these on "ufw --dry-run delete": it does not reliably report
+# whether a rule exists, and the version that did left BOTH world-open rules in place
+# while reporting success.
 for rule in "allow 80/tcp" "allow 443/tcp"; do
-  if ufw --dry-run delete $rule >/dev/null 2>&1; then
-    ufw delete $rule >/dev/null && echo "cloudflare-firewall: removed world-open '$rule'"
+  if ufw delete $rule >/dev/null 2>&1; then
+    echo "cloudflare-firewall: removed world-open '$rule'"
   else
     echo "cloudflare-firewall: '$rule' already absent"
   fi
 done
+
+# REFUSE TO FINISH QUIETLY IF THE WORLD IS STILL ALLOWED IN. The entire point of this
+# script is that 80/443 stop being open, and a half-applied firewall that reports
+# success is the exact failure this file already had once. Note the pattern matches
+# "ALLOW" and not "ALLOW IN": plain `ufw status` prints the former and only the verbose
+# form prints the latter, and a check written against the verbose wording silently
+# passed while both rules were still there.
+if ufw status | grep -qE '^(80|443)/tcp( \(v6\))?[[:space:]]+ALLOW'; then
+  echo "cloudflare-firewall: FAILED -- 80/443 are still open to Anywhere" >&2
+  ufw status >&2
+  exit 1
+fi
+
+allowed="$(ufw status | grep -c 'cloudflare edge' || true)"
+if [[ "$allowed" -lt "$count" ]]; then
+  echo "cloudflare-firewall: FAILED -- only $allowed of $count Cloudflare ranges allowed" >&2
+  exit 1
+fi
+echo "cloudflare-firewall: verified $allowed/$count ranges allowed, 80/443 closed to all else"
 
 echo
 ufw status verbose
