@@ -1,6 +1,7 @@
 "use client";
 import { createDefaultLayout, STAGE_ID, type ShellLayout } from "@/lib/console/types";
 import { addWidget, arrangeBoard, setStage, setSegmentCollapsed, setSegmentSize, setWidgetHeight } from "@/lib/console/reducers";
+import { ringFromCircle, type CircleSpec } from "@/lib/map/circle";
 import { splitSpan } from "@/lib/terminal/rails";
 import { GAP_PX, ROW_PX } from "@/lib/terminal/layoutGrid";
 import { visibleShell } from "@/lib/terminal/rowBudget";
@@ -142,10 +143,11 @@ function compose(stage: ShellLayout["stage"], shell: { w: number; h: number }, c
  * is that job.
  *
  * The tiles are laid out by `arrangeWall` on the twelve-column grid and the map
- * moves into a dock that opens closed. WEIGHTS DO NOTHING HERE and are left
- * equal to say so: `arrangeWall` tiles uniform 4-column cards and takes no
- * weights at all. A board that wants a hero tile gets one by the user dragging
- * it, which is the entire point of the mode.
+ * moves into a dock — see the note on `composeWall` below for when that dock
+ * opens and when it is closed. WEIGHTS DO NOTHING HERE and are left equal to
+ * say so: `arrangeWall` tiles uniform 4-column cards and takes no weights at
+ * all. A board that wants a hero tile gets one by the user dragging it, which
+ * is the entire point of the mode.
  *
  * ── THE COMMENT THIS REPLACED, KEPT FOR ITS FACTS ──────────────────────────
  * It recorded that `arrangeHouse` hardcoded a 4-of-12-column rail and that,
@@ -163,7 +165,12 @@ function compose(stage: ShellLayout["stage"], shell: { w: number; h: number }, c
  * readout drags the tile bigger — which is a thing they can now do, and could
  * not before.
  */
-function composeWall(stage: ShellLayout["stage"], shell: { w: number; h: number }, cards: CardSpec[]): ShellLayout {
+function composeWall(
+  stage: ShellLayout["stage"],
+  shell: { w: number; h: number },
+  cards: CardSpec[],
+  area?: CircleSpec,
+): ShellLayout {
   let l: ShellLayout = { ...setStage(createDefaultLayout(), stage), mode: "wall" };
 
   // `mode` is set BEFORE the widgets go in, and that ordering is load-bearing:
@@ -182,11 +189,17 @@ function composeWall(stage: ShellLayout["stage"], shell: { w: number; h: number 
   // be; `arrangeWall` fits the bands to the window this board is opening on.
   l = arrangeBoard(l, Math.floor(shell.h / (ROW_PX + GAP_PX)));
 
-  // THE MAP DOCK OPENS CLOSED, and its width is remembered anyway. `collapsed`
-  // is the open/closed flag and `size` is the width it returns to, so the first
-  // click on the dock control gives a usable panel rather than a 220px sliver.
+  // THE DOCK OPENS UNCOLLAPSED NOW, and that is the whole first-run change. With
+  // no tiles on the board `dockSize` gives the map the full width (see
+  // lib/terminal/rails.ts), so "open" and "empty" together ARE the prompt state.
+  // A collapsed dock would open this board on a blank grid instead.
   l = setSegmentSize(l, "right", WALL_DOCK_PX);
-  l = setSegmentCollapsed(l, "right", true);
+  l = setSegmentCollapsed(l, "right", false);
+
+  if (area) {
+    const ring = ringFromCircle(area);
+    if (ring.length >= 3) l = { ...l, watch: { ring } };
+  }
 
   // `segments.left` is left at its default rather than zeroed. A wall does not
   // render rails at all, so the value is invisible here — but the tiles keep
@@ -221,6 +234,29 @@ function composeRail(
   l.widgets.forEach((w, i) => { l = setWidgetHeight(l, w.id, heights[i]); });
   return l;
 }
+
+/**
+ * Where Streets opens.
+ *
+ * MEASURED, not chosen for the name. Only four host families in
+ * `lib/proxy/hls-allowlist.ts` serve playable video — Caltrans, SCDOT and two
+ * Serbian networks — so a board that promises live cameras can only open on one
+ * of those networks. Fetched from the upstream feeds on 2026-09-07: SCDOT is
+ * 771/771 live, Caltrans D11 (San Diego) 235/324, D12 (Orange County) 249/385.
+ * The densest 5 km circle of live cameras measured was San Diego at 44, on I-8
+ * just east of the 163.
+ *
+ * KNOWN GAP, stated rather than hidden: districts 3, 4, 6, 7 and 8 all returned
+ * HTTP 500 under what looked like throttling, so LOS ANGELES (D7) and the BAY
+ * AREA (D4) were never measured and either could be denser. This is the densest
+ * area measured, not the densest that exists. If those are read later and win,
+ * this constant is the only thing that changes.
+ *
+ * The three webcam ids this replaced — Trafalgar Square, Plaza Canalejas,
+ * Wenceslas Square — had ZERO live cameras between them. They were Windy stills,
+ * and TfL's JamCams are presented as stills too (see lib/cameras/classify.ts).
+ */
+export const STREETS_DEFAULT_AREA: CircleSpec = { lat: 32.7641, lon: -117.1577, radiusKm: 5 };
 
 // SIX broad boards — deliberately few. The *union* still touches every widget group
 // (all seven core cards + every signal group), so the lineup exercises the whole
@@ -286,45 +322,25 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   //
   // THE ONLY `mode: "wall"` BOARD. Authored with composeWall, which is now a
   // different shape rather than a wider rail: the tiles sit on a free twelve-column
-  // grid the user can drag and resize, and the map moves into a dock that opens
-  // closed. Everything else on the console stays on rails, and a stored layout with
-  // no `mode` at all reads as rails — which is what leaves every saved board and
-  // every `?c=` link behaving exactly as it does today.
+  // grid the user can drag and resize, and the map moves into a dock. Everything
+  // else on the console stays on rails, and a stored layout with no `mode` at all
+  // reads as rails — which is what leaves every saved board and every `?c=` link
+  // behaving exactly as it does today.
   //
   // mapCore is REQUIRED. presetLayers hard-resets cameras/webcams to false on every
   // board switch and only maps a handful of widget types back on; without this the
   // board would open with a map showing no camera pins at all.
   //
-  // THE SEEDS ROT AND THAT IS EXPECTED. These are real Windy ids, verified live on
-  // 2026-08-15, but the webcam layer is an unranked sample of a third-party
-  // catalogue and any of them can be unpublished without notice. A dead id renders
-  // an honest "no longer published" tile (see camslot.tsx / CameraImage), which is
-  // why seeding is safe at all. The fourth slot is deliberately empty: it is the
-  // affordance that teaches the board is yours to fill.
-  //
-  // `name` IS RENDERED — do not drop it. It used to be dead config: WidgetFrame drew
-  // the widget TYPE's title, so all four walls here carried the identical header
-  // "CAMERA WALL" and no user could say which tile a camera would land in. The
-  // registry's `titleOf` (see camslotTitle in camslot.tsx) now reads it. That is what
-  // makes these three strings load-bearing rather than decorative.
-  //
-  // THE WEIGHTS BELOW DO NOTHING ON THIS BOARD, and they are left equal to say so.
-  // `composeWall` hands `arrangeWall` a bare id list and `arrangeWall` takes no
-  // weights at all — it tiles uniform 4-column cards, three across. That is not a
-  // gap to be filled in later: a wall's whole proposition is that the user sizes it,
-  // so an opening size that already claimed one tile mattered more than another
-  // would be a preference the board had made on their behalf.
-  //
-  // FOUR CARDS FILLS TWO BANDS EXACTLY (3 across, then 1). The fourth is
-  // deliberately empty — see the note above.
+  // NO SEEDS ANY MORE. The three fixed webcam ids this board used to open with —
+  // Trafalgar Square, Plaza Canalejas, Wenceslas Square — had ZERO live cameras
+  // between them; see `STREETS_DEFAULT_AREA`'s own note for the measurement. The
+  // board now opens on NO tiles at all and a pre-drawn circle over the densest live
+  // cluster measured, asking the user to draw their own area rather than showing
+  // them three stills that were never the point. Tiles arrive once an area is
+  // applied — that wiring is a later task, not this one.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     mapCore: ["cameras", "webcams"],
-    build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [
-      { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641", t: "London: Trafalgar Square" }] } },
-      { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744", t: "Madrid: Cortes: Plaza Canalejas" }] } },
-      { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762", t: "Prague: Wenceslas Square" }] } },
-      { type: "camslot", weight: 3, config: { streams: [] } },
-  ]) },
+    build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [], STREETS_DEFAULT_AREA) },
 ];
 
 const KEY = "tn.console.presets.v1";

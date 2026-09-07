@@ -1,10 +1,11 @@
-import { expect, test } from "vitest";
-import { BUILTIN_PRESETS, DEFAULT_PRESET_ID } from "@/lib/console/presets";
+import { describe, expect, it, test } from "vitest";
+import { BUILTIN_PRESETS, DEFAULT_PRESET_ID, STREETS_DEFAULT_AREA } from "@/lib/console/presets";
 import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
 import { dockSize, effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
 import { COLS, MIN_H, MIN_W, overlaps } from "@/lib/terminal/layoutGrid";
 import { listWidgetTypes } from "@/lib/console/registry";
+import { haversineKm } from "@/lib/map/circle";
 import "@/lib/console/widgets";
 
 const CORE_WIDGETS = new Set(["events", "news", "aviation", "satellites", "markets", "headlines", "locate", "anomaly", "camslot"]);
@@ -18,12 +19,15 @@ const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon
 // URLs), which is why the landing board kept the id "overview" through the rename.
 const BOARD_IDS = ["overview", "streets"];
 
-// THE LANDING BOARD IS DELIBERATELY EMPTY, so "every board has at least one widget" is
-// no longer true and must not be asserted. What replaces it is narrower and still
-// catches the thing that mattered: a board may not exceed the widget cap, and only the
-// landing board may be empty. A second empty board would be a build() that silently
-// stopped composing, which is the bug the old assertion was really guarding.
-const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID]);
+// BOTH BOARDS ARE DELIBERATELY EMPTY NOW, so "every board has at least one widget" is
+// no longer true and must not be asserted. Streets joined the landing board here in
+// this task: it used to seed three webcams and now opens on no tiles at all, asking
+// the user to draw an area (see STREETS_DEFAULT_AREA). What replaces the old assertion
+// is narrower and still catches the thing that mattered: a board may not exceed the
+// widget cap. A THIRD empty board would be a build() that silently stopped composing,
+// which is the bug the old assertion was really guarding — that is still checked
+// below, just against the (now larger) set of boards allowed to be empty.
+const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID, "streets"]);
 
 // The seven core monitoring cards that must stay REGISTERED (and so addable from ⌘K)
 // even though no board features them any more. `locate` is a utility card, not a
@@ -212,6 +216,12 @@ test("a rails board carries no rectangle, and a wall board carries nothing else"
   // wall board NOT authoring one is the failure that has no symptom you can see,
   // because a tile with no rect is mounted, holds its config and its fetches,
   // and draws nothing at all.
+  //
+  // A WALL BOARD MAY NOW BE EMPTY — Streets opens on no tiles, so "every wall
+  // board has at least one widget" is no longer a safe thing to assert here (it
+  // is asserted precisely, for Streets, in the describe block below). What still
+  // matters and is still checked: every tile a wall board DOES compose carries a
+  // rect, empty or not.
   for (const p of BUILTIN_PRESETS) {
     const l = p.build({ w: 1440, h: 820 });
     const json = JSON.stringify(l);
@@ -221,7 +231,6 @@ test("a rails board carries no rectangle, and a wall board carries nothing else"
     }
 
     if (l.mode === "wall") {
-      expect(l.widgets.length, `wall board "${p.id}" is empty`).toBeGreaterThan(0);
       for (const w of l.widgets) {
         expect(w.rect, `wall board "${p.id}" leaves ${w.type} unplaced`).toBeTruthy();
       }
@@ -261,20 +270,25 @@ test("a wall board tiles inside twelve columns without overlapping itself", () =
   }
 });
 
-test("a wall board opens with its map dock closed", () => {
-  // The map is the picker, not the hero, and the wall gets the window until the
-  // user asks for the map. A dock that opened open would be the rails board with
-  // extra steps.
+// REVERSED BY THIS TASK. The dock used to open CLOSED, because a wall used to
+// open pre-filled with tiles and the map was secondary until asked for. Now a
+// wall board can open with nothing drawn on it at all (Streets), and a closed
+// dock on an empty wall would be a blank grid with no way back to the map — so
+// the dock opens OPEN, and `dockSize`'s empty-wall exception (lib/terminal/
+// rails.ts) is what turns that into an actual full-bleed map rather than a
+// 400px sliver beside an empty grid.
+test("a wall board with no tiles opens full-bleed, dock uncollapsed", () => {
   for (const p of BUILTIN_PRESETS) {
     const l = p.build({ w: 1440, h: 820 });
     if (l.mode !== "wall") continue;
-    expect(l.segments.right.collapsed, `wall board "${p.id}" opens with the dock showing`).toBe(true);
+    expect(l.segments.right.collapsed, `wall board "${p.id}" opens with its dock collapsed`).toBe(false);
     expect(
       dockSize(l, { w: 1440, h: 820 }),
-      `wall board "${p.id}" reserves width for a closed dock`,
-    ).toBe(0);
-    // …and it still remembers a width to reopen to, or the first click on the
-    // control gives a sliver clamped up from zero rather than a usable map.
+      `wall board "${p.id}" does not go full-bleed with no tiles on it`,
+    ).toBe(1440);
+    // …and it still remembers a width to reopen to once a tile lands, or the
+    // first click on the control gives a sliver clamped up from zero rather than
+    // a usable map.
     expect(l.segments.right.size, `wall board "${p.id}" forgets its dock width`).toBeGreaterThan(0);
   }
 });
@@ -367,7 +381,9 @@ const EXEMPT_GROUPS = new Set(["Civic safety"]);
 // rather than merely narrowing: a widget that no board mentions must still be reachable.
 // Every core card and every non-exempt signal group must therefore still have a
 // registered widget type, because the ⌘K palette builds itself from that registry
-// (CommandPalette.tsx) and it is now the only route to most of these.
+// (CommandPalette.tsx) and it is now the only route to most of these — including
+// `camslot` itself, now that Streets opens on no tiles at all (see the describe
+// block below) rather than the four camera slots it used to seed.
 //
 // If this goes red, a widget has become genuinely unreachable — not merely unfeatured.
 test("every core card and signal group is still REACHABLE, even with no board featuring it", () => {
@@ -382,4 +398,51 @@ test("every core card and signal group is still REACHABLE, even with no board fe
     const covered = sources.some((s) => registered.has(`signal:${s.id}`));
     expect(covered, `no registered widget for any signal in the "${group}" group`).toBe(true);
   }
+});
+
+describe("the Streets board opens on a monitored area", () => {
+  const streets = BUILTIN_PRESETS.find((p) => p.id === "streets")!;
+
+  it("is still the only wall board", () => {
+    expect(streets.build().mode).toBe("wall");
+  });
+
+  it("opens with NO tiles, so the board is a prompt", () => {
+    expect(streets.build().widgets).toEqual([]);
+  });
+
+  it("carries a default area as a ring", () => {
+    const ring = streets.build().watch?.ring;
+    expect(ring).toBeDefined();
+    expect(ring!.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("centres that area on the measured live-camera cluster", () => {
+    // San Diego, I-8 just east of the 163 — 44 live cameras within 5 km,
+    // measured from the Caltrans D11 feed on 2026-09-07.
+    expect(STREETS_DEFAULT_AREA.lat).toBeCloseTo(32.7641, 3);
+    expect(STREETS_DEFAULT_AREA.lon).toBeCloseTo(-117.1577, 3);
+    expect(STREETS_DEFAULT_AREA.radiusKm).toBe(5);
+  });
+
+  it("puts every ring vertex the stated radius from the centre", () => {
+    for (const [lon, lat] of streets.build().watch!.ring) {
+      expect(haversineKm(STREETS_DEFAULT_AREA, { lat, lon })).toBeCloseTo(5, 1);
+    }
+  });
+
+  it("no longer seeds the three fixed webcam ids", () => {
+    const json = JSON.stringify(streets.build());
+    for (const dead of ["1420893641", "1606332744", "1345327762"]) {
+      expect(json).not.toContain(dead);
+    }
+  });
+
+  it("opens with the dock UNCOLLAPSED, so the prompt is a visible map", () => {
+    expect(streets.build().segments.right.collapsed).toBe(false);
+  });
+
+  it("still asks for the camera and webcam layers", () => {
+    expect(streets.mapCore).toEqual(["cameras", "webcams"]);
+  });
 });

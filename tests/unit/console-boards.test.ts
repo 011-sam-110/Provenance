@@ -131,13 +131,20 @@ test("layoutSignature: an unedited board's freshly-built layout matches its own 
 // the board-archive machinery (applyPreset / resetActiveBoard / isBoardEdited), never
 // the identity of a particular board — they only need one board that HAS widgets to
 // resize and a second board to switch away to. "earth" (Hazards) and "situation"
-// (Conflict) were removed, so the non-empty board is now Streets and the away-board is
-// the landing globe, which is empty and therefore cannot be the one being resized.
+// (Conflict) were removed, so the away-board is the landing globe, which is empty and
+// therefore cannot be the one being resized.
+//
+// STREETS ITSELF WENT EMPTY TOO (task: open it on a monitored area instead of three
+// fixed webcams), so neither built-in board opens with a widget any more. Every test
+// below that needs one to drag now adds it itself with `shellLayoutStore.add(...)`
+// right after opening the board — the archive machinery under test does not care
+// which widget it is archiving, only that it is archiving the RIGHT board's widget.
 test("REGRESSION: a board switch no longer destroys the board you came from", async () => {
   const { applyPreset } = await import("@/lib/console/presets");
   const { shellLayoutStore } = await import("@/lib/console/store");
 
   applyPreset("streets");
+  shellLayoutStore.add("camslot", { segment: "left" });
   const moved = shellLayoutStore.get().widgets[0];
   // Stand in for a drag: the store's write path for a height change.
   shellLayoutStore.resizeWidget(moved.id, 620);
@@ -148,7 +155,7 @@ test("REGRESSION: a board switch no longer destroys the board you came from", as
 
   expect(
     shellLayoutStore.get().widgets.find((w) => w.id === moved.id)?.height,
-    "the card came back where the template puts it, not where the user left it",
+    "the card came back where the user left it, not stripped by the switch",
   ).toEqual(edited);
 });
 
@@ -169,13 +176,18 @@ test("a drag marks the board edited; Reset puts the template back and clears the
   const { isBoardEdited } = await import("@/lib/console/boards");
 
   applyPreset("streets");
-  const template = shellLayoutStore.get().widgets.map((w) => w.height);
+  shellLayoutStore.add("camslot", { segment: "left" });
   shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
   expect(isBoardEdited("streets")).toBe(true);
 
   resetActiveBoard();
 
-  expect(shellLayoutStore.get().widgets.map((w) => w.height)).toEqual(template);
+  // The template itself is empty now (Streets opens on no tiles), so Reset does
+  // not restore a height — it throws the added widget away entirely, back to
+  // the board's authored (empty) shape. That is a stronger claim than the old
+  // one, not a weaker one: it proves an edit is discarded completely rather than
+  // merely un-resized.
+  expect(shellLayoutStore.get().widgets, "reset did not return to the empty template").toEqual([]);
   expect(isBoardEdited("streets"), "a reset board must not still read as edited").toBe(false);
 });
 
@@ -185,6 +197,7 @@ test("edits to one board do not leak into another board's slot", async () => {
   const { isBoardEdited } = await import("@/lib/console/boards");
 
   applyPreset("streets");
+  shellLayoutStore.add("camslot", { segment: "left" });
   shellLayoutStore.resizeWidget(shellLayoutStore.get().widgets[0].id, 620);
   applyPreset("overview");
 
