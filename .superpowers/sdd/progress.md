@@ -430,6 +430,95 @@ QUEUED FOR FINISHING (behind Task 11's writer):
     `as any` or debugger anywhere in the added lines. Seven new source modules, ten new test
     files, one component.
 
+MERGED origin/main INTO THE BRANCH (b0df17c), 12 commits, and it was a real integration
+  rather than a textual clash. #191 redefined a preset as THE WHOLE WORKSPACE — core
+  layers + signal layers + board — deleted lib/monitors.ts into lib/console/presets.ts,
+  took the lineup from 2 boards to SEVEN presets, replaced `composeRail` with a
+  multi-rail `compose`, and renamed ConsolePreset's `mapCore`/`mapSignals` to
+  `layers`/`signals`. Two conflicts, both in the Streets path: lib/console/presets.ts
+  and tests/unit/console-presets.test.ts.
+  RESOLVED BY TAKING MAIN'S FILE WHOLESALE and re-applying our four deltas onto it,
+  rather than hand-merging hunks: the `area?: CircleSpec` parameter on composeWall, the
+  dock opening UNCOLLAPSED, STREETS_DEFAULT_AREA, and the Streets preset building an
+  empty wall. Main's own Streets preset still seeded the three dead webcams (London /
+  Madrid / Prague) that this whole branch exists to replace, so ours wins there; main's
+  `layers: ["cameras", "webcams"]` is kept because it is new information.
+  The dock-collapsed reversal is the one place we deliberately overrule main. Main's
+  comment ("the dock opens closed, and its width is remembered anyway") was written when
+  a wall always ARRIVED with cards on it. Streets now opens EMPTY, so there is nothing
+  for the dock to crowd and the map IS the first screen. `size` is still set, so the
+  remembered-width behaviour that note protects is unchanged once tiles exist. The
+  source now says that rather than silently flipping a boolean someone reasoned about.
+  Also had to `npm install` — #192 added posthog-js. CHECKED FIRST that node_modules
+  here is a REAL directory and not a junction to the main checkout (no reparse point,
+  88 entries vs the main checkout's 97), because installing into a shared node_modules
+  would have reached peers on other branches. It is not shared.
+  Suite after the merge: 341 files / 3418 tests, tsc clean.
+
+Task 12: COMPLETE (a393622). Gate opened: `setExternalDraw` IS now exported from
+  lib/map/aoi.ts on origin/main (line 106), so #187 landed. The gate was the GREP and
+  it paid for itself — checked the symbol, not the PR number.
+  THE PLAN'S SNIPPET WOULD NOT HAVE COMPILED. It gave
+  `{ tool: "circle", center: state.center, radiusKm }`, but DrawState requires `active`
+  and `vertices`, and its `center` is a [lon, lat] TUPLE while this module passes
+  { lat, lon } around — so the obvious hand-over drops required fields AND swaps the
+  coordinate order, which would have put the circle on the wrong side of the planet and
+  made the banner read a latitude as a longitude. Implemented against the signature.
+  That is the FOURTH plan defect this execution has found; the plan is a good map and a
+  bad contract.
+  Publishing rides on emit() rather than sitting at the four sites that assign local
+  state, so the local store and the shared one cannot drift.
+  A GUARD I WROTE AND THEN DELETED, which is the Task 9 lesson applied to myself: I
+  first added an aoiDrawStore subscription to tear the gesture down if the shared state
+  stopped being our circle. It CANNOT FIRE — `startDraw` self-guards with
+  `if (draw.active) return false`, so nothing else can take the store while we publish
+  active, and this module is the only caller of setExternalDraw in the tree. Deleted,
+  and the source says why, because a guard that cannot fire makes the next reader
+  believe the case is handled.
+  KNOWN GAP, SURFACED NOT PAPERED OVER: DrawBanner renders a Cancel button
+  unconditionally and it cannot reach this gesture. `cancelDraw()` is only
+  `cancelActive?.()`; `setExternalDraw` documents that it does not touch cancelActive;
+  and cancelActive is module-private to aoi.ts with no exported setter. So while a
+  circle runs, that button is a no-op that does not even clear the shared state. Escape
+  still cancels and the button names Esc on its face. The fix is ~4 lines in aoi.ts
+  (optional `onCancel` on setExternalDraw, called by cancelDraw) — ANOTHER
+  WORKSTREAM'S FILE, so it is raised with them and with Sam rather than reached into.
+  Six tests, mutation-proven: removing publish() from emit turns all six red, swapping
+  the centre tuple order turns the coordinate test red. TWO OF THEM WERE VACUOUS at
+  first — they asserted only that the state ends idle, which is trivially true of a
+  gesture that never published, and both survived the first mutation. Fixed by
+  asserting active mid-gesture before asserting idle after.
+
+CameraVideo bench fix: COMPLETE (e1e8914), the last queued item.
+  Two separate problems, and they needed two pieces of state rather than one.
+  (1) CameraVideo reported NOTHING through onOutcome, so a live camera whose HLS was
+      dead fell back to a still silently, was never benched, and was re-fetched every
+      rotation. It now takes an optional onOutcome and passes it THROUGH to the still,
+      so the still is what says whether the CAMERA is dead as opposed to just its video.
+  (2) A tile remounts CameraVideo on every rotation with a fresh failed=false, so a dead
+      stream re-ran the entire handshake each visit before falling back to the still it
+      was always going to show. Now memoised per stream id.
+  THE MEMO IS NOT THE BENCH and must not become it: the bench decides whether a stream
+  is rotated through AT ALL (two strikes), and a camera with dead video but a working
+  still should stay in rotation showing that still. The memo decides only whether the
+  video handshake is worth retrying. It expires on the bench's clock (RETRY_AFTER_MS,
+  imported not retyped, with a test pinning that they are one number) and is cleared
+  outright when frames arrive. A permanent memo would be exactly the invisible false
+  negative I argued console-ux out of on their never-started timeout this week.
+  IT LIVES IN lib/cameras/videoFatal.ts, NOT IN THE COMPONENT, and that is not tidiness:
+  vitest is node-environment with no React testing library, so a decision left inside a
+  component is a decision no test in this repo can reach. I wrote it as component-local
+  module state first, found the only test I could write was the empty-memo case — which
+  would pass against a memo that never recorded anything — and moved it out.
+  Six tests, mutation-proven: deleting the expiry line turns two red.
+
+BRANCH STATE AT THE FINAL REVIEW: 47 commits, 42 files, +6384/-145 against origin/main.
+  Suite 343 files / 3430 tests, tsc clean. All 12 tasks complete. Final whole-branch
+  review dispatched on the most capable model against
+  .superpowers/sdd/review-463d496..e1e8914.diff.
+  STILL NOT GREEN: scripts/verify-streets-area.mjs cannot complete while the console
+  renders 0 cameras (see Task 11). That is reproducible on main and undiagnosed.
+
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
   planar ray-casting with no seam unwrapping. Affects the EXISTING polygon AOI tool as well
