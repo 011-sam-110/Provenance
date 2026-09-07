@@ -32,7 +32,8 @@ Environment=CADDY_LOG_DIR=/var/log/caddy
 Environment=CADDY_LOG_NAME=provenance.log
 Environment=ROLLUP_SELF_HOST=provenance-online.com
 # Keeps V8 well under the box's headroom. The job is streaming and never holds a whole
-# log file, but a runaway here would be competing with Next for 2 GB of RAM and no swap.
+# log file, but a runaway here would be competing with Next for 1,907 MB of RAM, and
+# spilling into the 2 GB swapfile would slow the live server rather than just this job.
 Environment=NODE_OPTIONS=--max-old-space-size=192
 
 # Least privilege for something that runs as root every five minutes. It needs to read

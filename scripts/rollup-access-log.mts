@@ -9,9 +9,11 @@
 // visitor data is a bigger change than running a counter that opens no sockets.
 //
 // NO BUILD STEP, AND THAT IS WHY THE IMPORTS CARRY .ts EXTENSIONS. Node 24 strips
-// TypeScript types natively. The box deliberately cannot run `next build` — 2 GB, no
-// swap, measured at 1,907 MB mid-build — so anything needing compilation on the box
-// could not be deployed to it at all. `.mts` rather than `.ts` because package.json is
+// TypeScript types natively. The box does not build this app: it has 1,907 MB of RAM
+// and `next build` was measured peaking at 1,907 MB, so a build would run entirely out
+// of the 2 GB swapfile deploy/provision.sh creates, while competing with the live
+// server for the same memory. Anything needing compilation on the box therefore could
+// not be deployed to it in practice. `.mts` rather than `.ts` because package.json is
 // not `"type": "module"`, which would make a plain `.ts` file CommonJS and reject every
 // import below.
 //
