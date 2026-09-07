@@ -277,9 +277,26 @@ export const inspectorStore = {
     };
   },
 
-  /** Pull persisted contexts back in. Called once from ConsoleShell, client-side. */
+  /**
+   * Pull persisted AREAS back in. Called once from ConsoleShell, client-side,
+   * AFTER variantStore.bootstrap().
+   *
+   * WORLD IS DELIBERATELY NOT RESTORED, and the ordering is not incidental. The
+   * variant spine is, in its own words, "the ONLY load-time hydration path": every
+   * boot runs applyVariant, which calls layersStore.applyExact and
+   * signalsStore.applyExact and so re-derives World's whole set. Persisting a
+   * second copy of it here would be two owners for one piece of state — the exact
+   * bug the Sources/Inspector split exists to avoid — and it was destructive, not
+   * merely redundant: with an area loaded, bootstrap's writes land on the AREA, so
+   * one reload replaced a user's area configuration with the variant's layers.
+   * Measured on a preview before this ordering was fixed.
+   *
+   * So World's toggles persist where they already did for 71 days, as a delta in
+   * tn.variant.v1; this store persists the areas, which nothing else knows about.
+   */
   hydrate() {
-    commit(coerceState(loadPersisted<InspectorState>(PERSIST_KEY, PERSIST_VERSION)));
+    const saved = coerceState(loadPersisted<InspectorState>(PERSIST_KEY, PERSIST_VERSION));
+    commit({ ...saved, world: state.world });
   },
 
   /** Save a drawn ring as an area. Returns its id, or null for a ring that is not one. */

@@ -11,8 +11,13 @@ const RING: [number, number][] = [
 ];
 
 beforeEach(() => {
-  // A clean store between tests — hydrate with nothing persisted resets to empty.
+  // A clean store between tests. hydrate() alone is NOT a reset any more: it
+  // deliberately preserves World, because the variant spine owns that half and
+  // re-derives it on every boot. So World is cleared explicitly — with nothing
+  // loaded, replaceSources writes World.
   inspectorStore.hydrate();
+  inspectorStore.load(null);
+  inspectorStore.replaceSources({});
 });
 
 test("with nothing loaded, layersStore reads World and matches today's defaults", () => {
@@ -124,4 +129,40 @@ test("the two stores share one map and must not wipe each other's half", () => {
   layersStore.applyExact({ ...DEFAULT_STATE, planes: false });
   expect(signalsStore.isOn("conflict-coverage")).toBe(true);
   expect(layersStore.get().planes).toBe(false);
+});
+
+// --- the two the BROWSER found, that no unit test could have --------------------
+
+test("hydrate restores areas but leaves World to the variant spine", () => {
+  // variantStore.bootstrap is, in its own words, the ONLY load-time hydration path:
+  // it re-derives World's whole set on every boot. If this store restored World too
+  // there would be two owners for one piece of state, and the loser was the user:
+  // with an area loaded, bootstrap's writes landed on the AREA and one reload
+  // replaced its sources with the variant's layers. Measured on a preview.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  layersStore.set("planes", false);
+  const worldBefore = { ...inspectorStore.get().world };
+  inspectorStore.hydrate();
+  expect(inspectorStore.get().world).toEqual(worldBefore);
+  // The area is gone because nothing is persisted in this environment — the point
+  // is only that World was NOT reset out from under the variant.
+  expect(inspectorStore.get().areas.some((a) => a.id === id)).toBe(false);
+});
+
+test("a toggle inside an area is not captured as the variant's override", async () => {
+  const { variantStore } = await import("@/lib/variants/store");
+  // bootstrap is what SUBSCRIBES captureOverride. Without this call nothing is
+  // listening and the assertion below passes whatever the guard does — which is
+  // exactly what the first cut of this test did.
+  variantStore.bootstrap(new URLSearchParams(""));
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.load(id);
+  const before = JSON.stringify(variantStore.get().overrides);
+  layersStore.set("planes", true);
+  signalsStore.set("earthquakes", true);
+  // layersStore/signalsStore project the LOADED context and are what captureOverride
+  // subscribes to. Without the guard, an area's set is written into the variant's
+  // override and unloading leaves the globe wearing the area's toggles — the exact
+  // leak the contexts model exists to prevent.
+  expect(JSON.stringify(variantStore.get().overrides)).toBe(before);
 });

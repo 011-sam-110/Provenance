@@ -85,9 +85,15 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // uiStore.hydrate() applies the persisted data-theme before paint; variantStore
   // then re-asserts the variant's theme. Order matters.
   useEffect(() => {
-    inspectorStore.hydrate();
     uiStore.hydrate();
+    // BEFORE inspectorStore.hydrate(), and that order is load-bearing. bootstrap
+    // applies the variant through layersStore/signalsStore, which write whichever
+    // source context is LOADED — so restoring a loaded area first made every reload
+    // overwrite that area's sources with the variant's layers. Nothing is loaded
+    // yet at this point, so the writes land on World, which is what a variant
+    // configures. Then the Inspector restores the areas and which one was loaded.
     variantStore.bootstrap(new URLSearchParams(window.location.search));
+    inspectorStore.hydrate();
     watchlistStore.hydrate();
     timeWindowStore.hydrate();
     langStore.hydrate();

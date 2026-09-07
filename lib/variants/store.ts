@@ -6,6 +6,7 @@ import type { OverrideDelta, PanelPlacement, Variant } from "@/lib/variants/type
 import { resolveSignals } from "@/lib/variants/resolveSignals";
 import { diffFromVariant, isEmptyDelta } from "@/lib/variants/diff";
 import { layersStore, DEFAULT_STATE, type LayerState } from "@/lib/layers";
+import { inspectorStore } from "@/lib/shell/inspector";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
 import { uiStore } from "@/lib/shell/ui";
 import { cameraFilterStore } from "@/lib/cameraFilter";
@@ -57,6 +58,13 @@ function emit() { for (const l of listeners) l(); }
 
 function captureOverride() {
   if (applying) return;
+  // Only World's toggles belong to a variant. layersStore/signalsStore now project
+  // whichever source context is loaded, and they are what this is subscribed to, so
+  // without this guard every toggle made INSIDE an area — and the act of loading one
+  // — would be captured as the variant's override. Unloading would then leave the
+  // globe wearing the area's set, which is exactly the leak the contexts model
+  // exists to prevent.
+  if (inspectorStore.get().loaded !== null) return;
   const v = resolveVariant(state.activeId);
   const delta = diffFromVariant(
     { layers: layersStore.get(), signals: signalsStore.get(), theme: uiStore.get().theme },
