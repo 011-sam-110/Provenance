@@ -63,6 +63,23 @@ widening `DrawTool` with `"circle"`. The circle calls it on start, finish and ca
 `isDrawing()` and their `DrawBanner` cover this gesture for free. **No parallel flag is
 hand-rolled** — until that export lands, the circle owns its own cue and fakes no draw state.
 
+Three points of that are contract rather than detail, given by console-ux on 2026-09-07:
+
+- **`center` and `radiusKm` must be reported from the first mousemove, not on release.**
+  `DrawBanner` already narrates `"circle"` — press prompt, then the live radius — off exactly those
+  two fields. A gesture that withholds `center` until the end leaves the banner stuck on the press
+  prompt for the whole drag, which looks like a dead tool.
+- **`setExternalDraw` does not paint.** The draft layers belong to their gestures; the circle owns
+  its own geometry on the map and this call publishes state only.
+- **It does not touch `cancelActive`.** The circle's Cancel runs its own teardown *first*, then
+  calls `setExternalDraw(null)`.
+
+Their work is on `feat/console-nav-and-areas` and is **not on `main`**. PR #186 has since merged
+WITHOUT `setExternalDraw` — the export is now expected in PR #187. This branch stays on
+`origin/main` and adopts the call once it lands, rather than branching off an unreviewed PR for the
+sake of one function call. **The gate is the symbol, never the PR number**: the check is a grep for
+`setExternalDraw` in `lib/map/aoi.ts` on `origin/main`, which is what caught #186 not carrying it.
+
 ### 2.3 Monitor
 
 The dock returns to its existing `WALL_DOCK_PX` (400) and the tiles appear. At 1440px that leaves
