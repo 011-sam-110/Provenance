@@ -260,9 +260,9 @@ export default async function Landing() {
           <div>
             <h4>Attribution</h4>
             <p>
-              Powered by TfL Open Data. Webcams provided by Windy.com. Basemap © CARTO, ©
-              OpenStreetMap contributors. Contains public sector information licensed under the
-              Open Government Licence. Star catalogue:{" "}
+              Powered by TfL Open Data. Webcams provided by Windy.com. Basemap © OpenFreeMap, ©
+              OpenMapTiles, data from © OpenStreetMap contributors. Contains public sector
+              information licensed under the Open Government Licence. Star catalogue:{" "}
               <a href="https://codeberg.org/astronexus/hyg" target="_blank" rel="noreferrer noopener">
                 HYG database v4.4
               </a>{" "}

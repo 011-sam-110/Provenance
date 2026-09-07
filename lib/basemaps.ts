@@ -52,7 +52,7 @@ export interface BasemapDef {
   vector: boolean;
 }
 
-// Keyless CARTO glyph server, used ONLY by the three inline raster styles below —
+// Keyless CARTO glyph server, used ONLY by the two inline raster styles below —
 // a raster style ships no `glyphs` of its own, and without one every symbol layer we
 // add drops its text silently. The vector entries never touch this: they carry
 // OpenFreeMap's own glyph endpoint inside their style document.
@@ -61,7 +61,18 @@ export interface BasemapDef {
 // rather than for tiles. It serves MAP_LABEL_FONT ("Noto Sans Regular"), which is the
 // point — see the measurement beside that constant for why the two glyph servers
 // force that particular stack.
+//
+// FONTS ARE NOT WATERMARKED and that is why this survived the hero's move off CARTO
+// (see DARK_STYLE_URL). The watermark is rasterised into the map tiles; a glyph PBF
+// carries no pixels to stamp. Re-measured 2026-09-08: the fonts endpoint still answers
+// 200 keyless. If CARTO ever gates it too, the failure is the silent one described
+// above — dropped labels, no error — so check it here first.
 const CARTO_GLYPHS = "https://tiles.basemaps.cartocdn.com/fonts/{fontstack}/{range}.pbf";
+
+// OpenFreeMap's glyph endpoint, lifted out of its style documents so DARK_FALLBACK_STYLE
+// can name it. The hosted vector styles carry this same URL inside themselves; the
+// fallback has no style document to inherit it from.
+const OFM_GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
 
 // The fontstack every symbol layer WE add asks for, and the one measurement that
 // picks it.
@@ -152,31 +163,53 @@ const ESRI_STYLE: StyleSpecification = {
 // EXPORTED, THOUGH IT IS NO LONGER A BASEMAP. Dark left the registry with the
 // console's dark skin, so it is not offered in any basemap switcher — but the
 // LANDING page's hero is a deliberate night stage (`.pv-night`, server-rendered so a
-// cold load does not flash daylight) and CARTO Dark Matter is the map half of it.
-// Removing the style along with the registry entry would have turned the hero white,
-// which is a marketing-page regression nothing in the console suite would have
-// caught. Same treatment as POSITRON_STYLE_URL below: the style is still available to
-// a caller that names it, it is just not something a user can pick.
-export const DARK_STYLE: StyleSpecification = {
+// cold load does not flash daylight) and this is the map half of it. Removing the
+// style along with the registry entry would have turned the hero white, which is a
+// marketing-page regression nothing in the console suite would have caught. Same
+// treatment as POSITRON_STYLE_URL below: the style is still available to a caller
+// that names it, it is just not something a user can pick.
+//
+// IT IS NO LONGER CARTO, AND THAT IS NOT HOUSEKEEPING. CARTO now stamps every
+// unauthenticated tile from basemaps.cartocdn.com with a diagonal
+// "API KEY REQUIRED · carto.com/basemaps/apikey" watermark, burned into the raster.
+// Measured 2026-09-08 against both localhost and the deployed site: the watermark is
+// on production right now, repeated across the whole sphere behind the headline.
+//
+// NOTHING IN THE APP COULD HAVE CAUGHT IT. The watermarked tiles are served with
+// HTTP 200 — a normal image of the right size — so there is no failed request, no
+// console error, and lib/map/resilience.ts never fires because nothing failed. The
+// only detector available was looking at it.
+//
+// The replacement is OpenFreeMap, which is where the console's own basemaps already
+// went (see POSITRON_STYLE_URL): OSM data under ODbL, no key, no watermark, and
+// self-hostable if the hosted instance ever goes the same way. It also serves its own
+// glyphs, so the hero no longer touches CARTO at all.
+export const DARK_STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+
+// THE PRICE OF THAT MOVE, PAID HERE. The old DARK was an INLINE StyleSpecification, so
+// it could not fail to load — only its tiles could, and a missing tile is cosmetic.
+// A style URL is a fetch, and if it fails `style.load` never fires; on the hero that
+// means no basemap AND no signal layers, because HeroGlobe adds all of them in that
+// handler. That is precisely the "permanent black rectangle" failure lib/map/resilience.ts
+// was written for, and moving the hero to a URL without a floor would have introduced
+// it on the front page.
+//
+// So the floor is inline and deliberately almost empty: the night ground and nothing
+// else. Degrading to a dark sphere still carrying every live signal layer is a hero
+// that has lost its basemap; degrading to nothing is a hero that has lost its argument.
+//
+// `glyphs` is set even though today's only caller cannot need it — HeroGlobe adds
+// circles and lines and no symbol layer at all, so nothing here asks for a fontstack.
+// It is here because the omission fails SILENTLY: a symbol layer whose style has no
+// glyphs endpoint draws its icon and drops its text without throwing or warning, so
+// the first label layer anyone adds to the hero would go missing with nothing to
+// explain it. It points at OpenFreeMap rather than CARTO_GLYPHS to keep the promise
+// this file now makes twice over — that the hero touches no CARTO host.
+export const DARK_FALLBACK_STYLE: StyleSpecification = {
   version: 8,
-  glyphs: CARTO_GLYPHS,
-  sources: {
-    "carto-dark": {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      maxzoom: 20,
-      attribution: "© CARTO · © OpenStreetMap contributors",
-    },
-  },
-  layers: [
-    { id: "background", type: "background", paint: { "background-color": "#06080b" } },
-    { id: "carto-dark", type: "raster", source: "carto-dark" },
-  ],
+  glyphs: OFM_GLYPHS,
+  sources: {},
+  layers: [{ id: "background", type: "background", paint: { "background-color": "#06080b" } }],
 };
 
 // OpenTopoMap — keyless topographic raster (relief + contours).
