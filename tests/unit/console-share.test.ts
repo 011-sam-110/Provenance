@@ -1,12 +1,25 @@
 import { expect, test } from "vitest";
 import { encodeLayout, decodeLayout } from "@/lib/console/share";
-import { BUILTIN_PRESETS } from "@/lib/console/presets";
 import { createDefaultLayout, MAX_WIDGETS, type ShellLayout } from "@/lib/console/types";
 
 test("encode→decode round-trips a layout", () => {
-  // Was the Hazards board, which no longer exists. Streets is now the only built-in
-  // with widgets on it, and a round-trip needs widgets to be worth anything.
-  const l = BUILTIN_PRESETS.find((p) => p.id === "streets")!.build();
+  // Built explicitly rather than pulled from a built-in preset. This used to read
+  // the Hazards board, then the Streets board once Hazards was removed — both
+  // times riding on "whichever built-in still happens to carry widgets" instead
+  // of asserting anything itself. That stopped being safe the day Streets also
+  // went empty (it now opens on a bare map with a pre-drawn circle, asking the
+  // user to draw their own area — see lib/console/presets.ts): the last assertion
+  // below silently became `expect([]).toEqual([])`, passing whether or not
+  // encode/decode preserved widgets at all. A layout built here, with its own
+  // widgets, can't go quiet that way no matter what any preset does next.
+  const l = {
+    segments: createDefaultLayout().segments, stage: "map2d",
+    widgets: [
+      { id: "a", type: "clock", segment: "left", order: 0, height: 260, collapsed: false, config: {} },
+      { id: "b", type: "aviation", segment: "left", order: 1, height: 300, collapsed: false, config: {} },
+      { id: "c", type: "camslot", segment: "right", order: 0, height: 280, collapsed: false, config: {} },
+    ],
+  } as unknown as ShellLayout;
   const round = decodeLayout(encodeLayout(l));
   expect(round?.stage).toBe(l.stage);
   expect(round?.widgets.map((w) => w.type)).toEqual(l.widgets.map((w) => w.type));
