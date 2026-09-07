@@ -5772,6 +5772,54 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-fb-btn.is-ghost:hover:not(:disabled) { color: var(--tn-text); background: var(--tn-surface-2); }
 @media (prefers-reduced-motion: reduce) { .tn-fb-card { animation: none; } }
 
+/* ── The live-build warning ─────────────────────────────────────────────────
+   z-index 1200: above the feedback modal (1100) and the Discord note (1050). If
+   any two ever coincide, this is the one that has to be readable, and the z-order
+   settles it with no cross-component wiring. */
+.tn-dev { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 16px; }
+.tn-dev-veil { position: fixed; inset: 0; background: rgba(15, 23, 42, .62); }
+.tn-dev-card {
+  position: relative; width: min(540px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;
+  background: var(--tn-surface); border: 1px solid var(--tn-border); border-radius: 14px;
+  box-shadow: 0 24px 64px -28px rgba(15, 23, 42, .55);
+}
+.tn-dev-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--tn-border); }
+.tn-dev-flag {
+  display: inline-block; font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: .1em;
+  /* The "lagging" ink/tint pair, not "down": this is a caution, not a failure. Both
+     are contrast-tuned for text on a light surface (see the status INK block). */
+  text-transform: uppercase; color: var(--tn-lagging-ink); background: var(--tn-lagging-bg);
+  border-radius: 999px; padding: 3px 10px; margin-bottom: 9px;
+}
+.tn-dev-title { margin: 0; font-size: var(--tnx-fs-lg); font-weight: 700; color: var(--tn-text); }
+.tn-dev-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 13px; }
+.tn-dev-lead { margin: 0; font-size: var(--tnx-fs-md); line-height: 1.55; color: var(--tn-text); }
+.tn-dev-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 9px; }
+.tn-dev-list li { font-size: var(--tnx-fs-md); line-height: 1.5; color: var(--tn-text-muted); }
+.tn-dev-list b { color: var(--tn-text); }
+.tn-dev-legal {
+  margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.55; color: var(--tn-text-muted);
+  border-left: 2px solid var(--tn-border-strong); padding-left: 10px;
+}
+.tn-dev-ask { margin: 0; font-size: var(--tnx-fs-md); line-height: 1.5; color: var(--tn-text-muted); }
+/* STICKY, because the card is the scroll container. On a phone the text is taller
+   than the viewport, so a static action bar leaves "I understand" below the fold and
+   the only way out of a modal is something you have to go looking for. */
+.tn-dev-actions {
+  position: sticky; bottom: 0; background: var(--tn-surface);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 13px 20px 16px; border-top: 1px solid var(--tn-border);
+}
+.tn-dev-btn {
+  display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
+  font: inherit; font-size: var(--tnx-fs-md); font-weight: 600; padding: 8px 16px; border-radius: 8px;
+  border: 1px solid var(--tn-border-strong); background: var(--tn-surface-2); color: var(--tn-text);
+  cursor: pointer;
+}
+.tn-dev-btn.is-primary { background: var(--tn-accent); border-color: transparent; color: #fff; }
+.tn-dev-btn.is-primary:hover { background: var(--tn-accent-strong); }
+.tn-dev-btn.is-discord:hover { border-color: var(--tn-accent); color: var(--tn-accent-strong); }
+
 /* ── The Discord invitation ─────────────────────────────────────────────────
    A corner note, not a banner and not a modal: no veil, no focus trap, nothing
    behind it goes inert. It takes the console's own card surface, border and

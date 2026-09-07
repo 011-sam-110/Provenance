@@ -33,6 +33,7 @@ import SkipLink from "@/components/shell/SkipLink";
 import CommandPalette from "@/components/shell/CommandPalette";
 import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
 import CommunityNote from "@/components/shell/CommunityNote";
+import DevNotice from "@/components/shell/DevNotice";
 import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
@@ -336,6 +337,13 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           Mounted AFTER FeedbackPrompt for readability only — the two are ordered by
           z-index (1050 under 1100), not by DOM position. */}
       <CommunityNote />
+      {/* Gates itself the same way (lib/shell/devnotice.ts). Mounted last and sitting
+          at z-index 1200, above both of the above: while access codes are being handed
+          out, this is the first thing a new tester sees, and it is the only place they
+          are told the data is unverified and the software unwarranted. It holds for the
+          boot plate and nothing else — a warning that waits is a warning that arrives
+          after the bug it was about. */}
+      <DevNotice />
       {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
           disappearing with its text. A live region has to already be in the
           accessibility tree when its content changes for the change to be

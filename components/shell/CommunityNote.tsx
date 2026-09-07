@@ -143,8 +143,14 @@ export default function CommunityNote() {
           </div>
           <div className="tn-note-body">
             <p className="tn-note-title">Join our Discord!</p>
+            {/* This used to lead with "say what is broken", which the live-build notice
+                (components/shell/DevNotice.tsx) now asks for directly and at much greater
+                length, on arrival. Two cards competing for the same request trains people
+                to skim both, so this one drops the duplicate and keeps the half the notice
+                does NOT cover: the people. The "new and quiet" line stays — being honest
+                that it is small reads as an invitation rather than a claim to be checked. */}
             <p className="tn-note-text">
-              Ask for a camera or a layer, say what is broken, or watch what gets built. It is
+              Join if you want to chat about the project and meet the people using it. It is
               new and quiet — come and make it less so.
             </p>
             <div className="tn-note-actions">
