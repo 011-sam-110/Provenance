@@ -503,7 +503,7 @@ export function useInspector(): InspectorState {
 - [ ] **Step 4: Run the test and watch it pass**
 
 Run: `npx vitest run tests/unit/inspector-store.test.ts`
-Expected: PASS, 15 tests.
+Expected: PASS, 16 tests.
 
 - [ ] **Step 5: Run the full gate**
 
@@ -793,11 +793,23 @@ Both stores keep their exact public API and become views onto whichever context
 is loaded. No call site changed: WorldMap, SourceCatalog, monitors, presetLayers,
 presets, PresetBar and the palette all still call toggle/set/get unedited.
 
-This also fixes a bug the two files' own comments had been denying. Both claimed
-toggle state survived a reload; both exposed a hydrate() that NOTHING in the tree
-called, so every reload silently reset layers to DEFAULT_STATE and signals to {}.
-ConsoleShell hydrates seventeen stores and neither was among them. Rehydration now
-happens once, in inspectorStore.
+This is also a REVERT of an accidental deletion, not a new feature, and one git
+show makes that visible:
+
+  git log -S \"layersStore.hydrate\" origin/main   ->  41cf2b9
+  git show 41cf2b9 -- components/shell/ConsoleShell.tsx
+
+41cf2b9, 2026-06-27, \"wire ConsoleShell to the variant spine\", rewrote the hydrate
+block and dropped two stores out of it. Its parent has layersStore.hydrate() and
+signalsStore.hydrate() at ConsoleShell.tsx lines 34 and 35; the commit shows them as
+two minus lines while alertStore and langStore are re-added in the same hunk. Nothing
+adds them back. That is 474 commits and 71 days on main.
+
+So layer and signal toggles have not survived a reload since 2026-06-27, and both
+files' headers have described the behaviour of the code that used to be there --
+lib/layers.ts still says \"persisted to localStorage so a composed view survives a
+reload\", and lib/signals/store.ts says the same. This makes the code match its
+documentation again. Rehydration now happens once, in inspectorStore.
 
 Also corrects the LayerKey comment: weather left SIGNALS in #177 and the rail
 stopped drawing signposts for either planned key before that."
