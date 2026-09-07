@@ -5,27 +5,69 @@
 # supervision. THE DNS A RECORD MUST ALREADY POINT HERE before the first start: issuance
 # is an HTTP-01 challenge against the name, so a reload before DNS resolves burns a
 # failed attempt against Let's Encrypt's rate limit rather than producing a certificate.
-
-# GLOBAL OPTIONS. This block masks addresses in the DEFAULT logger, and it exists
-# because the site-level `log` block at the bottom of this file does NOT cover
-# everything. Caddy splits its logging in two:
-#
-#   http.log.access.log0  -> the site's own `log` block  -> the file, filtered.
-#   http.log.error.log0   -> the DEFAULT logger          -> stderr, so journald.
-#
-# Both carry `request>remote_ip` and `request>client_ip` in full. Only the first was
-# filtered, so every 502, every timeout and every refused upstream wrote a complete
-# visitor address into the systemd journal — where it is retained, rotated by journald's
-# own rules rather than ours, and readable by anyone who can read the journal. The
-# access log looked masked, which is exactly what made it easy to miss.
-#
-# app/(site)/privacy tells visitors this server does not record their IP address. That
-# sentence has to be true of BOTH streams, so the same 16/32 mask is applied here.
 {
+	# TRUSTED PROXIES, AND THIS IS WHAT MAKES THE ACCESS LOG MEAN ANYTHING AGAIN.
+	#
+	# Cloudflare terminates the visitor's TLS and opens its own connection to this box,
+	# so from Caddy's point of view every request in the world now arrives from one of
+	# the ~22 networks listed below. Without this block `client_ip` IS a Cloudflare edge
+	# node: the log still fills up, nothing errors, and every aggregate built on it
+	# measures Cloudflare's topology instead of our visitors.
+	#
+	# `client_ip_headers` tells Caddy where the real address is. Cloudflare sets
+	# CF-Connecting-IP itself and strips any copy the client sent, so it cannot be forged
+	# THROUGH Cloudflare — but it is trivially forged by anyone connecting to this box
+	# directly, which is why Caddy only honours it for source addresses in this list, and
+	# why the firewall is closed to everything else (deploy/cloudflare-firewall.sh).
+	# Both halves are load bearing: the list without the firewall still trusts a header
+	# from a direct connection, and the firewall without the list logs every visitor as
+	# an edge node.
+	#
+	# THE LIST GOES STALE. Fetched 2026-09-07 from https://www.cloudflare.com/ips-v4 and
+	# /ips-v6. Cloudflare adds ranges occasionally; a missing one does not fail, it just
+	# silently logs those visitors as their edge node. Refresh with
+	# deploy/refresh-cloudflare-ips.sh, which diffs before it writes.
+	servers {
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers Cf-Connecting-Ip
+	}
+
+	# This block masks addresses in the DEFAULT logger, and it exists because the
+	# site-level `log` block at the bottom of this file does NOT cover everything. Caddy
+	# splits its logging in two:
+	#
+	#   http.log.access.log0  -> the site's own `log` block  -> the file, filtered.
+	#   http.log.error.log0   -> the DEFAULT logger          -> stderr, so journald.
+	#
+	# Both carry `request>remote_ip` and `request>client_ip` in full. Only the first was
+	# filtered, so every 502, every timeout and every refused upstream wrote a complete
+	# visitor address into the systemd journal — where it is retained, rotated by
+	# journald's own rules rather than ours, and readable by anyone who can read the
+	# journal. The access log looked masked, which is exactly what made it easy to miss.
+	#
+	# THE SAME TRAP REOPENED THE DAY CLOUDFLARE WENT IN FRONT. Caddy logs every request
+	# header, and Cloudflare adds CF-Connecting-IP — the visitor's full, unmasked address
+	# — to every single request. Masking `client_ip` while logging that header verbatim
+	# would have written the exact thing the mask exists to prevent, into both streams,
+	# from the first proxied request. So the deletions below are duplicated into the site
+	# log block; the two lists must stay in step.
+	#
+	# Cf-Ipcountry is deliberately NOT deleted. It is a two-letter country code, which is
+	# the one geographic signal the rollups want and the only one this box could not
+	# derive for itself without shipping a GeoIP database.
+	#
+	# app/(site)/privacy tells visitors this server does not record their IP address.
+	# That sentence has to be true of BOTH streams.
 	log default {
 		format filter {
 			request>remote_ip ip_mask 16 32
 			request>client_ip ip_mask 16 32
+			request>headers>Cf-Connecting-Ip delete
+			request>headers>X-Forwarded-For delete
+			request>headers>True-Client-Ip delete
+			request>headers>Cf-Visitor delete
+			request>headers>Cf-Ray delete
+			request>headers>Cdn-Loop delete
 		}
 	}
 }
@@ -110,6 +152,12 @@ provenance-online.com {
 			request>remote_ip ip_mask 16 32
 			request>client_ip ip_mask 16 32
 			request>headers>Cookie delete
+			request>headers>Cf-Connecting-Ip delete
+			request>headers>X-Forwarded-For delete
+			request>headers>True-Client-Ip delete
+			request>headers>Cf-Visitor delete
+			request>headers>Cf-Ray delete
+			request>headers>Cdn-Loop delete
 			request>headers>Authorization delete
 			request>headers>Accept delete
 			request>headers>Accept-Encoding delete
