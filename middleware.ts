@@ -4,6 +4,7 @@ import { GATE_COOKIE, GATE_QUERY, GATE_DENIED, gateToken } from "@/lib/gate/toke
 import { isTempKey, verifyTempKey } from "@/lib/gate/tempkey";
 import { maintenanceHtml } from "@/lib/gate/page";
 import { isMaintenanceArmed } from "@/lib/gate/armed";
+import { legacyRedirect } from "@/lib/brand.legacy";
 
 /**
  * The maintenance gate.
@@ -31,6 +32,22 @@ export const config = {
 };
 
 export default async function middleware(request: NextRequest) {
+  // THE LEGACY-HOST REDIRECT RUNS FIRST, AND THAT ORDER IS THE POINT.
+  //
+  // The obvious home for this is `redirects()` in next.config.ts, where it would cost no
+  // function invocation at all. It cannot go there: middleware runs BEFORE the routing
+  // layer applies those rules, so while MAINTENANCE_MODE is armed on the Vercel project
+  // the curtain would answer every request and the redirect would never fire. The old
+  // host would sit on 503 while search engines decided it was dead — losing exactly the
+  // ranking this redirect exists to move.
+  //
+  // Above the gate, it wins regardless of the curtain, and the old host consolidates
+  // into the new one whether or not anyone remembers to unset a variable.
+  const moved = legacyRedirect(request.headers.get("host"), request.nextUrl.pathname + request.nextUrl.search);
+  // 301 and not 308: this is GET traffic from crawlers and shared links, and 301 is the
+  // status every search engine treats as "move the ranking".
+  if (moved) return NextResponse.redirect(moved, 301);
+
   if (!isMaintenanceArmed()) return NextResponse.next();
 
   const { pathname, search, searchParams } = request.nextUrl;
