@@ -182,6 +182,7 @@ function StreamView({
           attribution=""
           license=""
           refreshSeconds={refreshSeconds}
+          onOutcome={(ok) => streamHealth.report(stream, ok)}
         />
       ) : (
         <CameraImage
