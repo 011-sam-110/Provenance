@@ -5,8 +5,14 @@
 // WorldMap reads this to decide which MapLibre layers are visible AND — via the
 // gating <CamerasFeed>/<PlanesFeed>/<SatellitesFeed> wrappers — whether a layer's
 // data hook is even mounted (a hidden layer does not fetch or tick). The left
-// LayerRail and the ⌘K palette drive the toggles. Toggle state is persisted to
-// localStorage so a composed view survives a reload.
+// LayerRail and the ⌘K palette drive the toggles.
+//
+// TOGGLE STATE IS NOT PERSISTED HERE, and this comment used to say it was. It
+// survives a reload through the VARIANT SPINE: variantStore.bootstrap is the only
+// load-time hydration path, and its captureOverride subscribes to this store and
+// persists the diff-from-variant under tn.variant.v1. The header was wrong about
+// the mechanism while being right about the outcome, which is the worse kind of
+// wrong — the behaviour appears to confirm it. tn.layers.v1 is a dead key.
 
 import { useSyncExternalStore } from "react";
 
@@ -34,8 +40,6 @@ export const DEFAULT_STATE: LayerState = {
   countries: true,
 };
 
-const PERSIST_KEY = "tn.layers.v1";
-const PERSIST_VERSION = 1;
 
 export type PresetId = "all" | "none" | "cameras" | "air-space";
 // Labels have to match presetState() below, which they did not: the "all" preset

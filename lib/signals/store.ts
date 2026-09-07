@@ -6,8 +6,11 @@
 //
 // Keyed by the registry source id (an arbitrary string), so adding a layer needs
 // no edit here. Like the core layers, a signal that is OFF is never fetched —
-// WorldMap mounts each signal's <SignalFeed> only while its id is on. State is
-// persisted to localStorage so a composed view survives a reload.
+// WorldMap mounts each signal's <SignalFeed> only while its id is on.
+//
+// STATE IS NOT PERSISTED HERE — see the same correction in lib/layers.ts. It
+// survives a reload as a variant override under tn.variant.v1; tn.signals.v1 is a
+// dead key.
 
 import { useSyncExternalStore } from "react";
 
