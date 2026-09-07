@@ -16,6 +16,7 @@ import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { WorldObject } from "@/lib/world";
 import { overlay } from "@/lib/overlay";
+import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { filterToScope } from "@/lib/scopeFilter";
 import { useScope } from "@/lib/shell/scope";
 import { cinematic } from "@/lib/cinematic/store";
@@ -1513,6 +1514,12 @@ export default function WorldMap() {
       const f = e.features?.[0];
       if (!f) return;
       overlay.open(buildCountryObject(f.properties as CountryProps, e.lngLat.lat, e.lngLat.lng));
+      // Open the rail alongside the dossier. The dossier is the country's detail; the
+      // rail is the index it belongs to, and the Inspector tab is where a country's
+      // sources are configured. Opening one without the other leaves the user reading
+      // a country panel with no visible way to act on it. What the overlay opens is
+      // unchanged — this only reveals the surface that was already there.
+      sourcesRailStore.setOpen(true);
     });
     // ── ONE shared pointer hit-test ─────────────────────────────────────────
     // This replaces 13 layer-scoped mouseenter/mouseleave/mousemove handlers.

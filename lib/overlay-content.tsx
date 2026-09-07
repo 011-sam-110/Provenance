@@ -6,6 +6,7 @@
 //   • camera    → live proxied image + mandatory attribution (CameraDetail)
 //   • satellite → identity + Esri satellite imagery of the ground beneath it
 //   • plane     → live flight info (callsign, altitude, speed, heading)
+//   • area      → a saved Inspector area: its shape, what it has on, load/remove
 
 import type { WorldObject } from "@/lib/world";
 import { CameraDetail } from "@/components/CameraDetail";
@@ -14,6 +15,7 @@ import PlaneDetail from "@/components/PlaneDetail";
 import WebcamDetail from "@/components/WebcamDetail";
 import SignalDetail from "@/components/SignalDetail";
 import CountryDetail from "@/components/CountryDetail";
+import AreaDetail from "@/components/shell/inspector/AreaDetail";
 
 export function OverlayBody({ object }: { object: WorldObject }) {
   switch (object.kind) {
@@ -29,6 +31,8 @@ export function OverlayBody({ object }: { object: WorldObject }) {
       return <SignalDetail object={object} />;
     case "country":
       return <CountryDetail object={object} />;
+    case "area":
+      return <AreaDetail object={object} />;
     default:
       return null;
   }
