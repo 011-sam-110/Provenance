@@ -13,18 +13,30 @@ import { notFound } from "next/navigation";
 /**
  * Is this a live deployment?
  *
- * FAILS CLOSED ON EITHER SIGNAL. `NODE_ENV` alone was the first version and one
- * signal is one thing that can be misconfigured: a build run with NODE_ENV unset, a
- * self-hosted runner, a Dockerfile that forgets it. `VERCEL_ENV` is set independently
- * by the platform, so requiring BOTH to say development is the difference between an
- * admin surface that leaks on a misconfiguration and one that does not.
+ * FAILS CLOSED ON ANY SIGNAL. `NODE_ENV` alone was the first version and one signal is
+ * one thing that can be misconfigured: a build run with NODE_ENV unset, a self-hosted
+ * runner, a Dockerfile that forgets it. `VERCEL_ENV` was added because the platform set
+ * it independently, so a single mistake could not open an admin surface that holds a
+ * team-wide API token.
+ *
+ * SITE_ENV IS HERE BECAUSE THE MOVE OFF VERCEL SILENTLY REMOVED THE SECOND SIGNAL.
+ * `VERCEL_ENV` is not set anywhere but Vercel, so the moment this runs on our own box
+ * the OR collapses back to `NODE_ENV` alone — the exact single-signal state the
+ * paragraph above calls insufficient, reached without editing this function and without
+ * anything going red. `SITE_ENV` is set in the unit's EnvironmentFile, independently of
+ * the `NODE_ENV` the unit sets directly, so the box has two again. `VERCEL_ENV` stays
+ * because the Vercel project is still alive to redirect the old subdomain.
  *
  * The cost of the stricter rule is a developer occasionally having to work out why
  * their production-mode local build 404s. That is a much better afternoon than the
  * other one.
  */
 export function isProduction(env: Record<string, string | undefined> = process.env): boolean {
-  return env.VERCEL_ENV === "production" || env.NODE_ENV === "production";
+  return (
+    env.SITE_ENV === "production" ||
+    env.VERCEL_ENV === "production" ||
+    env.NODE_ENV === "production"
+  );
 }
 
 /** 404 unless this is a development server. Used by every page and layout under /admin. */

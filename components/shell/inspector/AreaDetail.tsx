@@ -19,7 +19,6 @@ import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import type { WorldObject } from "@/lib/world";
 import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector";
-import { scopeStore, WORLD_SCOPE } from "@/lib/shell/scope";
 import { mapViewStore } from "@/lib/mapView";
 import { overlay } from "@/lib/overlay";
 
@@ -82,7 +81,7 @@ export default function AreaDetail({ object }: { object: WorldObject }) {
     );
   }
 
-  const loaded = state.loaded === area.id;
+  const editing = state.editing === area.id;
   const centre = bboxCentre(area.bbox);
   const on = Object.entries(area.sources)
     .filter(([, v]) => v)
@@ -135,28 +134,21 @@ export default function AreaDetail({ object }: { object: WorldObject }) {
       </div>
 
       <div style={ROW_STYLE}>
+        {/* IT NO LONGER TOUCHES THE SCOPE, and that is the change rather than an
+            omission. This used to "load" the area: point the rail at it AND crop the
+            whole console to its ring. Areas are additive now — every one of them is
+            live whatever this button says — so cropping here would take the globe
+            away as a side effect of picking which context to type into. The map-rail
+            Draw ▸ Area filter is still how you say "show me only here". */}
         <button
           type="button"
           style={{
             ...BTN_STYLE,
-            borderColor: loaded ? "var(--tn-accent, var(--tn-border))" : "var(--tn-border)",
+            borderColor: editing ? "var(--tn-accent, var(--tn-border))" : "var(--tn-border)",
           }}
-          onClick={() => {
-            if (loaded) {
-              inspectorStore.load(null);
-              scopeStore.set(WORLD_SCOPE);
-              return;
-            }
-            inspectorStore.load(area.id);
-            scopeStore.set({
-              mode: "aoi",
-              bbox: area.bbox,
-              polygon: area.polygon as [number, number][],
-              label: area.label,
-            });
-          }}
+          onClick={() => inspectorStore.edit(editing ? null : area.id)}
         >
-          {loaded ? "Unload — back to World" : "Load this area"}
+          {editing ? "Editing this area — switch back to World" : "Edit this area's sources"}
         </button>
         <button
           type="button"

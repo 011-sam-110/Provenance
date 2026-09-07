@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from "vitest";
-import { BUILTIN_PRESETS, DEFAULT_PRESET_ID, STREETS_DEFAULT_AREA } from "@/lib/console/presets";
-import { SIGNALS, signalsByGroup } from "@/lib/signals/registry";
+import { BUILTIN_PRESETS, DEFAULT_PRESET_ID, MAX_CARDS_PER_RAIL, STREETS_DEFAULT_AREA } from "@/lib/console/presets";
+import { MAP_SIGNALS, SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
 import { dockSize, effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
 import { COLS, MIN_H, MIN_W, overlaps } from "@/lib/terminal/layoutGrid";
@@ -13,11 +13,19 @@ const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
 
-// TWO boards, down from seven. Conflict, Hazards, Transit, Markets & Cyber and Recon
-// were removed outright and Brief was emptied and renamed Globe. Ids are stable (used
-// by the first-run seed, the ⌘K Profiles section, the central preset pill, and shared
-// URLs), which is why the landing board kept the id "overview" through the rename.
-const BOARD_IDS = ["overview", "streets"];
+// SEVEN presets. A preset is the whole workspace now — core layers, signal layers
+// AND a board — because lib/monitors.ts merged into lib/console/presets.ts; the
+// Sources rail's tiles and the ⌘K Profiles list drive the same seven things.
+//
+// Ids are stable (used by the first-run seed, the ⌘K Profiles section, the central
+// preset pill, and shared `?c=` URLs), which is why the landing board still carries
+// the id "overview" long after being renamed Globe.
+//
+// The six old MONITOR ids were world / skywatch / ground / nature / infrastructure /
+// calm. Four of them are presets here. GROUND and CALM are deliberately absent:
+// both were subtractive layer states rather than workspaces ("cameras and webcams",
+// "cameras only") and both meant the thing STREETS already is.
+const BOARD_IDS = ["overview", "world", "nature", "skywatch", "infrastructure", "intel", "streets"];
 
 // BOTH BOARDS ARE DELIBERATELY EMPTY NOW, so "every board has at least one widget" is
 // no longer true and must not be asserted. Streets joined the landing board here in
@@ -34,7 +42,7 @@ const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID, "streets"]);
 // monitoring card, so it is exempt.
 const CORE_MONITORS = ["events", "news", "camslot", "aviation", "satellites", "markets", "headlines"];
 
-test("the board lineup is exactly the two boards, each within the cap", () => {
+test("the board lineup is exactly the seven presets, each within the cap", () => {
   const ids = BUILTIN_PRESETS.map((p) => p.id);
   expect(ids).toEqual(BOARD_IDS);
   for (const p of BUILTIN_PRESETS) {
@@ -77,6 +85,12 @@ const SHELLS = [
  *  first row, which reads as broken rather than as small. */
 const MIN_CARD_PX = 120;
 
+/** `presets.ts`'s floor for a card in the BOTTOM strip, where the size that
+ *  matters is width. Wider than the height floor because the failure is worse: a
+ *  short card loses its last rows, a narrow one truncates every row it has to an
+ *  ellipsis. */
+const MIN_CARD_W = 240;
+
 const RAILS: SegmentId[] = ["left", "right", "bottom"];
 
 const stackedIn = (l: ReturnType<(typeof BUILTIN_PRESETS)[number]["build"]>, rail: SegmentId) =>
@@ -115,26 +129,110 @@ test("no board overflows its rail by more than the card floor forces", () => {
       for (const rail of RAILS) {
         const n = l.widgets.filter((w) => w.segment === rail).length;
         if (n === 0) continue;
-        const budget = rail === "bottom" ? l.segments.bottom.size : shell.h;
-        const allowed = Math.max(budget, n * MIN_CARD_PX);
+        // THE BOTTOM RAIL RUNS ALONG A DIFFERENT AXIS, and this test did not used
+        // to know that — because no board had ever put a card there, so the branch
+        // was never exercised against real content. It compared a bottom rail's
+        // card sizes against `segments.bottom.size`, i.e. against the strip's own
+        // HEIGHT, which is its cross axis. With cards sized by width that compares
+        // 1280px of cards against a 220px strip and fails a board that is correct.
+        //
+        // A card's stored size is its extent along its rail's MAIN axis (see the
+        // note in ConsoleWorkspace's renderRail), so the budget has to be measured
+        // on that same axis: the window's height for a column, its width for a
+        // strip. The floors differ too — a narrow card truncates every row to an
+        // ellipsis, which costs more than a short card losing its tail.
+        const horizontal = rail === "bottom";
+        const budget = horizontal ? shell.w : shell.h;
+        const floor = horizontal ? MIN_CARD_W : MIN_CARD_PX;
+        const allowed = Math.max(budget, n * floor);
         expect(
           stackedIn(l, rail),
-          `board "${p.id}" stacks ${stackedIn(l, rail)}px into its ${rail} rail — more than ${n} cards at the ${MIN_CARD_PX}px floor allows, at ${shell.w}x${shell.h}`,
+          `board "${p.id}" lays ${stackedIn(l, rail)}px along its ${rail} rail — more than ${n} cards at the ${floor}px floor allows, at ${shell.w}x${shell.h}`,
         ).toBeLessThanOrEqual(allowed);
       }
     }
   }
 });
 
-test("no card is composed too short to read", () => {
+test("no card is composed too small to read", () => {
   for (const shell of SHELLS) {
     for (const p of BUILTIN_PRESETS) {
-      for (const w of p.build(shell).widgets) {
+      const l = p.build(shell);
+      for (const w of l.widgets) {
+        // Same axis rule as the budget test above: a bottom-rail card's stored
+        // size is a WIDTH, and its floor is the wider one.
+        const floor = !l.mode || l.mode !== "wall" ? (w.segment === "bottom" ? MIN_CARD_W : MIN_CARD_PX) : MIN_CARD_PX;
         expect(
           w.height,
-          `board "${p.id}" gives ${w.type} ${w.height}px at ${shell.w}x${shell.h}`,
-        ).toBeGreaterThanOrEqual(MIN_CARD_PX);
+          `board "${p.id}" gives ${w.type} ${w.height}px in its ${w.segment} rail at ${shell.w}x${shell.h}`,
+        ).toBeGreaterThanOrEqual(floor);
       }
+    }
+  }
+});
+
+// ── THE SPREAD RULE ─────────────────────────────────────────────────────────
+//
+// A board with more cards than one rail holds spreads into a second rail rather
+// than scrolling. This is the assertion behind that: four cards in an 820px
+// column is ~200px each before weighting, and a fifth puts the smallest on the
+// 120px floor and starts the rail scrolling — which hides a card on a board
+// whose whole job is being readable in one look.
+//
+// It is a real constraint on authoring, not a description of it: Infrastructure
+// carries six cards and Intel six, and both are only legal because they spread
+// (left+right and right+bottom respectively). Squeezing either into one rail
+// fails here.
+test("no rail opens holding more cards than it can show", () => {
+  for (const shell of SHELLS) {
+    for (const p of BUILTIN_PRESETS) {
+      const l = p.build(shell);
+      // A wall tiles on a grid and does not have rails to overfill.
+      if (l.mode === "wall") continue;
+      for (const rail of RAILS) {
+        const n = l.widgets.filter((w) => w.segment === rail).length;
+        expect(
+          n,
+          `board "${p.id}" opens with ${n} cards in its ${rail} rail — spread it to a second rail`,
+        ).toBeLessThanOrEqual(MAX_CARDS_PER_RAIL);
+      }
+    }
+  }
+});
+
+// ── A PRESET MAY NOT ASK FOR A MAP LAYER THAT DOES NOT EXIST ────────────────
+//
+// `signals` names MAP layers. A `dataOnly` source is registered and fetchable
+// but has no layer at all — no catalog entry, no rail row, no pin — so naming
+// one here asks for something that can never light, and it would do so silently:
+// `layersForLayout` just writes the id into a state object nothing reads.
+//
+// The Country Instability Index is the only data-only source today and it IS on
+// the Intel board, as a `signal:instability` WIDGET. That is the legal way to
+// use one, and it is exactly the distinction this test exists to keep.
+test("every preset's signal layers are real map layers", () => {
+  const mappable = new Set(MAP_SIGNALS.map((s) => s.id));
+  for (const p of BUILTIN_PRESETS) {
+    for (const id of p.signals ?? []) {
+      expect(
+        mappable.has(id),
+        `preset "${p.id}" asks for signal layer "${id}", which is not in MAP_SIGNALS${
+          SIGNALS.some((s) => s.id === id) ? " — it is registered but dataOnly, so it can only be a widget" : ""
+        }`,
+      ).toBe(true);
+    }
+  }
+});
+
+// Every card a preset places has to be a type the registry knows. A typo here
+// mounts nothing and reports nothing — `getWidgetType` returns undefined and the
+// frame renders an empty box — so a misspelt id is a card-shaped hole rather
+// than an error anyone would see.
+test("every card a preset places is a registered widget type", () => {
+  const known = new Set(listWidgetTypes().map((t) => t.id));
+  for (const p of BUILTIN_PRESETS) {
+    for (const w of p.build().widgets) {
+      expect(known.has(w.type), `preset "${p.id}" places unregistered widget "${w.type}"`).toBe(true);
     }
   }
 });
@@ -443,6 +541,6 @@ describe("the Streets board opens on a monitored area", () => {
   });
 
   it("still asks for the camera and webcam layers", () => {
-    expect(streets.mapCore).toEqual(["cameras", "webcams"]);
+    expect(streets.layers).toEqual(["cameras", "webcams"]);
   });
 });

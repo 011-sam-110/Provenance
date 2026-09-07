@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  areasCollection,
   MIN_VERTICES,
   RADIUS_RING_STEPS,
   aoiLabel,
@@ -47,6 +48,60 @@ test("the draft shows a vertex dot per placed point, and a line once there are t
 
 test("an empty draft is an empty collection, not a malformed feature", () => {
   expect(draftCollection([]).features).toEqual([]);
+});
+
+// ── The rubber band: what tells you the gesture is running ───────────────────
+
+test("a cursor draws a preview segment from the last placed vertex", () => {
+  // The report this answers: after one click a polygon draw showed a single dot and
+  // nothing else, which is indistinguishable from a mark on the basemap.
+  const c = draftCollection([[0, 0]], [5, 5]);
+  const lines = c.features.filter((f) => f.geometry.type === "LineString");
+  expect(lines).toHaveLength(1);
+  expect((lines[0].geometry as GeoJSON.LineString).coordinates).toEqual([[0, 0], [5, 5]]);
+});
+
+test("from two vertices the band also closes back to the first", () => {
+  // So the shape reads as an AREA before it is committed, rather than as a path.
+  const c = draftCollection([[0, 0], [10, 0]], [10, 10]);
+  const lines = c.features
+    .filter((f) => f.geometry.type === "LineString")
+    .map((f) => (f.geometry as GeoJSON.LineString).coordinates);
+  expect(lines).toEqual([
+    [[0, 0], [10, 0]], // the placed edge
+    [[10, 0], [10, 10]], // last → cursor
+    [[10, 10], [0, 0]], // cursor → first, closing the preview
+  ]);
+});
+
+test("a cursor with no vertices draws nothing", () => {
+  // Painting a dot or a line under the pointer before the first click would claim a
+  // vertex the user has not placed.
+  expect(draftCollection([], [5, 5]).features).toEqual([]);
+});
+
+test("the preview never becomes a vertex dot", () => {
+  // The dots are the record of what was actually clicked. A cursor that added one
+  // would make the count in the banner disagree with the map.
+  const c = draftCollection([[0, 0], [1, 1]], [2, 2]);
+  expect(c.features.filter((f) => f.geometry.type === "Point")).toHaveLength(2);
+});
+
+test("the opening vertex is marked, and only the opening vertex", () => {
+  // It is the one the ring closes back to, so the DRAFT_DOTS layer draws it larger.
+  const props = draftCollection(RING)
+    .features.filter((f) => f.geometry.type === "Point")
+    .map((f) => f.properties?.first);
+  expect(props).toEqual([true, false, false, false]);
+});
+
+test("omitting the cursor is exactly what it was before", () => {
+  // The rubber band is additive: every existing caller passes no cursor and must get
+  // the identical collection back.
+  expect(draftCollection(RING, null)).toEqual(draftCollection(RING));
+  expect(draftCollection(RING, undefined).features.map((f) => f.geometry.type)).toEqual([
+    "Point", "Point", "Point", "Point", "LineString",
+  ]);
 });
 
 test("the label names the vertex count and never invents a place name", () => {
@@ -129,4 +184,42 @@ test("the draft is centre-only until the pointer has moved", () => {
   const line = (sized.features[1].geometry as GeoJSON.LineString).coordinates;
   expect(line).toHaveLength(RADIUS_RING_STEPS + 1);
   expect(line[line.length - 1]).toEqual(line[0]);
+});
+
+
+// --- the drawn areas on the map ------------------------------------------------
+
+function area(id: string, ring: [number, number][] = RING) {
+  return { id, label: id, polygon: ring, bbox: [0, 0, 0, 0] as [number, number, number, number], createdAt: 0, sources: {} };
+}
+
+test("every area is painted, not only the one being edited", () => {
+  // The additive model in one assertion: an area does not have to be selected to be
+  // live, so it does not have to be selected to be visible either. Editing used to
+  // set the console scope as a side effect, and painting the scope was the only
+  // reason a ring appeared at all — so when areas stopped narrowing the console the
+  // rings silently stopped being drawn.
+  const c = areasCollection([area("a"), area("b")], "a");
+  expect(c.features).toHaveLength(2);
+  expect(c.features.map((f) => f.properties!.editing)).toEqual([true, false]);
+});
+
+test("the edited flag is false for every area when the rail is on World", () => {
+  const c = areasCollection([area("a"), area("b")], null);
+  expect(c.features.every((f) => f.properties!.editing === false)).toBe(true);
+});
+
+test("a ring that is not an area is not painted", () => {
+  // Nothing should ever store one, but a hand-edited localStorage payload can hold
+  // it, and MapLibre drops an invalid polygon layer SILENTLY — taking the valid
+  // areas beside it off the map with no error anywhere.
+  const c = areasCollection([area("thin", [[0, 0], [1, 1]])], null);
+  expect(c.features).toHaveLength(0);
+});
+
+test("a painted area is a CLOSED ring, like every other polygon here", () => {
+  const c = areasCollection([area("a")], null);
+  const outer = (c.features[0].geometry as GeoJSON.Polygon).coordinates[0];
+  expect(outer).toHaveLength(RING.length + 1);
+  expect(outer[outer.length - 1]).toEqual(outer[0]);
 });

@@ -110,6 +110,7 @@ import { appStatusLine } from "@/components/shell/a11y";
 import Mark from "@/components/brand/Mark";
 import DiscordMark from "@/components/brand/DiscordMark";
 import SettingsPanel from "@/components/shell/SettingsPanel";
+import LivePresence from "@/components/shell/LivePresence";
 import { BRAND } from "@/lib/brand";
 
 /**
@@ -305,6 +306,12 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           cannot be a room with no door. `.tn-settings-trigger` came back with it.
         */}
         <div className="tnx-hdr-right">
+          {/* HOW MANY PEOPLE ARE ON THE SITE, when that is worth saying.
+              Renders NOTHING below the threshold — not a zero, not a gap — so it
+              adds no width to this cluster on the ordinary day. It leads the
+              cluster because it is a readout rather than a control, and the three
+              things after it are all controls. */}
+          <LivePresence />
           {/* THE PERMANENT DOOR TO THE DISCORD, and the reason CommunityNote's
               dismissal is allowed to be permanent. That card asks once and then
               never again; without a standing link, "No thanks" would close the

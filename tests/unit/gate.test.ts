@@ -14,6 +14,7 @@ import {
   gateCookieHeader,
 } from "@/lib/gate/token";
 import { maintenanceHtml, escapeHtml } from "@/lib/gate/page";
+import { isMaintenanceArmed } from "@/lib/gate/armed";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { SIGNALS, MAP_SIGNALS } from "@/lib/signals/registry";
 import "@/lib/console/widgets";
@@ -331,5 +332,43 @@ describe("the numbers the curtain states as fact", () => {
       }
     }
     expect(text).toContain(`${countries.size} countries`);
+  });
+});
+
+describe("what actually arms the curtain", () => {
+  // THIS SUITE EXISTS BECAUSE OF ONE CHARACTER. The gate used to be
+  // `if (!process.env.MAINTENANCE_MODE)`, which is exactly right on Vercel, where you
+  // disarm by DELETING the dashboard row. In the box's EnvironmentFile you disarm by
+  // typing, and what a person types is `MAINTENANCE_MODE=0` — a non-empty string, so
+  // truthy, so the whole site goes dark on the most natural way of writing "off".
+  // Nothing throws and nothing logs. It was caught by hand mid-migration; these cases
+  // are what catches it next time.
+  it("treats the words a person writes for off as off", () => {
+    for (const v of ["", "0", "false", "off", "no", "FALSE", "Off", " 0 "]) {
+      expect(isMaintenanceArmed({ MAINTENANCE_MODE: v })).toBe(false);
+    }
+  });
+
+  it("stays disarmed when the variable is absent, which is the normal open state", () => {
+    expect(isMaintenanceArmed({})).toBe(false);
+  });
+
+  it("arms on anything else, including a value nobody planned for", () => {
+    // Fails CLOSED on purpose. An unrecognised value leaves the site DOWN and costing
+    // nothing; the alternative failure is UP and billing, which is the single thing
+    // this gate was built to prevent.
+    for (const v of ["1", "true", "on", "yes", "maintenance", "please"]) {
+      expect(isMaintenanceArmed({ MAINTENANCE_MODE: v })).toBe(true);
+    }
+  });
+
+  it("is what both readers call, so the two doors cannot disagree", () => {
+    // A curtain that middleware raises but /api/gate calls 404 would mean nobody could
+    // submit the password to get back in.
+    for (const f of ["middleware.ts", join("app", "api", "gate", "route.ts")]) {
+      const src = readFileSync(join(ROOT, f), "utf8");
+      expect(src).toMatch(/isMaintenanceArmed\(\)/);
+      expect(src).not.toMatch(/process\.env\.MAINTENANCE_MODE/);
+    }
   });
 });

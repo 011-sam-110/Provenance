@@ -1,0 +1,21 @@
+[Unit]
+Description=Fold the Caddy access log into daily analytics rollups, every five minutes
+Documentation=https://github.com/011-sam-110/Provenance/blob/main/scripts/rollup-access-log.mts
+
+[Timer]
+# FIVE MINUTES IS NOT ARBITRARY. It is short enough that the live file has grown by only
+# a few hundred rows between runs, so a run is a seek and a few hundred JSON parses
+# rather than a re-read. And it bounds what a crash costs: the cursor and the counters
+# are written together, so an interrupted run replays at most five minutes of rows and
+# lands on identical numbers.
+OnCalendar=*:0/5
+# A run skipped because the box was off is a run whose rows are still sitting in the log,
+# so catch up rather than wait for the next boundary.
+Persistent=true
+# Every deployment's timers firing on the same second is how a 2 vCPU box gets a spike it
+# did not need. There is no deadline here worth defending to the second.
+RandomizedDelaySec=45
+AccuracySec=30
+
+[Install]
+WantedBy=timers.target

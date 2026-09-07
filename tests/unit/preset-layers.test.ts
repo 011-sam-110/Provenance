@@ -85,16 +85,16 @@ test("recon widgets imply no layer and no core", () => {
 // because every other board exists to show something.
 //
 // `p.build()` IS PASSED THROUGH `onLayers` FOR EVERY OTHER TEST IN THIS FILE with no
-// mapSignals/mapCore — deliberately, because those tests are pinning what a WIDGET
+// signals/layers — deliberately, because those tests are pinning what a WIDGET
 // implies, board or no board. This one is different in kind: it is asking what a
 // PERSONA lights, and `applyPreset` (lib/console/presets.ts) always passes a board's
-// own mapSignals/mapCore alongside its widgets, so leaving them out here would make
+// own signals/layers alongside its widgets, so leaving them out here would make
 // the assertion stricter than the product actually is. Streets is exactly the board
-// that exposes the gap: it now opens on no widgets at all, so with mapCore left out
+// that exposes the gap: it now opens on no widgets at all, so with layers left out
 // it would read as a blank map despite lighting cameras + webcams for real.
 test("no board except the landing globe opens on a blank map", () => {
   for (const p of BUILTIN_PRESETS) {
-    const { core, signals } = layersForLayout(p.build(), p.mapSignals ?? [], p.mapCore ?? []);
+    const { core, signals } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
     const lit =
       Object.entries(core).filter(([k, v]) => v && k !== "countries").length +
       Object.entries(signals).filter(([, v]) => v).length;
@@ -125,7 +125,7 @@ test("an explicit core request wins over the reset, and leaves the others alone"
   expect(core.satellites).toBe(false);
 });
 
-// ONE board lights webcams now, not two. The landing board dropped its `mapCore` with
+// ONE board lights webcams now, not two. The landing board dropped its `layers` with
 // its widgets, so Streets is the only one left — and it is the one that always had the
 // stronger claim: the webcam layer IS the pedestrian-zone content that board exists to
 // show, since the road-camera feeds are junctions and carriageways. Everywhere else it
@@ -135,7 +135,7 @@ const WEBCAM_BOARDS = new Set(["streets"]);
 test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
   for (const p of BUILTIN_PRESETS) {
     if (WEBCAM_BOARDS.has(p.id)) continue;
-    const { core } = layersForLayout(p.build(), p.mapSignals ?? [], p.mapCore ?? []);
+    const { core } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
     expect(core.webcams, `${p.id} unexpectedly lights webcams`).toBe(false);
   }
 });

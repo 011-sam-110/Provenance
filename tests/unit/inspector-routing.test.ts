@@ -1,5 +1,5 @@
 import { beforeEach, expect, test } from "vitest";
-import { inspectorStore } from "@/lib/shell/inspector";
+import { inspectorStore, sourceRegions } from "@/lib/shell/inspector";
 import { DEFAULT_STATE, layersStore } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
 
@@ -13,105 +13,154 @@ const RING: [number, number][] = [
 beforeEach(() => {
   // A clean store between tests. hydrate() alone is NOT a reset any more: it
   // deliberately preserves World, because the variant spine owns that half and
-  // re-derives it on every boot. So World is cleared explicitly — with nothing
-  // loaded, replaceSources writes World.
+  // re-derives it on every boot. So World is cleared explicitly — with the rail
+  // pointed at World, replaceSources writes World.
   inspectorStore.hydrate();
-  inspectorStore.load(null);
+  inspectorStore.edit(null);
   inspectorStore.replaceSources({});
 });
 
-test("with nothing loaded, layersStore reads World and matches today's defaults", () => {
+test("with the rail on World, layersStore reads World and matches today's defaults", () => {
   expect(layersStore.get()).toEqual(DEFAULT_STATE);
 });
 
-test("a layer toggle while World is loaded writes World, not an area", () => {
+test("a layer toggle while editing World writes World, not an area", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
   layersStore.set("planes", false);
   expect(inspectorStore.get().world.planes).toBe(false);
   expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.planes).toBeUndefined();
 });
 
-test("a layer toggle while an area is loaded writes the area and leaves World alone", () => {
+test("a layer toggle while editing an area writes the area and leaves World alone", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
   layersStore.set("planes", false); // World: planes off
-  inspectorStore.load(id);
+  inspectorStore.edit(id);
   layersStore.set("planes", true); // area: planes on
   expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.planes).toBe(true);
   expect(inspectorStore.get().world.planes).toBe(false);
 });
 
-test("unloading restores World's set exactly", () => {
+test("switching back to World restores World's own set exactly", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
   layersStore.set("satellites", false);
-  const world = { ...layersStore.get() };
-  inspectorStore.load(id);
+  const world = { ...layersStore.editing() };
+  inspectorStore.edit(id);
   layersStore.set("satellites", true);
-  inspectorStore.load(null);
-  expect(layersStore.get()).toEqual(world);
+  inspectorStore.edit(null);
+  expect(layersStore.editing()).toEqual(world);
 });
 
-test("an area forces cameras and webcams on however its own set reads", () => {
-  const id = inspectorStore.add(RING, "Kharkiv")!;
-  inspectorStore.load(id);
-  layersStore.set("cameras", false);
-  layersStore.set("webcams", false);
-  expect(layersStore.get().cameras).toBe(true);
-  expect(layersStore.get().webcams).toBe(true);
-});
-
-test("World keeps webcams opt-in — the always-on rule is areas only", () => {
-  expect(layersStore.get().webcams).toBe(false);
-});
-
-test("signalsStore routes the same way", () => {
+test("signalsStore routes writes the same way", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
   signalsStore.set("earthquakes", true);
-  inspectorStore.load(id);
-  expect(signalsStore.isOn("earthquakes")).toBe(false);
+  inspectorStore.edit(id);
+  expect(signalsStore.editing().earthquakes).toBeUndefined();
   signalsStore.set("conflict", true);
-  expect(signalsStore.isOn("conflict")).toBe(true);
-  inspectorStore.load(null);
-  expect(signalsStore.isOn("earthquakes")).toBe(true);
-  expect(signalsStore.isOn("conflict")).toBe(false);
+  expect(signalsStore.editing().conflict).toBe(true);
+  inspectorStore.edit(null);
+  expect(signalsStore.editing().earthquakes).toBe(true);
+  expect(signalsStore.editing().conflict).toBeUndefined();
 });
 
-test("applyPreset writes the loaded area, not World", () => {
+test("applyPreset writes the edited area, not World", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
-  inspectorStore.load(id);
+  inspectorStore.edit(id);
   layersStore.applyPreset("air-space");
   expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.planes).toBe(true);
   expect(inspectorStore.get().world.planes).toBeUndefined();
 });
 
-// --- the two the first cut got wrong ----------------------------------------
+// --- ADDITIVE AREAS: the reports this model was built from ---------------------
 
-test("an empty area reads every layer OFF except the always-on pair", () => {
+test("an area's sources do NOT take the globe's away", () => {
+  // Sam's report, in one test. Turning a signal on for an area used to switch every
+  // global signal off, because a loaded area REPLACED World rather than adding to it.
+  signalsStore.set("earthquakes", true); // World
   const id = inspectorStore.add(RING, "Kharkiv")!;
-  inspectorStore.load(id);
+  inspectorStore.edit(id);
+  signalsStore.set("conflict", true); // the area only
+  expect(signalsStore.isOn("earthquakes")).toBe(true); // still on the globe
+  expect(signalsStore.isOn("conflict")).toBe(true); // and the area's is on too
+});
+
+test("every area is live at once, whichever one the rail is pointed at", () => {
+  const a = inspectorStore.add(RING, "A")!;
+  const b = inspectorStore.add(RING, "B")!;
+  inspectorStore.edit(a);
+  signalsStore.set("fires", true);
+  inspectorStore.edit(b);
+  signalsStore.set("quakes", true);
+  // Pointed at B, and A's signal is still drawn.
+  expect(signalsStore.isOn("fires")).toBe(true);
+  expect(signalsStore.isOn("quakes")).toBe(true);
+  inspectorStore.edit(null);
+  expect(signalsStore.isOn("fires")).toBe(true);
+  expect(signalsStore.isOn("quakes")).toBe(true);
+});
+
+test("a source on only inside an area is cropped to that area's ring", () => {
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  signalsStore.set("fires", true);
+  const rings = sourceRegions(inspectorStore.get(), "fires");
+  expect(rings?.map((r) => r.id)).toEqual([id]);
+});
+
+test("the same source on in World as well is cropped nowhere", () => {
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  signalsStore.set("fires", true);
+  inspectorStore.edit(null);
+  signalsStore.set("fires", true); // World too
+  // An area can add to the globe and can never narrow it.
+  expect(sourceRegions(inspectorStore.get(), "fires")).toBeNull();
+});
+
+test("a toggle inside an area compares against the AREA, never the union", () => {
+  // The dead-control bug the two projections exist to prevent. With planes on in
+  // World, `toggle` reading the union would see true, write false to the area, and
+  // change nothing anyone can see.
+  layersStore.set("planes", true); // World
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  layersStore.toggle("planes"); // the area's own floor is OFF, so this turns it ON
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.planes).toBe(true);
+});
+
+test("an empty area reads every layer OFF in the rail, and adds nothing to the map", () => {
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
   // A new area starts with an empty set. DEFAULT_STATE is World's floor, not an
   // area's — flooring an area with it would silently hand the user a context they
   // never configured, and would drift again the day a default flips.
-  expect(layersStore.get()).toEqual({
-    cameras: true, // always-on
-    webcams: true, // always-on
+  //
+  // NOTHING IS FORCED ON. ALWAYS_ON_SOURCES used to pin cameras and webcams true
+  // here so an area could not load to a blank map; loading an area cannot blank the
+  // map any more, and with every area live at once a forced source would be camera
+  // pins inside every ring ever drawn, with a toggle that says off. See inspector.ts.
+  expect(layersStore.editing()).toEqual({
+    cameras: false,
+    webcams: false,
     satellites: false,
     planes: false,
     ships: false,
     weather: false,
     countries: false,
   });
+  expect(layersStore.get()).toEqual(DEFAULT_STATE); // the globe is untouched by it
 });
 
-test("get() is identity-stable while an area is loaded — a fresh object per call loops React", () => {
+test("get() and editing() are both identity-stable — a fresh object per call loops React", () => {
   const id = inspectorStore.add(RING, "Kharkiv")!;
-  inspectorStore.load(id);
-  // effectiveSet() FORCES the always-on ids in, so it builds a new object every
-  // call. useSyncExternalStore compares snapshots by identity: returning a new one
-  // per render is the documented infinite-loop bug, and there are no component
-  // tests in this repo to catch it. World never showed it — it returns state.world
-  // by identity — so this only bites once an area loads.
+  inspectorStore.edit(id);
+  // unionSet() builds a new object every call, so get() must go through the memo.
+  // useSyncExternalStore compares snapshots by identity: returning a new one per
+  // render is the documented infinite-loop bug, and there are no component tests in
+  // this repo to catch it.
   expect(layersStore.get()).toBe(layersStore.get());
   expect(signalsStore.get()).toBe(signalsStore.get());
+  expect(layersStore.editing()).toBe(layersStore.editing());
+  expect(signalsStore.editing()).toBe(signalsStore.editing());
 });
 
 test("the two stores share one map and must not wipe each other's half", () => {
@@ -136,9 +185,9 @@ test("the two stores share one map and must not wipe each other's half", () => {
 test("hydrate restores areas but leaves World to the variant spine", () => {
   // variantStore.bootstrap is, in its own words, the ONLY load-time hydration path:
   // it re-derives World's whole set on every boot. If this store restored World too
-  // there would be two owners for one piece of state, and the loser was the user:
-  // with an area loaded, bootstrap's writes landed on the AREA and one reload
-  // replaced its sources with the variant's layers. Measured on a preview.
+  // there would be two owners for one piece of state. (Bootstrap landing on an AREA
+  // was the other half of that bug; it is fixed at the write now — see the applyWorld
+  // tests below — rather than by running bootstrap before this.)
   const id = inspectorStore.add(RING, "Kharkiv")!;
   layersStore.set("planes", false);
   const worldBefore = { ...inspectorStore.get().world };
@@ -156,13 +205,67 @@ test("a toggle inside an area is not captured as the variant's override", async 
   // exactly what the first cut of this test did.
   variantStore.bootstrap(new URLSearchParams(""));
   const id = inspectorStore.add(RING, "Kharkiv")!;
-  inspectorStore.load(id);
+  inspectorStore.edit(id);
   const before = JSON.stringify(variantStore.get().overrides);
   layersStore.set("planes", true);
   signalsStore.set("earthquakes", true);
-  // layersStore/signalsStore project the LOADED context and are what captureOverride
-  // subscribes to. Without the guard, an area's set is written into the variant's
-  // override and unloading leaves the globe wearing the area's toggles — the exact
-  // leak the contexts model exists to prevent.
+  // captureOverride is subscribed to these stores. Without the `editing` guard, an
+  // area's set is written into the variant's override and the next boot replays it
+  // onto the globe — the exact leak the contexts model exists to prevent.
   expect(JSON.stringify(variantStore.get().overrides)).toBe(before);
+});
+
+// --- the globe's own writes: what the BROWSER found a second time ---------------
+
+test("a whole-set write from the spine lands on World even while an area is edited", () => {
+  // Seen in the browser: draw an area, reload, and an area created with no sources
+  // of its own comes back holding a copy of World's whole set. layersStore.applyExact
+  // wrote the EDITED context, and ConsoleShell seeds a board on every boot (the
+  // landing board carries no widgets, so the first-run branch always fires) AFTER
+  // hydrate has restored which area was being edited. applyWorld names its target.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  layersStore.applyWorld({ ...DEFAULT_STATE, planes: false });
+  signalsStore.applyWorld({ fires: true });
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources).toEqual({});
+  expect(inspectorStore.get().world.planes).toBe(false);
+  expect(inspectorStore.get().world.fires).toBe(true);
+});
+
+test("applying a variant while editing an area configures the globe, not the area", async () => {
+  // The same bug through the path a user actually takes. A variant is a description
+  // of the globe; pouring its ~30 layers into a ring the user drew is not a reading
+  // of "switch profile" that anyone would ask for.
+  const { variantStore } = await import("@/lib/variants/store");
+  variantStore.bootstrap(new URLSearchParams(""));
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  variantStore.setActive("aviation");
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources).toEqual({});
+  expect(layersStore.get().planes).toBe(true); // ...and the globe did change
+});
+
+test("a per-key write still follows the rail — the split is deliberate", () => {
+  // applyMonitor drives layersStore.set key by key rather than a whole-set write,
+  // and that is the difference: giving an area a monitor's layers is a thing a user
+  // can point the rail at and ask for. Handing it the globe's configuration behind
+  // their back is not.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  layersStore.set("ships", true);
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.ships).toBe(true);
+  expect(inspectorStore.get().world.ships).toBeUndefined();
+});
+
+test("a source on ONLY inside an area is never captured as a World override", () => {
+  // The second half of that leak, and the one the guard alone does not close.
+  // captureOverride reads the store while the rail is on World; if it read the UNION
+  // it would see the area's signal, persist it as World's, and the next boot would
+  // put a ring-scoped source across the whole globe.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  signalsStore.set("fires", true);
+  inspectorStore.edit(null);
+  expect(signalsStore.isOn("fires")).toBe(true); // the union sees it...
+  expect(signalsStore.editing().fires).toBeUndefined(); // ...and World does not
 });

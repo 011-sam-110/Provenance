@@ -249,7 +249,99 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
   },
 };
 
-// STREETS by default. It was positron, chosen as the map half of a PAIR whose
+/**
+ * What a browser can usefully be told to fetch before the map is constructed, for
+ * a given basemap. Derived from the registry entry, never typed out again.
+ *
+ * WHY THIS IS A FUNCTION AND NOT A URL. The console layout used to read
+ * `BASEMAPS[DEFAULT_BASEMAP].style` and preload it, guarded by
+ * `typeof style === "string"`. That guard silently became a no-op the day the
+ * default moved to a RASTER basemap: an inline `StyleSpecification` is not a
+ * document, so there is nothing to preload — and the branch quietly warmed
+ * nothing at all while still looking like a working optimisation.
+ *
+ * A raster basemap has a warm-up worth doing, it is just a different one. Two
+ * origins matter before first paint and neither is discoverable until MapLibre
+ * has been constructed:
+ *
+ *   • the TILE host, which serves the imagery itself.
+ *   • the GLYPH host, because every symbol layer WE add — country names, signal
+ *     labels, pin labels — resolves MAP_LABEL_FONT against the active style's
+ *     `glyphs` endpoint. A raster style ships no labels of its own, so ours are
+ *     the only text on the map and that fetch is on the critical path for it.
+ *
+ * Returns the style document to preload (vector only) and every origin worth a
+ * `preconnect`. Both lists may be empty; neither is ever wrong-but-plausible,
+ * which is what the old hand-typed URL risked being.
+ */
+export function basemapWarmup(key: BasemapKey): { preloadStyle?: string; preconnect: string[] } {
+  const { style } = BASEMAPS[key];
+  const origins = new Set<string>();
+  const add = (u: string) => {
+    try { origins.add(new URL(u).origin); } catch { /* a relative or malformed URL warms nothing */ }
+  };
+
+  if (typeof style === "string") {
+    add(style);
+    return { preloadStyle: style, preconnect: [...origins] };
+  }
+
+  // An inline raster style. Its tile template carries `{z}/{x}/{y}` placeholders,
+  // which `new URL()` parses fine — only the origin is read, and the braces are
+  // in the path.
+  for (const src of Object.values(style.sources ?? {})) {
+    if (src && typeof src === "object" && "tiles" in src && Array.isArray(src.tiles)) {
+      for (const t of src.tiles) if (typeof t === "string") add(t);
+    }
+  }
+  if (typeof style.glyphs === "string") add(style.glyphs);
+  return { preconnect: [...origins] };
+}
+
+// SATELLITE by default.
+//
+// ── WHY IT MOVED OFF STREETS ───────────────────────────────────────────────
+// The console globe at rest was cream and blank, and the cause was measured
+// rather than guessed: #158 trimmed the Natural Earth relief raster to
+// `RELIEF_MIN_ZOOM = 3` (lib/map/styleTrim.ts), and a z1 OpenMapTiles tile
+// carries no landcover class except `ice` — wood and grass only exist from z7.
+// So the green and tan the globe used to have came ENTIRELY from that relief
+// raster, and with it gone the only thing drawing the globe was four z1 vector
+// tiles totalling ~807 KB, which a cold visitor waits on before the planet has
+// any colour at all. Esri's imagery paints land on the first raster tile.
+//
+// ── WHAT THIS COSTS, STATED RATHER THAN GLOSSED ────────────────────────────
+// The pairing argument below is real and this change accepts it knowingly. The
+// console's chrome is light, and Esri World Imagery is dark — which is the same
+// mismatch, with the values swapped, that made a light-chrome/CARTO-Dark-Matter
+// pairing wrong. The difference is that a photographic basemap is the SUBJECT
+// of an OSINT console in a way a styled dark basemap is not, and the globe at
+// rest is the first thing anyone sees. It is a deliberate trade, not an
+// oversight, and it is the one thing here worth looking at on a preview before
+// it ships.
+//
+// Two things that do NOT break, both checked rather than assumed:
+//   • `usesOwnLabels()` reads the registry's `vector` flag, so a raster default
+//     is correctly classified and WE draw the country names. No double-labelling.
+//   • 3D buildings still work. WorldMap adds its own `tn-buildings-3d` extrusion
+//     against its own `tn-buildings` source (lib/map/buildings.ts) precisely so
+//     buildings rise over basemaps whose style has no building layer — Esri
+//     included. That was already true and is why it is safe to lean on now.
+//
+// The skin⇄basemap sync that would have fought this does not exist any more; it
+// was deleted in #153 along with the console's dark skin, so nothing swaps this
+// value out from under a first load.
+//
+// This does NOT reintroduce the persistence hazard lib/mapView.ts warns about.
+// The basemap is still deliberately unpersisted: this constant is the value the
+// store STARTS at, read synchronously before the map is constructed, so it can
+// never race the async style.load the way a localStorage read after first paint
+// would. A deep-link `?base=streets` still wins (readInitialViewState runs
+// before the map is built), and Streets remains in the registry and reachable.
+export const DEFAULT_BASEMAP: BasemapKey = "satellite";
+
+// ── THE PREVIOUS DEFAULT'S REASONING, KEPT FOR ITS FACTS ───────────────────
+// STREETS was the default until 2026-09-07. It was positron, chosen as the map half of a PAIR whose
 // chrome half is DEFAULT_TERMINAL_SKIN — and that pairing still holds, because
 // Liberty is a light vector style: the constraint the pair exists to satisfy is
 // "do not wrap light chrome around a near-black map", and Streets satisfies it as
@@ -272,13 +364,8 @@ export const BASEMAPS: Record<BasemapKey, BasemapDef> = {
 // whole decision. The view-control cluster — the 3D/2D switch, the five basemap
 // buttons and the two exports — has been removed from the console, so a visitor
 // cannot change the basemap from the UI at all. Every other entry in BASEMAPS is
-// still reachable, but only by deep link (`?base=dark`), and the registry keeps
-// them for exactly that reason rather than out of momentum.
-//
-// This does NOT reintroduce the persistence hazard lib/mapView.ts warns about. The
-// basemap is still deliberately unpersisted: this constant is the value the store
-// STARTS at, read synchronously before the map is constructed, so it can never race
-// the async style.load the way a localStorage read after first paint would. A
-// deep-link `?base=satellite` still wins (readInitialViewState runs before the map
-// is built).
-export const DEFAULT_BASEMAP: BasemapKey = "streets";
+// still reachable, but only by deep link (`?base=streets`), and the registry keeps
+// them for exactly that reason rather than out of momentum. That last fact is the
+// one this change leans on hardest: with no basemap switcher on screen, the
+// constant above is not a default anyone can casually correct, so it had to be
+// worth defending on its own.

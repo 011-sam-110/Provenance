@@ -6,7 +6,7 @@
 // basemap, or fly to a covered region. Open/close is owned by ConsoleShell.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { layersStore, ACTIVE_LAYERS, useLayers, type LayerKey } from "@/lib/layers";
+import { layersStore, ACTIVE_LAYERS, useEditingLayers, type LayerKey } from "@/lib/layers";
 import { mapViewStore, useMapView } from "@/lib/mapView";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import { CAMERA_REGIONS } from "@/lib/icons/svg";
@@ -241,7 +241,13 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   const activePreset = useActivePreset();
   const variant = useVariant();
   const layout = useShellLayout();
-  const layerState = useLayers();
+  // THE EDITING PROJECTION, not the union. This snapshot stamps the ON/OFF badge on
+  // each layer command, and the command itself calls layersStore.toggle, which writes
+  // to whichever context the Sources rail is pointed at. Read from the union and the
+  // pair disagree: with the rail on an area and Aircraft on in World, the badge says
+  // ON, the toggle writes false to the AREA, and the badge does not move. The palette
+  // would be a dead control. See lib/layers.ts.
+  const layerState = useEditingLayers();
   const snapshot = useMemo<PaletteSnapshot>(() => ({
     basemap: mapView.basemap,
     stage: layout.stage,

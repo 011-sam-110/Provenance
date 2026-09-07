@@ -10,6 +10,36 @@
 // toggles while an area is loaded" on every single write, and every answer to that
 // question is a bug waiting for a reload.
 //
+// EVERY CONTEXT IS LIVE AT ONCE. THIS IS THE PART THAT CHANGED, and the comment it
+// replaces was wrong about the product rather than about the code. Contexts used to
+// be EXCLUSIVE: one area was "loaded", and while it was, it was the only thing the
+// console drew. Sam's report was that configuring one area silently took every
+// global signal off the globe and every other area dark with it — "all the global
+// signals that were on for different areas and different parts of the globe aren't
+// on". That is exactly what exclusivity does, and it is not what anyone wants from
+// a tool whose job is watching several places.
+//
+// So the composition rule is now:
+//
+//   World's sources draw EVERYWHERE, always.
+//   Each area's sources draw INSIDE THAT AREA'S RING, always, all areas at once.
+//
+// and the field formerly called `loaded` is now `editing`: it selects which context
+// a toggle in the Sources rail WRITES to, and nothing else. It no longer decides
+// what is on the map, so switching context can no longer make anything disappear.
+//
+// The contexts stay separate maps, which is what keeps that safe — see above. What
+// changed is only how they are READ, and there are now two readings, which callers
+// must not confuse:
+//
+//   editingSet(state)  the ONE context being edited. What the rail ticks and writes.
+//   unionSet(state)    on in World or in ANY area. What is fetched and mounted.
+//
+// A source that is on only inside one ring is still FETCHED globally — almost every
+// upstream here is a whole-world pull with no bbox parameter — and then CROPPED to
+// the rings that asked for it. `sourceRegions` is what says where; see
+// lib/shell/sourceScope.ts for the filter that consumes it.
+//
 // WHAT DEPENDS ON WHAT. This file knows nothing about lib/layers.ts or
 // lib/signals/store.ts. THEY import THIS. Keep it that way: those two stores are
 // views onto whichever SourceSet is loaded, and a back-reference here would make
@@ -49,32 +79,37 @@ export interface InspectorArea {
 export interface InspectorState {
   world: SourceSet;
   areas: InspectorArea[];
-  /** null = World. The one value that decides what the console shows. */
-  loaded: string | null;
+  /**
+   * Which context the Sources rail WRITES to. null = World.
+   *
+   * IT DOES NOT DECIDE WHAT IS DRAWN. It was called `loaded` and it did, which is
+   * the bug described at the top of this file. Every area is live whatever this
+   * says, so changing it is a safe, invisible-on-the-map act: you are choosing a
+   * pen, not a view.
+   */
+  editing: string | null;
 }
 
 export const AREA_CAP = 40;
 
-/**
- * Sources an AREA always draws, whatever its own set says.
- *
- * Sam's rule, and it is what lets a new area start empty without ever loading to a
- * blank map. ONE CONSTANT ON PURPOSE: `webcams` is a keyed, rate-limited global
- * sample that lib/layers.ts deliberately defaults off and keeps out of the presets,
- * and its adapter's fetch() takes no arguments — so the pull is global whatever the
- * ring is, and scoping crops what is drawn rather than what is pulled. That cost was
- * put to Sam and he kept the rule. Reversing it is deleting one string here, not a
- * hunt through the UI.
- *
- * WORLD IS NOT SUBJECT TO THIS. The globe keeps its own toggles, so today's
- * "webcams is opt-in on the globe" behaviour is unchanged. See effectiveSet.
- */
-export const ALWAYS_ON_SOURCES: readonly string[] = ["cameras", "webcams"];
+// ALWAYS_ON_SOURCES IS GONE, and its own rationale is what retired it.
+//
+// It forced `cameras` and `webcams` on inside every area whatever that area's set
+// said, and the stated reason was that it "lets a new area start empty without ever
+// loading to a blank map". Loading an area cannot blank the map any more — World
+// keeps drawing throughout — so the premise is spent.
+//
+// Keeping it would have been actively wrong under the new rule rather than merely
+// redundant. With every area live at once, a forced-on source is not a floor for the
+// one area you are looking at; it is camera pins inside every ring you have ever
+// drawn, permanently, with a toggle in the rail that says off and no way to make it
+// true. A control that cannot turn its own source off is the thing this codebase
+// keeps writing comments about. The AREA_CAP of 40 is what that would have scaled to.
 
 const PERSIST_KEY = "tn.inspector.v1";
 const PERSIST_VERSION = 1;
 
-const EMPTY: InspectorState = Object.freeze({ world: {}, areas: [], loaded: null });
+const EMPTY: InspectorState = Object.freeze({ world: {}, areas: [], editing: null });
 
 // --- pure -------------------------------------------------------------------
 
@@ -129,36 +164,67 @@ export function renameArea(
   return areas.map((a) => (a.id === id ? { ...a, label } : a));
 }
 
-/** Pure: the loaded area, or null for World (including a dangling id). */
-export function loadedArea(state: InspectorState): InspectorArea | null {
-  if (state.loaded === null) return null;
-  return state.areas.find((a) => a.id === state.loaded) ?? null;
+/** Pure: the area being edited, or null for World (including a dangling id). */
+export function editingArea(state: InspectorState): InspectorArea | null {
+  if (state.editing === null) return null;
+  return state.areas.find((a) => a.id === state.editing) ?? null;
 }
 
-/** Pure: the RAW set for the loaded context. What the Sources rail edits. */
-export function activeSet(state: InspectorState): SourceSet {
-  return loadedArea(state)?.sources ?? state.world;
+/** Pure: the RAW set for the context being edited. What the Sources rail ticks. */
+export function editingSet(state: InspectorState): SourceSet {
+  return editingArea(state)?.sources ?? state.world;
 }
 
-/** Pure: the set the console actually DRAWS. Areas force ALWAYS_ON_SOURCES on. */
-export function effectiveSet(state: InspectorState): SourceSet {
-  const area = loadedArea(state);
-  if (!area) return state.world;
-  const out: SourceSet = { ...area.sources };
-  for (const id of ALWAYS_ON_SOURCES) out[id] = true;
+/**
+ * Pure: on in World, or on in ANY area. What is FETCHED and MOUNTED.
+ *
+ * OR, never AND, and never a later context winning. An area saying nothing about a
+ * source (the common case — an area's set starts empty) must not pull World's copy
+ * down, and an area saying `false` is that area declining it rather than vetoing it
+ * for everyone. So only `true` propagates upwards; every other value is silence.
+ *
+ * This is deliberately a coarser question than "what should the map DRAW". It
+ * answers "is this source wanted anywhere at all", which is the only question the
+ * fetch layer can act on: almost every upstream here is a whole-world pull with no
+ * bounding-box parameter, so a source wanted in one 40km ring costs exactly the same
+ * request as one wanted globally. WHERE it is then allowed to appear is
+ * `sourceRegions`, applied after the fetch.
+ */
+export function unionSet(state: InspectorState): SourceSet {
+  const out: SourceSet = { ...state.world };
+  for (const area of state.areas) {
+    for (const [id, on] of Object.entries(area.sources)) {
+      if (on === true) out[id] = true;
+    }
+  }
   return out;
 }
 
 /**
- * The set the console DRAWS, memoised on the state object.
+ * Pure: WHERE a source is allowed to appear.
  *
- * effectiveSet() builds a fresh object whenever an area is loaded, because it has to
- * force ALWAYS_ON_SOURCES in. useSyncExternalStore compares snapshots by identity, so
- * a store calling effectiveSet() per render hands React a new snapshot every time —
- * the documented infinite-loop bug. World hid it: with nothing loaded effectiveSet
- * returns state.world by identity, so the globe was stable and only loading an area
- * would have hung the console. There are no component tests in this repo to catch
- * that, so the guard is an identity assertion in tests/unit/inspector-routing.test.ts.
+ * `null` means everywhere and is the answer whenever World has the source on — an
+ * area cannot narrow the globe, only add to it. Otherwise it is the areas that asked
+ * for it, and the source is cropped to their rings. An empty array means the source
+ * is on nowhere, which callers should never see for a source they are drawing, but
+ * is the honest answer and is cheaper to return than to forbid.
+ */
+export function sourceRegions(state: InspectorState, id: string): InspectorArea[] | null {
+  if (state.world[id] === true) return null;
+  return state.areas.filter((a) => a.sources[id] === true);
+}
+
+/**
+ * The union, memoised on the state object.
+ *
+ * IT MUST GO THROUGH HERE, always. unionSet() builds a fresh object on every call,
+ * and useSyncExternalStore compares snapshots by identity — a store calling it per
+ * render hands React a new snapshot every time, which is an infinite render loop and
+ * not a slow one. The predecessor of this function had exactly that shape and was
+ * saved only by returning `state.world` by identity in the no-area case, so the loop
+ * was latent until the first area was drawn. There are no component tests here to
+ * catch it, so the guard is an identity assertion in
+ * tests/unit/inspector-routing.test.ts.
  *
  * The state object is replaced on every write and never mutated, so its identity is
  * the correct cache key.
@@ -166,17 +232,17 @@ export function effectiveSet(state: InspectorState): SourceSet {
 let memoState: InspectorState | null = null;
 let memoSet: SourceSet = {};
 
-export function effectiveSetMemo(state: InspectorState): SourceSet {
+export function unionSetMemo(state: InspectorState): SourceSet {
   if (state !== memoState) {
     memoState = state;
-    memoSet = effectiveSet(state);
+    memoSet = unionSet(state);
   }
   return memoSet;
 }
 
-/** Pure: set one source on the loaded context. */
+/** Pure: set one source on the context being EDITED. */
 export function writeActive(state: InspectorState, id: string, on: boolean): InspectorState {
-  const area = loadedArea(state);
+  const area = editingArea(state);
   if (!area) return { ...state, world: { ...state.world, [id]: on } };
   return {
     ...state,
@@ -184,14 +250,39 @@ export function writeActive(state: InspectorState, id: string, on: boolean): Ins
   };
 }
 
-/** Pure: replace the whole set for the loaded context (presets, variants). */
+/** Pure: replace the whole set for the context being EDITED (presets, variants). */
 export function replaceActive(state: InspectorState, next: SourceSet): InspectorState {
-  const area = loadedArea(state);
+  const area = editingArea(state);
   if (!area) return { ...state, world: { ...next } };
   return {
     ...state,
     areas: state.areas.map((a) => (a.id === area.id ? { ...a, sources: { ...next } } : a)),
   };
+}
+
+/**
+ * Pure: replace WORLD's set, whatever context is being edited.
+ *
+ * The counterpart to replaceActive, and the split is a bug rather than a preference.
+ * The variant spine and the board presets configure THE GLOBE — "drive the globe to
+ * match the board", in lib/console/presets.ts's own words. Routing those through
+ * replaceActive sent them to whichever context the rail happened to be pointed at,
+ * so an area being edited absorbed them.
+ *
+ * Seen in the browser rather than reasoned about: draw an area, reload, and an area
+ * created with `sources: {}` comes back holding a copy of World's whole set. The
+ * path is ConsoleShell's first-run seed, `applyPreset(DEFAULT_PRESET_ID)`, which
+ * fires on EVERY boot while the landing board carries no widgets, and which runs
+ * AFTER inspectorStore.hydrate() has restored which area was being edited.
+ *
+ * Only whole-set writes move. A per-key write (writeActive, and so every toggle,
+ * and applyMonitor, which drives layersStore.set key by key) still lands on the
+ * edited context — pointing the rail at an area and giving it a monitor's layers is
+ * a thing a user can reasonably want. Handing an area the globe's configuration
+ * behind their back is not.
+ */
+export function replaceWorld(state: InspectorState, next: SourceSet): InspectorState {
+  return { ...state, world: { ...next } };
 }
 
 /**
@@ -221,9 +312,17 @@ export function coerceState(saved: unknown): InspectorState {
       });
     }
   }
-  const loaded =
-    typeof s.loaded === "string" && areas.some((a) => a.id === s.loaded) ? s.loaded : null;
-  return { world: cleanSet(s.world), areas: areas.slice(0, AREA_CAP), loaded };
+  // `loaded` is the field's OLD name, still sitting in every browser that used the
+  // console before this change. It is read as a fallback rather than migrated in
+  // place: the value means less than it used to (a pen, not a view), so carrying it
+  // forward costs one `??` and losing it would silently reset which context a
+  // returning user was editing.
+  const saw = (s as { editing?: unknown; loaded?: unknown });
+  const want = typeof saw.editing === "string" ? saw.editing
+    : typeof saw.loaded === "string" ? saw.loaded
+    : null;
+  const editing = want !== null && areas.some((a) => a.id === want) ? want : null;
+  return { world: cleanSet(s.world), areas: areas.slice(0, AREA_CAP), editing };
 }
 
 const EARTH_RADIUS_KM = 6371.0088;
@@ -290,18 +389,21 @@ export const inspectorStore = {
    * Pull persisted AREAS back in. Called once from ConsoleShell, client-side,
    * AFTER variantStore.bootstrap().
    *
-   * WORLD IS DELIBERATELY NOT RESTORED, and the ordering is not incidental. The
-   * variant spine is, in its own words, "the ONLY load-time hydration path": every
-   * boot runs applyVariant, which calls layersStore.applyExact and
-   * signalsStore.applyExact and so re-derives World's whole set. Persisting a
-   * second copy of it here would be two owners for one piece of state — the exact
-   * bug the Sources/Inspector split exists to avoid — and it was destructive, not
-   * merely redundant: with an area loaded, bootstrap's writes land on the AREA, so
-   * one reload replaced a user's area configuration with the variant's layers.
-   * Measured on a preview before this ordering was fixed.
+   * WORLD IS DELIBERATELY NOT RESTORED. The variant spine is, in its own words,
+   * "the ONLY load-time hydration path": every boot runs applyVariant, which calls
+   * layersStore.applyWorld and signalsStore.applyWorld and so re-derives World's
+   * whole set. Persisting a second copy of it here would be two owners for one
+   * piece of state — the exact bug the Sources/Inspector split exists to avoid.
+   *
+   * Those two writes used to be applyExact, i.e. aimed at whatever context the rail
+   * was pointed at, and this note used to say the fix was to run bootstrap BEFORE
+   * hydrate so nothing was pointed at an area yet. That was true and insufficient:
+   * ConsoleShell also seeds a board after hydrate. The write itself now names its
+   * target, so neither ordering can send it into an area.
    *
    * So World's toggles persist where they already did for 71 days, as a delta in
-   * tn.variant.v1; this store persists the areas, which nothing else knows about.
+   * tn.variant.v1; this store persists the areas and which one is being edited, which nothing else
+   * knows about.
    */
   hydrate() {
     const saved = coerceState(loadPersisted<InspectorState>(PERSIST_KEY, PERSIST_VERSION));
@@ -322,7 +424,7 @@ export const inspectorStore = {
     commit({
       ...state,
       areas: removeArea(state.areas, id),
-      loaded: state.loaded === id ? null : state.loaded,
+      editing: state.editing === id ? null : state.editing,
     });
   },
 
@@ -330,11 +432,19 @@ export const inspectorStore = {
     commit({ ...state, areas: renameArea(state.areas, id, label) });
   },
 
-  /** null unloads (back to World). An unknown id is ignored rather than stranding. */
-  load(id: string | null) {
+  /**
+   * Point the Sources rail at a context. null = World.
+   *
+   * WAS `load`, AND THE RENAME IS THE POINT. "Load" described putting an area on the
+   * map and taking everything else off it, which is no longer a thing that happens.
+   * This only chooses where the next toggle is written; the map does not change.
+   * An unknown id is ignored rather than stranding the rail on a context that is not
+   * there.
+   */
+  edit(id: string | null) {
     if (id !== null && !state.areas.some((a) => a.id === id)) return;
-    if (state.loaded === id) return;
-    commit({ ...state, loaded: id });
+    if (state.editing === id) return;
+    commit({ ...state, editing: id });
   },
 
   setSource(id: string, on: boolean) {
@@ -343,6 +453,11 @@ export const inspectorStore = {
 
   replaceSources(next: SourceSet) {
     commit(replaceActive(state, next));
+  },
+
+  /** Whole-set write from the variant spine / board presets. Always World. */
+  replaceWorldSources(next: SourceSet) {
+    commit(replaceWorld(state, next));
   },
 };
 

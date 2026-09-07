@@ -18,6 +18,7 @@ import type { WorldObject } from "@/lib/world";
 import { overlay } from "@/lib/overlay";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { filterToScope } from "@/lib/scopeFilter";
+import { filterToScopes, useSourceScopes } from "@/lib/shell/sourceScope";
 import { useScope } from "@/lib/shell/scope";
 import { cinematic } from "@/lib/cinematic/store";
 import { computeDive } from "@/lib/cinematic/dive";
@@ -2447,10 +2448,17 @@ function SignalFeed({
 }) {
   const { id } = source;
   const scope = useScope();
+  // WHERE THIS SIGNAL IS ALLOWED TO APPEAR. null when World has it on — an area can
+  // add a signal to the map and can never narrow the globe. Otherwise it is the rings
+  // of the areas that asked for it, and every area is live at once, so this is a LIST
+  // rather than the one scope this component used to read. See lib/shell/sourceScope.ts.
+  const rings = useSourceScopes(id);
   const rawRef = useRef<WorldObject[]>([]);
   const loadedOnceRef = useRef(false);
   const scopeRef = useRef(scope);
   scopeRef.current = scope;
+  const ringsRef = useRef(rings);
+  ringsRef.current = rings;
 
   /**
    * Hand on the SCOPED view of whatever the upstream last returned.
@@ -2473,20 +2481,24 @@ function SignalFeed({
    */
   const publish = useCallback(
     (objs: WorldObject[]) => {
-      const scoped = filterToScope(objs, scopeRef.current, (o) => o);
+      const scoped = filterToScopes(
+        filterToScope(objs, scopeRef.current, (o) => o),
+        ringsRef.current,
+        (o) => o,
+      );
       onData(id, scoped);
       signalCountsStore.set(id, scoped.length);
     },
     [id, onData],
   );
 
-  // Re-crop when the scope changes, WITHOUT refetching — loading an area must not
-  // fire 33 upstream requests. Skipped until the first load so a mounting layer
-  // shows "no count yet" rather than a momentary 0.
+  // Re-crop when either crop changes, WITHOUT refetching — drawing an area, or giving
+  // an existing one a new source, must not fire 33 upstream requests. Skipped until
+  // the first load so a mounting layer shows "no count yet" rather than a momentary 0.
   useEffect(() => {
     if (!loadedOnceRef.current) return;
     publish(rawRef.current);
-  }, [scope, publish]);
+  }, [scope, rings, publish]);
 
   useEffect(() => {
     let alive = true;

@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { BRAND, siteUrl } from "@/lib/brand";
 import "./globals.css";
+import { Suspense } from "react";
+import { Beacon } from "@/components/analytics/Beacon";
 
 // The OpenData Terminal's two typefaces, self-hosted by next/font (no runtime
 // request to Google, no render-blocking <link>, and a size-matched local fallback
@@ -95,8 +96,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // root; nothing changes typeface until globals.css consumes them.
     <html lang="en" data-theme="light" className={`${jetbrainsMono.variable} ${ibmPlexSans.variable}`}>
       <body>
+        {/*
+          WHAT COUNTS PAGE VIEWS HERE, AND WHAT DOES NOT.
+
+          `<Analytics />` from @vercel/analytics used to sit on this line. It posted to
+          /_vercel/insights, a path that exists only on Vercel's edge, so self-hosted it
+          would have fired a 404 on every single page view — collecting nothing while
+          looking, in the code, exactly like collection.
+
+          What replaced it is deliberately two things, because one cannot do the job.
+          Caddy's access log is the source of truth for traffic: it cannot be blocked and
+          it sees crawlers. The beacon below is the only possible source for engagement —
+          bounce rate needs to know two requests were one visit, time on page needs to
+          know when someone LEFT, and a misclick is a click that produced no request at
+          all. No server log can answer those, however it is parsed.
+
+          The beacon is dormant-safe and cookieless: with NEXT_PUBLIC_POSTHOG_KEY unset,
+          posthog-js is never even fetched. See lib/analytics/beacon.ts, and
+          app/(site)/privacy states all of this in the visitor's words.
+
+          THE SUSPENSE BOUNDARY IS REQUIRED, NOT TIDINESS. Beacon reads useSearchParams,
+          and an unwrapped useSearchParams opts every route that renders this layout out
+          of static generation — which is every route on the site. The boundary keeps the
+          ~18,766 prerendered camera pages prerendered.
+        */}
+        <Suspense fallback={null}>
+          <Beacon />
+        </Suspense>
         {children}
-        <Analytics />
       </body>
     </html>
   );

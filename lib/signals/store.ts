@@ -18,20 +18,31 @@ import { useSyncExternalStore } from "react";
 export type SignalState = Record<string, boolean>;
 
 import { DEFAULT_STATE } from "@/lib/layers";
-import { effectiveSetMemo, inspectorStore, type SourceSet } from "@/lib/shell/inspector";
+import { editingSet, inspectorStore, unionSetMemo, type SourceSet } from "@/lib/shell/inspector";
 
 // Signals are the sparse half of a context's SourceSet: an id that is not present
 // reads as off, exactly as before. No projection is needed — a SourceSet IS a
-// SignalState — so this returns the context's map directly.
+// SignalState — so these return a context's map directly.
 //
-// It must go through the MEMOISED reader. An earlier cut of this file called
-// effectiveSet() and claimed its identity was "already stable across renders": true
-// for World, which is returned by identity, and false for an area, where the
-// always-on ids are forced into a fresh object on every call. useSignals() would have
-// looped as soon as an area loaded. Pinned by an identity assertion in
-// tests/unit/inspector-routing.test.ts.
+// TWO READERS, MIRRORING lib/layers.ts, and its note on the split applies here word
+// for word: `current` is the UNION (on in World or in any area — what is fetched and
+// mounted), `editing` is the one context the rail is pointed at (what it ticks, and
+// what every write compares against). A write that compared against the union would
+// be a dead toggle on any signal World already has on.
+//
+// `current` must go through the MEMOISED reader. An earlier cut of this file called
+// the un-memoised builder and claimed its identity was "already stable across
+// renders": true for World, which was returned by identity, and false the moment an
+// area was involved, where a fresh object is built per call. useSignals() would have
+// looped. Pinned by an identity assertion in tests/unit/inspector-routing.test.ts.
 function current(): SignalState {
-  return effectiveSetMemo(inspectorStore.get());
+  return unionSetMemo(inspectorStore.get());
+}
+
+// `editingSet` returns a context's own map BY IDENTITY — state.world, or the area's
+// own `sources` — so it is already stable across renders and needs no memo of its own.
+function editing(): SignalState {
+  return editingSet(inspectorStore.get());
 }
 
 export const signalsStore = {
@@ -39,10 +50,10 @@ export const signalsStore = {
     return current()[id] === true;
   },
   toggle(id: string) {
-    inspectorStore.setSource(id, !(current()[id] === true));
+    inspectorStore.setSource(id, !(editing()[id] === true));
   },
   set(id: string, on: boolean) {
-    if ((current()[id] === true) === on) return;
+    if ((editing()[id] === true) === on) return;
     inspectorStore.setSource(id, on);
   },
   applyExact(next: SignalState) {
@@ -54,13 +65,24 @@ export const signalsStore = {
     // carried over; every signal id comes from `next`, so a signal absent from it still
     // reads off, exactly as before.
     const set: SourceSet = { ...next };
-    const cur = effectiveSetMemo(inspectorStore.get());
+    const cur = editing();
     for (const k of Object.keys(DEFAULT_STATE)) {
       if (typeof cur[k] === "boolean") set[k] = cur[k];
     }
     inspectorStore.replaceSources(set);
   },
+  /** The mirror of layersStore.applyWorld — see the note there. */
+  applyWorld(next: SignalState) {
+    const set: SourceSet = { ...next };
+    const cur = inspectorStore.get().world;
+    for (const k of Object.keys(DEFAULT_STATE)) {
+      if (typeof cur[k] === "boolean") set[k] = cur[k];
+    }
+    inspectorStore.replaceWorldSources(set);
+  },
   get: current,
+  /** The context being edited. For the rail's ticks and for anything that writes. */
+  editing,
   /** Kept for API compatibility. inspectorStore.hydrate() owns rehydration now. */
   hydrate() {
     /* no-op */
@@ -70,8 +92,14 @@ export const signalsStore = {
   },
 };
 
+/** The UNION. What is on the map. */
 export function useSignals(): SignalState {
   return useSyncExternalStore(signalsStore.subscribe, signalsStore.get, signalsStore.get);
+}
+
+/** The context being EDITED. What the Sources rail ticks. */
+export function useEditingSignals(): SignalState {
+  return useSyncExternalStore(signalsStore.subscribe, signalsStore.editing, signalsStore.editing);
 }
 
 // --- Live per-signal counts -------------------------------------------------

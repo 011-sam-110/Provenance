@@ -15,11 +15,23 @@ export default function robots(): MetadataRoute.Robots {
 
   // Every non-production deployment gets a blanket refusal. Preview URLs carry a
   // byte-identical copy of the whole site, and an indexed preview competes with
-  // production for the same queries as duplicate content. VERCEL_ENV is absent
-  // outside Vercel (local dev), where the file is not served to anyone anyway, so
-  // the default has to be "allow" - defaulting to noindex would risk silently
-  // deindexing production if the variable ever went missing.
-  if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== "production") {
+  // production for the same queries as duplicate content.
+  //
+  // SITE_ENV EXISTS BECAUSE THE OLD REASONING STOPPED BEING TRUE. This used to read
+  // VERCEL_ENV alone, justified by "absent outside Vercel (local dev), where the file
+  // is not served to anyone anyway". Self-hosted that is false: the preview box serves
+  // this file to whoever asks, VERCEL_ENV is absent there too, and the guard written to
+  // keep previews out of the index would have waved them straight in.
+  //
+  // VERCEL_ENV is still honoured, because the Vercel project stays alive to redirect
+  // the old subdomain and should keep behaving correctly while it does.
+  //
+  // The default stays "allow" on purpose. Defaulting to noindex would mean one missing
+  // variable silently deindexes production, which is far worse than the failure it
+  // prevents - so a preview MUST set SITE_ENV=preview, and this file is generated at
+  // BUILD time, so it has to be set for the build and not on the running box.
+  const siteEnv = process.env.SITE_ENV || process.env.VERCEL_ENV;
+  if (siteEnv && siteEnv !== "production") {
     return { rules: [{ userAgent: "*", disallow: "/" }] };
   }
 

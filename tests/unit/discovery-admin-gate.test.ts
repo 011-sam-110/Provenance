@@ -91,6 +91,15 @@ describe("the /admin production gate", () => {
     expect(isProduction({ NODE_ENV: "production", VERCEL_ENV: "production" })).toBe(true);
     expect(isProduction({ NODE_ENV: "development", VERCEL_ENV: "preview" })).toBe(false);
     expect(isProduction({})).toBe(false);
+
+    // SITE_ENV is the third signal, and it exists because the other two stopped being
+    // two. Off Vercel, VERCEL_ENV is set by nobody, so every self-hosted case below is
+    // decided by ONE variable unless SITE_ENV also counts — which is the single-signal
+    // state the paragraph above says is not good enough. These four are the box.
+    expect(isProduction({ NODE_ENV: "production", SITE_ENV: "production" })).toBe(true);
+    expect(isProduction({ SITE_ENV: "production" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "production", SITE_ENV: "preview" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "development", SITE_ENV: "preview" })).toBe(false);
   });
 
   it("keeps the review tool out of the crawler's way as well", () => {
@@ -127,7 +136,15 @@ describe("the curation data files", () => {
         // because it documents the very grep this test performs — and a guard that
         // fires on prose is a guard people learn to route around.
         const src = stripComments(readFileSync(join(ROOT, rel), "utf8"));
-        if (/from "node:fs"|require\("node:fs"\)|writeFileSync|appendFileSync/.test(src)) {
+        // Broader than "writeFileSync". The point of the sentence on /privacy is that
+        // the served application puts nothing on disk, and a rename or an mkdir is as
+        // much a write as an append — createWriteStream especially, which is how a file
+        // gets written without any of the obvious names appearing at all.
+        if (
+          /from "node:fs"|require\("node:fs"\)|writeFileSync|appendFileSync|writeFile\(|createWriteStream|renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync/.test(
+            src,
+          )
+        ) {
           offenders.push(rel);
         }
       }
@@ -142,5 +159,37 @@ describe("the curation data files", () => {
       "these files write to disk outside the dev-only curation tooling, which makes the /privacy page's 'writes no files' sentence false: " +
         unexpected.join(", "),
     ).toEqual([]);
+  });
+
+  it("keeps the served tree from importing anything under scripts/", () => {
+    // scripts/ holds the tooling that DOES write to disk — the camera-review store and
+    // the access-log rollup job. None of it is bundled, none of it is deployed inside a
+    // release, and the test above is only meaningful while that stays true. A single
+    // import from a route or a lib module would pull a writer back into the served
+    // application without tripping any of the greps above, because the write call would
+    // be in a file this walk never reaches.
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      const abs = join(ROOT, dir);
+      if (!existsSync(abs)) return;
+      for (const name of readdirSync(abs)) {
+        const rel = dir + "/" + name;
+        if (statSync(join(ROOT, rel)).isDirectory()) {
+          walk(rel);
+          continue;
+        }
+        if (!/\.(ts|tsx)$/.test(name)) continue;
+        const src = stripComments(readFileSync(join(ROOT, rel), "utf8"));
+        if (/from\s+["'][^"']*(\.\.\/)*scripts\//.test(src) || /from\s+["']@\/scripts\//.test(src)) {
+          offenders.push(rel);
+        }
+      }
+    };
+    walk("app");
+    walk("lib");
+    walk("components");
+    expect(offenders, "these served files import from scripts/, which is not deployed: " + offenders.join(", ")).toEqual(
+      [],
+    );
   });
 });

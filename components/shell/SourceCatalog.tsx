@@ -29,8 +29,13 @@
 // stale persisted "1h" cannot outlive the control that set it.
 
 import { useRef, useState } from "react";
-import { useLayers, layersStore, type LayerKey } from "@/lib/layers";
-import { signalsStore, useSignals } from "@/lib/signals/store";
+// THE EDITING PROJECTIONS, NOT THE UNION. `useLayers`/`useSignals` answer "is this
+// on anywhere" — World or any drawn area — which is what the MAP needs and is the
+// wrong answer for a tick beside a toggle. With the rail pointed at an area, a row
+// ticked from the union would claim the area has a source that World has and the
+// area does not, and clicking it would appear to do nothing. See lib/layers.ts.
+import { useEditingLayers, useLayers, layersStore, type LayerKey } from "@/lib/layers";
+import { signalsStore, useEditingSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
 import { marketsStore } from "@/lib/shell/markets";
@@ -50,8 +55,8 @@ import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/
 import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
-import ContextBar from "@/components/shell/inspector/ContextBar";
-import InspectorTab from "@/components/shell/inspector/InspectorTab";
+import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
+import AreasPanel from "@/components/shell/inspector/AreasPanel";
 
 function CameraFilters() {
   const filter = useCameraFilter();
@@ -99,6 +104,37 @@ function CameraFilters() {
   );
 }
 
+/**
+ * The rail's close mark.
+ *
+ * INLINE SVG, and drawn here rather than imported. components/console/RailGlyph.tsx
+ * is this repo's precedent for chrome-only art as real JSX, and its reasoning
+ * applies unchanged: lib/icons/svg.ts is the registry for marks that name a feature
+ * ON THE MAP and is rasterised into a MapLibre sprite, which an ✕ on a panel header
+ * has no business being in.
+ *
+ * A "✕" text character was the obvious cheaper option and is the thing being
+ * replaced. It renders at whatever weight the first font in the stack happens to
+ * carry it at — the rail's mono stack does not — so it arrived thin, small and
+ * vertically off-centre next to a 16px uppercase title. Two strokes at the same 1.9
+ * weight the stage-rail glyphs use cannot drift.
+ */
+function CloseGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      aria-hidden
+      focusable="false"
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 // Built once: the mapping is static, and rebuilding it per render would re-derive
 // every label collision on every keystroke in the search box.
 const SECTIONS = buildSourceSections(RAIL_SOURCES);
@@ -123,13 +159,16 @@ export default function SourceCatalog() {
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"sources" | "inspector">("sources");
+  const [tab, setTab] = useState<"sources" | "presets">("sources");
   const t = useT();
-  const layers = useLayers();
-  const signals = useSignals();
+  const layers = useEditingLayers();
+  const signals = useEditingSignals();
   // The LIVE console layout — the one ConsoleWorkspace draws. Subscribing here is
   // what makes a ＋ light up the instant its widget lands, and go out when the
   // widget is closed from its own ⋯ menu.
+  // The UNION, for the handful of things below that are about what the MAP is
+  // drawing rather than about what a toggle would write.
+  const mapLayers = useLayers();
   const consoleLayout = useShellLayout();
   const openTypes = new Set(consoleLayout.widgets.map((w) => w.type));
 
@@ -211,13 +250,23 @@ export default function SourceCatalog() {
         <span className="tn-cat-count" title="Widgets on your workspace right now">
           {consoleLayout.widgets.length} ▦
         </span>
-        <button type="button" className="tn-rail-collapse" onClick={() => setRailOpen(false)} aria-label="Collapse sources">
-          ‹
+        <button
+          type="button"
+          className="tn-rail-collapse"
+          onClick={() => setRailOpen(false)}
+          aria-label="Close sources"
+          title="Close sources"
+        >
+          <CloseGlyph />
         </button>
       </div>
 
-      <ContextBar />
-
+      {/* TABS ABOVE THE CONTEXT SWITCHER, which is the order Sam asked for and the
+          one that reads correctly: the tabs choose WHICH PANEL, the switcher says
+          WHERE THAT PANEL WRITES, and a scope line that sat above the thing it
+          scoped was claiming to cover the tab strip as well. Both presets and
+          sources write to the selected context, so the switcher belongs under the
+          tabs and over their shared content. */}
       <div className="tn-rail-tabs" role="tablist">
         <button
           type="button" role="tab" className="tn-rail-tab"
@@ -227,11 +276,13 @@ export default function SourceCatalog() {
         </button>
         <button
           type="button" role="tab" className="tn-rail-tab"
-          aria-selected={tab === "inspector"} onClick={() => setTab("inspector")}
+          aria-selected={tab === "presets"} onClick={() => setTab("presets")}
         >
-          Inspector
+          Presets
         </button>
       </div>
+
+      <ContextSwitcher />
 
       {tab === "sources" ? (
         <>
@@ -244,8 +295,12 @@ export default function SourceCatalog() {
             aria-label="Search sources"
           />
 
-          <PresetBar />
+          {/* WHERE PresetBar USED TO BE. Drawing an area and then turning sources on
+              for it is one job; it used to be split across two tabs. The presets took
+              this block's old home as the rail's second tab. */}
+          <AreasPanel />
 
+          <div className="tn-rail-divider" />
 
           {visible.length === 0 ? (
             <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
@@ -269,7 +324,13 @@ export default function SourceCatalog() {
               rail exists to give you. They are a refinement of one source rather
               than a source, so they read better as a trailing panel. Shown only
               while the layer they filter is actually on. */}
-          {layers.cameras ? (
+          {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
+              and region filter for the whole console, not a per-context setting — so
+              these belong on screen whenever camera pins are being drawn anywhere.
+              Gated on the edited context they would vanish while you configured an
+              area, taking a global control off the page as a side effect of a choice
+              that has nothing to do with it. */}
+          {mapLayers.cameras ? (
             <>
               <div className="tn-rail-divider" />
               <CameraFilters />
@@ -291,12 +352,12 @@ export default function SourceCatalog() {
           </button>
 
           <p className="tn-rail-foot">
-            Only sources you can see are fetched. ＋ or drag a source to put it on the left, right or
-            bottom rail.
+            Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
+            right rail.
           </p>
         </>
       ) : (
-        <InspectorTab />
+        <PresetBar />
       )}
     </aside>
   );
