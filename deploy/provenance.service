@@ -1,0 +1,39 @@
+# /etc/systemd/system/provenance.service
+# systemctl daemon-reload && systemctl enable --now provenance
+[Unit]
+Description=Provenance (Next.js standalone)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=app
+Group=app
+WorkingDirectory=/srv/provenance/current
+
+# Runtime secrets (API keys). Owner app, chmod 600 — NOT in git.
+# NEXT_PUBLIC_* vars are inlined into the client bundle at BUILD time, so setting one
+# here changes nothing; it has to be present when deploy.sh runs `next build`.
+EnvironmentFile=/srv/provenance/shared/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+
+ExecStart=/usr/bin/node /srv/provenance/current/.next/standalone/server.js
+Restart=always
+RestartSec=3
+
+# The registry warm-up means a cold start does real work before it answers.
+TimeoutStartSec=90
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+# ISR writes rendered camera pages to the build's own cache dir, so that path is the
+# one exception to ProtectSystem=strict. 18,766 camera URLs render on first request
+# and are served from here afterwards; losing it means re-rendering all of them.
+ReadWritePaths=/srv/provenance/current/.next
+
+[Install]
+WantedBy=multi-user.target

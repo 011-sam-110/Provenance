@@ -1,0 +1,38 @@
+# /etc/caddy/Caddyfile   —   edit DOMAIN, then: systemctl reload caddy
+#
+# Caddy terminates TLS (certificate obtained and renewed automatically from Let's
+# Encrypt on first boot — the DNS A record must already point here or issuance fails)
+# and reverse-proxies to the Next standalone server on loopback:3000.
+#
+# NOT adding `encode` here on purpose: Next's standalone server already compresses
+# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates to
+# roughly a megabyte. A second encoder buys nothing and costs CPU on every response.
+
+provenance.example.com {
+
+	# Long-lived immutable build assets. Hashed filenames, so a year is safe and it
+	# keeps repeat visitors off the origin entirely — the cheapest byte is unsent.
+	@immutable path /_next/static/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	reverse_proxy 127.0.0.1:3000 {
+		# lib/brand.ts resolves absolute URLs from NEXT_PUBLIC_SITE_URL first, so these
+		# are the backstop rather than the primary path — they keep anything that reads
+		# the request directly (redirects, Next's own URL handling) on https and the
+		# real host instead of http://127.0.0.1:3000.
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+		header_up Host {host}
+
+		# /api/hls streams video segments straight through. Caddy does not buffer
+		# response bodies by default, so segments start flowing before they finish
+		# downloading — leave it that way.
+	}
+
+	log {
+		output file /var/log/caddy/provenance.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}

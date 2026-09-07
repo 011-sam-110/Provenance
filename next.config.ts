@@ -31,6 +31,21 @@ const nextConfig: NextConfig = {
       permanent: false,
     }));
   },
+  /**
+   * Emit `.next/standalone/server.js` — a self-contained Node server carrying only the
+   * traced dependencies, so the box runs the app without a `node_modules` install.
+   *
+   * WHY THIS EXISTS NOW. Vercel never needed it: its builder traced the same graph
+   * itself. Off Vercel there is no builder, and the alternative is shipping the full
+   * ~1.1 GB `node_modules` to the server on every deploy.
+   *
+   * THE TRAP. `output: "standalone"` does NOT copy `public/` or `.next/static` into
+   * the standalone tree — Next assumes a CDN serves them. Self-hosted there is no CDN,
+   * so the deploy pipeline copies both in beside `server.js`. Miss that step and the
+   * app boots, answers HTML, and every stylesheet, script chunk and icon 404s: the
+   * page renders unstyled and the map never mounts, with a clean server log.
+   */
+  output: "standalone",
   // Allow an isolated build dir so a verification `next build` doesn't fight a
   // concurrently-running `next dev` over `.next` (defaults to `.next`).
   /**
