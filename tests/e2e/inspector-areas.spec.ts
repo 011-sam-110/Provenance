@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { basemapWarmup, DEFAULT_BASEMAP } from "@/lib/basemaps";
 
 // The Inspector, end to end, under the ADDITIVE model: every area is live at once,
 // World draws everywhere, and an area's own sources are cropped to its ring.
@@ -46,10 +47,17 @@ const BBOX: [number, number, number, number] = [90, -60, 180, 70];
 const SIGNAL = "earthquakes"; // global, keyless, and reliably non-empty
 const AREA_LABEL = "West Pacific";
 
-// lib/basemaps.ts: DEFAULT_BASEMAP is "streets", whose style is
-// tiles.openfreemap.org/styles/liberty. Measured against a preview: 200s arrive from
-// this host and none from basemaps.cartocdn.com, which only serves the dark variant.
-const TILE_HOST = "tiles.openfreemap.org";
+// The host the active basemap's imagery actually comes from, DERIVED rather than
+// typed. It was hardcoded to `tiles.openfreemap.org` while DEFAULT_BASEMAP was
+// `streets`; the default is now `satellite` (Esri World Imagery), so a literal
+// here would wait forever for tiles from a host this page no longer touches —
+// and it would do it as a TIMEOUT, which reads like a broken page rather than a
+// stale constant.
+//
+// `basemapWarmup` returns every origin the default basemap fetches from. The
+// first is the tile host for both kinds of entry: a vector style's own origin,
+// or a raster style's tile template.
+const TILE_HOST = new URL(basemapWarmup(DEFAULT_BASEMAP).preconnect[0]).host;
 
 // Reaching a protection-enabled preview WITHOUT setting a request header, because a
 // header is what CORS-preflights the tile host and silently kills the basemap.
