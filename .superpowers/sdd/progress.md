@@ -25,7 +25,7 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 5: ring -> planned wall (camslot.monitor.ts)
 - [x] Task 6: circle gesture + rubber band
 - [x] Task 7: Streets preset opens on an area
-- [~] Task 8: prompt + apply -- implementer running
+- [~] Task 8: prompt + apply -- implementer resumed after a rate limit
 - [ ] Task 9: monitored marks
 - [ ] Task 10: video in a tile
 - [ ] Task 11: browser + perf gate
@@ -199,6 +199,23 @@ Task 7: implemented (86da18a). Suite 333/3273 -> 333/3281 (+8). Streets now open
      missing tile selector at :314, past a try/finally with no catch, after 2 of 7 screenshots.
      Both left unchanged BY DECISION -- loud is acceptable, and Task 11's browser gate may
      supersede verify-wall.mjs entirely. Revisit at Task 11, do not silently rewrite them.
+
+Task 8: IN PROGRESS. The implementer hit an account session rate limit at 20:50 and died
+  mid-task; the limit reset two minutes later and I resumed the same agent rather than
+  restarting, so its context survived. Nothing was lost -- everything it had done was
+  uncommitted on disk and I inventoried it before resuming: store.ts modified, camslot.apply.ts
+  and its 8-test file created; StreetsPrompt.tsx, the ConsoleWorkspace render, the CSS block
+  and the commit still to come.
+  PLAN DEFECT IT FOUND, and its fix is better than my plan: my Task 8 text specified
+  `replace(fn) { state = fn(state); emit(); }`. But `replace` ALREADY EXISTED taking a
+  ShellLayout, and my version skipped sanitizeLayout -- which would have opened a second,
+  UNVALIDATED door into the `watch` field, bypassing exactly the vertex-count and
+  coordinate-range checks Task 2 built for it. It overloaded the existing method and routed
+  BOTH shapes through sanitizeLayout. Keeping it; asked for it to be stated in the report as a
+  deliberate deviation, and for confirmation that the typeof-function branch cannot capture
+  any existing object-form caller or change archive semantics.
+  LESSON: my plan said "replace(fn), if it does not already exist", which reads like diligence
+  and is not. It existed WITH A DIFFERENT SIGNATURE, which is the case that phrasing misses.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
