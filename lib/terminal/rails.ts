@@ -46,6 +46,19 @@ export const WALL_MIN_PX = STAGE_MIN_PX;
  */
 export function dockSize(l: ShellLayout, container: { w: number; h: number }): number {
   if (l.segments.right.collapsed) return 0;
+
+  // AN EMPTY WALL GIVES THE MAP THE WHOLE BOARD.
+  //
+  // The two bounds below exist for one reason each, and neither reason is present
+  // when there are no tiles: RAIL_MAX stops a rail crowding the map out, and
+  // WALL_MIN_PX keeps the WALL's own controls from colliding. A wall with nothing
+  // in it has no controls to collide and nothing to be crowded out of.
+  //
+  // This is what lets the Streets board open as a full-bleed map asking for an
+  // area. If a future empty wall grows chrome of its own, this exception is wrong
+  // and goes — it is guarded by the tile count precisely so that stays checkable.
+  if (l.mode === "wall" && l.widgets.length === 0) return container.w;
+
   const want = clampRailSize("right", l.segments.right.size);
   return Math.max(0, Math.min(want, container.w - WALL_MIN_PX));
 }
