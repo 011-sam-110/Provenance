@@ -1,5 +1,6 @@
 # /etc/systemd/system/provenance.service
-# systemctl daemon-reload && systemctl enable --now provenance
+# install -m 644 deploy/provenance.service /etc/systemd/system/ \
+#   && systemctl daemon-reload && systemctl enable --now provenance
 [Unit]
 Description=Provenance (Next.js standalone)
 After=network-online.target
@@ -9,20 +10,24 @@ Wants=network-online.target
 Type=simple
 User=app
 Group=app
-WorkingDirectory=/srv/provenance/current
 
-# Runtime secrets (API keys). Owner app, chmod 600 — NOT in git.
-# NEXT_PUBLIC_* vars are inlined into the client bundle at BUILD time, so setting one
-# here changes nothing; it has to be present when deploy.sh runs `next build`.
+# A RELEASE DIRECTORY IS THE APP ROOT. `output: "standalone"` emits a tree whose entry
+# point is server.js and which expects `public/` and `.next/static` beside it, so CI
+# assembles exactly that and ships it as the release. There is no repo checkout here and
+# no node_modules install: the traced dependencies are already inside the artifact.
+WorkingDirectory=/srv/provenance/current
+ExecStart=/usr/bin/node /srv/provenance/current/server.js
+
+# Runtime secrets (upstream API keys). Owner app, chmod 600 — NOT in git.
+# NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so setting one here
+# changes nothing; it has to be present in the CI environment when `next build` runs.
 EnvironmentFile=/srv/provenance/shared/.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOSTNAME=127.0.0.1
 
-ExecStart=/usr/bin/node /srv/provenance/current/.next/standalone/server.js
 Restart=always
 RestartSec=3
-
 # The registry warm-up means a cold start does real work before it answers.
 TimeoutStartSec=90
 
@@ -30,9 +35,17 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-# ISR writes rendered camera pages to the build's own cache dir, so that path is the
-# one exception to ProtectSystem=strict. 18,766 camera URLs render on first request
-# and are served from here afterwards; losing it means re-rendering all of them.
+
+# ISR writes rendered pages under the app root, so this is the one path that has to stay
+# writable under ProtectSystem=strict. `current` is a symlink and systemd resolves it at
+# unit START, which is why the deploy swaps the symlink and then restarts — in that
+# order. Restarting first would leave the service writing into the previous release.
+#
+# THE CACHE IS PER-RELEASE, ON PURPOSE. Pointing it at a shared directory would keep the
+# 18,766 camera pages warm across deploys, and would also let a page rendered by the old
+# code be served by the new one, because Next keys these entries by route and not by
+# build. A cold cache after a deploy costs a re-render on first request; a shared one
+# costs correctness.
 ReadWritePaths=/srv/provenance/current/.next
 
 [Install]
