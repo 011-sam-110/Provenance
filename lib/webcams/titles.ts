@@ -12,7 +12,9 @@
 // miss returns nothing and callers fall back to the id, which is honest — never a
 // fabricated name.
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useMemo } from "react";
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 
 export interface WebcamRow {
   id: string;
@@ -87,10 +89,20 @@ const EMPTY: WebcamRow[] = [];
 
 /** Every known webcam row, or an empty list until the first load resolves. */
 export function useWebcamDirectory(): WebcamRow[] {
-  return useSyncExternalStore(
+  const all = useSyncExternalStore(
     subscribe,
     () => rows ?? EMPTY,
     () => EMPTY,
+  );
+  const scope = useScope();
+  return useMemo(
+    () =>
+      filterToScope(all, scope, (w) =>
+        typeof w.lat === "number" && typeof w.lon === "number"
+          ? { lat: w.lat, lon: w.lon }
+          : null,
+      ),
+    [all, scope],
   );
 }
 

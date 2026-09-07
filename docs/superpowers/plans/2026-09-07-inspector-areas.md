@@ -1167,7 +1167,19 @@ export default function InspectorTab() {
             type="button"
             className="tn-insp-row"
             data-loaded={state.loaded === a.id ? "" : undefined}
-            onClick={() => overlay.open({ kind: "area", id: a.id, label: a.label, lat: 0, lon: 0 })}
+            onClick={() =>
+              // The bbox CENTRE, not 0,0. FeedOverlay writes the object's lat/lon
+              // straight into its GeoJSON export, so a placeholder would hand the
+              // user a downloaded file claiming every area sits at Null Island.
+              // A position we do have must never be shipped as one we invented.
+              overlay.open({
+                kind: "area",
+                id: a.id,
+                label: a.label,
+                lat: (a.bbox[1] + a.bbox[3]) / 2,
+                lon: (a.bbox[0] + a.bbox[2]) / 2,
+              })
+            }
           >
             <span className="tn-insp-glyph" aria-hidden>▣</span>
             <span className="tn-insp-main">
@@ -1231,7 +1243,7 @@ Append to `app/globals.css`, beside the existing `.tn-rail` block:
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
 .tn-ctxbar {
   display: flex; align-items: center; gap: 7px; margin: 0 0 2px;
-  padding: 6px 9px; border-radius: 8px; font-size: 12px;
+  padding: 6px 9px; border-radius: 8px; font-size: var(--tnx-fs-sm);
   background: var(--tn-surface-2, rgba(0,0,0,.03)); border: 1px solid var(--tn-border);
 }
 .tn-ctxbar[data-area] { border-color: var(--tn-accent); }
@@ -1243,7 +1255,7 @@ Append to `app/globals.css`, beside the existing `.tn-rail` block:
 
 .tn-rail-tabs { display: flex; gap: 4px; padding: 7px 0 2px; }
 .tn-rail-tab {
-  flex: 1; padding: 5px 0 6px; font: inherit; font-size: 12px; font-weight: 500;
+  flex: 1; padding: 5px 0 6px; font: inherit; font-size: var(--tnx-fs-sm); font-weight: 500;
   border-radius: 7px; border: 1px solid transparent; background: none;
   color: var(--tn-text-faint); cursor: pointer;
 }
@@ -1262,9 +1274,9 @@ Append to `app/globals.css`, beside the existing `.tn-rail` block:
 .tn-insp-glyph { color: var(--tn-accent); flex: 0 0 auto; }
 .tn-insp-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .tn-insp-label { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-insp-sub { font-size: 11px; color: var(--tn-text-faint); }
+.tn-insp-sub { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
 .tn-insp-pill {
-  font-size: 9.5px; font-weight: 700; letter-spacing: .05em;
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: .05em;
   padding: 1.5px 5px; border-radius: 4px; white-space: nowrap; color: var(--tn-accent);
   border: 1px solid var(--tn-accent);
 }
@@ -1272,15 +1284,15 @@ Append to `app/globals.css`, beside the existing `.tn-rail` block:
 .tn-insp-draw {
   width: 100%; margin-top: 8px; padding: 7px 9px; text-align: left;
   border: 1px dashed var(--tn-border); border-radius: 8px; background: none;
-  font: inherit; font-size: 12px; color: var(--tn-accent); cursor: pointer;
+  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-accent); cursor: pointer;
 }
 .tn-insp-soon {
   margin-top: 12px; padding: 9px 10px; border-radius: 10px;
   border: 1px dashed var(--tn-border); background: var(--tn-surface-2, rgba(0,0,0,.03));
 }
-.tn-insp-soon-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 11px; font-weight: 600; }
+.tn-insp-soon-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: var(--tnx-fs-xs); font-weight: 600; }
 .tn-insp-soon-head span:first-child { flex: 1; }
-.tn-insp-soon p { margin: 0; font-size: 11px; color: var(--tn-text-faint); line-height: 1.5; }
+.tn-insp-soon p { margin: 0; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); line-height: 1.5; }
 ```
 
 - [ ] **Step 9: Run the full gate**
@@ -1311,7 +1323,7 @@ and an area label that overstates is the one thing this product must not print."
 **Files:**
 - Create: `lib/scopeFilter.ts`
 - Test: `tests/unit/scope-filter.test.ts`
-- Modify: `lib/planes/usePlanes.ts`, `lib/cameras/useCameras.ts`, and the satellites + webcam directory hooks
+- Modify: `lib/planes/usePlanes.ts`, `lib/cameras/useCameras.ts`, `lib/satellites/useSatellites.ts`, `lib/webcams/titles.ts` (`useWebcamDirectory`)
 
 **Interfaces:**
 - Consumes: `withinScope`, `useScope` from `@/lib/shell/scope`.
@@ -1557,7 +1569,7 @@ ring', and keeping it would place an unknown inside a boundary drawn to exclude.
 - Create: `components/shell/inspector/AreaDetail.tsx`
 - Modify: `lib/world.ts` — add `"area"` to `WorldObjectKind`
 - Modify: `lib/overlay-content.tsx` — add `case "area"`
-- Modify: `components/WorldMap.tsx:1507`
+- Modify: `components/WorldMap.tsx:1510`
 
 **Interfaces:**
 - Consumes: `inspectorStore`, `useInspector`, `areaSummary` from Task 1; `overlay` from `@/lib/overlay`.
@@ -1567,21 +1579,254 @@ ring', and keeping it would place an unknown inside a boundary drawn to exclude.
 
 - [ ] **Step 1: Add the `area` kind**
 
-In `lib/world.ts`, extend `WorldObjectKind` with `"area"`.
+In `lib/world.ts`, extend `WorldObjectKind`:
+
+```ts
+export type WorldObjectKind = "camera" | "satellite" | "plane" | "webcam" | "signal" | "country" | "area";
+```
 
 - [ ] **Step 2: Build `AreaDetail.tsx`**
 
-Render, from the area whose `id` the overlay object carries: label (inline-editable → `inspectorStore.rename`), `areaSummary(area)`, vertex count, centre coordinates, and the source list read from `area.sources`. Buttons: **Load / Unload** (`inspectorStore.load` + `scopeStore.set`), **Fly to** (`mapViewStore.flyToPoint` on the bbox centre), **Remove** (`inspectorStore.remove`, then `overlay.close()`).
+Create `components/shell/inspector/AreaDetail.tsx`. Written out rather than described,
+because an earlier revision of this plan described it in prose and that is not
+transcribable — it is a component someone then has to invent.
 
-The source list is **read-only here** with the line "Change these in the Sources tab — it is already pointed at this area." Two places to change one thing is the bug this whole split exists to avoid.
+Two decisions in it are not stylistic. **It reads the STORE, not the overlay object**,
+so the object only has to carry an id and every other field is live: a rename here, a
+toggle in the Sources tab and a load from anywhere all repaint it, and an area removed
+elsewhere leaves an honest "no longer saved" instead of a stale copy. And **the source
+list is read-only**, with the line pointing at the Sources tab — two places to change
+one thing is the bug this whole split exists to avoid.
+
+```tsx
+"use client";
+// In-overlay body for a saved area.
+//
+// The Inspector tab is the INDEX — every area, one row each. This is the DETAIL, and
+// it opens in the same right-edge dossier that a camera, a plane or a country opens
+// in. That split is the whole point: the rail stays a list you can scan, and the
+// panel that was already the app's detail surface goes on being it.
+//
+// IT READS THE STORE, NOT THE OVERLAY OBJECT. The object carries only an id; every
+// field below is looked up live. So a rename in this panel, a toggle in the Sources
+// tab and a load from anywhere all repaint it, and an area removed elsewhere leaves
+// an honest "no longer saved" rather than a stale copy of something that is gone.
+//
+// THE SOURCE LIST HERE IS READ-ONLY, on purpose. Sources are configured in the
+// Sources tab, which is already pointed at whichever context is loaded. Two places
+// to change one thing is the bug this whole split exists to avoid.
+
+import type { CSSProperties } from "react";
+import { useEffect, useState } from "react";
+import type { WorldObject } from "@/lib/world";
+import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector";
+import { scopeStore, WORLD_SCOPE } from "@/lib/shell/scope";
+import { mapViewStore } from "@/lib/mapView";
+import { overlay } from "@/lib/overlay";
+
+const CARD_STYLE: CSSProperties = {
+  padding: "10px",
+  borderRadius: 8,
+  background: "var(--tn-surface-2, rgba(148,163,184,0.10))",
+};
+const TITLE_STYLE: CSSProperties = { fontSize: 13, fontWeight: 600, color: "var(--tn-text)" };
+const NOTE_STYLE: CSSProperties = { fontSize: 11, color: "var(--tn-text-muted)" };
+const ROW_STYLE: CSSProperties = { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" };
+const BTN_STYLE: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  border: "1px solid var(--tn-border)",
+  borderRadius: 6,
+  padding: "4px 9px",
+  background: "transparent",
+  color: "var(--tn-text)",
+  cursor: "pointer",
+};
+const LABEL_INPUT_STYLE: CSSProperties = {
+  fontSize: 14,
+  fontWeight: 600,
+  width: "100%",
+  border: "1px solid var(--tn-border)",
+  borderRadius: 6,
+  padding: "4px 7px",
+  background: "var(--tn-surface, transparent)",
+  color: "var(--tn-text)",
+};
+
+/** [west, south, east, north] → its centre. */
+function bboxCentre(bbox: [number, number, number, number]): { lat: number; lon: number } {
+  return { lat: (bbox[1] + bbox[3]) / 2, lon: (bbox[0] + bbox[2]) / 2 };
+}
+
+export default function AreaDetail({ object }: { object: WorldObject }) {
+  const state = useInspector();
+  const area = state.areas.find((a) => a.id === object.id) ?? null;
+  const [draft, setDraft] = useState(area?.label ?? "");
+
+  // Follow a rename made anywhere else, but never while this input has focus —
+  // overwriting what someone is mid-way through typing is its own small betrayal.
+  useEffect(() => {
+    if (!area) return;
+    if (document.activeElement?.getAttribute("data-tn-area-label") === area.id) return;
+    setDraft(area.label);
+  }, [area]);
+
+  if (!area) {
+    return (
+      <div style={{ ...CARD_STYLE, display: "grid", gap: 6 }}>
+        <div style={TITLE_STYLE}>Area no longer saved</div>
+        <div style={NOTE_STYLE}>
+          It was removed while this panel was open. Nothing here is stale — the panel simply has
+          nothing left to show.
+        </div>
+      </div>
+    );
+  }
+
+  const loaded = state.loaded === area.id;
+  const centre = bboxCentre(area.bbox);
+  const on = Object.entries(area.sources)
+    .filter(([, v]) => v)
+    .map(([id]) => id)
+    .sort();
+
+  const commitLabel = () => {
+    const next = draft.trim();
+    // An empty label would leave an unclickable blank row in the index.
+    if (!next || next === area.label) {
+      setDraft(area.label);
+      return;
+    }
+    inspectorStore.rename(area.id, next);
+  };
+
+  return (
+    <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gap: 6 }}>
+        <label style={NOTE_STYLE} htmlFor={`area-label-${area.id}`}>
+          Area name
+        </label>
+        <input
+          id={`area-label-${area.id}`}
+          data-tn-area-label={area.id}
+          style={LABEL_INPUT_STYLE}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitLabel}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") {
+              setDraft(area.label);
+              e.currentTarget.blur();
+            }
+          }}
+        />
+        <div style={NOTE_STYLE}>{areaSummary(area)}</div>
+      </div>
+
+      <div style={{ ...CARD_STYLE, display: "grid", gap: 6 }}>
+        <div style={TITLE_STYLE}>Shape</div>
+        <div style={NOTE_STYLE}>
+          {area.polygon.length} vertices · centre {centre.lat.toFixed(2)}, {centre.lon.toFixed(2)}
+        </div>
+        <div style={NOTE_STYLE}>
+          Drawn, not a bounding box — the console filters on the ring itself, and the box is only
+          the cheap first reject.
+        </div>
+      </div>
+
+      <div style={ROW_STYLE}>
+        <button
+          type="button"
+          style={{
+            ...BTN_STYLE,
+            borderColor: loaded ? "var(--tn-accent, var(--tn-border))" : "var(--tn-border)",
+          }}
+          onClick={() => {
+            if (loaded) {
+              inspectorStore.load(null);
+              scopeStore.set(WORLD_SCOPE);
+              return;
+            }
+            inspectorStore.load(area.id);
+            scopeStore.set({
+              mode: "aoi",
+              bbox: area.bbox,
+              polygon: area.polygon as [number, number][],
+              label: area.label,
+            });
+          }}
+        >
+          {loaded ? "Unload — back to World" : "Load this area"}
+        </button>
+        <button
+          type="button"
+          style={BTN_STYLE}
+          onClick={() => mapViewStore.flyToPoint({ lat: centre.lat, lon: centre.lon, zoom: 6 })}
+        >
+          Fly to
+        </button>
+        <button
+          type="button"
+          style={BTN_STYLE}
+          onClick={() => {
+            inspectorStore.remove(area.id);
+            overlay.close();
+          }}
+        >
+          Remove
+        </button>
+      </div>
+
+      <div style={{ ...CARD_STYLE, display: "grid", gap: 6 }}>
+        <div style={TITLE_STYLE}>Sources on here</div>
+        {on.length === 0 ? (
+          <div style={NOTE_STYLE}>
+            Nothing switched on yet. Cameras and webcams still draw — an area never loads to a
+            blank map.
+          </div>
+        ) : (
+          <div style={NOTE_STYLE}>{on.join(", ")}</div>
+        )}
+        <div style={NOTE_STYLE}>
+          Change these in the Sources tab — it is already pointed at this area.
+        </div>
+      </div>
+    </div>
+  );
+}
+```
 
 - [ ] **Step 3: Register it**
 
-In `lib/overlay-content.tsx`, add `case "area": return <AreaDetail object={object} />;`.
+In `lib/overlay-content.tsx`, add the import beside `CountryDetail` and the case beside
+`case "country"`:
+
+```tsx
+import AreaDetail from "@/components/shell/inspector/AreaDetail";
+```
+
+```tsx
+    case "area":
+      return <AreaDetail object={object} />;
+```
 
 - [ ] **Step 4: Country click also opens the Inspector**
 
-At `components/WorldMap.tsx:1507`, keep the existing `overlay.open(...)` and add `sourcesRailStore.setOpen(true)` beside it so the index is visible alongside the dossier. **Do not** change what the overlay opens.
+At `components/WorldMap.tsx:1510`, keep the existing `overlay.open(...)` exactly as it
+is and add the rail beside it. **Do not** change what the overlay opens.
+
+```tsx
+      overlay.open(buildCountryObject(f.properties as CountryProps, e.lngLat.lat, e.lngLat.lng));
+      // Open the rail alongside the dossier. The dossier is the country's detail; the
+      // rail is the index it belongs to, and the Inspector tab is where a country's
+      // sources are configured. Opening one without the other leaves the user reading
+      // a country panel with no visible way to act on it. What the overlay opens is
+      // unchanged — this only reveals the surface that was already there.
+      sourcesRailStore.setOpen(true);
+```
+
+with `import { sourcesRailStore } from "@/lib/console/sourcesRail";` added to the imports.
 
 - [ ] **Step 5: Run the full gate**
 

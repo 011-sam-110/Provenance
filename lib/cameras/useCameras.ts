@@ -12,6 +12,8 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { CameraLite } from "@/lib/cameras/coverage";
 import type { SurfaceReading } from "@/lib/cameras/surface";
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 
 export interface CameraRow extends CameraLite {
   country: string;
@@ -94,5 +96,11 @@ export function useCameras(): CamerasFeed {
   );
 
   const getSnapshot = () => ensure().state;
-  return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+  const feed = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+  const scope = useScope();
+  return useMemo(() => {
+    const cameras = filterToScope(feed.cameras, scope, (c) => c);
+    if (cameras === feed.cameras) return feed; // World: keep status/updatedAt identity
+    return { ...feed, cameras };
+  }, [feed, scope]);
 }

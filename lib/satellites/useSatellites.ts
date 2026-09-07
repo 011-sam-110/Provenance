@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import type { SatRec } from "satellite.js";
 import type { WorldObject } from "@/lib/world";
 import { buildSatrec, propagateAt, orbitalPeriodMin } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
 import { SAT_META } from "@/lib/icons/svg";
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 
 interface ApiSat {
   name: string;
@@ -109,5 +111,6 @@ export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
     return () => clearInterval(timer);
   }, [stepMs]);
 
-  return objects;
+  const scope = useScope();
+  return useMemo(() => filterToScope(objects, scope, (o) => o), [objects, scope]);
 }
