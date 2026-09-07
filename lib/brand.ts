@@ -45,6 +45,18 @@ export const BRAND = {
    * Code confirmed live by Sampo on 2026-09-07, replacing H5vB8TsVK.
    */
   discordUrl: "https://discord.gg/q45NU8qWk",
+  /**
+   * Canonical host, WITHOUT a scheme, for the one caller that needs a bare hostname to
+   * print rather than a URL to fetch: the OG card footer.
+   *
+   * This is a LAST-RESORT fallback, not the source of truth. `siteUrl()` is, and it
+   * reads NEXT_PUBLIC_SITE_URL first so a self-hoster or a renamed domain needs no code
+   * change. This literal only appears on a share card when `new URL(siteUrl())` throws,
+   * and it exists as a named constant because the last two values hardcoded here were a
+   * competitor's domain and then a host we no longer serve from — both invisible until
+   * somebody looked at a card.
+   */
+  domain: "provenance-online.com",
   /** Canonical public repository. */
   repo: "011-sam-110/Provenance",
   repoUrl: "https://github.com/011-sam-110/Provenance",

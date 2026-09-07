@@ -112,7 +112,14 @@ export function GET(req: Request): ImageResponse {
   // `new URL(siteUrl())` threw. tests/unit/naming-guard.test.ts caught it on the
   // merge — that guard exists because this exact string had already leaked into
   // CSV filenames and outbound alerts once before.
-  let host = "traffic-nerd-v2.vercel.app";
+  //
+  // It then spent the whole Vercel era naming `traffic-nerd-v2.vercel.app`, a host that
+  // is now a redirect to somewhere else. A fallback pointing at the old home is the
+  // hardest kind of wrong to notice: nothing errors, and the only symptom is a share
+  // card branded with an address we have left, seen by whoever received the link.
+  // Annotated, because BRAND is `as const` and would otherwise narrow `host` to the
+  // literal domain and reject the real hostname assigned below.
+  let host: string = BRAND.domain;
   try {
     host = new URL(siteUrl()).host;
   } catch {

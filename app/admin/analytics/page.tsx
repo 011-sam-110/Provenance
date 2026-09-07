@@ -84,6 +84,17 @@ export default async function AnalyticsPage() {
         retains. Every panel below states which of its numbers were measured and which were never
         available, because on a dashboard an unexplained empty panel reads as a zero.
       </p>
+      <p className="adm-lede">
+        <strong>This is a closing archive, not a live dashboard.</strong> Collection stopped when
+        the site left Vercel: <code>&lt;Analytics /&gt;</code> posted to{" "}
+        <code>/_vercel/insights</code>, a path that exists only on their edge, so it was removed
+        rather than left to 404 once per page view. Everything here is history, and the rolling
+        window means it is history that is <em>expiring</em> — each day the earliest day drops off
+        and nothing is added at the other end. Read a fall to zero as the move, not as a collapse
+        in traffic. Whatever needs keeping should be exported before the window swallows it, and
+        certainly before the Vercel plan changes, because the free tier answers any request for a
+        date older than 31 days with a flat 400 rather than a short answer.
+      </p>
 
       <Panel
         title="1 · Traffic over time"

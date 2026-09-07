@@ -1,0 +1,97 @@
+# /etc/caddy/Caddyfile
+#   install -m 644 deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy
+#
+# Caddy terminates TLS, obtaining and renewing certificates from Let's Encrypt without
+# supervision. THE DNS A RECORD MUST ALREADY POINT HERE before the first start: issuance
+# is an HTTP-01 challenge against the name, so a reload before DNS resolves burns a
+# failed attempt against Let's Encrypt's rate limit rather than producing a certificate.
+
+# GLOBAL OPTIONS. This block masks addresses in the DEFAULT logger, and it exists
+# because the site-level `log` block at the bottom of this file does NOT cover
+# everything. Caddy splits its logging in two:
+#
+#   http.log.access.log0  -> the site's own `log` block  -> the file, filtered.
+#   http.log.error.log0   -> the DEFAULT logger          -> stderr, so journald.
+#
+# Both carry `request>remote_ip` and `request>client_ip` in full. Only the first was
+# filtered, so every 502, every timeout and every refused upstream wrote a complete
+# visitor address into the systemd journal — where it is retained, rotated by journald's
+# own rules rather than ours, and readable by anyone who can read the journal. The
+# access log looked masked, which is exactly what made it easy to miss.
+#
+# app/(site)/privacy tells visitors this server does not record their IP address. That
+# sentence has to be true of BOTH streams, so the same 16/32 mask is applied here.
+{
+	log default {
+		format filter {
+			request>remote_ip ip_mask 16 32
+			request>client_ip ip_mask 16 32
+		}
+	}
+}
+
+# Canonical host is the apex. www redirects rather than serving a byte-identical copy,
+# because two hostnames answering the same 18,766 camera pages is duplicate content
+# competing with itself — and the sitemap and canonical tags name the apex.
+www.provenance-online.com {
+	redir https://provenance-online.com{uri} permanent
+}
+
+provenance-online.com {
+	# Build assets only. Filenames here are content-hashed, so a year is safe and it
+	# keeps repeat visitors off the origin entirely — the cheapest byte is unsent.
+	#
+	# DO NOT WIDEN THIS TO public/. Nothing in public/ is content-hashed, so `immutable`
+	# would pin a stale file with no way to recall it. public/ is served by Next, which
+	# applies the headers() block added in PR #174 — the fix for 1,083,357 static
+	# requests in one day, 124 per page load. Serving public/ from Caddy would bypass
+	# that block and silently reintroduce the bill it removed.
+	@immutable path /_next/static/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# NO header_up LINES, AND THAT IS NOT AN OMISSION. Caddy already sends
+	# X-Forwarded-Proto, X-Forwarded-Host and X-Forwarded-For, and unlike nginx it
+	# passes the original Host through untouched. `caddy validate` warns about writing
+	# them by hand ("Unnecessary header_up ..."), which is how the three that used to be
+	# here were found. Anything reading the request directly — a redirect, Next's own
+	# URL handling — therefore sees https and the real hostname rather than
+	# http://127.0.0.1:3000. It is a backstop either way: lib/brand.ts resolves absolute
+	# URLs from NEXT_PUBLIC_SITE_URL first.
+	#
+	# /api/hls streams video segments straight through. Caddy does not buffer response
+	# bodies by default, so segments start flowing before they finish downloading —
+	# leave it that way.
+	reverse_proxy 127.0.0.1:3000
+
+	# NOT adding `encode` on purpose: Next's standalone server already compresses
+	# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates
+	# to roughly a megabyte. A second encoder buys nothing and costs CPU on every
+	# response, on a box with two shared vCPUs.
+
+	# THE ACCESS LOG IS IP-MASKED, AND app/(site)/privacy PROMISES THAT IN WRITING.
+	# Caddy's default JSON encoder writes request>remote_ip and request>client_ip in
+	# full. On Vercel those addresses were the host's to hold and the privacy page said
+	# so; self-hosted they become ours, and "this application holds no record of you"
+	# stops being true the moment the first request is written down.
+	#
+	# ip_mask keeps 16 bits of IPv4 and 32 of IPv6, so a row still distinguishes one
+	# machine hammering the box from a genuine crowd — the only operational question an
+	# address answers here — while naming a block of ~65,000 rather than a person.
+	# Deleting the field outright would cost that signal and buy nothing extra, since a
+	# /16 identifies no one.
+	#
+	# The rest of the row is what M7 needs: path, status, size and duration are how the
+	# request volume gets measured before deciding whether a CDN in front of this box
+	# pays for itself. Do not remove the log to "save disk" — 5 x 50 MiB is bounded, and
+	# without it the CDN decision goes back to guessing.
+	log {
+		output file /var/log/caddy/provenance.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+		format filter {
+			request>remote_ip ip_mask 16 32
+			request>client_ip ip_mask 16 32
+		}
+	}
+}

@@ -20,7 +20,6 @@
     "webcams:status": "node scripts/harvest-webcams.mjs --status"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "h3-js": "^4.4.0",
     "hls.js": "^1.6.16",
     "maplibre-gl": "^5.24.0",

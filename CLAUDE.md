@@ -108,7 +108,6 @@ obligations and are not satisfied by the licence.
   file and the README state the new figures. That is the guard working — and note that
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
-<<<<<<< HEAD
 - **Windy webcams are a harvested static catalogue, not a live sample.** `public/webcams/`
   holds 196 committed tiles with **70,698 webcams** (8.2 MB raw / 2.0 MB gzipped), built by
   `scripts/harvest-webcams.mjs` and streamed in by `lib/webcams/tileLoad.ts` — static CDN
@@ -230,7 +229,6 @@ Re-measure before putting a number in a README, a CV or a PR description.
   image CDN, if it is ever needed for something else, is
   `https://webcams.ventusky.com/data/{last 2 digits of id}/{id}/latest_thumb.jpg`, **not**
   `images.ventusky.com/{id}.jpg`.
-<<<<<<< HEAD
 - **Windy's free tier caps offset at 1,000, and that is what shapes the webcam harvest
   (measured 2026-09-05).** `limit>50` is a 400; `offset=2000` is a 400 reading
   `"Offset is over API tier limit 1000!"`. So one bbox yields at most **1,050 rows**, and

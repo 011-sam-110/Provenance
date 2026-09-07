@@ -91,6 +91,15 @@ describe("the /admin production gate", () => {
     expect(isProduction({ NODE_ENV: "production", VERCEL_ENV: "production" })).toBe(true);
     expect(isProduction({ NODE_ENV: "development", VERCEL_ENV: "preview" })).toBe(false);
     expect(isProduction({})).toBe(false);
+
+    // SITE_ENV is the third signal, and it exists because the other two stopped being
+    // two. Off Vercel, VERCEL_ENV is set by nobody, so every self-hosted case below is
+    // decided by ONE variable unless SITE_ENV also counts — which is the single-signal
+    // state the paragraph above says is not good enough. These four are the box.
+    expect(isProduction({ NODE_ENV: "production", SITE_ENV: "production" })).toBe(true);
+    expect(isProduction({ SITE_ENV: "production" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "production", SITE_ENV: "preview" })).toBe(true);
+    expect(isProduction({ NODE_ENV: "development", SITE_ENV: "preview" })).toBe(false);
   });
 
   it("keeps the review tool out of the crawler's way as well", () => {

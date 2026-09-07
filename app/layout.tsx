@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { BRAND, siteUrl } from "@/lib/brand";
 import "./globals.css";
 
@@ -95,8 +94,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // root; nothing changes typeface until globals.css consumes them.
     <html lang="en" data-theme="light" className={`${jetbrainsMono.variable} ${ibmPlexSans.variable}`}>
       <body>
+        {/*
+          NOTHING COUNTS PAGE VIEWS HERE. `<Analytics />` from @vercel/analytics used to
+          sit on this line. It posts to /_vercel/insights, a path that exists only on
+          Vercel's edge, so self-hosted it would have fired a 404 on every single page
+          view — collecting nothing while looking, in the code, exactly like collection.
+          It was removed with the package rather than left inert, because a dead
+          analytics import is a standing invitation to conclude the numbers are being
+          gathered somewhere.
+
+          /admin/analytics can still READ the history Vercel already holds while the
+          token lasts. It just stops gaining new rows from the moment this deployment
+          serves traffic. app/(site)/privacy states this in the visitor's words.
+        */}
         {children}
-        <Analytics />
       </body>
     </html>
   );

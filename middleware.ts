@@ -3,14 +3,18 @@ import { isGatedPath } from "@/lib/gate/paths";
 import { GATE_COOKIE, GATE_QUERY, GATE_DENIED, gateToken } from "@/lib/gate/token";
 import { isTempKey, verifyTempKey } from "@/lib/gate/tempkey";
 import { maintenanceHtml } from "@/lib/gate/page";
+import { isMaintenanceArmed } from "@/lib/gate/armed";
 
 /**
  * The maintenance gate.
  *
- * Armed by `MAINTENANCE_MODE` on Vercel Production only, so previews are untouched and
- * stay behind Vercel Authentication as they already are. Disarmed, this function reads
- * one environment variable and passes through - that is the standing cost of having the
- * switch on `main` rather than on a branch, and it was chosen knowingly.
+ * Armed by `MAINTENANCE_MODE`, which is now a line in the box's EnvironmentFile rather
+ * than a row in a Vercel dashboard - see lib/gate/armed.ts, which exists entirely
+ * because those two are edited with different gestures and `=0` means opposite things
+ * in them. The preview box is untouched simply by not carrying the variable. Disarmed,
+ * this function reads one environment variable and passes through - that is the standing
+ * cost of having the switch on `main` rather than on a branch, and it was chosen
+ * knowingly.
  *
  * The point of the gate is COST, not concealment. It answers before anything downstream
  * is invoked, so a gated request buys no React render, no ISR revalidation and no
@@ -27,7 +31,7 @@ export const config = {
 };
 
 export default async function middleware(request: NextRequest) {
-  if (!process.env.MAINTENANCE_MODE) return NextResponse.next();
+  if (!isMaintenanceArmed()) return NextResponse.next();
 
   const { pathname, search, searchParams } = request.nextUrl;
   // The matcher has already excluded the exempt paths; this is the same list applied a

@@ -1,0 +1,89 @@
+name: Deploy production
+
+# Builds the app and ships it to the Lightsail box. The box deliberately cannot build
+# this app — it is a 2 GB instance, measured at 1,907 MB with no swap — so the runner is
+# where `next build` happens and the box receives a finished standalone tree.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Never run two deploys at once: they would race over the same `current` symlink and
+  # the loser would restart the service pointing at a half-written release.
+  group: deploy-production
+  # And never cancel one in flight. A cancelled deploy can leave the symlink swapped
+  # with the service not yet restarted, which is the one state with no owner.
+  cancel-in-progress: false
+
+env:
+  PROVENANCE_HOST: app@52.44.44.162
+  # Host key pinned rather than discovered. A fresh runner has an empty known_hosts, so
+  # trust-on-first-use would mean trusting whatever answers, on every single run.
+  # Rotate this if the instance is ever rebuilt: ssh-keygen -lf shows
+  # SHA256:afvWsEb5xOUbrAhxnMSRWqLeoWYbEQuOrDnqIX1tfpA
+  PROVENANCE_HOST_KEY: "52.44.44.162 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILEW3+9JkjhzAMb5ChHTWtHE6zK8ha/FvMUwMy8oOfiH"
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # deploy.sh names the release directory after the short SHA, so it needs the
+          # commit to exist locally. A shallow checkout of depth 1 is enough for that.
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          # Must match the box. `output: "standalone"` bundles traced dependencies and a
+          # native binding built on one major does not load on another.
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci --no-audit --fund=false
+
+      - name: Gate
+        # The repo's own gate, from CLAUDE.md. Route-export mistakes and plan-ceiling
+        # settings are invisible to tsc and to vitest, so `next build` below is the
+        # third check rather than a formality.
+        run: |
+          npx tsc --noEmit
+          npm test
+
+      - name: Build
+        env:
+          # NEXT_PUBLIC_* is inlined into the client bundle at BUILD time, so this is the
+          # only place the production hostname can be set. Without it, lib/brand.ts falls
+          # back to VERCEL_PROJECT_PRODUCTION_URL — which does not exist here — and then
+          # to a hardcoded vercel.app host, baking the wrong canonical, og:image and
+          # sitemap URL into every page.
+          NEXT_PUBLIC_SITE_URL: https://provenance-online.com
+          # Replaces VERCEL_ENV, which no longer exists off Vercel. robots.ts is
+          # generated at build time and reads the BUILD's environment, so this has to be
+          # here and not on the box.
+          SITE_ENV: production
+        # NOTE ON WHAT IS ABSENT. No upstream API keys. Every fetch in this repo is
+        # keyless-first and dormant-safe, and the pages that show live data are
+        # regenerated at runtime on the box where the keys actually live. So the secrets
+        # exist in exactly one place and never pass through CI.
+        run: npm run build
+
+      - name: Assemble the release
+        run: bash deploy/assemble.sh
+
+      - name: Ship
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$PROVENANCE_HOST_KEY" > ~/.ssh/known_hosts
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          bash deploy/deploy.sh
+        env:
+          # The private half of provenance_deploy. It authenticates as `app`, whose sudo
+          # rights are three systemctl verbs on one unit — deliberately not `ubuntu`,
+          # which has passwordless sudo for everything.
+          DEPLOY_KEY: ${{ secrets.PROVENANCE_SSH_KEY }}
