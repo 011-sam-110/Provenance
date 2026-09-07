@@ -71,6 +71,90 @@ fi
 # our own tooling are excluded because neither is a person who loses the site.
 WINDOW_MIN="${CF_FW_WINDOW_MIN:-10}"
 LOG=/var/log/caddy/provenance.log
+APEX="${CF_FW_APEX:-provenance-online.com}"
+LEGACY_NS="${CF_FW_LEGACY_NS:-dns1.registrar-servers.com dns2.registrar-servers.com}"
+
+# THE DELEGATION GATE, AND IT EXISTS BECAUSE THE TRAFFIC GATE BELOW IS NOT ENOUGH.
+#
+# The traffic gate passed with 522 proxied and 0 direct requests, this script ran, and
+# the site went down for the owner ten minutes later. Both numbers were true. The gate
+# can only see resolvers that MADE A REQUEST inside its window; a resolver that holds
+# the old delegation but happens to be idle is invisible to it, and its users find out
+# the next time they open the site. That is most of them, because a stale resolver
+# serves a whole ISP and an ISP is quiet for minutes at a time.
+#
+# So the traffic gate measures the wrong population. It answers "is anyone arriving
+# direct right now", when the question is "can anyone still be TOLD to arrive direct".
+# The second question has an exact answer that does not depend on timing: a visitor can
+# only reach the origin if some nameserver still hands out the origin address. Ask the
+# nameservers.
+#
+# Two checks, both cheap, both self-clearing:
+#
+#   1. The .com delegation must actually name Cloudflare. If it does not, the cutover
+#      did not take, and closing 80/443 would take the site off the internet outright.
+#   2. The OLD nameservers must have stopped answering for the zone. While they still
+#      answer, every resolver holding the cached .com delegation — up to 48 hours of
+#      them — is being handed the origin address, and closing the origin times those
+#      visitors out. This clears by itself when the old registrar drops the zone.
+#
+# Neither check is a clock, and neither can be satisfied by waiting quietly at the
+# wrong moment.
+if [[ "${1:-}" == "--force" ]]; then
+  echo "cloudflare-firewall: --force, skipping the delegation gate"
+elif ! command -v dig >/dev/null; then
+  echo "cloudflare-firewall: dig not found, cannot check the delegation (apt install dnsutils)" >&2
+  echo "cloudflare-firewall: refusing rather than skipping the check that would have caught the last outage" >&2
+  exit 1
+else
+  deleg="$(dig +noall +authority +time=3 +tries=2 @a.gtld-servers.net NS "$APEX" 2>/dev/null \
+           | awk '$4 == "NS" { print $5 }' | sort -u)"
+  if [[ -z "$deleg" ]]; then
+    echo "cloudflare-firewall: could not read the .com delegation for $APEX; refusing" >&2
+    exit 1
+  fi
+  if grep -qv 'ns\.cloudflare\.com\.$' <<<"$deleg"; then
+    echo "cloudflare-firewall: the .com delegation for $APEX is not Cloudflare:" >&2
+    sed 's/^/    /' <<<"$deleg" >&2
+    echo "cloudflare-firewall: closing 80/443 now would take the site off the internet. Refusing." >&2
+    exit 1
+  fi
+  echo "cloudflare-firewall: .com delegation is Cloudflare ($(tr '\n' ' ' <<<"$deleg"))"
+
+  stale=""
+  for ns in $LEGACY_NS; do
+    ans="$(dig +short +time=3 +tries=2 @"$ns" A "$APEX" 2>/dev/null | grep -E '^[0-9.]+$' || true)"
+    if [[ -n "$ans" ]]; then
+      stale+="    $ns still answers: $(tr '\n' ' ' <<<"$ans")"$'\n'
+    fi
+  done
+  if [[ -n "$stale" ]]; then
+    cat >&2 <<MSG
+
+cloudflare-firewall: REFUSING TO RUN.
+
+The old nameservers are still serving this zone:
+
+$stale
+Any resolver that cached the .com delegation before the cutover is being handed the
+ORIGIN address by those servers, and will keep being handed it until its cached
+delegation expires — up to 48 hours. Closing 80/443 now times out every one of those
+visitors, which is a worse outage than the one this script prevents.
+
+THIS EXACT THING HAS HAPPENED. The traffic gate below passed, the firewall closed, and
+the site was unreachable for everyone on one large ISP whose resolver was stale but
+idle. Waiting for the traffic count to hit zero does not help: it was already zero.
+
+Re-run when the old nameservers stop answering. That is the registrar dropping the
+zone, and it is not something this box controls.
+
+  CF_FW_LEGACY_NS="a.example b.example" ./cloudflare-firewall.sh   check different servers
+  ./cloudflare-firewall.sh --force                                 apply anyway
+MSG
+    exit 1
+  fi
+  echo "cloudflare-firewall: delegation gate passed - the old nameservers no longer answer for $APEX"
+fi
 
 if [[ "${1:-}" == "--force" ]]; then
   echo "cloudflare-firewall: --force, skipping the propagation gate"
@@ -125,10 +209,12 @@ what looks like a real browser. Those visitors are on a resolver that still has 
 old delegation cached, and closing 80/443 now would time them out rather than route
 them through the edge.
 
-Re-run when that reaches zero. It falls away on its own as the cached delegation
-expires — up to 48 hours from the nameserver change, though in practice most of it
-goes within the hour. Nothing is at risk while you wait: the origin being reachable
-is the state it has been in all along.
+Nothing is at risk while you wait: the origin being reachable is the state it has
+been in all along.
+
+A zero here is NOT the all-clear on its own — it was zero the time this script took
+the site down. It only means nobody stale happened to load a page in the window. The
+delegation gate above is the check that actually settles it.
 
   ./cloudflare-firewall.sh --force     apply anyway, accepting the timeouts
   CF_FW_WINDOW_MIN=30 ./cloudflare-firewall.sh    use a stricter window
