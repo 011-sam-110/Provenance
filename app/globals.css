@@ -322,8 +322,25 @@ a { color: var(--tn-accent); }
   background: var(--tn-surface);
 }
 .tn-rail-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--tn-text); }
-.tn-rail-collapse { background: transparent; border: none; cursor: pointer; color: var(--tn-text-faint); font-size: 18px; line-height: 1; padding: 0 4px; }
-.tn-rail-collapse:hover { color: var(--tn-text); }
+/* THE CLOSE BUTTON. It was a bare "9" chevron in a `padding: 0 4px` box, which
+   made two mistakes at once. The mark said "collapse leftwards" while the rail's
+   own launcher is a labelled "1 Sources" tab, so the pair did not read as one
+   control opening and closing one thing; and the hit area was about 12x18px, well
+   under the 24px minimum a pointer target should carry and a quarter of the 44px
+   this file already gives every touch target further down.
+
+   It is now an ✕ in a 30px square. The glyph is INLINE SVG in the component rather
+   than a text character, because "¹5" renders at whatever weight the fallback
+   font happens to have and the rail's own mono stack does not carry it. */
+.tn-rail-collapse {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 30px; height: 30px; margin-right: -6px;
+  background: transparent; border: none; border-radius: 8px; padding: 0;
+  color: var(--tn-text-faint); cursor: pointer;
+}
+.tn-rail-collapse svg { width: 15px; height: 15px; }
+.tn-rail-collapse:hover { color: var(--tn-text); background: var(--tn-surface-2, rgba(0,0,0,.06)); }
+.tn-rail-collapse:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
 .tn-rail-fab {
   position: fixed; top: calc(var(--tn-topbar-h) + 12px); left: 12px; z-index: 25;
@@ -5029,6 +5046,37 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   box-shadow: var(--tnx-shadow-1);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+/* THE BOX HAD TO BE FIXED TOO, AND THAT IS THE BUG THIS BLOCK NOW ANSWERS.
+   Recolouring the mark above left the CONTAINER at maplibre-gl.css's compact
+   metrics — `box-sizing: content-box; min-height: 20px; padding: 2px 24px 2px 0` —
+   which is a 24x24 content box sized for MapLibre's own 24px button. The rule
+   below grows that button to 30px and positions it `absolute; right: 0; top: 0`,
+   so the circle overhung its own pill by 6px on two sides: what shipped was a
+   small bordered lozenge with a larger circle hanging out of its bottom-right
+   corner, plus a drop shadow tracing the lozenge rather than the mark. Both halves
+   of that are this file's doing, so both are corrected here rather than by giving
+   up the restyle.
+   Collapsed, the container becomes exactly the button: one 30px circle, one
+   border, one shadow. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+  box-sizing: border-box !important;
+  width: 30px; height: 30px; min-height: 0 !important;
+  padding: 0 !important; margin: 0 !important;
+}
+/* MapLibre draws a SECOND copy of the i as a `:after` on the compact container.
+   It is the same mark in MapLibre's own black, at MapLibre's own 24px, pinned to
+   the same corner — invisible while the container was bigger than the button and
+   an off-register double the moment the two became the same size. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact:after { content: none !important; }
+/* Expanded, it is a credit LINE. It needs its padding back, room for the button on
+   the left (MapLibre pins the button to the left edge in a bottom-left control),
+   and a width cap so a four-source credit does not run the width of the map. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  box-sizing: border-box !important;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 5px 10px 5px 34px !important;
+  line-height: 1.45;
+}
 .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
 .tn-terminal .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
   width: 30px !important;
@@ -6836,17 +6884,121 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 /* ── end stage rail ──────────────────────────────── */
 
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
+/* ── The drawing banner ───────────────────────────────────────────────────
+   Over the map for as long as a draw gesture runs. TOP-CENTRE is the one free
+   band on this stage: the header owns the row above it, the rail FAB sits at the
+   same height on the LEFT margin, the map rail is centred on the right edge, and
+   the toast (z 1200) is bottom-centre. It is `fixed` and centred by transform
+   rather than by flexbox so nothing about the workspace layout can shift it.
+
+   Z-INDEX 1150 — under the toast and the feedback modal (1200/1100) and over the
+   stage chrome. A message about a gesture in progress should not cover the pill
+   telling you the workspace is full, and must not cover a modal at all.
+
+   `pointer-events` is NONE on the banner and AUTO on its button. The banner sits
+   over the map during a gesture whose whole job is receiving clicks; a bar that
+   swallowed them would eat the user's first vertex if they aimed near the top of
+   the map, which is a worse bug than the one this fixes. Only the Cancel button
+   takes the pointer back. */
+.tn-drawbanner {
+  position: fixed; z-index: 1150; pointer-events: none;
+  top: calc(var(--tn-topbar-h) + 14px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 11px;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 8px 10px 8px 12px; border-radius: 999px;
+  border: 1px solid var(--tn-accent); background: var(--tn-surface);
+  box-shadow: var(--tn-shadow);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-size: var(--tnx-fs-sm);
+}
+/* A pulsing dot, because the banner is otherwise indistinguishable from the many
+   other static pills on this stage and the state it reports is a LIVE one. It is
+   the only motion here and it stops the moment the gesture ends. */
+.tn-drawbanner-pulse {
+  flex: 0 0 auto; width: 8px; height: 8px; border-radius: 999px;
+  background: var(--tn-accent); animation: tn-drawpulse 1.4s ease-in-out infinite;
+}
+@keyframes tn-drawpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+/* Motion is decoration here — the words carry the whole message — so it goes
+   entirely rather than being slowed down. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-drawbanner-pulse { animation: none; }
+}
+.tn-drawbanner-text { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.tn-drawbanner-text strong { font-weight: 600; white-space: nowrap; }
+.tn-drawbanner-text > span { color: var(--tn-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-drawbanner-x {
+  pointer-events: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  /* 28px tall rather than the 22px the text alone would give it: it is a control on
+     a surface the user is clicking at speed, and a thin one beside a live map is a
+     mis-click waiting to place a vertex. */
+  min-height: 28px; padding: 0 10px; border-radius: 999px;
+  border: 1px solid var(--tn-border); background: none;
+  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-text); cursor: pointer;
+}
+.tn-drawbanner-x:hover { border-color: var(--tn-text-faint); background: var(--tn-surface-2, rgba(0,0,0,.04)); }
+.tn-drawbanner-x kbd {
+  font: inherit; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint);
+  border: 1px solid var(--tn-border); border-radius: 4px; padding: 0 4px;
+}
+/* On a phone the stage is short and the banner would sit on top of the first thing
+   the user is trying to click. It keeps its place but loses the fixed lead word, so
+   the live hint — the half that changes — is what survives the width. */
+@media (max-width: 560px) {
+  .tn-drawbanner { gap: 8px; padding: 7px 8px 7px 10px; }
+  .tn-drawbanner-text strong { display: none; }
+}
+
+/* ── Inspector: the context switcher and the areas index ──────────────── */
+/* IT IS A BUTTON NOW, NOT A LABEL. It used to state which context was loaded and
+   carry a "✕ back to World"; picking a context is a safe, map-invisible act since
+   areas became additive, so the whole line opens a menu of them. `position:
+   relative` on the wrapper is what the popover is anchored to — it must not move to
+   the button, or the menu would be clipped by the button's own 30px box. */
+.tn-ctxbar-wrap { position: relative; margin: 0 0 2px; }
 .tn-ctxbar {
-  display: flex; align-items: center; gap: 7px; margin: 0 0 2px;
-  padding: 6px 9px; border-radius: 8px; font-size: var(--tnx-fs-sm);
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 7px 9px; border-radius: 8px; font: inherit; font-size: var(--tnx-fs-sm);
+  text-align: left; color: inherit; cursor: pointer;
   background: var(--tn-surface-2, rgba(0,0,0,.03)); border: 1px solid var(--tn-border);
 }
+.tn-ctxbar:hover { border-color: var(--tn-text-faint); }
+.tn-ctxbar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 .tn-ctxbar[data-area] { border-color: var(--tn-accent); }
-.tn-ctxbar-glyph { color: var(--tn-text-faint); }
+.tn-ctxbar-glyph { color: var(--tn-text-faint); flex: 0 0 auto; }
 .tn-ctxbar[data-area] .tn-ctxbar-glyph, .tn-ctxbar[data-area] .tn-ctxbar-name { color: var(--tn-accent); }
+/* "Editing" is the word that stops the control lying. Quiet, because it is the same
+   on every row; the context name is the part that changes and carries the weight. */
+.tn-ctxbar-lead { color: var(--tn-text-faint); flex: 0 0 auto; }
 .tn-ctxbar-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-ctxbar-x { border: none; background: none; color: var(--tn-text-faint); cursor: pointer; font: inherit; padding: 0 2px; }
-.tn-ctxbar-x:hover { color: var(--tn-text); }
+/* The caret rides the token like everything else in this region — a px literal
+   here is how --tnx-fs quietly stops meaning anything (tests/unit/terminal-tokens
+   .test.ts guards exactly that). It only needs to be smaller than the label, and
+   the xs step already is. */
+.tn-ctxbar-caret { color: var(--tn-text-faint); flex: 0 0 auto; font-size: var(--tnx-fs-xs); }
+
+/* The popover. `max-height` + scroll rather than a taller panel: AREA_CAP is 40, so
+   the list can be 41 rows and must never push the source sections off the rail. */
+.tn-ctxbar-menu {
+  position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px);
+  max-height: 320px; overflow-y: auto; padding: 4px;
+  border-radius: 10px; border: 1px solid var(--tn-border);
+  background: var(--tn-surface); box-shadow: var(--tn-shadow);
+}
+.tn-ctxbar-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 7px;
+  border: none; border-radius: 7px; background: none;
+  font: inherit; font-size: var(--tnx-fs-sm); text-align: left; color: inherit; cursor: pointer;
+}
+.tn-ctxbar-opt:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
+.tn-ctxbar-opt:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
+.tn-ctxbar-opt[aria-checked="true"] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
+.tn-ctxbar-opt[aria-checked="true"] .tn-insp-label { color: var(--tn-accent); font-weight: 600; }
+.tn-ctxbar-foot {
+  margin: 4px 3px 2px; font-size: var(--tnx-fs-xs); line-height: 1.45;
+  color: var(--tn-text-faint);
+}
 
 .tn-rail-tabs { display: flex; gap: 4px; padding: 7px 0 2px; }
 .tn-rail-tab {
@@ -6865,7 +7017,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   font: inherit; text-align: left; color: inherit; cursor: pointer;
 }
 .tn-insp-row:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
-.tn-insp-row[data-loaded] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
+.tn-insp-row[data-editing] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
 .tn-insp-glyph { color: var(--tn-accent); flex: 0 0 auto; }
 .tn-insp-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .tn-insp-label { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

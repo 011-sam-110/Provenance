@@ -1,15 +1,24 @@
 "use client";
-// The Inspector index. A LIST, not a detail view — detail opens in the dossier on
-// the right, which already exists at 384px and already handles focus, escape and
-// mobile. See lib/overlay-content.tsx.
+// The areas block — draw one, and see the ones you have drawn.
 //
-// Sources are NOT configured here. Load an area and the Sources tab is pointed at
-// it; that is the whole interaction, and duplicating a source list in this column
-// would give the user two places to change one thing.
+// WAS THE "INSPECTOR" TAB. It is now a block INSIDE the Sources tab, sitting where
+// the presets block used to, and the presets have taken its place as the rail's
+// second tab. Sam asked for the swap and the reason it holds is traffic: drawing an
+// area and then turning sources on for it is one continuous job, and it used to be
+// split across two tabs — draw here, switch there, toggle, switch back to see what
+// the area now says. Presets are a one-tap act you do occasionally, which is what a
+// second tab is for.
+//
+// SOURCES ARE STILL NOT CONFIGURED HERE. The context switcher above the tabs points
+// the rail at an area; the source list below then writes to it. Duplicating a source
+// list in this block would give the user two places to change one thing.
+//
+// A ROW OPENS THE DOSSIER, it does not select. Selecting is the switcher's job now,
+// and detail belongs in the dossier on the right, which already exists at 384px and
+// already handles focus, escape and mobile. See lib/overlay-content.tsx.
 
 import { aoiLabel, startDraw } from "@/lib/map/aoi";
 import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector";
-import { aoiScope, scopeStore } from "@/lib/shell/scope";
 import { overlay } from "@/lib/overlay";
 import type { Map as MapLibreMap } from "maplibre-gl";
 
@@ -17,7 +26,7 @@ declare global {
   interface Window { __map?: MapLibreMap }
 }
 
-export default function InspectorTab() {
+export default function AreasPanel() {
   const state = useInspector();
 
   const draw = () => {
@@ -29,15 +38,12 @@ export default function InspectorTab() {
     startDraw(map, {
       onFinish: (ring) => {
         const id = inspectorStore.add(ring, aoiLabel(ring));
-        if (id) load(id);
+        // Point the rail at the new area, because the next thing anyone does after
+        // drawing one is turn something on for it. It is only a write target — the
+        // map is unchanged by this, so it cannot surprise anyone.
+        if (id) inspectorStore.edit(id);
       },
     });
-  };
-
-  const load = (id: string) => {
-    inspectorStore.load(id);
-    const area = inspectorStore.get().areas.find((a) => a.id === id);
-    if (area) scopeStore.set(aoiScope(area.polygon, area.label));
   };
 
   return (
@@ -48,7 +54,8 @@ export default function InspectorTab() {
 
       {state.areas.length === 0 ? (
         <p className="tn-rail-foot">
-          No areas yet. Draw one on the map to give it its own sources.
+          No areas yet. Draw one on the map to give it its own sources — they show
+          inside it, and the globe keeps everything it already had.
         </p>
       ) : (
         state.areas.map((a) => (
@@ -56,7 +63,7 @@ export default function InspectorTab() {
             key={a.id}
             type="button"
             className="tn-insp-row"
-            data-loaded={state.loaded === a.id ? "" : undefined}
+            data-editing={state.editing === a.id ? "" : undefined}
             onClick={() =>
               // The bbox CENTRE, not 0,0. FeedOverlay writes the object's lat/lon
               // straight into its GeoJSON export, so a placeholder would hand the
@@ -76,7 +83,11 @@ export default function InspectorTab() {
               <span className="tn-insp-label">{a.label}</span>
               <span className="tn-insp-sub">{areaSummary(a)}</span>
             </span>
-            {state.loaded === a.id ? <span className="tn-insp-pill">LOADED</span> : null}
+            {/* "EDITING", NOT "LOADED". The pill used to mean "this is what the map is
+                showing", which is no longer a thing an area can be — they all show at
+                once. It now means "the toggles below land here", which is the only
+                claim this row can still make. */}
+            {state.editing === a.id ? <span className="tn-insp-pill">EDITING</span> : null}
           </button>
         ))
       )}

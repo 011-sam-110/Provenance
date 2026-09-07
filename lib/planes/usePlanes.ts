@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import type { WorldObject } from "@/lib/world";
 import { buildTrailPath, pushHistory, type TrailPoint } from "@/lib/planes/trail";
 import { filterToScope } from "@/lib/scopeFilter";
+import { filterToScopes, useSourceScopes } from "@/lib/shell/sourceScope";
 import { useScope } from "@/lib/shell/scope";
 
 const POLL_INTERVAL_MS = 12_000;
@@ -87,11 +88,16 @@ export function usePlanes(): PlanesLayer {
     };
   }, []);
 
+  // PER-SOURCE, not the one global scope. Areas are additive, so this source is
+  // unrestricted when World has it on and cropped to the rings of the areas that
+  // asked for it otherwise. The map-rail Draw filter still applies on top of both.
+  // See lib/shell/sourceScope.ts.
   const scope = useScope();
+  const rings = useSourceScopes("planes");
   return useMemo(() => {
-    const objects = filterToScope(layer.objects, scope, (o) => o);
-    if (objects === layer.objects) return layer; // World: same array, same identity
+    const objects = filterToScopes(filterToScope(layer.objects, scope, (o) => o), rings, (o) => o);
+    if (objects === layer.objects) return layer; // unrestricted: same array, same identity
     const keep = new Set(objects.map((o) => o.id));
     return { objects, trails: layer.trails.filter((t) => keep.has(t.id)) };
-  }, [layer, scope]);
+  }, [layer, scope, rings]);
 }

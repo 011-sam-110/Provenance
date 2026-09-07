@@ -92,11 +92,33 @@ export function ringToFeature(ring: readonly [number, number][]): GeoJSON.Featur
   };
 }
 
-/** Pure: the in-progress ring → a LineString plus one point per placed vertex. */
-export function draftCollection(ring: readonly [number, number][]): GeoJSON.FeatureCollection {
-  const features: GeoJSON.Feature[] = ring.map((c) => ({
+/**
+ * Pure: the in-progress ring → a LineString plus one point per placed vertex, and —
+ * when a cursor position is supplied — the RUBBER BAND from the last vertex to it.
+ *
+ * THE RUBBER BAND IS THE POINT OF THIS FUNCTION NOW. Without it a polygon draw shows
+ * a single 7px dot after the first click and nothing else until the second, which is
+ * the report: "it is hard to tell if you have clicked and if you are actually
+ * drawing". One placed dot is indistinguishable from a stray mark on the basemap, and
+ * the gesture gives no other sign it is running. A line that follows the pointer is
+ * unmistakable, and it costs one `mousemove` handler that this module already binds
+ * for the radius tool.
+ *
+ * TWO PREVIEW SEGMENTS ONCE THERE ARE TWO VERTICES: last→cursor, and cursor→first.
+ * The second is what makes the shape read as an AREA rather than a path, so the user
+ * can see what double-clicking would commit before committing it. Below two vertices
+ * there is nothing to close, so only the first segment is drawn.
+ *
+ * `first` on the opening vertex is styled by the DRAFT_DOTS layer — it is the vertex
+ * the ring closes back to, so it is the one worth being able to find.
+ */
+export function draftCollection(
+  ring: readonly [number, number][],
+  cursor?: readonly [number, number] | null,
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = ring.map((c, i) => ({
     type: "Feature",
-    properties: {},
+    properties: { first: i === 0 },
     geometry: { type: "Point", coordinates: c as [number, number] },
   }));
   if (ring.length >= 2) {
@@ -105,6 +127,26 @@ export function draftCollection(ring: readonly [number, number][]): GeoJSON.Feat
       properties: {},
       geometry: { type: "LineString", coordinates: ring as [number, number][] },
     });
+  }
+  if (cursor && ring.length >= 1) {
+    features.push({
+      type: "Feature",
+      properties: { preview: true },
+      geometry: {
+        type: "LineString",
+        coordinates: [ring[ring.length - 1] as [number, number], cursor as [number, number]],
+      },
+    });
+    if (ring.length >= 2) {
+      features.push({
+        type: "Feature",
+        properties: { preview: true },
+        geometry: {
+          type: "LineString",
+          coordinates: [cursor as [number, number], ring[0] as [number, number]],
+        },
+      });
+    }
   }
   return { type: "FeatureCollection", features };
 }
@@ -299,11 +341,18 @@ function ensureLayers(map: MapLibreMap): boolean {
       type: "circle",
       source: DRAFT_SRC,
       filter: ["==", ["geometry-type"], "Point"],
+      // BIGGER THAN IT WAS (3.5 + 2), and the opening vertex bigger still.
+      //
+      // A 7px total mark is small on a busy basemap and smaller again on Sam's
+      // display, which runs the browser at about 80% — the dot a user is looking for
+      // to confirm their click landed was rendering at roughly 5 CSS px. It is now
+      // 11px, and the first vertex 15px, because that is the one the ring closes back
+      // to and the only one worth telling apart.
       paint: {
-        "circle-radius": 3.5,
+        "circle-radius": ["case", ["==", ["get", "first"], true], 5.5, 3.5],
         "circle-color": "#ffffff",
         "circle-stroke-color": "#0ea5e9",
-        "circle-stroke-width": 2,
+        "circle-stroke-width": ["case", ["==", ["get", "first"], true], 3, 2],
       },
     });
   }
@@ -531,10 +580,25 @@ export function startDraw(map: MapLibreMap, opts: DrawOptions = {}): boolean {
   if (!ensureLayers(map)) return false; // style not up: nothing to draw on yet
   setDraw({ active: true, tool: "polygon", vertices: [] });
 
+  // THE CURSOR IS A CLOSURE LOCAL, NOT STORE STATE, and that is deliberate. It
+  // changes on every mousemove, and `setDraw` notifies every subscriber — the rail
+  // flyout and the drawing banner both re-render on each notification. Vertices
+  // change on a click and belong in the store; a pointer position belongs to the
+  // frame it paints. Keeping it here means the rubber band costs one setData call
+  // per move and no React render at all.
+  let cursor: [number, number] | null = null;
+
   return beginGesture(map, {
     onPlace: (p) => {
       setDraw({ active: true, tool: "polygon", vertices: [...draw.vertices, p] });
-      setData(map, DRAFT_SRC, draftCollection(draw.vertices));
+      setData(map, DRAFT_SRC, draftCollection(draw.vertices, cursor));
+    },
+    onMove: (p) => {
+      cursor = p;
+      // Before the first click there is no anchor to draw a band from, and painting
+      // a lone dot under the pointer would claim a vertex the user has not placed.
+      if (draw.vertices.length === 0) return;
+      setData(map, DRAFT_SRC, draftCollection(draw.vertices, cursor));
     },
     onFinish: ({ vertices: ring }) => {
       if (ring.length < MIN_VERTICES) return; // not an area - abandon, never filter

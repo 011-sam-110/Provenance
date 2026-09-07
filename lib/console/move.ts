@@ -25,8 +25,18 @@ export const SEGMENT_LABEL: Record<SegmentId, string> = {
   bottom: "Bottom dock",
 };
 
-/** Reading order for the "send to the next column" cycle. */
-export const SEGMENT_ORDER: SegmentId[] = ["left", "right", "bottom"];
+/**
+ * The order the rails are OFFERED in, everywhere a control asks "which rail?" —
+ * the placement picker, the ⋯ → send-to menu, and the arrow-key cycle all read
+ * this one list so they can never disagree with each other.
+ *
+ * It is deliberately NOT the DOM order (left, right, bottom — see RAILS in
+ * components/console/ConsoleWorkspace.tsx) and not the screen-reading order
+ * camslot.send.ts pins for its own purpose. Those describe where the rails ARE;
+ * this describes the order you are asked to choose between them, which is a
+ * separate decision and is allowed to differ.
+ */
+export const SEGMENT_ORDER: SegmentId[] = ["left", "bottom", "right"];
 
 /**
  * One step up or down within the widget's own column.

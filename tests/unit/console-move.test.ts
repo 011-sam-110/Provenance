@@ -61,7 +61,7 @@ describe("sending a widget to another column", () => {
   });
 
   it("offers exactly the columns the widget is not already in", () => {
-    expect(otherSegments(board(), "w1")).toEqual(["right", "bottom"]);
+    expect(otherSegments(board(), "w1")).toEqual(["bottom", "right"]);
     expect(otherSegments(board(), "w4")).toEqual(["left", "bottom"]);
   });
 

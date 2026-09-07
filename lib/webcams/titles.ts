@@ -14,6 +14,7 @@
 
 import { useSyncExternalStore, useMemo } from "react";
 import { filterToScope } from "@/lib/scopeFilter";
+import { filterToScopes, useSourceScopes } from "@/lib/shell/sourceScope";
 import { useScope } from "@/lib/shell/scope";
 
 export interface WebcamRow {
@@ -94,15 +95,18 @@ export function useWebcamDirectory(): WebcamRow[] {
     () => rows ?? EMPTY,
     () => EMPTY,
   );
+  // PER-SOURCE, not the one global scope. Areas are additive, so this source is
+  // unrestricted when World has it on and cropped to the rings of the areas that
+  // asked for it otherwise. The map-rail Draw filter still applies on top of both.
+  // See lib/shell/sourceScope.ts.
   const scope = useScope();
+  const rings = useSourceScopes("webcams");
+  const at = (w: WebcamRow) =>
+    typeof w.lat === "number" && typeof w.lon === "number" ? { lat: w.lat, lon: w.lon } : null;
   return useMemo(
-    () =>
-      filterToScope(all, scope, (w) =>
-        typeof w.lat === "number" && typeof w.lon === "number"
-          ? { lat: w.lat, lon: w.lon }
-          : null,
-      ),
-    [all, scope],
+    () => filterToScopes(filterToScope(all, scope, at), rings, at),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `at` is a pure local
+    [all, scope, rings],
   );
 }
 

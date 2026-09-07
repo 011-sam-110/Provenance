@@ -1,15 +1,15 @@
 import { expect, test } from "vitest";
 import {
   AREA_CAP,
-  ALWAYS_ON_SOURCES,
-  activeSet,
   addArea,
   coerceState,
-  effectiveSet,
+  editingSet,
   newArea,
   removeArea,
   renameArea,
   replaceActive,
+  sourceRegions,
+  unionSet,
   writeActive,
   type InspectorArea,
   type InspectorState,
@@ -27,7 +27,7 @@ function area(id: string, createdAt = 1): InspectorArea {
 }
 
 function state(partial: Partial<InspectorState> = {}): InspectorState {
-  return { world: {}, areas: [], loaded: null, ...partial };
+  return { world: {}, areas: [], editing: null, ...partial };
 }
 
 test("newArea derives a bbox and keeps the ring open", () => {
@@ -66,80 +66,121 @@ test("removeArea and renameArea are pure and by id", () => {
   expect(list[0].label).toBe("b"); // original untouched
 });
 
-test("activeSet returns World's set when nothing is loaded", () => {
-  const s = state({ world: { cameras: true }, areas: [area("a")], loaded: null });
-  expect(activeSet(s)).toEqual({ cameras: true });
+test("editingSet returns World's set when the rail points at World", () => {
+  const s = state({ world: { cameras: true }, areas: [area("a")], editing: null });
+  expect(editingSet(s)).toEqual({ cameras: true });
 });
 
-test("activeSet returns the loaded area's own set", () => {
+test("editingSet returns the edited area's own set", () => {
   const a = { ...area("a"), sources: { planes: true } };
-  expect(activeSet(state({ world: { cameras: true }, areas: [a], loaded: "a" }))).toEqual({ planes: true });
+  expect(editingSet(state({ world: { cameras: true }, areas: [a], editing: "a" }))).toEqual({ planes: true });
 });
 
-test("a loaded id that no longer exists falls back to World", () => {
-  const s = state({ world: { cameras: true }, areas: [], loaded: "gone" });
-  expect(activeSet(s)).toEqual({ cameras: true });
+test("an editing id that no longer exists falls back to World", () => {
+  const s = state({ world: { cameras: true }, areas: [], editing: "gone" });
+  expect(editingSet(s)).toEqual({ cameras: true });
 });
 
-test("effectiveSet forces the always-on sources on inside an area", () => {
-  const a = { ...area("a"), sources: { planes: true } };
-  const eff = effectiveSet(state({ areas: [a], loaded: "a" }));
-  for (const id of ALWAYS_ON_SOURCES) expect(eff[id]).toBe(true);
-  expect(eff.planes).toBe(true);
+// ── The composition rule: World everywhere, each area inside its own ring ────
+
+test("unionSet ORs every area onto World", () => {
+  const a = { ...area("a"), sources: { fires: true } };
+  const b = { ...area("b"), sources: { quakes: true } };
+  expect(unionSet(state({ world: { cameras: true }, areas: [a, b] }))).toEqual({
+    cameras: true, fires: true, quakes: true,
+  });
 });
 
-test("effectiveSet leaves World alone — webcams stays opt-in on the globe", () => {
-  const eff = effectiveSet(state({ world: { cameras: true } }));
-  expect(eff).toEqual({ cameras: true });
-  expect(eff.webcams).toBeUndefined();
+test("an area cannot switch off a source World has on", () => {
+  // The whole point of the additive model. An area declining a source is that area
+  // declining it, never a veto for the globe.
+  const a = { ...area("a"), sources: { cameras: false } };
+  expect(unionSet(state({ world: { cameras: true }, areas: [a] })).cameras).toBe(true);
 });
 
-test("writeActive lands on the loaded area and leaves World untouched", () => {
+test("an area's set is live whether or not the rail is pointed at it", () => {
+  // The bug the model exists to fix: this used to depend on which area was loaded.
+  const a = { ...area("a"), sources: { fires: true } };
+  const b = { ...area("b"), sources: { quakes: true } };
+  for (const editing of [null, "a", "b"]) {
+    const u = unionSet(state({ areas: [a, b], editing }));
+    expect(u.fires).toBe(true);
+    expect(u.quakes).toBe(true);
+  }
+});
+
+test("sourceRegions is null — everywhere — whenever World has the source on", () => {
+  const a = { ...area("a"), sources: { cameras: true } };
+  expect(sourceRegions(state({ world: { cameras: true }, areas: [a] }), "cameras")).toBeNull();
+});
+
+test("sourceRegions names only the areas that asked for the source", () => {
+  const a = { ...area("a"), sources: { fires: true } };
+  const b = { ...area("b"), sources: { fires: false } };
+  const c = { ...area("c"), sources: { fires: true } };
+  const got = sourceRegions(state({ areas: [a, b, c] }), "fires");
+  expect(got?.map((x) => x.id)).toEqual(["a", "c"]);
+});
+
+test("sourceRegions is empty — nowhere — for a source nothing has on", () => {
+  expect(sourceRegions(state({ areas: [area("a")] }), "fires")).toEqual([]);
+});
+
+test("writeActive lands on the edited area and leaves World untouched", () => {
   const a = area("a");
-  const s = state({ world: { cameras: true }, areas: [a], loaded: "a" });
+  const s = state({ world: { cameras: true }, areas: [a], editing: "a" });
   const next = writeActive(s, "planes", true);
   expect(next.areas[0].sources).toEqual({ planes: true });
   expect(next.world).toEqual({ cameras: true });
 });
 
-test("writeActive lands on World when nothing is loaded", () => {
+test("writeActive lands on World when the rail points at World", () => {
   const next = writeActive(state({ world: {} }), "planes", true);
   expect(next.world).toEqual({ planes: true });
 });
 
-test("replaceActive swaps the whole set for the loaded context only", () => {
+test("replaceActive swaps the whole set for the edited context only", () => {
   const a = { ...area("a"), sources: { planes: true } };
-  const s = state({ world: { cameras: true }, areas: [a], loaded: "a" });
+  const s = state({ world: { cameras: true }, areas: [a], editing: "a" });
   const next = replaceActive(s, { ships: true });
   expect(next.areas[0].sources).toEqual({ ships: true });
   expect(next.world).toEqual({ cameras: true });
 });
 
 test("coerceState turns junk into a valid empty state", () => {
-  expect(coerceState(null)).toEqual({ world: {}, areas: [], loaded: null });
-  expect(coerceState("nonsense")).toEqual({ world: {}, areas: [], loaded: null });
-  expect(coerceState({ areas: "no" })).toEqual({ world: {}, areas: [], loaded: null });
+  expect(coerceState(null)).toEqual({ world: {}, areas: [], editing: null });
+  expect(coerceState("nonsense")).toEqual({ world: {}, areas: [], editing: null });
+  expect(coerceState({ areas: "no" })).toEqual({ world: {}, areas: [], editing: null });
 });
 
-test("coerceState drops areas whose ring is not an area, and a dangling loaded id", () => {
+test("coerceState reads the field's old `loaded` name — a returning user keeps their pen", () => {
+  const s = coerceState({
+    world: {},
+    areas: [{ id: "a", label: "A", polygon: RING, createdAt: 1, sources: {} }],
+    loaded: "a",
+  });
+  expect(s.editing).toBe("a");
+});
+
+test("coerceState drops areas whose ring is not an area, and a dangling id", () => {
   const s = coerceState({
     world: { cameras: true, junk: "yes" },
     areas: [
       { id: "good", label: "Good", polygon: RING, createdAt: 1, sources: { planes: true } },
       { id: "bad", label: "Bad", polygon: [[0, 0]], createdAt: 2, sources: {} },
     ],
-    loaded: "bad",
+    editing: "bad",
   });
   expect(s.areas.map((a) => a.id)).toEqual(["good"]);
   expect(s.world).toEqual({ cameras: true });
-  expect(s.loaded).toBeNull();
+  expect(s.editing).toBeNull();
 });
 
 test("coerceState recomputes the bbox rather than trusting the payload", () => {
   const s = coerceState({
     world: {},
     areas: [{ id: "a", label: "A", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 1, sources: {} }],
-    loaded: null,
+    editing: null,
   });
   expect(s.areas[0].bbox).toEqual([36, 49.8, 36.5, 50.2]);
 });
