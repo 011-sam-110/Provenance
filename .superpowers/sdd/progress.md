@@ -24,8 +24,8 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 4: full-bleed dock exception (re-review clean)
 - [x] Task 5: ring -> planned wall (camslot.monitor.ts)
 - [x] Task 6: circle gesture + rubber band
-- [~] Task 7: Streets preset opens on an area -- implementer running
-- [ ] Task 8: prompt + apply
+- [x] Task 7: Streets preset opens on an area
+- [~] Task 8: prompt + apply -- implementer running
 - [ ] Task 9: monitored marks
 - [ ] Task 10: video in a tile
 - [ ] Task 11: browser + perf gate
@@ -185,6 +185,20 @@ Task 7: implemented (86da18a). Suite 333/3273 -> 333/3281 (+8). Streets now open
    - README.md:54 alt text still describes the three-webcam wall.
    - scripts/shoot-conditions.mjs + verify-wall.mjs assume tiles exist; assessment requested
      before touching them.
+  COLLATERAL FIXED (cc6976f). Suite unchanged at 333/3281 -- correct, since all three fixes
+  change existing tests/scripts/docs rather than adding tests.
+   - share round-trip is now built EXPLICITLY with three widgets instead of borrowing whichever
+     preset still had some, which is the habit that broke it twice (Hazards, then Streets).
+     Red run proven: "expected [] to deeply equal [ 'clock', 'aviation', 'camslot' ]".
+   - mint-conditions-board.mts now calls the real addWidget reducer instead of copying a
+     template that no longer exists, so segment/order/height/rect come from the product rather
+     than from invented numbers.
+   - README alt text reworded; readme-counts.test.ts re-verified 14/14, no pinned figure moved.
+   - shoot-conditions.mjs fails LOUDLY (total===0 -> exit 1) and is unaffected in its intended
+     TN_BOARD= mode. verify-wall.mjs also fails loudly but messily: page.$eval throws on a
+     missing tile selector at :314, past a try/finally with no catch, after 2 of 7 screenshots.
+     Both left unchanged BY DECISION -- loud is acceptable, and Task 11's browser gate may
+     supersede verify-wall.mjs entirely. Revisit at Task 11, do not silently rewrite them.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
