@@ -459,3 +459,56 @@
   margin-bottom: 4px;
 }
 .adm-field .adm-input { width: 100%; min-width: 0; }
+
+/*
+ * The live deck (/admin/live).
+ *
+ * One extra idea beyond the verify deck: the meter. It is the only control here whose
+ * state is EVIDENCE rather than decoration -- it fills while the stream is producing
+ * frames and drops to zero the moment it stalls, and the admit button follows it. So it
+ * gets the accent colour and sits directly under the picture, where a reviewer watching
+ * the video sees it without moving their eyes.
+ */
+.lv-stage {
+  aspect-ratio: 16 / 9;
+}
+.lv-media {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #000;
+}
+.lv-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 4px;
+}
+.lv-meter-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--adm-panel-2);
+  overflow: hidden;
+}
+.lv-meter-fill {
+  height: 100%;
+  background: var(--adm-accent-bright);
+  transition: width 120ms linear;
+}
+.lv-meter-label {
+  color: var(--adm-ink-dim);
+  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.lv-warn {
+  border-left: 3px solid var(--adm-warn);
+  background: var(--adm-panel);
+  color: var(--adm-ink-dim);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  margin: 8px 0 0;
+  font-size: 13px;
+}

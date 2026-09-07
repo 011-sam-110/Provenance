@@ -37,3 +37,10 @@ profile-out/
 # Excluded from tsconfig too -- a stale copy of a real file in here was gating
 # `tsc --noEmit` on an import that no longer existed.
 scratchpad/
+
+# Stage A liveness harness: raw upstream bodies saved before anything is decided, so
+# `scripts/liveness-measure.mts --replay` can re-run the whole scan with no network.
+# 5.5 MB of other people's public JSON, regenerable in one command, and the conclusions
+# it supports are committed in data/liveness/report.json. The fixtures are the working
+# note, not the finding.
+data/liveness/raw/
