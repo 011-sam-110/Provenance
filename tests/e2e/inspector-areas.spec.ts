@@ -39,12 +39,29 @@ async function boot(page: Page) {
         "tn.terminal.boot.v1",
         JSON.stringify({ v: 1, d: { seenVersion: 1 } }),
       );
+      // World's source set belongs to the VARIANT spine, not to this store — see
+      // inspectorStore.hydrate. So the signal is switched on the way a user's own
+      // toggle persists: as a captured override under tn.variant.v1. Seeding it in
+      // tn.inspector.v1 would be silently discarded on boot, which is what the
+      // first run of this spec discovered.
+      window.localStorage.setItem(
+        "tn.variant.v1",
+        JSON.stringify({
+          v: 1,
+          d: {
+            activeId: "explore",
+            userVariants: [],
+            overrides: { explore: { signals: { [signal]: true } } },
+            layoutOverrides: {},
+          },
+        }),
+      );
       window.localStorage.setItem(
         "tn.inspector.v1",
         JSON.stringify({
           v: 1,
           d: {
-            world: { [signal]: true },
+            world: {},
             loaded: null,
             areas: [
               {
