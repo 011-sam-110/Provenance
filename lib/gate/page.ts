@@ -231,7 +231,7 @@ export function maintenanceHtml(opts: {
     <div class="lede">
       <h1>${name} is offline</h1>
       <p>A surge in visitors pushed the running cost past what this project can carry, so the site is down for now.</p>
-      <p>A lot of feedback came in with those visitors. A new release is planned in about a month, and development updates go to the Discord.</p>
+      <p>We are working to fix this, and expect the site to be up and ready for normal use again within two weeks. Development updates go to the Discord.</p>
       <p class="pulse" id="pulse" hidden><span class="dot"></span>Still in active development &mdash; last commit <a id="pulse-link" href="${BRAND.repoUrl}/commits" rel="noopener"><span id="pulse-when"></span></a>.</p>
       <div class="ctas">
         <a class="discord" href="${BRAND.discordUrl}" rel="noopener">${DISCORD_MARK}Updates on Discord</a>

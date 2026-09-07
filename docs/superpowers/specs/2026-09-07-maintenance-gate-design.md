@@ -7,7 +7,8 @@
 ## Why
 
 Visitor volume pushed Provenance's running cost past what the project carries. The site
-comes down for about a month while a new release is built.
+comes down while the cost is fixed. The stated window on the curtain is **within two
+weeks** (revised down from "about a month" on 2026-09-07, before the gate was armed).
 
 The goal is **cost, not concealment**. A gate that hides the UI but still renders pages,
 revalidates ISR and fetches upstreams would have solved nothing. Success is measured as:
@@ -111,8 +112,10 @@ content of every one of them, and it begins dropping them. A `503` with `Retry-A
 says the absence is temporary.
 
 **It is the best signal available, not a guarantee.** Google treats 503 as "come back
-later" and slows crawling, which is correct for days. Across about a month some erosion
-is likely regardless — 503 minimises it, it does not prevent it. The cheap hedge, if the
+later" and slows crawling, which is correct for days. Across two weeks some erosion is
+likely regardless — 503 minimises it, it does not prevent it. The shorter the outage the
+smaller that risk, so the window shrinking from a month to two weeks strengthens this
+argument rather than changing it; a slip back towards a month is the case to re-read. The cheap hedge, if the
 index turns out to matter more than the saving, is to let `/` alone through as a static
 page: it costs nothing to serve and keeps one live URL for crawlers. Not built; a
 one-line change to the exempt list.
