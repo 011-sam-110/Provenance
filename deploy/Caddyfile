@@ -89,9 +89,44 @@ provenance-online.com {
 			roll_size 50MiB
 			roll_keep 5
 		}
+		# WHAT IS KEPT, AND WHY THE REST IS DELETED.
+		#
+		# This log is the analytics source now — /admin/analytics is built on rollups of it,
+		# not on a third party's dashboard — so these fields are chosen rather than
+		# inherited. Measured an hour after go-live on 2026-09-07: 3,672 rows at ~1,445 bytes
+		# each, which against roll_size 50MiB x roll_keep 5 is about 1.7 DAYS of history.
+		# Almost all of that weight is resp_headers plus a dozen Sec-* request headers that no
+		# aggregate will ever read.
+		#
+		# Deleting them is not only a disk saving. The rollup job parses every row, and the
+		# fields it never reads are the ones it spends its time skipping.
+		#
+		# Referer and User-Agent STAY. Referrer is the channel breakdown — the one measurement
+		# that corrected "Reddit beats search" to the opposite. User-Agent is the only way to
+		# separate the scanners that arrived within minutes of the certificate hitting the CT
+		# log from actual visitors, and an aggregate that counts them as people is worse than
+		# no aggregate.
 		format filter {
 			request>remote_ip ip_mask 16 32
 			request>client_ip ip_mask 16 32
+			request>headers>Cookie delete
+			request>headers>Authorization delete
+			request>headers>Accept delete
+			request>headers>Accept-Encoding delete
+			request>headers>Accept-Language delete
+			request>headers>Priority delete
+			request>headers>Sec-Ch-Ua delete
+			request>headers>Sec-Ch-Ua-Mobile delete
+			request>headers>Sec-Ch-Ua-Platform delete
+			request>headers>Sec-Fetch-Dest delete
+			request>headers>Sec-Fetch-Mode delete
+			request>headers>Sec-Fetch-Site delete
+			request>headers>Sec-Fetch-User delete
+			request>headers>Sec-Gpc delete
+			request>headers>Upgrade-Insecure-Requests delete
+			resp_headers delete
+			request>tls delete
+			request>remote_port delete
 		}
 	}
 }
