@@ -22,8 +22,8 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 2: watch field + sanitize
 - [x] Task 3: nine-way fan-out
 - [x] Task 4: full-bleed dock exception (re-review clean)
-- [ ] Task 5: ring -> planned wall (camslot.monitor.ts)
-- [ ] Task 6: circle gesture + rubber band
+- [x] Task 5: ring -> planned wall (camslot.monitor.ts)
+- [~] Task 6: circle gesture + rubber band -- built 4ed4dd2, fixing review findings
 - [ ] Task 7: Streets preset opens on an area
 - [ ] Task 8: prompt + apply
 - [ ] Task 9: monitored marks
@@ -100,6 +100,60 @@ Task 4: implemented (c3df69c) then FIXED (2fa3b34, 57094ec). Tests 3262 (331 fil
   nothing remounts. It also endorsed using layout.widgets.length over a rect-filtered list,
   because that is the same field dockSize itself branches on.
 
+Task 5: implemented (790e2cd, 2 files, 189 insertions). Suite 331/3262 -> 332/3270, exactly
+  the +8 the brief specified. I verified that count MYSELF after the commit rather than
+  taking the report's word, and checked the commit holds only its own two files.
+  Second index collision of the session, this time agent-to-agent: I dispatched Task 5 while
+  the Task 4 FIX agent was still running, having assumed its commit meant it had finished.
+  Its staged files were swept in and reverted twice. No content lost -- both agents diffed
+  rather than trusting, and both recovered with explicit pathspecs. THE RULE I KEEP BREAKING:
+  a commit existing is not an agent finishing. Wait for the completion notification.
+  REVIEW: spec OK, quality NOT approved -- one CRITICAL, and it is the second vacuous test
+  of this plan. camslot-monitor.test.ts:68 "refuses a ring with fewer than three vertices"
+  asserts only tiles===[] and found===0, and BOTH already hold without planMonitor's guard,
+  because camerasInRing independently returns [] for ring.length<3. I verified it: delete
+  camslot.monitor.ts:64-66 and the test stays green. The two states differ ONLY in message
+  ("That area is not a shape." vs "No cameras inside that area.") and neither is asserted --
+  so the one distinction this task exists to draw is implemented correctly and pinned by
+  nothing.
+  IMPORTANT: the test at :46 is titled "when the ring is empty" but passes a real 64-vertex
+  ring; it is the CAMERAS that are empty. Nothing anywhere feeds planMonitor a genuinely
+  refused ring, so Task 1's antimeridian refusal is not connected to Task 5's message
+  end to end.
+  FIXED (2eb340d). Suite 333/3272 -> 333/3273. The fix agent handed back the RED run, which
+  was the deliverable: deleting camslot.monitor.ts:64-66 fails both tests with
+  "expected 'No cameras inside that area.' to be 'That area is not a shape.'", and restoring
+  it turns them green. I read the diff myself rather than dispatching a re-review: both tests
+  now assert the distinguishing message, the mistitled test is renamed to say it is the
+  CAMERAS that are empty, and the new end-to-end test asserts ringFromCircle actually refused
+  BEFORE asserting anything downstream, so it cannot quietly become a duplicate. webcamRef
+  bound once. Task 5 COMPLETE. Task 6 (circle gesture) running alongside it as the
+  SOLE writer -- a read-only reviewer next to one writer is fine, two writers is not.
+
+Task 6: implemented (4ed4dd2, 2 files, 241 insertions). Suite 332/3270 -> 333/3272; the
+  implementer cross-checked with `npx vitest list` as well as the npm test summary, and I
+  re-ran it myself: 3272. Layer ids tn-circle-src / -fill / -line, confirmed disjoint.
+  Rubber band is real: fill+line updated via setData on every pointermove, not a radiusKm
+  readout. Ring closed ONLY at the MapLibre feature boundary; an empty ring from
+  ringFromCircle is dropped in onUp and never reaches onFinish.
+  ITS CONCERN, RESOLVED WITHOUT ASKING THE PEER: a repo-wide grep found no aoi-areas* ids,
+  which the brief said aoi.ts owns. Correct and expected -- those ids are in console-ux's
+  UNMERGED #187, not on origin/main, which this branch is cut from. The brief was describing
+  a future state. No collision either way. Worth re-checking at the Task 12 rebase.
+  REVIEW: spec OK, quality APPROVED, three findings, none blocking. Verified teardown order
+  (layers before source), that an empty ring reaches neither onFinish nor MapLibre, that the
+  ring closes only at the paintPreview boundary, and that both specFrom tests would fail on a
+  swapped-argument or hardcoded-zero bug. center/radiusKm publish on onDown, earlier than the
+  brief asked.
+  IMPORTANT, being fixed: no pointercancel listener. A pointer taken away mid-drag (tab
+  switch, system touch gesture, stylus out of range) leaves center set, the band painted and
+  -- the part that matters -- dragPan DISABLED, so the map will not pan and nothing on screen
+  says why. aoi.ts has the same gap; not ours to fix.
+  MINOR, being fixed: a comment claimed aoi.ts already adds preventDefault on Enter. It does
+  not -- that is on console-ux's unmerged #187. The claim came VERBATIM FROM MY OWN PLAN, so
+  I corrected the plan too (d204636). Briefs are meant to be copied verbatim, which makes a
+  false line in a brief a defect that ships.
+
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
   planar ray-casting with no seam unwrapping. Affects the EXISTING polygon AOI tool as well
@@ -110,6 +164,17 @@ Task 4: implemented (c3df69c) then FIXED (2fa3b34, 57094ec). Tests 3262 (331 fil
 - T1-m1: the pole clamp Math.max(-90,Math.min(90,degLat)) is inert -- Math.asin already
   returns [-pi/2,pi/2]. Plan-mandated, harmless, could be dropped.
 - T1-m2: ringFromCircle's `vertices` param undertested (no case < 3 or fractional).
+- T6-m1: no pointerId check in onDown/onMove/onUp -- a second touch or stylus contact
+  mid-drag silently overwrites center or ends the gesture early. Low likelihood on a
+  mouse-first console; deliberately left for the final review to triage.
+- T5-m1: ringCentre + WEBCAM_REFRESH_SECONDS=600 in camslot.monitor.ts is a THIRD copy of
+  logic already duplicated in camslot.area.ts:197,202. The comments disclose the mirroring
+  honestly and the brief's exported-function contract forced it, but nothing keeps the three
+  in sync. Worth a decision at final review: one home, or a comment naming all three.
+- T5-m2: camslot.monitor.ts:191-193 builds webcamRef(w.id, w.label) twice (once for the ref,
+  once inside pickKey) instead of binding it once.
+- T5-m3: camslot-monitor.test.ts:88 asserts not.toContain("not placed") against a string that
+  appears nowhere in the code -- documentation, not a constraint.
 - T4-m1: RailSplitter's aria-controls points at a nonexistent id in wall mode. PRE-EXISTING,
   not introduced or worsened by Task 4 -- spotted by the Task 4 re-reviewer while reading
   RailSplitter.tsx to confirm the aria-valuenow defect. Someone should decide whether wall
