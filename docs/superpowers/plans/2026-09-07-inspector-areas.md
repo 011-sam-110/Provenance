@@ -930,23 +930,30 @@ Both stores keep their exact public API and become views onto whichever context
 is loaded. No call site changed: WorldMap, SourceCatalog, monitors, presetLayers,
 presets, PresetBar and the palette all still call toggle/set/get unedited.
 
-This is also a REVERT of an accidental deletion, not a new feature, and one git
-show makes that visible:
+CORRECTED DURING EXECUTION, and the correction is the useful part. This step was
+planned as a REVERT of an accidental deletion: git log -S \"layersStore.hydrate\"
+origin/main lands on 41cf2b9 (2026-06-27, \"wire ConsoleShell to the variant
+spine\"), whose parent has layersStore.hydrate() and signalsStore.hydrate() at
+ConsoleShell.tsx lines 34-35 and which drops both, with their imports, while
+re-adding alertStore and langStore in the same hunk. Nothing adds them back --
+474 commits and 71 days. Both files' headers still claim the old behaviour.
 
-  git log -S \"layersStore.hydrate\" origin/main   ->  41cf2b9
-  git show 41cf2b9 -- components/shell/ConsoleShell.tsx
+Every one of those facts is true, and the conclusion drawn from them was wrong.
+variantStore.bootstrap calls itself \"The ONLY load-time hydration path\" in its
+own doc comment: it applies the variant on every boot, and captureOverride
+subscribes to both stores and persists the delta under tn.variant.v1. Toggles DO
+survive a reload; their persistence MOVED. The deletion was deliberate and
+correct, and re-adding those calls would have fought the mechanism that replaced
+them.
 
-41cf2b9, 2026-06-27, \"wire ConsoleShell to the variant spine\", rewrote the hydrate
-block and dropped two stores out of it. Its parent has layersStore.hydrate() and
-signalsStore.hydrate() at ConsoleShell.tsx lines 34 and 35; the commit shows them as
-two minus lines while alertStore and langStore are re-added in the same hunk. Nothing
-adds them back. That is 474 commits and 71 days on main.
+Two things to take from it. A careful reading of a diff supported a conclusion
+that one line of localStorage in a running browser disproves -- so where a claim
+is about RUNTIME behaviour, run it. And the deletion was internally consistent
+(calls and imports together, no unused symbol, no type error), which is why no
+tool flagged it for 474 commits and why the only thing left inconsistent was
+English prose in two file headers.
 
-So layer and signal toggles have not survived a reload since 2026-06-27, and both
-files' headers have described the behaviour of the code that used to be there --
-lib/layers.ts still says \"persisted to localStorage so a composed view survives a
-reload\", and lib/signals/store.ts says the same. This makes the code match its
-documentation again. Rehydration now happens once, in inspectorStore.
+Rehydration now happens once, in inspectorStore.
 
 Also corrects the LayerKey comment: weather left SIGNALS in #177 and the rail
 stopped drawing signposts for either planned key before that."
