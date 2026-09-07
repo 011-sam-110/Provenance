@@ -1,6 +1,7 @@
 "use client";
 
 import { ringFromCircle, haversineKm, type CircleSpec } from "@/lib/map/circle";
+import { setExternalDraw } from "@/lib/map/aoi";
 import type { LatLon } from "@/lib/console/widgets/camslot.arm";
 
 // ── Press, drag, release ─────────────────────────────────────────────────────
@@ -106,7 +107,40 @@ function clearPreview(map: MapLike): void {
 
 let state: CircleDrawState | null = null;
 const listeners = new Set<() => void>();
-function emit() { for (const fn of listeners) fn(); }
+// `publish()` rides on emit rather than sitting at each of the four sites that
+// assign `state`. Those two writes cannot then drift apart, which is the whole
+// point of publishing at all — a shared truth updated at three sites out of four
+// is worse than no shared truth, because the banner would narrate a stale radius
+// instead of visibly not working.
+function emit() { publish(); for (const fn of listeners) fn(); }
+
+/**
+ * Mirror the local state into `lib/map/aoi.ts`'s draw store, so "a draw is
+ * running" stays ONE truth.
+ *
+ * This module keeps its own store because the wall reads `radiusKm` every frame
+ * and should not depend on another module's shape; publishing here is what buys
+ * the two things a private flag cannot: `isDrawing()` stops the polygon tool
+ * arming on top of this gesture, and `DrawBanner` — the only always-mounted sign
+ * that the map is swallowing clicks — narrates it.
+ *
+ * SHAPE NOTE, because the obvious call is wrong: `DrawState` is not `{ tool,
+ * center, radiusKm }`. `active` and `vertices` are required, and `center` is a
+ * `[lon, lat]` TUPLE rather than the `LatLon` this module passes around — order
+ * swapped and typed the other way. `vertices` stays empty by contract: it is the
+ * polygon's list, and the banner reads `center`/`radiusKm` for a radius-like
+ * tool. It does NOT paint; the preview layers above remain this module's own.
+ */
+function publish(): void {
+  if (!state) { setExternalDraw(null); return; }
+  setExternalDraw({
+    active: true,
+    tool: "circle",
+    vertices: [],
+    ...(state.center ? { center: [state.center.lon, state.center.lat] as [number, number] } : {}),
+    radiusKm: state.radiusKm,
+  });
+}
 
 export const circleDrawStore = {
   get(): CircleDrawState | null { return state; },
@@ -235,3 +269,29 @@ export function startCircleDraw(
 export function cancelCircleDraw(): void {
   teardown?.();
 }
+
+// ── KNOWN GAP: THE BANNER'S CANCEL BUTTON DOES NOT REACH THIS GESTURE ────────
+//
+// Publishing through `setExternalDraw` buys the DrawBanner, and the banner
+// renders a Cancel button unconditionally (components/shell/DrawBanner.tsx). That
+// button calls `cancelDraw()`, which is only `cancelActive?.()` — and
+// `setExternalDraw` documents that it does not touch `cancelActive`, which is
+// module-private to aoi.ts with no exported setter. So while a circle is running
+// that button is a NO-OP: it does not tear this gesture down, and it does not
+// even clear the shared state, so the banner does not so much as blink.
+//
+// ESCAPE STILL WORKS (`onKey` above), and the button names Esc on its own face,
+// so the gesture is always escapable. The cost is a visible control that does
+// nothing, which is worth stating plainly rather than papering over.
+//
+// NO GUARD IS INSTALLED HERE FOR IT, deliberately. The obvious one — subscribe to
+// `aoiDrawStore` and tear down if the shared state stops being our circle — is
+// DEAD CODE: `startDraw` self-guards with `if (draw.active) return false`, so
+// while this gesture publishes `active: true` nothing else can take the store,
+// and this module is the only caller of `setExternalDraw` in the tree. A guard
+// that cannot fire is worse than none, because the next reader believes the case
+// is handled.
+//
+// THE FIX BELONGS IN aoi.ts and is about four lines — let `setExternalDraw` take
+// an optional `onCancel` and have `cancelDraw()` call it — but that file is
+// another workstream's, so it is raised with them rather than reached into here.
