@@ -6884,6 +6884,72 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 /* ── end stage rail ──────────────────────────────── */
 
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
+/* ── The drawing banner ───────────────────────────────────────────────────
+   Over the map for as long as a draw gesture runs. TOP-CENTRE is the one free
+   band on this stage: the header owns the row above it, the rail FAB sits at the
+   same height on the LEFT margin, the map rail is centred on the right edge, and
+   the toast (z 1200) is bottom-centre. It is `fixed` and centred by transform
+   rather than by flexbox so nothing about the workspace layout can shift it.
+
+   Z-INDEX 1150 — under the toast and the feedback modal (1200/1100) and over the
+   stage chrome. A message about a gesture in progress should not cover the pill
+   telling you the workspace is full, and must not cover a modal at all.
+
+   `pointer-events` is NONE on the banner and AUTO on its button. The banner sits
+   over the map during a gesture whose whole job is receiving clicks; a bar that
+   swallowed them would eat the user's first vertex if they aimed near the top of
+   the map, which is a worse bug than the one this fixes. Only the Cancel button
+   takes the pointer back. */
+.tn-drawbanner {
+  position: fixed; z-index: 1150; pointer-events: none;
+  top: calc(var(--tn-topbar-h) + 14px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 11px;
+  max-width: min(560px, calc(100vw - 24px));
+  padding: 8px 10px 8px 12px; border-radius: 999px;
+  border: 1px solid var(--tn-accent); background: var(--tn-surface);
+  box-shadow: var(--tn-shadow);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-size: var(--tnx-fs-sm);
+}
+/* A pulsing dot, because the banner is otherwise indistinguishable from the many
+   other static pills on this stage and the state it reports is a LIVE one. It is
+   the only motion here and it stops the moment the gesture ends. */
+.tn-drawbanner-pulse {
+  flex: 0 0 auto; width: 8px; height: 8px; border-radius: 999px;
+  background: var(--tn-accent); animation: tn-drawpulse 1.4s ease-in-out infinite;
+}
+@keyframes tn-drawpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+/* Motion is decoration here — the words carry the whole message — so it goes
+   entirely rather than being slowed down. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-drawbanner-pulse { animation: none; }
+}
+.tn-drawbanner-text { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.tn-drawbanner-text strong { font-weight: 600; white-space: nowrap; }
+.tn-drawbanner-text > span { color: var(--tn-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-drawbanner-x {
+  pointer-events: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  /* 28px tall rather than the 22px the text alone would give it: it is a control on
+     a surface the user is clicking at speed, and a thin one beside a live map is a
+     mis-click waiting to place a vertex. */
+  min-height: 28px; padding: 0 10px; border-radius: 999px;
+  border: 1px solid var(--tn-border); background: none;
+  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-text); cursor: pointer;
+}
+.tn-drawbanner-x:hover { border-color: var(--tn-text-faint); background: var(--tn-surface-2, rgba(0,0,0,.04)); }
+.tn-drawbanner-x kbd {
+  font: inherit; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint);
+  border: 1px solid var(--tn-border); border-radius: 4px; padding: 0 4px;
+}
+/* On a phone the stage is short and the banner would sit on top of the first thing
+   the user is trying to click. It keeps its place but loses the fixed lead word, so
+   the live hint — the half that changes — is what survives the width. */
+@media (max-width: 560px) {
+  .tn-drawbanner { gap: 8px; padding: 7px 8px 7px 10px; }
+  .tn-drawbanner-text strong { display: none; }
+}
+
 /* ── Inspector: the context switcher and the areas index ──────────────── */
 /* IT IS A BUTTON NOW, NOT A LABEL. It used to state which context was loaded and
    carry a "✕ back to World"; picking a context is a safe, map-invisible act since

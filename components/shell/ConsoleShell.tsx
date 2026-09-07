@@ -34,6 +34,7 @@ import CommandPalette from "@/components/shell/CommandPalette";
 import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
 import CommunityNote from "@/components/shell/CommunityNote";
 import DevNotice from "@/components/shell/DevNotice";
+import DrawBanner from "@/components/shell/DrawBanner";
 import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
@@ -344,6 +345,12 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           boot plate and nothing else — a warning that waits is a warning that arrives
           after the bug it was about. */}
       <DevNotice />
+      {/* Renders null unless a draw gesture is running, so this costs one store
+          subscription. Mounted HERE rather than inside the stage rail because the
+          rail keeps one group open at a time — opening Search mid-draw unmounts
+          DrawFlyout and, with it, every sign that the map is still taking clicks.
+          See components/shell/DrawBanner.tsx. */}
+      <DrawBanner />
       {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
           disappearing with its text. A live region has to already be in the
           accessibility tree when its content changes for the change to be
