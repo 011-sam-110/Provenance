@@ -9,6 +9,18 @@
 // NO RADIUS SURVIVES THIS MODULE. The ring is the interface; a centre+radius pair
 // is an input to it and is never stored, never persisted and never added to
 // InspectorArea. That keeps one geometry type in the system rather than two.
+//
+// KNOWN, DELIBERATE LIMITATION: a circle that crosses the ±180° seam is REFUSED,
+// not approximated. `pointInRing` (`lib/shell/scope.ts`, the only real consumer of
+// this ring) does planar ray-casting on raw longitude differences with no
+// antimeridian unwrapping — so a straddling ring does not just look odd, it
+// INVERTS. Measured for `{ lat: 0, lon: 179.9, radiusKm: 50 }`: the bbox covers
+// nearly the whole globe, the centre (zero km away) tests as OUTSIDE, and a point
+// 111 km away tests as INSIDE. `crossesAntimeridian` detects this up front and
+// `ringFromCircle` returns `[]` for it — an empty ring every caller already
+// handles — rather than hand `pointInRing` a shape it cannot judge correctly.
+// Teaching the containment path itself about the seam is out of scope here
+// (it is shared with the polygon AOI tool and is its own, later task).
 
 /** Mean Earth radius, km. The same figure MapLibre and turf use. */
 const EARTH_KM = 6371.0088;
@@ -50,6 +62,48 @@ function wrapLon(lon: number): number {
   return ((((lon + 180) % 360) + 360) % 360) - 180;
 }
 
+/** Angular radius (radians) beyond which a circle stops behaving like a local
+ *  patch of the sphere: a cap wider than a hemisphere necessarily reaches past
+ *  its own antipodal meridian, so it wraps the full 360° of longitude no matter
+ *  where it is centred. */
+const MAX_ANGULAR_RADIUS = Math.PI / 2;
+
+/** Below this, cos(lat) is close enough to zero that a fixed ground distance
+ *  corresponds to an unbounded number of degrees of longitude — every bearing
+ *  becomes "east". Treated as crossing rather than divided by (near) zero. */
+const MIN_COS_LAT = 1e-6;
+
+/**
+ * Whether a circle would cross the ±180° seam.
+ *
+ * A ring that crosses it cannot be fed to `pointInRing`, which ray-casts on raw
+ * longitude differences: measured for a 50 km circle at 179.9°E, the bbox covers
+ * nearly the globe, the centre tests as OUTSIDE and a point 111 km away tests as
+ * INSIDE. Refusing is the honest answer until the containment path itself
+ * understands the seam.
+ *
+ * Derived from the circle itself, not from `ringFromCircle`'s wrapped output:
+ * the unwrapped east/west extent is `lon ± (angularRadius / cos(lat))`, and this
+ * reports whether either one leaves [-180, 180]. Also refuses a radius so large
+ * the circle spans more than a hemisphere (it wraps regardless of longitude),
+ * and a centre close enough to a pole that cos(lat) collapses toward zero.
+ */
+export function crossesAntimeridian(c: CircleSpec): boolean {
+  if (!Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return false;
+  if (!Number.isFinite(c.radiusKm) || c.radiusKm <= 0) return false;
+
+  const angularRadius = c.radiusKm / EARTH_KM;
+  if (angularRadius >= MAX_ANGULAR_RADIUS) return true;
+
+  const cosLat = Math.cos((c.lat * Math.PI) / 180);
+  if (Math.abs(cosLat) < MIN_COS_LAT) return true;
+
+  const lonHalfSpanDeg = ((angularRadius / cosLat) * 180) / Math.PI;
+  const east = c.lon + lonHalfSpanDeg;
+  const west = c.lon - lonHalfSpanDeg;
+  return east > 180 || west < -180;
+}
+
 /**
  * An OPEN ring approximating a circle — first vertex not repeated, `[lon, lat]`
  * pairs, matching what `startDraw`'s `onFinish` hands back.
@@ -57,10 +111,16 @@ function wrapLon(lon: number): number {
  * Returns `[]` rather than throwing for a radius that is not a positive finite
  * number: every caller is a pointer handler mid-gesture, and a zero-radius circle
  * is what the very first mousemove of every drag looks like.
+ *
+ * Also returns `[]` when `crossesAntimeridian(c)` — a straddling ring is not
+ * approximated, it is refused, because the only real consumer (`pointInRing`)
+ * would silently invert it. Every caller already treats an empty ring as "found
+ * nothing here" rather than an error, so this reuses that same contract.
  */
 export function ringFromCircle(c: CircleSpec, vertices = CIRCLE_VERTICES): [number, number][] {
   if (!Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return [];
   if (!Number.isFinite(c.radiusKm) || c.radiusKm <= 0) return [];
+  if (crossesAntimeridian(c)) return [];
 
   const n = Math.max(3, Math.floor(vertices));
   const lat = (c.lat * Math.PI) / 180;
