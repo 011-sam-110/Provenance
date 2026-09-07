@@ -347,6 +347,69 @@ Task 11 dispatched with an environment warning that matters more than the task t
   measurement task. Told it to start its own server from this worktree on 3010/3011/3012, never
   to kill a peer's, and to verify its own shutdown by PID rather than by the port going quiet.
 
+Task 11: COMMITTED BY ME (53038b5), and the agent did not finish it. Suite 336/3303, tsc clean.
+  PROCESS FAILURE, and it is the documented one: the agent returned status `completed` FOUR
+  times, each time with a final message of the form "I will wait for the run to finish before
+  proceeding" -- 278 tool uses, 81 minutes, ZERO commits. That is the false-completion pattern
+  already in my memory, and I still resumed it once before accepting it was stopped rather than
+  working. Worse, the resume was actively harmful: killing its orphaned background run WOKE it,
+  and it immediately launched ANOTHER verify run against the same dev server while mine was in
+  flight. Two Chromium instances measuring "CPU at rest" on one box is not a measurement. I
+  caught it because two verify PIDs showed up 35 seconds apart, killed both runs, stopped the
+  agent with TaskStop so it could not wake again, and only then re-ran. LESSON: an agent that
+  reports `completed` while waiting is not merely idle -- it can still hold background children
+  that RESTART it. Stop it, then clean up; not the other way round.
+
+  WHAT THE AGENT GOT RIGHT, and I am recording it because it is most of the script: reading
+  product constants out of their source files rather than retyping them, pre-resolving the
+  DevNotice / CommunityNote / FeedbackPrompt modals in localStorage (each is a real veil that
+  eats a click, and FeedbackPrompt fires on a ~1-in-3 roll per reload, so the run's outcome
+  would otherwise depend on chance), the mount COUNTER rather than a boolean, and blocking on
+  the cameras source before the draw instead of measuring a webcam-only board and calling it
+  video. It also widened the per-switch timeout 15s -> 20s AFTER I told it not to; I checked
+  its evidence and kept the change, because a successful load at 14,688ms against a 15,000ms
+  ceiling means the old ceiling was clipping real loads. Instruction beaten by measurement is
+  the right way round.
+
+  THREE FIXES OF MINE, all found by running it rather than reading it:
+  (a) The rotation-churn check reported "heap grows monotonically" when what had happened was
+      "7 of 20 switches never painted". Its gate was `validTimes >= 15 && !monotonicGrowth`, so
+      a quiet upstream failed the LEAK gate. Split into an upstream paint rate (reported, never
+      gated -- allowlist match means proxyable, NOT that a stream exists) and the leak gate with
+      THREE outcomes: pass, leak, or explicit INCONCLUSIVE. I did NOT lower the floor of 15 to
+      make it green; dead switches simply no longer spend the sample budget.
+  (b) The post-reload phase raced the camera fetch: watchingFeatures drops any key it cannot
+      place, so marks=0 was recorded for a board that was merely still loading -- identical on
+      the page to the regression the check exists to catch. It now waits for the cameras source
+      first, so a 0 means "did not come back".
+  (c) --calibrate would have written thresholds from a board with NO video on it, and the
+      assertion could then be satisfied by an idle map scoring full marks for doing no work.
+      Both paths now refuse a sample with no video.
+
+  A REAL DEFECT IN THE HARNESS, worth carrying to any other Playwright script here:
+  `page.waitForFunction(fn, { timeout: N })` passes the options object as the FUNCTION ARGUMENT,
+  not as options -- the signature is (pageFunction, arg, options). Every two-argument
+  waitForFunction in this script therefore ran on Playwright's 30s default and its stated
+  timeout was fiction. Caught because the error said "Timeout 30000ms exceeded" against a line
+  reading `{ timeout: 20_000 }`. The three-argument calls (which pass an element handle) are
+  correct. NOT yet fixed -- see follow-ups.
+
+  THE GATE IS NOT GREEN, and the cause is not this branch. The console intermittently shows
+  0 cameras while /api/cameras answers 200 with 19,386 rows, 1,467 of them live from exactly
+  the four documented host families (caltrans 634, scdot 771, mup-rs 32, putevi-rs 30).
+  Measured with a probe: the fetch lands TWICE (StrictMode), no page error, no console error,
+  webcams populate normally to 70,686 features, and the cameras source stays at 0 for 45s.
+  It is not the dev server -- a freshly started one reproduces it. It is not the Streets board
+  -- the default board simply runs no camera fetch at all. The agent's own screenshot of the
+  board on MAIN (persona-shots/_main-streets-board.png, untracked) shows "CAMERAS DOWN" and
+  0 LIVE, so the state predates this work. It worked at 22:35 and not at 23:00 on identical
+  code, so it is intermittent. NOT diagnosed further: it is outside Task 11 and I stopped
+  rather than keep digging.
+
+  Screenshots are deliberately NOT committed. The three surviving runs were killed or
+  contended, so persona-shots/streets-area holds frames from three different runs -- an
+  incoherent set that would read as evidence of a pass that never happened.
+
 QUEUED FOR FINISHING (behind Task 11's writer):
  1. CameraVideo bench fix (T10-i2 above). console-ux CLEARED it -- they do not own the file,
     they are a future consumer, and it helps their camera-review deck. They asked for a second
