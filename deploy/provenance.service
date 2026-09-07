@@ -36,6 +36,27 @@ RestartSec=3
 # The registry warm-up means a cold start does real work before it answers.
 TimeoutStartSec=90
 
+# CAP THE STOP, BECAUSE THE DEFAULT 90s IS A 90s OUTAGE ON EVERY DEPLOY.
+#
+# Next stops accepting on SIGTERM and then drains in-flight and keep-alive connections,
+# so the port is CLOSED for the whole drain. Measured on this box on 2026-09-07: a stop
+# with no established connections took 0.03s; a stop while a client was making requests
+# on a keep-alive connection took 26.7 SECONDS. /api/hls streams video segments and a
+# player holds that connection open indefinitely, so in production the drain is bounded
+# by the slowest client rather than by the slowest request.
+#
+# That is where the 89 `502 /` responses in the first day came from. Every deploy calls
+# `systemctl restart`, and everything arriving during the drain got a connection refused
+# from Caddy.
+#
+# Five seconds is chosen against the measurement, not picked round: page responses
+# average 127 ms and the slowest upstream fetch in the app times out at 8 s, so an
+# ordinary request finishes comfortably inside it and only a long-lived stream is cut —
+# and a stream is being cut either way. SIGKILL rather than a longer wait is the right
+# trade because deploy/deploy.sh has already proved the incoming release answers on
+# :3001 before the symlink moves; the old process has nothing left to contribute.
+TimeoutStopSec=5
+
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

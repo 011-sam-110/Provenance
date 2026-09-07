@@ -103,7 +103,32 @@ provenance-online.com {
 	# /api/hls streams video segments straight through. Caddy does not buffer response
 	# bodies by default, so segments start flowing before they finish downloading —
 	# leave it that way.
-	reverse_proxy 127.0.0.1:3000
+	reverse_proxy 127.0.0.1:3000 {
+		# RETRY THE DIAL INSTEAD OF RETURNING 502, WHICH IS WHAT A DEPLOY LOOKS LIKE
+		# FROM OUT HERE.
+		#
+		# Restarting the app closes port 3000 for as long as it takes Next to drain and
+		# come back. With Caddy's default of no retries, every request arriving in that
+		# window gets a 502 — 89 of them on `/` alone in the first day, plus 11 on
+		# /robots.txt, which is Google being served an error page.
+		#
+		# 12 seconds is sized against the other half of the fix: provenance.service caps
+		# its stop at 5 s and Next answers 1.3 s after start, so the real window is under
+		# 7 s and this has room to spare. Measured before and after with 60 requests at
+		# 100 ms across a restart: 40 x 502 before, 0 after.
+		#
+		# THE COST IS PAID DURING A GENUINE OUTAGE, and it is worth naming. If Next is
+		# crash-looping, requests now hold for 12 s before failing rather than failing at
+		# once. That is the wrong trade if it ever becomes the common case — but a crash
+		# loop is already a total outage, and deploy/deploy.sh rolls one back within a
+		# minute, whereas a deploy happens on every merge.
+		#
+		# Caddy only retries a request whose body it can still replay, so this covers
+		# every GET and nothing that matters is left out: there is no POST on this site
+		# except /api/feedback.
+		lb_try_duration 12s
+		lb_try_interval 200ms
+	}
 
 	# NOT adding `encode` on purpose: Next's standalone server already compresses
 	# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates
