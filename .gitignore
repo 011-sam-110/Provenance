@@ -32,3 +32,8 @@ profile-out/
 .next-perf/
 
 .env*
+
+# Scratch working directory: throwaway probes, backups and captured output.
+# Excluded from tsconfig too -- a stale copy of a real file in here was gating
+# `tsc --noEmit` on an import that no longer existed.
+scratchpad/

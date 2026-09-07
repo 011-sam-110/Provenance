@@ -1,15 +1,18 @@
 import { describe, it, expect } from "vitest";
 import { resolveSignals } from "@/lib/variants/resolveSignals";
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS, DATA_ONLY_SIGNAL_IDS } from "@/lib/signals/registry";
 
 describe("resolveSignals", () => {
   it("returns {} for no selection", () => {
     expect(resolveSignals(undefined)).toEqual({});
   });
-  it("'*' selects every registry id as true", () => {
+  it("'*' selects every MAP id as true, and cannot reach a data-only source", () => {
     const r = resolveSignals({ groups: ["*"] });
-    expect(Object.keys(r).length).toBe(SIGNALS.length);
+    expect(Object.keys(r).length).toBe(MAP_SIGNALS.length);
     expect(Object.values(r).every((v) => v === true)).toBe(true);
+    // "*" is the widest selector a variant can write. If it could switch on a data-only
+    // source, "not a map layer" would last exactly until someone picked that variant.
+    for (const id of DATA_ONLY_SIGNAL_IDS) expect(r[id]).toBeUndefined();
   });
   it("selects a group by name", () => {
     const r = resolveSignals({ groups: ["Cyber threat"] });

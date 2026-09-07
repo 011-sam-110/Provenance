@@ -48,16 +48,12 @@ import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/gdelt";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
 import { EMSC_SOURCE } from "@/lib/signals/emsc";
-import { ACLED_SOURCE } from "@/lib/signals/acled";
-import { WEATHER_SOURCE } from "@/lib/signals/weather";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
 import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
 import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
-import { FAA_SOURCE } from "@/lib/signals/faa";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
 import { DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
-import { FOOD_SECURITY_SOURCE } from "@/lib/signals/food-security";
 import { MILITARY_AIR_SOURCE } from "@/lib/signals/military-air";
 import { AIS_SOURCE } from "@/lib/signals/ais";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
@@ -70,8 +66,11 @@ import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 
 /** Every registered signal layer, in rail display order. */
 export const SIGNALS: SignalSource[] = [
-  // Synthesis — the flagship: a per-country instability score composited from the
-  // conflict / food / displacement / outage layers (keyless inputs; ACLED upgrades it).
+  // Synthesis — a per-country instability score composited from the conflict /
+  // food / displacement / outage inputs. DATA-ONLY since 2026-09-05: it is not a
+  // map layer any more (see `dataOnly` in lib/signals/types.ts), but the Daily
+  // Brief, the Country Instability widget, the Strategic Risk panel and the country
+  // dossier all still read it through /api/signals/instability.
   INSTABILITY_SOURCE,
   EARTHQUAKES_SOURCE,
   WILDFIRES_SOURCE,
@@ -95,23 +94,18 @@ export const SIGNALS: SignalSource[] = [
   PORTS_SOURCE,
   INTERNET_OUTAGES_SOURCE, // IODA national internet-shutdown detection (keyless, country-aggregated)
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
-  FAA_SOURCE, // FAA national airspace status (keyless); US only, and the layer says so
   // Intel (GDELT geolocated news coverage)
   CONFLICT_SOURCE,
   PROTESTS_SOURCE,
-  // Conflict events (ACLED — key-gated: ACLED_EMAIL + ACLED_PASSWORD)
-  ACLED_SOURCE,
   // Environment & civic (keyless Open-Meteo + data.police.uk)
-  WEATHER_SOURCE,
   AIR_QUALITY_SOURCE,
   AIR_QUALITY_STATIONS_SOURCE, // real OpenAQ station PM2.5 (key-gated: OPENAQ_API_KEY)
   UK_CRIME_SOURCE,
   // Cyber threat (keyless abuse.ch + Ransomware.live, country-aggregated)
   CYBER_C2_SOURCE,
   CYBER_RANSOMWARE_SOURCE,
-  // Human cost (keyless UNHCR displacement + WFP HungerMap, country-aggregated)
+  // Human cost (keyless UNHCR displacement, country-aggregated)
   DISPLACEMENT_SOURCE,
-  FOOD_SECURITY_SOURCE,
   RELIEFWEB_SOURCE, // UN OCHA humanitarian emergencies (key-gated: RELIEFWEB_APPNAME)
   // Energy / grid (key-gated: ENTSOE_API_TOKEN)
   GRID_LOAD_SOURCE,
@@ -121,15 +115,33 @@ export const SIGNALS: SignalSource[] = [
   AIS_SOURCE,
 ];
 
+/**
+ * The signals that are offered as MAP LAYERS — every registered source except the
+ * data-only ones (see `SignalSource.dataOnly`).
+ *
+ * This is the list for anything that draws, lists, toggles or shares a layer: the
+ * source catalog, the Sources rail, WorldMap, the monitor presets, the ⌘K palette,
+ * the variant profiles and the `?sig=` share URL. `SIGNALS` stays the full registry
+ * and is what the /api/signals/<id> route, /api/status and the explainers read.
+ *
+ * Getting these two the wrong way round is the failure this split exists to prevent:
+ * import `SIGNALS` into a layer surface and a data-only source reappears as a layer.
+ */
+export const MAP_SIGNALS: SignalSource[] = SIGNALS.filter((s) => !s.dataOnly);
+
+/** Ids that are registered but deliberately not map layers. */
+export const DATA_ONLY_SIGNAL_IDS: readonly string[] = SIGNALS.filter((s) => s.dataOnly).map((s) => s.id);
+
 /** Lookup a source by id (the dynamic route + store key). */
 export function getSignal(id: string): SignalSource | undefined {
   return SIGNALS.find((s) => s.id === id);
 }
 
-/** Registry grouped by `group`, preserving registration order — used by the rail. */
+/** Map layers grouped by `group`, preserving registration order — used by the rail.
+ *  Walks MAP_SIGNALS, so a data-only source never appears as a group or a row. */
 export function signalsByGroup(): { group: string; sources: SignalSource[] }[] {
   const groups: { group: string; sources: SignalSource[] }[] = [];
-  for (const s of SIGNALS) {
+  for (const s of MAP_SIGNALS) {
     let g = groups.find((x) => x.group === s.group);
     if (!g) {
       g = { group: s.group, sources: [] };

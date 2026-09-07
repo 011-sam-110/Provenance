@@ -57,7 +57,7 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Synthesis ------------------------------------------------------------
   {
     id: "instability",
-    whatItShows: "A 0–100 country instability score, composited from the conflict, food-security, displacement and internet-outage layers already on this map.",
+    whatItShows: "A 0–100 country instability score, composited from conflict (GDELT article volume), food insecurity, displacement and internet outages. Not a map layer — it feeds the Brief, the Country Instability widget and the country dossier.",
     method: "A weighted mean of the available factors, rescaled to 0–100, with the number of contributing factors published alongside the score.",
     confidence: "derived",
     coverage: "Every country for which at least one input factor has data.",
@@ -313,19 +313,6 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
-    id: "faa-airports",
-    whatItShows: "A US airport the FAA currently reports as closed, under a ground stop, running a ground-delay programme, or delayed.",
-    method: "Read straight from the FAA's own National Airspace System status feed. The cause is the FAA's, quoted verbatim from the NOTAM.",
-    confidence: "official",
-    coverage: "The United States only. There is no equivalent open feed for most of the world, so an empty map outside the US is coverage, not calm.",
-    limitations: [
-      "Most entries in the FAA's own \"Airport Closures\" list are PARTIAL restrictions — LAX and LAS appear there because they are closed to unscheduled general aviation while every airline flight operates normally. We label those \"Partial restriction\", not \"closed\"; the raw NOTAM is shown so you can check the call.",
-      "It reports the airspace programme, not your flight. A ground stop at an airport does not mean every flight there is cancelled, and no ground stop does not mean your flight is on time.",
-      "An airport whose 3-letter code we cannot resolve to coordinates is dropped rather than placed approximately.",
-      "The feed reports current programmes only; there is no history and no forecast here.",
-    ],
-  },
-  {
     id: "grid-load",
     whatItShows: "Electricity demand and generation for a European bidding zone.",
     method: "Published by ENTSO-E's Transparency Platform from transmission-system-operator submissions.",
@@ -371,19 +358,6 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
-    id: "acled",
-    whatItShows: "A political-violence or protest event recorded by ACLED, with actors, date and fatality count.",
-    method: "Coded by ACLED researchers from multiple sources against a published methodology, then reviewed.",
-    confidence: "reported",
-    coverage: "Global, phased in by region over time — historical depth varies a lot by country.",
-    limitations: [
-      "Fatality figures are contested by nature and are frequently revised in later releases.",
-      "Coding lags the event, typically by several days, so the most recent week is always the thinnest.",
-      "Sourcing depends on reporting: under-reported conflicts stay under-reported here too.",
-      "Requires an ACLED key. Without one this layer is empty AND the instability index silently runs without its conflict factor.",
-    ],
-  },
-  {
     id: "military-air",
     whatItShows: "An aircraft currently broadcasting ADS-B that community trackers classify as military.",
     // Two different claims live in one pin, and they do NOT share a provenance.
@@ -406,18 +380,6 @@ const EXPLAINERS: LayerExplainer[] = [
   },
 
   // --- Weather / environment -----------------------------------------------
-  {
-    id: "weather",
-    whatItShows: "Current temperature, wind and conditions at one of a curated set of world cities.",
-    method: "Open-Meteo's blend of national weather-service model output, interpolated to the point.",
-    confidence: "modelled",
-    coverage: "A curated set of cities, not a continuous field.",
-    limitations: [
-      "Model output interpolated to a coordinate — not a reading from a station at that spot.",
-      "Only the cities in our list are shown; this is not a global weather map.",
-      "Model resolution smooths out local effects: coastlines, valleys and urban heat.",
-    ],
-  },
   {
     id: "airquality",
     whatItShows: "Modelled air quality (CAMS / GEOS-CF) at a selected city.",
@@ -491,19 +453,6 @@ const EXPLAINERS: LayerExplainer[] = [
       "Annual figures with a long lag — typically a year or more behind. This is not a live crisis feed.",
       "Country-level totals cannot show where inside a country people are.",
       "Internal displacement, statelessness and irregular movement are counted inconsistently between states.",
-    ],
-  },
-  {
-    id: "food-security",
-    whatItShows: "Estimated prevalence of insufficient food consumption for a country or admin area.",
-    method: "WFP HungerMap LIVE combines survey data with a predictive model where surveys are absent.",
-    confidence: "modelled",
-    coverage: "The countries WFP monitors — concentrated on those already in or near crisis.",
-    limitations: [
-      "THIS LAYER IS CURRENTLY DARK. WFP withdrew the keyless feed — it answers 401 — so the layer shows a status notice instead of readings. An empty map here means we have no data, NOT that nobody is hungry.",
-      "In many areas the figure is a MODEL ESTIMATE, not a survey result, and the two are not distinguished on the map.",
-      "Absence of a country usually means WFP does not monitor it, not that food security is fine.",
-      "Admin-area averages hide severe local pockets.",
     ],
   },
   {

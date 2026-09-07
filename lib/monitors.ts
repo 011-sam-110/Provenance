@@ -13,7 +13,7 @@
 // APIs (layersStore.set / signalsStore.set) — it never re-implements toggle logic.
 
 import { ACTIVE_LAYERS, PLANNED_LAYERS, layersStore, type LayerKey, type LayerState } from "@/lib/layers";
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
 
 /** A curated map configuration: which core layers + which signal layers are on. */
@@ -139,6 +139,6 @@ export function applyMonitor(id: string): boolean {
   const ls = monitorLayerState(m);
   for (const k of ALL_LAYER_KEYS) layersStore.set(k, ls[k]);
   const on = new Set(m.signals);
-  for (const s of SIGNALS) signalsStore.set(s.id, on.has(s.id));
+  for (const s of MAP_SIGNALS) signalsStore.set(s.id, on.has(s.id));
   return true;
 }

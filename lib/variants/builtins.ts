@@ -50,12 +50,12 @@ export const BUILTIN_VARIANTS: Variant[] = [
 
   { id: "geopolitics", builtin: true, title: "Geopolitics", accent: "#b91c1c", theme: "light",
     layers: { cameras: false, planes: false, satellites: false },
-    signals: { groups: ["Conflict", "Intel", "Military"], ids: ["displacement", "instability"] },
+    signals: { groups: ["Conflict", "Intel", "Military"], ids: ["displacement"] },
     panels: [slot("layerRail"), dock("brief", 0, 6), slot("news"), slot("freshness")] },
 
   { id: "humanitarian", builtin: true, title: "Humanitarian", accent: "#047857", theme: "light",
     layers: { cameras: false, planes: false, satellites: false },
-    signals: { groups: ["Human cost"], ids: ["airquality", "instability"] },
+    signals: { groups: ["Human cost"], ids: ["airquality"] },
     panels: [slot("layerRail"), dock("brief", 0, 6), slot("freshness")] },
 
   { id: "infrastructure", builtin: true, title: "Infrastructure", accent: "#6d28d9", theme: "light",
@@ -73,9 +73,13 @@ export const BUILTIN_VARIANTS: Variant[] = [
     signals: { groups: ["Civic safety", "Environment"] },
     panels: [slot("layerRail"), slot("freshness")] },
 
+  // No `signals` block: this variant's only entry was the instability layer, which
+  // became data-only on 2026-09-05. Its two docked panels (markets + the Brief, and the
+  // Brief still reads the index) are the whole point of the variant, so it keeps them
+  // and simply turns no map layer on -- rather than listing an id that resolves to
+  // nothing.
   { id: "markets", builtin: true, title: "Markets", accent: "#15803d", theme: "light",
     layers: { cameras: false, planes: false, satellites: false },
-    signals: { ids: ["instability"] },
     panels: [slot("layerRail"), dock("markets", 0, 6), dock("brief", 6, 5)] },
 ];
 

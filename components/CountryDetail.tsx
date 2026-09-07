@@ -227,11 +227,20 @@ function InstabilitySlot({ iso3, label }: { iso3: string | undefined; label: str
 }
 
 // ── Active signals ──────────────────────────────────────────────────────────
+// Country-coded layers this dossier summarises. Each entry costs one fixed
+// useSignalFeatures() call below, so the list length and the hook list must move
+// together -- see the comment there.
+//
+// "food-security" was a fourth entry until 2026-09-05. It was removed with the layer,
+// and the symptom it left is worth recording: the layer was gone from the registry, so
+// /api/signals/food-security began returning 404, and this component kept asking for it
+// on every country click. Nothing threw and nothing turned red -- the row simply never
+// resolved. A hardcoded id list does not fail loudly when the thing it names stops
+// existing, so grep this file whenever a layer is retired.
 const ACTIVE_LAYERS: { id: string; label: string; color: string }[] = [
   { id: "cyber-ransomware", label: "Ransomware", color: "#9333ea" },
   { id: "internet-outages", label: "Connectivity", color: "#b91c1c" },
   { id: "displacement", label: "Displacement", color: "#ea580c" },
-  { id: "food-security", label: "Food security", color: "#dc2626" },
 ];
 
 /** Live country-coded signals that fall inside the clicked country + a ReliefWeb feed. */
@@ -241,7 +250,6 @@ function ActiveSignalsSlot({ iso2, iso3, name }: { iso2?: string; iso3?: string;
     useSignalFeatures(ACTIVE_LAYERS[0].id, true),
     useSignalFeatures(ACTIVE_LAYERS[1].id, true),
     useSignalFeatures(ACTIVE_LAYERS[2].id, true),
-    useSignalFeatures(ACTIVE_LAYERS[3].id, true),
   ];
   const country = { iso2, iso3, name };
   const rows = ACTIVE_LAYERS.map((layer, i) => {

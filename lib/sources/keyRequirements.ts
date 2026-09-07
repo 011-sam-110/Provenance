@@ -1,6 +1,6 @@
 // Which capabilities need a credential, and are we holding it?
 //
-// WHY THIS EXISTS. Six of our layers are key-gated. Without a key they resolve to
+// WHY THIS EXISTS. Several of our layers are key-gated. Without a key they resolve to
 // [] — which is the right dormant-safe behaviour, but on screen it is
 // indistinguishable from a dead upstream, a broken adapter, or a genuinely quiet
 // feed. A visitor sees an empty layer and concludes the product is broken. Both
@@ -48,15 +48,6 @@ export interface KeyRequirement {
 export const KEY_REQUIREMENTS: KeyRequirement[] = [
   {
     kind: "required",
-    id: "acled",
-    label: "ACLED conflict events",
-    env: ["ACLED_EMAIL", "ACLED_PASSWORD"],
-    degrades:
-      "The conflict-event layer is empty, and the Country Instability Index loses its 0.40-weight conflict factor, capping every score at roughly 49/100.",
-    obtain: "Free for non-commercial use — register at acleddata.com and request API read access.",
-  },
-  {
-    kind: "required",
     id: "ais",
     label: "Ship traffic (AIS)",
     env: ["AISSTREAM_API_KEY"],
@@ -94,16 +85,6 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     env: ["RELIEFWEB_APPNAME"],
     degrades: "No UN OCHA humanitarian situation reports.",
     obtain: "Free, no signup — ReliefWeb only wants an identifying app-name string.",
-  },
-  {
-    kind: "required",
-    id: "food-security",
-    label: "WFP food insecurity",
-    env: ["HUNGERMAP_API_KEY"],
-    degrades:
-      "The food-insecurity layer shows a single labelled notice instead of data, and the Country Instability Index loses its food factor.",
-    obtain:
-      "WFP withdrew the keyless HungerMap feed in 2026 (v1 now 401s, and every mirror we could find refuses). There is no public self-service signup; access has to be requested from WFP.",
   },
   // --- capabilities that are not signal layers ------------------------------
   {
@@ -228,6 +209,8 @@ export function missingEnvFor(id: string, env: Record<string, string | undefined
  * different facts, and the report used to carry only the first. ACLED was published
  * as `configured` with `missingEnv: []` — "we hold ACLED_EMAIL and ACLED_PASSWORD" —
  * while acleddata.com answered HTTP 403 to a token that had just passed ACLED's own
+ * (ACLED was removed as a layer on 2026-09-05 for exactly that reason, so do not go
+ * looking for it in the table above — the lesson it taught is why `refused` exists.)
  * OAuth password grant. Every reader hears "this works". It does not, and no amount
  * of reading the config could tell you so.
  *

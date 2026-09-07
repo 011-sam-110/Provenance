@@ -330,8 +330,11 @@ describe("buildFeedCells — status shapes and the null case", () => {
 });
 
 describe("buildFeedCells — the three layers that publish a placeholder when broken", () => {
-  it("names exactly conflict, protests and food-security", () => {
-    expect([...PLACEHOLDER_NOTICE_LAYERS].sort()).toEqual(["conflict", "food-security", "protests"]);
+  it("names exactly conflict and protests", () => {
+    // food-security was the third until 2026-09-05. It was removed as a layer because
+    // WFP withdrew the keyless feed, so its placeholder was the only thing it could ever
+    // publish -- a permanent notice, not an occasional one.
+    expect([...PLACEHOLDER_NOTICE_LAYERS].sort()).toEqual(["conflict", "protests"]);
   });
 
   it("caveats a live cell for those layers — count > 0 is not proof of health", () => {
@@ -397,12 +400,12 @@ describe("feedCounts", () => {
         signals,
         fresh,
         on: new Set(signals.map((s) => s.id)),
-        status: { layers: [{ id: "acled", state: "locked" }, { id: "ais", state: "refused" }] },
+        status: { layers: [{ id: "grid-load", state: "locked" }, { id: "ais", state: "refused" }] },
       }),
     );
     const counts = tally(cells);
     expect(counts.live + counts.lag + counts.down + counts.key + counts.dormant).toBe(SIGNALS.length);
-    expect(counts.key).toBe(1); // acled
+    expect(counts.key).toBe(1); // grid-load
   });
 
   it("tallies a known mix exactly", () => {

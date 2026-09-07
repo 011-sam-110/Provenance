@@ -101,7 +101,7 @@ import {
   type LatLon,
 } from "@/lib/console/widgets/camslot.arm";
 import { sanitizeCamslotConfig, type StreamRef } from "@/lib/console/widgets/camslot.model";
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore } from "@/lib/signals/freshness";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
@@ -2338,7 +2338,7 @@ export default function WorldMap() {
       {/* One gating feed per ON signal — mounted only while its toggle is on, so a
           hidden signal never fetches (mirrors CamerasFeed). Each lifts its objects
           into the aggregated set and clears its slot on unmount. */}
-      {SIGNALS.filter((s) => signalsState[s.id]).map((s) => (
+      {MAP_SIGNALS.filter((s) => signalsState[s.id]).map((s) => (
         <SignalFeed key={s.id} source={s} onData={mergeSignalChunk} />
       ))}
     </div>

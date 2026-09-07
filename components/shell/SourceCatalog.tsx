@@ -20,11 +20,16 @@
 // still needs no edit here.
 //
 // Kept, because none of it is a source: the header and its widget counter, the
-// search box, MonitorBar, the layer presets, the camera feed/region filters, the
-// signal time window, and the coverage / markets / watchlist launchers.
+// search box, PresetBar (the presets block), the camera feed/region filters, and the
+// coverage / markets / watchlist launchers.
+//
+// GONE from here on 2026-09-05: TimeWindowControl. It was the only caller of
+// timeWindowStore.set, so the window is now fixed at its default -- see
+// lib/shell/timeWindow.ts, where hydrate() was made a no-op in the same change so a
+// stale persisted "1h" cannot outlive the control that set it.
 
 import { useRef, useState } from "react";
-import { useLayers, layersStore, LAYER_PRESETS, type LayerKey } from "@/lib/layers";
+import { useLayers, layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore, useSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
@@ -32,8 +37,7 @@ import { marketsStore } from "@/lib/shell/markets";
 import { watchlistPanelStore } from "@/lib/shell/watchlist";
 import { CAMERA_REGIONS, CAMERA_FEED_META } from "@/lib/icons/svg";
 import { useT } from "@/lib/i18n/store";
-import MonitorBar from "@/components/shell/MonitorBar";
-import TimeWindowControl from "@/components/shell/TimeWindowControl";
+import PresetBar from "@/components/shell/PresetBar";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
 import { isSourceWidgetOpen } from "@/lib/widgets/dock";
 import "@/lib/console/widgets";
@@ -218,32 +222,8 @@ export default function SourceCatalog() {
         aria-label="Search sources"
       />
 
-      <MonitorBar />
+      <PresetBar />
 
-      <div className="tn-presets" role="group" aria-label="Layer presets">
-        {LAYER_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            className="tn-preset-btn"
-            title={p.hint}
-            onClick={() => layersStore.applyPreset(p.id)}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {/* KEPT, and this is not a style preference. TimeWindowControl is the ONLY
-          caller of timeWindowStore.set anywhere in the app -- ConsoleTopBar.tsx also
-          renders one but nothing renders ConsoleTopBar, so it is dead code. The
-          window is persisted (`tn.timewindow.v1`) and hydrated on mount, so deleting
-          this leaves anyone who ever picked "1h" filtered to 1h forever, with events
-          silently missing from the Events widget and no control anywhere to undo it.
-          If it should leave the rail, it has to arrive somewhere else in the same
-          change -- the Events widget is the honest home, since that is what it
-          filters. */}
-      <TimeWindowControl />
 
       {visible.length === 0 ? (
         <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
