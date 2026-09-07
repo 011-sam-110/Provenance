@@ -231,7 +231,7 @@ export function ringFromCircle(c: CircleSpec, vertices = CIRCLE_VERTICES): [numb
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/unit/map-circle.test.ts`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 5: Run the gate and commit**
 
@@ -661,7 +661,7 @@ export function planFanOut(
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `npx vitest run tests/unit/camslot-fanout.test.ts`
-Expected: PASS, 12 tests.
+Expected: PASS, 11 tests.
 
 - [ ] **Step 6: Run the gate and commit**
 
@@ -679,7 +679,8 @@ While the wall holds no tiles, the map takes the whole board. Today it cannot: `
 
 **Files:**
 - Modify: `lib/terminal/rails.ts` (`dockSize`)
-- Modify: `components/console/ConsoleWorkspace.tsx` (pass the tile count)
+- Modify: `components/console/WallWorkspace.tsx` (render nothing at zero tiles — its toolbar included)
+- Modify: `components/console/ConsoleWorkspace.tsx` (pass the tile count; suppress the dock splitter while the map is full-bleed)
 - Test: `tests/unit/terminal-rails-dock.test.ts`
 
 **Interfaces:**
@@ -758,10 +759,12 @@ export function dockSize(l: ShellLayout, container: { w: number; h: number }): n
 
   // AN EMPTY WALL GIVES THE MAP THE WHOLE BOARD.
   //
-  // The two bounds below exist for one reason each, and neither reason is present
-  // when there are no tiles: RAIL_MAX stops a rail crowding the map out, and
-  // WALL_MIN_PX keeps the WALL's own controls from colliding. A wall with nothing
-  // in it has no controls to collide and nothing to be crowded out of.
+  // The two bounds below exist for one reason each: RAIL_MAX stops a rail
+  // crowding the map out, and WALL_MIN_PX keeps the WALL's own controls from
+  // colliding. Neither applies to a board with nothing on it — but only because
+  // WallWorkspace RETURNS NULL at zero tiles, its toolbar included. That is a
+  // dependency, not an observation: leave that toolbar mounted and this exception
+  // squeezes it to 0px, taking "+ Wall" and "Map" — the visible way back — with it.
   //
   // This is what lets the Streets board open as a full-bleed map asking for an
   // area. If a future empty wall grows chrome of its own, this exception is wrong
@@ -773,16 +776,42 @@ export function dockSize(l: ShellLayout, container: { w: number; h: number }): n
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Make the exception's premise true**
+
+`dockSize` above is only safe because an empty wall draws nothing. Today it draws
+`.tn-wall-bar` regardless of tile count, so make that conditional. In
+`components/console/WallWorkspace.tsx`, before any markup:
+
+```tsx
+  // An empty wall renders NOTHING, toolbar included: dockSize hands the map the
+  // whole board in that state, so this column is 0px wide and any chrome here is
+  // squeezed to nothing. The board's empty state goes over the map instead — see
+  // StreetsPrompt in ConsoleWorkspace.
+  if (items.length === 0) return null;
+```
+
+(Use whatever the file already calls its placed-tile list.)
+
+Then in `components/console/ConsoleWorkspace.tsx`, do not render the dock splitter
+while the map is full-bleed. The seam is meaningless there — `dockSize` ignores
+`segments.right.size` in that state, so dragging it does nothing, and its
+`aria-valuenow` would report the full container width against an `aria-valuemax`
+of `RAIL_MAX.right` (720). Every other case keeps its current behaviour.
+
+- [ ] **Step 5: Run tests to verify they pass**
 
 Run: `npx vitest run tests/unit/terminal-rails-dock.test.ts`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Run the gate and commit**
+The two component changes are NOT unit-testable here: vitest runs in the node
+environment and the repo has no React testing library. Task 11's browser gate is
+where the full-bleed state is actually looked at.
+
+- [ ] **Step 6: Run the gate and commit**
 
 ```bash
 npx tsc --noEmit && npm test
-git add lib/terminal/rails.ts tests/unit/terminal-rails-dock.test.ts
+git add lib/terminal/rails.ts components/console/WallWorkspace.tsx components/console/ConsoleWorkspace.tsx tests/unit/terminal-rails-dock.test.ts
 git commit -m "Give the map the whole board while the wall is empty"
 ```
 
@@ -1501,7 +1530,7 @@ Wire the pieces: an empty wall shows the prompt, the prompt starts the gesture, 
 **Files:**
 - Create: `components/console/StreetsPrompt.tsx`
 - Create: `lib/console/widgets/camslot.apply.ts`
-- Modify: `components/console/WallWorkspace.tsx` (render the prompt when there are no tiles)
+- Modify: `components/console/ConsoleWorkspace.tsx` (render the prompt over the stage while the wall is empty)
 - Modify: `app/globals.css` (append a `.tn-streets-` block at the end)
 - Test: `tests/unit/camslot-apply.test.ts`
 
@@ -1781,15 +1810,27 @@ export function StreetsPrompt() {
 }
 ```
 
-- [ ] **Step 5: Render it from the wall**
+- [ ] **Step 5: Render it over the stage**
 
-In `components/console/WallWorkspace.tsx`, import `StreetsPrompt` and return it when the board has no tiles — before the grid markup:
+The prompt goes in `components/console/ConsoleWorkspace.tsx`, NOT in the wall.
+Task 4 gives the map the whole board while the wall is empty, which makes the wall
+column 0px wide — a prompt rendered there would be invisible, and WallWorkspace
+returns `null` in that state for exactly this reason.
+
+The stage `<section>` already hosts the map's overlays. Add the prompt beside
+`PinNavigator`, inside that section, after `{showMapOverlays && <PinNavigator />}`:
 
 ```tsx
-  if (items.length === 0) return <StreetsPrompt />;
+          {/* The board's first question, over the map that answers it. It lives
+              here rather than in WallWorkspace because an empty wall column has
+              no width — see dockSize's full-bleed exception. */}
+          {wall && showMapOverlays && layout.widgets.length === 0 && <StreetsPrompt />}
 ```
 
-(Use whatever the file already calls its placed-tile list; the condition is "no tiles on this wall".)
+`wall`, `showMapOverlays` and `layout` are all already in scope in that component.
+The `showMapOverlays` gate matters: it is false when a widget is fullscreened onto
+the stage or the stage is not a map, and a prompt to draw on a map that is not
+there would be a false claim.
 
 - [ ] **Step 6: Append the CSS**
 
@@ -1800,36 +1841,47 @@ At the very end of `app/globals.css`:
    Appended at the end of the file and namespaced .tn-streets-*, by agreement
    with the console-ux workstream, so the two branches cannot collide here. */
 .tn-streets-prompt{
-  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:8px;padding:24px;text-align:center;pointer-events:none;
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:18px 22px;text-align:center;max-width:min(90%,420px);
+  border-radius:12px;border:1px solid var(--tn-border);
+  background:var(--tn-surface);box-shadow:0 6px 20px rgba(0,0,0,.18);
+  /* The card sits in the middle of the map, which is where the drag that answers
+     it starts. pointer-events:none lets that press fall THROUGH to the map; only
+     the button takes the cursor back. */
+  pointer-events:none;
 }
 .tn-streets-prompt-t{
-  margin:0;font-size:15px;font-weight:600;color:var(--tn-ink);text-wrap:balance;
+  margin:0;font-size:15px;font-weight:600;color:var(--tn-text);text-wrap:balance;
 }
 .tn-streets-prompt-s{
-  margin:0;font-size:13px;color:var(--tn-ink-muted);font-variant-numeric:tabular-nums;
+  margin:0;font-size:13px;color:var(--tn-text-muted);font-variant-numeric:tabular-nums;
 }
 .tn-streets-prompt-b{
   pointer-events:auto;margin-top:6px;font:inherit;font-size:13px;
-  padding:6px 14px;border-radius:3px;border:1px solid var(--tn-line);
-  background:var(--tn-panel);color:var(--tn-ink);cursor:pointer;
+  padding:6px 14px;border-radius:8px;border:1px solid var(--tn-border);
+  background:var(--tn-surface-2);color:var(--tn-text);cursor:pointer;
 }
 .tn-streets-prompt-b:hover{border-color:var(--tn-accent);}
 .tn-streets-prompt-b:focus-visible{outline:2px solid var(--tn-accent);outline-offset:2px;}
 ```
 
-Check the actual token names in `app/globals.css` before writing this block and substitute the real ones — the `.tn-*` palette is defined there and these are placeholders for whatever it calls ink, muted ink, line, panel and accent.
+These are the real token names, read from `app/globals.css`: `--tn-surface`,
+`--tn-surface-2`, `--tn-border`, `--tn-text`, `--tn-text-muted`, `--tn-accent`.
+All six are re-pointed at the `.tn-terminal` skin's own palette further down that
+file, so using the tokens — never the literals — is what makes the card correct on
+the console as well as the marketing map.
 
 - [ ] **Step 7: Run tests to verify they pass**
 
 Run: `npx vitest run tests/unit/camslot-apply.test.ts`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 8: Run the gate and commit**
 
 ```bash
 npx tsc --noEmit && npm test
-git add lib/console/widgets/camslot.apply.ts components/console/StreetsPrompt.tsx components/console/WallWorkspace.tsx app/globals.css lib/console/store.ts tests/unit/camslot-apply.test.ts
+git add lib/console/widgets/camslot.apply.ts components/console/StreetsPrompt.tsx components/console/ConsoleWorkspace.tsx app/globals.css lib/console/store.ts tests/unit/camslot-apply.test.ts
 git commit -m "Ask for an area on an empty Streets board, and build the wall from it"
 ```
 
@@ -2105,7 +2157,7 @@ Then an effect that pushes features whenever the store changes. Position lookup 
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `npx vitest run tests/unit/camslot-watching.test.ts`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests.
 
 - [ ] **Step 7: Run the gate and commit**
 
