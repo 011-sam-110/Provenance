@@ -1043,6 +1043,17 @@ The browser half. Press for the centre, drag for the radius, release.
   - `export function cancelCircleDraw(): void`
   - `export function specFrom(center: LatLon, edge: LatLon): CircleSpec` — pure, tested.
 
+**The gesture must PAINT, and this was nearly missed.** Publishing `radiusKm` to a text
+readout is not a drawing tool — without a rubber-band circle following the pointer, the user
+drags against a blank map and reads a number. The preview is part of this task, not a polish
+pass.
+
+**Layer ids are namespaced `tn-circle-*` and must not collide.** `lib/map/aoi.ts` owns
+`aoi-areas`, `aoi-areas-fill`, `aoi-areas-line` and `aoi-areas-line-editing` (confirmed by
+console-ux, 2026-09-07). Reusing any of those would have one gesture's teardown remove the
+other's paint. **MapLibre drops an invalid layer silently**, so a collision here shows up as
+"the circle just doesn't draw" with nothing in the console.
+
 - [ ] **Step 1: Write the failing test for the pure helper**
 
 Create `tests/unit/camslot-circle.test.ts`:
@@ -1108,6 +1119,14 @@ import type { LatLon } from "@/lib/console/widgets/camslot.arm";
  *  containing nothing and no explanation. */
 const MIN_RADIUS_KM = 0.05;
 
+/** Preview layer ids. NAMESPACED AWAY FROM aoi.ts, which owns `aoi-areas*`. Two
+ *  gestures sharing a layer id means one's teardown removes the other's paint,
+ *  and MapLibre drops an invalid layer SILENTLY — the symptom is "the circle does
+ *  not draw" with a clean console. */
+const CIRCLE_SRC = "tn-circle-src";
+const CIRCLE_FILL = "tn-circle-fill";
+const CIRCLE_LINE = "tn-circle-line";
+
 export interface CircleDrawState {
   center: LatLon | null;
   radiusKm: number;
@@ -1119,6 +1138,62 @@ export interface MapLike {
   getCanvas(): HTMLCanvasElement;
   unproject(p: [number, number]): { lat: number; lng: number };
   dragPan: { enable(): void; disable(): void };
+  getSource(id: string): { setData(d: unknown): void } | undefined;
+  addSource(id: string, spec: unknown): void;
+  getLayer(id: string): unknown;
+  addLayer(spec: unknown): void;
+  removeLayer(id: string): void;
+  removeSource(id: string): void;
+}
+
+/**
+ * The rubber band. Ensures the preview layers exist and pushes the current ring.
+ *
+ * Called on every pointermove, so it adds the source and layers ONCE and does
+ * `setData` thereafter — adding a layer per frame is what makes a drag stutter.
+ * Paint values are hard-coded, as every paint value in this codebase is: MapLibre
+ * cannot read a CSS custom property.
+ */
+function paintPreview(map: MapLike, ring: readonly [number, number][]): void {
+  const data = {
+    type: "FeatureCollection",
+    features: ring.length >= 3
+      ? [{
+          type: "Feature",
+          properties: {},
+          // A GeoJSON polygon ring must be CLOSED — first coordinate repeated.
+          // Our rings are open by contract, so the closure happens here, at the
+          // one place that hands geometry to MapLibre, and nowhere else.
+          geometry: { type: "Polygon", coordinates: [[...ring, ring[0]]] },
+        }]
+      : [],
+  };
+
+  const existing = map.getSource(CIRCLE_SRC);
+  if (existing) { existing.setData(data); return; }
+
+  map.addSource(CIRCLE_SRC, { type: "geojson", data });
+  if (!map.getLayer(CIRCLE_FILL)) {
+    map.addLayer({
+      id: CIRCLE_FILL, type: "fill", source: CIRCLE_SRC,
+      paint: { "fill-color": "#ffb020", "fill-opacity": 0.1 },
+    });
+  }
+  if (!map.getLayer(CIRCLE_LINE)) {
+    map.addLayer({
+      id: CIRCLE_LINE, type: "line", source: CIRCLE_SRC,
+      paint: { "line-color": "#ffb020", "line-width": 2, "line-opacity": 0.95 },
+    });
+  }
+}
+
+/** Remove the preview. Layers BEFORE the source — MapLibre refuses to drop a
+ *  source that a layer still references, and the refusal is silent. */
+function clearPreview(map: MapLike): void {
+  for (const id of [CIRCLE_FILL, CIRCLE_LINE]) {
+    if (map.getLayer(id)) map.removeLayer(id);
+  }
+  if (map.getSource(CIRCLE_SRC)) map.removeSource(CIRCLE_SRC);
 }
 
 let state: CircleDrawState | null = null;
@@ -1180,7 +1255,11 @@ export function startCircleDraw(
 
   const onMove = (e: PointerEvent) => {
     if (!center) return;
-    state = { center, radiusKm: specFrom(center, at(e)).radiusKm };
+    const spec = specFrom(center, at(e));
+    state = { center, radiusKm: spec.radiusKm };
+    // Draw the band the user is dragging. Without this the gesture is a number
+    // in a panel and the map shows nothing at all.
+    paintPreview(map, ringFromCircle(spec));
     emit();
   };
 
@@ -1208,6 +1287,10 @@ export function startCircleDraw(
     window.removeEventListener("keydown", onKey);
     canvas.style.cursor = "";
     map.dragPan.enable();
+    // The preview is the GESTURE's paint, not the board's. The finished area is
+    // drawn separately from `layout.watch`, so leaving this behind would put two
+    // rings on the map that drift apart the moment a second area is drawn.
+    clearPreview(map);
     teardown = null;
     state = null;
     emit();
