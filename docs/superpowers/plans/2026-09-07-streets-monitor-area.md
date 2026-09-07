@@ -252,6 +252,9 @@ The circle has to survive a reload and a `?c=` link. This is the only persistenc
 - Modify: `lib/console/sanitize.ts` (parse it)
 - Test: `tests/unit/console-sanitize-watch.test.ts`
 
+**`sanitizeLayout` returns `ShellLayout | null`** — every call in these tests uses `!`, because a
+blob that fails the outer parse returns null and TypeScript will not let you read `.watch` off it.
+
 **Interfaces:**
 - Consumes: nothing.
 - Produces:
@@ -280,47 +283,47 @@ const wallBlob = (extra: Record<string, unknown> = {}) => ({
 
 describe("sanitizeLayout — watch ring", () => {
   it("keeps a well-formed ring", () => {
-    const l = sanitizeLayout(wallBlob({ watch: { ring: square } }));
+    const l = sanitizeLayout(wallBlob({ watch: { ring: square } }))!;
     expect(l.watch?.ring).toEqual(square);
   });
 
   it("drops the key entirely when it is absent, so an untouched board is byte-identical", () => {
-    const l = sanitizeLayout(wallBlob());
+    const l = sanitizeLayout(wallBlob())!;
     expect("watch" in l).toBe(false);
     expect(JSON.stringify(l)).not.toContain("watch");
   });
 
   it("drops a ring with fewer than three vertices", () => {
-    expect(sanitizeLayout(wallBlob({ watch: { ring: [[0, 0], [1, 1]] } })).watch).toBeUndefined();
+    expect(sanitizeLayout(wallBlob({ watch: { ring: [[0, 0], [1, 1]] } }))!.watch).toBeUndefined();
   });
 
   it("drops a ring holding a non-finite or out-of-range coordinate", () => {
     const bad = [[0, 0], [1, 1], [Number.NaN, 2]];
-    expect(sanitizeLayout(wallBlob({ watch: { ring: bad } })).watch).toBeUndefined();
+    expect(sanitizeLayout(wallBlob({ watch: { ring: bad } }))!.watch).toBeUndefined();
     const off = [[0, 0], [1, 1], [999, 2]];
-    expect(sanitizeLayout(wallBlob({ watch: { ring: off } })).watch).toBeUndefined();
+    expect(sanitizeLayout(wallBlob({ watch: { ring: off } }))!.watch).toBeUndefined();
   });
 
   it("drops junk shapes rather than throwing", () => {
     for (const junk of [{ watch: 7 }, { watch: null }, { watch: { ring: "nope" } }, { watch: {} }]) {
       expect(() => sanitizeLayout(wallBlob(junk))).not.toThrow();
-      expect(sanitizeLayout(wallBlob(junk)).watch).toBeUndefined();
+      expect(sanitizeLayout(wallBlob(junk))!.watch).toBeUndefined();
     }
   });
 
   it("refuses a ring longer than the vertex cap, so a share link cannot carry a megabyte", () => {
     const huge = Array.from({ length: MAX_WATCH_VERTICES + 1 }, (_, i) => [i * 0.001, 0] as [number, number]);
-    expect(sanitizeLayout(wallBlob({ watch: { ring: huge } })).watch).toBeUndefined();
+    expect(sanitizeLayout(wallBlob({ watch: { ring: huge } }))!.watch).toBeUndefined();
   });
 
   it("round-trips through JSON unchanged", () => {
-    const once = sanitizeLayout(wallBlob({ watch: { ring: square } }));
-    const twice = sanitizeLayout(JSON.parse(JSON.stringify(once)));
+    const once = sanitizeLayout(wallBlob({ watch: { ring: square } }))!;
+    const twice = sanitizeLayout(JSON.parse(JSON.stringify(once)))!;
     expect(twice.watch?.ring).toEqual(square);
   });
 
   it("ignores a watch ring on a RAILS board — it is a wall-board concept", () => {
-    const rails = sanitizeLayout({ ...wallBlob({ watch: { ring: square } }), mode: "rails" });
+    const rails = sanitizeLayout({ ...wallBlob({ watch: { ring: square } }), mode: "rails" })!;
     expect(rails.watch).toBeUndefined();
   });
 });
@@ -1273,6 +1276,12 @@ export function startCircleDraw(
     if (done.length >= 3) opts.onFinish(done);
   };
 
+  // Escape only — this gesture never ENDS on a key, and that is deliberate.
+  // `aoi.ts` had to add `preventDefault` on Enter because a focused button turns
+  // Enter into a click as its default action, so arming a draw from a button and
+  // pressing Enter to finish re-armed it on the same keystroke. A gesture that
+  // ends on pointerup cannot hit that trap. If a key ever ends this one, it needs
+  // the same preventDefault.
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cancelCircleDraw(); };
 
   canvas.addEventListener("pointerdown", onDown);
@@ -1513,6 +1522,10 @@ import { createDefaultLayout } from "@/lib/console/reducers";
 import type { FanOutTile } from "@/lib/console/widgets/camslot.fanout";
 
 const wall = () => ({ ...createDefaultLayout(), mode: "wall" as const });
+
+/** A deterministic minter, which is the point of `mintId` being a parameter:
+ *  the test asserts the LAYOUT, not the shape of a random string. */
+const minter = () => { let n = 0; return () => `w${++n}`; };
 const tile = (name: string, n: number): FanOutTile => ({
   name,
   streams: Array.from({ length: n }, (_, i) => ({ k: "cam" as const, id: `${name}-${i}` })),
@@ -1520,44 +1533,49 @@ const tile = (name: string, n: number): FanOutTile => ({
 
 describe("tilesToLayout", () => {
   it("creates one widget per tile", () => {
-    const l = tilesToLayout(wall(), [tile("a", 1), tile("b", 2), tile("c", 3)], 28);
+    const l = tilesToLayout(wall(), [tile("a", 1), tile("b", 2), tile("c", 3)], 28, minter());
     expect(l.widgets).toHaveLength(3);
     expect(l.widgets.every((w) => w.type === "camslot")).toBe(true);
   });
 
   it("gives every widget a rect, so none is mounted-but-undrawn", () => {
-    const l = tilesToLayout(wall(), Array.from({ length: 9 }, (_, i) => tile(`t${i}`, 2)), 28);
+    const l = tilesToLayout(wall(), Array.from({ length: 9 }, (_, i) => tile(`t${i}`, 2)), 28, minter());
     expect(l.widgets).toHaveLength(9);
     for (const w of l.widgets) expect(w.rect).toBeDefined();
   });
 
   it("lays nine tiles out three across", () => {
-    const l = tilesToLayout(wall(), Array.from({ length: 9 }, (_, i) => tile(`t${i}`, 1)), 28);
+    const l = tilesToLayout(wall(), Array.from({ length: 9 }, (_, i) => tile(`t${i}`, 1)), 28, minter());
     const xs = l.widgets.map((w) => w.rect!.x);
     expect(new Set(xs)).toEqual(new Set([0, 4, 8]));
     expect(new Set(l.widgets.map((w) => w.rect!.y)).size).toBe(3);
   });
 
   it("carries each tile's name and streams into its config", () => {
-    const l = tilesToLayout(wall(), [tile("Soho", 2)], 28);
+    const l = tilesToLayout(wall(), [tile("Soho", 2)], 28, minter());
     expect(l.widgets[0].config.name).toBe("Soho");
     expect(l.widgets[0].config.streams).toEqual([{ k: "cam", id: "Soho-0" }, { k: "cam", id: "Soho-1" }]);
   });
 
   it("uses the video dwell for a tile holding several streams", () => {
-    const l = tilesToLayout(wall(), [tile("many", 4)], 28);
+    const l = tilesToLayout(wall(), [tile("many", 4)], 28, minter());
     expect(l.widgets[0].config.intervalMs).toBe(30_000);
   });
 
+  it("mints ids through the injected factory, so the layout is deterministic", () => {
+    const l = tilesToLayout(wall(), [tile("a", 1), tile("b", 1)], 28, minter());
+    expect(l.widgets.map((w) => w.id)).toEqual(["w1", "w2"]);
+  });
+
   it("REPLACES whatever the board held, so redrawing does not append", () => {
-    const first = tilesToLayout(wall(), [tile("a", 1), tile("b", 1)], 28);
-    const second = tilesToLayout(first, [tile("c", 1)], 28);
+    const first = tilesToLayout(wall(), [tile("a", 1), tile("b", 1)], 28, minter());
+    const second = tilesToLayout(first, [tile("c", 1)], 28, minter());
     expect(second.widgets).toHaveLength(1);
     expect(second.widgets[0].config.name).toBe("c");
   });
 
   it("leaves an empty tile list as an empty board, which is the prompt state", () => {
-    expect(tilesToLayout(wall(), [], 28).widgets).toEqual([]);
+    expect(tilesToLayout(wall(), [], 28, minter()).widgets).toEqual([]);
   });
 });
 ```
@@ -1611,13 +1629,24 @@ const TILE_HEIGHT_PX = 280;
  * REPLACES rather than appends. Drawing a second area means "monitor this
  * instead", not "monitor both" — and appending would silently walk the board past
  * nine tiles on every redraw.
+ *
+ * `mintId` IS A PARAMETER so this stays pure and deterministic under test. Minting
+ * ids inside would make a function that claims to be pure return a different
+ * layout on every call, and a test could then only assert the SHAPE of an id, not
+ * the layout. The app passes the store's own minter, so ids keep the `w<base36>`
+ * format every other widget in the console uses.
  */
-export function tilesToLayout(l: ShellLayout, tiles: readonly FanOutTile[], rows: number): ShellLayout {
+export function tilesToLayout(
+  l: ShellLayout,
+  tiles: readonly FanOutTile[],
+  rows: number,
+  mintId: () => string,
+): ShellLayout {
   let next = l;
   for (const w of [...l.widgets]) next = removeWidget(next, w.id);
 
   for (const t of tiles) {
-    next = addWidget(next, "camslot", `w${Math.random().toString(36).slice(2, 9)}`, {
+    next = addWidget(next, "camslot", mintId(), {
       segment: "left",
       height: TILE_HEIGHT_PX,
       config: {
@@ -1643,7 +1672,7 @@ export function applyMonitorPlan(plan: MonitorPlan, ring: readonly [number, numb
   }
   const rows = Math.floor((typeof window === "undefined" ? 900 : window.innerHeight) / (ROW_PX + GAP_PX));
   shellLayoutStore.replace((l) => ({
-    ...tilesToLayout(l, plan.tiles, rows),
+    ...tilesToLayout(l, plan.tiles, rows, nextWidgetId),
     watch: { ring: [...ring] as [number, number][] },
   }));
   return { ok: true, message: plan.message, created: plan.tiles.length };
@@ -1682,13 +1711,28 @@ function toast(message: string): void {
 }
 ```
 
-**Note:** if `shellLayoutStore` has no `replace(fn)` method, add one alongside `add`/`remove` in `lib/console/store.ts`:
+**Two additions to `lib/console/store.ts`.** `console-ux` has confirmed they do not touch this file.
+
+1. `replace(fn)`, if it does not already exist — alongside `add`/`remove`:
 
 ```ts
   /** Swap the whole layout through a pure function. The one door for a change
    *  that rewrites the board wholesale, so every such change emits exactly once. */
   replace(fn: (l: ShellLayout) => ShellLayout) { state = fn(state); emit(); },
 ```
+
+2. Export the id minter. `nextId()` is module-private today and is the ONLY thing
+   in the app that knows a widget id is `w<base36>` plus a monotonic counter. A
+   second minter elsewhere would be a second format:
+
+```ts
+/** The app's widget-id minter, exported so a caller that builds a board wholesale
+ *  (camslot.apply.ts) mints ids in the same format and from the same counter as
+ *  `add()` does, rather than inventing a parallel scheme. */
+export function nextWidgetId(): string { return nextId(); }
+```
+
+Import it in `camslot.apply.ts` as `import { shellLayoutStore, nextWidgetId } from "@/lib/console/store";`
 
 - [ ] **Step 4: Write the prompt component**
 
@@ -2217,7 +2261,23 @@ Checks, each of which must print its measured value, not just a verdict:
 6. **The marks track the rotation.** Read the `tn-watching` source's features; assert the count of `onair === 1` equals the visible tile count, wait one dwell, assert the on-air key set has changed.
 7. **A reload restores it.** Reload; assert the ring, the nine tiles and the marks all come back — this is the `watch` sanitize path caught in the act.
 8. **Video actually plays.** Assert at least one `<video>` element has `readyState >= 2` and a non-zero `currentTime` after 10s. A tile showing a poster forever is the failure this catches.
-9. **The nine-decode cost.** Measure CPU at rest over 30s with video on and with video off on the same board and window; measure dropped frames while panning the map; measure heap after 5 minutes. Print all three. **This check reports rather than fails** — the number is the deliverable and the decision is Sam's.
+9. **The nine-decode cost.** Measure CPU at rest over 30s with video on and with video off on the same board and window; measure dropped frames while panning the map; measure heap after 5 minutes. Print all three.
+
+   **This check runs in two passes — measure, then assert.** It is deliberately NOT a
+   check that can never fail; a check that cannot fail is not a check.
+
+   *Pass one (this step):* run it with `--calibrate`. It prints the three numbers and
+   writes them to `scripts/streets-area-baseline.json`. It asserts nothing and exits 0.
+
+   *Pass two (step 3a below):* once the numbers exist, the thresholds are written from
+   them plus a stated margin, committed into that file, and the check asserts against
+   them from then on. The margin is 25% on CPU and heap and 2x on dropped frames —
+   wide enough that ordinary run-to-run variance does not produce a red suite, tight
+   enough that a real regression trips it.
+
+   **The threshold encodes one run, and that is a known weakness.** Calibrate over three
+   runs and take the WORST of the three, so a single unlucky run cannot set a threshold
+   the next run fails, and a single lucky run cannot set one nothing ever trips.
 10. **Rotation churn.** Time from a tile switching to its first painted frame, over 20 switches; assert heap does not grow monotonically across them, which is the un-destroyed hls.js instance leak.
 
 - [ ] **Step 2: Run it**
@@ -2228,18 +2288,36 @@ node scripts/verify-streets-area.mjs
 ```
 Expected: all checks PASS except #9, which prints numbers. Screenshots land in `persona-shots/streets-area/`.
 
+- [ ] **Step 3a: Calibrate, then assert**
+
+Run the perf pass three times and take the worst of the three:
+
+```bash
+for i in 1 2 3; do node scripts/verify-streets-area.mjs --calibrate; done
+```
+
+Write the worst figures plus the stated margins into `scripts/streets-area-baseline.json`,
+then re-run WITHOUT `--calibrate` and confirm check 9 now passes as an assertion rather
+than printing. Commit the baseline file with the numbers in the commit message, so the
+threshold's provenance is in the history rather than in someone's memory.
+
+**Report the raw calibration figures to Sam before writing the thresholds.** If nine
+decodes cost materially more than the 9.0% CPU at rest that #158 achieved, the right
+answer may be the cap (play the 3-4 tiles nearest the centre, stills elsewhere) rather
+than a threshold that enshrines a regression. That is Sam's call, not the script's.
+
 - [ ] **Step 3: Act on what it finds**
 
 If check 5 fails, the dock's post-draw default is too wide — reduce `WALL_DOCK_PX` for this board and re-run.
 If check 8 fails, `playsVideo` is returning true for a stream `/api/hls` cannot serve — check the allowlist rather than loosening the predicate.
-If check 9 shows CPU at rest materially above the 9.0% #158 measured, **report the number to Sam before shipping** and offer the cap (play the 3-4 tiles nearest the centre, stills elsewhere), which was the recommended option.
+If check 9's calibration shows CPU at rest materially above the 9.0% #158 measured, **report the number to Sam before writing any threshold** and offer the cap (play the 3-4 tiles nearest the centre, stills elsewhere), which was the recommended option. Do not calibrate a threshold around a regression and call it a baseline.
 If check 10 shows growing heap, the hls.js instance is not being destroyed on switch — that is a real leak on a board built to run all day.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 npx tsc --noEmit && npm test
-git add scripts/verify-streets-area.mjs persona-shots/streets-area
+git add scripts/verify-streets-area.mjs scripts/streets-area-baseline.json persona-shots/streets-area
 git commit -m "Measure the Streets area board in a browser, nine decodes included"
 ```
 
@@ -2247,10 +2325,15 @@ git commit -m "Measure the Streets area board in a browser, nine decodes include
 
 ### Task 12: Rebase onto the draw-state writer
 
-Once PR #186 merges, adopt the shared draw-state truth so one banner narrates both gestures.
+Once **PR #187** merges, adopt the shared draw-state truth so one banner narrates both gestures.
 
 **Files:**
 - Modify: `lib/console/widgets/camslot.circle.ts`
+
+**The gate is the GREP, never the PR number.** #186 merged on 2026-09-07 (`b666922`) and
+`setExternalDraw` **was not in it** — it was still uncommitted when the PR was merged, and it now
+sits in **#187** (`feat/console-areas-visible`). A gate that trusted "#186 merged" would have
+wired this branch to an export that does not exist. Trust the symbol, not the announcement.
 
 - [ ] **Step 1: Confirm the export exists**
 
@@ -2258,7 +2341,8 @@ Once PR #186 merges, adopt the shared draw-state truth so one banner narrates bo
 git fetch origin && git rebase origin/main
 grep -n "setExternalDraw" lib/map/aoi.ts
 ```
-Expected: `export function setExternalDraw(next: DrawState | null): void`. If absent, **stop** — #186 has not merged, and this task waits.
+Expected: `export function setExternalDraw(next: DrawState | null): void`. If absent, **stop** — the
+export has not landed yet and this task waits. Do not implement a local stand-in.
 
 - [ ] **Step 2: Call it from the gesture**
 
