@@ -23,8 +23,8 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 3: nine-way fan-out
 - [x] Task 4: full-bleed dock exception (re-review clean)
 - [x] Task 5: ring -> planned wall (camslot.monitor.ts)
-- [~] Task 6: circle gesture + rubber band -- built 4ed4dd2, fixing review findings
-- [ ] Task 7: Streets preset opens on an area
+- [x] Task 6: circle gesture + rubber band
+- [~] Task 7: Streets preset opens on an area -- implementer running
 - [ ] Task 8: prompt + apply
 - [ ] Task 9: monitored marks
 - [ ] Task 10: video in a tile
@@ -153,6 +153,12 @@ Task 6: implemented (4ed4dd2, 2 files, 241 insertions). Suite 332/3270 -> 333/32
   not -- that is on console-ux's unmerged #187. The claim came VERBATIM FROM MY OWN PLAN, so
   I corrected the plan too (d204636). Briefs are meant to be copied verbatim, which makes a
   false line in a brief a defect that ships.
+  FIXED (1061c357, one file). Suite unchanged at 333/3273, which is CORRECT -- pointer events
+  against a real canvas are not testable in a node-environment vitest with no map, and the
+  agent declined to build a fake map rather than manufacture coverage. I read the diff: the
+  pointercancel listener routes through cancelCircleDraw, which is the same path Escape uses
+  and resolves to the module's single stop() closure, and the listener is removed in that same
+  block -- one teardown, not two. Comment now states the truth about aoi.ts. Task 6 COMPLETE.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
