@@ -63,6 +63,11 @@ export interface PickedCamera {
   /** Owning network, e.g. "TfL". Shown in the tray so a user can tell a road
    *  camera from a Windy webcam before committing to it. */
   source?: string;
+  /** Whether this camera serves a stream `/api/hls` can actually play. Optional,
+   *  and optional on purpose: a webcam has no such stream and a road camera whose
+   *  row we have not read yet has no answer. Absent reads as NOT live — the safe
+   *  direction, because it can only ever under-promise. */
+  live?: boolean;
 }
 
 /**
