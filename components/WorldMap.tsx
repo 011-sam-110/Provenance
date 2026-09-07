@@ -1795,6 +1795,17 @@ export default function WorldMap() {
     // whether or not interception 2 works. A handle is the only way to aim a test at
     // a NAMED camera on a chosen path.
     (window as unknown as { __pick?: typeof pickStore }).__pick = pickStore;
+    // Task 11's mount-count instrument: `scripts/verify-streets-area.mjs` reads this
+    // to prove StageHost's map never remounts across the Streets area walk (prompt →
+    // draw → monitor → reload). A remount here is not free — a fresh WebGL context, a
+    // full basemap style fetch, the countries geojson, ~18 re-rasterised sprites and
+    // ~19k camera features — so this init effect is exactly the place a real remount
+    // would show up. Counted, not booleaned, so a second mount is visible as "2" and
+    // not silently indistinguishable from "1".
+    {
+      const w = window as unknown as { __tnStageMounts?: number };
+      w.__tnStageMounts = (w.__tnStageMounts ?? 0) + 1;
+    }
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     // ...and collapse it. { compact: true } alone still mounts EXPANDED — MapLibre
