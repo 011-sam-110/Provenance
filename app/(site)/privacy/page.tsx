@@ -86,12 +86,32 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     every visitor's full IP address before we do. What reaches our log is masked; what
  *     reaches Cloudflare is not, and no wording on our side changes that.
  *   • persistence — package.json ships ten runtime deps and not one is a database
- *     client. `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/ components/
- *     now returns TWO files, lib/discovery/store.ts and app/api/admin/promote/route.ts,
- *     both belonging to the dev-only camera-review tool and both behind a production
- *     404. tests/unit/discovery-admin-gate.test.ts asserts that list is exactly those
- *     two and that every route under app/admin and app/api/admin carries the guard —
- *     proven by injection in both directions before it was committed, not by reading.
+ *     client. The guard in tests/unit/discovery-admin-gate.test.ts is now TWO checks and
+ *     the difference matters to the copy below.
+ *
+ *     WRITING: a grep for writeFileSync|appendFileSync|writeFile\(|createWriteStream|
+ *     renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync over app/ lib/
+ *     components/ returns exactly TWO files, lib/discovery/store.ts and
+ *     app/api/admin/promote/route.ts, both belonging to the dev-only camera-review tool
+ *     and both behind a production 404. So "nothing this site serves writes a file"
+ *     stays true.
+ *
+ *     READING: `node:fs` returns a THIRD, lib/analytics/rollupRead.ts, which reads the
+ *     access-log rollups for /admin/analytics and is held to reading by the write check
+ *     above. A further check fails if anything under app/, lib/ or components/ imports
+ *     from scripts/, which is where the code that WRITES the rollups lives — outside
+ *     what Next bundles, so a route cannot reach it even by accident.
+ *
+ *     ROLLUPS, added 2026-09-08: scripts/rollup-access-log.mts folds the access log into
+ *     one aggregate per day under /srv/provenance/shared/analytics, and those aggregates
+ *     are KEPT INDEFINITELY while the log itself rotates away in about three and a half
+ *     days. That is a real change to what persists and the logs section says so. They
+ *     hold counts only — paths, referrer hostnames, country codes, device classes,
+ *     statuses, byte totals — and no addresses at any resolution. The one per-visitor
+ *     structure is a set of salted truncated hashes of (masked address, user agent) used
+ *     to size a day's visitor count, and it is DELETED when the day is finalised.
+ *     ANY CHANGE THAT KEEPS THOSE HASHES, OR ADDS A FIELD DERIVED FROM AN ADDRESS,
+ *     MAKES THE LOGS SECTION FALSE.
  *   • identity — `next/headers|cookies\(\)|x-forwarded-for|x-real-ip|req(uest)?\.ip`
  *     over app/ lib/ components/ returns exactly ONE hit, app/api/feedback/route.ts:63,
  *     and the page names it rather than rounding it down to "we read nothing". That
@@ -766,6 +786,31 @@ export default function PrivacyPage() {
               The log rolls and old files are deleted; nothing is exported anywhere.
             </p>
             <p>
+              <strong>
+                Counts taken from that log are kept, and they outlive the log.
+              </strong>{" "}
+              Every five minutes a job on the same machine folds the new lines into one
+              summary per day: how many requests, how many of them were pages, which paths,
+              which referring hostnames, which country codes, which device classes, which
+              status codes, how many bytes and how long things took. Those summaries are
+              kept indefinitely, while the log they came from is gone in about three and a
+              half days. This is what the traffic figures behind the scenes are read from,
+              and it exists because the alternative was a third party&rsquo;s dashboard.
+            </p>
+            <p>
+              What those summaries do <em>not</em> contain is any address, at any resolution
+              &mdash; not even the masked form, which is discarded along with the log line
+              it came from. A summary is a set of totals and nothing that points at a
+              request. The single exception is how the daily visitor number is arrived at:
+              for the day in progress the job keeps a set of short salted hashes, each one
+              made from a masked address and a user agent, purely so that the same browser
+              is not counted twice in a day. That set is <strong>deleted</strong> when the
+              day is closed off, leaving only the count. It is also why that number is
+              described as approximate wherever it appears: two people on one network using
+              the same browser are one of them, and one person on a phone and a laptop is
+              two.
+            </p>
+            <p>
               <strong>Something sits in front of that server now, and it does see your address.</strong>{" "}
               This site is served through{" "}
               <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer noopener">
@@ -804,15 +849,16 @@ export default function PrivacyPage() {
               yourself by clearing site data.
             </p>
             <p>
-              Three things sit outside that, and they are the only places anything of yours can
+              Four things sit outside that, and they are the only places anything of yours can
               persist. One is the server access log described above, which is IP-masked, rolled and
-              deleted. One is the page-view counter described above, which holds no cookie and
-              nothing that survives your tab, and which will not have counted you at all if your
-              browser sends Do Not Track. The third is a feedback answer, if you chose to send one,
-              which is sitting as a message in a private Telegram chat &mdash; that is the only place a name or an email
-              you gave us can be, and asking will get it deleted. The page-view counts that Vercel
-              gathered before the move are a third, historical, and are being wound down with that
-              account.
+              deleted &mdash; together with the daily counts taken from it, which are kept but hold
+              no address at any resolution. One is the page-view counter described above, which
+              holds no cookie and nothing that survives your tab, and which will not have counted
+              you at all if your browser sends Do Not Track. The third is a feedback answer, if you
+              chose to send one, which is sitting as a message in a private Telegram chat &mdash;
+              that is the only place a name or an email you gave us can be, and asking will get it
+              deleted. The fourth is historical: the page-view counts a previous host gathered
+              before the move, which are being wound down with that account and cannot be added to.
             </p>
             <p>
               If you think any of this is wrong, say so in{" "}

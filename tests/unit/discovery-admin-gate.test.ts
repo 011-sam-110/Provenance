@@ -117,10 +117,11 @@ describe("the curation data files", () => {
     expect(src.toLowerCase()).toMatch(/generated|ledger/);
   });
 
-  it("keeps node:fs out of everything except the curation tooling", () => {
-    // The /privacy page tells readers the deployed application writes no files, and
-    // that sentence is only checkable if the exception is exactly one directory. This
-    // is the check the page's claim points at.
+  // Two separate checks, because reading a file and writing one are different promises
+  // and the /privacy page only makes the second. Collapsing them into one grep — which
+  // is what this used to be — means the first module that legitimately needs to READ
+  // gets added to the allowlist, and takes the write ban with it.
+  const walkServed = (test: (src: string) => boolean): string[] => {
     const offenders: string[] = [];
     const walk = (dir: string) => {
       const abs = join(ROOT, dir);
@@ -135,28 +136,50 @@ describe("the curation data files", () => {
         // Comments are stripped first. Without that the /privacy page reports itself,
         // because it documents the very grep this test performs — and a guard that
         // fires on prose is a guard people learn to route around.
-        const src = stripComments(readFileSync(join(ROOT, rel), "utf8"));
-        // Broader than "writeFileSync". The point of the sentence on /privacy is that
-        // the served application puts nothing on disk, and a rename or an mkdir is as
-        // much a write as an append — createWriteStream especially, which is how a file
-        // gets written without any of the obvious names appearing at all.
-        if (
-          /from "node:fs"|require\("node:fs"\)|writeFileSync|appendFileSync|writeFile\(|createWriteStream|renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync/.test(
-            src,
-          )
-        ) {
-          offenders.push(rel);
-        }
+        if (test(stripComments(readFileSync(join(ROOT, rel), "utf8")))) offenders.push(rel);
       }
     };
     walk("app");
     walk("lib");
     walk("components");
+    return offenders;
+  };
+
+  it("keeps every way of WRITING a file out of the served tree", () => {
+    // This is the check app/(site)/privacy points at when it says nothing this site
+    // serves writes a file. Broader than "writeFileSync" on purpose: a rename or an
+    // mkdir is as much a write as an append, and createWriteStream is how a file gets
+    // written without any of the obvious names appearing at all.
+    const writes =
+      /writeFileSync|appendFileSync|writeFile\(|createWriteStream|renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync/;
     const allowed = new Set(["lib/discovery/store.ts", "app/api/admin/promote/route.ts"]);
-    const unexpected = offenders.filter((f) => !allowed.has(f));
+    const unexpected = walkServed((src) => writes.test(src)).filter((f) => !allowed.has(f));
     expect(
       unexpected,
       "these files write to disk outside the dev-only curation tooling, which makes the /privacy page's 'writes no files' sentence false: " +
+        unexpected.join(", "),
+    ).toEqual([]);
+  });
+
+  it("keeps node:fs itself to the few modules that have a stated reason", () => {
+    // Reading is allowed where it is named here and nowhere else, so a new fs import
+    // has to be argued for rather than slipped in. The allowlist is short and each
+    // entry has a reason:
+    //   lib/discovery/store.ts        the camera-review ledger, dev-only, writes too
+    //   app/api/admin/promote/route.ts  the same tool's write endpoint
+    //   lib/analytics/rollupRead.ts   reads the access-log rollups, and only reads —
+    //                                 the check above is what holds it to that
+    const allowed = new Set([
+      "lib/discovery/store.ts",
+      "app/api/admin/promote/route.ts",
+      "lib/analytics/rollupRead.ts",
+    ]);
+    const unexpected = walkServed((src) => /from "node:fs"|require\("node:fs"\)/.test(src)).filter(
+      (f) => !allowed.has(f),
+    );
+    expect(
+      unexpected,
+      "these files reach the filesystem from the served tree without being on the list that explains why: " +
         unexpected.join(", "),
     ).toEqual([]);
   });
