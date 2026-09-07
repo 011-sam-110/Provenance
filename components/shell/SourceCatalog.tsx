@@ -34,7 +34,7 @@ import { useRef, useState } from "react";
 // wrong answer for a tick beside a toggle. With the rail pointed at an area, a row
 // ticked from the union would claim the area has a source that World has and the
 // area does not, and clicking it would appear to do nothing. See lib/layers.ts.
-import { useEditingLayers, layersStore, type LayerKey } from "@/lib/layers";
+import { useEditingLayers, useLayers, layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore, useEditingSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
@@ -166,6 +166,9 @@ export default function SourceCatalog() {
   // The LIVE console layout — the one ConsoleWorkspace draws. Subscribing here is
   // what makes a ＋ light up the instant its widget lands, and go out when the
   // widget is closed from its own ⋯ menu.
+  // The UNION, for the handful of things below that are about what the MAP is
+  // drawing rather than about what a toggle would write.
+  const mapLayers = useLayers();
   const consoleLayout = useShellLayout();
   const openTypes = new Set(consoleLayout.widgets.map((w) => w.type));
 
@@ -321,7 +324,13 @@ export default function SourceCatalog() {
               rail exists to give you. They are a refinement of one source rather
               than a source, so they read better as a trailing panel. Shown only
               while the layer they filter is actually on. */}
-          {layers.cameras ? (
+          {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
+              and region filter for the whole console, not a per-context setting — so
+              these belong on screen whenever camera pins are being drawn anywhere.
+              Gated on the edited context they would vanish while you configured an
+              area, taking a global control off the page as a side effect of a choice
+              that has nothing to do with it. */}
+          {mapLayers.cameras ? (
             <>
               <div className="tn-rail-divider" />
               <CameraFilters />
