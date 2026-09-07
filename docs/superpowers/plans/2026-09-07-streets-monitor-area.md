@@ -1306,11 +1306,13 @@ export function startCircleDraw(
   };
 
   // Escape only — this gesture never ENDS on a key, and that is deliberate.
-  // `aoi.ts` had to add `preventDefault` on Enter because a focused button turns
-  // Enter into a click as its default action, so arming a draw from a button and
-  // pressing Enter to finish re-armed it on the same keystroke. A gesture that
-  // ends on pointerup cannot hit that trap. If a key ever ends this one, it needs
-  // the same preventDefault.
+  // The console-ux workstream hit the trap in their polygon tool: a focused button
+  // turns Enter into a click as its default action, so arming a draw from a button
+  // and pressing Enter to finish re-armed it on the same keystroke. Their fix is a
+  // preventDefault on Enter in `aoi.ts`, and it is on an UNMERGED branch (#187) —
+  // do not write a comment claiming `aoi.ts` on this branch already does it, because
+  // it does not. A gesture that ends on pointerup cannot hit the trap at all. If a
+  // key ever ends this one, it needs that preventDefault.
   const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cancelCircleDraw(); };
 
   canvas.addEventListener("pointerdown", onDown);
