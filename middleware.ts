@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isGatedPath } from "@/lib/gate/paths";
 import { GATE_COOKIE, GATE_QUERY, GATE_DENIED, gateToken } from "@/lib/gate/token";
+import { isTempKey, verifyTempKey } from "@/lib/gate/tempkey";
 import { maintenanceHtml } from "@/lib/gate/page";
 
 /**
@@ -34,9 +35,19 @@ export default async function middleware(request: NextRequest) {
   if (!isGatedPath(pathname)) return NextResponse.next();
 
   const code = process.env.MAINTENANCE_PASSWORD ?? "";
-  if (code) {
-    const presented = request.cookies.get(GATE_COOKIE)?.value;
-    if (presented && presented === (await gateToken(code))) return NextResponse.next();
+  const presented = request.cookies.get(GATE_COOKIE)?.value;
+  if (code && presented) {
+    // A TEMPORARY KEY re-checks its own expiry here, on every request. Max-Age asked
+    // the browser to drop the cookie; this is what actually stops it, so a browser
+    // that ignored the request, or a cookie copied to another machine, still expires
+    // on time. The shape check comes first so the permanent path never pays for an
+    // HMAC it was not going to match, and vice versa.
+    if (isTempKey(presented)) {
+      const verdict = await verifyTempKey(code, presented, Math.floor(Date.now() / 1000));
+      if (verdict.ok) return NextResponse.next();
+    } else if (presented === (await gateToken(code))) {
+      return NextResponse.next();
+    }
   }
 
   return new NextResponse(
