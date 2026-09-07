@@ -26,6 +26,11 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOSTNAME=127.0.0.1
 
+# Restart=always is deliberate: a transient failure should recover without anyone
+# watching. Know the consequence, which deploy/deploy.sh explains at length — it makes
+# `systemctl restart` exit 0 even when the service dies immediately, because a dead unit
+# reads as "activating (auto-restart)" and not "failed". Never use that exit code as
+# proof a deploy worked.
 Restart=always
 RestartSec=3
 # The registry warm-up means a cold start does real work before it answers.

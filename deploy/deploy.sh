@@ -86,6 +86,19 @@ ssh "${SSH_OPTS[@]}" "$HOST" \
 ssh "${SSH_OPTS[@]}" "$HOST" "sudo -n systemctl restart provenance"
 
 # ---- verify live, roll back if not -------------------------------------------
+# DO NOT "SIMPLIFY" THIS INTO TRUSTING THE RESTART ABOVE. `systemctl restart` exits 0
+# for a unit that dies instantly, because the unit sets Restart=always: systemd reports
+# the dead service as "activating (auto-restart)" rather than "failed", and the restart
+# JOB genuinely succeeded, so there is nothing for it to report. Measured on this box on
+# 2026-09-07 with no `current` symlink at all — every start died with 226/NAMESPACE
+# because WorkingDirectory did not exist, twelve times in a row, and `systemctl restart`
+# returned 0 each time. Systemd's own start limiter never trips either: RestartSec=3 in a
+# 10-second burst window is about three starts, under the default burst of five, so it
+# loops indefinitely rather than giving up.
+#
+# So the ONLY thing that distinguishes a live release from a crash loop is asking the
+# application whether it answers. That is what this does, and it is why the rollback
+# below can be trusted.
 echo "==> verifying live"
 LIVE=0
 for i in $(seq 1 20); do
