@@ -7,6 +7,7 @@ import {
   gateCookieHeader,
 } from "@/lib/gate/token";
 import { verifyTempKey } from "@/lib/gate/tempkey";
+import { isMaintenanceArmed } from "@/lib/gate/armed";
 
 /**
  * The one door through the maintenance curtain.
@@ -29,7 +30,7 @@ import { verifyTempKey } from "@/lib/gate/tempkey";
  * this handler - a middleware-shaped limiter would cost an invocation to say no.
  */
 export async function POST(request: NextRequest) {
-  if (!process.env.MAINTENANCE_MODE) {
+  if (!isMaintenanceArmed()) {
     return new NextResponse(null, { status: 404 });
   }
 
