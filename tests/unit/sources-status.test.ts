@@ -105,6 +105,19 @@ describe("key requirements table", () => {
       "VERCEL_ANALYTICS_TOKEN",
       "VERCEL_ANALYTICS_PROJECT_ID",
       "VERCEL_ANALYTICS_TEAM_ID",
+      // The maintenance gate, exempt for the same reason as the three above plus one
+      // specific to it. Registering them would put "there is a password gate, and here
+      // are the two variables behind it" on a PUBLIC status endpoint. The capability
+      // reading would be nonsense anyway: while the gate is armed /api/status is itself
+      // behind the curtain, so it reports nothing to anybody.
+      "MAINTENANCE_MODE",
+      "MAINTENANCE_PASSWORD",
+      // Inputs to the LOCAL test runner, surfaced the moment this scan learned to read
+      // root-level files. playwright.preview.config.ts uses them to decide which preview
+      // deployment an e2e run points at and how it gets through deployment protection.
+      // The deployment never holds either, and no capability turns on them.
+      "VERCEL_OIDC_TOKEN",
+      "PREVIEW_URL",
     ]);
     const declared = new Set(KEY_REQUIREMENTS.flatMap((r) => r.env));
 
@@ -118,6 +131,13 @@ describe("key requirements table", () => {
     };
     walk("lib");
     walk("app");
+    // Root-level source too. `middleware.ts` reads env to decide whether the whole
+    // site is served at all, and until it existed nothing in this repo read env from
+    // the root - so this scan had never needed to look there. A gate the guard cannot
+    // see is not guarded.
+    for (const name of readdirSync(".")) {
+      if (/\.ts$/.test(name) && !name.endsWith(".d.ts") && statSync(name).isFile()) files.push(name);
+    }
 
     const undeclared = new Map<string, string>();
     for (const file of files) {
