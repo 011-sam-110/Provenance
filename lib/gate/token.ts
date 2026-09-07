@@ -80,12 +80,27 @@ export function withDenied(next: string): string {
   return url.pathname + url.search;
 }
 
-/** The Set-Cookie header value for a fresh session. */
-export function gateCookieHeader(token: string, secure: boolean): string {
+/**
+ * The Set-Cookie header value for a fresh session.
+ *
+ * `maxAge` exists for TEMPORARY KEYS, and defaulting it to the permanent lifetime is
+ * the only safe default: a thirty-minute key issued with the thirty-DAY cookie would
+ * work forever, and nothing would look wrong — it would simply never stop working.
+ *
+ * Note that Max-Age is only the FIRST of two stops, and the weaker one: it is a request
+ * to the browser. The second is that a temporary cookie's VALUE is the signed key
+ * itself, so a browser that keeps it anyway, or a cookie copied to another machine, is
+ * still refused at the edge. See lib/gate/tempkey.ts.
+ */
+export function gateCookieHeader(
+  token: string,
+  secure: boolean,
+  maxAge: number = GATE_COOKIE_MAX_AGE,
+): string {
   const parts = [
     `${GATE_COOKIE}=${token}`,
     "Path=/",
-    `Max-Age=${GATE_COOKIE_MAX_AGE}`,
+    `Max-Age=${Math.max(0, Math.floor(maxAge))}`,
     "HttpOnly",
     "SameSite=Lax",
   ];
