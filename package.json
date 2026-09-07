@@ -24,6 +24,7 @@
     "hls.js": "^1.6.16",
     "maplibre-gl": "^5.24.0",
     "next": "15.5.19",
+    "posthog-js": "^1.428.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-grid-layout": "^2.2.3",

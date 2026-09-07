@@ -51,27 +51,41 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     and camera pictures; it never sees a visitor, and it is not deployed.
  *
  * The load-bearing checks behind the copy below, all re-run against 2cf8797:
- *   • analytics — NONE, as of the move off Vercel. `<Analytics />` from
- *     @vercel/analytics was removed from app/layout.tsx together with the package;
- *     /_vercel/insights exists only on Vercel's edge, so self-hosted it would have
- *     posted a 404 per page view — the appearance of collection with none of the
- *     substance. A repo-wide grep for gtag / GA / Plausible / PostHog / Segment /
- *     Hotjar / Sentry / Clarity returns no runtime hit either.
- *     IF AN EXTERNAL COUNTER IS EVER ADDED, THIS SECTION AND THE THREE PLACES BELOW
- *     THAT SAY "no analytics" HAVE TO MOVE WITH IT.
- *     ONE FIRST-PARTY COUNTER NOW EXISTS, added 2026-09-07, and the copy moved with
- *     it: `/api/presence` + lib/presence/store.ts, which count how many browsers
- *     have the site open in a three-minute window so the console header can show
- *     "N online". It is the reason the summary card no longer says "nothing counts
- *     your visit" and the cookies section is no longer headed "No counter either".
- *     It is worth being precise about why it is still not analytics: it holds a
- *     random per-tab string and a timestamp IN MEMORY, evicts after three minutes,
- *     writes nothing to disk, records no IP, user agent, referrer or route, and
- *     answers `null` below a threshold so a small number never leaves the server.
- *     There is no history, so there is nothing to query — it can say how many
- *     browsers are here and literally nothing else. ANY CHANGE THAT GIVES IT A
+ *   • analytics — THERE ARE NOW TWO COUNTERS, and this bullet used to say there were
+ *     none. The warning the old version left here ("IF AN EXTERNAL COUNTER IS EVER
+ *     ADDED, THIS SECTION AND THE THREE PLACES BELOW THAT SAY no analytics HAVE TO MOVE
+ *     WITH IT") is why neither edit was a one-line change: it named four places, and all
+ *     four moved — twice, because the two counters landed a day apart on separate
+ *     branches and each had to re-state what the other had already rewritten.
+ *
+ *     FIRST-PARTY, added 2026-09-07: `/api/presence` + lib/presence/store.ts, which count
+ *     how many browsers have the site open in a three-minute window so the console header
+ *     can show "N online". It holds a random per-tab string and a timestamp IN MEMORY,
+ *     evicts after three minutes, writes nothing to disk, records no IP, user agent,
+ *     referrer or route, and answers `null` below a threshold so a small number never
+ *     leaves the server. There is no history, so there is nothing to query — it can say
+ *     how many browsers are here and literally nothing else. ANY CHANGE THAT GIVES IT A
  *     DISK, A LOG LINE, OR A SECOND FIELD MAKES THAT PARAGRAPH FALSE.
- *   • persistence — package.json ships nine runtime deps and not one is a database
+ *
+ *     THIRD-PARTY, added 2026-09-08: a cookieless PostHog beacon
+ *     (components/analytics/Beacon.tsx, configured by lib/analytics/beacon.ts). What it is
+ *     NOT is the thing the page previously ruled out: `persistence: "sessionStorage"` sets
+ *     no cookie and keeps nothing past the tab, `disable_session_recording` is on, and
+ *     there is no ad pixel and no cross-site identifier. tests/unit/beacon-config.test.ts
+ *     pins each of those three, including the trap that the most private setting
+ *     ("memory") would have made bounce rate read ~100% forever. It is DORMANT-SAFE: with
+ *     NEXT_PUBLIC_POSTHOG_KEY unset, posthog-js is never fetched, so a self-hoster's
+ *     deployment really does count nothing.
+ *
+ *     DO NOT COLLAPSE THE TWO INTO ONE SENTENCE. One is ours, in memory, and forgets in
+ *     three minutes; the other is a third party's, on their servers, and keeps what it
+ *     collects. Any copy that says "the counter" is now wrong whichever one it means —
+ *     which is exactly the fault that produced this paragraph.
+ *   • processors — CLOUDFLARE IS NOW IN FRONT OF THE SITE, which is a change this page
+ *     has to carry whatever the app does. It terminates TLS, so it necessarily sees
+ *     every visitor's full IP address before we do. What reaches our log is masked; what
+ *     reaches Cloudflare is not, and no wording on our side changes that.
+ *   • persistence — package.json ships ten runtime deps and not one is a database
  *     client. `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/ components/
  *     now returns TWO files, lib/discovery/store.ts and app/api/admin/promote/route.ts,
  *     both belonging to the dev-only camera-review tool and both behind a production
@@ -156,12 +170,12 @@ export default function PrivacyPage() {
               </p>
             </div>
             <div className="pv-card">
-              <h2 className="pv-h3">No analytics</h2>
+              <h2 className="pv-h3">Two counters, no cookies</h2>
               <p>
-                No Google Analytics, no ad pixel, no session recording, and since the move off
-                Vercel, no page-view counter. The one thing that does count is a live tally of how
-                many browsers have the site open right now, which forgets you three minutes after
-                you close the tab.
+                Two counters, and neither sets a cookie. One is ours and lives three minutes:
+                how many browsers have the site open right now. The other counts page views and
+                clicks, on PostHog&rsquo;s European servers. No Google Analytics, no ad pixel, no
+                session recording, and nothing that links this visit to your next one.
               </p>
             </div>
           </div>
@@ -323,7 +337,21 @@ export default function PrivacyPage() {
                     twice
                   </td>
                   <td>Session storage &mdash; erased when you close the tab</td>
-                  <td>Yes, every 45 seconds. It is all the counter gets, and it means nothing else</td>
+                  <td>
+                    Yes, every 45 seconds, to us. It is all that counter gets, and it means nothing
+                    else
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    A second random string, so the page-view counter can tell that page 2 was the
+                    same visit as page 1
+                  </td>
+                  <td>Session storage &mdash; erased when you close the tab</td>
+                  <td>
+                    Yes, to PostHog. This is the identifier that would have been a cookie in a
+                    normal analytics install; it is deliberately not one
+                  </td>
                 </tr>
                 <tr>
                   <td>A display name, if you type one into settings</td>
@@ -642,7 +670,7 @@ export default function PrivacyPage() {
               <span>Cookies</span>
               <span>Analytics</span>
             </p>
-            <h2 className="pv-h2">No cookies of ours. One counter, and it forgets.</h2>
+            <h2 className="pv-h2">No cookies of ours. Two counters, and neither follows you.</h2>
           </div>
           <div className="pv-prose">
             <p>
@@ -652,15 +680,42 @@ export default function PrivacyPage() {
               YouTube embed described above.
             </p>
             <p>
-              There is also <strong>no analytics</strong>. Until this site moved off Vercel it
-              loaded their Web Analytics script, which counted page views; that script and its
-              package were removed in the move, and nothing replaced them. A search of the
-              repository finds no Google Analytics, no gtag, no Meta pixel, no PostHog, no
-              Plausible, no session recorder and no fingerprinting library.
+              <strong>This page used to say there was no analytics at all, and that is no longer
+              true.</strong> There are now two counters &mdash; one ours, one a third party&rsquo;s
+              &mdash; and since the old wording was unusually emphatic it is worth being equally
+              specific about what each one does and what neither of them does.
             </p>
             <p>
-              <strong>The one counter there is</strong> answers a single question: how many browsers
-              have the site open at this moment. While a tab is open it sends{" "}
+              What was added is a page-view and interaction counter provided by{" "}
+              <a href="https://posthog.com/privacy" target="_blank" rel="noreferrer noopener">
+                PostHog
+              </a>
+              , running on their European servers. It records which pages were opened, in what
+              order, how long each was open, and where on the page you clicked &mdash; including
+              clicks that did nothing, which is how a broken control gets found. It exists because
+              a server log physically cannot answer those questions: leaving a page sends no
+              request, and a click that fails to do anything sends nothing at all.
+            </p>
+            <p>
+              What was <em>not</em> added matters as much. It sets <strong>no cookie</strong>. The
+              identifier it uses to tell one page view from the next lives in your tab&rsquo;s own
+              memory and is destroyed when you close that tab, so there is nothing to link this
+              visit to your next one and nothing to follow you to another site. It does not record
+              your screen, your typing or your form fields &mdash; session replay is switched off
+              in the configuration, not merely unused. There is no ad pixel, no Google Analytics,
+              no Meta pixel and no fingerprinting library. And if your browser sends{" "}
+              <span className="pv-num">Do Not Track</span>, it does not count you at all.
+            </p>
+            <p>
+              Two honest consequences. Because it is a script, anything that blocks scripts blocks
+              it &mdash; a good share of this site&rsquo;s visitors block it, so its numbers
+              understate reality and we know they do. And it is deliberately not disguised as
+              first-party traffic to get around that, which is a thing we could do and choose not
+              to.
+            </p>
+            <p>
+              <strong>The other counter is ours, and it is a much smaller thing.</strong> It answers a
+              single question: how many browsers have the site open at this moment. While a tab is open it sends{" "}
               <span className="pv-num">/api/presence</span> a random string every 45 seconds &mdash;
               a string your own browser invents, keeps in{" "}
               <span className="pv-num">sessionStorage</span> only until you close the tab, and which
@@ -679,7 +734,7 @@ export default function PrivacyPage() {
               <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer noopener">
                 their privacy policy
               </a>
-              . Nothing has been added to that record since the move, because nothing is being sent.
+              . Nothing has been added to that record since the move.
             </p>
           </div>
         </section>
@@ -703,12 +758,27 @@ export default function PrivacyPage() {
               Underneath the application is a web server, and it keeps an access log, as any web
               server does. That used to be Vercel&rsquo;s and is now ours, which means it is worth
               being specific about: it records the path you asked for, the status and size of the
-              reply, how long it took, and your user agent. <strong>It does not record your IP
-              address.</strong> The server is told to mask it before writing &mdash; the first 16
-              bits survive for IPv4, which is a block of some sixty-five thousand addresses, and the
-              rest is discarded. That is enough to tell one machine hammering the site from a
-              genuine crowd, and not enough to point at you. The log rolls and old files are
-              deleted; nothing is exported anywhere.
+              reply, how long it took, your user agent, and the two-letter country your request
+              came from. <strong>It does not record your IP address.</strong> The server is told to
+              mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
+              some sixty-five thousand addresses, and the rest is discarded. That is enough to tell
+              one machine hammering the site from a genuine crowd, and not enough to point at you.
+              The log rolls and old files are deleted; nothing is exported anywhere.
+            </p>
+            <p>
+              <strong>Something sits in front of that server now, and it does see your address.</strong>{" "}
+              This site is served through{" "}
+              <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer noopener">
+                Cloudflare
+              </a>
+              , which handles the encrypted connection from your browser and passes the request on
+              to us. Because it is the party your browser actually negotiates with, it necessarily
+              sees your full IP address before we do. It is also where that country code comes
+              from. What we write down is masked; what Cloudflare holds is Cloudflare&rsquo;s to
+              describe, and no wording on our side changes that &mdash; which is why it is named
+              here rather than left as an implementation detail. It is the reason the site loads
+              quickly from far away, and it filters a steady volume of automated scanning that
+              would otherwise reach the box directly.
             </p>
           </div>
         </section>
@@ -734,10 +804,12 @@ export default function PrivacyPage() {
               yourself by clearing site data.
             </p>
             <p>
-              Two things sit outside that, and they are the only places anything of yours can
+              Three things sit outside that, and they are the only places anything of yours can
               persist. One is the server access log described above, which is IP-masked, rolled and
-              deleted. The other is a feedback answer, if you chose to send one, which is sitting as
-              a message in a private Telegram chat &mdash; that is the only place a name or an email
+              deleted. One is the page-view counter described above, which holds no cookie and
+              nothing that survives your tab, and which will not have counted you at all if your
+              browser sends Do Not Track. The third is a feedback answer, if you chose to send one,
+              which is sitting as a message in a private Telegram chat &mdash; that is the only place a name or an email
               you gave us can be, and asking will get it deleted. The page-view counts that Vercel
               gathered before the move are a third, historical, and are being wound down with that
               account.
