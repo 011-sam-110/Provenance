@@ -25,6 +25,7 @@ import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
 import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
 import { pickStore } from "@/lib/console/widgets/camslot.pick";
+import { armPicking } from "@/lib/console/widgets/camslot.layers";
 import { shellLayoutStore } from "@/lib/console/store";
 import {
   sanitizeCamslotConfig,
@@ -212,7 +213,11 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   // basket, which is what lets the user choose the destination at send time rather
   // than committing to one before they have found anything.
   const openPicker = useCallback(() => setPicking(true), []);
-  const pickOnMap = useCallback(() => pickStore.setMode("picking"), []);
+  // armPicking, not pickStore.setMode: this route hits the same trap as the map
+  // rail's, so it gets the same fix — the camera and webcam pins come on with the
+  // mode. Sending someone to a selection surface with nothing selectable on it is
+  // the failure this slot's empty state is already apologising for.
+  const pickOnMap = useCallback(() => armPicking(), []);
 
   // Names and cadences come from the shared camera poller — ref-counted, so several
   // slots share one 60s poll instead of each starting their own.

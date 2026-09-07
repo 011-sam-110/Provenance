@@ -174,3 +174,65 @@ export function PinGearGlyph() {
     </svg>
   );
 }
+
+/**
+ * Pick cameras — a camera with a ＋ badge. The flyout mark for arming the picker.
+ *
+ * Traced from Sam's reference (selectcamerasicon.png). Same redraw-don't-embed
+ * rule this file opens with, though NOT for the reason that rule was written: the
+ * console is light now (--tnx-panel is #ffffff), so a black raster would be
+ * visible rather than invisible. Two things still make stroke geometry the only
+ * option. The mark has to take --tnx-accent (#464b37) when the button is pressed,
+ * and a raster cannot be recoloured; and at rest it has to be the same olive ink
+ * as the word beside it, not pure black, or the two halves of one button are
+ * different colours. currentColor gives both for free.
+ *
+ * THE BODY IS AN OPEN PATH, NOT A RECT, and that is the whole trick. The badge
+ * overlaps the camera's bottom-right corner, so the outline STOPS on both sides
+ * of it (x=11.5 along the bottom, y=9.5 down the right edge) instead of running
+ * underneath. Those two numbers are the badge circle grown by 0.9 — the cut is
+ * wider than the badge so there is a visible gap rather than a kiss. Same
+ * reasoning as PolygonGlyph's trimmed edges: at 18px two strokes of one colour
+ * that touch read as a smudge, and one drawn through another reads as a blot.
+ */
+export function CameraPlusGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.9}>
+      <path d="M11.5 16.4H3.6A1.6 1.6 0 0 1 2 14.8V8.2A1.6 1.6 0 0 1 3.6 6.6H6L7 4.6h3.4l1 2h3.2A1.6 1.6 0 0 1 16.2 8.2V9.5" />
+      <circle cx={9.1} cy={11.5} r={2.9} />
+      <circle cx={17.4} cy={15.4} r={5.1} />
+      <line x1={17.4} y1={12.9} x2={17.4} y2={17.9} />
+      <line x1={14.9} y1={15.4} x2={19.9} y2={15.4} />
+    </svg>
+  );
+}
+
+/**
+ * By area — a bounding box with square corner handles.
+ *
+ * Traced from Sam's reference (pickcamerasbyarea.png), redrawn for the same
+ * currentColor reasons as CameraPlusGlyph above. Deliberately built on
+ * PolygonGlyph's geometry — same corner centres (4/20), same trimmed edges — so
+ * the two area marks read as one family. It is told apart from PolygonGlyph by
+ * the two things the references themselves differ on: SQUARE handles rather than
+ * round, and a closed rectangle rather than an irregular five-vertex ring. That
+ * distinction has to survive 18px, which is why the handles are not merely
+ * smaller circles.
+ *
+ * The edges run handle-edge to handle-edge (6.1 → 17.9, the centres ± 2.1) so no
+ * line is drawn through the inside of a handle.
+ */
+export function BoundingBoxGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.9}>
+      <line x1={6.1} y1={4} x2={17.9} y2={4} />
+      <line x1={6.1} y1={20} x2={17.9} y2={20} />
+      <line x1={4} y1={6.1} x2={4} y2={17.9} />
+      <line x1={20} y1={6.1} x2={20} y2={17.9} />
+      <rect x={1.9} y={1.9} width={4.2} height={4.2} rx={0.7} />
+      <rect x={17.9} y={1.9} width={4.2} height={4.2} rx={0.7} />
+      <rect x={1.9} y={17.9} width={4.2} height={4.2} rx={0.7} />
+      <rect x={17.9} y={17.9} width={4.2} height={4.2} rx={0.7} />
+    </svg>
+  );
+}

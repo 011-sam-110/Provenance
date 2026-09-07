@@ -248,6 +248,58 @@ test("Radius: two clicks set a circular scope, and the readout names the radius"
   await expect(pop.getByRole("button", { name: RADIUS_TOOL })).toBeVisible();
 });
 
+test("Cameras: two buttons with marks, no New wall, and arming turns the pins on", async ({ page }) => {
+  // THE ONE THING THE NODE TESTS CANNOT SAY. tests/unit/camslot-layers.test.ts pins
+  // the store contract that armPicking() honours, but vitest here is environment:
+  // "node" and collects .ts only -- nothing there can see a button, so nothing there
+  // can catch the flyout being wired to pickStore.setMode again, or New wall coming
+  // back. That is what this covers.
+  const rail = page.locator(RAIL);
+  await mapReady(page);
+
+  // A COLD layer state, so "arming turned them on" is an observation and not a value
+  // that was already true. Written before the click, through the same persisted key
+  // lib/layers.ts uses, and read back the same way.
+  await page.evaluate(() => {
+    window.localStorage.setItem("tn.layers.v1", JSON.stringify({
+      v: 1,
+      d: { cameras: false, satellites: false, planes: false, ships: false, webcams: false, weather: false, countries: true },
+    }));
+  });
+  await page.reload();
+  await mapReady(page);
+
+  await rail.getByRole("button", { name: CAMERAS }).click();
+  const pop = page.locator(".tnx-maprail-pop");
+  await expect(pop).toBeVisible();
+
+  // TWO buttons, not three. Asserted on the count as well as on the absent name,
+  // because a New wall button that had merely been renamed would still be a third
+  // control for a thing two other routes already do.
+  await expect(pop.getByRole("button")).toHaveCount(2);
+  await expect(pop.getByRole("button", { name: /new wall/i })).toHaveCount(0);
+
+  // Both marks render. They are aria-hidden, so they are counted rather than
+  // queried by role -- an icon a screen reader can see would be the bug.
+  await expect(pop.locator("button svg")).toHaveCount(2);
+
+  const layers = () =>
+    page.evaluate(() => JSON.parse(window.localStorage.getItem("tn.layers.v1") || "{}").d ?? {});
+  expect(await layers()).toMatchObject({ cameras: false, webcams: false });
+
+  await pop.getByRole("button", { name: /^Pick cameras$/ }).click();
+  await expect(pop.getByRole("button", { name: /Picking cameras/ })).toHaveAttribute("aria-pressed", "true");
+
+  // The point of the change: the picker switched on the layers it reads from.
+  await expect.poll(layers).toMatchObject({ cameras: true, webcams: true });
+
+  // And stopping leaves them up -- deliberate, see camslot.layers.ts. Nothing
+  // records what was on beforehand, so "restore" could only mean "turn off".
+  await pop.getByRole("button", { name: /Picking cameras/ }).click();
+  await expect(pop.getByRole("button", { name: /^Pick cameras$/ })).toHaveAttribute("aria-pressed", "false");
+  expect(await layers()).toMatchObject({ cameras: true, webcams: true });
+});
+
 test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page }) => {
   // Two assertions that have to travel together. The zoom/compass cluster was
   // removed because the rail replaces it; the attribution was NOT, because

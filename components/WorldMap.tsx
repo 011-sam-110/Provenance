@@ -403,7 +403,12 @@ function pickBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams: W
   if (rows.length === 0 && webcams.length === 0) {
     // The store is populated only while the camera layer is on (WorldMap:1859), so an
     // empty result here means "we were not looking", not "there is nothing there".
-    toast("No camera pins are loaded, so a box has nothing to select. Turn on the Cameras layer.");
+    //
+    // It no longer means the layer is OFF, though, which is what this used to say.
+    // A box-drag only reaches here while picking is armed, and arming now switches
+    // the camera and webcam layers on itself (lib/console/widgets/camslot.layers.ts),
+    // so "Turn on the Cameras layer" would point at a toggle that is already lit.
+    toast("No camera pins have loaded yet, so a box has nothing to select. Give the pins a moment and drag again.");
     return;
   }
   if (cams.length === 0 && cover.length === 0) {
