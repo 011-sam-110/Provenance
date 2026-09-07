@@ -317,6 +317,28 @@ Task 10: implemented (e904ad1). Suite 335/3298 -> 336/3303 (+5). playsVideo is
   mutant reddened 4 of 5, `return false` reddened the 5th, then it restored and re-ran the
   gate. That is the standard the other five stated-red-conditions on this branch failed to
   meet, and it was not asked for in those words.
+  REVIEW: spec OK, quality APPROVED. It verified the whole chain in the real files rather than
+  trusting the report (hls-allowlist -> isLiveStreamUrl -> body.ts:62 -> WorldMap:2556 ->
+  loadedCamerasStore -> camslot.tsx:168), reproduced the mutation testing BY HAND, and
+  cross-checked the TfL comment against lib/sources/tfl.ts:39 plus its fixture. Two IMPORTANTs,
+  neither a defect in the diff:
+   - T10-i1: loadedCamerasStore only populates while the map's cameras layer is mounted. Board
+     load and map-pick auto-enable it, but adding a camera via camslot's own search picker to an
+     already-open board does NOT -- so isLive is stuck false for that camera all session.
+     Pre-existing, fails to a still, which is the safe direction. ROLLED UP, not fixed.
+   - T10-i2: CameraVideo has NO onOutcome, so the video path never calls streamHealth.report().
+     A dead HLS stream is never benched, liveStreams never filters it, and every rotation opens
+     a fresh full handshake against a real operator -- nine tiles on a 30s dwell. That is the
+     hammering the bench exists to stop. Verified myself: CameraImage.tsx:11/49/52 has the prop
+     and camslot wires it at :176 and :193; CameraVideo has nothing.
+     I AM FIXING THIS. It was unreachable from the wall before Task 10 rendered CameraVideo at
+     all, so my change made it live. Correctness, not performance: the camera policy here is
+     operator-primary and an operator blocking the proxy ends the feature.
+     Fix = optional onOutcome passed through to the fallback CameraImage (video dies but still
+     loads -> ok, content kept, nothing benched; BOTH die -> benched, which never happens today)
+     plus a per-stream-id memo of a fatal failure so the handshake is not re-attempted every
+     rotation. Additive; existing callers untouched. Announced to all on the bus first since
+     CameraVideo is shared. QUEUED behind Task 11's writer.
 
 Task 11 dispatched with an environment warning that matters more than the task text: TWO dev
   servers are already listening on 3000 and 3001 and NEITHER IS MINE -- they belong to peer
