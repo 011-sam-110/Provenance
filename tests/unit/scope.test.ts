@@ -43,9 +43,20 @@ describe("coerceSavedScope", () => {
     expect(coerceSavedScope({ mode: "near-me", center: { lat: 1, lon: 2 }, radiusKm: 50, label: "Near me" }))
       .toEqual(WORLD_SCOPE);
   });
-  it("keeps a region scope", () => {
-    const r: Scope = { mode: "region", center: { lat: 1, lon: 2 }, radiusKm: 100, label: "Berlin" };
-    expect(coerceSavedScope(r)).toEqual(r);
+  // A persisted `region` used to survive a reload. It cannot any more, because
+  // nothing can SET one: ScopeControl was the only writer of region mode and it
+  // was orphaned when ConsoleTopBar was deleted. Rehydrating it would drop a user
+  // into a console silently filtered to a city they chose days ago, with no
+  // control anywhere in the UI to widen it again — the only route back to World
+  // is the map rail's Draw > Clear, which nobody would think to look for.
+  // So a stored region degrades to World, exactly as near-me already did.
+  it("rehydrates a persisted region back to World (nothing can set or clear one now)", () => {
+    expect(coerceSavedScope({ mode: "region", center: { lat: 1, lon: 2 }, radiusKm: 100, label: "Berlin" }))
+      .toEqual(WORLD_SCOPE);
+  });
+  it("keeps a drawn area, which IS still settable and clearable from the map rail", () => {
+    const a = coerceSavedScope({ mode: "aoi", label: "Drawn area", polygon: [[0, 0], [0, 4], [4, 4], [4, 0], [0, 0]] });
+    expect(a.mode).toBe("aoi");
   });
   it("returns World for junk", () => {
     expect(coerceSavedScope(null)).toEqual(WORLD_SCOPE);
