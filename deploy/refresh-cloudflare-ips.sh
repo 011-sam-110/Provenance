@@ -48,7 +48,18 @@ if grep -vqE '^[0-9a-fA-F:.]+/[0-9]{1,3}$' "$tmp/v4" "$tmp/v6"; then
   exit 1
 fi
 
-new="$(cat "$tmp/v4" "$tmp/v6" | tr -d '\r' | paste -sd' ' -)"
+# READ THE RANGES WITH 'awk NF', NEVER 'cat'. Cloudflare serves ips-v4 and ips-v6 with
+# NO TRAILING NEWLINE, so 'cat v4 v6' glues the last v4 range onto the first v6 one and
+# emits a single malformed token: "131.0.72.0/222400:cb00::/32". awk treats each file's
+# final partial line as a record, so it separates them correctly.
+#
+# THIS ALREADY HAPPENED, and the failure was worse than a crash. ufw rejected the glued
+# token, set -e aborted mid-loop, and the box was left half-configured: 14 of 15 IPv4
+# ranges allowed, NO IPv6 ranges at all, and the world-open rules still in place -- so
+# the firewall looked tightened while the origin stayed reachable by anyone. The
+# per-file CIDR validation above did not catch it either, because grep reads each file
+# separately and both files are individually well-formed.
+new="$(awk 'NF' "$tmp/v4" "$tmp/v6" | tr -d '\r' | paste -sd' ' -)"
 old="$(sed -n 's/^[[:space:]]*trusted_proxies static //p' "$CADDYFILE")"
 
 if [[ "$old" == "$new" ]]; then
