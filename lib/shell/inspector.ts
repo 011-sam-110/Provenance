@@ -261,6 +261,31 @@ export function replaceActive(state: InspectorState, next: SourceSet): Inspector
 }
 
 /**
+ * Pure: replace WORLD's set, whatever context is being edited.
+ *
+ * The counterpart to replaceActive, and the split is a bug rather than a preference.
+ * The variant spine and the board presets configure THE GLOBE — "drive the globe to
+ * match the board", in lib/console/presets.ts's own words. Routing those through
+ * replaceActive sent them to whichever context the rail happened to be pointed at,
+ * so an area being edited absorbed them.
+ *
+ * Seen in the browser rather than reasoned about: draw an area, reload, and an area
+ * created with `sources: {}` comes back holding a copy of World's whole set. The
+ * path is ConsoleShell's first-run seed, `applyPreset(DEFAULT_PRESET_ID)`, which
+ * fires on EVERY boot while the landing board carries no widgets, and which runs
+ * AFTER inspectorStore.hydrate() has restored which area was being edited.
+ *
+ * Only whole-set writes move. A per-key write (writeActive, and so every toggle,
+ * and applyMonitor, which drives layersStore.set key by key) still lands on the
+ * edited context — pointing the rail at an area and giving it a monitor's layers is
+ * a thing a user can reasonably want. Handing an area the globe's configuration
+ * behind their back is not.
+ */
+export function replaceWorld(state: InspectorState, next: SourceSet): InspectorState {
+  return { ...state, world: { ...next } };
+}
+
+/**
  * Pure: coerce a persisted payload into a valid state.
  *
  * The bbox is RECOMPUTED rather than trusted: it is derived data, and a payload
@@ -364,15 +389,17 @@ export const inspectorStore = {
    * Pull persisted AREAS back in. Called once from ConsoleShell, client-side,
    * AFTER variantStore.bootstrap().
    *
-   * WORLD IS DELIBERATELY NOT RESTORED, and the ordering is not incidental. The
-   * variant spine is, in its own words, "the ONLY load-time hydration path": every
-   * boot runs applyVariant, which calls layersStore.applyExact and
-   * signalsStore.applyExact and so re-derives World's whole set. Persisting a
-   * second copy of it here would be two owners for one piece of state — the exact
-   * bug the Sources/Inspector split exists to avoid — and it was destructive, not
-   * merely redundant: with an area loaded, bootstrap's writes land on the AREA, so
-   * one reload replaced a user's area configuration with the variant's layers.
-   * Measured on a preview before this ordering was fixed.
+   * WORLD IS DELIBERATELY NOT RESTORED. The variant spine is, in its own words,
+   * "the ONLY load-time hydration path": every boot runs applyVariant, which calls
+   * layersStore.applyWorld and signalsStore.applyWorld and so re-derives World's
+   * whole set. Persisting a second copy of it here would be two owners for one
+   * piece of state — the exact bug the Sources/Inspector split exists to avoid.
+   *
+   * Those two writes used to be applyExact, i.e. aimed at whatever context the rail
+   * was pointed at, and this note used to say the fix was to run bootstrap BEFORE
+   * hydrate so nothing was pointed at an area yet. That was true and insufficient:
+   * ConsoleShell also seeds a board after hydrate. The write itself now names its
+   * target, so neither ordering can send it into an area.
    *
    * So World's toggles persist where they already did for 71 days, as a delta in
    * tn.variant.v1; this store persists the areas and which one is being edited, which nothing else
@@ -426,6 +453,11 @@ export const inspectorStore = {
 
   replaceSources(next: SourceSet) {
     commit(replaceActive(state, next));
+  },
+
+  /** Whole-set write from the variant spine / board presets. Always World. */
+  replaceWorldSources(next: SourceSet) {
+    commit(replaceWorld(state, next));
   },
 };
 

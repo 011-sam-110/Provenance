@@ -71,6 +71,15 @@ export const signalsStore = {
     }
     inspectorStore.replaceSources(set);
   },
+  /** The mirror of layersStore.applyWorld — see the note there. */
+  applyWorld(next: SignalState) {
+    const set: SourceSet = { ...next };
+    const cur = inspectorStore.get().world;
+    for (const k of Object.keys(DEFAULT_STATE)) {
+      if (typeof cur[k] === "boolean") set[k] = cur[k];
+    }
+    inspectorStore.replaceWorldSources(set);
+  },
   get: current,
   /** The context being edited. For the rail's ticks and for anything that writes. */
   editing,

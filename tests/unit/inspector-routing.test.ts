@@ -185,9 +185,9 @@ test("the two stores share one map and must not wipe each other's half", () => {
 test("hydrate restores areas but leaves World to the variant spine", () => {
   // variantStore.bootstrap is, in its own words, the ONLY load-time hydration path:
   // it re-derives World's whole set on every boot. If this store restored World too
-  // there would be two owners for one piece of state, and the loser was the user:
-  // with an area being edited, bootstrap's writes landed on the AREA and one reload
-  // replaced its sources with the variant's layers. Measured on a preview.
+  // there would be two owners for one piece of state. (Bootstrap landing on an AREA
+  // was the other half of that bug; it is fixed at the write now — see the applyWorld
+  // tests below — rather than by running bootstrap before this.)
   const id = inspectorStore.add(RING, "Kharkiv")!;
   layersStore.set("planes", false);
   const worldBefore = { ...inspectorStore.get().world };
@@ -213,6 +213,48 @@ test("a toggle inside an area is not captured as the variant's override", async 
   // area's set is written into the variant's override and the next boot replays it
   // onto the globe — the exact leak the contexts model exists to prevent.
   expect(JSON.stringify(variantStore.get().overrides)).toBe(before);
+});
+
+// --- the globe's own writes: what the BROWSER found a second time ---------------
+
+test("a whole-set write from the spine lands on World even while an area is edited", () => {
+  // Seen in the browser: draw an area, reload, and an area created with no sources
+  // of its own comes back holding a copy of World's whole set. layersStore.applyExact
+  // wrote the EDITED context, and ConsoleShell seeds a board on every boot (the
+  // landing board carries no widgets, so the first-run branch always fires) AFTER
+  // hydrate has restored which area was being edited. applyWorld names its target.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  layersStore.applyWorld({ ...DEFAULT_STATE, planes: false });
+  signalsStore.applyWorld({ fires: true });
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources).toEqual({});
+  expect(inspectorStore.get().world.planes).toBe(false);
+  expect(inspectorStore.get().world.fires).toBe(true);
+});
+
+test("applying a variant while editing an area configures the globe, not the area", async () => {
+  // The same bug through the path a user actually takes. A variant is a description
+  // of the globe; pouring its ~30 layers into a ring the user drew is not a reading
+  // of "switch profile" that anyone would ask for.
+  const { variantStore } = await import("@/lib/variants/store");
+  variantStore.bootstrap(new URLSearchParams(""));
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  variantStore.setActive("aviation");
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources).toEqual({});
+  expect(layersStore.get().planes).toBe(true); // ...and the globe did change
+});
+
+test("a per-key write still follows the rail — the split is deliberate", () => {
+  // applyMonitor drives layersStore.set key by key rather than a whole-set write,
+  // and that is the difference: giving an area a monitor's layers is a thing a user
+  // can point the rail at and ask for. Handing it the globe's configuration behind
+  // their back is not.
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.edit(id);
+  layersStore.set("ships", true);
+  expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.ships).toBe(true);
+  expect(inspectorStore.get().world.ships).toBeUndefined();
 });
 
 test("a source on ONLY inside an area is never captured as a World override", () => {
