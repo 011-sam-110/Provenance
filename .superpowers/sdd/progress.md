@@ -271,6 +271,28 @@ Task 9: implemented (1b7047d) + my follow-up (dbbb255). Suite 334/3289 -> 335/32
   Holding myself to the standard I have been setting for the agents.
   Plan's "Expected: PASS, 8 tests" for Task 9 was wrong AGAIN (file had 7, now 9). Third
   miscount in this plan; the line now tells the reader to count the it( blocks instead.
+  REVIEW: spec PASS. Quality NOT APPROVED -- one CRITICAL, AND IT IS AGAINST MY OWN FIX.
+  camslot.tsx:390-393 is `useEffect(() => { setTile(...); return () => dropTile(id); },
+  [instanceId, streams, current])`, and `streams` is a useMemo keyed on benchTick, which
+  useNowCoarse ticks EVERY 60 SECONDS -- so the array gets a new reference every minute even
+  when its contents are identical. React runs an effect's cleanup before every re-run, not only
+  on unmount, so dropTile fires first and tiles.get(id) is ALWAYS undefined when setTile runs.
+  My `prev &&` guard can never be true for the real caller. Verified myself at
+  camslot.tsx:79/213/214/390-393 -- the reviewer is exactly right.
+  So: the guard is dead in production, the once-a-minute rebuild + notify + setData per tile
+  that I said I had fixed is still happening, and my two tests exercise a sequence (two setTile
+  calls with no dropTile between) that the real caller never performs. They constrain the
+  store's contract honestly, but they do NOT protect the case the commit message claimed.
+  FIFTH "looks like coverage, is not" on this branch, and the first one that is mine. The
+  lesson is specific and worth keeping: I tested the STORE in isolation and never asked what
+  its only caller actually does. A unit test of a module cannot tell you the module is reached.
+  REAL FIX (reviewer's, and correct): split camslot.tsx into a report effect with NO cleanup
+  and a separate unmount-only effect keyed on instanceId alone. QUEUED -- Task 10's implementer
+  is editing camslot.tsx right now, so it waits rather than racing it.
+  - T9-m1: WorldMap.tsx:1323 circle-opacity:1 on the non-on-air case is dead, since that fill is
+    already rgba(0,0,0,0). Stroke has its own circle-stroke-opacity. Harmless, fold into the fix.
+  - T9-m2 (scope): dbbb255 bundled camslot.apply.ts and the plan doc into Task 9's range. Fair
+    call -- it was my combined fix commit. Safe, but it made the review range wider than the task.
 
 BRANCH PUSHED (21:16). 34 commits had accumulated on ONE DISK, never pushed. `origin/main..HEAD`
   read 34 and looked reassuring, but that counts UNMERGED, not unpushed -- the upstream was
