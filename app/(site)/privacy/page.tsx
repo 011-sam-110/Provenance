@@ -51,22 +51,36 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     and camera pictures; it never sees a visitor, and it is not deployed.
  *
  * The load-bearing checks behind the copy below, all re-run against 2cf8797:
- *   • analytics — THERE IS NOW A COUNTER, and this bullet used to say there was not.
- *     The warning the old version left here ("IF AN EXTERNAL COUNTER IS EVER ADDED,
- *     THIS SECTION AND THE THREE PLACES BELOW THAT SAY no analytics HAVE TO MOVE WITH
- *     IT") is the reason this edit was not a one-line change: it named four places, and
- *     all four moved.
+ *   • analytics — THERE ARE NOW TWO COUNTERS, and this bullet used to say there were
+ *     none. The warning the old version left here ("IF AN EXTERNAL COUNTER IS EVER
+ *     ADDED, THIS SECTION AND THE THREE PLACES BELOW THAT SAY no analytics HAVE TO MOVE
+ *     WITH IT") is why neither edit was a one-line change: it named four places, and all
+ *     four moved — twice, because the two counters landed a day apart on separate
+ *     branches and each had to re-state what the other had already rewritten.
  *
- *     What was added is a cookieless PostHog beacon (components/analytics/Beacon.tsx,
- *     configured by lib/analytics/beacon.ts). What it is NOT is the thing the page
- *     previously ruled out: `persistence: "sessionStorage"` sets no cookie and keeps
- *     nothing past the tab, `disable_session_recording` is on, and there is no ad pixel
- *     and no cross-site identifier. tests/unit/beacon-config.test.ts pins each of those
- *     three, including the trap that the most private setting ("memory") would have
- *     made bounce rate read ~100% forever.
+ *     FIRST-PARTY, added 2026-09-07: `/api/presence` + lib/presence/store.ts, which count
+ *     how many browsers have the site open in a three-minute window so the console header
+ *     can show "N online". It holds a random per-tab string and a timestamp IN MEMORY,
+ *     evicts after three minutes, writes nothing to disk, records no IP, user agent,
+ *     referrer or route, and answers `null` below a threshold so a small number never
+ *     leaves the server. There is no history, so there is nothing to query — it can say
+ *     how many browsers are here and literally nothing else. ANY CHANGE THAT GIVES IT A
+ *     DISK, A LOG LINE, OR A SECOND FIELD MAKES THAT PARAGRAPH FALSE.
  *
- *     It is DORMANT-SAFE: with NEXT_PUBLIC_POSTHOG_KEY unset, posthog-js is never
- *     fetched, so a self-hoster's deployment really does count nothing.
+ *     THIRD-PARTY, added 2026-09-08: a cookieless PostHog beacon
+ *     (components/analytics/Beacon.tsx, configured by lib/analytics/beacon.ts). What it is
+ *     NOT is the thing the page previously ruled out: `persistence: "sessionStorage"` sets
+ *     no cookie and keeps nothing past the tab, `disable_session_recording` is on, and
+ *     there is no ad pixel and no cross-site identifier. tests/unit/beacon-config.test.ts
+ *     pins each of those three, including the trap that the most private setting
+ *     ("memory") would have made bounce rate read ~100% forever. It is DORMANT-SAFE: with
+ *     NEXT_PUBLIC_POSTHOG_KEY unset, posthog-js is never fetched, so a self-hoster's
+ *     deployment really does count nothing.
+ *
+ *     DO NOT COLLAPSE THE TWO INTO ONE SENTENCE. One is ours, in memory, and forgets in
+ *     three minutes; the other is a third party's, on their servers, and keeps what it
+ *     collects. Any copy that says "the counter" is now wrong whichever one it means —
+ *     which is exactly the fault that produced this paragraph.
  *   • processors — CLOUDFLARE IS NOW IN FRONT OF THE SITE, which is a change this page
  *     has to carry whatever the app does. It terminates TLS, so it necessarily sees
  *     every visitor's full IP address before we do. What reaches our log is masked; what
@@ -156,11 +170,12 @@ export default function PrivacyPage() {
               </p>
             </div>
             <div className="pv-card">
-              <h2 className="pv-h3">A counter, no cookies</h2>
+              <h2 className="pv-h3">Two counters, no cookies</h2>
               <p>
-                Your visit is counted, and that is all. No Google Analytics, no ad pixel, no
-                session recording, no cookies, and nothing that links this visit to your next
-                one. Close the tab and the counter forgets you.
+                Two counters, and neither sets a cookie. One is ours and lives three minutes:
+                how many browsers have the site open right now. The other counts page views and
+                clicks, on PostHog&rsquo;s European servers. No Google Analytics, no ad pixel, no
+                session recording, and nothing that links this visit to your next one.
               </p>
             </div>
           </div>
@@ -315,6 +330,28 @@ export default function PrivacyPage() {
                   <td>Watchlists, dropped pins, tracked aircraft, market alerts</td>
                   <td>Local storage</td>
                   <td>No</td>
+                </tr>
+                <tr>
+                  <td>
+                    A random string, so the live &ldquo;online&rdquo; count does not count this tab
+                    twice
+                  </td>
+                  <td>Session storage &mdash; erased when you close the tab</td>
+                  <td>
+                    Yes, every 45 seconds, to us. It is all that counter gets, and it means nothing
+                    else
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    A second random string, so the page-view counter can tell that page 2 was the
+                    same visit as page 1
+                  </td>
+                  <td>Session storage &mdash; erased when you close the tab</td>
+                  <td>
+                    Yes, to PostHog. This is the identifier that would have been a cookie in a
+                    normal analytics install; it is deliberately not one
+                  </td>
                 </tr>
                 <tr>
                   <td>A display name, if you type one into settings</td>
@@ -560,19 +597,21 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h3 className="pv-h3">OpenFreeMap</h3>
               <p>
-                <span className="pv-num">tiles.openfreemap.org</span> serves the default Light map
-                and the Streets map, along with their fonts, icons and the building shapes the 3D
-                buildings are drawn from. It is the map you get in the console unless you pick
-                another one, so it sees you on almost every visit to the console.
+                <span className="pv-num">tiles.openfreemap.org</span> serves the Streets map, the
+                small inset maps on a pin&rsquo;s detail card, the map on the Locate page, and the
+                building shapes the 3D buildings are drawn from. It was the console&rsquo;s default
+                map until 7 September 2026; the default is now Satellite, so OpenFreeMap only sees
+                you if you open a detail card, the Locate page, or the Streets map itself.
               </p>
             </div>
             <div className="pv-card">
               <h3 className="pv-h3">CARTO</h3>
               <p>
                 <span className="pv-num">basemaps.cartocdn.com</span> serves the Dark map, and the
-                label fonts the Dark, Satellite and Topographic maps use. That includes the globe on
-                the front page, so CARTO sees you whether or not you open the console. It used to
-                serve the default map as well; that moved to OpenFreeMap on 3 September 2026.
+                label fonts the Dark, Satellite and Topographic maps use. Satellite is the
+                console&rsquo;s default map, so those fonts load on almost every visit to the
+                console. The Dark map is also the globe on the front page, so CARTO sees you whether
+                or not you open the console.
               </p>
             </div>
             <div className="pv-card">
@@ -586,10 +625,12 @@ export default function PrivacyPage() {
             <div className="pv-card">
               <h3 className="pv-h3">Esri and OpenTopoMap</h3>
               <p>
-                <span className="pv-num">server.arcgisonline.com</span> serves the satellite basemap
-                and one aerial image on a satellite&rsquo;s detail card.{" "}
-                <span className="pv-num">tile.opentopomap.org</span> serves the topographic basemap.
-                Both load only if you pick them.
+                <span className="pv-num">server.arcgisonline.com</span> serves the Satellite map and
+                one aerial image on a satellite&rsquo;s detail card. Satellite became the
+                console&rsquo;s default map on 7 September 2026, so Esri now sees you on almost
+                every visit to the console rather than only when you pick it.{" "}
+                <span className="pv-num">tile.opentopomap.org</span> serves the topographic basemap,
+                which loads only if you pick it.
               </p>
             </div>
             <div className="pv-card">
@@ -629,7 +670,7 @@ export default function PrivacyPage() {
               <span>Cookies</span>
               <span>Analytics</span>
             </p>
-            <h2 className="pv-h2">No cookies of ours. There is a counter.</h2>
+            <h2 className="pv-h2">No cookies of ours. Two counters, and neither follows you.</h2>
           </div>
           <div className="pv-prose">
             <p>
@@ -640,8 +681,9 @@ export default function PrivacyPage() {
             </p>
             <p>
               <strong>This page used to say there was no analytics at all, and that is no longer
-              true.</strong> There is now a counter, and since the old wording was unusually
-              emphatic it is worth being equally specific about what changed and what did not.
+              true.</strong> There are now two counters &mdash; one ours, one a third party&rsquo;s
+              &mdash; and since the old wording was unusually emphatic it is worth being equally
+              specific about what each one does and what neither of them does.
             </p>
             <p>
               What was added is a page-view and interaction counter provided by{" "}
@@ -670,6 +712,20 @@ export default function PrivacyPage() {
               understate reality and we know they do. And it is deliberately not disguised as
               first-party traffic to get around that, which is a thing we could do and choose not
               to.
+            </p>
+            <p>
+              <strong>The other counter is ours, and it is a much smaller thing.</strong> It answers a
+              single question: how many browsers have the site open at this moment. While a tab is open it sends{" "}
+              <span className="pv-num">/api/presence</span> a random string every 45 seconds &mdash;
+              a string your own browser invents, keeps in{" "}
+              <span className="pv-num">sessionStorage</span> only until you close the tab, and which
+              means nothing anywhere else. The server holds that string and the time it last arrived,
+              in memory, and deletes it three minutes later. No IP address, no browser name, no page
+              address and no cookie is recorded with it, nothing is written to disk, and a restart of
+              the server erases the lot. It cannot say who you are, where you came from, or what you
+              looked at &mdash; only that some browser was here in the last three minutes. The number
+              is shown in the console header when it is above a threshold; below that the server does
+              not answer with it at all, so a quiet site does not report a small number to anyone.
             </p>
             <p>
               The page-view counts collected while the site ran on Vercel still sit in Vercel&rsquo;s

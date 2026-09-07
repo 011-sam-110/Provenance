@@ -2,62 +2,93 @@
 // The Sources rail's PRESETS block — one heading over the two kinds of one-tap
 // configuration the app has.
 //
-// WAS "Monitors", renamed 2026-09-05. The rail used to stack two chip rows: a
-// labelled "MONITORS" row (the six curated whole-map combos in lib/monitors.ts) and,
-// directly beneath it, an UNLABELLED row of four core-layer presets from
-// lib/layers.ts. Two rows, two shapes, one heading between them — nothing on screen
-// said why there were two, and both wrapped raggedly.
+// ── WHAT A TILE DOES NOW ───────────────────────────────────────────────────
+// It used to apply a MONITOR: a curated set of core + signal layers, and nothing
+// else. `lib/monitors.ts` held six of them and this was their only caller.
 //
-// They are now one block. Both are presets in the only sense a user cares about
-// ("configure the map in one tap"), so they share a heading, and the difference that
-// IS real is carried by the layout instead of by prose:
+// Monitors are gone. A preset is the whole workspace now — the layers AND the
+// board that reads them — so these tiles and the ⌘K Profiles list finally mean
+// the same thing, which is the whole point of the merge. See lib/console/presets.ts.
 //
-//   • the six MONITORS are the full presets — they set core layers AND signal layers,
-//     so they get the primary tier: a 3-column grid, two clean rows of three, each
-//     tile showing pressed state (a monitor can be "the current configuration").
-//   • the four LAYER PRESETS only switch cameras/planes/satellites, so they get a
-//     quieter second tier: a 4-column row of small text buttons, no pressed state,
-//     because they describe a partial state that the store cannot match against.
+// ── THE ONE PLACE THAT IS NOT A STRAIGHT SWAP ──────────────────────────────
+// This rail can be pointed at a drawn AREA instead of at the globe, and while it
+// is, every tick in it writes to that area. `applyPreset` writes to WORLD on
+// purpose — a board is a property of the globe, not of a polygon — so sending a
+// tile through it during an area edit would change the globe the user is not
+// looking at AND replace their board mid-edit. That is the same class of bug
+// #186 fixed for the rail's own ticks, and it is not being reintroduced here.
 //
-// Fixed column counts, not auto-fit: 6 into 3 and 4 into 4 both divide exactly, which
-// is what removes the ragged wrap. Behaviour is unchanged — this still just calls
-// applyMonitor() and layersStore.applyPreset().
+// So the tile splits on context:
+//   • pointed at the globe → applyPreset(): board, core layers, signal layers.
+//   • pointed at an area   → the layer set only, written to that area.
+// An area has a layer set and no board, so the layer set is the only half of a
+// preset that means anything for one.
+//
+// ── THE LAYOUT, WHICH IS UNCHANGED ─────────────────────────────────────────
+// Two tiers, and the difference between them is carried by the layout rather
+// than by prose:
+//   • the PRESETS are the full ones — layers, signals and a board — so they get
+//     the primary tier: a 3-column grid, each tile showing pressed state.
+//   • the four LAYER PRESETS only switch cameras/planes/satellites, so they get
+//     a quieter second tier: a 4-column row of small text buttons, no pressed
+//     state, because they describe a partial state the store cannot match.
+//
+// Fixed column counts, not auto-fit: 7 into 3 leaves one short row rather than a
+// ragged wrap, and 4 into 4 divides exactly.
 
-import { MONITORS, applyMonitor, matchMonitor } from "@/lib/monitors";
-// THE EDITING PROJECTIONS. A monitor tile reads pressed when the CURRENT
-// CONFIGURATION matches it, and applyMonitor writes to whichever context the rail is
-// pointed at — so the state it is matched against has to be that same context. Read
-// from the union instead and a tile would light up because the GLOBE matches it while
-// the area you are editing does not, and pressing it would change something without
-// changing the pressed state. See lib/layers.ts.
-import { LAYER_PRESETS, layersStore, useEditingLayers } from "@/lib/layers";
-import { useEditingSignals } from "@/lib/signals/store";
-import { MAP_SIGNALS } from "@/lib/signals/registry";
+import { BUILTIN_PRESETS, applyPreset, presetMapState } from "@/lib/console/presets";
+import { useActivePreset } from "@/lib/console/activePreset";
+// THE EDITING PROJECTION. See the note above: which context this rail is aimed
+// at decides what a tile is allowed to write.
+import { LAYER_PRESETS, layersStore } from "@/lib/layers";
+import { signalsStore } from "@/lib/signals/store";
+import { editingArea, useInspector } from "@/lib/shell/inspector";
 import { useT } from "@/lib/i18n/store";
 
-const SIGNAL_IDS = MAP_SIGNALS.map((s) => s.id);
-
 export default function PresetBar() {
-  const layers = useEditingLayers();
-  const signals = useEditingSignals();
+  const inspector = useInspector();
+  const active = useActivePreset();
   const t = useT();
-  const active = matchMonitor(layers, signals, SIGNAL_IDS);
+  const area = editingArea(inspector);
+
+  // Pressed state comes from the ACTIVE PRESET, not from matching the live layer
+  // state back against each preset's set. Matching was how the old monitor tiles
+  // worked and it was always slightly dishonest: toggling one layer off silently
+  // un-pressed a tile that had genuinely been applied, and two presets with the
+  // same layers would both light. The active id is the fact; the layers are a
+  // consequence of it.
+  //
+  // While an AREA is being edited nothing is pressed, because "the active board"
+  // is a property of the globe and this rail is not pointed at the globe. A
+  // pressed tile there would be claiming the area is on that preset.
+  const pressed = area ? null : active;
+
+  const apply = (id: string) => {
+    if (!area) { applyPreset(id); return; }
+    const state = presetMapState(id);
+    if (!state) return;
+    // applyExact, NOT applyWorld — this is the contextual write, so it lands on
+    // the area the rail is pointed at. Both stores merge rather than replace, so
+    // neither wipes the other's ids out of the area's shared source set.
+    layersStore.applyExact(state.core);
+    signalsStore.applyExact(state.signals);
+  };
 
   return (
     <div className="tn-presets">
       <div className="tn-subhead">{t("sectionPresets")}</div>
 
       <div className="tn-preset-grid" role="group" aria-label={t("sectionPresets")}>
-        {MONITORS.map((m) => (
+        {BUILTIN_PRESETS.map((p) => (
           <button
-            key={m.id}
+            key={p.id}
             type="button"
             className="tn-preset-tile"
-            aria-pressed={active === m.id}
-            title={m.blurb}
-            onClick={() => applyMonitor(m.id)}
+            aria-pressed={pressed === p.id}
+            title={area ? `${p.blurb} — applies this preset's layers to ${area.label}` : p.blurb}
+            onClick={() => apply(p.id)}
           >
-            {m.label}
+            {p.title}
           </button>
         ))}
       </div>

@@ -114,7 +114,7 @@ test("an explicit core request wins over the reset, and leaves the others alone"
   expect(core.satellites).toBe(false);
 });
 
-// ONE board lights webcams now, not two. The landing board dropped its `mapCore` with
+// ONE board lights webcams now, not two. The landing board dropped its `layers` with
 // its widgets, so Streets is the only one left — and it is the one that always had the
 // stronger claim: the webcam layer IS the pedestrian-zone content that board exists to
 // show, since the road-camera feeds are junctions and carriageways. Everywhere else it
@@ -124,7 +124,7 @@ const WEBCAM_BOARDS = new Set(["streets"]);
 test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
   for (const p of BUILTIN_PRESETS) {
     if (WEBCAM_BOARDS.has(p.id)) continue;
-    const { core } = layersForLayout(p.build(), p.mapSignals ?? [], p.mapCore ?? []);
+    const { core } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
     expect(core.webcams, `${p.id} unexpectedly lights webcams`).toBe(false);
   }
 });

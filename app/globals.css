@@ -5229,6 +5229,41 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   font-size: var(--tnx-fs-xs); font-weight: 700; padding: 1px 5px;
   border: 1px solid var(--tnx-line-strong); color: var(--tnx-ink);
 }
+
+/* ── "N online" ──────────────────────────────────────────────────────────────
+   A READOUT, NOT A CONTROL, and it is styled to say so. It sits in the same
+   cluster as SHORTCUTS and SETTINGS but takes no `border-right`, no hover state
+   and no pointer: the three things beside it do something when clicked and this
+   does not, so giving it their chrome would make it look broken rather than
+   consistent.
+
+   It carries no width at all below the threshold, because the component returns
+   null rather than rendering an empty pill — see LivePresence.tsx for why an
+   empty gap would be worse than nothing. */
+.tn-terminal .tn-presence {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em;
+  padding: 0 10px; color: var(--tnx-ink-dim); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* The live dot takes --tnx-live, the same green every feed-health readout in the
+   console uses for "this is arriving now". It is the one piece of semantic colour
+   in the header, which is what makes it read as a state rather than a decoration. */
+.tn-terminal .tn-presence-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tnx-live); flex: none;
+}
+/* A slow pulse, because the number IS live and a static dot claims less than the
+   thing is doing. Suppressed under reduced-motion, where the dot still carries
+   the meaning through its colour alone. */
+@media (prefers-reduced-motion: no-preference) {
+  .tn-terminal .tn-presence-dot { animation: tn-presence-pulse 2.6s ease-in-out infinite; }
+}
+@keyframes tn-presence-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+/* Under 720px the header collapses its button labels to marks; the count is a
+   number rather than a label, so it goes entirely instead of becoming a bare dot
+   that says nothing. */
+@media (max-width: 720px) { .tn-terminal .tn-presence { display: none; } }
 .tn-terminal .tnx-hdr-btn-label { color: inherit; }
 .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: var(--tnx-fs-sm); border-radius: var(--tnx-r-sm); }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
@@ -6264,6 +6299,47 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tnx-bg);
   overscroll-behavior: contain;
 }
+
+/* A CARD'S STORED SIZE IS AUTHORITATIVE, so it does not shrink to fit the rail.
+   Without this the default `flex-shrink: 1` squashes every card whenever a rail
+   holds more than fits — so a rail that was supposed to SCROLL instead silently
+   compressed its cards, and `MIN_CARD_PX` became a number the composer respected
+   and the browser did not. The rail's own `overflow` is what handles the excess. */
+.tn-terminal .tn-rail-col > .tn-seg-slot { flex: none; }
+
+/* THE BOTTOM RAIL IS A STRIP, NOT A COLUMN.
+   Every rail shared one rule until now, and for the bottom rail that rule was
+   wrong in a way nothing caught: `flex-direction: column` stacked its cards
+   VERTICALLY inside a band ~200px tall, so a two-card bottom rail showed one card
+   and scrolled to reach the other. It was never noticed because no board had ever
+   placed a widget there — `composeRail` hardcoded the left rail, so the bottom
+   rail rendered correctly and only ever rendered nothing.
+
+   A card in a row rail is sized along the rail's own main axis, which is its
+   WIDTH. That is why `renderRail` writes `width` rather than `height` here and
+   why `WidgetInstance.height` is documented as "size along the rail's axis"
+   rather than being given a second field: adding a `width` would need a migration
+   in `sanitize.ts`, in the `?c=` share codec and in every persisted layout, to
+   store a number that means exactly what the existing one already means. */
+.tn-terminal .tn-rail-col-bottom {
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* A STRIP'S CARDS MAY SHRINK; A COLUMN'S MAY NOT. The rule above this one pins
+   every card to its stored size so a rail scrolls instead of squashing, and that
+   is right for a column — a card pushed below the fold is still reachable.
+
+   Sideways it is not the same trade. `visibleShell()` measures the workspace band
+   including its own padding, so the composer's arithmetic always runs a little
+   ahead of the box a strip really gets (42px of chrome at 1440, see
+   SHELL_CHROME_PX in presets.ts), and any drift there would push the last card
+   off the end — a card nobody can see, on a board composed to show exactly it.
+   Letting the width be a basis rather than a fixed size absorbs that: cards
+   narrow in proportion, keeping the weights' relative sizes, and only start
+   scrolling once `min-width` binds and there is genuinely no room. */
+.tn-terminal .tn-rail-col-bottom > .tn-seg-slot { flex: 0 1 auto; min-width: 200px; }
 
 /* The seam. A 1px rule with an 7px invisible grab area either side of it, so it
    is a comfortable pointer target without drawing a thick bar: the visible line
