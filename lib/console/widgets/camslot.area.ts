@@ -1,6 +1,7 @@
 "use client";
 
 import { getMapInstance } from "@/lib/map/instance";
+import { revealPickLayers } from "@/lib/console/widgets/camslot.layers";
 import { aoiDrawStore, startDraw } from "@/lib/map/aoi";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
 import { loadedWebcamsStore } from "@/lib/webcams/loaded";
@@ -86,11 +87,18 @@ aoiDrawStore.subscribe(() => {
  * Turns picking mode on as a side effect, deliberately: someone who has just drawn
  * a ring around Soho is picking cameras whether or not they pressed the toggle
  * first, and making them press it afterwards to see the tray would be a riddle.
+ *
+ * And it brings the pins up for the same reason — see camslot.layers.ts. Drawing a
+ * ring is an unambiguous statement that you want the cameras inside it, so a ring
+ * that closes onto an empty result because a layer was off is the tool refusing a
+ * request it understood. `revealPickLayers` is called here rather than only in the
+ * flyout so the guarantee belongs to the GESTURE, not to one button that starts it.
  */
 export function startAreaPick(): AreaPickOutcome {
   const map = getMapInstance();
   if (!map) return { kind: "no-map" };
 
+  revealPickLayers();
   pickStore.setMode("picking");
   setForPick(true);
   const ok = startDraw(map, { onFinish: (ring) => { setForPick(false); pickRing(ring); } });
@@ -119,9 +127,15 @@ export function pickRing(ring: readonly [number, number][]): RingPickResult {
   const webcams = loadedWebcamsStore.get();
 
   if (rows.length === 0 && webcams.length === 0) {
-    // Neither layer is on. Saying "no cameras in that area" here would be a
+    // Nothing has ARRIVED yet. Saying "no cameras in that area" here would be a
     // confident wrong answer to a question we never actually asked.
-    const message = "No camera pins are loaded, so an area has nothing to select. Turn on the Cameras or Webcams layer and draw it again.";
+    //
+    // This used to read "Turn on the Cameras or Webcams layer and draw it again",
+    // and that instruction is now false: startAreaPick switched both layers on
+    // before the draw began, so it would send the user to a toggle that is already
+    // lit. Reaching here means the feeds are still in flight (or have failed), which
+    // is a wait, not a setting.
+    const message = "No camera pins have loaded yet, so an area has nothing to select. Give the pins a moment and draw it again.";
     toast(message);
     return { message, found: 0, added: 0 };
   }
