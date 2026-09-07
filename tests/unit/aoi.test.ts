@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  areasCollection,
   MIN_VERTICES,
   RADIUS_RING_STEPS,
   aoiLabel,
@@ -183,4 +184,42 @@ test("the draft is centre-only until the pointer has moved", () => {
   const line = (sized.features[1].geometry as GeoJSON.LineString).coordinates;
   expect(line).toHaveLength(RADIUS_RING_STEPS + 1);
   expect(line[line.length - 1]).toEqual(line[0]);
+});
+
+
+// --- the drawn areas on the map ------------------------------------------------
+
+function area(id: string, ring: [number, number][] = RING) {
+  return { id, label: id, polygon: ring, bbox: [0, 0, 0, 0] as [number, number, number, number], createdAt: 0, sources: {} };
+}
+
+test("every area is painted, not only the one being edited", () => {
+  // The additive model in one assertion: an area does not have to be selected to be
+  // live, so it does not have to be selected to be visible either. Editing used to
+  // set the console scope as a side effect, and painting the scope was the only
+  // reason a ring appeared at all — so when areas stopped narrowing the console the
+  // rings silently stopped being drawn.
+  const c = areasCollection([area("a"), area("b")], "a");
+  expect(c.features).toHaveLength(2);
+  expect(c.features.map((f) => f.properties!.editing)).toEqual([true, false]);
+});
+
+test("the edited flag is false for every area when the rail is on World", () => {
+  const c = areasCollection([area("a"), area("b")], null);
+  expect(c.features.every((f) => f.properties!.editing === false)).toBe(true);
+});
+
+test("a ring that is not an area is not painted", () => {
+  // Nothing should ever store one, but a hand-edited localStorage payload can hold
+  // it, and MapLibre drops an invalid polygon layer SILENTLY — taking the valid
+  // areas beside it off the map with no error anywhere.
+  const c = areasCollection([area("thin", [[0, 0], [1, 1]])], null);
+  expect(c.features).toHaveLength(0);
+});
+
+test("a painted area is a CLOSED ring, like every other polygon here", () => {
+  const c = areasCollection([area("a")], null);
+  const outer = (c.features[0].geometry as GeoJSON.Polygon).coordinates[0];
+  expect(outer).toHaveLength(RING.length + 1);
+  expect(outer[outer.length - 1]).toEqual(outer[0]);
 });

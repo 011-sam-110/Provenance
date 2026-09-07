@@ -37,12 +37,15 @@ function applyVariant(v: Variant, override?: OverrideDelta, sigFromUrl?: string[
   applying = true;
   try {
     const layers = { ...DEFAULT_STATE, ...v.layers, ...override?.layers } as LayerState;
-    layersStore.applyExact(layers);
+    // applyWorld, not applyExact: a variant is a configuration OF THE GLOBE, and
+    // captureOverride below reads World back. Aiming it at the edited context would
+    // write an area on the way in and read World on the way out.
+    layersStore.applyWorld(layers);
 
     let signals: SignalState = { ...resolveSignals(v.signals), ...override?.signals };
     // URL sig= is the authoritative on-set for a shared view — replace rather than merge with any local override.
     if (sigFromUrl) { signals = {}; for (const id of sigFromUrl) signals[id] = true; }
-    signalsStore.applyExact(signals);
+    signalsStore.applyWorld(signals);
 
     uiStore.setTheme(override?.theme ?? v.theme);
     cameraFilterStore.setLiveOnly(v.cameraFilter?.liveOnly ?? false);

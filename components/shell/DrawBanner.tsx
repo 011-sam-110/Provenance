@@ -32,11 +32,21 @@ export default function DrawBanner() {
   if (!draw.active) return null;
 
   const radius = draw.tool === "radius";
+  // `circle` is an EXTERNAL tool (see setExternalDraw in lib/map/aoi.ts) — a
+  // press-centre-and-drag gesture owned by another surface. It reports the same
+  // centre and radiusKm this component already reads, so it narrates through the
+  // radius branch; only the verb differs, because "click again to set the edge" would
+  // be describing the wrong gesture.
+  const circle = draw.tool === "circle";
   // TWO LINES WITH DIFFERENT JOBS. The lead says what is happening — it does not
   // change, so it is the thing the eye can lock onto. The hint says what to do next
   // and changes as the gesture progresses, which is the part worth re-reading.
-  const lead = radius ? "Drawing a radius" : "Drawing an area";
-  const hint = radius
+  const lead = circle ? "Drawing a circle" : radius ? "Drawing a radius" : "Drawing an area";
+  const hint = circle
+    ? draw.center == null
+      ? "Press on the map and drag out from the centre"
+      : `${formatRadius(draw.radiusKm ?? 0)} — release to set it`
+    : radius
     ? draw.center == null
       ? "Click the centre on the map"
       : `${formatRadius(draw.radiusKm ?? 0)} — click again to set the edge`

@@ -191,6 +191,25 @@ export const layersStore = {
     for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) set[k] = active[k];
     inspectorStore.replaceSources(set);
   },
+  /**
+   * The same whole-set write, aimed at WORLD however the rail is pointed.
+   *
+   * WHY BOTH EXIST. applyExact is reached from the rail's own layer-preset chips,
+   * where "give this area the Transit set" is a real thing to ask for. This is
+   * reached from the variant spine and from applyPreset, which say in their own
+   * comments that they are driving THE GLOBE. Sending those down the contextual path
+   * quietly poured a board's layers into whatever area was being edited — see the
+   * note on replaceWorld in lib/shell/inspector.ts for how that surfaced.
+   *
+   * The merge base is World's own set rather than the edited one, for the same
+   * reason: reading the area's set here would copy the area's signals onto World.
+   */
+  applyWorld(next: LayerState) {
+    const active = { ...DEFAULT_STATE, ...next };
+    const set: SourceSet = { ...inspectorStore.get().world };
+    for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) set[k] = active[k];
+    inspectorStore.replaceWorldSources(set);
+  },
   get: current,
   /** The context being edited. For the rail's ticks and for anything that writes. */
   editing: editingProjection,

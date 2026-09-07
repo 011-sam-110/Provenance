@@ -5068,14 +5068,24 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    the same corner — invisible while the container was bigger than the button and
    an off-register double the moment the two became the same size. */
 .tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact:after { content: none !important; }
-/* Expanded, it is a credit LINE. It needs its padding back, room for the button on
-   the left (MapLibre pins the button to the left edge in a bottom-left control),
-   and a width cap so a four-source credit does not run the width of the map. */
+/* Expanded, it is a credit LINE: padding back, a width cap so a four-source credit
+   does not run the width of the map, and room reserved for the button.
+
+   THE RESERVED SIDE FOLLOWS THE CORNER, and getting that wrong is visible rather
+   than subtle — the first cut reserved the left and the mark landed on top of
+   "OpenStreetMap". maplibre-gl.css pins the button `right: 0` by default and moves
+   it to `left: 0` only inside a `-left` container, so these mirror that structure
+   rather than assuming a corner. The control is bottom-right today; it has moved
+   corners before in this file's history and both cases now hold. */
 .tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact-show {
   box-sizing: border-box !important;
   max-width: min(420px, calc(100vw - 24px));
-  padding: 5px 10px 5px 34px !important;
+  padding: 5px 34px 5px 10px !important;
   line-height: 1.45;
+}
+.tn-terminal .maplibregl-ctrl-bottom-left > .maplibregl-ctrl-attrib.maplibregl-compact-show,
+.tn-terminal .maplibregl-ctrl-top-left > .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  padding: 5px 10px 5px 34px !important;
 }
 .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
 .tn-terminal .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
@@ -7000,14 +7010,33 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   color: var(--tn-text-faint);
 }
 
-.tn-rail-tabs { display: flex; gap: 4px; padding: 7px 0 2px; }
+/* A SEGMENTED CONTROL, not two loose buttons.
+   It used to be a transparent-bordered pair where only the selected one drew a
+   1px outline. Seen in the browser at the top of the rail that reads as an empty
+   input box beside a floating word: the selected half looks like a text field, the
+   unselected half has no affordance at all and does not look clickable. That was
+   survivable while the strip sat below the context line and above one tab's worth
+   of content; it is now the first control in the rail and the thing that says the
+   presets are still here at all, so it needs to look like a control.
+   One track, two halves, the selected half filled. */
+.tn-rail-tabs {
+  display: flex; gap: 2px; margin: 7px 0 8px; padding: 2px;
+  border-radius: 9px; background: var(--tn-surface-2, rgba(0,0,0,.05));
+  border: 1px solid var(--tn-border);
+}
 .tn-rail-tab {
   flex: 1; padding: 5px 0 6px; font: inherit; font-size: var(--tnx-fs-sm); font-weight: 500;
   border-radius: 7px; border: 1px solid transparent; background: none;
   color: var(--tn-text-faint); cursor: pointer;
 }
+.tn-rail-tab:hover { color: var(--tn-text); }
+.tn-rail-tab:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
+/* The fill carries the selection, not the border. --tn-accent is a pale olive here
+   and an outline in it is nearly invisible against the rail's own surface — which
+   is how the old rule managed to leave the selected tab looking unselected. */
 .tn-rail-tab[aria-selected="true"] {
-  border-color: var(--tn-accent); color: var(--tn-accent); font-weight: 600;
+  background: var(--tn-surface); border-color: var(--tn-border);
+  color: var(--tn-text); font-weight: 600; box-shadow: var(--tn-shadow);
 }
 
 .tn-insp-count { color: var(--tn-text-faint); font-weight: 400; }

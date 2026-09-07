@@ -88,12 +88,16 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // then re-asserts the variant's theme. Order matters.
   useEffect(() => {
     uiStore.hydrate();
-    // BEFORE inspectorStore.hydrate(), and that order is load-bearing. bootstrap
-    // applies the variant through layersStore/signalsStore, which write whichever
-    // source context is LOADED — so restoring a loaded area first made every reload
-    // overwrite that area's sources with the variant's layers. Nothing is loaded
-    // yet at this point, so the writes land on World, which is what a variant
-    // configures. Then the Inspector restores the areas and which one was loaded.
+    // BEFORE inspectorStore.hydrate(), and this used to be the ONLY thing stopping a
+    // reload from overwriting the edited area with the variant's layers: bootstrap
+    // applies a variant through layersStore/signalsStore, and those wrote whichever
+    // source context the rail was pointed at. Ordering alone was never enough —
+    // `applyPreset(DEFAULT_PRESET_ID)` below runs AFTER hydrate and fires on every
+    // boot while the landing board carries no widgets, so the area absorbed the
+    // board's set instead. Both paths now go through layersStore.applyWorld /
+    // signalsStore.applyWorld, which write World by construction. The order is kept
+    // because a variant should be on the map before the areas layer over it, not
+    // because it is holding a bug shut.
     variantStore.bootstrap(new URLSearchParams(window.location.search));
     inspectorStore.hydrate();
     watchlistStore.hydrate();

@@ -414,8 +414,8 @@ export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): v
   // signal layers are lit, so switching persona actually re-skins the map (not just
   // the side rail). See lib/console/presetLayers.ts.
   const { core, signals } = layersForLayout(layout, built?.mapSignals ?? [], built?.mapCore ?? []);
-  layersStore.applyExact(core);
-  signalsStore.applyExact(signals);
+  layersStore.applyWorld(core);
+  signalsStore.applyWorld(signals);
 }
 
 /**
