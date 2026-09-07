@@ -52,10 +52,25 @@ export const watchingStore = {
   /** A tile reports what it holds and what it is showing. Called on mount and on
    *  every rotation. */
   setTile(id: string, assigned: readonly StreamRef[], onAir: StreamRef | null) {
-    tiles.set(id, {
-      assigned: assigned.map(streamKey),
-      onAir: onAir ? streamKey(onAir) : null,
-    });
+    const nextAssigned = assigned.map(streamKey);
+    const nextOnAir = onAir ? streamKey(onAir) : null;
+
+    // A REPORT THAT CHANGES NOTHING MUST NOT CHANGE THE SNAPSHOT. Tiles call this
+    // on every rotation, and a rotation that lands on the same frame is a no-op —
+    // but an unconditional `rebuild()` would still hand out a fresh object, which
+    // is precisely what makes `useSyncExternalStore` re-render forever. Nothing
+    // subscribes that way today (WorldMap subscribes imperatively), so this is a
+    // guard against the next consumer, not a live bug. `dropTile` below already
+    // had it, via `if (tiles.delete(id))`; this is the same rule on the other door.
+    const prev = tiles.get(id);
+    if (
+      prev &&
+      prev.onAir === nextOnAir &&
+      prev.assigned.length === nextAssigned.length &&
+      prev.assigned.every((k, i) => k === nextAssigned[i])
+    ) return;
+
+    tiles.set(id, { assigned: nextAssigned, onAir: nextOnAir });
     rebuild();
   },
 

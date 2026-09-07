@@ -68,7 +68,12 @@ export function tilesToLayout(
     });
   }
 
-  return tiles.length > 0 ? arrangeBoard(next, rows) : next;
+  // No `tiles.length` guard: every widget was removed above, so on an empty plan
+  // `arrangeBoard` is arranging nothing and returns the same board. The guard that
+  // used to be here read as protecting something and protected nothing — the test
+  // below ("leaves an empty tile list as an empty board") passes either way, which
+  // is how it was caught.
+  return arrangeBoard(next, rows);
 }
 
 export interface ApplyResult { ok: boolean; message: string; created: number }

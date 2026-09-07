@@ -2172,7 +2172,10 @@ Then an effect that pushes features whenever the store changes. Position lookup 
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `npx vitest run tests/unit/camslot-watching.test.ts`
-Expected: PASS, 8 tests.
+Expected: PASS, 9 tests. (The block as written above holds 7; the two snapshot-identity
+cases were added when the store turned out to hand a NEW object back for a no-op
+`setTile`, which is the `useSyncExternalStore` infinite-render trap. Count the `it(`
+blocks rather than trusting this line — it has been wrong three times in this plan.)
 
 - [ ] **Step 7: Run the gate and commit**
 

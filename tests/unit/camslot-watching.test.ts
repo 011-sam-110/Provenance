@@ -14,6 +14,26 @@ describe("watchingStore", () => {
     expect([...s.onAir].sort()).toEqual(["cam:a", "cam:c"]);
   });
 
+  it("hands out the SAME snapshot object when a tile reports no change", () => {
+    // useSyncExternalStore compares snapshots by identity: a store that returns a
+    // fresh object for a no-op write re-renders its consumer forever. Tiles call
+    // setTile on every rotation, and a rotation landing on the same frame is a
+    // no-op, so this is the common case rather than an exotic one.
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    const first = watchingStore.get();
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    expect(watchingStore.get()).toBe(first);
+  });
+
+  it("hands out a NEW snapshot as soon as the on-air frame actually moves", () => {
+    // The other half of the rule above: deduping must not swallow a real rotation.
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    const first = watchingStore.get();
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "b" });
+    expect(watchingStore.get()).not.toBe(first);
+    expect([...watchingStore.get().onAir]).toEqual(["cam:b"]);
+  });
+
   it("forgets a tile that is removed", () => {
     watchingStore.setTile("t1", [{ k: "cam", id: "a" }], { k: "cam", id: "a" });
     watchingStore.dropTile("t1");
