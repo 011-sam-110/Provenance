@@ -59,3 +59,16 @@ echo
 systemctl --no-pager --lines=20 status provenance-rollup.service || true
 echo
 systemctl list-timers --no-pager provenance-rollup.timer
+
+# Where to look at the result, said here because it is the one question the operator
+# has next and the answer is not guessable: /admin returns 404 whenever NODE_ENV is
+# production, so the dashboard cannot be opened on this box at all.
+cat <<'NOTE'
+
+The rollups are written to /srv/provenance/shared/analytics. To read them:
+
+  scripts/pull-rollups.sh        # from a checkout, copies them down and prints the rest
+
+/admin/analytics 404s in production by design (lib/discovery/devOnly.ts), so it is only
+reachable from `npx next dev` on a laptop pointed at a copy of these files.
+NOTE
