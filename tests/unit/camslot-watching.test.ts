@@ -19,6 +19,14 @@ describe("watchingStore", () => {
     // fresh object for a no-op write re-renders its consumer forever. Tiles call
     // setTile on every rotation, and a rotation landing on the same frame is a
     // no-op, so this is the common case rather than an exotic one.
+    //
+    // WHAT THIS TEST CANNOT SEE: whether the real caller ever reaches this path.
+    // It first did not — camslot.tsx combined reporting and dropping in one effect,
+    // and React's cleanup-before-every-re-run deleted the entry each minute, so
+    // `prev` was always undefined and the guard was dead while this test stayed
+    // green. The effect is split now (camslot.tsx, two useEffects). A React
+    // component cannot be tested in this repo's node-environment vitest, so the
+    // caller-side half is measured in scripts/verify-streets-area.mjs instead.
     watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
     const first = watchingStore.get();
     watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });

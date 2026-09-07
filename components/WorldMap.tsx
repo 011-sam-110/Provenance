@@ -1320,7 +1320,10 @@ export default function WorldMap() {
           paint: {
             "circle-radius": ["case", ["==", ["get", "onair"], 1], 7, 5],
             "circle-color": ["case", ["==", ["get", "onair"], 1], "#ffb020", "rgba(0,0,0,0)"],
-            "circle-opacity": ["case", ["==", ["get", "onair"], 1], 0.95, 1],
+            // Fill opacity only — the assigned-but-not-on-air case has a fully
+            // transparent fill already, so its value here would do nothing either
+            // way. The ring those cameras read as is drawn by circle-stroke-*.
+            "circle-opacity": 0.95,
             "circle-stroke-color": "#ffb020",
             "circle-stroke-width": ["case", ["==", ["get", "onair"], 1], 2.5, 2],
             "circle-stroke-opacity": ["case", ["==", ["get", "onair"], 1], 1, 0.55],

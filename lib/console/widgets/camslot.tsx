@@ -384,13 +384,24 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const upcoming = rotates ? streams[nextIndex(safeIndex, streams.length)] : undefined;
 
   // Tell the map what this tile holds and which frame it is showing right now —
-  // see camslot.watching.ts. Runs on mount and every rotation; the drop on unmount
-  // is what lets the map stop claiming a tile is watching anything once it is gone
-  // (closed, or scrolled off the wall entirely).
+  // see camslot.watching.ts.
+  //
+  // REPORTING AND DROPPING ARE TWO EFFECTS ON PURPOSE, and combining them is a trap
+  // that already caught us. React runs an effect's cleanup before EVERY re-run, not
+  // only on unmount. `streams` is a useMemo keyed on `benchTick`, which ticks once a
+  // minute, so a single effect with a `dropTile` cleanup deleted the store entry
+  // every minute and re-added it — which meant the store's "nothing changed, keep
+  // the same snapshot" guard could never see a previous entry and never fired. The
+  // map still showed the right thing, so nothing looked wrong; it just rebuilt and
+  // re-pushed setData once a minute per tile, forever.
   useEffect(() => {
     watchingStore.setTile(instanceId, streams, current ?? null);
-    return () => watchingStore.dropTile(instanceId);
   }, [instanceId, streams, current]);
+
+  // The drop is keyed on `instanceId` ALONE, so it runs when this tile genuinely
+  // goes away (closed, or scrolled off the wall) and not on a rotation. That is what
+  // lets the map stop claiming a tile is watching anything once it is gone.
+  useEffect(() => () => watchingStore.dropTile(instanceId), [instanceId]);
 
   // The conditions overlay's data for whichever stream is CURRENTLY on screen.
   // Rotating to a different stream is a pure lookup into `weatherByCoord` — no

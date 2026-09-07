@@ -2321,6 +2321,19 @@ The unit suite cannot see a WebGL remount, a tile narrower than its own overlay,
 
 Create `scripts/verify-streets-area.mjs`, modelled on the existing `scripts/verify-wall.mjs`. Every check is a measured PASS/FAIL against a live dev server, and the script exits non-zero if any fails.
 
+**Add this check, which exists because the unit suite provably could not catch it.**
+`camslot.tsx` reports to `watchingStore` from one effect and drops from a second keyed on
+`instanceId` alone. They were one effect, and because React runs a cleanup before EVERY
+re-run — and `streams` is a `useMemo` keyed on a 60s tick — the entry was deleted and
+re-added every minute, so the store's "nothing changed" guard never fired. Nothing looked
+wrong on screen; it just rebuilt and re-pushed `setData` once a minute per tile. The store's
+own tests stayed green throughout, because they exercise a sequence the caller never performs.
+
+So measure it at the caller: with a board of tiles open and NO rotation due, sample
+`watchingStore.get()` twice more than 60 seconds apart and assert it is the SAME object
+(`===`). It must not change identity while nothing has changed. Fail the run if it does —
+that is the regression this split exists to prevent, and it is invisible to vitest.
+
 Checks, each of which must print its measured value, not just a verdict:
 
 1. **The map does not remount.** Instrument one `StageHost` mount counter on `window`; walk prompt → draw → monitor → reload and assert the count is 1 for the session.
