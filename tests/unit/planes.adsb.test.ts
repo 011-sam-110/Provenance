@@ -20,6 +20,9 @@ import {
   sweepToObjects,
   SWEEP_CELLS,
   cellUrl,
+  rotatingSweepCells,
+  ANCHOR_SIZE,
+  ROTATE_STEP,
   type AdsbRow,
   type SweepResult,
 } from "@/lib/sources/adsb";
@@ -358,4 +361,63 @@ describe("SWEEP_CELLS", () => {
       "https://api.adsb.lol/v2/lat/51.5/lon/-0.1/dist/250",
     );
   });
+});
+
+// --- rotation: the coverage-fairness fix -------------------------------------
+
+describe("rotatingSweepCells", () => {
+  const WINDOW_MS = 240_000; // matches opensky.ts's REVALIDATE_S in production
+
+  it("keeps the anchor cells first, in order, no matter what time it is", () => {
+    const anchorLabels = SWEEP_CELLS.slice(0, ANCHOR_SIZE).map((c) => c.label);
+    for (const now of [0, WINDOW_MS, WINDOW_MS * 5, WINDOW_MS * 37]) {
+      const order = rotatingSweepCells(SWEEP_CELLS, now, WINDOW_MS).map((c) => c.label);
+      expect(order.slice(0, ANCHOR_SIZE)).toEqual(anchorLabels);
+    }
+  });
+
+  it("returns every cell exactly once — a reordering, never a drop or a duplicate", () => {
+    const order = rotatingSweepCells(SWEEP_CELLS, 1_234_567, WINDOW_MS);
+    expect(order).toHaveLength(SWEEP_CELLS.length);
+    const keys = order.map((c) => `${c.lat},${c.lon}`);
+    expect(new Set(keys).size).toBe(SWEEP_CELLS.length);
+  });
+
+  it("rotates the pool after the anchor once the window advances", () => {
+    const first = rotatingSweepCells(SWEEP_CELLS, 0, WINDOW_MS).map((c) => c.label);
+    const next = rotatingSweepCells(SWEEP_CELLS, WINDOW_MS, WINDOW_MS).map((c) => c.label);
+    expect(first.slice(ANCHOR_SIZE)).not.toEqual(next.slice(ANCHOR_SIZE));
+  });
+
+  it("is a pure function of time — the same window number always reorders the same way", () => {
+    const a = rotatingSweepCells(SWEEP_CELLS, WINDOW_MS * 9, WINDOW_MS);
+    const b = rotatingSweepCells(SWEEP_CELLS, WINDOW_MS * 9 + 1000, WINDOW_MS);
+    expect(a.map((c) => c.label)).toEqual(b.map((c) => c.label));
+  });
+
+  it(
+    "brings every long-tail cell to the front within one rotation cycle — " +
+      "this is the actual bug: before this function existed, fetchAdsbSweep(SWEEP_CELLS) " +
+      "swept the identical fixed prefix on every single call, forever, so cells like " +
+      "Tokyo, Sydney and Mumbai were not merely thin, they were unreachable for the " +
+      "deployment's entire lifetime, regardless of how many times the sweep ran",
+    () => {
+      // The rate limit reliably reaches ~9-11 cells (see adsb.ts's own measurement).
+      // ANCHOR_SIZE (4) + one rotated window's worth (ROTATE_STEP=6) = 10, matching
+      // that reality with no slack invented for the test.
+      const attemptableSlice = ANCHOR_SIZE + ROTATE_STEP;
+      const pool = SWEEP_CELLS.slice(ANCHOR_SIZE);
+      const cyclesInOneFullRotation = Math.ceil(pool.length / ROTATE_STEP);
+
+      const reached = new Set<string>();
+      for (let i = 0; i < cyclesInOneFullRotation; i++) {
+        const order = rotatingSweepCells(SWEEP_CELLS, i * WINDOW_MS, WINDOW_MS);
+        for (const c of order.slice(0, attemptableSlice)) reached.add(c.label);
+      }
+
+      for (const cell of pool) {
+        expect(reached.has(cell.label)).toBe(true);
+      }
+    },
+  );
 });

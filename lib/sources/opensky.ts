@@ -48,7 +48,7 @@ import {
   withCoverage,
   type SignalCoverage,
 } from "@/lib/signals/coverage";
-import { fetchAdsbSweep, sweepToObjects } from "@/lib/sources/adsb";
+import { fetchAdsbSweep, rotatingSweepCells, sweepToObjects, SWEEP_CELLS } from "@/lib/sources/adsb";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -331,9 +331,18 @@ const REVALIDATE_S = 240;
  * good cached one and empty the layer for the rest of the revalidate window. Throwing
  * leaves the previous Data Cache entry in place for the staleness gate to judge —
  * see `decideStaleness`.
+ *
+ * CELL ORDER ROTATES BY WALL CLOCK, not by memory of the last sweep. Passing
+ * `SWEEP_CELLS` unrotated here — as this used to — meant every 240 s window swept the
+ * identical fixed prefix forever, so `SWEEP_CELLS[11..]` (most of Asia, Africa, South
+ * America, Oceania) was never reached, not "rarely" — literally never, for the
+ * deployment's lifetime. `rotatingSweepCells` fixes that without adding any state a
+ * cold serverless invocation could lose: it derives which cells lead purely from
+ * `Date.now()` and `REVALIDATE_S`, so it needs nothing carried over from the previous
+ * call. See its docblock in `lib/sources/adsb.ts` for the trade-off this makes.
  */
 async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
-  const sweep = await fetchAdsbSweep();
+  const sweep = await fetchAdsbSweep(rotatingSweepCells(SWEEP_CELLS, Date.now(), REVALIDATE_S * 1000));
   if (!sweep.objects.length) throw new Error("adsb.lol sweep returned zero positioned aircraft");
   const objects = sweepToObjects(sweep, MAX_PLANES);
   return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };

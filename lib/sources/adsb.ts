@@ -122,6 +122,71 @@ export const SWEEP_CELLS: readonly SweepCell[] = [
   { lat: 64.1, lon: -21.9, label: "Reykjavik" },
 ];
 
+// ---------------------------------------------------------------------------
+// Fair rotation across cache windows
+// ---------------------------------------------------------------------------
+
+/**
+ * How many of the highest-yield cells stay first, every window, unrotated.
+ * These are the ones {@link fetchAdsbSweep}'s budget reliably reaches (see the
+ * rate-limit block below), so pinning them means the density this sweep is
+ * known to deliver over North America/Europe never regresses because of
+ * rotation — only the cells AFTER them move.
+ */
+export const ANCHOR_SIZE = 4;
+
+/** How many pool cells the rotation advances by per window. Chosen to divide
+ * `SWEEP_CELLS.length - ANCHOR_SIZE` evenly (36 / 6 = 6 windows), so one full
+ * rotation reaches every non-anchor cell with no gaps and no repeats. */
+export const ROTATE_STEP = 6;
+
+/** Fallback cadence for direct/test calls. Production passes the REAL
+ * revalidate window from `lib/sources/opensky.ts` explicitly instead of
+ * relying on this — see the call site there for why. */
+export const ROTATION_WINDOW_MS = 240_000;
+
+/**
+ * Without this, `fetchAdsbSweep(SWEEP_CELLS)` swept the SAME fixed prefix on
+ * every single call, forever: the rate-limit budget below only reaches
+ * roughly the first 9-11 cells, and nothing about that prefix ever changed
+ * between calls. Measured against the deployed 240 s revalidation cadence
+ * (`lib/sources/opensky.ts`): SWEEP_CELLS[11..39] — Tokyo, Delhi, Mumbai,
+ * Sydney, Johannesburg, Sao Paulo and 24 others — were not "thin", they were
+ * unreached, literally, for the deployment's entire lifetime. That is a code
+ * ordering bug, distinct from the honesty boundary above (which is about
+ * receivers genuinely not existing in a region) — this one is fixable in code.
+ *
+ * The fix keeps the {@link ANCHOR_SIZE} highest-yield cells first every
+ * window and rotates everything after them by wall-clock time, so a
+ * DIFFERENT slice of the remaining cells leads each window. Purely a function
+ * of `now`: nothing persists between calls, which matters the same way the
+ * module-state warning in this file's header matters for opensky.ts — there
+ * is no state here a cold serverless invocation could reset or lose, because
+ * there is no state at all.
+ *
+ * Trade-off, stated plainly rather than buried: in a window whose rotated
+ * slice starts deep in the long tail, the modest post-anchor budget is spent
+ * on genuinely low-yield cells instead of the moderate-yield ones that used
+ * to always run next. That is the intended trade — it is what turns "zero,
+ * forever" into "sometimes, on a real cycle" for Asia/Africa/South America/
+ * Oceania — but it is a real one, not a free win, and worth knowing if it
+ * ever needs tuning back the other way.
+ */
+export function rotatingSweepCells(
+  cells: readonly SweepCell[] = SWEEP_CELLS,
+  now: number = Date.now(),
+  windowMs: number = ROTATION_WINDOW_MS,
+  anchorSize: number = ANCHOR_SIZE,
+  rotateStep: number = ROTATE_STEP,
+): SweepCell[] {
+  const anchor = cells.slice(0, anchorSize);
+  const pool = cells.slice(anchorSize);
+  if (pool.length === 0) return anchor;
+  const step = Math.floor(now / windowMs) * rotateStep;
+  const offset = ((step % pool.length) + pool.length) % pool.length;
+  return [...anchor, ...pool.slice(offset), ...pool.slice(0, offset)];
+}
+
 const RADIUS_NM = 250; // the endpoint's documented maximum
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 const CELL_TIMEOUT_MS = 8_000;
