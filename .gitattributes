@@ -1,2 +1,8 @@
 # The Vercel ignore step runs this on Linux; CRLF would break the shebang line.
 *.sh text eol=lf
+
+# deploy/ is copied verbatim onto a Linux box: a systemd unit, a Caddy config, and an
+# env file that bash sources. A trailing CR does not fail loudly there — it rides along
+# INSIDE every value, so NEXT_PUBLIC_SITE_URL becomes a URL with a carriage return on
+# the end and every canonical link is subtly wrong.
+deploy/* text eol=lf
