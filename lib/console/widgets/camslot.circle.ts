@@ -133,13 +133,21 @@ function emit() { publish(); for (const fn of listeners) fn(); }
  */
 function publish(): void {
   if (!state) { setExternalDraw(null); return; }
-  setExternalDraw({
-    active: true,
-    tool: "circle",
-    vertices: [],
-    ...(state.center ? { center: [state.center.lon, state.center.lat] as [number, number] } : {}),
-    radiusKm: state.radiusKm,
-  });
+  setExternalDraw(
+    {
+      active: true,
+      tool: "circle",
+      vertices: [],
+      ...(state.center ? { center: [state.center.lon, state.center.lat] as [number, number] } : {}),
+      radiusKm: state.radiusKm,
+    },
+    // The banner's Cancel, wired to this gesture's own teardown. Publishing state
+    // alone bought the banner but not its button: `cancelDraw()` reaches
+    // `cancelActive`, which only aoi.ts's own `startDraw` sets, so Cancel used to
+    // be a no-op for a circle. `cancelCircleDraw` is idempotent — `teardown` is
+    // null once it has run — so a double invocation cannot double-tear-down.
+    cancelCircleDraw,
+  );
 }
 
 export const circleDrawStore = {
@@ -270,28 +278,14 @@ export function cancelCircleDraw(): void {
   teardown?.();
 }
 
-// ── KNOWN GAP: THE BANNER'S CANCEL BUTTON DOES NOT REACH THIS GESTURE ────────
+// ── WHY NO aoiDrawStore SUBSCRIPTION HERE ────────────────────────────────────
 //
-// Publishing through `setExternalDraw` buys the DrawBanner, and the banner
-// renders a Cancel button unconditionally (components/shell/DrawBanner.tsx). That
-// button calls `cancelDraw()`, which is only `cancelActive?.()` — and
-// `setExternalDraw` documents that it does not touch `cancelActive`, which is
-// module-private to aoi.ts with no exported setter. So while a circle is running
-// that button is a NO-OP: it does not tear this gesture down, and it does not
-// even clear the shared state, so the banner does not so much as blink.
-//
-// ESCAPE STILL WORKS (`onKey` above), and the button names Esc on its own face,
-// so the gesture is always escapable. The cost is a visible control that does
-// nothing, which is worth stating plainly rather than papering over.
-//
-// NO GUARD IS INSTALLED HERE FOR IT, deliberately. The obvious one — subscribe to
-// `aoiDrawStore` and tear down if the shared state stops being our circle — is
-// DEAD CODE: `startDraw` self-guards with `if (draw.active) return false`, so
-// while this gesture publishes `active: true` nothing else can take the store,
-// and this module is the only caller of `setExternalDraw` in the tree. A guard
-// that cannot fire is worse than none, because the next reader believes the case
-// is handled.
-//
-// THE FIX BELONGS IN aoi.ts and is about four lines — let `setExternalDraw` take
-// an optional `onCancel` and have `cancelDraw()` call it — but that file is
-// another workstream's, so it is raised with them rather than reached into here.
+// The Cancel button is handled by handing `cancelCircleDraw` to
+// `setExternalDraw` as its `onCancel` (see `publish` above), NOT by watching the
+// shared store and tearing down when it stops being our circle. That adapter is
+// the obvious shape and it is DEAD CODE: `startDraw` self-guards with
+// `if (draw.active) return false`, so nothing else can take the store while this
+// gesture publishes `active: true`, and this module is the only caller of
+// `setExternalDraw` in the tree. It was written, proved unreachable, and deleted
+// — recorded here because a guard that cannot fire is worse than no guard at
+// all: the next reader believes the case is handled and stops looking.

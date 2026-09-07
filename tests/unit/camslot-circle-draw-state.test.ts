@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { startCircleDraw, cancelCircleDraw, type MapLike } from "@/lib/console/widgets/camslot.circle";
-import { aoiDrawStore, isDrawing } from "@/lib/map/aoi";
+import { aoiDrawStore, cancelDraw, isDrawing } from "@/lib/map/aoi";
 
 // The circle gesture publishes into lib/map/aoi.ts's draw store so that "a draw
 // is running" stays ONE truth: `isDrawing()` stops the polygon tool arming on
@@ -151,4 +151,48 @@ describe("the circle gesture publishes into the shared draw state", () => {
     off();
     expect(panWhenCleared).toBe(true);
   });
+});
+
+describe("the banner's Cancel reaches the circle gesture", () => {
+  it("tears the gesture down and hands the map back", () => {
+    startCircleDraw(map, { onFinish: () => {} });
+    canvas.fire("pointerdown", ptr(0, 0));
+    canvas.fire("pointermove", ptr(0, 60));
+    expect(map.dragPan.enabled).toBe(false);
+    expect(aoiDrawStore.get().active).toBe(true);
+
+    // This is exactly what DrawBanner's button calls. Before `onCancel` existed
+    // it reached only `cancelActive`, which none but aoi.ts's own startDraw
+    // sets, so for a circle it did nothing at all: the banner stayed up and the
+    // map went on swallowing clicks behind a visible Cancel that was a lie.
+    cancelDraw();
+
+    expect(aoiDrawStore.get().active).toBe(false);
+    expect(map.dragPan.enabled).toBe(true);
+    expect(canvas.listenerCount()).toBe(0);
+  });
+
+  it("is safe to cancel twice, which is what makes the re-entrancy ordering harmless", () => {
+    // aoi.ts reads and clears `externalCancel` BEFORE invoking it, so a teardown
+    // that republishes its way to idle cannot re-enter cancelDraw and run twice.
+    // That ordering is defensive rather than load-bearing HERE, and this test
+    // says which: this gesture's teardown is idempotent (`teardown` is null once
+    // it has run), so a second call is a no-op regardless. What this pins is the
+    // idempotence the ordering leans on — if that were ever lost, the ordering in
+    // aoi.ts would become the only thing standing between a stray notification
+    // and a double teardown.
+    startCircleDraw(map, { onFinish: () => {} });
+    canvas.fire("pointerdown", ptr(0, 0));
+    cancelDraw();
+    expect(() => cancelDraw()).not.toThrow();
+    expect(() => cancelCircleDraw()).not.toThrow();
+    expect(map.dragPan.enabled).toBe(true);
+  });
+
+  // NOT TESTED HERE, and stated rather than quietly skipped: that cancelDraw runs
+  // the external teardown even when `cancelActive` throws (the try/finally, not a
+  // chained `cancelActive?.(); externalCancel?.()`). `cancelActive` is private to
+  // aoi.ts and set only by its own `startDraw`, which needs a real MapLibre map
+  // and a live style — neither of which exists in this node-environment suite. The
+  // precondition cannot be built here, so the assertion is not made here.
 });

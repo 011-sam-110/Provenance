@@ -65,6 +65,9 @@ export interface DrawState {
 
 const IDLE: DrawState = { active: false, tool: "polygon", vertices: [] };
 let draw: DrawState = IDLE;
+/** The teardown of a gesture this module does NOT own, so `cancelDraw()` can reach it.
+ *  Set by `setExternalDraw`; see the ordering notes on that function and `cancelDraw`. */
+let externalCancel: (() => void) | null = null;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
@@ -99,11 +102,27 @@ export function useAoiDraw(): DrawState {
  *
  * IT DOES NOT PAINT. The draft layers belong to this module's own gestures; an
  * external tool owns its own geometry on the map and this only publishes the STATE.
- * It also does not touch `cancelActive`, so `cancelDraw()` reaches the tool that
- * armed it — an external caller must wire its own Cancel to its own teardown and then
- * call this with `null`.
+ *
+ * `onCancel` IS HOW THE BANNER'S CANCEL REACHES AN EXTERNAL TOOL, and without it that
+ * button was a lie. DrawBanner renders Cancel unconditionally for whatever is drawing;
+ * it calls `cancelDraw()`, which was only `cancelActive?.()`; and `cancelActive` is set
+ * exclusively by this module's own `startDraw`. So while an external gesture was
+ * running, Cancel did nothing at all — it did not tear the gesture down and did not
+ * even clear this state, so the banner did not so much as blink and the map went on
+ * swallowing clicks. Escape still worked, which is what kept it from being a trap, but
+ * a visible control that does nothing is worse than no control.
+ *
+ * Pass the tool's own teardown. It is invoked INSTEAD OF nothing, not instead of
+ * `cancelActive` — the two are independent, and a tool that also wants its state
+ * cleared should call this with `null` from inside its own teardown, as it already
+ * does for the completing path.
  */
-export function setExternalDraw(next: DrawState | null): void {
+export function setExternalDraw(next: DrawState | null, onCancel?: () => void): void {
+  // Assigned BEFORE `setDraw`, because `setDraw` notifies synchronously: a subscriber
+  // that reacts by calling `cancelDraw()` would otherwise re-enter while this slot
+  // still held the previous gesture's teardown and fire it a second time. Ordering it
+  // first makes that unreachable rather than merely unlikely.
+  externalCancel = next ? onCancel ?? null : null;
   setDraw(next ?? IDLE);
 }
 
@@ -795,9 +814,33 @@ export function startRadius(map: MapLibreMap, opts: DrawOptions = {}): boolean {
   });
 }
 
-/** Abandon an in-progress draw from outside (the Cancel button). */
+/**
+ * Abandon an in-progress draw from outside (the Cancel button).
+ *
+ * Reaches BOTH this module's own gesture and an external one. They are separate
+ * slots because they are separate tools, and at most one of them is ever set.
+ *
+ * Two orderings here are deliberate, not incidental:
+ *
+ * (1) `externalCancel` is read and cleared BEFORE it is invoked. A teardown that
+ *     synchronously publishes its way back through `setExternalDraw(null)` — which is
+ *     exactly what a well-behaved tool does — would otherwise be able to re-enter this
+ *     function and run the same teardown twice.
+ *
+ * (2) They are invoked in separate statements under `finally`, not chained in one
+ *     expression. `cancelActive?.(); externalCancel?.()` reads fine and hides a real
+ *     failure: a throw in the first silently skips the second, so an external tool
+ *     would keep the pointer capture and leave `dragPan` disabled because an unrelated
+ *     polygon teardown happened to fail.
+ */
 export function cancelDraw(): void {
-  cancelActive?.();
+  const external = externalCancel;
+  externalCancel = null;
+  try {
+    cancelActive?.();
+  } finally {
+    external?.();
+  }
 }
 
 /** Drop the AOI filter and go back to World. */
