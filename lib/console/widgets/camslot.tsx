@@ -16,7 +16,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { CameraImage } from "@/components/CameraImage";
+import { CameraVideo } from "@/components/CameraVideo";
 import { useCameras } from "@/lib/cameras/useCameras";
+import { loadedCamerasStore } from "@/lib/cameras/loaded";
+import { playsVideo } from "@/lib/console/widgets/camslot.video";
 import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
 import { useWebcamPlaces, webcamPlaceState } from "@/lib/webcams/places";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
@@ -162,6 +165,8 @@ function StreamView({
     );
   }
 
+  const isLive = playsVideo(stream, (id) => loadedCamerasStore.get().find((c) => c.id === id)?.live === true);
+
   return (
     <div className="tn-cs-view" data-kind={stream.k} style={style}>
       {stream.k === "webcam" ? (
@@ -169,6 +174,14 @@ function StreamView({
           id={stream.id}
           alt={label}
           onOutcome={(ok) => streamHealth.report(stream, ok)}
+        />
+      ) : isLive ? (
+        <CameraVideo
+          id={stream.id}
+          alt={label}
+          attribution=""
+          license=""
+          refreshSeconds={refreshSeconds}
         />
       ) : (
         <CameraImage
