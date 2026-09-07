@@ -36,10 +36,15 @@ export const BRAND = {
    *
    * So the rule is a SETTING on Discord's side, not a check on ours: this must be a
    * "never expire" invite (server → Invites → Edit → Expire After: Never, max uses
-   * unlimited). Verified against Discord's invite API on 2026-09-07 — server
-   * "Provenance", guild 1539313032801423441.
+   * unlimited).
+   *
+   * The stakes went UP on 2026-09-07: the maintenance curtain (lib/gate/page.ts) is
+   * served in place of every page while the site is down, and this is the only link
+   * on it. A dead invite there does not degrade the experience, it IS the experience.
+   *
+   * Code confirmed live by Sampo on 2026-09-07, replacing H5vB8TsVK.
    */
-  discordUrl: "https://discord.gg/H5vB8TsVK",
+  discordUrl: "https://discord.gg/q45NU8qWk",
   /** Canonical public repository. */
   repo: "011-sam-110/Provenance",
   repoUrl: "https://github.com/011-sam-110/Provenance",
