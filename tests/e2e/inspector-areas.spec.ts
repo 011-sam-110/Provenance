@@ -20,13 +20,19 @@ import { test, expect, type Page } from "@playwright/test";
 // 0 features cropped to 0 features would sail through a naive "fewer after loading"
 // check if the world count were never asserted.
 
-// Kharkiv, as [lon, lat] — the polygon order lib/shell/scope.ts uses.
+// The western Pacific, as [lon, lat] — the polygon order lib/shell/scope.ts uses.
+//
+// A SEISMICALLY ACTIVE box on purpose. Cropping to a quiet area (Kharkiv was the first
+// draft) proves only that the count fell, because "kept the right features" and
+// "dropped everything" both land on 0. With quakes inside it, the post-load count can
+// be checked against the features genuinely within the ring — see the last assertion.
 const RING: [number, number][] = [
-  [36.0, 49.8],
-  [36.5, 49.8],
-  [36.5, 50.2],
-  [36.0, 50.2],
+  [90, -60],
+  [180, -60],
+  [180, 70],
+  [90, 70],
 ];
+const BBOX: [number, number, number, number] = [90, -60, 180, 70];
 
 const SIGNAL = "earthquakes"; // global, keyless, and reliably non-empty
 
@@ -48,7 +54,7 @@ test.beforeEach(async ({ page }) => {
 
 async function boot(page: Page) {
   await page.addInitScript(
-    ({ ring, signal }) => {
+    ({ ring, box, signal }) => {
       // The launch sequence is a position:fixed inset:0 layer; without this stamp a
       // click lands on the plate instead of the control under it. Copied from
       // map-rail.spec.ts for the reason stated there.
@@ -70,9 +76,9 @@ async function boot(page: Page) {
             areas: [
               {
                 id: "area:1",
-                label: "Kharkiv",
+                label: "West Pacific",
                 polygon: ring,
-                bbox: [36.0, 49.8, 36.5, 50.2],
+                bbox: box,
                 createdAt: 1,
                 sources: { [signal]: true },
               },
@@ -81,7 +87,7 @@ async function boot(page: Page) {
         }),
       );
     },
-    { ring: RING, signal: SIGNAL },
+    { ring: RING, box: BBOX, signal: SIGNAL },
   );
 }
 
@@ -140,9 +146,30 @@ test("the Inspector lists a saved area, and loading it crops the map", async ({ 
     .toBeGreaterThan(0);
   const worldCount = await drawnSignals(page);
 
+  // What SHOULD survive: the world features whose position falls in the ring. The ring
+  // is a rectangle, so point-in-polygon and the bbox test are the same predicate here.
+  const insideCount = await page.evaluate(([w, s, e, n]) => {
+    const map = (window as unknown as { __map?: unknown }).__map as {
+      getSource: (id: string) => { serialize?: () => { data?: { features?: unknown[] } } } | undefined;
+    };
+    const features = (map.getSource("signals")?.serialize?.().data?.features ?? []) as {
+      geometry?: { type?: string; coordinates?: [number, number] };
+    }[];
+    let k = 0;
+    for (const f of features) {
+      if (f.geometry?.type !== "Point") continue;
+      const [lon, lat] = f.geometry.coordinates as [number, number];
+      if (lon >= w && lon <= e && lat >= s && lat <= n) k++;
+    }
+    return k;
+  }, BBOX);
+  // PRECONDITION 3 — the area is not empty, or "cropped" and "wiped" look identical.
+  expect(insideCount).toBeGreaterThan(0);
+  expect(insideCount).toBeLessThan(worldCount);
+
   await page.getByRole("tab", { name: "Inspector" }).click();
   await expect(page.locator(".tn-insp-row")).toHaveCount(1);
-  await expect(page.locator(".tn-insp-label")).toHaveText("Kharkiv");
+  await expect(page.locator(".tn-insp-label")).toHaveText("West Pacific");
   // Nothing is loaded yet, so no row carries the pill.
   await expect(page.locator(".tn-insp-pill", { hasText: "LOADED" })).toHaveCount(0);
 
@@ -152,14 +179,16 @@ test("the Inspector lists a saved area, and loading it crops the map", async ({ 
   await page.getByRole("button", { name: "Load this area" }).click();
 
   await expect(page.locator(".tn-insp-pill", { hasText: "LOADED" })).toHaveCount(1);
-  await expect(page.locator(".tn-ctxbar")).toHaveText(/Kharkiv/);
+  await expect(page.locator(".tn-ctxbar")).toHaveText(/West Pacific/);
 
-  // THE CLAIM. Kharkiv holds a small fraction of the world's earthquakes, so the
-  // drawn count must fall. Strictly fewer, not merely different.
+  // THE CLAIM, and it is an equality rather than an inequality: the map must end up
+  // drawing EXACTLY the features inside the ring. "Fewer than before" would also pass
+  // on a build that simply drops everything.
   await expect
     .poll(() => drawnSignals(page), {
-      message: `the map still draws ${worldCount} features after loading an area — it did not crop`,
+      message: `the map draws neither ${worldCount} (uncropped) nor ${insideCount} ` +
+        "(the features inside the ring) after loading the area",
       timeout: 30_000,
     })
-    .toBeLessThan(worldCount);
+    .toBe(insideCount);
 });
