@@ -79,6 +79,20 @@ export interface ShellLayout {
   focusedWidgetId: string | null;
   /** Which engine lays this board out. Absent on stored input means "rails". */
   mode: LayoutMode;
+  /**
+   * The area this board is monitoring, as an OPEN [lon, lat] ring.
+   *
+   * Board state, deliberately — NOT an InspectorArea and NOT the shell scope. An
+   * area scopes its own sources; this ring says which cameras a wall was built
+   * from, which is a different claim and belongs to the board that made it. It
+   * therefore persists with the board and rides the `?c=` link.
+   *
+   * Absent on every rails board and on any wall board nobody has drawn on. The
+   * key's ABSENCE is the untouched state — `layoutSignature()` JSON.stringifies
+   * the layout and JSON.stringify drops `undefined`, so writing an explicit
+   * `watch: null` here would light the "customised" dot on a board nobody edited.
+   */
+  watch?: { ring: [number, number][] };
 }
 
 /**
@@ -98,6 +112,16 @@ export interface ShellLayout {
  *    rather than unbounded.
  */
 export const MAX_WIDGETS = 200;
+
+/**
+ * Vertex ceiling for a stored watch ring.
+ *
+ * `ringFromCircle` produces 64. This is four times that so a ring drawn with the
+ * polygon tool and saved onto a board is not truncated, while still bounding what
+ * a `?c=` link can carry: 256 vertices of two 8-byte numbers is ~4 KB of JSON,
+ * against a basket of picks that is already larger.
+ */
+export const MAX_WATCH_VERTICES = 256;
 
 /** The ONLY wording of the widget-cap toast, derived from MAX_WIDGETS so the
  *  number cannot drift out of the copy again. It read "50-widget limit" in four
