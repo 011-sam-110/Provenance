@@ -9,12 +9,11 @@
 // localStorage so a composed view survives a reload.
 
 import { useSyncExternalStore } from "react";
-import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 // Active layers have a live CORE map layer today. The two "planned" keys never got
-// one — but their data DID ship, as signal layers (lib/signals/ais.ts and
-// lib/signals/weather.ts, both in SIGNALS), so the rail renders them as dimmed,
-// toggle-less signposts pointing at Global signals, NOT as "coming soon".
+// one. ships still ships as the AIS signal layer; weather no longer has one — its
+// adapter was unregistered in #177. Neither is drawn in the rail; see OMITTED_LAYERS
+// in lib/console/sources/railSources.ts.
 export type LayerKey = "cameras" | "satellites" | "planes" | "ships" | "webcams" | "weather" | "countries";
 export type LayerState = Record<LayerKey, boolean>;
 
@@ -70,46 +69,84 @@ export function presetState(id: PresetId): LayerState {
   }
 }
 
-let state: LayerState = { ...DEFAULT_STATE };
-const listeners = new Set<() => void>();
+// STATE LIVES IN lib/shell/inspector.ts, NOT HERE. This store is a VIEW onto
+// whichever source context is loaded — World, or one drawn area. The API below is
+// byte-identical to what it was before that change, which is the whole point:
+// WorldMap, SourceCatalog, monitors.ts, presetLayers.ts, presets.ts, PresetBar and
+// the command palette all call these methods and none of them needed an edit.
+//
+// The projection is one-way. This file imports inspector.ts; inspector.ts must never
+// import this one, or the pair is circular and neither owns the state.
+import { effectiveSetMemo, inspectorStore, loadedArea, type SourceSet } from "@/lib/shell/inspector";
 
-function emit() {
-  for (const l of listeners) l();
-  savePersisted(PERSIST_KEY, PERSIST_VERSION, state);
+/** Every LayerKey off. An AREA's floor — see project(). */
+const ALL_OFF: LayerState = (Object.keys(DEFAULT_STATE) as LayerKey[]).reduce((acc, k) => {
+  acc[k] = false;
+  return acc;
+}, {} as LayerState);
+
+/**
+ * The 7 LayerKeys pulled out of a context's set, over the floor that context uses.
+ *
+ * THE FLOOR IS DIFFERENT FOR WORLD AND FOR AN AREA, and that is the whole contexts
+ * rule expressed in one argument. World floors to DEFAULT_STATE, so the globe behaves
+ * exactly as it did before this store was routed. An area floors to ALL_OFF, because a
+ * new area starts with an empty set and must read as empty — flooring it with
+ * DEFAULT_STATE would hand the user a context they never configured, and would move
+ * every area's unset key the day a default flips. ALWAYS_ON_SOURCES is what keeps an
+ * empty area from loading to a blank map; the floor is not.
+ */
+function project(set: SourceSet, floor: LayerState): LayerState {
+  const out = { ...floor };
+  for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) {
+    if (typeof set[k] === "boolean") out[k] = set[k];
+  }
+  return out;
+}
+
+// Memoised on the state object so useSyncExternalStore's identity check holds:
+// project() builds a fresh object every call, and returning a new one from get() on
+// every render loops React forever. effectiveSetMemo is memoised for the same reason
+// one layer down — see the note on it in lib/shell/inspector.ts.
+let lastSet: SourceSet | null = null;
+let lastProjection: LayerState = { ...DEFAULT_STATE };
+
+function current(): LayerState {
+  const state = inspectorStore.get();
+  const set = effectiveSetMemo(state);
+  if (set !== lastSet) {
+    lastSet = set;
+    lastProjection = project(set, loadedArea(state) ? ALL_OFF : DEFAULT_STATE);
+  }
+  return lastProjection;
 }
 
 export const layersStore = {
   toggle(key: LayerKey) {
-    state = { ...state, [key]: !state[key] };
-    emit();
+    inspectorStore.setSource(key, !current()[key]);
   },
   set(key: LayerKey, on: boolean) {
-    if (state[key] === on) return;
-    state = { ...state, [key]: on };
-    emit();
+    if (current()[key] === on) return;
+    inspectorStore.setSource(key, on);
   },
   applyPreset(id: PresetId) {
-    state = presetState(id);
-    emit();
+    layersStore.applyExact(presetState(id));
   },
   applyExact(next: LayerState) {
-    state = { ...DEFAULT_STATE, ...next };
-    emit();
+    // Merge rather than replace: the context's set also holds SIGNAL ids, and a
+    // layer preset must not silently switch every signal layer off.
+    const active = { ...DEFAULT_STATE, ...next };
+    const set: SourceSet = { ...effectiveSetMemo(inspectorStore.get()) };
+    for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) set[k] = active[k];
+    inspectorStore.replaceSources(set);
   },
-  get(): LayerState {
-    return state;
-  },
-  /** Pull persisted toggles back in. Call once, client-side, after mount. */
+  get: current,
+  /** Kept for API compatibility. inspectorStore.hydrate() owns rehydration now. */
   hydrate() {
-    const saved = loadPersisted<Partial<LayerState>>(PERSIST_KEY, PERSIST_VERSION);
-    if (saved) state = { ...DEFAULT_STATE, ...saved };
-    emit();
+    /* no-op — see the note at the top of this block */
   },
   subscribe(listener: () => void): () => void {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
+    return inspectorStore.subscribe(listener);
   },
 };
 

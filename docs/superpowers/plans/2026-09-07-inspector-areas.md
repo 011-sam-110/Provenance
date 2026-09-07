@@ -382,6 +382,31 @@ export function effectiveSet(state: InspectorState): SourceSet {
   return out;
 }
 
+/**
+ * The set the console DRAWS, memoised on the state object.
+ *
+ * effectiveSet() builds a fresh object whenever an area is loaded, because it has to
+ * force ALWAYS_ON_SOURCES in. useSyncExternalStore compares snapshots by identity, so
+ * a store calling effectiveSet() per render hands React a new snapshot every time —
+ * the documented infinite-loop bug. World hid it: with nothing loaded effectiveSet
+ * returns state.world by identity, so the globe was stable and only loading an area
+ * would have hung the console. There are no component tests in this repo to catch
+ * that, so the guard is an identity assertion in tests/unit/inspector-routing.test.ts.
+ *
+ * The state object is replaced on every write and never mutated, so its identity is
+ * the correct cache key.
+ */
+let memoState: InspectorState | null = null;
+let memoSet: SourceSet = {};
+
+export function effectiveSetMemo(state: InspectorState): SourceSet {
+  if (state !== memoState) {
+    memoState = state;
+    memoSet = effectiveSet(state);
+  }
+  return memoSet;
+}
+
 /** Pure: set one source on the loaded context. */
 export function writeActive(state: InspectorState, id: string, on: boolean): InspectorState {
   const area = loadedArea(state);
@@ -542,6 +567,35 @@ toggles and removing an area cannot strand a source only it turned on."
 
 **Why this shape:** `WorldMap`, `SourceCatalog`, `monitors.ts`, `presetLayers.ts`, `presets.ts`, `PresetBar.tsx`, the command palette and the widgets all call these stores. Changing the API would touch every one of them. Making them views onto `inspectorStore` touches none.
 
+> **Three corrections were made to this task DURING execution, and the blocks below are
+> the corrected versions.** Recording them because each was a real defect that the first
+> cut shipped, and two of them no test in the original plan would have caught:
+>
+> 1. **The two stores share one map and were wiping each other's half.** Layers and
+>    signals used to own separate module state, so neither `applyExact` could reach the
+>    other. Projecting both onto one `SourceSet` made a whole-set replace destructive:
+>    `lib/variants/store.ts` applies layers and then signals, so every variant reset its
+>    own map layers a moment after setting them. Caught by the EXISTING
+>    `tests/unit/variants-store.test.ts` — the pinning test doing exactly its job.
+> 2. **`get()` returned a fresh object per call whenever an area was loaded.**
+>    `effectiveSet()` has to build a new object to force `ALWAYS_ON_SOURCES` in, and
+>    `useSyncExternalStore` compares snapshots by identity — the documented infinite-loop
+>    bug. World hid it completely (it returns `state.world` by identity), so the console
+>    would have worked on the globe and hung the moment an area loaded. There are no
+>    component tests in this repo, so nothing would have caught it before a browser.
+>    Fixed with `effectiveSetMemo` in `lib/shell/inspector.ts`; pinned by an identity
+>    assertion. The first cut's comment in `lib/signals/store.ts` asserted the identity
+>    WAS stable, which was true for World and false for an area.
+> 3. **An empty area read as `DEFAULT_STATE`, not as empty.** `project()` floored every
+>    context with `DEFAULT_STATE`, so a new area came up with planes, satellites and
+>    countries on — contradicting `newArea`'s own "starts empty" comment two files away.
+>    An area now floors to all-off; World still floors to `DEFAULT_STATE` so the globe is
+>    byte-identical to before. Without this the area's set silently inherits a constant,
+>    and every unconfigured key moves the day a default flips.
+>
+> Also: the test block below was missing its `vitest` import, which the implementing
+> agent added and reported. That was a gap in this plan, not a deviation.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `tests/unit/inspector-routing.test.ts`:
@@ -626,6 +680,54 @@ test("applyPreset writes the loaded area, not World", () => {
   expect(inspectorStore.get().areas.find((a) => a.id === id)!.sources.planes).toBe(true);
   expect(inspectorStore.get().world.planes).toBeUndefined();
 });
+
+// --- the two the first cut got wrong ----------------------------------------
+
+test("an empty area reads every layer OFF except the always-on pair", () => {
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.load(id);
+  // A new area starts with an empty set. DEFAULT_STATE is World's floor, not an
+  // area's — flooring an area with it would silently hand the user a context they
+  // never configured, and would drift again the day a default flips.
+  expect(layersStore.get()).toEqual({
+    cameras: true, // always-on
+    webcams: true, // always-on
+    satellites: false,
+    planes: false,
+    ships: false,
+    weather: false,
+    countries: false,
+  });
+});
+
+test("get() is identity-stable while an area is loaded — a fresh object per call loops React", () => {
+  const id = inspectorStore.add(RING, "Kharkiv")!;
+  inspectorStore.load(id);
+  // effectiveSet() FORCES the always-on ids in, so it builds a new object every
+  // call. useSyncExternalStore compares snapshots by identity: returning a new one
+  // per render is the documented infinite-loop bug, and there are no component
+  // tests in this repo to catch it. World never showed it — it returns state.world
+  // by identity — so this only bites once an area loads.
+  expect(layersStore.get()).toBe(layersStore.get());
+  expect(signalsStore.get()).toBe(signalsStore.get());
+});
+
+test("the two stores share one map and must not wipe each other's half", () => {
+  // Layers and signals used to own separate module state, so neither applyExact
+  // could reach the other. They now project onto ONE SourceSet per context, which
+  // makes a whole-set replace from either side destructive. A variant writes both
+  // (lib/variants/store.ts applies layers, then signals) so whichever runs second
+  // would silently reset the first — caught by tests/unit/variants-store.test.ts.
+  layersStore.applyExact({ ...DEFAULT_STATE, satellites: false });
+  signalsStore.applyExact({ "conflict-coverage": true });
+  expect(layersStore.get().satellites).toBe(false);
+  expect(signalsStore.isOn("conflict-coverage")).toBe(true);
+
+  // ...and the mirror: a layer preset must not switch every signal layer off.
+  layersStore.applyExact({ ...DEFAULT_STATE, planes: false });
+  expect(signalsStore.isOn("conflict-coverage")).toBe(true);
+  expect(layersStore.get().planes).toBe(false);
+});
 ```
 
 - [ ] **Step 2: Run it and watch it fail**
@@ -658,28 +760,46 @@ Then replace everything from `let state: LayerState = { ...DEFAULT_STATE };` to 
 //
 // The projection is one-way. This file imports inspector.ts; inspector.ts must never
 // import this one, or the pair is circular and neither owns the state.
-import { effectiveSet, inspectorStore, type SourceSet } from "@/lib/shell/inspector";
+import { effectiveSetMemo, inspectorStore, loadedArea, type SourceSet } from "@/lib/shell/inspector";
 
-/** The 7 LayerKeys pulled out of a context's set, with DEFAULT_STATE as the floor. */
-function project(set: SourceSet): LayerState {
-  const out = { ...DEFAULT_STATE };
+/** Every LayerKey off. An AREA's floor — see project(). */
+const ALL_OFF: LayerState = (Object.keys(DEFAULT_STATE) as LayerKey[]).reduce((acc, k) => {
+  acc[k] = false;
+  return acc;
+}, {} as LayerState);
+
+/**
+ * The 7 LayerKeys pulled out of a context's set, over the floor that context uses.
+ *
+ * THE FLOOR IS DIFFERENT FOR WORLD AND FOR AN AREA, and that is the whole contexts
+ * rule expressed in one argument. World floors to DEFAULT_STATE, so the globe behaves
+ * exactly as it did before this store was routed. An area floors to ALL_OFF, because a
+ * new area starts with an empty set and must read as empty — flooring it with
+ * DEFAULT_STATE would hand the user a context they never configured, and would move
+ * every area's unset key the day a default flips. ALWAYS_ON_SOURCES is what keeps an
+ * empty area from loading to a blank map; the floor is not.
+ */
+function project(set: SourceSet, floor: LayerState): LayerState {
+  const out = { ...floor };
   for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) {
     if (typeof set[k] === "boolean") out[k] = set[k];
   }
   return out;
 }
 
-// Memoised on the context object so useSyncExternalStore's identity check holds:
-// project() builds a fresh object every call, and returning a new one from get()
-// on every render loops React forever.
+// Memoised on the state object so useSyncExternalStore's identity check holds:
+// project() builds a fresh object every call, and returning a new one from get() on
+// every render loops React forever. effectiveSetMemo is memoised for the same reason
+// one layer down — see the note on it in lib/shell/inspector.ts.
 let lastSet: SourceSet | null = null;
 let lastProjection: LayerState = { ...DEFAULT_STATE };
 
 function current(): LayerState {
-  const set = effectiveSet(inspectorStore.get());
+  const state = inspectorStore.get();
+  const set = effectiveSetMemo(state);
   if (set !== lastSet) {
     lastSet = set;
-    lastProjection = project(set);
+    lastProjection = project(set, loadedArea(state) ? ALL_OFF : DEFAULT_STATE);
   }
   return lastProjection;
 }
@@ -698,11 +818,9 @@ export const layersStore = {
   applyExact(next: LayerState) {
     // Merge rather than replace: the context's set also holds SIGNAL ids, and a
     // layer preset must not silently switch every signal layer off.
-    const merged: SourceSet = { ...inspectorStore.get().world };
     const active = { ...DEFAULT_STATE, ...next };
-    const set: SourceSet = { ...effectiveSet(inspectorStore.get()) };
+    const set: SourceSet = { ...effectiveSetMemo(inspectorStore.get()) };
     for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) set[k] = active[k];
-    void merged;
     inspectorStore.replaceSources(set);
   },
   get: current,
@@ -727,14 +845,21 @@ Remove the now-unused `loadPersisted` / `savePersisted` import and the `PERSIST_
 Same treatment. Replace the module-level `state` and the `signalsStore` body; leave `SignalState`, `signalCountsStore` and `useSignalCounts` untouched.
 
 ```ts
-import { effectiveSet, inspectorStore } from "@/lib/shell/inspector";
+import { DEFAULT_STATE } from "@/lib/layers";
+import { effectiveSetMemo, inspectorStore, type SourceSet } from "@/lib/shell/inspector";
 
 // Signals are the sparse half of a context's SourceSet: an id that is not present
 // reads as off, exactly as before. No projection is needed — a SourceSet IS a
-// SignalState — so this returns the context's map directly and its identity is
-// already stable across renders.
+// SignalState — so this returns the context's map directly.
+//
+// It must go through the MEMOISED reader. An earlier cut of this file called
+// effectiveSet() and claimed its identity was "already stable across renders": true
+// for World, which is returned by identity, and false for an area, where the
+// always-on ids are forced into a fresh object on every call. useSignals() would have
+// looped as soon as an area loaded. Pinned by an identity assertion in
+// tests/unit/inspector-routing.test.ts.
 function current(): SignalState {
-  return effectiveSet(inspectorStore.get());
+  return effectiveSetMemo(inspectorStore.get());
 }
 
 export const signalsStore = {
@@ -749,7 +874,19 @@ export const signalsStore = {
     inspectorStore.setSource(id, on);
   },
   applyExact(next: SignalState) {
-    inspectorStore.replaceSources({ ...next });
+    // MERGE, never replace — the exact mirror of the note in lib/layers.ts. Layers and
+    // signals used to own separate module state, so neither could reach the other; they
+    // now project onto ONE SourceSet per context. A variant writes both (layers first,
+    // then signals, in lib/variants/store.ts), so a whole-set replace here resets every
+    // map layer to its floor a moment after the variant set it. Only the layer half is
+    // carried over; every signal id comes from `next`, so a signal absent from it still
+    // reads off, exactly as before.
+    const set: SourceSet = { ...next };
+    const cur = effectiveSetMemo(inspectorStore.get());
+    for (const k of Object.keys(DEFAULT_STATE)) {
+      if (typeof cur[k] === "boolean") set[k] = cur[k];
+    }
+    inspectorStore.replaceSources(set);
   },
   get: current,
   /** Kept for API compatibility. inspectorStore.hydrate() owns rehydration now. */
@@ -1287,13 +1424,99 @@ Expected: PASS, 5 tests.
 
 - [ ] **Step 5: Apply it in the four hooks**
 
-In each of `lib/planes/usePlanes.ts`, `lib/cameras/useCameras.ts`, the satellites hook and the webcam-directory hook, wrap the returned list:
+Four files, four different return shapes. All four were read on 2026-09-07 and the
+accessors below match the real fields. Do NOT assume every row carries `lat`/`lon`:
+one of the four has them **optional**, and that is load-bearing rather than sloppy.
+
+Two things hold across all four:
+
+- **Use the `useMemo` + `filterToScope` form, not bare `useScopeFilter`.** Under World
+  `filterToScope` returns the SAME array, so the memo keeps the hook's return identity
+  byte-for-byte stable and nothing downstream re-renders for a filter that filtered
+  nothing. Under an area the memo stops a fresh array being minted on every render.
+  `useScope()` reads a module-level snapshot, so `scope` is a valid memo dependency.
+- **A source being always-on does not exempt it from the boundary.** Cameras and
+  webcams are forced ON inside an area (`ALWAYS_ON_SOURCES`), which keeps the *source*
+  enabled; the scope still crops what it shows to the ring. Both are true at once and
+  neither is a bug to "fix" later.
+
+**5a. `lib/planes/usePlanes.ts`** — returns `PlanesLayer { objects: WorldObject[]; trails: PlaneTrail[] }`.
+`WorldObject.lat` / `.lon` are required. **The trails must be filtered to match the
+objects**, or a plane cropped out of the area keeps drawing its tail across the ring.
+
+Extend the react import on line 3 to include `useMemo`, and add:
 
 ```ts
-const scoped = useScopeFilter(list, (x) => (Number.isFinite(x.lat) && Number.isFinite(x.lon) ? x : null));
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 ```
 
-and return `scoped` in place of `list`. Read each hook's actual return shape first — the field names differ (`lat`/`lon` vs `latitude`/`longitude`) and the accessor must match the real one.
+Then replace the final `return layer;` with:
+
+```ts
+  const scope = useScope();
+  return useMemo(() => {
+    const objects = filterToScope(layer.objects, scope, (o) => o);
+    if (objects === layer.objects) return layer; // World: same array, same identity
+    const keep = new Set(objects.map((o) => o.id));
+    return { objects, trails: layer.trails.filter((t) => keep.has(t.id)) };
+  }, [layer, scope]);
+```
+
+**5b. `lib/cameras/useCameras.ts`** — returns `CamerasFeed { cameras: CameraRow[]; status; updatedAt }`.
+`CameraRow extends CameraLite`, whose `lat` / `lon` are required. `useMemo` is already
+imported on line 12; add the two imports above.
+
+Replace the final `return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);` with:
+
+```ts
+  const feed = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+  const scope = useScope();
+  return useMemo(() => {
+    const cameras = filterToScope(feed.cameras, scope, (c) => c);
+    if (cameras === feed.cameras) return feed; // World: keep status/updatedAt identity
+    return { ...feed, cameras };
+  }, [feed, scope]);
+```
+
+**5c. `lib/satellites/useSatellites.ts`** — returns `WorldObject[]` directly. Extend the
+react import on line 2 with `useMemo`, add the two imports above, and replace the final
+`return objects;` with:
+
+```ts
+  const scope = useScope();
+  return useMemo(() => filterToScope(objects, scope, (o) => o), [objects, scope]);
+```
+
+**5d. `lib/webcams/titles.ts`, `useWebcamDirectory()` (line 89)** — returns `WebcamRow[]`,
+and here `lat` / `lon` are **optional**. The file's own comment says why: "a missing
+position means we don't know, never 0,0". That is exactly the row `filterToScope` drops
+inside an area and keeps under World, so **the accessor must return `null`, never coerce
+to 0**. Extend the react import on line 15 with `useMemo`, add the two imports above, and
+rewrite the hook body as:
+
+```ts
+export function useWebcamDirectory(): WebcamRow[] {
+  const all = useSyncExternalStore(
+    subscribe,
+    () => rows ?? EMPTY,
+    () => EMPTY,
+  );
+  const scope = useScope();
+  return useMemo(
+    () =>
+      filterToScope(all, scope, (w) =>
+        typeof w.lat === "number" && typeof w.lon === "number"
+          ? { lat: w.lat, lon: w.lon }
+          : null,
+      ),
+    [all, scope],
+  );
+}
+```
+
+Leave `useWebcamTitles()` directly below it alone — it maps id to title for rows a slot
+already holds, and scoping it would blank the label on a webcam the user is looking at.
 
 - [ ] **Step 6: Classify every registered widget type**
 

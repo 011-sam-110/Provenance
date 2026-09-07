@@ -149,6 +149,31 @@ export function effectiveSet(state: InspectorState): SourceSet {
   return out;
 }
 
+/**
+ * The set the console DRAWS, memoised on the state object.
+ *
+ * effectiveSet() builds a fresh object whenever an area is loaded, because it has to
+ * force ALWAYS_ON_SOURCES in. useSyncExternalStore compares snapshots by identity, so
+ * a store calling effectiveSet() per render hands React a new snapshot every time —
+ * the documented infinite-loop bug. World hid it: with nothing loaded effectiveSet
+ * returns state.world by identity, so the globe was stable and only loading an area
+ * would have hung the console. There are no component tests in this repo to catch
+ * that, so the guard is an identity assertion in tests/unit/inspector-routing.test.ts.
+ *
+ * The state object is replaced on every write and never mutated, so its identity is
+ * the correct cache key.
+ */
+let memoState: InspectorState | null = null;
+let memoSet: SourceSet = {};
+
+export function effectiveSetMemo(state: InspectorState): SourceSet {
+  if (state !== memoState) {
+    memoState = state;
+    memoSet = effectiveSet(state);
+  }
+  return memoSet;
+}
+
 /** Pure: set one source on the loaded context. */
 export function writeActive(state: InspectorState, id: string, on: boolean): InspectorState {
   const area = loadedArea(state);
