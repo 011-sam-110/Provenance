@@ -201,6 +201,37 @@ export function coerceState(saved: unknown): InspectorState {
   return { world: cleanSet(s.world), areas: areas.slice(0, AREA_CAP), loaded };
 }
 
+const EARTH_RADIUS_KM = 6371.0088;
+
+/**
+ * Pure: the spherical area of a closed ring, in km².
+ *
+ * A PLANAR shoelace on lon/lat is wrong by the cosine of the latitude — at 50°N it
+ * overstates by about 55%, and an area label that overstates is worse than no label
+ * on a product whose whole claim is that it does not overstate. This is the spherical
+ * excess form, which is correct at any latitude and costs nothing at these ring sizes.
+ * Returns 0 for anything that is not an area, rather than a plausible fake.
+ */
+export function ringAreaKm2(ring: readonly [number, number][]): number {
+  if (!Array.isArray(ring) || ring.length < 3) return 0;
+  const rad = Math.PI / 180;
+  let total = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const [lon1, lat1] = ring[i];
+    const [lon2, lat2] = ring[(i + 1) % ring.length];
+    total += (lon2 - lon1) * rad * (2 + Math.sin(lat1 * rad) + Math.sin(lat2 * rad));
+  }
+  return Math.abs((total * EARTH_RADIUS_KM * EARTH_RADIUS_KM) / 2);
+}
+
+/** Pure: the one-line summary the index row and the dossier header both print. */
+export function areaSummary(area: InspectorArea): string {
+  const on = Object.values(area.sources).filter(Boolean).length;
+  const km2 = Math.round(ringAreaKm2(area.polygon));
+  const count = on === 0 ? "No sources" : on === 1 ? "1 source" : `${on} sources`;
+  return `${count} · ${km2.toLocaleString("en-GB")} km²`;
+}
+
 // --- store ------------------------------------------------------------------
 
 let state: InspectorState = { ...EMPTY };
