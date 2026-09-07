@@ -1549,7 +1549,7 @@ Create `tests/unit/camslot-apply.test.ts`. This tests the layout arithmetic thro
 ```ts
 import { describe, expect, it } from "vitest";
 import { tilesToLayout } from "@/lib/console/widgets/camslot.apply";
-import { createDefaultLayout } from "@/lib/console/reducers";
+import { createDefaultLayout } from "@/lib/console/types";
 import type { FanOutTile } from "@/lib/console/widgets/camslot.fanout";
 
 const wall = () => ({ ...createDefaultLayout(), mode: "wall" as const });
@@ -1749,7 +1749,15 @@ function toast(message: string): void {
 ```ts
   /** Swap the whole layout through a pure function. The one door for a change
    *  that rewrites the board wholesale, so every such change emits exactly once. */
-  replace(fn: (l: ShellLayout) => ShellLayout) { state = fn(state); emit(); },
+  // `replace` ALREADY EXISTS taking a ShellLayout. Do not add a second method —
+  // OVERLOAD it, and route BOTH shapes through sanitizeLayout. A bare
+  // `state = fn(state)` would be an unvalidated second door into `watch`, skipping
+  // the vertex-count and coordinate-range checks Task 2 built for exactly that field.
+  replace(arg: ShellLayout | ((l: ShellLayout) => ShellLayout), opts: { archive?: boolean } = {}) {
+    const next = typeof arg === "function" ? arg(state) : arg;
+    const clean = sanitizeLayout(next);
+    if (clean) { state = clean; emit(opts.archive !== false); }
+  },
 ```
 
 2. Export the id minter. `nextId()` is module-private today and is the ONLY thing
@@ -1854,19 +1862,24 @@ At the very end of `app/globals.css`:
   pointer-events:none;
 }
 .tn-streets-prompt-t{
-  margin:0;font-size:15px;font-weight:600;color:var(--tn-text);text-wrap:balance;
+  margin:0;font-size:calc(var(--tnx-fs) + 2px);font-weight:600;color:var(--tn-text);text-wrap:balance;
 }
 .tn-streets-prompt-s{
-  margin:0;font-size:13px;color:var(--tn-text-muted);font-variant-numeric:tabular-nums;
+  margin:0;font-size:var(--tnx-fs);color:var(--tn-text-muted);font-variant-numeric:tabular-nums;
 }
 .tn-streets-prompt-b{
-  pointer-events:auto;margin-top:6px;font:inherit;font-size:13px;
+  pointer-events:auto;margin-top:6px;font:inherit;font-size:var(--tnx-fs);
   padding:6px 14px;border-radius:8px;border:1px solid var(--tn-border);
   background:var(--tn-surface-2);color:var(--tn-text);cursor:pointer;
 }
 .tn-streets-prompt-b:hover{border-color:var(--tn-accent);}
 .tn-streets-prompt-b:focus-visible{outline:2px solid var(--tn-accent);outline-offset:2px;}
 ```
+
+**Font sizes are `calc()`d off `--tnx-fs`, never written as px literals.**
+`tests/unit/terminal-tokens.test.ts` is a pinned drift guard that BANS px literals in the
+console region, and the first draft of this block tripped it. `calc(var(--tnx-fs) + 2px)`
+is 15px on the scale's current 13px root and follows `--tnx-fs-lg`'s own idiom.
 
 These are the real token names, read from `app/globals.css`: `--tn-surface`,
 `--tn-surface-2`, `--tn-border`, `--tn-text`, `--tn-text-muted`, `--tn-accent`.
