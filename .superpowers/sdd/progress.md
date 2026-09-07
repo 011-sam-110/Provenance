@@ -347,6 +347,26 @@ Task 11 dispatched with an environment warning that matters more than the task t
   measurement task. Told it to start its own server from this worktree on 3010/3011/3012, never
   to kill a peer's, and to verify its own shutdown by PID rather than by the port going quiet.
 
+QUEUED FOR FINISHING (behind Task 11's writer):
+ 1. CameraVideo bench fix (T10-i2 above). console-ux CLEARED it -- they do not own the file,
+    they are a future consumer, and it helps their camera-review deck. They asked for a second
+    video-specific callback (playing / fatal / never-started); I DECLINED to build it now --
+    no caller, no branch, and an optional prop nobody invokes is a feature with nothing behind
+    it. Gave them the seam instead. They withdrew the ask and agreed the rule applies.
+    I also pushed back on their `never-started` timeout: under default-deny it is the outcome
+    that produces an INVISIBLE false negative against a real operator (a 12s cold-proxy start
+    recorded as dead, camera excluded forever, nothing says so). They are now measuring
+    time-to-first-frame instead of guessing, and changed their admission fact from "first frame
+    decoded" to "frames still arriving when signed" -- which also made their human-side check
+    match the server-side one they already had.
+ 2. `git rm --cached .superpowers/sdd/task-4-report.md`. Only it and progress.md are tracked;
+    the other ELEVEN task reports are ignored scratch. It was swept in by the first index
+    collision, and it would otherwise land in the PR as a 282-line internal review doc.
+    progress.md STAYS -- it is pre-existing on main, not something this branch introduced.
+ 3. Branch sweep is clean: 39 files, +5444/-171, and NO console.log, TODO, FIXME, @ts-ignore,
+    `as any` or debugger anywhere in the added lines. Seven new source modules, ten new test
+    files, one component.
+
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
   planar ray-casting with no seam unwrapping. Affects the EXISTING polygon AOI tool as well
