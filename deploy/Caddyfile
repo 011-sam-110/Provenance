@@ -1,25 +1,36 @@
-# /etc/caddy/Caddyfile   —   edit DOMAIN, then: systemctl reload caddy
+# /etc/caddy/Caddyfile
+#   install -m 644 deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy
 #
-# Caddy terminates TLS (certificate obtained and renewed automatically from Let's
-# Encrypt on first boot — the DNS A record must already point here or issuance fails)
-# and reverse-proxies to the Next standalone server on loopback:3000.
-#
-# NOT adding `encode` here on purpose: Next's standalone server already compresses
-# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates to
-# roughly a megabyte. A second encoder buys nothing and costs CPU on every response.
+# Caddy terminates TLS, obtaining and renewing certificates from Let's Encrypt without
+# supervision. THE DNS A RECORD MUST ALREADY POINT HERE before the first start: issuance
+# is an HTTP-01 challenge against the name, so a reload before DNS resolves burns a
+# failed attempt against Let's Encrypt's rate limit rather than producing a certificate.
 
-provenance.example.com {
+# Canonical host is the apex. www redirects rather than serving a byte-identical copy,
+# because two hostnames answering the same 18,766 camera pages is duplicate content
+# competing with itself — and the sitemap and canonical tags name the apex.
+www.provenance-online.com {
+	redir https://provenance-online.com{uri} permanent
+}
 
-	# Long-lived immutable build assets. Hashed filenames, so a year is safe and it
+provenance-online.com {
+
+	# Build assets only. Filenames here are content-hashed, so a year is safe and it
 	# keeps repeat visitors off the origin entirely — the cheapest byte is unsent.
+	#
+	# DO NOT WIDEN THIS TO public/. Nothing in public/ is content-hashed, so `immutable`
+	# would pin a stale file with no way to recall it. public/ is served by Next, which
+	# applies the headers() block added in PR #174 — the fix for 1,083,357 static
+	# requests in one day, 124 per page load. Serving public/ from Caddy would bypass
+	# that block and silently reintroduce the bill it removed.
 	@immutable path /_next/static/*
 	header @immutable Cache-Control "public, max-age=31536000, immutable"
 
 	reverse_proxy 127.0.0.1:3000 {
 		# lib/brand.ts resolves absolute URLs from NEXT_PUBLIC_SITE_URL first, so these
-		# are the backstop rather than the primary path — they keep anything that reads
-		# the request directly (redirects, Next's own URL handling) on https and the
-		# real host instead of http://127.0.0.1:3000.
+		# are the backstop rather than the primary path — they keep anything reading the
+		# request directly (redirects, Next's own URL handling) on https and the real
+		# host instead of http://127.0.0.1:3000.
 		header_up X-Forwarded-Proto {scheme}
 		header_up X-Forwarded-Host {host}
 		header_up Host {host}
@@ -28,6 +39,11 @@ provenance.example.com {
 		# response bodies by default, so segments start flowing before they finish
 		# downloading — leave it that way.
 	}
+
+	# NOT adding `encode` on purpose: Next's standalone server already compresses
+	# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates
+	# to roughly a megabyte. A second encoder buys nothing and costs CPU on every
+	# response, on a box with two shared vCPUs.
 
 	log {
 		output file /var/log/caddy/provenance.log {
