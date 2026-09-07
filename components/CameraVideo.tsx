@@ -19,6 +19,16 @@ export function CameraVideo(props: {
   const src = `/api/hls?id=${encodeURIComponent(id)}`;
   const poster = `/api/proxy?id=${encodeURIComponent(id)}`;
 
+  // A NEW STREAM IN THE SAME INSTANCE IS A NEW QUESTION. Without this, `failed` is a
+  // one-way latch: it is a useState initialiser, so it is evaluated once and never
+  // again, and while it is true no <video> is rendered — which makes the effect below
+  // return at `!videoRef.current`, so nothing can ever put the player back. A camslot
+  // tile rotates by changing this component's props, not by remounting it
+  // (camslot.tsx mounts StreamView without a key), so one dead camera in a five-camera
+  // tile downgraded that tile to stills for the rest of the session. Both siblings
+  // already do exactly this: CameraImage.tsx and WebcamImage in camslot.tsx.
+  useEffect(() => { setFailed(videoRecentlyFatal(id, Date.now())); }, [id]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -50,7 +60,12 @@ export function CameraVideo(props: {
     })();
 
     return () => { cancelled = true; if (hls) hls.destroy(); };
-  }, [src, id]);
+    // `failed` is a dependency because the <video> exists ONLY while it is false, and
+    // the reset above lands in a different commit from the element's arrival: on a
+    // rotation back off the still, this effect would otherwise run once against a null
+    // ref and never be asked again. It cannot loop — the only write is setFailed(true)
+    // on a fatal error, which unmounts the element, so the re-run returns at `!video`.
+  }, [src, id, failed]);
 
   // A stream that reaches `playing` is answering, whatever it did before, so the
   // memo is cleared here rather than left to time out. Frames arriving is the

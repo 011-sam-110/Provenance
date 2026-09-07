@@ -486,8 +486,23 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         <>
       <div className="tn-cs-stage" ref={stageRef} data-fit={cfg.fit ?? "cover"}>
         {/* Rule 1: exactly the current view, plus one hidden prefetch. Never the
-            whole playlist — that is what would multiply fetches. */}
+            whole playlist — that is what would multiply fetches.
+
+            KEYED BY STREAM, AND THAT IS WHAT MAKES THE PREFETCH WORTH ANYTHING.
+            Unkeyed, React reconciles these two by POSITION, so a rotation does not
+            promote the warmed view — it hands slot 0 a new `stream` prop and the
+            player inside rebuilds from zero, one frame before it is shown. That is
+            free for a still (an image re-request hits the browser HTTP cache) and
+            total for video: hls.js holds its buffer in JS, so destroy loses it, and
+            the next visible frame costs the full handshake again. Measured against
+            Caltrans D11 on 2026-09-08 that handshake is master 915ms + chunklist
+            171ms + a 2.6 MB / 10-second segment at 4.1s ≈ 5.2s.
+            With keys, the hidden fiber that has been warming for the whole 30s dwell
+            (VIDEO_DWELL_MS) is MOVED into slot 0 with its player and buffer intact.
+            Re-inserting a <video> in the same document does not re-run media resource
+            selection, so playback is not interrupted by the move. */}
         <StreamView
+          key={streamKey(current)}
           stream={current}
           refreshSeconds={refreshFor(current)}
           label={labelFor(current)}
@@ -495,6 +510,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         />
         {upcoming && streamKey(upcoming) !== streamKey(current) && (
           <StreamView
+            key={streamKey(upcoming)}
             stream={upcoming}
             refreshSeconds={refreshFor(upcoming)}
             label={labelFor(upcoming)}

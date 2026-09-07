@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { tilesToLayout } from "@/lib/console/widgets/camslot.apply";
+import { applyMonitorPlan, tilesToLayout } from "@/lib/console/widgets/camslot.apply";
+import { shellLayoutStore } from "@/lib/console/store";
 import { createDefaultLayout } from "@/lib/console/types";
 import type { FanOutTile } from "@/lib/console/widgets/camslot.fanout";
 
@@ -58,5 +59,51 @@ describe("tilesToLayout", () => {
 
   it("leaves an empty tile list as an empty board, which is the prompt state", () => {
     expect(tilesToLayout(wall(), [], 28, minter()).widgets).toEqual([]);
+  });
+});
+
+describe("applyMonitorPlan only lands on the board that asked for it", () => {
+  const plan = (n: number) => ({
+    tiles: Array.from({ length: n }, (_, i) => tile(`t${i}`, 2)),
+    found: n * 2,
+    live: n,
+    message: `${n} tiles`,
+  });
+
+  it("puts the tiles and the ring onto an open WALL", () => {
+    shellLayoutStore.replace(wall());
+    const res = applyMonitorPlan(plan(3), [[0, 0], [1, 0], [1, 1]]);
+    expect(res.ok).toBe(true);
+    expect(res.created).toBe(3);
+    expect(shellLayoutStore.get().widgets).toHaveLength(3);
+    expect(shellLayoutStore.get().watch?.ring).toHaveLength(3);
+  });
+
+  it("REFUSES a board that is not a wall, and leaves it exactly as it was", () => {
+    // The gesture can outlive the prompt that started it: press "Draw an area",
+    // switch preset, then release. `tilesToLayout` opens by removing EVERY widget,
+    // so without the guard that release wipes the board the user switched to — and
+    // since a rails board is sanitized without `watch`, they lose the area too.
+    shellLayoutStore.replace({ ...createDefaultLayout(), mode: "rails" as const });
+    const before = shellLayoutStore.get();
+    const res = applyMonitorPlan(plan(9), [[0, 0], [1, 0], [1, 1]]);
+    expect(res.ok).toBe(false);
+    expect(res.created).toBe(0);
+    // Not "some message" — the refusal has to say what to do about it, because the
+    // user is holding a circle they just drew and nothing appeared.
+    expect(res.message).toMatch(/Streets/);
+    expect(shellLayoutStore.get()).toBe(before);
+  });
+
+  it("still refuses an EMPTY plan on a wall, and says why rather than clearing the board", () => {
+    shellLayoutStore.replace(wall());
+    const seeded = applyMonitorPlan(plan(2), [[0, 0], [1, 0], [1, 1]]);
+    expect(seeded.ok).toBe(true);
+    const res = applyMonitorPlan({ tiles: [], found: 0, live: 0, message: "No cameras in that area." }, [[0, 0]]);
+    expect(res.ok).toBe(false);
+    expect(res.message).toBe("No cameras in that area.");
+    // The board it already drew survives — an empty result is not an instruction
+    // to throw away the last one that worked.
+    expect(shellLayoutStore.get().widgets).toHaveLength(2);
   });
 });

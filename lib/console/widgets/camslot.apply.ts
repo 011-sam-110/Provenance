@@ -83,6 +83,18 @@ export function applyMonitorPlan(plan: MonitorPlan, ring: readonly [number, numb
   if (plan.tiles.length === 0) {
     return { ok: false, message: plan.message, created: 0 };
   }
+  // THE PLAN MAY ONLY LAND ON THE BOARD THAT ASKED FOR IT. The gesture can outlive
+  // the prompt that started it — press "Draw an area", switch preset with ⌘K, then
+  // release — and `tilesToLayout` opens by removing EVERY widget on the open board.
+  // Without this a stray release would wipe an Infrastructure or Intel board and
+  // replace it with nine camera tiles; and because those boards are `rails`,
+  // `sanitizeLayout` would then drop the `watch` ring too, so the user would lose
+  // their board and not even get the area. StreetsPrompt now cancels the gesture on
+  // unmount, which closes the same hole from the other side; this is the one that
+  // does not depend on a component being mounted to be true.
+  if (shellLayoutStore.get().mode !== "wall") {
+    return { ok: false, message: "That area needs a camera wall — switch to Streets and draw it again.", created: 0 };
+  }
   const rows = Math.floor((typeof window === "undefined" ? 900 : window.innerHeight) / (ROW_PX + GAP_PX));
   shellLayoutStore.replace((l) => ({
     ...tilesToLayout(l, plan.tiles, rows, nextWidgetId),
