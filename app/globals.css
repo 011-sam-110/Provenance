@@ -6884,17 +6884,55 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 /* ── end stage rail ──────────────────────────────── */
 
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
+/* ── Inspector: the context switcher and the areas index ──────────────── */
+/* IT IS A BUTTON NOW, NOT A LABEL. It used to state which context was loaded and
+   carry a "✕ back to World"; picking a context is a safe, map-invisible act since
+   areas became additive, so the whole line opens a menu of them. `position:
+   relative` on the wrapper is what the popover is anchored to — it must not move to
+   the button, or the menu would be clipped by the button's own 30px box. */
+.tn-ctxbar-wrap { position: relative; margin: 0 0 2px; }
 .tn-ctxbar {
-  display: flex; align-items: center; gap: 7px; margin: 0 0 2px;
-  padding: 6px 9px; border-radius: 8px; font-size: var(--tnx-fs-sm);
+  display: flex; align-items: center; gap: 7px; width: 100%;
+  padding: 7px 9px; border-radius: 8px; font: inherit; font-size: var(--tnx-fs-sm);
+  text-align: left; color: inherit; cursor: pointer;
   background: var(--tn-surface-2, rgba(0,0,0,.03)); border: 1px solid var(--tn-border);
 }
+.tn-ctxbar:hover { border-color: var(--tn-text-faint); }
+.tn-ctxbar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 .tn-ctxbar[data-area] { border-color: var(--tn-accent); }
-.tn-ctxbar-glyph { color: var(--tn-text-faint); }
+.tn-ctxbar-glyph { color: var(--tn-text-faint); flex: 0 0 auto; }
 .tn-ctxbar[data-area] .tn-ctxbar-glyph, .tn-ctxbar[data-area] .tn-ctxbar-name { color: var(--tn-accent); }
+/* "Editing" is the word that stops the control lying. Quiet, because it is the same
+   on every row; the context name is the part that changes and carries the weight. */
+.tn-ctxbar-lead { color: var(--tn-text-faint); flex: 0 0 auto; }
 .tn-ctxbar-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-ctxbar-x { border: none; background: none; color: var(--tn-text-faint); cursor: pointer; font: inherit; padding: 0 2px; }
-.tn-ctxbar-x:hover { color: var(--tn-text); }
+/* The caret rides the token like everything else in this region — a px literal
+   here is how --tnx-fs quietly stops meaning anything (tests/unit/terminal-tokens
+   .test.ts guards exactly that). It only needs to be smaller than the label, and
+   the xs step already is. */
+.tn-ctxbar-caret { color: var(--tn-text-faint); flex: 0 0 auto; font-size: var(--tnx-fs-xs); }
+
+/* The popover. `max-height` + scroll rather than a taller panel: AREA_CAP is 40, so
+   the list can be 41 rows and must never push the source sections off the rail. */
+.tn-ctxbar-menu {
+  position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px);
+  max-height: 320px; overflow-y: auto; padding: 4px;
+  border-radius: 10px; border: 1px solid var(--tn-border);
+  background: var(--tn-surface); box-shadow: var(--tn-shadow);
+}
+.tn-ctxbar-opt {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 7px;
+  border: none; border-radius: 7px; background: none;
+  font: inherit; font-size: var(--tnx-fs-sm); text-align: left; color: inherit; cursor: pointer;
+}
+.tn-ctxbar-opt:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
+.tn-ctxbar-opt:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
+.tn-ctxbar-opt[aria-checked="true"] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
+.tn-ctxbar-opt[aria-checked="true"] .tn-insp-label { color: var(--tn-accent); font-weight: 600; }
+.tn-ctxbar-foot {
+  margin: 4px 3px 2px; font-size: var(--tnx-fs-xs); line-height: 1.45;
+  color: var(--tn-text-faint);
+}
 
 .tn-rail-tabs { display: flex; gap: 4px; padding: 7px 0 2px; }
 .tn-rail-tab {
@@ -6913,7 +6951,7 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   font: inherit; text-align: left; color: inherit; cursor: pointer;
 }
 .tn-insp-row:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
-.tn-insp-row[data-loaded] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
+.tn-insp-row[data-editing] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
 .tn-insp-glyph { color: var(--tn-accent); flex: 0 0 auto; }
 .tn-insp-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .tn-insp-label { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

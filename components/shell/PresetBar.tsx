@@ -24,16 +24,22 @@
 // applyMonitor() and layersStore.applyPreset().
 
 import { MONITORS, applyMonitor, matchMonitor } from "@/lib/monitors";
-import { LAYER_PRESETS, layersStore, useLayers } from "@/lib/layers";
-import { useSignals } from "@/lib/signals/store";
+// THE EDITING PROJECTIONS. A monitor tile reads pressed when the CURRENT
+// CONFIGURATION matches it, and applyMonitor writes to whichever context the rail is
+// pointed at — so the state it is matched against has to be that same context. Read
+// from the union instead and a tile would light up because the GLOBE matches it while
+// the area you are editing does not, and pressing it would change something without
+// changing the pressed state. See lib/layers.ts.
+import { LAYER_PRESETS, layersStore, useEditingLayers } from "@/lib/layers";
+import { useEditingSignals } from "@/lib/signals/store";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useT } from "@/lib/i18n/store";
 
 const SIGNAL_IDS = MAP_SIGNALS.map((s) => s.id);
 
 export default function PresetBar() {
-  const layers = useLayers();
-  const signals = useSignals();
+  const layers = useEditingLayers();
+  const signals = useEditingSignals();
   const t = useT();
   const active = matchMonitor(layers, signals, SIGNAL_IDS);
 

@@ -13,6 +13,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import type { CameraLite } from "@/lib/cameras/coverage";
 import type { SurfaceReading } from "@/lib/cameras/surface";
 import { filterToScope } from "@/lib/scopeFilter";
+import { filterToScopes, useSourceScopes } from "@/lib/shell/sourceScope";
 import { useScope } from "@/lib/shell/scope";
 
 export interface CameraRow extends CameraLite {
@@ -97,10 +98,15 @@ export function useCameras(): CamerasFeed {
 
   const getSnapshot = () => ensure().state;
   const feed = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+  // PER-SOURCE, not the one global scope. Areas are additive, so this source is
+  // unrestricted when World has it on and cropped to the rings of the areas that
+  // asked for it otherwise. The map-rail Draw filter still applies on top of both.
+  // See lib/shell/sourceScope.ts.
   const scope = useScope();
+  const rings = useSourceScopes("cameras");
   return useMemo(() => {
-    const cameras = filterToScope(feed.cameras, scope, (c) => c);
-    if (cameras === feed.cameras) return feed; // World: keep status/updatedAt identity
+    const cameras = filterToScopes(filterToScope(feed.cameras, scope, (c) => c), rings, (c) => c);
+    if (cameras === feed.cameras) return feed; // unrestricted: keep status/updatedAt identity
     return { ...feed, cameras };
-  }, [feed, scope]);
+  }, [feed, scope, rings]);
 }

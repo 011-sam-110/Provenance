@@ -73,15 +73,27 @@ export function presetState(id: PresetId): LayerState {
   }
 }
 
-// STATE LIVES IN lib/shell/inspector.ts, NOT HERE. This store is a VIEW onto
-// whichever source context is loaded — World, or one drawn area. The API below is
-// byte-identical to what it was before that change, which is the whole point:
-// WorldMap, SourceCatalog, monitors.ts, presetLayers.ts, presets.ts, PresetBar and
-// the command palette all call these methods and none of them needed an edit.
+// STATE LIVES IN lib/shell/inspector.ts, NOT HERE. This store is a VIEW onto the
+// source contexts — World, plus one per drawn area.
+//
+// IT IS NOW TWO VIEWS, AND THEY ANSWER DIFFERENT QUESTIONS. Areas are additive, so
+// "is cameras on?" has stopped having one answer:
+//
+//   get()      the UNION — on in World or in ANY area. What WorldMap gates its
+//              feeds and its layer visibility on, because a source wanted inside
+//              one ring still has to be fetched and still has to have a layer.
+//   editing()  the ONE context the rail is pointed at. What a tick in the Sources
+//              rail shows, and what toggle() flips.
+//
+// Reading the wrong one is a real bug in both directions and neither shows up as a
+// type error, so they are named rather than distinguished by an argument. Using the
+// union to drive a toggle is the worse half: with Aircraft on in World, toggling it
+// while editing an area would read `true`, write `false` to the area, and change
+// nothing on screen — a dead control.
 //
 // The projection is one-way. This file imports inspector.ts; inspector.ts must never
 // import this one, or the pair is circular and neither owns the state.
-import { effectiveSetMemo, inspectorStore, loadedArea, type SourceSet } from "@/lib/shell/inspector";
+import { editingArea, editingSet, inspectorStore, unionSetMemo, type SourceSet } from "@/lib/shell/inspector";
 
 /** Every LayerKey off. An AREA's floor — see project(). */
 const ALL_OFF: LayerState = (Object.keys(DEFAULT_STATE) as LayerKey[]).reduce((acc, k) => {
@@ -108,29 +120,64 @@ function project(set: SourceSet, floor: LayerState): LayerState {
   return out;
 }
 
-// Memoised on the state object so useSyncExternalStore's identity check holds:
-// project() builds a fresh object every call, and returning a new one from get() on
-// every render loops React forever. effectiveSetMemo is memoised for the same reason
-// one layer down — see the note on it in lib/shell/inspector.ts.
+// Both projections are memoised on the object they derive from, so
+// useSyncExternalStore's identity check holds: project() builds a fresh object every
+// call, and returning a new one from get() on every render loops React forever.
+// unionSetMemo is memoised for the same reason one layer down — see the note on it in
+// lib/shell/inspector.ts.
+//
+// TWO CACHES, NOT ONE. They key off different objects (the union set, and the state)
+// and are read on different renders; sharing one slot would thrash it on every write.
 let lastSet: SourceSet | null = null;
 let lastProjection: LayerState = { ...DEFAULT_STATE };
 
+/**
+ * The UNION — what is drawn and fetched.
+ *
+ * FLOORED TO DEFAULT_STATE, always. World is always part of the union and World's
+ * floor is DEFAULT_STATE, so there is no second case here the way there is in
+ * `editingProjection` below. An area contributes only its `true` values (see
+ * unionSet), so an area can add a layer to this and can never take one away.
+ */
 function current(): LayerState {
-  const state = inspectorStore.get();
-  const set = effectiveSetMemo(state);
+  const set = unionSetMemo(inspectorStore.get());
   if (set !== lastSet) {
     lastSet = set;
-    lastProjection = project(set, loadedArea(state) ? ALL_OFF : DEFAULT_STATE);
+    lastProjection = project(set, DEFAULT_STATE);
   }
   return lastProjection;
 }
 
+let lastEditState: unknown = null;
+let lastEditProjection: LayerState = { ...DEFAULT_STATE };
+
+/**
+ * The context being EDITED — what the rail ticks and what toggle() flips.
+ *
+ * THE FLOOR IS DIFFERENT FOR WORLD AND FOR AN AREA, and that is the contexts rule in
+ * one argument. World floors to DEFAULT_STATE, so the globe reads exactly as it did
+ * before any of this. An area floors to ALL_OFF, because a new area's set is empty
+ * and must read as empty — flooring it with DEFAULT_STATE would tick four layers the
+ * user never turned on, and would move every area's unset key the day a default flips.
+ */
+function editingProjection(): LayerState {
+  const state = inspectorStore.get();
+  if (state !== lastEditState) {
+    lastEditState = state;
+    lastEditProjection = project(editingSet(state), editingArea(state) ? ALL_OFF : DEFAULT_STATE);
+  }
+  return lastEditProjection;
+}
+
 export const layersStore = {
+  // EVERY WRITE READS `editingProjection`, NEVER `current`. A write lands on the
+  // context being edited, so it has to compare against that context — comparing
+  // against the union means "on in World" makes the area's own toggle inert.
   toggle(key: LayerKey) {
-    inspectorStore.setSource(key, !current()[key]);
+    inspectorStore.setSource(key, !editingProjection()[key]);
   },
   set(key: LayerKey, on: boolean) {
-    if (current()[key] === on) return;
+    if (editingProjection()[key] === on) return;
     inspectorStore.setSource(key, on);
   },
   applyPreset(id: PresetId) {
@@ -140,11 +187,13 @@ export const layersStore = {
     // Merge rather than replace: the context's set also holds SIGNAL ids, and a
     // layer preset must not silently switch every signal layer off.
     const active = { ...DEFAULT_STATE, ...next };
-    const set: SourceSet = { ...effectiveSetMemo(inspectorStore.get()) };
+    const set: SourceSet = { ...editingSet(inspectorStore.get()) };
     for (const k of Object.keys(DEFAULT_STATE) as LayerKey[]) set[k] = active[k];
     inspectorStore.replaceSources(set);
   },
   get: current,
+  /** The context being edited. For the rail's ticks and for anything that writes. */
+  editing: editingProjection,
   /** Kept for API compatibility. inspectorStore.hydrate() owns rehydration now. */
   hydrate() {
     /* no-op — see the note at the top of this block */
@@ -154,6 +203,12 @@ export const layersStore = {
   },
 };
 
+/** The UNION. What is on the map. */
 export function useLayers(): LayerState {
   return useSyncExternalStore(layersStore.subscribe, layersStore.get, layersStore.get);
+}
+
+/** The context being EDITED. What the Sources rail ticks. */
+export function useEditingLayers(): LayerState {
+  return useSyncExternalStore(layersStore.subscribe, layersStore.editing, layersStore.editing);
 }

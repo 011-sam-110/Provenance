@@ -6,6 +6,7 @@ import { buildSatrec, propagateAt, orbitalPeriodMin } from "@/lib/satellites/pro
 import { classifySatellite } from "@/lib/satellites/classify";
 import { SAT_META } from "@/lib/icons/svg";
 import { filterToScope } from "@/lib/scopeFilter";
+import { filterToScopes, useSourceScopes } from "@/lib/shell/sourceScope";
 import { useScope } from "@/lib/shell/scope";
 
 interface ApiSat {
@@ -111,6 +112,14 @@ export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
     return () => clearInterval(timer);
   }, [stepMs]);
 
+  // PER-SOURCE, not the one global scope. Areas are additive, so this source is
+  // unrestricted when World has it on and cropped to the rings of the areas that
+  // asked for it otherwise. The map-rail Draw filter still applies on top of both.
+  // See lib/shell/sourceScope.ts.
   const scope = useScope();
-  return useMemo(() => filterToScope(objects, scope, (o) => o), [objects, scope]);
+  const rings = useSourceScopes("satellites");
+  return useMemo(
+    () => filterToScopes(filterToScope(objects, scope, (o) => o), rings, (o) => o),
+    [objects, scope, rings],
+  );
 }

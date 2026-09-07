@@ -29,8 +29,13 @@
 // stale persisted "1h" cannot outlive the control that set it.
 
 import { useRef, useState } from "react";
-import { useLayers, layersStore, type LayerKey } from "@/lib/layers";
-import { signalsStore, useSignals } from "@/lib/signals/store";
+// THE EDITING PROJECTIONS, NOT THE UNION. `useLayers`/`useSignals` answer "is this
+// on anywhere" — World or any drawn area — which is what the MAP needs and is the
+// wrong answer for a tick beside a toggle. With the rail pointed at an area, a row
+// ticked from the union would claim the area has a source that World has and the
+// area does not, and clicking it would appear to do nothing. See lib/layers.ts.
+import { useEditingLayers, layersStore, type LayerKey } from "@/lib/layers";
+import { signalsStore, useEditingSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
 import { marketsStore } from "@/lib/shell/markets";
@@ -50,8 +55,8 @@ import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/
 import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
-import ContextBar from "@/components/shell/inspector/ContextBar";
-import InspectorTab from "@/components/shell/inspector/InspectorTab";
+import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
+import AreasPanel from "@/components/shell/inspector/AreasPanel";
 
 function CameraFilters() {
   const filter = useCameraFilter();
@@ -154,10 +159,10 @@ export default function SourceCatalog() {
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"sources" | "inspector">("sources");
+  const [tab, setTab] = useState<"sources" | "presets">("sources");
   const t = useT();
-  const layers = useLayers();
-  const signals = useSignals();
+  const layers = useEditingLayers();
+  const signals = useEditingSignals();
   // The LIVE console layout — the one ConsoleWorkspace draws. Subscribing here is
   // what makes a ＋ light up the instant its widget lands, and go out when the
   // widget is closed from its own ⋯ menu.
@@ -253,8 +258,12 @@ export default function SourceCatalog() {
         </button>
       </div>
 
-      <ContextBar />
-
+      {/* TABS ABOVE THE CONTEXT SWITCHER, which is the order Sam asked for and the
+          one that reads correctly: the tabs choose WHICH PANEL, the switcher says
+          WHERE THAT PANEL WRITES, and a scope line that sat above the thing it
+          scoped was claiming to cover the tab strip as well. Both presets and
+          sources write to the selected context, so the switcher belongs under the
+          tabs and over their shared content. */}
       <div className="tn-rail-tabs" role="tablist">
         <button
           type="button" role="tab" className="tn-rail-tab"
@@ -264,11 +273,13 @@ export default function SourceCatalog() {
         </button>
         <button
           type="button" role="tab" className="tn-rail-tab"
-          aria-selected={tab === "inspector"} onClick={() => setTab("inspector")}
+          aria-selected={tab === "presets"} onClick={() => setTab("presets")}
         >
-          Inspector
+          Presets
         </button>
       </div>
+
+      <ContextSwitcher />
 
       {tab === "sources" ? (
         <>
@@ -281,8 +292,12 @@ export default function SourceCatalog() {
             aria-label="Search sources"
           />
 
-          <PresetBar />
+          {/* WHERE PresetBar USED TO BE. Drawing an area and then turning sources on
+              for it is one job; it used to be split across two tabs. The presets took
+              this block's old home as the rail's second tab. */}
+          <AreasPanel />
 
+          <div className="tn-rail-divider" />
 
           {visible.length === 0 ? (
             <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
@@ -333,7 +348,7 @@ export default function SourceCatalog() {
           </p>
         </>
       ) : (
-        <InspectorTab />
+        <PresetBar />
       )}
     </aside>
   );

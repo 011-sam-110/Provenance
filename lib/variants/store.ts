@@ -58,16 +58,21 @@ function emit() { for (const l of listeners) l(); }
 
 function captureOverride() {
   if (applying) return;
-  // Only World's toggles belong to a variant. layersStore/signalsStore now project
-  // whichever source context is loaded, and they are what this is subscribed to, so
-  // without this guard every toggle made INSIDE an area — and the act of loading one
-  // — would be captured as the variant's override. Unloading would then leave the
-  // globe wearing the area's set, which is exactly the leak the contexts model
-  // exists to prevent.
-  if (inspectorStore.get().loaded !== null) return;
+  // Only World's toggles belong to a variant. layersStore/signalsStore are views onto
+  // the source contexts and are what this is subscribed to, so without this guard
+  // every toggle made INSIDE an area would be captured as the variant's override and
+  // replayed onto the globe on the next boot — the leak the contexts model exists to
+  // prevent.
+  if (inspectorStore.get().editing !== null) return;
   const v = resolveVariant(state.activeId);
+  // `.editing` RATHER THAN `.get()`, AND THE GUARD ABOVE IS NOT ENOUGH ON ITS OWN.
+  // `.get()` is the UNION now — on in World or in any area — so with the rail pointed
+  // at World and one area quietly holding Fires, the union says Fires is on and this
+  // would persist it as a WORLD override. The next boot then applies it to the globe,
+  // and a source the user scoped to one ring is suddenly planet-wide with no way to
+  // trace how. Past the guard, `.editing` is World's own set by definition.
   const delta = diffFromVariant(
-    { layers: layersStore.get(), signals: signalsStore.get(), theme: uiStore.get().theme },
+    { layers: layersStore.editing(), signals: signalsStore.editing(), theme: uiStore.get().theme },
     v,
   );
   const next = { ...state.overrides };
