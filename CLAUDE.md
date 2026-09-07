@@ -108,7 +108,12 @@ obligations and are not satisfied by the licence.
   file and the README state the new figures. That is the guard working — and note that
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
-- `lib/signals/*` — one adapter + one `registry.ts` entry per global-signal layer (35 registered).
+- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**33 registered, 32 of them map layers**).
+  A source may set `dataOnly: true` (see `types.ts`) meaning registered + fetchable but NOT a
+  map layer: no catalog entry, no rail row, no pin, unreachable from monitors/variants/`?sig=`.
+  Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
+  `SIGNALS`. Importing `SIGNALS` into something that draws or lists layers silently turns every
+  data-only source back into a layer. Today the only one is the Country Instability Index.
 - `lib/console/*` — widget registry, presets (**2 boards** in `presets.ts`), store, share (`?c=` layout URL).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
@@ -146,10 +151,10 @@ Re-measure before putting a number in a README, a CV or a PR description.
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
 | Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
-| Signal layers | 35 registered; 24 returning data, 11 empty | `GET /api/signals/<id>` for every id in `SIGNALS` |
+| Signal layers | **33 registered (32 map layers + 1 data-only); 31 returning data, 2 empty** (2026-09-05) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. The 2 empties are ReliefWeb and ENTSO-E grid load, both waiting on a key — not broken adapters. |
 | Console boards | 2 (2026-09-04) | `BUILTIN_PRESETS` in `lib/console/presets.ts`. Was 7 until Conflict, Hazards, Transit, Markets & Cyber and Recon were removed and Brief was emptied and renamed **Globe** — the landing board is now a bare rotating globe with no widgets, so `console-presets.test.ts` pins the empty widget list and the `map3d` stage as well as the id list. The guided tour used to pin this row a second time — `tour-board-copy.test.ts` failed if the tour's copy stated a different number — and that guard went with the tour. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Widget types | 70 registered (2026-09-03) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
+| Widget types | 63 registered (2026-09-05) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
 | Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
 
 ## Live-source notes (verified 2026-08-10, these change)
@@ -212,8 +217,22 @@ Re-measure before putting a number in a README, a CV or a PR description.
   image CDN, if it is ever needed for something else, is
   `https://webcams.ventusky.com/data/{last 2 digits of id}/{id}/latest_thumb.jpg`, **not**
   `images.ventusky.com/{id}.jpg`.
-- Key-gated layers dormant in prod: ACLED, ReliefWeb, ENTSO-E grid, AIS. Live with keys:
-  NASA FIRMS, OpenAQ stations. Canonical env-var names live in `docs/API_KEYS.md` —
+- **Four layers were removed on 2026-09-05, and two of them for measured reasons.** Asked for:
+  the Country Instability Index, US airport disruption (FAA) and City weather. Measured dead:
+  **ACLED** — the OAuth password grant issues a valid 811-char token and `GET /api/acled/read`
+  then answers **403**, verified directly against acleddata.com, so it had been falling through
+  to its GDELT fallback on every cycle and deleting it changed no score; and **food security** —
+  WFP withdrew the keyless HungerMap feed, so the layer only ever published its own "unavailable"
+  placeholder. The CII was NOT deleted, it became the first `dataOnly` source: the Brief, the
+  Country Instability widget, the Strategic Risk panel and the country dossier all still read it.
+  Two consequences worth knowing, both now pinned by tests: with ACLED gone the conflict factor is
+  GDELT article volume only, whose ramp hard-caps at 0.55, so **the index can no longer exceed
+  82/100** and conflict can be out-ranked as a driver by displacement. And on the live feed today
+  it tops out near **32/100 with most countries on 1 of 4 factors** — the food and ACLED inputs
+  are both gone, so nearly every score is a floor. Read the Brief's numbers with that in mind.
+- Key-gated layers dormant in prod: ReliefWeb, ENTSO-E grid. Live with keys: NASA FIRMS,
+  OpenAQ stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
+  vessels through the real adapter on 2026-09-05). Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
   `WINDY_WEBCAMS_API_KEY`).
 

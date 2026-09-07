@@ -301,13 +301,50 @@ a { color: var(--tn-accent); }
 }
 .tn-rail-fab-bars { font-size: 15px; color: var(--tn-accent); }
 
-.tn-presets { display: flex; gap: 5px; margin-bottom: 12px; flex-wrap: wrap; }
-.tn-preset-btn {
+/* --- Presets block (components/shell/PresetBar.tsx) -------------------------
+   Two tiers under ONE heading. Fixed column counts, not auto-fit: 6 monitors into
+   3 columns and 4 layer presets into 4 both divide exactly, so neither row can wrap
+   raggedly at any rail width. This replaced two separate chip rows (a labelled
+   "MONITORS" row of pills over an unlabelled row of rounded rects) that wrapped
+   independently and gave no clue why there were two of them. */
+.tn-presets { margin-bottom: 12px; }
+
+/* Tier 1 — the six full presets: core layers AND signal layers. */
+.tn-preset-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.tn-preset-tile {
+  /* 12.5px/600 in near-full text colour, not the 11px muted pill this replaced. Sam
+     runs the browser at ~80% zoom, so anything specced at 11px reads nearer 9px on the
+     machine that matters -- and these are the rail's primary actions. */
+  font: inherit; font-size: 12.5px; font-weight: 600; color: var(--tn-text);
+  background: var(--tn-chip-bg); border: 1px solid transparent; border-radius: 8px;
+  padding: 8px 8px; cursor: pointer; text-align: center;
+  /* Labels vary from "Calm" to "Infrastructure"; clip rather than let one tile grow. */
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.tn-preset-tile:hover { color: var(--tn-accent); border-color: var(--tn-border); }
+.tn-preset-tile[aria-pressed="true"] {
+  color: var(--tn-accent-strong); background: var(--tn-accent-soft); border-color: var(--tn-border);
+}
+
+/* Tier 2 — the four core-layer presets. Quieter on purpose: they set a PARTIAL
+   state the store cannot match against, so they carry no pressed state and must not
+   read as equals of the tiles above. */
+.tn-preset-quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 5px; }
+.tn-preset-quick-btn {
   font: inherit; font-size: 11.5px; font-weight: 600; color: var(--tn-text-muted);
-  background: var(--tn-chip-bg); border: 1px solid transparent; border-radius: 8px; padding: 5px 9px; cursor: pointer;
+  background: transparent; border: 1px solid var(--tn-border); border-radius: 7px;
+  padding: 5px 6px; cursor: pointer; text-align: center;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   transition: color 0.15s ease, border-color 0.15s ease;
 }
-.tn-preset-btn:hover { color: var(--tn-accent); border-color: var(--tn-border); }
+.tn-preset-quick-btn:hover { color: var(--tn-accent); border-color: var(--tn-accent); }
+
+/* Narrow rails: 3 across gets tight below ~360px of rail, so drop to 2 + 2. */
+@media (max-width: 420px) {
+  .tn-preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tn-preset-quick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 .tn-rail-section { display: flex; flex-direction: column; }
 .tn-rail-divider { height: 1px; background: var(--tn-border); margin: 10px 0; }
@@ -672,7 +709,7 @@ a { color: var(--tn-accent); }
     animation: tn-sheet-up 0.26s cubic-bezier(0.2, 0.7, 0.3, 1);
   }
   .tn-rail-fab { top: auto; bottom: calc(var(--tn-ticker-h) + 12px); left: 12px; padding: 11px 15px; }
-  .tn-preset-btn { padding: 9px 12px; }
+  .tn-preset-tile, .tn-preset-quick-btn { padding: 9px 8px; }
   .tn-coverage-open { padding: 11px 12px; }
 
   /* Right dossier → bottom sheet. */
@@ -818,30 +855,6 @@ a { color: var(--tn-accent); }
    switcher, and the saved-places (watchlist) slide-in. All reuse the calm-light
    tokens above; nothing introduces a new colour.
    ========================================================================= */
-
-/* --- Monitor variants (top of the rail: whole-map-in-one-tap) ------------- */
-.tn-monitors { margin-bottom: 12px; }
-.tn-monitor-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.tn-monitor-chip {
-  font: inherit; font-size: 11px; font-weight: 600; color: var(--tn-text-muted);
-  background: var(--tn-chip-bg); border: 1px solid transparent; border-radius: 999px;
-  padding: 5px 11px; cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-}
-.tn-monitor-chip:hover { color: var(--tn-accent); border-color: var(--tn-border); }
-.tn-monitor-chip[aria-pressed="true"] {
-  color: var(--tn-accent-strong); background: var(--tn-accent-soft); border-color: var(--tn-border);
-}
-
-/* --- Time-window filter (inside the global-signals body) ------------------ */
-.tn-timewindow { margin-bottom: 8px; }
-.tn-timewindow-chips { display: flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }
-.tn-timewindow-chip {
-  flex: 1; font: inherit; font-size: 11px; font-weight: 600; color: var(--tn-text-muted);
-  background: transparent; border: none; border-radius: 7px; padding: 5px 0; cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.tn-timewindow-chip[aria-pressed="true"] { background: var(--tn-surface-solid); color: var(--tn-accent); box-shadow: var(--tn-shadow-sm); }
 
 /* --- Language switcher (top bar, mirrors the basemap segmented control) ---- */
 .tn-lang { display: flex; gap: 2px; background: var(--tn-chip-bg); border-radius: 9px; padding: 2px; }

@@ -65,16 +65,17 @@ export const REFUSAL_TTL_MS = 24 * 60 * 60 * 1000;
  *
  * Not listed, and why:
  *   ais                — wss://stream.aisstream.io, a WebSocket. Not a fetch.
+ *   acled/food-security — removed as layers on 2026-09-05. acleddata.com is the host
+ *                        that taught this table its lesson (see below); it is gone from
+ *                        the map, not from the reasoning.
  *   ai-brief           — FREELLMAPI_BASE_URL, configured per deployment. No fixed host.
  *   geolocate-vision   — same gateway, same reason.
  */
 export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
-  acled: ["acleddata.com"],
   "air-quality-stations": ["api.openaq.org"],
   "fire-active": ["firms.modaps.eosdis.nasa.gov"],
   "grid-load": ["web-api.tp.entsoe.eu"],
   reliefweb: ["api.reliefweb.int"],
-  "food-security": ["api.hungermapdata.org"],
   webcams: ["api.windy.com"],
   "markets-equities": ["finnhub.io"],
   "markets-macro": ["api.stlouisfed.org"],

@@ -85,11 +85,15 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
 // ---------------------------------------------------------------------------
 // Licence linking — CC BY 4.0 asks for a link to the LICENCE, not just credit.
 // Naming the provider satisfies "appropriate credit" only, which left the two
-// Open-Meteo layers nearly-conformant rather than conformant.
+// Open-Meteo layers nearly-conformant rather than conformant. "City weather" was
+// removed on 2026-09-05, so airquality is the only Open-Meteo LAYER left -- but the
+// obligation did not shrink with it: /api/point-weather still feeds the camera-tile
+// conditions overlay, which credits Open-Meteo through OPEN_METEO_ATTRIBUTION in
+// lib/signals/weather.ts. Do not delete that constant because this list got shorter.
 // ---------------------------------------------------------------------------
 describe("resolveSignalSources — licence obligations", () => {
   test("Open-Meteo layers carry the CC BY 4.0 deed link", () => {
-    for (const id of ["weather", "airquality"]) {
+    for (const id of ["airquality"]) {
       const sources = resolveSignalSources({ signalId: id });
       const licensed = sources.filter((s) => s.licence);
       expect(licensed.length, `${id} lost its licence link`).toBeGreaterThanOrEqual(1);
@@ -102,7 +106,7 @@ describe("resolveSignalSources — licence obligations", () => {
     // licence hung only off the provider entry would vanish exactly when the deep
     // link works. It must ride on the record entry too.
     const sources = resolveSignalSources({
-      signalId: "weather",
+      signalId: "airquality",
       link: "https://open-meteo.com/en/docs#some-record",
     });
     expect(sources.some((s) => s.licence?.url === CC_BY_4_0.url)).toBe(true);

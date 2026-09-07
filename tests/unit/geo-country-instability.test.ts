@@ -51,12 +51,15 @@ test("deriveInstabilityView exposes score, ordered drivers and factor breakdown"
   expect(view.score).toBe(Number(syr.props?.score));
   expect(view.color).toBe(syr.color);
   expect(view.coverage).toBe("4/4 factors");
-  // Drivers ordered by weighted contribution — armed conflict (w=0.40) leads.
-  expect(view.drivers[0]).toBe("armed conflict");
+  // Drivers ordered by weighted CONTRIBUTION, not by weight. Conflict still holds the
+  // largest weight (0.40) but its GDELT ramp caps at 0.55, so on this fixture it
+  // contributes 0.220 against displacement's 0.243 and lands third. It also carries the
+  // proxy label, because since ACLED's removal every conflict number is press volume.
+  expect(view.drivers[0]).toBe("displacement");
   // Breakdown mirrors the drivers ordering and parses the "NN%" values.
-  expect(view.factors[0].label).toBe("armed conflict");
+  expect(view.factors[0].label).toBe("displacement");
   expect(view.factors.map((f) => f.label).sort()).toEqual(
-    ["armed conflict", "displacement", "food insecurity", "internet outages"],
+    ["armed conflict (GDELT article-volume proxy)", "displacement", "food insecurity", "internet outages"],
   );
   const food = view.factors.find((f) => f.label === "food insecurity")!;
   expect(food.value).toBe("90%");

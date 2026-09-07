@@ -1,6 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, type CountryCentroid } from "@/lib/signals/country-centroids.data";
-import { ACLED_SOURCE } from "@/lib/signals/acled";
 import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
 import { degraded, observed } from "@/lib/signals/outcome";
 
@@ -28,38 +27,39 @@ import { degraded, observed } from "@/lib/signals/outcome";
 //     drivers. No black box — you can see exactly why a score is what it is.
 //
 // Factors (each normalised to 0..1, then weighted):
-//   conflict (ACLED fatalities, 30d)   0.40   — the strongest signal, but ACLED
-//                                                 is key-gated (dormant with no
-//                                                 creds, or a 403 until the
-//                                                 account is activated). When
-//                                                 ACLED has nothing this cycle,
-//                                                 the factor falls back to GDELT
-//                                                 (keyless, article-volume of its
-//                                                 own conflict layer, CAMEO
-//                                                 18/19/20 QuadClass 4) — see
-//                                                 conflictFactor() below. GDELT is
-//                                                 a WEAKER, noisier proxy (media
-//                                                 coverage volume, not casualties
-//                                                 — confounded by media-market
-//                                                 size; measured 2026-08-11 its
-//                                                 raw top country was the United
-//                                                 States on domestic-enforcement
-//                                                 coverage, not a war zone), so it
-//                                                 is normalised on a dampened,
-//                                                 HARD-CAPPED ramp that can never
-//                                                 alone claim "extreme" the way an
-//                                                 ACLED fatality count can, and
-//                                                 every score it touches is
-//                                                 labelled with its source.
+//   conflict (GDELT article volume)   0.40   — the heaviest weight, and the
+//                                                 weakest evidence, which is why it
+//                                                 is capped. Sums GDELT's own
+//                                                 conflict layer (CAMEO 18/19/20,
+//                                                 QuadClass 4) per country. This is
+//                                                 MEDIA COVERAGE VOLUME, not
+//                                                 casualties, and it is confounded
+//                                                 by media-market size — measured
+//                                                 2026-08-11 its raw top country was
+//                                                 the United States, on domestic-
+//                                                 enforcement coverage, not a war
+//                                                 zone. So it runs on a dampened,
+//                                                 HARD-CAPPED ramp (max 0.55) that
+//                                                 can never alone claim "extreme".
+//                                                 ACLED used to supply this factor
+//                                                 as a fatality count and was
+//                                                 removed on 2026-09-05: the account
+//                                                 issues a valid OAuth token and
+//                                                 then answers 403 to every read, so
+//                                                 it had already been falling
+//                                                 through to GDELT on every cycle.
+//                                                 Deleting it changed no score.
 //   food insecurity (WFP prevalence)   0.25   — acute hunger, instability accelerant
 //   displacement-from (UNHCR origin)   0.25   — people displaced FROM the country
 //   internet outages (IODA severity)   0.10   — shutdowns track unrest/crackdowns
 // ============================================================================
 
 export type FactorKey = "conflict" | "food" | "displacement" | "outages";
-/** Which upstream produced the `conflict` raw value. Governs both its
- *  normalisation ramp and its label in the breakdown. */
-export type ConflictSource = "acled" | "gdelt";
+/** Which upstream produced the `conflict` raw value. GDELT is the only one left
+ *  (ACLED removed 2026-09-05, see the header) — the type is kept as a named
+ *  one-member union so the breakdown keeps labelling the proxy explicitly, and so
+ *  adding a real fatality source back is a widening rather than a re-plumbing. */
+export type ConflictSource = "gdelt";
 
 export const FACTOR_WEIGHTS: Record<FactorKey, number> = {
   conflict: 0.4,
@@ -75,10 +75,10 @@ const FACTOR_LABEL: Record<FactorKey, string> = {
   outages: "internet outages",
 };
 
-/** Human label for a factor, source-aware: the GDELT conflict fallback is
- *  named explicitly so a reader never mistakes an article-volume proxy for
- *  the ACLED fatality count it stands in for. */
-export function factorLabel(key: FactorKey, conflictSource: ConflictSource = "acled"): string {
+/** Human label for a factor. The conflict factor is named explicitly as an
+ *  article-volume proxy so a reader never mistakes press coverage for a
+ *  casualty count. */
+export function factorLabel(key: FactorKey, conflictSource: ConflictSource = "gdelt"): string {
   if (key === "conflict" && conflictSource === "gdelt") return "armed conflict (GDELT article-volume proxy)";
   return FACTOR_LABEL[key];
 }
@@ -90,7 +90,7 @@ export const CII_MIN_SCORE = 8;
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 /** Raw factor value → 0..1 sub-score. Each ramp is documented and deliberately conservative. */
-export function normalizeFactor(key: FactorKey, raw: number, conflictSource: ConflictSource = "acled"): number {
+export function normalizeFactor(key: FactorKey, raw: number, conflictSource: ConflictSource = "gdelt"): number {
   if (!(raw > 0)) return 0;
   switch (key) {
     case "food":
@@ -100,15 +100,13 @@ export function normalizeFactor(key: FactorKey, raw: number, conflictSource: Con
     case "outages":
       return clamp01(Math.log10(1 + raw) / 6); // IODA severity score; ~1e6 = max
     case "conflict":
-      if (conflictSource === "gdelt") {
-        // Article-volume proxy, summed per country from GDELT's own conflict
-        // layer (see gdeltConflictFactor()). Looser ramp (needs more evidence
-        // to move) AND hard-capped below the ACLED ceiling — "well covered by
-        // the press" is not "many people died", so this can never alone push a
-        // country into "extreme" territory the way a fatality count can.
-        return Math.min(0.55, clamp01(Math.log10(1 + raw) / 4.5));
-      }
-      return clamp01(Math.log10(1 + raw) / 3); // ACLED fatalities/30d; ~1000 = max
+      // Article-volume proxy, summed per country from GDELT's own conflict layer
+      // (see gdeltConflictFactor()). Looser ramp (needs more evidence to move) AND
+      // hard-capped — "well covered by the press" is not "many people died", so this
+      // can never alone push a country into "extreme" territory. The cap is why the
+      // index tops out well below 100 on today's inputs; that is the ramp being
+      // honest, not a bug to tune away.
+      return Math.min(0.55, clamp01(Math.log10(1 + raw) / 4.5));
   }
 }
 
@@ -129,7 +127,7 @@ export interface CountryInput {
   /** Raw factor values (prevalence 0..1 for food; counts otherwise). Absent = no data. */
   factors: Partial<Record<FactorKey, number>>;
   /** Which upstream produced `factors.conflict`, when present. Defaults to
-   *  "acled" when omitted (e.g. synthetic fixtures), matching the original
+   *  "gdelt" when omitted (e.g. synthetic fixtures), matching the only
    *  single-source behaviour. Ignored when there is no conflict factor. */
   conflictSource?: ConflictSource;
 }
@@ -156,7 +154,7 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
     const ctr = centroidByIso3((row.iso3 ?? "").toUpperCase());
     if (!ctr) continue;
 
-    const conflictSource = row.conflictSource ?? "acled";
+    const conflictSource = row.conflictSource ?? "gdelt";
     const contributions: { key: FactorKey; norm: number; weighted: number; label: string }[] = [];
     for (const key of Object.keys(FACTOR_WEIGHTS) as FactorKey[]) {
       const raw = row.factors[key];
@@ -215,11 +213,12 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
 
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
-/** name → ISO-3, for matching ACLED's country names (built once from the centroid set). */
+/** name → ISO-3, for matching upstream country names (built once from the centroid set).
+ *  Now used only by iso3FromGdeltPlace(); it predates that and was written for ACLED. */
 const NAME_TO_ISO3 = (() => {
   const m = new Map<string, string>();
   for (const c of COUNTRY_CENTROIDS) m.set(c.name.toLowerCase(), c.iso3);
-  // A few ACLED spellings that differ from the centroid dataset.
+  // A few upstream spellings that differ from the centroid dataset.
   const alias: Record<string, string> = {
     "democratic republic of congo": "COD",
     "democratic republic of the congo": "COD",
@@ -343,25 +342,12 @@ async function outageFactor(): Promise<Map<string, number>> {
   return out;
 }
 
-/** Conflict fatalities (30d) by ISO-3, from the ACLED adapter (dormant → empty). */
-async function acledConflictFactor(): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  const feats = await ACLED_SOURCE.fetch();
-  for (const f of feats) {
-    const iso3 = iso3ByName(f.props?.country as string | undefined);
-    const fatalities = Number(f.props?.fatalities ?? 0);
-    if (iso3 && fatalities > 0) out.set(iso3, (out.get(iso3) ?? 0) + fatalities);
-  }
-  return out;
-}
-
 /**
- * Conflict fallback: sums GDELT's already-normalised conflict layer (CAMEO
+ * Conflict factor: sums GDELT's already-normalised conflict layer (CAMEO
  * 18/19/20, QuadClass 4) per country, by article volume. Reuses
  * `CONFLICT_SOURCE.fetch()` — the same fetch, window cache and normaliser the
  * standalone `conflict` map layer uses — rather than a second GDELT fetcher.
- * Keyless, so this is what keeps the 0.40 conflict weight alive while ACLED's
- * account is not yet activated.
+ * Keyless, and since ACLED's removal this is the sole provider of the 0.40 weight.
  */
 async function gdeltConflictFactor(): Promise<Map<string, number>> {
   const out = new Map<string, number>();
@@ -375,26 +361,16 @@ async function gdeltConflictFactor(): Promise<Map<string, number>> {
   return out;
 }
 
-/**
- * Conflict raw values by ISO-3, plus which upstream produced them. ACLED is
- * tried first; when it returns ANY country data it is used for the WHOLE
- * cycle — mixing fatality-scaled ACLED numbers for some countries with
- * article-volume-scaled GDELT numbers for others in the same run would make
- * the ranking internally incomparable. Only when ACLED comes back completely
- * empty (no creds, or the account not yet activated — both resolve to a bare
- * `[]`, indistinguishable from "genuinely zero global conflict this cycle",
- * which does not happen) does GDELT stand in, for every country, this cycle.
- */
+/** Conflict raw values by ISO-3, plus the upstream that produced them (always GDELT
+ *  since ACLED's removal — the shape is kept so the breakdown still names its source). */
 async function conflictFactor(): Promise<{ values: Map<string, number>; source: ConflictSource }> {
-  const acled = await acledConflictFactor();
-  if (acled.size > 0) return { values: acled, source: "acled" };
   return { values: await gdeltConflictFactor(), source: "gdelt" };
 }
 
 /** Merge the per-factor maps into one CountryInput list keyed by ISO-3. */
 export function mergeFactors(
   maps: { key: FactorKey; values: Map<string, number> }[],
-  conflictSource: ConflictSource = "acled",
+  conflictSource: ConflictSource = "gdelt",
 ): CountryInput[] {
   const byIso = new Map<string, CountryInput>();
   for (const { key, values } of maps) {
@@ -412,12 +388,15 @@ export function mergeFactors(
 }
 
 export const INSTABILITY_SOURCE: SignalSource = {
+  // Not a map layer — see `dataOnly` in lib/signals/types.ts. Still fetched by the
+  // Brief, the Country Instability widget, the Strategic Risk panel and the dossier.
+  dataOnly: true,
   id: "instability",
   label: "Country Instability Index",
   group: "Synthesis",
   color: "#dc2626",
   refreshMs: 60 * 60 * 1000, // composite of slow-moving inputs; hourly is ample
-  attribution: "Composite — ACLED (or GDELT article-volume fallback) · WFP HungerMap · UNHCR · IODA",
+  attribution: "Composite — GDELT article volume · WFP HungerMap · UNHCR · IODA",
   metric: { field: "score", domain: [0, 100] }, // 0-100 composite → ranked score bar (green→dark-red)
   async fetch() {
     try {

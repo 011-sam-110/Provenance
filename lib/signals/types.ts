@@ -166,6 +166,27 @@ export interface SignalSource {
   directory?: DirectorySpec;
   /** Optional: bands + all-clear copy for the forecast/index focus view (kind:"forecast"). */
   forecast?: ForecastSpec;
+  /**
+   * TRUE = registered and fetchable, but NOT offered as a map layer.
+   *
+   * A data-only source still has a `/api/signals/<id>` route and still feeds whatever
+   * panels/widgets read it — but it is deliberately absent from the source catalog, the
+   * Sources rail, the map, the monitor presets, the ⌘K palette, the variant profiles and
+   * the `?sig=` share URL. Nothing can toggle it on, so it can never draw a pin.
+   *
+   * WHY THIS EXISTS. "Remove the layer" and "delete the data" are different requests, and
+   * before this flag the registry could only express the second. The Country Instability
+   * Index was asked to come off the map on 2026-09-05 while the Daily Brief, the Country
+   * Instability widget, the Strategic Risk panel and the country dossier all keep reading
+   * it. Deleting the source would have taken those four surfaces with it; leaving it
+   * registered would have left the layer on the map. This is the third option.
+   *
+   * The split is enforced by `MAP_SIGNALS` in lib/signals/registry.ts — layer-facing code
+   * reads that, registry-facing code (the route, /api/status, the explainers) reads
+   * `SIGNALS`. Do not reintroduce a raw `SIGNALS` import in anything that draws or lists
+   * layers, or a data-only source silently becomes a layer again.
+   */
+  dataOnly?: boolean;
   /** Fetch + normalise upstream into points. MUST resolve (never reject) to []. */
   fetch(): Promise<SignalFeature[]>;
 }
