@@ -25,8 +25,8 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 5: ring -> planned wall (camslot.monitor.ts)
 - [x] Task 6: circle gesture + rubber band
 - [x] Task 7: Streets preset opens on an area
-- [~] Task 8: prompt + apply -- implementer resumed after a rate limit
-- [ ] Task 9: monitored marks
+- [~] Task 8: prompt + apply -- built 2c356d0, review running
+- [~] Task 9: monitored marks -- implementer running
 - [ ] Task 10: video in a tile
 - [ ] Task 11: browser + perf gate
 - [ ] Task 12: adopt setExternalDraw (BLOCKED on #187)
@@ -216,6 +216,20 @@ Task 8: IN PROGRESS. The implementer hit an account session rate limit at 20:50 
   any existing object-form caller or change archive semantics.
   LESSON: my plan said "replace(fn), if it does not already exist", which reads like diligence
   and is not. It existed WITH A DIFFERENT SIGNATURE, which is the case that phrasing misses.
+  BUILT (2c356d0, 6 files). Suite 333/3281 -> 334/3289. I verified the thing most likely to be
+  got wrong: StreetsPrompt renders at ConsoleWorkspace.tsx:357 gated
+  `wall && showMapOverlays && layout.widgets.length === 0`, NOT in WallWorkspace.
+  circleDrawStore.get() returns the module-level state directly and never derives, so
+  useSyncExternalStore cannot spin -- the agent proved it with a throwaway toBe assertion and
+  then deleted it rather than leaving a test that pins someone else's module.
+  THREE PLAN DEFECTS, all found by the implementer, all corrected in the plan at 28dd76f:
+   1. The replace signature above.
+   2. My CSS wrote font-size in px LITERALS. tests/unit/terminal-tokens.test.ts is a pinned
+      drift guard that bans px literals in the console region, and it caught it. Shipped as
+      calc(var(--tnx-fs) + 2px), matching --tnx-fs-lg's own idiom. A guard test I did not know
+      about did exactly its job.
+   3. My test imported createDefaultLayout from @/lib/console/reducers; it lives in
+      @/lib/console/types. Would not have compiled.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
