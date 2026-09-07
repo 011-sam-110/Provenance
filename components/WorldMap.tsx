@@ -104,6 +104,7 @@ import {
   type LatLon,
 } from "@/lib/console/widgets/camslot.arm";
 import { sanitizeCamslotConfig, type StreamRef } from "@/lib/console/widgets/camslot.model";
+import { watchingStore, watchingFeatures } from "@/lib/console/widgets/camslot.watching";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore } from "@/lib/signals/freshness";
@@ -150,6 +151,10 @@ const TRACK_RING_LAYER = "track-ring";
 // it" ended with the user hunting for which of forty dots had just been chosen.
 const SELECT_SRC = "selection-highlight";
 const SELECT_RING_LAYER = "selection-ring";
+// What the Streets board is watching — see camslot.watching.ts. A quiet ring on
+// every camera assigned to a tile, a bright mark on whichever frame is on air.
+const WATCH_SRC = "tn-watching-src";
+const WATCH_LAYER = "tn-watching";
 // User-dropped pins (search bar + right-click). Rendered on top of everything.
 const PIN_SRC = "user-pins";
 const PIN_DOT_LAYER = "user-pin-dots";
@@ -1295,6 +1300,34 @@ export default function WorldMap() {
         });
       }
 
+      // WHAT THE BOARD IS WATCHING. A sibling of SELECT_RING_LAYER and drawn just
+      // above it: a pick is a selection in progress, this is a commitment already
+      // made, so it must not be hidden underneath one.
+      //
+      // ONE layer, data-driven off `onair`, so a rotation is a setData rather than
+      // a layer swap. Paint values are hard-coded like every other paint value in
+      // this file — MapLibre cannot read a CSS custom property, and a
+      // getComputedStyle read here would tie the map to whether the terminal shell
+      // happened to mount first.
+      if (!map.getSource(WATCH_SRC)) {
+        map.addSource(WATCH_SRC, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      }
+      if (!map.getLayer(WATCH_LAYER)) {
+        map.addLayer({
+          id: WATCH_LAYER,
+          type: "circle",
+          source: WATCH_SRC,
+          paint: {
+            "circle-radius": ["case", ["==", ["get", "onair"], 1], 7, 5],
+            "circle-color": ["case", ["==", ["get", "onair"], 1], "#ffb020", "rgba(0,0,0,0)"],
+            "circle-opacity": ["case", ["==", ["get", "onair"], 1], 0.95, 1],
+            "circle-stroke-color": "#ffb020",
+            "circle-stroke-width": ["case", ["==", ["get", "onair"], 1], 2.5, 2],
+            "circle-stroke-opacity": ["case", ["==", ["get", "onair"], 1], 1, 0.55],
+          },
+        });
+      }
+
       // User pins — drawn on top of every data layer. The active pin reads larger
       // and fully-opaque; its label rides above the dot. Data-driven off `active`.
       if (!map.getLayer(PIN_DOT_LAYER)) {
@@ -2064,6 +2097,33 @@ export default function WorldMap() {
     if (!map || !readyRef.current) return;
     (map.getSource(SELECT_SRC) as GeoJSONSource | undefined)?.setData(toSelectionFC(selection));
   }, [selection]);
+
+  // What the Streets board is watching → the tn-watching source. Runs once at
+  // mount to paint whatever the store already holds, then again on every tile
+  // report and rotation via the store's own subscription — never on a React
+  // dependency, since watchingStore is module state, not a prop or a hook.
+  useEffect(() => {
+    const paint = () => {
+      const map = mapRef.current;
+      const src = map?.getSource(WATCH_SRC) as GeoJSONSource | undefined;
+      if (!src) return;
+      const cams = loadedCamerasStore.get();
+      const webs = loadedWebcamsStore.get();
+      const locate = (key: string) => {
+        const [kind, ...rest] = key.split(":");
+        const id = rest.join(":");
+        if (kind === "cam") {
+          const c = cams.find((x) => x.id === id);
+          return c ? { lat: c.lat, lon: c.lon } : null;
+        }
+        const w = webs.find((x) => x.id === id);
+        return w ? { lat: w.lat, lon: w.lon } : null;
+      };
+      src.setData({ type: "FeatureCollection", features: watchingFeatures(watchingStore.get(), locate) });
+    };
+    paint();
+    return watchingStore.subscribe(paint);
+  }, []);
 
   // Restore a deep-linked dossier (?obj=) once its layer's data has streamed in.
   // Planes/satellites stream after first paint, so this retries on each data tick

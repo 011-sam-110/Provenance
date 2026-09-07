@@ -47,6 +47,7 @@ import {
 import { CamslotConditions } from "@/lib/console/widgets/camslot.overlay";
 import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
 import { coordKey, type Coord } from "@/lib/weather/pointWeather";
+import { watchingStore } from "@/lib/console/widgets/camslot.watching";
 
 /**
  * A coordinate pair, or null if either half is missing or not a real number.
@@ -368,6 +369,15 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   // narrowing on `current` below is what keeps the populated branch type-safe.
   const current: StreamRef | undefined = streams[safeIndex];
   const upcoming = rotates ? streams[nextIndex(safeIndex, streams.length)] : undefined;
+
+  // Tell the map what this tile holds and which frame it is showing right now —
+  // see camslot.watching.ts. Runs on mount and every rotation; the drop on unmount
+  // is what lets the map stop claiming a tile is watching anything once it is gone
+  // (closed, or scrolled off the wall entirely).
+  useEffect(() => {
+    watchingStore.setTile(instanceId, streams, current ?? null);
+    return () => watchingStore.dropTile(instanceId);
+  }, [instanceId, streams, current]);
 
   // The conditions overlay's data for whichever stream is CURRENTLY on screen.
   // Rotating to a different stream is a pure lookup into `weatherByCoord` — no
