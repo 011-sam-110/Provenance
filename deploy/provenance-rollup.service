@@ -1,0 +1,66 @@
+[Unit]
+# Fold Caddy's access log into durable daily rollups.
+#
+# WHY THIS EXISTS AT ALL: the access log is the only record of traffic this project
+# owns, and it expires. deploy/Caddyfile keeps 5 x 50 MiB, which at the measured ~1,006
+# bytes a row is about three and a half days. Vercel's Web Analytics stopped collecting
+# the day the site left Vercel, and Cloudflare's free plan has no analytics API to read
+# back. A day not rolled up before it rotates is a day that never happened.
+Description=Fold the Caddy access log into daily analytics rollups
+Documentation=https://github.com/011-sam-110/Provenance/blob/main/scripts/rollup-access-log.mts
+After=caddy.service
+# Not Requires=. If Caddy is down there is no new traffic to count, but the rows already
+# on disk are still worth folding, and refusing to run would turn a web outage into a
+# permanent hole in the history as well.
+Wants=caddy.service
+
+[Service]
+Type=oneshot
+# ROOT BECAUSE THE LOG IS 0600 caddy:caddy. The alternative is loosening the permissions
+# on the one file on this box that holds visitor data, which is a larger change than
+# running a counter that opens no sockets and writes to one directory.
+User=root
+Group=root
+
+# The path mirrors the repository layout because the job's imports are relative and
+# there is no bundler on this box to rewrite them. deploy/install-rollup.sh lays it out.
+ExecStart=/usr/bin/node /usr/local/lib/provenance/scripts/rollup-access-log.mts
+
+# The rollups outlive releases, so they live in shared/ and not in a release directory.
+Environment=ANALYTICS_ROLLUP_DIR=/srv/provenance/shared/analytics
+Environment=CADDY_LOG_DIR=/var/log/caddy
+Environment=CADDY_LOG_NAME=provenance.log
+Environment=ROLLUP_SELF_HOST=provenance-online.com
+# Keeps V8 well under the box's headroom. The job is streaming and never holds a whole
+# log file, but a runaway here would be competing with Next for 2 GB of RAM and no swap.
+Environment=NODE_OPTIONS=--max-old-space-size=192
+
+# Least privilege for something that runs as root every five minutes. It needs to read
+# one log directory and write one output directory; everything else is closed.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+MemoryDenyWriteExecute=no
+ReadWritePaths=/srv/provenance/shared/analytics
+ReadOnlyPaths=/var/log/caddy
+# THE JOB MAKES NO NETWORK REQUESTS. Nothing here should ever need to, and saying so in
+# the unit means a future version that tries to ship data somewhere fails loudly instead
+# of quietly exfiltrating an access log.
+PrivateNetwork=yes
+IPAddressDeny=any
+
+# A failed run is not an emergency: the cursor was not advanced, so the next run picks up
+# exactly where this one started. Do not restart in a tight loop over a bad log line.
+Restart=no
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

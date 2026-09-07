@@ -10,12 +10,17 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    // scripts/rollup-access-log.mts runs on the box under plain `node`, which resolves
+    // no path aliases and requires a real extension. Its imports therefore end in .ts,
+    // and this is what stops tsc rejecting them. Safe alongside noEmit: it permits the
+    // specifier, it does not change what is emitted, because nothing is emitted.
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./*"] }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.mts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules", "tests/e2e", "scratchpad"]
 }
