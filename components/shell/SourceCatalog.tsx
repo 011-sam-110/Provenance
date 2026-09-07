@@ -50,6 +50,8 @@ import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/
 import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
+import ContextBar from "@/components/shell/inspector/ContextBar";
+import InspectorTab from "@/components/shell/inspector/InspectorTab";
 
 function CameraFilters() {
   const filter = useCameraFilter();
@@ -121,6 +123,7 @@ export default function SourceCatalog() {
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"sources" | "inspector">("sources");
   const t = useT();
   const layers = useLayers();
   const signals = useSignals();
@@ -213,65 +216,88 @@ export default function SourceCatalog() {
         </button>
       </div>
 
-      <input
-        type="search"
-        className="tn-cat-search"
-        placeholder="Search sources…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label="Search sources"
-      />
+      <ContextBar />
 
-      <PresetBar />
+      <div className="tn-rail-tabs" role="tablist">
+        <button
+          type="button" role="tab" className="tn-rail-tab"
+          aria-selected={tab === "sources"} onClick={() => setTab("sources")}
+        >
+          Sources
+        </button>
+        <button
+          type="button" role="tab" className="tn-rail-tab"
+          aria-selected={tab === "inspector"} onClick={() => setTab("inspector")}
+        >
+          Inspector
+        </button>
+      </div>
 
-
-      {visible.length === 0 ? (
-        <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
-      ) : (
-        visible.map((section) => (
-          <SourceSection
-            key={section.id}
-            section={section}
-            isOn={isOn}
-            isPlaced={isPlaced}
-            onToggle={onToggle}
-            onDragHandle={onDragHandle}
-          />
-        ))
-      )}
-
-      {/* AFTER the six sections, not inside them. These filters belong to the
-          Cameras row, so the obvious place was under the section holding it —
-          but seen in the browser that injects ~220px of feed and region chips
-          between Ground and Air & space and breaks the run of six headings the
-          rail exists to give you. They are a refinement of one source rather
-          than a source, so they read better as a trailing panel. Shown only
-          while the layer they filter is actually on. */}
-      {layers.cameras ? (
+      {tab === "sources" ? (
         <>
+          <input
+            type="search"
+            className="tn-cat-search"
+            placeholder="Search sources…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search sources"
+          />
+
+          <PresetBar />
+
+
+          {visible.length === 0 ? (
+            <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
+          ) : (
+            visible.map((section) => (
+              <SourceSection
+                key={section.id}
+                section={section}
+                isOn={isOn}
+                isPlaced={isPlaced}
+                onToggle={onToggle}
+                onDragHandle={onDragHandle}
+              />
+            ))
+          )}
+
+          {/* AFTER the six sections, not inside them. These filters belong to the
+              Cameras row, so the obvious place was under the section holding it —
+              but seen in the browser that injects ~220px of feed and region chips
+              between Ground and Air & space and breaks the run of six headings the
+              rail exists to give you. They are a refinement of one source rather
+              than a source, so they read better as a trailing panel. Shown only
+              while the layer they filter is actually on. */}
+          {layers.cameras ? (
+            <>
+              <div className="tn-rail-divider" />
+              <CameraFilters />
+            </>
+          ) : null}
+
           <div className="tn-rail-divider" />
-          <CameraFilters />
+
+          <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
+            {t("btnCoverage")}
+          </button>
+
+          <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
+            {t("btnMarkets")}
+          </button>
+
+          <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
+            ★ {t("sectionSaved")}
+          </button>
+
+          <p className="tn-rail-foot">
+            Only sources you can see are fetched. ＋ or drag a source to put it on the left, right or
+            bottom rail.
+          </p>
         </>
-      ) : null}
-
-      <div className="tn-rail-divider" />
-
-      <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
-        {t("btnCoverage")}
-      </button>
-
-      <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
-        {t("btnMarkets")}
-      </button>
-
-      <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
-        ★ {t("sectionSaved")}
-      </button>
-
-      <p className="tn-rail-foot">
-        Only sources you can see are fetched. ＋ or drag a source to put it on the left, right or
-        bottom rail.
-      </p>
+      ) : (
+        <InspectorTab />
+      )}
     </aside>
   );
 }

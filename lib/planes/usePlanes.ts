@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import type { WorldObject } from "@/lib/world";
 import { buildTrailPath, pushHistory, type TrailPoint } from "@/lib/planes/trail";
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 
 const POLL_INTERVAL_MS = 12_000;
 
@@ -85,5 +87,11 @@ export function usePlanes(): PlanesLayer {
     };
   }, []);
 
-  return layer;
+  const scope = useScope();
+  return useMemo(() => {
+    const objects = filterToScope(layer.objects, scope, (o) => o);
+    if (objects === layer.objects) return layer; // World: same array, same identity
+    const keep = new Set(objects.map((o) => o.id));
+    return { objects, trails: layer.trails.filter((t) => keep.has(t.id)) };
+  }, [layer, scope]);
 }

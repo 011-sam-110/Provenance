@@ -14,6 +14,7 @@
 // remapped --tn-* tokens without a single .tn-cw* rule being rewritten.
 
 import { useEffect, useRef, useState } from "react";
+import { inspectorStore } from "@/lib/shell/inspector";
 import { uiStore } from "@/lib/shell/ui";
 import { langStore } from "@/lib/i18n/store";
 import { watchlistStore } from "@/lib/shell/watchlist";
@@ -85,7 +86,14 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // then re-asserts the variant's theme. Order matters.
   useEffect(() => {
     uiStore.hydrate();
+    // BEFORE inspectorStore.hydrate(), and that order is load-bearing. bootstrap
+    // applies the variant through layersStore/signalsStore, which write whichever
+    // source context is LOADED — so restoring a loaded area first made every reload
+    // overwrite that area's sources with the variant's layers. Nothing is loaded
+    // yet at this point, so the writes land on World, which is what a variant
+    // configures. Then the Inspector restores the areas and which one was loaded.
     variantStore.bootstrap(new URLSearchParams(window.location.search));
+    inspectorStore.hydrate();
     watchlistStore.hydrate();
     timeWindowStore.hydrate();
     langStore.hydrate();

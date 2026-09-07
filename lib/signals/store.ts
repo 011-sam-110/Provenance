@@ -6,57 +6,67 @@
 //
 // Keyed by the registry source id (an arbitrary string), so adding a layer needs
 // no edit here. Like the core layers, a signal that is OFF is never fetched —
-// WorldMap mounts each signal's <SignalFeed> only while its id is on. State is
-// persisted to localStorage so a composed view survives a reload.
+// WorldMap mounts each signal's <SignalFeed> only while its id is on.
+//
+// STATE IS NOT PERSISTED HERE — see the same correction in lib/layers.ts. It
+// survives a reload as a variant override under tn.variant.v1; tn.signals.v1 is a
+// dead key.
 
 import { useSyncExternalStore } from "react";
-import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 /** Map of signal id → on/off. A missing id reads as off (default). */
 export type SignalState = Record<string, boolean>;
 
-const PERSIST_KEY = "tn.signals.v1";
-const PERSIST_VERSION = 1;
+import { DEFAULT_STATE } from "@/lib/layers";
+import { effectiveSetMemo, inspectorStore, type SourceSet } from "@/lib/shell/inspector";
 
-let state: SignalState = {};
-const listeners = new Set<() => void>();
-
-function emit() {
-  for (const l of listeners) l();
-  savePersisted(PERSIST_KEY, PERSIST_VERSION, state);
+// Signals are the sparse half of a context's SourceSet: an id that is not present
+// reads as off, exactly as before. No projection is needed — a SourceSet IS a
+// SignalState — so this returns the context's map directly.
+//
+// It must go through the MEMOISED reader. An earlier cut of this file called
+// effectiveSet() and claimed its identity was "already stable across renders": true
+// for World, which is returned by identity, and false for an area, where the
+// always-on ids are forced into a fresh object on every call. useSignals() would have
+// looped as soon as an area loaded. Pinned by an identity assertion in
+// tests/unit/inspector-routing.test.ts.
+function current(): SignalState {
+  return effectiveSetMemo(inspectorStore.get());
 }
 
 export const signalsStore = {
   isOn(id: string): boolean {
-    return state[id] === true;
+    return current()[id] === true;
   },
   toggle(id: string) {
-    state = { ...state, [id]: !state[id] };
-    emit();
+    inspectorStore.setSource(id, !(current()[id] === true));
   },
   set(id: string, on: boolean) {
-    if ((state[id] === true) === on) return;
-    state = { ...state, [id]: on };
-    emit();
+    if ((current()[id] === true) === on) return;
+    inspectorStore.setSource(id, on);
   },
   applyExact(next: SignalState) {
-    state = { ...next };
-    emit();
+    // MERGE, never replace — the exact mirror of the note in lib/layers.ts. Layers and
+    // signals used to own separate module state, so neither could reach the other; they
+    // now project onto ONE SourceSet per context. A variant writes both (layers first,
+    // then signals, in lib/variants/store.ts), so a whole-set replace here resets every
+    // map layer to its floor a moment after the variant set it. Only the layer half is
+    // carried over; every signal id comes from `next`, so a signal absent from it still
+    // reads off, exactly as before.
+    const set: SourceSet = { ...next };
+    const cur = effectiveSetMemo(inspectorStore.get());
+    for (const k of Object.keys(DEFAULT_STATE)) {
+      if (typeof cur[k] === "boolean") set[k] = cur[k];
+    }
+    inspectorStore.replaceSources(set);
   },
-  get(): SignalState {
-    return state;
-  },
-  /** Pull persisted toggles back in. Call once, client-side, after mount. */
+  get: current,
+  /** Kept for API compatibility. inspectorStore.hydrate() owns rehydration now. */
   hydrate() {
-    const saved = loadPersisted<SignalState>(PERSIST_KEY, PERSIST_VERSION);
-    if (saved) state = { ...saved };
-    emit();
+    /* no-op */
   },
   subscribe(listener: () => void): () => void {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
+    return inspectorStore.subscribe(listener);
   },
 };
 

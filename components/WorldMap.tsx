@@ -16,6 +16,9 @@ import maplibregl, { type GeoJSONSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { WorldObject } from "@/lib/world";
 import { overlay } from "@/lib/overlay";
+import { sourcesRailStore } from "@/lib/console/sourcesRail";
+import { filterToScope } from "@/lib/scopeFilter";
+import { useScope } from "@/lib/shell/scope";
 import { cinematic } from "@/lib/cinematic/store";
 import { computeDive } from "@/lib/cinematic/dive";
 import { loadedCamerasStore } from "@/lib/cameras/loaded";
@@ -1511,6 +1514,12 @@ export default function WorldMap() {
       const f = e.features?.[0];
       if (!f) return;
       overlay.open(buildCountryObject(f.properties as CountryProps, e.lngLat.lat, e.lngLat.lng));
+      // Open the rail alongside the dossier. The dossier is the country's detail; the
+      // rail is the index it belongs to, and the Inspector tab is where a country's
+      // sources are configured. Opening one without the other leaves the user reading
+      // a country panel with no visible way to act on it. What the overlay opens is
+      // unchanged — this only reveals the surface that was already there.
+      sourcesRailStore.setOpen(true);
     });
     // ── ONE shared pointer hit-test ─────────────────────────────────────────
     // This replaces 13 layer-scoped mouseenter/mouseleave/mousemove handlers.
@@ -2363,6 +2372,48 @@ function SignalFeed({
   onData: (id: string, objs: WorldObject[]) => void;
 }) {
   const { id } = source;
+  const scope = useScope();
+  const rawRef = useRef<WorldObject[]>([]);
+  const loadedOnceRef = useRef(false);
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+
+  /**
+   * Hand on the SCOPED view of whatever the upstream last returned.
+   *
+   * The map is the surface the Inspector's whole promise rests on: load an area and
+   * the console shows that area. Every signal layer funnels through this component,
+   * so this is the one place that has to crop, and cropping here also fixes the 13
+   * roll-up cards and the Webcams leaf — they read signalCountsStore and would
+   * otherwise print a planet-wide total beside a map cropped to one ring.
+   *
+   * FRESHNESS IS DELIBERATELY NOT SCOPED. It answers "did the upstream respond",
+   * and an area with nothing inside it must not make a healthy source look dead.
+   * So a card can honestly read 0 with a green dot: the feed is fine, your area is
+   * empty. Those are different facts and the UI keeps them apart.
+   *
+   * KNOWN LIMIT, stated rather than hidden: a feature is tested by its
+   * representative lat/lon, so a cable or a jamming corridor whose line crosses the
+   * ring while its own point sits outside is dropped. Testing the geometry itself
+   * needs a per-shape traversal this does not do yet.
+   */
+  const publish = useCallback(
+    (objs: WorldObject[]) => {
+      const scoped = filterToScope(objs, scopeRef.current, (o) => o);
+      onData(id, scoped);
+      signalCountsStore.set(id, scoped.length);
+    },
+    [id, onData],
+  );
+
+  // Re-crop when the scope changes, WITHOUT refetching — loading an area must not
+  // fire 33 upstream requests. Skipped until the first load so a mounting layer
+  // shows "no count yet" rather than a momentary 0.
+  useEffect(() => {
+    if (!loadedOnceRef.current) return;
+    publish(rawRef.current);
+  }, [scope, publish]);
+
   useEffect(() => {
     let alive = true;
     const load = () => {
@@ -2397,14 +2448,16 @@ function SignalFeed({
               ...(f.geometry ? { geometry: f.geometry } : {}),
             },
           }));
-          onData(id, objs);
-          signalCountsStore.set(id, objs.length);
+          rawRef.current = objs;
+          loadedOnceRef.current = true;
+          publish(objs);
           signalFreshnessStore.record(id, { ok: true, count: objs.length });
         })
         .catch(() => {
           if (!alive) return;
-          onData(id, []);
-          signalCountsStore.set(id, 0);
+          rawRef.current = [];
+          loadedOnceRef.current = true;
+          publish([]);
           signalFreshnessStore.record(id, { ok: false, count: 0 });
         });
     };
@@ -2418,7 +2471,7 @@ function SignalFeed({
       signalCountsStore.set(id, null);
       signalFreshnessStore.clear(id);
     };
-  }, [id, source, onData]);
+  }, [id, source, onData, publish]);
   return null;
 }
 
