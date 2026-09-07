@@ -79,18 +79,21 @@ export function planMonitor(input: MonitorInput, tiles?: number): MonitorPlan {
       source: c.source,
       live: c.live === true,
     })),
-    ...webcamsInRing.map((w) => ({
-      ref: webcamRef(w.id, w.label),
-      key: pickKey(webcamRef(w.id, w.label)),
-      label: w.label || w.id,
-      lat: w.lat,
-      lon: w.lon,
-      refreshSeconds: WEBCAM_REFRESH_SECONDS,
-      source: "Windy",
-      // A Windy webcam is a refreshing still by definition — there is no HLS
-      // stream behind one — so this is a fact, not a default.
-      live: false,
-    })),
+    ...webcamsInRing.map((w) => {
+      const ref = webcamRef(w.id, w.label);
+      return {
+        ref,
+        key: pickKey(ref),
+        label: w.label || w.id,
+        lat: w.lat,
+        lon: w.lon,
+        refreshSeconds: WEBCAM_REFRESH_SECONDS,
+        source: "Windy",
+        // A Windy webcam is a refreshing still by definition — there is no HLS
+        // stream behind one — so this is a fact, not a default.
+        live: false,
+      };
+    }),
   ];
 
   const found = picks.length;

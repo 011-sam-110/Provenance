@@ -44,7 +44,7 @@ describe("planMonitor", () => {
     expect(plan.tiles[0].streams[0]).toEqual({ k: "cam", id: "r" });
   });
 
-  it("says nothing was found when the ring is empty, and makes no tiles", () => {
+  it("says nothing was found when the ring holds no cameras, and makes no tiles", () => {
     const plan = planMonitor({ ring, cameras: [], webcams: [] });
     expect(plan.tiles).toEqual([]);
     expect(plan.found).toBe(0);
@@ -70,5 +70,21 @@ describe("planMonitor", () => {
     const plan = planMonitor({ ring: [[0, 0], [1, 1]], cameras: [road("a", true)], webcams: [] });
     expect(plan.tiles).toEqual([]);
     expect(plan.found).toBe(0);
+    expect(plan.message).toBe("That area is not a shape.");
+  });
+
+  it("refuses a real ringFromCircle antimeridian straddle end to end", () => {
+    // A ~50 km circle centred at 179.9°E — the exact case lib/map/circle.ts
+    // documents as inverting under pointInRing if it were not refused.
+    const straddling = ringFromCircle({ lat: 0, lon: 179.9, radiusKm: 50 });
+    // Assert the refusal itself first: if ringFromCircle ever stops refusing
+    // this circle, this test must fail loudly here rather than quietly
+    // degenerate into a duplicate of the empty-cameras test above.
+    expect(straddling).toEqual([]);
+
+    const plan = planMonitor({ ring: straddling, cameras: [road("a", true)], webcams: [] });
+    expect(plan.tiles).toEqual([]);
+    expect(plan.found).toBe(0);
+    expect(plan.message).toBe("That area is not a shape.");
   });
 });
