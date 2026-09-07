@@ -160,6 +160,32 @@ Task 6: implemented (4ed4dd2, 2 files, 241 insertions). Suite 332/3270 -> 333/32
   and resolves to the module's single stop() closure, and the listener is removed in that same
   block -- one teardown, not two. Comment now states the truth about aoi.ts. Task 6 COMPLETE.
 
+Task 7: implemented (86da18a). Suite 333/3273 -> 333/3281 (+8). Streets now opens on NO tiles
+  and a 5km circle over the densest live Caltrans cluster measured (San Diego, I-8 near the
+  163, 44 cameras), with the dock uncollapsed so the empty wall is full-bleed on first paint.
+  IT EDITED THREE PRE-EXISTING TESTS, so I read every one rather than trusting the summary:
+   - console-boards.test.ts: adds a widget via shellLayoutStore.add before resizing, because
+     no built-in board opens with one any more. Setup change, not an assertion change. It also
+     corrected a message that CONTRADICTED ITS OWN ASSERTION ("came back where the template
+     puts it" on an expect(...).toEqual(edited), which is where the USER left it). I went in
+     suspecting an inverted assertion and found a pre-existing false comment instead.
+   - console-boards reset test: now asserts widgets===[] rather than heights===template.
+     Different claim, and a stronger one (complete discard, not merely un-resized). The
+     height-restoration coverage is genuinely GONE, because no built-in board has an authored
+     widget height left to restore. Product change, not a weakened test.
+   - preset-layers.test.ts: "no board opens on a blank map" now reads the preset's own
+     mapCore/mapSignals, not only widget-implied layers. Faithful to applyPreset, which always
+     passes both; and it excludes "countries" so a basemap layer cannot satisfy it.
+  COLLATERAL IT FOUND AND REPORTED RATHER THAN HID (good), now being fixed:
+   - console-share.test.ts:6 round-trip went VACUOUS -- expect([]).toEqual([]). Its own comment
+     says a round-trip "needs widgets to be worth anything". Third vacuous test of this plan.
+   - scripts/mint-conditions-board.mts:58 -- slots is empty so slots[-1] is undefined. It does
+     NOT crash as reported: {...undefined} is legal, so it mints widgets with no segment/order/
+     height and prints only its own warning. Silent malformed output, worse than a crash.
+   - README.md:54 alt text still describes the three-webcam wall.
+   - scripts/shoot-conditions.mjs + verify-wall.mjs assume tiles exist; assessment requested
+     before touching them.
+
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
   planar ray-casting with no seam unwrapping. Affects the EXISTING polygon AOI tool as well
