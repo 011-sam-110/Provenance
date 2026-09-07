@@ -6,3 +6,8 @@
 # INSIDE every value, so NEXT_PUBLIC_SITE_URL becomes a URL with a carriage return on
 # the end and every canonical link is subtly wrong.
 deploy/* text eol=lf
+
+# GitHub Actions parses the YAML and writes each `run:` block to a script file on an
+# Ubuntu runner. A CR surviving into that file makes bash read `$'\r'` as part of the
+# last token on every line, so the step fails on something that looks correct on screen.
+.github/workflows/* text eol=lf
