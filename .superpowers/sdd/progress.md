@@ -25,9 +25,9 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 5: ring -> planned wall (camslot.monitor.ts)
 - [x] Task 6: circle gesture + rubber band
 - [x] Task 7: Streets preset opens on an area
-- [~] Task 8: prompt + apply -- built 2c356d0, review running
-- [~] Task 9: monitored marks -- implementer running
-- [ ] Task 10: video in a tile
+- [x] Task 8: prompt + apply
+- [~] Task 9: monitored marks -- built 1b7047d + dbbb255, review running
+- [~] Task 10: video in a tile -- implementer running
 - [ ] Task 11: browser + perf gate
 - [ ] Task 12: adopt setExternalDraw (BLOCKED on #187)
 
@@ -245,8 +245,38 @@ Task 8: IN PROGRESS. The implementer hit an account session rate limit at 20:50 
      present tense, and that script does not exist yet -- it is Task 11's deliverable. Inherited
      verbatim from my brief, so not fabricated, but it reads as a claim about a real artifact.
      Same family as the two false comments already caught here.
-  DECIDED: I fix both myself after Task 9's writer finishes -- a dead ternary and a comment do
-  not justify an agent. Not rolled up: the comment pattern has produced two Criticals already.
+  BOTH RESOLVED (dbbb255).
+   - T8-m1: dead ternary removed. I checked arrangeBoard myself first rather than deleting on
+     a reviewer's say-so: it is applyItems(l, arrangeWall(ids, rows)), a no-op with no widgets.
+   - T8-m2: comment referencing scripts/verify-streets-area.mjs LEFT AS IS, by decision. It is
+     Task 11's deliverable in this same branch, so it is a forward reference within one change,
+     not a false claim about the world -- and rewording it now only to reword it back is churn.
+     THE RISK IS REAL THOUGH: if Task 11 renames or drops that script the comment strands.
+     VERIFY THE FILENAME AT TASK 11.
+  Task 8 COMPLETE.
+
+Task 9: implemented (1b7047d) + my follow-up (dbbb255). Suite 334/3289 -> 335/3298.
+  Source tn-watching-src, layer tn-watching, all paint values LITERAL (#ffb020 / transparent),
+  two strengths via data-driven `case` on an `onair` property. SignalFeed untouched, confirmed
+  by diff -- console-ux owns four hunks in there.
+  THE IMPLEMENTER FLAGGED ITS OWN GAP rather than hiding it: setTile rebuilt the snapshot
+  unconditionally, so a tile reporting the SAME frame twice handed back a new object. Nothing
+  uses useSyncExternalStore against this store today (WorldMap subscribes imperatively), so it
+  was latent, not live -- but tiles call setTile on every rotation and a rotation landing on
+  the same frame is a no-op, so it is the common case, and it is the exact infinite-render trap
+  this repo has hit before. dropTile already guarded; setTile did not.
+  I fixed it myself and pinned BOTH directions: unchanged report keeps the object, moved on-air
+  frame does not. AND I PROVED THE RED: removing the guard fails
+  "hands out the SAME snapshot object when a tile reports no change", 1 failed | 8 passed.
+  Holding myself to the standard I have been setting for the agents.
+  Plan's "Expected: PASS, 8 tests" for Task 9 was wrong AGAIN (file had 7, now 9). Third
+  miscount in this plan; the line now tells the reader to count the it( blocks instead.
+
+BRANCH PUSHED (21:16). 34 commits had accumulated on ONE DISK, never pushed. `origin/main..HEAD`
+  read 34 and looked reassuring, but that counts UNMERGED, not unpushed -- the upstream was
+  origin/main, i.e. no branch of its own, which is the "exists nowhere else" case wearing a
+  healthy number. Upstream is now origin/feat/streets-monitor-area and `@{u}..HEAD` is 0.
+  No PR opened -- that is Sam's call at finishing-a-development-branch.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
