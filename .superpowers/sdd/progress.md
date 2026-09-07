@@ -26,9 +26,9 @@ COMPLETE. Preserved as progress-widget-console-redesign.md. Its tasks are NOT th
 - [x] Task 6: circle gesture + rubber band
 - [x] Task 7: Streets preset opens on an area
 - [x] Task 8: prompt + apply
-- [~] Task 9: monitored marks -- built 1b7047d + dbbb255, review running
-- [~] Task 10: video in a tile -- implementer running
-- [ ] Task 11: browser + perf gate
+- [x] Task 9: monitored marks
+- [~] Task 10: video in a tile -- built e904ad1, review running
+- [~] Task 11: browser + perf gate -- implementer running
 - [ ] Task 12: adopt setExternalDraw (BLOCKED on #187)
 
 ## Completed
@@ -289,6 +289,14 @@ Task 9: implemented (1b7047d) + my follow-up (dbbb255). Suite 334/3289 -> 335/32
   REAL FIX (reviewer's, and correct): split camslot.tsx into a report effect with NO cleanup
   and a separate unmount-only effect keyed on instanceId alone. QUEUED -- Task 10's implementer
   is editing camslot.tsx right now, so it waits rather than racing it.
+  FIXED (245335f) once Task 10 was clear. camslot.tsx now reports from one effect with NO
+  cleanup and drops from a second keyed on instanceId ALONE. I did NOT claim a test proves it:
+  a React effect split is untestable in a node-environment vitest with no RTL, so instead the
+  store tests now STATE what they cannot see, and Task 11 gained the check that can -- sample
+  watchingStore.get() twice more than 60s apart with nothing changing and assert ===. That is
+  the honest shape: the thing the unit suite structurally cannot observe is measured where it
+  is observable, rather than asserted where it is convenient.
+  T9-m1 folded in: the dead circle-opacity case is gone. Task 9 COMPLETE.
   - T9-m1: WorldMap.tsx:1323 circle-opacity:1 on the non-on-air case is dead, since that fill is
     already rgba(0,0,0,0). Stroke has its own circle-stroke-opacity. Harmless, fold into the fix.
   - T9-m2 (scope): dbbb255 bundled camslot.apply.ts and the plan doc into Task 9's range. Fair
@@ -299,6 +307,23 @@ BRANCH PUSHED (21:16). 34 commits had accumulated on ONE DISK, never pushed. `or
   origin/main, i.e. no branch of its own, which is the "exists nowhere else" case wearing a
   healthy number. Upstream is now origin/feat/streets-monitor-area and `@{u}..HEAD` is 0.
   No PR opened -- that is Sam's call at finishing-a-development-branch.
+
+Task 10: implemented (e904ad1). Suite 335/3298 -> 336/3303 (+5). playsVideo is
+  `ref.k === "cam" && live(ref.id)`, live wired to loadedCamerasStore, which traces to
+  isLiveStreamUrl and the four host families in lib/proxy/hls-allowlist.ts. Webcams and
+  YouTube always false; an unknown id defaults FALSE, which is the safe direction (a still
+  instead of a broken player). Review running.
+  THE FIRST AGENT TO PROVE ITS TESTS BY MUTATION rather than by reasoning: a `return true`
+  mutant reddened 4 of 5, `return false` reddened the 5th, then it restored and re-ran the
+  gate. That is the standard the other five stated-red-conditions on this branch failed to
+  meet, and it was not asked for in those words.
+
+Task 11 dispatched with an environment warning that matters more than the task text: TWO dev
+  servers are already listening on 3000 and 3001 and NEITHER IS MINE -- they belong to peer
+  sessions on different branches. A gate pointed at 3000 would measure someone else's build
+  and could PASS while this branch is broken, which is the worst outcome available to a
+  measurement task. Told it to start its own server from this worktree on 3010/3011/3012, never
+  to kill a peer's, and to verify its own shutdown by PID rather than by the port going quiet.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
