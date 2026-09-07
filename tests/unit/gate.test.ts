@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { BRAND } from "@/lib/brand";
 import { GATE_EXEMPT_STARTS, isGatedPath, gateMatcher } from "@/lib/gate/paths";
@@ -14,6 +14,11 @@ import {
   gateCookieHeader,
 } from "@/lib/gate/token";
 import { maintenanceHtml, escapeHtml } from "@/lib/gate/page";
+import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
+import { SIGNALS, MAP_SIGNALS } from "@/lib/signals/registry";
+import "@/lib/console/widgets";
+import { listWidgetTypes } from "@/lib/console/registry";
+import { BUILTIN_VARIANTS } from "@/lib/variants/builtins";
 
 const ROOT = process.cwd();
 
@@ -165,6 +170,13 @@ describe("the curtain", () => {
     expect(html).toContain(BRAND.discordUrl);
   });
 
+  // The curtain is the only surface anyone can reach for a month, so the two things a
+  // visitor can actually DO have to be on it: ask for a code, and chip in.
+  it("offers a way in and a way to help", () => {
+    expect(html).toContain(BRAND.kofiUrl);
+    expect(html).toMatch(/feedback/i);
+  });
+
   // The whole reason the curtain answers 503 rather than 200 is to keep the camera
   // pages in the index. A noindex directive on the same page asks for the opposite.
   it("carries no directive that would remove pages from the index", () => {
@@ -172,12 +184,66 @@ describe("the curtain", () => {
     expect(html).not.toContain("nofollow");
   });
 
-  // Its own stylesheet lives behind the gate it is standing in for, so any same-origin
-  // asset it references would 503 and the page would render undressed.
-  it("requests no asset of its own", () => {
-    expect(html).not.toMatch(/\ssrc=/);
-    expect(html).not.toMatch(/href="\//);
-    expect(html).not.toContain("<script");
+  // Its own stylesheet lives behind the gate it is standing in for. The curtain may
+  // reference same-origin files, but ONLY ones the gate exempts - point a src at
+  // anything gated and it 503s inside its own curtain, silently, with no test to
+  // notice. So every same-origin URL in the document goes through the SAME predicate
+  // the middleware uses.
+  const sameOrigin = [...html.matchAll(/(?:src|href|action)="(\/[^"]*)"/g)].map((m) => m[1]);
+
+  it("only points at paths that survive the gate", () => {
+    expect(sameOrigin, "expected at least the unlock form and the screenshots").not.toHaveLength(0);
+    for (const url of sameOrigin) {
+      expect(isGatedPath(url), `${url} is gated and would 503 inside the curtain`).toBe(false);
+    }
+  });
+
+  it("ships every image it points at", () => {
+    const shots = sameOrigin.filter((u) => /\.(webp|png|jpe?g|svg|avif)$/.test(u));
+    expect(shots.length).toBeGreaterThan(0);
+    for (const shot of shots) {
+      expect(existsSync(join(ROOT, "public", shot)), `${shot} is missing from public/`).toBe(true);
+    }
+  });
+
+  // This document is served on EVERY gated request, and the outage exists because
+  // bandwidth got expensive. Screenshots that drift back towards their 6.2 MB raw
+  // originals would make the curtain cost more than the site it replaced.
+  it("keeps its images small enough to serve on every request", () => {
+    const bytes = sameOrigin
+      .filter((u) => /\.(webp|png|jpe?g|svg|avif)$/.test(u))
+      .reduce((n, u) => n + statSync(join(ROOT, "public", u)).size, 0);
+    expect(bytes, `curtain images total ${Math.round(bytes / 1024)} KB`).toBeLessThan(600 * 1024);
+  });
+
+  // This page WAS script-free, and that was worth something. One thing bought the
+  // exception: a "last commit" line, read live from GitHub's public API by the
+  // VISITOR'S browser. A build-time constant would freeze on the day the gate was armed
+  // and then spend a month advertising a month of silence, and a server-side fetch would
+  // cost an upstream request per view on the page that exists because requests got
+  // expensive. See `pulseScript()` for the full reasoning.
+  //
+  // These two tests are what keeps that exception honest, and they are the reason the
+  // rule could be relaxed without losing what it protected.
+  it("loads nothing external, script or stylesheet", () => {
+    expect(html).not.toMatch(/<script[^>]+src=/i);
+    expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/i);
+    // One inline block, not a habit.
+    expect(html.match(/<script/g) ?? []).toHaveLength(1);
+  });
+
+  it("reads exactly the same with script disabled", () => {
+    const noJs = html.replace(/<script[\s\S]*?<\/script>/g, "");
+    // Everything the reader needs is in the served HTML, not assembled by the script.
+    expect(noJs).toContain("running cost");
+    expect(noJs).toContain("<form");
+    expect(noJs).toContain(BRAND.discordUrl);
+    expect(noJs).toContain(BRAND.kofiUrl);
+    expect(noJs).toContain(BRAND.repoUrl);
+    // And the one scripted element ships hidden, so a blocked fetch, a rate limit or a
+    // browser with script off leaves no empty row and never a stale claim.
+    expect(noJs).toMatch(/id="pulse"[^>]*\shidden/);
+    expect(noJs).not.toMatch(/last commit[^<]*\d/);
   });
 
   it("says why the site is down, not just that it is", () => {
@@ -211,5 +277,55 @@ describe("the invite", () => {
   // invite ships. The expiry rule is a setting on Discord's side; see lib/brand.ts.
   it("is the one that was confirmed", () => {
     expect(BRAND.discordUrl).toBe("https://discord.gg/q45NU8qWk");
+  });
+});
+
+describe("the numbers the curtain states as fact", () => {
+  const html = maintenanceHtml({ next: "/", denied: false });
+
+  // CLAUDE.md's standing rule: never quote a count from memory, every figure rots, and
+  // this table has been wrong twice before a test pinned it. The curtain is worse than
+  // a README - it is a PUBLIC page and it is the ONLY page, for a month. It cannot
+  // import the registries (that would drag ~39 adapters into the edge bundle), so the
+  // figures are literals there and pinned to their real sources here. Same shape as
+  // readme-counts.test.ts.
+  // Assertions read the RENDERED TEXT, not the markup, so the tiles are free to put the
+  // figure in its own element without the pin quietly ceasing to match anything.
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+
+  it("states the camera networks the registry actually has", () => {
+    expect(text).toContain(`${CAMERA_FEED_COUNT} camera networks`);
+  });
+
+  // MAP_SIGNALS, not SIGNALS. The curtain says "live map layers", and a dataOnly source
+  // is registered and fetchable but never drawn - quoting SIGNALS.length here would put
+  // a layer on the page that no visitor can find when the site returns.
+  it("states the map layers the signal registry actually draws", () => {
+    expect(MAP_SIGNALS.length).toBeLessThan(SIGNALS.length);
+    expect(text).toContain(`${MAP_SIGNALS.length} live map layers`);
+  });
+
+  it("states the widget and profile counts the registries actually hold", () => {
+    expect(text).toContain(`${listWidgetTypes().length} console widgets`);
+    expect(text).toContain(`${BUILTIN_VARIANTS.length} monitor profiles`);
+  });
+
+  it("states the webcam count the committed manifest actually holds", () => {
+    const manifest = JSON.parse(
+      readFileSync(join(ROOT, "public", "webcams", "manifest.json"), "utf8"),
+    ) as { harvested: number };
+    expect(text).toContain(`${manifest.harvested.toLocaleString("en-GB")} webcams`);
+  });
+
+  it("counts countries the way CLAUDE.md says they are counted", () => {
+    const countries = new Set<string>();
+    const dir = join(ROOT, "lib", "sources");
+    for (const file of readdirSync(dir)) {
+      if (!file.endsWith(".ts")) continue;
+      for (const m of readFileSync(join(dir, file), "utf8").matchAll(/country:\s*"([A-Z]{2})"/g)) {
+        countries.add(m[1]);
+      }
+    }
+    expect(text).toContain(`${countries.size} countries`);
   });
 });
