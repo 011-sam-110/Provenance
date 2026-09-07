@@ -322,8 +322,25 @@ a { color: var(--tn-accent); }
   background: var(--tn-surface);
 }
 .tn-rail-title { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--tn-text); }
-.tn-rail-collapse { background: transparent; border: none; cursor: pointer; color: var(--tn-text-faint); font-size: 18px; line-height: 1; padding: 0 4px; }
-.tn-rail-collapse:hover { color: var(--tn-text); }
+/* THE CLOSE BUTTON. It was a bare "9" chevron in a `padding: 0 4px` box, which
+   made two mistakes at once. The mark said "collapse leftwards" while the rail's
+   own launcher is a labelled "1 Sources" tab, so the pair did not read as one
+   control opening and closing one thing; and the hit area was about 12x18px, well
+   under the 24px minimum a pointer target should carry and a quarter of the 44px
+   this file already gives every touch target further down.
+
+   It is now an ✕ in a 30px square. The glyph is INLINE SVG in the component rather
+   than a text character, because "¹5" renders at whatever weight the fallback
+   font happens to have and the rail's own mono stack does not carry it. */
+.tn-rail-collapse {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto; width: 30px; height: 30px; margin-right: -6px;
+  background: transparent; border: none; border-radius: 8px; padding: 0;
+  color: var(--tn-text-faint); cursor: pointer;
+}
+.tn-rail-collapse svg { width: 15px; height: 15px; }
+.tn-rail-collapse:hover { color: var(--tn-text); background: var(--tn-surface-2, rgba(0,0,0,.06)); }
+.tn-rail-collapse:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
 .tn-rail-fab {
   position: fixed; top: calc(var(--tn-topbar-h) + 12px); left: 12px; z-index: 25;
@@ -5029,6 +5046,37 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   box-shadow: var(--tnx-shadow-1);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+/* THE BOX HAD TO BE FIXED TOO, AND THAT IS THE BUG THIS BLOCK NOW ANSWERS.
+   Recolouring the mark above left the CONTAINER at maplibre-gl.css's compact
+   metrics — `box-sizing: content-box; min-height: 20px; padding: 2px 24px 2px 0` —
+   which is a 24x24 content box sized for MapLibre's own 24px button. The rule
+   below grows that button to 30px and positions it `absolute; right: 0; top: 0`,
+   so the circle overhung its own pill by 6px on two sides: what shipped was a
+   small bordered lozenge with a larger circle hanging out of its bottom-right
+   corner, plus a drop shadow tracing the lozenge rather than the mark. Both halves
+   of that are this file's doing, so both are corrected here rather than by giving
+   up the restyle.
+   Collapsed, the container becomes exactly the button: one 30px circle, one
+   border, one shadow. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+  box-sizing: border-box !important;
+  width: 30px; height: 30px; min-height: 0 !important;
+  padding: 0 !important; margin: 0 !important;
+}
+/* MapLibre draws a SECOND copy of the i as a `:after` on the compact container.
+   It is the same mark in MapLibre's own black, at MapLibre's own 24px, pinned to
+   the same corner — invisible while the container was bigger than the button and
+   an off-register double the moment the two became the same size. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact:after { content: none !important; }
+/* Expanded, it is a credit LINE. It needs its padding back, room for the button on
+   the left (MapLibre pins the button to the left edge in a bottom-left control),
+   and a width cap so a four-source credit does not run the width of the map. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  box-sizing: border-box !important;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 5px 10px 5px 34px !important;
+  line-height: 1.45;
+}
 .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
 .tn-terminal .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
   width: 30px !important;

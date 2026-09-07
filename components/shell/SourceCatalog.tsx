@@ -99,6 +99,37 @@ function CameraFilters() {
   );
 }
 
+/**
+ * The rail's close mark.
+ *
+ * INLINE SVG, and drawn here rather than imported. components/console/RailGlyph.tsx
+ * is this repo's precedent for chrome-only art as real JSX, and its reasoning
+ * applies unchanged: lib/icons/svg.ts is the registry for marks that name a feature
+ * ON THE MAP and is rasterised into a MapLibre sprite, which an ✕ on a panel header
+ * has no business being in.
+ *
+ * A "✕" text character was the obvious cheaper option and is the thing being
+ * replaced. It renders at whatever weight the first font in the stack happens to
+ * carry it at — the rail's mono stack does not — so it arrived thin, small and
+ * vertically off-centre next to a 16px uppercase title. Two strokes at the same 1.9
+ * weight the stage-rail glyphs use cannot drift.
+ */
+function CloseGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.9}
+      strokeLinecap="round"
+      aria-hidden
+      focusable="false"
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 // Built once: the mapping is static, and rebuilding it per render would re-derive
 // every label collision on every keystroke in the search box.
 const SECTIONS = buildSourceSections(RAIL_SOURCES);
@@ -211,8 +242,14 @@ export default function SourceCatalog() {
         <span className="tn-cat-count" title="Widgets on your workspace right now">
           {consoleLayout.widgets.length} ▦
         </span>
-        <button type="button" className="tn-rail-collapse" onClick={() => setRailOpen(false)} aria-label="Collapse sources">
-          ‹
+        <button
+          type="button"
+          className="tn-rail-collapse"
+          onClick={() => setRailOpen(false)}
+          aria-label="Close sources"
+          title="Close sources"
+        >
+          <CloseGlyph />
         </button>
       </div>
 
@@ -291,8 +328,8 @@ export default function SourceCatalog() {
           </button>
 
           <p className="tn-rail-foot">
-            Only sources you can see are fetched. ＋ or drag a source to put it on the left, right or
-            bottom rail.
+            Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
+            right rail.
           </p>
         </>
       ) : (
