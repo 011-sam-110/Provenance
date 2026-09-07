@@ -198,42 +198,35 @@ restructuring of either component beyond the two guards above.
 
 ### Tests
 
-Extended `tests/unit/terminal-rails-dock.test.ts` (existing 6 cases
-untouched) with 2 new cases under a new `describe`:
-
-- `"the full-bleed dock width can exceed RAIL_MAX.right"` — pins that
-  `dockSize(layout([]), box)` (1440) is `> RAIL_MAX.right` (720). This is
-  the numeric precondition the `ConsoleWorkspace` guard exists to handle:
-  if a rendered splitter reported this value as `aria-valuenow` against
-  an unchanged `aria-valuemax` of `RAIL_MAX.right`, it would be out of
-  range.
-- `"stays within RAIL_MAX.right once a tile exists, for the same
-  container"` — pins that with one tile placed, `dockSize` returns to
-  `<= RAIL_MAX.right`, guarding the "yields to normal clamps" behaviour
-  Task 4 established (the pre-existing tests at lines 29–31 and 33–35
-  already cover this directly; this test restates it from the ARIA-safety
-  angle so a future change to `RAIL_MAX`/`WALL_MIN_PX` can't silently
-  reopen the out-of-range condition).
+I initially extended `tests/unit/terminal-rails-dock.test.ts` (existing 6
+cases untouched) with 2 new cases pinning that the full-bleed dock width
+can exceed `RAIL_MAX.right` and returns within it once a tile exists. A
+concurrent process reviewing the same fix (see **Concurrent integration**
+below) correctly judged both redundant: the existing first case already
+pins the full-bleed width at 1440 (`> RAIL_MAX.right` at 720) and the
+existing third case already pins the clamped width at exactly
+`RAIL_MAX.right`, so neither new assertion could go red independently of
+one already in the file — which is exactly the "no test that cannot fail"
+condition this task warned against. That process replaced my two cases
+with a comment making the same point in words instead. **Net test count
+change: zero** — the file still holds its original 6 cases.
 
 **Component changes are not unit-testable.** `WallWorkspace`'s early
 return and `ConsoleWorkspace`'s splitter suppression are both React
 component behaviour, and this repo has no React testing library and runs
 vitest in the node environment (confirmed: no `@testing-library/react` or
 similar in `package.json`, and every existing test under `tests/unit/`
-exercises pure functions only). No test was added that asserts on either
-component directly — the two new cases above are pure `dockSize`
-assertions that document why the suppression is needed, not proof that
-the suppression itself works. This is an acknowledged coverage gap, not a
-vacuous test.
+exercises pure functions only). No test asserts on either component
+directly. This is an acknowledged coverage gap, not a vacuous test.
 
-### Commands and output
+### Commands and output (final state)
 
 ```
 $ npx vitest list 2>&1 | grep -c " > "
 3262
 ```
 
-Verified the stated baseline (3262) before making any change.
+Baseline, verified before making any change.
 
 ```
 $ npx tsc --noEmit
@@ -241,42 +234,139 @@ $ npx tsc --noEmit
 
 $ npm test
  Test Files  331 passed (331)
-      Tests  3264 passed (3264)
+      Tests  3262 passed (3262)
 ```
 
 ```
 $ npx vitest run tests/unit/terminal-rails-dock.test.ts
- ✓ tests/unit/terminal-rails-dock.test.ts (8 tests) 4ms
+ ✓ tests/unit/terminal-rails-dock.test.ts (6 tests) 4ms
  Test Files  1 passed (1)
-      Tests  8 passed (8)
+      Tests  6 passed (6)
 ```
 
 Covering-test command: `npx vitest run tests/unit/terminal-rails-dock.test.ts`
-— 8/8 passed (6 pre-existing + 2 new).
+— 6/6 passed (the original 6 cases; none added, none edited, none removed
+from Task 4's own set).
 
 ### Test count before/after
 
 - Before: 3262 (verified via `npx vitest list`)
-- After: 3264
-- Delta: +2, matching the 2 new cases added; file count held at 331 across
-  the full run, so no worker silently dropped a file.
+- After: 3262
+- Delta: 0. Two cases were added then removed as logically implied by
+  existing ones (see **Tests** above); file count held at 331 across the
+  full run, so no worker silently dropped a file.
 
-### Files touched
+### Files touched (final state, across all commits below)
 
 - `components/console/WallWorkspace.tsx` — modified (early `return null`)
 - `components/console/ConsoleWorkspace.tsx` — modified (`renderSplit` guard)
-- `tests/unit/terminal-rails-dock.test.ts` — extended (+2 tests, 0 edited)
+- `lib/terminal/rails.ts` — modified: the `dockSize` comment's claim ("a
+  wall with nothing in it has no controls to collide") was the false
+  premise this whole defect report opened with. Once `WallWorkspace`
+  returns null at zero tiles, the honest comment names that early return
+  as the dependency the exception rests on, rather than asserting
+  independently that the wall "has no controls" — a claim that was true
+  only because of the code the comment did not mention.
+- `tests/unit/terminal-rails-dock.test.ts` — 6 pre-existing cases, still
+  untouched; a trailing comment added, no case count change.
 
 ### Not touched
 
-`lib/map/aoi.ts`, `lib/shell/scope.ts`, `components/shell/**` — untouched,
-per instructions. `lib/terminal/rails.ts` itself was not modified for this
-fix — its `dockSize` implementation from Task 4 is unchanged; only the two
-components that consume it were edited, which is what makes its comment's
-claim true instead of false.
+`lib/map/aoi.ts`, `lib/shell/scope.ts`, `components/shell/**` — untouched.
+
+### Concurrent integration — read before trusting any SHA above
+
+While this fix was in progress, another process was actively committing
+to this same branch/worktree in parallel, working the identical defect
+(same file paths, near-identical comment wording, same reasoning). Two of
+my own `git add` + `git commit` attempts landed correctly in the index but
+were then swept into that process's own commits and/or rebased under new
+SHAs — my local commit (`76d1864`, then briefly `2fa3b34`) does not exist
+in the final `git log`. The branch's history was rewritten more than once
+while I worked.
+
+The **final, verified state of the fix** lives at whatever is HEAD when
+this section was written — confirmed by commit message and diff:
+
+- `2fa3b34` "Wall renders nothing when empty; drop its dead dock splitter"
+  — the core fix (WallWorkspace, ConsoleWorkspace, the two now-removed
+  test cases), content-identical to what I authored.
+- `57094ec` "Say what the full-bleed exception rests on, and drop two
+  implied assertions" — the refinement: fixes the `rails.ts` comment I
+  did not touch, rewords `WallWorkspace`'s comment to stop quoting text
+  that no longer exists, and removes my two redundant test cases in
+  favour of a documentation comment.
+
+I did not fight this history rewrite or force my own version back in —
+the end state is correct, gate-green, and arguably better than what I
+would have shipped alone (it closes the exact false-comment defect this
+task opened with, in `rails.ts`, which my own plan had explicitly left
+untouched). I re-ran the full gate against the actual current files
+(commands above) rather than trusting either commit's own claims.
 
 ### Commit
 
-Solo attribution — no `Co-Authored-By` trailer, no `Claude-Session` line,
-per `CLAUDE.md`'s solo-attribution convention and this task's explicit
-override.
+This report-correction edit is committed separately, solo attribution —
+no `Co-Authored-By` trailer, no `Claude-Session` line, per `CLAUDE.md`'s
+solo-attribution convention and this task's explicit override. The code
+fix itself is already committed (see **Concurrent integration**); I am
+not re-committing code that is already correctly on the branch.
+
+## Re-review
+
+**1. Spec compliance: yes.** The fix matches the brief's Step 4 intent exactly
+— `WallWorkspace` returns `null` at zero tiles, `ConsoleWorkspace`'s
+`renderSplit` suppresses the dock splitter in that same state, nothing else
+touched. The brief's parenthetical ("use whatever the file already calls its
+placed-tile list") could be read as the `ordered`/DOM-order list, but the
+implementation uses `layout.widgets.length` instead — the right call, not a
+deviation in spirit: it's the same field `dockSize` itself reads, so the two
+conditions can never disagree (a mid-repair widget with no `rect` yet would
+otherwise desync `dockSize`'s full-bleed trigger from `WallWorkspace`'s early
+return).
+
+**2. Code quality: Approved.**
+
+- **Exception is now actually safe.** Grepped: `dockSize` has exactly one
+  consumer (`ConsoleWorkspace.tsx:127`), and `.tn-wall-bar` is painted only by
+  `WallWorkspace.tsx`. No other component writes chrome into the wall column.
+  `WallWorkspace`'s early return sits after every hook (`useShellLayout`,
+  `useGridDrag`, the repair-on-arrival `useEffect`, both `useMemo`s) — no
+  Rules-of-Hooks violation, and the repair effect's `.some()` on an empty
+  array is a no-op, so nothing fires into a null render. `StageHost` stays at
+  a fixed sibling index regardless of `wall`/`dock`/widget count — this diff
+  never conditions its presence, only `gridColumn` and the unrelated
+  `is-stowed` class — so the no-remount constraint holds.
+- **Splitter suppression correct, and matches every case asked about.**
+  Collapsed dock: `dockSize` checks `.collapsed` before the empty-wall branch,
+  so it's already 0 and the pre-existing `size === 0` check would return null
+  even without the new guard — no double-guard bug. `rails` mode: the new
+  guard is `wall && ...`, so a rails board is untouched (the `renderSplit`
+  `wall`-ternary for `size` already existed pre-diff). First-tile transition:
+  the guard reads `layout.widgets.length`, so it clears the instant `dockSize`
+  itself returns to the normal clamp — no lag or mismatch between the two.
+- **Verified the original defect was real**, not just asserted: `RailSplitter`
+  renders `aria-valuenow={size}` against a fixed `aria-valuemax={RAIL_MAX[rail]}`
+  (720) — pre-fix, an empty wall would have reported `aria-valuenow=1440` on a
+  control whose max claims 720. Confirmed by reading `RailSplitter.tsx`
+  directly, not just taking the commit message's word for it.
+- **Test removal (57094ec) was correct.** Diffed 2fa3b34→57094ec directly: the
+  two dropped assertions (`toBeGreaterThan(RAIL_MAX.right)` and
+  `toBeLessThanOrEqual(RAIL_MAX.right)`) test facts already pinned as exact
+  equalities two tests above (`toBe(box.w)` where `box.w=1440`, and
+  `toBe(RAIL_MAX.right)`) — arithmetic on file-local constants, not new code
+  behaviour; neither could go red without the equality above it going red
+  first. The replacement comment states this honestly and claims no more
+  coverage than exists. The remaining 6 tests all constrain real `dockSize`
+  behaviour (full-bleed, clamp-restored, RAIL_MAX, WALL_MIN_PX floor,
+  collapsed, rails-mode) — none are vacuous.
+- **Comments checked against the code they describe**, not taken on faith:
+  `rails.ts`'s comment now says the safety is a *dependency* on
+  `WallWorkspace` returning null, not an intrinsic property of an empty wall
+  — true today (verified above) and correctly frames it as falsifiable if
+  `WallWorkspace` ever grows chrome back.
+- Noted but out of scope: `RailSplitter`'s `aria-controls={tn-rail-${rail}}`
+  points at an id that doesn't exist in wall mode at all (`renderRail` isn't
+  called there) — pre-existing, unrelated to this diff, not worsened by it.
+
+**Findings:** none — no Critical, Important, or Minor.
