@@ -109,7 +109,11 @@ ufw allow OpenSSH >/dev/null
 ufw allow 80/tcp  >/dev/null
 ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
-ufw status verbose | head -6
+# sed, not `head -6`: this script also runs under `set -euo pipefail`, and head closing
+# the pipe early would SIGPIPE ufw and fail the whole provision on its last step. It has
+# not bitten yet only because ufw's output happens to be short enough that head reads it
+# all. sed reads to EOF, so it cannot.
+ufw status verbose | sed -n '1,6p'
 
 echo
 echo "Provisioned. Remaining, in order:"

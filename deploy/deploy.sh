@@ -33,7 +33,15 @@ SSH_OPTS=(-o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new)
 # Pick a real hashed asset now, so the health check can prove the static tree actually
 # arrived. A check that only fetches / passes happily while every stylesheet 404s: the
 # page renders unstyled, the map never mounts, and the server log stays clean.
-PROBE_ASSET="$(cd "$ART/.next/static" && find . -name '*.js' -type f | head -1 | sed 's|^\./||')"
+# `-print -quit` rather than `| head -1`, and that is the whole bug this line once had.
+# `head` closes the pipe after the first line, `find` then takes SIGPIPE while writing the
+# second, and `set -euo pipefail` at the top of this file promotes that into a failed
+# deploy. It is load-bearing that the tree is BIG: locally, with few files, find often
+# finishes before head closes and the pipeline exits 0, so this passed by hand and failed
+# on the runner against a real build. `-print -quit` stops find after the first match, so
+# there is no second write and nothing to fail. (GNU findutils; the runner is ubuntu and
+# git-bash ships it too, which is the other place this script is run from.)
+PROBE_ASSET="$(cd "$ART/.next/static" && find . -name '*.js' -type f -print -quit | sed 's|^\./||')"
 [[ -n "$PROBE_ASSET" ]] || { echo "! no hashed asset found under $ART/.next/static" >&2; exit 1; }
 echo "==> shipping $SHA (probe asset: $PROBE_ASSET)"
 
