@@ -230,6 +230,23 @@ Task 8: IN PROGRESS. The implementer hit an account session rate limit at 20:50 
       about did exactly its job.
    3. My test imported createDefaultLayout from @/lib/console/reducers; it lives in
       @/lib/console/types. Would not have compiled.
+  REVIEW: spec OK, quality APPROVED, two MINORS. The reviewer did not take the deviations on
+  trust -- it grepped every replace() call site (ConsoleShell.tsx:114, presets.ts:428, 3 tests,
+  none passing a function), and it located terminal-tokens.test.ts's region sweep start
+  (line 3496, the OPENDATA TERMINAL banner) to confirm the guard really covers a block appended
+  at ~6897. It also confirmed the prompt gate in all four states and that the two planMonitor
+  messages survive unmodified through applyMonitorPlan.
+   - T8-m1: camslot.apply.ts:143's `tiles.length > 0 ? arrangeBoard(next, rows) : next` is DEAD.
+     I checked arrangeBoard myself: it is applyItems(l, arrangeWall(ids, rows)), so with every
+     widget already removed it changes nothing. PLAN-MANDATED (my code). Worse, task-8-report
+     :122 names this ternary as what turns test 8 red, and that is false -- test 8 passes with
+     it deleted. Fourth stated-red-condition on this branch that does not hold.
+   - T8-m2: camslot.apply.ts:24's comment says scripts/verify-streets-area.mjs "times a switch",
+     present tense, and that script does not exist yet -- it is Task 11's deliverable. Inherited
+     verbatim from my brief, so not fabricated, but it reads as a claim about a real artifact.
+     Same family as the two false comments already caught here.
+  DECIDED: I fix both myself after Task 9's writer finishes -- a dead ternary and a comment do
+  not justify an agent. Not rolled up: the comment pattern has produced two Criticals already.
 
 ## Follow-ups (SURFACE TO USER)
 - [ ] ANTIMERIDIAN CONTAINMENT, proper fix. lib/shell/scope.ts pointInRing/bboxOfRing do
