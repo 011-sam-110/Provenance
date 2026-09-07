@@ -51,10 +51,15 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     and camera pictures; it never sees a visitor, and it is not deployed.
  *
  * The load-bearing checks behind the copy below, all re-run against 2cf8797:
- *   • analytics — `<Analytics />` from @vercel/analytics in app/layout.tsx:99, and
- *     nothing else. A repo-wide grep for gtag / GA / Plausible / PostHog / Segment /
- *     Hotjar / Sentry / Clarity returns no runtime hit.
- *   • persistence — package.json ships ten runtime deps and not one is a database
+ *   • analytics — NONE, as of the move off Vercel. `<Analytics />` from
+ *     @vercel/analytics was removed from app/layout.tsx together with the package;
+ *     /_vercel/insights exists only on Vercel's edge, so self-hosted it would have
+ *     posted a 404 per page view — the appearance of collection with none of the
+ *     substance. A repo-wide grep for gtag / GA / Plausible / PostHog / Segment /
+ *     Hotjar / Sentry / Clarity returns no runtime hit either. Nothing counts a visit.
+ *     IF AN EXTERNAL COUNTER IS EVER ADDED, THIS SECTION AND THE THREE PLACES BELOW
+ *     THAT SAY "no analytics" HAVE TO MOVE WITH IT.
+ *   • persistence — package.json ships nine runtime deps and not one is a database
  *     client. `writeFileSync|writeFile\(|appendFile|node:fs` over app/ lib/ components/
  *     now returns TWO files, lib/discovery/store.ts and app/api/admin/promote/route.ts,
  *     both belonging to the dev-only camera-review tool and both behind a production
@@ -139,10 +144,10 @@ export default function PrivacyPage() {
               </p>
             </div>
             <div className="pv-card">
-              <h2 className="pv-h3">One analytics tool</h2>
+              <h2 className="pv-h3">No analytics</h2>
               <p>
-                Vercel Web Analytics counts page views. No Google Analytics, no ad pixel, no session
-                recording.
+                Nothing counts your visit. No Google Analytics, no ad pixel, no session recording,
+                and since the move off Vercel, no page-view counter of any kind.
               </p>
             </div>
           </div>
@@ -611,7 +616,7 @@ export default function PrivacyPage() {
               <span>Cookies</span>
               <span>Analytics</span>
             </p>
-            <h2 className="pv-h2">No cookies of ours. One counter.</h2>
+            <h2 className="pv-h2">No cookies of ours. No counter either.</h2>
           </div>
           <div className="pv-prose">
             <p>
@@ -621,20 +626,20 @@ export default function PrivacyPage() {
               YouTube embed described above.
             </p>
             <p>
-              The site does load <strong>Vercel Web Analytics</strong>, served from this domain,
-              which reports page views to Vercel, our host. It is the only analytics here. A search
-              of the repository finds no Google Analytics, no gtag, no Meta pixel, no PostHog, no
+              There is also <strong>no analytics</strong>. Until this site moved off Vercel it
+              loaded their Web Analytics script, which counted page views; that script and its
+              package were removed in the move, and nothing replaced them. A search of the
+              repository finds no Google Analytics, no gtag, no Meta pixel, no PostHog, no
               Plausible, no session recorder and no fingerprinting library.
             </p>
             <p>
-              What Vercel collects, and for how long, is Vercel&rsquo;s to describe rather than ours.
-              We have not audited their end. What we can tell you is what this application asks for,
-              which is a count of page views, and that nothing in this code sends them anything
-              else.{" "}
+              The page-view counts collected while the site ran on Vercel still sit in Vercel&rsquo;s
+              account, and what they hold and for how long is theirs to describe rather than ours
+              &mdash; see{" "}
               <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noreferrer noopener">
-                Vercel&rsquo;s privacy policy
+                their privacy policy
               </a>
-              .
+              . Nothing has been added to that record since the move, because nothing is being sent.
             </p>
           </div>
         </section>
@@ -655,10 +660,15 @@ export default function PrivacyPage() {
               from anything you sent. Nothing you type is logged anywhere.
             </p>
             <p>
-              Vercel keeps its own request logs underneath the application, as any web host does, and
-              those will include your IP address and user agent. That happens below this code, we do
-              not add to it, and we have not audited how long it is held. If that matters to you,
-              treat it the way you would treat any hosted website.
+              Underneath the application is a web server, and it keeps an access log, as any web
+              server does. That used to be Vercel&rsquo;s and is now ours, which means it is worth
+              being specific about: it records the path you asked for, the status and size of the
+              reply, how long it took, and your user agent. <strong>It does not record your IP
+              address.</strong> The server is told to mask it before writing &mdash; the first 16
+              bits survive for IPv4, which is a block of some sixty-five thousand addresses, and the
+              rest is discarded. That is enough to tell one machine hammering the site from a
+              genuine crowd, and not enough to point at you. The log rolls and old files are
+              deleted; nothing is exported anywhere.
             </p>
           </div>
         </section>
@@ -684,11 +694,13 @@ export default function PrivacyPage() {
               yourself by clearing site data.
             </p>
             <p>
-              Three things sit outside that, and they are the only places anything of yours can
-              persist. Two are handled by Vercel as our host: Web Analytics, and platform request
-              logs. The third is a feedback answer, if you chose to send one, which is sitting as a
-              message in a private Telegram chat. That one is the only place a name or an email you
-              gave us can be. Ask and it will be deleted.
+              Two things sit outside that, and they are the only places anything of yours can
+              persist. One is the server access log described above, which is IP-masked, rolled and
+              deleted. The other is a feedback answer, if you chose to send one, which is sitting as
+              a message in a private Telegram chat &mdash; that is the only place a name or an email
+              you gave us can be, and asking will get it deleted. The page-view counts that Vercel
+              gathered before the move are a third, historical, and are being wound down with that
+              account.
             </p>
             <p>
               If you think any of this is wrong, say so in{" "}

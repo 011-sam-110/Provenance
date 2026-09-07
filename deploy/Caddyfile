@@ -14,7 +14,6 @@ www.provenance-online.com {
 }
 
 provenance-online.com {
-
 	# Build assets only. Filenames here are content-hashed, so a year is safe and it
 	# keeps repeat visitors off the origin entirely — the cheapest byte is unsent.
 	#
@@ -26,29 +25,49 @@ provenance-online.com {
 	@immutable path /_next/static/*
 	header @immutable Cache-Control "public, max-age=31536000, immutable"
 
-	reverse_proxy 127.0.0.1:3000 {
-		# lib/brand.ts resolves absolute URLs from NEXT_PUBLIC_SITE_URL first, so these
-		# are the backstop rather than the primary path — they keep anything reading the
-		# request directly (redirects, Next's own URL handling) on https and the real
-		# host instead of http://127.0.0.1:3000.
-		header_up X-Forwarded-Proto {scheme}
-		header_up X-Forwarded-Host {host}
-		header_up Host {host}
-
-		# /api/hls streams video segments straight through. Caddy does not buffer
-		# response bodies by default, so segments start flowing before they finish
-		# downloading — leave it that way.
-	}
+	# NO header_up LINES, AND THAT IS NOT AN OMISSION. Caddy already sends
+	# X-Forwarded-Proto, X-Forwarded-Host and X-Forwarded-For, and unlike nginx it
+	# passes the original Host through untouched. `caddy validate` warns about writing
+	# them by hand ("Unnecessary header_up ..."), which is how the three that used to be
+	# here were found. Anything reading the request directly — a redirect, Next's own
+	# URL handling — therefore sees https and the real hostname rather than
+	# http://127.0.0.1:3000. It is a backstop either way: lib/brand.ts resolves absolute
+	# URLs from NEXT_PUBLIC_SITE_URL first.
+	#
+	# /api/hls streams video segments straight through. Caddy does not buffer response
+	# bodies by default, so segments start flowing before they finish downloading —
+	# leave it that way.
+	reverse_proxy 127.0.0.1:3000
 
 	# NOT adding `encode` on purpose: Next's standalone server already compresses
 	# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates
 	# to roughly a megabyte. A second encoder buys nothing and costs CPU on every
 	# response, on a box with two shared vCPUs.
 
+	# THE ACCESS LOG IS IP-MASKED, AND app/(site)/privacy PROMISES THAT IN WRITING.
+	# Caddy's default JSON encoder writes request>remote_ip and request>client_ip in
+	# full. On Vercel those addresses were the host's to hold and the privacy page said
+	# so; self-hosted they become ours, and "this application holds no record of you"
+	# stops being true the moment the first request is written down.
+	#
+	# ip_mask keeps 16 bits of IPv4 and 32 of IPv6, so a row still distinguishes one
+	# machine hammering the box from a genuine crowd — the only operational question an
+	# address answers here — while naming a block of ~65,000 rather than a person.
+	# Deleting the field outright would cost that signal and buy nothing extra, since a
+	# /16 identifies no one.
+	#
+	# The rest of the row is what M7 needs: path, status, size and duration are how the
+	# request volume gets measured before deciding whether a CDN in front of this box
+	# pays for itself. Do not remove the log to "save disk" — 5 x 50 MiB is bounded, and
+	# without it the CDN decision goes back to guessing.
 	log {
 		output file /var/log/caddy/provenance.log {
 			roll_size 50MiB
 			roll_keep 5
+		}
+		format filter {
+			request>remote_ip ip_mask 16 32
+			request>client_ip ip_mask 16 32
 		}
 	}
 }
