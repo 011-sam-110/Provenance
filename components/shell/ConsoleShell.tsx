@@ -14,6 +14,7 @@
 // remapped --tn-* tokens without a single .tn-cw* rule being rewritten.
 
 import { useEffect, useRef, useState } from "react";
+import { inspectorStore } from "@/lib/shell/inspector";
 import { uiStore } from "@/lib/shell/ui";
 import { langStore } from "@/lib/i18n/store";
 import { watchlistStore } from "@/lib/shell/watchlist";
@@ -84,6 +85,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // uiStore.hydrate() applies the persisted data-theme before paint; variantStore
   // then re-asserts the variant's theme. Order matters.
   useEffect(() => {
+    inspectorStore.hydrate();
     uiStore.hydrate();
     variantStore.bootstrap(new URLSearchParams(window.location.search));
     watchlistStore.hydrate();
