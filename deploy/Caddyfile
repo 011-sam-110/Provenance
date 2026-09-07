@@ -6,6 +6,30 @@
 # is an HTTP-01 challenge against the name, so a reload before DNS resolves burns a
 # failed attempt against Let's Encrypt's rate limit rather than producing a certificate.
 
+# GLOBAL OPTIONS. This block masks addresses in the DEFAULT logger, and it exists
+# because the site-level `log` block at the bottom of this file does NOT cover
+# everything. Caddy splits its logging in two:
+#
+#   http.log.access.log0  -> the site's own `log` block  -> the file, filtered.
+#   http.log.error.log0   -> the DEFAULT logger          -> stderr, so journald.
+#
+# Both carry `request>remote_ip` and `request>client_ip` in full. Only the first was
+# filtered, so every 502, every timeout and every refused upstream wrote a complete
+# visitor address into the systemd journal — where it is retained, rotated by journald's
+# own rules rather than ours, and readable by anyone who can read the journal. The
+# access log looked masked, which is exactly what made it easy to miss.
+#
+# app/(site)/privacy tells visitors this server does not record their IP address. That
+# sentence has to be true of BOTH streams, so the same 16/32 mask is applied here.
+{
+	log default {
+		format filter {
+			request>remote_ip ip_mask 16 32
+			request>client_ip ip_mask 16 32
+		}
+	}
+}
+
 # Canonical host is the apex. www redirects rather than serving a byte-identical copy,
 # because two hostnames answering the same 18,766 camera pages is duplicate content
 # competing with itself — and the sitemap and canonical tags name the apex.
