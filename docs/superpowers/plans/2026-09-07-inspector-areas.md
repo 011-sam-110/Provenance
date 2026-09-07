@@ -1888,4 +1888,51 @@ visible beside the dossier it is describing."
 
 **Type consistency.** `SourceSet`, `InspectorArea`, `InspectorState`, `effectiveSet`, `activeSet`, `writeActive`, `replaceActive`, `areaSummary`, `ringAreaKm2`, `loadedArea`, `filterToScope`, `useScopeFilter` are used in Tasks 2–5 exactly as Task 1 and Task 4 define them. `ALWAYS_ON_SOURCES` is read only through `effectiveSet`.
 
-**One risk worth naming.** Task 2's `layersStore.applyExact` merges rather than replaces, because a context's `SourceSet` holds signal ids alongside `LayerKey`s and a layer preset must not switch every signal off. `signalsStore.applyExact` does replace, which mirrors its current behaviour but now also clears layer keys from the set — `presetLayers.ts` and `variants/resolveSignals.ts` call it, so their tests are the ones to watch in Task 2 Step 7.
+**One risk worth naming — and it landed.** Task 2's `layersStore.applyExact` merges rather than replaces, because a context's `SourceSet` holds signal ids alongside `LayerKey`s and a layer preset must not switch every signal off. The plan had `signalsStore.applyExact` still doing a whole-set replace, which in the new shape clears every layer key a moment after the variant sets them; `variants-store.test.ts` caught it during execution and it now merges the layer half too. `presetLayers.ts` and `variants/resolveSignals.ts` are its callers.
+
+
+## Verified in a browser, and what running it found
+
+`npx tsc --noEmit` clean; 324 unit files / 3,162 tests green. Neither could see any of
+the following — every one is a mount-order or shared-state fault in a real browser.
+
+**Two data-destroying bugs, both found by running it, both now fixed and guarded.**
+
+1. **A reload replaced a loaded area's configuration with the variant's layers.**
+   `ConsoleShell` hydrated the Inspector before `variantStore.bootstrap()`, and
+   bootstrap writes through `layersStore`/`signalsStore` — which are now views onto
+   whichever context is loaded. Measured: an area seeded `{earthquakes, wildfires}`
+   came back holding the variant's set. Fixed by bootstrapping first, not persisting
+   World in the Inspector, and returning early from `captureOverride` unless
+   `loaded === null`.
+2. **Every reload emptied the Inspector — the mirror of (1).** With bootstrap running
+   first, its World write hit an `inspectorStore.commit()` that persisted
+   unconditionally, saving the pre-hydrate `areas: []` over the user's saved areas;
+   the hydrate that followed then read back the file it had just destroyed. Measured
+   on the preview: a seeded area came back as `{"world":{…},"areas":[],"loaded":null}`.
+   Fixed with a module flag — nothing persists until `hydrate()` has read what is
+   already saved. `tests/unit/inspector-boot-order.test.ts` pins it by driving the real
+   boot order against an injected `localStorage`, and fails with
+   `expected [] to have a length of 1` when the gate is removed.
+
+**The claim itself.** `tests/e2e/inspector-areas.spec.ts`, run against the preview
+through the repo's own `playwright.preview.config.ts`: **1 passed**. Loading an area
+cropped the map from 193 drawn features to 11 — *exactly* the 11 whose positions fall
+inside the ring, computed at run time. The assertion is an equality, not "fewer than
+before", because a build that drops everything also satisfies the inequality: the first
+ring chosen (Kharkiv) was seismically quiet and cropped 193 → 0, where "filtered
+correctly" and "wiped" are indistinguishable. Inverted, the assertion fails with
+`Expected: 192, Received: 11`, so it discriminates rather than decorates.
+
+**Two things about the harness that cost real time.**
+
+- The basemap host is `tiles.openfreemap.org` (`DEFAULT_BASEMAP = "streets"`), not
+  `basemaps.cartocdn.com`, which serves only the dark variant. An earlier commit
+  "corrected" it the wrong way round.
+- `playwright.preview.config.ts` could not run a map spec at all: it sets the
+  protection token as a request header, and any custom header CORS-preflights the tile
+  host, which answers 405 to OPTIONS. The basemap then dies silently — a
+  false-positive generator for exactly this claim. It now also accepts
+  `PREVIEW_SHARE_URL` (a `_vercel_share` cookie link, no header). A share token is
+  per-deployment, so every push invalidates it; the symptom is a `.map-canvas`
+  timeout rather than a visible login page.
