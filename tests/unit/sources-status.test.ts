@@ -56,7 +56,7 @@ describe("key requirements table", () => {
 
   it("treats anything not in the table as keyless — that is the default", () => {
     expect(isKeyless("earthquakes")).toBe(true);
-    expect(isKeyless("acled")).toBe(false);
+    expect(isKeyless("reliefweb")).toBe(false);
   });
 
   // THE GUARD THAT WAS MISSING. /api/status reported food-security as "keyless"
@@ -148,9 +148,14 @@ describe("hasEnv", () => {
 
 describe("capabilityState", () => {
   it("needs every declared var, not just one of them", () => {
-    expect(capabilityState("acled", { ACLED_EMAIL: "a" })).toBe("locked");
-    expect(missingEnvFor("acled", { ACLED_EMAIL: "a" })).toEqual(["ACLED_PASSWORD"]);
-    expect(capabilityState("acled", { ACLED_EMAIL: "a", ACLED_PASSWORD: "b" })).toBe("configured");
+    // ACLED was this example until it was removed on 2026-09-05. feedback-prompt is the
+    // two-variable capability left, and the property under test is the same one: holding
+    // SOME of a capability's variables is holding none of it.
+    const one = { FEEDBACK_TELEGRAM_BOT_TOKEN: "a" };
+    const both = { FEEDBACK_TELEGRAM_BOT_TOKEN: "a", FEEDBACK_TELEGRAM_CHAT_ID: "b" };
+    expect(capabilityState("feedback-prompt", one)).toBe("locked");
+    expect(missingEnvFor("feedback-prompt", one)).toEqual(["FEEDBACK_TELEGRAM_CHAT_ID"]);
+    expect(capabilityState("feedback-prompt", both)).toBe("configured");
   });
 
   it("calls an ungated layer keyless rather than configured", () => {
@@ -164,24 +169,25 @@ describe("capabilityState", () => {
   it("separates an optional upgrade from a hard gate", () => {
     expect(capabilityState("markets-equities", {})).toBe("upgradable");
     expect(capabilityState("markets-equities", { FINNHUB_API_KEY: "k" })).toBe("enhanced");
-    expect(capabilityState("acled", {})).toBe("locked");
+    expect(capabilityState("reliefweb", {})).toBe("locked");
   });
 
   // `configured` says we hold the credential. It does NOT say the upstream
-  // accepts it: ACLED answers 403 to a token that passes its own OAuth flow, and
-  // AISStream opens a socket then sends nothing. Liveness is the freshness chip's
-  // job and this field must not be read as a health check.
+  // accepts it: AISStream opens a socket then sends nothing, and ACLED used to answer
+  // 403 to a token that passed its own OAuth flow -- which is what got that layer
+  // removed. Liveness is the freshness chip's job and this field must not be read as a
+  // health check.
   it("reports holding a credential, not that it works", () => {
-    expect(capabilityState("acled", { ACLED_EMAIL: "a", ACLED_PASSWORD: "b" })).toBe("configured");
+    expect(capabilityState("ais", { AISSTREAM_API_KEY: "k" })).toBe("configured");
   });
 });
 
 describe("lockedReason", () => {
   it("names the missing variables and the consequence, and nothing else", () => {
-    const r = lockedReason("acled", {});
-    expect(r).toContain("ACLED_EMAIL + ACLED_PASSWORD");
-    expect(r).toContain("Instability Index");
-    expect(lockedReason("acled", { ACLED_EMAIL: "a", ACLED_PASSWORD: "b" })).toBeNull();
+    const r = lockedReason("feedback-prompt", {});
+    expect(r).toContain("FEEDBACK_TELEGRAM_BOT_TOKEN + FEEDBACK_TELEGRAM_CHAT_ID");
+    expect(r).toContain("never mounts");
+    expect(lockedReason("feedback-prompt", { FEEDBACK_TELEGRAM_BOT_TOKEN: "a", FEEDBACK_TELEGRAM_CHAT_ID: "b" })).toBeNull();
     expect(lockedReason("earthquakes", {})).toBeNull();
   });
 });
@@ -189,7 +195,7 @@ describe("lockedReason", () => {
 describe("buildStatusReport", () => {
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000, attribution: "USGS" },
-    { id: "acled", label: "ACLED", group: "Conflict", refreshMs: 900_000 },
+    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
 
@@ -233,10 +239,10 @@ describe("buildStatusReport", () => {
 
   it("explains a locked layer and stays quiet about a working one", () => {
     const rep = buildStatusReport(reg, {}, NOW);
-    const acled = rep.layers.find((l) => l.id === "acled")!;
-    expect(acled.state).toBe("locked");
-    expect(acled.missingEnv).toEqual(["ACLED_EMAIL", "ACLED_PASSWORD"]);
-    expect(acled.degrades).toContain("Instability Index");
+    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
+    expect(reliefweb.state).toBe("locked");
+    expect(reliefweb.missingEnv).toEqual(["RELIEFWEB_APPNAME"]);
+    expect(reliefweb.degrades).toContain("situation reports");
 
     const quakes = rep.layers.find((l) => l.id === "earthquakes")!;
     expect(quakes.state).toBe("keyless");
@@ -254,7 +260,7 @@ describe("buildStatusReport", () => {
 
   // The report is public. A leak here would be a live credential on the open web.
   it("never carries an env VALUE anywhere in the payload", () => {
-    const secrets = { ACLED_EMAIL: "sekrit-email", ACLED_PASSWORD: "sekrit-pw", AISSTREAM_API_KEY: "sekrit-ais" };
+    const secrets = { RELIEFWEB_APPNAME: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
     const json = JSON.stringify(buildStatusReport(reg, secrets, NOW));
     for (const v of Object.values(secrets)) expect(json).not.toContain(v);
   });
@@ -263,17 +269,17 @@ describe("buildStatusReport", () => {
   // is publishable; a query string that carried the key would not be, so the
   // refusal record stores a HOSTNAME and this proves the whole payload stays clean.
   it("never carries an env VALUE once refusal evidence is attached either", () => {
-    const secrets = { ACLED_EMAIL: "sekrit-email", ACLED_PASSWORD: "sekrit-pw", AISSTREAM_API_KEY: "sekrit-ais" };
+    const secrets = { RELIEFWEB_APPNAME: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
     const rep = buildStatusReport(reg, secrets, NOW, {
       evidence: {
-        acled: ev({ lastRefusalAt: NOW - 1_000, lastRefusalStatus: 403, lastRefusalHost: "acleddata.com", refusals: 3 }),
+        reliefweb: ev({ lastRefusalAt: NOW - 1_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 3 }),
         ais: ev({ lastFetchAt: NOW - 500, lastFetchOk: true, lastRows: 0, fetches: 9 }),
       },
       observingSince: NOW - 60_000,
     });
     const json = JSON.stringify(rep);
     for (const v of Object.values(secrets)) expect(json).not.toContain(v);
-    expect(json).toContain("acleddata.com"); // the host IS published, deliberately
+    expect(json).toContain("api.reliefweb.int"); // the host IS published, deliberately
   });
 
   it("runs over the real registry without inventing or dropping a layer", () => {
@@ -336,7 +342,7 @@ describe("credentialVerdict", () => {
     expect(credentialVerdict(cleared, NOW)).toBe("accepted");
   });
 
-  // ACLED's adapter resolves to [] on a 403, so "the adapter fetch completed" must
+  // A key-gated adapter resolves to [] on a 403, so "the adapter fetch completed" must
   // NOT count as the credential being accepted — only an actual 2xx from the host
   // does. Getting this backwards would cancel every refusal the moment it happened.
   it("is not cleared by the adapter merely completing", () => {
@@ -364,7 +370,7 @@ describe("credentialVerdict", () => {
 
 describe("attributeUpstream", () => {
   it("maps a credentialed host to the capability whose key goes there", () => {
-    expect(attributeUpstream("https://acleddata.com/api/acled/read?limit=2000")).toBe("acled");
+    expect(attributeUpstream("https://api.reliefweb.int/v1/reports?appname=x")).toBe("reliefweb");
     expect(attributeUpstream("https://api.openaq.org/v3/parameters/2/latest")).toBe("air-quality-stations");
     expect(attributeUpstream("https://api.windy.com/webcams/api/v3/webcams")).toBe("webcams");
   });
@@ -377,8 +383,8 @@ describe("attributeUpstream", () => {
   // Exact hostname, not a suffix match: a lookalike host must never be able to
   // stamp "refused" on a layer whose credential it never saw.
   it("does not match a lookalike or a subdomain of a credentialed host", () => {
-    expect(attributeUpstream("https://evil-acleddata.com/api")).toBeNull();
-    expect(attributeUpstream("https://acleddata.com.example.net/api")).toBeNull();
+    expect(attributeUpstream("https://evil-api.reliefweb.int/v1")).toBeNull();
+    expect(attributeUpstream("https://api.reliefweb.int.example.net/v1")).toBeNull();
   });
 
   it("shrugs off a string that is not a URL", () => {
@@ -393,10 +399,10 @@ describe("observeUpstreamResponse", () => {
   it("turns a 401/402/403 from a credentialed host into evidence, and nothing else does", () => {
     for (const status of [401, 402, 403]) {
       resetEvidence();
-      observeUpstreamResponse("https://acleddata.com/api/acled/read", status, NOW);
-      const rec = readEvidence("acled")!;
+      observeUpstreamResponse("https://api.reliefweb.int/v1/reports", status, NOW);
+      const rec = readEvidence("reliefweb")!;
       expect(rec.lastRefusalStatus).toBe(status);
-      expect(rec.lastRefusalHost).toBe("acleddata.com");
+      expect(rec.lastRefusalHost).toBe("api.reliefweb.int");
       expect(rec.refusals).toBe(1);
     }
   });
@@ -405,19 +411,19 @@ describe("observeUpstreamResponse", () => {
   // rejected" would put a red state on a perfectly good credential.
   it("does not read a rate-limit or a server error as a credential refusal", () => {
     for (const status of [404, 429, 500, 502, 503]) {
-      observeUpstreamResponse("https://acleddata.com/api/acled/read", status, NOW);
+      observeUpstreamResponse("https://api.reliefweb.int/v1/reports", status, NOW);
     }
     // Nothing is filed at all — not a refusal, not a zero-count placeholder.
-    expect(readEvidence("acled")?.lastRefusalAt ?? null).toBeNull();
-    expect(readEvidence("acled")?.refusals ?? 0).toBe(0);
-    expect(credentialVerdict(readEvidence("acled"), NOW)).toBe("unknown");
+    expect(readEvidence("reliefweb")?.lastRefusalAt ?? null).toBeNull();
+    expect(readEvidence("reliefweb")?.refusals ?? 0).toBe(0);
+    expect(credentialVerdict(readEvidence("reliefweb"), NOW)).toBe("unknown");
   });
 
   it("records a 2xx so a later success can clear an earlier refusal", () => {
-    observeUpstreamResponse("https://acleddata.com/api/acled/read", 403, NOW);
-    expect(credentialVerdict(readEvidence("acled"), NOW)).toBe("refused");
-    observeUpstreamResponse("https://acleddata.com/api/acled/read", 200, NOW + 1_000);
-    expect(credentialVerdict(readEvidence("acled"), NOW + 1_000)).toBe("accepted");
+    observeUpstreamResponse("https://api.reliefweb.int/v1/reports", 403, NOW);
+    expect(credentialVerdict(readEvidence("reliefweb"), NOW)).toBe("refused");
+    observeUpstreamResponse("https://api.reliefweb.int/v1/reports", 200, NOW + 1_000);
+    expect(credentialVerdict(readEvidence("reliefweb"), NOW + 1_000)).toBe("accepted");
   });
 
   it("files nothing at all for an unmapped host", () => {
@@ -463,46 +469,46 @@ describe("credentialed host table", () => {
 describe("buildStatusReport — refused", () => {
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000 },
-    { id: "acled", label: "ACLED", group: "Conflict", refreshMs: 900_000 },
+    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
-  const held = { ACLED_EMAIL: "a", ACLED_PASSWORD: "b", AISSTREAM_API_KEY: "k" };
+  const held = { RELIEFWEB_APPNAME: "a", AISSTREAM_API_KEY: "k" };
 
   // THE BUG. "We hold the key" was published as if it meant "the key works".
   it("stops calling a rejected credential 'configured'", () => {
     const before = buildStatusReport(reg, held, NOW);
-    expect(before.layers.find((l) => l.id === "acled")!.state).toBe("configured");
+    expect(before.layers.find((l) => l.id === "reliefweb")!.state).toBe("configured");
 
     const after = buildStatusReport(reg, held, NOW, {
       evidence: {
-        acled: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "acleddata.com", refusals: 2 }),
+        reliefweb: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 2 }),
       },
     });
-    const acled = after.layers.find((l) => l.id === "acled")!;
-    expect(acled.state).toBe("refused");
+    const reliefweb = after.layers.find((l) => l.id === "reliefweb")!;
+    expect(reliefweb.state).toBe("refused");
     // Still empty, and that is now the informative part: we HAVE the vars.
-    expect(acled.missingEnv).toEqual([]);
-    expect(acled.refusal).toEqual({
+    expect(reliefweb.missingEnv).toEqual([]);
+    expect(reliefweb.refusal).toEqual({
       since: NOW - 2_000,
       status: 403,
-      host: "acleddata.com",
+      host: "api.reliefweb.int",
       count: 2,
-      observed: expect.stringContaining("acleddata.com answered HTTP 403"),
+      observed: expect.stringContaining("api.reliefweb.int answered HTTP 403"),
     });
     // A refused layer must tell the reader what they are losing and how to fix it,
     // exactly like a locked one.
-    expect(acled.degrades).toContain("Instability Index");
-    expect(acled.obtain).toContain("acleddata.com");
+    expect(reliefweb.degrades).toContain("situation reports");
+    expect(reliefweb.obtain).toContain("app-name");
     expect(after.summary.layersRefused).toBe(1);
     expect(after.summary.layersConfigured).toBe(1); // ais, still only "we hold it"
-    expect(after.summary.layersNotKeyBlocked).toBe(2); // earthquakes + ais, not acled
+    expect(after.summary.layersNotKeyBlocked).toBe(2); // earthquakes + ais, not reliefweb
   });
 
   // The rule that stops this becoming a hardcoded blame list.
   it("leaves a layer with no evidence either way as configured", () => {
     const rep = buildStatusReport(reg, held, NOW, {
       evidence: {
-        acled: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "acleddata.com", refusals: 1 }),
+        reliefweb: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 1 }),
       },
     });
     // AIS is a WebSocket, so no fetch-level refusal can ever be observed for it. It
@@ -516,29 +522,29 @@ describe("buildStatusReport — refused", () => {
     const rep = buildStatusReport(reg, {}, NOW, {
       evidence: {
         earthquakes: ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "x.example", refusals: 9 }),
-        acled: ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "acleddata.com", refusals: 9 }),
+        reliefweb: ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 9 }),
       },
     });
     expect(rep.layers.find((l) => l.id === "earthquakes")!.state).toBe("keyless");
-    expect(rep.layers.find((l) => l.id === "acled")!.state).toBe("locked");
+    expect(rep.layers.find((l) => l.id === "reliefweb")!.state).toBe("locked");
     expect(rep.summary.layersRefused).toBe(0);
   });
 
   it("goes back to configured once the refusal is superseded by a 2xx", () => {
     const rep = buildStatusReport(reg, held, NOW, {
       evidence: {
-        acled: ev({
+        reliefweb: ev({
           lastRefusalAt: NOW - 5_000,
           lastRefusalStatus: 403,
-          lastRefusalHost: "acleddata.com",
+          lastRefusalHost: "api.reliefweb.int",
           refusals: 1,
           lastUpstreamOkAt: NOW - 100,
         }),
       },
     });
-    const acled = rep.layers.find((l) => l.id === "acled")!;
-    expect(acled.state).toBe("configured");
-    expect(acled.refusal).toBeUndefined();
+    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
+    expect(reliefweb.state).toBe("configured");
+    expect(reliefweb.refusal).toBeUndefined();
   });
 
   it("applies the same rule to the non-layer capabilities", () => {
@@ -562,7 +568,7 @@ describe("buildStatusReport — refused", () => {
 describe("buildStatusReport — flow", () => {
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000 },
-    { id: "acled", label: "ACLED", group: "Conflict", refreshMs: 900_000 },
+    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
 
@@ -596,9 +602,9 @@ describe("buildStatusReport — flow", () => {
     const ais = rep.layers.find((l) => l.id === "ais")!;
     expect(ais.flow.rows).toBe(0);
     expect(ais.flow.observed).toBe(true);
-    const acled = rep.layers.find((l) => l.id === "acled")!;
-    expect(acled.flow.rows).toBeNull();
-    expect(acled.flow.observed).toBe(false);
+    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
+    expect(reliefweb.flow.rows).toBeNull();
+    expect(reliefweb.flow.observed).toBe(false);
   });
 
   it("totals the flow taxonomy over observed layers only", () => {
@@ -606,7 +612,7 @@ describe("buildStatusReport — flow", () => {
       evidence: {
         earthquakes: ev({ lastFetchAt: NOW - 1_000, lastFetchOk: true, lastRows: 317, fetches: 2 }),
         ais: ev({ lastFetchAt: NOW - 2_000, lastFetchOk: true, lastRows: 0, fetches: 2 }),
-        acled: ev({ lastFetchAt: NOW - 3_000, lastFetchOk: false, lastRows: null, fetches: 1 }),
+        reliefweb: ev({ lastFetchAt: NOW - 3_000, lastFetchOk: false, lastRows: null, fetches: 1 }),
       },
     });
     expect(rep.summary.layersObserved).toBe(3);
@@ -674,10 +680,10 @@ describe("evidence ledger hygiene", () => {
   beforeEach(resetEvidence);
 
   it("hands out copies, so a caller cannot mutate the ledger through the report", () => {
-    recordCredentialRefusal("acled", 403, "acleddata.com", NOW);
+    recordCredentialRefusal("reliefweb", 403, "api.reliefweb.int", NOW);
     const snap = snapshotEvidence();
-    snap.acled.refusals = 999;
-    expect(readEvidence("acled")!.refusals).toBe(1);
+    snap.reliefweb.refusals = 999;
+    expect(readEvidence("reliefweb")!.refusals).toBe(1);
   });
 
   it("stores a hostname and a status — never a URL that could carry a key", () => {

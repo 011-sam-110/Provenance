@@ -89,11 +89,9 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   // Each feature deep-links to the vendor's own incident via `link`; this is the
   // fallback when a vendor reports a degraded indicator with no open incident post.
   "cloud-status": { label: "Vendor status pages", url: "https://www.githubstatus.com/" },
-  "faa-airports": { label: "FAA NAS status", url: "https://nasstatus.faa.gov/" },
   conflict: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   protests: { label: "GDELT", url: "https://www.gdeltproject.org/" },
   acled: { label: "ACLED", url: "https://acleddata.com/" },
-  weather: { label: "Open-Meteo", url: "https://open-meteo.com/", licence: CC_BY_4_0 },
   airquality: {
     label: "Open-Meteo",
     url: "https://open-meteo.com/en/docs/air-quality-api",

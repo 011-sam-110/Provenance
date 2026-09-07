@@ -15,7 +15,7 @@
 //     only trims events that are too OLD, never ones that are "too new".
 
 import { useSyncExternalStore } from "react";
-import { loadPersisted, savePersisted } from "@/lib/shell/persist";
+import { savePersisted } from "@/lib/shell/persist";
 
 export type TimeWindowKey = "1h" | "6h" | "24h" | "7d" | "all";
 
@@ -31,8 +31,6 @@ export const TIME_WINDOWS: { key: TimeWindowKey; label: string; ms: number | nul
 ];
 
 export const DEFAULT_TIME_WINDOW: TimeWindowKey = "all";
-
-const KEYS = new Set<string>(TIME_WINDOWS.map((w) => w.key));
 
 /** Window length in ms for a key, or null for "All". */
 export function windowMsFor(key: TimeWindowKey): number | null {
@@ -78,10 +76,31 @@ export const timeWindowStore = {
   get(): TimeWindowKey {
     return state;
   },
-  /** Pull the persisted window back in. Call once, client-side, after mount. */
+  /**
+   * NO-OP SINCE 2026-09-05, deliberately, and this is the load-bearing half of taking
+   * TimeWindowControl off the Sources rail.
+   *
+   * This used to restore the persisted window on mount. The control that set it is no
+   * longer rendered anywhere, and it was the only caller of `set`. So restoring a saved
+   * "1h" would leave that visitor filtered to the last hour forever -- events quietly
+   * missing from the Events widget and the map, with no control anywhere to undo it and
+   * nothing on screen saying a filter was active. Removing the control WITHOUT this
+   * change is the bug; the two belong in the same commit.
+   *
+   * What it does instead: nothing, so `state` stays DEFAULT_TIME_WINDOW ("all"), which
+   * `withinWindow` treats as "never filter". Everyone sees everything.
+   *
+   * The persisted value is deliberately NOT deleted, and the store, the key and the pure
+   * `withinWindow` test are all still here and still exercised. Re-mount a control that
+   * calls `set`, restore the two lines below, and the feature is back with the user's old
+   * choice intact:
+   *     const KEYS = new Set<string>(TIME_WINDOWS.map((w) => w.key));
+   *     const saved = loadPersisted<TimeWindowKey>(PERSIST_KEY, PERSIST_VERSION);
+   *     if (saved && KEYS.has(saved)) state = saved;
+   * (re-importing loadPersisted from @/lib/shell/persist -- both it and KEYS were
+   *  dropped here rather than left dangling for a linter to trip over.)
+   */
   hydrate() {
-    const saved = loadPersisted<TimeWindowKey>(PERSIST_KEY, PERSIST_VERSION);
-    if (saved && KEYS.has(saved)) state = saved;
     emit();
   },
   subscribe(listener: () => void): () => void {

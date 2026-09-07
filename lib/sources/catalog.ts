@@ -4,7 +4,7 @@
 // data-driven off ONE list. Pure + isomorphic (node-testable): static descriptors
 // only — live count/freshness are read from the existing stores by lib/sources/live.ts.
 
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { ADSB_ATTRIBUTION } from "@/lib/sources/adsb";
 
 export type SourceKind = "core" | "signal";
@@ -38,7 +38,10 @@ const CORE_SOURCES: CatalogSource[] = [
   { id: "satellites", kind: "core", label: "Satellites", group: "Space",    color: "#7c3aed", attribution: "CelesTrak TLE · SGP4 (local)", refreshMs: 1_000 },
 ];
 
-const SIGNAL_SOURCES: CatalogSource[] = SIGNALS.map((s) => ({
+// MAP_SIGNALS, not SIGNALS: a data-only source (lib/signals/types.ts) is registered
+// and fetchable but is not a layer, so it must not enter the catalog the rail and the
+// widget grid are built from.
+const SIGNAL_SOURCES: CatalogSource[] = MAP_SIGNALS.map((s) => ({
   id: s.id,
   kind: "signal" as const,
   label: s.label,

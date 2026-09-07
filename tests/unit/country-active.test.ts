@@ -58,9 +58,11 @@ describe("activeEventLine", () => {
     expect(activeEventLine("displacement", feat("x:AFG", { totalDisplaced: "3,220,946" }))).toBe(
       "3,220,946 forcibly displaced",
     );
-    expect(activeEventLine("food-security", feat("x:AFG", { insufficientFood: "15M", prevalence: "40%" }))).toBe(
-      "15M food-insecure (40%)",
-    );
+    // food-security had a fourth case here until 2026-09-05, removed with the layer.
+    // The default branch is what a retired id hits now, so assert THAT rather than
+    // leaving the removal untested -- an unknown id must fall back to the feature's own
+    // title, never render a half-built sentence.
+    expect(activeEventLine("food-security", feat("x:AFG", { insufficientFood: "15M" }))).toBe("Active signal");
   });
   test("falls back to the feature title for an unmapped layer", () => {
     expect(activeEventLine("mystery", feat("x:US", {}, "Something happened"))).toBe("Something happened");

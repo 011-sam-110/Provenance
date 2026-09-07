@@ -279,6 +279,14 @@ function makeSignalBody(source: SignalSource) {
 }
 
 // Register one widget type per registered signal source.
+//
+// SIGNALS, not MAP_SIGNALS -- the deliberate exception to the split. This widget is a
+// READ-ONLY LIST of a source's rows; it has no map toggle and draws nothing on the
+// globe. A data-only source (the Country Instability Index) therefore still deserves
+// one: taking the pin off the map was never meant to take away the ability to read the
+// numbers. The rail's "+" cannot reach these, because the rail is built from the
+// catalog and the catalog IS filtered -- so a data-only source's widget is reachable
+// from the command palette and nowhere else, which is the intent.
 for (const source of SIGNALS) {
   registerWidget({
     id: `signal:${source.id}`,

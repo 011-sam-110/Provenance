@@ -132,12 +132,19 @@ export function aoiScope(ring: readonly [number, number][], label = "Drawn area"
   return { mode: "aoi", label, polygon: clean, bbox: bboxOfRing(clean) };
 }
 
-/** A persisted near-me rehydrates to World (we never auto-geolocate on load);
- *  region/aoi/world survive; junk → World. */
+/** A persisted near-me OR region rehydrates to World; aoi/world survive; junk → World.
+ *
+ *  near-me goes because we never auto-geolocate on load. `region` goes for a different
+ *  reason: nothing can set one any more. `ScopeControl` was its only writer and it was
+ *  orphaned when `ConsoleTopBar` was deleted, so restoring a stored region would open
+ *  the console silently filtered to a city the user picked days ago, with no control in
+ *  the UI to widen it — the one route back to World is the map rail's Draw ▸ Clear,
+ *  which nobody would think to look for. The drawn-area (`aoi`) scope still survives a
+ *  reload, because that one IS both settable and clearable from the map rail. */
 export function coerceSavedScope(saved: unknown): Scope {
   const s = saved as Scope | null;
   if (!s || typeof s !== "object" || typeof s.mode !== "string") return WORLD_SCOPE;
-  if (s.mode === "near-me") return WORLD_SCOPE;
+  if (s.mode === "near-me" || s.mode === "region") return WORLD_SCOPE;
   if (s.mode === "aoi") {
     // localStorage is user-writable and this drives what a feed HIDES. A ring that
     // survived as junk would silently filter the console down to nothing with no
@@ -146,7 +153,7 @@ export function coerceSavedScope(saved: unknown): Scope {
     if (!ring) return { ...s, polygon: undefined };
     return { ...s, polygon: ring, bbox: bboxOfRing(ring) };
   }
-  if (s.mode === "region" || s.mode === "world") return s;
+  if (s.mode === "world") return s;
   return WORLD_SCOPE;
 }
 

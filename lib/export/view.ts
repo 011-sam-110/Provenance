@@ -6,7 +6,7 @@
 // function here (the freshness mapping, the layer list) so it can be unit-tested
 // without a DOM. What remains is only the store reads.
 
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { signalsStore, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore, classifySignalFreshness } from "@/lib/signals/freshness";
 import { resolveSignalSources } from "@/lib/signals/sourceLink";
@@ -120,7 +120,7 @@ export function collectSitrepInput(now: number = Date.now()): SitrepInput {
     },
     layers: buildLayers({
       now,
-      sources: SIGNALS.map((s) => ({
+      sources: MAP_SIGNALS.map((s) => ({
         id: s.id,
         label: s.label,
         refreshMs: s.refreshMs,

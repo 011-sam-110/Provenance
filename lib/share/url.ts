@@ -27,7 +27,7 @@
 
 import { ACTIVE_LAYERS, type LayerKey } from "@/lib/layers";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
-import { SIGNALS } from "@/lib/signals/registry";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 
 export interface ViewState {
   lat?: number;
@@ -50,7 +50,8 @@ const OBJ_MAX_LEN = 96; // opaque internal key — keep shared links sane
 
 const VALID_LAYERS = new Set<string>(ACTIVE_LAYERS);
 const VALID_BASEMAPS = new Set<string>(Object.keys(BASEMAPS));
-const VALID_SIGNALS = new Set<string>(SIGNALS.map((s) => s.id));
+// MAP_SIGNALS: a shared ?sig= URL may only turn on things that are actually layers.
+const VALID_SIGNALS = new Set<string>(MAP_SIGNALS.map((s) => s.id));
 const SIG_MAX = 40;
 
 function clamp(n: number, lo: number, hi: number): number {

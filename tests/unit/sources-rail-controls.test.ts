@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { withinWindow } from "@/lib/shell/timeWindow";
 
 // Two things about the Sources rail that no other test can see, both found by trying
 // to land a legibility pass on it.
@@ -18,33 +19,75 @@ function read(rel: string): string {
 const CATALOG = "components/shell/SourceCatalog.tsx";
 const CSS = "app/globals.css";
 
-describe("the time window keeps a live setter", () => {
-  it("THE ONLY CALLER OF timeWindowStore.set IS STILL RENDERED SOMEWHERE MOUNTED", () => {
-    // The failure this exists for, caught in review rather than in a test run.
-    //
-    // `TimeWindowControl` is the only thing in the app that calls
-    // `timeWindowStore.set`. `ConsoleTopBar.tsx` also renders one, but NOTHING renders
-    // ConsoleTopBar — it is dead code — so SourceCatalog is the single live host.
-    //
-    // The window is persisted as `tn.timewindow.v1` and hydrated on mount. So deleting
-    // this one render does not merely remove a control: it strands anyone who ever
-    // chose "1h" at 1h permanently, with older events missing from the Events widget
-    // and no way anywhere in the product to put it back. The default is "all", which
-    // never filters, so a developer who never touched the control sees nothing wrong.
-    //
-    // If the rail should lose it, the same change has to give it another home — the
-    // Events widget is the honest one, since that is what the window filters. Moving
-    // it will fail this test, which is the point: update the assertion deliberately,
-    // naming the new host, rather than deleting the control and the test together.
-    const src = read(CATALOG);
-    expect(src).toMatch(/import\s+TimeWindowControl\s+from\s+"@\/components\/shell\/TimeWindowControl"/);
-    expect(src).toContain("<TimeWindowControl />");
+describe("the time window cannot strand anyone", () => {
+  // WHAT CHANGED, 2026-09-05. This block used to assert that SourceCatalog still
+  // rendered <TimeWindowControl />, because that was the only live caller of
+  // timeWindowStore.set and deleting it would strand anyone who had chosen "1h" --
+  // filtered forever, with no control anywhere to undo it.
+  //
+  // The control has now been taken off the rail deliberately. So the old assertion is
+  // gone, but the FAILURE it protected against is not, and this is the same guard
+  // rewritten around the thing that actually prevents it now: with no setter mounted,
+  // `hydrate()` must not restore a persisted window. Either half alone is the bug --
+  // a control with no hydration merely forgets your choice, but hydration with no
+  // control silently filters your data with no way back.
+  //
+  // Stated as one rule, so it stays true whichever way this is taken later:
+  //   a persisted window may be restored ONLY IF something mounted can change it.
+
+  // The two components that could plausibly host it. ConsoleTopBar used to be a third
+  // and was deleted in the same change: nothing rendered it, so its <TimeWindowControl />
+  // was the dead import of a dead component -- a "host" that would have made this check
+  // pass while no user could reach the control.
+  const HOSTS = ["components/shell/SourceCatalog.tsx", "components/console/ConsoleWorkspace.tsx"];
+  const setterIsMounted = HOSTS.some((f) => read(f).includes("<TimeWindowControl />"));
+
+  it("has no mounted setter today -- if this flips, the assertion below must flip too", () => {
+    expect(setterIsMounted).toBe(false);
   });
 
-  it("the control is still the thing that sets the store", () => {
-    // Guards the other half: a refactor that keeps the component but moves the setter
-    // out of it would satisfy the assertion above while breaking the same way.
-    expect(read("components/shell/TimeWindowControl.tsx")).toContain("timeWindowStore.set");
+  it("DOES NOT RESTORE A PERSISTED WINDOW while nothing can change it", async () => {
+    // Behavioural, not a source grep: seed the exact key a real visitor would already
+    // have in localStorage from before the control was removed, then hydrate.
+    const store: Record<string, string> = {
+      "tn.timewindow.v1": JSON.stringify({ v: 1, d: "1h" }),
+    };
+    const g = globalThis as unknown as { window?: unknown };
+    const hadWindow = "window" in g;
+    g.window = {
+      localStorage: {
+        getItem: (k: string) => store[k] ?? null,
+        setItem: (k: string, v: string) => { store[k] = v; },
+        removeItem: (k: string) => { delete store[k]; },
+      },
+    };
+    try {
+      const { timeWindowStore, windowMsFor } = await import("@/lib/shell/timeWindow");
+      timeWindowStore.hydrate();
+      if (setterIsMounted) {
+        expect(timeWindowStore.get()).toBe("1h"); // a setter exists: honouring it is correct
+      } else {
+        // No setter: the saved "1h" must NOT come back, or this visitor is stranded.
+        expect(timeWindowStore.get()).toBe("all");
+        expect(windowMsFor(timeWindowStore.get())).toBeNull(); // null = never filters
+      }
+      // Either way the saved value is left on disk, so restoring the control restores
+      // the user's choice rather than silently discarding it.
+      expect(store["tn.timewindow.v1"]).toBeTruthy();
+    } finally {
+      if (!hadWindow) delete g.window;
+    }
+  });
+
+  it("still filters correctly if the feature is ever remounted", () => {
+    // The store and its pure predicate are intact, not half-deleted -- so bringing the
+    // control back is a re-mount, not a rebuild.
+    const now = Date.parse("2026-09-05T12:00:00Z");
+    const oneHour = 60 * 60 * 1000;
+    expect(withinWindow("2026-09-05T11:30:00Z", oneHour, now)).toBe(true);
+    expect(withinWindow("2026-09-05T09:00:00Z", oneHour, now)).toBe(false);
+    expect(withinWindow(null, oneHour, now)).toBe(true); // never hide undated data
+    expect(withinWindow("2026-09-05T09:00:00Z", null, now)).toBe(true); // "all" never filters
   });
 });
 

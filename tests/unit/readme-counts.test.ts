@@ -5,7 +5,7 @@ import "@/lib/console/widgets";
 import { listWidgetTypes } from "@/lib/console/registry";
 import { BUILTIN_PRESETS } from "@/lib/console/presets";
 import { BUILTIN_VARIANTS } from "@/lib/variants/builtins";
-import { SIGNALS } from "@/lib/signals/registry";
+import { SIGNALS, MAP_SIGNALS } from "@/lib/signals/registry";
 import { allExplainers } from "@/lib/signals/explain";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { CASTLEROCK_SYSTEMS } from "@/lib/sources/castlerock";
@@ -182,29 +182,45 @@ describe("README camera figures", () => {
 });
 
 describe("README layer figures", () => {
-  // "41 live layers" = 4 core (cameras, webcams, aircraft, satellites) + 37 signals.
+  // "36 live layers" = 4 core (cameras, webcams, aircraft, satellites) + 32 MAP signals.
+  //
+  // MAP_SIGNALS, not SIGNALS, and the distinction is the claim's honesty. The sentence
+  // is "N live layers ON ONE GLOBE", and a data-only source (lib/signals/types.ts) draws
+  // nothing on the globe -- it is registered and fetchable and feeds panels, but it is
+  // not a layer. Counting the registry here would inflate the headline number of the
+  // whole project by every source we ever decide to keep as data but not as a pin.
   const CORE_LAYERS = 4;
 
   it("states a layer total that is the core layers plus the signal registry", () => {
     const m = README.match(/\*\*(\d+) live layers on one globe\*\*/);
     expect(m, "the intro no longer states a layer total").not.toBeNull();
-    expect(Number(m![1])).toBe(CORE_LAYERS + SIGNALS.length);
+    expect(Number(m![1])).toBe(CORE_LAYERS + MAP_SIGNALS.length);
   });
 
   it("states the same total in the Features bullet", () => {
     const m = README.match(/- \*\*(\d+) layers, each independently attributed\*\*/);
     expect(m, "the layers bullet no longer states a total").not.toBeNull();
-    expect(Number(m![1])).toBe(CORE_LAYERS + SIGNALS.length);
+    expect(Number(m![1])).toBe(CORE_LAYERS + MAP_SIGNALS.length);
   });
 
   it("states the signal-layer count the registry ships", () => {
     const m = README.match(/plus (\d+) global-signal layers/);
     expect(m, "the layers bullet no longer states a signal count").not.toBeNull();
-    expect(Number(m![1])).toBe(SIGNALS.length);
+    expect(Number(m![1])).toBe(MAP_SIGNALS.length);
   });
 
   // The confidence split is the most quietly rot-prone figure in the file: adding one
   // layer changes exactly one of five numbers, and nothing else in the repo notices.
+  it("states the provenance-card count, which counts SOURCES not layers", () => {
+    // Deliberately SIGNALS and not MAP_SIGNALS: every registered source carries a
+    // provenance card, including a data-only one. This number is therefore allowed to
+    // exceed the layer count above, and the two must not be "unified" by someone
+    // tidying up -- they answer different questions.
+    const m = README.match(/each of the (\d+) carries a provenance card/);
+    expect(m, "the provenance bullet no longer states a source count").not.toBeNull();
+    expect(Number(m![1])).toBe(SIGNALS.length);
+  });
+
   it("states the confidence split the explainers actually declare", () => {
     const m = README.match(
       /confidence class \(today (\d+) official, (\d+) reported, (\d+) measured, (\d+) modelled, (\d+) derived\)/,
