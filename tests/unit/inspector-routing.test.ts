@@ -2,12 +2,20 @@ import { beforeEach, expect, test } from "vitest";
 import { inspectorStore, sourceRegions } from "@/lib/shell/inspector";
 import { DEFAULT_STATE, layersStore } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
-// Static, not `await import(...)` inside a test body. Loading the store pulls the
-// whole signal registry, and vitest bills that to whichever test triggers it — which
-// put these two within a few hundred ms of the 5s timeout and made them fail under
-// full-suite parallel load every time a signal was added. The module has no top-level
-// side effects (captureOverride subscribes in bootstrap()), so this is a move, not a
-// behaviour change; three other test files already import it this way.
+// Static, not `await import(...)` inside a test body. Loading this module pulls the whole
+// signal registry, and vitest bills that load to whichever TEST triggers it rather than to
+// collect — which left two tests here spending ~1.8s of a 5s budget doing nothing but
+// importing, and going red whenever the machine was busy.
+//
+// It was NOT caused by the registry growing, though that was the first and most convincing
+// explanation. A peer reproduced both failures on a branch whose registry is byte-identical
+// to main, which is what ruled it out. Registry size, an extra test file, and someone
+// else's build in another worktree are all just ways to spend the same headroom.
+//
+// The module has no top-level side effects (captureOverride subscribes in bootstrap()), so
+// hoisting is a move and not a behaviour change; three other test files already import it
+// this way. Guarded by no-registry-import-in-test-body.test.ts, which explains there why
+// the guard is structural rather than a timeout.
 import { variantStore } from "@/lib/variants/store";
 
 const RING: [number, number][] = [
