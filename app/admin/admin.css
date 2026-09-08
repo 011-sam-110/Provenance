@@ -11,6 +11,24 @@
  */
 
 .adm-root {
+  /* ONE FACE, Inter. Nine rules below used to read
+   `var(--tn-font-mono, ui-monospace, monospace)` directly; they now read this token,
+   which is here so the fallback list exists in exactly one place instead of nine.
+
+   TWO THINGS THE FALLBACK IS DOING. `--tn-font-mono` is no longer published by
+   next/font — globals.css defines it as an alias of `--tn-font-sans` — so the var
+   still resolves to Inter and nothing downstream changed. And the fallback chain is
+   now SANS: the old `ui-monospace, monospace` would have quietly reinstated a mono
+   face on whichever surface the var failed to resolve on, which is the one way this
+   change could have half-landed and looked deliberate.
+
+   Every one of those nine also gained `font-variant-numeric: tabular-nums`. They are
+   stat numbers, funnel counts, right-aligned table columns, tallies, log lines and
+   meter labels — all of which were column-aligned only because the face was
+   fixed-advance. /admin renders OUTSIDE `.tn-terminal`, so it cannot inherit the
+   console's tabular-nums and has to ask. */
+  --adm-mono: var(--tn-font-mono, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   --adm-bg: #0b1016;
   --adm-panel: #131b24;
   --adm-panel-2: #1a242f;
@@ -27,7 +45,7 @@
   min-height: 100vh;
   background: var(--adm-bg);
   color: var(--adm-ink);
-  font-family: var(--tn-font-sans, ui-sans-serif, system-ui, sans-serif);
+  font-family: var(--tn-font-sans, "Inter"), ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.55;
 }
@@ -71,7 +89,8 @@
 }
 
 .adm-env {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -120,7 +139,8 @@
   padding: 14px 16px;
 }
 .adm-stat-n {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 26px;
   font-weight: 500;
   letter-spacing: -0.02em;
@@ -172,7 +192,8 @@
   min-width: 2px;
 }
 .adm-funnel-n {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   text-align: right;
   font-size: 13px;
 }
@@ -200,7 +221,8 @@
   vertical-align: top;
 }
 .adm-table td.adm-num {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
@@ -232,7 +254,8 @@
 }
 .adm-frame-msg {
   color: var(--adm-ink-faint);
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 13px;
   padding: 24px;
   text-align: center;
@@ -325,7 +348,8 @@
 .adm-btn:hover { border-color: var(--adm-accent-bright); }
 .adm-btn:focus-visible { outline: 2px solid var(--adm-accent-bright); outline-offset: 2px; }
 .adm-btn kbd {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
   color: var(--adm-ink-faint);
   border: 1px solid var(--adm-line);
@@ -362,7 +386,8 @@
 .adm-tally {
   display: flex;
   gap: 14px;
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   color: var(--adm-ink-dim);
   margin-top: 14px;
@@ -389,7 +414,8 @@
 }
 
 .adm-log {
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   color: var(--adm-ink-dim);
   background: var(--adm-panel);
@@ -509,7 +535,8 @@
 }
 .lv-meter-label {
   color: var(--adm-ink-dim);
-  font-family: var(--tn-font-mono, ui-monospace, monospace);
+  font-family: var(--adm-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   white-space: nowrap;
 }

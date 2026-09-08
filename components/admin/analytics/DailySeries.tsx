@@ -107,7 +107,15 @@ export function DailySeries({ points, todayUtc }: { points: DayPoint[]; todayUtc
         <tbody>
           {[...points].reverse().map((p) => (
             <tr key={p.date}>
-              <td style={{ fontFamily: "var(--tn-font-mono, ui-monospace, monospace)", fontSize: 12.5 }}>
+              {/* This is a column of ISO dates, so it is exactly the case tabular
+                  figures exist for; `--adm-mono` is admin.css's one Inter stack. */}
+              <td
+                style={{
+                  fontFamily: "var(--adm-mono)",
+                  fontVariantNumeric: "tabular-nums",
+                  fontSize: 12.5,
+                }}
+              >
                 {p.date}
                 {p.date === todayUtc && (
                   <span style={{ color: "var(--adm-ink-faint)" }}> · partial</span>

@@ -1,12 +1,17 @@
 "use client";
-// THE STAGE RAIL — four icon groups on the right edge of the map, one flyout
+// THE STAGE RAIL — two icon groups on the right edge of the map, one flyout
 // open at a time, expanding leftward into the map.
 //
-// It replaces five things: the centred search box (.tnx-stage-search), the
-// right-hand text stack (.tnx-stage-right → AoiControl + CameraPickControl), and
-// MapLibre's zoom/compass cluster, which is deleted in WorldMap.tsx. The ⓘ
-// attribution control STAYS — see lib/map/attribution.ts, it is a licence
-// obligation for CARTO/OSM (ODbL), OpenTopoMap (CC-BY-SA) and Esri, not styling.
+// IT WAS FOUR. Draw ("Restrict results to an area") and Cameras ("Pick cameras for
+// a wall") were removed on request, along with their flyouts. Search and View stay.
+// Neither underlying feature went with its button — see the note in
+// lib/console/mapRail.ts for where each is still reached from — so this file lost
+// two entry points, not two capabilities.
+//
+// It replaces MapLibre's zoom/compass cluster, which is deleted in WorldMap.tsx,
+// and the centred search box (.tnx-stage-search). The ⓘ attribution control STAYS —
+// see lib/map/attribution.ts, it is a licence obligation for CARTO/OSM (ODbL),
+// OpenTopoMap (CC-BY-SA) and Esri, not styling.
 //
 // CLICK, NOT HOVER. Asked for and confirmed, and it is also the position this
 // codebase has already argued for twice: CameraPickControl existed because the
@@ -39,10 +44,8 @@ import {
   railStep,
   useMapRail,
 } from "@/lib/console/mapRail";
-import { CameraBracketGlyph, MapPenGlyph, PinGearGlyph, SearchGlyph } from "./RailIcons";
+import { PinGearGlyph, SearchGlyph } from "./RailIcons";
 import SearchFlyout from "./SearchFlyout";
-import DrawFlyout from "./DrawFlyout";
-import CamerasFlyout from "./CamerasFlyout";
 import ViewFlyout from "./ViewFlyout";
 
 /** The id focusStageSearch() looks for to decide whether the rail is on screen. */
@@ -70,26 +73,6 @@ const GROUPS: {
     popClass: "tnx-maprail-pop-search",
     glyph: SearchGlyph,
     body: SearchFlyout,
-  },
-  {
-    id: "draw",
-    // The group holds TWO tools now (a drawn area and a radius), so the button
-    // names the outcome they share rather than either gesture. "Restrict results
-    // to an area" is still the sentence — a radius IS an area — and keeping the
-    // wording is what lets the e2e accessible names stay put.
-    label: "Restrict results to an area",
-    btnClass: "tnx-maprail-btn-draw",
-    popClass: "tnx-maprail-pop-draw",
-    glyph: MapPenGlyph,
-    body: DrawFlyout,
-  },
-  {
-    id: "cameras",
-    label: "Pick cameras for a wall",
-    btnClass: "tnx-maprail-btn-cameras",
-    popClass: "tnx-maprail-pop-cameras",
-    glyph: CameraBracketGlyph,
-    body: CamerasFlyout,
   },
   {
     id: "view",
@@ -153,10 +136,11 @@ export default function MapRail() {
 
   // ── Outside click ─────────────────────────────────────────────────────────
   //
-  // Suppressed while the map is armed. Draw and Cameras exist to make the user
-  // click ON the map; closing on that click would take the vertex counter and
-  // Cancel with it at the one moment they are needed. No refocus on this path —
-  // the user is aiming at the map, and yanking focus back would fight the click.
+  // Suppressed while the map is armed. The two groups this was written for are
+  // gone, but the map is still armed from surfaces that were never on this rail —
+  // see railHoldsOpen in lib/console/mapRail.ts, which is where that was checked
+  // rather than assumed. No refocus on this path — the user is aiming at the map,
+  // and yanking focus back would fight the click.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {

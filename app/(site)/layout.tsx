@@ -1,36 +1,21 @@
-import { Archivo, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import "../provenance.css";
 
-// The landing page's three faces, all open source — which matters on a page whose
-// argument is that open source is what makes a number checkable. The typography
-// should not be the one proprietary thing on it.
+// THIS LAYOUT NO LONGER LOADS A FONT, AND THAT IS THE POINT.
 //
-// The contrast axis here is WIDTH, not serif-vs-sans: an expanded display against
-// a normal-width body against a mono utility face. Archivo is loaded with its wdth
-// axis so the headlines can sit at ~118 without a fake horizontal scale.
+// It used to load three, all open source — which mattered on a page whose argument is
+// that open source is what makes a number checkable: Archivo for display (with its
+// `wdth` axis, so the headlines sat at ~118), Public Sans for body, IBM Plex Mono for
+// the utility role. The contrast axis was WIDTH — an expanded display against a
+// normal-width body against a mono. That axis is gone by request; everything is Inter.
 //
-// These live in the (site) group's layout, not the root, so the console at /app
-// never downloads them.
-const archivo = Archivo({
-  subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--pv-font-display",
-  display: "swap",
-});
-
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  variable: "--pv-font-body",
-  display: "swap",
-});
-
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--pv-font-mono",
-  display: "swap",
-});
-
+// They lived HERE rather than in the root layout so the console at /app never
+// downloaded the marketing faces. With one shared family that argument inverts: this
+// group nests inside app/layout.tsx, which already self-hosts Inter and publishes it
+// as `--tn-font-sans` on <html>, so a second `Inter()` call here would emit a second
+// @font-face family for the same bytes and buy nothing. provenance.css defines
+// `--pv-font-display` / `--pv-font-body` / `--pv-font-mono` from `--tn-font-sans`
+// instead, so all three ROLE names survive and every `font-family: var(--pv-*)` rule
+// downstream is untouched.
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   // `pv-night` is server-rendered because the page opens on the night hero. It is
   // ScrollGround's to own from the first scroll frame onward, but leaving it off
@@ -45,10 +30,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
   // bar but NO hero would need to clear it — ScrollGround only removes it when a
   // [data-pv-hero] exists.
   return (
-    <div
-      className={`pv-root pv-night pv-bar-night ${archivo.variable} ${publicSans.variable} ${plexMono.variable}`}
-    >
-      {children}
-    </div>
+    <div className="pv-root pv-night pv-bar-night">{children}</div>
   );
 }

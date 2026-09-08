@@ -699,7 +699,7 @@ export default function PrivacyPage() {
               whatever host you gave it.
             </p>
             <p>
-              Typefaces are self-hosted. They are downloaded at build time and served from this
+              The typeface is self-hosted. It is downloaded at build time and served from this
               domain, so your browser never contacts Google Fonts.
             </p>
           </div>

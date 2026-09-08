@@ -140,10 +140,20 @@ function drawnInsideRing(page: Page): Promise<number> {
   }, BBOX);
 }
 
-/** Point the Sources rail at a context through the switcher above the tabs. */
+/**
+ * Point the Sources rail at a context through the switcher.
+ *
+ * "above the tabs" is what this used to say; the rail's tab strip is gone and the
+ * switcher is the first control in it now.
+ *
+ * `:not(.tn-ctxbar-draw)` because that menu also carries a "Draw an area" ACTION
+ * sharing the row class. No context name collides with its text today, so this is
+ * a guard against a future one rather than a fix — but a context picker that could
+ * silently arm a draw is not a failure anyone would enjoy debugging.
+ */
 async function switchContext(page: Page, name: string) {
   await page.locator(".tn-ctxbar").click();
-  await page.locator(".tn-ctxbar-opt", { hasText: name }).first().click();
+  await page.locator(".tn-ctxbar-opt:not(.tn-ctxbar-draw)", { hasText: name }).first().click();
   await expect(page.locator(".tn-ctxbar")).toHaveText(new RegExp(name));
 }
 
@@ -175,7 +185,7 @@ test("switching context draws nothing different, and an area's own source is cro
   // The switcher names what a toggle would write, and it starts on World.
   await expect(page.locator(".tn-ctxbar")).toHaveText(/World/);
 
-  // The areas block lives in the Sources tab now, where the presets used to be.
+  // The areas block sits in the rail's one scroll, under the search box.
   await expect(page.locator(".tn-insp-row")).toHaveCount(1);
   await expect(page.locator(".tn-insp-label")).toHaveText(AREA_LABEL);
   // The rail is pointed at World, so no row carries the pill.

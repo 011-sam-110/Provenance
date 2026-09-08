@@ -42,6 +42,25 @@ export interface CircleSpec {
  */
 export const CIRCLE_VERTICES = 64;
 
+/**
+ * The minimum a drag must cover before it counts as a circle rather than a click.
+ * Below this, a user who pressed and released on the same spot would get a ring
+ * containing nothing and no explanation.
+ *
+ * IT LIVES HERE, in the pure module, because two surfaces need it and they must not
+ * disagree: the gesture (camslot.circle.ts) uses it to decide whether a release
+ * produced an area at all, and the draw banner (lib/shell/drawBanner.ts) uses it to
+ * decide whether "release to set it" is a true statement yet. A banner promising a
+ * result the gesture is about to refuse is the same defect as saying nothing.
+ *
+ * NAMED FOR THE CIRCLE, not `MIN_RADIUS_KM`. Two other constants in this codebase
+ * carry that name and mean different things by three and four orders of magnitude —
+ * `MIN_DRAWN_RADIUS_KM` in lib/map/aoi.ts (1 m, the floor under a drawn radius) and
+ * a module-private one in lib/shell/scope.ts (10 km, the floor a geocoder extent is
+ * widened to). A shared export needs a name that cannot be confused with either.
+ */
+export const MIN_CIRCLE_RADIUS_KM = 0.05;
+
 /** Great-circle distance in km. */
 export function haversineKm(
   a: { lat: number; lon: number },

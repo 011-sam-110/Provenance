@@ -115,13 +115,25 @@ export function maintenanceHtml(opts: {
     --line: rgba(15,23,42,.10); --line-2: rgba(15,23,42,.16);
     --accent: ${BRAND.accent}; --accent-2: #0b6175; --warn: #a85907;
     --blurple: #5865f2; --blurple-2: #4752c4;
-    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+    /* THE ONE SURFACE THAT CANNOT GET THE SELF-HOSTED INTER, and it is worth saying
+       why rather than leaving the reader to wonder. This page is a standalone HTML
+       string served by middleware when MAINTENANCE_MODE is on. It has no React tree,
+       so next/font's CSS variable never reaches it, and pulling Inter would mean a
+       render-blocking <link> to fonts.googleapis.com — an external request on the one
+       page whose whole job is to render when the app is down, and a contradiction of
+       the "your browser never contacts Google Fonts" promise on /privacy.
+       So: Inter is NAMED FIRST and picked up only if the visitor has it installed
+       locally; otherwise this page is the system sans. What it is NOT any more is
+       monospace — --mono no longer names a mono face, so this surface cannot be the
+       one place the old texture survives. The name is kept because three rules read
+       it and it still means "the small tracked-out label role". */
+    --mono: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
     background: var(--bg); color: var(--ink);
-    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font: 16px/1.6 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
   a { color: var(--accent-2); }

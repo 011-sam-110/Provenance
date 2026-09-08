@@ -53,10 +53,31 @@
   --pv-g: 1;
   --pv-p: 0;
 
-  /* type roles — the variables are published by next/font in (site)/layout.tsx */
-  --pv-display: var(--pv-font-display), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
-  --pv-body: var(--pv-font-body), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
-  --pv-mono: var(--pv-font-mono), ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* Type roles — ONE FACE, Inter. It is NOT loaded here or by (site)/layout.tsx any
+     more: this group nests inside app/layout.tsx, which self-hosts Inter via
+     next/font and publishes it as `--tn-font-sans` on <html>. Reading that instead of
+     loading a second copy is the only reason this page is not shipping the same font
+     bytes twice under two family names.
+
+     `--tn-*` IS THE ONE EXCEPTION TO THIS FILE'S CONTAINMENT RULE, and it is
+     deliberate. The rest of the sheet may not touch console tokens; this reads
+     exactly one, the font handle, because the alternative is a duplicate download.
+     Nothing else crosses.
+
+     Display was Archivo (loaded with its `wdth` axis and set at ~118 on the
+     headlines) and mono was IBM Plex Mono; both are gone, and with them the page's
+     width contrast. The three ROLES survive because ~28 rules below read them by
+     name, and because they still mean different things even on one family — display
+     carries the headline tracking, mono carries the tabular figures. Each keeps a
+     var() default so an unstyled render degrades to the system sans instead of
+     invalidating the whole declaration; the mono fallback deliberately names NO
+     monospace face. */
+  --pv-font-body: var(--tn-font-sans, "Inter");
+  --pv-font-display: var(--pv-font-body, "Inter");
+  --pv-font-mono: var(--pv-font-body, "Inter");
+  --pv-display: var(--pv-font-display, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pv-body: var(--pv-font-body, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pv-mono: var(--pv-font-mono, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   font-family: var(--pv-body);
   font-size: 17px;
@@ -186,6 +207,9 @@
 
 .pv-eyebrow {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -203,10 +227,16 @@
   content: "";
 }
 
+/* `font-variation-settings: "wdth" var(--pv-h1-wdth, 118)` was here, and on .pv-h2
+   (115), .pv-h3 (108), .pv-root .pv-wordmark (112), .pv-adapter-closer (115) and
+   .pv-src-label (106). Inter
+   has no `wdth` axis, so all six became declarations naming an axis that no longer
+   exists — inert, and misleading to the next reader. Removed rather than left. The
+   headlines are now Inter 900 and carry their width from `letter-spacing` alone;
+   `--pv-h1-wdth` had no writer in any component, so nothing was reading it either. */
 .pv-h1 {
   font-family: var(--pv-display);
   font-weight: 900;
-  font-variation-settings: "wdth" var(--pv-h1-wdth, 118);
   font-size: clamp(2.9rem, 8.4vw, 6rem);
   line-height: 0.9;
   letter-spacing: -0.025em;
@@ -218,7 +248,6 @@
 .pv-h2 {
   font-family: var(--pv-display);
   font-weight: 900;
-  font-variation-settings: "wdth" 115;
   font-size: clamp(1.9rem, 4.4vw, 3rem);
   line-height: 1;
   letter-spacing: -0.02em;
@@ -230,7 +259,6 @@
 .pv-h3 {
   font-family: var(--pv-display);
   font-weight: 800;
-  font-variation-settings: "wdth" 108;
   font-size: 1.28rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -252,6 +280,9 @@
 }
 .pv-note {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.76rem;
   line-height: 1.65;
   color: var(--pv-fg-mute);
@@ -325,6 +356,9 @@
   backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
   -webkit-backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -400,7 +434,6 @@
 .pv-root .pv-wordmark {
   font-family: var(--pv-display);
   font-weight: 900;
-  font-variation-settings: "wdth" 112;
   font-size: 0.86rem;
   letter-spacing: 0.3em;
   /* CSS puts tracking after the LAST glyph too, so 0.3em of dead space hangs off
@@ -475,7 +508,10 @@
 }
 /* Phones: tighten before giving anything up. MEASURED at 390 (the commonest phone
    width), where the untightened cluster left only 34px of slack — enough today and
-   not enough if Archivo fails to load and a wider fallback stands in. */
+   not enough if the display face fails to load and a wider fallback stands in.
+   The 34px was measured against ARCHIVO, which is gone; Inter is narrower at the
+   same size, so the slack can only have grown. Not re-measured — re-walk 390 in a
+   browser before trusting the figure for anything new. */
 @media (max-width: 30rem) {
   .pv-bar { gap: 1rem; }
   .pv-root .pv-wordmark {
@@ -687,6 +723,9 @@
   gap: 1.5rem;
   padding: 0.75rem 0;
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -718,6 +757,9 @@
   z-index: 3;
   margin: 0;
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -749,6 +791,9 @@
 }
 .pv-cta {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -850,6 +895,9 @@
   width: max-content;
   gap: 2rem;
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -952,6 +1000,9 @@
 }
 .pv-payload {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: clamp(0.66rem, 1.5vw, 0.8rem);
   line-height: 1.6;
   margin: 0;
@@ -974,6 +1025,9 @@
 }
 .pv-arrow {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   color: #3fb4ce;
   text-align: center;
   font-size: 1.1rem;
@@ -1023,6 +1077,9 @@
   background: rgba(11, 16, 22, 0.92);
   border: 1px solid rgba(232, 238, 241, 0.2);
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.7rem;
   line-height: 1.75;
   color: #c6d2d9;
@@ -1088,6 +1145,9 @@
   gap: 0.5rem;
   align-items: center;
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1145,6 +1205,9 @@
 
 .pv-adapter-foot {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
   line-height: 1.6;
   color: #7a8892;
@@ -1153,7 +1216,6 @@
 .pv-adapter-closer {
   font-family: var(--pv-display);
   font-weight: 900;
-  font-variation-settings: "wdth" 115;
   text-transform: uppercase;
   font-size: clamp(1.2rem, 2.8vw, 1.9rem);
   letter-spacing: -0.015em;
@@ -1217,6 +1279,9 @@
 }
 .pv-wall-group-label {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1242,7 +1307,6 @@
 .pv-src-label {
   font-family: var(--pv-display);
   font-weight: 800;
-  font-variation-settings: "wdth" 106;
   font-size: 0.98rem;
   line-height: 1.15;
   color: var(--pv-fg);
@@ -1259,6 +1323,9 @@
   justify-content: space-between;
   gap: 0.5rem;
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1286,6 +1353,9 @@
 .pv-status[data-state="down"] i { background: #b4413c; }
 .pv-env {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   font-size: 0.62em;
   letter-spacing: 0.04em;
@@ -1364,6 +1434,9 @@
 }
 .pv-ledger thead th {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1405,6 +1478,9 @@
   border: 1px solid var(--pv-rule);
   background: var(--pv-surface);
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
   /* Parallax: the facts panel overtakes the prose as you pass. Transform only. */
   transform: translate3d(0, calc(var(--pv-shift, 0) * -1px), 0);
@@ -1514,6 +1590,9 @@
 }
 .pv-footer h4 {
   font-family: var(--pv-mono);
+  /* Inter replaced the mono utility face; tabular figures are what kept these
+     columns aligned, so they are asked for explicitly now. */
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;

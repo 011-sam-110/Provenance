@@ -1,33 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { BRAND, siteUrl } from "@/lib/brand";
 import "./globals.css";
 import { Suspense } from "react";
 import { Beacon } from "@/components/analytics/Beacon";
 
-// The OpenData Terminal's two typefaces, self-hosted by next/font (no runtime
-// request to Google, no render-blocking <link>, and a size-matched local fallback
-// generated per family so the swap does not reflow the grid).
+// ONE typeface for the whole product, self-hosted by next/font (no runtime request
+// to Google, no render-blocking <link>, and a size-matched local fallback generated
+// so the swap does not reflow the grid).
 //
-// Neither was loaded before this: `--tn-mono` merely NAMED "JetBrains Mono" third in
-// an OS-fallback list, so on Windows it resolved to Consolas and on macOS to SF Mono,
-// and "IBM Plex Sans" did not appear anywhere in the repo. The terminal's whole look
-// is these two faces at 9–12.5px, so the design does not exist without this.
+// This replaced JetBrains Mono + IBM Plex Sans. Losing the mono face means losing
+// FIXED-ADVANCE COLUMNS, which the terminal was relying on for every number, age,
+// coordinate and port readout — so `.tn-terminal` now sets
+// `font-variant-numeric: tabular-nums` and it inherits to the whole console. Inter
+// ships `tnum`, so digits still line up; letters no longer do, which is the accepted
+// cost of the change.
 //
-// Weights are exactly the ones the design uses and no more — every extra weight is
-// another woff2 on the critical path. Mono: 400 body/rows, 500 emphasis, 700 labels
-// and numbers, 800 the SEL badge and mode pills. Sans: 400/500/600 for headline
-// titles only.
-const jetbrainsMono = JetBrains_Mono({
+// `weight` is deliberately OMITTED. Inter is a variable font, so one file carries the
+// entire 100–900 axis — cheaper than the seven static instances the stylesheets ask
+// for (400/500/550/600/620/650/700/800/900), and the only way the non-standard
+// 550/620/650 render as written instead of snapping to a neighbour.
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
-  variable: "--tn-font-mono",
-  display: "swap",
-});
-
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
   variable: "--tn-font-sans",
   display: "swap",
 });
@@ -92,9 +86,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // fight uiStore or variantStore (which re-asserts a variant's theme on every
     // switch and would yank a global dark default straight back to light).
     //
-    // The two font classes only publish `--tn-font-mono` / `--tn-font-sans` on the
-    // root; nothing changes typeface until globals.css consumes them.
-    <html lang="en" data-theme="light" className={`${jetbrainsMono.variable} ${ibmPlexSans.variable}`}>
+    // The font class only publishes `--tn-font-sans` on the root; nothing changes
+    // typeface until globals.css consumes it. `--tn-font-mono` is NOT gone — it is
+    // aliased to `--tn-font-sans` in globals.css, because a handful of rules
+    // (app/admin/admin.css, the analytics tables) read the mono variable by name and
+    // must still resolve to Inter rather than dropping to their fallback list.
+    <html lang="en" data-theme="light" className={inter.variable}>
       <body>
         {/*
           WHAT COUNTS PAGE VIEWS HERE, AND WHAT DOES NOT.

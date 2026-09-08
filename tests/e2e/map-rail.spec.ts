@@ -1,7 +1,18 @@
 import { test, expect } from "@playwright/test";
 
-// The stage rail: four icon groups on the right edge of the map, one flyout open
+// The stage rail: two icon groups on the right edge of the map, one flyout open
 // at a time, expanding leftward.
+//
+// IT WAS FOUR. Draw ("Restrict results to an area") and Cameras ("Pick cameras for
+// a wall") were removed on request, and the three cases that covered them went with
+// them rather than being repointed at something else. One of those was the §1
+// regression guard for railHoldsOpen — clicking the map must not close the flyout
+// that armed the gesture — and THAT RULE IS STILL LIVE even though its subject is
+// gone: the map is still armed from AreasPanel, from camslot.area.ts and from an
+// empty camera wall, none of which is on this rail. tests/unit/map-rail.test.ts
+// holds the pure function; nothing in a browser holds the wiring any more. Restoring
+// it means arming from one of those three surfaces with Search or View open, and it
+// is a real gap until someone does.
 //
 // WHY THIS FILE EXISTS AT ALL. vitest here is `environment: "node"` and collects
 // `tests/unit/**/*.test.ts` only — .tsx is not collected and no React testing
@@ -40,34 +51,32 @@ async function mapReady(page: import("@playwright/test").Page) {
   await expect(page.locator(".maplibregl-ctrl-attrib-inner")).toContainText(/\S/, {
     timeout: 30_000,
   });
-  // And then the tiles. `startDraw` returns false unless `map.isStyleLoaded()` —
-  // see ensureLayers in lib/map/aoi.ts — which a resolved credit line does not
-  // yet guarantee, so the flyout would say "The map is still loading" and the
-  // outside-click guard would correctly not be armed. This was measured, not
-  // guessed: it is what made the draw case fail on its first run.
+  // And then the tiles. A resolved credit line does not yet guarantee
+  // `map.isStyleLoaded()`, and several things on this stage refuse until it is —
+  // `startDraw` among them, see ensureLayers in lib/map/aoi.ts. Measured, not
+  // guessed: it is what made the (now removed) draw case fail on its first run, and
+  // the screenshot case below still needs it for the same reason.
   await page.waitForLoadState("networkidle");
 }
 
-/** The four groups, by the accessible name each button actually carries. */
+/** The two groups, by the accessible name each button actually carries. */
 const SEARCH = /Search for a place/;
-const DRAW = /Restrict results to an area/;
-const CAMERAS = /Pick cameras for a wall/;
 const VIEW = /View settings/;
 
-/** The two tools inside the Draw group, by their accessible names. */
-const AREA_TOOL = /Restrict results to a drawn area/;
-const RADIUS_TOOL = /Restrict results to a radius/;
-
-test("the rail is one toolbar of four groups, and opens one at a time", async ({ page }) => {
+test("the rail is one toolbar of two groups, and opens one at a time", async ({ page }) => {
   const rail = page.locator(RAIL);
   await expect(rail).toBeVisible();
   // role=toolbar, never role=dialog: ConsoleShell's global keydown handler early
   // returns while any dialog is mounted, so a dialog-flavoured flyout would kill
   // "/" and Escape app-wide for as long as it was open.
   await expect(rail).toHaveAttribute("role", "toolbar");
-  await expect(rail.getByRole("button")).toHaveCount(4);
+  // TWO, and the count is asserted rather than just the two names: a Draw or
+  // Cameras button finding its way back would still satisfy a pair of name checks.
+  await expect(rail.getByRole("button")).toHaveCount(2);
+  await expect(rail.getByRole("button", { name: /Restrict results to an area/ })).toHaveCount(0);
+  await expect(rail.getByRole("button", { name: /Pick cameras for a wall/ })).toHaveCount(0);
 
-  for (const name of [SEARCH, DRAW, CAMERAS, VIEW]) {
+  for (const name of [SEARCH, VIEW]) {
     await expect(rail.getByRole("button", { name })).toHaveAttribute("aria-expanded", "false");
   }
 
@@ -77,12 +86,12 @@ test("the rail is one toolbar of four groups, and opens one at a time", async ({
   // Opening another group REPLACES it rather than stacking. Asserted on the flyout
   // count, not on the button state, so a panel left mounted behind the new one
   // still fails.
-  await rail.getByRole("button", { name: CAMERAS }).click();
+  await rail.getByRole("button", { name: SEARCH }).click();
   await expect(page.locator(".tnx-maprail-pop")).toHaveCount(1);
   await expect(rail.getByRole("button", { name: VIEW })).toHaveAttribute("aria-expanded", "false");
 
   // Clicking the open group closes it.
-  await rail.getByRole("button", { name: CAMERAS }).click();
+  await rail.getByRole("button", { name: SEARCH }).click();
   await expect(page.locator(".tnx-maprail-pop")).toHaveCount(0);
 });
 
@@ -175,129 +184,6 @@ test("Search: the group opens focused, and ; opens it from anywhere", async ({ p
   await expect(input).toBeFocused();
   // And the ";" itself must not be typed into the field it just opened.
   await expect(input).toHaveValue("");
-});
-
-test("Draw: clicking the map does not close the flyout that armed the gesture", async ({ page }) => {
-  // The §1 regression guard. Draw exists to make the user click ON the map; a
-  // plain close-on-outside-click would shut the panel on the very first vertex and
-  // take the live counter and Cancel with it.
-  await mapReady(page);
-  const rail = page.locator(RAIL);
-  await rail.getByRole("button", { name: DRAW }).click();
-
-  const pop = page.locator(".tnx-maprail-pop");
-  await pop.getByRole("button", { name: AREA_TOOL }).click();
-
-  // Assert the draw ARMED before clicking the map, so a failure names the real
-  // cause. startDraw returns false while the style is still loading and the
-  // flyout says so in a note; without this line that shows up further down as a
-  // confusing "the flyout closed", which is the guard behaving correctly on a
-  // gesture that never started.
-  await expect(pop.getByRole("status")).toContainText(/points/);
-
-  const canvas = page.locator(".map-canvas");
-  await canvas.click({ position: { x: 300, y: 200 } });
-
-  await expect(pop).toBeVisible();
-  await expect(pop.getByRole("status")).toContainText(/points/);
-  await expect(pop.getByRole("button", { name: "Cancel" })).toBeVisible();
-
-  // Escape abandons the RING, not the flyout — rung 1 of the ladder. The rail's
-  // capture-phase listener stands down while a draw is running, so this key
-  // reaches lib/map/aoi.ts and the panel is still there afterwards, back in its
-  // idle state.
-  await page.keyboard.press("Escape");
-  await expect(pop).toBeVisible();
-  await expect(pop.getByRole("button", { name: AREA_TOOL })).toBeVisible();
-});
-
-test("Radius: two clicks set a circular scope, and the readout names the radius", async ({ page }) => {
-  // The second tool in the Draw group. It is worth a case of its own rather than a
-  // variant of the polygon one, because the gesture is genuinely different: the
-  // FIRST click commits a centre and does not end anything, and the second both
-  // sizes and finishes. A tool where click one silently did nothing visible would
-  // be indistinguishable from a dead control.
-  await mapReady(page);
-  const rail = page.locator(RAIL);
-  await rail.getByRole("button", { name: DRAW }).click();
-
-  const pop = page.locator(".tnx-maprail-pop");
-  await pop.getByRole("button", { name: RADIUS_TOOL }).click();
-  await expect(pop.getByRole("status")).toContainText(/Click the centre/);
-
-  const canvas = page.locator(".map-canvas");
-  await canvas.click({ position: { x: 300, y: 220 } });
-
-  // Centre placed. The panel must still be open — Radius, like Area, exists to make
-  // you click ON the map, so railHoldsOpen has to cover it too. This is the §1
-  // regression guard for the new tool.
-  await expect(pop).toBeVisible();
-  await expect(pop.getByRole("status")).toContainText(/click the edge/);
-  await expect(pop.getByRole("button", { name: "Cancel" })).toBeVisible();
-
-  // Second click sizes and commits. A radius is stored as a ring, so the scope this
-  // leaves behind is an AOI — what must NOT happen is the panel reporting it as a
-  // point count, which is why the set state renders the scope's own label.
-  await canvas.click({ position: { x: 420, y: 300 } });
-  await expect(pop.getByText(/Drawn radius \(/)).toBeVisible();
-  await expect(pop.getByRole("button", { name: "Clear" })).toBeVisible();
-
-  // And Clear puts the world back, from a radius exactly as from a polygon.
-  await pop.getByRole("button", { name: "Clear" }).click();
-  await expect(pop.getByText(/Drawn radius \(/)).toHaveCount(0);
-  await expect(pop.getByRole("button", { name: RADIUS_TOOL })).toBeVisible();
-});
-
-test("Cameras: two buttons with marks, no New wall, and arming turns the pins on", async ({ page }) => {
-  // THE ONE THING THE NODE TESTS CANNOT SAY. tests/unit/camslot-layers.test.ts pins
-  // the store contract that armPicking() honours, but vitest here is environment:
-  // "node" and collects .ts only -- nothing there can see a button, so nothing there
-  // can catch the flyout being wired to pickStore.setMode again, or New wall coming
-  // back. That is what this covers.
-  const rail = page.locator(RAIL);
-  await mapReady(page);
-
-  // A COLD layer state, so "arming turned them on" is an observation and not a value
-  // that was already true. Written before the click, through the same persisted key
-  // lib/layers.ts uses, and read back the same way.
-  await page.evaluate(() => {
-    window.localStorage.setItem("tn.layers.v1", JSON.stringify({
-      v: 1,
-      d: { cameras: false, satellites: false, planes: false, ships: false, webcams: false, weather: false, countries: true },
-    }));
-  });
-  await page.reload();
-  await mapReady(page);
-
-  await rail.getByRole("button", { name: CAMERAS }).click();
-  const pop = page.locator(".tnx-maprail-pop");
-  await expect(pop).toBeVisible();
-
-  // TWO buttons, not three. Asserted on the count as well as on the absent name,
-  // because a New wall button that had merely been renamed would still be a third
-  // control for a thing two other routes already do.
-  await expect(pop.getByRole("button")).toHaveCount(2);
-  await expect(pop.getByRole("button", { name: /new wall/i })).toHaveCount(0);
-
-  // Both marks render. They are aria-hidden, so they are counted rather than
-  // queried by role -- an icon a screen reader can see would be the bug.
-  await expect(pop.locator("button svg")).toHaveCount(2);
-
-  const layers = () =>
-    page.evaluate(() => JSON.parse(window.localStorage.getItem("tn.layers.v1") || "{}").d ?? {});
-  expect(await layers()).toMatchObject({ cameras: false, webcams: false });
-
-  await pop.getByRole("button", { name: /^Pick cameras$/ }).click();
-  await expect(pop.getByRole("button", { name: /Picking cameras/ })).toHaveAttribute("aria-pressed", "true");
-
-  // The point of the change: the picker switched on the layers it reads from.
-  await expect.poll(layers).toMatchObject({ cameras: true, webcams: true });
-
-  // And stopping leaves them up -- deliberate, see camslot.layers.ts. Nothing
-  // records what was on beforehand, so "restore" could only mean "turn off".
-  await pop.getByRole("button", { name: /Picking cameras/ }).click();
-  await expect(pop.getByRole("button", { name: /^Pick cameras$/ })).toHaveAttribute("aria-pressed", "false");
-  expect(await layers()).toMatchObject({ cameras: true, webcams: true });
 });
 
 test("the zoom cluster is gone and the ⓘ attribution is not", async ({ page }) => {

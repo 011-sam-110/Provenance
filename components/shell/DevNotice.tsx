@@ -2,6 +2,12 @@
 // The live-build warning — the first thing anyone handed an access code sees, shown
 // once and then not again until its text is revised.
 //
+// IT IS SWITCHED OFF RIGHT NOW, and this file is untouched by that. The switch is
+// DEV_NOTICE_ENABLED in lib/shell/devnotice.ts, which is where every other reason
+// this card is or is not shown already lives; putting a second copy of the decision
+// in here is how the two would come to disagree. Nothing below is dead code — it is
+// one constant away from rendering again, so read it as live.
+//
 // IT IS A MODAL, WHERE CommunityNote NEXT DOOR IS A CORNER CARD, and the difference is
 // the design rather than an inconsistency. The invitation asks for nothing and may be
 // ignored at no cost, so it takes no veil and never moves focus. This one carries the
@@ -33,7 +39,7 @@ import {
   loadDevNoticeState,
   markAcknowledged,
   saveDevNoticeState,
-  shouldWarn,
+  shouldOpen,
   forcedFromSearch,
 } from "@/lib/shell/devnotice";
 
@@ -69,8 +75,11 @@ export default function DevNotice() {
     // No qualifying time, unlike the invitation next door: a warning shown late has
     // already been overtaken by the bug it was warning about. The only wait is for
     // the boot plate, so the card is readable when it lands.
+    // ONE call, not `FORCED || shouldWarn(...)`. The force is no longer a plain OR
+    // — the off switch outranks it — and that rule belongs in the pure module where
+    // a node test can hold it, not in an `||` here that nothing can reach.
     const t = window.setTimeout(() => {
-      if (FORCED || shouldWarn(s, { bootPlaying: false })) setOpen(true);
+      if (shouldOpen(s, { bootPlaying: false }, FORCED)) setOpen(true);
     }, INITIAL_HOLD_MS);
 
     return () => window.clearTimeout(t);

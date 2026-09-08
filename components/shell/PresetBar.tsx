@@ -76,7 +76,10 @@ export default function PresetBar() {
 
   return (
     <div className="tn-presets">
-      <div className="tn-subhead">{t("sectionPresets")}</div>
+      {/* The Sources rail's one heading style — see AreasPanel. This block is the
+          other tab, so the two are never on screen together and the difference
+          only ever showed as a jump when you switched. */}
+      <h3 className="tn-src-sec-head"><span className="tn-src-sec-name">{t("sectionPresets")}</span></h3>
 
       <div className="tn-preset-grid" role="group" aria-label={t("sectionPresets")}>
         {BUILTIN_PRESETS.map((p) => (
