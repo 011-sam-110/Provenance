@@ -16,13 +16,16 @@ import { rulesStore } from "@/lib/notify/rules";
 import { observationsStore } from "@/lib/notify/observations";
 import { wordEvent } from "@/lib/notify/wording";
 import { applyBudget } from "@/lib/notify/budget";
+import { syncArmedSubscriptions } from "@/lib/notify/sources";
 import { dispatch, notificationsStore, type NotifyRule } from "@/lib/shell/notifications";
 import { inspectorStore } from "@/lib/shell/inspector";
 import { WORLD_AREA_ID, type AreaRule, type NotifyEvent, type ObservedRow } from "@/lib/notify/types";
 
-/** How often the runner re-reads the feeds. Well under the fastest source cadence
- *  (planes at 12s) so a transition is not missed, and cheap because it reads stores
- *  that are already being filled — it adds no upstream request of its own. */
+/** How often the runner re-reads the feeds. Well under the slowest source cadence
+ *  so a transition is not missed, and cheap because a tick only READS the shared
+ *  poller's cache. It does not fetch: the polling itself stays on each source's own
+ *  `refreshMs` (floored at 60s by useSignalFeed), and a source already on the board
+ *  costs nothing extra because the ref count is shared. */
 const TICK_MS = 10_000;
 
 /** Per-area send timestamps for the rolling budget. In memory only: a reload
@@ -140,12 +143,28 @@ export function __resetBudgetWindow(): void {
   sentByArea.clear();
 }
 
-/** Mount the loop. Returns a teardown for ConsoleShell's effect. */
+/** The sources currently armed by an enabled rule — what has to be kept polling. */
+function armedSourceIds(): Set<string> {
+  return new Set(rulesStore.get().filter((r) => r.enabled).map((r) => r.sourceId));
+}
+
+/** Mount the loop. Returns a teardown for ConsoleShell's effect.
+ *
+ *  The subscription sync lives HERE and not in `tick` on purpose: `tick` takes its
+ *  feed reader as an argument so it can be driven from a node test without touching
+ *  the network, and reaching into the real poller from inside it would undo that. */
 export function startNotifyRunner(readFeed: FeedReader): () => void {
   if (typeof window === "undefined") return () => {};
+  syncArmedSubscriptions(armedSourceIds());
   const h = window.setInterval(() => {
     if (!notificationsStore.getState().master) return; // global gate, checked live
+    // Re-synced every tick because arming a rule must start its feed without a
+    // remount, and disarming the last rule on a source must stop it.
+    syncArmedSubscriptions(armedSourceIds());
     tick(readFeed, Date.now());
   }, TICK_MS);
-  return () => window.clearInterval(h);
+  return () => {
+    window.clearInterval(h);
+    syncArmedSubscriptions(new Set()); // release every poll hold we opened
+  };
 }

@@ -131,6 +131,13 @@ export const rulesStore = {
   },
 };
 
+/** Every rule, for a caller that has to count across MANY areas in one render.
+ *  `forArea` is memoised per area but is still a per-area call, and a component
+ *  mapping over a changing list of areas cannot call a hook once per row. */
+export function useAllRules(): AreaRule[] {
+  return useSyncExternalStore(rulesStore.subscribe, rulesStore.get, rulesStore.get);
+}
+
 export function useAreaRules(areaId: string): AreaRule[] {
   return useSyncExternalStore(
     rulesStore.subscribe,

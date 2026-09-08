@@ -47,6 +47,10 @@ import { activePresetStore } from "@/lib/console/activePreset";
 import { profileStore } from "@/lib/shell/profile";
 import { telegramStore } from "@/lib/shell/telegram";
 import { notificationsStore } from "@/lib/shell/notifications";
+import { rulesStore } from "@/lib/notify/rules";
+import { observationsStore } from "@/lib/notify/observations";
+import { startNotifyRunner } from "@/lib/notify/runner";
+import { readNotifyFeed } from "@/lib/notify/sources";
 import { trackStore } from "@/lib/planes/track";
 import { pinsStore } from "@/lib/map/pins";
 import { applyPreset, presetById, DEFAULT_PRESET_ID } from "@/lib/console/presets";
@@ -112,6 +116,17 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     profileStore.hydrate();
     telegramStore.hydrate();
     notificationsStore.hydrate();
+    // Rules hydrate AFTER inspectorStore, because coercion DROPS a rule naming an
+    // area that no longer exists — and before that store is hydrated, no area does,
+    // so hydrating earlier would silently delete every saved rule on every boot.
+    rulesStore.hydrate(
+      new Set(inspectorStore.get().areas.map((a) => a.id)),
+      new Set(SIGNALS.map((s) => s.id)),
+    );
+    // And observations after the rules, since they are pruned to the armed pairs.
+    observationsStore.hydrate(
+      new Set(rulesStore.get().map((r) => `${r.areaId}|${r.sourceId}`)),
+    );
     trackStore.hydrate();
     pinsStore.hydrate();
     const params = new URLSearchParams(window.location.search);
@@ -145,6 +160,12 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // suite alone, which is a weaker guard than the one that went — worth knowing
     // before renaming one.
   }, []);
+
+  // The area-notification loop. One per console, not one per widget: a rule watches
+  // a PLACE, so it has to keep running when no card for its source is on the board.
+  // Mounted in its own effect because the hydrate effect above must have run first —
+  // the runner reads the stores it fills.
+  useEffect(() => startNotifyRunner(readNotifyFeed), []);
 
 // THE SKIN⇄BASEMAP EFFECT IS GONE, with the skin it followed.
   //

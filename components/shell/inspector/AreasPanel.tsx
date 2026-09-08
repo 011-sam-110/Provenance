@@ -20,9 +20,15 @@
 import { areaSummary, useInspector } from "@/lib/shell/inspector";
 import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { overlay } from "@/lib/overlay";
+import RulesPanel from "@/components/shell/inspector/RulesPanel";
+import { useAllRules } from "@/lib/notify/rules";
+import { WORLD_AREA_ID } from "@/lib/notify/types";
 
 export default function AreasPanel() {
   const state = useInspector();
+  // ONE subscription, counted per row. A hook cannot be called once per area — the
+  // list changes length — so the count is derived from the whole set here.
+  const rules = useAllRules();
   // TWO ENTRY POINTS, ONE IMPLEMENTATION. The context switcher's menu can start
   // the same gesture, and `onFinish` is the part that must not drift between them
   // — without it a saved area silently becomes a console-wide filter. The whole
@@ -79,9 +85,18 @@ export default function AreasPanel() {
                 once. It now means "the toggles below land here", which is the only
                 claim this row can still make. */}
             {state.editing === a.id ? <span className="tn-insp-pill">EDITING</span> : null}
+            {/* An armed area has to say so on the row. A rule fires whether or not
+                the area is the one being edited, so without this the only evidence
+                that a watch exists is opening the area that happens to hold it. */}
+            {rules.some((r) => r.areaId === a.id) ? (
+              <span className="tn-insp-pill" title="Notification rules armed on this area">
+                {rules.filter((r) => r.areaId === a.id).length} ▲
+              </span>
+            ) : null}
           </button>
         ))
       )}
+
 
       {/* IT STAYS, even though the context switcher's menu now offers the same
           action. This one sits directly under the "No areas yet…" empty state,
@@ -104,16 +119,14 @@ export default function AreasPanel() {
         {capped ? `＋ Draw an area — ${AREA_CAP_MESSAGE}` : "＋ Draw an area"}
       </button>
 
-      {/* Labelled and inert, never a control that does nothing. The design is in
-          docs/superpowers/specs/2026-09-07-inspector-design.md §12 so it drops in
-          without moving anything here. */}
-      <div className="tn-insp-soon">
-        <div className="tn-insp-soon-head">
-          <span>Alert me</span>
-          <span className="tn-insp-pill tn-insp-pill-muted">COMING SOON</span>
-        </div>
-        <p>Tell me when something enters or leaves an area. Not built yet.</p>
-      </div>
+      {/* "Alert me" IS THE CONTROL NOW, not a placeholder pill. It arms against
+          whichever context the rail is pointed at — `editing === null` already means
+          World everywhere else in this store (see editingSet), so the composer reads
+          the same way rather than inventing a second idea of "current area". */}
+      <RulesPanel
+        areaId={state.editing ?? WORLD_AREA_ID}
+        areaLabel={state.areas.find((a) => a.id === state.editing)?.label ?? "World"}
+      />
     </div>
   );
 }
