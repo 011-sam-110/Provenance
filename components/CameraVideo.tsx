@@ -12,8 +12,10 @@ export function CameraVideo(props: {
    *  stream was re-fetched on every rotation and never benched. The still is what
    *  says whether the CAMERA is dead, as opposed to just its video. */
   onOutcome?: (ok: boolean) => void;
+  /** True while this view is the hidden prefetch. See the play() effect below. */
+  hidden?: boolean;
 }) {
-  const { id, alt, attribution, license, refreshSeconds, onOutcome } = props;
+  const { id, alt, attribution, license, refreshSeconds, onOutcome, hidden = false } = props;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(() => videoRecentlyFatal(id, Date.now()));
   const src = `/api/hls?id=${encodeURIComponent(id)}`;
@@ -66,6 +68,33 @@ export function CameraVideo(props: {
     // ref and never be asked again. It cannot loop — the only write is setFailed(true)
     // on a fatal error, which unmounts the element, so the re-run returns at `!video`.
   }, [src, id, failed]);
+
+  // AUTOPLAY DOES NOT SURVIVE BEING BORN HIDDEN, so becoming visible has to ask.
+  //
+  // Chromium will not start a media element inside a `display:none` subtree, and the
+  // camslot prefetch mounts the NEXT stream exactly that way. Once the two views are
+  // keyed by stream, the element that becomes visible is always the one that was
+  // created hidden — so `autoPlay` was declined for it while it was invisible and
+  // nothing asked again.
+  //
+  // WHAT IS AND IS NOT MEASURED. The mechanism is certain; the size of the win is
+  // not. Runs of scripts/verify-streets-area.mjs put "elements with readyState>=2 AND
+  // currentTime>0" at 1/27, 0/36 and 1/27 — the gate's check flips on that margin, so
+  // this is not evidence of a large improvement and should not be read as one. What
+  // IS measured, and large, is the switch→first-paint time the keyed prefetch buys:
+  // 20/20 switches painting at a ~162ms average, against 7-of-20 never painting
+  // inside 15s and an ~8.9s average before it. Those are different claims and only
+  // the second one has numbers behind it.
+  //
+  // `.catch()` because play() rejects for reasons that are not failures here — a
+  // teardown mid-call, or a policy refusal we cannot argue with. A refusal leaves the
+  // poster frame up, which is what the element would have shown anyway.
+  useEffect(() => {
+    if (hidden || failed) return;
+    const video = videoRef.current;
+    if (!video || !video.paused) return;
+    void video.play().catch(() => {});
+  }, [hidden, failed, src]);
 
   // A stream that reaches `playing` is answering, whatever it did before, so the
   // memo is cleared here rather than left to time out. Frames arriving is the

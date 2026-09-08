@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CIRCLE_VERTICES, crossesAntimeridian, haversineKm, ringFromCircle } from "@/lib/map/circle";
+import { CIRCLE_VERTICES, crossesAntimeridian, haversineKm, ringBounds, ringFromCircle, toWatchRingFC } from "@/lib/map/circle";
 import { camerasInRing } from "@/lib/console/widgets/camslot.pick";
 
 describe("haversineKm", () => {
@@ -127,5 +127,79 @@ describe("ringFromCircle", () => {
     expect(ringFromCircle({ lat: 0, lon: 0, radiusKm: 0 })).toEqual([]);
     expect(ringFromCircle({ lat: 0, lon: 0, radiusKm: -1 })).toEqual([]);
     expect(ringFromCircle({ lat: 0, lon: 0, radiusKm: Number.NaN })).toEqual([]);
+  });
+});
+
+describe("toWatchRingFC — the monitored area as something the map can draw", () => {
+  it("CLOSES the ring, because ringFromCircle deliberately does not", () => {
+    const ring = ringFromCircle({ lat: 32.7641, lon: -117.1577, radiusKm: 5 });
+    const fc = toWatchRingFC(ring);
+    const coords = (fc.features[0].geometry as GeoJSON.Polygon).coordinates[0];
+    // One MORE than the vertex count: GeoJSON requires the first coordinate repeated,
+    // and ringFromCircle's count is pinned as the vertex count by the test above. If
+    // this closing were left to the caller it would be forgotten at one of them, and
+    // MapLibre drops an invalid layer silently rather than complaining.
+    expect(coords).toHaveLength(CIRCLE_VERTICES + 1);
+    expect(coords[0]).toEqual(coords[coords.length - 1]);
+  });
+
+  it("does not double-close a ring that already closes", () => {
+    const fc = toWatchRingFC([[0, 0], [1, 0], [1, 1], [0, 0]]);
+    const coords = (fc.features[0].geometry as GeoJSON.Polygon).coordinates[0];
+    expect(coords).toHaveLength(4);
+  });
+
+  it("returns NO FEATURE for fewer than three vertices, rather than a line or a point", () => {
+    // Not a degenerate polygon — not an area. Drawing an area whose extent the user
+    // cannot see is worse than drawing nothing, because it still reads as a boundary.
+    for (const ring of [undefined, [] as [number, number][], [[0, 0]] as [number, number][], [[0, 0], [1, 1]] as [number, number][]]) {
+      expect(toWatchRingFC(ring).features).toEqual([]);
+    }
+  });
+
+  it("keeps [lon, lat] order, which is the order GeoJSON wants and the opposite of the store's", () => {
+    const fc = toWatchRingFC([[-117.1577, 32.7641], [-117, 32.7641], [-117, 33]]);
+    const coords = (fc.features[0].geometry as GeoJSON.Polygon).coordinates[0];
+    expect(coords[0]).toEqual([-117.1577, 32.7641]);
+  });
+});
+
+describe("ringBounds — where the camera should open", () => {
+  it("boxes a circle tightly enough that the area fills the view", () => {
+    const c = { lat: 32.7641, lon: -117.1577, radiusKm: 5 };
+    const b = ringBounds(ringFromCircle(c))!;
+    expect(b).not.toBeNull();
+    const [[w, s], [e, n]] = b;
+    expect(w).toBeLessThan(c.lon);
+    expect(e).toBeGreaterThan(c.lon);
+    expect(s).toBeLessThan(c.lat);
+    expect(n).toBeGreaterThan(c.lat);
+    // A 5km radius is a ~10km box. At this latitude that is well under a quarter
+    // degree of latitude — the assertion that matters is that it is SMALL, because
+    // the bug this replaces was a camera showing the whole planet.
+    expect(n - s).toBeLessThan(0.25);
+  });
+
+  it("REFUSES a straddling ring that arrived from a ?c= LINK, which is the only way one can", () => {
+    // The route matters, and the first version of this test got it wrong. Going
+    // through ringFromCircle proves nothing: it already returns [] for a circle that
+    // crosses the antimeridian, so ringBounds refuses on `length < 3` and the guard
+    // below is never reached — the test passed with the guard deleted, which is how
+    // it was caught.
+    //
+    // The live route is sanitize.ts's readWatch. It accepts any lon in [-180, 180]
+    // with NO wrap check, so a hand-built `?c=` link can put this ring into
+    // layout.watch. Un-refused, min/max spans ~358 degrees and fitBounds frames the
+    // whole planet — the exact opposite of framing the area, and it would read as
+    // the feature being broken rather than as a bad link.
+    expect(ringFromCircle({ lat: 0, lon: 179.9, radiusKm: 50 })).toEqual([]);
+    const fromLink: [number, number][] = [[179, 0], [-179, 0], [-179, 1], [179, 1]];
+    expect(ringBounds(fromLink)).toBeNull();
+  });
+
+  it("returns null for anything that is not an area", () => {
+    expect(ringBounds(undefined)).toBeNull();
+    expect(ringBounds([])).toBeNull();
+    expect(ringBounds([[0, 0], [1, 1]])).toBeNull();
   });
 });

@@ -182,6 +182,7 @@ function StreamView({
           attribution=""
           license=""
           refreshSeconds={refreshSeconds}
+          hidden={hidden}
           onOutcome={(ok) => streamHealth.report(stream, ok)}
         />
       ) : (

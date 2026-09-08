@@ -148,3 +148,68 @@ export function ringFromCircle(c: CircleSpec, vertices = CIRCLE_VERTICES): [numb
   }
   return out;
 }
+
+/**
+ * The monitored area, as something the map can draw.
+ *
+ * `layout.watch.ring` was authored, sanitized, vertex-capped, persisted and carried
+ * on the `?c=` share link — and never read by anything that draws. So the circle the
+ * user drew vanished the moment they released the pointer, while the README and a
+ * comment in camslot.circle.ts both described it as being on the map. This is the
+ * reader that makes those true.
+ *
+ * A CLOSED RING IS THE CALLER'S JOB, not this function's, because GeoJSON demands a
+ * repeated first coordinate for a Polygon and `ringFromCircle` deliberately does not
+ * emit one (its vertex count is the vertex count, and a test pins it). Closing here
+ * keeps that contract in one place rather than at every call site.
+ *
+ * Fewer than three vertices is not a degenerate polygon, it is NOT AN AREA, and it is
+ * returned as an empty collection rather than a line or a point: an area the user
+ * cannot see the extent of is worse than no area drawn at all.
+ */
+export function toWatchRingFC(ring: readonly [number, number][] | undefined): GeoJSON.FeatureCollection {
+  if (!ring || ring.length < 3) return { type: "FeatureCollection", features: [] };
+  const closed = [...ring];
+  const [fx, fy] = closed[0];
+  const [lx, ly] = closed[closed.length - 1];
+  if (fx !== lx || fy !== ly) closed.push([fx, fy]);
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "Polygon", coordinates: [closed.map(([x, y]) => [x, y])] },
+      },
+    ],
+  };
+}
+
+/**
+ * The bounding box of a drawn ring, as MapLibre's `fitBounds` wants it.
+ *
+ * Returns `[[west, south], [east, north]]`, or NULL when the ring straddles the
+ * antimeridian. A straddling ring has longitudes at both ends of the range, so a
+ * naive min/max produces a box spanning the entire planet — which would "fit" the
+ * area by zooming out to the whole world, the exact opposite of the intent, and it
+ * would look like a bug rather than a refusal. Refusing is honest and the caller
+ * leaves the camera alone; `crossesAntimeridian` is the same test the rest of this
+ * module uses, so the two cannot disagree.
+ */
+export function ringBounds(
+  ring: readonly [number, number][] | undefined,
+): [[number, number], [number, number]] | null {
+  if (!ring || ring.length < 3) return null;
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [lon, lat] of ring) {
+    if (lon < w) w = lon;
+    if (lon > e) e = lon;
+    if (lat < s) s = lat;
+    if (lat > n) n = lat;
+  }
+  // 180 is the width of half the planet: no ring this feature can produce is that
+  // wide, so a span beyond it means the coordinates wrapped rather than that the
+  // area is genuinely enormous.
+  if (e - w > 180) return null;
+  return [[w, s], [e, n]];
+}
