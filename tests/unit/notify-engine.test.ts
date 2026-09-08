@@ -66,3 +66,28 @@ describe("diff — appears", () => {
     expect(next.lastOk).toBe(1_000);
   });
 });
+
+// A DELIBERATELY ASYMMETRIC ring: 20 degrees of longitude by 2 of latitude. The
+// existing RING is a square centred on the origin and every point the other tests
+// use is symmetric under swapping x and y, so `pointInRing(lat, lon, ...)` — the
+// arguments the wrong way round — passes the entire suite. lib/shell/scope.ts takes
+// LONGITUDE FIRST. This is the only fixture that can tell.
+const WIDE_RING: [number, number][] = [
+  [0, 0], [20, 0], [20, 2], [0, 2],
+];
+
+describe("diff — ring geometry pins the lon/lat argument order", () => {
+  it("counts a row at lat 1, lon 10 as INSIDE a ring 20 wide and 2 tall — swapping the arguments would read it as lat 10 and put it outside", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, rows: {}, count: 0, lastOk: 500 };
+    const { next } = diff(prev, [row("wide", 1, 10)], WIDE_RING, [rule({ kind: "appears" })], OK, 2_000);
+    expect(next.rows.wide.inside).toBe(true);
+    expect(next.count).toBe(1);
+  });
+
+  it("counts a row at lat 10, lon 1 as OUTSIDE the same ring, which is the mirror of the case above", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, rows: {}, count: 0, lastOk: 500 };
+    const { next } = diff(prev, [row("tall", 10, 1)], WIDE_RING, [rule({ kind: "appears" })], OK, 2_000);
+    expect(next.rows.tall.inside).toBe(false);
+    expect(next.count).toBe(0);
+  });
+});
