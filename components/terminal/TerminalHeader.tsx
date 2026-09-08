@@ -168,6 +168,73 @@ const BOARD_ORDER = BUILTIN_PRESETS.map((p) => p.id);
  * the callbacks it's handed and owns the parts that are genuinely per-tab:
  * which button ref is which, and the roving `tabIndex`.
  */
+/**
+ * The travelling board marker.
+ *
+ * The active board used to be marked by `border-bottom-color` ON THE BUTTON, and
+ * a per-element border is the one thing that cannot move: it can only switch off
+ * under one tab and switch on under another. Since a preset is the WHOLE
+ * workspace, that made the largest navigation in the product — both rails, six
+ * widgets and the map's layer set — arrive with nothing tying it to the tab that
+ * caused it.
+ *
+ * So the marker becomes a single bar owned by the nav, positioned from two custom
+ * properties measured here. The measurement is why this is JS and not CSS: the
+ * tabs are content-width, so their positions are not knowable from a stylesheet.
+ *
+ * It costs nothing at rest. This runs on a board change and on a resize, which is
+ * exactly when the answer can have changed — there is no rAF loop and no
+ * per-frame state, which #158 spent real effort removing from this route.
+ *
+ * `data-ind` is set one frame AFTER the first measurement, for two reasons: the
+ * per-tab border stays the marker until a real position exists (so a server
+ * render, a JS failure or a browser with no ResizeObserver still shows which
+ * board is open), and the bar's first appearance is already in place rather than
+ * sliding in from x=0.
+ *
+ * IT TRACKS `.is-active`, NOT HOVER, and that is the correct reading of the nav
+ * panel this now sits inside: hovering a tab PREVIEWS that board's chrome
+ * without switching board, and only a click commits. A marker that followed the
+ * pointer would claim the board had changed every time someone read the panel.
+ * It moves when `applyPreset` has actually run, which is also why the effect is
+ * keyed on the active preset and not on the panel's open id.
+ */
+function useBoardMarker(activePresetId: string | null) {
+  const navRef = useRef<HTMLElement | null>(null);
+  const [measured, setMeasured] = useState(false);
+
+  const measure = useCallback(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const active = nav.querySelector<HTMLElement>(".tnx-hdr-board.is-active");
+    // No active tab is a real state — a board can be closed — and the honest
+    // answer is a marker of zero width rather than one parked under tab one.
+    nav.style.setProperty("--tnx-bi-x", `${active ? active.offsetLeft : 0}px`);
+    nav.style.setProperty("--tnx-bi-w", `${active ? active.offsetWidth : 0}px`);
+  }, []);
+
+  useEffect(() => {
+    measure();
+    // One frame's grace, so the bar is painted in position instead of animating
+    // there from nothing on the first load.
+    const raf = requestAnimationFrame(() => setMeasured(true));
+    return () => cancelAnimationFrame(raf);
+  }, [measure, activePresetId]);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    // The nav itself, because the tab strip reflows on a narrow header and the
+    // labels are abbreviated by `boardLabel` at some widths — both change the
+    // answer without changing which board is open.
+    const ro = new ResizeObserver(measure);
+    ro.observe(nav);
+    return () => ro.disconnect();
+  }, [measure]);
+
+  return { navRef, measured };
+}
+
 function BoardTabs({
   openId,
   onTabHoverEnter,
@@ -186,6 +253,7 @@ function BoardTabs({
   useShellLayout();
 
   const activeTitle = BUILTIN_PRESETS.find((p) => p.id === activePresetId)?.title;
+  const { navRef, measured } = useBoardMarker(activePresetId);
 
   // Roving tabindex: the row is one Tab stop. `focusedTab` is DOM-focus state,
   // deliberately separate from `openId` (which also moves on plain mouse
@@ -214,7 +282,12 @@ function BoardTabs({
   };
 
   return (
-    <nav className="tn-preset-pill tnx-hdr-boards" aria-label="Boards">
+    <nav
+      ref={navRef}
+      className="tn-preset-pill tnx-hdr-boards"
+      aria-label="Boards"
+      data-ind={measured ? "1" : undefined}
+    >
       {BUILTIN_PRESETS.map((p) => {
         const active = p.id === activePresetId;
         // A board is "edited" once its owner has moved, resized, added or removed

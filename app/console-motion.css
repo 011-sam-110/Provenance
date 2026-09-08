@@ -1,0 +1,412 @@
+/* ===========================================================================
+   Console motion — the layer that tells you what just happened.
+
+   Measured before writing any of this, on /app at 1440x900 with the
+   Infrastructure board open: every element on the board reported
+   `transition-duration: 0s`. The board tabs, the widget cards, the card
+   headers, all 316 list rows, all 133 magnitude bars, the status dots and the
+   freshness chips. Two things in the whole console moved — the map-rail
+   buttons (150ms) and the rail splitter (120ms). Everything else was a hard
+   cut, which is why a board switch reads as a page replacement rather than as
+   a thing you did.
+
+   The product already knows how to move: globals.css carries 35 keyframe
+   blocks, nearly all of them spent on the boot sequence and the landing page.
+   The console simply never got the treatment. This file is that treatment.
+
+   ── The rule this file obeys ────────────────────────────────────────────────
+   #158 took /app from 60.8% CPU at rest to 9.0%, and nothing here is allowed
+   to spend that back. So: NO infinite keyframes, NO rAF, NO always-on pulses,
+   NO animation that runs when the operator is not doing something. Every rule
+   below is either a `transition` (costs nothing until a value changes) or a
+   one-shot `animation` on an element that just mounted. At rest this file is
+   worth exactly zero frames.
+
+   ── Kept OUT of globals.css deliberately ────────────────────────────────────
+   Same reason console-chrome.css is: that file's tail is contended, and a
+   motion layer wants to be read, judged and reverted as one piece.
+
+   ── One multiplier, no parallel rule set ────────────────────────────────────
+   Every duration and delay below is a multiple of `--tn-mo`, and the scripted
+   entrance reads that same value, so there is exactly one place motion is
+   tuned and the CSS and JS paths cannot drift apart. Today only
+   `prefers-reduced-motion` moves it. If the console ever wants a "reduce
+   interface motion" setting, that setting is this one variable and nothing
+   else — but it does not exist yet, so nothing here pretends it does.
+   =========================================================================== */
+
+.tn-terminal {
+  /* Master multipliers. Everything below is expressed as a multiple of these,
+     so the off switch and the reduced-motion path are each one edit. */
+  --tn-mo: 1;          /* duration + delay. 0 = instant, i.e. today's console. */
+  --tn-mo-travel: 1;   /* spatial distance. 0 = fades and colour only.         */
+
+  /* Timing expresses distance and consequence, per the scale in the playbook.
+     Feedback is faster than state, state is faster than layout. Nothing here
+     is slow enough to read as latency.
+
+     Held as UNITLESS milliseconds because the board entrance is driven by the
+     Web Animations API, and `getComputedStyle` hands back a custom property's
+     specified text — `calc(1 * 420ms)`, which JS would have to parse. Numbers
+     here mean the stylesheet stays the single source of truth for timing, and
+     both the A/B switch and prefers-reduced-motion govern the scripted motion
+     for free rather than through a second copy of the rule. */
+  --tn-mo-fast-ms: 120;   /* pointer feedback      */
+  --tn-mo-exit-ms: 90;    /* leaving is quicker    */
+  --tn-mo-base-ms: 200;   /* routine state change  */
+  --tn-mo-slow-ms: 300;   /* layout / navigation   */
+  --tn-mo-focal-ms: 420;  /* the authored entrance */
+  --tn-mo-step-ms: 45;    /* one stagger step      */
+
+  --tn-mo-fast: calc(var(--tn-mo-fast-ms) * var(--tn-mo) * 1ms);
+  --tn-mo-exit: calc(var(--tn-mo-exit-ms) * var(--tn-mo) * 1ms);
+  --tn-mo-base: calc(var(--tn-mo-base-ms) * var(--tn-mo) * 1ms);
+  --tn-mo-slow: calc(var(--tn-mo-slow-ms) * var(--tn-mo) * 1ms);
+  --tn-mo-focal: calc(var(--tn-mo-focal-ms) * var(--tn-mo) * 1ms);
+  --tn-mo-step: calc(var(--tn-mo-step-ms) * var(--tn-mo) * 1ms);
+
+  /* Confident arrival, no bounce.
+
+     The console is NOT motionless and this file should not pretend otherwise:
+     lib/terminal/flip.ts already animates a wall card's drag-release, at
+     SNAP_MS 200 on SNAP_EASE. --tn-mo-base-ms is set to that same 200 on
+     purpose, so a state change and a snap agree.
+
+     The CURVE deliberately does not follow it. Read SNAP_EASE and you will find
+     its third control point above 1 — an overshoot. A card thrown at a cell
+     earns one: it is a physical release, and the settle reads as weight. A board
+     switch, a hover and a value revision are none of those, and an overshoot on
+     a magnitude bar means the bar briefly shows a number that is not true. */
+  --tn-mo-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --tn-mo-ease-io: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduced motion is FEWER AND GENTLER, not off. Spatial travel goes to zero,
+   so nothing slides or lifts; durations shorten but survive, so every piece of
+   feedback that tells you a control responded is still legible. Killing the
+   whole file here would take away the confirmation, which is the opposite of
+   what the preference asks for. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal { --tn-mo: 0.55; --tn-mo-travel: 0; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   1 · THE FOCAL MOMENT — the board hand-off
+   ═══════════════════════════════════════════════════════════════════════════
+   Switching a board is the biggest single act in this product: a preset is the
+   whole workspace, so one click swaps both rails, six widgets and the map's
+   layer set. Today all of that lands in one frame with no relationship to the
+   tab you pressed.
+
+   The hand-off says three things in one gesture. The marker TRAVELS to the tab
+   you chose, so the choice has a source. The rails then re-form FROM THEIR OWN
+   EDGES — left cards from the left, right cards from the right — so the rails
+   read as standing furniture holding new instruments, not as a new page. And
+   the stagger runs outward from the header, so the eye is led from what you
+   clicked to what changed because of it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── The travelling marker ───────────────────────────────────────────────────
+   The active tab used to be `border-bottom-color` ON THE BUTTON, which cannot
+   move: it can only switch off under one tab and switch on under another. A
+   shared element can travel, so the marker becomes one bar owned by the nav
+   and positioned from two custom properties the header measures.
+
+   `data-ind="1"` is set by the header only once it has measured. Until then —
+   server render, no JS, a measurement that failed — the per-tab border is
+   still the marker and nothing is lost. */
+.tn-terminal .tnx-hdr-boards { position: relative; }
+
+.tn-terminal .tnx-hdr-boards[data-ind="1"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: var(--tnx-bi-w, 0px);
+  transform: translateX(var(--tnx-bi-x, 0px));
+  background: var(--tnx-accent);
+  pointer-events: none;
+  transition:
+    transform var(--tn-mo-slow) var(--tn-mo-ease),
+    width var(--tn-mo-slow) var(--tn-mo-ease);
+}
+
+/* Hand the marker over. With the travelling bar live, the per-tab border would
+   double it. */
+.tn-terminal .tnx-hdr-boards[data-ind="1"] .tnx-hdr-board.is-active {
+  border-bottom-color: transparent;
+}
+
+/* The tabs themselves. A board switch is a navigation, so the label's arrival
+   at full ink should be visible rather than instant. */
+.tn-terminal .tnx-hdr-board {
+  transition:
+    color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    background-color var(--tn-mo-fast) var(--tn-mo-ease-io);
+}
+
+/* ── The rails re-form ───────────────────────────────────────────────────────
+   THIS ONE IS SCRIPTED, and the reason is a measurement rather than a
+   preference. The first version was a CSS entrance on `.tn-cw`, on the
+   assumption that `applyPreset` mints new widget instances and therefore
+   remounts the cards. Instrumenting `animationstart` across a real board switch
+   returned ZERO events: React reuses those DOM nodes, so a declarative
+   entrance plays once on first load and never again — the entire focal moment
+   would have been dead on the one interaction it exists for.
+
+   So the entrance lives in useBoardEntrance.ts, on the Web Animations API,
+   which the playbook names for exactly this: sequencing that has to be
+   re-triggered and interrupted. Timing still comes from the `-ms` tokens
+   above, so this stylesheet remains the one place motion is tuned, and both
+   the A/B switch and prefers-reduced-motion reach the scripted path too.
+
+   Nothing is set here to hold the cards hidden. A card's resting state is
+   fully visible, and the script animates FROM an offset TO that state — so a
+   failed script leaves a complete, readable board rather than an empty one. */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   2 · FEEDBACK — the 316 rows that did not answer
+   ═══════════════════════════════════════════════════════════════════════════
+   The single largest gap measured. A list row on this board had NO hover rule
+   at all: the one that exists, `.tn-ev .tn-w-list li:hover`, is scoped to a
+   skin the console does not use, so it never applied here. 316 rows on one
+   screen, every one of them inert under the pointer, in a product whose whole
+   job is that those rows are things you look into.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tn-terminal .tn-w-list li {
+  position: relative;
+  transition:
+    background-color var(--tn-mo-exit) var(--tn-mo-ease-io),
+    color var(--tn-mo-exit) var(--tn-mo-ease-io);
+}
+
+/* The wash is the accent at 14%, not the shared `--tnx-accent-soft` at 10%.
+   Measured on the built page: row text is ALREADY full ink (#262b15), so there
+   is no headroom to darken the label on hover and the ground is the only
+   channel left carrying the signal. 10% survives on a 27" panel at 100% and
+   disappears on a laptop at 80% browser zoom, which is where this console is
+   actually read. The 1px edge below is the second channel, so the cue does not
+   rest on a wash alone. */
+.tn-terminal .tn-w-list li:hover {
+  background-color: rgba(70, 75, 55, 0.14);
+  transition-duration: var(--tn-mo-fast);
+}
+
+/* The eye-guide. A 1px accent rule wipes down the row's leading edge, which
+   points at the row you are on without moving the text or costing a reflow.
+   Kept to 1px: a thick coloured left edge is a callout pattern, and every row
+   here would be wearing one. */
+.tn-terminal .tn-w-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--tnx-accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--tn-mo-exit) var(--tn-mo-ease),
+    opacity var(--tn-mo-exit) var(--tn-mo-ease-io);
+}
+
+.tn-terminal .tn-w-list li:hover::before,
+.tn-terminal .tn-w-list li:focus-visible::before,
+.tn-terminal .tn-w-list li:focus-within::before {
+  transform: scaleY(1);
+  opacity: 1;
+  transition-duration: var(--tn-mo-base);
+}
+
+/* A row that is a control should say so under the press, not only under the
+   pointer. Colour rather than travel: these rows sit in a dense stack and a
+   moving row would shove its neighbours' apparent position. */
+.tn-terminal .tn-w-list li:active {
+  background-color: var(--tnx-panel-head);
+  transition-duration: 0s;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   3 · THE MEASUREMENTS — bars that grow to their value
+   ═══════════════════════════════════════════════════════════════════════════
+   `.tn-w-bar-fill` is the console's magnitude mark: 133 of them on the
+   Infrastructure board alone. It appears at its final width, which throws away
+   the one thing motion is actually good at here — making a magnitude legible
+   as a magnitude rather than as a coloured rectangle.
+
+   Growth is `scaleX`, never `width`, so it stays on the compositor and cannot
+   reflow the row it sits in. The transition on `width` is separate and is
+   there for a different event: a live feed revising a value. Today that value
+   jumps between frames and nothing tells you which bar moved.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes tn-mo-bar-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.tn-terminal .tn-w-bar-fill {
+  transform-origin: left center;
+  /* `backwards`, not `both`: backwards holds scaleX(0) before the animation
+     starts, which is what stops a full-width flash on the first frame. Holding
+     the END state as well would leave 133 finished animations each pinning a
+     transform that is already the element's natural one. */
+  animation: tn-mo-bar-grow var(--tn-mo-focal) var(--tn-mo-ease) backwards;
+
+  /* Value revisions, not the entrance. Eased so the eye can follow which bar
+     moved and which way.
+
+     THE LINE BELOW IS A KNOWINGLY-ACCEPTED EXCEPTION and the design detector
+     flags it, correctly by its own rule. It does not bite here: `.tn-w-bar-fill`
+     is `position: absolute; left: 0; top: 0; bottom: 0` inside a fixed track
+     (globals.css:1840), so it is OUT OF FLOW — it cannot reflow a sibling, a row
+     or the rail, and the work is confined to one childless box.
+
+     `scaleX` would be the textbook answer and is worse here for a specific
+     reason: the fill carries `box-shadow: inset 0 0 0 1px`, and scaling the
+     element stretches that 1px inset outline into a visibly uneven border. The
+     entrance above can use scaleX because it runs from 0 to 1 and ENDS at the
+     true scale; a revision would have to rest at a scaled value and hold the
+     distortion permanently. */
+  transition: width var(--tn-mo-slow) var(--tn-mo-ease);
+}
+
+/* No stagger down the list, and no delay chained to the card's arrival. Both
+   were tried and both are wrong here: 133 bars staggered turns a rail into a
+   wave, and a bar that waits for its card makes the card's arrival feel like it
+   has a second, slower half. They grow WITH the card, which reads as one event
+   — the instrument arrives with its readings already coming up. */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   4 · THE CARD — which one am I in, and what can I do to it
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* A dense board of six cards should say which one the pointer owns. A lift or
+   a shadow bloom would be noise at this density, so the answer is the border
+   and the header ground only — the two edges already drawn. */
+.tn-terminal .tn-cw {
+  transition:
+    border-color var(--tn-mo-base) var(--tn-mo-ease-io),
+    box-shadow var(--tn-mo-base) var(--tn-mo-ease-io);
+}
+.tn-terminal .tn-cw:hover,
+.tn-terminal .tn-cw:focus-within {
+  border-color: var(--tnx-line-strong);
+}
+
+.tn-terminal .tn-cw-head { transition: background-color var(--tn-mo-base) var(--tn-mo-ease-io); }
+.tn-terminal .tn-cw:hover > .tn-cw-head { background-color: var(--tnx-panel-head); }
+
+/* Header controls. These already appear and disappear on hover; what they
+   lacked was any acknowledgement that the click landed. Feedback duration,
+   nothing longer — a control that takes 300ms to answer feels like the app is
+   thinking rather than like the button is working. */
+.tn-terminal .tn-cw-expand,
+.tn-terminal .tn-cw-menu,
+.tn-terminal .tn-cw-grip,
+.tn-terminal .tn-cw-danger-btn,
+.tn-terminal .tn-cw-btn {
+  transition:
+    color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    background-color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    border-color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    opacity var(--tn-mo-fast) var(--tn-mo-ease-io),
+    transform var(--tn-mo-exit) var(--tn-mo-ease-io);
+}
+.tn-terminal .tn-cw-expand:active,
+.tn-terminal .tn-cw-menu:active,
+.tn-terminal .tn-cw-close:active,
+.tn-terminal .tn-cw-danger-btn:active,
+.tn-terminal .tn-cw-btn:active {
+  transform: scale(calc(1 - var(--tn-mo-travel) * 0.08));
+}
+
+/* The grip's reveal was a hard cut at opacity 0→1. It is the signpost for a
+   drag, so it should surface rather than blink. */
+.tn-terminal .tn-cw-grip,
+.tn-terminal .tn-cw-rz i,
+.tn-terminal .tn-cw-resize::after,
+.tn-terminal .tn-cw-resize-x::after {
+  transition: opacity var(--tn-mo-base) var(--tn-mo-ease-io);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   5 · HEADER + CHROME — the controls outside the board
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tn-terminal .tnx-hdr-btn,
+.tn-terminal .tnx-hdr-board-reset,
+.tn-terminal .tn-note-btn {
+  transition:
+    color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    background-color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    border-color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    transform var(--tn-mo-exit) var(--tn-mo-ease-io);
+}
+.tn-terminal .tnx-hdr-btn:active,
+.tn-terminal .tnx-hdr-board-reset:active,
+.tn-terminal .tn-note-btn:active {
+  transform: scale(calc(1 - var(--tn-mo-travel) * 0.06));
+}
+
+/* The "customised" dot arrives the moment a board is first edited. It is a
+   state change the operator caused, so it should be seen arriving. */
+@keyframes tn-mo-dot-in {
+  from { opacity: 0; transform: scale(calc(1 - var(--tn-mo-travel) * 0.5)); }
+  to   { opacity: 1; transform: none; }
+}
+.tn-terminal .tnx-hdr-board-dot {
+  display: inline-block;
+  animation: tn-mo-dot-in var(--tn-mo-base) var(--tn-mo-ease) both;
+}
+
+/* Freshness chips carry the feed's state. A change between live, lagging and
+   down is the most consequential colour change on the board and it happens
+   without the operator doing anything — so it is the one place a slower ease
+   is right: it has to catch an eye that is looking somewhere else. */
+.tn-terminal .tn-cw-fresh,
+.tn-terminal .tn-fresh-live,
+.tn-terminal .tn-w-dot {
+  transition:
+    color var(--tn-mo-slow) var(--tn-mo-ease-io),
+    background-color var(--tn-mo-slow) var(--tn-mo-ease-io);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   6 · BROWSER SURFACES — the parts nobody drew
+   ═══════════════════════════════════════════════════════════════════════════
+   Measured: `::selection` had zero rules in the entire stylesheet, so dragging
+   across any figure on this console painted it in the browser's stock blue —
+   the one colour in the product that belongs to no palette. Focus rings jumped
+   on. Neither is motion exactly; both are the same complaint, which is that
+   the surface does not answer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tn-terminal ::selection {
+  background: var(--tnx-accent-soft);
+  color: var(--tnx-ink);
+}
+
+/* The focus ring is the keyboard operator's pointer. It should arrive the way
+   a hover does rather than snapping, and it must survive reduced motion —
+   which it does, because only the travel multiplier goes to zero there. */
+.tn-terminal :focus-visible {
+  transition:
+    outline-color var(--tn-mo-fast) var(--tn-mo-ease-io),
+    box-shadow var(--tn-mo-fast) var(--tn-mo-ease-io);
+}
+
+.tn-terminal ::-webkit-scrollbar-thumb {
+  transition: background-color var(--tn-mo-base) var(--tn-mo-ease-io);
+}
