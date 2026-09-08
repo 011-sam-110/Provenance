@@ -1894,25 +1894,30 @@ export function tick(readFeed: FeedReader, now: number): void {
         level,
       });
       const bucket = perArea.get(areaId) ?? [];
-      bucket.push({ text, areaId, at: e.at });
+      // The ruleId RIDES ALONG. Each event is sent on the channels of the rule that
+      // produced it — a rule armed to Browser only must not reach Telegram because
+      // some other rule on the same area happens to have Telegram on.
+      bucket.push({ ...e, text });
       perArea.set(areaId, bucket);
     }
   }
 
   for (const [areaId, items] of perArea) {
-    const asEvents = items.map((i) => ({
-      ruleId: "", areaId, sourceId: "", kind: "appears" as const, text: i.text, at: i.at,
-    }));
-    const { send, nextSent, closing } = applyBudget(asEvents, sentByArea.get(areaId) ?? [], now);
+    const { send, nextSent, closing } = applyBudget(items, sentByArea.get(areaId) ?? [], now);
     sentByArea.set(areaId, nextSent);
 
-    for (const e of send) fanOut(e.text, areaId);
-    if (closing) fanOut(closing, areaId);
+    for (const e of send) {
+      const rule = rulesStore.get().find((r) => r.id === e.ruleId);
+      if (rule) fanOut(e.text, rule.channels);
+    }
+    // The closing line is about the AREA, not about any one rule, so it goes to the
+    // union of everything armed there — it must reach whoever was going to be
+    // notified, whichever rule's events were the ones held.
+    if (closing) fanOut(closing, unionChannels(areaId));
   }
 }
 
-/** Fan one line out to the union of channels armed by this area's rules. */
-function fanOut(text: string, areaId: string): void {
+function unionChannels(areaId: string): NotifyRule["channels"] {
   const channels = { browser: false, telegram: false, discord: false };
   for (const r of rulesStore.forArea(areaId)) {
     if (!r.enabled) continue;
@@ -1920,6 +1925,11 @@ function fanOut(text: string, areaId: string): void {
     channels.telegram ||= r.channels.telegram;
     channels.discord ||= r.channels.discord;
   }
+  return channels;
+}
+
+/** Fan one line out on exactly these channels. */
+function fanOut(text: string, channels: NotifyRule["channels"]): void {
   // Reuses the existing master gate, cred checks and relays verbatim — a rule here
   // can never send through a channel the user has switched off globally.
   const rule: NotifyRule = { enabled: true, channels };
@@ -2026,14 +2036,23 @@ export function recordSignalPoll(id: string, rows: SignalFeature[], ok: boolean,
   cache.set(id, { rows: ok ? rows : (prev?.rows ?? []), ok, lastOk: ok ? at : (prev?.lastOk ?? 0) });
 }
 
-/** PURE: a SignalFeature → the flat row the engine reads. `magnitude` is the one
- *  scalar every source may carry (see SignalFeature.props in lib/signals/types.ts). */
-export function toObservedRow(f: SignalFeature): ObservedRow {
+/**
+ * PURE: a SignalFeature → the flat row the engine reads.
+ *
+ * THE SCALAR COMES FROM THE SOURCE'S OWN `metric`, not from a hardcoded field name.
+ * `SignalMetric` already exists in lib/signals/types.ts precisely because
+ * `props.magnitude` is overloaded — a Richter value for quakes, a rescaled radius
+ * proxy for GDACS and cyclones — and each source names its REAL field and domain
+ * there. That declaration is exactly what a threshold needs, so `crosses` reads it
+ * rather than inventing a parallel one. A source with no `metric` offers no
+ * `crosses`, which is the honest answer.
+ */
+export function toObservedRow(f: SignalFeature, metricField?: string): ObservedRow {
   const scalars: Record<string, number> = {};
-  const mag = f.props?.magnitude;
-  if (typeof mag === "number" && Number.isFinite(mag)) scalars.magnitude = mag;
-  const score = f.props?.score;
-  if (typeof score === "number" && Number.isFinite(score)) scalars.score = score;
+  if (metricField) {
+    const raw = metricField === "magnitude" ? f.props?.magnitude : f.props?.[metricField];
+    if (typeof raw === "number" && Number.isFinite(raw)) scalars[metricField] = raw;
+  }
   return {
     id: f.id, lat: f.lat, lon: f.lon, scalars, title: f.title,
     ...(f.ts ? { dueAt: f.ts } : {}),
@@ -2044,12 +2063,24 @@ export function readNotifyFeed(sourceId: string): SourceFeed | null {
   const source = getSignal(sourceId);
   const hit = cache.get(sourceId);
   if (!source || !hit) return null;
-  return { rows: hit.rows.map(toObservedRow), ok: hit.ok, lastOk: hit.lastOk, label: source.label };
+  const field = source.metric?.field;
+  return {
+    rows: hit.rows.map((f) => toObservedRow(f, field)),
+    ok: hit.ok, lastOk: hit.lastOk, label: source.label,
+  };
 }
 
-/** Every source the composer may offer, with what it needs to build the menu. */
-export function armableSources(): { id: string; label: string; group: string }[] {
-  return SIGNALS.map((s) => ({ id: s.id, label: s.label, group: s.group }));
+/** Every source the composer may offer, with what it needs to build the menu.
+ *  `metric` is passed through so the composer can label the threshold with the
+ *  source's real field and clamp it to the source's real domain. */
+export function armableSources(): {
+  id: string; label: string; group: string;
+  metric?: { field: string; domain: [number, number]; unit?: string };
+}[] {
+  return SIGNALS.map((s) => ({
+    id: s.id, label: s.label, group: s.group,
+    ...(s.metric ? { metric: { field: s.metric.field, domain: s.metric.domain, unit: s.metric.unit } } : {}),
+  }));
 }
 ```
 
@@ -2107,14 +2138,21 @@ export default function RulesPanel({ areaId }: { areaId: string }) {
   const [channels, setChannels] = useState({ browser: true, telegram: false, discord: false });
 
   const source = sources.find((s) => s.id === sourceId);
-  const offered = useMemo(
-    () => (source ? resolveTriggers(source.group, undefined).filter((k) => IMPLEMENTED.includes(k)) : []),
-    [source],
-  );
+  const offered = useMemo(() => {
+    if (!source) return [];
+    // A source with no `metric` names no real scalar, so `crosses` has no field to
+    // read and is dropped — the group default cannot conjure one. This is layer 3
+    // doing its job with the declaration the codebase already has.
+    return resolveTriggers(source.group, source.metric ? { scalars: [{ field: source.metric.field, label: source.metric.field, domain: source.metric.domain }] } : { remove: ["crosses"] })
+      .filter((k) => IMPLEMENTED.includes(k));
+  }, [source]);
 
   const arm = () => {
     let params: TriggerParams;
-    if (kind === "crosses") params = { kind, field: "magnitude", dir: "atOrAbove", level };
+    if (kind === "crosses") {
+      if (!source?.metric) return; // offered[] already prevents this; belt and braces
+      params = { kind, field: source.metric.field, dir: "atOrAbove", level };
+    }
     else if (kind === "count") params = { kind, dir: "atOrAbove", level };
     else if (kind === "quiet") params = { kind, silentMs: 30 * 60_000 };
     else params = { kind: "appears" };
@@ -2164,11 +2202,18 @@ export default function RulesPanel({ areaId }: { areaId: string }) {
 
       {(kind === "crosses" || kind === "count") && offered.length > 0 && (
         <label className="tn-rules-row">
-          <span>Level</span>
+          <span>{kind === "crosses" ? source?.metric?.field ?? "Level" : "Count"}</span>
           <input
             type="number" value={level}
+            min={kind === "crosses" ? source?.metric?.domain[0] : 0}
+            max={kind === "crosses" ? source?.metric?.domain[1] : undefined}
             onChange={(e) => setLevel(Number(e.target.value))}
           />
+          {kind === "crosses" && source?.metric && (
+            <span className="tn-rules-domain">
+              {source.metric.domain[0]}–{source.metric.domain[1]}{source.metric.unit ?? ""}
+            </span>
+          )}
         </label>
       )}
 
@@ -2282,7 +2327,17 @@ git commit -m "M1: arm a rule on an area, from a menu that cannot offer what the
 
 **Spec coverage.** §3 data model → Task 1, 6. §4 vocabulary → Tasks 2–4 (four of nine; the other five are M2–M4 by design). §5 four-layer resolution → Task 1 (layers 2, 3), Task 11 (the menu reads it). **Layer 4's audit and calibration is M2 per §9 of the spec** and has no task here — correct, since it annotates the `crosses` control with observed values and M1 has no declarations to audit yet. §6 engine → Tasks 2–5, 10. §7 guards → Task 5 (G1, G2), Task 8 (G4, G5), Task 9 (G3). §8 interface → Task 11. §10 testing → every task.
 
-**Known gap, deliberately left:** the composer in Task 11 calls `resolveTriggers(source.group, undefined)` — no layer-3 declaration, because no source declares one until M2. `crosses` therefore hardcodes `field: "magnitude"`. That is honest for M1 (the only scalar `toObservedRow` extracts is `magnitude`, plus `score` for instability) and Task 1's resolution already supports declarations for when M2 adds them.
+**Layer 3 in M1, from a declaration that already exists.** `SignalSource.metric`
+(`{ field, domain, unit }`) is already in `lib/signals/types.ts`, and it exists for
+exactly this reason: `props.magnitude` is overloaded — a Richter value for quakes, a
+rescaled radius proxy for GDACS and cyclones — so each source names its real field
+and its real domain there. Task 11 builds a `TriggerCapability` from it, so `crosses`
+reads the source's own field, its threshold input is clamped to the source's own
+domain, and a source with no `metric` does not offer `crosses` at all. No hardcoded
+field name, and no invented parallel declaration.
+
+**Still deferred to M2:** layer 4's audit and observed-value calibration, and
+`state` / `due` declarations. §9 of the spec phases both there.
 
 **Placeholder scan.** No TBD, no "add error handling", no "similar to Task N". Every code step carries its code.
 
