@@ -1,0 +1,4885 @@
+{
+  "version": 1,
+  "ranAt": "2026-09-08T00:49:14.797Z",
+  "systems": [
+    {
+      "site": "fl511.com",
+      "total": 4953,
+      "pulled": 4953,
+      "withVideo": 4382
+    },
+    {
+      "site": "511ga.org",
+      "total": 0,
+      "pulled": 0,
+      "withVideo": 0,
+      "error": "511ga.org @0: 500"
+    },
+    {
+      "site": "511ny.org",
+      "total": 1873,
+      "pulled": 1873,
+      "withVideo": 1568
+    },
+    {
+      "site": "511.idaho.gov",
+      "total": 457,
+      "pulled": 457,
+      "withVideo": 0
+    },
+    {
+      "site": "newengland511.org",
+      "total": 406,
+      "pulled": 406,
+      "withVideo": 0
+    },
+    {
+      "site": "511la.org",
+      "total": 336,
+      "pulled": 336,
+      "withVideo": 335
+    },
+    {
+      "site": "511on.ca",
+      "total": 944,
+      "pulled": 944,
+      "withVideo": 0
+    },
+    {
+      "site": "511.alberta.ca",
+      "total": 354,
+      "pulled": 354,
+      "withVideo": 0
+    },
+    {
+      "site": "511.novascotia.ca",
+      "total": 57,
+      "pulled": 57,
+      "withVideo": 0
+    },
+    {
+      "site": "511.gnb.ca",
+      "total": 57,
+      "pulled": 57,
+      "withVideo": 0
+    },
+    {
+      "site": "www.nvroads.com",
+      "total": 640,
+      "pulled": 640,
+      "withVideo": 625
+    },
+    {
+      "site": "www.drivenc.gov",
+      "total": 1139,
+      "pulled": 1139,
+      "withVideo": 1084
+    },
+    {
+      "site": "511pa.com",
+      "total": 1542,
+      "pulled": 1542,
+      "withVideo": 1275
+    },
+    {
+      "site": "az511.com",
+      "total": 644,
+      "pulled": 644,
+      "withVideo": 0
+    },
+    {
+      "site": "ctroads.org",
+      "total": 347,
+      "pulled": 347,
+      "withVideo": 0
+    },
+    {
+      "site": "511.alaska.gov",
+      "total": 129,
+      "pulled": 129,
+      "withVideo": 0
+    }
+  ],
+  "hosts": [
+    {
+      "host": "dis-se18.divas.cloud:8200",
+      "sampleUrl": "https://dis-se18.divas.cloud:8200/chan-1_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 236,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 236,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se16.divas.cloud:8200",
+      "sampleUrl": "https://dis-se16.divas.cloud:8200/chan-3_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 241,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 241,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se13.divas.cloud:8200",
+      "sampleUrl": "https://dis-se13.divas.cloud:8200/chan-6_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 226,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 226,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se12.divas.cloud:8200",
+      "sampleUrl": "https://dis-se12.divas.cloud:8200/chan-8_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 229,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 229,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se11.divas.cloud:8200",
+      "sampleUrl": "https://dis-se11.divas.cloud:8200/chan-9_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 231,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 231,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se10.divas.cloud:8200",
+      "sampleUrl": "https://dis-se10.divas.cloud:8200/chan-10_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 237,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 237,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se9.divas.cloud:8200",
+      "sampleUrl": "https://dis-se9.divas.cloud:8200/chan-20_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 220,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 220,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se6.divas.cloud:8200",
+      "sampleUrl": "https://dis-se6.divas.cloud:8200/chan-30_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 214,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 214,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se5.divas.cloud:8200",
+      "sampleUrl": "https://dis-se5.divas.cloud:8200/chan-32_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 216,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 216,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se4.divas.cloud:8200",
+      "sampleUrl": "https://dis-se4.divas.cloud:8200/chan-34_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 216,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 216,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se2.divas.cloud:8200",
+      "sampleUrl": "https://dis-se2.divas.cloud:8200/chan-38_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 218,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 218,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se17.divas.cloud:8200",
+      "sampleUrl": "https://dis-se17.divas.cloud:8200/chan-43_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 222,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 222,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se15.divas.cloud:8200",
+      "sampleUrl": "https://dis-se15.divas.cloud:8200/chan-47_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 234,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 234,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se14.divas.cloud:8200",
+      "sampleUrl": "https://dis-se14.divas.cloud:8200/chan-49_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 246,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [
+        {
+          "nativeId": "5908",
+          "name": "I-10",
+          "lat": 30.746704,
+          "lon": -85.517224,
+          "url": "https://dis-se14.divas.cloud:8200/chan-12530_h/index.m3u8",
+          "system": {
+            "system": "fl",
+            "site": "fl511.com",
+            "country": "US",
+            "region": "Florida",
+            "agency": "Florida DOT (FL511)"
+          }
+        }
+      ],
+      "authRequired": 245,
+      "open": 1,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se8.divas.cloud:8200",
+      "sampleUrl": "https://dis-se8.divas.cloud:8200/chan-57_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 217,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 217,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se7.divas.cloud:8200",
+      "sampleUrl": "https://dis-se7.divas.cloud:8200/chan-58_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 205,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 205,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se3.divas.cloud:8200",
+      "sampleUrl": "https://dis-se3.divas.cloud:8200/chan-63_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 208,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 208,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se1.divas.cloud:8200",
+      "sampleUrl": "https://dis-se1.divas.cloud:8200/chan-65_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 228,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 228,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se26.divas.cloud:8200",
+      "sampleUrl": "https://dis-se26.divas.cloud:8200/chan-8487_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 57,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 57,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se22.divas.cloud:8200",
+      "sampleUrl": "https://dis-se22.divas.cloud:8200/chan-8122_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 18,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se19.divas.cloud:8200",
+      "sampleUrl": "https://dis-se19.divas.cloud:8200/chan-11536_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 160,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 160,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se20.divas.cloud:8200",
+      "sampleUrl": "https://dis-se20.divas.cloud:8200/chan-11708_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 24,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 24,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se24.divas.cloud:8200",
+      "sampleUrl": "https://dis-se24.divas.cloud:8200/chan-11737_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 21,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 21,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se21.divas.cloud:8200",
+      "sampleUrl": "https://dis-se21.divas.cloud:8200/chan-11767_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 22,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 22,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se23.divas.cloud:8200",
+      "sampleUrl": "https://dis-se23.divas.cloud:8200/chan-11920_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 15,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 15,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "dis-se25.divas.cloud:8200",
+      "sampleUrl": "https://dis-se25.divas.cloud:8200/chan-12049_h/index.m3u8",
+      "referer": "https://fl511.com/",
+      "count": 21,
+      "system": {
+        "system": "fl",
+        "site": "fl511.com",
+        "country": "US",
+        "region": "Florida",
+        "agency": "Florida DOT (FL511)"
+      },
+      "examples": [],
+      "authRequired": 21,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "s52.nysdot.skyvdn.com",
+      "sampleUrl": "https://s52.nysdot.skyvdn.com/rtplive/R5_013/playlist.m3u8",
+      "referer": "https://511ny.org/",
+      "count": 344,
+      "system": {
+        "system": "ny",
+        "site": "511ny.org",
+        "country": "US",
+        "region": "New York",
+        "agency": "NYSDOT (511NY)"
+      },
+      "examples": [
+        {
+          "nativeId": "16",
+          "name": "NY 33",
+          "lat": 42.9223627,
+          "lon": -78.8435134,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/R5_013/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "21",
+          "name": "NY 33",
+          "lat": 42.9074247,
+          "lon": -78.8436404,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/R5_011/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "22",
+          "name": "NY 33",
+          "lat": 42.9223673,
+          "lon": -78.8438361,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/R5_012/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "679",
+          "name": "Winton RD at Merchants st / Elm",
+          "lat": 43.15951391,
+          "lon": -77.54698428,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/R4_213/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "680",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.01503,
+          "lon": -73.72309,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_011/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "681",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.01429,
+          "lon": -73.7092,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_012/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "682",
+          "name": "Garden State Parkway Connector",
+          "lat": 41.0929,
+          "lon": -74.03941,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_013/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "683",
+          "name": "I-87 - NYS Thruway",
+          "lat": 40.90645,
+          "lon": -73.87841,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_014/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "684",
+          "name": "I-87 - NYS Thruway",
+          "lat": 40.9167,
+          "lon": -73.87181,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_015/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "685",
+          "name": "I-87 - NYS Thruway",
+          "lat": 40.92465,
+          "lon": -73.8586,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_016/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "686",
+          "name": "I-87 - NYS Thruway",
+          "lat": 40.93813,
+          "lon": -73.85536,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_017/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "687",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.11618,
+          "lon": -74.11361,
+          "url": "https://s52.nysdot.skyvdn.com/rtplive/TA_018/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 344,
+      "disabled": 0
+    },
+    {
+      "host": "s51.nysdot.skyvdn.com",
+      "sampleUrl": "https://s51.nysdot.skyvdn.com/rtplive/R1_033/playlist.m3u8",
+      "referer": "https://511ny.org/",
+      "count": 323,
+      "system": {
+        "system": "ny",
+        "site": "511ny.org",
+        "country": "US",
+        "region": "New York",
+        "agency": "NYSDOT (511NY)"
+      },
+      "examples": [
+        {
+          "nativeId": "19",
+          "name": "US 9",
+          "lat": 43.237344,
+          "lon": -73.690416,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/R1_033/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "312",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.05757,
+          "lon": -73.83243,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_001/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "313",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.05911,
+          "lon": -73.82328,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_002/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "314",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.05563,
+          "lon": -73.81012,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_003/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "315",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.04707,
+          "lon": -73.80424,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_004/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "316",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.04579,
+          "lon": -73.79263,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_005/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "317",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.04242,
+          "lon": -73.78608,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_006/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "318",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.04503,
+          "lon": -73.77176,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_007/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "319",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.0448,
+          "lon": -73.76441,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_008/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "320",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.04093,
+          "lon": -73.76253,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_009/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "321",
+          "name": "I-287 - Cross Westchester Expwy",
+          "lat": 41.03282,
+          "lon": -73.75333,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_010/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "322",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.07144,
+          "lon": -73.91165,
+          "url": "https://s51.nysdot.skyvdn.com/rtplive/TA_031/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 323,
+      "disabled": 2
+    },
+    {
+      "host": "s53.nysdot.skyvdn.com",
+      "sampleUrl": "https://s53.nysdot.skyvdn.com/rtplive/R2_029/playlist.m3u8",
+      "referer": "https://511ny.org/",
+      "count": 330,
+      "system": {
+        "system": "ny",
+        "site": "511ny.org",
+        "country": "US",
+        "region": "New York",
+        "agency": "NYSDOT (511NY)"
+      },
+      "examples": [
+        {
+          "nativeId": "20",
+          "name": "NY 5A",
+          "lat": 43.106347,
+          "lon": -75.239611,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/R2_029/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "49",
+          "name": "I-290",
+          "lat": 42.99067,
+          "lon": -78.79924,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/R5_029/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "50",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.00857,
+          "lon": -73.85127,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_021/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "51",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.04137,
+          "lon": -73.83591,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_022/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "52",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.05692,
+          "lon": -73.83504,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_023/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "53",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.06074,
+          "lon": -73.84306,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_024/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "54",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.0605,
+          "lon": -73.85643,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_025/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "55",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.07144,
+          "lon": -73.89642,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_028/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "56",
+          "name": "I-87 - NYS Thruway",
+          "lat": 41.07126,
+          "lon": -73.90788,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_030/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "57",
+          "name": "I-95 - New England Thruway",
+          "lat": 40.88688,
+          "lon": -73.81127,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_051/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "58",
+          "name": "I-95 - New England Thruway",
+          "lat": 40.89966,
+          "lon": -73.79586,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_052/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "59",
+          "name": "I-95 - New England Thruway",
+          "lat": 40.91765,
+          "lon": -73.7809,
+          "url": "https://s53.nysdot.skyvdn.com/rtplive/TA_053/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 330,
+      "disabled": 0
+    },
+    {
+      "host": "s7.nysdot.skyvdn.com",
+      "sampleUrl": "https://s7.nysdot.skyvdn.com/rtplive/R6_005/playlist.m3u8",
+      "referer": "https://511ny.org/",
+      "count": 293,
+      "system": {
+        "system": "ny",
+        "site": "511ny.org",
+        "country": "US",
+        "region": "New York",
+        "agency": "NYSDOT (511NY)"
+      },
+      "examples": [
+        {
+          "nativeId": "374",
+          "name": "NY 414",
+          "lat": 42.154819,
+          "lon": -77.052832,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R6_005/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "375",
+          "name": "I-84",
+          "lat": 41.529714,
+          "lon": -73.813121,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_002/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "377",
+          "name": "I-84",
+          "lat": 41.538471,
+          "lon": -73.774562,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_004/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "380",
+          "name": "I-84",
+          "lat": 41.452589,
+          "lon": -73.639344,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_008/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "381",
+          "name": "I-84",
+          "lat": 41.374777,
+          "lon": -74.60945,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_009/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "382",
+          "name": "Saw Mill River Parkway",
+          "lat": 41.081263,
+          "lon": -73.829514,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_031/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "384",
+          "name": "Hutchinson River Parkway [Westchester]",
+          "lat": 41.027828,
+          "lon": -73.684031,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R8_037/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "386",
+          "name": "Harlem River Drive",
+          "lat": 40.80397,
+          "lon": -73.93116,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R11_153/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "387",
+          "name": "Long Island Expressway (I-495)",
+          "lat": 40.74907,
+          "lon": -73.75828,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R11_154/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "388",
+          "name": "Long Island Expressway (I-495)",
+          "lat": 40.76378,
+          "lon": -73.72657,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R11_155/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "389",
+          "name": "Van Wyck Expressway (I-678)",
+          "lat": 40.66655,
+          "lon": -73.8027,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R11_157/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "390",
+          "name": "Van Wyck Expressway (I-678)",
+          "lat": 40.666,
+          "lon": -73.80151,
+          "url": "https://s7.nysdot.skyvdn.com/rtplive/R11_158/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 293,
+      "disabled": 0
+    },
+    {
+      "host": "s9.nysdot.skyvdn.com",
+      "sampleUrl": "https://s9.nysdot.skyvdn.com/rtplive/R2_041/playlist.m3u8",
+      "referer": "https://511ny.org/",
+      "count": 278,
+      "system": {
+        "system": "ny",
+        "site": "511ny.org",
+        "country": "US",
+        "region": "New York",
+        "agency": "NYSDOT (511NY)"
+      },
+      "examples": [
+        {
+          "nativeId": "749",
+          "name": "NY 920P",
+          "lat": 42.949608,
+          "lon": -74.369051,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R2_041/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "750",
+          "name": "NY 14",
+          "lat": 42.090502,
+          "lon": -76.805569,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R6_031/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "752",
+          "name": "NY 30",
+          "lat": 43.109147,
+          "lon": -74.268057,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R2_042/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "753",
+          "name": "NY 14",
+          "lat": 42.058224,
+          "lon": -76.806253,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R6_033/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "754",
+          "name": "Westchester",
+          "lat": 41.023311,
+          "lon": -73.695022,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R8_CAMHRP4081/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "755",
+          "name": "North Genesee St",
+          "lat": 43.112024,
+          "lon": -75.216271,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R2_043/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "757",
+          "name": "NY 400 at Transit Road",
+          "lat": 42.83431,
+          "lon": -78.6974,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R5_048/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "758",
+          "name": "I-84",
+          "lat": 41.513894,
+          "lon": -74.158258,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R8_011/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "760",
+          "name": "Sprain Brook Parkway",
+          "lat": 41.006966,
+          "lon": -73.829253,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R8_014/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "765",
+          "name": "Hutchinson River Parkway [Westchester]",
+          "lat": 40.977136,
+          "lon": -73.757885,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R8_041/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "766",
+          "name": "Grand Central Parkway (907M)",
+          "lat": 40.76784,
+          "lon": -73.88369,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R11_223/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        },
+        {
+          "nativeId": "767",
+          "name": "Long Island Expressway (I-495)",
+          "lat": 40.73122,
+          "lon": -73.91717,
+          "url": "https://s9.nysdot.skyvdn.com/rtplive/R11_230/playlist.m3u8",
+          "system": {
+            "system": "ny",
+            "site": "511ny.org",
+            "country": "US",
+            "region": "New York",
+            "agency": "NYSDOT (511NY)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 278,
+      "disabled": 1
+    },
+    {
+      "host": "itsstreamingbr2.dotd.la.gov",
+      "sampleUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-030.streams/playlist.m3u8",
+      "referer": "https://511la.org/",
+      "count": 188,
+      "system": {
+        "system": "la",
+        "site": "511la.org",
+        "country": "US",
+        "region": "Louisiana",
+        "agency": "Louisiana DOTD (511LA)"
+      },
+      "examples": [
+        {
+          "nativeId": "1",
+          "name": "I-20",
+          "lat": 32.538889,
+          "lon": -93.630833,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-030.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "2",
+          "name": "I-20",
+          "lat": 32.4609,
+          "lon": -93.83,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-002.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "3",
+          "name": "I-20",
+          "lat": 32.4844,
+          "lon": -93.774,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-005.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "4",
+          "name": "I-20",
+          "lat": 32.4904,
+          "lon": -93.772,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-006.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "5",
+          "name": "I-20",
+          "lat": 32.4955,
+          "lon": -93.763,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-007.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "6",
+          "name": "I-20",
+          "lat": 32.497017684654,
+          "lon": -93.7586513133894,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-008.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "7",
+          "name": "I-20",
+          "lat": 32.5017,
+          "lon": -93.749,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-009.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "8",
+          "name": "I-20",
+          "lat": 32.5053,
+          "lon": -93.746,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-010.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "9",
+          "name": "I-20",
+          "lat": 32.5102,
+          "lon": -93.743,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-011.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "10",
+          "name": "I-20",
+          "lat": 32.513553068,
+          "lon": -93.736,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-012.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "11",
+          "name": "I-20",
+          "lat": 32.5137,
+          "lon": -93.715,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-014.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "12",
+          "name": "I-20",
+          "lat": 32.51821345231,
+          "lon": -93.709,
+          "url": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-015.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 188,
+      "disabled": 0
+    },
+    {
+      "host": "itsstreamingno.dotd.la.gov",
+      "sampleUrl": "https://ITSStreamingNO.dotd.la.gov/public/hou-cam-002.streams/playlist.m3u8",
+      "referer": "https://511la.org/",
+      "count": 145,
+      "system": {
+        "system": "la",
+        "site": "511la.org",
+        "country": "US",
+        "region": "Louisiana",
+        "agency": "Louisiana DOTD (511LA)"
+      },
+      "examples": [
+        {
+          "nativeId": "19",
+          "name": "LA 24",
+          "lat": 29.60677,
+          "lon": -90.74324,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/hou-cam-002.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "21",
+          "name": "I-55",
+          "lat": 30.15134574,
+          "lon": -90.44853,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-036.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "21",
+          "name": "I-55",
+          "lat": 30.15134574,
+          "lon": -90.44853,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-037.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "22",
+          "name": "I-55",
+          "lat": 30.25419097,
+          "lon": -90.40279,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-030.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "22",
+          "name": "I-55",
+          "lat": 30.25419097,
+          "lon": -90.40279,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-031.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "23",
+          "name": "I-55",
+          "lat": 30.34837687,
+          "lon": -90.41557,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-033.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "23",
+          "name": "I-55",
+          "lat": 30.34837687,
+          "lon": -90.41557,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-034.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "24",
+          "name": "I-55",
+          "lat": 30.4385,
+          "lon": -90.46016667,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-022.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "25",
+          "name": "I-55",
+          "lat": 30.49133333,
+          "lon": -90.49783333,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-023.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "26",
+          "name": "I-55",
+          "lat": 30.504,
+          "lon": -90.50366667,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-021.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "27",
+          "name": "I-59",
+          "lat": 30.322,
+          "lon": -89.7375,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-026.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "28",
+          "name": "I-59",
+          "lat": 30.34266667,
+          "lon": -89.73833333,
+          "url": "https://ITSStreamingNO.dotd.la.gov/public/ns-cam-016.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 145,
+      "disabled": 1
+    },
+    {
+      "host": "itsstreamingbr.dotd.la.gov",
+      "sampleUrl": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-168.streams/playlist.m3u8",
+      "referer": "https://511la.org/",
+      "count": 156,
+      "system": {
+        "system": "la",
+        "site": "511la.org",
+        "country": "US",
+        "region": "Louisiana",
+        "agency": "Louisiana DOTD (511LA)"
+      },
+      "examples": [
+        {
+          "nativeId": "29",
+          "name": "US 61",
+          "lat": 30.4530442717707,
+          "lon": -91.09590149,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-168.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "29",
+          "name": "US 61",
+          "lat": 30.4530442717707,
+          "lon": -91.09590149,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-169.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "30",
+          "name": "US 61",
+          "lat": 30.5085549311101,
+          "lon": -91.171515,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-188.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "31",
+          "name": "US 61",
+          "lat": 30.5093188180344,
+          "lon": -91.149351,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-184.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "32",
+          "name": "US 61",
+          "lat": 30.3593106905663,
+          "lon": -91.0089143646209,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-172.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "33",
+          "name": "US 61",
+          "lat": 30.4883038902307,
+          "lon": -91.1210899090909,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-185.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "34",
+          "name": "US 61",
+          "lat": 30.4712770865729,
+          "lon": -91.1088807149758,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-186.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "35",
+          "name": "US 61",
+          "lat": 30.5023290860851,
+          "lon": -91.13113,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-171.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "36",
+          "name": "US 61",
+          "lat": 30.4432018578934,
+          "lon": -91.08879,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-025.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "37",
+          "name": "US 61",
+          "lat": 30.4043683798029,
+          "lon": -91.0590200013652,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-189.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "38",
+          "name": "US 61",
+          "lat": 30.399070058138,
+          "lon": -91.0541948519492,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-190.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        },
+        {
+          "nativeId": "38",
+          "name": "US 61",
+          "lat": 30.399070058138,
+          "lon": -91.0541948519492,
+          "url": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-191.streams/playlist.m3u8",
+          "system": {
+            "system": "la",
+            "site": "511la.org",
+            "country": "US",
+            "region": "Louisiana",
+            "agency": "Louisiana DOTD (511LA)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 156,
+      "disabled": 0
+    },
+    {
+      "host": "d2wse2.its.nv.gov",
+      "sampleUrl": "https://d2wse2.its.nv.gov:443/renoxcd02/fb89196b-15dc-48fb-992e-030b7a325d34_hspflirxcd02_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 113,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "2",
+          "name": "McCarran & Caughlin/cashill",
+          "lat": 39.484798,
+          "lon": -119.852401,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/fb89196b-15dc-48fb-992e-030b7a325d34_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6705",
+          "name": "West 4th St @ Woodland Roundabout",
+          "lat": 39.50925,
+          "lon": -119.89655,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/f32c784f-2ea1-4302-a9e4-fde90a7a0c0a_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6733",
+          "name": "US395 Red Rock Virginia Park n Ride",
+          "lat": 39.62526,
+          "lon": -119.91576,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/499cd9ed-721f-4663-8ee8-a0af2cdcaf29_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6734",
+          "name": "SR431 Mt Rose Summit",
+          "lat": 39.31161,
+          "lon": -119.89967,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/ec6b8c8f-7e43-4af3-a420-e7d91c1014ef_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6735",
+          "name": "SR431 Diamond Peak",
+          "lat": 39.2831,
+          "lon": -119.93504,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/9c9baad9-db84-471d-aa62-19bb75a45441_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6736",
+          "name": "SR431 Country Club Dr",
+          "lat": 39.27421,
+          "lon": -119.94688,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/8680813f-95d1-47c0-bf28-e7d265e1fced_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6737",
+          "name": "US95 Trinity Rest Area",
+          "lat": 39.94036,
+          "lon": -118.7492,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/cf0f29f4-ff62-4343-8bfc-d3ee2e7556fe_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6741",
+          "name": "US-50 Austin LA MM11",
+          "lat": 39.4783,
+          "lon": -117.298,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd03/9199b63d-df30-4195-887a-136e6dd2f8f3_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7076",
+          "name": "Galletti @ Kietzke",
+          "lat": 39.5335,
+          "lon": -119.778,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/f945b59b-3ea4-4b1d-af41-e20a9f89bdae_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7078",
+          "name": "I580 @ I80 N E",
+          "lat": 39.537,
+          "lon": -119.7876,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/726e8019-76d4-4066-afcd-d254acc465e3_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7080",
+          "name": "I580 @ Kietzke Lane",
+          "lat": 39.5319,
+          "lon": -119.786,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/47a314f6-23f7-420d-a48e-55e7b3e857ff_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7083",
+          "name": "I580 @ Mill St",
+          "lat": 39.5197,
+          "lon": -119.7828,
+          "url": "https://d2wse2.its.nv.gov:443/renoxcd02/87b560ad-b350-46a3-b16a-a277140d96d4_hspflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 113,
+      "disabled": 0
+    },
+    {
+      "host": "d2wse1.its.nv.gov",
+      "sampleUrl": "https://d2wse1.its.nv.gov:443/renoxcd03/cfba9931-de51-4d48-95b7-c703a137c7ae_hspflirxcd03_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 69,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "80",
+          "name": "West 4th St @ Woodland Roundabout",
+          "lat": 39.5091388096057,
+          "lon": -119.896934154755,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd03/cfba9931-de51-4d48-95b7-c703a137c7ae_hspflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "623",
+          "name": "McCarran & Lakeside",
+          "lat": 39.476799,
+          "lon": -119.807403,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/468fec45-7a0a-46be-b3d2-380ce76d2e3f_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7077",
+          "name": "I80 @ Lovelock",
+          "lat": 40.177,
+          "lon": -118.4715,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/420e7f80-319e-4ec2-ac89-b339a9b2ceaf_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7079",
+          "name": "I580 @ I80 S W",
+          "lat": 39.537,
+          "lon": -119.7876,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/f619ee21-977d-471a-88e7-eebcfdb55531_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7081",
+          "name": "I-80 @ Lockwood",
+          "lat": 39.51174,
+          "lon": -119.65384,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/8cc12dea-a3ad-47d7-9554-0dec384fbfda_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7087",
+          "name": "Rock Blvd @ I80 WB Onramp",
+          "lat": 39.5342,
+          "lon": -119.7657,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/85f6a09e-a0c7-4712-80ba-1dab2463d0e0_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7088",
+          "name": "Pyramid Way @ I80 EB Onramp",
+          "lat": 39.5337,
+          "lon": -119.7527,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/7fcf89c4-aa87-45e3-8f73-890d49633272_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7089",
+          "name": "E. McCarran Blvd @ I80 EB Offramp",
+          "lat": 39.533,
+          "lon": -119.7392,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/57dbef53-96c9-43fe-8ee9-4ed59d5e0578_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7095",
+          "name": "I80 @ Nugget",
+          "lat": 39.5337,
+          "lon": -119.7579,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/a35bb217-cc01-4140-b435-0f84d981155b_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7097",
+          "name": "I80 @ Trinity",
+          "lat": 39.9518,
+          "lon": -118.7256,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/7cc2547c-b67e-4d22-abd0-7e2864fa164c_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7106",
+          "name": "I80 @ Mustang",
+          "lat": 39.52519,
+          "lon": -119.62217,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/7e0d4063-fae5-4c14-a826-41d3dbcd74ce_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7108",
+          "name": "I80 @ Patrick",
+          "lat": 39.55669,
+          "lon": -119.55914,
+          "url": "https://d2wse1.its.nv.gov:443/renoxcd01/8c585bb3-16de-4c0f-b97e-4471ad4901c5_hspflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 69,
+      "disabled": 0
+    },
+    {
+      "host": "d1wse2.its.nv.gov",
+      "sampleUrl": "https://d1wse2.its.nv.gov:443/vegasxcd02/607991cc-f93b-4b4c-8cbc-17fa2b69a6cd_lvflirxcd03_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 72,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6642",
+          "name": "Sahara Ave & Boulder Hwy - Fremont",
+          "lat": 36.14541,
+          "lon": -115.10151,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/607991cc-f93b-4b4c-8cbc-17fa2b69a6cd_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6643",
+          "name": "Boulder Hwy & US 95 NB Ramp",
+          "lat": 36.13487,
+          "lon": -115.08962,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/4ffce686-6a62-4d00-b2a1-4cc9da2b334a_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6645",
+          "name": "Boulder Hwy & Tropicana Ave",
+          "lat": 36.10081,
+          "lon": -115.0508,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/02ae4536-d425-4ab3-b8ff-c7edeff3eeaf_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6647",
+          "name": "Charleston Blvd & Fremont St",
+          "lat": 36.15899,
+          "lon": -115.11711,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/4af1c23c-788a-46f2-b70b-31b713ba6281_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6650",
+          "name": "Boulder Hwy & Warm Springs Rd",
+          "lat": 36.05079,
+          "lon": -114.99423,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/9f99fc10-376c-4f2b-b317-308371e2f484_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6654",
+          "name": "Rainbow Blvd & Desert Inn Rd",
+          "lat": 36.12936,
+          "lon": -115.24272,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/c21d478f-14cf-4949-a36b-4b7b9943dd11_lvflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6655",
+          "name": "Boulder Hwy & Horizon Dr-RacetrackRd",
+          "lat": 36.01427,
+          "lon": -114.95354,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/9111ebaf-88b9-4af6-b234-184a2494944d_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6660",
+          "name": "Sahara Ave & Las Vegas Blvd - Festival",
+          "lat": 36.14384,
+          "lon": -115.1571,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/a2a31b07-28af-43f5-a303-5c352b234062_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6662",
+          "name": "Rainbow Blvd & Flamingo Rd",
+          "lat": 36.11481,
+          "lon": -115.24273,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/7e5ae16d-8bed-4bd3-a1ae-0ab3717ed5ff_lvflirxcd02_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6663",
+          "name": "Flamingo Rd & Decatur Blvd",
+          "lat": 36.11573,
+          "lon": -115.20782,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/c979a02e-eec9-46a3-b329-d579aa5cb53d_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6669",
+          "name": "Boulder Hwy & Lake Mead Pkwy",
+          "lat": 36.03965,
+          "lon": -114.98167,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/7f73a121-c6d0-469e-a29c-4f8a689366fd_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6670",
+          "name": "Boulder Hwy & Flamingo Blvd",
+          "lat": 36.11483,
+          "lon": -115.06663,
+          "url": "https://d1wse2.its.nv.gov:443/vegasxcd02/c4dd5d40-7b8d-46c6-af22-a21522a6b7a2_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 72,
+      "disabled": 0
+    },
+    {
+      "host": "d1wse1.its.nv.gov",
+      "sampleUrl": "https://d1wse1.its.nv.gov:443/vegasxcd01/ce41b7e4-bf27-4095-9a8c-e931ef8a282b_lvflirxcd01_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 70,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6646",
+          "name": "Sahara  Ave & Eastern Ave",
+          "lat": 36.14412,
+          "lon": -115.11902,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/ce41b7e4-bf27-4095-9a8c-e931ef8a282b_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6656",
+          "name": "Decatur Blvd & Sunset Rd",
+          "lat": 36.07194,
+          "lon": -115.20764,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/c0e5bdc6-682e-4736-8d8c-26b61eac1940_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6657",
+          "name": "Sahara Ave & Decatur Blvd",
+          "lat": 36.14476,
+          "lon": -115.20846,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/c87478a0-0f9c-453d-a8dd-756dd24422a9_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6667",
+          "name": "Rainbow Blvd & Oakey Blvd",
+          "lat": 36.15151,
+          "lon": -115.24356,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/a2b901f5-69c4-494d-9bc0-8167af719c4f_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6671",
+          "name": "Durango Dr & North CC 215 WB Ramp",
+          "lat": 36.28085,
+          "lon": -115.28783,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/fbb10712-4f0b-4efb-919d-168c1506e1d0_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6673",
+          "name": "Grand Central Pkwy & Premium Outlet Mall",
+          "lat": 36.16165,
+          "lon": -115.15772,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/f76b81d9-0c3d-4fdc-bd8a-b179d63052a9_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6674",
+          "name": "Grand Central Pkwy & Bonneville-Alta",
+          "lat": 36.16648,
+          "lon": -115.15552,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/9f1d74de-6b11-4ea0-b605-997bce6f294d_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6675",
+          "name": "I-15 SB Lake Mead N",
+          "lat": 36.19612,
+          "lon": -115.13946,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/c1077f9d-8b69-4683-94cc-eb6e452df502_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6677",
+          "name": "Buffalo Dr & South CC 215 WB Ramp",
+          "lat": 36.06717,
+          "lon": -115.26064,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/66ad7e88-005e-4388-82b0-bd2a014d32d1_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6678",
+          "name": "Flamingo Rd & CC 215 NB Ramp",
+          "lat": 36.11514,
+          "lon": -115.30127,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/c7612d6d-5369-4150-abda-38a3086c9b93_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6681",
+          "name": "Durango Dr & South CC215 WB Ramp",
+          "lat": 36.06737,
+          "lon": -115.27939,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/270ff33a-d570-450b-9a37-d8bf77250154_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6684",
+          "name": "Elkhorn Rd & Grand Montecito Pkwy",
+          "lat": 36.29199,
+          "lon": -115.28417,
+          "url": "https://d1wse1.its.nv.gov:443/vegasxcd01/0dfe44ba-f4ff-47c1-b1bc-0bee12006615_lvflirxcd01_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 70,
+      "disabled": 0
+    },
+    {
+      "host": "d3wse1.its.nv.gov",
+      "sampleUrl": "https://d3wse1.its.nv.gov:443/elkoxcd01/76bcd803-4d2f-4aee-af2b-708557b21e8d_hspflirxcd04_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 88,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6649",
+          "name": "SR-225 Adobe EL MM12",
+          "lat": 40.95032,
+          "lon": -115.87576,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/76bcd803-4d2f-4aee-af2b-708557b21e8d_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7003",
+          "name": "IR-80 MM 200 Golconda Summit HU33",
+          "lat": 40.9212,
+          "lon": -117.3938,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/4b01896c-c7a3-45ba-ada5-c410bb8965a0_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7004",
+          "name": "IR-80 MM 321Halleck EL43",
+          "lat": 40.957,
+          "lon": -115.4786,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/e821e793-276e-4dc6-9d22-819bc6f8fdd3_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7005",
+          "name": "IR-80 MM375 Pequop Summit EL95",
+          "lat": 41.0783,
+          "lon": -114.5696,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/19dc17b3-79c8-4df4-a69d-90445479980d_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7006",
+          "name": "IR-80 MM 298 West Elko EL22",
+          "lat": 40.8014,
+          "lon": -115.8352,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/eef89ab2-bf8e-4010-a23c-e68c61cb725b_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7007",
+          "name": "IR-80 MM 303 East Elko EL18",
+          "lat": 40.8656,
+          "lon": -115.734,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/2b222ee0-1f22-4539-9f4b-7f0d7ce8e1fa_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7008",
+          "name": "IR-80 MM 285 Carlin Tunnel West EL 7.5",
+          "lat": 40.7233,
+          "lon": -116.017,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/a3924004-7af8-4bf6-a6c2-ff8838c92ada_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7009",
+          "name": "IR-80 MM 286 Carlin Tunnel East EL08",
+          "lat": 40.7198,
+          "lon": -116.0104,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/21479ba7-e2d7-420f-a88d-45b2245d7f85_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7010",
+          "name": "IR-80 MM 269 Emigrant Summit EU 18",
+          "lat": 40.6547,
+          "lon": -116.2766,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/349e8907-d301-4c17-99aa-12324de911f6_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7011",
+          "name": "I-80 & Golconda East Bound MM196 Chain Up HU32",
+          "lat": 40.9268,
+          "lon": -117.434,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/3056a9a8-4d89-4d67-94f0-5e1651875d27_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7012",
+          "name": "IR-80 MM 398 Pilot Valley EL100",
+          "lat": 40.8447,
+          "lon": -114.2107,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/8b566376-996b-43f7-8bc4-6b4b3125c459_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "7013",
+          "name": "SR229 EL MM 27 Ruby Valley RWIS",
+          "lat": 40.6795,
+          "lon": -115.2558,
+          "url": "https://d3wse1.its.nv.gov:443/elkoxcd01/2f8d5185-f812-4202-962e-3db34ab4a598_hspflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 88,
+      "disabled": 0
+    },
+    {
+      "host": "d1wse4.its.nv.gov",
+      "sampleUrl": "https://d1wse4.its.nv.gov:443/vegasxcd04/f0e42ab9-1282-4d78-b193-9ebf01b072b7_lvflirxcd06_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 69,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6652",
+          "name": "Charleston Blvd & Rancho Dr",
+          "lat": 36.15877,
+          "lon": -115.17263,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/f0e42ab9-1282-4d78-b193-9ebf01b072b7_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6653",
+          "name": "Las Vegas Blvd & Lake Mead Blvd",
+          "lat": 36.1957,
+          "lon": -115.12938,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/a1d2d9d2-5a35-469c-ac39-e300d545441e_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6661",
+          "name": "Decatur Blvd & CC 215 EB Ramp",
+          "lat": 36.0669,
+          "lon": -115.20784,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/9493a157-b40a-4787-8041-0a62a788d081_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6672",
+          "name": "Charleston Blvd & CC 215 NB Ramp",
+          "lat": 36.15879,
+          "lon": -115.33663,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/3a9e0ed9-0123-4a64-9a5b-602cb7a946f8_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6699",
+          "name": "Sahara Ave & Paradise Rd - Festival",
+          "lat": 36.14388,
+          "lon": -115.15459,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/141f140b-a5ee-47c5-aac7-ab489b9d025e_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6702",
+          "name": "I-15 SB S of Russell",
+          "lat": 36.08244,
+          "lon": -115.18132,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/ecbb056b-87e4-48e5-9e26-68b64c76dfde_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6703",
+          "name": "I-15 NB Tropicana - Arena",
+          "lat": 36.10124,
+          "lon": -115.1804,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/7c90e838-898a-4f57-9245-91be194ddad1_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6709",
+          "name": "I-15 SB Oakey",
+          "lat": 36.15136,
+          "lon": -115.16545,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/020cb289-3c89-48f4-9d9c-d04c0a863555_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6718",
+          "name": "Charleston Blvd & Town Center Dr",
+          "lat": 36.15914,
+          "lon": -115.32291,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/daa7c41a-3591-4952-ba68-1559e8144dd9_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6722",
+          "name": "Craig Rd & Decatur Blvd",
+          "lat": 36.23903,
+          "lon": -115.20789,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/ac4a59bb-08b3-4dcf-8c5e-93a9e0a6b3da_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6725",
+          "name": "Craig Rd & Losee Rd - Speed",
+          "lat": 36.24008,
+          "lon": -115.11707,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/95487a78-62fb-4f99-80a6-e1be2e8f3a5d_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6726",
+          "name": "Blue Diamond Rd & Buffalo Dr",
+          "lat": 36.01995,
+          "lon": -115.26145,
+          "url": "https://d1wse4.its.nv.gov:443/vegasxcd04/967403f6-cd1f-488d-aad2-e68dcbc798f2_lvflirxcd06_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 69,
+      "disabled": 0
+    },
+    {
+      "host": "d1wse5.its.nv.gov",
+      "sampleUrl": "https://d1wse5.its.nv.gov:443/vegasxcd05/51c88575-37ff-4aed-b137-204b6c47db00_lvflirxcd07_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 72,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6658",
+          "name": "Durango Dr & North CC 215 EB Ramp",
+          "lat": 36.27898,
+          "lon": -115.2878,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/51c88575-37ff-4aed-b137-204b6c47db00_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6700",
+          "name": "I-215 EB I-15 SB ramp",
+          "lat": 36.0651,
+          "lon": -115.1863,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/aed7089c-c1ff-4de3-8535-2c1792c7cc8f_lvflirxcd05_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6721",
+          "name": "I-215 WB I-15",
+          "lat": 36.06615,
+          "lon": -115.18214,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/b2bec0dc-f008-4f34-8a57-7a8476298a30_lvflirxcd05_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6724",
+          "name": "Desert Inn Rd WB TUNNEL EXIT",
+          "lat": 36.13146,
+          "lon": -115.16647,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/d18d42e6-e9c8-41f3-9488-ead2b15d1c73_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6731",
+          "name": "Sandhill Blvd & I-15",
+          "lat": 36.81208,
+          "lon": -114.06374,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/2786ff79-3d66-4ef0-87ea-a3392c48c96c_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6812",
+          "name": "Lake Mead Blvd & CC-215 NB",
+          "lat": 36.20543,
+          "lon": -115.3407,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/cb07c808-1d23-4e07-ad95-a00257fb6cb5_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6813",
+          "name": "Rainbow Blvd & south CC 215 EB Ramp",
+          "lat": 36.06538,
+          "lon": -115.24244,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/e664c903-c043-4c71-8e79-0e642f42819b_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6823",
+          "name": "Las Vegas Blvd & I-215 WB",
+          "lat": 36.06467,
+          "lon": -115.17271,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/bea9280d-145c-4a34-88d0-492bf6cee834_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6824",
+          "name": "Las Vegas Blvd & I-215 EB",
+          "lat": 36.06269,
+          "lon": -115.17211,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/5a159a4a-84db-4c1d-af0c-f9026ad9d777_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6839",
+          "name": "Lake Mead Blvd & Buffalo Dr",
+          "lat": 36.19633,
+          "lon": -115.26057,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/6ed4308e-7756-4f12-add6-504e3e0123e7_lvflirxcd05_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6855",
+          "name": "Valle Verde Dr & I-215 WB Beltway",
+          "lat": 36.02751,
+          "lon": -115.06254,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/b9f374d4-513b-463e-9114-14da5c7e13f4_lvflirxcd05_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6866",
+          "name": "Jones Blvd & South CC 215 EB Ramp",
+          "lat": 36.06578,
+          "lon": -115.22457,
+          "url": "https://d1wse5.its.nv.gov:443/vegasxcd05/8f5205e3-5fe8-4171-83ca-97d3b1f986f7_lvflirxcd07_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 72,
+      "disabled": 0
+    },
+    {
+      "host": "d1wse3.its.nv.gov",
+      "sampleUrl": "https://d1wse3.its.nv.gov:443/vegasxcd03/4c0bab02-65b4-4b1e-bd8a-ee77a2b0d02c_lvflirxcd04_public.stream/playlist.m3u8",
+      "referer": "https://nvroads.com/",
+      "count": 72,
+      "system": {
+        "system": "nv",
+        "site": "www.nvroads.com",
+        "country": "US",
+        "region": "Nevada",
+        "agency": "Nevada DOT (NVRoads)"
+      },
+      "examples": [
+        {
+          "nativeId": "6659",
+          "name": "Decatur Blvd & CC 215 WB Ramp",
+          "lat": 36.06907,
+          "lon": -115.20784,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/4c0bab02-65b4-4b1e-bd8a-ee77a2b0d02c_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6664",
+          "name": "Flamingo Rd & Las Vegas Blvd F1",
+          "lat": 36.11454,
+          "lon": -115.17308,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/c250fce9-1e47-479e-99eb-a28ba37fe962_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6665",
+          "name": "Tropicana Ave & Las Vegas Blvd Arena",
+          "lat": 36.10106,
+          "lon": -115.17323,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/198fc527-1255-4c29-a318-7e111677d239_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6666",
+          "name": "Decatur Blvd & Russell Rd",
+          "lat": 36.08654,
+          "lon": -115.20768,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/84dcbb2d-c220-4504-b6da-97f6fe8b3d1d_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6679",
+          "name": "Sunset Rd & CC 215 NB Ramp",
+          "lat": 36.07033,
+          "lon": -115.28778,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/1c9f1ce5-170e-424a-90ac-4fa1b31174d2_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6697",
+          "name": "Casino Center Blvd & Ogden Ave",
+          "lat": 36.17195,
+          "lon": -115.14314,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/d84c424f-d6bb-44df-9c77-5fb45dcb5caf_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6698",
+          "name": "Casino Center Blvd & Bonneville Ave",
+          "lat": 36.16489,
+          "lon": -115.14809,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/fbd6fb13-e955-4ea2-9eb1-194e1b613c8a_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6719",
+          "name": "I-515 SB I-15 (Turtles)",
+          "lat": 36.17385,
+          "lon": -115.15308,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/f81c7971-2ab0-4f48-bde9-355fd5255c89_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6723",
+          "name": "Craig Rd & Martin Luther King Blvd",
+          "lat": 36.23926,
+          "lon": -115.16167,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/52d23062-e5cb-4e71-a3d0-f9b79414b813_lvflirxcd04_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6745",
+          "name": "Eastern Ave & Horizon Ridge Pkwy",
+          "lat": 35.99923,
+          "lon": -115.10441,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/aebed15f-3e64-40a6-bb35-5932cb73a548_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6750",
+          "name": "Tropicana Ave & Paradise Rd T&M",
+          "lat": 36.10125,
+          "lon": -115.15003,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/11559fef-80fa-4730-99a6-691383b7b530_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        },
+        {
+          "nativeId": "6752",
+          "name": "Eastern Ave & CC 215 EB Ramp",
+          "lat": 36.02265,
+          "lon": -115.11822,
+          "url": "https://d1wse3.its.nv.gov:443/vegasxcd03/dcc1b63f-709d-43b9-9c85-852b3c1d1b39_lvflirxcd03_public.stream/playlist.m3u8",
+          "system": {
+            "system": "nv",
+            "site": "www.nvroads.com",
+            "country": "US",
+            "region": "Nevada",
+            "agency": "Nevada DOT (NVRoads)"
+          }
+        }
+      ],
+      "authRequired": 0,
+      "open": 72,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse01.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse01.services.ncdot.gov:8887/chan-5135_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 14,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 14,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse02.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse02.services.ncdot.gov:8887/chan-5136_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 19,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 19,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse03.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse03.services.ncdot.gov:8887/chan-5137_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 16,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 16,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse04.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse04.services.ncdot.gov:8887/chan-5138_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse05.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse05.services.ncdot.gov:8887/chan-5139_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 21,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [
+        {
+          "nativeId": "6142",
+          "name": "I-85",
+          "lat": 35.25398,
+          "lon": -80.98252,
+          "url": "https://cfmse05.services.ncdot.gov:8887/chan-6642_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        }
+      ],
+      "authRequired": 20,
+      "open": 1,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse06.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse06.services.ncdot.gov:8887/chan-5140_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 24,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [
+        {
+          "nativeId": "6143",
+          "name": "Gilead",
+          "lat": 35.40448,
+          "lon": -80.86954,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6643_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6144",
+          "name": "Gilead",
+          "lat": 35.40702,
+          "lon": -80.86276,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6645_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6145",
+          "name": "Gilead",
+          "lat": 35.40899,
+          "lon": -80.85882,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6646_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6146",
+          "name": "Gilead",
+          "lat": 35.40917,
+          "lon": -80.85669,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6647_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6147",
+          "name": "Gilead",
+          "lat": 35.41011,
+          "lon": -80.85532,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6648_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6148",
+          "name": "Gilead",
+          "lat": 35.41058,
+          "lon": -80.85179,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6649_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6149",
+          "name": "US-21",
+          "lat": 35.41384,
+          "lon": -80.85635,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6650_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6150",
+          "name": "US-21",
+          "lat": 35.41218,
+          "lon": -80.85583,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6651_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6151",
+          "name": "US-21",
+          "lat": 35.40764,
+          "lon": -80.85443,
+          "url": "https://cfmse06.services.ncdot.gov:8887/chan-6652_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        }
+      ],
+      "authRequired": 15,
+      "open": 9,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse07.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse07.services.ncdot.gov:8887/chan-5141_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 19,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [
+        {
+          "nativeId": "6152",
+          "name": "I-485",
+          "lat": 35.10939,
+          "lon": -80.68982,
+          "url": "https://cfmse07.services.ncdot.gov:8887/chan-6653_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6153",
+          "name": "I-485",
+          "lat": 35.11126,
+          "lon": -80.68704,
+          "url": "https://cfmse07.services.ncdot.gov:8887/chan-6654_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6154",
+          "name": "I-485",
+          "lat": 35.10255,
+          "lon": -80.70958,
+          "url": "https://cfmse07.services.ncdot.gov:8887/chan-6655_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6155",
+          "name": "I-485",
+          "lat": 35.119343,
+          "lon": -80.904828,
+          "url": "https://cfmse07.services.ncdot.gov:8887/chan-6656_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        }
+      ],
+      "authRequired": 15,
+      "open": 4,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse08.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse08.services.ncdot.gov:8887/chan-5142_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 15,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 15,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse09.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse09.services.ncdot.gov:8887/chan-5143_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse10.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse10.services.ncdot.gov:8887/chan-5144_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse12.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse12.services.ncdot.gov:8887/chan-5146_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 14,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 14,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfmse11.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfmse11.services.ncdot.gov:8887/chan-5157_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfese02.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese02.services.ncdot.gov:8887/chan-5221_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 33,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 33,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase03.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase03.services.ncdot.gov:8887/chan-5368_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 15,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 15,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase04.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase04.services.ncdot.gov:8887/chan-5369_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 10,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 10,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase02.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase02.services.ncdot.gov:8887/chan-5373_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 13,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 13,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase01.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase01.services.ncdot.gov:8887/chan-5390_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 8,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 8,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase06.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase06.services.ncdot.gov:8887/chan-5401_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 9,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 9,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfase05.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfase05.services.ncdot.gov:8887/chan-5412_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 7,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 7,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse01.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse01.services.ncdot.gov:8887/chan-5102_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 21,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 21,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse02.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse02.services.ncdot.gov:8887/chan-5104_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 23,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 23,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse03.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse03.services.ncdot.gov:8887/chan-5106_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 25,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 25,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse04.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse04.services.ncdot.gov:8887/chan-5108_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 23,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 23,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse05.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse05.services.ncdot.gov:8887/chan-5110_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 38,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 38,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse06.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse06.services.ncdot.gov:8887/chan-5112_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 30,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 30,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse07.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse07.services.ncdot.gov:8887/chan-5114_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 27,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 27,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse08.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse08.services.ncdot.gov:8887/chan-5116_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 37,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [
+        {
+          "nativeId": "6134",
+          "name": "US-421",
+          "lat": 34.25328,
+          "lon": -77.95736,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6639_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6136",
+          "name": "US-17B",
+          "lat": 34.22596,
+          "lon": -77.94505,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6633_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6137",
+          "name": "17th",
+          "lat": 34.18183,
+          "lon": -77.91637,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6631_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6138",
+          "name": "US-17",
+          "lat": 34.26496,
+          "lon": -77.82678,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6634_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6139",
+          "name": "NC-417",
+          "lat": 34.27605,
+          "lon": -77.83335,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6635_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6140",
+          "name": "NC-417",
+          "lat": 34.28879,
+          "lon": -77.8228,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6636_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        },
+        {
+          "nativeId": "6141",
+          "name": "US-17",
+          "lat": 34.30164,
+          "lon": -77.78769,
+          "url": "https://cfsse08.services.ncdot.gov:8887/chan-6637_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        }
+      ],
+      "authRequired": 30,
+      "open": 7,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse09.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse09.services.ncdot.gov:8887/chan-5118_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 30,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 30,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse10.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse10.services.ncdot.gov:8887/chan-5120_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 28,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 28,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse11.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse11.services.ncdot.gov:8887/chan-5122_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 25,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 25,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse12.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse12.services.ncdot.gov:8887/chan-5124_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 23,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 23,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfsse13.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfsse13.services.ncdot.gov:8887/chan-5126_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 22,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 22,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse03.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse03.services.ncdot.gov:8887/chan-6338_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfese01.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese01.services.ncdot.gov:8887/chan-5312_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 35,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [
+        {
+          "nativeId": "6135",
+          "name": "US-74",
+          "lat": 34.25016,
+          "lon": -77.94774,
+          "url": "https://cfese01.services.ncdot.gov:8887/chan-6641_l/index.m3u8",
+          "system": {
+            "system": "nc",
+            "site": "www.drivenc.gov",
+            "country": "US",
+            "region": "North Carolina",
+            "agency": "NCDOT (DriveNC)"
+          }
+        }
+      ],
+      "authRequired": 34,
+      "open": 1,
+      "disabled": 0
+    },
+    {
+      "host": "cfese03.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese03.services.ncdot.gov:8887/chan-5315_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 38,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 38,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfese04.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese04.services.ncdot.gov:8887/chan-5317_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 50,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 50,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfese05.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese05.services.ncdot.gov:8887/chan-5319_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 44,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 44,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cfese06.services.ncdot.gov:8887",
+      "sampleUrl": "https://cfese06.services.ncdot.gov:8887/chan-5321_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 41,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 41,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse02.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse02.services.ncdot.gov:8887/chan-5805_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 19,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 19,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse04.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse04.services.ncdot.gov:8887/chan-5807_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse05.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse05.services.ncdot.gov:8887/chan-5808_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse06.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse06.services.ncdot.gov:8887/chan-5809_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse07.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse07.services.ncdot.gov:8887/chan-5810_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 20,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 20,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse08.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse08.services.ncdot.gov:8887/chan-5811_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse09.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse09.services.ncdot.gov:8887/chan-5812_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 21,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 21,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse11.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse11.services.ncdot.gov:8887/chan-5813_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse10.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse10.services.ncdot.gov:8887/chan-5814_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 18,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 18,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse01.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse01.services.ncdot.gov:8887/chan-5816_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "cftse12.services.ncdot.gov:8887",
+      "sampleUrl": "https://cftse12.services.ncdot.gov:8887/chan-5828_l/index.m3u8",
+      "referer": "https://drivenc.gov/",
+      "count": 17,
+      "system": {
+        "system": "nc",
+        "site": "www.drivenc.gov",
+        "country": "US",
+        "region": "North Carolina",
+        "agency": "NCDOT (DriveNC)"
+      },
+      "examples": [],
+      "authRequired": 17,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "pa-se1.arcadis-ivds.com:8200",
+      "sampleUrl": "https://pa-se1.arcadis-ivds.com:8200/chan-2273/index.m3u8",
+      "referer": "https://511pa.com/",
+      "count": 322,
+      "system": {
+        "system": "pa",
+        "site": "511pa.com",
+        "country": "US",
+        "region": "Pennsylvania",
+        "agency": "PennDOT (511PA)"
+      },
+      "examples": [
+        {
+          "nativeId": "4402",
+          "name": "I-78",
+          "lat": 40.60721,
+          "lon": -75.29935,
+          "url": "https://pa-se1.arcadis-ivds.com:8200/chan-29758/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        },
+        {
+          "nativeId": "4412",
+          "name": "US 30",
+          "lat": 40.087629,
+          "lon": -78.905969,
+          "url": "https://pa-se1.arcadis-ivds.com:8200/chan-29768/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        }
+      ],
+      "authRequired": 320,
+      "open": 2,
+      "disabled": 1
+    },
+    {
+      "host": "pa-se2.arcadis-ivds.com:8200",
+      "sampleUrl": "https://pa-se2.arcadis-ivds.com:8200/chan-2276/index.m3u8",
+      "referer": "https://511pa.com/",
+      "count": 308,
+      "system": {
+        "system": "pa",
+        "site": "511pa.com",
+        "country": "US",
+        "region": "Pennsylvania",
+        "agency": "PennDOT (511PA)"
+      },
+      "examples": [
+        {
+          "nativeId": "4401",
+          "name": "I-78",
+          "lat": 40.62163,
+          "lon": -75.28508,
+          "url": "https://pa-se2.arcadis-ivds.com:8200/chan-29757/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        },
+        {
+          "nativeId": "4411",
+          "name": "US 30",
+          "lat": 40.096814,
+          "lon": -78.934919,
+          "url": "https://pa-se2.arcadis-ivds.com:8200/chan-29767/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        }
+      ],
+      "authRequired": 306,
+      "open": 2,
+      "disabled": 1
+    },
+    {
+      "host": "pa-se3.arcadis-ivds.com:8200",
+      "sampleUrl": "https://pa-se3.arcadis-ivds.com:8200/chan-2279/index.m3u8",
+      "referer": "https://511pa.com/",
+      "count": 320,
+      "system": {
+        "system": "pa",
+        "site": "511pa.com",
+        "country": "US",
+        "region": "Pennsylvania",
+        "agency": "PennDOT (511PA)"
+      },
+      "examples": [
+        {
+          "nativeId": "4410",
+          "name": "US 30",
+          "lat": 40.137852,
+          "lon": -79.009764,
+          "url": "https://pa-se3.arcadis-ivds.com:8200/chan-29766/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        },
+        {
+          "nativeId": "4414",
+          "name": "US 30",
+          "lat": 40.058911,
+          "lon": -78.829479,
+          "url": "https://pa-se3.arcadis-ivds.com:8200/chan-29770/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        }
+      ],
+      "authRequired": 318,
+      "open": 2,
+      "disabled": 1
+    },
+    {
+      "host": "d2g22ywzrs8q02.cloudfront.net",
+      "sampleUrl": "https://d2g22ywzrs8q02.cloudfront.net/main_320x240_200k.m3u8",
+      "referer": "https://511pa.com/",
+      "count": 1,
+      "system": {
+        "system": "pa",
+        "site": "511pa.com",
+        "country": "US",
+        "region": "Pennsylvania",
+        "agency": "PennDOT (511PA)"
+      },
+      "examples": [],
+      "authRequired": 1,
+      "open": 0,
+      "disabled": 0
+    },
+    {
+      "host": "pa-se4.arcadis-ivds.com:8200",
+      "sampleUrl": "https://pa-se4.arcadis-ivds.com:8200/chan-2381/index.m3u8",
+      "referer": "https://511pa.com/",
+      "count": 324,
+      "system": {
+        "system": "pa",
+        "site": "511pa.com",
+        "country": "US",
+        "region": "Pennsylvania",
+        "agency": "PennDOT (511PA)"
+      },
+      "examples": [
+        {
+          "nativeId": "4409",
+          "name": "TURNPIKE EXIT ACCESS",
+          "lat": 40.016061,
+          "lon": -79.079069,
+          "url": "https://pa-se4.arcadis-ivds.com:8200/chan-29765/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        },
+        {
+          "nativeId": "4413",
+          "name": "US 30",
+          "lat": 40.076921,
+          "lon": -78.875745,
+          "url": "https://pa-se4.arcadis-ivds.com:8200/chan-29769/index.m3u8",
+          "system": {
+            "system": "pa",
+            "site": "511pa.com",
+            "country": "US",
+            "region": "Pennsylvania",
+            "agency": "PennDOT (511PA)"
+          }
+        }
+      ],
+      "authRequired": 322,
+      "open": 2,
+      "disabled": 2
+    }
+  ]
+}

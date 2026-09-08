@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "ranAt": "2026-09-07T23:55:50.046Z",
+  "exitIp": "86.20.84.13",
+  "replay": false,
+  "results": [
+    {
+      "key": "ga-511",
+      "label": "511 Georgia (GDOT NaviGAtor)",
+      "country": "US",
+      "region": "Georgia",
+      "verdict": "player-but-no-url",
+      "requests": [
+        {
+          "url": "https://511ga.org/",
+          "outcome": "ok 200",
+          "bytes": 158556
+        }
+      ],
+      "assetsFetched": 40,
+      "players": [
+        "video.js"
+      ],
+      "firstParty": [],
+      "thirdParty": []
+    },
+    {
+      "key": "nv-roads",
+      "label": "NVRoads (Nevada DOT)",
+      "country": "US",
+      "region": "Nevada",
+      "verdict": "player-but-no-url",
+      "requests": [
+        {
+          "url": "https://www.nvroads.com/",
+          "outcome": "ok 200",
+          "bytes": 189042
+        }
+      ],
+      "assetsFetched": 40,
+      "players": [
+        "video.js"
+      ],
+      "firstParty": [],
+      "thirdParty": []
+    },
+    {
+      "key": "oh-ohgo",
+      "label": "OHGO (Ohio DOT)",
+      "country": "US",
+      "region": "Ohio",
+      "verdict": "no-stream-found",
+      "requests": [
+        {
+          "url": "https://www.ohgo.com/",
+          "outcome": "ok 200",
+          "bytes": 29400
+        }
+      ],
+      "assetsFetched": 32,
+      "players": [],
+      "firstParty": [],
+      "thirdParty": []
+    },
+    {
+      "key": "va-511",
+      "label": "511Virginia (VDOT)",
+      "country": "US",
+      "region": "Virginia",
+      "verdict": "player-but-no-url",
+      "requests": [
+        {
+          "url": "https://www.511virginia.org/",
+          "outcome": "ok 200",
+          "bytes": 61633
+        }
+      ],
+      "assetsFetched": 3,
+      "players": [
+        "video.js"
+      ],
+      "firstParty": [],
+      "thirdParty": []
+    }
+  ]
+}
