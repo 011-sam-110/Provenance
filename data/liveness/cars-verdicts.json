@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "ranAt": "2026-09-08T02:22:22.024Z",
+  "verdicts": [
+    {
+      "host": "video.dot.state.mn.us",
+      "system": {
+        "system": "mn",
+        "site": "511mn.org",
+        "country": "US",
+        "region": "Minnesota",
+        "agency": "Minnesota DOT (511mn)"
+      },
+      "count": 1246,
+      "sampled": 40,
+      "reachable": 38,
+      "rolling": 38,
+      "stalled": 0,
+      "rollingRate": 0.95,
+      "estimatedLive": 1184,
+      "verdict": "live"
+    },
+    {
+      "host": "publicstreamer1.cotrip.org",
+      "system": {
+        "system": "co",
+        "site": "cotrip.org",
+        "country": "US",
+        "region": "Colorado",
+        "agency": "Colorado DOT (COtrip)"
+      },
+      "count": 257,
+      "sampled": 5,
+      "verdict": "unreachable-from-this-network",
+      "statuses": [
+        "neterr"
+      ],
+      "note": "portal served the catalogue; this video host answered no read. Not scored live or dead — re-probe from an exit the operator serves."
+    },
+    {
+      "host": "publicstreamer3.cotrip.org",
+      "system": {
+        "system": "co",
+        "site": "cotrip.org",
+        "country": "US",
+        "region": "Colorado",
+        "agency": "Colorado DOT (COtrip)"
+      },
+      "count": 184,
+      "sampled": 5,
+      "verdict": "unreachable-from-this-network",
+      "statuses": [
+        "neterr"
+      ],
+      "note": "portal served the catalogue; this video host answered no read. Not scored live or dead — re-probe from an exit the operator serves."
+    },
+    {
+      "host": "publicstreamer2.cotrip.org",
+      "system": {
+        "system": "co",
+        "site": "cotrip.org",
+        "country": "US",
+        "region": "Colorado",
+        "agency": "Colorado DOT (COtrip)"
+      },
+      "count": 178,
+      "sampled": 5,
+      "verdict": "unreachable-from-this-network",
+      "statuses": [
+        "neterr"
+      ],
+      "note": "portal served the catalogue; this video host answered no read. Not scored live or dead — re-probe from an exit the operator serves."
+    },
+    {
+      "host": "publicstreamer4.cotrip.org",
+      "system": {
+        "system": "co",
+        "site": "cotrip.org",
+        "country": "US",
+        "region": "Colorado",
+        "agency": "Colorado DOT (COtrip)"
+      },
+      "count": 173,
+      "sampled": 5,
+      "verdict": "unreachable-from-this-network",
+      "statuses": [
+        "neterr"
+      ],
+      "note": "portal served the catalogue; this video host answered no read. Not scored live or dead — re-probe from an exit the operator serves."
+    }
+  ]
+}
