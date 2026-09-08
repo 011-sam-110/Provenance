@@ -6521,9 +6521,12 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   width: 22px;
   height: 22px;
   border-radius: 6px;
-  border: 1px solid var(--tn-border);
+  /* Its border is the ONLY thing that says this is a control, so it is held to
+     WCAG 1.4.11's 3:1 for non-text contrast rather than to the hairline used for
+     separators. --tn-srx-edge measures 3.04:1 on white; --tn-border was 1.28. */
+  border: 1px solid var(--tn-srx-edge);
   background: var(--tn-surface-solid);
-  color: var(--tn-text-faint);
+  color: var(--tn-text-muted);
   font-size: var(--tnx-fs-sm);
   line-height: 1;
   display: grid;
@@ -6574,16 +6577,19 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   border: 1px solid var(--tn-border-strong);
   border-radius: 10px;
   box-shadow: var(--tn-shadow);
-  font-size: var(--tnx-fs-xs);
-  line-height: 1.45;
+  /* 12px, not 11px. Sam reads this console at about 80% browser zoom, so an 11px
+     step lands near 8.8 device pixels — "the grey text is impossible to read, and
+     some of it quite small". Nothing meaningful in this rail sits below 12px now. */
+  font-size: var(--tnx-fs-sm);
+  line-height: 1.5;
 }
 .tn-src-pop-attr { color: var(--tn-text); }
 .tn-src-pop-hint {
   margin-top: 6px;
   padding-top: 5px;
-  border-top: 1px solid var(--tn-border);
-  color: var(--tn-text-faint);
-  font-size: var(--tnx-fs-xs);
+  border-top: 1px solid var(--tn-border-strong);
+  color: var(--tn-text-muted);
+  font-size: var(--tnx-fs-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6599,21 +6605,40 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    matches a container's DESCENDANTS — an element cannot respond to its own
    container-type — so declaring it on the grid meant the fold never fired and a
    268px rail still drew two columns. */
-.tn-src-sec { margin: 0 0 10px; container-type: inline-size; }
+.tn-src-sec { margin: 0 0 14px; container-type: inline-size; }
+/* THE RAIL'S ONE HEADING, and every block in it now uses this class — the source
+   sections, AREAS, the camera Feed/Region filters and the presets tab. They used
+   to be split between this and `.tn-subhead` (12px against 14px), so the panel
+   carried two tiers of heading with nothing saying which outranked which, and
+   the one block that is NOT a list of sources was the one that looked smallest.
+   Sam: "'AREAS' needs to be capital and bold a bit like 'AIR & SPACE'."
+   `.tn-subhead` still exists and is still correct for the OTHER panels that use
+   it; what changed is which class this rail's headings ask for.
+
+   THE RULE UNDER IT IS THE HIERARCHY, and it is why this reads as sections at
+   all. On a white page with white cards there was nothing separating one
+   heading's rows from the next heading — "there is no heirachy" — and a
+   hairline is the cheapest fix that does not spend the console's deliberate 26px
+   row rhythm on air. --tn-border-strong measures 1.69:1 on white against
+   --tn-border's 1.28. */
 .tn-src-sec-head {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin: 0 0 3px;
-  padding: 0 6px;
+  margin: 0 0 6px;
+  padding: 0 6px 5px;
+  border-bottom: 1px solid var(--tn-border-strong);
   font-size: var(--tnx-fs-md);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tnx-ink);
 }
 .tn-src-sec-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-src-sec-n { font-weight: 500; opacity: 0.7; }
+/* A STATED COLOUR, NOT AN OPACITY. `opacity: 0.7` on the heading ink composited
+   to 5.50:1 and moved whenever the ink did; --tn-text-muted is 8.19:1 and says
+   what it is. Same visual weight relative to the title, better floor. */
+.tn-src-sec-n { font-weight: 600; color: var(--tn-text-muted); }
 /* Pushed to the far end so the "on" reading sits in one column down the rail
    instead of moving with the length of each heading. */
 .tn-src-sec-on { margin-left: auto; color: var(--tn-accent); font-weight: 600; }
@@ -7151,80 +7176,155 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    areas became additive, so the whole line opens a menu of them. `position:
    relative` on the wrapper is what the popover is anchored to — it must not move to
    the button, or the menu would be clipped by the button's own 30px box. */
-.tn-ctxbar-wrap { position: relative; margin: 0 0 2px; }
+/* ── THE EDGE THIS RAIL DRAWS ITS CONTROLS WITH ───────────────────────────────
+   The ink at half strength. It is the same move --tnx-line and --tnx-line-strong
+   already make ("Rules are the ink at low alpha, not the #afb4ad swatch as a flat
+   fill") taken one step further, and it exists because those two do not reach the
+   3:1 that WCAG 1.4.11 asks of a control whose boundary is the only thing
+   identifying it. Measured on --tnx-panel #ffffff:
+
+     --tn-border         rgba(38,43,21,0.13)   1.28   separators only
+     --tn-border-strong   rgba(38,43,21,0.26)   1.69   separators, section rules
+     --tn-srx-edge        rgba(38,43,21,0.50)   3.04   CONTROL boundaries
+
+   That is the whole of "its kind of hard to see elements, as the drawing boxes
+   around them are poor": on a white page with white cards a 1.28:1 outline is not
+   an outline. Scoped to the rail rather than added to the palette block, so it
+   cannot leak into chrome that was measured against the softer two. */
+.tn-rail { --tn-srx-edge: rgba(38, 43, 21, 0.5); }
+
+/* ── The context switcher — the rail's PRIMARY control ────────────────────────
+   It decides which context every toggle below writes to, and it used to read as
+   a quiet grey bar: 12px type in a 30px box with a 1.28:1 outline, sitting under
+   a segmented tab strip that was louder than it. Sam: "Similar issues for the
+   'editing x' dropdown. Hard to see that that is a big thing."
+
+   Four changes, and none of them is size for its own sake. The type steps from
+   --tnx-fs-sm to --tnx-fs-md and the name to 700, because the name is the whole
+   answer the control gives. The fill moves to --tnx-panel-head, the one surface
+   in this palette that is not white, so the control has a body rather than only
+   an outline. The edge takes --tn-srx-edge. And the left border is 3px of the
+   accent — the strongest single signal available here, 9.04:1, and the thing
+   that makes this read as a section marker rather than another row.
+
+   THE HEIGHT IS THE ONE PLACE SIZE WAS ADDED. 40px against the console's 26px
+   row rhythm, deliberately: that rhythm is the density the source list is FOR,
+   and this is not a source row. */
+.tn-ctxbar-wrap { position: relative; margin: 0 0 6px; }
+/* The trigger and the ✕ are two controls on one line. `stretch`, so the ✕ is the
+   same height as the bar without either of them stating a number twice. */
+.tn-ctxbar-row { display: flex; align-items: stretch; gap: 6px; }
 .tn-ctxbar {
-  display: flex; align-items: center; gap: 7px; width: 100%;
-  padding: 7px 9px; border-radius: 8px; font: inherit; font-size: var(--tnx-fs-sm);
-  text-align: left; color: inherit; cursor: pointer;
-  background: var(--tn-surface-2, rgba(0,0,0,.03)); border: 1px solid var(--tn-border);
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  min-height: 40px;
+  padding: 8px 10px; border-radius: var(--tnx-r-sm);
+  font: inherit; font-size: var(--tnx-fs-md);
+  text-align: left; color: var(--tn-text); cursor: pointer;
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-srx-edge);
+  border-left: 3px solid var(--tn-accent);
+  box-shadow: var(--tn-shadow-sm);
 }
-.tn-ctxbar:hover { border-color: var(--tn-text-faint); }
+.tn-ctxbar:hover { background: var(--tn-accent-soft); }
 .tn-ctxbar:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 .tn-ctxbar[data-area] { border-color: var(--tn-accent); }
-.tn-ctxbar-glyph { color: var(--tn-text-faint); flex: 0 0 auto; }
-.tn-ctxbar[data-area] .tn-ctxbar-glyph, .tn-ctxbar[data-area] .tn-ctxbar-name { color: var(--tn-accent); }
-/* "Editing" is the word that stops the control lying. Quiet, because it is the same
-   on every row; the context name is the part that changes and carries the weight. */
-.tn-ctxbar-lead { color: var(--tn-text-faint); flex: 0 0 auto; }
-.tn-ctxbar-name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-ctxbar-glyph { color: var(--tn-accent); flex: 0 0 auto; }
+.tn-ctxbar[data-area] .tn-ctxbar-name { color: var(--tn-accent); }
+/* "Editing" is the word that stops the control lying, and it is now a LABEL
+   rather than a quieter copy of the name — small caps at --tn-text-muted (8.19:1,
+   up from the 5.88:1 of faint). Two tiers on one line: what the field is, then
+   what it says. */
+.tn-ctxbar-lead {
+  flex: 0 0 auto;
+  font-size: var(--tnx-fs-sm); font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tn-text-muted);
+}
+.tn-ctxbar-name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The caret rides the token like everything else in this region — a px literal
    here is how --tnx-fs quietly stops meaning anything (tests/unit/terminal-tokens
-   .test.ts guards exactly that). It only needs to be smaller than the label, and
-   the xs step already is. */
-.tn-ctxbar-caret { color: var(--tn-text-faint); flex: 0 0 auto; font-size: var(--tnx-fs-xs); }
+   .test.ts guards exactly that). It only needs to be smaller than the label. */
+.tn-ctxbar-caret { color: var(--tn-text-muted); flex: 0 0 auto; font-size: var(--tnx-fs-sm); }
+
+/* ── THE CLEAR-AREA ✕ — the only way out of a persisted filter ────────────────
+   See components/shell/inspector/ContextSwitcher.tsx and lib/shell/clearArea.ts
+   for why this control exists at all. What matters here is that it is VISIBLE and
+   HITTABLE: 36px wide against the bar's own 40px, which is past the 24px minimum
+   this sheet holds pointer targets to, and it carries the same edge as the bar so
+   it reads as part of the same control group rather than as a stray glyph.
+
+   Hover goes to --tnx-down (5.25:1 on white) because this is the destructive-ish
+   half of the pair — it drops a filter the user set — and the accent means
+   "selected" everywhere else in this console. */
+.tn-ctxbar-clear {
+  flex: 0 0 auto; width: 36px; min-height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border-radius: var(--tnx-r-sm);
+  border: 1px solid var(--tn-srx-edge);
+  background: var(--tn-surface-solid);
+  color: var(--tn-text-muted); cursor: pointer;
+}
+.tn-ctxbar-clear svg { width: 16px; height: 16px; }
+.tn-ctxbar-clear:hover { color: var(--tn-down); border-color: var(--tn-down); }
+.tn-ctxbar-clear:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
 /* The popover. `max-height` + scroll rather than a taller panel: AREA_CAP is 40, so
    the list can be 41 rows and must never push the source sections off the rail. */
 .tn-ctxbar-menu {
   position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px);
   max-height: 320px; overflow-y: auto; padding: 4px;
-  border-radius: 10px; border: 1px solid var(--tn-border);
+  border-radius: 10px; border: 1px solid var(--tn-srx-edge);
   background: var(--tn-surface); box-shadow: var(--tn-shadow);
 }
 .tn-ctxbar-opt {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 7px;
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px;
   border: none; border-radius: 7px; background: none;
-  font: inherit; font-size: var(--tnx-fs-sm); text-align: left; color: inherit; cursor: pointer;
+  font: inherit; font-size: var(--tnx-fs); text-align: left; color: inherit; cursor: pointer;
 }
 .tn-ctxbar-opt:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
 .tn-ctxbar-opt:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
 .tn-ctxbar-opt[aria-checked="true"] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
 .tn-ctxbar-opt[aria-checked="true"] .tn-insp-label { color: var(--tn-accent); font-weight: 600; }
 .tn-ctxbar-foot {
-  margin: 4px 3px 2px; font-size: var(--tnx-fs-xs); line-height: 1.45;
-  color: var(--tn-text-faint);
+  margin: 6px 3px 2px; font-size: var(--tnx-fs-sm); line-height: 1.5;
+  color: var(--tn-text-muted);
 }
 
-/* A SEGMENTED CONTROL, not two loose buttons.
-   It used to be a transparent-bordered pair where only the selected one drew a
-   1px outline. Seen in the browser at the top of the rail that reads as an empty
-   input box beside a floating word: the selected half looks like a text field, the
-   unselected half has no affordance at all and does not look clickable. That was
-   survivable while the strip sat below the context line and above one tab's worth
-   of content; it is now the first control in the rail and the thing that says the
-   presets are still here at all, so it needs to look like a control.
-   One track, two halves, the selected half filled. */
-.tn-rail-tabs {
-  display: flex; gap: 2px; margin: 7px 0 8px; padding: 2px;
-  border-radius: 9px; background: var(--tn-surface-2, rgba(0,0,0,.05));
-  border: 1px solid var(--tn-border);
-}
-.tn-rail-tab {
-  flex: 1; padding: 5px 0 6px; font: inherit; font-size: var(--tnx-fs-sm); font-weight: 500;
-  border-radius: 7px; border: 1px solid transparent; background: none;
-  color: var(--tn-text-faint); cursor: pointer;
-}
-.tn-rail-tab:hover { color: var(--tn-text); }
-.tn-rail-tab:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
-/* The fill carries the selection, not the border. --tn-accent is a pale olive here
-   and an outline in it is nearly invisible against the rail's own surface — which
-   is how the old rule managed to leave the selected tab looking unselected. */
-.tn-rail-tab[aria-selected="true"] {
-  background: var(--tn-surface); border-color: var(--tn-border);
-  color: var(--tn-text); font-weight: 600; box-shadow: var(--tn-shadow);
-}
+/* ── "Draw an area", inside the switcher's menu ───────────────────────────────
+   A rule, then an action. The rows above SELECT a context and this one PERFORMS a
+   gesture, so it is separated rather than merely listed last — the separator is a
+   real `role="separator"` element, which is what a menu wants between groups, not
+   a border on the row.
 
-.tn-insp-count { color: var(--tn-text-faint); font-weight: 400; }
+   The accent says "this makes something", matching the ＋ on the dashed button in
+   the areas block below, which is the same action from the other direction.
+
+   AT THE CAP IT IS `aria-disabled`, NOT `disabled`, so the arrow keys can still
+   land on it and read the reason out. The styling has to carry that itself —
+   `:disabled` would not match — which is why the selector below is the attribute
+   and not the pseudo-class. */
+.tn-ctxbar-sep { height: 1px; margin: 5px 3px; background: var(--tn-border-strong); }
+.tn-ctxbar-draw { color: var(--tn-accent); }
+.tn-ctxbar-draw .tn-insp-label { font-weight: 700; color: var(--tn-accent); }
+.tn-ctxbar-draw .tn-ctxbar-glyph { color: var(--tn-accent); }
+.tn-ctxbar-draw[aria-disabled="true"] { cursor: default; }
+.tn-ctxbar-draw[aria-disabled="true"] .tn-insp-label,
+.tn-ctxbar-draw[aria-disabled="true"] .tn-ctxbar-glyph { color: var(--tn-text-muted); }
+.tn-ctxbar-draw[aria-disabled="true"]:hover { background: none; }
+
+/* `.tn-rail-tabs` / `.tn-rail-tab` WERE HERE and are deleted with the tab strip
+   they styled. The rail is one panel again: the Presets tab's boards already live
+   in the centre navbar pill and in ⌘K, so the strip was charging every visitor a
+   choice on the way to the only tab that had unique content. Its comment argued
+   at length about making the segmented control read as a control — worth keeping
+   in mind if a second tab is ever justified, but not worth keeping as CSS for
+   markup that no longer exists. See components/shell/SourceCatalog.tsx. */
+
+/* The areas block, which is a section of this rail like any other now — its
+   heading is `.tn-src-sec-head`, so it needs the same air above it that
+   `.tn-src-sec` gives the source sections. */
+.tn-insp { margin-top: 12px; }
 .tn-insp-row {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px;
   margin: 0 -8px; border: none; border-radius: 8px; background: none;
@@ -7234,26 +7334,80 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-insp-row[data-editing] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
 .tn-insp-glyph { color: var(--tn-accent); flex: 0 0 auto; }
 .tn-insp-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
-.tn-insp-label { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tn-insp-sub { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+.tn-insp-label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* THE 11px STEP IS GONE FROM EVERYTHING THAT CARRIES MEANING. This line is an
+   area's source count and size — the only thing distinguishing two rings called
+   "Drawn area (5 points)" — and it was 11px at 5.88:1, which at the ~80% browser
+   zoom this console is read at renders near 8.8 device pixels. 12px at 8.19:1. */
+.tn-insp-sub { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
 .tn-insp-pill {
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: .05em;
+  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: .05em;
   padding: 1.5px 5px; border-radius: 4px; white-space: nowrap; color: var(--tn-accent);
   border: 1px solid var(--tn-accent);
 }
-.tn-insp-pill-muted { color: var(--tn-text-faint); border-color: var(--tn-border); }
+.tn-insp-pill-muted { color: var(--tn-text-muted); border-color: var(--tn-srx-edge); }
 .tn-insp-draw {
-  width: 100%; margin-top: 8px; padding: 7px 9px; text-align: left;
-  border: 1px dashed var(--tn-border); border-radius: 8px; background: none;
-  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-accent); cursor: pointer;
+  width: 100%; margin-top: 8px; padding: 9px 10px; min-height: 36px; text-align: left;
+  /* A dashed 1.28:1 outline on white is not a box, and this is the only control
+     that creates an area. Dashed still says "nothing here yet"; 3.04:1 says there
+     is a control saying it. */
+  border: 1px dashed var(--tn-srx-edge); border-radius: 8px; background: none;
+  font: inherit; font-size: var(--tnx-fs); font-weight: 600;
+  color: var(--tn-accent); cursor: pointer;
 }
+.tn-insp-draw:hover { background: var(--tn-accent-soft); }
+.tn-insp-draw:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+/* Inert by design — it is a labelled COMING SOON card, not a control — so it keeps
+   the softer edge. Nothing here is clickable, so 1.4.11 does not apply and a 3:1
+   box would advertise an affordance the card does not have. */
 .tn-insp-soon {
   margin-top: 12px; padding: 9px 10px; border-radius: 10px;
-  border: 1px dashed var(--tn-border); background: var(--tn-surface-2, rgba(0,0,0,.03));
+  border: 1px dashed var(--tn-border-strong); background: var(--tn-surface-solid);
 }
-.tn-insp-soon-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: var(--tnx-fs-xs); font-weight: 600; }
+.tn-insp-soon-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: var(--tnx-fs-sm); font-weight: 700; }
 .tn-insp-soon-head span:first-child { flex: 1; }
-.tn-insp-soon p { margin: 0; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); line-height: 1.5; }
+.tn-insp-soon p { margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); line-height: 1.5; }
+
+/* ── The shared rail chrome, re-asserted for the terminal skin ────────────────
+   These four rules live in the LEGACY left-rail block near the top of this sheet,
+   outside the `.tn-terminal` region, and every one of them is read only by this
+   panel. `.tn-terminal .tn-rail-foot` (0,2,0) beats `.tn-rail-foot` (0,1,0), so
+   the overrides go here rather than editing rules three thousand lines away that
+   another workstream may be holding.
+
+   `.tn-rail-foot` IS THE WORST OFFENDER IN THE PANEL and it is worth naming: it
+   was `font-size: 10px` at --tn-text-faint. That is the "No areas yet. Draw one on
+   the map…" copy and the "Only sources you can see are fetched" footer — 10px at
+   ~80% zoom is 8 device pixels, at 5.88:1. Sam's words were "the grey text is
+   impossible to read, and some of it quite small". */
+.tn-terminal .tn-rail-foot {
+  font-size: var(--tnx-fs-sm);
+  color: var(--tn-text-muted);
+  line-height: 1.55;
+}
+.tn-terminal .tn-rail-divider { background: var(--tn-border-strong); }
+/* The search box's whole affordance is its outline, and 12.5px was below the
+   scale's own body step. */
+.tn-terminal .tn-cat-search {
+  font-size: var(--tnx-fs);
+  padding: 8px 10px; min-height: 36px;
+  color: var(--tn-text);
+  border: 1px solid var(--tn-srx-edge);
+}
+.tn-terminal .tn-cat-search::placeholder { color: var(--tn-text-muted); }
+.tn-terminal .tn-cat-count { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+/* The four core-layer shortcuts. They kept the base rule's 11.5px while they were
+   the quiet second tier of a tab most people never opened; they are on the Sources
+   tab itself now, so they take the same 12px floor and 3.04:1 edge as every other
+   control in this rail. Still the quietest thing here — no fill, no pressed state,
+   because they set a partial layer state the store cannot match against. */
+.tn-terminal .tn-preset-quick { margin: 0 0 12px; }
+.tn-terminal .tn-preset-quick-btn {
+  font-size: var(--tnx-fs-sm);
+  padding: 6px;
+  color: var(--tn-text-muted);
+  border-color: var(--tn-srx-edge);
+}
 
 /* ── Streets monitor area ───────────────────────────────────────────────────
    Appended at the end of the file and namespaced .tn-streets-*, by agreement

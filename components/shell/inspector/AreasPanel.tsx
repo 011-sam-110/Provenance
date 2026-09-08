@@ -17,40 +17,31 @@
 // and detail belongs in the dossier on the right, which already exists at 384px and
 // already handles focus, escape and mobile. See lib/overlay-content.tsx.
 
-import { aoiLabel, startDraw } from "@/lib/map/aoi";
-import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector";
+import { areaSummary, useInspector } from "@/lib/shell/inspector";
+import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { overlay } from "@/lib/overlay";
-import type { Map as MapLibreMap } from "maplibre-gl";
-
-declare global {
-  interface Window { __map?: MapLibreMap }
-}
 
 export default function AreasPanel() {
   const state = useInspector();
-
-  const draw = () => {
-    const map = window.__map;
-    if (!map) return;
-    // onFinish is supplied, so aoi.ts hands us the ring and leaves the scope alone.
-    // That contract is what keeps a camera pick from becoming a saved area; do not
-    // drop it. See DrawOptions in lib/map/aoi.ts.
-    startDraw(map, {
-      onFinish: (ring) => {
-        const id = inspectorStore.add(ring, aoiLabel(ring));
-        // Point the rail at the new area, because the next thing anyone does after
-        // drawing one is turn something on for it. It is only a write target — the
-        // map is unchanged by this, so it cannot surprise anyone.
-        if (id) inspectorStore.edit(id);
-      },
-    });
-  };
+  // TWO ENTRY POINTS, ONE IMPLEMENTATION. The context switcher's menu can start
+  // the same gesture, and `onFinish` is the part that must not drift between them
+  // — without it a saved area silently becomes a console-wide filter. The whole
+  // rule, and the reason it is load-bearing now, is in lib/shell/drawArea.ts.
+  const capped = atAreaCap(state.areas.length);
 
   return (
     <div className="tn-insp">
-      <div className="tn-subhead">
-        Areas <span className="tn-insp-count">{state.areas.length}</span>
-      </div>
+      {/* THE SAME HEADING AS "AIR & SPACE", not a second, quieter one.
+          It was `.tn-subhead` (12px) while every source section was
+          `.tn-src-sec-head` (14px small caps), so the one block in this rail
+          that is NOT a list of sources was also the one heading that did not
+          look like a heading. Sam's words: "'AREAS' needs to be capital and
+          bold a bit like 'AIR & SPACE'." Sharing the class is what makes that
+          true permanently rather than until the next retune. */}
+      <h3 className="tn-src-sec-head">
+        <span className="tn-src-sec-name">Areas</span>
+        <span className="tn-src-sec-n tn-num">{state.areas.length}</span>
+      </h3>
 
       {state.areas.length === 0 ? (
         <p className="tn-rail-foot">
@@ -92,8 +83,25 @@ export default function AreasPanel() {
         ))
       )}
 
-      <button type="button" className="tn-insp-draw" onClick={draw}>
-        ＋ Draw an area
+      {/* IT STAYS, even though the context switcher's menu now offers the same
+          action. This one sits directly under the "No areas yet…" empty state,
+          which is where a first-time user is already looking; the menu entry is
+          for someone who opened the switcher to point at an area and found they
+          had none. Discovery and convenience are different jobs.
+
+          REFUSES AT THE CAP rather than drawing over the oldest area — see
+          atAreaCap. `disabled` and not merely `aria-disabled`, because unlike a
+          menu item this is not inside a composite widget whose roving focus
+          would be broken by skipping it, and the reason is stated in the label
+          itself so the refusal is never a dead-looking click. */}
+      <button
+        type="button"
+        className="tn-insp-draw"
+        onClick={() => drawArea(state.areas.length)}
+        disabled={capped}
+        title={capped ? AREA_CAP_MESSAGE : undefined}
+      >
+        {capped ? `＋ Draw an area — ${AREA_CAP_MESSAGE}` : "＋ Draw an area"}
       </button>
 
       {/* Labelled and inert, never a control that does nothing. The design is in
