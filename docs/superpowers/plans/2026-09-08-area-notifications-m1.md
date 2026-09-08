@@ -363,7 +363,7 @@ export function resolveTriggers(
 - [ ] **Step 6: Run test to verify it passes**
 
 Run: `npx vitest run tests/unit/notify-capability.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 11 tests.
 
 - [ ] **Step 7: Run the gate and commit**
 
@@ -716,7 +716,9 @@ Then inside the `for (const rule of armed)` loop, after the `appears` branch:
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/unit/notify-engine.test.ts`
-Expected: PASS, 14 tests.
+Expected: PASS. Every test in the file — 14 if nothing was added since this plan was
+written. Cumulative across a file earlier tasks also own, so it drifts; trust the file,
+and never add or delete a test to make a count match.
 
 - [ ] **Step 5: Run the gate and commit**
 
@@ -822,7 +824,8 @@ And immediately after `const next: Observation = { ... }` is built, reset the la
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run tests/unit/notify-engine.test.ts`
-Expected: PASS, 19 tests.
+Expected: PASS. Every test in the file — 19 if nothing was added since this plan was
+written. Cumulative across a file earlier tasks also own, so it drifts; trust the file.
 
 - [ ] **Step 5: Run the gate and commit**
 
@@ -1011,7 +1014,9 @@ Leave the `quiet` branch in its own loop **outside** that block, so a dead feed 
 - [ ] **Step 4: Run both test files to verify they pass**
 
 Run: `npx vitest run tests/unit/notify-guards.test.ts tests/unit/notify-engine.test.ts`
-Expected: PASS. 9 guard tests, 19 engine tests.
+Expected: PASS. 9 guard tests — that one is exact, this task writes all nine. The engine
+file is CUMULATIVE and drifts (22 as measured on 2026-09-08); trust the file, not this
+number, and never add or delete a test to make a count match.
 
 > If an engine test from Task 2–4 now fails, it is because it passed `prev` as a real object and the guard is correct — check the test supplies a previous observation rather than `undefined`. Do not weaken the guard to satisfy a test.
 
