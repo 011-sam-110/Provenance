@@ -8,6 +8,8 @@ import {
   hoverChanged,
   resolveHover,
   shouldHitTest,
+  canvasCursor,
+  cursorOwner,
   type HoverFeature,
 } from "@/lib/map/hover";
 import { COUNTRY_HIT_LAYER, PIN_HIT_LAYERS } from "@/lib/map/hitTest";
@@ -146,5 +148,63 @@ describe("shouldHitTest", () => {
 
   it("ignores the gap when the caller does not ask for one", () => {
     expect(gate({ nowMs: 1000, lastRunMs: 999 })).toBe(true);
+  });
+});
+
+describe("cursorOwner + canvasCursor", () => {
+  const overPin = resolveHover([{ layer: PIN_HIT_LAYERS[0] }]);
+  const owner = (drawing: boolean, picking: boolean) => cursorOwner({ drawing, picking });
+  const want = (drawing: boolean, picking: boolean, hover = overPin) =>
+    canvasCursor(hover, owner(drawing, picking));
+
+  // THE TRUTH TABLE. Three gestures paint a crosshair and they do it two different
+  // ways, which is why there are three owners rather than one boolean:
+  //   • picking          — a CLASS, `.world-map.tn-picking` in globals.css
+  //   • polygon / radius — INLINE, by lib/map/aoi.ts's beginGesture
+  //   • circle           — INLINE, by lib/console/widgets/camslot.circle.ts
+  // A class is cleared by clearing the inline write on top of it. An inline
+  // crosshair is destroyed by exactly the same act, so it needs the opposite answer.
+
+  it("lets the hover decide when nothing else is running", () => {
+    expect(owner(false, false)).toBe("hover");
+    expect(want(false, false)).toBe("pointer");
+    expect(want(false, false, NO_HOVER)).toBe("");
+  });
+
+  it("clears the inline pointer for a CLASS-painted mode, so the class shows through", () => {
+    // The pins ARE the target of a camera pick, so an inline `pointer` beat
+    // `.world-map.tn-picking`'s crosshair for most of every pick.
+    expect(owner(false, true)).toBe("mode");
+    expect(want(false, true)).toBe("");
+    expect(want(false, true, NO_HOVER)).toBe("");
+  });
+
+  it("writes NOTHING for an INLINE-painted gesture, so a draw keeps its crosshair", () => {
+    // aoi.ts and camslot.circle.ts write `crosshair` on the canvas themselves and
+    // restore it in their own teardown. Clearing to "" here would wipe it and leave
+    // the default arrow — a worse result than the `pointer` this set out to fix.
+    expect(owner(true, false)).toBe("gesture");
+    expect(want(true, false)).toBeNull();
+    expect(want(true, false, NO_HOVER)).toBeNull();
+  });
+
+  it("gives a live gesture precedence over a mode, because a camera AREA pick is both", () => {
+    // startAreaPick arms picking AND runs a draw. If the mode won, the draw's own
+    // inline crosshair would be cleared, and the moment picking ended first the
+    // remaining draw would have no crosshair at all.
+    expect(owner(true, true)).toBe("gesture");
+    expect(want(true, true)).toBeNull();
+  });
+
+  it("never writes the crosshair itself, so it owns no teardown", () => {
+    // The class belongs to React and the inline value belongs to the gesture. This
+    // function writing one would outrank both and could survive an unmount mid-draw.
+    for (const drawing of [false, true]) {
+      for (const picking of [false, true]) {
+        for (const hover of [NO_HOVER, overPin]) {
+          expect(want(drawing, picking, hover)).not.toBe("crosshair");
+        }
+      }
+    }
   });
 });

@@ -7133,8 +7133,19 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    Over the map for as long as a draw gesture runs. TOP-CENTRE is the one free
    band on this stage: the header owns the row above it, the rail FAB sits at the
    same height on the LEFT margin, the map rail is centred on the right edge, and
-   the toast (z 1200) is bottom-centre. It is `fixed` and centred by transform
-   rather than by flexbox so nothing about the workspace layout can shift it.
+   the toast (z 1200) is bottom-centre.
+
+   CENTRED ON THE MAP STAGE, NOT ON THE VIEWPORT. `left`, `top` and `max-width` are
+   overwritten inline by components/shell/DrawBanner.tsx from the stage's measured
+   box; the values here are what applies before the first measurement lands and if
+   the stage element is not found, so they stay a sane standalone position rather
+   than becoming a placeholder. The rail width custom properties are NOT an option
+   and it is worth knowing why before reaching for them: `--tn-lw` / `--tn-rw` are
+   spread onto `.tn-cw-shell`, which is a SIBLING of this element, so `var(--tn-lw)`
+   here resolves to nothing and voids the whole `calc()` it sits in — and the
+   Sources rail does not drive them in any case. That rail insets the console with
+   `padding-left: var(--tn-rail-w)` on the same shell, a third number in a third
+   place. See placeBanner in lib/shell/drawBanner.ts.
 
    Z-INDEX 1150 — under the toast and the feedback modal (1200/1100) and over the
    stage chrome. A message about a gesture in progress should not cover the pill
@@ -7144,17 +7155,24 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    over the map during a gesture whose whole job is receiving clicks; a bar that
    swallowed them would eat the user's first vertex if they aimed near the top of
    the map, which is a worse bug than the one this fixes. Only the Cancel button
-   takes the pointer back. */
+   takes the pointer back.
+
+   NOT A ONE-LINE PILL ANY MORE, and the radius follows from that. The old one put
+   the lead and the whole instruction on a single baseline behind `text-overflow:
+   ellipsis`, so "double-click or press Enter to finish" was cut off on a narrow map
+   — the one line a user who is stuck actually needs. Three zones now: the live
+   count, a two-line narration, and Cancel. At that height a 999px radius reads as a
+   lozenge, so it takes the same 14px the stage itself does. */
 .tn-drawbanner {
   position: fixed; z-index: 1150; pointer-events: none;
   top: calc(var(--tn-topbar-h) + 14px); left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 11px;
-  max-width: min(560px, calc(100vw - 24px));
-  padding: 8px 10px 8px 12px; border-radius: 999px;
+  display: flex; align-items: center; gap: 12px;
+  max-width: min(680px, calc(100vw - 24px));
+  padding: 9px 10px 9px 13px; border-radius: var(--tnx-r-lg, 14px);
   border: 1px solid var(--tn-accent); background: var(--tn-surface);
   box-shadow: var(--tn-shadow);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  font-size: var(--tnx-fs-sm);
+  font-size: var(--tnx-fs-md);
 }
 /* A pulsing dot, because the banner is otherwise indistinguishable from the many
    other static pills on this stage and the state it reports is a LIVE one. It is
@@ -7169,30 +7187,77 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 @media (prefers-reduced-motion: reduce) {
   .tn-drawbanner-pulse { animation: none; }
 }
-.tn-drawbanner-text { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.tn-drawbanner-text strong { font-weight: 600; white-space: nowrap; }
-.tn-drawbanner-text > span { color: var(--tn-text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* THE COUNT, given the weight of a readout instead of the weight of two words in a
+   sentence. "13 points" used to sit mid-line in the same faint grey as the
+   instructions, and it is the one thing on this banner that changes with every
+   click — it is what the user is watching, so it is what the eye should land on
+   first. Tabular figures and a floor on the width, so the pill does not twitch
+   sideways going from 9 to 10. The radius gestures put their live distance in the
+   same block; the label underneath is what says which of the two you are reading. */
+.tn-drawbanner-count {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; min-width: 58px; padding-right: 12px;
+  border-right: 1px solid var(--tn-border);
+}
+.tn-drawbanner-num {
+  font-size: calc(var(--tnx-fs) + 8px); font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--tn-accent);
+}
+.tn-drawbanner-unit {
+  font-size: var(--tnx-fs-xs); font-weight: 700; line-height: 1;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--tn-text-faint);
+}
+.tn-drawbanner-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tn-drawbanner-lead {
+  font-size: var(--tnx-fs-md); font-weight: 700; line-height: 1.25; white-space: nowrap;
+}
+/* NOTHING HERE TRUNCATES, and that is a fix rather than a preference. `nowrap` plus
+   `text-overflow: ellipsis` on the old hint meant the narrower the map, the less of
+   the instruction survived — and the instruction is the whole point of the banner.
+   Wrapping costs a row; an ellipsis costs the sentence.
+
+   The column gap is wide enough that two steps read as two steps on one line with
+   no separator glyph between them. A middot would look right until the row wrapped,
+   and then it would lead the second line as a stray mark. */
+.tn-drawbanner-steps {
+  display: flex; flex-wrap: wrap; align-items: center;
+  row-gap: 2px; column-gap: 14px; min-width: 0;
+}
+.tn-drawbanner-step {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-text-muted);
+}
+/* ONE CHIP FOR EVERY KEY, on the finish step and on Cancel alike. Confirming and
+   stopping are the two things this banner exists to keep visible, and printing one
+   of their keys as a chip and the other as faint prose made them look like
+   different kinds of fact. */
+.tn-drawbanner-step kbd,
+.tn-drawbanner-x kbd {
+  font: inherit; font-size: var(--tnx-fs-xs); font-weight: 700; line-height: 1.5;
+  color: var(--tn-text); background: var(--tn-accent-soft);
+  border: 1px solid var(--tn-border); border-radius: 4px; padding: 1px 5px;
+}
 .tn-drawbanner-x {
   pointer-events: auto; flex: 0 0 auto;
-  display: inline-flex; align-items: center; gap: 6px;
-  /* 28px tall rather than the 22px the text alone would give it: it is a control on
+  display: inline-flex; align-items: center; gap: 7px;
+  /* 30px tall rather than the 22px the text alone would give it: it is a control on
      a surface the user is clicking at speed, and a thin one beside a live map is a
      mis-click waiting to place a vertex. */
-  min-height: 28px; padding: 0 10px; border-radius: 999px;
-  border: 1px solid var(--tn-border); background: none;
-  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-text); cursor: pointer;
+  min-height: 30px; padding: 0 11px; border-radius: 999px;
+  border: 1px solid var(--tn-border); background: none; white-space: nowrap;
+  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 600;
+  color: var(--tn-text); cursor: pointer;
 }
-.tn-drawbanner-x:hover { border-color: var(--tn-text-faint); background: var(--tn-surface-2, rgba(0,0,0,.04)); }
-.tn-drawbanner-x kbd {
-  font: inherit; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint);
-  border: 1px solid var(--tn-border); border-radius: 4px; padding: 0 4px;
-}
+.tn-drawbanner-x:hover { border-color: var(--tn-accent); background: var(--tn-surface-2, rgba(0,0,0,.04)); }
+.tn-drawbanner-x:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
 /* On a phone the stage is short and the banner would sit on top of the first thing
-   the user is trying to click. It keeps its place but loses the fixed lead word, so
-   the live hint — the half that changes — is what survives the width. */
+   the user is trying to click. It keeps its place and it keeps the COUNT — that is
+   the answer to "did that click land", and the last thing that should go — and
+   drops the lead, which is the half that never changes during a gesture. */
 @media (max-width: 560px) {
-  .tn-drawbanner { gap: 8px; padding: 7px 8px 7px 10px; }
-  .tn-drawbanner-text strong { display: none; }
+  .tn-drawbanner { gap: 9px; padding: 7px 8px 7px 10px; }
+  .tn-drawbanner-count { min-width: 44px; padding-right: 9px; }
+  .tn-drawbanner-lead { display: none; }
 }
 
 /* ── Inspector: the context switcher and the areas index ──────────────── */

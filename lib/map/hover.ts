@@ -113,6 +113,92 @@ export function resolveHover(features: readonly HoverFeature[]): HoverState {
   };
 }
 
+/**
+ * The cursor to write on the canvas INLINE, given what the pointer is over and
+ * whether a map-wide gesture mode owns the pointer.
+ *
+ * IT RETURNS "" WHILE A GESTURE OWNS THE POINTER, never "crosshair", and that is
+ * the whole design. Camera picking already paints a crosshair, from
+ * `.world-map.tn-picking .maplibregl-canvas` in globals.css — a rule React removes
+ * along with the class the moment the mode ends or the map unmounts, so it cannot
+ * leave a cursor stuck. What it could not beat was `resolveHover`'s inline
+ * `pointer`, because an inline style outranks any stylesheet: the crosshair
+ * vanished the instant the pointer crossed a pin, which in pick mode is most of the
+ * time, since the pins ARE the target. Writing "crosshair" here would win that
+ * fight and then own a teardown this function has no way to run on unmount — and a
+ * cursor left on crosshair after the mode is over is worse than no crosshair at
+ * all. Suppressing the `pointer` is the entire fix.
+ *
+ * WHY THE PIN'S `pointer` IS THE ONE THAT LOSES. It would otherwise win nearly
+ * every frame of a pick, so the mode cue would flicker on and off as the analyst
+ * sweeps a dense camera field — which reads as instability, not as "this pin is
+ * clickable". That a pin can be clicked is already said by the accent ring around
+ * the map and by the pick hint; that the map is in a mode is said by nothing else.
+ */
+/**
+ * Who is deciding the canvas cursor right now.
+ *
+ * There are three answers and not two, because the crosshair reaches the canvas by
+ * two different mechanisms and they need OPPOSITE treatment from this module:
+ *
+ *   "hover"    Nothing else is running. The hover result decides, as it always did.
+ *   "mode"     A mode paints the crosshair from a CLASS — `.world-map.tn-picking` in
+ *              globals.css, put there by React for as long as picking is armed.
+ *   "gesture"  A live gesture paints it INLINE on the canvas and restores the value
+ *              it found in its own teardown: `beginGesture` in lib/map/aoi.ts for
+ *              the polygon and radius tools, `startCircleDraw` in
+ *              lib/console/widgets/camslot.circle.ts for the circle.
+ *
+ * A class-painted crosshair is revealed by CLEARING the inline write sitting on top
+ * of it. An inline-painted one is DESTROYED by exactly that act — which is why a
+ * single "something owns the pointer" boolean is not enough, and why the first
+ * version of this fix would have replaced a wrong `pointer` with a wrong arrow.
+ */
+export type CursorOwner = "hover" | "mode" | "gesture";
+
+/**
+ * Which of the three is in charge.
+ *
+ * A GESTURE OUTRANKS A MODE, and that ordering is load-bearing rather than
+ * arbitrary. `startAreaPick` arms picking AND runs a draw, so a camera pick by area
+ * is both at once. If the mode won there, the draw's own inline crosshair would be
+ * cleared to reveal the class — which looks identical while both are up, and leaves
+ * the draw with no crosshair at all the moment picking ends first.
+ *
+ * `drawing` is one read for all three gestures: the circle publishes into the same
+ * `aoiDrawStore` through `setExternalDraw`, so `aoiDrawStore.get().active` covers
+ * polygon, radius and circle without this function naming any of them.
+ */
+export function cursorOwner(s: { drawing: boolean; picking: boolean }): CursorOwner {
+  if (s.drawing) return "gesture";
+  if (s.picking) return "mode";
+  return "hover";
+}
+
+/**
+ * The cursor to write on the canvas INLINE — or `null` for "write nothing at all".
+ *
+ * IT NEVER RETURNS "crosshair", under any owner, and that is the design rather than
+ * an omission. Both crosshairs already have an owner that can take them away again:
+ * the class goes when React removes it with the mode, and the inline value is
+ * restored by the gesture's own teardown. Writing one here would outrank both and
+ * then own a teardown this function has no way to run — and a cursor left on
+ * crosshair after the gesture is over is worse than no crosshair at all. All this
+ * has to do is stop the hover's inline `pointer` from winning.
+ *
+ * WHY THE PIN'S `pointer` IS THE ONE THAT LOSES. It would otherwise win nearly every
+ * frame of a pick or a draw, because the pins and the map under them are exactly
+ * where those gestures are aimed. The cue would flicker on and off as the analyst
+ * sweeps a dense camera field, which reads as instability rather than as "this pin
+ * is clickable" — something the accent ring, the pick hint and the draw banner
+ * already say in words.
+ */
+export function canvasCursor(hover: HoverState, owner: CursorOwner): HoverState["cursor"] | null {
+  if (owner === "gesture") return null;
+  if (owner === "mode") return "";
+  return hover.cursor;
+}
+
 /** Did anything the map or the DOM cares about actually change? Value equality. */
 export function hoverChanged(a: HoverState, b: HoverState): boolean {
   if (a.cursor !== b.cursor) return true;
