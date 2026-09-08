@@ -8,6 +8,7 @@ import { readingOrder, COLS, ROW_PX, GAP_PX } from "@/lib/terminal/layoutGrid";
 import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDrag";
 import { visibleShell } from "@/lib/terminal/rowBudget";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
+import { clearMonitorArea } from "@/lib/console/widgets/camslot.apply";
 
 // The camera wall: ONE free twelve-column grid of tiles, and no map in it.
 //
@@ -45,6 +46,14 @@ import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 
 /** The eight resize handles, in the order they are painted. */
 const HANDLES: ResizeDir[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
+
+/** Into ConsoleShell's single `.tn-toast` live region. Inlined because there is
+ *  no shared helper to import: every caller in the tree dispatches this event
+ *  directly, and CameraTray keeps a local `toast` of exactly this shape. A
+ *  module for it would be a change to all of them, not to this one. */
+function toast(message: string): void {
+  window.dispatchEvent(new CustomEvent("tn-toast", { detail: message }));
+}
 
 export default function WallWorkspace({
   style,
@@ -184,6 +193,38 @@ export default function WallWorkspace({
           state it matters in. The same goes for adding a tile — the map's "PICK
           CAMERAS" flow is the other door, and it is behind the same closed dock. */}
       <div className="tn-wall-bar">
+        {/* THE WAY BACK TO THE QUESTION. `StreetsPrompt` — the only thing that
+            explains the gesture and the only control that starts it — renders
+            over the map at zero tiles and unmounts the moment the first nine
+            land, so a drawn board had nothing on it offering another area.
+
+            IT IS NOT THE FIRST WAY BACK, and the difference is the reason this
+            exists rather than being a duplicate. `resetActiveBoard()` — the ⟲ in
+            TerminalHeader and ⌘K's "Reset … to its default layout" — already
+            emptied the board. But it restores the preset TEMPLATE, which for
+            Streets carries `STREETS_DEFAULT_AREA`: reset leaves you monitoring
+            the authored San Diego ring again, and drops the board's saved edits
+            on the way. This lets go of the area instead of swapping in a
+            different one, touches nothing but the open board, and is labelled
+            for the thing the user came to do.
+
+            It CLEARS rather than clearing-and-arming; camslot.apply.ts records
+            the measurement behind that. Emptying the board is what brings the
+            prompt back, and the prompt asks the question and carries the button
+            that starts the draw. */}
+        <button
+          type="button"
+          className="tn-wall-btn"
+          title="Clear the board and draw a different area to monitor"
+          onClick={() => {
+            // The toast names what happened, because clearing swaps nine tiles
+            // for a full-bleed map in one frame — a big enough change to read as
+            // something having gone wrong rather than as the board asking again.
+            if (clearMonitorArea()) toast("Board cleared — draw an area to fill it again.");
+          }}
+        >
+          New area
+        </button>
         <button
           type="button"
           className="tn-wall-btn"

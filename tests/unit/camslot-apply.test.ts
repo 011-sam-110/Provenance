@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMonitorPlan, tilesToLayout } from "@/lib/console/widgets/camslot.apply";
+import { applyMonitorPlan, clearMonitorArea, clearedWall, tilesToLayout } from "@/lib/console/widgets/camslot.apply";
 import { shellLayoutStore } from "@/lib/console/store";
 import { createDefaultLayout } from "@/lib/console/types";
 import type { FanOutTile } from "@/lib/console/widgets/camslot.fanout";
@@ -105,5 +105,71 @@ describe("applyMonitorPlan only lands on the board that asked for it", () => {
     // The board it already drew survives — an empty result is not an instruction
     // to throw away the last one that worked.
     expect(shellLayoutStore.get().widgets).toHaveLength(2);
+  });
+});
+
+describe("clearing the area — the way back off a drawn board", () => {
+  const ring: [number, number][] = [[0, 0], [1, 0], [1, 1]];
+  const plan = (n: number) => ({
+    tiles: Array.from({ length: n }, (_, i) => tile(`t${i}`, 2)),
+    found: n * 2,
+    live: n,
+    message: `${n} tiles`,
+  });
+
+  it("removes every tile, which is what brings the prompt back", () => {
+    // The prompt renders on `layout.widgets.length === 0` and nothing else, so
+    // this assertion IS the assertion that the board becomes askable again.
+    const drawn = tilesToLayout(wall(), [tile("a", 1), tile("b", 1)], 28, minter());
+    expect(clearedWall(drawn, 28).widgets).toEqual([]);
+  });
+
+  it("DELETES the watch key rather than nulling it", () => {
+    // Not a style point. `lib/console/types.ts`: the key's absence is the
+    // untouched state, because `layoutSignature()` goes through JSON.stringify,
+    // which drops `undefined` and keeps `null`. Setting `watch: null` would light
+    // the "customised" dot on a board that was just emptied. `toBeUndefined()`
+    // would pass either way, so this asserts on the KEY.
+    const drawn = { ...tilesToLayout(wall(), [tile("a", 1)], 28, minter()), watch: { ring } };
+    expect("watch" in drawn).toBe(true);
+    expect("watch" in clearedWall(drawn, 28)).toBe(false);
+  });
+
+  it("is idempotent on a board that is already clear", () => {
+    const once = clearedWall(wall(), 28);
+    expect(clearedWall(once, 28)).toEqual(once);
+  });
+
+  it("clears the live board through the store", () => {
+    shellLayoutStore.replace(wall());
+    expect(applyMonitorPlan(plan(4), ring).ok).toBe(true);
+    expect(shellLayoutStore.get().widgets).toHaveLength(4);
+
+    expect(clearMonitorArea()).toBe(true);
+    expect(shellLayoutStore.get().widgets).toEqual([]);
+    expect(shellLayoutStore.get().watch).toBeUndefined();
+  });
+
+  it("opens the dock, because a closed one leaves the prompt no map to render into", () => {
+    // `dockSize` checks `collapsed` BEFORE its empty-wall exception, so clearing
+    // a board whose dock is closed would hand the prompt a 0px stage — the board
+    // would look broken rather than askable.
+    shellLayoutStore.replace(wall());
+    expect(applyMonitorPlan(plan(4), ring).ok).toBe(true);
+    shellLayoutStore.collapseSegment("right", true);
+    expect(shellLayoutStore.get().segments.right.collapsed).toBe(true);
+
+    expect(clearMonitorArea()).toBe(true);
+    expect(shellLayoutStore.get().segments.right.collapsed).toBe(false);
+  });
+
+  it("REFUSES a board that is not a wall, for the reason applyMonitorPlan does", () => {
+    // Same hazard, opposite direction: this removes every widget on the open
+    // board, so reaching it from a rails board would delete an Infrastructure or
+    // Intel board rather than a camera wall.
+    shellLayoutStore.replace({ ...createDefaultLayout(), mode: "rails" as const });
+    const before = shellLayoutStore.get();
+    expect(clearMonitorArea()).toBe(false);
+    expect(shellLayoutStore.get()).toBe(before);
   });
 });
