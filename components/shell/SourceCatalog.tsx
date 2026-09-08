@@ -20,8 +20,16 @@
 // still needs no edit here.
 //
 // Kept, because none of it is a source: the header and its widget counter, the
-// search box, PresetBar (the presets block), the camera feed/region filters, and the
-// coverage / markets / watchlist launchers.
+// context switcher, the search box, the areas block, the four core-layer
+// shortcuts, the camera feed/region filters, and the coverage / markets /
+// watchlist launchers.
+//
+// GONE from here on 2026-09-08: the PRESETS TAB, and with it the rail's whole tab
+// strip. The boards it listed have two louder homes already — the centre navbar
+// pill and ⌘K's Profiles group — so it was a third copy charging every visitor a
+// choice on the way in. `PresetBar.tsx` survives on disk, unmounted. Its second
+// tier did NOT have another home and was lifted out rather than dropped; see
+// components/shell/sources/LayerPresetRow.tsx.
 //
 // GONE from here on 2026-09-05: TimeWindowControl. It was the only caller of
 // timeWindowStore.set, so the window is now fixed at its default -- see
@@ -48,7 +56,7 @@ import { marketsStore } from "@/lib/shell/markets";
 import { watchlistPanelStore } from "@/lib/shell/watchlist";
 import { CAMERA_REGIONS, CAMERA_FEED_META } from "@/lib/icons/svg";
 import { useT } from "@/lib/i18n/store";
-import PresetBar from "@/components/shell/PresetBar";
+import LayerPresetRow from "@/components/shell/sources/LayerPresetRow";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
 import { isSourceWidgetOpen } from "@/lib/widgets/dock";
 import "@/lib/console/widgets";
@@ -69,7 +77,11 @@ function CameraFilters() {
   const feeds = Object.values(CAMERA_FEED_META);
   return (
     <div className="tn-cam-filters">
-      <div className="tn-subhead">Feed</div>
+      {/* ONE HEADING STYLE IN THIS RAIL. These were `.tn-subhead` — 12px against
+          the source sections' 14px small caps — so the rail read as two
+          competing tiers of heading with no rule saying which outranked which.
+          They are section headings, so they use the section heading. */}
+      <h3 className="tn-src-sec-head"><span className="tn-src-sec-name">Feed</span></h3>
       <div className="tn-feed-row">
         {feeds.map((f) => (
           <span key={f.key} className="tn-feed-chip">
@@ -86,7 +98,7 @@ function CameraFilters() {
           Live video only
         </button>
       </div>
-      <div className="tn-subhead">Region — click to filter</div>
+      <h3 className="tn-src-sec-head"><span className="tn-src-sec-name">Region — click to filter</span></h3>
       <div className="tn-region-grid">
         {CAMERA_REGIONS.map((r) => {
           const on = filter.regions[r.source] ?? true;
@@ -165,7 +177,6 @@ export default function SourceCatalog() {
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"sources" | "presets">("sources");
 
   // ── RAIL WIDTH ─────────────────────────────────────────────────────────────
   // The width is PUBLISHED AS A CSS VARIABLE rather than applied as an inline
@@ -344,104 +355,101 @@ export default function SourceCatalog() {
         </button>
       </div>
 
-      {/* TABS ABOVE THE CONTEXT SWITCHER, which is the order Sam asked for and the
-          one that reads correctly: the tabs choose WHICH PANEL, the switcher says
-          WHERE THAT PANEL WRITES, and a scope line that sat above the thing it
-          scoped was claiming to cover the tab strip as well. Both presets and
-          sources write to the selected context, so the switcher belongs under the
-          tabs and over their shared content. */}
-      <div className="tn-rail-tabs" role="tablist">
-        <button
-          type="button" role="tab" className="tn-rail-tab"
-          aria-selected={tab === "sources"} onClick={() => setTab("sources")}
-        >
-          Sources
-        </button>
-        <button
-          type="button" role="tab" className="tn-rail-tab"
-          aria-selected={tab === "presets"} onClick={() => setTab("presets")}
-        >
-          Presets
-        </button>
-      </div>
+      {/* ── THERE IS NO TAB STRIP ANY MORE ─────────────────────────────────────
+          This rail was two tabs, Sources and Presets, and the second one is gone.
+          Sam: "lets also get rid of the presets button, as the presets are already
+          at the top." They are: components/shell/PresetPill.tsx is the centre
+          navbar control, it lists every builtin AND every custom saved board, and
+          ⌘K carries the same seven under Profiles plus "Save layout as preset…".
+          A whole tab spent on a third copy cost every visitor a choice before they
+          could reach the thing the rail is for.
 
+          WHAT THE TAB'S SECOND TIER WAS, because it did not have a third copy:
+          the four core-layer shortcuts. Those live on below as LayerPresetRow —
+          see that file for why the pill could never carry them. `PresetBar.tsx`
+          itself is left on disk and unmounted rather than deleted; restoring a tab
+          is cheap, un-deleting a component is not.
+
+          The context switcher is now the FIRST control in the rail, which is where
+          it belongs on its own merits: it says where everything below writes. */}
       <ContextSwitcher />
 
-      {tab === "sources" ? (
-        <>
-          <input
-            type="search"
-            className="tn-cat-search"
-            placeholder="Search sources…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search sources"
-          />
+      <input
+        type="search"
+        className="tn-cat-search"
+        placeholder="Search sources…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        aria-label="Search sources"
+      />
 
-          {/* WHERE PresetBar USED TO BE. Drawing an area and then turning sources on
-              for it is one job; it used to be split across two tabs. The presets took
-              this block's old home as the rail's second tab. */}
-          <AreasPanel />
+      {/* Drawing an area and then turning sources on for it is one job, so the
+          areas block sits in the same scroll as the sources it configures. It used
+          to be a tab of its own and the round trip — draw here, switch there,
+          toggle, switch back to see what the area now says — was the reason it
+          moved. */}
+      <AreasPanel />
 
-          <div className="tn-rail-divider" />
+      <div className="tn-rail-divider" />
 
-          {visible.length === 0 ? (
-            <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
-          ) : (
-            visible.map((section) => (
-              <SourceSection
-                key={section.id}
-                section={section}
-                isOn={isOn}
-                isPlaced={isPlaced}
-                onToggle={onToggle}
-                onDragHandle={onDragHandle}
-              />
-            ))
-          )}
+      {/* Above the sections whose rows they flip, because that is what they act
+          on. Not a heading of their own: they are four small buttons, and a
+          heading would make them look like a third tier of preset. */}
+      <LayerPresetRow />
 
-          {/* AFTER the six sections, not inside them. These filters belong to the
-              Cameras row, so the obvious place was under the section holding it —
-              but seen in the browser that injects ~220px of feed and region chips
-              between Ground and Air & space and breaks the run of six headings the
-              rail exists to give you. They are a refinement of one source rather
-              than a source, so they read better as a trailing panel. Shown only
-              while the layer they filter is actually on. */}
-          {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
-              and region filter for the whole console, not a per-context setting — so
-              these belong on screen whenever camera pins are being drawn anywhere.
-              Gated on the edited context they would vanish while you configured an
-              area, taking a global control off the page as a side effect of a choice
-              that has nothing to do with it. */}
-          {mapLayers.cameras ? (
-            <>
-              <div className="tn-rail-divider" />
-              <CameraFilters />
-            </>
-          ) : null}
-
-          <div className="tn-rail-divider" />
-
-          <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
-            {t("btnCoverage")}
-          </button>
-
-          <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
-            {t("btnMarkets")}
-          </button>
-
-          <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
-            ★ {t("sectionSaved")}
-          </button>
-
-          <p className="tn-rail-foot">
-            Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
-            right rail.
-          </p>
-        </>
+      {visible.length === 0 ? (
+        <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
       ) : (
-        <PresetBar />
+        visible.map((section) => (
+          <SourceSection
+            key={section.id}
+            section={section}
+            isOn={isOn}
+            isPlaced={isPlaced}
+            onToggle={onToggle}
+            onDragHandle={onDragHandle}
+          />
+        ))
       )}
+
+      {/* AFTER the six sections, not inside them. These filters belong to the
+          Cameras row, so the obvious place was under the section holding it —
+          but seen in the browser that injects ~220px of feed and region chips
+          between Ground and Air & space and breaks the run of six headings the
+          rail exists to give you. They are a refinement of one source rather
+          than a source, so they read better as a trailing panel. Shown only
+          while the layer they filter is actually on. */}
+      {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
+          and region filter for the whole console, not a per-context setting — so
+          these belong on screen whenever camera pins are being drawn anywhere.
+          Gated on the edited context they would vanish while you configured an
+          area, taking a global control off the page as a side effect of a choice
+          that has nothing to do with it. */}
+      {mapLayers.cameras ? (
+        <>
+          <div className="tn-rail-divider" />
+          <CameraFilters />
+        </>
+      ) : null}
+
+      <div className="tn-rail-divider" />
+
+      <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
+        {t("btnCoverage")}
+      </button>
+
+      <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
+        {t("btnMarkets")}
+      </button>
+
+      <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
+        ★ {t("sectionSaved")}
+      </button>
+
+      <p className="tn-rail-foot">
+        Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
+        right rail.
+      </p>
     </aside>
     <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
     </>
