@@ -1,5 +1,5 @@
 import {
-  createDefaultLayout, MAX_WIDGETS,
+  createDefaultLayout, MAX_WIDGETS, MAX_WATCH_VERTICES,
   type GridRect, type ShellLayout, type SegmentId, type StageId, type WidgetInstance,
 } from "@/lib/console/types";
 import { clampRailSize, railsFromRects } from "@/lib/terminal/rails";
@@ -43,6 +43,26 @@ function readRect(v: unknown): GridRect | null {
   const nums = [r.x, r.y, r.w, r.h];
   if (!nums.every((n) => typeof n === "number" && Number.isFinite(n))) return null;
   return { x: r.x as number, y: r.y as number, w: r.w as number, h: r.h as number };
+}
+
+/** A stored watch ring, or undefined. Total — never throws, never half-accepts.
+ *  A ring that fails ANY check is dropped whole rather than repaired: a partly
+ *  valid area is a lie about where the cameras came from. */
+function readWatch(raw: unknown): { ring: [number, number][] } | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const r = (raw as Record<string, unknown>).ring;
+  if (!Array.isArray(r) || r.length < 3 || r.length > MAX_WATCH_VERTICES) return undefined;
+
+  const ring: [number, number][] = [];
+  for (const pt of r) {
+    if (!Array.isArray(pt) || pt.length !== 2) return undefined;
+    const [lon, lat] = pt;
+    if (typeof lon !== "number" || typeof lat !== "number") return undefined;
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return undefined;
+    if (lon < -180 || lon > 180 || lat < -90 || lat > 90) return undefined;
+    ring.push([lon, lat]);
+  }
+  return { ring };
 }
 
 /**
@@ -136,6 +156,13 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
     focusedWidgetId,
     mode,
   };
+
+  // Wall boards only, and the key stays ABSENT when there is nothing to store —
+  // see the field's own note about layoutSignature and the "customised" dot.
+  if (mode === "wall") {
+    const watch = readWatch(r.watch);
+    if (watch) layout.watch = watch;
+  }
 
   // Repair, not decoration. A wall tile with no rect is MOUNTED BUT NEVER DRAWN —
   // it holds its config and its fetches and shows nothing — which reads as data

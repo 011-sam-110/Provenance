@@ -1,0 +1,84 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { watchingStore, watchingFeatures } from "@/lib/console/widgets/camslot.watching";
+
+const at = (key: string) => (key === "cam:missing" ? null : { lat: 1, lon: 2 });
+
+describe("watchingStore", () => {
+  beforeEach(() => { watchingStore.reset(); });
+
+  it("collects assigned and on-air keys across tiles", () => {
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    watchingStore.setTile("t2", [{ k: "cam", id: "c" }], { k: "cam", id: "c" });
+    const s = watchingStore.get();
+    expect([...s.assigned].sort()).toEqual(["cam:a", "cam:b", "cam:c"]);
+    expect([...s.onAir].sort()).toEqual(["cam:a", "cam:c"]);
+  });
+
+  it("hands out the SAME snapshot object when a tile reports no change", () => {
+    // useSyncExternalStore compares snapshots by identity: a store that returns a
+    // fresh object for a no-op write re-renders its consumer forever. Tiles call
+    // setTile on every rotation, and a rotation landing on the same frame is a
+    // no-op, so this is the common case rather than an exotic one.
+    //
+    // WHAT THIS TEST CANNOT SEE: whether the real caller ever reaches this path.
+    // It first did not — camslot.tsx combined reporting and dropping in one effect,
+    // and React's cleanup-before-every-re-run deleted the entry each minute, so
+    // `prev` was always undefined and the guard was dead while this test stayed
+    // green. The effect is split now (camslot.tsx, two useEffects). A React
+    // component cannot be tested in this repo's node-environment vitest, so the
+    // caller-side half is measured in scripts/verify-streets-area.mjs instead.
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    const first = watchingStore.get();
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    expect(watchingStore.get()).toBe(first);
+  });
+
+  it("hands out a NEW snapshot as soon as the on-air frame actually moves", () => {
+    // The other half of the rule above: deduping must not swallow a real rotation.
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    const first = watchingStore.get();
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "b" });
+    expect(watchingStore.get()).not.toBe(first);
+    expect([...watchingStore.get().onAir]).toEqual(["cam:b"]);
+  });
+
+  it("forgets a tile that is removed", () => {
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }], { k: "cam", id: "a" });
+    watchingStore.dropTile("t1");
+    expect(watchingStore.get().assigned.size).toBe(0);
+  });
+
+  it("notifies subscribers when a tile rotates", () => {
+    let hits = 0;
+    const off = watchingStore.subscribe(() => { hits++; });
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "a" });
+    watchingStore.setTile("t1", [{ k: "cam", id: "a" }, { k: "cam", id: "b" }], { k: "cam", id: "b" });
+    off();
+    expect(hits).toBeGreaterThanOrEqual(2);
+  });
+
+  it("returns an IDENTICAL snapshot when nothing changed", () => {
+    // useSyncExternalStore loops forever if get() derives a fresh object each call.
+    expect(watchingStore.get()).toBe(watchingStore.get());
+  });
+});
+
+describe("watchingFeatures", () => {
+  it("marks an on-air camera as on-air and an assigned one as assigned", () => {
+    const state = { assigned: new Set(["cam:a", "cam:b"]), onAir: new Set(["cam:a"]) };
+    const f = watchingFeatures(state, at);
+    const byKey = Object.fromEntries(f.map((x) => [x.properties!.key, x.properties!.onair]));
+    expect(byKey["cam:a"]).toBe(1);
+    expect(byKey["cam:b"]).toBe(0);
+  });
+
+  it("drops a camera whose position is unknown rather than placing it at 0,0", () => {
+    const state = { assigned: new Set(["cam:missing"]), onAir: new Set<string>() };
+    expect(watchingFeatures(state, at)).toEqual([]);
+  });
+
+  it("never emits an on-air key that is not also assigned", () => {
+    const state = { assigned: new Set(["cam:a"]), onAir: new Set(["cam:a", "cam:ghost"]) };
+    expect(watchingFeatures(state, at).map((x) => x.properties!.key)).toEqual(["cam:a"]);
+  });
+});

@@ -7254,3 +7254,39 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-insp-soon-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: var(--tnx-fs-xs); font-weight: 600; }
 .tn-insp-soon-head span:first-child { flex: 1; }
 .tn-insp-soon p { margin: 0; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); line-height: 1.5; }
+
+/* ── Streets monitor area ───────────────────────────────────────────────────
+   Appended at the end of the file and namespaced .tn-streets-*, by agreement
+   with the console-ux workstream, so the two branches cannot collide here.
+
+   Font sizes are calc()'d off --tnx-fs rather than written as px literals:
+   this block lands inside the "OPENDATA TERMINAL" console region that
+   tests/unit/terminal-tokens.test.ts sweeps for exactly that drift, and this
+   card only ever renders inside .tn-cw-shell.tn-terminal (ConsoleWorkspace),
+   so the token is always in scope. calc(var(--tnx-fs) + 2px) is 15px on the
+   scale's current 13px root, matching --tnx-fs-lg's own "+4px" idiom rather
+   than inventing a bare number. */
+.tn-streets-prompt{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:18px 22px;text-align:center;max-width:min(90%,420px);
+  border-radius:12px;border:1px solid var(--tn-border);
+  background:var(--tn-surface);box-shadow:0 6px 20px rgba(0,0,0,.18);
+  /* The card sits in the middle of the map, which is where the drag that answers
+     it starts. pointer-events:none lets that press fall THROUGH to the map; only
+     the button takes the cursor back. */
+  pointer-events:none;
+}
+.tn-streets-prompt-t{
+  margin:0;font-size:calc(var(--tnx-fs) + 2px);font-weight:600;color:var(--tn-text);text-wrap:balance;
+}
+.tn-streets-prompt-s{
+  margin:0;font-size:var(--tnx-fs);color:var(--tn-text-muted);font-variant-numeric:tabular-nums;
+}
+.tn-streets-prompt-b{
+  pointer-events:auto;margin-top:6px;font:inherit;font-size:var(--tnx-fs);
+  padding:6px 14px;border-radius:8px;border:1px solid var(--tn-border);
+  background:var(--tn-surface-2);color:var(--tn-text);cursor:pointer;
+}
+.tn-streets-prompt-b:hover{border-color:var(--tn-accent);}
+.tn-streets-prompt-b:focus-visible{outline:2px solid var(--tn-accent);outline-offset:2px;}

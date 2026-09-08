@@ -51,7 +51,7 @@ Every figure above will drift, which is why each one is dated and pinned to a co
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/streets.png" width="900" alt="The Streets board: six camera-wall tiles showing Trafalgar Square, Plaza Canalejas, Wenceslas Square and three London road cameras at night, beside a dark map of southern England carrying camera and webcam clusters">
+  <img src="docs/screenshots/streets.png" width="900" alt="The Streets board: a full-bleed live map open on a pre-drawn circle over the densest cluster of live cameras measured, prompting you to draw your own area before any camera-wall tiles appear">
 </p>
 
 **Streets** is a board of camera walls you compose yourself. Every tile holds a *list* of live views rather than one, so `47/60` is a slot cycling through the sixtieth camera it was given - sixty road cameras added in a single drag of a box across London. Search a place, paste a YouTube link, or arm a tile and pick straight off the map.

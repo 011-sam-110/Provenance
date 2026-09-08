@@ -12,6 +12,7 @@ import { activePresetStore } from "@/lib/console/activePreset";
 import { forgetBoardLayout, isBoardEdited, layoutSignature, readBoardLayout, writeBoardLayout } from "@/lib/console/boards";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
+import { ringFromCircle, type CircleSpec } from "@/lib/map/circle";
 
 // ── A PRESET IS NOW THE WHOLE WORKSPACE ─────────────────────────────────────
 //
@@ -282,7 +283,12 @@ function compose(stage: StageId, shell: { w: number; h: number }, rails: RailSpe
  * OPENING size clears the compact threshold and a user who wants the full
  * readout drags the tile bigger.
  */
-function composeWall(stage: StageId, shell: { w: number; h: number }, cards: CardSpec[]): ShellLayout {
+function composeWall(
+  stage: StageId,
+  shell: { w: number; h: number },
+  cards: CardSpec[],
+  area?: CircleSpec,
+): ShellLayout {
   let l: ShellLayout = { ...setStage(createDefaultLayout(), stage), mode: "wall" };
 
   // `mode` is set BEFORE the widgets go in, and that ordering is load-bearing:
@@ -295,13 +301,49 @@ function composeWall(stage: StageId, shell: { w: number; h: number }, cards: Car
 
   l = arrangeBoard(l, Math.floor(shell.h / (ROW_PX + GAP_PX)));
 
-  // THE MAP DOCK OPENS CLOSED, and its width is remembered anyway. `collapsed`
-  // is the open/closed flag and `size` is the width it returns to, so the first
-  // click on the dock control gives a usable panel rather than a sliver.
+  // THE DOCK OPENS UNCOLLAPSED NOW, and that is the whole first-run change. With
+  // no tiles on the board `dockSize` gives the map the full width (see
+  // lib/terminal/rails.ts), so "open" and "empty" together ARE the prompt state.
+  // A collapsed dock would open this board on a blank grid instead.
+  //
+  // This replaces "the dock opens closed, and its width is remembered anyway".
+  // That reasoning was sound while a wall always ARRIVED with cards on it — the
+  // dock was then competing with tiles for width. A wall that opens empty is the
+  // opposite case: there is nothing for the dock to crowd, and the map IS the
+  // first screen. `size` is still set, so the remembered-width behaviour that
+  // note was protecting is unchanged once tiles exist.
   l = setSegmentSize(l, "right", WALL_DOCK_PX);
-  l = setSegmentCollapsed(l, "right", true);
+  l = setSegmentCollapsed(l, "right", false);
+
+  if (area) {
+    const ring = ringFromCircle(area);
+    if (ring.length >= 3) l = { ...l, watch: { ring } };
+  }
   return l;
 }
+
+/**
+ * Where Streets opens.
+ *
+ * MEASURED, not chosen for the name. Only four host families in
+ * `lib/proxy/hls-allowlist.ts` serve playable video — Caltrans, SCDOT and two
+ * Serbian networks — so a board that promises live cameras can only open on one
+ * of those networks. Fetched from the upstream feeds on 2026-09-07: SCDOT is
+ * 771/771 live, Caltrans D11 (San Diego) 235/324, D12 (Orange County) 249/385.
+ * The densest 5 km circle of live cameras measured was San Diego at 44, on I-8
+ * just east of the 163.
+ *
+ * KNOWN GAP, stated rather than hidden: districts 3, 4, 6, 7 and 8 all returned
+ * HTTP 500 under what looked like throttling, so LOS ANGELES (D7) and the BAY
+ * AREA (D4) were never measured and either could be denser. This is the densest
+ * area measured, not the densest that exists. If those are read later and win,
+ * this constant is the only thing that changes.
+ *
+ * The three webcam ids this replaced — Trafalgar Square, Plaza Canalejas,
+ * Wenceslas Square — had ZERO live cameras between them. They were Windy stills,
+ * and TfL's JamCams are presented as stills too (see lib/cameras/classify.ts).
+ */
+export const STREETS_DEFAULT_AREA: CircleSpec = { lat: 32.7641, lon: -117.1577, radiusKm: 5 };
 
 // ── THE LINEUP ──────────────────────────────────────────────────────────────
 //
@@ -483,14 +525,20 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // `name` IS RENDERED — do not drop it. The registry's `titleOf` (see
   // camslotTitle in camslot.tsx) reads it, which is what stops all four tiles
   // carrying the identical header "CAMERA WALL".
+  // STREETS OPENS EMPTY, AND THAT IS THE FEATURE. It is the only wall board, and
+  // it arrives with no cards at all plus an area already set: an empty wall makes
+  // `dockSize` hand the map the entire width, so the board opens as a full-bleed
+  // map carrying the prompt to draw a circle. The nine tiles are dealt from the
+  // cameras inside whatever the user draws (camslot.fanout.ts), so seeding cards
+  // here would put strangers' cameras on a board about to be replaced.
+  //
+  // THE THREE SEEDED WEBCAMS THIS REPLACES — Trafalgar Square, Plaza Canalejas,
+  // Wenceslas Square — had ZERO live video between them. They were Windy stills
+  // on a board whose whole promise is live cameras. `STREETS_DEFAULT_AREA` above
+  // records where the area starts and what was measured to choose it.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
     layers: ["cameras", "webcams"],
-    build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [
-      { type: "camslot", weight: 3, config: { name: "London", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1420893641", t: "London: Trafalgar Square" }] } },
-      { type: "camslot", weight: 3, config: { name: "Madrid", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1606332744", t: "Madrid: Cortes: Plaza Canalejas" }] } },
-      { type: "camslot", weight: 3, config: { name: "Prague", intervalMs: 8000, streams: [{ k: "webcam", id: "windy:1345327762", t: "Prague: Wenceslas Square" }] } },
-      { type: "camslot", weight: 3, config: { streams: [] } },
-    ]) },
+    build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [], STREETS_DEFAULT_AREA) },
 ];
 
 /** Look up a preset by id. */

@@ -105,6 +105,9 @@ import {
   type LatLon,
 } from "@/lib/console/widgets/camslot.arm";
 import { sanitizeCamslotConfig, type StreamRef } from "@/lib/console/widgets/camslot.model";
+import { watchingStore, watchingFeatures } from "@/lib/console/widgets/camslot.watching";
+import { ringBounds, toWatchRingFC } from "@/lib/map/circle";
+import { shellLayoutStore } from "@/lib/console/store";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore } from "@/lib/signals/freshness";
@@ -151,6 +154,12 @@ const TRACK_RING_LAYER = "track-ring";
 // it" ended with the user hunting for which of forty dots had just been chosen.
 const SELECT_SRC = "selection-highlight";
 const SELECT_RING_LAYER = "selection-ring";
+// What the Streets board is watching — see camslot.watching.ts. A quiet ring on
+// every camera assigned to a tile, a bright mark on whichever frame is on air.
+const WATCH_SRC = "tn-watching-src";
+const WATCH_LAYER = "tn-watching";
+const WATCH_RING_SRC = "tn-watch-ring-src";
+const WATCH_RING_LAYER = "tn-watch-ring";
 // User-dropped pins (search bar + right-click). Rendered on top of everything.
 const PIN_SRC = "user-pins";
 const PIN_DOT_LAYER = "user-pin-dots";
@@ -475,6 +484,15 @@ export default function WorldMap() {
   const pinsRef = useRef<{ pins: MapPin[]; activeId: string | null }>({ pins: [], activeId: null });
   // Same job for the Terminal's selection ring.
   const selectionRef = useRef<TerminalSelection | null>(null);
+
+  // Latest watching marks and monitored ring, so addAppLayers can re-seed both after
+  // a restyle. Held as the finished FeatureCollection rather than as the inputs,
+  // because the inputs live in module stores this component does not own and the
+  // re-seed must not have to re-derive them mid-style.load.
+  const watchingFCRef = useRef<GeoJSON.FeatureCollection>({ type: "FeatureCollection", features: [] });
+  const watchRingFCRef = useRef<GeoJSON.FeatureCollection>({ type: "FeatureCollection", features: [] });
+  // The ring the camera has already been flown to, so a repaint cannot re-fly it.
+  const flownRingRef = useRef<string>("");
   // A deep-linked object id (?obj=) waiting to be resolved once its layer's data
   // has streamed in — see the restore effect below. Cleared after it opens.
   const pendingObjRef = useRef<string | null>(null);
@@ -1296,6 +1314,60 @@ export default function WorldMap() {
         });
       }
 
+      // WHAT THE BOARD IS WATCHING. A sibling of SELECT_RING_LAYER and drawn just
+      // above it: a pick is a selection in progress, this is a commitment already
+      // made, so it must not be hidden underneath one.
+      //
+      // ONE layer, data-driven off `onair`, so a rotation is a setData rather than
+      // a layer swap. Paint values are hard-coded like every other paint value in
+      // this file — MapLibre cannot read a CSS custom property, and a
+      // getComputedStyle read here would tie the map to whether the terminal shell
+      // happened to mount first.
+      // RE-SEEDED FROM A REF like every other source in this function, not created
+      // empty. `setStyle` wipes every source, and the only thing that repaints this
+      // one is a tile REPORT — so a basemap or projection swap, or a return from a
+      // focused widget (StageHost unmounts the map outright), left the marks blank
+      // until the next rotation. A tile holding a single camera never rotates, so
+      // for that tile the marks were gone for good.
+      ensureGeoJSON(map, WATCH_SRC, watchingFCRef.current);
+
+      // THE MONITORED AREA ITSELF. Drawn beneath the marks — the ring is context,
+      // the cameras are the subject — and as a line rather than a fill so it never
+      // tints the imagery an operator is reading. Paint values hard-coded for the
+      // reason given above: MapLibre cannot read a CSS custom property.
+      ensureGeoJSON(map, WATCH_RING_SRC, watchRingFCRef.current);
+      if (!map.getLayer(WATCH_RING_LAYER)) {
+        map.addLayer({
+          id: WATCH_RING_LAYER,
+          type: "line",
+          source: WATCH_RING_SRC,
+          paint: {
+            "line-color": "#ffb020",
+            "line-width": 1.5,
+            "line-opacity": 0.7,
+            "line-dasharray": [3, 2],
+          },
+        });
+      }
+      if (!map.getLayer(WATCH_LAYER)) {
+        map.addLayer({
+          id: WATCH_LAYER,
+          type: "circle",
+          source: WATCH_SRC,
+          paint: {
+            "circle-radius": ["case", ["==", ["get", "onair"], 1], 7, 5],
+            "circle-color": ["case", ["==", ["get", "onair"], 1], "#ffb020", "rgba(0,0,0,0)"],
+            // Fill opacity only — the assigned-but-not-on-air case has a fully
+            // transparent fill already, so its value here would do nothing either
+            // way. The ring those cameras read as is drawn by circle-stroke-*.
+            "circle-opacity": 0.95,
+            "circle-stroke-color": "#ffb020",
+            "circle-stroke-width": ["case", ["==", ["get", "onair"], 1], 2.5, 2],
+            "circle-stroke-opacity": ["case", ["==", ["get", "onair"], 1], 1, 0.55],
+          },
+        });
+      }
+
       // User pins — drawn on top of every data layer. The active pin reads larger
       // and fully-opaque; its label rides above the dot. Data-driven off `active`.
       if (!map.getLayer(PIN_DOT_LAYER)) {
@@ -1692,6 +1764,37 @@ export default function WorldMap() {
    * rejection there means we have a style but no pins — still broken, so leave the
    * watchdog running rather than declaring success.
    */
+  // OPEN ON THE AREA THE BOARD IS PRESET TO, which is the whole point of
+  // STREETS_DEFAULT_AREA having been measured for live-camera density. Without this
+  // the ring was authored, stored and drawn — at a scale of five kilometres, on a
+  // camera showing the whole planet, so it was a few pixels somewhere off screen and
+  // the board opened on an empty world.
+  //
+  // CALLED FROM THREE PLACES BECAUSE THE TWO EVENTS RACE. On a cold load the layout
+  // is applied during hydration, BEFORE the map exists, so the store notification
+  // arrives with nothing to fly and never comes again — measured: the private
+  // endpoint opened the Streets board correctly and sat at 0°N 28°E. On a warm switch
+  // it is the other way round. So: once at mount, again whenever the layout changes,
+  // and again when a style settles, whichever of those happens to be last.
+  //
+  // ONLY WHILE THE BOARD IS EMPTY. That is the prompt state — the board is asking a
+  // question and this frames it. Once tiles exist the user is driving, and moving
+  // their camera because a store ticked would be the map taking the wheel back.
+  // Guarded by ring identity, so none of the three callers can re-fly the same ring.
+  const fitToRing = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const l = shellLayoutStore.get();
+    if (l.widgets.length > 0) return;
+    const ring = l.watch?.ring;
+    const sig = ring ? JSON.stringify(ring) : "";
+    if (!sig || sig === flownRingRef.current) return;
+    const bounds = ringBounds(ring);
+    if (!bounds) return; // straddles the antimeridian — see ringBounds
+    flownRingRef.current = sig;
+    map.fitBounds(bounds, { padding: 64, duration: 0 });
+  }, []);
+
   const onStyleSettled = useCallback(() => {
     if (!readyRef.current) return;
     clearStyleWatchdog();
@@ -1700,7 +1803,10 @@ export default function WorldMap() {
     // basemap than they asked for and deserves to know why. Clear the transient
     // "retrying" state, which has served its purpose.
     setLoadStatus((s) => (s.kind === "fallback" ? s : { kind: "ok" }));
-  }, [clearStyleWatchdog]);
+    // The map is up. If a board was applied before it existed, this is the first
+    // moment its area can actually be framed — see fitToRing's note on the race.
+    fitToRing();
+  }, [clearStyleWatchdog, fitToRing]);
 
   /** Manual "Try again" from the notice. */
   const retryBasemap = useCallback(
@@ -1760,6 +1866,17 @@ export default function WorldMap() {
     // whether or not interception 2 works. A handle is the only way to aim a test at
     // a NAMED camera on a chosen path.
     (window as unknown as { __pick?: typeof pickStore }).__pick = pickStore;
+    // Task 11's mount-count instrument: `scripts/verify-streets-area.mjs` reads this
+    // to prove StageHost's map never remounts across the Streets area walk (prompt →
+    // draw → monitor → reload). A remount here is not free — a fresh WebGL context, a
+    // full basemap style fetch, the countries geojson, ~18 re-rasterised sprites and
+    // ~19k camera features — so this init effect is exactly the place a real remount
+    // would show up. Counted, not booleaned, so a second mount is visible as "2" and
+    // not silently indistinguishable from "1".
+    {
+      const w = window as unknown as { __tnStageMounts?: number };
+      w.__tnStageMounts = (w.__tnStageMounts ?? 0) + 1;
+    }
 
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
     // ...and collapse it. { compact: true } alone still mounts EXPANDED — MapLibre
@@ -1854,6 +1971,25 @@ export default function WorldMap() {
     // A lost WebGL context cannot be recovered in place — say so rather than
     // leaving a frozen canvas that looks like a hung app.
     map.getCanvas().addEventListener("webglcontextlost", () => setLoadStatus({ kind: "lost" }));
+
+    // A RENDERED FRAME RETRACTS "the map couldn't start". `onStyleSettled` already
+    // clears the notice, but only on a style.load — and the escalation to "lost"
+    // has paths with no style.load after it: the watchdog gives up without applying
+    // a new style, and a `map.on("error")` classified as a style error can start a
+    // recovery for a style that is already loaded and will not load again. The
+    // result was measured, not theorised: "The map couldn't start in this browser.
+    // Reload the page to try again." pinned over a working satellite map with live
+    // camera pins on it, for the rest of the session (persona-shots/streets-area,
+    // 2026-09-08). `idle` means MapLibre has finished rendering every visible tile,
+    // which is a stronger proof that the map started than any load event.
+    //
+    // "fallback" is left alone on purpose — it says we are showing a DIFFERENT
+    // basemap than the one asked for, which stays true once the substitute renders.
+    // A context lost to `webglcontextlost` never renders again, so it cannot be
+    // cleared by this and correctly stays on screen.
+    map.on("idle", () => {
+      setLoadStatus((st) => (st.kind === "retrying" || st.kind === "lost" ? { kind: "ok" } : st));
+    });
 
     armStyleWatchdog();
     // Engage/disengage 3D terrain as we cross the mercator threshold (see syncTerrain).
@@ -2065,6 +2201,54 @@ export default function WorldMap() {
     if (!map || !readyRef.current) return;
     (map.getSource(SELECT_SRC) as GeoJSONSource | undefined)?.setData(toSelectionFC(selection));
   }, [selection]);
+
+  // What the Streets board is watching → the tn-watching source. Runs once at
+  // mount to paint whatever the store already holds, then again on every tile
+  // report and rotation via the store's own subscription — never on a React
+  // dependency, since watchingStore is module state, not a prop or a hook.
+  useEffect(() => {
+    const paint = () => {
+      const cams = loadedCamerasStore.get();
+      const webs = loadedWebcamsStore.get();
+      // ONE INDEX PER PAINT, not a scan per key. `cams` is ~19,400 rows and a nine-tile
+      // wall assigns ~45 keys, so the find-per-key this replaces was ~870k comparisons
+      // — repeated on every rotation of every tile, roughly every three seconds. This
+      // file has form for idle map cost, and that is the reason to build the map once.
+      const at = new Map<string, { lat: number; lon: number }>();
+      for (const c of cams) at.set(`cam:${c.id}`, { lat: c.lat, lon: c.lon });
+      for (const w of webs) at.set(`webcam:${w.id}`, { lat: w.lat, lon: w.lon });
+      const locate = (key: string) => at.get(key) ?? null;
+
+      // COMPUTED INTO THE REF FIRST, THEN PUSHED. addAppLayers re-seeds from these
+      // refs after a restyle, so the ref has to hold the truth even on the passes
+      // where the source does not exist yet — which is every pass before style.load.
+      watchingFCRef.current = {
+        type: "FeatureCollection",
+        features: watchingFeatures(watchingStore.get(), locate),
+      };
+      watchRingFCRef.current = toWatchRingFC(shellLayoutStore.get().watch?.ring);
+
+      const map = mapRef.current;
+      (map?.getSource(WATCH_SRC) as GeoJSONSource | undefined)?.setData(watchingFCRef.current);
+      (map?.getSource(WATCH_RING_SRC) as GeoJSONSource | undefined)?.setData(watchRingFCRef.current);
+    };
+    paint();
+    fitToRing();
+
+    // FOUR SUBSCRIPTIONS, AND THE CAMERA ONES ARE NOT OPTIONAL. On a cold reload the
+    // tiles report before /api/cameras resolves, so every key fails to locate and the
+    // collection comes out empty; without a repaint when the rows land, a tile that
+    // does not rotate would never be marked at all. `watch` rides on the layout, so
+    // the ring repaints when a drawn area is applied or restored from a ?c= link.
+    const onLayout = () => { paint(); fitToRing(); };
+    const offs = [
+      watchingStore.subscribe(paint),
+      loadedCamerasStore.subscribe(paint),
+      loadedWebcamsStore.subscribe(paint),
+      shellLayoutStore.subscribe(onLayout),
+    ];
+    return () => { for (const off of offs) off(); };
+  }, [fitToRing]);
 
   // Restore a deep-linked dossier (?obj=) once its layer's data has streamed in.
   // Planes/satellites stream after first paint, so this retries on each data tick
@@ -2496,7 +2680,17 @@ function SignalFeed({
 function CamerasFeed({ onData }: { onData: (pts: Pt[]) => void }) {
   useEffect(() => {
     let alive = true;
-    fetch("/api/cameras")
+    // `cache: "no-store"` IS THE FIX, NOT A PREFERENCE. This response is ~7.1 MB of
+    // JSON (20,488 cameras, measured 2026-09-08), and Chromium tries to write every
+    // cacheable response of that size into its disk cache. When that write fails —
+    // ERR_CACHE_WRITE_FAILURE, observed on this machine with 137 GB free, so it is
+    // not simply a full disk — the body is aborted MID-STREAM after the headers have
+    // already arrived. The request looks like a clean 200 in devtools and in
+    // Playwright's response event, and `r.json()` then rejects on the truncated body.
+    // The layer is re-fetched on mount only, so there is no retry: the map sits at
+    // zero cameras for the session. Not caching a payload this large costs nothing
+    // real (one fetch per mount) and removes the failure entirely.
+    fetch("/api/cameras", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (!alive) return;
@@ -2505,9 +2699,18 @@ function CamerasFeed({ onData }: { onData: (pts: Pt[]) => void }) {
         loadedCamerasStore.set(cams);
         freshnessStore.record("cameras", { count: cams.length, ok: true });
       })
-      .catch(() => {
+      .catch((err) => {
         if (!alive) return;
-        onData([]);
+        // NOT SWALLOWED. The bare `.catch(() => …)` this replaces is why the above
+        // took hours to find: a truncated body produced a silent empty layer with a
+        // 200 in the network panel and NOTHING in the console, so every symptom
+        // pointed at the map rather than at the fetch. One line makes the same
+        // failure self-describing next time.
+        console.error("[cameras] /api/cameras failed, keeping the last good rows:", err);
+        // DELIBERATELY NOT `onData([])`. Wiping is what turned a transient body
+        // failure into an empty map; the repo's standing rule for a failed upstream
+        // is last-good plus an honest status, and the `ok: false` below is what
+        // drives the "CAMERAS DOWN" readout, so nothing is being hidden.
         freshnessStore.record("cameras", { count: 0, ok: false });
       });
     return () => {

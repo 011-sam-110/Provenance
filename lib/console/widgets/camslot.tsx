@@ -16,7 +16,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import { CameraImage } from "@/components/CameraImage";
+import { CameraVideo } from "@/components/CameraVideo";
 import { useCameras } from "@/lib/cameras/useCameras";
+import { loadedCamerasStore } from "@/lib/cameras/loaded";
+import { playsVideo } from "@/lib/console/widgets/camslot.video";
 import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
 import { useWebcamPlaces, webcamPlaceState } from "@/lib/webcams/places";
 import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
@@ -47,6 +50,7 @@ import {
 import { CamslotConditions } from "@/lib/console/widgets/camslot.overlay";
 import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
 import { coordKey, type Coord } from "@/lib/weather/pointWeather";
+import { watchingStore } from "@/lib/console/widgets/camslot.watching";
 
 /**
  * A coordinate pair, or null if either half is missing or not a real number.
@@ -161,12 +165,24 @@ function StreamView({
     );
   }
 
+  const isLive = playsVideo(stream, (id) => loadedCamerasStore.get().find((c) => c.id === id)?.live === true);
+
   return (
     <div className="tn-cs-view" data-kind={stream.k} style={style}>
       {stream.k === "webcam" ? (
         <WebcamImage
           id={stream.id}
           alt={label}
+          onOutcome={(ok) => streamHealth.report(stream, ok)}
+        />
+      ) : isLive ? (
+        <CameraVideo
+          id={stream.id}
+          alt={label}
+          attribution=""
+          license=""
+          refreshSeconds={refreshSeconds}
+          hidden={hidden}
           onOutcome={(ok) => streamHealth.report(stream, ok)}
         />
       ) : (
@@ -369,6 +385,26 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   const current: StreamRef | undefined = streams[safeIndex];
   const upcoming = rotates ? streams[nextIndex(safeIndex, streams.length)] : undefined;
 
+  // Tell the map what this tile holds and which frame it is showing right now —
+  // see camslot.watching.ts.
+  //
+  // REPORTING AND DROPPING ARE TWO EFFECTS ON PURPOSE, and combining them is a trap
+  // that already caught us. React runs an effect's cleanup before EVERY re-run, not
+  // only on unmount. `streams` is a useMemo keyed on `benchTick`, which ticks once a
+  // minute, so a single effect with a `dropTile` cleanup deleted the store entry
+  // every minute and re-added it — which meant the store's "nothing changed, keep
+  // the same snapshot" guard could never see a previous entry and never fired. The
+  // map still showed the right thing, so nothing looked wrong; it just rebuilt and
+  // re-pushed setData once a minute per tile, forever.
+  useEffect(() => {
+    watchingStore.setTile(instanceId, streams, current ?? null);
+  }, [instanceId, streams, current]);
+
+  // The drop is keyed on `instanceId` ALONE, so it runs when this tile genuinely
+  // goes away (closed, or scrolled off the wall) and not on a rotation. That is what
+  // lets the map stop claiming a tile is watching anything once it is gone.
+  useEffect(() => () => watchingStore.dropTile(instanceId), [instanceId]);
+
   // The conditions overlay's data for whichever stream is CURRENTLY on screen.
   // Rotating to a different stream is a pure lookup into `weatherByCoord` — no
   // request, no flash — because every place in the playlist was already
@@ -451,8 +487,23 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         <>
       <div className="tn-cs-stage" ref={stageRef} data-fit={cfg.fit ?? "cover"}>
         {/* Rule 1: exactly the current view, plus one hidden prefetch. Never the
-            whole playlist — that is what would multiply fetches. */}
+            whole playlist — that is what would multiply fetches.
+
+            KEYED BY STREAM, AND THAT IS WHAT MAKES THE PREFETCH WORTH ANYTHING.
+            Unkeyed, React reconciles these two by POSITION, so a rotation does not
+            promote the warmed view — it hands slot 0 a new `stream` prop and the
+            player inside rebuilds from zero, one frame before it is shown. That is
+            free for a still (an image re-request hits the browser HTTP cache) and
+            total for video: hls.js holds its buffer in JS, so destroy loses it, and
+            the next visible frame costs the full handshake again. Measured against
+            Caltrans D11 on 2026-09-08 that handshake is master 915ms + chunklist
+            171ms + a 2.6 MB / 10-second segment at 4.1s ≈ 5.2s.
+            With keys, the hidden fiber that has been warming for the whole 30s dwell
+            (VIDEO_DWELL_MS) is MOVED into slot 0 with its player and buffer intact.
+            Re-inserting a <video> in the same document does not re-run media resource
+            selection, so playback is not interrupted by the move. */}
         <StreamView
+          key={streamKey(current)}
           stream={current}
           refreshSeconds={refreshFor(current)}
           label={labelFor(current)}
@@ -460,6 +511,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         />
         {upcoming && streamKey(upcoming) !== streamKey(current) && (
           <StreamView
+            key={streamKey(upcoming)}
             stream={upcoming}
             refreshSeconds={refreshFor(upcoming)}
             label={labelFor(upcoming)}

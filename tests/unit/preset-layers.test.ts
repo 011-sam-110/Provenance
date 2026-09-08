@@ -83,10 +83,21 @@ test("recon widgets imply no layer and no core", () => {
 // mapCore, and therefore no data layers at all. That is the product decision, so the
 // rule is narrowed rather than deleted — a SECOND blank board would still be a bug,
 // because every other board exists to show something.
+//
+// `p.build()` IS PASSED THROUGH `onLayers` FOR EVERY OTHER TEST IN THIS FILE with no
+// signals/layers — deliberately, because those tests are pinning what a WIDGET
+// implies, board or no board. This one is different in kind: it is asking what a
+// PERSONA lights, and `applyPreset` (lib/console/presets.ts) always passes a board's
+// own signals/layers alongside its widgets, so leaving them out here would make
+// the assertion stricter than the product actually is. Streets is exactly the board
+// that exposes the gap: it now opens on no widgets at all, so with layers left out
+// it would read as a blank map despite lighting cameras + webcams for real.
 test("no board except the landing globe opens on a blank map", () => {
   for (const p of BUILTIN_PRESETS) {
-    const { onCore, onSignals } = onLayers(p.build());
-    const lit = onCore.length + onSignals.length;
+    const { core, signals } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
+    const lit =
+      Object.entries(core).filter(([k, v]) => v && k !== "countries").length +
+      Object.entries(signals).filter(([, v]) => v).length;
     if (p.id === DEFAULT_PRESET_ID) {
       expect(lit, "the landing globe must stay blank").toBe(0);
     } else {

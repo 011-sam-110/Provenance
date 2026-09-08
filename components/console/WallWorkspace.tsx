@@ -126,6 +126,18 @@ export default function WallWorkspace({
     return [...held, ...ordered.filter((w) => !heldIds.has(w.id))];
   }, [ordered, drag.activeId]);
 
+  // AN EMPTY WALL RENDERS NOTHING.
+  //
+  // `dockSize` (lib/terminal/rails.ts) gives the map dock the ENTIRE container
+  // width while this board holds zero tiles, which leaves the wall column 0px
+  // wide. That exception names this early return as the thing it rests on:
+  // painting `.tn-wall-bar` — or the grid, or anything else — here would squeeze
+  // live chrome into no width at all, which is the exact collision
+  // `WALL_MIN_PX` exists to prevent. So this returns null before any markup
+  // instead. The board's empty-state prompt belongs over the MAP, as an
+  // overlay, not here — that is a later task, not this one.
+  if (layout.widgets.length === 0) return null;
+
   const gridStyle = {
     gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))`,
     gridAutoRows: `${ROW_PX}px`,

@@ -76,11 +76,34 @@ function emit(archive = true) {
 }
 function nextId(): string { seq += 1; return `w${Date.now().toString(36)}${seq.toString(36)}`; }
 
+/** The app's widget-id minter, exported so a caller that builds a board wholesale
+ *  (camslot.apply.ts) mints ids in the same format and from the same counter as
+ *  `add()` does, rather than inventing a parallel scheme. */
+export function nextWidgetId(): string { return nextId(); }
+
 export const shellLayoutStore = {
   get(): ShellLayout { return state; },
   set(l: ShellLayout) { state = l; emit(); },
-  replace(l: ShellLayout, opts: { archive?: boolean } = {}) {
-    const clean = sanitizeLayout(l);
+  /**
+   * Swap the whole layout — either a finished layout handed in directly (a
+   * decoded `?c=` link, a preset), or through a pure function of the CURRENT one.
+   * The one door for a change that rewrites the board wholesale, so every such
+   * change emits exactly once.
+   *
+   * The function form exists for a caller that has to read the layout it is
+   * replacing to build the next one — camslot.apply.ts rebuilds the wall's tiles
+   * from whatever is on the board right now. Reading `get()` and then calling
+   * `replace(layout)` would be two store calls with the current state read
+   * in between them; the function form makes it one.
+   *
+   * Both shapes still run through `sanitizeLayout`, unlike a bare `state = fn
+   * (state)`: a `watch` ring built by hand (camslot.apply.ts sets one) gets the
+   * same vertex-count and coordinate-range checks a `?c=` link's ring gets,
+   * rather than a second, unvalidated door into the same field.
+   */
+  replace(arg: ShellLayout | ((l: ShellLayout) => ShellLayout), opts: { archive?: boolean } = {}) {
+    const next = typeof arg === "function" ? arg(state) : arg;
+    const clean = sanitizeLayout(next);
     if (clean) { state = clean; emit(opts.archive !== false); }
   },
   subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },

@@ -16,6 +16,7 @@ import MarketsPanel from "@/components/shell/MarketsPanel";
 import WatchlistPanel from "@/components/shell/WatchlistPanel";
 import RailSplitter from "@/components/console/RailSplitter";
 import WallWorkspace from "@/components/console/WallWorkspace";
+import { StreetsPrompt } from "@/components/console/StreetsPrompt";
 import { getWidgetType } from "@/lib/console/registry";
 import { stageRegionLabel } from "@/components/shell/a11y";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
@@ -262,6 +263,12 @@ export default function ConsoleWorkspace() {
    *  IS the right rail: it simply holds the stage instead of widgets, so its
    *  width persists in `segments.right.size` like every other rail's. */
   const renderSplit = (rail: SegmentId) => {
+    // In the full-bleed state (an empty wall — see `dockSize`) the dock owns
+    // the entire container width and stops reading `segments.right.size`
+    // altogether, so this seam would report a bogus size on a control that
+    // moves nothing. Suppress it for that state only; every other case below
+    // is unchanged.
+    if (wall && rail === "right" && layout.widgets.length === 0) return null;
     const size = wall ? (rail === "right" ? dock : 0) : sizes[rail];
     if (size === 0) return null;
     return (
@@ -351,6 +358,10 @@ export default function ConsoleWorkspace() {
               gets two geocoders, two clock timers and two projection switches. */}
           <StageBar />
           {showMapOverlays && <PinNavigator />}
+          {/* The board's first question, over the map that answers it. It lives
+              here rather than in WallWorkspace because an empty wall column has
+              no width — see dockSize's full-bleed exception. */}
+          {wall && showMapOverlays && layout.widgets.length === 0 && <StreetsPrompt />}
         </section>
 
         {renderSplit("right")}

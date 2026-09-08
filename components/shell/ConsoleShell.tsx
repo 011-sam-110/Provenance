@@ -49,7 +49,7 @@ import { telegramStore } from "@/lib/shell/telegram";
 import { notificationsStore } from "@/lib/shell/notifications";
 import { trackStore } from "@/lib/planes/track";
 import { pinsStore } from "@/lib/map/pins";
-import { applyPreset, DEFAULT_PRESET_ID } from "@/lib/console/presets";
+import { applyPreset, presetById, DEFAULT_PRESET_ID } from "@/lib/console/presets";
 import { decodeLayout } from "@/lib/console/share";
 import "@/lib/console/widgets";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
@@ -115,8 +115,19 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     notificationsStore.hydrate();
     trackStore.hydrate();
     pinsStore.hydrate();
-    const c = new URLSearchParams(window.location.search).get("c");
+    const params = new URLSearchParams(window.location.search);
+    const c = params.get("c");
+    // `?preset=<id>` opens the console on a named board. `?c=` outranks it: a saved
+    // layout is a complete workspace someone chose to share, a preset is only a
+    // starting point, so a link carrying both means the layout.
+    //
+    // VALIDATED AGAINST THE REGISTRY, never applied as given — this arrives from a URL
+    // like every other parameter here, and applyPreset on an unknown id would be a
+    // silent no-op that leaves the console on whatever the previous visit left behind.
+    // An unrecognised id falls through to the first-run seed instead.
+    const presetParam = params.get("preset");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
+    else if (presetParam && presetById(presetParam)) applyPreset(presetParam);
     else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
