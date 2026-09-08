@@ -239,6 +239,22 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "ukraineAlerts",
+    whatItShows:
+      "Which Ukrainian oblasts currently have an air-raid alert active. A warning to take shelter — not a report that anything was struck.",
+    method:
+      "Read directly from the oblast alert state alerts.com.ua publishes; the marker is placed on the oblast's main city because the feed carries no geometry.",
+    confidence: "official",
+    coverage:
+      "All 25 regions Ukraine's alert system covers (24 oblasts plus Kyiv city). Nothing outside Ukraine, and no sub-oblast detail — an alert covers an area up to about 300 km across.",
+    limitations: [
+      "An alert is a warning, not an incident. Most alerts end with nothing happening at any given point inside the oblast, and the layer can never say where something landed.",
+      "The dot marks the oblast's administrative centre, which is an anchor and not a location. Reading it as the place under threat is wrong by up to a few hundred kilometres.",
+      "Occupied oblasts can sit in a permanently-alerted state — Luhansk has not cleared since October 2023 — so those are labelled as standing conditions rather than fresh warnings.",
+      "This is a public mirror of the alert state, not the government's own API, which requires an issued key. It can lag or drop out, and a stale read would look like an all-clear; the layer serves its last-good reading rather than an empty map for that reason.",
+    ],
+  },
+  {
     id: "gpsJamming",
     whatItShows: "An area where aircraft are reporting degraded GNSS reception, i.e. probable GPS jamming or spoofing.",
     method: "Derived from aircraft-reported navigation-accuracy values aggregated over a grid.",
