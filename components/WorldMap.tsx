@@ -58,6 +58,7 @@ import {
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
 import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { layersToTrim } from "@/lib/map/styleTrim";
+import { whenStyleReady } from "@/lib/map/styleReady";
 import { markMapReady } from "@/lib/terminal/mapReady";
 import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC, toSignalLineFC, toSignalFillFC } from "@/lib/map/features";
 import {
@@ -276,25 +277,6 @@ function hitsAt(map: maplibregl.Map, point: maplibregl.MapLayerMouseEvent["point
 const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
-
-// Run `fn` once the map's style is fully loaded. MapLibre's setProjection (and
-// other style ops) throw "Style is not done loading" if called mid-load — and
-// that throw, uncaught, crashes the whole app (React error boundary). On first
-// mount and during a basemap setStyle the style is briefly not ready, so any
-// caller that can fire at an arbitrary time (e.g. the view-mode → projection
-// sync) MUST defer through this guard instead of calling setProjection directly.
-function whenStyleReady(map: maplibregl.Map, fn: () => void): void {
-  if (map.isStyleLoaded()) {
-    fn();
-    return;
-  }
-  const onData = () => {
-    if (!map.isStyleLoaded()) return; // styledata fires repeatedly during load
-    map.off("styledata", onData);
-    fn();
-  };
-  map.on("styledata", onData);
-}
 
 // ── Map arming: ONE resolver, four entry points ──────────────────────────────
 //
