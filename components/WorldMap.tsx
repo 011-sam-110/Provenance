@@ -275,7 +275,9 @@ function hitsAt(map: maplibregl.Map, point: maplibregl.MapLayerMouseEvent["point
 // THE CONSOLE GLOBE DOES NOT ROTATE. It used to turn on load and, after #158, turn
 // for 8 s and settle. Both are gone: it is now still from the first frame. See the
 // note on the removed spin loop further down for what came out with it, and
-// `lib/map/spin.ts`, which still drives the LANDING hero and only that.
+// `lib/map/spin.ts`, which is now driven by NOTHING: the landing hero stopped
+// settling on 2026-09-08 and no longer imports it. The module is kept for its
+// measurements, which are still the argument against a spinning console globe.
 const HOME = { center: [-30, 28] as [number, number], zoom: 1.4 };
 
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
@@ -2073,7 +2075,9 @@ export default function WorldMap() {
     // frame forever; and the budget has to count time actually spent spinning, not
     // wall-clock, or a slow first paint delivers an already-motionless globe.
     //
-    // `lib/map/spin.ts` still holds that envelope and still drives the landing hero.
+    // `lib/map/spin.ts` still holds that envelope. It no longer drives anything —
+    // the landing hero stopped settling on 2026-09-08 — but its measurements are
+    // why this map is motionless, so the module stays.
 
     return () => {
       for (const ev of inputs) el.removeEventListener(ev, markInteract);

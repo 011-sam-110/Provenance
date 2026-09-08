@@ -196,15 +196,29 @@ fill === null || (fill > 0.9 && fill <= 1)
 // that says so up front — same principle as this repo's own
 // tests/unit/client-bundle-node-builtins.test.ts.
 //
-// Unlike the MapLibre canvas above, `.pv-hero-stars` is a 2D canvas
-// (getContext("2d")), so no preserveDrawingBuffer dance is needed — its pixels
-// can be read back directly at any time.
+// `.pv-hero-stars` IS A WEBGL CANVAS NOW, not a 2D one. It became a photo sphere on
+// 2026-09-08 — an equirectangular texture sampled by view direction in a shader — so
+// `getContext("2d")` returns null on it and this returned "(no canvas found)".
+//
+// That means it needs the same preserveDrawingBuffer dance as the MapLibre canvas
+// above: a WebGL canvas reads back blank once the frame is composited unless the
+// buffer is preserved. Starfield.tsx honours the same `?capture=1` switch the globe
+// does, and this script already loads every page with it, so the readback works —
+// but only because of that flag, and only here.
 async function sampleSkyCanvas() {
   return page.evaluate(() => {
     const cv = document.querySelector(".pv-hero-stars");
     if (!(cv instanceof HTMLCanvasElement) || cv.width === 0 || cv.height === 0) return null;
-    const ctx = cv.getContext("2d");
-    if (!ctx) return null;
+    const gl = cv.getContext("webgl2") || cv.getContext("webgl");
+    if (!gl) return null;
+    // Blit the GL canvas into a 2D one first, so the downsampling below is unchanged.
+    const via = document.createElement("canvas");
+    via.width = cv.width;
+    via.height = cv.height;
+    const vctx = via.getContext("2d");
+    if (!vctx) return null;
+    vctx.drawImage(cv, 0, 0);
+    const ctx = vctx;
     // Downsample onto a small offscreen canvas before reading it back: a few
     // thousand bytes instead of the several million a HiDPI backing store
     // holds, and — because drawImage averages as it scales down — a change
@@ -241,10 +255,15 @@ sky1 && sky1.pixels > 0 && sky1.opaque / sky1.pixels > SKY_MIN_OPAQUE_FRACTION
   ? pass("sky canvas has drawn something", `${sky1.opaque}/${sky1.pixels} downsampled px opaque, sum=${sky1.sum}`)
   : fail("sky canvas is blank", sky1 ? JSON.stringify(sky1) : "(no .pv-hero-stars canvas found)");
 
-// Give the globe real time to turn (0.035deg/frame is visibly different inside
-// a couple of seconds at 60fps) with the pointer well away from the stage —
-// pointerenter pauses the rotation, and a paused globe would make "frozen"
-// pass for the wrong reason.
+// Give the globe real time to turn. It drifts at 2.1 deg/s, so a couple of seconds
+// is comfortably visible.
+//
+// THE POINTER NO LONGER MATTERS, and the move below is kept only because it is
+// harmless. `pointerenter` used to pause the rotation — on the FULL-BLEED hero, so
+// moving the mouse anywhere over the page stopped the globe — and this script moved
+// the pointer to the corner to avoid making "frozen" pass for the wrong reason. That
+// pause was removed on 2026-09-08: only a drag, a hidden tab, or scrolling past the
+// hero stops the drift now.
 //
 // This check assumes motion is ALLOWED. Under prefers-reduced-motion the globe
 // stops spinning and the twinkle is switched off by design, so a correct sky
