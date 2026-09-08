@@ -20,16 +20,27 @@
 // still needs no edit here.
 //
 // Kept, because none of it is a source: the header and its widget counter, the
-// context switcher, the search box, the areas block, the four core-layer
-// shortcuts, the camera feed/region filters, and the coverage / markets /
-// watchlist launchers.
+// context switcher, the search box, the areas block, the camera feed/region
+// filters, and the coverage / markets / watchlist launchers.
+//
+// GONE from here on 2026-09-08: the FOUR CORE-LAYER SHORTCUTS — Core / None /
+// Cameras / Air + space — which sat between the areas block and the sections. Sam
+// asked for them off the rail, and the search box moved down into the slot they
+// left. That trade is the point of the change: the search box used to sit under
+// the header, two blocks and a divider above the list it filters, and it now sits
+// directly on top of it.
+//
+// WHAT GOES WITH THEM, stated rather than discovered later: that row was the only
+// live renderer of `LAYER_PRESETS` and the only caller of `layersStore.applyPreset`
+// in the mounted tree, so there is no longer a one-tap way to turn every data layer
+// off — the rows are switched one at a time. `lib/layers.ts` keeps both, and
+// components/shell/sources/LayerPresetRow.tsx survives on disk, unmounted, so
+// putting the row back is one import and one line.
 //
 // GONE from here on 2026-09-08: the PRESETS TAB, and with it the rail's whole tab
 // strip. The boards it listed have two louder homes already — the centre navbar
 // pill and ⌘K's Profiles group — so it was a third copy charging every visitor a
-// choice on the way in. `PresetBar.tsx` survives on disk, unmounted. Its second
-// tier did NOT have another home and was lifted out rather than dropped; see
-// components/shell/sources/LayerPresetRow.tsx.
+// choice on the way in. `PresetBar.tsx` survives on disk, unmounted.
 //
 // GONE from here on 2026-09-05: TimeWindowControl. It was the only caller of
 // timeWindowStore.set, so the window is now fixed at its default -- see
@@ -56,7 +67,6 @@ import { marketsStore } from "@/lib/shell/markets";
 import { watchlistPanelStore } from "@/lib/shell/watchlist";
 import { CAMERA_REGIONS, CAMERA_FEED_META } from "@/lib/icons/svg";
 import { useT } from "@/lib/i18n/store";
-import LayerPresetRow from "@/components/shell/sources/LayerPresetRow";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
 import { isSourceWidgetOpen } from "@/lib/widgets/dock";
 import "@/lib/console/widgets";
@@ -364,24 +374,14 @@ export default function SourceCatalog() {
           A whole tab spent on a third copy cost every visitor a choice before they
           could reach the thing the rail is for.
 
-          WHAT THE TAB'S SECOND TIER WAS, because it did not have a third copy:
-          the four core-layer shortcuts. Those live on below as LayerPresetRow —
-          see that file for why the pill could never carry them. `PresetBar.tsx`
-          itself is left on disk and unmounted rather than deleted; restoring a tab
-          is cheap, un-deleting a component is not.
+          The tab's second tier — the four core-layer shortcuts — outlived it by
+          three days as LayerPresetRow and is now off the rail too, at Sam's ask.
+          Both files are left on disk and unmounted rather than deleted; restoring
+          a tab is cheap, un-deleting a component is not.
 
           The context switcher is now the FIRST control in the rail, which is where
           it belongs on its own merits: it says where everything below writes. */}
       <ContextSwitcher />
-
-      <input
-        type="search"
-        className="tn-cat-search"
-        placeholder="Search sources…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label="Search sources"
-      />
 
       {/* Drawing an area and then turning sources on for it is one job, so the
           areas block sits in the same scroll as the sources it configures. It used
@@ -392,10 +392,19 @@ export default function SourceCatalog() {
 
       <div className="tn-rail-divider" />
 
-      {/* Above the sections whose rows they flip, because that is what they act
-          on. Not a heading of their own: they are four small buttons, and a
-          heading would make them look like a third tier of preset. */}
-      <LayerPresetRow />
+      {/* THE SEARCH BOX SITS HERE, directly above the list it filters, and not
+          under the header where it used to be. It moved into the slot the four
+          core-layer shortcuts vacated: from the header it was separated from its
+          own results by the context switcher and the whole areas block, so typing
+          in it changed something a scroll away. */}
+      <input
+        type="search"
+        className="tn-cat-search"
+        placeholder="Search sources…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        aria-label="Search sources"
+      />
 
       {visible.length === 0 ? (
         <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
