@@ -76,6 +76,39 @@ export function tilesToLayout(
   return arrangeBoard(next, rows);
 }
 
+/**
+ * The board's row budget, read from the window it is being drawn in.
+ *
+ * Shared by every path that re-arranges the wall, so a redraw and a first draw
+ * cannot disagree about how many rows exist. The SSR fallback is a number
+ * rather than a throw because this module is imported by code that is evaluated
+ * on the server; nothing calls into it there.
+ */
+function visibleRows(): number {
+  return Math.floor((typeof window === "undefined" ? 900 : window.innerHeight) / (ROW_PX + GAP_PX));
+}
+
+/**
+ * The board with its area let go: no tiles, no ring. PURE for the same reason
+ * `tilesToLayout` is — the arithmetic is testable without a store or a map.
+ *
+ * `watch` is DELETED, not set to `null` and not set to an empty ring, and that
+ * is the one subtle line here. `lib/console/types.ts` states the contract it
+ * rests on: the key's ABSENCE is the untouched state, because `layoutSignature()`
+ * runs the layout through `JSON.stringify`, which drops `undefined` and keeps
+ * `null`. A board that has just been emptied carrying `watch: null` would light
+ * the "customised" dot — the opposite of what clearing it says.
+ */
+export function clearedWall(l: ShellLayout, rows: number): ShellLayout {
+  let next = l;
+  for (const w of [...l.widgets]) next = removeWidget(next, w.id);
+  const arranged = arrangeBoard(next, rows);
+  if (!("watch" in arranged)) return arranged;
+  const cleared = { ...arranged };
+  delete cleared.watch;
+  return cleared;
+}
+
 export interface ApplyResult { ok: boolean; message: string; created: number }
 
 /** Put a planned wall onto the open board and remember the area that made it. */
@@ -95,7 +128,7 @@ export function applyMonitorPlan(plan: MonitorPlan, ring: readonly [number, numb
   if (shellLayoutStore.get().mode !== "wall") {
     return { ok: false, message: "That area needs a camera wall — switch to Streets and draw it again.", created: 0 };
   }
-  const rows = Math.floor((typeof window === "undefined" ? 900 : window.innerHeight) / (ROW_PX + GAP_PX));
+  const rows = visibleRows();
   shellLayoutStore.replace((l) => ({
     ...tilesToLayout(l, plan.tiles, rows, nextWidgetId),
     watch: { ring: [...ring] as [number, number][] },
@@ -129,6 +162,52 @@ export function startStreetsArea(): { ok: boolean; message?: string } {
   });
   return ok ? { ok: true } : { ok: false, message: "Could not start drawing." };
 }
+
+/**
+ * Empty the open wall and let go of its area — the way back to the prompt.
+ *
+ * Guarded on `mode === "wall"` for the reason `applyMonitorPlan` is: this
+ * removes EVERY widget on the open board, so reaching it from a rails board
+ * would delete an Infrastructure or Intel board rather than a camera wall.
+ *
+ * THE DOCK IS FORCED OPEN, because `dockSize` checks `collapsed` BEFORE the
+ * empty-wall exception (lib/terminal/rails.ts). Clearing a board whose dock is
+ * closed would otherwise leave a 0px map, so the prompt this hands back to would
+ * have no width to render into and the board would look simply broken. Same
+ * reasoning the wall bar's "Map" button carries.
+ */
+export function clearMonitorArea(): boolean {
+  if (shellLayoutStore.get().mode !== "wall") return false;
+  const rows = visibleRows();
+  shellLayoutStore.replace((l) => clearedWall(l, rows));
+  shellLayoutStore.collapseSegment("right", false);
+  return true;
+}
+
+// ── WHY THIS DOES NOT ALSO ARM THE GESTURE ───────────────────────────────────
+//
+// The obvious next step is a `redrawStreetsArea()` that clears the board and
+// then calls `startStreetsArea()`, saving the user a click. It was written and
+// it does not work, for a reason worth recording because the next person will
+// try it too.
+//
+// Clearing the board is what MOUNTS `StreetsPrompt` (ConsoleWorkspace renders it
+// on `widgets.length === 0`), and that component's whole contract is to cancel
+// any live gesture when it unmounts — an armed circle holds pointer capture and
+// `dragPan.disable()`, so one left behind makes the map silently refuse to pan.
+// Under React StrictMode, which Next turns on in development by default, an
+// effect is mounted, torn down and mounted again in one commit, so that cleanup
+// fires immediately and cancels the gesture armed a moment earlier.
+//
+// Measured on the dev server at 1440x900: arming while the prompt is ALREADY
+// mounted leaves it live ("Press on the map and drag out from the centre");
+// arming in the same tick the prompt mounts leaves it idle ("Every camera inside
+// it fills the board"). The gesture was gone before the user could press.
+//
+// A `requestAnimationFrame` would step around it, and that is exactly the shape
+// to avoid: it makes the gesture depend on winning a race against a commit. So
+// clearing hands back to the prompt, and the prompt's own button — the one path
+// that is already proven — arms the draw.
 
 function toast(message: string): void {
   if (typeof window === "undefined") return;
