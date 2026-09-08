@@ -1,0 +1,581 @@
+{
+  "version": 1,
+  "verdicts": {
+    "dis-se18.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 236 streams (not probed)",
+      "at": "2026-09-08T00:49:33.768Z",
+      "cams": 236
+    },
+    "dis-se16.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 241 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 241
+    },
+    "dis-se13.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 226 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 226
+    },
+    "dis-se12.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 229 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 229
+    },
+    "dis-se11.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 231 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 231
+    },
+    "dis-se10.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 237 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 237
+    },
+    "dis-se9.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 220 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 220
+    },
+    "dis-se6.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 214 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 214
+    },
+    "dis-se5.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 216 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 216
+    },
+    "dis-se4.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 216 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 216
+    },
+    "dis-se2.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 218 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 218
+    },
+    "dis-se17.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 222 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 222
+    },
+    "dis-se15.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 234 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 234
+    },
+    "dis-se8.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 217 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 217
+    },
+    "dis-se7.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 205 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 205
+    },
+    "dis-se3.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 208 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 208
+    },
+    "dis-se1.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 228 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 228
+    },
+    "dis-se26.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 57 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 57
+    },
+    "dis-se22.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 18
+    },
+    "dis-se19.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 160 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 160
+    },
+    "dis-se20.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 24 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 24
+    },
+    "dis-se24.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 21 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 21
+    },
+    "dis-se21.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 22 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 22
+    },
+    "dis-se23.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 15 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 15
+    },
+    "dis-se25.divas.cloud:8200": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 21 streams (not probed)",
+      "at": "2026-09-08T00:49:33.770Z",
+      "cams": 21
+    },
+    "cfmse01.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 14 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 14
+    },
+    "cfmse02.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 19 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 19
+    },
+    "cfmse03.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 16 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 16
+    },
+    "cfmse04.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cfmse08.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 15 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 15
+    },
+    "cfmse09.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cfmse10.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cfmse12.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 14 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 14
+    },
+    "cfmse11.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cfese02.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 33 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 33
+    },
+    "cfase03.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 15 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 15
+    },
+    "cfase04.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 10 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 10
+    },
+    "cfase02.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 13 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 13
+    },
+    "cfase01.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 8 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 8
+    },
+    "cfase06.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 9 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 9
+    },
+    "cfase05.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 7 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 7
+    },
+    "cfsse01.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 21 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 21
+    },
+    "cfsse02.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 23 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 23
+    },
+    "cfsse03.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 25 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 25
+    },
+    "cfsse04.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 23 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 23
+    },
+    "cfsse05.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 38 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 38
+    },
+    "cfsse06.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 30 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 30
+    },
+    "cfsse07.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 27 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 27
+    },
+    "cfsse09.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 30 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 30
+    },
+    "cfsse10.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 28 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 28
+    },
+    "cfsse11.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 25 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 25
+    },
+    "cfsse12.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 23 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 23
+    },
+    "cfsse13.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 22 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 22
+    },
+    "cftse03.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cfese03.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 38 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 38
+    },
+    "cfese04.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 50 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 50
+    },
+    "cfese05.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 44 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 44
+    },
+    "cfese06.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 41 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 41
+    },
+    "cftse02.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 19 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 19
+    },
+    "cftse04.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cftse05.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cftse06.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cftse07.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 20 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 20
+    },
+    "cftse08.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cftse09.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 21 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 21
+    },
+    "cftse11.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cftse10.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 18 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 18
+    },
+    "cftse01.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "cftse12.services.ncdot.gov:8887": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 17 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 17
+    },
+    "d2g22ywzrs8q02.cloudfront.net": {
+      "status": "refused",
+      "note": "operator declares isVideoAuthRequired on all 1 streams (not probed)",
+      "at": "2026-09-08T00:49:33.771Z",
+      "cams": 1
+    },
+    "dis-se14.divas.cloud:8200": {
+      "status": "refused",
+      "note": "http 401 Basic realm=\"XEngine\"",
+      "at": "2026-09-08T00:49:34.288Z",
+      "cams": 246
+    },
+    "s52.nysdot.skyvdn.com": {
+      "status": "live",
+      "note": "advanced over 8s",
+      "at": "2026-09-08T00:49:43.144Z",
+      "cams": 344
+    },
+    "s51.nysdot.skyvdn.com": {
+      "status": "live",
+      "note": "advanced over 14s",
+      "at": "2026-09-08T00:49:58.037Z",
+      "cams": 323
+    },
+    "s53.nysdot.skyvdn.com": {
+      "status": "live",
+      "note": "advanced over 8s",
+      "at": "2026-09-08T00:50:06.969Z",
+      "cams": 330
+    },
+    "s7.nysdot.skyvdn.com": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:50:19.843Z",
+      "cams": 293
+    },
+    "s9.nysdot.skyvdn.com": {
+      "status": "live",
+      "note": "advanced over 10s",
+      "at": "2026-09-08T00:50:30.758Z",
+      "cams": 278
+    },
+    "itsstreamingbr2.dotd.la.gov": {
+      "status": "live",
+      "note": "advanced over 14s",
+      "at": "2026-09-08T00:50:47.203Z",
+      "cams": 188
+    },
+    "itsstreamingno.dotd.la.gov": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:50:55.463Z",
+      "cams": 145
+    },
+    "itsstreamingbr.dotd.la.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:51:10.979Z",
+      "cams": 156
+    },
+    "d2wse2.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 13s",
+      "at": "2026-09-08T00:51:25.096Z",
+      "cams": 113
+    },
+    "d2wse1.its.nv.gov": {
+      "status": "unreachable",
+      "note": "http 404",
+      "at": "2026-09-08T00:51:26.009Z",
+      "cams": 69
+    },
+    "d1wse2.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:51:39.121Z",
+      "cams": 72
+    },
+    "d1wse1.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:51:52.272Z",
+      "cams": 70
+    },
+    "d3wse1.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 11s",
+      "at": "2026-09-08T00:52:04.433Z",
+      "cams": 88
+    },
+    "d1wse4.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:52:17.647Z",
+      "cams": 69
+    },
+    "d1wse5.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:52:30.862Z",
+      "cams": 72
+    },
+    "d1wse3.its.nv.gov": {
+      "status": "live",
+      "note": "advanced over 12s",
+      "at": "2026-09-08T00:52:44.103Z",
+      "cams": 72
+    },
+    "cfmse05.services.ncdot.gov:8887": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:52:54.793Z",
+      "cams": 21
+    },
+    "cfmse06.services.ncdot.gov:8887": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:53:05.917Z",
+      "cams": 24
+    },
+    "cfmse07.services.ncdot.gov:8887": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:53:17.122Z",
+      "cams": 19
+    },
+    "cfsse08.services.ncdot.gov:8887": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:53:28.216Z",
+      "cams": 37
+    },
+    "cfese01.services.ncdot.gov:8887": {
+      "status": "unreachable",
+      "note": "fetch failed",
+      "at": "2026-09-08T00:53:39.346Z",
+      "cams": 35
+    },
+    "pa-se1.arcadis-ivds.com:8200": {
+      "status": "refused",
+      "note": "http 401 Basic realm=\"XEngine\"",
+      "at": "2026-09-08T00:53:40.562Z",
+      "cams": 322
+    },
+    "pa-se2.arcadis-ivds.com:8200": {
+      "status": "refused",
+      "note": "http 401 Basic realm=\"XEngine\"",
+      "at": "2026-09-08T00:53:41.792Z",
+      "cams": 308
+    },
+    "pa-se3.arcadis-ivds.com:8200": {
+      "status": "refused",
+      "note": "http 401 Basic realm=\"XEngine\"",
+      "at": "2026-09-08T00:53:42.816Z",
+      "cams": 320
+    },
+    "pa-se4.arcadis-ivds.com:8200": {
+      "status": "refused",
+      "note": "http 401 Basic realm=\"XEngine\"",
+      "at": "2026-09-08T00:53:44.045Z",
+      "cams": 324
+    }
+  }
+}

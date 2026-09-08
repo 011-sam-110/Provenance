@@ -492,10 +492,20 @@
   background: var(--adm-panel-2);
   overflow: hidden;
 }
+/*
+ * Scaled, not resized, and the reason is specific to this page rather than general
+ * performance advice: the meter ticks continuously while a stream decodes, and this
+ * deck exists so a person can judge whether that video is stuttering. A meter that
+ * animates `width` lays out the page on every tick, next to a running video element —
+ * so our own chrome would be a source of the jank the reviewer is being asked to
+ * attribute to the camera. `transform` composites and cannot do that.
+ */
 .lv-meter-fill {
   height: 100%;
+  width: 100%;
+  transform-origin: left center;
   background: var(--adm-accent-bright);
-  transition: width 120ms linear;
+  transition: transform 120ms linear;
 }
 .lv-meter-label {
   color: var(--adm-ink-dim);
@@ -503,12 +513,18 @@
   font-size: 12px;
   white-space: nowrap;
 }
+/*
+ * Bordered in the warn colour on all four sides, matching `.adm-env` above, which is the
+ * only other "this needs your attention" element on the admin surface. It previously had
+ * a 3px left rule and square left corners; that was the single border-left in the file,
+ * so it was a one-off rather than a house pattern worth keeping.
+ */
 .lv-warn {
-  border-left: 3px solid var(--adm-warn);
+  border: 1px solid var(--adm-warn);
   background: var(--adm-panel);
   color: var(--adm-ink-dim);
   padding: 8px 12px;
-  border-radius: 0 8px 8px 0;
+  border-radius: 8px;
   margin: 8px 0 0;
   font-size: 13px;
 }
