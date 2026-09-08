@@ -204,4 +204,20 @@ describe("diff — quiet", () => {
     const { events } = diff(EMPTY_OBSERVATION, [], RING, [quietRule], DOWN, 999_999_999);
     expect(events).toHaveLength(0);
   });
+
+  it("does not fire, or latch, on the poll where the feed RECOVERS", () => {
+    // The whole outage fell BETWEEN two polls: the previous observation is
+    // healthy-but-stale and never latched, and the very next poll is the one that
+    // succeeds. There is no silence left to announce — and latching here would
+    // swallow the next real outage instead.
+    const prev: Observation = { ...EMPTY_OBSERVATION, lastOk: 1_000 };
+    const at = 1_000 + 31 * 60_000;
+    const recovery = diff(prev, [row("a")], RING, [quietRule], { ok: true, lastOk: at }, at);
+    expect(recovery.events).toHaveLength(0);
+    expect(recovery.next.quietFired).toBe(false);
+
+    // and the latch really is clear — a genuine outage straight afterwards speaks.
+    const outage = diff(recovery.next, [], RING, [quietRule], { ok: false, lastOk: at }, at + 31 * 60_000);
+    expect(outage.events).toHaveLength(1);
+  });
 });

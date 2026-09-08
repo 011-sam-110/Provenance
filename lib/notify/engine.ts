@@ -116,7 +116,13 @@ export function diff(
       // lastOk === 0 means this pair has NEVER answered. Silence with no baseline is
       // not an outage — it is a source that was armed before it ever worked, and
       // announcing it would blame the wrong thing.
-      const silentFor = before.lastOk > 0 ? now - before.lastOk : 0;
+      //
+      // `!feed.ok` is load-bearing and must stay the exact complement of the
+      // `next.quietFired = false` reset above. Without it the ONE poll on which a
+      // feed recovers both announces a bogus outage and re-latches quietFired after
+      // that reset already cleared it — leaving the latch stuck true, so the next
+      // real outage is never announced at all.
+      const silentFor = !feed.ok && before.lastOk > 0 ? now - before.lastOk : 0;
       if (silentFor >= silentMs && !before.quietFired) {
         events.push(event(rule, "quiet", now));
         next.quietFired = true;
