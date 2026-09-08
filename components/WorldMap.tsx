@@ -73,6 +73,7 @@ import {
   HOVER_SETTLE_MS,
   NO_HOVER,
   canvasCursor,
+  cursorOwner,
   hoverChanged,
   resolveHover,
   shouldHitTest,
@@ -85,7 +86,7 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
 import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
-import { attachAoi } from "@/lib/map/aoi";
+import { aoiDrawStore, attachAoi } from "@/lib/map/aoi";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map picking. Every rule lives in camslot.pick and camslot.arm; this file supplies
 // geometry and side effects and decides nothing. See the block above addPicks for
@@ -1617,13 +1618,26 @@ export default function WorldMap() {
       if (tip) tip.style.transform = "translate(" + at.x + "px," + at.y + "px)";
     };
 
-    // THE ONE PLACE THE CANVAS CURSOR IS WRITTEN. It reconciles against the element
-    // rather than against `hover`, so it is correct however it was reached — a
-    // pointer move, a mode change under a stationary pointer, or the [picking]
-    // effect below clearing it. The read is of an inline style and forces no
-    // layout, and it happens at most once per rAF.
+    // THE ONE PLACE THIS FILE WRITES THE CANVAS CURSOR. It reconciles against the
+    // element rather than against `hover`, so it is correct however it was reached —
+    // a pointer move, a mode change under a stationary pointer, or the [picking]
+    // effect below clearing it. The read is of an inline style and forces no layout,
+    // and it happens at most once per rAF.
+    //
+    // `null` means "leave it alone", which is what a live draw needs: aoi.ts and
+    // camslot.circle.ts write their own crosshair inline and restore what they found
+    // when the gesture ends. Both stores are read at EVENT time rather than closed
+    // over, for the reason this whole effect is `useCallback(…, [])` — see the block
+    // above addPicks.
     const syncCursor = (state: HoverState) => {
-      const want = canvasCursor(state, pickStore.get().mode === "picking");
+      const want = canvasCursor(
+        state,
+        cursorOwner({
+          drawing: aoiDrawStore.get().active,
+          picking: pickStore.get().mode === "picking",
+        }),
+      );
+      if (want === null) return;
       const canvas = map.getCanvas();
       if (canvas.style.cursor !== want) canvas.style.cursor = want;
     };
@@ -2477,7 +2491,16 @@ export default function WorldMap() {
   // React removes with the mode. The cost is that a pointer resting on a pin as the
   // mode ends shows the default arrow until it next moves, when `syncCursor` puts
   // the pointer back.
+  //
+  // NOT WHILE A DRAW IS LIVE, and this guard is the whole reason the owner is three
+  // values rather than a boolean. A camera pick BY AREA arms picking and starts a
+  // draw in the same call (`startAreaPick`), so this effect fires with aoi.ts's
+  // inline crosshair already on the canvas — and clearing it there would delete the
+  // very cue the class is standing in for, leaving nothing behind the moment picking
+  // ended before the draw did. The gesture owns the inline value for its whole life
+  // and puts back what it found; there is nothing here for this effect to fix.
   useEffect(() => {
+    if (aoiDrawStore.get().active) return;
     const canvas = mapRef.current?.getCanvas();
     if (canvas) canvas.style.cursor = "";
   }, [picking]);

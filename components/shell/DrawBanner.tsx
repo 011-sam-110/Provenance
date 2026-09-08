@@ -1,20 +1,35 @@
 "use client";
 // "You are drawing." A banner over the map for as long as a draw gesture is running.
 //
-// WHY IT EXISTS, given the rail flyout already narrates the gesture. Two reasons, and
+// WHY IT EXISTS, given the stage rail can narrate the gesture too. Two reasons, and
 // the second is a bug rather than a preference.
 //
-//  1. REACH. The flyout's readout is a ~90px line of small text on the right edge of
-//     the map, beside the button that armed the tool. The user's attention after
-//     pressing it is on the map, where they are about to click. "It is hard to tell
-//     if you have clicked and if you are actually drawing" is the report, and a cue
-//     living next to the button is a cue nobody is looking at.
-//  2. THE FLYOUT CAN CLOSE WHILE THE GESTURE IS STILL LIVE. The stage rail keeps one
-//     group open at a time, so opening Search or Cameras mid-draw unmounts
-//     DrawFlyout — and with it the only sign the map is still swallowing clicks, and
-//     the only Cancel button. Escape still works, and nothing on screen says so.
-//     This is mounted from ConsoleShell and keys off the draw store alone, so it
-//     cannot be closed by anything except the gesture ending.
+//  1. REACH. Whatever the rail shows about a live draw is a short line of small text
+//     on the right edge of the map, beside the button that armed the tool. The
+//     user's attention after pressing it is on the map, where they are about to
+//     click. "It is hard to tell if you have clicked and if you are actually
+//     drawing" is the report, and a cue living next to the button is a cue nobody is
+//     looking at.
+//  2. THE RAIL'S NARRATION CAN GO AWAY WHILE THE GESTURE IS STILL LIVE — and the
+//     rail is not the only way into a draw, so it was never guaranteed to be there
+//     in the first place.
+//
+//     The stage rail keeps ONE group open at a time (lib/console/mapRail.ts), so
+//     opening any other group mid-draw takes the draw group's readout with it, and
+//     with it the Cancel button that lived in it. Escape still works, and nothing on
+//     screen says so.
+//
+//     A draw also starts from three surfaces that are not the rail: the `draw` key
+//     action arms the polygon tool directly (Ctrl+Q by default and rebindable — see
+//     lib/shell/keymap.ts), and `AreasPanel` and `camslot.area` each call
+//     `startDraw` from their own panel. The rail is one entry point among several,
+//     and the narration has to outlive all of them.
+//
+//     SO THIS IS THE ONE THAT CANNOT BE TAKEN AWAY. It is mounted from ConsoleShell
+//     and keys off the draw store alone, which means no rail group, no panel and no
+//     board change can close it — only the gesture ending. Deliberately written
+//     without naming which rail groups exist, because that list changes and this
+//     reasoning does not.
 //
 // WHAT IT HAS TO MAKE UNMISTAKABLE — four things, and they are why the pill is laid
 // out in three zones rather than written as one sentence. How many points you have
