@@ -69,64 +69,83 @@ export function diff(
   feed: { ok: boolean; lastOk: number },
   now: number,
 ): { events: NotifyEvent[]; next: Observation } {
+  const seeding = prev === undefined;
   const before = prev ?? EMPTY_OBSERVATION;
-  const nextRows = snapshot(rows, ring);
-  const insideNow = rows.filter((r) => isInside(r, ring));
+
+  // G2 — is this poll worth believing?
+  //   • the fetch errored, so its rows tell us nothing; or
+  //   • a previously non-empty set came back completely empty, which is what an
+  //     upstream hiccup looks like and is indistinguishable from a real evacuation.
+  // Either way the OBSERVATION IS LEFT UNTOUCHED, so the next healthy poll compares
+  // against the last state we trusted rather than against an empty one. Believing a
+  // bad poll would announce that everything left Soho, and then announce it all
+  // arriving back a minute later.
+  const collapsed = before.count > 0 && rows.length === 0;
+  const trustRows = feed.ok && !collapsed;
+
+  const nextRows = trustRows ? snapshot(rows, ring) : before.rows;
+  const insideNow = trustRows ? rows.filter((r) => isInside(r, ring)) : [];
   const next: Observation = {
     rows: nextRows,
-    count: insideNow.length,
-    lastOk: feed.ok ? feed.lastOk : before.lastOk,
+    count: trustRows ? insideNow.length : before.count,
+    lastOk: feed.ok && !collapsed ? feed.lastOk : before.lastOk,
     dueFired: before.dueFired,
     quietFired: before.quietFired,
   };
-
-  // A successful poll ends the silence, so the NEXT outage is announced too.
-  if (feed.ok) next.quietFired = false;
+  if (trustRows) next.quietFired = false; // same expression the quiet branch negates
 
   const events: NotifyEvent[] = [];
   const armed = rules.filter((r) => r.enabled);
 
-  for (const rule of armed) {
-    if (rule.params.kind === "appears") {
-      for (const r of insideNow) {
-        if (!before.rows[r.id]) events.push(event(rule, "appears", now, r.id));
+  // G1 — the first observation SEEDS. Rows already present are not "appeared", and a
+  // count already over its level is not a crossing. Arming a rule over a busy area
+  // must not fire ninety messages about things that were there before the rule
+  // existed. `quiet` is exempt: it reads the clock, not the rows.
+  if (trustRows && !seeding) {
+    for (const rule of armed) {
+      if (rule.params.kind === "appears") {
+        for (const r of insideNow) {
+          if (!before.rows[r.id]) events.push(event(rule, "appears", now, r.id));
+        }
       }
-    }
 
-    if (rule.params.kind === "count") {
-      const { dir, level } = rule.params;
-      if (crossed(before.count, next.count, dir, level)) {
-        events.push(event(rule, "count", now));
+      if (rule.params.kind === "count") {
+        const { dir, level } = rule.params;
+        if (crossed(before.count, next.count, dir, level)) {
+          events.push(event(rule, "count", now));
+        }
       }
-    }
 
-    if (rule.params.kind === "crosses") {
-      const { field, dir, level } = rule.params;
-      for (const r of insideNow) {
-        const cur = r.scalars[field];
-        if (!Number.isFinite(cur)) continue; // absent is not zero
-        if (crossed(before.rows[r.id]?.scalars?.[field], cur, dir, level)) {
-          events.push(event(rule, "crosses", now, r.id));
+      if (rule.params.kind === "crosses") {
+        const { field, dir, level } = rule.params;
+        for (const r of insideNow) {
+          const cur = r.scalars[field];
+          if (!Number.isFinite(cur)) continue; // absent is not zero
+          if (crossed(before.rows[r.id]?.scalars?.[field], cur, dir, level)) {
+            events.push(event(rule, "crosses", now, r.id));
+          }
         }
       }
     }
+  }
 
-    if (rule.params.kind === "quiet") {
-      const { silentMs } = rule.params;
-      // lastOk === 0 means this pair has NEVER answered. Silence with no baseline is
-      // not an outage — it is a source that was armed before it ever worked, and
-      // announcing it would blame the wrong thing.
-      //
-      // `!feed.ok` is load-bearing and must stay the exact complement of the
-      // `next.quietFired = false` reset above. Without it the ONE poll on which a
-      // feed recovers both announces a bogus outage and re-latches quietFired after
-      // that reset already cleared it — leaving the latch stuck true, so the next
-      // real outage is never announced at all.
-      const silentFor = !feed.ok && before.lastOk > 0 ? now - before.lastOk : 0;
-      if (silentFor >= silentMs && !before.quietFired) {
-        events.push(event(rule, "quiet", now));
-        next.quietFired = true;
-      }
+  for (const rule of armed) {
+    if (rule.params.kind !== "quiet") continue;
+    const { silentMs } = rule.params;
+    // lastOk === 0 means this pair has NEVER answered. Silence with no baseline is
+    // not an outage — it is a source that was armed before it ever worked, and
+    // announcing it would blame the wrong thing.
+    //
+    // A poll we TRUSTED is not silence, whatever the previous lastOk says. This
+    // term must stay the exact complement of the `next.quietFired = false` reset
+    // above — hence `trustRows`, not a re-typed `feed.ok`. If the two ever
+    // disagree, the single poll on which a feed RECOVERS both fires a bogus
+    // outage and re-latches quietFired after the reset already cleared it,
+    // leaving the latch stuck true so the next genuine outage is never announced.
+    const silentFor = !trustRows && before.lastOk > 0 ? now - before.lastOk : 0;
+    if (silentFor >= silentMs && !before.quietFired) {
+      events.push(event(rule, "quiet", now));
+      next.quietFired = true;
     }
   }
 
