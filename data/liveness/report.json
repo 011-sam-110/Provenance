@@ -1,0 +1,1031 @@
+{
+  "generatedAt": "2026-09-07T23:11:59.333Z",
+  "exitIp": "86.20.84.13",
+  "replay": false,
+  "probed": true,
+  "feeds": [
+    {
+      "key": "castlerock",
+      "label": "Castle Rock 511 platform",
+      "note": "13,180 cameras and 65% of the registry. The single highest-value answer here.",
+      "level1": [
+        {
+          "url": "https://fl511.com/List/GetData/Cameras",
+          "outcome": "ok",
+          "bytes": 112315
+        },
+        {
+          "url": "https://511on.ca/List/GetData/Cameras",
+          "outcome": "ok",
+          "bytes": 140252
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://fl511.com/map",
+          "outcome": "ok",
+          "bytes": 136116
+        },
+        {
+          "url": "https://511on.ca/map",
+          "outcome": "ok",
+          "bytes": 191081
+        }
+      ],
+      "streamsFound": 97,
+      "playableFound": 97,
+      "hits": [
+        {
+          "path": "data.0.images.0.videoUrl",
+          "url": "https://dis-se18.divas.cloud:8200/chan-1_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.1.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-3_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.3.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-6_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.4.images.0.videoUrl",
+          "url": "https://dis-se12.divas.cloud:8200/chan-8_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.5.images.0.videoUrl",
+          "url": "https://dis-se11.divas.cloud:8200/chan-9_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.6.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-10_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.7.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-20_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.10.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-30_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.11.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-32_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.12.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-34_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.13.images.0.videoUrl",
+          "url": "https://dis-se2.divas.cloud:8200/chan-38_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.14.images.0.videoUrl",
+          "url": "https://dis-se17.divas.cloud:8200/chan-43_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.15.images.0.videoUrl",
+          "url": "https://dis-se15.divas.cloud:8200/chan-47_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.16.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-49_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.17.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-51_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.18.images.0.videoUrl",
+          "url": "https://dis-se12.divas.cloud:8200/chan-53_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.19.images.0.videoUrl",
+          "url": "https://dis-se11.divas.cloud:8200/chan-54_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.20.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-55_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.21.images.0.videoUrl",
+          "url": "https://dis-se8.divas.cloud:8200/chan-57_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.22.images.0.videoUrl",
+          "url": "https://dis-se7.divas.cloud:8200/chan-58_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.23.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-61_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.24.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-62_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.25.images.0.videoUrl",
+          "url": "https://dis-se3.divas.cloud:8200/chan-63_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.26.images.0.videoUrl",
+          "url": "https://dis-se2.divas.cloud:8200/chan-64_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.27.images.0.videoUrl",
+          "url": "https://dis-se1.divas.cloud:8200/chan-65_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.28.images.0.videoUrl",
+          "url": "https://dis-se18.divas.cloud:8200/chan-66_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.29.images.0.videoUrl",
+          "url": "https://dis-se17.divas.cloud:8200/chan-67_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.30.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-68_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.31.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-71_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.32.images.0.videoUrl",
+          "url": "https://dis-se12.divas.cloud:8200/chan-72_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.33.images.0.videoUrl",
+          "url": "https://dis-se11.divas.cloud:8200/chan-73_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.34.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-74_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.35.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-75_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.36.images.0.videoUrl",
+          "url": "https://dis-se7.divas.cloud:8200/chan-77_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.37.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-78_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.38.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-79_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.39.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-80_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.40.images.0.videoUrl",
+          "url": "https://dis-se3.divas.cloud:8200/chan-81_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.41.images.0.videoUrl",
+          "url": "https://dis-se2.divas.cloud:8200/chan-82_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.42.images.0.videoUrl",
+          "url": "https://dis-se1.divas.cloud:8200/chan-83_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.43.images.0.videoUrl",
+          "url": "https://dis-se17.divas.cloud:8200/chan-85_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.44.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-86_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.45.images.0.videoUrl",
+          "url": "https://dis-se15.divas.cloud:8200/chan-87_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.46.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-88_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.47.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-89_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.48.images.0.videoUrl",
+          "url": "https://dis-se12.divas.cloud:8200/chan-90_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.49.images.0.videoUrl",
+          "url": "https://dis-se11.divas.cloud:8200/chan-91_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.50.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-92_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.51.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-93_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.52.images.0.videoUrl",
+          "url": "https://dis-se8.divas.cloud:8200/chan-94_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.53.images.0.videoUrl",
+          "url": "https://dis-se7.divas.cloud:8200/chan-95_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.54.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-96_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.55.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-97_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.56.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-98_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.57.images.0.videoUrl",
+          "url": "https://dis-se3.divas.cloud:8200/chan-99_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.58.images.0.videoUrl",
+          "url": "https://dis-se2.divas.cloud:8200/chan-100_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.59.images.0.videoUrl",
+          "url": "https://dis-se1.divas.cloud:8200/chan-103_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.60.images.0.videoUrl",
+          "url": "https://dis-se18.divas.cloud:8200/chan-104_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.61.images.0.videoUrl",
+          "url": "https://dis-se17.divas.cloud:8200/chan-105_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.62.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-106_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.63.images.0.videoUrl",
+          "url": "https://dis-se15.divas.cloud:8200/chan-107_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.64.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-108_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.65.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-109_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.66.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-134_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.67.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-153_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.68.images.0.videoUrl",
+          "url": "https://dis-se8.divas.cloud:8200/chan-186_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.69.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-190_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.70.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-202_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.71.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-206_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.72.images.0.videoUrl",
+          "url": "https://dis-se1.divas.cloud:8200/chan-211_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.73.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-221_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.74.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-232_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.75.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-8959_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.76.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-9145_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.77.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-9453_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.78.images.0.videoUrl",
+          "url": "https://dis-se15.divas.cloud:8200/chan-9511_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.79.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-9518_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.80.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-9550_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.81.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-9558_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.82.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-9559_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.83.images.0.videoUrl",
+          "url": "https://dis-se18.divas.cloud:8200/chan-9880_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.84.images.0.videoUrl",
+          "url": "https://dis-se7.divas.cloud:8200/chan-10514_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.85.images.0.videoUrl",
+          "url": "https://dis-se17.divas.cloud:8200/chan-10631_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.86.images.0.videoUrl",
+          "url": "https://dis-se16.divas.cloud:8200/chan-10632_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.87.images.0.videoUrl",
+          "url": "https://dis-se15.divas.cloud:8200/chan-10633_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.88.images.0.videoUrl",
+          "url": "https://dis-se14.divas.cloud:8200/chan-10634_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.89.images.0.videoUrl",
+          "url": "https://dis-se13.divas.cloud:8200/chan-10635_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.90.images.0.videoUrl",
+          "url": "https://dis-se12.divas.cloud:8200/chan-10636_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.91.images.0.videoUrl",
+          "url": "https://dis-se11.divas.cloud:8200/chan-10637_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.92.images.0.videoUrl",
+          "url": "https://dis-se10.divas.cloud:8200/chan-10638_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.93.images.0.videoUrl",
+          "url": "https://dis-se9.divas.cloud:8200/chan-10639_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.94.images.0.videoUrl",
+          "url": "https://dis-se8.divas.cloud:8200/chan-10640_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.95.images.0.videoUrl",
+          "url": "https://dis-se7.divas.cloud:8200/chan-10641_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.96.images.0.videoUrl",
+          "url": "https://dis-se6.divas.cloud:8200/chan-10642_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.97.images.0.videoUrl",
+          "url": "https://dis-se5.divas.cloud:8200/chan-10643_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.98.images.0.videoUrl",
+          "url": "https://dis-se4.divas.cloud:8200/chan-10644_h/index.m3u8",
+          "kind": "hls"
+        },
+        {
+          "path": "data.99.images.0.videoUrl",
+          "url": "https://dis-se3.divas.cloud:8200/chan-10645_h/index.m3u8",
+          "kind": "hls"
+        }
+      ],
+      "probes": [
+        {
+          "url": "https://dis-se18.divas.cloud:8200/chan-1_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se16.divas.cloud:8200/chan-3_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se13.divas.cloud:8200/chan-6_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se12.divas.cloud:8200/chan-8_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se11.divas.cloud:8200/chan-9_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se10.divas.cloud:8200/chan-10_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se9.divas.cloud:8200/chan-20_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se6.divas.cloud:8200/chan-30_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se5.divas.cloud:8200/chan-32_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se4.divas.cloud:8200/chan-34_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se2.divas.cloud:8200/chan-38_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se17.divas.cloud:8200/chan-43_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se15.divas.cloud:8200/chan-47_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se14.divas.cloud:8200/chan-49_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se13.divas.cloud:8200/chan-51_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se12.divas.cloud:8200/chan-53_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se11.divas.cloud:8200/chan-54_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se10.divas.cloud:8200/chan-55_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se8.divas.cloud:8200/chan-57_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se7.divas.cloud:8200/chan-58_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se5.divas.cloud:8200/chan-61_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se4.divas.cloud:8200/chan-62_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se3.divas.cloud:8200/chan-63_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se2.divas.cloud:8200/chan-64_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se1.divas.cloud:8200/chan-65_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se18.divas.cloud:8200/chan-66_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se17.divas.cloud:8200/chan-67_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se16.divas.cloud:8200/chan-68_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se13.divas.cloud:8200/chan-71_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se12.divas.cloud:8200/chan-72_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se11.divas.cloud:8200/chan-73_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se10.divas.cloud:8200/chan-74_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se9.divas.cloud:8200/chan-75_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se7.divas.cloud:8200/chan-77_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se6.divas.cloud:8200/chan-78_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se5.divas.cloud:8200/chan-79_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se4.divas.cloud:8200/chan-80_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se3.divas.cloud:8200/chan-81_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se2.divas.cloud:8200/chan-82_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        },
+        {
+          "url": "https://dis-se1.divas.cloud:8200/chan-83_h/index.m3u8",
+          "kind": "hls",
+          "status": "unknown",
+          "reason": "first read: HTTP 401"
+        }
+      ]
+    },
+    {
+      "key": "tripcheck",
+      "label": "Oregon DOT TripCheck",
+      "note": "Level 1 is a JS file, so it is scanned as text rather than parsed as JSON.",
+      "level1": [
+        {
+          "url": "https://tripcheck.com/Scripts/map/data/cctvinventory.js",
+          "outcome": "ok",
+          "bytes": 329342
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://tripcheck.com/",
+          "outcome": "ok",
+          "bytes": 19392
+        },
+        {
+          "url": "https://tripcheck.com/map",
+          "outcome": "ok",
+          "bytes": 12773
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "drivebc",
+      "label": "DriveBC",
+      "level1": [
+        {
+          "url": "https://www.drivebc.ca/api/webcams/",
+          "outcome": "ok",
+          "bytes": 1236532
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://www.drivebc.ca/",
+          "outcome": "ok",
+          "bytes": 4137
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "digitraffic",
+      "label": "Fintraffic Digitraffic weathercams",
+      "level1": [
+        {
+          "url": "https://tie.digitraffic.fi/api/weathercam/v1/stations",
+          "outcome": "ok",
+          "bytes": 465658
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://www.digitraffic.fi/",
+          "outcome": "ok",
+          "bytes": 48502
+        },
+        {
+          "url": "https://liikennetilanne.fintraffic.fi/",
+          "outcome": "ok",
+          "bytes": 4131
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "nzta",
+      "label": "NZTA Waka Kotahi",
+      "level1": [
+        {
+          "url": "https://trafficnz.info/service/traffic/rest/4/cameras/all",
+          "outcome": "ok",
+          "bytes": 241745
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://www.journeys.nzta.govt.nz/",
+          "outcome": "ok",
+          "bytes": 18223
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "trafficscotland",
+      "label": "Traffic Scotland",
+      "level1": [
+        {
+          "url": "https://www.traffic.gov.scot/tsis/cameras",
+          "outcome": "ok",
+          "bytes": 63047
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://www.traffic.gov.scot/",
+          "outcome": "ok",
+          "bytes": 203529
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "iceland",
+      "label": "Vegagerdin (Iceland)",
+      "level1": [
+        {
+          "url": "https://gagnaveita.vegagerdin.is/api/vefmyndavelar2014_1",
+          "outcome": "ok",
+          "bytes": 135827
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://www.vegagerdin.is/",
+          "outcome": "ok",
+          "bytes": 182844
+        },
+        {
+          "url": "https://umferdin.is/",
+          "outcome": "ok",
+          "bytes": 24803
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "estonia",
+      "label": "Transpordiamet (Estonia)",
+      "level1": [
+        {
+          "url": "https://tarktee.transpordiamet.ee/tarktee/rest/services/tram/road_cameras/MapServer/0/query?where=1=1&outFields=*&outSR=4326&f=json",
+          "outcome": "ok",
+          "bytes": 67843
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://tarktee.transpordiamet.ee/",
+          "outcome": "ok",
+          "bytes": 66309
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "cetsp",
+      "label": "CET Sao Paulo",
+      "note": "The adapter reads a hand-built table; View/Cam.aspx is the operator own viewer.",
+      "level1": [
+        {
+          "url": "https://cameras.cetsp.com.br/View/Cam.aspx",
+          "outcome": "ok",
+          "bytes": 9636
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://cameras.cetsp.com.br/View/Cam.aspx",
+          "outcome": "ok",
+          "bytes": 9636
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "bihamk",
+      "label": "BIHAMK (Bosnia and Herzegovina)",
+      "note": "Level 1 IS the portal HTML, so level 2 adds nothing here and is not counted twice.",
+      "level1": [
+        {
+          "url": "https://bihamk.ba/spi/kamere",
+          "outcome": "ok",
+          "bytes": 171290
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://bihamk.ba/spi/kamere",
+          "outcome": "ok",
+          "bytes": 171124
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "act-pr",
+      "label": "ACT Puerto Rico",
+      "note": "HTTP/2 transport required upstream; a malformed-header failure here is OUR bug, not a missing stream.",
+      "level1": [
+        {
+          "url": "https://its.act.pr.gov/es/Default.aspx/GetCctv",
+          "outcome": "ok",
+          "bytes": 9743
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://its.act.pr.gov/es/Default.aspx",
+          "outcome": "ok",
+          "bytes": 33359
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    },
+    {
+      "key": "tfl",
+      "label": "Transport for London JamCams",
+      "note": "The one adapter that DOES parse a stream field, listed because what it parses is an MP4 clip rather than a live stream. Included to confirm that reading rather than assume it.",
+      "level1": [
+        {
+          "url": "https://api.tfl.gov.uk/Place/Type/JamCam",
+          "outcome": "ok",
+          "bytes": 1147660
+        }
+      ],
+      "level2": [
+        {
+          "url": "https://tfl.gov.uk/traffic/status/",
+          "outcome": "ok",
+          "bytes": 362590
+        }
+      ],
+      "streamsFound": 0,
+      "playableFound": 0,
+      "hits": [],
+      "probes": []
+    }
+  ],
+  "firstByteMs": null
+}

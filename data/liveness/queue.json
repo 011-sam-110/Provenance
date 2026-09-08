@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-07T23:23:17.125Z",
+  "cameras": [
+    {
+      "cameraId": "scdot:10002",
+      "feed": "scdot",
+      "name": "I-77 S @ MM 4.9",
+      "lat": 33.948503,
+      "lon": -80.997286,
+      "country": "US",
+      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10002/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10002.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    },
+    {
+      "cameraId": "scdot:10003",
+      "feed": "scdot",
+      "name": "SB 5.8 I-77 S @ MM 5.8",
+      "lat": 33.951347,
+      "lon": -80.982847,
+      "country": "US",
+      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10003/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10003.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    },
+    {
+      "cameraId": "scdot:10004",
+      "feed": "scdot",
+      "name": "I-77 S @ MM 7",
+      "lat": 33.95301,
+      "lon": -80.964955,
+      "country": "US",
+      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10004/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10004.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    },
+    {
+      "cameraId": "scdot:10005",
+      "feed": "scdot",
+      "name": "I-126 E @ MM 3.4 Elmwood Ave",
+      "lat": 34.009967,
+      "lon": -81.050091,
+      "country": "US",
+      "streamUrl": "https://s19.us-east-1.skyvdn.com/rtplive/10005/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10005.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    },
+    {
+      "cameraId": "scdot:10006",
+      "feed": "scdot",
+      "name": "I-126 E @ MM 3 Huger Street",
+      "lat": 34.008779,
+      "lon": -81.052432,
+      "country": "US",
+      "streamUrl": "https://s20.us-east-1.skyvdn.com/rtplive/10006/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10006.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    },
+    {
+      "cameraId": "scdot:10007",
+      "feed": "scdot",
+      "name": "I-126 E @ MM 2.7 Broad River Bridge",
+      "lat": 34.009855,
+      "lon": -81.06269,
+      "country": "US",
+      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10007/playlist.m3u8",
+      "kind": "hls",
+      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10007.png",
+      "operator": "South Carolina DOT (511SC)",
+      "license": "SCDOT 511 public camera feed — no stated licence",
+      "attribution": "South Carolina DOT (511SC)",
+      "flags": [
+        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
+      ]
+    }
+  ]
+}

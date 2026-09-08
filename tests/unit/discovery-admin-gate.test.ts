@@ -152,7 +152,14 @@ describe("the curation data files", () => {
     // written without any of the obvious names appearing at all.
     const writes =
       /writeFileSync|appendFileSync|writeFile\(|createWriteStream|renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync/;
-    const allowed = new Set(["lib/discovery/store.ts", "app/api/admin/promote/route.ts"]);
+    // lib/liveness/queue.ts is the live review deck's store and the direct analogue of
+    // lib/discovery/store.ts beside it: same job, same dev-only reach, imported only by
+    // routes under app/api/admin that 404 in production.
+    const allowed = new Set([
+      "lib/discovery/store.ts",
+      "lib/liveness/queue.ts",
+      "app/api/admin/promote/route.ts",
+    ]);
     const unexpected = walkServed((src) => writes.test(src)).filter((f) => !allowed.has(f));
     expect(
       unexpected,
@@ -171,6 +178,12 @@ describe("the curation data files", () => {
     //                                 the check above is what holds it to that
     const allowed = new Set([
       "lib/discovery/store.ts",
+      // The live deck's queue and ledger. Note what is deliberately NOT here:
+      // lib/liveness/ledger.ts, which holds the serving gate. The gate has to run in
+      // production, so its half is kept pure and every fs call lives in queue.ts. If
+      // the gate ever needs admissions at runtime it gets a generated module the way
+      // lib/sources/discovered.data.ts is generated, not an fs read added to this list.
+      "lib/liveness/queue.ts",
       "app/api/admin/promote/route.ts",
       "lib/analytics/rollupRead.ts",
     ]);
