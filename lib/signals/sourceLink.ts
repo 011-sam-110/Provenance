@@ -81,6 +81,7 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   launches: { label: "The Space Devs", url: "https://thespacedevs.com/" },
   cables: { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
   "cable-landings": { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
+  ukraineAlerts: { label: "alerts.com.ua", url: "https://alerts.com.ua/" },
   gpsJamming: { label: "gpsjam.org", url: "https://gpsjam.org/" },
   nuclear: { label: "OpenStreetMap", url: "https://www.openstreetmap.org/" },
   airports: { label: "OurAirports", url: "https://ourairports.com/" },

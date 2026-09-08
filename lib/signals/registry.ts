@@ -45,6 +45,7 @@ import { NUCLEAR_SOURCE } from "@/lib/signals/nuclear";
 import { AIRPORTS_SOURCE } from "@/lib/signals/airports";
 import { PORTS_SOURCE } from "@/lib/signals/ports";
 import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/gdelt";
+import { UKRAINE_ALERTS_SOURCE } from "@/lib/signals/ukraine-alerts";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
 import { EMSC_SOURCE } from "@/lib/signals/emsc";
@@ -96,6 +97,7 @@ export const SIGNALS: SignalSource[] = [
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
   // Intel (GDELT geolocated news coverage)
   CONFLICT_SOURCE,
+  UKRAINE_ALERTS_SOURCE,
   PROTESTS_SOURCE,
   // Environment & civic (keyless Open-Meteo + data.police.uk)
   AIR_QUALITY_SOURCE,

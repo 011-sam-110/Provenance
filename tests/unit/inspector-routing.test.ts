@@ -2,6 +2,13 @@ import { beforeEach, expect, test } from "vitest";
 import { inspectorStore, sourceRegions } from "@/lib/shell/inspector";
 import { DEFAULT_STATE, layersStore } from "@/lib/layers";
 import { signalsStore } from "@/lib/signals/store";
+// Static, not `await import(...)` inside a test body. Loading the store pulls the
+// whole signal registry, and vitest bills that to whichever test triggers it — which
+// put these two within a few hundred ms of the 5s timeout and made them fail under
+// full-suite parallel load every time a signal was added. The module has no top-level
+// side effects (captureOverride subscribes in bootstrap()), so this is a move, not a
+// behaviour change; three other test files already import it this way.
+import { variantStore } from "@/lib/variants/store";
 
 const RING: [number, number][] = [
   [36.0, 49.8],
@@ -198,8 +205,7 @@ test("hydrate restores areas but leaves World to the variant spine", () => {
   expect(inspectorStore.get().areas.some((a) => a.id === id)).toBe(false);
 });
 
-test("a toggle inside an area is not captured as the variant's override", async () => {
-  const { variantStore } = await import("@/lib/variants/store");
+test("a toggle inside an area is not captured as the variant's override", () => {
   // bootstrap is what SUBSCRIBES captureOverride. Without this call nothing is
   // listening and the assertion below passes whatever the guard does — which is
   // exactly what the first cut of this test did.
@@ -232,11 +238,10 @@ test("a whole-set write from the spine lands on World even while an area is edit
   expect(inspectorStore.get().world.fires).toBe(true);
 });
 
-test("applying a variant while editing an area configures the globe, not the area", async () => {
+test("applying a variant while editing an area configures the globe, not the area", () => {
   // The same bug through the path a user actually takes. A variant is a description
   // of the globe; pouring its ~30 layers into a ring the user drew is not a reading
   // of "switch profile" that anyone would ask for.
-  const { variantStore } = await import("@/lib/variants/store");
   variantStore.bootstrap(new URLSearchParams(""));
   const id = inspectorStore.add(RING, "Kharkiv")!;
   inspectorStore.edit(id);

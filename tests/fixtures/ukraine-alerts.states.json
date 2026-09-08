@@ -1,0 +1,180 @@
+{
+ "states": [
+  {
+   "id": 1,
+   "name": "Вінницька область",
+   "name_en": "Vinnytsia oblast",
+   "alert": false,
+   "changed": "2025-11-02T22:07:39.738Z"
+  },
+  {
+   "id": 2,
+   "name": "Волинська область",
+   "name_en": "Volyn oblast",
+   "alert": false,
+   "changed": "2025-12-23T07:09:02.018Z"
+  },
+  {
+   "id": 3,
+   "name": "Дніпропетровська область",
+   "name_en": "Dnipropetrovsk oblast",
+   "alert": false,
+   "changed": "2025-11-04T01:50:57.350Z"
+  },
+  {
+   "id": 4,
+   "name": "Донецька область",
+   "name_en": "Donetsk oblast",
+   "alert": false,
+   "changed": "2025-11-04T21:37:04.663Z"
+  },
+  {
+   "id": 5,
+   "name": "Житомирська область",
+   "name_en": "Zhytomyr oblast",
+   "alert": false,
+   "changed": "2025-11-02T22:07:11.961Z"
+  },
+  {
+   "id": 6,
+   "name": "Закарпатська область",
+   "name_en": "Zakarpattia oblast",
+   "alert": false,
+   "changed": "2025-12-23T07:08:48.192Z"
+  },
+  {
+   "id": 7,
+   "name": "Запорізька область",
+   "name_en": "Zaporizhzhia oblast",
+   "alert": true,
+   "changed": "2025-11-04T10:47:05.667Z"
+  },
+  {
+   "id": 8,
+   "name": "Івано-Франківська область",
+   "name_en": "Ivano-Frankivsk oblast",
+   "alert": false,
+   "changed": "2026-08-07T15:13:56.139Z"
+  },
+  {
+   "id": 9,
+   "name": "Київська область",
+   "name_en": "Kyiv oblast",
+   "alert": false,
+   "changed": "2025-11-04T01:37:06.501Z"
+  },
+  {
+   "id": 10,
+   "name": "Кіровоградська область",
+   "name_en": "Kirovohrad oblast",
+   "alert": false,
+   "changed": "2025-11-03T02:47:16.727Z"
+  },
+  {
+   "id": 11,
+   "name": "Луганська область",
+   "name_en": "Luhansk oblast",
+   "alert": false,
+   "changed": "2023-10-29T18:22:37.357Z"
+  },
+  {
+   "id": 12,
+   "name": "Львівська область",
+   "name_en": "Lviv oblast",
+   "alert": false,
+   "changed": "2025-11-02T22:07:35.265Z"
+  },
+  {
+   "id": 13,
+   "name": "Миколаївська область",
+   "name_en": "Mykolaiv oblast",
+   "alert": false,
+   "changed": "2025-11-04T07:47:04.774Z"
+  },
+  {
+   "id": 14,
+   "name": "Одеська область",
+   "name_en": "Odesa oblast",
+   "alert": false,
+   "changed": "2025-11-04T07:58:05.351Z"
+  },
+  {
+   "id": 15,
+   "name": "Полтавська область",
+   "name_en": "Poltava oblast",
+   "alert": false,
+   "changed": "2025-11-01T05:38:46.499Z"
+  },
+  {
+   "id": 16,
+   "name": "Рівненська область",
+   "name_en": "Rivne oblast",
+   "alert": false,
+   "changed": "2025-10-27T16:52:31.844Z"
+  },
+  {
+   "id": 17,
+   "name": "Сумська область",
+   "name_en": "Sumy oblast",
+   "alert": false,
+   "changed": "2025-10-23T06:05:49.461Z"
+  },
+  {
+   "id": 18,
+   "name": "Тернопільська область",
+   "name_en": "Ternopil oblast",
+   "alert": false,
+   "changed": "2025-11-02T22:08:14.235Z"
+  },
+  {
+   "id": 19,
+   "name": "Харківська область",
+   "name_en": "Kharkiv oblast",
+   "alert": true,
+   "changed": "2025-10-19T08:13:03.417Z"
+  },
+  {
+   "id": 20,
+   "name": "Херсонська область",
+   "name_en": "Kherson oblast",
+   "alert": false,
+   "changed": "2025-11-04T12:20:35.117Z"
+  },
+  {
+   "id": 21,
+   "name": "Хмельницька область",
+   "name_en": "Khmelnytskyi oblast",
+   "alert": false,
+   "changed": "2025-08-20T09:47:06.310Z"
+  },
+  {
+   "id": 22,
+   "name": "Черкаська область",
+   "name_en": "Cherkasy oblast",
+   "alert": false,
+   "changed": "2025-11-04T01:36:36.460Z"
+  },
+  {
+   "id": 23,
+   "name": "Чернівецька область",
+   "name_en": "Chernivtsi oblast",
+   "alert": false,
+   "changed": "2025-11-02T22:07:12.041Z"
+  },
+  {
+   "id": 24,
+   "name": "Чернігівська область",
+   "name_en": "Chernihiv oblast",
+   "alert": false,
+   "changed": "2025-10-22T23:26:04.458Z"
+  },
+  {
+   "id": 25,
+   "name": "м. Київ",
+   "name_en": "Kyiv",
+   "alert": false,
+   "changed": "2026-09-07T16:42:33.428Z"
+  }
+ ],
+ "last_update": "2026-09-08T01:19:30.508+00:00"
+}
