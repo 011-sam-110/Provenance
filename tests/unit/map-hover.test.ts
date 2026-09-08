@@ -8,6 +8,7 @@ import {
   hoverChanged,
   resolveHover,
   shouldHitTest,
+  canvasCursor,
   type HoverFeature,
 } from "@/lib/map/hover";
 import { COUNTRY_HIT_LAYER, PIN_HIT_LAYERS } from "@/lib/map/hitTest";
@@ -146,5 +147,29 @@ describe("shouldHitTest", () => {
 
   it("ignores the gap when the caller does not ask for one", () => {
     expect(gate({ nowMs: 1000, lastRunMs: 999 })).toBe(true);
+  });
+});
+
+describe("canvasCursor", () => {
+  const overPin = resolveHover([{ layer: PIN_HIT_LAYERS[0] }]);
+
+  it("writes the hover's own cursor when no gesture owns the pointer", () => {
+    expect(canvasCursor(overPin, false)).toBe("pointer");
+    expect(canvasCursor(NO_HOVER, false)).toBe("");
+  });
+
+  it("stops a pin hover overriding a gesture mode's cursor", () => {
+    // The pins ARE the target of a camera pick, so an inline `pointer` here beat
+    // `.world-map.tn-picking`'s crosshair for most of every pick.
+    expect(canvasCursor(overPin, true)).toBe("");
+  });
+
+  it("never writes the crosshair itself, so it owns no teardown", () => {
+    // The crosshair belongs to a class React removes with the mode. An inline write
+    // would outrank that class and could survive an unmount mid-pick.
+    for (const state of [NO_HOVER, overPin]) {
+      expect(canvasCursor(state, true)).not.toBe("crosshair");
+      expect(canvasCursor(state, false)).not.toBe("crosshair");
+    }
   });
 });

@@ -72,6 +72,7 @@ import {
   HOVER_QUERY_LAYERS,
   HOVER_SETTLE_MS,
   NO_HOVER,
+  canvasCursor,
   hoverChanged,
   resolveHover,
   shouldHitTest,
@@ -1616,8 +1617,19 @@ export default function WorldMap() {
       if (tip) tip.style.transform = "translate(" + at.x + "px," + at.y + "px)";
     };
 
+    // THE ONE PLACE THE CANVAS CURSOR IS WRITTEN. It reconciles against the element
+    // rather than against `hover`, so it is correct however it was reached — a
+    // pointer move, a mode change under a stationary pointer, or the [picking]
+    // effect below clearing it. The read is of an inline style and forces no
+    // layout, and it happens at most once per rAF.
+    const syncCursor = (state: HoverState) => {
+      const want = canvasCursor(state, pickStore.get().mode === "picking");
+      const canvas = map.getCanvas();
+      if (canvas.style.cursor !== want) canvas.style.cursor = want;
+    };
+
     const applyHover = (next: HoverState, at: maplibregl.MapMouseEvent["point"] | null) => {
-      if (next.cursor !== hover.cursor) map.getCanvas().style.cursor = next.cursor;
+      syncCursor(next);
 
       if (next.country !== hover.country) {
         if (hover.country !== null) map.setFeatureState({ source: COUNTRY_SRC, id: hover.country }, { hover: false });
@@ -1666,7 +1678,12 @@ export default function WorldMap() {
         };
       }));
       if (hoverChanged(hover, next)) applyHover(next, pt);
-      else if (next.line) moveTip(pt); // same cable, new cursor — move, do not re-decide
+      else {
+        // Same hover result, so nothing to re-decide — but the mode may have
+        // changed since the last move, and this is the cheapest place to notice.
+        syncCursor(hover);
+        if (next.line) moveTip(pt); // same cable, new cursor — move, do not re-decide
+      }
     };
 
     map.on("mousemove", (e) => {
@@ -2436,6 +2453,33 @@ export default function WorldMap() {
       clearBox();
       map.boxZoom.enable();
     };
+  }, [picking]);
+
+  // ── The pick crosshair, and the inline style that was eating it ────────────
+  //
+  // Picking has always had a crosshair — `.world-map.tn-picking .maplibregl-canvas`
+  // in globals.css. It was invisible for most of a pick because the shared hover
+  // hit-test writes `cursor: pointer` as an INLINE style on the same canvas, and an
+  // inline style outranks a stylesheet. The pins are what a pick is aimed at, so the
+  // cue disappeared exactly when it was needed. `canvasCursor` (lib/map/hover.ts)
+  // now suppresses that write while picking is armed, which fixes every case where
+  // the pointer is moving.
+  //
+  // THIS COVERS THE STATIONARY POINTER, which is the other half. The hit-test only
+  // runs on mousemove, so arming the tool from a keyboard chord or a rail button
+  // while the pointer rests on a pin would leave the stale inline `pointer` in place
+  // until the mouse moved.
+  //
+  // It CLEARS rather than setting a cursor, on both edges and on unmount. Nothing
+  // here ever writes "crosshair", so there is no captured value to restore and no
+  // path — disarm, Escape, a board change, StageHost unmounting the map for a
+  // focused widget — that can leave a cursor stuck: the crosshair belongs to a class
+  // React removes with the mode. The cost is that a pointer resting on a pin as the
+  // mode ends shows the default arrow until it next moves, when `syncCursor` puts
+  // the pointer back.
+  useEffect(() => {
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = "";
   }, [picking]);
 
   const trackedFound = track.id ? planesLayer.objects.some((o) => o.id === track.id) : false;

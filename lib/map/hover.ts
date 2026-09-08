@@ -113,6 +113,32 @@ export function resolveHover(features: readonly HoverFeature[]): HoverState {
   };
 }
 
+/**
+ * The cursor to write on the canvas INLINE, given what the pointer is over and
+ * whether a map-wide gesture mode owns the pointer.
+ *
+ * IT RETURNS "" WHILE A GESTURE OWNS THE POINTER, never "crosshair", and that is
+ * the whole design. Camera picking already paints a crosshair, from
+ * `.world-map.tn-picking .maplibregl-canvas` in globals.css — a rule React removes
+ * along with the class the moment the mode ends or the map unmounts, so it cannot
+ * leave a cursor stuck. What it could not beat was `resolveHover`'s inline
+ * `pointer`, because an inline style outranks any stylesheet: the crosshair
+ * vanished the instant the pointer crossed a pin, which in pick mode is most of the
+ * time, since the pins ARE the target. Writing "crosshair" here would win that
+ * fight and then own a teardown this function has no way to run on unmount — and a
+ * cursor left on crosshair after the mode is over is worse than no crosshair at
+ * all. Suppressing the `pointer` is the entire fix.
+ *
+ * WHY THE PIN'S `pointer` IS THE ONE THAT LOSES. It would otherwise win nearly
+ * every frame of a pick, so the mode cue would flicker on and off as the analyst
+ * sweeps a dense camera field — which reads as instability, not as "this pin is
+ * clickable". That a pin can be clicked is already said by the accent ring around
+ * the map and by the pick hint; that the map is in a mode is said by nothing else.
+ */
+export function canvasCursor(hover: HoverState, gestureOwnsPointer: boolean): HoverState["cursor"] {
+  return gestureOwnsPointer ? "" : hover.cursor;
+}
+
 /** Did anything the map or the DOM cares about actually change? Value equality. */
 export function hoverChanged(a: HoverState, b: HoverState): boolean {
   if (a.cursor !== b.cursor) return true;

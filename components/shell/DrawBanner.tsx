@@ -16,54 +16,134 @@
 //     This is mounted from ConsoleShell and keys off the draw store alone, so it
 //     cannot be closed by anything except the gesture ending.
 //
+// WHAT IT HAS TO MAKE UNMISTAKABLE — four things, and they are why the pill is laid
+// out in three zones rather than written as one sentence. How many points you have
+// placed (the value block, which is the live number the user is tracking); how you
+// plot; how you confirm; how you stop. The old single line of faint text carried the
+// last two, `white-space: nowrap` and an ellipsis, so on a narrow map the
+// instructions were literally cut off. Nothing here truncates.
+//
 // A STATUS REGION, NOT A DIALOG. `role="status"` with `aria-live="polite"`: the count
 // updates as vertices land and a screen reader should hear them without being
 // interrupted mid-word. It must NOT be role="dialog" — ConsoleShell's global keydown
 // handler early-returns while any [role="dialog"] is mounted, so a dialog here would
 // kill Escape for the whole app exactly while the user needs Escape to cancel.
 //
+// WHY IT MEASURES THE STAGE. It is `position: fixed`, and it used to be centred on
+// the VIEWPORT — so opening the Sources rail, which insets the console by up to
+// 602px, left it visibly off-centre over the map that was left. The stage's
+// bounding box is the only value with every inset already folded into it; see
+// placeBanner in lib/shell/drawBanner.ts for why the rail width variables cannot be
+// used instead. Until the first measurement lands, the CSS keeps the old
+// viewport-centred position, which is the pre-existing behaviour rather than a new
+// failure mode.
+//
 // It renders null when nothing is being drawn, so mounting it always costs one store
 // subscription.
 
-import { cancelDraw, formatRadius, MIN_VERTICES, useAoiDraw } from "@/lib/map/aoi";
+import { useEffect, useState } from "react";
+import { cancelDraw, useAoiDraw } from "@/lib/map/aoi";
+import { drawBannerModel, placeBanner, type BannerPlacement } from "@/lib/shell/drawBanner";
+
+/** The map stage this banner belongs to (components/console/ConsoleWorkspace.tsx). */
+const STAGE_SELECTOR = ".tn-cw-stage";
+/** The camera-pick hint, which shares the stage's top edge while picking is armed. */
+const ABOVE_SELECTOR = ".tn-arm-hint";
+
+/**
+ * Track the stage's box for as long as the gesture runs.
+ *
+ * A ResizeObserver on the stage covers every way its geometry moves — the Sources
+ * rail opening, a rail splitter being DRAGGED (the widths update live, so a
+ * subscription that only fired on drag-end would leave the banner lagging the map
+ * it sits on), a wall board taking the hero cell, and the window resizing. Reads are
+ * coalesced into one rAF, so a drag costs one measurement per frame rather than one
+ * per event.
+ *
+ * It observes nothing at all while `active` is false, which is all but a few seconds
+ * of a session.
+ */
+function useStagePlacement(active: boolean): BannerPlacement | null {
+  const [place, setPlace] = useState<BannerPlacement | null>(null);
+
+  useEffect(() => {
+    if (!active) {
+      setPlace(null);
+      return;
+    }
+    const stage = document.querySelector(STAGE_SELECTOR);
+    if (!stage || typeof ResizeObserver === "undefined") return;
+
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const r = stage.getBoundingClientRect();
+      const above = document.querySelector(ABOVE_SELECTOR)?.getBoundingClientRect();
+      setPlace(
+        placeBanner({
+          stage: { left: r.left, width: r.width, top: r.top },
+          above: above ? { bottom: above.bottom } : null,
+          viewport: window.innerWidth,
+        }),
+      );
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(measure);
+    };
+
+    measure();
+    const ro = new ResizeObserver(schedule);
+    ro.observe(stage);
+    window.addEventListener("resize", schedule);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", schedule);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [active]);
+
+  return place;
+}
 
 export default function DrawBanner() {
   const draw = useAoiDraw();
+  // Called before the early return, so the hook order is stable across a gesture
+  // starting and ending.
+  const place = useStagePlacement(draw.active);
   if (!draw.active) return null;
 
-  const radius = draw.tool === "radius";
-  // `circle` is an EXTERNAL tool (see setExternalDraw in lib/map/aoi.ts) — a
-  // press-centre-and-drag gesture owned by another surface. It reports the same
-  // centre and radiusKm this component already reads, so it narrates through the
-  // radius branch; only the verb differs, because "click again to set the edge" would
-  // be describing the wrong gesture.
-  const circle = draw.tool === "circle";
-  // TWO LINES WITH DIFFERENT JOBS. The lead says what is happening — it does not
-  // change, so it is the thing the eye can lock onto. The hint says what to do next
-  // and changes as the gesture progresses, which is the part worth re-reading.
-  const lead = circle ? "Drawing a circle" : radius ? "Drawing a radius" : "Drawing an area";
-  const hint = circle
-    ? draw.center == null
-      ? "Press on the map and drag out from the centre"
-      : `${formatRadius(draw.radiusKm ?? 0)} — release to set it`
-    : radius
-    ? draw.center == null
-      ? "Click the centre on the map"
-      : `${formatRadius(draw.radiusKm ?? 0)} — click again to set the edge`
-    : draw.vertices.length === 0
-      ? "Click the map to place your first point"
-      : draw.vertices.length < MIN_VERTICES
-        // Naming the number left, rather than the number placed, because the question
-        // at this stage is "when does this become an area", not "how far have I come".
-        ? `${draw.vertices.length} placed — ${MIN_VERTICES - draw.vertices.length} more to make an area`
-        : `${draw.vertices.length} points — double-click or press Enter to finish`;
+  const model = drawBannerModel(draw);
 
   return (
-    <div className="tn-drawbanner" role="status" aria-live="polite">
+    <div
+      className="tn-drawbanner"
+      role="status"
+      aria-live="polite"
+      style={
+        place
+          ? { left: `${place.left}px`, top: `${place.top}px`, maxWidth: `${place.maxWidth}px` }
+          : undefined
+      }
+    >
       <span className="tn-drawbanner-pulse" aria-hidden />
+      {model.value && (
+        <span className="tn-drawbanner-count">
+          <strong className="tn-drawbanner-num">{model.value.text}</strong>
+          <span className="tn-drawbanner-unit">{model.value.label}</span>
+        </span>
+      )}
       <span className="tn-drawbanner-text">
-        <strong>{lead}</strong>
-        <span>{hint}</span>
+        <strong className="tn-drawbanner-lead">{model.lead}</strong>
+        <span className="tn-drawbanner-steps">
+          {model.steps.map((step) => (
+            <span className="tn-drawbanner-step" key={step.text}>
+              {step.text}
+              {step.keys.map((key) => (
+                <kbd key={key}>{key}</kbd>
+              ))}
+            </span>
+          ))}
+        </span>
       </span>
       {/* A SECOND Cancel, and the duplication is the point — see (2) above. This one
           cannot be unmounted by opening another rail group, so it is the one that is
