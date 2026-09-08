@@ -27,6 +27,13 @@
 // CSS THE INTEGRATOR MUST ADD (all inside the scoped `.tn-terminal` token block in
 // app/globals.css — this file owns no CSS). Values are the design's, verbatim.
 //
+// THE TWO FONT NAMES BELOW ARE THE HANDOFF'S, NOT THE SHIPPED RULE'S. They are left
+// verbatim because this block is a record of what was specified. What actually ships
+// is `var(--tnx-font-mono)` / `var(--tnx-font-title)`, and since the move to a single
+// typeface BOTH resolve to Inter — JetBrains Mono and IBM Plex Sans are loaded
+// nowhere in the repo. Read the rules in globals.css, not these comments, for the
+// current face.
+//
 //   .tn-terminal .tnx-hdr {
 //     flex: none; display: flex; align-items: stretch; height: 34px;
 //     background: #080b0f; border-bottom: 1px solid var(--tnx-line-strong);

@@ -191,6 +191,10 @@
   font-size: 13px;
   font-weight: 700;
   font-family: var(--tn-mono);
+  /* A rank digit centred in a 26px circle. Inter is proportional, so "1" is narrower
+     than "2" and the badge contents would shift between rows without this. /locate
+     renders outside `.tn-terminal` and cannot inherit the console's copy. */
+  font-variant-numeric: tabular-nums;
 }
 .loc-cand-place { font-size: 14px; font-weight: 600; line-height: 1.25; }
 .loc-cand-country { font-size: 12px; color: var(--tn-text-muted); }
@@ -235,5 +239,6 @@
   place-items: center;
   cursor: pointer;
 }
-.loc-pin span { transform: rotate(45deg); color: #fff; font-size: 12px; font-weight: 700; font-family: var(--tn-mono); }
+/* Same argument as .loc-rank: a digit centred in a map pin, outside `.tn-terminal`. */
+.loc-pin span { transform: rotate(45deg); color: #fff; font-size: 12px; font-weight: 700; font-family: var(--tn-mono); font-variant-numeric: tabular-nums; }
 .loc-pin.is-active { background: var(--tn-accent-strong); width: 32px; height: 32px; z-index: 5; }

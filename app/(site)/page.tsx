@@ -246,15 +246,12 @@ export default async function Landing() {
             </a>
           </div>
           <div>
-            <h4>Typefaces</h4>
-            <a href="https://fonts.google.com/specimen/Archivo" target="_blank" rel="noreferrer noopener">
-              Archivo
-            </a>
-            <a href="https://fonts.google.com/specimen/Public+Sans" target="_blank" rel="noreferrer noopener">
-              Public Sans
-            </a>
-            <a href="https://fonts.google.com/specimen/IBM+Plex+Mono" target="_blank" rel="noreferrer noopener">
-              IBM Plex Mono
+            {/* One face now, so one credit. This list named Archivo, Public Sans and
+                IBM Plex Mono; leaving any of them here would be a visible false
+                statement on a page whose argument is that its claims are checkable. */}
+            <h4>Typeface</h4>
+            <a href="https://fonts.google.com/specimen/Inter" target="_blank" rel="noreferrer noopener">
+              Inter
             </a>
           </div>
           <div>

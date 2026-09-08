@@ -59,8 +59,7 @@ obligations and are not satisfied by the licence.
 
 ## Shape
 - **`/` is the marketing site, `/app` is the console.** `app/(site)/` holds the landing
-  page (its own layout loads the three marketing typefaces so `/app` never downloads
-  them); `app/(console)/app/` holds the shell. `/` forwards any request carrying `?v=`
+  page; `app/(console)/app/` holds the shell. `/` forwards any request carrying `?v=`
   or `?c=` to `/app` with the query intact — shared links and OG cards were minted
   against `/`, so removing that shim breaks every link anyone has already sent.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
@@ -154,6 +153,17 @@ obligations and are not satisfied by the licence.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
 - Calm light identity; `.tn-*` CSS tokens in `app/globals.css`.
+- **ONE typeface: Inter, everywhere.** Loaded once, self-hosted by next/font in
+  `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads a
+  font — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
+  The role tokens (`--tn-mono`, `--tn-sans`, `--tn-title`, `--tnx-font-*`, `--pv-*`) all
+  survive and all resolve to it, so a `font-family:` rule almost never needs editing;
+  repoint the token instead. **Losing the mono face means the digits no longer align on
+  their own**: `.tn-terminal` sets `font-variant-numeric: tabular-nums` and it inherits
+  to the whole console, but anything rendering OUTSIDE that skin (the public camera
+  pages, `/admin`, `/locate`, `/`) has to ask for it per rule. Two surfaces are NOT
+  Inter and cannot cheaply be: `app/api/og/route.tsx` (Satori needs font bytes) and
+  MapLibre's own labels (`MAP_LABEL_FONT` is served by the basemap's glyph server).
 
 ## Numbers, and how to re-check them
 Never quote a count from memory — every figure below was measured, and each rots.
