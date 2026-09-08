@@ -44,6 +44,7 @@ import { alertingStore } from "@/lib/events/alerting";
 import ConsoleWorkspace from "@/components/console/ConsoleWorkspace";
 import { shellLayoutStore } from "@/lib/console/store";
 import { activePresetStore } from "@/lib/console/activePreset";
+import { sceneChromeStore } from "@/lib/console/sceneChrome";
 import { profileStore } from "@/lib/shell/profile";
 import { telegramStore } from "@/lib/shell/telegram";
 import { notificationsStore } from "@/lib/shell/notifications";
@@ -107,6 +108,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     assetsStore.hydrate();
     alertingStore.hydrate();
     shellLayoutStore.hydrate();
+    sceneChromeStore.hydrate();
     keymapStore.hydrate();
     activePresetStore.hydrate();
     profileStore.hydrate();

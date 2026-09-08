@@ -9,6 +9,8 @@ import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDra
 import { visibleShell } from "@/lib/terminal/rowBudget";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { clearMonitorArea } from "@/lib/console/widgets/camslot.apply";
+import { useActivePreset } from "@/lib/console/activePreset";
+import { useSceneChrome, visibleWidgets } from "@/lib/console/sceneChrome";
 
 // The camera wall: ONE free twelve-column grid of tiles, and no map in it.
 //
@@ -70,6 +72,19 @@ export default function WallWorkspace({
   const layout = useShellLayout();
   const gridRef = useRef<HTMLDivElement>(null);
   const drag = useGridDrag(gridRef);
+  // Which scene's chrome applies — see lib/console/sceneChrome.ts. Streets is
+  // the one `mode: "wall"` board and every one of its tiles is type "camslot",
+  // so hiding that type hides the whole wall; that is a legitimate, if blunt,
+  // outcome and is deliberately not special-cased here (nav-spec §3).
+  const sceneId = useActivePreset();
+  // Subscribed, not read — the same pattern, and the same reason, as BoardTabs'
+  // bare `useShellLayout()` in TerminalHeader.tsx. `visibleWidgets(domOrder,
+  // sceneId)` at the render site re-derives the hidden set from the store on
+  // every render, so the VALUE here is genuinely unused; what this call buys is
+  // the SUBSCRIPTION. Without it nothing re-renders a wall board when
+  // `setHidden` fires, so the filter below simply never runs again and hiding a
+  // tile does nothing until some other state change happens to repaint.
+  useSceneChrome(sceneId);
 
   /**
    * Repair on arrival: any tile with no rect gets one.
@@ -273,7 +288,7 @@ export default function WallWorkspace({
         <div className="tn-grid-ghost" aria-hidden="true" style={gridArea(drag.ghostRect)} />
       )}
 
-      {domOrder.map((w) => (
+      {visibleWidgets(domOrder, sceneId).map((w) => (
         <div
           key={w.id}
           data-widget-id={w.id}

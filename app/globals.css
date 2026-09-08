@@ -3745,6 +3745,18 @@ a.tn-w-place { display: flex; align-items: center; }
   --tnx-glass-bar: rgba(255, 255, 255, 0.90);
   --tnx-glass-solid: rgba(255, 255, 255, 0.97);
 
+  /* ── Expanding nav panel (Apple-style board hover/focus preview) ──────────
+     Timings mirror lib/console/navPanel.ts's HEIGHT_TRANSITION_MS/CROSSFADE_MS
+     exactly — a change to one file that isn't mirrored in the other is a bug,
+     not a style choice. --tnx-scrim is a DIMMING wash the PAGE sits under and
+     is deliberately its own token rather than a --tnx-glass* variant: the
+     glass family above is a near-opaque LIGHT fill a panel sits ON, the
+     opposite job. */
+  --tnx-nav-open-ms: 220ms;
+  --tnx-nav-fade-ms: 150ms;
+  --tnx-nav-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --tnx-scrim: rgba(8, 11, 15, 0.36);
+
   --tnx-live: #1a8f4c;
   --tnx-lag: #b8690a;
   --tnx-down: #c8352a;
@@ -4334,7 +4346,35 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   overflow: hidden;
   background: var(--tnx-bg);
 }
-.tn-shell.tn-terminal > .tnx-hdr { flex: 0 0 auto; }
+/* MUST-FIX (nav-spec §6): `.tnx-hdr` stops being a direct child of
+   `.tn-shell.tn-terminal` the moment TerminalHeader wraps it in `.tnx-navshell`
+   for the Apple-style expanding board panel (§4 below) — this child combinator
+   would otherwise silently stop matching, and the header would stretch to
+   fill the flex column instead of sizing to its own content. Re-grepped for
+   every selector keying off `.tnx-hdr`'s parentage or sibling position
+   (`> .tnx-hdr`, `.tnx-hdr +`, `.tnx-hdr ~`) on 2026-09-08: this was the only
+   one in the sheet, confirming the finding fable posted to #plan.
+
+   `position: relative` + an explicit `z-index` are NEW here too, not just the
+   flex carry-over, and for a reason that isn't obvious from this rule alone:
+   `.tn-cw-shell` (the very next rule below) is `position: relative` with no z-index of its own,
+   i.e. it already establishes a stacking context at the implicit z-index 0 —
+   and it comes AFTER the navshell in the DOM. Left alone, the navshell would
+   stay a plain non-positioned box, and `.tnx-nav-scrim` below (`position:
+   fixed`, which paints above any non-positioned box regardless of DOM order
+   the moment it carries a z-index) would cover the whole bar, board tabs
+   included, instead of stopping at the panel's own bottom edge. z-index 45
+   clears every z-index used inside `.tn-cw-shell`'s own subtree (that whole
+   subtree is capped by ITS z-index: auto out here, no matter how high
+   something nested inside it reaches — .tn-seg-slot.is-held's 40 included)
+   and sits under the full-screen overlays that were already 60 (Settings,
+   Command Palette, Coverage), so any of those still wins if ever opened while
+   this panel is up. */
+.tn-shell.tn-terminal > .tnx-navshell {
+  flex: 0 0 auto;
+  display: flex; flex-direction: column;
+  position: relative; z-index: 45;
+}
 
 /* ── The workspace band ────────────────────────────────────────────────────
    `.tn-cw-shell` stops being an absolute canvas, so `inset` is reset explicitly.
@@ -5230,12 +5270,63 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 .tn-terminal .tn-preset-pill.tnx-hdr-boards {
   position: static; transform: none; z-index: auto;
   display: flex; align-items: stretch; min-width: 0;
+  /* FOUND DURING THE NAV REBUILD, NOT CAUSED BY IT: flagged independently by
+     both claude-nav and claude-qa. `.tnx-hdr-board` (below) has no
+     `min-width` of its own, and a flex item's initial `min-width` is `auto`
+     — its min-CONTENT size, which for `white-space: nowrap` text is its full
+     intrinsic width — so the seven tabs already refused to shrink below
+     675px measured at 1280×720 (one of this app's own pinned widths, per
+     CLAUDE.md's card-rail table) while this box only had 616px to give them.
+     With `overflow` left at its default `visible`, that 59px of un-shrinkable
+     content did not wrap or clip — it painted straight past this nav's own
+     right edge and into `.tnx-hdr-right`, which is exactly why the new
+     `.tnx-hdr-nav-toggle` (last in this row) measured its click intercepted
+     by the DISCORD button sitting on top of it: two elements occupying the
+     same pixels because neither is fewer than its content demands.
+
+     `overflow-x: auto` is the fix already proven one screen-width down (see
+     the ≤900px rule for this same selector): it turns "content wider than
+     the box" into "the box scrolls" instead of "the content escapes the
+     box," which is what actually stops the escape into the sibling cluster.
+     It changes nothing when the content DOES fit — auto only engages when
+     scrollWidth exceeds clientWidth — so every width above the one this was
+     measured at is visually identical to before. */
+  overflow-x: auto; overflow-y: hidden;
 }
+
+/* …AND THE SCROLLBOX ALONE WAS NOT ENOUGH, WHICH IS THE OTHER HALF OF THIS BUG.
+   `overflow-x: auto` stops the tabs ESCAPING into `.tnx-hdr-right`, so the
+   collision above is genuinely fixed. But it fixes it by CLIPPING, and the
+   thing sitting last in this row is `.tnx-hdr-nav-toggle` — the panel's only
+   touch- and click-reliable entry point. Measured at 1280x720 after the
+   scrollbox landed: this nav wants 681px and has 616px, so the toggle is laid
+   out at x825 while the box's visible edge ends at x789, and
+   `document.elementFromPoint()` at the toggle's own centre returns
+   `.tnx-hdr-btn-label` — the DISCORD label behind it. The toggle was no longer
+   painting over its neighbour; it had simply been clipped out of existence,
+   unreachable without horizontally scrolling a bar nobody would think to
+   scroll.
+
+   So make it FIT rather than scroll. The 65px shortfall is smaller than the
+   182px this row spends on tab padding alone (7 tabs x 13px x 2), and dropping
+   to 8px a side returns 70px — enough, with the labels still fully readable
+   and no tab truncated ("STREETS" was rendering as "STREETO" under the
+   shrink). Bounded below at 901px because the ≤900px block already re-flows
+   this row onto its own full-width line, where it has all the room it needs
+   and this correction would be pointless.
+
+   The rule itself sits AFTER the base `.tnx-hdr-board` declaration below, not
+   here beside its own explanation: a media query adds no specificity, so at
+   equal weight source order decides and a copy placed above would be silently
+   overridden by the very rule it is meant to correct. */
 .tn-terminal .tnx-hdr-board {
   font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em;
   padding: 0 13px; background: none; cursor: pointer; white-space: nowrap;
   border: 0; border-right: 1px solid var(--tnx-line);
   border-bottom: 2px solid transparent; color: var(--tnx-ink-faint);
+}
+@media (min-width: 901px) and (max-width: 1439px) {
+  .tn-terminal .tnx-hdr-board { padding: 0 8px; }
 }
 .tn-terminal .tnx-hdr-board:hover { color: var(--tnx-ink-dim); }
 .tn-terminal .tnx-hdr-board.is-active {
@@ -5346,6 +5437,209 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    resting outline for a focus ring to thicken. */
 .tn-terminal .tnx-hdr :focus-visible {
   outline: 2px solid var(--tnx-accent); outline-offset: -2px;
+}
+
+/* ── Expanding nav panel (nav-spec §4/§5/§6) ───────────────────────────────
+   Hovering/focusing a board tab (`.tnx-hdr-board`) grows THIS bar downward to
+   show that board's quick settings + widget show/hide, without switching the
+   active board — click still switches immediately, unchanged above. The
+   panel is a SIBLING of `<header class="tnx-hdr">` inside `.tnx-navshell`
+   (see the MUST-FIX rule above), not a child of it, so none of `.tnx-hdr`'s
+   own rules (font, focus-visible, height) reach it for free — everything
+   the panel needs is declared here.
+
+   `.tnx-hdr-nav-toggle` is the universal (mouse/keyboard/touch) entry point,
+   always scoped to the ACTIVE board, and lives in the SAME `<nav>` as the
+   board tabs and Reset — it gets their family (flat, hairline-divided,
+   24×24 minimum target, WCAG 2.5.8), not the right cluster's, because that is
+   physically where it sits. */
+.tn-terminal .tnx-hdr-nav-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 24px; min-height: 24px; align-self: center; margin: 0 6px 0 0;
+  font: inherit; font-size: var(--tnx-fs-md); line-height: 1; cursor: pointer;
+  border: 1px solid var(--tnx-line-strong); background: none; color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-hdr-nav-toggle:hover { color: var(--tnx-accent); border-color: var(--tnx-accent); }
+/* The one member of this row with a persistent on-state — same treatment
+   `.tnx-hdr-btn[aria-pressed="true"]` gives the skin toggle, for the same
+   reason: it is showing you something, not just sitting there. */
+.tn-terminal .tnx-hdr-nav-toggle[aria-expanded="true"] {
+  color: var(--tnx-accent); border-color: var(--tnx-accent); background: var(--tnx-accent-soft);
+}
+
+/* The panel itself. `overflow: hidden` + `max-height: 0` is the one CSS
+   technique here that can transition at all (`height: auto` cannot) and the
+   one that doesn't need a guessed cap (a hardcoded max-height clips a board
+   with many widgets) — nav-panel.ts's ResizeObserver writes the measured
+   content height to --tnx-navpanel-h and this rule reads it back.
+
+   The OPEN state is `[data-open]`, deliberately independent of the `hidden`
+   attribute nav-spec §7 puts on this element: `hidden`'s UA default is
+   `display: none`, which cannot transition, so per §7 `hidden` is removed
+   just before the open transition starts and re-added only after the close
+   transition finishes — for the whole close animation the element is
+   `hidden`-absent but visually on its way to closed, a state `:not([hidden])`
+   alone can't express. `[data-open]` mirrors the sibling `.tnx-nav-scrim`'s
+   own attribute below; TerminalHeader/NavPanel own toggling both together.
+   The 320px fallback only matters on the one frame before nav-panel.ts's
+   ResizeObserver has measured anything real — it is not a substitute for a
+   real measurement and should never be visibly reached. */
+.tn-terminal .tnx-nav-panel {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  background: var(--tnx-chrome);
+  border-bottom: 1px solid var(--tnx-line-strong);
+  transition: max-height var(--tnx-nav-open-ms) var(--tnx-nav-ease),
+              opacity var(--tnx-nav-fade-ms) ease;
+}
+.tn-terminal .tnx-nav-panel[data-open] {
+  max-height: var(--tnx-navpanel-h, 320px);
+  opacity: 1;
+}
+/* Retargeting (hovering a DIFFERENT board while a panel is already open) must
+   not restart this rule from max-height:0 — [data-open] stays put and only
+   --tnx-navpanel-h moves, which the transition above eases on its own between
+   e.g. Globe's 0-widget height and World's. The CONTENT swap underneath gets
+   its OWN, separate crossfade instead of the open/close one: whatever
+   re-renders `.tnx-nav-panel-inner` for the new board toggles this attribute
+   off then back on around the swap (a rAF or a CROSSFADE_MS timeout both
+   work) so the old board's controls don't hang around under the new board's
+   while the height is still easing between the two. */
+.tn-terminal .tnx-nav-panel-inner {
+  opacity: 1;
+  transition: opacity var(--tnx-nav-fade-ms) ease;
+}
+.tn-terminal .tnx-nav-panel-inner[data-retargeting] { opacity: 0; }
+
+.tn-terminal .tnx-nav-panel-head {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px;
+  padding: 12px 16px 8px;
+}
+.tn-terminal .tnx-nav-panel-icon { font-size: var(--tnx-fs-lg); line-height: 1; flex: none; }
+.tn-terminal .tnx-nav-panel-title {
+  margin: 0; font-family: var(--tnx-font-mono); font-size: var(--tnx-fs-md); font-weight: 800;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--tnx-ink); flex: none;
+}
+.tn-terminal .tnx-nav-panel-blurb {
+  margin: 0; font-family: var(--tn-sans); font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint);
+  flex: 1 1 160px; min-width: 0;
+}
+/* Only rendered when the panel is previewing a board other than the active
+   one (nav-spec §4) — this is the ONE board-switching affordance the panel
+   carries, and it calls the existing applyPreset, nothing new. */
+.tn-terminal .tnx-nav-panel-switch {
+  flex: none; font: inherit; font-family: var(--tnx-font-mono); font-size: var(--tnx-fs-xs); font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--tnx-accent);
+  background: none; border: 1px solid var(--tnx-line-strong); border-radius: var(--tnx-r-sm);
+  padding: 4px 10px; cursor: pointer; white-space: nowrap;
+}
+.tn-terminal .tnx-nav-panel-switch:hover { border-color: var(--tnx-accent); background: var(--tnx-accent-soft); }
+
+.tn-terminal .tnx-nav-panel-body {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 4px 16px 14px;
+}
+.tn-terminal .tnx-nav-sec-title {
+  margin: 0 0 6px; font-family: var(--tnx-font-mono); font-size: var(--tnx-fs-xs); font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--tnx-ink-faint);
+}
+
+/* Just the one row today (compactCards, nav-spec §1) — `.quick` is written as
+   its own flex column rather than folded into `.tnx-nav-panel-body` directly
+   because `quick`'s bag is open (sceneChromeStore.setQuick) and a second
+   toggle landing later should only mean one more `.tnx-nav-quick-row`, not a
+   layout rule to revisit here. */
+.tn-terminal .tnx-nav-quick { display: flex; flex-direction: column; gap: 4px; }
+.tn-terminal .tnx-nav-quick-row {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--tn-sans); font-size: var(--tnx-fs); color: var(--tnx-ink); cursor: pointer;
+}
+.tn-terminal .tnx-nav-quick-row input[type="checkbox"] {
+  flex: none; width: 15px; height: 15px; accent-color: var(--tnx-accent); cursor: pointer;
+}
+
+/* One row per widget TYPE on the board (nav-spec §4: boardWidgetTypes(openId),
+   deduped). A grid rather than a stack: World/Intel can carry several, and a
+   single column of them would make the panel needlessly tall — this is the
+   whole reason the height has to be MEASURED rather than guessed. Globe (0
+   widgets) renders zero rows here and the grid collapses to nothing, which is
+   why nothing below needs a min-height. */
+.tn-terminal .tnx-nav-widgets {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 2px 12px;
+}
+.tn-terminal .tnx-nav-sec-title,
+.tn-terminal .tnx-nav-widget-add { grid-column: 1 / -1; }
+/* Two different controls share this row: a checkbox <label> for a widget
+   already on the board, a bare <button> for one being offered under "Add a
+   widget…" (NavPanel.tsx reuses this row/icon/title trio rather than
+   inventing a second set for that state — flagged by claude-nav, no new
+   selector needed, just both element types covered here). */
+.tn-terminal .tnx-nav-widget-row label,
+.tn-terminal .tnx-nav-widget-row button {
+  display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%;
+  padding: 3px 5px; border: 0; background: none; border-radius: var(--tnx-r-sm); cursor: pointer;
+  font: inherit; font-family: var(--tn-sans); font-size: var(--tnx-fs-sm); color: var(--tnx-ink);
+  text-align: left;
+}
+.tn-terminal .tnx-nav-widget-row label:hover,
+.tn-terminal .tnx-nav-widget-row button:hover { background: var(--tnx-panel-head); }
+.tn-terminal .tnx-nav-widget-row input[type="checkbox"] {
+  flex: none; width: 14px; height: 14px; accent-color: var(--tnx-accent); cursor: pointer;
+}
+.tn-terminal .tnx-nav-widget-icon { flex: none; font-size: var(--tnx-fs-md); line-height: 1; }
+.tn-terminal .tnx-nav-widget-title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Only rendered on the ACTIVE scene's panel (nav-spec §4) — previewing a
+   board you haven't switched to can show/hide what it already has, but
+   adding a widget writes to the live workspace, so it stays gated to the one
+   board actually on screen. Reuses `<details>/<summary>` rather than a new
+   disclosure component, same as nothing else in this file needed to invent. */
+.tn-terminal .tnx-nav-widget-add {
+  margin-top: 2px; font-family: var(--tn-sans); font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim);
+}
+.tn-terminal .tnx-nav-widget-add summary {
+  cursor: pointer; font-weight: 650; color: var(--tnx-accent); list-style: none;
+}
+.tn-terminal .tnx-nav-widget-add summary::-webkit-details-marker { display: none; }
+.tn-terminal .tnx-nav-widget-add summary::before { content: "+ "; }
+.tn-terminal .tnx-nav-widget-add[open] summary::before { content: "− "; }
+
+/* Focus rings for everything the panel holds — it is a sibling of `.tnx-hdr`,
+   not a descendant, so the header's own `.tnx-hdr :focus-visible` rule above
+   never reaches in here; this is the same treatment, scoped to the panel. */
+.tn-terminal .tnx-nav-panel :focus-visible {
+  outline: 2px solid var(--tnx-accent); outline-offset: -2px;
+}
+
+/* The scrim: dims (not blocks — role="region", not role="dialog", nav-spec
+   §7) everything below the bar while a panel is open, and is what makes an
+   outside click close it. `[data-open]` mirrors the panel's own attribute
+   above; TerminalHeader/NavPanel toggle both from the same state. */
+.tn-terminal .tnx-nav-scrim {
+  position: fixed; inset: 0; z-index: 44;
+  background: var(--tnx-scrim);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--tnx-nav-fade-ms) ease;
+}
+.tn-terminal .tnx-nav-scrim[data-open] { opacity: 1; pointer-events: auto; }
+
+/* Every other animated overlay in this sheet earns its own reduced-motion
+   escape hatch right after its own transition/animation rule (see
+   .tn-settings-scrim, .tn-settings at :2775 for the precedent this follows) —
+   so does this one, rather than splicing new selectors into that unrelated
+   section. HOVER_OPEN_DELAY_MS/CLOSE_GRACE_MS in lib/console/navPanel.ts are
+   DELIBERATELY UNCHANGED by this query: they are pacing against an accidental
+   mouse pass-through, not animation, and cutting them would make the panel
+   flash open on every incidental hover for exactly the users this query
+   serves. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tnx-nav-panel,
+  .tn-terminal .tnx-nav-panel-inner,
+  .tn-terminal .tnx-nav-scrim { transition: none !important; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -5549,6 +5843,24 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tnx-hdr-utc-label { display: none; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
+  /* `.tnx-hdr-nav-toggle` is the PRIMARY entry point below desktop (hover has
+     no touch equivalent), so unlike `.tn-palette-trigger`/`.tn-preset-pill`'s
+     720px cousin, it never gets hidden here — only sized for the row. The
+     panel itself is a sibling of `.tnx-hdr` inside `.tnx-navshell`'s own flex
+     COLUMN (not a child caught up in `.tnx-hdr`'s wrap above), so it already
+     renders below the wrapped header with no `order` needed; what it does
+     need at this width is a cap, because a JS-measured height that fits a
+     1280px desktop workspace can still be taller than a phone screen — 70dvh
+     plus its own scrollbar keeps a long widget list from pushing the map
+     off-screen the way the "MOBILE — RE-ASSERTED OVER THE TERMINAL SKIN"
+     section further down this sheet describes happening once already
+     (`.tn-cw-shell`'s own `overflow-y: hidden` with no way to scroll). */
+  .tn-terminal .tnx-nav-panel { width: 100%; }
+  .tn-terminal .tnx-nav-panel[data-open] {
+    max-height: min(var(--tnx-navpanel-h, 480px), 70dvh);
+    overflow-y: auto;
+  }
+
   /* Strip: the 37 cells are the payload. The view controls keep the projection
      switch and Export — the two that have no equal in the command palette's reach on a
      phone — and shed the basemap names, which do (palette → "Basemap"). */
@@ -5597,6 +5909,9 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   /* Board tabs get real height — they are the console's main menu, and a 26px tab
      in a horizontally-scrolling strip is the easiest thing on the page to miss. */
   .tn-terminal .tnx-hdr-board { min-height: 34px; padding: 0 15px; }
+  /* Same row, same treatment — it is the touch/keyboard-reliable way into the
+     panel below desktop and sits directly beside these tabs. */
+  .tn-terminal .tnx-hdr-nav-toggle { min-width: 34px; min-height: 34px; }
 
   /* (a) Real size. The right cluster is now one family of full-height segments
      rather than four differently-shaped chips, so each one can simply BE 34px

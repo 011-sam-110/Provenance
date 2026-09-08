@@ -54,6 +54,14 @@ obligations and are not satisfied by the licence.
 - Roadmap: `ROADMAP.md` (driven by the `/goal` milestone loop — one gated milestone per invocation)
 - Gate: `npx tsc --noEmit && npm test`   (full check: `npm run build`)
 - UI evidence: Playwright screenshots to `persona-shots/`
+- **The gate does NOT run Playwright, so "green" says nothing about `tests/e2e/*`.**
+  Measured 2026-09-08 at `a85e14f` with a clean tree: `console.spec.ts` (STREETS ships
+  `cards: []` by design, the spec still expects `.tn-cw`), `sources-rail.spec.ts`
+  (asks for "Collapse sources"; `SourceCatalog.tsx` says `aria-label="Close sources"`)
+  and 6 of 10 in `shortcuts.spec.ts` (assert `Ctrl+K`; `formatChord(c, mac)` renders
+  `⌘K` on a Mac dev box) were **already failing before any feature work**. Do not
+  assume you broke them, and do not "fix" them by editing the spec — verify against
+  the baseline commit first.
 - Commit: one commit per milestone, `M<n>: <name>`, **solo attribution** (matches every existing commit — no co-author trailer)
 - PR: fresh branch + PR per milestone/group. Sampo live-merges and deletes branches fast → always branch off the latest `main` and open a new PR for follow-ons.
 
@@ -129,6 +137,18 @@ obligations and are not satisfied by the licence.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
+- **The console top bar EXPANDS on hover, Apple-style** — `components/terminal/TerminalHeader.tsx`
+  + `NavPanel.tsx`, state in `lib/console/navPanel.ts`, per-scene memory in
+  `lib/console/sceneChrome.ts`. **Hover previews, click commits**: hovering a board tab
+  grows the whole bar into that board's quick settings + a widget show/hide list without
+  switching board; clicking still calls `applyPreset` exactly as before. **Scene = board =
+  preset**, one thing — `sceneId` IS a `ConsolePreset.id`; do not invent a second concept.
+  Hiding is a **paint-time filter** (`visibleWidgets`, applied at two render sites), never a
+  layout mutation: a hidden widget keeps its slot, its config and its place in the capacity
+  count. Chrome is a **sibling store** (`tn.console.sceneChrome.v1`), deliberately orthogonal
+  to `boards.ts`, so Reset and `?c=` links needed no changes — which also means share links
+  do NOT carry hidden state. Full write-up, including the two subscription traps that made
+  this silently do nothing while every unit test stayed green: `docs/CONSOLE_NAV.md`.
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
 - **Camera-tile conditions** — `lib/console/widgets/camslot.conditions.ts` (pure: what may be
@@ -178,7 +198,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling — Infrastructure is left+right, Intel and World are two rails each. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 65 registered (2026-09-08) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
-| Unit tests | 1,414 cases / 215 files (2026-08-11) | `npx vitest list` (collects without running — safe alongside other agents) |
+| Unit tests | **3,677 cases / 359 files (2026-09-08)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
