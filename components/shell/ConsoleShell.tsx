@@ -54,7 +54,6 @@ import { decodeLayout } from "@/lib/console/share";
 import "@/lib/console/widgets";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { actionFor, chordOf, keymapStore } from "@/lib/shell/keymap";
-import { mapRailStore } from "@/lib/console/mapRail";
 import { isDrawing, startDraw } from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
 
@@ -207,13 +206,26 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           return;
         }
         if (action === "draw") {
-          // Opens the group AND arms the gesture. Opening the flyout alone would be a
-          // shortcut that saves one click out of two and leaves the user looking at a
-          // panel wondering what the key did.
+          // IT ONLY ARMS NOW. It used to open the rail's Draw group as well, and that
+          // group is gone — but the shortcut is not, and removing it would have been
+          // the wrong read of what was asked for. What was removed is a rail button;
+          // startDraw() is still a live feature reached from the inspector's "Draw an
+          // area" and from the camera picker, this key is rebindable and listed in
+          // Settings under its own name, and nothing about "arm the polygon tool"
+          // depended on a panel being on screen.
+          //
+          // The old comment argued a shortcut that only OPENED the group would leave
+          // the user looking at a panel wondering what the key did. The inverse worry
+          // — arming with no panel — is what components/shell/DrawBanner.tsx already
+          // answers, and has since before this change: it is mounted from this file,
+          // keys off the draw store alone, names the gesture, counts the vertices and
+          // carries its own Cancel. Its header says why it exists in exactly these
+          // words — the flyout could always close mid-gesture, so the banner had to be
+          // the thing that could not. That is now the only narration, which is what it
+          // was built to be.
           const map = getMapInstance();
           if (map && !isDrawing()) {
             e.preventDefault();
-            mapRailStore.open("draw");
             startDraw(map);
           }
           return;
@@ -350,10 +362,10 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           after the bug it was about. */}
       <DevNotice />
       {/* Renders null unless a draw gesture is running, so this costs one store
-          subscription. Mounted HERE rather than inside the stage rail because the
-          rail keeps one group open at a time — opening Search mid-draw unmounts
-          DrawFlyout and, with it, every sign that the map is still taking clicks.
-          See components/shell/DrawBanner.tsx. */}
+          subscription. Mounted HERE rather than inside the stage rail, and that has
+          gone from a good idea to the only thing holding: the rail's Draw group was
+          removed, so this banner is now the ONLY sign that the map is taking clicks
+          and the only Cancel besides Escape. See components/shell/DrawBanner.tsx. */}
       <DrawBanner />
       {/* The toast is now mounted ALWAYS, empty when idle, instead of appearing and
           disappearing with its text. A live region has to already be in the

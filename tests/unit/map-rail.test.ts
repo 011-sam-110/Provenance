@@ -48,6 +48,27 @@ describe("railStep / railEdge — roving tabindex arithmetic", () => {
     expect(railStep("search", -1)).toBe("view");
   });
 
+  it("AT TWO GROUPS both directions land on the other one, and that is correct", () => {
+    // The rail went from four groups to two when Draw and Cameras were removed, and
+    // the modulo has to still hold at n=2 rather than merely not crashing. It does,
+    // and the reason is worth pinning: (i+1) and (i-1) are congruent mod 2, so
+    // ArrowUp and ArrowDown agree. That is not a degenerate case — "the next one,
+    // wrapping" and "the previous one, wrapping" ARE the same item when there are
+    // only two, and a toolbar that made them differ would be the bug.
+    expect(RAIL_GROUPS.length).toBe(2);
+    for (const g of RAIL_GROUPS) {
+      expect(railStep(g, 1)).toBe(railStep(g, -1));
+      expect(railStep(g, 1)).not.toBe(g);
+    }
+  });
+
+  it("still names the two groups the rail actually has", () => {
+    // Pins the removal itself, not just the arithmetic over whatever is left. A
+    // "draw" or "cameras" entry finding its way back into the order would restore
+    // the arrow-key stop for a button that no longer exists.
+    expect([...RAIL_GROUPS]).toEqual(["search", "view"]);
+  });
+
   it("returns to where it started after a full lap in each direction", () => {
     for (const g of RAIL_GROUPS) {
       let f = g;
@@ -68,9 +89,16 @@ describe("railStep / railEdge — roving tabindex arithmetic", () => {
 });
 
 describe("railHoldsOpen — the outside-click guard", () => {
-  // Draw and Cameras exist to make the user click ON THE MAP. Closing the flyout
-  // on that click would take the vertex counter and Cancel with it, at the one
-  // moment they are needed. This is that rule.
+  // IT SURVIVED THE REMOVAL OF THE TWO GROUPS IT WAS WRITTEN FOR, and these cases
+  // are why. Draw and Cameras existed to make the user click ON THE MAP, and the
+  // guard stopped that first click closing the panel that held the vertex counter
+  // and Cancel. Both groups are gone - but the map is still armed from surfaces
+  // that were never on this rail. The clearest is the Ctrl+Q keymap action, which
+  // arms a draw without touching the rail: a flyout that was open stays open, and
+  // the next click is a vertex. Camera picking gets there in two steps, from the
+  // empty camera wall's "Pick cameras on the map". Without this guard those map
+  // clicks shut the flyout under the user. "No caller" was never the same claim as
+  // "does not happen", and only the first one changed.
   it("holds the flyout open while a draw is running", () => {
     expect(railHoldsOpen(true, false)).toBe(true);
   });
@@ -123,9 +151,9 @@ describe("mapRailStore", () => {
     mapRailStore.close();
     let hits = 0;
     const off = mapRailStore.subscribe(() => hits++);
-    mapRailStore.open("draw");
+    mapRailStore.open("view");
     expect(hits).toBe(1);
-    expect(mapRailStore.get()).toBe("draw");
+    expect(mapRailStore.get()).toBe("view");
     off();
     mapRailStore.close();
   });
@@ -140,8 +168,8 @@ describe("mapRailStore", () => {
   });
 
   it("toggle closes the group that is already open", () => {
-    mapRailStore.open("cameras");
-    mapRailStore.toggle("cameras");
+    mapRailStore.open("search");
+    mapRailStore.toggle("search");
     expect(mapRailStore.get()).toBe(null);
   });
 });

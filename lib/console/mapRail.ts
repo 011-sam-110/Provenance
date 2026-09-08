@@ -1,7 +1,24 @@
 "use client";
-// The stage rail: four icon groups on the right edge of the map, one flyout open
+// The stage rail: two icon groups on the right edge of the map, one flyout open
 // at a time. This module is the rail's brain — the pure reducers plus a
 // module-level store — and it holds everything worth testing.
+//
+// IT WAS FOUR. "Restrict results to an area" (draw) and "Pick cameras for a wall"
+// (cameras) were removed on request; Search and View stay.
+//
+// MOSTLY THE FEATURES DID NOT GO WITH THEIR BUTTONS, and the exception is worth
+// stating rather than discovering. Still reachable: startDraw() from the inspector's
+// "Draw an area" (components/shell/inspector/AreasPanel.tsx) and from the Ctrl+Q
+// keymap action (ConsoleShell.tsx), and camera picking from the empty camera wall's
+// "Pick cameras on the map" (camslot.tsx). NOT reachable any more: startAreaPick()
+// in lib/console/widgets/camslot.area.ts - picking cameras BY DRAWING A SHAPE was
+// the Cameras flyout's second button and had no other door. It is left in place
+// rather than deleted, because that is a product call and not this change's to
+// make; if it is wanted back it needs a control, not a repair.
+//
+// So anything reasoning about whether the map can still be ARMED must answer YES -
+// see railHoldsOpen below, which is exactly where that assumption would have been
+// quietly wrong.
 //
 // WHY A MODULE STORE AND NOT useState. `focusStageSearch()` in
 // components/terminal/StageBar.tsx is called synchronously from ConsoleShell's
@@ -24,11 +41,11 @@ import { useSyncExternalStore } from "react";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import type { StageId } from "@/lib/console/types";
 
-export type RailGroup = "search" | "draw" | "cameras" | "view";
+export type RailGroup = "search" | "view";
 export type RailOpen = RailGroup | null;
 
 /** Rail order, top to bottom. Also the arrow-key order. */
-export const RAIL_GROUPS = ["search", "draw", "cameras", "view"] as const;
+export const RAIL_GROUPS = ["search", "view"] as const;
 
 /**
  * Click a rail button. Clicking the open group closes it; clicking any other
@@ -39,7 +56,17 @@ export function toggleGroup(open: RailOpen, group: RailGroup): RailOpen {
   return open === group ? null : group;
 }
 
-/** Move along the rail by one, wrapping at both ends. Roving-tabindex arithmetic. */
+/**
+ * Move along the rail by one, wrapping at both ends. Roving-tabindex arithmetic.
+ *
+ * AT n=2 THE TWO DIRECTIONS COINCIDE, and the modulo is what makes that fall out
+ * rather than needing a case: from either group, +1 and -1 both land on the other
+ * one, because (i+1) and (i-1) are congruent mod 2. That is the correct behaviour
+ * for a two-item toolbar and not a degenerate one — ArrowDown from the last item
+ * has always wrapped to the first, and with two items the first IS the other item.
+ * tests/unit/map-rail.test.ts asserts it explicitly so the arithmetic is pinned
+ * rather than merely happening to work.
+ */
 export function railStep(from: RailGroup, dir: 1 | -1): RailGroup {
   const i = RAIL_GROUPS.indexOf(from);
   const n = RAIL_GROUPS.length;
@@ -52,13 +79,28 @@ export function railEdge(to: "first" | "last"): RailGroup {
 }
 
 /**
- * Does an outside click leave the flyout open?
+ * Does an outside click leave the flyout open? YES while the map is armed.
  *
- * YES while the map is armed, and this is the rule that makes Draw and Cameras
- * usable at all. Both groups exist to make the user click ON THE MAP — placing
- * vertices, or picking pins. A plain close-on-outside-click would shut the panel
- * on the very first map click and take the live vertex counter and the Cancel
- * button with it, which is the one moment the user most needs them.
+ * IT KEPT ITS JOB WHEN DRAW AND CAMERAS LEFT THE RAIL, and that was checked rather
+ * than assumed. The rule was written for those two groups: both existed to make the
+ * user click ON THE MAP, and a plain close-on-outside-click would have shut the
+ * panel on the very first vertex and taken the live counter and Cancel with it.
+ * Both groups are gone, so the obvious reading is that the guard has no work left.
+ *
+ * It has. "No caller" and "does not happen" are different claims, and only the
+ * first one changed. The clearest live case is the Ctrl+Q keymap action: it arms a
+ * draw without touching the rail at all, so a flyout that was open stays open and
+ * the user's next click - a vertex - is an outside click. Camera picking reaches
+ * the same state in two steps, since the empty camera wall's "Pick cameras on the
+ * map" arms the mode and the rail can be reopened over it; every pin click after
+ * that is an outside click too. Without this guard those clicks close the flyout
+ * underneath.
+ *
+ * WHAT DID CHANGE IS THE STAKES, and the honest version is worth writing down: the
+ * two surviving flyouts carry no vertex counter and no Cancel, so losing one costs a
+ * reopen rather than the controls for the gesture in flight. That is why this is
+ * kept as correct behaviour and not restored as a §1 regression guard. Both inputs
+ * are still live truths; delete it only when nothing can arm the map at all.
  */
 export function railHoldsOpen(drawActive: boolean, picking: boolean): boolean {
   return drawActive || picking;

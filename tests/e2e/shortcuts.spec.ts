@@ -55,21 +55,36 @@ test("A SEMICOLON TYPED INTO A BOX IS A SEMICOLON", async ({ page }) => {
   await expect(input).toHaveValue("a;b");
 });
 
-test("Ctrl+Q arms the draw tool, not just the flyout", async ({ page }) => {
-  // A shortcut that only opened the group would save one click out of two and leave
-  // the user looking at a panel wondering what the key did. The map's crosshair cursor
-  // is the evidence that the gesture is actually live.
+test("Ctrl+Q arms the draw tool, and the banner is what says so", async ({ page }) => {
+  // THE RAIL'S DRAW GROUP IS GONE, so this key no longer opens a flyout — it only
+  // arms. That makes the assertion better rather than weaker: the flyout could
+  // always be closed mid-gesture by opening another group, which is precisely why
+  // DrawBanner exists (see its header). The banner is mounted from ConsoleShell and
+  // keys off the draw store alone, so it is the one thing that cannot be dismissed
+  // while the map is still swallowing clicks, and it is now the only narration.
+  //
+  // TWO OBSERVABLES, DELIBERATELY. The banner proves the app believes a draw is
+  // running; the crosshair proves the MAP does. A shortcut that set the store and
+  // never reached MapLibre would satisfy the first alone.
   await stampSeen(page);
   await page.goto("/app");
   await mapReady(page);
 
   await page.keyboard.press("Control+q");
-  const pop = page.locator(".tnx-maprail-pop-draw");
-  await expect(pop).toBeVisible();
-  // The live readout, not the cursor: it is what the flyout says while a gesture is
-  // running, and it distinguishes "armed" from "opened the panel and gave up".
-  await expect(pop.getByRole("status")).toContainText(/points/);
+  const banner = page.locator(".tn-drawbanner");
+  await expect(banner).toBeVisible();
+  await expect(banner).toContainText(/Drawing an area/);
+  await expect(banner.getByRole("button", { name: /Cancel/ })).toBeVisible();
   await expect(page.locator(".map-canvas canvas").first()).toHaveCSS("cursor", "crosshair");
+
+  // And no flyout opened. The rail has two groups now; a Draw panel appearing would
+  // mean the group came back rather than that the shortcut worked.
+  await expect(page.locator(".tnx-maprail-pop-draw")).toHaveCount(0);
+
+  // Escape abandons the ring, and the banner goes with it — the gesture ending is
+  // the only thing that can remove it.
+  await page.keyboard.press("Escape");
+  await expect(banner).toHaveCount(0);
 });
 
 test("a rebound key works, and it is still bound after a reload", async ({ page }) => {
