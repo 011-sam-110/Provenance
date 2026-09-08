@@ -543,14 +543,35 @@
   inset: 0;
   z-index: 0;
 }
-.pv-hero-stage > .pv-hero-stars {
+/* THE SKY IS A PHOTO SPHERE: an equirectangular texture sampled per pixel by view
+   direction in a WebGL shader, so dragging the globe rotates it. See
+   components/marketing/Starfield.tsx for the profile that forced the rewrite and for
+   why a flat capture was tried and rejected. */
+.pv-hero-stage > .pv-hero-stars,
+.pv-handoff > .pv-hero-stars {
   position: absolute;
   inset: 0;
-  /* A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps
-     its intrinsic 300x150. It needs explicit width/height. */
+  z-index: 0;
+  /* A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps its
+     intrinsic 300x150. It needs explicit width/height. (Same note as the canvas this
+     replaced — the element type went div and came back.) */
   width: 100%;
   height: 100%;
-  z-index: 0;
+  /* THE FALLBACK, and the reason this rule carries a picture at all. The sky is
+     drawn by a WebGL shader (components/marketing/Starfield.tsx); if WebGL is
+     unavailable the component returns without ever touching the canvas, and a
+     canvas that was never drawn into is TRANSPARENT — the hero would show the page
+     ground through a hole where the sky should be. This background is what is left
+     in that case: the same equirectangular texture, flat and unrotatable, which is
+     a worse sky than the shader draws and a far better one than none.
+
+     `#06080b` under it is the night ground the texture was itself composited onto,
+     so the moment before the JPEG decodes matches the moment after. */
+  background-color: #06080b;
+  background-image: url("/sky/sky-equirect.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* The globe box is a square of the sphere's own diameter, parked so its centre
@@ -1457,13 +1478,8 @@
   padding: 5rem 1.25rem;
   overflow: hidden;
 }
-.pv-handoff > .pv-hero-stars {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
+/* The closing section's sky is the same element and the same image; its rule
+   merged into the shared selector above when the canvas became a div. */
 .pv-handoff-inner {
   position: relative;
   z-index: 1;

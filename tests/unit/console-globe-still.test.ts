@@ -25,8 +25,10 @@ import { expect, test } from "vitest";
  * WHAT THIS DOES NOT CLAIM. `map.flyTo` / `jumpTo` / `easeTo` are deliberate,
  * user-initiated camera moves and are untouched — the assertions below are about a
  * self-driving camera, not about the map being frozen. Nor does this file govern
- * `components/marketing/HeroGlobe.tsx`: the LANDING hero still spins and still
- * settles on the `lib/map/spin.ts` envelope. Only the console is pinned still.
+ * `components/marketing/HeroGlobe.tsx`: the LANDING hero still spins, and since
+ * 2026-09-08 it no longer settles — it turns until you drag it or scroll past.
+ * It no longer imports the `lib/map/spin.ts` envelope either. Only the console is
+ * pinned still, and this file pins only the console.
  */
 
 const SRC = resolve(process.cwd(), "components/WorldMap.tsx");
@@ -55,7 +57,7 @@ test("WorldMap never moves the camera by setCenter", () => {
 });
 
 test("the spin envelope is not imported by the console map", () => {
-  // lib/map/spin.ts still exists and still drives the landing hero. If it turns up
+  // lib/map/spin.ts still exists, though nothing imports it now. If it turns up
   // here again, a console spin has come back with it.
   expect(code).not.toMatch(/lib\/map\/spin/);
   expect(code).not.toMatch(/spinEnvelope/);

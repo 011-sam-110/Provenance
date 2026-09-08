@@ -8,7 +8,6 @@ import { classifyMapError } from "@/lib/map/resilience";
 import { buildSatrec, propagateAt } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
 import { setHeroView } from "@/lib/marketing/heroView";
-import { spinEnvelope } from "@/lib/map/spin";
 
 /**
  * The hero globe: the product's own MapLibre engine, its own registry, and its own
@@ -194,12 +193,47 @@ export default function HeroGlobe({
       style: DARK_STYLE_URL,
       // MapLibre v5 moved this under canvasContextAttributes (it was a top-level
       // MapOptions field in v4).
-      canvasContextAttributes: { preserveDrawingBuffer: capture },
+      canvasContextAttributes: {
+        preserveDrawingBuffer: capture,
+        // MSAA off. On a sphere seen from orbit the only geometry with visible edges
+        // is the coastline, and it is already antialiased by the tile raster; paying
+        // for multisampling on every fragment buys nothing here and is charged on
+        // every frame of a rotation that now never stops.
+        antialias: false,
+      },
+      // NO TILE CROSSFADE. MapLibre fades tiles and labels in over 300ms by default,
+      // which means a moving camera keeps TWO versions of a tile alive and composites
+      // between them for the whole fade. On a globe that is turning continuously this
+      // never settles, so the fade is permanent overdraw for an effect nobody can see
+      // at this zoom.
+      fadeDuration: 0,
+      // The hero's camera never leaves its orbit, so there is nothing to refetch when
+      // a tile's cache entry expires — and a refetch mid-spin is a stall.
+      refreshExpiredTiles: false,
       // Near-equatorial, because only the sphere's upper cap is above the fold:
       // centring further north would put the visible band in the Arctic and hide
       // every populated coastline the data actually sits on.
       center: [8, 8],
       zoom: zoomToFill(el.clientWidth),
+      /**
+       * RENDER THE GLOBE AT 1.5x, NOT AT THE DISPLAY'S FULL 2x.
+       *
+       * This is the largest single saving available on a Retina machine and it is
+       * invisible to every measurement taken in headless Chromium, which runs at
+       * devicePixelRatio 1 — so the profiles in this file UNDERSTATE the hero's real
+       * cost on the hardware people actually use. At dpr 2 the globe is rasterised at
+       * four times the fragments of those runs, every frame, for the whole of a
+       * rotation that no longer stops.
+       *
+       * 1.5 rather than 1 because the coastline is the one edge on screen with any
+       * high-frequency detail, and at 1 it visibly stair-steps against the black.
+       * At 1.5 it holds, and the fragment count is 44% of full Retina.
+       *
+       * NOT applied to the console's map: that one is stationary, is the product
+       * rather than a backdrop, and is zoomed into detail where sharpness is the
+       * whole point. This is a hero-only trade.
+       */
+      pixelRatio: Math.min(1.5, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1),
       attributionControl: false,
       // Grab it and spin it — and that is the whole interaction. Zoom is off on
       // every gesture now that the globe is a full-bleed backdrop rather than a
@@ -509,51 +543,124 @@ export default function HeroGlobe({
       }
     }
 
-    // The hero globe settles for the same reason the console globe does, measured on
-    // the same day: this page was 83.1% main-thread busy over a 10 s idle window, and
-    // 46% of the sampled profile was MapLibre rendering this globe. The drift is the
-    // opening impression, so it is kept — for about eight seconds, then eased out.
-    // lib/map/spin.ts holds the budget so the two globes cannot drift apart.
+    // THE HERO NO LONGER SETTLES, and the cost of that is known rather than ignored.
     //
-    // `spinSpentMs` counts time SPENT DRIFTING, so the seconds a visitor spends
-    // scrolled past the hero, or with the tab hidden, or holding the globe, are not
-    // deducted from a turn they never saw.
-    let spinSpentMs = 0;
-    let lastSpin = 0;
-    function spinLoop(t: number) {
-      if (disposed) return;
-      if (paused || offScreen || reduce.matches || !map.loaded()) {
-        // Not drifting, so the budget does not advance and neither does the clock —
-        // otherwise a long scroll away would silently spend the whole eight seconds.
-        lastSpin = t;
-        spin = window.requestAnimationFrame(spinLoop);
-        return;
-      }
-      const dt = lastSpin ? Math.min(t - lastSpin, 50) : 0;
-      lastSpin = t;
-      const { factor, settled } = spinEnvelope(spinSpentMs);
-      spinSpentMs += dt;
-      if (settled) {
-        // Stop scheduling entirely rather than rescheduling and returning early.
-        // A loop that re-arms before its own gate — which is what this was, and what
-        // Starfield still was — can never stop, and costs a callback per compositor
-        // frame for the life of the page.
-        spin = 0;
+    // It used to turn for ~8 seconds and ease to a stop on `lib/map/spin.ts`, whose
+    // measurements still stand and are still the honest argument against this: with
+    // the globe turning, this page measured 83.1% main-thread busy over a 10 s idle
+    // window against 18.9% with motion off, and 46% of the sampled profile was
+    // MapLibre rendering this globe. That module also records the thing that does NOT
+    // help — slowing the spin down. Rate-limited to 30fps it measured 99.4% busy; at
+    // 20fps, 99.6%. A moving camera re-renders the whole globe however often the
+    // centre actually moves, so the cost is the movement itself.
+    //
+    // It was changed anyway, deliberately: a hero that stops after eight seconds reads
+    // as a page that has finished loading and died, and the drift is the thing that
+    // says the map is alive. The budget is bought back at the two edges that actually
+    // matter instead — `offScreen` (scrolled past, nobody is looking) and
+    // `document.hidden` (another tab) — both of which stop it completely.
+    //
+    // lib/map/spin.ts is deliberately left in place with its measurements intact. It
+    // is the record of what this costs, and `tests/unit/console-globe-still.test.ts`
+    // still uses it to pin the CONSOLE globe motionless, which is untouched by this.
+    /**
+     * ── WHY THIS IS AN easeTo AND NOT A PER-FRAME jumpTo ─────────────────────
+     *
+     * THE SYMPTOM THAT FOUND IT: dragging the globe is smooth, the automatic drift is
+     * not. Same camera, same renderer, same frame budget — so the difference cannot be
+     * cost, and it is not. It is WHO drives the camera.
+     *
+     * A drag is interpolated by MapLibre itself, inside its own render loop: one
+     * camera update per rendered frame, by construction. The drift used to be driven
+     * from OUR requestAnimationFrame, calling `map.jumpTo` once per callback. Those are
+     * two independent loops. Ours fires, mutates the camera and returns; MapLibre then
+     * schedules its render for the following frame. The two beat against each other —
+     * some rendered frames carry two of our steps, some carry none — and the result is
+     * a judder that is not dropped frames and cannot be fixed by making frames cheaper.
+     * It is a phase problem, and it looked exactly like a performance problem.
+     *
+     * `easeTo` with a linear easing hands the interpolation back to MapLibre: it
+     * computes the camera for each frame it is ABOUT to draw, so every rendered frame
+     * advances by exactly its own elapsed time. That is the same path a drag takes,
+     * which is why a drag was always smooth.
+     *
+     * It is also less work. The old loop ran a rAF callback of our own every frame for
+     * the life of the page and fired movestart/moveend on every one of them; this runs
+     * one callback per LEG.
+     */
+    const SPIN_DEG_PER_SEC = 2.1;
+    /**
+     * How much of the turn each `easeTo` covers.
+     *
+     * Long enough that the per-leg callback is rare (one every 12s), short enough that
+     * a leg in flight when you grab the globe is cheap to abandon. It must NOT be so
+     * long that floating-point drift accumulates inside one interpolation.
+     */
+    const SPIN_LEG_DEG = 25;
+    const SPIN_LEG_MS = (SPIN_LEG_DEG / SPIN_DEG_PER_SEC) * 1000;
+
+    /** Linear, so leg boundaries are invisible. Any eased curve would make the globe
+     *  pulse once per leg, which is the artefact this whole comment is about. */
+    const linear = (t: number) => t;
+
+    function spinLeg() {
+      if (disposed || spinStopped || paused || offScreen || reduce.matches) return;
+      // NOT LOADED YET IS A WAIT, NOT A REFUSAL — and this is the one difference from
+      // the rAF loop that has to be handled explicitly. That loop re-ran every frame,
+      // so `!map.loaded()` simply meant "not this frame" and it started on its own as
+      // soon as the map was ready. A chain has no such heartbeat: the first call comes
+      // from `style.load`, when tiles are still arriving and `loaded()` is false, so
+      // returning here would end the chain before it began and the globe would never
+      // move at all. (It did exactly that, first try.)
+      //
+      // `idle` rather than `load`: load fires once and may already have gone by, while
+      // idle fires whenever the map next has nothing in flight — which is precisely
+      // when starting a drift is cheapest.
+      if (!map.loaded()) {
+        map.once("idle", spinLeg);
         return;
       }
       const c = map.getCenter();
-      map.jumpTo({ center: [c.lng + 0.035 * factor, c.lat] });
-      spin = window.requestAnimationFrame(spinLoop);
+      map.easeTo({
+        center: [c.lng + SPIN_LEG_DEG, c.lat],
+        duration: SPIN_LEG_MS,
+        easing: linear,
+        // Not a user-initiated move: this must never be reported as interaction, and
+        // must never be interrupted-and-restored by MapLibre's own gesture bookkeeping.
+        animate: true,
+        essential: true,
+      });
     }
 
-    // Reduced motion does not start the loop at all. The paused / offScreen cases
-    // still need a live loop because they resume on their own, but reduced motion is
-    // a standing answer — a loop kept alive only to decline every frame is the exact
-    // shape this change exists to remove.
+    // Chain the next leg when the last one lands. `moveend` also fires when a drag
+    // finishes or when a leg is cut short by one, which is exactly when the drift
+    // should be reconsidered — the gates at the top of spinLeg decide whether it may
+    // actually resume.
+    let spinStopped = false;
+    const onMoveEnd = () => { if (!spinStopped) spinLeg(); };
+    map.on("moveend", onMoveEnd);
+
+    /**
+     * Stop the drift NOW, not at the end of the current leg.
+     *
+     * `map.stop()` is the load-bearing call. Setting a flag alone would leave the
+     * in-flight `easeTo` interpolating for up to a whole leg — so a drag would fight
+     * an animation that believed it was still running, and scrolling past would keep
+     * re-rendering the globe for another twelve seconds with nobody watching. That
+     * second case is the one the offScreen gate exists to prevent and would have
+     * silently stopped working.
+     */
+    function stopSpin() {
+      spinStopped = true;
+      map.stop();
+    }
+
+    // Reduced motion never starts it at all — it is a standing answer, not a state
+    // that resumes on its own.
     function startSpin() {
-      if (spin || disposed || reduce.matches || spinEnvelope(spinSpentMs).settled) return;
-      lastSpin = 0;
-      spin = window.requestAnimationFrame(spinLoop);
+      if (disposed || reduce.matches) return;
+      spinStopped = false;
+      spinLeg();
     }
     const onMotionPreference = () => startSpin();
     reduce.addEventListener("change", onMotionPreference);
@@ -569,35 +676,77 @@ export default function HeroGlobe({
     // the drift under a hero that is nowhere near the viewport.
     let offScreen = false;
     const vis = new IntersectionObserver(
-      (entries) => { for (const e of entries) offScreen = !e.isIntersecting; },
+      (entries) => {
+        for (const e of entries) offScreen = !e.isIntersecting;
+        // Acted on, not just recorded. The gate used to be read by a rAF loop that
+        // ran every frame anyway; there is no such loop now, so scrolling away has to
+        // cancel the leg in flight and scrolling back has to start a new one.
+        if (offScreen) stopSpin();
+        else startSpin();
+      },
       { rootMargin: "100% 0px" },
     );
     vis.observe(el);
 
-    // Pause the drift while the tab is hidden or the pointer is on the globe, so a
-    // backgrounded hero costs nothing and hovering to read a label does not fight
-    // you. After a drag, hold still briefly before resuming — snapping straight
-    // back into rotation the instant you let go feels like the page undoing you.
+    // WHAT STOPS THE DRIFT, AND WHAT DELIBERATELY NO LONGER DOES.
+    //
+    // Only three things stop it now: a DRAG (you are steering, so the page must not
+    // fight you), scrolling PAST the hero (`offScreen` below — nobody can see it),
+    // and a hidden tab. Everything else keeps turning.
+    //
+    // HOVER USED TO STOP IT AND THAT WAS THE BUG. `pointerenter` on this element
+    // paused the spin, and this element is the FULL-BLEED hero backdrop — so moving
+    // the mouse anywhere across the headline, the lede or the buttons stopped the
+    // globe dead. The intent was "hovering to read a label does not fight you", which
+    // made sense when the globe was a small plate beside the copy and stopped making
+    // sense when it became the whole stage. There are no labels to hover here.
+    //
+    // After a drag, still hold briefly before resuming: snapping straight back into
+    // rotation the instant you let go feels like the page undoing you.
     let resume: ReturnType<typeof setTimeout> | undefined;
     const hold = () => {
       paused = true;
       if (resume) clearTimeout(resume);
+      stopSpin();
     };
     const release = (delay: number) => {
       if (resume) clearTimeout(resume);
-      resume = setTimeout(() => (paused = document.hidden), delay);
+      resume = setTimeout(() => {
+        paused = document.hidden;
+        if (!paused) startSpin();
+      }, delay);
     };
-    const onEnter = () => hold();
-    const onLeave = () => release(400);
-    const onVis = () => (paused = document.hidden);
-    const onDragStart = () => hold();
-    const onDragEnd = () => release(2500);
+    const onVis = () => {
+      paused = document.hidden;
+      if (paused) stopSpin();
+      else startSpin();
+    };
 
-    el.addEventListener("pointerenter", onEnter);
-    el.addEventListener("pointerleave", onLeave);
+    // POINTER EVENTS ON THE CANVAS, NOT MapLibre's `dragstart`/`dragend`.
+    //
+    // Those two never fire here. Instrumented against the running hero, a full
+    // press-move-release over the globe emits exactly: `mousedown`, `movestart`,
+    // `moveend` — and nothing else. The drag handlers were bound to events this map
+    // does not produce, so the "hold still while you steer" behaviour had simply
+    // never worked; the globe kept drifting under the cursor mid-drag and fought you.
+    //
+    // The likely reason is that the spin loop calls `map.jumpTo` on every frame,
+    // which is itself a camera move, so the drag never becomes the thing driving the
+    // camera in the way the gesture handler reports on. Rather than depend on that
+    // staying true, the pause now comes from the pointer directly: pressing is what
+    // "you are steering" actually means, and it cannot be masked by our own writes.
+    //
+    // `pointerdown` on the CANVAS (not the container) so a press on the copy or the
+    // buttons floating over the stage is not mistaken for grabbing the globe.
+    // `pointerup`/`pointercancel` on the WINDOW, because a drag almost always ends
+    // with the cursor somewhere else entirely.
+    const onPointerDown = () => hold();
+    const onPointerUp = () => release(2500);
+
     document.addEventListener("visibilitychange", onVis);
-    map.on("dragstart", onDragStart);
-    map.on("dragend", onDragEnd);
+    map.getCanvas().addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
 
     // Clicking a feature names it in the status rail. The dossier proper lives in
     // the app; here it is just enough to prove the dots are real objects carrying
@@ -637,12 +786,18 @@ export default function HeroGlobe({
       clearTimeout(readyBackstop);
       if (satTimer) clearInterval(satTimer);
       if (resume) clearTimeout(resume);
+      // Cancel any leg still interpolating, then unbind the chain that would start
+      // another one. Order matters: `map.stop()` fires `moveend`.
+      spinStopped = true;
+      map.off("moveend", onMoveEnd);
+      map.stop();
       if (spin) cancelAnimationFrame(spin);
       if (hoverRaf) cancelAnimationFrame(hoverRaf);
       vis.disconnect();
-      el.removeEventListener("pointerenter", onEnter);
-      el.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVis);
+      map.getCanvas().removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
       reduce.removeEventListener("change", onMotionPreference);
       map.remove();
       mapRef.current = null;
