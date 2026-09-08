@@ -48,6 +48,13 @@ function card(title: string, subtitle: string, accent: string, host: string): Re
         background: `linear-gradient(135deg, ${BRAND.ink} 0%, #0f172a 100%)`,
         color: "#ffffff",
         position: "relative",
+        // NOT INTER, AND DELIBERATELY LEFT THAT WAY. The rest of the product moved to
+        // a single self-hosted Inter; this card cannot follow without an `fonts:`
+        // option on ImageResponse carrying real font bytes, which means either
+        // committing a .ttf or fetching one inside a route that is already the
+        // CPU-heaviest thing here. Writing "Inter" without supplying the bytes would
+        // silently render next/og's bundled Latin default while claiming otherwise,
+        // which is worse than saying sans-serif and meaning it.
         fontFamily: "sans-serif",
       }}
     >

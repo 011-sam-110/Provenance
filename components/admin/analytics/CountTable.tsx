@@ -67,7 +67,16 @@ export function CountTable({
           {rows.map((r) => (
             <tr key={r.key}>
               <td style={{ wordBreak: "break-word" }}>
-                <span style={{ fontFamily: "var(--tn-font-mono, ui-monospace, monospace)", fontSize: 12.5 }}>
+                {/* `--adm-mono` is admin.css's one Inter stack; the old inline
+                    fallback here named `ui-monospace, monospace`, which would have
+                    put a mono face back on this column alone. */}
+                <span
+                  style={{
+                    fontFamily: "var(--adm-mono)",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 12.5,
+                  }}
+                >
                   {r.key}
                 </span>
                 {SYNTHETIC[r.key] && (
