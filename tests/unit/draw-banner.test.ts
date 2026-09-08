@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_VERTICES } from "@/lib/map/aoi";
 import type { DrawState } from "@/lib/map/aoi";
+import { MIN_CIRCLE_RADIUS_KM } from "@/lib/map/circle";
 import {
   MIN_BANNER_PX,
   drawBannerModel,
@@ -86,6 +87,33 @@ describe("drawBannerModel — the radius and circle branches", () => {
     expect(drawBannerModel({ ...radius, center: [0, 0], radiusKm: 1 }).steps[0].text).toBe(
       "Click again to set the edge",
     );
+  });
+
+  it("does not offer a release the circle gesture would throw away", () => {
+    // camslot.circle refuses a ring under MIN_CIRCLE_RADIUS_KM and never calls
+    // onFinish, so "Release to set it" there promises nothing.
+    const tiny: DrawState = { ...circle, center: [0, 0], radiusKm: MIN_CIRCLE_RADIUS_KM / 2 };
+    expect(drawBannerModel(tiny).steps[0].text).not.toContain("Release");
+    expect(drawBannerModel(tiny).steps[0].text).toContain("Keep dragging");
+  });
+
+  it("offers the release the moment the drag is big enough", () => {
+    const ok: DrawState = { ...circle, center: [0, 0], radiusKm: MIN_CIRCLE_RADIUS_KM };
+    expect(drawBannerModel(ok).steps[0].text).toBe("Release to set it");
+  });
+
+  it("still reports the live radius while the circle is below the floor", () => {
+    // The number is what tells the user the drag is being tracked at all; hiding it
+    // while the copy says "keep dragging" would leave them dragging blind.
+    const tiny: DrawState = { ...circle, center: [0, 0], radiusKm: 0.02 };
+    expect(drawBannerModel(tiny).value).toEqual({ text: "20 m", label: "radius" });
+  });
+
+  it("does not apply the circle floor to the two-click radius tool", () => {
+    // That tool has its own, far smaller floor (MIN_DRAWN_RADIUS_KM, 1 m) and a
+    // second click is what ends it — there is no drag to keep going.
+    const tiny: DrawState = { ...radius, center: [0, 0], radiusKm: MIN_CIRCLE_RADIUS_KM / 2 };
+    expect(drawBannerModel(tiny).steps[0].text).toBe("Click again to set the edge");
   });
 
   it("counts no points in either — there are none to count", () => {

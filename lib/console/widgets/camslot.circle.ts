@@ -1,6 +1,11 @@
 "use client";
 
-import { ringFromCircle, haversineKm, type CircleSpec } from "@/lib/map/circle";
+import {
+  MIN_CIRCLE_RADIUS_KM,
+  ringFromCircle,
+  haversineKm,
+  type CircleSpec,
+} from "@/lib/map/circle";
 import { setExternalDraw } from "@/lib/map/aoi";
 import type { LatLon } from "@/lib/console/widgets/camslot.arm";
 
@@ -22,11 +27,6 @@ import type { LatLon } from "@/lib/console/widgets/camslot.arm";
 // interaction wiring is a `useCallback(..., [])` invoked once at mount, so
 // anything a handler closes over is frozen at mount. State read at EVENT time is
 // the only shape that works.
-
-/** The minimum a drag must cover before it counts as a circle rather than a click.
- *  Below this, a user who pressed and released on the same spot would get a ring
- *  containing nothing and no explanation. */
-const MIN_RADIUS_KM = 0.05;
 
 /** Preview layer ids. NAMESPACED AWAY FROM aoi.ts, which owns `aoi-areas*`. Two
  *  gestures sharing a layer id means one's teardown removes the other's paint,
@@ -216,7 +216,7 @@ export function startCircleDraw(
   const onUp = (e: PointerEvent) => {
     if (!center) return;
     const spec = specFrom(center, at(e));
-    const done = spec.radiusKm >= MIN_RADIUS_KM ? ringFromCircle(spec) : [];
+    const done = spec.radiusKm >= MIN_CIRCLE_RADIUS_KM ? ringFromCircle(spec) : [];
     stop();
     // Fired AFTER teardown so a handler that starts another gesture is not
     // immediately torn down by this one's cleanup.

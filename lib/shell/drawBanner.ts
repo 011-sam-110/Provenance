@@ -15,6 +15,7 @@
 // need a window nobody resizes to by accident.
 
 import { MIN_VERTICES, formatRadius, type DrawState } from "@/lib/map/aoi";
+import { MIN_CIRCLE_RADIUS_KM } from "@/lib/map/circle";
 
 /** One instruction, and the keys that perform it. */
 export interface DrawStep {
@@ -62,18 +63,26 @@ export function drawBannerModel(draw: DrawState): DrawBannerModel {
   if (draw.tool === "circle" || draw.tool === "radius") {
     const circle = draw.tool === "circle";
     const started = draw.center != null;
+    // A circle under MIN_CIRCLE_RADIUS_KM is a CLICK, and releasing there produces
+    // nothing at all — camslot.circle.ts refuses the ring and never calls onFinish.
+    // "Release to set it" would be promising a result the gesture is about to
+    // discard, which is the same defect as the polygon's below-minimum branch and
+    // gets the same answer: say what is still needed.
+    const tooSmall = circle && started && (draw.radiusKm ?? 0) < MIN_CIRCLE_RADIUS_KM;
     return {
       lead: circle ? "Drawing a circle" : "Drawing a radius",
       value: started ? { text: formatRadius(draw.radiusKm ?? 0), label: "radius" } : null,
       steps: [
-        started
-          ? { text: circle ? "Release to set it" : "Click again to set the edge", keys: [] }
-          : {
+        !started
+          ? {
               text: circle
                 ? "Press on the map and drag out from the centre"
                 : "Click the centre on the map",
               keys: [],
-            },
+            }
+          : tooSmall
+            ? { text: "Keep dragging — too small to be an area yet", keys: [] }
+            : { text: circle ? "Release to set it" : "Click again to set the edge", keys: [] },
       ],
     };
   }
