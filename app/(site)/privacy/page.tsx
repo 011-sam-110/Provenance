@@ -14,6 +14,21 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-09-08:
+ *   - The CARTO card was narrowed AGAIN, to fonts only, and the OpenFreeMap card grew
+ *     the front page. components/marketing/HeroGlobe.tsx now reads DARK_STYLE_URL
+ *     (tiles.openfreemap.org/styles/dark) instead of the inline CARTO Dark Matter
+ *     style, so basemaps.cartocdn.com is no longer contacted by a landing-page visit.
+ *     The move was forced: CARTO began watermarking unauthenticated tiles.
+ *   - "CARTO sees you whether or not you open the console" was TRUE when written and
+ *     is now false, which is the whole reason this header exists. A visitor who only
+ *     ever sees the front page now reaches OpenFreeMap and not CARTO, and both cards
+ *     say so. CARTO is still contacted from the console, for label fonts only.
+ *   - Checked, not assumed: the landing-page and hero credit lines said CARTO and were
+ *     correct until this commit. They are updated here in the same change rather than
+ *     left for later, because a credit line naming a host we no longer contact is the
+ *     same class of false statement as a privacy card naming one.
+ *
  * WHAT CHANGED ON 2026-09-03:
  *   - A new third-party card, OpenFreeMap, because the default basemap stopped being
  *     CARTO's. tiles.openfreemap.org now serves the Light and Streets maps, their
@@ -25,6 +40,9 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     front-page globe is still CARTO Dark Matter (components/marketing/HeroGlobe.tsx
  *     reads BASEMAPS.dark) - so "CARTO sees you whether or not you open the console"
  *     is still true and stays. Only "serves the default map tiles" became false.
+ *     (SUPERSEDED 2026-09-08 - see above. The hero left CARTO, so that sentence is
+ *     now false too and has gone. Note the file:line cited here had already rotted:
+ *     HeroGlobe stopped reading BASEMAPS.dark when Dark left the registry.)
  *   - Checked, not assumed: the landing page and hero credit lines still say CARTO
  *     and are still correct for the same reason. They were left alone deliberately.
  *
@@ -620,18 +638,22 @@ export default function PrivacyPage() {
                 <span className="pv-num">tiles.openfreemap.org</span> serves the Streets map, the
                 small inset maps on a pin&rsquo;s detail card, the map on the Locate page, and the
                 building shapes the 3D buildings are drawn from. It was the console&rsquo;s default
-                map until 7 September 2026; the default is now Satellite, so OpenFreeMap only sees
-                you if you open a detail card, the Locate page, or the Streets map itself.
+                map until 7 September 2026; the default is now Satellite, so inside the console
+                OpenFreeMap only sees you if you open a detail card, the Locate page, or the Streets
+                map itself. Since 8 September 2026 it also serves the globe on the FRONT page,
+                which CARTO used to serve &mdash; so on the landing page it sees you without your
+                opening anything.
               </p>
             </div>
             <div className="pv-card">
               <h3 className="pv-h3">CARTO</h3>
               <p>
-                <span className="pv-num">basemaps.cartocdn.com</span> serves the Dark map, and the
-                label fonts the Dark, Satellite and Topographic maps use. Satellite is the
-                console&rsquo;s default map, so those fonts load on almost every visit to the
-                console. The Dark map is also the globe on the front page, so CARTO sees you whether
-                or not you open the console.
+                <span className="pv-num">basemaps.cartocdn.com</span> serves the label fonts the
+                Satellite and Topographic maps use. Satellite is the console&rsquo;s default map, so
+                those fonts load on almost every visit to the console. It no longer serves any map
+                tiles, and it is no longer contacted by the front page at all: the globe there moved
+                to OpenFreeMap on 8 September 2026. If you never open the console, CARTO does not
+                see you.
               </p>
             </div>
             <div className="pv-card">
@@ -931,9 +953,9 @@ export default function PrivacyPage() {
           <div>
             <h4>Attribution</h4>
             <p>
-              Powered by TfL Open Data. Webcams provided by Windy.com. Basemap &copy; CARTO, &copy;
-              OpenStreetMap contributors. Contains public sector information licensed under the Open
-              Government Licence. Star catalogue:{" "}
+              Powered by TfL Open Data. Webcams provided by Windy.com. Basemap &copy; OpenFreeMap,
+              &copy; OpenMapTiles, data from &copy; OpenStreetMap contributors. Contains public
+              sector information licensed under the Open Government Licence. Star catalogue:{" "}
               <a href="https://codeberg.org/astronexus/hyg" target="_blank" rel="noreferrer noopener">
                 HYG database v4.4
               </a>{" "}

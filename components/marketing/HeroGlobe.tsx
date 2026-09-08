@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import maplibregl, { type Map as MlMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { DARK_STYLE } from "@/lib/basemaps";
+import { DARK_STYLE_URL, DARK_FALLBACK_STYLE } from "@/lib/basemaps";
+import { classifyMapError } from "@/lib/map/resilience";
 import { buildSatrec, propagateAt } from "@/lib/satellites/propagate";
 import { classifySatellite } from "@/lib/satellites/classify";
 import { setHeroView } from "@/lib/marketing/heroView";
@@ -187,10 +188,10 @@ export default function HeroGlobe({
 
     const map = new maplibregl.Map({
       container: el,
-      // DARK_STYLE by name, not BASEMAPS.dark. Dark is no longer a registry entry —
+      // DARK_STYLE_URL by name, not BASEMAPS.dark. Dark is no longer a registry entry —
       // it left with the console's dark skin — but this hero is a night stage and
       // the style itself is still exported for exactly this caller.
-      style: DARK_STYLE,
+      style: DARK_STYLE_URL,
       // MapLibre v5 moved this under canvasContextAttributes (it was a top-level
       // MapOptions field in v4).
       canvasContextAttributes: { preserveDrawingBuffer: capture },
@@ -239,9 +240,49 @@ export default function HeroGlobe({
       points: [],
     };
 
+    // THE FLOOR UNDER A REMOTE STYLE. The basemap is a URL now (see DARK_STYLE_URL for
+    // why it stopped being an inline CARTO style), so for the first time the hero can
+    // fail on the style document itself. If it does, `style.load` never fires and none
+    // of the code below runs: no basemap, and — because every signal layer is added in
+    // that handler — no data either. A blank stage under the headline.
+    //
+    // Swapping to the inline floor re-fires `style.load` on a document that cannot fail,
+    // so the layers below get added anyway and the hero keeps its live globe with a plain
+    // night ground under it. Reuses classifyMapError rather than reacting to every error
+    // event: a raster style 404s tiles constantly at the poles and past maxzoom, and
+    // tearing the style down for one missing tile would be its own outage. One shot only
+    // — if the floor itself somehow errors, retrying it forever would spin.
+    let floored = false;
+    map.on("error", (e) => {
+      if (disposed || floored) return;
+      if (classifyMapError(e) !== "style") return;
+      floored = true;
+      map.setStyle(DARK_FALLBACK_STYLE);
+    });
+
     map.on("style.load", () => {
       if (disposed) return;
       map.setProjection({ type: "globe" });
+
+      // MUTE THE BASEMAP'S OWN LABELS. The old CARTO style was a RASTER, so its few
+      // labels were baked into the tile and there was nothing to switch off. The
+      // OpenFreeMap replacement is vector and ships a full label set — country, region,
+      // state, city, water — in local scripts. Left on, the hero picks up dense
+      // multi-script type across the sphere, competing with the headline sitting on top
+      // of it and with the signal dots that are the actual argument. This is a backdrop,
+      // not a reference map: the map you can read is one click away.
+      //
+      // Hiding beats not-adding: the style is fetched whole from a URL we do not own, so
+      // there is no build step to strip layers in, and a style edit would have to be
+      // re-derived every time upstream changes. Hidden symbol layers also never request
+      // their glyphs, so this removes the font fetches too.
+      //
+      // Only OUR layers are added below, all of them circle/line/fill, so this can never
+      // catch one of them — but it runs first regardless, so a symbol layer added later
+      // stays visible by construction rather than by luck.
+      for (const layer of map.getStyle().layers ?? []) {
+        if (layer.type === "symbol") map.setLayoutProperty(layer.id, "visibility", "none");
+      }
 
       // Order matters: areas under lines under points, so a country-sized fill
       // never buries the events sitting inside it.

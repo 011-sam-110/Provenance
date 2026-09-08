@@ -131,7 +131,8 @@ export default function HeroStage({ layers, satColor }: { layers: HeroLayer[]; s
             {status}
           </p>
           <p className="pv-hero-credit">
-            CARTO · OpenStreetMap · TeleGeography · CelesTrak · USGS · NASA EONET · OurAirports
+            OpenFreeMap · OpenStreetMap · TeleGeography · CelesTrak · USGS · NASA EONET ·
+            OurAirports
           </p>
         </div>
       </div>
