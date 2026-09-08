@@ -799,7 +799,12 @@ In `lib/notify/engine.ts`, inside the rule loop, after the `crosses` branch:
       // lastOk === 0 means this pair has NEVER answered. Silence with no baseline is
       // not an outage — it is a source that was armed before it ever worked, and
       // announcing it would blame the wrong thing.
-      const silentFor = before.lastOk > 0 ? now - before.lastOk : 0;
+      // A poll that SUCCEEDED is not silence, whatever the previous lastOk says.
+      // Without the `!feed.ok` term, the single poll on which a feed RECOVERS both
+      // fires a bogus outage and re-latches quietFired after the reset above has
+      // already cleared it — leaving the latch stuck true, so the next genuine
+      // outage is never announced at all.
+      const silentFor = !feed.ok && before.lastOk > 0 ? now - before.lastOk : 0;
       if (silentFor >= silentMs && !before.quietFired) {
         events.push(event(rule, "quiet", now));
         next.quietFired = true;
@@ -963,7 +968,7 @@ In `lib/notify/engine.ts`, replace the body of `diff` from `const before = ...` 
     dueFired: before.dueFired,
     quietFired: before.quietFired,
   };
-  if (feed.ok && !collapsed) next.quietFired = false;
+  if (trustRows) next.quietFired = false; // same expression the quiet branch negates
 
   const events: NotifyEvent[] = [];
   const armed = rules.filter((r) => r.enabled);
@@ -989,7 +994,13 @@ Leave the `quiet` branch in its own loop **outside** that block, so a dead feed 
   for (const rule of armed) {
     if (rule.params.kind !== "quiet") continue;
     const { silentMs } = rule.params;
-    const silentFor = before.lastOk > 0 ? now - before.lastOk : 0;
+    // A poll we TRUSTED is not silence, whatever the previous lastOk says. This
+    // term must stay the exact complement of the `next.quietFired = false` reset
+    // above — hence `trustRows`, not a re-typed `feed.ok`. If the two ever
+    // disagree, the single poll on which a feed RECOVERS both fires a bogus
+    // outage and re-latches quietFired after the reset already cleared it,
+    // leaving the latch stuck true so the next genuine outage is never announced.
+    const silentFor = !trustRows && before.lastOk > 0 ? now - before.lastOk : 0;
     if (silentFor >= silentMs && !before.quietFired) {
       events.push(event(rule, "quiet", now));
       next.quietFired = true;
