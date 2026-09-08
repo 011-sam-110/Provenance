@@ -4,6 +4,8 @@ import { useMemo, useRef, type CSSProperties } from "react";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
 import { STAGE_ID, type SegmentId } from "@/lib/console/types";
 import { widgetsInSegment } from "@/lib/console/reducers";
+import { useActivePreset } from "@/lib/console/activePreset";
+import { useSceneChrome, visibleWidgets } from "@/lib/console/sceneChrome";
 import { nudgeTarget, sendToTarget, SEGMENT_ORDER, SEGMENT_LABEL } from "@/lib/console/move";
 import WidgetFrame from "@/components/console/WidgetFrame";
 import StageHost from "@/components/console/StageHost";
@@ -96,6 +98,13 @@ export default function ConsoleWorkspace() {
   const gridRef = useRef<HTMLDivElement>(null);
   const split = useRailSplitter(gridRef);
 
+  // Which scene's chrome applies to this render — see lib/console/sceneChrome.ts.
+  // `null` (no board applied yet, or a `?c=` layout with no board) means "hide
+  // nothing, no compact override," which is exactly what visibleWidgets/the
+  // quick-settings read below already do for that case.
+  const sceneId = useActivePreset();
+  const chrome = useSceneChrome(sceneId);
+
   // The workspace's own box, measured. Rail sizes are clamped against it so two
   // wide rails can never squeeze the map below STAGE_MIN_PX — the clamp needs a
   // container width, and this is the element the rails actually hang off.
@@ -130,9 +139,24 @@ export default function ConsoleWorkspace() {
   /** Every rail's widgets, already ordered — `order` is dense and 0-based. */
   const byRail = useMemo(() => {
     const out = {} as Record<SegmentId, ReturnType<typeof widgetsInSegment>>;
-    for (const rail of RAILS) out[rail] = widgetsInSegment(layout, rail);
+    // visibleWidgets is a paint-time filter only — it never touches order/rect,
+    // so a hidden card keeps its slot and comes back to it when un-hidden.
+    for (const rail of RAILS) out[rail] = visibleWidgets(widgetsInSegment(layout, rail), sceneId);
     return out;
-  }, [layout]);
+    // `chrome` IS A DEPENDENCY, and leaving it out is the bug this comment exists
+    // to stop coming back. `visibleWidgets` reads the hidden set out of
+    // sceneChromeStore by sceneId, so hiding a widget changes this computation's
+    // RESULT without changing either `layout` or `sceneId` — both are untouched
+    // when only chrome moves. `useSceneChrome` correctly re-renders on the store
+    // write, but a memo keyed only on [layout, sceneId] is not invalidated by it,
+    // so the stale rail arrays paint again and the card never leaves the DOM.
+    //
+    // Measured before the fix: unchecking "What's abnormal" on WORLD wrote
+    // {"world":{"hidden":["anomaly"],"quick":{}}} to localStorage immediately and
+    // .tn-cw still held 6 cards with WHAT'S ABNORMAL among them. Every store-level
+    // unit test was green throughout — the store was never wrong. Only a real
+    // browser could see this, which is why it survived to e2e.
+  }, [layout, sceneId, chrome]);
 
   const railVars = {
     "--tn-lw": `${wall ? 0 : sizes.left}px`,
@@ -296,7 +320,11 @@ export default function ConsoleWorkspace() {
     // tokens. It used to carry a `data-tnx-skin` attribute alongside — without it,
     // the inner scope re-declared the DARK palette and only the outer chrome went
     // light. That failure mode died with the dark skin.
-    <div className="tn-cw-shell tn-terminal" style={railVars}>
+    <div
+      className="tn-cw-shell tn-terminal"
+      style={railVars}
+      data-density={chrome.quick.compactCards === true ? "compact" : undefined}
+    >
       {/* The grid is a separate element from `.tn-cw-shell`, and that is not
           incidental: grid placement only applies to DIRECT children of the grid
           container, while the rail (PanelHost) has to stay a direct child of

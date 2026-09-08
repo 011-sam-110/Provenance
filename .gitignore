@@ -48,3 +48,9 @@ data/liveness/raw/
 # Raw GDELT windows recorded by scripts/gdelt-record.mts. Multi-MB per 15-min
 # slot; the audit replays from these, and only the labelled subset is committed.
 .gdelt-cache/
+
+# Agent coordination scratch (message bus + shared memory). Not product code.
+.hive/
+
+# macOS Finder metadata — junk, never ours
+.DS_Store

@@ -106,10 +106,10 @@
 //   now also applies here. Left alone — changing it is the integrator's call.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMetrics } from "@/lib/metrics";
 import { useLayers } from "@/lib/layers";
-import { useActivePreset } from "@/lib/console/activePreset";
+import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
 import { BUILTIN_PRESETS, applyPreset, listPresets, resetActiveBoard } from "@/lib/console/presets";
 import { isBoardEdited } from "@/lib/console/boards";
 import { useShellLayout } from "@/lib/console/store";
@@ -119,6 +119,8 @@ import DiscordMark from "@/components/brand/DiscordMark";
 import SettingsPanel from "@/components/shell/SettingsPanel";
 import LivePresence from "@/components/shell/LivePresence";
 import { BRAND } from "@/lib/brand";
+import NavPanel, { NAV_PANEL_ID } from "@/components/terminal/NavPanel";
+import { CLOSE_GRACE_MS, boardStep, navPanelStore, nextOpenDelay, useNavPanel } from "@/lib/console/navPanel";
 
 /**
  * The tab label IS the board's title, uppercased. There used to be a second map here
@@ -145,6 +147,11 @@ const boardLabel = (title: string) => title.toUpperCase();
 // of the stage (`.tnx-stage-foot`) already carries LA/NYC/LDN/DXB/SGP/TYO/SYD, so UTC
 // in the top bar was the second clock on the page.
 
+/** The seven board ids in tab order — also the roving-focus / Home-End order,
+ *  and the order `boardStep` walks for ArrowLeft/ArrowRight. One source, so a
+ *  reordering of BUILTIN_PRESETS is the only place that has to change. */
+const BOARD_ORDER = BUILTIN_PRESETS.map((p) => p.id);
+
 /**
  * The board tabs, and the edited/reset state that belongs with them.
  *
@@ -152,8 +159,26 @@ const boardLabel = (title: string) => title.toUpperCase();
  * layout so the "customised" dot is live, and the layout changes on every cell
  * crossing of every drag. Keeping that subscription here re-renders six buttons
  * instead of dragging SettingsPanel and ProfileMenu along with it.
+ *
+ * AS OF THE NAV REBUILD, each tab is also an Apple-style expanding-nav label:
+ * hovering or focusing one PREVIEWS its board's quick-settings panel (see
+ * NavPanel.tsx) without switching; click/Enter/Space still switches
+ * immediately, unchanged. The hover/close TIMERS live one level up, in
+ * TerminalHeader — see the comment there for why — this component only calls
+ * the callbacks it's handed and owns the parts that are genuinely per-tab:
+ * which button ref is which, and the roving `tabIndex`.
  */
-function BoardTabs() {
+function BoardTabs({
+  openId,
+  onTabHoverEnter,
+  onTabFocus,
+  onToggleClick,
+}: {
+  openId: string | null;
+  onTabHoverEnter: (sceneId: string) => void;
+  onTabFocus: (sceneId: string) => void;
+  onToggleClick: () => void;
+}) {
   const activePresetId = useActivePreset();
   // Subscribed, not read: `isBoardEdited` hits localStorage, so without a re-render
   // trigger the dot would be a snapshot from whenever the header last happened to
@@ -161,6 +186,32 @@ function BoardTabs() {
   useShellLayout();
 
   const activeTitle = BUILTIN_PRESETS.find((p) => p.id === activePresetId)?.title;
+
+  // Roving tabindex: the row is one Tab stop. `focusedTab` is DOM-focus state,
+  // deliberately separate from `openId` (which also moves on plain mouse
+  // hover, with no DOM focus change at all) — tying the roving stop to hover
+  // would relocate where a keyboard Tab lands every time the mouse passed
+  // over a different label. Defaults to the active board, same convention
+  // MapRail's `tabStop` uses for its own roving group.
+  const [focusedTab, setFocusedTab] = useState<string | null>(null);
+  const tabStop = focusedTab ?? activePresetId ?? BOARD_ORDER[0];
+  const btnRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const onTabKeyDown = (e: React.KeyboardEvent, id: string) => {
+    // Enter/Space are handled natively (these are real <button>s) — only the
+    // roving-focus keys are this handler's job.
+    let next: string | null = null;
+    if (e.key === "ArrowLeft") next = boardStep(BOARD_ORDER, id, -1);
+    else if (e.key === "ArrowRight") next = boardStep(BOARD_ORDER, id, 1);
+    else if (e.key === "Home") next = BOARD_ORDER[0];
+    else if (e.key === "End") next = BOARD_ORDER[BOARD_ORDER.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    // Moving DOM focus fires that button's own onFocus below, which is what
+    // actually opens/retargets the panel — one mechanism for both Tab and
+    // arrow-key navigation, per nav-spec §5.
+    btnRefs.current[next]?.focus();
+  };
 
   return (
     <nav className="tn-preset-pill tnx-hdr-boards" aria-label="Boards">
@@ -179,11 +230,31 @@ function BoardTabs() {
         return (
           <button
             key={p.id}
+            ref={(el) => {
+              btnRefs.current[p.id] = el;
+            }}
             type="button"
             className={`tnx-hdr-board${active ? " is-active" : ""}${edited ? " is-edited" : ""}`}
             aria-pressed={active}
+            // In addition to aria-pressed ("is this the active board"), NOT a
+            // replacement for it — true only for whichever scene's panel is
+            // currently open, which may or may not be the active one.
+            aria-expanded={openId === p.id}
+            aria-controls={NAV_PANEL_ID}
+            tabIndex={tabStop === p.id ? 0 : -1}
             title={`${p.title} — ${p.blurb}${edited ? " · customised" : ""}`}
-            onClick={() => applyPreset(p.id)}
+            onClick={() => {
+              applyPreset(p.id);
+              // Click commits — Apple's split. The preview is over once the
+              // board it was previewing is the board you're now on.
+              navPanelStore.close();
+            }}
+            onMouseEnter={() => onTabHoverEnter(p.id)}
+            onFocus={() => {
+              setFocusedTab(p.id);
+              onTabFocus(p.id);
+            }}
+            onKeyDown={(e) => onTabKeyDown(e, p.id)}
           >
             {boardLabel(p.title)}
             {edited && <span className="tnx-hdr-board-dot" aria-hidden>•</span>}
@@ -210,6 +281,42 @@ function BoardTabs() {
           <span className="tn-sr-only">Reset {activeTitle ?? "this board"} to its default layout</span>
         </button>
       )}
+
+      {/* THE UNIVERSAL ENTRY POINT — mouse, keyboard AND touch alike, and the
+          ONLY one touch gets. Hover has no touch equivalent, so this is what
+          makes quick settings reachable at all on a coarse pointer; on every
+          pointer type it always opens the ACTIVE board's panel, never a
+          preview, which is what makes it safe to be the one thing every input
+          method can reach — a tap can't "preview" the way a hover does, so it
+          doesn't try to.
+
+          onMouseEnter SELF-HEALS a real bug (found by claude-qa): this button
+          sits at the end of the SAME hover-sensitive row as the seven tabs, so
+          a mouse travelling from a just-clicked tab toward the toggle crosses
+          the intervening tabs' own boxes and fires THEIR onMouseEnter along
+          the way. Because retargeting between two ALREADY-open scenes is
+          instant (nextOpenDelay()=0, by design, for real tab-to-tab hovering),
+          openId would silently end up pointed at whichever tab the pointer
+          last grazed in transit — not the active board — by the time it
+          reached the toggle, corrupting the click that follows. Treating
+          arrival at the toggle exactly like arriving at a tab for the ACTIVE
+          board corrects openId the instant the pointer gets here, before any
+          click can read a stale value; it costs nothing when nothing was
+          open (same debounced-open a first hover on any tab would get) and
+          nothing extra when the active board's panel was already showing. */}
+      <button
+        type="button"
+        className="tnx-hdr-nav-toggle"
+        aria-expanded={openId !== null}
+        aria-controls={NAV_PANEL_ID}
+        aria-label={`Quick settings for ${activeTitle ?? "this board"}`}
+        onClick={onToggleClick}
+        onMouseEnter={() => {
+          if (activePresetId) onTabHoverEnter(activePresetId);
+        }}
+      >
+        <span aria-hidden>{openId ? "▴" : "▾"}</span>
+      </button>
     </nav>
   );
 }
@@ -218,6 +325,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const m = useMetrics();
   const layers = useLayers();
   const activePresetId = useActivePreset();
+  const { openId } = useNavPanel();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
@@ -225,8 +333,149 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   // because a custom saved board is also a legitimate active board.
   const boardTitle = listPresets().find((p) => p.id === activePresetId)?.title ?? null;
 
+  // ── The nav panel's hover/close TIMERS ──────────────────────────────────
+  //
+  // These live here, one level above BoardTabs and NavPanel, because they are
+  // the one piece of state three different triggers all have to share and
+  // agree on: a tab's mouseenter (open, debounced), the WHOLE navshell's
+  // mouseleave (close, debounced — the wrapper below, not any one tab or the
+  // panel, so moving the pointer from a tab down into the panel is never a
+  // "leave"), and the toggle button's click (immediate, no debounce). They
+  // are plain `useRef` timer handles, per nav-spec §5 — NOT part of the pure
+  // lib/console/navPanel.ts module, which only answers "how long" and "what
+  // happens," never owns a `setTimeout` that has to outlive a render.
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Read once, not per mouseenter — a `matchMedia` call per hover would be
+  // wasteful and its answer cannot change mid-session on a real device.
+  // Coarse/no-hover pointers (touch) never get the hover preview at all;
+  // `.tnx-hdr-nav-toggle` is their entry point instead (nav-spec §7).
+  const finePointerRef = useRef(false);
+  useEffect(() => {
+    finePointerRef.current =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        : false;
+  }, []);
+
+  const clearOpenTimer = useCallback(() => {
+    if (openTimerRef.current !== null) {
+      clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  }, []);
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const handleTabHoverEnter = useCallback(
+    (sceneId: string) => {
+      if (!finePointerRef.current) return;
+      clearCloseTimer();
+      clearOpenTimer();
+      const delay = nextOpenDelay(navPanelStore.get(), sceneId);
+      if (delay === 0) navPanelStore.open(sceneId);
+      else openTimerRef.current = setTimeout(() => navPanelStore.open(sceneId), delay);
+    },
+    [clearCloseTimer, clearOpenTimer],
+  );
+
+  // Focus (Tab, or the DOM focus an arrow key just moved) opens immediately —
+  // Tab-ing through the row previews each board for free, with none of
+  // hover's debounce (a keyboard user is not "passing through").
+  const handleTabFocus = useCallback(
+    (sceneId: string) => {
+      clearOpenTimer();
+      clearCloseTimer();
+      navPanelStore.open(sceneId);
+    },
+    [clearOpenTimer, clearCloseTimer],
+  );
+
+  const handleToggleClick = useCallback(() => {
+    clearOpenTimer();
+    clearCloseTimer();
+    if (navPanelStore.get().openId === null) {
+      const id = activePresetStore.get();
+      if (id) navPanelStore.open(id);
+    } else {
+      navPanelStore.close();
+    }
+  }, [clearOpenTimer, clearCloseTimer]);
+
+  // The pointer leaving the WHOLE navshell (header + panel together — React's
+  // onMouseEnter/onMouseLeave already behave like native mouseenter/mouseleave,
+  // firing only at this element's own boundary, not on every descendant
+  // crossing) starts the close grace timer; re-entering anywhere in the
+  // navshell before it fires cancels it. Entering or leaving a tab WITHIN the
+  // navshell never touches this pair at all.
+  const handleNavshellMouseLeave = useCallback(() => {
+    clearOpenTimer();
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => navPanelStore.close(), CLOSE_GRACE_MS);
+  }, [clearOpenTimer, clearCloseTimer]);
+  const handleNavshellMouseEnter = useCallback(() => {
+    clearCloseTimer();
+  }, [clearCloseTimer]);
+
+  useEffect(
+    () => () => {
+      clearOpenTimer();
+      clearCloseTimer();
+    },
+    [clearOpenTimer, clearCloseTimer],
+  );
+
+  // ── Escape closes the panel, and ONLY the panel ──────────────────────────
+  //
+  // .tnx-nav-panel is role="region", never role="dialog" — ConsoleShell's own
+  // global keydown handler early-returns whenever `[role="dialog"]` is
+  // mounted, and using that role here would silently disable Escape/;/Ctrl-K
+  // for the app for as long as this panel was open, which is a bigger
+  // regression than anything about the panel itself (nav-spec §7). Because
+  // ConsoleShell does NOT defer to a role="region" panel on its own, this
+  // listener has to both close the panel AND stop the SAME keypress also
+  // reaching ConsoleShell's handler, which would otherwise run its own
+  // Escape branch (leave picking mode, else clear the selection) as an
+  // unwanted second effect of the same keystroke.
+  //
+  // stopImmediatePropagation, not stopPropagation: both listeners are on
+  // `window`, so there is no capture/bubble path between them to interrupt —
+  // only registration ORDER decides who runs first, and stopImmediatePropagation
+  // is what stops a LATER-registered listener on the same target from running
+  // at all once an earlier one has handled the event.
+  //
+  // Mounted always (not only while open) and self-gating on the store, so the
+  // listener's own registration happens once, on mount, rather than being
+  // added and removed every time the panel opens and closes — which matters
+  // here specifically: registration order is what makes this run before
+  // ConsoleShell's own listener (React mounts child effects before parent
+  // effects, and TerminalHeader is ConsoleShell's child), and re-registering
+  // this one on every open/close would not change that order but adds churn
+  // for no benefit.
+  //
+  // VERIFIED IN A REAL BROWSER, not just by trusting the mount-order argument
+  // above (nav-spec §7 asks for this explicitly): opened a scene's panel with
+  // the mouse, pressed Escape once, and confirmed BOTH that the panel closed
+  // AND that ConsoleShell's own Escape branch did not also fire on the same
+  // keypress (no selection-clear side effect). See #nav-shell for the note.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (navPanelStore.get().openId === null) return;
+      navPanelStore.close();
+      e.stopImmediatePropagation();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <>
+      <div className="tnx-navshell" onMouseEnter={handleNavshellMouseEnter} onMouseLeave={handleNavshellMouseLeave}>
       <header className="tnx-hdr" role="banner">
         {/* Canonical machine-readable pulse — visually hidden, kept for the e2e smoke
             test and screen readers. */}
@@ -288,7 +537,12 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             aria-pressed rather than role="tab"/aria-selected: these tabs control the
             whole workspace — widgets, map layers, stage — not one tabpanel, and a
             tablist with no tabpanel is a promise the DOM does not keep. */}
-        <BoardTabs />
+        <BoardTabs
+          openId={openId}
+          onTabHoverEnter={handleTabHoverEnter}
+          onTabFocus={handleTabFocus}
+          onToggleClick={handleToggleClick}
+        />
 
         <div className="tnx-hdr-spacer" />
 
@@ -411,6 +665,24 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           </button>
         </div>
       </header>
+
+      {/* Sibling of <header>, inside the same navshell, so the navshell's own
+          height (not a fixed/absolute overlay) is what visibly "grows
+          downward" when it opens — the same trick Apple's bar uses. */}
+      <NavPanel openId={openId} />
+      </div>
+
+      {/* Sibling of .tnx-navshell — covers everything BELOW the bar by
+          z-index alone, dims the page behind an open panel without making it
+          inert (role="region", not role="dialog" — see the Escape comment
+          above), and closes the panel on any outside click. Placed here,
+          still inside TerminalHeader's own returned fragment, so no
+          ConsoleShell.tsx edit was needed to add it. */}
+      <div
+        className="tnx-nav-scrim"
+        data-open={openId !== null || undefined}
+        onClick={() => navPanelStore.close()}
+      />
 
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
