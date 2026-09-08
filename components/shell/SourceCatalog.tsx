@@ -28,7 +28,7 @@
 // lib/shell/timeWindow.ts, where hydrate() was made a no-op in the same change so a
 // stale persisted "1h" cannot outlive the control that set it.
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 // THE EDITING PROJECTIONS, NOT THE UNION. `useLayers`/`useSignals` answer "is this
 // on anywhere" — World or any drawn area — which is what the MAP needs and is the
 // wrong answer for a tick beside a toggle. With the rail pointed at an area, a row
@@ -38,6 +38,12 @@ import { useEditingLayers, useLayers, layersStore, type LayerKey } from "@/lib/l
 import { signalsStore, useEditingSignals } from "@/lib/signals/store";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
+import SourcesSplitter from "@/components/shell/sources/SourcesSplitter";
+import {
+  sourcesRailWidthStore,
+  useSourcesRailWidth,
+  widthFromPointer,
+} from "@/lib/shell/sourcesRailWidth";
 import { marketsStore } from "@/lib/shell/markets";
 import { watchlistPanelStore } from "@/lib/shell/watchlist";
 import { CAMERA_REGIONS, CAMERA_FEED_META } from "@/lib/icons/svg";
@@ -160,6 +166,77 @@ export default function SourceCatalog() {
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<"sources" | "presets">("sources");
+
+  // ── RAIL WIDTH ─────────────────────────────────────────────────────────────
+  // The width is PUBLISHED AS A CSS VARIABLE rather than applied as an inline
+  // `width` on the aside, because two rules need it and only one of them is this
+  // element: `.tn-terminal .tn-cw-shell > .tn-rail` sizes the rail, and
+  // `.tn-terminal .tn-cw-shell:has(> .tn-rail)` pads the workspace by the same
+  // amount so the grid REFLOWS beside the rail instead of being covered by it.
+  // Setting the variable moves both together; an inline width would move the rail
+  // and leave the console's padding at the old figure, which is a rail that
+  // overlaps the first widget column.
+  //
+  // It goes on the document element, not on the aside: `:has()` reads the rail's
+  // width to pad an ANCESTOR, so a variable declared on the rail itself is out of
+  // scope for the rule that needs it.
+  const railWidth = useSourcesRailWidth();
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--tn-rail-user-w", `${railWidth}px`);
+    // Cleared on unmount so the CSS falls back to its own default rather than
+    // leaving a stale figure behind on a route that has no rail at all.
+    return () => {
+      root.style.removeProperty("--tn-rail-user-w");
+    };
+  }, [railWidth]);
+
+  // Persisted width arrives one frame after mount, for the reason spelled out on
+  // useSourcesRailWidth's server snapshot: localStorage cannot be read during SSR,
+  // so reading it in render would make the first client pass disagree with the
+  // server's HTML. Every other persisted shell store hydrates the same way from
+  // ConsoleShell; this one hydrates here because it is the only consumer.
+  useEffect(() => {
+    sourcesRailWidthStore.hydrate();
+  }, []);
+
+  const [dragging, setDragging] = useState(false);
+  const onSplitterDown = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const el = e.currentTarget as HTMLElement;
+    const pointerId = e.pointerId;
+    // Measured against the WORKSPACE band, not the viewport. The rail is absolutely
+    // positioned inside `.tn-cw-shell`, so its left edge is that element's left edge
+    // — which is not 0 once anything sits outside it. Falling back to the viewport
+    // when the shell cannot be found keeps a drag usable rather than dead.
+    const shell = el.closest(".tn-cw-shell");
+    const boxLeft = shell ? shell.getBoundingClientRect().left : 0;
+
+    // Pointer capture rather than window listeners: this element is never
+    // reordered or re-parented mid-gesture (the constraint that ruled capture out
+    // for the row drag in useRailDrag.ts does not apply here), so the pointer keeps
+    // talking to the splitter once it leaves the 9px handle — which it does
+    // immediately, because dragging it is the point.
+    el.setPointerCapture(pointerId);
+    setDragging(true);
+
+    const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      sourcesRailWidthStore.set(widthFromPointer(ev.clientX, boxLeft));
+    };
+    const stop = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      setDragging(false);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerup", stop);
+      el.removeEventListener("pointercancel", stop);
+      if (el.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", stop);
+    el.addEventListener("pointercancel", stop);
+    e.preventDefault();
+  }, []);
   const t = useT();
   const layers = useEditingLayers();
   const signals = useEditingSignals();
@@ -244,6 +321,12 @@ export default function SourceCatalog() {
         })).filter((s) => s.rows.length > 0);
 
   return (
+    // A FRAGMENT, so the aside stays a DIRECT child of `.tn-cw-shell`. Wrapping the
+    // pair in a positioning div would break `.tn-terminal .tn-cw-shell > .tn-rail`
+    // and the `:has(> .tn-rail)` padding rule at the same time — the rail would lose
+    // its width and the console would lose the gap it sits in. See SourcesSplitter
+    // for why the handle cannot simply live inside the rail.
+    <>
     <aside className="tn-rail" aria-label="Sources">
       <div className="tn-rail-header">
         <h2 className="tn-rail-title">Sources</h2>
@@ -360,5 +443,7 @@ export default function SourceCatalog() {
         <PresetBar />
       )}
     </aside>
+    <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
+    </>
   );
 }

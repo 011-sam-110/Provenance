@@ -3571,8 +3571,45 @@ a.tn-w-place { display: flex; align-items: center; }
      the stage never goes below 800.
 
      Below 901px a separate rule re-homes the rail as a bottom sheet with
-     width:auto, so this value stops applying entirely on a phone. */
-  --tn-rail-w: clamp(316px, calc(100vw - 820px), 602px);
+     width:auto, so this value stops applying entirely on a phone.
+
+     ── SUPERSEDED 2026-09-08, and kept because the ARITHMETIC is still live ──
+     The measurement above is not stale and must not be deleted: 276px per column,
+     562px of content for two, 40px of rail chrome, 316px for one. Those are still
+     the numbers the container-query fold and both bounds below are derived from,
+     and the note about the offline probe is still the reason nobody should
+     re-derive them from a font metric.
+     What IS stale is the conclusion — that the rail should simply take 602px
+     wherever it fits. It should not, because at the viewport most people use it
+     lands just under the fold and draws ONE column in a two-column pane. The
+     width is now the reader's to set. See the declaration below. */
+  /* ── UPDATED 2026-09-08: the rail is USER-RESIZABLE and defaults narrower ──
+     Was `clamp(316px, calc(100vw - 820px), 602px)` — as wide as 602px wherever the
+     viewport allowed, because 602px is what buys the two-column `.tn-src-rows`
+     layout (562px of content + 40px of padding and scrollbar).
+
+     THE PROBLEM WITH THAT DEFAULT IS THAT IT USUALLY BOUGHT NOTHING. At a 1400px
+     viewport the clamp yields ~580px, the section's inline size lands just under
+     the `@container (max-width: 561px)` fold, and the rail draws ONE column of rows
+     stretched label-left / toggle-right. The middle of every row is the gap. So the
+     widest setting was paying for a second column it was not getting.
+
+     The preferred value is now `--tn-rail-user-w`, published by SourceCatalog from
+     lib/shell/sourcesRailWidth.ts, defaulting to 452px — 75% of the old figure, and
+     one column sized to its own content rather than to two columns' worth.
+
+     THE BOUNDS ARE STILL THE SAFETY, and they are why this stays a clamp rather
+     than becoming the bare variable. The upper bound is `min(640px, 100vw - 820px)`:
+     640 so the two-column layout is still REACHABLE by dragging (a ceiling at the
+     old 602 would have made it unreachable, since the fold needs >561px of content),
+     and `100vw - 820px` so the rail can never starve the stage — the console needs
+     STAGE_MIN_PX 360 plus RAIL_MIN.left 220 plus RAIL_MIN.right 220, plus gutters.
+     A drag is clamped to the same ceiling in JS; this is the second line of defence,
+     for a viewport that shrinks AFTER the width was chosen.
+
+     Below 901px a separate rule re-homes the rail as a bottom sheet with
+     width:auto, so none of this applies on a phone. */
+  --tn-rail-w: clamp(300px, var(--tn-rail-user-w, 452px), min(640px, calc(100vw - 820px)));
   /* ── The design palette: THREE COLOURS AND WHITE ────────────────────────
      #262b15 ink · #464b37 accent · #afb4ad edge · #ffffff everything else.
 
@@ -6581,6 +6618,78 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
    instead of moving with the length of each heading. */
 .tn-src-sec-on { margin-left: auto; color: var(--tn-accent); font-weight: 600; }
 /* ── end sources rail sections ────────────────── */
+
+/* ── SOURCES RAIL SPLITTER ───────────────────────────────────────────────────
+   The seam between the rail and the console. A SIBLING of `.tn-rail`, positioned
+   off the same `--tn-rail-w` the rail is sized by — see SourcesSplitter.tsx for
+   why it cannot live inside the rail (that element is its own scrollport, so a
+   child handle would scroll away with the source rows).
+
+   9px WIDE, DRAWN AS 1px. The hit target is the whole element; what you see is the
+   ::after hairline down the middle. A 1px target is a hostile one — Fitts' law
+   aside, the rail's right border is also the console's left edge, so a miss lands
+   on a widget. The visible line stays 1px so the chrome does not gain a bar.
+
+   It sits ON the border rather than beside it: `translateX(-50%)` centres the
+   element over the rail's edge so the grab area straddles the seam evenly instead
+   of hanging off one side of it. */
+.tn-src-splitter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--tn-rail-w);
+  width: 9px;
+  transform: translateX(-50%);
+  /* Above the rail (z 26) so the handle is grabbable along its whole height, and
+     above the widget columns so the last few pixels are not stolen by a card. */
+  z-index: 27;
+  cursor: col-resize;
+  /* The rail has no touch equivalent of this gesture and does not need one: it is a
+     full-width bottom sheet below 901px (see the media query at the end of this
+     sheet), where a width control would mean nothing. `pan-y` keeps a stray touch
+     scrolling the page rather than starting a resize nobody can see the result of. */
+  touch-action: pan-y;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.tn-src-splitter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: transparent;
+  transition: background 120ms ease;
+}
+/* The line only appears on hover, focus or during a drag. At rest the rail already
+   HAS a right border (`.tn-terminal .tn-cw-shell > .tn-rail`), and painting a second
+   one on top of it would read as a double rule rather than as an affordance. */
+.tn-src-splitter:hover::after,
+.tn-src-splitter[data-active]::after {
+  background: var(--tn-accent);
+  width: 2px;
+}
+/* Keyboard focus is a RING, not the hover line: this control is reachable by Tab
+   and its focus state has to be visible to someone who never hovers anything. */
+.tn-src-splitter:focus-visible {
+  outline: 2px solid var(--tn-accent);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+/* While dragging, the resize cursor must survive the pointer leaving the 9px
+   handle — which it does immediately. Pointer capture keeps the EVENTS coming;
+   this keeps the CURSOR from flickering back to a pointer over the map. */
+.tn-src-splitter[data-active] { cursor: col-resize; }
+body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none; }
+
+/* The rail is a bottom sheet on a phone, so there is no vertical seam to drag. */
+@media (max-width: 900px) {
+  .tn-src-splitter { display: none; }
+}
+/* ── end sources rail splitter ────────────────── */
 
 /* ══ STAGE RAIL — prefix .tnx-maprail ══════════════════════════════════════════
    Four icon groups on the RIGHT edge of the map stage, one flyout open at a time,
