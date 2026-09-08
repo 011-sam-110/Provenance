@@ -86,36 +86,60 @@ function load(id: string, e: Entry) {
     });
 }
 
+/**
+ * Join (or start) the shared poll loop for one id. Returns a detach function.
+ *
+ * Extracted from the hook so a NON-REACT caller can hold a subscription too. The
+ * notification runner needs exactly that: a rule armed on an area must fire whether
+ * or not a widget for its source is on the board, and without this "watch this
+ * place" would quietly mean "watch this place while a card for it happens to be
+ * open". Sharing the ref count is what keeps that from opening a second loop.
+ */
+function attach(id: string, cb: () => void, refreshMs: number): () => void {
+  const e = ensure(id);
+  const cadence = Math.max(MIN_REFRESH_MS, refreshMs);
+  e.listeners.add(cb);
+  e.refCount += 1;
+  if (e.refCount === 1) {
+    if (!e.state.updatedAt) e.state = { ...e.state, status: "loading" };
+    load(id, e);
+    // Skip the tick in a hidden tab, and catch up on return — see lib/shell/visibility.
+    e.timer = setInterval(() => {
+      if (!isHidden()) load(id, e);
+    }, cadence);
+    e.unwatch = onVisible(() => {
+      if (shouldRefreshOnVisible(e.state.updatedAt, cadence, Date.now())) load(id, e);
+    });
+  }
+  return () => {
+    e.listeners.delete(cb);
+    e.refCount -= 1;
+    if (e.refCount === 0) {
+      if (e.timer) clearInterval(e.timer);
+      e.timer = null;
+      e.unwatch?.();
+      e.unwatch = null;
+    }
+  };
+}
+
+/** Hold a poll loop open with no React involved. Returns a detach function.
+ *  Each call passes its OWN no-op listener, so two holders cannot collapse into
+ *  one Set entry and have the first detach silence the second. */
+export function subscribeSignalFeed(id: string, refreshMs = DEFAULT_REFRESH_MS): () => void {
+  return attach(id, () => {}, refreshMs);
+}
+
+/** Read the shared cache WITHOUT subscribing. Null when nothing has polled this id
+ *  yet — which is "not loaded", not "empty", and callers must not confuse the two. */
+export function peekSignalFeed(id: string): SignalFeed | null {
+  return feeds.get(id)?.state ?? null;
+}
+
 /** Subscribe to a single signal source's live feature feed. */
 export function useSignalFeed(signalId: string, refreshMs = DEFAULT_REFRESH_MS): SignalFeed {
   const subscribe = useMemo(
-    () => (cb: () => void) => {
-      const e = ensure(signalId);
-      const cadence = Math.max(MIN_REFRESH_MS, refreshMs);
-      e.listeners.add(cb);
-      e.refCount += 1;
-      if (e.refCount === 1) {
-        if (!e.state.updatedAt) e.state = { ...e.state, status: "loading" };
-        load(signalId, e);
-        // Skip the tick in a hidden tab, and catch up on return — see lib/shell/visibility.
-        e.timer = setInterval(() => {
-          if (!isHidden()) load(signalId, e);
-        }, cadence);
-        e.unwatch = onVisible(() => {
-          if (shouldRefreshOnVisible(e.state.updatedAt, cadence, Date.now())) load(signalId, e);
-        });
-      }
-      return () => {
-        e.listeners.delete(cb);
-        e.refCount -= 1;
-        if (e.refCount === 0) {
-          if (e.timer) clearInterval(e.timer);
-          e.timer = null;
-          e.unwatch?.();
-          e.unwatch = null;
-        }
-      };
-    },
+    () => (cb: () => void) => attach(signalId, cb, refreshMs),
     [signalId, refreshMs],
   );
 
