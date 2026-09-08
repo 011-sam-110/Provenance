@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  DEV_NOTICE_ENABLED,
   DEV_NOTICE_KEY,
   DEV_NOTICE_VERSION,
   NOTICE_REVISION,
@@ -9,6 +10,7 @@ import {
   saveDevNoticeState,
   markAcknowledged,
   blockedBy,
+  shouldOpen,
   shouldWarn,
   forcedFromSearch,
 } from "@/lib/shell/devnotice";
@@ -45,34 +47,92 @@ function store(seed?: Record<string, string>) {
 
 const AFTER_BOOT = { bootPlaying: false };
 
+/* ── THE OFF SWITCH ───────────────────────────────────────────────────────────
+ *
+ * The notice is switched OFF right now, and these are the cases that say so. They
+ * are separated from the gate's own arms below because they test different things:
+ * this block tests the switch, and the block after it tests the gate the switch is
+ * currently holding shut — which still has to be correct on the day it opens again.
+ */
+describe("the off switch", () => {
+  it("is off, and turning it back on means changing this line too", () => {
+    // Deliberately a red on the flip. Turning the notice back on is one constant in
+    // lib/shell/devnotice.ts, and this is the test that makes it a DECISION rather
+    // than something that happened. When you flip it: change `false` to `true` here,
+    // and the four cases below invert with it.
+    expect(DEV_NOTICE_ENABLED).toBe(false);
+  });
+
+  it("withholds the notice from a first-time visitor, and names the reason", () => {
+    expect(blockedBy(EMPTY_DEV_NOTICE_STATE, AFTER_BOOT)).toBe("disabled");
+    expect(shouldWarn(EMPTY_DEV_NOTICE_STATE, AFTER_BOOT)).toBe(false);
+  });
+
+  it("OUTRANKS every other arm, so no state can talk its way past it", () => {
+    // Asserted over the whole cross-product rather than one example: the switch is
+    // the outermost reason, so nothing about this visitor may change the answer.
+    for (const acknowledged of [0, NOTICE_REVISION - 1, NOTICE_REVISION, 99]) {
+      for (const bootPlaying of [true, false]) {
+        expect(blockedBy({ acknowledged }, { bootPlaying })).toBe("disabled");
+      }
+    }
+  });
+
+  it("REFUSES ?notice=1 — a URL may not summon a notice that is switched off", () => {
+    // The judgement call, and it goes the other way from the two arms below it.
+    // `boot` and `acknowledged` are facts about THIS VISITOR, and re-reading a
+    // warning costs a visitor nothing, so a link may override them. `disabled` is
+    // not about the visitor at all: it is the operator saying this text is not the
+    // one to be showing. `?notice=1` is unauthenticated and pasteable, so honouring
+    // it would let anyone republish a statement about warranty and data quality that
+    // the project has taken down. The switch is what turns it back on, not a query
+    // string — and flipping a constant is cheaper than the review that link skips.
+    expect(shouldOpen(EMPTY_DEV_NOTICE_STATE, AFTER_BOOT, true)).toBe(false);
+
+    // The PARSER is untouched, and that is on purpose: it is what makes the force a
+    // one-line restoration rather than a rewrite. What refuses is the gate.
+    expect(forcedFromSearch("?notice=1")).toBe(true);
+  });
+});
+
+/* ── THE GATE ITSELF, EXERCISED WITH THE SWITCH ON ───────────────────────────
+ *
+ * Every case below passes `true` as the switch explicitly. That is not ceremony:
+ * with the notice off, a gate test that took the default would assert "disabled"
+ * four times over and stop testing the thing it is named after. Held ON, these keep
+ * proving the acknowledgement ladder works — which is the state the product returns
+ * to the moment the constant flips, and the worst possible time to find it broken.
+ */
 describe("the live-build warning gate", () => {
+  const ON = true;
+
   it("warns a first-time visitor as soon as the boot plate is gone", () => {
-    expect(shouldWarn(EMPTY_DEV_NOTICE_STATE, AFTER_BOOT)).toBe(true);
+    expect(shouldWarn(EMPTY_DEV_NOTICE_STATE, AFTER_BOOT, ON)).toBe(true);
   });
 
   // The cold-start plate owns the screen. A dialog on top of it is a dialog nobody
   // reads, and this is the one card that has to actually be read.
   it("withholds it while the boot plate is still playing", () => {
-    expect(blockedBy(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true })).toBe("boot");
-    expect(shouldWarn(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true })).toBe(false);
+    expect(blockedBy(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true }, ON)).toBe("boot");
+    expect(shouldWarn(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true }, ON)).toBe(false);
   });
 
   it("does not warn twice for the same revision", () => {
     const seen = markAcknowledged(EMPTY_DEV_NOTICE_STATE, NOTICE_REVISION);
-    expect(blockedBy(seen, AFTER_BOOT)).toBe("acknowledged");
-    expect(shouldWarn(seen, AFTER_BOOT)).toBe(false);
+    expect(blockedBy(seen, AFTER_BOOT, ON)).toBe("acknowledged");
+    expect(shouldWarn(seen, AFTER_BOOT, ON)).toBe(false);
   });
 
   // The reason the state stores a number and not a boolean.
   it("warns again when the text is revised past what was acknowledged", () => {
     const seenOld: DevNoticeState = { acknowledged: NOTICE_REVISION - 1 };
-    expect(shouldWarn(seenOld, AFTER_BOOT)).toBe(true);
+    expect(shouldWarn(seenOld, AFTER_BOOT, ON)).toBe(true);
   });
 
   it("survives a hand-edited or half-written envelope by warning again", () => {
     const s = store({ [DEV_NOTICE_KEY]: '{"v":1,"d":{"acknowledged":"yes"}}' });
     expect(loadDevNoticeState(s)).toEqual(EMPTY_DEV_NOTICE_STATE);
-    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT)).toBe(true);
+    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT, ON)).toBe(true);
   });
 
   // Failing OPEN is the correct direction for a warning: an unreadable envelope
@@ -80,7 +140,7 @@ describe("the live-build warning gate", () => {
   it("warns again rather than staying quiet when the value is nonsense", () => {
     for (const bad of ["-3", "NaN", "1e400", "null"]) {
       const s = store({ [DEV_NOTICE_KEY]: `{"v":1,"d":{"acknowledged":${bad}}}` });
-      expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT), bad).toBe(true);
+      expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT, ON), bad).toBe(true);
     }
   });
 
@@ -88,14 +148,14 @@ describe("the live-build warning gate", () => {
     const s = store();
     saveDevNoticeState(markAcknowledged(EMPTY_DEV_NOTICE_STATE, NOTICE_REVISION), s);
     expect(loadDevNoticeState(s).acknowledged).toBe(NOTICE_REVISION);
-    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT)).toBe(false);
+    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT, ON)).toBe(false);
   });
 
   it("ignores an envelope written by a different schema version", () => {
     const s = store({
       [DEV_NOTICE_KEY]: JSON.stringify({ v: DEV_NOTICE_VERSION + 1, d: { acknowledged: 99 } }),
     });
-    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT)).toBe(true);
+    expect(shouldWarn(loadDevNoticeState(s), AFTER_BOOT, ON)).toBe(true);
   });
 
   /**
@@ -111,10 +171,14 @@ describe("the live-build warning gate", () => {
     expect(forcedFromSearch("?notice=0")).toBe(false);
     expect(forcedFromSearch("")).toBe(false);
     expect(forcedFromSearch("not a query string")).toBe(false);
+
+    const seen = markAcknowledged(EMPTY_DEV_NOTICE_STATE, NOTICE_REVISION);
+    expect(shouldOpen(seen, AFTER_BOOT, false, ON)).toBe(false);
+    expect(shouldOpen(seen, AFTER_BOOT, true, ON)).toBe(true);
   });
 
   it("still withholds a forced notice while the boot plate is playing", () => {
     // The force overrides the acknowledgement, not the readability problem.
-    expect(blockedBy(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true })).toBe("boot");
+    expect(blockedBy(EMPTY_DEV_NOTICE_STATE, { bootPlaying: true }, ON)).toBe("boot");
   });
 });

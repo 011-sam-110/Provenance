@@ -1,7 +1,13 @@
 "use client";
 // "You are drawing." A banner over the map for as long as a draw gesture is running.
 //
-// WHY IT EXISTS, given the rail flyout already narrates the gesture. Two reasons, and
+// IT IS NOW THE ONLY NARRATION. The rail's Draw group was removed, so there is no
+// flyout left to duplicate - the two reasons below are why it was written while one
+// still existed, and reason 2 turned out to be the whole story. Read them as the
+// argument for why this could never have been left to a panel.
+//
+// WHY IT WAS WRITTEN, back when the rail flyout also narrated the gesture. Two
+// reasons, and the second is a bug rather than a preference.
 // the second is a bug rather than a preference.
 //
 //  1. REACH. The flyout's readout is a ~90px line of small text on the right edge of

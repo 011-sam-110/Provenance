@@ -6731,8 +6731,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* ── end sources rail splitter ────────────────── */
 
 /* ══ STAGE RAIL — prefix .tnx-maprail ══════════════════════════════════════════
-   Four icon groups on the RIGHT edge of the map stage, one flyout open at a time,
-   expanding LEFTWARD into the map.
+   Two icon groups on the RIGHT edge of the map stage, one flyout open at a time,
+   expanding LEFTWARD into the map. It was four: Draw and Cameras were removed on
+   request, and the rules that were only ever theirs are marked as gone below rather
+   than left behind as selectors nothing matches.
 
    NOT `.tn-rail*`. That family (.tn-rail, .tn-rail-col, .tn-rail-fab,
    --tnx-rail-tab-w and thirteen more) belongs to the Sources rail and the widget
@@ -6740,7 +6742,9 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    hazard for whoever comes next. `maprail` appears nowhere else in this sheet.
 
    REPLACES `.tnx-stage-search` (the centred geocoder) and `.tnx-stage-right`
-   (AoiControl + CameraPickControl). Both families are deleted below this block.
+   (AoiControl + CameraPickControl). Both families are deleted below this block. The
+   two controls `.tnx-stage-right` held have since been removed from the rail as
+   well; the search box it replaced is what the rail still carries.
 
    CENTRED AND CONTENT-HEIGHT, not full-height. A rail down the whole edge would put
    its ends over `.tnx-stage-foot` (the clock strip) and over MapLibre's attribution
@@ -6985,21 +6989,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-terminal .tnx-maprail-act:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
 
-/* A flyout button that carries a glyph as well as its word — the Draw group's two
-   tools. The glyph is 18px, NOT the rail's 27px: a mark inside a panel is labelled
-   by the word beside it, whereas a mark on the rail is the only thing identifying
-   its button, so they are different jobs and deliberately different sizes.
-   `--tnx-maprail-glyph` is not reused here for that reason.
-
-   `flex: none` because these sit in the flyout's flex row and the strip must stay
-   lateral; without it a long adjacent label squeezes the glyph into an ellipse. */
-.tn-terminal .tnx-maprail-act-icon {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-.tn-terminal .tnx-maprail-act-icon svg { width: 18px; height: 18px; display: block; flex: none; }
+/* `.tnx-maprail-act-icon` IS GONE — a flyout button carrying a glyph as well as its
+   word. Only the Draw and Cameras flyouts ever wore it, and both were deleted with
+   their groups. If a flyout button ever needs a mark again, the rule it wants is an
+   18px glyph and NOT `--tnx-maprail-glyph` (27px): a mark inside a panel is labelled
+   by the word beside it, where a mark on the rail is the only thing identifying its
+   button. Plus `flex: none`, or a long adjacent label squeezes the glyph into an
+   ellipse on a strip whose job is to stay lateral. */
 
 .tn-terminal .tnx-maprail-seg { display: flex; align-items: center; gap: 4px; }
 .tn-terminal .tnx-maprail-rule {
@@ -7017,22 +7013,11 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   color: var(--tnx-ink-ghost);
   padding-left: 3px;
 }
-.tn-terminal .tnx-maprail-live {
-  font-size: var(--tnx-fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--tnx-accent);
-  line-height: 1.35;
-  padding: 0 3px;
-}
-.tn-terminal .tnx-maprail-note {
-  font-size: var(--tnx-fs-xs);
-  color: var(--tnx-ink-faint);
-  line-height: 1.35;
-  padding: 0 3px;
-  max-width: 26ch;
-}
+/* `.tnx-maprail-live` (the vertex/radius readout) and `.tnx-maprail-note` (the "map
+   is still loading" line) went with the Draw and Cameras flyouts. Nothing left in
+   the rail narrates a gesture — the one surface that still does is `.tn-drawbanner`
+   further down this sheet, which is mounted from ConsoleShell and cannot be closed
+   by anything except the gesture ending. */
 
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
    translateX(-50%)`, so it has to be flattened or it re-centres itself inside the
@@ -7086,11 +7071,12 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 
 /* MOBILE — and the rail STAYS. `.tnx-stage-right` was hidden below 900px, which
    meant restrict-to-area, pick cameras, draw an area and new wall did not exist on
-   a phone at all. The rail is four 44px buttons; hiding it would now also take the
-   basemap picker and the 2D/3D switch with it, which is a strictly bigger loss.
-   The polygon gesture is still awkward with a thumb — that is worth saying rather
-   than hiding the control, because hiding a control because it is awkward is
-   exactly how the area filter became unreachable the first time.
+   a phone at all. The rail is two 44px buttons now; hiding it would take the search
+   box, the basemap picker and the 2D/3D switch with it, which is a strictly bigger
+   loss than it ever was. The removal of the two map-arming groups was a product
+   decision taken at every width — NOT the old "hide it on a phone because the
+   gesture is awkward" move, which is exactly how the area filter became unreachable
+   the first time, and which this block was written to refuse.
 
    44px is the measured target from the touch pass, technique (a): real size, since
    the rail is a column with room around it and does not need a transparent ::before.
