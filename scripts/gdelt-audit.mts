@@ -27,6 +27,7 @@
  * about exactly those columns, so this script re-parses the raw row for them rather
  * than widening the shared type before anything is measured.
  */
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -193,6 +194,72 @@ function extract() {
   console.log(`\nwrote ${CANDIDATES}`);
 }
 
+/**
+ * Print articles and their pins for labelling.
+ *
+ * GROUPED BY SOURCE URL ON PURPOSE. Reading an article once settles two different
+ * questions for every row it produced: whether a real event of that type happened at
+ * all (`not-an-event`), and whether each individual pin is where it happened
+ * (`wrong-place`). Labelling row-by-row would mean reading the same article five times
+ * and inviting five inconsistent verdicts on the same text.
+ *
+ * STRATIFIED, because the sample has to answer two questions and only one of them is
+ * about the rows the rule fires on. Precision needs labelled rows from the 4+ bucket;
+ * RECALL needs labelled rows from the 1-, 2- and 3-place buckets, where the rule stays
+ * silent. A sample drawn only from the loud bucket can report a precision and cannot
+ * report a recall, and would flatter any rule.
+ */
+function worksheet() {
+  const candidates: Candidate[] = JSON.parse(readFileSync(CANDIDATES, "utf8"));
+  const bucketArg = process.argv.find((a) => a.startsWith("--bucket="))?.slice(9);
+  const limit = Number(process.argv.find((a) => a.startsWith("--limit="))?.slice(8) ?? 8);
+  const offset = Number(process.argv.find((a) => a.startsWith("--offset="))?.slice(9) ?? 0);
+
+  const grp = new Map<string, Candidate[]>();
+  for (const c of candidates) {
+    const k = `${c.stamp} ${c.sourceUrl}`;
+    (grp.get(k) ?? grp.set(k, []).get(k)!).push(c);
+  }
+
+  const groups = [...grp.entries()].map(([k, rows]) => {
+    const places = new Set(rows.map((r) => `${r.lat.toFixed(2)},${r.lon.toFixed(2)}`)).size;
+    return { stamp: k.split(" ")[0], url: rows[0].sourceUrl, rows, places };
+  });
+
+  const inBucket = (p: number) => {
+    if (!bucketArg) return true;
+    if (bucketArg === "4+") return p >= 4;
+    return p === Number(bucketArg);
+  };
+  const picked = groups.filter((g) => inBucket(g.places)).slice(offset, offset + limit);
+
+  console.log(`# ${picked.length} article(s), bucket=${bucketArg ?? "all"}, offset=${offset}\n`);
+  for (const g of picked) {
+    const art = readArticle(g.url);
+    console.log(`URL      ${g.url}`);
+    console.log(`SLOT     ${g.stamp}   PLACES ${g.places}   ROWS ${g.rows.length}`);
+    console.log(`FETCH    ${art?.outcome ?? "NOT FETCHED"}`);
+    if (art?.outcome === "ok") {
+      console.log(`TITLE    ${art.title.slice(0, 160)}`);
+      if (art.description) console.log(`DESC     ${art.description.slice(0, 260)}`);
+      console.log(`LEDE     ${art.text.split("\n").slice(0, 3).join(" ").slice(0, 520)}`);
+    }
+    console.log(`PINS`);
+    for (const r of g.rows) {
+      console.log(`  ${r.id}  ${r.layer.padEnd(8)} ${r.eventCode.padEnd(5)} ${r.actionCountry.padEnd(3)} ${r.place.slice(0, 44).padEnd(44)} art=${r.numArticles} src=${r.numSources}`);
+    }
+    console.log("");
+  }
+}
+
+interface CachedArticle { url: string; outcome: string; title: string; description: string; text: string }
+
+function readArticle(url: string): CachedArticle | undefined {
+  const key = createHash("sha1").update(url).digest("hex").slice(0, 16);
+  const f = join(".gdelt-cache", "articles", `${key}.json`);
+  return existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : undefined;
+}
+
 function score() {
   if (!existsSync(LABELS)) {
     throw new Error(
@@ -205,8 +272,9 @@ function score() {
 
 const cmd = process.argv[2];
 if (cmd === "extract") extract();
+else if (cmd === "worksheet") worksheet();
 else if (cmd === "score") score();
 else {
-  console.error("usage: gdelt-audit.mts <extract|score>");
+  console.error("usage: gdelt-audit.mts <extract|worksheet|score>");
   process.exitCode = 2;
 }
