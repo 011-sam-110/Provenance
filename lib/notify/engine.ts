@@ -80,6 +80,9 @@ export function diff(
     quietFired: before.quietFired,
   };
 
+  // A successful poll ends the silence, so the NEXT outage is announced too.
+  if (feed.ok) next.quietFired = false;
+
   const events: NotifyEvent[] = [];
   const armed = rules.filter((r) => r.enabled);
 
@@ -105,6 +108,18 @@ export function diff(
         if (crossed(before.rows[r.id]?.scalars?.[field], cur, dir, level)) {
           events.push(event(rule, "crosses", now, r.id));
         }
+      }
+    }
+
+    if (rule.params.kind === "quiet") {
+      const { silentMs } = rule.params;
+      // lastOk === 0 means this pair has NEVER answered. Silence with no baseline is
+      // not an outage — it is a source that was armed before it ever worked, and
+      // announcing it would blame the wrong thing.
+      const silentFor = before.lastOk > 0 ? now - before.lastOk : 0;
+      if (silentFor >= silentMs && !before.quietFired) {
+        events.push(event(rule, "quiet", now));
+        next.quietFired = true;
       }
     }
   }

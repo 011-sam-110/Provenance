@@ -167,3 +167,41 @@ describe("diff — crosses, edge-triggered per row", () => {
     expect(events).toHaveLength(0);
   });
 });
+
+describe("diff — quiet", () => {
+  const quietRule = rule({ kind: "quiet", silentMs: 30 * 60_000 });
+  const DOWN = { ok: false, lastOk: 0 };
+
+  it("fires when the last success is older than the window", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, lastOk: 1_000 };
+    const { events } = diff(prev, [], RING, [quietRule], DOWN, 1_000 + 31 * 60_000);
+    expect(events).toHaveLength(1);
+    expect(events[0].kind).toBe("quiet");
+  });
+
+  it("does not fire inside the window", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, lastOk: 1_000 };
+    const { events } = diff(prev, [], RING, [quietRule], DOWN, 1_000 + 5 * 60_000);
+    expect(events).toHaveLength(0);
+  });
+
+  it("fires once per silence, not once per poll", () => {
+    const first = diff({ ...EMPTY_OBSERVATION, lastOk: 1_000 }, [], RING, [quietRule], DOWN, 1_000 + 31 * 60_000);
+    expect(first.events).toHaveLength(1);
+    const second = diff(first.next, [], RING, [quietRule], DOWN, 1_000 + 40 * 60_000);
+    expect(second.events).toHaveLength(0);
+  });
+
+  it("re-arms after the feed recovers, so the NEXT outage is announced too", () => {
+    const first = diff({ ...EMPTY_OBSERVATION, lastOk: 1_000 }, [], RING, [quietRule], DOWN, 1_000 + 31 * 60_000);
+    const recovered = diff(first.next, [row("a")], RING, [quietRule], { ok: true, lastOk: 3_000_000 }, 3_000_000);
+    expect(recovered.next.quietFired).toBe(false);
+    const again = diff(recovered.next, [], RING, [quietRule], { ok: false, lastOk: 3_000_000 }, 3_000_000 + 31 * 60_000);
+    expect(again.events).toHaveLength(1);
+  });
+
+  it("never fires for a pair that has NEVER succeeded, because silence we have no baseline for is not an outage", () => {
+    const { events } = diff(EMPTY_OBSERVATION, [], RING, [quietRule], DOWN, 999_999_999);
+    expect(events).toHaveLength(0);
+  });
+});
