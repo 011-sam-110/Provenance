@@ -189,11 +189,58 @@ With either var unset the route is inert and the prompt never mounts, so an unco
 deploy shows no dead form.
 
 
+## 6 - Private endpoint (BUILT, dormant until set)
+
+One unlisted path behind one password, for showing unreleased work on the live site
+without it being public. Both halves are required; with either unset the path does not
+exist at all — not a 401, not a login form, a plain 404. That is the normal state for
+every preview build and every fork, so it has to be the safe direction.
+
+| Var | What it is |
+|---|---|
+| `PRIVATE_PREVIEW_SLUG` | The secret path segment, served at `/<slug>`. **At least 16 characters**, `A-Z a-z 0-9 _ -` only. |
+| `PRIVATE_PREVIEW_PASSWORD` | The password the form asks for. At least 8 characters. |
+
+**THE SLUG IS A SECRET AND CANNOT LIVE IN THE REPOSITORY.** This repo is public
+(AGPL-3.0-only, on GitHub), so a path written into the source is published with a commit
+date next to it. Both values come from the environment and neither has a default.
+`readPrivateConfig` refuses a slug shorter than 16 characters rather than serving a
+barely-hidden endpoint, because the slug is the first of the two factors.
+
+Generate one with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(15).toString('base64url'))"
+```
+
+**It is NOT the maintenance gate and does not share its cookie.** The maintenance
+curtain (`MAINTENANCE_MODE` + `MAINTENANCE_PASSWORD`) covers the whole site during a
+rebuild and everyone with the code is meant to get in. This is the opposite shape, so
+the cookie (`pv_private`) and the hash prefix are both distinct: the same password set
+on both produces two different cookie values, and letting someone through a maintenance
+window does not silently hand them the private endpoint too. When maintenance is armed
+it wins, and the private path is down with everything else.
+
+**What it is not: authentication.** No accounts, no lockout, no audit trail — one shared
+password over one unlisted path. That is proportionate to "let a few people look at an
+unreleased board" and is not proportionate to anything holding personal data. If it ever
+needs real resistance, the place for it is a Vercel Firewall rule on `/api/private`,
+not a middleware-shaped limiter that costs an invocation to say no.
+
+**Scope, stated plainly:** the gate hides a URL, not a fact. Anything also reachable on
+a public route is still public; this only controls who can reach it *at this path*.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
 
 ```dotenv
+# --- Private endpoint (blank = the path does not exist) ---
+# Slug must be >=16 chars of [A-Za-z0-9_-]; generate with
+#   node -e "console.log(require('crypto').randomBytes(15).toString('base64url'))"
+PRIVATE_PREVIEW_SLUG=
+PRIVATE_PREVIEW_PASSWORD=
+
 # --- Intelligence layers (free) ---
 AISSTREAM_API_KEY=
 ENTSOE_API_TOKEN=

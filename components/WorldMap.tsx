@@ -1764,6 +1764,37 @@ export default function WorldMap() {
    * rejection there means we have a style but no pins — still broken, so leave the
    * watchdog running rather than declaring success.
    */
+  // OPEN ON THE AREA THE BOARD IS PRESET TO, which is the whole point of
+  // STREETS_DEFAULT_AREA having been measured for live-camera density. Without this
+  // the ring was authored, stored and drawn — at a scale of five kilometres, on a
+  // camera showing the whole planet, so it was a few pixels somewhere off screen and
+  // the board opened on an empty world.
+  //
+  // CALLED FROM THREE PLACES BECAUSE THE TWO EVENTS RACE. On a cold load the layout
+  // is applied during hydration, BEFORE the map exists, so the store notification
+  // arrives with nothing to fly and never comes again — measured: the private
+  // endpoint opened the Streets board correctly and sat at 0°N 28°E. On a warm switch
+  // it is the other way round. So: once at mount, again whenever the layout changes,
+  // and again when a style settles, whichever of those happens to be last.
+  //
+  // ONLY WHILE THE BOARD IS EMPTY. That is the prompt state — the board is asking a
+  // question and this frames it. Once tiles exist the user is driving, and moving
+  // their camera because a store ticked would be the map taking the wheel back.
+  // Guarded by ring identity, so none of the three callers can re-fly the same ring.
+  const fitToRing = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const l = shellLayoutStore.get();
+    if (l.widgets.length > 0) return;
+    const ring = l.watch?.ring;
+    const sig = ring ? JSON.stringify(ring) : "";
+    if (!sig || sig === flownRingRef.current) return;
+    const bounds = ringBounds(ring);
+    if (!bounds) return; // straddles the antimeridian — see ringBounds
+    flownRingRef.current = sig;
+    map.fitBounds(bounds, { padding: 64, duration: 0 });
+  }, []);
+
   const onStyleSettled = useCallback(() => {
     if (!readyRef.current) return;
     clearStyleWatchdog();
@@ -1772,7 +1803,10 @@ export default function WorldMap() {
     // basemap than they asked for and deserves to know why. Clear the transient
     // "retrying" state, which has served its purpose.
     setLoadStatus((s) => (s.kind === "fallback" ? s : { kind: "ok" }));
-  }, [clearStyleWatchdog]);
+    // The map is up. If a board was applied before it existed, this is the first
+    // moment its area can actually be framed — see fitToRing's note on the race.
+    fitToRing();
+  }, [clearStyleWatchdog, fitToRing]);
 
   /** Manual "Try again" from the notice. */
   const retryBasemap = useCallback(
@@ -2199,30 +2233,6 @@ export default function WorldMap() {
       (map?.getSource(WATCH_RING_SRC) as GeoJSONSource | undefined)?.setData(watchRingFCRef.current);
     };
     paint();
-    // OPEN ON THE AREA THE BOARD IS PRESET TO, which is the whole point of
-    // STREETS_DEFAULT_AREA having been measured for live-camera density. Without
-    // this the ring was authored, stored and (now) drawn — at a scale of five
-    // kilometres, on a camera showing the whole planet, so it was a handful of
-    // pixels somewhere off screen and the board opened on an empty world. The
-    // README described it as opening on the area; this is what makes that true.
-    //
-    // ONLY WHILE THE BOARD IS EMPTY. That is the prompt state — the board is asking
-    // a question and this frames it. Once tiles exist the user is driving, and
-    // moving their camera because a store ticked would be the map taking the wheel
-    // back. Guarded by ring identity too, so a re-render cannot re-fly.
-    const fitToRing = () => {
-      const map = mapRef.current;
-      if (!map || !readyRef.current) return;
-      const l = shellLayoutStore.get();
-      if (l.widgets.length > 0) return;
-      const ring = l.watch?.ring;
-      const sig = ring ? JSON.stringify(ring) : "";
-      if (!sig || sig === flownRingRef.current) return;
-      const bounds = ringBounds(ring);
-      if (!bounds) return; // straddles the antimeridian — see ringBounds
-      flownRingRef.current = sig;
-      map.fitBounds(bounds, { padding: 64, duration: 0 });
-    };
     fitToRing();
 
     // FOUR SUBSCRIPTIONS, AND THE CAMERA ONES ARE NOT OPTIONAL. On a cold reload the
@@ -2238,7 +2248,7 @@ export default function WorldMap() {
       shellLayoutStore.subscribe(onLayout),
     ];
     return () => { for (const off of offs) off(); };
-  }, []);
+  }, [fitToRing]);
 
   // Restore a deep-linked dossier (?obj=) once its layer's data has streamed in.
   // Planes/satellites stream after first paint, so this retries on each data tick
