@@ -44,3 +44,7 @@ scratchpad/
 # it supports are committed in data/liveness/report.json. The fixtures are the working
 # note, not the finding.
 data/liveness/raw/
+
+# Raw GDELT windows recorded by scripts/gdelt-record.mts. Multi-MB per 15-min
+# slot; the audit replays from these, and only the labelled subset is committed.
+.gdelt-cache/
