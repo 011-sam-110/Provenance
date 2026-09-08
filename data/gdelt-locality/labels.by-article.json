@@ -1,0 +1,206 @@
+{
+  "_README": [
+    "Human labels for the GDELT spurious-event audit. Keyed by source URL, because a",
+    "verdict comes from reading an article once and applies to every pin it produced.",
+    "Per-row exceptions live in `rows`, keyed by GlobalEventID, and override `default`.",
+    "",
+    "LABELS",
+    "  good          a real event of that coded type, at (or acceptably near) that place",
+    "  wrong-place   real event of that kind, wrong location",
+    "  wrong-event   location may be fine, the CAMEO coding does not describe the article",
+    "  not-an-event  no event of that type: old court reporting, sport, fundraising, essays",
+    "  unreachable   the page could not be read. NOT a verdict. Leaves the denominator.",
+    "",
+    "`unreachable` covers a failed fetch AND an HTTP 200 that was not the article -- a",
+    "geo-block, a sign-in wall, a javascript shell. Labelling one of those as junk would",
+    "let the audit manufacture evidence for its own hypothesis."
+  ],
+  "https://www.wsbradio.com/news/national/tucson-arizona/WYGDS2XF34ZR7HN3G7JJIOZNWY/": {
+    "default": "unreachable",
+    "why": "HTTP 200 carrying 'This website is unavailable in your location'. Geo-block, not an article. No verdict is possible and none is recorded."
+  },
+  "https://www.breitbart.com/economy/2026/09/01/breitbart-business-digest-wendell-berry-and-the-roots-of-economic-nationalism/": {
+    "default": "not-an-event",
+    "why": "A reflective essay on the death of the poet Wendell Berry and on economic nationalism. Coded CAMEO 190/192 and pinned to New York, Kentucky, Canada and China. There is no event of any kind in it."
+  },
+  "http://www.thegazette.com/news/national/the-latest-us-and-iran-exchange-fire-after-abrupt-end-to-month-without-military-action/article_e116b8e8-4117-52c1-863a-91cca7046932.html": {
+    "default": "unreachable",
+    "why": "HTTP 451. Almost certainly a real US-Iran military story from the headline, but the rule is that a slug is not evidence, so it gets no verdict and leaves the denominator."
+  },
+  "https://www.merimbulanewsweekly.com.au/story/9341967/us-military-completes-latest-strikes-against-iran/": {
+    "default": "good",
+    "why": "REAL, MULTI-LOCATION, AND THE STRONGEST ARGUMENT AGAINST MY OWN RULE. Iran fired drones and missiles at Kuwait, Jordan, Qatar and Bahrain in response to US strikes on Iran. Four of the five pins are genuine locations of the described action. A row-wise k>3 filter deletes this entire story.",
+    "rows": {
+      "1321004959": "wrong-place"
+    },
+    "rowsWhy": {
+      "1321004959": "Pinned at 'United States'. The US is the ACTOR here, not where anything happened. This is the fan-out putting the aggressor on the map as a victim location."
+    }
+  },
+  "https://www.2news.com/news/fire/president-trump-approves-emergency-declaration-for-hawk-fire-recovery/article_fdf51688-9d3a-4089-9254-b50a2927f3b5.html": {
+    "default": "unreachable",
+    "why": "HTTP 429. The slug reads like a wildfire emergency declaration, which would make all five conflict pins junk, but that is a guess from a URL and guesses are not labels."
+  },
+  "https://www.newsweek.com/lindsay-clancy-trial-judge-william-sullivan-jury-deliberations-12397907": {
+    "default": "not-an-event",
+    "why": "Court reporting: a profile of the judge while a jury deliberates. This is the residue the gdelt.ts docblock already warns cannot be filtered structurally - real judicial actors, real violence vocabulary, no current event. Also pinned to Rome, Italy, which nothing in the article supports."
+  },
+  "https://www.newindianexpress.com/india/2026/Sep/03/alleged-money-for-rape-case-settlement-involving-cms-wife-prompts-bjp-sad-demanding-probe-aap-hits-back": {
+    "default": "not-an-event",
+    "why": "A political row over allegations and counter-allegations, with parties demanding an inquiry. Coded CAMEO 141, Demonstration or rally, on the protests layer. No demonstration or rally is described anywhere in the piece."
+  },
+  "https://www.dailykos.com/stories/2026/9/4/800093877/community/%F0%9F%9A%A8-60-days-to-go-1-3m-raised-so-far-donate-to-dozens-of-democrats-at-once-today/": {
+    "default": "not-an-event",
+    "why": "A Democratic party FUNDRAISING POST, reposted near-daily by its author. Coded CAMEO 193, Fight with small arms and light weapons, and pinned to 28 US states in one slot."
+  },
+  "https://www.dailykos.com/stories/2026/9/6/800094746/community/%F0%9F%9A%A8-58-days-to-go-over-1-3m-raised-so-far-donate-to-dozens-of-democrats-at-once-today/": {
+    "default": "not-an-event",
+    "why": "The same fundraising post two days later, 26 states. Together these two articles put 54 fake conflict pins on the US map."
+  },
+  "https://www.eurasiareview.com/08092026-pakistan-tormenting-baloch-women-analysis/": {
+    "default": "good",
+    "why": "THE HARD CASE, AND I AM LABELLING IT AGAINST MY OWN RULE. An analysis column on bounties, disappearances and violence against Baloch women. The subject is real, the towns named are real locations of real described incidents, and the layer is honestly titled 'Conflict coverage' rather than claiming a verified incident - so most of these pins are defensible coverage, not junk. Calling all ten junk would inflate my precision on a debatable case. What it IS is undated: the incidents span months and the pins read as current.",
+    "rows": {
+      "1321924668": "wrong-place",
+      "1321924900": "wrong-place"
+    },
+    "rowsWhy": {
+      "1321924668": "'Attaullah, Punjab' - Attaullah is a PERSON named in the piece, geocoded as a place. Same failure as the Christchurch case in the gdelt.ts docblock, one level down.",
+      "1321924900": "'Turbat, Punjab' - Turbat is in Balochistan, not Punjab. GDELT resolved the right town into the wrong province."
+    }
+  },
+  "https://english.news.cn/20260901/02960c07a63c4da4b7f456cb60efdf26/c.html": {
+    "default": "good",
+    "why": "UN humanitarians on Israeli attacks in Gaza and settler violence in the West Bank. Gaza, Al Mughayyir and Ramallah are all locations the piece describes."
+  },
+  "http://www.northkoreatimes.com/news/279277512/at-g20-bessent-vows-to-intensify-economic-pressure-on-iran": {
+    "default": "good",
+    "why": "IRGC missiles at two US bases in Jordan plus US strikes on Iran. Larak is filed under the wrong Iranian province by GDELT, but the country and the theatre are right, so I am not scoring a gazetteer slip as a wrong pin."
+  },
+  "http://www.indiagazette.com/news/279277459/ready-for-debate-in-assembly-telangana-cm-reddy-challenges-kcr-to-compare-10-year-brs-rule-with-1000-days-of-congress-govt": {
+    "default": "not-an-event",
+    "why": "A state chief minister challenges the opposition leader to a DEBATE. Coded CAMEO 145, Violent protest or riot, on the protests layer. Two of its three pins are also junk geography: Telangana filed under Andhra Pradesh, and Mahatma, Rajasthan built from a person name."
+  },
+  "https://www.arabnews.com/middle-east/yemeni-forces-thwart-houthi-red-sea-attacks-seize-drone-components-2656441": {
+    "default": "good",
+    "why": "Yemeni forces engaging Houthi drone boats in the Red Sea and intercepting a components shipment. Marib, Red Sea and Sanaa are all in the piece."
+  },
+  "https://economictimes.indiatimes.com/nri/latest-updates/indian-citizen-among-12-killed-in-latest-russian-attacks-on-ukraine-zelenskyy/articleshow/133672452.cms": {
+    "default": "good",
+    "why": "Russian strikes on Kyiv and Odesa killing 12. Both Ukrainian pins are right.",
+    "rows": {
+      "1320869803": "wrong-place"
+    },
+    "rowsWhy": {
+      "1320869803": "Pinned at Russia. Russia is the attacker; nothing in the article happened there. Same aggressor-as-location fan-out as the Iran story."
+    }
+  },
+  "https://www.deccanchronicle.com/news/crime/three-kuki-villagers-including-two-women-killed-in-manipur-houses-set-ablaze-cm-condemns-1984009": {
+    "default": "good",
+    "why": "Three Kuki villagers shot dead and houses burned in Kangpokpi district, Manipur. A real armed attack, and the Imphal pins are acceptably near it.",
+    "rows": {
+      "1320903740": "wrong-place",
+      "1320904004": "wrong-place",
+      "1320904007": "wrong-place"
+    },
+    "rowsWhy": {
+      "1320903740": "New Delhi. The killing was in Manipur; Delhi appears only as where reaction came from.",
+      "1320904004": "Guwahati is the reporter DATELINE, not the attack site. This is the publisher-locality shape that started the whole investigation - it is real, it is just far rarer than the fan-out.",
+      "1320904007": "Guwahati again, same dateline artefact."
+    }
+  },
+  "https://torontosun.com/news/world/woman-severely-injured-colorado-rollercoaster-mishap": {
+    "default": "not-an-event",
+    "why": "A woman injured on a ROLLERCOASTER at an amusement park, coded CAMEO 182 physical assault and 190 use of conventional military force. The third pin is Toronto, which is the publisher, not anywhere in the story."
+  },
+  "https://www.yahoo.com/news/politics/articles/eu-official-says-not-time-121750288.html": {
+    "default": "unreachable",
+    "why": "HTTP 200 carrying a Yahoo cookie-consent wall, not the article. My interstitial detector missed this pattern on the first pass and was widened to catch it."
+  },
+  "http://www.thegazette.com/news/national/us-and-iran-trade-strikes-and-other-mideast-news/article_05ed8f64-e485-5bc5-a175-83271494961d.html": {
+    "default": "unreachable",
+    "why": "HTTP 200 carrying a page whose entire body is the words Security Check."
+  },
+  "http://www.indiagazette.com/news/279277790/north-east-delhi-riots-2020-delhi-court-acquits-12-accused-of-rioting-murder-saying-prosecution-failed-to-prove-allegations": {
+    "default": "not-an-event",
+    "why": "A 2026 court ACQUITTAL over the 2020 Delhi riots. The riot is six years old; the event today is a verdict."
+  },
+  "https://www.arabnews.com/opinion/sliman-mansour-a-painter-a-porter-a-homeland-2656432": {
+    "default": "not-an-event",
+    "why": "An OBITUARY for the Palestinian painter Sliman Mansour, who died in hospital aged 79. Coded as conventional military force at Jerusalem and Gaza."
+  },
+  "https://backup.arabnews.com/node/2656503/world": {
+    "default": "good",
+    "why": "A massive Russian missile and drone attack on Kyiv killing eight. Both Kyiv pins are right.",
+    "rows": {
+      "1320868807": "wrong-place"
+    },
+    "rowsWhy": {
+      "1320868807": "Moscow. The attack landed in Kyiv; Moscow is where it came from."
+    }
+  },
+  "https://www.arabnews.com/middle-east/xis-egypt-visit-puts-deepening-chinese-egyptian-partnership-in-focus-3000033": {
+    "default": "not-an-event",
+    "why": "A STATE VISIT and trade partnership analysis, Xi in Cairo, coded CAMEO 192 occupy territory, at Cairo and Washington."
+  },
+  "https://www.staradvertiser.com/2026/08/31/breaking-news/maui-police-officer-arrested-for-4-counts-of-sexual-assault/": {
+    "default": "not-an-event",
+    "why": "An ARREST on a warrant and the filing of charges. Criminal process, not a reported incident, and the same class as the Coonabarabran parole case."
+  },
+  "https://www.siasat.com/bhumi-pednekar-reacts-to-minor-girls-gang-rape-in-delhi-bus-3534228/": {
+    "default": "not-an-event",
+    "why": "A BOLLYWOOD ACTOR INSTAGRAM REACTION to a crime. The crime is real and elsewhere reported; this article is a celebrity comment piece, and its second pin is Kanpur, which is the news agency dateline."
+  },
+  "https://slguardian.org/cia-top-spys-moscow-mystery/": {
+    "default": "not-an-event",
+    "why": "Speculative commentary about why the CIA director flew to Moscow. Coded CAMEO 193, fight with small arms, at Baltiysk and Kaliningrad. No fighting is reported anywhere in it."
+  },
+  "https://thesun.ng/tupac-duane-keffe-d-davis-found-guilty-in-murder-case/": {
+    "default": "not-an-event",
+    "why": "A GUILTY VERDICT in the 1996 killing of Tupac Shakur, a thirty-year-old murder. Pinned to Nigeria, which is the publisher country and appears nowhere in the story, and to the United States."
+  },
+  "https://www.arabnews.com/middle-east/how-one-highway-could-determine-sudans-war-and-the-future-of-its-fractured-regions-2656186": {
+    "default": "good",
+    "why": "Reporting from the Khartoum to El Obeid road on the course of the Sudan war, with burned-out convoys described in place. El-Obeid and Kordofan are both right, and I am labelling it the same way I labelled the Balochistan analysis, for consistency."
+  },
+  "https://www.kotaradio.com/2026/08/31/tensions-erupt-in-house-hearing-as-gop-advances-anti-socialism-resolution-while-dems-rage-silly-season/": {
+    "default": "not-an-event",
+    "why": "A congressional procedural fight over a resolution condemning socialism. Coded as occupy territory, and pinned to New York when the hearing is in Washington."
+  },
+  "https://foxbaltimore.com/news/local/police-officer-on-duty-rape-baltimore-police-department-investigators-cases-investigation-harford-county": {
+    "default": "not-an-event",
+    "why": "An investigation and custody update on an accused officer. Criminal process."
+  },
+  "https://wtov9.com/news/nation-world/never-alone-the-wounded-blue-founder-highlights-support-for-injured-police-officers-police-department-injury": {
+    "default": "not-an-event",
+    "why": "A HUMAN-INTEREST PIECE about a charity supporting injured police officers, coded CAMEO 193 fight with small arms, at Washington DC. Note NumArticles 48 across 6 sources: the highest-volume row in this whole labelled set is a charity profile."
+  },
+  "https://www.euronews.com/my-europe/2026/08/31/belgian-judge-strikes-down-pre-trial-detention-appeal-for-alleged-nato-spy": {
+    "default": "not-an-event",
+    "why": "A judge refusing pre-trial release to an espionage suspect. Court process."
+  },
+  "https://www.fox969.com/2026/08/31/campus-police-arrest-two-men-in-wisconsin-for-sexual-assault-strangulation/": {
+    "default": "unreachable",
+    "why": "HTTP 404."
+  },
+  "https://english.news.cn/northamerica/20260901/4f9c3cbfc0804377b6f9fff722e1ec91/c.html": {
+    "default": "good",
+    "why": "A woman stabbed two people near Times Square and was shot by police. A real armed incident, in New York, reported as it happened."
+  },
+  "https://www.examiner.com.au/story/9341130/killers-on-the-run-after-man-shot-dead-in-home-invasion/": {
+    "default": "good",
+    "why": "A man shot dead in a home invasion in Sydney. A real armed incident at the coded place."
+  },
+  "http://www.indiagazette.com/news/279277788/my-child-is-completely-innocent-family-demands-justice-as-police-arrest-bus-staff-in-kashmere-gate-minor-gang-rape-case": {
+    "default": "not-an-event",
+    "why": "The family of an arrested driver protesting his innocence. The underlying crime is real and the Delhi pin is where it happened, but this article reports an ARREST and a family claim, which is process. Judgement call, and the one I am least sure of in this set."
+  },
+  "https://timesofindia.indiatimes.com/city/nagpur/after-safe-return-from-nepal-nagpur-pilgrims-meet-cm-fadnavis-to-express-gratitude/articleshow/133665091.cms": {
+    "default": "not-an-event",
+    "why": "Pilgrims returning safely from flood-hit Nepal meet a chief minister to say THANK YOU. Coded as occupy territory, and pinned to Bihar, which appears nowhere in it."
+  },
+  "https://www.bordermail.com.au/story/9341159/us-army-secretary-driscoll-tenders-resignation/": {
+    "default": "not-an-event",
+    "why": "A cabinet-level RESIGNATION, coded as use of conventional military force at the White House."
+  }
+}
