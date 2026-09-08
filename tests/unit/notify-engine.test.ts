@@ -91,3 +91,79 @@ describe("diff — ring geometry pins the lon/lat argument order", () => {
     expect(next.count).toBe(0);
   });
 });
+
+describe("diff — count, edge-triggered", () => {
+  const countRule = rule({ kind: "count", dir: "atOrAbove", level: 3 });
+
+  it("fires on the poll that crosses the level", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, count: 2, lastOk: 500 };
+    const { events } = diff(prev, [row("a"), row("b"), row("c")], RING, [countRule], OK, 2_000);
+    expect(events).toHaveLength(1);
+    expect(events[0].kind).toBe("count");
+    expect(events[0].rowId).toBeUndefined();
+  });
+
+  it("does NOT fire again while the level stays crossed — this is the jetSurgeMin bug", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, count: 3, lastOk: 500 };
+    const { events } = diff(prev, [row("a"), row("b"), row("c"), row("d")], RING, [countRule], OK, 2_000);
+    expect(events).toHaveLength(0);
+  });
+
+  it("re-arms once the count falls back below, so the next crossing fires again", () => {
+    const dropped = diff(
+      { ...EMPTY_OBSERVATION, count: 4, lastOk: 500 },
+      [row("a")], RING, [countRule], OK, 2_000,
+    );
+    expect(dropped.events).toHaveLength(0);
+    const again = diff(dropped.next, [row("a"), row("b"), row("c")], RING, [countRule], OK, 3_000);
+    expect(again.events).toHaveLength(1);
+  });
+
+  it("fires on a `below` rule when the count drops through the level", () => {
+    const below = rule({ kind: "count", dir: "below", level: 2 });
+    const prev: Observation = { ...EMPTY_OBSERVATION, count: 3, lastOk: 500 };
+    const { events } = diff(prev, [row("a")], RING, [below], OK, 2_000);
+    expect(events).toHaveLength(1);
+  });
+});
+
+describe("diff — crosses, edge-triggered per row", () => {
+  const magRule = rule({ kind: "crosses", field: "magnitude", dir: "atOrAbove", level: 5 });
+
+  it("fires when a row's number passes the level", () => {
+    const prev: Observation = {
+      ...EMPTY_OBSERVATION,
+      rows: { q: { inside: true, scalars: { magnitude: 4.2 } } },
+      count: 1, lastOk: 500,
+    };
+    const { events } = diff(prev, [row("q", 0, 0, { magnitude: 5.4 })], RING, [magRule], OK, 2_000);
+    expect(events).toHaveLength(1);
+    expect(events[0].rowId).toBe("q");
+  });
+
+  it("does not fire while the row stays above the level", () => {
+    const prev: Observation = {
+      ...EMPTY_OBSERVATION,
+      rows: { q: { inside: true, scalars: { magnitude: 5.4 } } },
+      count: 1, lastOk: 500,
+    };
+    const { events } = diff(prev, [row("q", 0, 0, { magnitude: 6.1 })], RING, [magRule], OK, 2_000);
+    expect(events).toHaveLength(0);
+  });
+
+  it("does not fire for a row seen for the first time, because there is no previous value to cross FROM", () => {
+    const prev: Observation = { ...EMPTY_OBSERVATION, rows: {}, count: 0, lastOk: 500 };
+    const { events } = diff(prev, [row("q", 0, 0, { magnitude: 9 })], RING, [magRule], OK, 2_000);
+    expect(events).toHaveLength(0);
+  });
+
+  it("ignores a row missing the field rather than treating absent as zero", () => {
+    const prev: Observation = {
+      ...EMPTY_OBSERVATION,
+      rows: { q: { inside: true, scalars: { magnitude: 4 } } },
+      count: 1, lastOk: 500,
+    };
+    const { events } = diff(prev, [row("q")], RING, [magRule], OK, 2_000);
+    expect(events).toHaveLength(0);
+  });
+});

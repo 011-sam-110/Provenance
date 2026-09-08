@@ -45,6 +45,22 @@ function event(
   return { ruleId: rule.id, areaId: rule.areaId, sourceId: rule.sourceId, kind, at, text: "", ...(rowId ? { rowId } : {}) };
 }
 
+/**
+ * EDGE, not level. True only when the value moved ACROSS the line since last time.
+ *
+ * This is a deliberate correction. `aviation.rules.ts` emits its private-jet surge
+ * whenever the count is at or above the threshold, and WidgetFrame's dedupe set is
+ * per-MOUNT, so focusing a widget and coming back re-announces a surge that never
+ * went away. An edge fires once and re-arms only when the value returns.
+ *
+ * A non-finite previous value means "we have never seen this", which is not a
+ * crossing — you cannot cross a line you were never on a side of.
+ */
+function crossed(prev: number | undefined, cur: number, dir: "atOrAbove" | "below", level: number): boolean {
+  if (prev == null || !Number.isFinite(prev) || !Number.isFinite(cur)) return false;
+  return dir === "atOrAbove" ? prev < level && cur >= level : prev >= level && cur < level;
+}
+
 export function diff(
   prev: Observation | undefined,
   rows: readonly ObservedRow[],
@@ -71,6 +87,24 @@ export function diff(
     if (rule.params.kind === "appears") {
       for (const r of insideNow) {
         if (!before.rows[r.id]) events.push(event(rule, "appears", now, r.id));
+      }
+    }
+
+    if (rule.params.kind === "count") {
+      const { dir, level } = rule.params;
+      if (crossed(before.count, next.count, dir, level)) {
+        events.push(event(rule, "count", now));
+      }
+    }
+
+    if (rule.params.kind === "crosses") {
+      const { field, dir, level } = rule.params;
+      for (const r of insideNow) {
+        const cur = r.scalars[field];
+        if (!Number.isFinite(cur)) continue; // absent is not zero
+        if (crossed(before.rows[r.id]?.scalars?.[field], cur, dir, level)) {
+          events.push(event(rule, "crosses", now, r.id));
+        }
       }
     }
   }
