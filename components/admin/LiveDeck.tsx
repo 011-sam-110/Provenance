@@ -245,7 +245,7 @@ export function LiveDeck({ queue }: { queue: QueueCamera[] }) {
           <div className="lv-meter-track">
             <div
               className="lv-meter-fill"
-              style={{ width: `${Math.min(100, (producingMs / MIN_PRODUCING_MS) * 100)}%` }}
+              style={{ transform: `scaleX(${Math.min(1, producingMs / MIN_PRODUCING_MS)})` }}
             />
           </div>
           <span className="lv-meter-label">

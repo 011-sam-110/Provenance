@@ -1,108 +1,726 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-07T23:23:17.125Z",
+  "generatedAt": "2026-09-08T00:54:35.581Z",
   "cameras": [
     {
-      "cameraId": "scdot:10002",
-      "feed": "scdot",
-      "name": "I-77 S @ MM 4.9",
-      "lat": 33.948503,
-      "lon": -80.997286,
+      "cameraId": "castlerock:ny:16",
+      "feed": "castlerock",
+      "name": "NY 33",
+      "lat": 42.9223627,
+      "lon": -78.8435134,
       "country": "US",
-      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10002/playlist.m3u8",
+      "streamUrl": "https://s52.nysdot.skyvdn.com/rtplive/R5_013/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10002.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s52.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.580Z"
+      }
     },
     {
-      "cameraId": "scdot:10003",
-      "feed": "scdot",
-      "name": "SB 5.8 I-77 S @ MM 5.8",
-      "lat": 33.951347,
-      "lon": -80.982847,
+      "cameraId": "castlerock:ny:19",
+      "feed": "castlerock",
+      "name": "US 9",
+      "lat": 43.237344,
+      "lon": -73.690416,
       "country": "US",
-      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10003/playlist.m3u8",
+      "streamUrl": "https://s51.nysdot.skyvdn.com/rtplive/R1_033/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10003.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s51.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
     },
     {
-      "cameraId": "scdot:10004",
-      "feed": "scdot",
-      "name": "I-77 S @ MM 7",
-      "lat": 33.95301,
-      "lon": -80.964955,
+      "cameraId": "castlerock:ny:20",
+      "feed": "castlerock",
+      "name": "NY 5A",
+      "lat": 43.106347,
+      "lon": -75.239611,
       "country": "US",
-      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10004/playlist.m3u8",
+      "streamUrl": "https://s53.nysdot.skyvdn.com/rtplive/R2_029/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10004.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s53.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
     },
     {
-      "cameraId": "scdot:10005",
-      "feed": "scdot",
-      "name": "I-126 E @ MM 3.4 Elmwood Ave",
-      "lat": 34.009967,
-      "lon": -81.050091,
+      "cameraId": "castlerock:ny:374",
+      "feed": "castlerock",
+      "name": "NY 414",
+      "lat": 42.154819,
+      "lon": -77.052832,
       "country": "US",
-      "streamUrl": "https://s19.us-east-1.skyvdn.com/rtplive/10005/playlist.m3u8",
+      "streamUrl": "https://s7.nysdot.skyvdn.com/rtplive/R6_005/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10005.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s7.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
     },
     {
-      "cameraId": "scdot:10006",
-      "feed": "scdot",
-      "name": "I-126 E @ MM 3 Huger Street",
-      "lat": 34.008779,
-      "lon": -81.052432,
+      "cameraId": "castlerock:ny:749",
+      "feed": "castlerock",
+      "name": "NY 920P",
+      "lat": 42.949608,
+      "lon": -74.369051,
       "country": "US",
-      "streamUrl": "https://s20.us-east-1.skyvdn.com/rtplive/10006/playlist.m3u8",
+      "streamUrl": "https://s9.nysdot.skyvdn.com/rtplive/R2_041/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10006.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s9.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
     },
     {
-      "cameraId": "scdot:10007",
-      "feed": "scdot",
-      "name": "I-126 E @ MM 2.7 Broad River Bridge",
-      "lat": 34.009855,
-      "lon": -81.06269,
+      "cameraId": "castlerock:la:1",
+      "feed": "castlerock",
+      "name": "I-20",
+      "lat": 32.538889,
+      "lon": -93.630833,
       "country": "US",
-      "streamUrl": "https://s18.us-east-1.skyvdn.com/rtplive/10007/playlist.m3u8",
+      "streamUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-030.streams/playlist.m3u8",
       "kind": "hls",
-      "imageUrl": "https://scdotsnap.us-east-1.skyvdn.com/10007.png",
-      "operator": "South Carolina DOT (511SC)",
-      "license": "SCDOT 511 public camera feed — no stated licence",
-      "attribution": "South Carolina DOT (511SC)",
-      "flags": [
-        "Seeded from an already-live feed to exercise the deck. Not an acquisition."
-      ]
+      "operator": "Louisiana DOTD (511LA)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Louisiana DOTD (511LA)",
+      "probe": {
+        "status": "live",
+        "reason": "host itsstreamingbr2.dotd.la.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:la:29",
+      "feed": "castlerock",
+      "name": "US 61",
+      "lat": 30.4530442717707,
+      "lon": -91.09590149,
+      "country": "US",
+      "streamUrl": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-168.streams/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Louisiana DOTD (511LA)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Louisiana DOTD (511LA)",
+      "probe": {
+        "status": "live",
+        "reason": "host itsstreamingbr.dotd.la.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:2",
+      "feed": "castlerock",
+      "name": "McCarran & Caughlin/cashill",
+      "lat": 39.484798,
+      "lon": -119.852401,
+      "country": "US",
+      "streamUrl": "https://d2wse2.its.nv.gov:443/renoxcd02/fb89196b-15dc-48fb-992e-030b7a325d34_hspflirxcd02_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d2wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6642",
+      "feed": "castlerock",
+      "name": "Sahara Ave & Boulder Hwy - Fremont",
+      "lat": 36.14541,
+      "lon": -115.10151,
+      "country": "US",
+      "streamUrl": "https://d1wse2.its.nv.gov:443/vegasxcd02/607991cc-f93b-4b4c-8cbc-17fa2b69a6cd_lvflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6646",
+      "feed": "castlerock",
+      "name": "Sahara  Ave & Eastern Ave",
+      "lat": 36.14412,
+      "lon": -115.11902,
+      "country": "US",
+      "streamUrl": "https://d1wse1.its.nv.gov:443/vegasxcd01/ce41b7e4-bf27-4095-9a8c-e931ef8a282b_lvflirxcd01_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6649",
+      "feed": "castlerock",
+      "name": "SR-225 Adobe EL MM12",
+      "lat": 40.95032,
+      "lon": -115.87576,
+      "country": "US",
+      "streamUrl": "https://d3wse1.its.nv.gov:443/elkoxcd01/76bcd803-4d2f-4aee-af2b-708557b21e8d_hspflirxcd04_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d3wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6652",
+      "feed": "castlerock",
+      "name": "Charleston Blvd & Rancho Dr",
+      "lat": 36.15877,
+      "lon": -115.17263,
+      "country": "US",
+      "streamUrl": "https://d1wse4.its.nv.gov:443/vegasxcd04/f0e42ab9-1282-4d78-b193-9ebf01b072b7_lvflirxcd06_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse4.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6658",
+      "feed": "castlerock",
+      "name": "Durango Dr & North CC 215 EB Ramp",
+      "lat": 36.27898,
+      "lon": -115.2878,
+      "country": "US",
+      "streamUrl": "https://d1wse5.its.nv.gov:443/vegasxcd05/51c88575-37ff-4aed-b137-204b6c47db00_lvflirxcd07_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse5.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6659",
+      "feed": "castlerock",
+      "name": "Decatur Blvd & CC 215 WB Ramp",
+      "lat": 36.06907,
+      "lon": -115.20784,
+      "country": "US",
+      "streamUrl": "https://d1wse3.its.nv.gov:443/vegasxcd03/4c0bab02-65b4-4b1e-bd8a-ee77a2b0d02c_lvflirxcd04_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse3.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:21",
+      "feed": "castlerock",
+      "name": "NY 33",
+      "lat": 42.9074247,
+      "lon": -78.8436404,
+      "country": "US",
+      "streamUrl": "https://s52.nysdot.skyvdn.com/rtplive/R5_011/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s52.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:312",
+      "feed": "castlerock",
+      "name": "I-287 - Cross Westchester Expwy",
+      "lat": 41.05757,
+      "lon": -73.83243,
+      "country": "US",
+      "streamUrl": "https://s51.nysdot.skyvdn.com/rtplive/TA_001/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s51.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:49",
+      "feed": "castlerock",
+      "name": "I-290",
+      "lat": 42.99067,
+      "lon": -78.79924,
+      "country": "US",
+      "streamUrl": "https://s53.nysdot.skyvdn.com/rtplive/R5_029/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s53.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:375",
+      "feed": "castlerock",
+      "name": "I-84",
+      "lat": 41.529714,
+      "lon": -73.813121,
+      "country": "US",
+      "streamUrl": "https://s7.nysdot.skyvdn.com/rtplive/R8_002/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s7.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:750",
+      "feed": "castlerock",
+      "name": "NY 14",
+      "lat": 42.090502,
+      "lon": -76.805569,
+      "country": "US",
+      "streamUrl": "https://s9.nysdot.skyvdn.com/rtplive/R6_031/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s9.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:la:2",
+      "feed": "castlerock",
+      "name": "I-20",
+      "lat": 32.4609,
+      "lon": -93.83,
+      "country": "US",
+      "streamUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-002.streams/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Louisiana DOTD (511LA)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Louisiana DOTD (511LA)",
+      "probe": {
+        "status": "live",
+        "reason": "host itsstreamingbr2.dotd.la.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6705",
+      "feed": "castlerock",
+      "name": "West 4th St @ Woodland Roundabout",
+      "lat": 39.50925,
+      "lon": -119.89655,
+      "country": "US",
+      "streamUrl": "https://d2wse2.its.nv.gov:443/renoxcd03/f32c784f-2ea1-4302-a9e4-fde90a7a0c0a_hspflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d2wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6643",
+      "feed": "castlerock",
+      "name": "Boulder Hwy & US 95 NB Ramp",
+      "lat": 36.13487,
+      "lon": -115.08962,
+      "country": "US",
+      "streamUrl": "https://d1wse2.its.nv.gov:443/vegasxcd02/4ffce686-6a62-4d00-b2a1-4cc9da2b334a_lvflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6656",
+      "feed": "castlerock",
+      "name": "Decatur Blvd & Sunset Rd",
+      "lat": 36.07194,
+      "lon": -115.20764,
+      "country": "US",
+      "streamUrl": "https://d1wse1.its.nv.gov:443/vegasxcd01/c0e5bdc6-682e-4736-8d8c-26b61eac1940_lvflirxcd01_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:7003",
+      "feed": "castlerock",
+      "name": "IR-80 MM 200 Golconda Summit HU33",
+      "lat": 40.9212,
+      "lon": -117.3938,
+      "country": "US",
+      "streamUrl": "https://d3wse1.its.nv.gov:443/elkoxcd01/4b01896c-c7a3-45ba-ada5-c410bb8965a0_hspflirxcd04_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d3wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6653",
+      "feed": "castlerock",
+      "name": "Las Vegas Blvd & Lake Mead Blvd",
+      "lat": 36.1957,
+      "lon": -115.12938,
+      "country": "US",
+      "streamUrl": "https://d1wse4.its.nv.gov:443/vegasxcd04/a1d2d9d2-5a35-469c-ac39-e300d545441e_lvflirxcd04_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse4.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6700",
+      "feed": "castlerock",
+      "name": "I-215 EB I-15 SB ramp",
+      "lat": 36.0651,
+      "lon": -115.1863,
+      "country": "US",
+      "streamUrl": "https://d1wse5.its.nv.gov:443/vegasxcd05/aed7089c-c1ff-4de3-8535-2c1792c7cc8f_lvflirxcd05_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse5.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6664",
+      "feed": "castlerock",
+      "name": "Flamingo Rd & Las Vegas Blvd F1",
+      "lat": 36.11454,
+      "lon": -115.17308,
+      "country": "US",
+      "streamUrl": "https://d1wse3.its.nv.gov:443/vegasxcd03/c250fce9-1e47-479e-99eb-a28ba37fe962_lvflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse3.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:22",
+      "feed": "castlerock",
+      "name": "NY 33",
+      "lat": 42.9223673,
+      "lon": -78.8438361,
+      "country": "US",
+      "streamUrl": "https://s52.nysdot.skyvdn.com/rtplive/R5_012/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s52.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:313",
+      "feed": "castlerock",
+      "name": "I-287 - Cross Westchester Expwy",
+      "lat": 41.05911,
+      "lon": -73.82328,
+      "country": "US",
+      "streamUrl": "https://s51.nysdot.skyvdn.com/rtplive/TA_002/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s51.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:50",
+      "feed": "castlerock",
+      "name": "I-87 - NYS Thruway",
+      "lat": 41.00857,
+      "lon": -73.85127,
+      "country": "US",
+      "streamUrl": "https://s53.nysdot.skyvdn.com/rtplive/TA_021/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s53.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:377",
+      "feed": "castlerock",
+      "name": "I-84",
+      "lat": 41.538471,
+      "lon": -73.774562,
+      "country": "US",
+      "streamUrl": "https://s7.nysdot.skyvdn.com/rtplive/R8_004/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s7.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:ny:752",
+      "feed": "castlerock",
+      "name": "NY 30",
+      "lat": 43.109147,
+      "lon": -74.268057,
+      "country": "US",
+      "streamUrl": "https://s9.nysdot.skyvdn.com/rtplive/R2_042/playlist.m3u8",
+      "kind": "hls",
+      "operator": "NYSDOT (511NY)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) NYSDOT (511NY)",
+      "probe": {
+        "status": "live",
+        "reason": "host s9.nysdot.skyvdn.com measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:la:3",
+      "feed": "castlerock",
+      "name": "I-20",
+      "lat": 32.4844,
+      "lon": -93.774,
+      "country": "US",
+      "streamUrl": "https://ITSStreamingBR2.dotd.la.gov/public/shr-cam-005.streams/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Louisiana DOTD (511LA)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Louisiana DOTD (511LA)",
+      "probe": {
+        "status": "live",
+        "reason": "host itsstreamingbr2.dotd.la.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:la:30",
+      "feed": "castlerock",
+      "name": "US 61",
+      "lat": 30.5085549311101,
+      "lon": -91.171515,
+      "country": "US",
+      "streamUrl": "https://ITSStreamingBR.dotd.la.gov/public/br-cam-188.streams/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Louisiana DOTD (511LA)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Louisiana DOTD (511LA)",
+      "probe": {
+        "status": "live",
+        "reason": "host itsstreamingbr.dotd.la.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6733",
+      "feed": "castlerock",
+      "name": "US395 Red Rock Virginia Park n Ride",
+      "lat": 39.62526,
+      "lon": -119.91576,
+      "country": "US",
+      "streamUrl": "https://d2wse2.its.nv.gov:443/renoxcd03/499cd9ed-721f-4663-8ee8-a0af2cdcaf29_hspflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d2wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6645",
+      "feed": "castlerock",
+      "name": "Boulder Hwy & Tropicana Ave",
+      "lat": 36.10081,
+      "lon": -115.0508,
+      "country": "US",
+      "streamUrl": "https://d1wse2.its.nv.gov:443/vegasxcd02/02ae4536-d425-4ab3-b8ff-c7edeff3eeaf_lvflirxcd03_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse2.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6657",
+      "feed": "castlerock",
+      "name": "Sahara Ave & Decatur Blvd",
+      "lat": 36.14476,
+      "lon": -115.20846,
+      "country": "US",
+      "streamUrl": "https://d1wse1.its.nv.gov:443/vegasxcd01/c87478a0-0f9c-453d-a8dd-756dd24422a9_lvflirxcd01_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:7004",
+      "feed": "castlerock",
+      "name": "IR-80 MM 321Halleck EL43",
+      "lat": 40.957,
+      "lon": -115.4786,
+      "country": "US",
+      "streamUrl": "https://d3wse1.its.nv.gov:443/elkoxcd01/e821e793-276e-4dc6-9d22-819bc6f8fdd3_hspflirxcd04_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d3wse1.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6661",
+      "feed": "castlerock",
+      "name": "Decatur Blvd & CC 215 EB Ramp",
+      "lat": 36.0669,
+      "lon": -115.20784,
+      "country": "US",
+      "streamUrl": "https://d1wse4.its.nv.gov:443/vegasxcd04/9493a157-b40a-4787-8041-0a62a788d081_lvflirxcd06_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse4.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
+    },
+    {
+      "cameraId": "castlerock:nv:6721",
+      "feed": "castlerock",
+      "name": "I-215 WB I-15",
+      "lat": 36.06615,
+      "lon": -115.18214,
+      "country": "US",
+      "streamUrl": "https://d1wse5.its.nv.gov:443/vegasxcd05/b2bec0dc-f008-4f34-8a57-7a8476298a30_lvflirxcd05_public.stream/playlist.m3u8",
+      "kind": "hls",
+      "operator": "Nevada DOT (NVRoads)",
+      "license": "Castle Rock 511 terms of use",
+      "attribution": "Live traffic data (c) Nevada DOT (NVRoads)",
+      "probe": {
+        "status": "live",
+        "reason": "host d1wse5.its.nv.gov measured rolling by scripts/liveness-castlerock.mts",
+        "at": "2026-09-08T00:54:35.581Z"
+      }
     }
   ]
 }
