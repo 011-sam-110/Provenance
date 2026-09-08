@@ -1,6 +1,16 @@
 "use client";
 // The four CORE-LAYER shortcuts — Core / None / Cameras / Air + space.
 //
+// ── UNMOUNTED SINCE 2026-09-08 ──────────────────────────────────────────────
+// Nothing renders this. Sam asked for the row off the Sources rail, and the search
+// box took the slot it had. The file is kept for the same reason PresetBar.tsx is:
+// putting the row back is one import and one line in SourceCatalog.tsx, and the
+// reasoning below is worth more on disk than in a diff.
+//
+// It was the only live renderer of `LAYER_PRESETS` and the only caller of
+// `layersStore.applyPreset`, so both are now reachable only from here. Neither has
+// been deleted.
+//
 // ── WHY THIS EXISTS AS ITS OWN COMPONENT ────────────────────────────────────
 // It is PresetBar's second tier, lifted out unchanged, because the Presets tab it
 // lived in has been removed and this tier had nowhere else to go.
