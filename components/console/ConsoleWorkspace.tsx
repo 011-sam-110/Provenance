@@ -2,6 +2,7 @@
 "use client";
 import { useMemo, useRef, type CSSProperties } from "react";
 import { useShellLayout, shellLayoutStore } from "@/lib/console/store";
+import { useBoardEntrance } from "@/components/console/useBoardEntrance";
 import { STAGE_ID, type SegmentId } from "@/lib/console/types";
 import { widgetsInSegment } from "@/lib/console/reducers";
 import { useActivePreset } from "@/lib/console/activePreset";
@@ -104,6 +105,17 @@ export default function ConsoleWorkspace() {
   // quick-settings read below already do for that case.
   const sceneId = useActivePreset();
   const chrome = useSceneChrome(sceneId);
+
+  // The board hand-off, keyed on that same scene id — a preset is the whole
+  // workspace, so switching one swaps both rails and every card in them, and
+  // that is the change this motion explains. It reuses `sceneId` rather than
+  // calling useActivePreset() again: a second subscription to the same store
+  // would re-render this component twice per board switch.
+  //
+  // Deliberately NOT keyed on the scene's hidden-widget set. Showing or hiding
+  // a widget from the nav panel is a paint-time filter, not a board switch, and
+  // replaying the whole rail entrance for it would overstate what happened.
+  useBoardEntrance(gridRef, sceneId);
 
   // The workspace's own box, measured. Rail sizes are clamped against it so two
   // wide rails can never squeeze the map below STAGE_MIN_PX — the clamp needs a

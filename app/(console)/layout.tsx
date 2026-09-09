@@ -1,3 +1,10 @@
+// Imported HERE and not from globals.css on purpose, for two reasons. It is a
+// console concern, so the route group is where it belongs and the marketing
+// site cannot pick it up by accident. And a nested layout's CSS loads after the
+// root layout's, which is the only way this file wins a specificity tie against
+// the rules it is adding motion to — `@import` can only ever go at the top of
+// globals.css, i.e. the losing end.
+import "../console-motion.css";
 import ReactDOM from "react-dom";
 import { basemapWarmup, DEFAULT_BASEMAP } from "@/lib/basemaps";
 
