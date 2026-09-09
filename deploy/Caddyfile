@@ -130,10 +130,49 @@ provenance-online.com {
 		lb_try_interval 200ms
 	}
 
-	# NOT adding `encode` on purpose: Next's standalone server already compresses
-	# (`compress` defaults to true), including the ~6.4 MB /api/cameras body it deflates
-	# to roughly a megabyte. A second encoder buys nothing and costs CPU on every
-	# response, on a box with two shared vCPUs.
+	# ENCODE. THE COMMENT THAT USED TO BE HERE WAS WRONG, AND IT WAS EXPENSIVE.
+	#
+	# It said `encode` was deliberately absent because "Next's standalone server already
+	# compresses (`compress` defaults to true), including the ~6.4 MB /api/cameras body
+	# it deflates to roughly a megabyte". That was an assumption about a default, not a
+	# measurement. Taken on this box on 2026-09-09, straight at Next and bypassing Caddy:
+	#
+	#   curl -H 'Accept-Encoding: gzip, br' http://127.0.0.1:3000/api/cameras
+	#     -> 6,747,810 bytes, and NO Content-Encoding header at all.
+	#     -> byte-identical with the header omitted entirely.
+	#
+	# Next does not compress these route handlers, with or without the request header,
+	# and /api/planes behaves the same way. So every byte of API JSON was leaving this
+	# box raw. Measured from the rollup for 2026-09-08: /api/cameras 29.83 GB over 5,049
+	# responses (6,195 KB each) and /api/planes 28.23 GB over 22,916 — 91 of the day's
+	# 93.49 GB, against a bundle allowance of 3 TB/month that the day was tracking at
+	# 2.74 TB.
+	#
+	# WHAT HID IT FOR SO LONG: Cloudflare compresses for the visitor, so the same body
+	# arrives at a browser as 547 KB of brotli. The client saw a small, fast response
+	# while the origin paid the full 6.7 MB on every miss — and every request is a miss,
+	# because Cloudflare caches by file extension by default and `/api/*` has none
+	# (`cf-cache-status: DYNAMIC` on cameras, planes and coverage, measured the same day).
+	#
+	# THE MATCHER IS NOT DECORATION. /api/hls is 21.81 GB/day of already-compressed video
+	# and /api/proxy serves JPEG frames; pushing either through gzip spends CPU on two
+	# shared vCPUs to make the bytes very slightly bigger. Only text-shaped types are
+	# compressed, which also leaves the segment path streaming unbuffered exactly as the
+	# reverse_proxy comment above requires.
+	encode {
+		zstd
+		gzip 5
+		minimum_length 1024
+		match {
+			header Content-Type text/*
+			header Content-Type application/json*
+			header Content-Type application/geo+json*
+			header Content-Type application/javascript*
+			header Content-Type application/xml*
+			header Content-Type application/vnd.apple.mpegurl*
+			header Content-Type image/svg+xml*
+		}
+	}
 
 	# THE ACCESS LOG IS IP-MASKED, AND app/(site)/privacy PROMISES THAT IN WRITING.
 	# Caddy's default JSON encoder writes request>remote_ip and request>client_ip in
