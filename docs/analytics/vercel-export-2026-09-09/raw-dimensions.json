@@ -1,0 +1,82 @@
+{
+  "source": "Vercel Web Analytics API (project traffic-nerd-v2)",
+  "window": "2026-07-01..2026-09-10",
+  "note": "Rows are [key, visitors, pageviews]. Visitors are per-bucket uniques; do not sum across rows or windows.",
+  "byRoute": [
+    ["/",8378,10355],["/app",8275,13286],["/camera/[id]",344,751],["/privacy",19,20],
+    ["/cameras/[country]/[region]",14,35],["/cameras/[country]",13,23],
+    ["/camera/tfl:JamCams_00002.00865",8,8],["/cameras",5,8],["/[layers]",4,9],["/admin",4,5],
+    ["/sitemap",2,2],["/about",1,1],["/admin/verify",1,1],["/app/admin",1,1],
+    ["/camera/digitraffic%3AC12591",1,1],["/cameras/[country]/[region]/[...paging]",1,1],
+    ["/cameras/[country]/road/[road]",1,11],["/sitemap.txt",1,1]
+  ],
+  "byReferrerHostname": [
+    ["(none/direct)",8928,19910],["google.com",1554,1832],["reddit.com",956,1096],
+    ["com.google.android.googlequicksearchbox",386,493],["com.reddit.frontpage",239,341],
+    ["github.com",192,238],["duckduckgo.com",158,245],["search.brave.com",81,92],["t.co",70,83],
+    ["bing.com",48,68],["m.facebook.com",11,12],["vercel.com",10,16],["chatgpt.com",9,9],
+    ["ecosia.org",7,11],["facebook.com",7,7],["linkedin.com",7,7],["keep.google.com",4,5],
+    ["l.instagram.com",4,5],["old.reddit.com",4,5],["search.yahoo.com",4,5],
+    ["com.linkedin.android",3,4],["teams.public.onecdn.static.microsoft",3,3],["google.gr",2,3],
+    ["startpage.com",2,2],["uk.search.yahoo.com",2,2],["192.168.8.1",1,1],["alohafind.com",1,1],
+    ["cl.search.yahoo.com",1,1],["duckduckgo.onion",1,1],["fresheye.com",1,1],
+    ["gemini.google.com",1,1],["google.co.uk",1,1],["google.com.hk",1,1],["google.com.ph",1,1],
+    ["google.lv",1,1],["google.nl",1,1],["hakia.com",1,1],["l.facebook.com",1,2],["lycos.com",1,1],
+    ["qwant.com",1,2],["rimowa.com",1,1],["safe.search.brave.com",1,1],["sh.reddit.com",1,1],
+    ["us.search.yahoo.com",1,4],["yandex.ru",1,1]
+  ],
+  "byDeviceType": [
+    ["mobile",6131,16581],["desktop",3383,7703],["tablet",96,227],["(unknown)",4,8]
+  ],
+  "byOsName": [
+    ["iOS",3503,8773],["Android",2722,8033],["Windows",1938,4523],["Mac",990,2264],
+    ["GNU/Linux",419,835],["Ubuntu",27,61],["Chrome OS",15,30]
+  ],
+  "byBrowserName": [
+    ["Mobile Safari",2426,6154],["Chrome Mobile",2168,6358],["Chrome",2063,4770],["Firefox",669,1513],
+    ["Chrome Mobile iOS",627,1441],["Safari",360,799],["Microsoft Edge",261,553],
+    ["Firefox Mobile",260,807],["Brave",183,499],["Samsung Browser",152,501],
+    ["Google Search App",142,386],["Opera",95,231],["Firefox Mobile iOS",55,136],
+    ["Opera Mobile",35,79],["Twitter",35,71],["Opera Touch",18,48],["Chrome Webview",12,37],
+    ["Ecosia",12,38],["Yandex Browser",11,34],["Facebook",7,12],["(unknown)",5,5],
+    ["Instagram App",4,8],["Huawei Browser",3,8],["Snapchat",3,4],["Aloha Browser",2,5],
+    ["MIUI Browser",2,13],["DuckDuckGo Privacy Browser",1,1],["Oculus Browser",1,4],
+    ["Qwant Mobile",1,2],["Steam In-Game Overlay",1,2]
+  ],
+  "byCountry": [
+    ["US",2764,6926],["GB",601,1781],["CA",492,1231],["DE",480,1235],["BR",384,1014],["IN",372,888],
+    ["NL",304,785],["AU",263,614],["FR",228,563],["ID",156,353],["ES",155,415],["IT",145,377],
+    ["PL",141,341],["RO",134,324],["(others)",117,303],["SE",108,285],["RS",107,295],["TR",104,264],
+    ["PT",97,268],["CH",96,249],["BE",93,272],["MX",83,194],["PH",81,188],["NO",80,183],["GR",77,215],
+    ["AT",73,182],["IE",72,166],["ZA",69,200],["MY",68,159],["AR",67,157],["CZ",63,145],["FI",63,171],
+    ["AE",62,151],["NZ",53,117],["JP",52,118],["BG",51,124],["SG",51,129],["HU",50,139],["AL",45,132],
+    ["IL",45,103],["MA",45,113],["CL",44,112],["PK",44,125],["DK",42,100],["CO",37,93],["RU",37,74],
+    ["UA",37,86],["EG",31,88],["LV",31,67],["HR",30,75],["GE",29,68],["NG",29,70],["BA",28,77],
+    ["TH",28,77],["KE",26,70],["LT",26,72],["MK",26,69],["DO",24,52],["SA",24,67],["SK",24,72],
+    ["DZ",23,52],["TN",21,60],["BD",20,44],["LB",20,53],["EE",19,45],["PR",19,51],["HK",18,38],
+    ["CY",17,51],["VN",17,43],["IQ",15,41],["LK",13,43],["LU",13,25],["ME",13,36],["TT",13,35],
+    ["GH",12,34],["PA",12,30],["UY",11,23],["KR",10,25],["KW",10,23],["QA",10,25],["BH",9,25],
+    ["GU",9,21],["JM",9,25],["PE",9,21],["TZ",9,22],["CR",8,16],["IS",8,22],["(unknown)",7,18],
+    ["EC",7,17],["TW",7,15],["XK",7,18],["KZ",6,15],["NP",6,14],["OM",6,14],["PY",6,16],["SI",6,12],
+    ["AM",5,14],["ET",5,10],["LY",5,15],["RW",5,11],["UZ",5,18]
+  ],
+  "spikeWindow_2026-09-06_to_09-08": {
+    "byReferrerHostname": [
+      ["(none/direct)",5994,14492],["google.com",1512,1785],
+      ["com.google.android.googlequicksearchbox",381,487],["duckduckgo.com",158,245],
+      ["search.brave.com",79,90],["bing.com",40,53],["(others)",21,29],["github.com",9,11],
+      ["reddit.com",8,10],["ecosia.org",7,11],["m.facebook.com",6,7],["facebook.com",4,4],
+      ["l.instagram.com",4,5],["search.yahoo.com",4,5],["chatgpt.com",2,2],["google.gr",2,3]
+    ],
+    "byRoute": [
+      ["/app",5886,9998],["/",5676,6726],["/camera/[id]",197,433],["/privacy",15,16],
+      ["/cameras/[country]/[region]",10,28],["/cameras/[country]",9,17],["/cameras",4,7],
+      ["/admin",2,2],["/cameras/[country]/road/[road]",1,11],["/sitemap",1,1]
+    ],
+    "byCountry": [
+      ["(others)",2351,6210],["US",1805,4805],["GB",381,1128],["CA",359,963],["DE",279,810],
+      ["BR",239,659],["NL",231,622],["AU",221,515],["IN",163,433],["ID",142,315],["RO",102,255],
+      ["FR",101,277],["ES",100,247]
+    ]
+  }
+}
