@@ -192,6 +192,33 @@ describe("adsbRowToWorldObject — classification", () => {
   });
 });
 
+// --- categoryTrusted: the actual bug behind bitácora #16 --------------------
+// The UI badge in components/PlaneDetail.tsx used to append "· est." to every
+// aircraft with a typeLabel, which is all of them — never distinguishing a
+// broadcast ADS-B category from the altitude/speed guess it claims to warn
+// about. This is the field that fixes it.
+
+describe("adsbRowToWorldObject — categoryTrusted", () => {
+  it("is true when the row broadcasts a recognised ADS-B category", () => {
+    // 48548c carries category "A3", a recognised code (see ADSB_FIXTURE above).
+    const meta = byHex("48548c").meta as { categoryTrusted: boolean };
+    expect(meta.categoryTrusted).toBe(true);
+  });
+
+  it("is false for an on-ground row, even though it also carries a category", () => {
+    // 4caead is on-ground AND carries category "A2" — on-ground wins the
+    // classification, so this is not a trusted category read.
+    const meta = byHex("4caead").meta as { categoryTrusted: boolean };
+    expect(meta.categoryTrusted).toBe(false);
+  });
+
+  it("is false when the row carries no usable category, falling back to the heuristic", () => {
+    const obj = adsbRowToWorldObject({ hex: "abc999", lat: 10, lon: 10, alt_baro: 30000, gs: 400 });
+    const meta = obj!.meta as { categoryTrusted: boolean };
+    expect(meta.categoryTrusted).toBe(false);
+  });
+});
+
 // --- honesty: no invented fields -------------------------------------------
 
 describe("adsbRowToWorldObject — honesty", () => {

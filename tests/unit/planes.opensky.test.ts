@@ -242,6 +242,14 @@ describe("planeToWorldObject", () => {
     const { meta } = planeToWorldObject(onGround);
     expect((meta as Record<string, unknown>).onGround).toBe(true);
   });
+
+  test("meta.categoryTrusted is always false — this parser's input never carries a broadcast category", () => {
+    // Matches lib/sources/adsb.ts's meta shape exactly (same field, real value, never
+    // omitted), so a consumer reading categoryTrusted cannot tell which provider
+    // served a given aircraft just from whether the field exists.
+    expect((planeToWorldObject(cruiser).meta as Record<string, unknown>).categoryTrusted).toBe(false);
+    expect((planeToWorldObject(onGround).meta as Record<string, unknown>).categoryTrusted).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

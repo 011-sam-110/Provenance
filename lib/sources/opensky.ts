@@ -40,7 +40,7 @@
  */
 
 import type { WorldObject } from "@/lib/world";
-import { classifyPlane } from "@/lib/planes/classify";
+import { classifyPlaneDetailed } from "@/lib/planes/classify";
 import { PLANE_META } from "@/lib/icons/svg";
 import {
   applyCap,
@@ -157,7 +157,12 @@ export function parseStates(states: unknown[][]): Plane[] {
  * globe layer can render it uniformly alongside cameras and satellites.
  */
 export function planeToWorldObject(p: Plane): WorldObject {
-  const category = classifyPlane({
+  // No `category` passed — this parser's input (OpenSky's state-vector shape) never
+  // carried a broadcast ADS-B category, so this always falls to the heuristic.
+  // categoryTrusted is therefore always false here; kept as a real field (not
+  // omitted) so this meta shape matches adsb.ts's exactly, per the contract this
+  // function's docstring already commits to.
+  const { category, trusted: categoryTrusted } = classifyPlaneDetailed({
     altKm: p.altKm,
     velocityMs: p.velocityMs,
     onGround: p.onGround,
@@ -183,6 +188,7 @@ export function planeToWorldObject(p: Plane): WorldObject {
       onGround: p.onGround,
       headingDeg: p.headingDeg,
       category,
+      categoryTrusted,
       typeLabel: meta.label,
       squawk: p.squawk,
     },

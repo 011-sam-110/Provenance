@@ -167,6 +167,12 @@ export default function PlaneDetail({ object }: Props) {
   const velocityMs = meta.velocityMs as number | null | undefined;
   const verticalRateMs = meta.verticalRateMs as number | null | undefined;
   const onGround = (meta.onGround as boolean | undefined) ?? false;
+  // adsb.lol broadcasts a real ADS-B emitter category for most rows, which
+  // lib/planes/classify.ts trusts as a fact; only the altitude/speed/on-ground
+  // fallback is actually a guess. Absent (older cached snapshots, or the
+  // OpenSky-shaped fallback in lib/sources/opensky.ts) defaults to "not
+  // trusted" — the honest assumption when the flag was never set.
+  const categoryTrusted = (meta.categoryTrusted as boolean | undefined) ?? false;
   const headingDeg = object.heading ?? 0;
 
   // Classify climb/descent with a dead-band of ±0.5 m/s
@@ -232,7 +238,11 @@ export default function PlaneDetail({ object }: Props) {
           </span>
           {object.typeLabel && (
             <span
-              title="Type estimated from the live flight profile"
+              title={
+                categoryTrusted
+                  ? "Type from the aircraft's own broadcast category"
+                  : "Type estimated from the live flight profile"
+              }
               style={{
                 background: "var(--tn-chip-bg)",
                 color: object.color ?? "#b45309",
@@ -243,7 +253,8 @@ export default function PlaneDetail({ object }: Props) {
                 letterSpacing: "0.04em",
               }}
             >
-              {object.typeLabel} · est.
+              {object.typeLabel}
+              {!categoryTrusted && " · est."}
             </span>
           )}
           {onGround && (
