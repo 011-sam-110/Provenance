@@ -1,7 +1,7 @@
 // Each rule is host + required path prefix (+ optional suffix). Adding a source
 // = adding a rule. SCDOT snapshots live at the host root as `/<id>.png`, so that
 // rule pins the suffix instead of a deep prefix to stay tight.
-const RULES: { host: string; prefix: string; suffix?: string }[] = [
+const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] = [
   { host: "s3-eu-west-1.amazonaws.com", prefix: "/jamcams.tfl.gov.uk/" },
   { host: "cwwp2.dot.ca.gov", prefix: "/data/" },
   { host: "scdotsnap.us-east-1.skyvdn.com", prefix: "/", suffix: ".png" },
@@ -52,11 +52,27 @@ const RULES: { host: string; prefix: string; suffix?: string }[] = [
   { host: "imgproxy.windy.com", prefix: "/_/" },
 ];
 
+/**
+ * THE PORT IS PART OF THE ADDRESS, and matching only the hostname left it open.
+ * `new URL()` normalises a scheme's own port away — `https://host:443` and
+ * `http://host:80` both report `url.port === ""` — so an empty string here means
+ * "the default for this scheme", and anything else is a port somebody asked for
+ * explicitly. Every rule below wants the default, so `r.port ?? ""` is the whole
+ * expression; a rule that needs a real port declares one (see hls-allowlist.ts,
+ * where the Serbian MUP host genuinely serves on 4443).
+ *
+ * Without this, `https://fl511.com:22/map/Cctv/x` passed the gate. That reaches
+ * no cloud metadata and no internal address — the hostname match already stops
+ * that — but it does turn this deployment into a way to knock on arbitrary ports
+ * of the allowlisted hosts, which are mostly state transport agencies, from
+ * Vercel's IP rather than the caller's.
+ */
 export function isAllowed(url: URL): boolean {
   if (url.protocol !== "https:" && url.protocol !== "http:") return false;
   return RULES.some(
     (r) =>
       url.hostname === r.host &&
+      url.port === (r.port ?? "") &&
       url.pathname.startsWith(r.prefix) &&
       (!r.suffix || url.pathname.endsWith(r.suffix)),
   );
