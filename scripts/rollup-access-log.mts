@@ -38,13 +38,12 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { createGunzip } from "node:zlib";
 import type { Readable } from "node:stream";
-import { capDay, dayKey, foldRow, mergeDay, topN, type AccessRow } from "../lib/analytics/rollup.ts";
+import { capDay, dayKey, foldRow, topN, type AccessRow } from "../lib/analytics/rollup.ts";
 import {
   DEFAULT_ROLLUP_DIR,
   finalisableDays,
   makeVisitorKey,
   openDay,
-  readDay,
   readState,
   statePath,
   writeDay,
@@ -298,10 +297,19 @@ async function main(): Promise<void> {
       const day = state.days[date];
       if (!day) continue;
       // A day already on disk means the job was stopped for longer than the finalise
-      // lag and late rows arrived for it. Merge rather than overwrite, which would
-      // throw away whichever half is smaller, silently.
-      const existing = readDay(OUT_DIR, date);
-      writeDay(OUT_DIR, existing ? mergeDay(existing, day) : day);
+      // lag and late rows arrived for it. `openDay` ALREADY pulled that file back into
+      // state.days before those rows were folded in (rollup-store.mts, and its own
+      // test pins that), so `day` is the old counters PLUS the late ones — a whole
+      // value, and the write below is a whole-value write.
+      //
+      // MERGING IT AGAIN HERE ADDED THE DAY FILE TO A COPY OF ITSELF. Measured before
+      // this line changed: 2 real rows reported 2, then 3 reported 5, 4 reported 11,
+      // 5 reported 23 — `n → 2n+1` per run, compounding for as long as late rows keep
+      // arriving, and silent, because nothing errors and the shape stays plausible.
+      // Two defences against the same loss — hydrate on open, merge on write — are
+      // each correct alone and fabricate traffic together. Exactly one may own the
+      // day file; `openDay` reads it, this writes it.
+      writeDay(OUT_DIR, day);
     }
     // Day files first, then state. Both orders can be interrupted, and this one merely
     // rewrites an identical day file on the next run. The reverse drops a finalised day.
