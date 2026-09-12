@@ -1,0 +1,338 @@
+{
+  "title": "EONET Event Series",
+  "events": [
+    {
+      "id": "EONET_24157",
+      "title": "Flood in Indonesia 1104146",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24157",
+      "categories": [
+        {
+          "id": "floods",
+          "title": "Floods"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104146"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-05T20:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -1.0336,
+                98.2364
+              ],
+              [
+                0.7759,
+                99.845
+              ],
+              [
+                1.4549,
+                100.3193
+              ],
+              [
+                4.0132,
+                98.0607
+              ],
+              [
+                3.2734,
+                97.9561
+              ],
+              [
+                -1.0336,
+                98.2364
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_24158",
+      "title": "Flood in Peru 1104145",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24158",
+      "categories": [
+        {
+          "id": "floods",
+          "title": "Floods"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104145"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-04T20:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -13.3897,
+                -75.8097
+              ],
+              [
+                -14.0941,
+                -75.0353
+              ],
+              [
+                -13.1008,
+                -74.4112
+              ],
+              [
+                -12.1881,
+                -74.3877
+              ],
+              [
+                -12.3462,
+                -75.1385
+              ],
+              [
+                -13.3897,
+                -75.8097
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_24193",
+      "title": "Flood in Islamic Republic of Iran 1104147",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24193",
+      "categories": [
+        {
+          "id": "floods",
+          "title": "Floods"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104147"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-06T20:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                36.5048,
+                54.173
+              ],
+              [
+                37.9796,
+                55.2288
+              ],
+              [
+                37.8296,
+                54.9978
+              ],
+              [
+                37.6626,
+                54.8028
+              ],
+              [
+                37.4484,
+                54.5783
+              ],
+              [
+                36.5048,
+                54.173
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_24244",
+      "title": "Flood in Slovenia 1104152",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24244",
+      "categories": [
+        {
+          "id": "floods",
+          "title": "Floods"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104152"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-09T20:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                45.622,
+                13.5932
+              ],
+              [
+                45.4588,
+                13.7309
+              ],
+              [
+                45.4272,
+                13.8604
+              ],
+              [
+                45.4645,
+                13.9866
+              ],
+              [
+                45.5139,
+                13.9799
+              ],
+              [
+                45.622,
+                13.5932
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_24101",
+      "title": "Flood in Poland 1104144",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24101",
+      "categories": [
+        {
+          "id": "floods",
+          "title": "Floods"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104144"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-04T20:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                53.142,
+                17.8742
+              ],
+              [
+                53.0881,
+                18.0364
+              ],
+              [
+                53.1999,
+                18.1877
+              ],
+              [
+                53.1746,
+                18.0549
+              ],
+              [
+                53.1809,
+                17.9479
+              ],
+              [
+                53.142,
+                17.8742
+              ]
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_24245",
+      "title": "Wildfire in Australia 1031915",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24245",
+      "categories": [
+        {
+          "id": "wildfires",
+          "title": "Wildfires"
+        }
+      ],
+      "sources": [
+        {
+          "id": "GDACS",
+          "url": "https://www.gdacs.org/report.aspx?eventtype=WF&eventid=1031915"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2026-09-09T19:00:00Z",
+          "type": "Point",
+          "coordinates": [
+            123.6974,
+            -20.5031
+          ]
+        }
+      ]
+    },
+    {
+      "id": "EONET_3935",
+      "title": "Madagascar Drought",
+      "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_3935",
+      "categories": [
+        {
+          "id": "drought",
+          "title": "Drought"
+        }
+      ],
+      "sources": [
+        {
+          "id": "ReliefWeb",
+          "url": "https://reliefweb.int/disaster/dr-2018-000141-mdg"
+        }
+      ],
+      "geometry": [
+        {
+          "date": "2018-08-03T00:00:00Z",
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                42.832,
+                -25.6671
+              ],
+              [
+                42.832,
+                -12.7827
+              ],
+              [
+                50.5273,
+                -12.7827
+              ],
+              [
+                50.5273,
+                -25.6671
+              ],
+              [
+                42.832,
+                -25.6671
+              ],
+              [
+                42.832,
+                -25.6671
+              ]
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}
