@@ -245,23 +245,40 @@ type How = "iso" | "name" | "polygon" | "snap" | "geometry" | "title";
 type Resolved = Rec & { how: How };
 
 /**
- * EONET publishes the FLOODS category with Polygon rings in [lat, lon] order while
- * every other category is Point in GeoJSON [lon, lat]. Measured 2026-09-08 against
- * eonet.gsfc.nasa.gov/api/v3/categories/floods: 122 of 400 open events are Polygons,
- * and of the 36 whose ordering is provable (second value outside +-90) all 36 prove
- * [lat, lon] and none prove [lon, lat]. lib/signals/eonet.ts averages the ring as
- * [lon, lat], so those pins ship transposed — "Flood in Austria" lands in the Gulf
- * of Aden. This correction exists so the country breakdown is not wrong too; it does
- * NOT fix the shipped layer.
+ * EONET publishes the FLOODS category with its rings in [lat, lon] order while every
+ * other category is GeoJSON [lon, lat]. Measured 2026-09-08 against
+ * eonet.gsfc.nasa.gov/api/v3/categories/floods: of the 36 events whose ordering is
+ * provable (second value outside +-90) all 36 prove [lat, lon] and none prove the
+ * reverse; re-measured 2026-09-12, when all 60 open events proved it.
+ *
+ * This script used to carry a PRIVATE correction for that, so the country breakdown
+ * would be right while the shipped layer stayed wrong. `lib/signals/eonet.ts` now owns
+ * the order (`coordOrder: "latlon"` on the floods category), so the correction is gone
+ * and this is a CHECK instead.
+ *
+ * It raises rather than repairing. A silent repair here is what let the shipped layer
+ * stay broken for four days without anything going red: the audit looked correct, so
+ * nothing pointed at the adapter. If EONET ever fixes the feed, the flag in eonet.ts
+ * becomes wrong in the other direction and these pins land in the sea — this is what
+ * says so, on the next run, in the one place that has the country polygons to prove it.
  */
-function unswapEonetFlood(f: SignalFeature): SignalFeature {
-  if (f.signalId !== "floods") return f;
-  const inLand = locate(f.lon, f.lat);
-  const swapped = locate(f.lat, f.lon);
-  // Only swap when the transposed reading lands in a country and the shipped one
-  // does not — never "correct" a pin that is already somewhere real.
-  if (!inLand && swapped && Math.abs(f.lon) <= 90) return { ...f, lat: f.lon, lon: f.lat };
-  return f;
+function assertFloodOrder(feats: SignalFeature[]): void {
+  const floods = feats.filter((f) => f.signalId === "floods");
+  if (!floods.length) return;
+  // A flood that lands in no country at all, whose transposition DOES land in one, is
+  // the signature of a pair read the wrong way round. One is noise (a genuine coastal
+  // event just offshore); a cluster is the feed having changed under us.
+  const wrong = floods.filter(
+    (f) => !locate(f.lon, f.lat) && locate(f.lat, f.lon) && Math.abs(f.lon) <= 90,
+  );
+  if (wrong.length > Math.max(2, floods.length * 0.1)) {
+    const sample = wrong.slice(0, 3).map((f) => `${f.title} @ ${f.lon},${f.lat}`);
+    throw new Error(
+      `EONET flood coordinate order looks wrong: ${wrong.length} of ${floods.length} ` +
+        `land nowhere but would land in a country if transposed. Re-measure the feed and ` +
+        `fix \`coordOrder\` on CATEGORIES.floods in lib/signals/eonet.ts. Sample: ${sample.join("; ")}`,
+    );
+  }
 }
 
 /** Every country a line/area geometry touches (containment, then a coastal snap). */
@@ -371,8 +388,6 @@ interface LayerReport {
   /** Features carrying a line/area geometry — these are counted in every country they touch. */
   geometryFeatures: number;
   spansCountries?: boolean;
-  /** EONET flood pins this run had to un-transpose before it could place them. */
-  transposedFixed?: number;
 }
 
 /** GET /api/signals/<id> from a deployment. Throws on anything but a JSON body. */
@@ -454,9 +469,8 @@ for (const src of SIGNALS) {
     rep.ok = true;
     rep.returned = feats.length;
     rep.geometryFeatures = feats.filter((f) => f.geometry).length;
-    for (const raw of feats) {
-      const f = unswapEonetFlood(raw);
-      if (f !== raw) rep.transposedFixed = (rep.transposedFixed ?? 0) + 1;
+    assertFloodOrder(feats);
+    for (const f of feats) {
       // A line/area feature belongs to EVERY country it crosses — a cable landing in
       // eight countries is a fact about all eight. Those layers are counted as
       // "features touching this country", flagged by `spansCountries` in the output.
