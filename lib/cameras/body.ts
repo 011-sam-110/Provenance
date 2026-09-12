@@ -1,5 +1,6 @@
 import type { Camera } from "@/lib/types";
 import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
+import { REGISTRY_TTL_MS } from "@/lib/sources/registry";
 import { edgeCacheHeaders } from "@/lib/http/cache";
 
 // The body of GET /api/cameras, and its edge-cache policy.
@@ -17,11 +18,19 @@ import { edgeCacheHeaders } from "@/lib/http/cache";
  * stale-while-revalidate server-side, so this is about not paying an invocation per
  * visitor, not about protecting the upstreams.
  *
- * 60 s is safe for this body specifically because every time it carries is ABSOLUTE
- * (`lastSampledAt`), so a cached copy cannot under-report a camera's age — the client
- * subtracts from its own clock. Positions and names move on the order of days.
+ * DERIVED FROM THE REGISTRY'S OWN CADENCE rather than typed, which is the rule at the
+ * top of `lib/http/cache.ts`: a TTL is the source's declared refresh interval, never a
+ * number chosen to cut a bill. This was a hand-written 60 s against a registry that
+ * refreshes every 5 minutes — five sixths of the cacheable window given away, and a
+ * second number to keep in step by hand. `REGISTRY_TTL_MS` is the one to follow: past
+ * it the registry itself would re-derive, so a copy held any longer could outlive data
+ * that had genuinely moved.
+ *
+ * Safe at this length for this body specifically because every time it carries is
+ * ABSOLUTE (`lastSampledAt`), so a cached copy cannot under-report a camera's age — the
+ * client subtracts from its own clock. Positions and names move on the order of days.
  */
-const CAMERAS_TTL_MS = 60_000;
+const CAMERAS_TTL_MS = REGISTRY_TTL_MS;
 
 /**
  * The serialised body, held until the registry replaces its array.
