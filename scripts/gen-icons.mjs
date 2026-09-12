@@ -74,6 +74,60 @@ const TARGETS = [
   { file: resolve(BRAND, "mark-512.png"), size: 512, radius: 0, pad: 0.02 },
 ];
 
+/**
+ * The root-of-site icon names clients ask for WITHOUT being told to, and which this
+ * deployment did not serve.
+ *
+ * MEASURED, 2026-09-07..11: `404 /favicon.ico` 6,146 times and the apple-touch-icon
+ * family 1,080 more across four spellings — together a fifth of every 404 the site
+ * produced, which is enough to bury a real broken link in the error panel.
+ *
+ * The metadata in app/layout.tsx was already correct and is not the problem. These are
+ * requested by convention rather than from the document: a browser asks for
+ * `/favicon.ico` when its preferred `<link rel="icon">` is one it will not use, and
+ * crawlers and older iOS clients probe the `apple-touch-icon` spellings at the root
+ * whatever the page declares. The only answer is to serve the files.
+ *
+ * `favicon.svg` already existed and does not cover it — the clients making these
+ * requests are precisely the ones that will not take an SVG.
+ *
+ * WHY THE .ico IS A WRAPPED PNG: the ICO container has allowed a PNG payload since
+ * Windows Vista and every browser in the 404 log reads one. It is 22 bytes of header
+ * in front of a file we already generate, which is a much smaller thing to own than a
+ * BMP encoder or a new native dependency — see the header of this file on why `sharp`
+ * was refused once already.
+ */
+function writeRootFallbacks() {
+  const png32 = readFileSync(resolve(BRAND, "mark-32.png"));
+
+  // ICONDIR(6) + one ICONDIRENTRY(16) + the PNG. 32 fits in the single width/height
+  // byte; 256 would have to be written as 0, which is why this is not a loop over
+  // arbitrary sizes.
+  const header = Buffer.alloc(22);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // 1 = icon
+  header.writeUInt16LE(1, 4); // one image
+  header.writeUInt8(32, 6); // width
+  header.writeUInt8(32, 7); // height
+  header.writeUInt8(0, 8); // palette size, 0 = truecolour
+  header.writeUInt8(0, 9); // reserved
+  header.writeUInt16LE(1, 10); // colour planes
+  header.writeUInt16LE(32, 12); // bits per pixel
+  header.writeUInt32LE(png32.length, 14);
+  header.writeUInt32LE(22, 18); // offset of the payload
+  writeFileSync(resolve(ROOT, "public", "favicon.ico"), Buffer.concat([header, png32]));
+  console.log("gen-icons: -> ./public/favicon.ico");
+
+  // Byte-identical copies at the two names iOS and the crawlers actually ask for.
+  // `-precomposed` means "already has the gloss applied"; modern iOS ignores the
+  // distinction, and both are requested regardless.
+  const apple = readFileSync(resolve(ICONS, "apple-touch-icon.png"));
+  for (const name of ["apple-touch-icon.png", "apple-touch-icon-precomposed.png"]) {
+    writeFileSync(resolve(ROOT, "public", name), apple);
+    console.log(`gen-icons: -> ./public/${name}`);
+  }
+}
+
 async function main() {
   mkdirSync(ICONS, { recursive: true });
   mkdirSync(BRAND, { recursive: true });
@@ -98,6 +152,8 @@ async function main() {
   const ico = svg({ size: 32, ink: INK, plate: PLATE, radius: 0, pad: 0.02 });
   writeFileSync(resolve(ROOT, "public", "favicon.svg"), ico);
   console.log("gen-icons: -> ./public/favicon.svg");
+
+  writeRootFallbacks();
 
   await browser.close();
 }
