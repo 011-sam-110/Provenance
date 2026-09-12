@@ -164,6 +164,38 @@ describe("the rollup job, end to end", () => {
     expect(day().byPath["/cameras"]).toBe(1);
   });
 
+  it("does not double a finalised day when late rows keep arriving", () => {
+    // THE DAY FILE HAS EXACTLY ONE OWNER. openDay() pulls a finalised day back into
+    // state.days, and the finalise step writes it out again; when that write ALSO
+    // merged the file it had just been hydrated from, the day was added to a copy of
+    // itself once per run — 2 real rows reported 2, then 3 reported 5, 4 reported 11,
+    // 5 reported 23. `n → 2n+1`, compounding, and silent: nothing errors, and the
+    // shape of the numbers stays plausible.
+    //
+    // THE DATE IS RELATIVE, NOT THE FIXTURE'S FIXED ONE. This scenario only exists
+    // once a day is past FINALISE_LAG_MS, so a hard-coded date decides whether the
+    // test exercises the bug based on the calendar the day it runs — which is how
+    // this file came to be green when written and red two days later. Three days
+    // back is always finalisable and never depends on today.
+    const old = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const at = (n: number) => Date.parse(`${old}T12:00:00Z`) / 1000 + n / 1e6;
+    const p = join(logs, "provenance.log");
+
+    writeFileSync(p, line({ ts: at(1) }) + line({ ts: at(2) }));
+    run();
+    expect(day(old).requests).toBe(2);
+
+    // Every later run folds in exactly one more row, so the total must track the rows
+    // actually written. Under the bug this reads 5, then 11, then 23.
+    for (let i = 3; i <= 5; i += 1) {
+      appendFileSync(p, line({ ts: at(i), uri: "/cameras" }));
+      run();
+      expect(day(old).requests).toBe(i);
+    }
+    // One visitor throughout — the doubling inflated this too.
+    expect(day(old).visitors).toBe(1);
+  });
+
   it("does not re-count a rolled file after the rename", () => {
     // The rename preserves the inode and changes the name. A name-keyed cursor doubles
     // everything here.
