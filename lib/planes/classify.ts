@@ -39,14 +39,37 @@ const AIRLINER_SPEED_MS = 150; // … and fast (~290 kt)
 const REGIONAL_ALT_KM = 3; // turboprops / regional jets mid-band
 const REGIONAL_SPEED_MS = 110;
 
-/** Coarse aircraft type — prefers the ADS-B category, else the flight profile. */
-export function classifyPlane(p: PlaneProfile): PlaneCategory {
-  if (p.onGround) return "ground";
-  if (p.category && ADSB_CATEGORY[p.category]) return ADSB_CATEGORY[p.category];
+export interface ClassifyResult {
+  category: PlaneCategory;
+  /**
+   * True when `category` came from the broadcast ADS-B emitter field, not the
+   * altitude/speed/on-ground heuristic. On-ground is real transmitted telemetry
+   * too, but it is not the broadcast *category* the "· est." distinction is
+   * about — help.ts's TYPE sentence already groups on-ground with the guess
+   * bucket, so `trusted` is false there as well, not a special case.
+   */
+  trusted: boolean;
+}
+
+/**
+ * Coarse aircraft type, with the trust flag alongside it. Single source of
+ * truth for the branching below — {@link classifyPlane} is a thin wrapper so
+ * existing callers that only want the category keep working unchanged.
+ */
+export function classifyPlaneDetailed(p: PlaneProfile): ClassifyResult {
+  if (p.onGround) return { category: "ground", trusted: false };
+  if (p.category && ADSB_CATEGORY[p.category]) {
+    return { category: ADSB_CATEGORY[p.category], trusted: true };
+  }
   const alt = Number.isFinite(p.altKm) ? p.altKm : 0;
   const v = p.velocityMs ?? 0;
-  if (alt < HELI_ALT_KM && v < HELI_SPEED_MS) return "helicopter";
-  if (alt >= AIRLINER_ALT_KM && v >= AIRLINER_SPEED_MS) return "airliner";
-  if (alt >= REGIONAL_ALT_KM || v >= REGIONAL_SPEED_MS) return "regional";
-  return "light";
+  if (alt < HELI_ALT_KM && v < HELI_SPEED_MS) return { category: "helicopter", trusted: false };
+  if (alt >= AIRLINER_ALT_KM && v >= AIRLINER_SPEED_MS) return { category: "airliner", trusted: false };
+  if (alt >= REGIONAL_ALT_KM || v >= REGIONAL_SPEED_MS) return { category: "regional", trusted: false };
+  return { category: "light", trusted: false };
+}
+
+/** Coarse aircraft type — prefers the ADS-B category, else the flight profile. */
+export function classifyPlane(p: PlaneProfile): PlaneCategory {
+  return classifyPlaneDetailed(p).category;
 }

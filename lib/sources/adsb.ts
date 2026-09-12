@@ -57,7 +57,7 @@
  */
 
 import type { WorldObject } from "@/lib/world";
-import { classifyPlane } from "@/lib/planes/classify";
+import { classifyPlaneDetailed } from "@/lib/planes/classify";
 import { sampleSpatially } from "@/lib/planes/sample";
 import { PLANE_META } from "@/lib/icons/svg";
 import { withCoverage } from "@/lib/signals/coverage";
@@ -202,7 +202,7 @@ export function adsbRowToWorldObject(row: AdsbRow): WorldObject | null {
   const verticalRateMs = baroRate === null ? null : baroRate * FTMIN_TO_MS;
   const headingDeg = num(row.track) ?? 0;
 
-  const category = classifyPlane({
+  const { category, trusted: categoryTrusted } = classifyPlaneDetailed({
     altKm,
     velocityMs,
     onGround,
@@ -238,6 +238,7 @@ export function adsbRowToWorldObject(row: AdsbRow): WorldObject | null {
       onGround,
       headingDeg,
       category,
+      categoryTrusted,
       typeLabel: meta.label,
       squawk: (row.squawk ?? "").trim(),
       // Additive extras this provider supplies and OpenSky does not.
