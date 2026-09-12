@@ -160,6 +160,59 @@ export interface GlobeControls {
   rest(): void;
 }
 
+/**
+ * THE GLOBE'S GROUND, AND THE ONE RULE IT HAS TO OBEY: THE SEA IS DARKER THAN THE LAND.
+ *
+ * The basemap draws no land. Land is whatever `background` is showing through, and the
+ * only thing that gives a continent a shape is the coverage choropleth painted on top of
+ * it. So the reader's sense of "that is a country and that is ocean" comes entirely from
+ * these tones, and if the sea is the brighter of the two the globe inverts: the oceans
+ * read as landmasses and the countries read as holes.
+ *
+ * That is what shipped. OpenFreeMap's dark style paints `water` rgb(27,27,29) over a
+ * `background` of rgb(12,12,12), and an unmeasured country composited to rgb(16,22,27) —
+ * DARKER than the sea around it. Nothing was geometrically wrong: the pins were on their
+ * cities to within a kilometre. They just looked wrong, because there was no readable
+ * coastline to place them against, so a pin on Lahore read as a dot floating over a shape
+ * nobody could identify.
+ *
+ * `landReadsAboveSea()` states the invariant and `tests/unit/landing-globe-ground.test.ts`
+ * holds it, so a palette change cannot re-invert the globe without going red.
+ */
+export const GLOBE_SEA = "#05070c";
+export const COVERAGE_NO_DATA = "#141f27";
+export const COVERAGE_RAMP_LOW = "#1d3540";
+export const COVERAGE_RAMP_HIGH = "#3fb4ce";
+export const COVERAGE_OPACITY = 0.55;
+/** OpenFreeMap `dark`'s own background, which is what land is painted on. */
+export const BASEMAP_LAND = "#0c0c0c";
+
+const hex = (c: string): [number, number, number] => [
+  parseInt(c.slice(1, 3), 16),
+  parseInt(c.slice(3, 5), 16),
+  parseInt(c.slice(5, 7), 16),
+];
+/** Rec. 709 relative luminance, 0-255. Good enough to order two near-blacks. */
+const luma = ([r, g, b]: [number, number, number]): number => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+/**
+ * Does the DARKEST land on the globe still read as brighter than the sea?
+ *
+ * The darkest land is an unmeasured country: `COVERAGE_NO_DATA` at `COVERAGE_OPACITY`
+ * over the basemap's background. Everything the ramp paints is brighter than that, so
+ * checking the floor checks the whole globe.
+ */
+export function landReadsAboveSea(sea = GLOBE_SEA, noData = COVERAGE_NO_DATA): boolean {
+  const base = hex(BASEMAP_LAND);
+  const top = hex(noData);
+  const composited = base.map((v, i) => v * (1 - COVERAGE_OPACITY) + top[i] * COVERAGE_OPACITY) as [
+    number,
+    number,
+    number,
+  ];
+  return luma(composited) > luma(hex(sea));
+}
+
 export default function HeroGlobe({
   layers,
   satColor,
@@ -374,6 +427,16 @@ export default function HeroGlobe({
         if (layer.type === "symbol") map.setLayoutProperty(layer.id, "visibility", "none");
       }
 
+      // SINK THE SEA BELOW THE LAND. See the GLOBE_SEA block above for why this is not a
+      // taste change: upstream's water is brighter than an unmeasured country, which
+      // inverts the globe. Written as a paint override rather than a forked style for the
+      // same reason the labels are hidden rather than deleted — the style document comes
+      // from a URL we do not own and is re-fetched whole. A basemap that renames its water
+      // layer loses the correction and keeps the globe; it does not throw.
+      if (map.getLayer("water")) {
+        map.setPaintProperty("water", "fill-color", GLOBE_SEA);
+      }
+
       /**
        * THE COVERAGE CHOROPLETH — the land, shaded by how many signal layers reach it.
        *
@@ -413,7 +476,7 @@ export default function HeroGlobe({
                 "fill-color": [
                   "case",
                   ["==", ["get", "pvLayers"], 0],
-                  "#141f27",
+                  COVERAGE_NO_DATA,
                   [
                     "interpolate",
                     ["linear"],
@@ -422,12 +485,12 @@ export default function HeroGlobe({
                     // whole map at the dark end. The same 0.6 exponent the legend is drawn to.
                     ["^", ["/", ["to-number", ["get", "pvLayers"]], max], 0.6],
                     0,
-                    "#1d3540",
+                    COVERAGE_RAMP_LOW,
                     1,
-                    "#3fb4ce",
+                    COVERAGE_RAMP_HIGH,
                   ],
                 ],
-                "fill-opacity": 0.55,
+                "fill-opacity": COVERAGE_OPACITY,
                 "fill-outline-color": "rgba(5,7,12,0.7)",
               },
             });
