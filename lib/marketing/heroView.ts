@@ -3,7 +3,7 @@
  *
  * Why a plain module-level store and not React state or context: CLAUDE.md's
  * "Shape" section is explicit that `components/marketing/*` has ONE scroll
- * subscriber (`ScrollGround.tsx`) publishing CSS custom properties, and "nothing
+ * subscriber (`GlobeStage.tsx`) publishing CSS custom properties, and "nothing
  * else may add a scroll listener and nothing may set React state per frame." The
  * camera changes on every animation frame — the spin loop calls `map.jumpTo`
  * ~60 times a second — so routing it through `useState` would mean a React

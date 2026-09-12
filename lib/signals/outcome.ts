@@ -4,7 +4,7 @@
 // failure and returns `[]` — 53 such sites across 24 files. Downstream, nothing can
 // tell "the world is quiet" from "the upstream is gone", because both arrive as an
 // empty array. The most visible consequence is on the PUBLIC landing page:
-// components/marketing/HonestLedger.tsx renders a dead USGS exactly like a calm
+// The landing page's layer table renders a dead USGS exactly like a calm
 // hour, in the section whose own docstring calls itself "the section no competitor
 // will copy: what is empty right now, and why" and warns against "precisely the
 // class of comfortable lie this whole page argues against". A `down` state and a

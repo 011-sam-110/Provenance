@@ -17,7 +17,7 @@ import { setHeroView } from "@/lib/marketing/heroView";
  * design brief started with. The trade was made on purpose — a real, rotating,
  * live-data globe is a far better argument than a rendered clip, and it makes the
  * closing line ("everything above was this") literally true. It is paid for by
- * mounting on browser idle (see HeroStage.tsx), so the headline still paints on
+ * mounting after the first paint (see GlobeStage.tsx), so the headline still paints on
  * the night stage first and the engine is never on the critical path.
  *
  * EVERY registered signal layer is drawn, not a hand-picked handful. The list
@@ -134,20 +134,68 @@ async function pool(width: number, jobs: (() => Promise<void>)[]): Promise<void>
   await Promise.allSettled(runners);
 }
 
+/**
+ * The handle the page gets on the engine.
+ *
+ * WHY A CONTROL SURFACE RATHER THAN PROPS. The globe is no longer hero furniture — it is
+ * the backdrop for the whole document, and the page turns it to whatever place the section
+ * under the reader is about. Driving that through props would mean a prop change per scroll
+ * step, and `CLAUDE.md` forbids React state per frame on this page. So the page takes this
+ * handle once, on mount, and drives the camera imperatively from its own rAF loop.
+ *
+ * `stopSpin` before any `focus`, always: the ambient drift chains itself on `moveend`, so a
+ * camera move issued while the drift is armed is immediately overwritten by the next leg.
+ */
+export interface GlobeControls {
+  /**
+   * Turn the globe to a place, hold it there, and drop a labelled pin on it.
+   *
+   * The pin is a real MapLibre marker rather than something drawn over the canvas, so
+   * it is projected by the same camera as the geometry underneath it and MapLibre hides
+   * it on its own when the place rotates round the far side of the sphere. A pin painted
+   * in screen space would go on pointing at a country that is no longer facing you.
+   */
+  focus(lon: number, lat: number, label: string, durationMs?: number): void;
+  /** Stop the globe moving, and take the pin off. */
+  rest(): void;
+}
+
 export default function HeroGlobe({
   layers,
   satColor,
+  coverage,
+  coverageMax,
+  ambientDrift = true,
   onStatus,
   onReady,
+  onControls,
 }: {
   layers: HeroLayer[];
   /** The catalog's own colour for the satellite layer, so the hero's key cannot
       disagree with what is painted. */
   satColor: string;
+  /**
+   * ISO-2 → how many signal layers place at least one feature in that country, from the
+   * committed coverage audit. Paints the land, so the globe IS the Coverage section's
+   * evidence rather than an illustration sitting near it. Omit for an unshaded globe.
+   */
+  coverage?: Record<string, number>;
+  /** The top of the shading ramp, so it is anchored to a real maximum rather than to 100. */
+  coverageMax?: number;
+  /**
+   * Whether the globe turns on its own when nothing is driving it. Default true, which is
+   * what every caller before the landing-page rebuild expected. The landing page passes
+   * false: its globe is a full-page backdrop, so the off-screen gate that used to pay for
+   * the drift can never fire, and a backdrop that turns for the length of a long document
+   * is a re-render per frame nobody is watching.
+   */
+  ambientDrift?: boolean;
   onStatus?: (line: string) => void;
   /** Fired once the engine has actually PAINTED, which is what the hero's globe
       entrance is keyed to. Mount is far too early — the box is still empty. */
   onReady?: () => void;
+  /** Handed the camera controls on mount, and `null` on teardown. */
+  onControls?: (controls: GlobeControls | null) => void;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
@@ -162,6 +210,14 @@ export default function HeroGlobe({
   layersRef.current = layers;
   const satColorRef = useRef(satColor);
   satColorRef.current = satColor;
+  const coverageRef = useRef(coverage);
+  coverageRef.current = coverage;
+  const coverageMaxRef = useRef(coverageMax);
+  coverageMaxRef.current = coverageMax;
+  const controlsRef = useRef(onControls);
+  controlsRef.current = onControls;
+  const ambientRef = useRef(ambientDrift);
+  ambientRef.current = ambientDrift;
 
   useEffect(() => {
     const el = holder.current;
@@ -256,7 +312,7 @@ export default function HeroGlobe({
 
     // The star layer behind the globe reads the camera out of this plain store
     // every frame it draws — not React state, per CLAUDE.md's "Shape" rule that
-    // nothing but ScrollGround may set React state per frame. "move" fires for
+    // nothing but the page's one scroll subscriber may set React state per frame. "move" fires for
     // the spin loop's jumpTo AND for a drag/rotate gesture, so both are covered
     // by one publisher; a first call right away means the sky is right before
     // anything has moved at all.
@@ -316,6 +372,69 @@ export default function HeroGlobe({
       // stays visible by construction rather than by luck.
       for (const layer of map.getStyle().layers ?? []) {
         if (layer.type === "symbol") map.setLayoutProperty(layer.id, "visibility", "none");
+      }
+
+      /**
+       * THE COVERAGE CHOROPLETH — the land, shaded by how many signal layers reach it.
+       *
+       * Added FIRST, so it sits under every signal layer and can never bury a pin.
+       *
+       * The polygons are `/geo/countries-110m.geojson`, which is the same 177-polygon file
+       * `scripts/country-event-breakdown.mts` runs point-in-polygon against. That is the
+       * point: the globe cannot shade a country the audit had no way to place a feature in,
+       * so the picture and the table can never disagree. A richer boundary set would draw
+       * countries the measurement is silent about — better looking, and a false statement.
+       *
+       * Two tones, not one ramp. A country with no measured layer is painted in its own
+       * "no data" colour rather than at the bottom of the ramp, because "we found nothing
+       * here" and "we found one thing here" are different claims and the page's legend
+       * names them separately.
+       */
+      if (coverageRef.current) {
+        const shading = coverageRef.current;
+        const max = coverageMaxRef.current || Math.max(1, ...Object.values(shading));
+        fetch("/geo/countries-110m.geojson", { signal: ac.signal })
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+          .then((fc: GeoJSON.FeatureCollection) => {
+            if (disposed || !map.getStyle()) return;
+            for (const f of fc.features) {
+              const iso = String(f.properties?.ISO_A2 ?? "");
+              // `?? 0` rather than leaving it absent: a missing property makes the
+              // interpolate expression fall back to its own default, which would paint an
+              // unmeasured country as if it were the palest measured one.
+              f.properties = { ...f.properties, pvLayers: shading[iso] ?? 0 };
+            }
+            map.addSource("pv-coverage", { type: "geojson", data: fc });
+            map.addLayer({
+              id: "pv-coverage",
+              type: "fill",
+              source: "pv-coverage",
+              paint: {
+                "fill-color": [
+                  "case",
+                  ["==", ["get", "pvLayers"], 0],
+                  "#141f27",
+                  [
+                    "interpolate",
+                    ["linear"],
+                    // The audit's distribution is long-tailed — most countries sit in single
+                    // digits and one reaches 22 — so a linear ramp would leave almost the
+                    // whole map at the dark end. The same 0.6 exponent the legend is drawn to.
+                    ["^", ["/", ["to-number", ["get", "pvLayers"]], max], 0.6],
+                    0,
+                    "#1d3540",
+                    1,
+                    "#3fb4ce",
+                  ],
+                ],
+                "fill-opacity": 0.55,
+                "fill-outline-color": "rgba(5,7,12,0.7)",
+              },
+            });
+          })
+          // A globe with no land shading is the honest failure: the basemap, the signal
+          // layers and the pins all still draw, and no claim on the page depends on it.
+          .catch(() => {});
       }
 
       // Order matters: areas under lines under points, so a country-sized fill
@@ -656,14 +775,81 @@ export default function HeroGlobe({
     }
 
     // Reduced motion never starts it at all — it is a standing answer, not a state
-    // that resumes on its own.
+    // that resumes on its own. `ambientDrift: false` is the same kind of standing answer
+    // from the caller: the landing page's globe rests unless a section turns it, so the
+    // IntersectionObserver and the motion-preference handler must not be able to start a
+    // drift behind its back. Gating it HERE rather than at the call sites means a future
+    // caller of startSpin inherits the answer instead of having to remember it.
     function startSpin() {
-      if (disposed || reduce.matches) return;
+      if (disposed || reduce.matches || ambientRef.current === false) return;
       spinStopped = false;
       spinLeg();
     }
     const onMotionPreference = () => startSpin();
     reduce.addEventListener("change", onMotionPreference);
+
+    /**
+     * Hand the page the camera.
+     *
+     * `focus` stops the drift BEFORE it eases, and that order is load-bearing: the drift
+     * chains itself on `moveend`, so easing first would have the next leg overwrite the
+     * move a moment after it landed. `stopSpin` sets `spinStopped`, which is the flag
+     * `onMoveEnd` reads, so the chain stays broken until `release` is called.
+     *
+     * `essential: true` so the move still runs under `prefers-reduced-motion`. Turning the
+     * globe to the country a section is about is navigation — it tells the reader where
+     * they are — and suppressing it would leave the pin and the label pointing at the
+     * wrong place rather than simply not animating. Under reduced motion it jumps rather
+     * than eases, which is the same information without the travel.
+     *
+     * THE AMBIENT DRIFT IS NOT PART OF THIS SURFACE, ON PURPOSE. The globe on the landing
+     * page now rests unless a section points it somewhere. It is a backdrop the reader
+     * scrolls past, and a backdrop that turns on its own for the whole length of a long
+     * document is a MapLibre re-render per frame for an effect nobody is looking at — the
+     * exact cost the old `offScreen` gate existed to claw back, which no longer works now
+     * that the globe's element is full-page and therefore always intersecting.
+     * `startSpin` is still here and still reachable by the motion-preference handler for a
+     * caller that wants it; the landing page is not that caller.
+     */
+    // One marker, reused. Creating a new one per step would remount the element and
+    // restart the ring animation from zero every time the reader moved between places.
+    const pinEl = document.createElement("div");
+    pinEl.className = "pv-pin";
+    // The globe is draggable; the pin sits on top of it and must not swallow that.
+    pinEl.style.pointerEvents = "none";
+    const pinLabel = document.createElement("span");
+    pinLabel.className = "pv-pin-label";
+    pinEl.innerHTML = '<i class="pv-pin-dot"></i><i class="pv-pin-ring"></i><span class="pv-pin-line"></span>';
+    pinEl.appendChild(pinLabel);
+    const pin = new maplibregl.Marker({ element: pinEl, anchor: "center" });
+    let pinOn = false;
+
+    const controls: GlobeControls = {
+      focus(lon, lat, label, durationMs = 1400) {
+        if (disposed) return;
+        stopSpin();
+        pinLabel.textContent = label;
+        pin.setLngLat([lon, lat]);
+        if (!pinOn) {
+          pin.addTo(map);
+          pinOn = true;
+        }
+        map.easeTo({
+          center: [lon, lat],
+          duration: reduce.matches ? 0 : durationMs,
+          essential: true,
+        });
+      },
+      rest() {
+        if (disposed) return;
+        stopSpin();
+        if (pinOn) {
+          pin.remove();
+          pinOn = false;
+        }
+      },
+    };
+    controlsRef.current?.(controls);
 
     // Scrolled past the hero, a drifting globe is a full MapLibre re-render per frame
     // that nobody can see. Measured on prod at the FOOT of the landing page, before
@@ -781,6 +967,10 @@ export default function HeroGlobe({
 
     return () => {
       disposed = true;
+      // Hand the handle back before anything is torn down, so a director still holding it
+      // cannot call `focus` on a map that is mid-removal.
+      controlsRef.current?.(null);
+      pin.remove();
       ac.abort();
       refit.disconnect();
       clearTimeout(readyBackstop);
@@ -807,7 +997,7 @@ export default function HeroGlobe({
   }, []);
 
   // Just the engine. The legend, the status line and the mandatory credit are the
-  // hero's furniture, not the globe's, and they live in HeroStage — which is what
+  // page's furniture, not the globe's, and they live in GlobeStage — which is what
   // lets them sit on the copy's grid instead of floating over a plate.
   return <div ref={holder} className="pv-hero-map" />;
 }
