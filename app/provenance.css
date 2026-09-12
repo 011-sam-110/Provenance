@@ -53,6 +53,11 @@
   /* The column every section measures itself against. */
   --pv-col: min(74rem, calc(100% - 2.5rem));
 
+  /* The height of the hero's bottom strip, DECLARED rather than derived, because the boot
+     ticker has to clear it and the two are written in different files by different owners.
+     `.pv-hero-strip-inner` is sized from this; `.pv-stage-status` is offset by it. */
+  --pv-strip-h: 2.75rem;
+
   /* Type roles. TWO FACES NOW.
 
      Inter is NOT loaded here: this group nests inside app/layout.tsx, which
@@ -304,10 +309,24 @@
   }
 }
 
+/* The boot ticker.
+
+   It sits ABOVE the hero strip, not beside it. The lines it carries are all produced while
+   the layers are landing — which is exactly the window in which the hero, and so the strip
+   nailed to the hero's bottom edge, is the thing on screen. Fixed to the bottom-left of the
+   viewport it landed on top of the strip's first line, and the page opened on two sentences
+   printed over each other. Cleared by the strip's declared height instead, and aligned to
+   the same column as the strip's own text so the two read as one stack rather than as one
+   line in the margin and one in the grid.
+
+   Below 60rem it is not drawn at all (see the breakpoint under this rule): at phone width
+   there is no room for a second line of mono down there, and the strip's claim wins.
+
+   tests/e2e/landing.spec.ts asserts the two boxes do not intersect. */
 .pv-stage-status {
   position: fixed;
-  left: 1.25rem;
-  bottom: 0.9rem;
+  left: calc(50% - var(--pv-col) / 2);
+  bottom: calc(var(--pv-strip-h) + 0.6rem);
   z-index: 2;
   margin: 0;
   font-family: var(--pv-mono);
@@ -708,6 +727,9 @@
   animation: pv-fade 1s ease 1.5s both;
 }
 
+/* The height is taken from `--pv-strip-h` rather than from padding plus whatever the mono
+   line happens to measure, because the boot ticker above it is positioned off that number.
+   Both lines in here are nowrap, so the bar is always exactly one line tall. */
 .pv-hero-strip-inner {
   width: var(--pv-col);
   margin: 0 auto;
@@ -715,7 +737,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 0.8rem 0;
+  height: var(--pv-strip-h);
   font-family: var(--pv-mono);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
