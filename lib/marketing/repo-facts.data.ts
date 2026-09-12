@@ -16,7 +16,7 @@
  * Measured 2026-09-12 with `npx vitest list` on a clean tree.
  */
 export const UNIT_TESTS = {
-  cases: 3817,
-  files: 375,
+  cases: 3820,
+  files: 376,
   measuredAt: "2026-09-12",
 } as const;
