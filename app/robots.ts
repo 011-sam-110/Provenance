@@ -37,6 +37,33 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
+      // TWO CRAWLERS THAT COST MORE THAN EVERY SEARCH ENGINE COMBINED, MEASURED.
+      // Over the 3.5 days the Caddy log holds (2026-09-08..11) the box answered:
+      //
+      //   meta-webindexer/1.1   36,525 requests, ~1.2 GB, nearly all in one run on 09-10
+      //   SemrushBot/7~bl       15,211 requests, still going at ~6,800/day
+      //   bingbot                  857
+      //   Googlebot                 67
+      //
+      // Neither of the top two sends a visitor. Blocking them is not an AI-policy
+      // decision — that one is already made, and Cloudflare's managed block list
+      // injects it above this file's rules (Amazonbot, Bytespider, CCBot, ClaudeBot,
+      // GPTBot, Google-Extended, meta-externalagent). It is a crawl-budget decision
+      // on a 2 vCPU box, and it is here rather than there because neither name is on
+      // Cloudflare's list.
+      //
+      // meta-webindexer IS NOT meta-externalagent. The blocked one is Meta's AI
+      // training fetcher; this is its indexing crawler, a separate token, and
+      // blocking one does nothing to the other. It also arrives wearing an ordinary
+      // Chrome User-Agent with its own name appended in the comment field, which is
+      // why it read as human traffic until the full string was looked at.
+      //
+      // THIS IS A REQUEST, NOT A CONTROL. Both publish that they honour robots.txt,
+      // and a crawler that stops honouring it needs a Cloudflare WAF rule instead —
+      // robots.txt has never been able to enforce anything. Re-measure from the
+      // access log before assuming it worked.
+      { userAgent: "meta-webindexer", disallow: "/" },
+      { userAgent: "SemrushBot", disallow: "/" },
       {
         userAgent: "*",
         allow: [

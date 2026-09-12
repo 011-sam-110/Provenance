@@ -15,6 +15,7 @@ import { CameraImage } from "@/components/CameraImage";
 import { useCameras } from "@/lib/cameras/useCameras";
 import { useWebcamTitles, useWebcamDirectory } from "@/lib/webcams/titles";
 import { useWebcamPlaces, webcamPlaceState } from "@/lib/webcams/places";
+import { streamHealth, useStreamHealth, isBenched } from "@/lib/console/widgets/camslot.health";
 import { useNow } from "@/lib/shell/useNow";
 import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
 import { coordKey, type Coord } from "@/lib/weather/pointWeather";
@@ -49,14 +50,20 @@ function formatClock(ts: number): string {
 /** The webcam analogue of CameraImage — /api/webcam-image re-resolves Windy's
  *  short-lived token server-side, so the client only ever holds an id. */
 function WebcamStill({ id, alt }: { id: string; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <div className="tn-cs-dead">This webcam is no longer published.</div>;
+  // Reads the SHARED bench rather than a local `useState(false)`. The local flag was
+  // reset by every remount, so each rotation back to this slot handed a dead webcam a
+  // fresh attempt and the same 404 was re-fetched indefinitely — the exact defect
+  // camslot.health was written for, on the one image path that never adopted it.
+  const health = useStreamHealth();
+  const benched = isBenched(health[streamKey({ k: "webcam", id })], Date.now());
+  if (benched) return <div className="tn-cs-dead">This webcam is not answering.</div>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/api/webcam-image?id=${encodeURIComponent(id)}`}
       alt={alt}
-      onError={() => setFailed(true)}
+      onError={() => streamHealth.report({ k: "webcam", id }, false)}
+      onLoad={() => streamHealth.report({ k: "webcam", id }, true)}
     />
   );
 }

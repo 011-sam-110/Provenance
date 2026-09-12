@@ -63,6 +63,11 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      // Smallest-first, because a browser picks the first entry it can use and the
+      // 192px plate was being scaled down into a 16px tab strip. `favicon.svg` was
+      // generated all along and declared nowhere, so nothing ever asked for it.
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
