@@ -61,7 +61,7 @@ export function generateMetadata(): Metadata {
 // The same rule is already applied twice elsewhere and written down both times:
 // CLAUDE.md states it for the hero globe ("read from SOURCE_CATALOG in the server
 // component and passed down as a prop — never imported into the client, or all ~39
-// adapters land in the browser bundle"), and components/console/SourceCatalog.tsx
+// adapters land in the browser bundle"), and components/shell/SourceCatalog.tsx
 // derives its own count from CAMERA_REGIONS for exactly this reason.
 //
 // It stays DERIVED. CAMERA_FEED_COUNT is SOURCES.length, and the two pinning tests
