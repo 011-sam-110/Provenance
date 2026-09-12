@@ -87,6 +87,9 @@ const nextConfig: NextConfig = {
       rule("/textures/:path*", assets),
       rule("/sky/:path*", assets),
       rule("/brand/:path*", assets),
+      // Landing-page artwork. Deploy-lifetime, exactly like /brand: it changes when
+      // the page changes and never between them.
+      rule("/marketing/:path*", assets),
       rule("/favicon.svg", assets),
       rule("/geo/:path*", data),
       rule("/webcams/:path*", data),

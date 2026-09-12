@@ -152,7 +152,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *
  * Visually this page is the landing page's own stylesheet and nothing new: .pv-doc
  * grid, .pv-block sections, .pv-ledger tables. It renders on the ink ground because
- * (site)/layout.tsx server-renders `.pv-night` and no ScrollGround runs here to lift
+ * (site)/layout.tsx server-renders `.pv-night` and nothing runs here to lift
  * `--pv-g` off 1 — so `.pv-ground` is mandatory, not decorative. Without it the
  * night foreground tokens paint light type onto the globals.css light body.
  */

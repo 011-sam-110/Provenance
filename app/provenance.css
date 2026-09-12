@@ -3,33 +3,27 @@
    Scoped to `.pv-root` (the (site) route group) so none of it can reach the
    console's `.tn-*` tokens, and none of the console's chrome leaks in here.
 
-   The whole page is one mechanic: a scroll-linked ground that interpolates
-   bone <-> ink. `--pv-g` (0..1) is written by ONE rAF-throttled subscriber in
-   ScrollGround.tsx; everything else in this file just reads it. Never add a
-   second scroll listener.
+   THE PAGE IS ONE NIGHT. The old sheet ran a scroll-linked ground that
+   interpolated bone <-> ink and back, driven by `--pv-g` from ScrollGround.tsx.
+   That mechanic is gone with the sections it existed for: the page is now a
+   single dark stage from the first pixel to the footer, with one fixed globe
+   behind all of it. `--pv-g` survives only as a constant 1, because a handful
+   of rules and /privacy still read it, and re-pointing them is a bigger change
+   than leaving the token pinned.
 
-   The ramp runs NIGHT -> DAY -> NIGHT. The hero is a full-bleed night stage
-   (`--pv-g` starts at 1), the ground lifts to daylight as the reader enters the
-   document, and it plunges back to ink behind the opaque Adapter panel. The
-   foreground token set flips (`.pv-night` on .pv-root) only while something
-   opaque covers the viewport, so no type is ever read against the ambiguous
-   mid-grey the ramp passes through.
-
-   `.pv-night` is SERVER-RENDERED onto .pv-root (see (site)/layout.tsx) because
-   the first thing on the page is the night hero. Defaulting to daylight and
-   letting the first scroll frame correct it flashed a bone instrument bar over
-   a black hero on every cold load.
+   THE ONE SCROLL SUBSCRIBER is now GlobeStage.tsx, and it does not even add a
+   listener — it reads scrollY inside the rAF loop it already runs, writes four
+   custom properties onto `.pv-stage`, and writes `opacity` onto the step items.
+   Never add a second scroll listener, and never set React state per frame.
    =========================================================================== */
 
 .pv-root {
-  /* ── ground ramp stops ── */
+  /* ── ground ── */
   --pv-bone: #eef1f3;
   --pv-ash: #c9d1d6;
   --pv-dusk: #2b3640;
   --pv-ink: #0b1016;
-  /* The night stage's own black, one notch below the ramp's ink. It was a literal
-     in two places; it is a token because THREE things have to agree on it now —
-     the hero stage, the closing bookend, and the ground behind the sticky bar. */
+  /* The stage's own black, one notch below the ink. */
   --pv-stage: #05070c;
 
   /* ── semantic (inherited from the app's own meanings) ── */
@@ -37,47 +31,53 @@
   --pv-amber: #d97706;
   --pv-slate: #64748b;
 
-  /* ── daylight foreground set ── */
-  --pv-fg: #0b1016;
-  --pv-fg-dim: #4a5761;
-  --pv-fg-mute: #6c7a85;
-  --pv-accent: #0a5f73;
-  --pv-warn: #a85504;
-  --pv-rule: rgba(11, 16, 22, 0.14);
-  --pv-rule-hi: rgba(11, 16, 22, 0.3);
-  --pv-surface: rgba(255, 255, 255, 0.55);
-  --pv-surface-2: rgba(255, 255, 255, 0.34);
+  /* ── foreground, night ── */
+  --pv-fg: #e8eef1;
+  --pv-fg-bright: #f4f8fa;
+  --pv-fg-body: #b8c5cd;
+  --pv-fg-dim: #93a3ae;
+  --pv-fg-mute: #7a8892;
+  --pv-accent: #3fb4ce;
+  --pv-warn: #f0a62e;
+  --pv-alarm: #e0625c;
+  --pv-rule: rgba(232, 238, 241, 0.16);
+  --pv-rule-hi: rgba(232, 238, 241, 0.32);
+  --pv-rule-lo: rgba(232, 238, 241, 0.1);
+  --pv-surface: rgba(5, 7, 12, 0.78);
+  --pv-surface-2: rgba(255, 255, 255, 0.028);
 
-  /* scroll progress, 0..1. `--pv-g` starts at 1: the page opens on the night hero,
-     so ink is the correct ground before a single scroll frame has run. */
+  /* Pinned. See the header note. */
   --pv-g: 1;
   --pv-p: 0;
 
-  /* Type roles — ONE FACE, Inter. It is NOT loaded here or by (site)/layout.tsx any
-     more: this group nests inside app/layout.tsx, which self-hosts Inter via
-     next/font and publishes it as `--tn-font-sans` on <html>. Reading that instead of
-     loading a second copy is the only reason this page is not shipping the same font
-     bytes twice under two family names.
+  /* The column every section measures itself against. */
+  --pv-col: min(74rem, calc(100% - 2.5rem));
 
-     `--tn-*` IS THE ONE EXCEPTION TO THIS FILE'S CONTAINMENT RULE, and it is
-     deliberate. The rest of the sheet may not touch console tokens; this reads
-     exactly one, the font handle, because the alternative is a duplicate download.
-     Nothing else crosses.
+  /* Type roles. TWO FACES NOW.
 
-     Display was Archivo (loaded with its `wdth` axis and set at ~118 on the
-     headlines) and mono was IBM Plex Mono; both are gone, and with them the page's
-     width contrast. The three ROLES survive because ~28 rules below read them by
-     name, and because they still mean different things even on one family — display
-     carries the headline tracking, mono carries the tabular figures. Each keeps a
-     var() default so an unstyled render degrades to the system sans instead of
-     invalidating the whole declaration; the mono fallback deliberately names NO
-     monospace face. */
+     Inter is NOT loaded here: this group nests inside app/layout.tsx, which
+     self-hosts Inter via next/font and publishes it as `--tn-font-sans` on
+     <html>. Reading that instead of loading a second copy is the only reason
+     this page is not shipping the same bytes twice under two family names.
+     `--tn-*` is the ONE exception to this sheet's containment rule, and it is
+     exactly one token: the font handle.
+
+     Permanent Marker IS loaded, by (site)/layout.tsx, and only there — the
+     console must never download a marketing face. It carries the graffiti in
+     the surveillance section and nothing else. It is credited in the footer,
+     because a face the page loads and does not credit is a false statement on
+     a page whose argument is that its claims are checkable.
+
+     The three Inter ROLES survive because rules below read them by name, and
+     because they still mean different things on one family: display carries the
+     headline tracking, mono carries the tabular figures. */
   --pv-font-body: var(--tn-font-sans, "Inter");
   --pv-font-display: var(--pv-font-body, "Inter");
   --pv-font-mono: var(--pv-font-body, "Inter");
   --pv-display: var(--pv-font-display, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --pv-body: var(--pv-font-body, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --pv-mono: var(--pv-font-mono, "Inter"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pv-marker: var(--pv-font-marker, "Permanent Marker"), var(--pv-display);
 
   font-family: var(--pv-body);
   font-size: 17px;
@@ -85,20 +85,17 @@
   color: var(--pv-fg);
   -webkit-font-smoothing: antialiased;
   position: relative;
+  /* `clip` not `hidden`: hidden would make this element a scroll container and
+     break `position: sticky` on the nav. See tests/unit/overflow-clip-guard. */
   overflow-x: clip;
+  background: var(--pv-stage);
 }
 
-/* Night: the same tokens, re-pointed. Nothing below this line hardcodes a colour. */
+/* `.pv-night` is still applied by (site)/layout.tsx and is now a no-op alias —
+   the tokens above are already the night set. Kept so the server-rendered class
+   does not have to change and /privacy keeps rendering identically. */
 .pv-root.pv-night {
-  --pv-fg: #e8eef1;
-  --pv-fg-dim: #93a3ae;
-  --pv-fg-mute: #7a8892;
-  --pv-accent: #3fb4ce;
-  --pv-warn: #f0a62e;
-  --pv-rule: rgba(232, 238, 241, 0.16);
-  --pv-rule-hi: rgba(232, 238, 241, 0.32);
-  --pv-surface: rgba(255, 255, 255, 0.045);
-  --pv-surface-2: rgba(255, 255, 255, 0.028);
+  color-scheme: dark;
 }
 
 .pv-root *,
@@ -107,43 +104,16 @@
   box-sizing: border-box;
 }
 
-/* The ground itself. Fixed, behind everything, one interpolated colour. */
+/* The ground. Fixed, behind everything including the globe stage. */
 .pv-ground {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* The dark stop is the STAGE, not `--pv-ink`. `.pv-bar` is sticky, which keeps
-     it IN FLOW, so at scroll 0 the top 44px of the page is ground and the hero
-     starts below it. The moment the bar lost its background and its hairline, that
-     44px of #0b1016 showed as a band across a #05070c stage — the seam the hairline
-     had been hiding. Landing the ramp on the stage's own black is what makes
-     "transparent" literally true. The daylight end is unchanged. */
-  background-color: color-mix(in oklab, var(--pv-bone), var(--pv-stage) calc(var(--pv-g) * 100%));
+  background: var(--pv-stage);
 }
 
-.pv-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 2px;
-  width: 100%;
-  transform-origin: 0 50%;
-  transform: scaleX(var(--pv-p));
-  background: var(--pv-teal);
-  z-index: 60;
-  pointer-events: none;
-}
-
-/* ─────────────────────────── load choreography ───────────────────────────
-   The hero arrives in a fixed order — starfield, then globe (its own spin-up
-   lives in the canvas), then headline, lede, buttons, legend, status rail. All
-   of it is CSS `animation` with a delay, never a scroll listener and never
-   React state, so it costs nothing after the first second and the reduced-motion
-   block at the foot of this file collapses the whole sequence to zero.
-
-   These are keyed off page load rather than an IntersectionObserver on purpose:
-   the hero is above the fold by definition, so there is nothing to observe. */
+/* ── motion ─────────────────────────────────────────────────────────────── */
 
 @keyframes pv-rise {
   from {
@@ -155,6 +125,7 @@
     transform: none;
   }
 }
+
 @keyframes pv-fade {
   from {
     opacity: 0;
@@ -163,9 +134,7 @@
     opacity: 1;
   }
 }
-/* The clip-path end state is inset by -20% rather than 0: a 0 inset clips the
-   headline's own descenders and letter overhang at the exact moment the
-   animation finishes, which reads as a 1px twitch on the last frame. */
+
 @keyframes pv-wipe {
   from {
     opacity: 0;
@@ -179,476 +148,73 @@
   }
 }
 
-/* ─────────────────────────── layout ─────────────────────────── */
+/* ===========================================================================
+   THE STAGE — one fixed globe behind the whole document.
+   GlobeStage.tsx writes --pv-globe-x/y/scale/alpha; nothing here reads scroll.
+   =========================================================================== */
 
-.pv-doc {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr min(74rem, calc(100% - 2.5rem)) 1fr;
-  row-gap: 6rem;
-  /* The hero is no longer a child of this grid, so the document opens against
-     the bottom of the night stage and needs its own headroom. */
-  padding-top: 6rem;
-  padding-bottom: 0;
-}
-.pv-doc > * {
-  grid-column: 2;
-}
-.pv-doc > .pv-bleed {
-  grid-column: 1 / -1;
-}
-
-.pv-prose {
-  max-width: 40rem;
-}
-
-/* ─────────────────────────── type ─────────────────────────── */
-
-.pv-eyebrow {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--pv-accent);
-  margin: 0 0 1.1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em;
-}
-.pv-eyebrow > span::after {
-  content: " ·";
-  color: var(--pv-fg-mute);
-}
-.pv-eyebrow > span:last-child::after {
-  content: "";
-}
-
-/* `font-variation-settings: "wdth" var(--pv-h1-wdth, 118)` was here, and on .pv-h2
-   (115), .pv-h3 (108), .pv-root .pv-wordmark (112), .pv-adapter-closer (115) and
-   .pv-src-label (106). Inter
-   has no `wdth` axis, so all six became declarations naming an axis that no longer
-   exists — inert, and misleading to the next reader. Removed rather than left. The
-   headlines are now Inter 900 and carry their width from `letter-spacing` alone;
-   `--pv-h1-wdth` had no writer in any component, so nothing was reading it either. */
-.pv-h1 {
-  font-family: var(--pv-display);
-  font-weight: 900;
-  font-size: clamp(2.9rem, 8.4vw, 6rem);
-  line-height: 0.9;
-  letter-spacing: -0.025em;
-  text-transform: uppercase;
-  text-wrap: balance;
-  margin: 0;
-  color: var(--pv-fg);
-}
-.pv-h2 {
-  font-family: var(--pv-display);
-  font-weight: 900;
-  font-size: clamp(1.9rem, 4.4vw, 3rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  text-wrap: balance;
-  margin: 0 0 1.2rem;
-  color: var(--pv-fg);
-}
-.pv-h3 {
-  font-family: var(--pv-display);
-  font-weight: 800;
-  font-size: 1.28rem;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  margin: 0 0 0.4rem;
-  color: var(--pv-fg);
-}
-.pv-lede {
-  font-size: 1.28rem;
-  line-height: 1.5;
-  color: var(--pv-fg-dim);
-  max-width: 34rem;
-  margin: 0;
-}
-.pv-root p {
-  margin: 0 0 1.05rem;
-}
-.pv-root p:last-child {
-  margin-bottom: 0;
-}
-.pv-note {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.76rem;
-  line-height: 1.65;
-  color: var(--pv-fg-mute);
-}
-.pv-root strong {
-  font-weight: 600;
-  color: var(--pv-fg);
-}
-.pv-root a {
-  color: var(--pv-accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-}
-.pv-root a:focus-visible,
-.pv-root button:focus-visible {
-  outline: 2px solid var(--pv-teal);
-  outline-offset: 3px;
-}
-
-/* ─────────────────────────── instrument bar ───────────────────────────
-   ONE CENTRED CLUSTER: the mark, the wordmark, and the three places worth going.
-   That is why this is `justify-content: center` and not a three-column grid —
-   with nothing in the side slots there is no width to compensate for. The live
-   coverage readout that used to sit here held the slack with `flex: 1`, and it
-   was what pushed the links out to the right edge.
-
-   TWO STATES OFF ONE SIGNAL THAT ALREADY EXISTS. `.pv-bar-night` is on
-   `.pv-root` exactly while the hero is the thing directly under the bar
-   (ScrollGround.tsx:96-98, `y < heroH - BAR_H`). The whole transparent → glass
-   handover reads off that class. Do NOT add a second scroll listener, a second
-   class, or a second custom property for it.
-
-   GLASS IS THE BASE AND TRANSPARENT IS THE OVERRIDE, not the other way round,
-   and `pv-bar-night` is server-rendered in (site)/layout.tsx so the override is
-   in the first paint. Written as `:not(.pv-bar-night)` the glass plate would
-   flash across the black stage on every cold load until hydration — the same
-   trap `.pv-night` is server-rendered to avoid. */
-.pv-bar {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Wider than the gap inside `.pv-bar-links`, or the cluster reads as five
-     loose words instead of a lockup followed by a nav. */
-  gap: 2rem;
-  /* 44px is load bearing in two other places and all three must agree: `BAR_H`
-     in ScrollGround.tsx, which decides where the handover fires, and the
-     `calc(100svh - 44px)` hero geometry further down this file. */
-  height: 44px;
-  padding: 0 1.25rem;
-  border-bottom: 1px solid var(--pv-rule);
-  /* The bar reads `--pv-bar-g`, NOT `--pv-g`.
-     It is translucent and it is sticky, so it is the one element on the page that
-     can be over two different grounds at once — and during the hero's exit it is:
-     the black stage is still under it while the ground behind the document below
-     has already lifted to bone. Following the page ramp painted a bone bar across
-     the night hero. ScrollGround publishes `--pv-bar-g` as the ground *directly
-     beneath the bar*, which is the only ground it can honestly match. */
-  background-color: color-mix(
-    in oklab,
-    color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-bar-g, 1) * 100%)) 82%,
-    transparent
-  );
-  /* Through a variable so the night state can ramp it to zero rather than snap
-     `none`: `blur(0px)` interpolates and `none` does not, and the snap is visible
-     on the way back UP the page as an unblurred wash over the stage. The
-     `-webkit-` alias is the house pattern everywhere else; this rule was the one
-     place missing it. */
-  backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
-  -webkit-backdrop-filter: blur(var(--pv-bar-blur, 10px)) saturate(1.05);
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--pv-fg-mute);
-  /* The handover happens the instant the hero's bottom edge clears the bar, so it
-     is a step, not a ramp. Ease it or it snaps. */
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
-    backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
-}
-
-/* A SCRIM, NOT A PLATE. Over the hero the bar has no background and no rule, but
-   the h1 slides directly under it on the way out — #f4f8fa display type passing
-   beneath an #e8eef1 wordmark, both unreadable for the length of the transit.
-   This is a top-down wash that reaches ZERO opacity at the bar's own bottom edge,
-   so it has no edge of its own: the bar still reads as absent while the type
-   stays legible. `--pv-bar-scrim: 0` gives the strict "nothing at all" reading.
-
-   Transitioned opacity on a pseudo-element rather than a transitioned gradient:
-   gradient interpolation is not worth betting a cold load on across engines.
-   `z-index: -1` keeps it above the bar's own background and below its text,
-   inside the stacking context `z-index: 50` already creates. */
-.pv-bar::before {
-  content: "";
-  position: absolute;
+.pv-stage {
+  position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
-  background: linear-gradient(to bottom, var(--pv-stage), transparent);
-  opacity: var(--pv-bar-scrim, 0);
-  transition: opacity 0.3s ease;
+  --pv-globe-x: 6%;
+  --pv-globe-y: 42%;
+  --pv-globe-scale: 1;
+  --pv-globe-alpha: 1;
 }
 
-/* Over the night stage the bar is not a bar: no plate, no rule, no blur, so the
-   top of the page reads as the stage rather than as furniture laid across it.
-
-   This is also where the bar wears night type — independently of `.pv-night`,
-   which by then has already handed the document over to daylight.
-
-   `border-bottom-color: transparent` and not `border: none`: `box-sizing` is
-   border-box, so removing the border would give the content box an extra pixel
-   and shift the cluster half a pixel on every handover. */
-.pv-root.pv-bar-night .pv-bar {
-  background-color: transparent;
-  border-bottom-color: transparent;
-  --pv-bar-blur: 0px;
-  --pv-bar-scrim: 0.55;
-  color: #7a8892;
-}
-.pv-root.pv-bar-night .pv-wordmark,
-.pv-root.pv-bar-night .pv-bar-links a.pv-bar-go {
-  color: #e8eef1;
-}
-.pv-root.pv-bar-night .pv-bar-links a {
-  color: #7a8892;
-}
-.pv-root.pv-bar-night .pv-bar-links a:hover {
-  color: #e8eef1;
-}
-.pv-root.pv-bar-night .pv-bar-rule {
-  background: rgba(232, 238, 241, 0.22);
-}
-.pv-root.pv-bar-night .pv-wordmark,
-.pv-root.pv-bar-night .pv-bar-links a {
-  transition: color 0.3s ease;
-}
-/* `.pv-root .pv-wordmark` and not `.pv-wordmark`, because `.pv-root a` at the top
-   of this file is (0,2,0) and a bare `.pv-wordmark` is only (0,1,0). The bare
-   selector lost, silently, and the site wordmark has been rendering in the LINK
-   accent in daylight ever since — against its own `color: var(--pv-fg)`. Night
-   never showed it because `.pv-root.pv-bar-night .pv-wordmark` is (0,3,0) and wins.
-   The wordmark is identity, not a link: it should not wear the link colour, and it
-   should not change hue when the page changes ground. */
-.pv-root .pv-wordmark {
-  font-family: var(--pv-display);
-  font-weight: 900;
-  font-size: 0.86rem;
-  letter-spacing: 0.3em;
-  /* CSS puts tracking after the LAST glyph too, so 0.3em of dead space hangs off
-     the right of the wordmark and drags the whole centred cluster left of true
-     centre. Claw it back — the centring is optical or it is nothing. */
-  margin-right: -0.3em;
-  text-transform: uppercase;
-  color: var(--pv-fg);
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex: none;
-  white-space: nowrap;
-  text-decoration: none;
-}
-/* The mark draws every part from `currentColor`, which is what lets one asset
-   serve both skins. The part rules (`.mk-ring`, `.mk-fill`, `.mk-dot`, and the
-   idle orbit) live in globals.css, which the ROOT layout loads on every route
-   including this one, so they apply here and are not repeated.
-   What DOES need saying is the colour: `.tn-mark` also sets
-   `color: var(--tnx-ink)`, and `--tnx-ink` is defined only under `.tn-terminal`
-   (globals.css:3087, :3255), a selector that does not exist on this page. The
-   variable is therefore invalid here and the colour already falls back to
-   `inherit` BY ACCIDENT. Say it outright, or the day somebody widens the scope of
-   `--tnx-ink` the mark turns console-coloured on the site with nothing to point
-   at. */
-.pv-wordmark .tn-mark {
-  color: inherit;
-}
-/* Separates the identity from the navigation, so the cluster reads as one object
-   with two halves rather than five loose words. */
-.pv-bar-rule {
-  width: 1px;
-  height: 14px;
-  background: var(--pv-rule-hi);
-  flex: none;
-}
-.pv-bar-links {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex: none;
-}
-.pv-bar-links a {
-  color: var(--pv-fg-mute);
-  text-decoration: none;
-  white-space: nowrap; /* nothing wraps to a second line in a 44px bar */
-}
-.pv-bar-links a:hover {
-  color: var(--pv-fg);
-}
-/* The one action in the bar, so the one link at full contrast. The arrow and the
-   contrast are the whole distinction — a bordered pill inside a centred cluster
-   reads as a fourth object and pulls the group off balance. */
-.pv-bar-links a.pv-bar-go {
-  color: var(--pv-fg);
-}
-/* Narrow viewports keep only the action — and now actually do. This block used to
-   hide `.pv-bar-links` outright, which took "Open the map" with it and left a
-   phone with no route into the product but the hero button, while the comment
-   here claimed the opposite. The two that go are anchors to sections the reader
-   is about to scroll through anyway; the map is the only thing in the bar you
-   cannot reach by scrolling.
-
-   Named classes and not `:nth-child` — the next person to reorder these links
-   should not silently change which two disappear. */
-@media (max-width: 40rem) {
-  .pv-bar { gap: 1.25rem; padding: 0 0.9rem; }
-  .pv-root .pv-wordmark { letter-spacing: 0.16em; margin-right: -0.16em; font-size: 0.8rem; }
-  .pv-bar-links { gap: 1rem; }
-  .pv-bar-rule, .pv-bar-jump { display: none; }
-}
-/* Phones: tighten before giving anything up. MEASURED at 390 (the commonest phone
-   width), where the untightened cluster left only 34px of slack — enough today and
-   not enough if the display face fails to load and a wider fallback stands in.
-   The 34px was measured against ARCHIVO, which is gone; Inter is narrower at the
-   same size, so the slack can only have grown. Not re-measured — re-walk 390 in a
-   browser before trusting the figure for anything new. */
-@media (max-width: 30rem) {
-  .pv-bar { gap: 1rem; }
-  .pv-root .pv-wordmark {
-    font-size: 0.76rem;
-    letter-spacing: 0.12em;
-    margin-right: -0.12em;
-    gap: 0.45rem;
-  }
-  .pv-root .pv-wordmark .tn-mark { width: 20px; height: 20px; }
-}
-/* Below 23rem the LETTERS finally go and the mark alone carries the identity,
-   leaving the bar as mark + action. This is the one width where they genuinely
-   cannot coexist, and it is measured rather than guessed: at 320 (iPhone SE) the
-   tightened cluster still wants more than the 291px of usable width there, and no
-   type size that keeps the wordmark legible closes the gap — the honest choice is
-   the identity or the action, and on a 320px phone the action wins. 390 and 430
-   keep both.
-
-   Worth knowing WHY this needed measuring at all: `.pv-root` is `overflow-x: clip`,
-   so an over-wide bar never reaches `documentElement.scrollWidth`. It is clipped
-   in silence, and the verifier's no-sideways-scroll sweep reports 0 either way —
-   it would have passed this bar at 320 while the cluster hung 36px off the edge.
-   The cluster has to be measured against the bar's own content box.
-
-   Clipped rather than `display: none`, so the link keeps its accessible name —
-   a link whose only remaining content is an aria-hidden SVG has no name at all. */
-@media (max-width: 23rem) {
-  .pv-wordmark-text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .pv-root .pv-wordmark { margin-right: 0; gap: 0; }
-}
-
-/* ─────────────────────────── hero (the night stage) ───────────────────────────
-   Not a plate beside the copy — a stage behind it. The globe is a full-bleed
-   backdrop rising from below the fold, the headline sits ON it, and the only
-   thing separating them is a radial scrim over the copy's corner.
-
-   The stage is always night regardless of `--pv-g`, so everything in here that
-   carries type states its own colour rather than reading the flipping token set.
-   The ground ramp starts at ink to match it and lifts to daylight below. */
-
-.pv-hero {
-  position: relative;
-  z-index: 1;
-  /* The globe's radius, in the design's own terms: 60% of the width or 86% of
-     the stage height, whichever is smaller. Both the canvas box and the copy's
-     breathing room are derived from it, so the composition holds at any size. */
-  --pv-globe-r: min(60vw, calc(0.86 * (100svh - 44px)));
-  min-height: calc(100svh - 44px);
-  background: var(--pv-stage);
-  overflow: hidden;
-  display: grid;
-  align-content: center;
-}
-
-/* ── the stage: stars, globe, scrim ── */
-.pv-hero-stage {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-/* THE SKY IS A PHOTO SPHERE: an equirectangular texture sampled per pixel by view
-   direction in a WebGL shader, so dragging the globe rotates it. See
-   components/marketing/Starfield.tsx for the profile that forced the rewrite and for
-   why a flat capture was tried and rejected. */
-.pv-hero-stage > .pv-hero-stars,
-.pv-handoff > .pv-hero-stars {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  /* A <canvas> is a REPLACED element: `inset: 0` does not stretch it, it keeps its
-     intrinsic 300x150. It needs explicit width/height. (Same note as the canvas this
-     replaced — the element type went div and came back.) */
-  width: 100%;
-  height: 100%;
-  /* THE FALLBACK, and the reason this rule carries a picture at all. The sky is
-     drawn by a WebGL shader (components/marketing/Starfield.tsx); if WebGL is
-     unavailable the component returns without ever touching the canvas, and a
-     canvas that was never drawn into is TRANSPARENT — the hero would show the page
-     ground through a hole where the sky should be. This background is what is left
-     in that case: the same equirectangular texture, flat and unrotatable, which is
-     a worse sky than the shader draws and a far better one than none.
-
-     `#06080b` under it is the night ground the texture was itself composited onto,
-     so the moment before the JPEG decodes matches the moment after. */
-  background-color: #06080b;
-  background-image: url("/sky/sky-equirect.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* The globe box is a square of the sphere's own diameter, parked so its centre
-   sits below the fold (94% down, 56% across). Only the upper cap is on screen,
-   which is what makes it read as rising rather than floating. */
-.pv-hero-globe {
-  position: absolute;
-  left: 56%;
-  top: 94%;
-  width: calc(var(--pv-globe-r) * 2);
-  height: calc(var(--pv-globe-r) * 2);
-  /* The -50%/-50% is the centring; the two custom properties on top of it are
-     written by ScrollGround so the globe sinks, swells slightly and dims as the
-     reader leaves the hero. Scale is last in the list and the origin is the
-     element's own centre, so it grows about the parked centre point rather than
-     wandering off it. */
-  transform: translate3d(-50%, calc(-50% + var(--pv-globe-y, 0%)), 0) scale(var(--pv-globe-s, 1));
-  opacity: var(--pv-globe-o, 1);
-  z-index: 1;
-  will-change: opacity, transform;
-}
-/* MapLibre stamps `.maplibregl-map { position: relative }` onto whatever element
-   you hand it, and maplibre-gl.css is imported from the component so it lands
-   AFTER this file. At equal specificity source order wins and the container
-   collapses to a static zero-height block. The child combinator outranks it. */
-.pv-hero-globe > .pv-hero-map {
+.pv-stage > .pv-hero-stars {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  display: block;
 }
-.pv-hero .maplibregl-control-container {
+
+/* The globe's own box: a square of the viewport's smaller side, so MapLibre's
+   container stays SQUARE at every width. `zoomToFill` is calibrated against a
+   square box and its fill ratio is only stable while it stays one. */
+.pv-stage-globe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(100vw, 100vh);
+  height: min(100vw, 100vh);
+  /* Translate first, then scale, so the scale is about the globe's own centre.
+     Scale is only ever <= 1: the canvas is rendered at full size and shrunk, never
+     stretched, because a soft coastline would undo the entire reason the real
+     engine is here instead of a video. */
+  transform: translate(-50%, -50%) translate(var(--pv-globe-x), var(--pv-globe-y))
+    scale(var(--pv-globe-scale));
+  opacity: 0;
+  will-change: transform, opacity;
+  /* Only the entrance is transitioned. The scroll choreography must NOT be, or
+     every frame would start a new interpolation and the globe would lag the page. */
+  transition: opacity 900ms ease;
+  /* The globe is grabbable through the stage, and nothing else on it is. */
+  pointer-events: auto;
+}
+
+.pv-stage-globe[data-ready="1"] {
+  opacity: var(--pv-globe-alpha);
+}
+
+.pv-stage-globe > .pv-hero-map {
+  width: 100%;
+  height: 100%;
+}
+
+.pv-stage .maplibregl-control-container {
   display: none;
 }
 
-/* Darkens the headline's corner without putting an edge anywhere. Decorative, so
-   it must not eat the pointer — the globe underneath is still grabbable. */
-.pv-hero-scrim {
+/* Darkens the corner the headline sits in without dimming the whole sphere.
+   Above the globe so it can do that, and pointer-transparent so the globe
+   underneath is still grabbable through it. */
+.pv-stage-scrim {
   position: absolute;
   inset: 0;
-  z-index: 2;
   pointer-events: none;
   background: radial-gradient(
     120% 90% at 22% 42%,
@@ -658,1016 +224,1263 @@
   );
 }
 
-/* ── the copy ── */
-.pv-hero-copy {
+/* ── the pin ──────────────────────────────────────────────────────────────
+   A MapLibre marker, so the camera projects it and hides it when the place
+   turns round the back of the sphere. Everything here is drawn relative to the
+   marker's own anchor point, which MapLibre centres on the coordinate. */
+
+.pv-pin {
   position: relative;
-  z-index: 3;
-  width: min(74rem, calc(100% - 3rem));
-  margin: 0 auto;
-  padding: clamp(1.5rem, 4vh, 3rem) 0 clamp(4.5rem, 9vh, 6.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.9rem, 2.2vh, 1.5rem);
-  /* Shrink every child to its own content width. Full-width blocks here would
-     lay a transparent sheet across the globe and swallow the drag. */
-  align-items: flex-start;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
-.pv-hero-copy > * {
-  pointer-events: auto;
-}
 
-.pv-hero .pv-h1 {
-  /* Capped against the VIEWPORT height as well as its width: the headline now
-     shares the stage with the globe, and a purely vw-scaled size pushed the
-     legend and the status bar off a short laptop screen. */
-  font-size: clamp(2.2rem, min(7.4vw, 13vh), 6.4rem);
-  line-height: 0.88;
-  letter-spacing: -0.03em;
-  color: #f4f8fa;
-  max-width: 22ch;
-}
-/* Each line wipes up under its own clip, one after the other. */
-.pv-hero .pv-h1 > span {
-  display: block;
-}
-.pv-hero.pv-intro .pv-h1 > span:nth-child(1) {
-  animation-delay: 0.5s;
-}
-.pv-hero.pv-intro .pv-h1 > span:nth-child(2) {
-  animation-delay: 0.64s;
-}
-
-.pv-hero-lede {
-  font-size: 1.16rem;
-  line-height: 1.5;
-  color: #b8c5cd;
-  max-width: 34rem;
-  margin: 0;
-}
-.pv-hero .pv-cta-row {
-}
-/* The stage is always night, so the hero's buttons state their colours outright
-   instead of deriving them from the ramp. */
-.pv-hero .pv-cta {
-  background: #e8eef1;
-  border-color: #e8eef1;
-  color: #0b1016;
-}
-.pv-hero .pv-cta-ghost {
-  background: transparent;
-  color: #e8eef1;
-  border-color: rgba(232, 238, 241, 0.34);
-}
-.pv-hero .pv-cta-ghost:hover {
-  border-color: #e8eef1;
-}
-
-
-/* ── the status rail along the foot of the stage ── */
-.pv-hero-foot {
+.pv-pin-dot,
+.pv-pin-ring {
   position: absolute;
+  top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 4;
-  border-top: 1px solid rgba(232, 238, 241, 0.14);
-  background: linear-gradient(to top, rgba(5, 7, 12, 0.92), rgba(5, 7, 12, 0.35));
-  pointer-events: none;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
-.pv-hero-foot-inner {
-  width: min(74rem, calc(100% - 2.5rem));
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 0.75rem 0;
+
+.pv-pin-dot {
+  width: 11px;
+  height: 11px;
+  background: var(--pv-warn);
+  box-shadow: 0 0 0 2px rgba(5, 7, 12, 0.75), 0 0 14px rgba(240, 166, 46, 0.9);
+}
+
+/* The pulse. Scaled from a fixed 11px box rather than animating width/height,
+   so it runs entirely on the compositor. */
+.pv-pin-ring {
+  width: 11px;
+  height: 11px;
+  border: 1.4px solid var(--pv-accent);
+  animation: pv-ping 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes pv-ping {
+  from {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3.4);
+  }
+}
+
+/* The leader line out to the label. */
+.pv-pin-line {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  width: 28px;
+  height: 1px;
+  background: rgba(232, 238, 241, 0.7);
+}
+
+.pv-pin-label {
+  position: absolute;
+  top: 0;
+  left: 44px;
+  transform: translateY(-50%);
+  white-space: nowrap;
   font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--pv-fg);
   font-variant-numeric: tabular-nums;
-  font-size: 0.62rem;
+  text-shadow: 0 1px 6px rgba(5, 7, 12, 0.95), 0 0 2px rgba(5, 7, 12, 0.95);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-pin-ring {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+.pv-stage-status {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 0.9rem;
+  z-index: 2;
+  margin: 0;
+  font-family: var(--pv-mono);
+  font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.6);
-}
-.pv-hero-status {
-  margin: 0;
-  color: rgba(232, 238, 241, 0.82);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.pv-hero-credit {
-  margin: 0;
-  text-align: right;
-  color: rgba(232, 238, 241, 0.42);
-  font-size: 0.58rem;
-  letter-spacing: 0.04em;
-  text-transform: none;
-  flex: none;
-}
-/* A quiet nudge that the thing can be grabbed. Mouse only — on touch the globe
-   deliberately does not take the drag, so the hint would be a lie. */
-.pv-hero-hint {
-  position: absolute;
-  right: 1.6rem;
-  top: 1.6rem;
-  z-index: 3;
-  margin: 0;
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
   font-variant-numeric: tabular-nums;
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(232, 238, 241, 0.4);
+  color: var(--pv-fg-mute);
   pointer-events: none;
 }
-@media (pointer: coarse) {
-  .pv-hero-hint {
+
+@media (max-width: 60rem) {
+  .pv-stage-status {
     display: none;
   }
 }
+
+/* ===========================================================================
+   NAV
+   =========================================================================== */
+
+.pv-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  height: 48px;
+  padding: 0 1.25rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pv-fg-dim);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(to bottom, rgba(5, 7, 12, 0.82), rgba(5, 7, 12, 0));
+  backdrop-filter: blur(6px);
+}
+
+.pv-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 900;
+  font-size: 0.92rem;
+  letter-spacing: 0.3em;
+  margin-right: -0.3em;
+  color: var(--pv-fg);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pv-nav-mark {
+  display: block;
+  flex: none;
+}
+
+.pv-nav-rule {
+  width: 1px;
+  height: 14px;
+  background: var(--pv-rule-hi);
+  flex: none;
+}
+
+.pv-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex: none;
+}
+
+.pv-nav-links a {
+  color: var(--pv-fg-dim);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pv-nav-links a:hover,
+.pv-nav-cta {
+  color: var(--pv-fg);
+}
+
 @media (max-width: 52rem) {
-  /* The credit list is six publishers long and wraps into a paragraph at this
-     width, shoving the status line out of the rail. Keep the live line. */
-  .pv-hero-credit {
-    display: none;
+  .pv-nav {
+    gap: 1rem;
+    justify-content: space-between;
   }
-  .pv-hero-hint {
+  .pv-nav-rule,
+  .pv-nav-links a:not(.pv-nav-cta) {
     display: none;
-  }
-  .pv-hero-foot-inner {
-    width: calc(100% - 1.8rem);
   }
 }
+
+/* ===========================================================================
+   SHARED TYPE + FURNITURE
+   =========================================================================== */
+
+.pv-block {
+  position: relative;
+  z-index: 1;
+  width: var(--pv-col);
+  margin: 0 auto;
+  padding: 7rem 0 0;
+}
+
+.pv-measure {
+  max-width: 42rem;
+}
+
+.pv-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin: 0 0 1.1rem;
+  font-family: var(--pv-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pv-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-eyebrow .pv-sep {
+  color: var(--pv-fg-mute);
+}
+
+.pv-h1 {
+  margin: 0;
+  font-family: var(--pv-display);
+  font-weight: 900;
+  font-size: clamp(2.4rem, min(7.6vw, 13vh), 6.6rem);
+  line-height: 0.88;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--pv-fg-bright);
+  max-width: 22ch;
+  text-wrap: balance;
+}
+
+.pv-h2 {
+  margin: 0 0 1.2rem;
+  font-family: var(--pv-display);
+  font-weight: 900;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--pv-fg);
+  text-wrap: balance;
+}
+
+.pv-h3 {
+  margin: 0;
+  font-family: var(--pv-display);
+  font-weight: 900;
+  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--pv-fg);
+}
+
+.pv-h3-loose {
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+  margin-bottom: 1.2rem;
+  text-wrap: balance;
+}
+
+.pv-lede {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--pv-fg-dim);
+  max-width: 36rem;
+}
+
+.pv-prose {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--pv-fg-body);
+  max-width: 36rem;
+  text-wrap: pretty;
+}
+
+.pv-note {
+  margin: 2rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.65;
+  color: var(--pv-fg-dim);
+  font-variant-numeric: tabular-nums;
+  max-width: 46rem;
+}
+
+.pv-root p:last-child {
+  margin-bottom: 0;
+}
+
+.pv-root strong {
+  color: var(--pv-fg-bright);
+  font-weight: 600;
+}
+
+/* The default link look, at specificity (0,0,0) — the WHOLE selector is inside
+   `:where()`, scope included, so it weighs literally nothing.
+
+   This is not tidiness. Written as a plain `.pv-root a` it scores (0,2,0) and
+   out-specifies every single-class component rule in this file: it painted the
+   primary CTA's label accent-teal on a near-white button (a contrast failure,
+   caught in review), and turned the wordmark and every citation line teal.
+   Wrapping only the `a` part — `.pv-root :where(a)` — scores (0,1,0), which
+   ties with a component class and hands the result to SOURCE ORDER: `.pv-cta`
+   and `.pv-receipt-cite` sit below this rule and won, `.pv-nav-brand` sits
+   above it and lost, so the wordmark stayed teal. At (0,0,0) any class rule
+   wins wherever it is written, which is the behaviour the rest of the file
+   assumes. Do not unwrap the `.pv-root`. */
+:where(.pv-root a) {
+  color: var(--pv-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:where(.pv-root a:hover) {
+  color: var(--pv-fg);
+}
+
+.pv-root a:focus-visible,
+.pv-root button:focus-visible {
+  outline: 2px solid var(--pv-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.pv-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The shared measure bar: a hairline track with a filled lead. */
+.pv-bar {
+  position: relative;
+  height: 2px;
+  background: var(--pv-rule);
+}
+
+.pv-bar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--pv-accent);
+}
+
+.pv-bignum {
+  font-family: var(--pv-display);
+  font-weight: 900;
+  font-size: clamp(3.2rem, 7.5vw, 5.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--pv-fg-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-bignum-sm {
+  font-size: clamp(2.4rem, 4.4vw, 3.4rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
 .pv-cta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.9rem;
 }
+
 .pv-cta {
   font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 0.85rem 1.5rem;
+  padding: 0.95rem 1.6rem;
   border: 1px solid var(--pv-fg);
   background: var(--pv-fg);
-  /* The label matches the GROUND, so it always contrasts with `--pv-fg` behind
-     it. Reading `(1 - --pv-g)` here inverted that and painted an ink label on an
-     ink button in daylight — the primary call to action, invisible. */
-  color: color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%));
+  color: #0b1016;
   text-decoration: none;
   transition: opacity 0.18s ease;
 }
+
 .pv-cta:hover {
   opacity: 0.82;
+  color: #0b1016;
 }
-.pv-cta.pv-cta-ghost {
+
+.pv-cta-ghost {
+  border-color: var(--pv-rule-hi);
   background: transparent;
   color: var(--pv-fg);
-  border-color: var(--pv-rule-hi);
+  transition: border-color 0.18s ease;
 }
-.pv-cta.pv-cta-ghost:hover {
+
+.pv-cta-ghost:hover {
   border-color: var(--pv-fg);
+  color: var(--pv-fg);
   opacity: 1;
 }
 
-
-/* ── the launch sequence ───────────────────────────────────────────────────
-   Every animation in the hero's opening is scoped to `.pv-intro`, which exists
-   so the whole sequence can be RESTARTED: remove the class, force a reflow,
-   put it back. HeroStage does that on `pageshow` when the page came out of the
-   back/forward cache, where a restored document keeps its finished animations
-   and the hero would otherwise appear fully assembled with no launch at all.
-
-   The class is server-rendered, so a cold load still plays the sequence on the
-   first paint without waiting for JavaScript to arrive and switch it on. */
-
-.pv-hero.pv-intro .pv-hero-stage > .pv-hero-stars {
-  animation: pv-fade 1.4s ease both;
+/* The graffiti. The ONLY place Permanent Marker is used. */
+.pv-graffiti {
+  font-family: var(--pv-marker);
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration-color: var(--pv-alarm);
+  text-decoration-thickness: 0.14em;
 }
-.pv-hero.pv-intro .pv-h1 > span {
-  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+/* ===========================================================================
+   HERO
+   =========================================================================== */
+
+.pv-hero {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100svh - 48px);
+  display: grid;
+  align-content: center;
+  overflow: hidden;
 }
+
+.pv-hero-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 22% 42%,
+    rgba(5, 7, 12, 0.7) 0%,
+    rgba(5, 7, 12, 0.4) 34%,
+    rgba(5, 7, 12, 0) 68%
+  );
+}
+
+.pv-hero-copy {
+  position: relative;
+  width: min(74rem, calc(100% - 3rem));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vh, 3rem) 0 clamp(4.5rem, 9vh, 6.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2.4vh, 1.7rem);
+  align-items: flex-start;
+}
+
+.pv-hero .pv-h1 > span {
+  display: block;
+}
+
 .pv-hero.pv-intro .pv-h1 > span:nth-child(1) {
-  animation-delay: 0.5s;
+  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
 }
+
 .pv-hero.pv-intro .pv-h1 > span:nth-child(2) {
-  animation-delay: 0.64s;
+  animation: pv-wipe 1s cubic-bezier(0.16, 1, 0.3, 1) 0.64s both;
 }
+
+.pv-hero-lede {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: var(--pv-fg-body);
+  max-width: 38rem;
+  text-wrap: pretty;
+}
+
 .pv-hero.pv-intro .pv-hero-lede {
   animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.86s both;
 }
+
 .pv-hero.pv-intro .pv-cta-row {
   animation: pv-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
 }
-/* The eyebrow (0.35s) and the legend (1.35s) were steps in this sequence and both
-   elements are gone from the hero. The remaining delays are ABSOLUTE and
-   independent, not chained, so the choreography still plays in order — it simply
-   has two fewer things arriving. Left at their original timings rather than
-   re-spaced: re-timing the survivors would be a redesign of the launch, and the
-   gaps read as breathing room rather than as a stall. */
-.pv-hero.pv-intro .pv-hero-foot {
+
+/* The hero's measurement strip.
+   OPAQUE, AND THAT IS THE POINT. It used to be a translucent gradient, so the globe
+   moved visibly behind it as the stage re-parked and the strip read as one more layer
+   of the parallax rather than as a caption on it. It is the page's first factual claim
+   and it should sit still on top of the stage, not travel with it. A solid ground also
+   means the figures are read against one colour at every scroll position instead of
+   against whatever part of the sphere happens to be passing under them. */
+.pv-hero-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 1px solid var(--pv-rule);
+  background: var(--pv-stage);
+  pointer-events: none;
   animation: pv-fade 1s ease 1.5s both;
 }
-.pv-hero.pv-intro .pv-hero-hint {
-  animation: pv-fade 1s ease 1.8s both;
+
+.pv-hero-strip-inner {
+  width: var(--pv-col);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.8rem 0;
+  font-family: var(--pv-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
-/* The globe now starts loading with the sequence rather than after it, so it
-   arrives mid-choreography and has to arrive as part of it. The entrance sits on
-   the INNER map element while the scroll-driven dim sits on the outer box — two
-   nested opacities multiply on their own, which one element could not do.
-   Keyed off `data-ready`, set when MapLibre has actually painted a frame: fading
-   in on mount instead would just fade in an empty black square. */
-.pv-hero-globe > .pv-hero-map {
-  opacity: 0;
-  transform: scale(0.965);
-  transition: opacity 1.1s ease, transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.pv-hero-globe[data-ready="1"] > .pv-hero-map {
-  opacity: 1;
-  transform: none;
+.pv-hero-strip-inner p {
+  margin: 0;
+  color: rgba(232, 238, 241, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
-/* ─────────────────────────── marquee ─────────────────────────── */
+.pv-hero-strip-credit {
+  text-align: right;
+  color: rgba(232, 238, 241, 0.45) !important;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  flex: none;
+}
 
-.pv-marquee {
+@media (max-width: 60rem) {
+  .pv-hero-strip-credit {
+    display: none;
+  }
+}
+
+/* ===========================================================================
+   RECEIPTS — the public-budget figures
+   =========================================================================== */
+
+.pv-receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1px;
+  margin: 2.5rem 0 0;
+  background: var(--pv-rule);
+  border: 1px solid var(--pv-rule);
+}
+
+.pv-receipt {
+  background: var(--pv-surface);
+  padding: 1.6rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  overflow: hidden;
-  border-top: 1px solid var(--pv-rule);
-  border-bottom: 1px solid var(--pv-rule);
-  padding: 1.15rem 0;
-  user-select: none;
+  gap: 0.6rem;
 }
-.pv-marquee-row {
+
+.pv-receipt dd {
+  margin: 0;
   display: flex;
-  width: max-content;
-  gap: 2rem;
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pv-receipt-figure {
+  font-family: var(--pv-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--pv-fg-bright);
   font-variant-numeric: tabular-nums;
-  font-size: 0.82rem;
+}
+
+.pv-receipt-what {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--pv-fg);
+}
+
+.pv-receipt-detail {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--pv-fg-body);
+}
+
+.pv-receipt-cite {
+  font-family: var(--pv-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pv-fg-mute);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pv-rule);
+  padding-bottom: 0.3rem;
+  margin-top: auto;
+}
+
+.pv-receipt-cite:hover {
+  color: var(--pv-accent);
+}
+
+/* ===========================================================================
+   WATCHED
+   =========================================================================== */
+
+.pv-watch-head {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 2.5rem 3rem;
+  align-items: center;
+}
+
+.pv-watch-head .pv-lede {
+  margin-bottom: 1rem;
+}
+
+/* Held at the source image's natural 174px. Upscaling a small cut-out next to
+   type this sharp reads as a mistake, and there is no larger original. */
+.pv-camera {
+  position: relative;
+  width: 100%;
+  max-width: 20rem;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 1rem 0;
+}
+
+.pv-camera-glow {
+  position: absolute;
+  inset: 8% 14%;
+  background: radial-gradient(
+    closest-side,
+    rgba(224, 98, 92, 0.5),
+    rgba(224, 98, 92, 0.16) 55%,
+    transparent 76%
+  );
+  filter: blur(8px);
+  transform: rotate(-8deg);
+}
+
+.pv-camera-img {
+  position: relative;
+  width: 174px;
+  height: auto;
+  max-width: 100%;
+  display: block;
+  filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.65));
+  transform: rotate(-4deg);
+}
+
+.pv-camera-tag {
+  position: absolute;
+  left: 0;
+  bottom: 2%;
+  font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+  color: var(--pv-alarm);
+  transform: rotate(-7deg);
+  text-shadow: 0 0 12px rgba(224, 98, 92, 0.6);
+}
+
+/* ── the stepped list, shared by Watched and Coverage ── */
+
+.pv-steps {
+  list-style: none;
+  margin: 3rem 0 0;
+  padding: 0;
+  max-width: 36rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-step {
+  min-height: 56vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  border-top: 1px solid var(--pv-rule);
+  transition: opacity 0.45s ease;
+}
+
+.pv-step-tag {
+  align-self: flex-start;
+  margin: 0 0 0.4rem 0.5rem;
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+}
+
+.pv-step-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-step-rank {
+  font-family: var(--pv-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--pv-accent);
+}
+
+.pv-step-country {
+  font-family: var(--pv-mono);
+  font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--pv-fg-mute);
-  white-space: nowrap;
-  animation: pv-drift var(--pv-dur, 42s) linear infinite;
-}
-.pv-marquee-row.pv-rev {
-  animation-direction: reverse;
-}
-.pv-marquee:hover .pv-marquee-row {
-  animation-play-state: paused;
-}
-@keyframes pv-drift {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(-50%, 0, 0); }
 }
 
-/* ─────────────────────────── generic blocks ─────────────────────────── */
-
-.pv-block {
+.pv-step-figure {
   display: flex;
-  flex-direction: column;
-  gap: 1.6rem;
+  align-items: baseline;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
 }
-.pv-cols {
+
+.pv-step-unit {
+  font-family: var(--pv-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pv-fg-dim);
+}
+
+.pv-step-dl {
+  margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem 1rem;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
-.pv-card {
-  background: var(--pv-surface);
+
+.pv-step-dl dt {
+  font-family: var(--pv-mono);
+  color: var(--pv-fg-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  align-self: baseline;
+  padding-top: 0.2em;
+}
+
+.pv-step-dl dd {
+  margin: 0;
+  color: var(--pv-fg-body);
+  line-height: 1.5;
+}
+
+.pv-watch-foot {
+  margin-top: 3rem;
+}
+
+.pv-reputation {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 1px;
+  background: var(--pv-rule);
   border: 1px solid var(--pv-rule);
-  padding: 1.4rem;
+}
+
+.pv-reputation > div {
+  background: var(--pv-surface);
+  padding: 1rem 1.1rem;
+}
+
+.pv-reputation dt {
+  font-family: var(--pv-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pv-fg-dim);
+  margin-bottom: 0.35rem;
+}
+
+.pv-reputation dd {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--pv-fg-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-reputation strong {
+  font-family: var(--pv-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* ===========================================================================
+   WHY — the ledger
+   =========================================================================== */
+
+.pv-why {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 3rem;
+  align-items: start;
+}
+
+.pv-ledger {
+  margin: 0;
+  border: 1px solid var(--pv-rule);
+  background: var(--pv-surface);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-ledger > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--pv-rule);
+}
+
+.pv-ledger > div:last-child {
+  border-bottom: 0;
+}
+
+.pv-ledger dt {
+  font-family: var(--pv-mono);
+  color: var(--pv-fg-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+}
+
+.pv-ledger dd {
+  margin: 0;
+  color: var(--pv-fg);
+  text-align: right;
+}
+
+.pv-ledger dd a {
+  color: var(--pv-fg);
+  text-decoration: none;
+}
+
+.pv-ledger dd a:hover {
+  color: var(--pv-accent);
+}
+
+/* ===========================================================================
+   COVERAGE
+   =========================================================================== */
+
+.pv-coverage {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 2.5rem;
 }
-.pv-card p {
+
+.pv-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.4rem;
+  font-family: var(--pv-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pv-fg-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-legend-swatch {
+  height: 0.9rem;
+  border: 1px solid var(--pv-rule-hi);
+  flex: none;
+}
+
+.pv-legend-none {
+  width: 0.9rem;
+  background: #141f27;
+}
+
+.pv-legend-ramp {
+  width: 8rem;
+  background: linear-gradient(to right, #1d3540, #3fb4ce);
+}
+
+.pv-tiers {
+  max-width: 46rem;
+  border: 1px solid var(--pv-rule);
+  background: var(--pv-surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.pv-tier {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  gap: 0.6rem 1.5rem;
+  padding: 1.4rem 1.5rem;
+  border-bottom: 1px solid var(--pv-rule);
+  align-items: start;
+}
+
+.pv-tier:last-child {
+  border-bottom: 0;
+}
+
+.pv-tier-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-tier-name {
+  font-family: var(--pv-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pv-accent);
+}
+
+.pv-tier-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.pv-tier-of {
   font-size: 0.95rem;
   color: var(--pv-fg-dim);
 }
 
-/* Reveal — the only entrance animation on the page, and only where a list of
-   facts benefits from arriving in order. */
-.pv-reveal {
-  opacity: 0;
-  transform: translate3d(0, 26px, 0);
-  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.pv-reveal.pv-in {
-  opacity: 1;
-  transform: none;
-}
-
-/* ─────────────────────────── the adapter (pinned) ─────────────────────────── */
-
-.pv-adapter {
-  position: relative;
-  background: var(--pv-ink);
-  color: #e8eef1;
-}
-.pv-adapter-track {
-  height: 320vh;
-}
-.pv-adapter-pin {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  padding: 3rem 1.25rem;
-}
-.pv-adapter-inner {
-  width: min(74rem, 100%);
-  margin: 0 auto;
+.pv-tier-body {
   display: flex;
   flex-direction: column;
-  gap: 1.8rem;
-}
-.pv-adapter .pv-h2,
-.pv-adapter .pv-h3 {
-  color: #e8eef1;
-}
-.pv-adapter .pv-eyebrow {
-  color: #3fb4ce;
-}
-.pv-adapter-stage {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  align-items: stretch;
-}
-@media (min-width: 54rem) {
-  .pv-adapter-stage {
-    grid-template-columns: minmax(0, 1fr) 2.5rem minmax(0, 1fr);
-    align-items: center;
-  }
-}
-.pv-payload {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: clamp(0.66rem, 1.5vw, 0.8rem);
-  line-height: 1.6;
-  margin: 0;
-  padding: 1.1rem;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(232, 238, 241, 0.14);
-  color: #93a3ae;
-  overflow: auto;
-  max-height: 42svh;
-  white-space: pre;
-  min-height: 12rem;
-}
-.pv-payload b {
-  color: #3fb4ce;
-  font-weight: 500;
-}
-.pv-payload s {
-  color: #4d5a64;
-  text-decoration-color: #4d5a64;
-}
-.pv-arrow {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  color: #3fb4ce;
-  text-align: center;
-  font-size: 1.1rem;
-  letter-spacing: 0.1em;
-}
-.pv-marker-stage {
-  position: relative;
-  min-height: 12rem;
-  max-height: 42svh;
-  height: 100%;
-  border: 1px solid rgba(232, 238, 241, 0.14);
-  background: radial-gradient(circle at 50% 50%, rgba(14, 125, 151, 0.16), transparent 62%), rgba(0, 0, 0, 0.32);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.pv-marker {
-  position: relative;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 50%;
-  background: var(--pv-amber);
-  box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.65);
-  transform: scale(var(--pv-marker-scale, 0));
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.pv-marker::after {
-  content: "";
-  position: absolute;
-  inset: -0.35rem;
-  border: 1px solid rgba(217, 119, 6, 0.5);
-  border-radius: 50%;
-  animation: pv-ping 2.4s ease-out infinite;
-}
-@keyframes pv-ping {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-.pv-dossier {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  margin: 1.6rem 0 0 1.6rem;
-  min-width: 13rem;
-  padding: 0.8rem 0.95rem;
-  background: rgba(11, 16, 22, 0.92);
-  border: 1px solid rgba(232, 238, 241, 0.2);
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.7rem;
-  line-height: 1.75;
-  color: #c6d2d9;
-  opacity: var(--pv-dossier-o, 0);
-  transform: translate3d(0, calc((1 - var(--pv-dossier-o, 0)) * 8px), 0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.pv-dossier dt {
-  color: #7a8892;
-  display: inline;
-}
-.pv-dossier dd {
-  display: inline;
-  margin: 0 0 0 0.5rem;
-  color: #e8eef1;
-}
-.pv-dossier div + div {
-  margin-top: 0.1rem;
-}
-
-/* ── The dossier on a narrow stage ─────────────────────────────────────────
-   `.pv-dossier` chases the marker: pinned to dead centre with a fixed 1.6rem
-   offset and a 13rem min-width. That is fine on a wide stage and broken on a
-   phone. Measured on prod at 375px CSS width, the stage is 335px and the card
-   starts at x=193, so its right edge lands at 401px — 66px past a stage that is
-   `overflow: hidden`. It overhung the bottom by a further 40px. The result:
-   `public domain` rendered as "public doma" and the whole `recorded` row was
-   cut off.
-
-   The card IS this section's payoff — the caption underneath it reads "now it
-   is a place on a map, with its source attached", and the attached source was
-   the unreadable part. So below 40rem it stops chasing the marker and sits as a
-   full-width plate at the foot of the stage, with the marker pinging above it.
-   Nothing is hidden and the beat still reads. */
-@media (max-width: 40rem) {
-  .pv-marker-stage {
-    /* Room for marker + plate without the plate landing on the marker. */
-    min-height: 17rem;
-    max-height: none;
-    align-items: flex-start;
-    padding-top: 4.5rem;
-  }
-  .pv-dossier {
-    left: 0.75rem;
-    right: 0.75rem;
-    top: auto;
-    bottom: 0.75rem;
-    margin: 0;
-    min-width: 0;
-  }
-}
-
-.pv-caption {
-  font-size: 1rem;
-  line-height: 1.55;
-  color: #c6d2d9;
-  min-height: 3.2rem;
-  margin: 0;
-  max-width: 46rem;
-}
-.pv-beats {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #7a8892;
-}
-.pv-beats i {
-  display: block;
-  height: 2px;
-  width: 2.4rem;
-  background: rgba(232, 238, 241, 0.18);
-}
-/* Beat switching is pure CSS off [data-beat], which ScrollGround writes. The
-   payloads are grid-stacked so the panel height is the TALLEST beat and never
-   jumps as they cross-fade; the short caption/label text swaps on display. */
-.pv-payload-stack {
-  display: grid;
+  gap: 0.7rem;
   min-width: 0;
 }
-.pv-payload-stack > .pv-payload {
-  grid-area: 1 / 1;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.35s ease, visibility 0.35s;
-}
-[data-pv-adapter][data-beat="0"] .pv-payload.pv-p0,
-[data-pv-adapter][data-beat="1"] .pv-payload.pv-p1,
-[data-pv-adapter][data-beat="2"] .pv-payload.pv-p2 {
-  opacity: 1;
-  visibility: visible;
-}
 
-[data-pv-adapter] .pv-caption > .pv-beat-0,
-[data-pv-adapter] .pv-caption > .pv-beat-1,
-[data-pv-adapter] .pv-caption > .pv-beat-2,
-[data-pv-adapter] .pv-beat-label > span {
-  display: none;
-}
-[data-pv-adapter][data-beat="0"] .pv-caption > .pv-beat-0,
-[data-pv-adapter][data-beat="1"] .pv-caption > .pv-beat-1,
-[data-pv-adapter][data-beat="2"] .pv-caption > .pv-beat-2,
-[data-pv-adapter][data-beat="0"] .pv-beat-label > .pv-beat-0,
-[data-pv-adapter][data-beat="1"] .pv-beat-label > .pv-beat-1,
-[data-pv-adapter][data-beat="2"] .pv-beat-label > .pv-beat-2 {
-  display: inline;
-}
-
-[data-pv-adapter][data-beat="0"] .pv-beats i.pv-b0,
-[data-pv-adapter][data-beat="1"] .pv-beats i.pv-b0,
-[data-pv-adapter][data-beat="1"] .pv-beats i.pv-b1,
-[data-pv-adapter][data-beat="2"] .pv-beats i.pv-b0,
-[data-pv-adapter][data-beat="2"] .pv-beats i.pv-b1,
-[data-pv-adapter][data-beat="2"] .pv-beats i.pv-b2 {
-  background: #3fb4ce;
-}
-
-.pv-adapter-foot {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.72rem;
-  line-height: 1.6;
-  color: #7a8892;
+.pv-tier-body p {
   margin: 0;
-}
-.pv-adapter-closer {
-  font-family: var(--pv-display);
-  font-weight: 900;
-  text-transform: uppercase;
-  font-size: clamp(1.2rem, 2.8vw, 1.9rem);
-  letter-spacing: -0.015em;
-  line-height: 1.05;
-  color: #e8eef1;
-  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--pv-fg-body);
 }
 
-/* ─────────────────────────── source wall (horizontal) ─────────────────────────── */
-
-.pv-wall {
-  position: relative;
-  /* A sticky child pins only for as long as its parent is still on screen, so the
-     section needs real height for the horizontal scrub to travel through. Without
-     this the pin lasts zero pixels and --pv-wall-x never leaves 0. */
-  min-height: 300vh;
-}
-.pv-wall-pin {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2.4rem;
-  overflow: hidden;
-  padding: 3rem 0;
-}
-.pv-wall-head {
-  padding: 0 1.25rem;
-  width: min(74rem, 100%);
-  margin: 0 auto;
-}
-.pv-wall-viewport {
-  overflow: hidden;
-  width: 100%;
-}
-.pv-wall-viewport {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.pv-wall-track {
-  display: flex;
-  gap: 1rem;
-  padding: 0 1.25rem;
-  width: max-content;
-  will-change: transform;
-}
-.pv-wall-track[data-row="1"] {
-  transform: translate3d(calc(var(--pv-wall-x1, 0) * -1px), 0, 0);
-}
-.pv-wall-track[data-row="2"] {
-  transform: translate3d(calc(var(--pv-wall-x2, 0) * -1px), 0, 0);
-}
-.pv-wall-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  flex: none;
-}
-.pv-wall-group-label {
+.pv-tier-features {
   font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--pv-accent);
-  border-bottom: 1px solid var(--pv-rule);
-  padding-bottom: 0.45rem;
-}
-.pv-wall-cards {
-  display: flex;
-  gap: 0.7rem;
-}
-.pv-src {
-  flex: none;
-  width: 15.5rem;
-  padding: 1.15rem;
-  border: 1px solid var(--pv-rule);
-  background: var(--pv-surface);
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  min-height: 11.5rem;
-}
-.pv-src-label {
-  font-family: var(--pv-display);
-  font-weight: 800;
-  font-size: 0.98rem;
-  line-height: 1.15;
-  color: var(--pv-fg);
-}
-.pv-src-attr {
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: var(--pv-fg-dim);
-  flex: 1;
-}
-.pv-src-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
+  font-size: 0.74rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--pv-fg-mute);
-  border-top: 1px solid var(--pv-rule);
-  padding-top: 0.5rem;
+  color: var(--pv-fg-dim);
+  font-variant-numeric: tabular-nums;
 }
-.pv-status {
+
+@media (max-width: 34rem) {
+  .pv-tier {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pv-cov-steps {
+  max-width: 40rem;
+  padding-top: 3rem;
+}
+
+.pv-cov-dl {
+  margin: 0;
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  border-top: 1px solid var(--pv-rule);
+}
+
+.pv-cov-dl > div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.2rem 1.2rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--pv-rule-lo);
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-cov-dl dt {
+  font-family: var(--pv-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  padding-top: 0.2rem;
+}
+
+.pv-cov-dl dd {
+  margin: 0;
+  color: var(--pv-fg);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.pv-t-inc {
+  color: var(--pv-warn);
+}
+
+.pv-t-read {
+  color: var(--pv-accent);
+}
+
+.pv-t-asset {
+  color: var(--pv-fg-dim);
+}
+
+@media (max-width: 30rem) {
+  .pv-cov-dl > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================================================================
+   LAYERS TABLE
+   =========================================================================== */
+
+.pv-table-wrap {
+  border: 1px solid var(--pv-rule);
+  background: rgba(5, 7, 12, 0.82);
+  overflow-x: auto;
+  margin-top: 1.6rem;
+}
+
+.pv-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+  min-width: 46rem;
+}
+
+.pv-table th {
+  text-align: left;
+  padding: 0.75rem 0.95rem;
+  border-bottom: 1px solid var(--pv-rule);
+  font-family: var(--pv-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pv-fg-dim);
+  font-weight: 500;
+}
+
+.pv-table td {
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--pv-rule-lo);
+  color: var(--pv-fg);
+  vertical-align: top;
+}
+
+.pv-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.pv-table td:first-child {
+  font-weight: 500;
+}
+
+.pv-table .pv-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.pv-td-dim {
+  color: var(--pv-fg-body) !important;
   white-space: nowrap;
 }
-.pv-status i {
-  width: 0.45rem;
-  height: 0.45rem;
+
+.pv-td-note {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--pv-fg-dim);
+  font-weight: 400;
+  line-height: 1.5;
+  margin-top: 0.15rem;
+}
+
+.pv-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--pv-fg-body);
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.pv-state > i {
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
   display: block;
   flex: none;
   background: var(--pv-slate);
 }
-.pv-status[data-state="live"] i { background: var(--pv-teal); }
-.pv-status[data-state="empty"] i { background: var(--pv-slate); }
-.pv-status[data-state="key"] i { background: var(--pv-amber); }
-.pv-status[data-state="down"] i { background: #b4413c; }
-.pv-env {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-style: normal;
-  font-size: 0.62em;
-  letter-spacing: 0.04em;
-  color: var(--pv-warn);
-  border: 1px solid color-mix(in oklab, var(--pv-warn), transparent 62%);
-  padding: 0.05em 0.4em;
-  margin-left: 0.5em;
-  white-space: nowrap;
-}
-.pv-status[data-state="checking"] i {
-  background: var(--pv-fg-mute);
-  animation: pv-pulse 1.4s ease-in-out infinite;
-}
-@keyframes pv-pulse {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
-}
-.pv-wall-rail {
-  height: 2px;
-  background: var(--pv-rule);
-  width: min(74rem, calc(100% - 2.5rem));
-  margin: 0 auto;
-  position: relative;
-}
-.pv-wall-rail i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 100%;
+
+.pv-state[data-state="live"] > i {
   background: var(--pv-teal);
-  transform-origin: 0 50%;
-  transform: scaleX(var(--pv-wall-p, 0));
-  display: block;
 }
 
-/* Touch: no pinning, a native snap strip instead. */
-.pv-wall-swipe {
-  display: none;
-}
-@media (max-width: 53.9rem) {
-  .pv-wall-track-outer { display: none; }
-  .pv-wall-swipe {
-    display: flex;
-    gap: 0.7rem;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    padding: 0 1.25rem 1rem;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pv-wall-swipe .pv-src { scroll-snap-align: start; }
-  .pv-wall-pin {
-    position: static;
-    height: auto;
-  }
+.pv-state[data-state="partial"] > i,
+.pv-state[data-state="locked"] > i {
+  background: var(--pv-amber);
 }
 
-/* ─────────────────────────── honest ledger ─────────────────────────── */
-
-.pv-ledger {
-  border: 1px solid var(--pv-rule);
-  background: var(--pv-surface-2);
-  overflow-x: auto;
-}
-.pv-ledger table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.9rem;
-  min-width: 32rem;
-}
-.pv-ledger th,
-.pv-ledger td {
-  text-align: left;
-  padding: 0.7rem 0.95rem;
-  border-bottom: 1px solid var(--pv-rule);
-  vertical-align: top;
-  color: var(--pv-fg-dim);
-}
-.pv-ledger thead th {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--pv-fg-mute);
-  font-weight: 500;
-  position: sticky;
-  top: 0;
-  background: color-mix(in oklab, color-mix(in oklab, var(--pv-bone), var(--pv-ink) calc(var(--pv-g) * 100%)) 94%, transparent);
-  backdrop-filter: blur(6px);
-}
-.pv-ledger tbody tr:last-child td {
-  border-bottom: 0;
-}
-.pv-ledger td:first-child {
-  color: var(--pv-fg);
-  font-weight: 500;
-}
-.pv-ledger .pv-num {
-  font-family: var(--pv-mono);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.pv-state[data-state="down"] > i {
+  background: #b4413c;
 }
 
-/* ─────────────────────────── open source panel ─────────────────────────── */
-
-.pv-split {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-@media (min-width: 54rem) {
-  .pv-split {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
-    gap: 3rem;
-  }
-}
-.pv-facts {
-  border: 1px solid var(--pv-rule);
-  background: var(--pv-surface);
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
-  /* Parallax: the facts panel overtakes the prose as you pass. Transform only. */
-  transform: translate3d(0, calc(var(--pv-shift, 0) * -1px), 0);
-  will-change: transform;
-}
-.pv-facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.65rem 0.95rem;
-  border-bottom: 1px solid var(--pv-rule);
-}
-.pv-facts div:last-child {
-  border-bottom: 0;
-}
-.pv-facts dt {
-  color: var(--pv-fg-mute);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 0.68rem;
-}
-.pv-facts dd {
-  margin: 0;
-  color: var(--pv-fg);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.pv-facts dd.pv-flag {
-  color: var(--pv-warn);
-}
-
-/* ─────────────────────────── handoff ─────────────────────────── */
+/* ===========================================================================
+   HANDOFF + FOOTER
+   =========================================================================== */
 
 .pv-handoff {
-  /* MUST be positioned. `.pv-ground` is `position: fixed; z-index: 0`, and a
-     positioned element with z-index >= 0 paints ABOVE unpositioned in-flow content
-     — so without this the ground covers this whole section and the closing pitch,
-     the CTA and the footer render invisible against it. `.pv-doc` only escapes the
-     same fate because it already sets z-index: 1. */
   position: relative;
   z-index: 1;
-  /* `--pv-stage`, the same black as the hero and NOT `--pv-ink`. The other
-     half of a bookend — "everything above was this" lands because the reader is
-     standing back on the stage they started on, under the same sky. */
-  background: var(--pv-stage);
-  color: #e8eef1;
   min-height: 100svh;
-  display: flex;
-  align-items: center;
-  padding: 5rem 1.25rem;
+  display: grid;
+  align-content: center;
   overflow: hidden;
+  margin-top: 7rem;
 }
-/* The closing section's sky is the same element and the same image; its rule
-   merged into the shared selector above when the canvas became a div. */
+
+.pv-handoff::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    90% 70% at 50% 40%,
+    rgba(5, 7, 12, 0.8) 0%,
+    rgba(5, 7, 12, 0.45) 40%,
+    rgba(5, 7, 12, 0) 70%
+  );
+}
+
 .pv-handoff-inner {
   position: relative;
-  z-index: 1;
-  width: min(74rem, 100%);
+  width: var(--pv-col);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  align-items: flex-start;
-}
-.pv-handoff .pv-h2 {
-  color: #e8eef1;
-}
-.pv-handoff .pv-eyebrow {
-  color: #3fb4ce;
-}
-.pv-handoff .pv-lede {
-  color: #93a3ae;
-}
-.pv-handoff .pv-cta {
-  background: #e8eef1;
-  border-color: #e8eef1;
-  color: #0b1016;
-}
-.pv-handoff .pv-cta-ghost {
-  background: transparent;
-  color: #e8eef1;
-  border-color: rgba(232, 238, 241, 0.3);
+  align-items: center;
+  text-align: center;
+  gap: 1.4rem;
+  padding: 6rem 0;
 }
 
-/* ─────────────────────────── footer ─────────────────────────── */
+.pv-handoff-inner .pv-eyebrow {
+  justify-content: center;
+}
+
+.pv-handoff-inner .pv-lede {
+  margin: 0;
+  text-wrap: pretty;
+}
 
 .pv-footer {
-  /* Same stacking trap as .pv-handoff — see the note there. */
   position: relative;
   z-index: 1;
-  background: var(--pv-ink);
-  color: #7a8892;
-  padding: 3.5rem 1.25rem 4rem;
-  font-size: 0.86rem;
-}
-.pv-footer-inner {
-  width: min(74rem, 100%);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 2rem;
-}
-.pv-footer h4 {
-  font-family: var(--pv-mono);
-  /* Inter replaced the mono utility face; tabular figures are what kept these
-     columns aligned, so they are asked for explicitly now. */
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #93a3ae;
-  margin: 0 0 0.8rem;
-  font-weight: 500;
-}
-.pv-footer a {
-  color: #93a3ae;
-  text-decoration: none;
-  display: block;
-  padding: 0.12rem 0;
-}
-.pv-footer a:hover {
-  color: #e8eef1;
-  text-decoration: underline;
-}
-.pv-footer p {
-  line-height: 1.7;
-  color: #7a8892;
-  font-size: 0.82rem;
+  background: var(--pv-stage);
+  border-top: 1px solid var(--pv-rule);
 }
 
-/* ─────────────────────────── reduced motion ─────────────────────────── */
+.pv-footer-inner {
+  width: var(--pv-col);
+  margin: 0 auto;
+  padding: 3rem 0 3.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 2rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--pv-fg-dim);
+}
+
+.pv-footer-inner > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pv-footer-inner h4 {
+  margin: 0 0 0.2rem;
+  font-family: var(--pv-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pv-fg);
+  font-weight: 500;
+}
+
+.pv-footer-inner p {
+  margin: 0;
+}
+
+.pv-footer-inner a {
+  color: var(--pv-fg-dim);
+  text-decoration: none;
+}
+
+.pv-footer-inner a:hover {
+  color: var(--pv-fg);
+}
+
+.pv-footer-attr {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  gap: 0.6rem !important;
+}
+
+.pv-footer-attr a {
+  color: var(--pv-fg-body);
+  text-decoration: underline;
+}
+
+/* ===========================================================================
+   /privacy and any other prose page in this group
+   =========================================================================== */
+
+.pv-doc {
+  position: relative;
+  z-index: 1;
+  width: var(--pv-col);
+  margin: 0 auto;
+}
+
+.pv-doc > * {
+  margin-bottom: 0;
+}
+
+.pv-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.pv-card {
+  border: 1px solid var(--pv-rule);
+  background: var(--pv-surface);
+  padding: 1.4rem;
+}
+
+.pv-card p {
+  color: var(--pv-fg-body);
+  font-size: 0.98rem;
+}
+
+/* ===========================================================================
+   REDUCED MOTION
+   The globe still turns to the place a section is about — that is navigation,
+   and suppressing it would leave the label pointing somewhere the copy is not
+   talking about. Everything decorative stops.
+   =========================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
   .pv-root *,
   .pv-root *::before,
   .pv-root *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    animation: none !important;
+    transition-duration: 0.01ms !important;
   }
-  .pv-reveal {
-    opacity: 1;
-    transform: none;
-  }
-  /* Pins become plain stacked sections; the page still makes the whole argument. */
-  .pv-adapter-track {
-    height: auto;
-  }
-  .pv-adapter-pin,
-  .pv-wall-pin {
-    position: static;
-    height: auto;
-  }
-  .pv-wall-track-outer {
-    display: none;
-  }
-  .pv-wall-swipe {
-    display: flex;
-    flex-wrap: wrap;
-    overflow: visible;
-  }
-  .pv-marker {
-    transform: scale(1);
-  }
-  .pv-dossier {
-    opacity: 1;
-    transform: none;
+  .pv-step {
+    opacity: 1 !important;
   }
 }
