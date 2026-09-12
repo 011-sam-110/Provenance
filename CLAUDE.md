@@ -1,7 +1,10 @@
 # CLAUDE.md — Provenance (repo `Provenance`)
 
 A Next.js 15 single-page global situational-awareness map. **Product name: Provenance.**
-**Prod domain: `provenance-online.vercel.app`** — that is the only domain we ship on.
+**Prod domain: `provenance-online.com`** — that is the only domain we ship on.
+`provenance-online.vercel.app` is the legacy host: `middleware.ts` 301s it here
+(`lib/brand.legacy.ts`), so never publish it as a link, and `curl` it without `-L` and
+you get "Redirecting..." rather than the site.
 Deployed product = `origin/main`.
 
 ## Licence — `AGPL-3.0-only`
@@ -110,7 +113,17 @@ obligations and are not satisfied by the licence.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
-  `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`.
+  `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
+  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, and the two
+  doors `middleware.ts` opens, `gate` and `private`.
+- **`middleware.ts` runs before every route its `matcher` does not exempt, and does three
+  things in a fixed order.** (1) 301s the legacy `.vercel.app` host to the `.com`
+  (`lib/brand.legacy.ts`) — first, so it still fires while the curtain is down. (2) The
+  maintenance curtain, armed by `MAINTENANCE_MODE` (`lib/gate/armed.ts`) and unlocked through
+  `/api/gate`. (3) The private endpoint (`lib/gate/private.ts`), unlocked through `/api/private`,
+  which rewrites to `/app`. The `matcher` must be a string literal, so it cannot import
+  `gateMatcher()`; `tests/unit/gate.test.ts` fails if the two drift. It is **not** the `/admin`
+  guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).

@@ -155,8 +155,8 @@ const SOURCES: CameraFeed[] = [
   // would let one network's outage discard every other discovered network's
   // cameras in the same round. See lib/sources/discovered.ts.
   //
-  // This spreads to LENGTH ZERO until a feed is admitted, so CAMERA_FEED_COUNT is
-  // 16 today and the two documents pinned against it stay true. When it grows,
+  // This spread to length zero until the first feed was admitted, so CAMERA_FEED_COUNT
+  // moves with every admission rather than with an adapter. When it grows,
   // claude-md-counts and readme-counts go red on purpose: a new camera network is
   // exactly the kind of change that ought to force the docs to move.
   ...discoveredCameraFeeds(),

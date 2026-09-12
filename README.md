@@ -6,7 +6,7 @@
 <p align="center">A live map of the world's open data, where every dot says who published it and how it knows.</p>
 
 <p align="center">
-  <a href="https://provenance-online.vercel.app"><img src="https://img.shields.io/badge/live-provenance--online.vercel.app-2ea44f" alt="Live at provenance-online.vercel.app"></a>
+  <a href="https://provenance-online.com"><img src="https://img.shields.io/badge/live-provenance--online.com-2ea44f" alt="Live at provenance-online.com"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-AGPL--3.0-blue" alt="Licensed AGPL-3.0-only"></a>
   <img src="https://img.shields.io/badge/Next.js-15-black?logo=next.js" alt="Next.js 15">
   <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
@@ -18,7 +18,7 @@ Governments, space agencies, seismologists and UN clusters publish an enormous a
 
 The repository used to be called `TrafficNerd-V2` and the product was briefly called OpenData. Both are now **Provenance**. It is the web rewrite of [TrafficNerd v1](https://github.com/011-sam-110/TrafficNerd), which was a London-only terminal app.
 
-_Status: live at [provenance-online.vercel.app](https://provenance-online.vercel.app) and runs locally with no keys. Coverage is real but partial and depends on public upstreams staying open, so here is what production actually returned on **2026-08-18**, against `6f60b4a`:_
+_Status: live at [provenance-online.com](https://provenance-online.com) and runs locally with no keys. Coverage is real but partial and depends on public upstreams staying open, so here is what production actually returned on **2026-08-18**, against `6f60b4a`:_
 
 | Check | Result |
 |---|---|
