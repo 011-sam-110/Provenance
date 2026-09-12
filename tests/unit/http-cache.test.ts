@@ -74,7 +74,7 @@ describe("edgeCacheControl", () => {
  * checked, every one of them `dynamic = "force-dynamic"`. So `X-Vercel-Cache: MISS`
  * on 100% of requests and every poll from every open tab was a cold invocation.
  *
- * The fix does not depend on pinning which layer strips them: `Vercel-CDN-Cache-Control`
+ * The fix does not depend on pinning which layer strips them: `CDN-Cache-Control`
  * is read by the Vercel CDN directly and is not rewritten, so the TTL sent under that
  * name arrives. These tests exist so the pair can never drift apart again.
  */
@@ -82,19 +82,19 @@ describe("edgeCacheHeaders", () => {
   it("sends the SAME policy twice — once for any CDN, once under the name Vercel reads", () => {
     const headers = edgeCacheHeaders(60_000);
     expect(headers["Cache-Control"]).toBe("public, s-maxage=60, stale-while-revalidate=60");
-    expect(headers["Vercel-CDN-Cache-Control"]).toBe(headers["Cache-Control"]);
+    expect(headers["CDN-Cache-Control"]).toBe(headers["Cache-Control"]);
   });
 
   it("carries an explicit stale window into both headers", () => {
     const headers = edgeCacheHeaders(20_000, 60_000);
-    expect(headers["Vercel-CDN-Cache-Control"]).toBe(
+    expect(headers["CDN-Cache-Control"]).toBe(
       "public, s-maxage=20, stale-while-revalidate=60",
     );
   });
 
   it("never invents a TTL — it is edgeCacheControl's value, unchanged", () => {
     for (const ttl of [1_000, 20_000, 300_000, 86_400_000]) {
-      expect(edgeCacheHeaders(ttl)["Vercel-CDN-Cache-Control"]).toBe(edgeCacheControl(ttl));
+      expect(edgeCacheHeaders(ttl)["CDN-Cache-Control"]).toBe(edgeCacheControl(ttl));
     }
   });
 });
@@ -103,7 +103,7 @@ describe("frameCacheHeaders", () => {
   it("keeps the browser max-age a camera frame needs AND reaches the CDN", () => {
     const headers = frameCacheHeaders(300);
     expect(headers["Cache-Control"]).toBe("public, max-age=300, s-maxage=300");
-    expect(headers["Vercel-CDN-Cache-Control"]).toBe("public, s-maxage=300");
+    expect(headers["CDN-Cache-Control"]).toBe("public, s-maxage=300");
   });
 
   it("floors a zero or fractional cadence rather than emitting max-age=0", () => {
@@ -116,7 +116,7 @@ describe("frameCacheHeaders", () => {
   it("lets the CDN hold a rasterised card longer than the visitor's own tab", () => {
     const headers = browserAndEdgeHeaders(86_400, 604_800);
     expect(headers["Cache-Control"]).toBe("public, max-age=86400, s-maxage=604800");
-    expect(headers["Vercel-CDN-Cache-Control"]).toBe("public, s-maxage=604800");
+    expect(headers["CDN-Cache-Control"]).toBe("public, s-maxage=604800");
   });
 });
 

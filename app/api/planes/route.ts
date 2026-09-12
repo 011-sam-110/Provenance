@@ -1,5 +1,6 @@
 import { fetchAircraftSnapshot } from "@/lib/sources/opensky";
-import { describeCoverage } from "@/lib/signals/coverage";
+import { planesBody } from "@/lib/planes/body";
+import { cachedBody } from "@/lib/http/originCache";
 import { edgeCacheHeaders } from "@/lib/http/cache";
 
 export const dynamic = "force-dynamic";
@@ -75,15 +76,19 @@ export const maxDuration = 60;
  * Response: { count, source?, coverage?, staleness?, planes }
  */
 export async function GET() {
-  const { planes, coverage, staleness, source } = await fetchAircraftSnapshot();
-  return Response.json(
-    {
-      count: planes.length,
-      ...(source ? { source } : {}),
-      ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
-      ...(staleness ? { staleness } : {}),
-      planes,
-    },
-    { headers: edgeCacheHeaders(PLANES_TTL_MS) },
-  );
+  const snapshot = await fetchAircraftSnapshot();
+  // Keyed on the snapshot's own fetch instant, so a new pull rebuilds immediately and
+  // an upstream that has stopped ticking is bounded by the TTL instead. Between the
+  // two, 33,181 requests over five days become at most one build per 20 s — see
+  // lib/http/originCache.ts for why the rebuild runs behind the request and not in
+  // front of it.
+  const body = await cachedBody({
+    key: "planes",
+    ttlMs: PLANES_TTL_MS,
+    version: snapshot.fetchedAt ?? null,
+    build: () => planesBody(snapshot),
+  });
+  return new Response(body, {
+    headers: { "Content-Type": "application/json", ...edgeCacheHeaders(PLANES_TTL_MS) },
+  });
 }

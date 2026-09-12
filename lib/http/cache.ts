@@ -76,9 +76,28 @@ export function toSeconds(ms: number): number {
 // THE TTLs ARE UNCHANGED BY THIS. Nothing here caches for longer than it already
 // claimed to — the freshness rule at the top of this file still holds, because every
 // value still comes from the source's own declared refresh interval.
+//
+// ---------------------------------------------------------------------------
+// AND THEN THE CDN CHANGED. `Vercel-CDN-Cache-Control` is a VENDOR header: it means
+// something to Vercel's edge and nothing to anyone else. This deployment left Vercel
+// on 2026-09-07 for a Lightsail box behind Cloudflare, so from that day the header
+// above was addressed to a CDN that is no longer in the path — sent on every read
+// response, read by nothing. The Vercel project still exists, but only to 308 two
+// spare domains at the live one; it serves no application traffic.
+//
+// `CDN-Cache-Control` is the standard-track name for the same idea and is the one
+// Cloudflare reads. Swapping it is the whole change — the value is byte-identical.
+//
+// WHAT THIS DOES NOT FIX, measured 2026-09-11 against the live site: Cloudflare still
+// answers `cf-cache-status: DYNAMIC` on `/api/cameras`, because its default cache is
+// keyed on FILE EXTENSION and an extensionless `/api/*` path is never a candidate no
+// matter what the origin asks for. A correct header is necessary and not sufficient;
+// a Cache Rule has to opt the path in before any of this takes effect. Until one
+// exists the real cache is `lib/http/originCache.ts`, which is on the box and needs
+// nobody's permission.
 
-/** The header name the Vercel CDN reads. Not rewritten by the framework. */
-export const CDN_HEADER = "Vercel-CDN-Cache-Control";
+/** The header name shared CDNs read. Standard-track, and the one Cloudflare honours. */
+export const CDN_HEADER = "CDN-Cache-Control";
 
 /**
  * Cache headers for a read-only JSON response: `edgeCacheControl`'s policy, sent
