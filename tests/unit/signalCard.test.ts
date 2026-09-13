@@ -26,6 +26,23 @@ describe("projectSignal", () => {
     expect(r.rows.map((x) => x.id)).toEqual(["new", "old", "undated"]);
   });
 
+  it("puts scheduled (future-dated) rows first, soonest first, ahead of past rows", () => {
+    // Launch Library 2 stamps ts with the launch time, so a recency-desc sort put the
+    // FURTHEST launch at the top of the card (prod, 2026-09-12: 24 Nov above 13 Sep).
+    const now = Date.parse("2026-09-13T12:00:00Z");
+    const r = projectSignal([
+      sf({ id: "nov", ts: "2026-11-24T00:00:00Z" }),
+      sf({ id: "sep15", ts: "2026-09-15T01:21:07Z" }),
+      sf({ id: "sep13", ts: "2026-09-13T18:49:00Z" }),
+      sf({ id: "launchedYesterday", ts: "2026-09-12T10:00:00Z" }),
+      sf({ id: "launchedLastWeek", ts: "2026-09-06T10:00:00Z" }),
+      sf({ id: "undated" }),
+    ], WORLD_SCOPE, { now });
+    expect(r.rows.map((x) => x.id)).toEqual([
+      "sep13", "sep15", "nov", "launchedYesterday", "launchedLastWeek", "undated",
+    ]);
+  });
+
   it("trims to the active scope and reports total vs shown", () => {
     const near: Scope = { mode: "region", center: { lat: 51.5, lon: -0.12 }, radiusKm: 50, label: "London" };
     const r = projectSignal([
