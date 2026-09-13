@@ -52,6 +52,19 @@ function emit(e: Entry) {
   for (const l of e.listeners) l();
 }
 
+/**
+ * PURE: did this response actually read anything?
+ *
+ * The route answers 200 with the adapter's own `ok`, so `{ok:false, "no key",
+ * count:0}` used to count as a success: `updatedAt` advanced, the card chip said
+ * "none now", and a `quiet` rule never saw the silence. A failure that still
+ * carries rows is left as it was — those rows can be current (a partial fan-out)
+ * or last-good, and neither is honestly a failed read with nothing to show.
+ */
+export function signalReadSucceeded(d: Record<string, unknown> | null | undefined, featureCount: number): boolean {
+  return d?.ok === true || featureCount > 0;
+}
+
 function load(id: string, e: Entry) {
   fetch(`/api/signals/${encodeURIComponent(id)}`)
     .then((r) => {
@@ -62,6 +75,7 @@ function load(id: string, e: Entry) {
     })
     .then((d) => {
       const features = (d?.features as SignalFeature[]) ?? [];
+      if (!signalReadSucceeded(d, features.length)) throw new Error("declared failure");
       e.state = {
         features,
         coverage: (d?.coverage as SignalCoverage | undefined) ?? undefined,
