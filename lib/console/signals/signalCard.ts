@@ -174,6 +174,8 @@ export interface SignalCardConfig {
   alertMin?: number;
   /** Max rows rendered (default 60). */
   limit?: number;
+  /** Clock for telling scheduled rows from past ones (default `Date.now()`); tests pin it. */
+  now?: number;
 }
 
 const DEFAULT_LIMIT = 60;
@@ -242,12 +244,20 @@ export function projectSignal(
   }));
 
   const hasMagnitude = rows.some((r) => r.magnitude != null);
+  const now = config.now ?? Date.now();
   rows.sort((a, b) => {
     if (hasMagnitude) {
       const diff = (b.magnitude ?? -Infinity) - (a.magnitude ?? -Infinity);
       if (diff !== 0) return diff;
     }
-    return tsMillis(b.ts) - tsMillis(a.ts);
+    // A future ts is a SCHEDULE (launches), not an observation: the next one is the
+    // most relevant, so scheduled rows lead soonest-first and past rows follow newest-first.
+    const ta = tsMillis(a.ts);
+    const tb = tsMillis(b.ts);
+    const fa = ta > now;
+    const fb = tb > now;
+    if (fa !== fb) return fa ? -1 : 1;
+    return fa ? ta - tb : tb - ta;
   });
 
   // Alerts — keyed by feature id so magnitude + prop-severity hits collapse.
