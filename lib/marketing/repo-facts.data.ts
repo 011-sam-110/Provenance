@@ -13,10 +13,10 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-14 with `npx vitest list` on the feat/landing-discord-note tree.
+ * Measured 2026-09-14 with `npx vitest list` on the fix/spike-hardening tree.
  */
 export const UNIT_TESTS = {
-  cases: 3942,
-  files: 383,
+  cases: 3960,
+  files: 386,
   measuredAt: "2026-09-14",
 } as const;
