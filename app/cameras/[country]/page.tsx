@@ -11,6 +11,7 @@ import {
   regionPath,
 } from "@/lib/seo/paths";
 import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
+import { DIRECTORY_CARD_SUBTITLE, cardHeadline, ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 
 export const revalidate = 86_400;
 
@@ -39,14 +40,18 @@ export async function generateMetadata({
   if (!group) return { title: "Country not found" };
 
   const name = countryName(group.iso2);
+  const title = countryTitle(group.iso2, group.count);
+  const description = `Every public road camera in ${name} on one map: ${formatCount(group.count)} cameras across ${group.regions.length} regions, each with a live image and its operator named.`;
   return {
-    title: countryTitle(group.iso2, group.count),
-    description: `Every public road camera in ${name} on one map: ${formatCount(group.count)} cameras across ${group.regions.length} regions, each with a live image and its operator named.`,
+    title,
+    description,
     alternates: { canonical: countryPath(group.iso2) },
-    openGraph: {
-      title: countryTitle(group.iso2, group.count),
-      url: countryPath(group.iso2),
-    },
+    ...shareMetadata({
+      title,
+      description,
+      path: countryPath(group.iso2),
+      image: ogCardPath(cardHeadline(title), DIRECTORY_CARD_SUBTITLE),
+    }),
   };
 }
 

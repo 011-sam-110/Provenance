@@ -47,10 +47,14 @@ export const metadata: Metadata = {
   // app/manifest.ts is auto-linked by Next; this is the explicit reference.
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: BRAND.name, statusBarStyle: "default" },
+  // NO `url` HERE, ON PURPOSE. Every page that does not set its own openGraph inherits
+  // this object, and it used to carry `url: "/"`, so /cameras, /privacy and /locate all
+  // told share previews they were the home page (measured on production 2026-09-14).
+  // og:url belongs to the page: `/` sets it through lib/seo/shareCard, and a page that
+  // omits it gets no og:url, which is correct where a wrong one is not.
   openGraph: {
     type: "website",
     siteName: BRAND.name,
-    url: "/",
     title: DEFAULT_TITLE,
     description: BRAND.description,
     images: [{ url: "/api/og", width: 1200, height: 630, alt: `${BRAND.name} live map preview` }],

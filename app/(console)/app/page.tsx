@@ -25,11 +25,15 @@ export function generateMetadata(): Metadata {
   return {
     title: meta.title,
     description: meta.description,
+    // /app shares its title and description with `/`, so it names itself as canonical
+    // rather than leaving a crawler to guess which of the two it is.
+    alternates: { canonical: "/app" },
     openGraph: {
       // Next replaces (not deep-merges) the parent openGraph, so re-declare type +
       // siteName here or the primary shared route drops them.
       type: "website",
       siteName: BRAND.name,
+      url: "/app",
       title: meta.title,
       description: meta.description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: meta.title }],

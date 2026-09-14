@@ -16,6 +16,7 @@ import {
   parsePageParam,
 } from "@/lib/seo/paths";
 import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
+import { DIRECTORY_CARD_SUBTITLE, cardHeadline, ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 
 export const revalidate = 86_400;
 
@@ -55,18 +56,25 @@ export async function generateMetadata({
   // read "in Finland, Finland". See placeLabel.
   const where = placeLabel({ region: hit.region, country });
 
+  const description =
+    page > 1
+      ? `Page ${page} of ${pages}: more public road cameras in ${where}, each with a live image and its operator named.`
+      : `Every public road camera in ${where}: ${formatCount(hit.total)} live feeds, each with its own page showing the current image, the operator and how often it refreshes.`;
+
   return {
     title,
-    description:
-      page > 1
-        ? `Page ${page} of ${pages}: more public road cameras in ${where}, each with a live image and its operator named.`
-        : `Every public road camera in ${where}: ${formatCount(hit.total)} live feeds, each with its own page showing the current image, the operator and how often it refreshes.`,
+    description,
     alternates: { canonical: regionPath(country, hit.region, page) },
     // Deep pages of a long list are real, useful and crawlable, but they are not
     // what should surface for "cameras in Florida" - page 1 is. Following the links
     // without indexing the tail keeps the crawl path intact and the index clean.
     robots: page > 1 ? { index: false, follow: true } : undefined,
-    openGraph: { title, url: regionPath(country, hit.region, page) },
+    ...shareMetadata({
+      title,
+      description,
+      path: regionPath(country, hit.region, page),
+      image: ogCardPath(cardHeadline(title), DIRECTORY_CARD_SUBTITLE),
+    }),
   };
 }
 
