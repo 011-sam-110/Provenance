@@ -55,6 +55,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // area does not, and clicking it would appear to do nothing. See lib/layers.ts.
 import { useEditingLayers, useLayers, layersStore, type LayerKey } from "@/lib/layers";
 import { signalsStore, useEditingSignals } from "@/lib/signals/store";
+import { track } from "@/lib/analytics/track";
 import { useCameraFilter, cameraFilterStore } from "@/lib/cameraFilter";
 import { coverageStore } from "@/lib/shell/coverage";
 import SourcesSplitter from "@/components/shell/sources/SourcesSplitter";
@@ -308,6 +309,7 @@ export default function SourceCatalog() {
   const onToggle = (id: string): void => {
     if (id in layers) layersStore.toggle(id as LayerKey);
     else signalsStore.toggle(id);
+    track({ name: "layer_toggled", layer: id });
   };
 
   if (!railOpen) {
