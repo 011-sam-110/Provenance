@@ -29,8 +29,11 @@ import { cinematic } from "@/lib/cinematic/store";
 import DiscordMark from "@/components/brand/DiscordMark";
 import {
   type CommunityState,
+  type CommunitySurface,
   addActiveMs,
   forcedFromSearch,
+  gateContext,
+  initialHoldMs,
   loadCommunityState,
   markResolved,
   recordVisit,
@@ -62,7 +65,12 @@ const TICK_MS = 5_000;
  */
 const FORCED = typeof window === "undefined" ? false : forcedFromSearch(window.location.search);
 
-export default function CommunityNote() {
+/**
+ * `surface` is "console" in ConsoleShell and "landing" on the home page. The two share
+ * one persisted state (see lib/shell/community.ts), so an answer on either is final on
+ * both. Only the hold and the gate context differ, and the console's are unchanged.
+ */
+export default function CommunityNote({ surface = "console" }: { surface?: CommunitySurface } = {}) {
   const [open, setOpen] = useState(false);
 
   const state = useRef<CommunityState | null>(null);
@@ -74,6 +82,7 @@ export default function CommunityNote() {
     state.current = s;
     saveCommunityState(s);
 
+    const hold = initialHoldMs(surface, INITIAL_HOLD_MS);
     let last = Date.now();
     const started = last;
 
@@ -89,14 +98,14 @@ export default function CommunityNote() {
         saveCommunityState(state.current);
       }
 
-      if (now - started < INITIAL_HOLD_MS) return;
+      if (now - started < hold) return;
       const cur = state.current;
       if (!cur) return;
 
-      const ctx = {
-        bootPlaying: false, // held out by INITIAL_HOLD_MS above, not by a racy read
+      const ctx = gateContext(surface, {
+        bootPlaying: false, // held out by the hold above, not by a racy read
         diveActive: cinematic.get().phase !== "idle",
-      };
+      });
 
       // The override forces the card for review but still respects a recorded
       // resolution, so a review pass cannot silently re-ask someone who said no.
@@ -108,12 +117,12 @@ export default function CommunityNote() {
     // One early evaluation so a forced review does not wait a full tick past the
     // hold. A normal visitor cannot qualify this early — the hold is under six
     // seconds and the bar is forty — so this costs nothing.
-    const first = window.setTimeout(tick, INITIAL_HOLD_MS + 100);
+    const first = window.setTimeout(tick, hold + 100);
     return () => {
       window.clearInterval(timer);
       window.clearTimeout(first);
     };
-  }, []);
+  }, [surface]);
 
   /* ── Resolution ───────────────────────────────────────────────────────── */
 

@@ -1528,3 +1528,60 @@
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }
+
+/* The Discord invitation (components/shell/CommunityNote.tsx), on the landing page.
+   The card's base rules in globals.css are written for the console: its type sizes come
+   from the console's own size tokens, which exist only under `.tn-terminal`, and its
+   colours from the LIGHT `:root` set. Here it takes the night tokens instead. Width,
+   z-index 1050, the Discord blurple and the entry animation stay as globals.css sets them.
+   Bottom-left sits over the decorative `.pv-stage-status` line (z 2, pointer-events none)
+   while the card is open, and over nothing a visitor needs to click. */
+.pv-root .tn-note {
+  left: 16px;
+  bottom: 16px;
+  font-family: var(--pv-body);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--pv-ink);
+  color: var(--pv-fg);
+  border-color: var(--pv-rule-hi);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+}
+.pv-root .tn-note-title {
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--pv-fg-bright);
+}
+.pv-root .tn-note-text {
+  font-size: 0.9rem;
+  color: var(--pv-fg-body);
+}
+.pv-root .tn-note-btn {
+  font-size: 0.9rem;
+}
+.pv-root .tn-note-btn.is-ghost {
+  color: var(--pv-fg-dim);
+}
+.pv-root .tn-note-btn.is-ghost:hover {
+  color: var(--pv-fg);
+  background: var(--pv-surface-2);
+}
+.pv-root .tn-note-btn:focus-visible,
+.pv-root .tn-note-x:focus-visible {
+  outline-color: var(--pv-accent);
+}
+.pv-root .tn-note-x {
+  font-size: 1.2rem;
+  color: var(--pv-fg-dim);
+}
+.pv-root .tn-note-x:hover {
+  color: var(--pv-fg);
+  border-color: var(--pv-rule-hi);
+}
+@media (max-width: 720px) {
+  .pv-root .tn-note {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+  }
+}
