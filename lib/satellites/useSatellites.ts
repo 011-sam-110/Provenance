@@ -24,6 +24,16 @@ interface Built extends ApiSat {
   typeLabel: string;
 }
 
+export type SatelliteLoad = "loading" | "ok" | "unavailable";
+
+/** Did an /api/satellites body actually deliver a TLE set? The route answers a CelesTrak
+ *  failure with 200, `satellites: []` and `error: "celestrak_unavailable"`, so reading
+ *  only `satellites` turned an outage into an endless "Loading satellites…". */
+export function satellitesPayloadOk(d: unknown): boolean {
+  const p = d as { satellites?: unknown; error?: unknown } | null;
+  return !!p && typeof p.error !== "string" && Array.isArray(p.satellites) && p.satellites.length > 0;
+}
+
 /**
  * Fetches the TLE set ONCE, then propagates every satellite locally on a timer
  * so the layer revolves smoothly (server polling would make them jump). Returns
@@ -33,16 +43,25 @@ interface Built extends ApiSat {
  * @param stepMs Propagation cadence in ms (default 1000; lower = smoother/heavier).
  */
 export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
+  return useSatelliteFeed(group, stepMs).objects;
+}
+
+/** `useSatellites` plus whether the TLE load actually succeeded, for callers that must
+ *  tell "still loading" from "CelesTrak did not answer". */
+export function useSatelliteFeed(group = "visual", stepMs = 1000): { objects: WorldObject[]; load: SatelliteLoad } {
   const [objects, setObjects] = useState<WorldObject[]>([]);
+  const [load, setLoad] = useState<SatelliteLoad>("loading");
   const builtRef = useRef<Built[]>([]);
 
   // Load TLEs and build satrecs once per group.
   useEffect(() => {
     let cancelled = false;
+    setLoad("loading");
     fetch(`/api/satellites?group=${encodeURIComponent(group)}`)
       .then((r) => r.json())
       .then((d) => {
         if (cancelled) return;
+        setLoad(satellitesPayloadOk(d) ? "ok" : "unavailable");
         const recs = (d.satellites ?? []) as ApiSat[];
         builtRef.current = recs
           .map((r): Built | null => {
@@ -69,6 +88,7 @@ export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
       })
       .catch(() => {
         builtRef.current = [];
+        if (!cancelled) setLoad("unavailable");
       });
     return () => {
       cancelled = true;
@@ -118,8 +138,9 @@ export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
   // See lib/shell/sourceScope.ts.
   const scope = useScope();
   const rings = useSourceScopes("satellites");
-  return useMemo(
+  const scoped = useMemo(
     () => filterToScopes(filterToScope(objects, scope, (o) => o), rings, (o) => o),
     [objects, scope, rings],
   );
+  return { objects: scoped, load };
 }

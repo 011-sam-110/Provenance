@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import * as celestrak from "@/lib/sources/celestrak";
 import { GET } from "@/app/api/satellites/route";
+import { satellitesPayloadOk } from "@/lib/satellites/useSatellites";
 
 // The landing page asks /api/satellites for EVERY visitor. On 2026-09-14, during a
 // traffic spike, the route took 10.4 s to answer `celestrak_unavailable` and sent no
@@ -123,4 +124,27 @@ test("last-good TLEs are served when a refresh fails after the TTL", async () =>
   });
   const stale = await celestrak.fetchTLEs("visual");
   expect(stale.map((s) => s.noradId)).toEqual(["25544"]);
+});
+
+// The other half of that contract is the card. On 2026-09-14 prod answered
+// `celestrak_unavailable` on two reads, and the Satellites card read only
+// `satellites` (empty), so it showed "Loading satellites…" forever under a green
+// "live" chip. These pin that the client reads the route's failure as a failure.
+test("the card reads the route's celestrak_unavailable answer as a failed load", async () => {
+  reset();
+  stubFetch(async () => new Response("", { status: 500 }));
+  const body = await (await GET(req("visual"))).json();
+  expect(satellitesPayloadOk(body)).toBe(false);
+});
+
+test("the card reads a real TLE set as loaded", async () => {
+  reset();
+  stubFetch(async () => new Response(TLE, { status: 200 }));
+  const body = await (await GET(req("visual"))).json();
+  expect(satellitesPayloadOk(body)).toBe(true);
+});
+
+test("a body that is not a satellites payload is not a load", () => {
+  expect(satellitesPayloadOk(null)).toBe(false);
+  expect(satellitesPayloadOk({ count: 0, satellites: [] })).toBe(false);
 });

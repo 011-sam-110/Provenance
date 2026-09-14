@@ -5,14 +5,14 @@
 // cheap (the globe uses 1s for smooth motion; a list does not need it).
 
 import { useEffect, useMemo } from "react";
-import { useSatellites } from "@/lib/satellites/useSatellites";
+import { useSatelliteFeed } from "@/lib/satellites/useSatellites";
 import { registerWidget, type WidgetBodyProps } from "@/lib/console/registry";
 import { useWidgetReport } from "@/components/console/WidgetFrame";
 import SatellitesDetail from "./satellites.detail";
 
 function SatellitesBody({ config }: WidgetBodyProps) {
   const group = (config.group as string) ?? "visual";
-  const sats = useSatellites(group, 10_000);
+  const { objects: sats, load } = useSatelliteFeed(group, 10_000);
 
   const rows = useMemo(
     () => [...sats].sort((a, b) => (b.altKm ?? 0) - (a.altKm ?? 0)).slice(0, 200),
@@ -24,14 +24,21 @@ function SatellitesBody({ config }: WidgetBodyProps) {
   // that, and the chip's tooltip explains it rather than asserting freshness we
   // cannot observe.
   const report = useWidgetReport();
+  // Propagation is local, but the TLE set it propagates is not: when CelesTrak did not
+  // answer there is nothing to propagate, and "live" would be the comfortable lie.
   useEffect(() => {
     report({
       alerts: [],
       count: sats.length,
-      fresh: { lastOk: Date.now(), ok: true, count: sats.length, refreshMs: 10_000, local: true },
+      fresh:
+        load === "unavailable"
+          ? { lastOk: null, ok: false, count: 0, refreshMs: 10_000 }
+          : { lastOk: Date.now(), ok: true, count: sats.length, refreshMs: 10_000, local: true },
     });
-  }, [sats.length, report]);
+  }, [sats.length, load, report]);
 
+  if (load === "unavailable")
+    return <p className="tn-w-empty">CelesTrak did not answer, so there are no satellite positions right now.</p>;
   if (sats.length === 0) return <p className="tn-w-empty">Loading satellites…</p>;
 
   return (
