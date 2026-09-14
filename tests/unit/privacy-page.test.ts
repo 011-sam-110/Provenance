@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { VISIT_KEY } from "@/lib/analytics/returnFlag";
+import { OPT_OUT_KEY } from "@/lib/analytics/optOut";
 
 // The /privacy page makes public factual claims about what the deployed software
 // does. Three of those claims are cheap to break by accident and expensive to have
@@ -41,8 +43,8 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-09-03"`);
-    expect(copy).toContain("3 September 2026");
+    expect(copy).toContain(`dateTime="2026-09-14"`);
+    expect(copy).toContain("14 September 2026");
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {
@@ -119,4 +121,35 @@ describe("AGPL-3.0 section 13 source offer", () => {
       expect(src).toContain("BRAND.license.url");
     });
   }
+});
+
+describe("privacy page: the return flag", () => {
+  // Three sentences became false when the beacon learned to tell a return from a new visit.
+  // If any of them comes back, or a storage key is renamed without the page, this fails.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+
+  it("names both storage keys", () => {
+    expect(copy).toContain(VISIT_KEY);
+    expect(copy).toContain(OPT_OUT_KEY);
+  });
+
+  it("no longer promises that nothing links one visit to the next", () => {
+    expect(copy).not.toContain("nothing that links this visit to your next one");
+    expect(copy).not.toContain("nothing that survives your tab");
+    expect(copy).not.toContain("neither follows you");
+  });
+
+  it("states the 13 months, both browser signals and the German time zone", () => {
+    expect(copy).toContain("13 months");
+    expect(copy).toContain("Global Privacy Control");
+    expect(copy).toContain("Germany&rsquo;s time zone");
+  });
+
+  it("never claims the dates are deleted on a timer, which localStorage cannot do", () => {
+    expect(copy).not.toMatch(/deleted (13 months|after 13)/);
+  });
+
+  it("renders the opt-out control", () => {
+    expect(copy).toContain("<CountingToggle />");
+  });
 });

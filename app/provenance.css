@@ -1506,3 +1506,25 @@
     opacity: 1 !important;
   }
 }
+
+/* /privacy opt-out control (components/analytics/CountingToggle.tsx). Colours come from
+   the surrounding prose through currentColor, so it follows the page's own tokens. */
+.pv-root .pv-counting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.pv-root .pv-counting-btn {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+.pv-root .pv-counting-btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
