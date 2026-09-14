@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { isHidden, onVisible, shouldRefreshOnVisible } from "@/lib/shell/visibility";
 import type { SignalFeature } from "@/lib/signals/types";
 import { EVENT_SOURCES } from "@/lib/events/sources";
+import { signalReadSucceeded } from "@/lib/console/signals/useSignalFeed";
 
 export interface RawFeeds {
   bySource: Record<string, SignalFeature[]>;
@@ -20,6 +21,29 @@ export interface RawFeeds {
    *  to say "7 of 9 sources" rather than pretending nothing is wrong. */
   okCount: number;
   total: number;
+}
+
+export interface EventFeedResult {
+  id: string;
+  features: SignalFeature[];
+  ok: boolean;
+}
+
+/** One source's parsed /api/signals/<id> body → a result for this round. The route answers
+ *  200 with `ok:false` when the upstream failed, so the status code alone is not a good read. */
+export function readEventFeed(id: string, d: Record<string, unknown>): EventFeedResult {
+  const features = (d.features as SignalFeature[]) ?? [];
+  return { id, features, ok: signalReadSucceeded(d, features.length) };
+}
+
+/** A round's results folded into the per-source rows: only a good read replaces a source's rows. */
+export function mergeEventRound(
+  prev: Record<string, SignalFeature[]>,
+  results: EventFeedResult[],
+): Record<string, SignalFeature[]> {
+  const next = { ...prev };
+  for (const r of results) if (r.ok) next[r.id] = r.features;
+  return next;
 }
 
 export const EVENT_POLL_MS = 5 * 60_000;
@@ -46,16 +70,12 @@ export function useEventFeeds(): RawFeeds {
               if (!r.ok) throw new Error(`HTTP ${r.status}`);
               return r.json();
             })
-            .then((d) => ({ id: s.id, features: (d.features as SignalFeature[]) ?? [], ok: true }))
+            .then((d) => readEventFeed(s.id, d))
             .catch(() => ({ id: s.id, features: [] as SignalFeature[], ok: false })),
         ),
       ).then((results) => {
         if (!alive) return;
-        setBySource((prev) => {
-          const next = { ...prev };
-          for (const r of results) if (r.ok) next[r.id] = r.features;
-          return next;
-        });
+        setBySource((prev) => mergeEventRound(prev, results));
         const ok = results.filter((r) => r.ok).length;
         setOkCount(ok);
         setStatus(ok === 0 ? "error" : "idle");

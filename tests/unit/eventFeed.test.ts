@@ -3,6 +3,35 @@ import type { SignalFeature } from "@/lib/signals/types";
 import { EVENT_SOURCES } from "@/lib/events/sources";
 import { projectEventFeed, type FeedFilters, type FeedInput } from "@/lib/widgets/eventFeed";
 import { WORLD_SCOPE, type Scope } from "@/lib/shell/scope";
+import { readEventFeed, mergeEventRound } from "@/lib/widgets/useEventFeeds";
+
+// The events widget polls /api/signals/<id>, which answers 200 even when the upstream
+// failed and says so in the body (`ok:false`). Until 2026-09-14 every 200 counted as a
+// good read, so a declared failure with no rows replaced the last good rows with [] and
+// advanced the freshness clock. Same rule as the signal cards (signalReadSucceeded, #230).
+describe("useEventFeeds round", () => {
+  const quake = sf({ id: "q1" });
+
+  it("treats a 200 that declares failure with no rows as a failed read", () => {
+    expect(readEventFeed("earthquakes", { ok: false, degradedReason: "http 404", count: 0, features: [] }).ok).toBe(false);
+  });
+
+  it("still counts a partial failure that serves rows (gdacs-style) as a read", () => {
+    const r = readEventFeed("gdacs", { ok: false, degradedReason: "partial: VO failed (http 404)", features: [quake] });
+    expect(r.ok).toBe(true);
+    expect(r.features).toHaveLength(1);
+  });
+
+  it("counts a declared-ok empty answer as a read (quiet is a real answer)", () => {
+    expect(readEventFeed("tropical-cyclones", { ok: true, count: 0, features: [] }).ok).toBe(true);
+  });
+
+  it("keeps the last good rows when a source declares failure", () => {
+    const prev = { earthquakes: [quake] };
+    const next = mergeEventRound(prev, [readEventFeed("earthquakes", { ok: false, count: 0, features: [] })]);
+    expect(next.earthquakes).toEqual([quake]);
+  });
+});
 
 const QUAKE = EVENT_SOURCES.find((s) => s.id === "earthquakes")!;
 const sf = (over: Partial<SignalFeature>): SignalFeature => ({
