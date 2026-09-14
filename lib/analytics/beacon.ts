@@ -40,8 +40,19 @@ export type BeaconConfig = {
  * by design — every visitor's browser can read it — so it is not a secret and belongs
  * in NEXT_PUBLIC_*. It cannot read data back; that needs a separate personal API key
  * which must never appear here.
+ *
+ * THE DEFAULT READS EACH VARIABLE BY NAME, AND IT HAS TO. Next.js puts a NEXT_PUBLIC_*
+ * value into the client bundle only where the source says
+ * `process.env.NEXT_PUBLIC_POSTHOG_KEY` literally. The old default was the whole
+ * `process.env` object, which reaches the browser as an empty polyfill. So the beacon
+ * armed in every test and in no browser. tests/unit/beacon-config.test.ts pins this.
  */
-export function beaconConfig(env: Record<string, string | undefined> = process.env): BeaconConfig | null {
+export function beaconConfig(
+  env: Record<string, string | undefined> = {
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  },
+): BeaconConfig | null {
   const key = env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
   if (!key) return null;
 

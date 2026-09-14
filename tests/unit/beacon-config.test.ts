@@ -129,3 +129,25 @@ describe("a browser that is not counted never loads the library", () => {
     expect(src.match(/beaconConfig\(\)/g) ?? []).toHaveLength(1);
   });
 });
+
+describe("the key reaches the browser build", () => {
+  // Next.js puts a NEXT_PUBLIC_* value into the client bundle only where the source
+  // says process.env.NEXT_PUBLIC_X literally. Passing process.env as an object, for
+  // example as a default parameter, gives the browser an empty polyfill. Every unit
+  // test above passes its own env, so they all stayed green while production loaded
+  // no beacon from 2026-09-07 to 2026-09-14. The deploy build did not pass the key
+  // either. These two tests pin both halves.
+  const beacon = readFileSync(join(ROOT, "lib", "analytics", "beacon.ts"), "utf8").replace(/\/\/.*$/gm, "");
+  const deploy = readFileSync(join(ROOT, ".github", "workflows", "deploy.yml"), "utf8");
+
+  it("reads each variable as a literal process.env member, never the whole object", () => {
+    expect(beacon).not.toMatch(/=\s*process\.env\s*\)/);
+    expect(beacon).toMatch(/process\.env\.NEXT_PUBLIC_POSTHOG_KEY\b/);
+    expect(beacon).toMatch(/process\.env\.NEXT_PUBLIC_POSTHOG_HOST\b/);
+  });
+
+  it("passes the project key to the production build", () => {
+    const build = deploy.slice(deploy.indexOf("- name: Build"), deploy.indexOf("- name: Assemble the release"));
+    expect(build).toMatch(/NEXT_PUBLIC_POSTHOG_KEY:\s*\$\{\{\s*vars\.NEXT_PUBLIC_POSTHOG_KEY\s*\}\}/);
+  });
+});
