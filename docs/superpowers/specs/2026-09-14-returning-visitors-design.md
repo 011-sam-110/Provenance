@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-14
 **Branch:** `feat/return-flag`, off `origin/main` at `5372c19`
-**Status:** design, waiting for review. Nothing here is built.
+**Status:** design approved by Sam on 2026-09-14, including option (b) for German visitors. Nothing here is built.
 
 ## The question
 
@@ -58,7 +58,8 @@ without sending anything that says who the visitor is.
 - Gap buckets, pinned at every edge: `0 same_day`, `1 next_day`, `2-7 2_7d`, `8-30 8_30d`,
   `31+ over_30d`.
 - **The 13-month cap runs from `first` and a later visit does not extend it.** CNIL's
-  audience-measurement conditions ask for exactly this.
+  audience-measurement conditions ask for exactly this. localStorage has no expiry, so the cap is
+  applied the next time the record is read.
 - **One classification per tab.** A reload or a full navigation in the same tab must not reclassify
   the visit as `returning / same_day`. The guard is PostHog's own session-scoped super property: if
   `visit_kind` is already registered in this tab, the record is not read or written again. This adds
@@ -69,7 +70,10 @@ without sending anything that says who the visitor is.
 - `tn.analytics.optout.v1` in localStorage records that this browser asked not to be counted. Storing
   an objection is what makes the objection work.
 - `privacySignal(nav)` is true for Do Not Track (`"1"` or `"yes"`) **or Global Privacy Control**.
-- `shouldCount({ configured, optedOut, signal })` is the single arming rule.
+- `shouldCount({ configured, optedOut, signal, timeZone })` is the single arming rule. It is also false
+  when `Intl.DateTimeFormat().resolvedOptions().timeZone` is `Europe/Berlin` or `Europe/Busingen`
+  (the Germany decision in the legal gate). If the time zone cannot be read, the rule does not block
+  on it.
 - `optOut(storage)` writes the flag **and deletes `tn.visit.v1`**. `optIn(storage)` removes the flag.
 - **Behaviour change for the existing beacon, on purpose.** Today, Do Not Track is handled inside
   posthog-js (`respect_dnt`). After this change, an opted-out or signalling browser **never imports
@@ -87,9 +91,11 @@ without sending anything that says who the visitor is.
   synchronously, and the initial `$pageview` is scheduled after it with `setTimeout(..., 1)`. So the
   first page view already carries both properties. A posthog-js upgrade could change that order, so
   the live check in "Verification" looks for `visit_kind` on the FIRST `$pageview`.
-- `beaconOptions` gains `person_profiles: "identified_only"` (the code never calls `identify`, so
-  PostHog builds no person profiles) and `opt_out_capturing_persistence_type: "sessionStorage"`.
-  Both are pinned by `beacon-config.test.ts`. `persistence` stays `"sessionStorage"`.
+- `beaconOptions` gains `person_profiles: "identified_only"`. The code never calls `identify`, so
+  PostHog builds no person profiles. `beacon-config.test.ts` pins it. `persistence` stays
+  `"sessionStorage"`.
+- **Every `import("posthog-js")` goes through one `armedConfig()` helper**, which applies
+  `shouldCount`. A source guard in `beacon-config.test.ts` fails if an import skips it.
 
 ### 4. Usage events: `lib/analytics/track.ts`
 
@@ -102,7 +108,7 @@ without sending anything that says who the visitor is.
 |---|---|---|---|
 | `object_opened` | `kind` (the `WorldObject` kind) | `overlay.open` in `lib/overlay.ts` | One site covers the 8 map, search and widget callers. A shared link that restores an object counts too, because opening the link was the user's action. |
 | `board_switched` | `board` (built-in preset id, or `custom`) | `applyPreset` in `lib/console/presets.ts` | Skipped for `reset: true` and for a new `track: false` option, which `ConsoleShell.tsx`'s two boot calls pass. Custom preset ids never leave the browser. |
-| `layer_toggled` | `layer` (core `LayerKey` or registered signal id), `on` | `SourceCatalog.tsx:309`, `CommandPalette.tsx:177`, `FreshnessTicker.tsx:47` | User toggles only. `layersStore.set` also runs on hydrate, presets and widget "show on map", so the store is the wrong place. An id outside the registry is dropped. |
+| `layer_toggled` | `layer` (core `LayerKey` or signal id) | `SourceCatalog.tsx:309`, `CommandPalette.tsx:177`, `FreshnessTicker.tsx:47` | User toggles only. `layersStore.set` also runs on hydrate, presets and widget "show on map", so the store is the wrong place. A value that is not a short slug is dropped. The signal registry is not imported, because that would put every adapter in the client bundle. No on/off property: the question is how much people use layers, not which way they switch them. |
 | `share_link_copied` | `what`: `view` or `layout` | `copyShareLink`, `CommandPalette.tsx:221`, `settings/DisplayTab.tsx:32` | Counted only when the copy succeeds. |
 | `alert_armed` | none | `RulesPanel.tsx:96` | No area, no radius, no source. |
 
@@ -118,7 +124,11 @@ without sending anything that says who the visitor is.
 - States: "This browser is counted." with **Stop counting this browser**. "This browser is not counted."
   with **Count this browser again**. If DNT or GPC is on: "Your browser asks not to be tracked, so it
   is not counted." and no button.
-- Stop counting: `optOut()`, and on a live client `opt_out_capturing()`, so this tab stops at once.
+- Both buttons change the flag and then reload the page. After **Stop counting**, the reloaded page
+  never imports posthog-js, so this tab stops at once. `opt_out_capturing()` is not used. In
+  posthog-js 1.428.1 its own marker can only live in localStorage or a cookie
+  (`opt_out_capturing_persistence_type: 'localStorage' | 'cookie'`, `@posthog/types`
+  `posthog-config.d.ts:1497`), which would add a key or a cookie.
 - UK PECR Schedule A1 asks for "a simple means of objecting". A settings-tab copy of the control is a
   possible later step and is not in this change.
 
@@ -137,14 +147,20 @@ Every sentence that promises "nothing links visits" moves in the same commit. Dr
   counter is told only whether this browser has been here before and, if so, roughly how long ago: the
   same day, the day before, within a week, within a month, or longer. The dates are not sent. Every
   browser that came back within a week sends the same words, so the counter can say how many visits are
-  returns but not whose. The entry is deleted 13 months after your first visit, and a later visit does
-  not extend that."
+  returns but not whose. 13 months after your first visit, the dates are thrown away the next time you
+  come, and you count as new again. Coming back does not extend the 13 months." localStorage has no
+  expiry, so the page must NOT say "deleted after 13 months".
 - **New opt-out paragraph plus the control:** "You can turn this off with the button below. It stops
   the page-view counter in this browser, deletes the visit dates, and remembers your choice under
   `tn.analytics.optout.v1`. If your browser sends Do Not Track or Global Privacy Control, the counter
-  does not load and nothing is written."
+  does not load and nothing is written. It also does not load in a browser set to Germany's time zone,
+  because German law gives this kind of counting no exemption."
 - **Storage table:** two new rows, one for `tn.visit.v1` ("No. Only new or returning, and roughly how
   long ago, is sent") and one for `tn.analytics.optout.v1` ("No").
+- **Named actions** (end of the "What was added" paragraph, ~739): "It also counts five named actions:
+  opening something on the map, switching a board, turning a layer on or off, copying a share link
+  and arming an alert. Each one is recorded with the type of thing, never with a place, a name or
+  anything you typed."
 - **Rights paragraph** (~878): "...which sets no cookie, keeps only your first and last visit dates on
   your own device, and does not run at all if you turned it off or your browser sends Do Not Track or
   Global Privacy Control."
@@ -178,17 +194,18 @@ Research on 2026-09-14 by a background agent, from primary sources. **This is no
 | 1 | PostHog is a processor, under a signed DPA, with no other use of the data. Check what it says about transfers outside the EU. | PostHog DPA | **Sam** |
 | 2 | A notice that states the purpose | Section 6 | this change |
 | 3 | A simple objection that does not rely on browser settings | Section 5 | this change |
-| 4 | The entry expires 13 months after the first visit, and visits do not renew it | Section 1 | this change |
+| 4 | The dates last 13 months from the first visit, and visits do not renew them. localStorage has no expiry, so the entry is thrown away on the first visit after 13 months. A browser that never returns keeps an inert entry until its site data is cleared. | Section 1 | this change |
 | 5 | PostHog event retention is at most 25 months | PostHog project settings | **Sam** |
 | 6 | No person profiles, no session replay, reads use totals only | `person_profiles`, `disable_session_recording`, a working rule | this change + practice |
-| 7 | A decision on German visitors | see below | **Sam** |
+| 7 | A decision on German visitors | option (b), decided by Sam 2026-09-14 | this change |
 
 **Still uncertain, and not created by this change:** PostHog keeps one row per event, with a per-tab
 id. It is not clear whether that is "anonymous statistics" (CNIL) or retained individual-level
 information (ICO). The beacon has had this property since 8 Sep. This change adds an objection path and
 turns person profiles off, so it narrows the gap rather than widening it.
 
-**Germany: a decision for Sam.** In 5 pulled rollup days, requests from DE were 3.9% of all
+**Germany: Sam chose (b) on 2026-09-14.** It applies to the whole beacon, not only to the return flag.
+In 5 pulled rollup days, requests from DE were 3.9% of all
 country-tagged requests. That figure counts requests, not people, and includes crawlers. The options:
 
 - (a) Treat German visitors like everyone else, as the beacon has done since 8 Sep.
@@ -233,9 +250,11 @@ vitest, node environment. Storage is injected. Each guard is proven red before i
   - expiry at 394 against 395 days
   - every corrupt shape resets to `new`
   - a returning visit keeps `first`
-  - **not armed means zero `setItem` calls**
+  - a tab that already registered `visit_kind` makes zero `setItem` calls
+  - `MAX_LIFETIME_DAYS` is 395, because the page says 13 months
 - `tests/unit/analytics-opt-out.test.ts`
   - DNT `"1"` and `"yes"`, and GPC
+  - `Europe/Berlin` and `Europe/Busingen` disarm, `Europe/Vienna` and an unreadable time zone do not
   - the opt-out flag disarms
   - `optOut` deletes `tn.visit.v1`
 - `tests/unit/usage-events.test.ts`
@@ -244,7 +263,9 @@ vitest, node environment. Storage is injected. Each guard is proven red before i
   - an unknown layer id is dropped
   - a custom board sends `custom`
   - `applyPreset(..., { track: false })` sends nothing
-- `tests/unit/beacon-config.test.ts`: pins `person_profiles` and `opt_out_capturing_persistence_type`.
+- `tests/unit/beacon-config.test.ts`: pins `person_profiles`. A source guard fails if any
+  `import("posthog-js")` in `Beacon.tsx` skips `armedConfig()`. The repo has no component tests, so
+  the claim that an unarmed browser writes nothing is checked live (see "Verification").
 - `tests/unit/privacy-page.test.ts`
   - the new date
   - the page names the `VISIT_KEY` and `OPT_OUT_KEY` constants' values, so renaming a key without moving
@@ -263,6 +284,8 @@ In Sam's browser:
 - a reload keeps `new`
 - a new tab gives `returning / same_day`
 - **Stop counting** deletes `tn.visit.v1` and no further request goes to `eu.i.posthog.com`
+- with DevTools Sensors set to Berlin, no request goes to `eu.i.posthog.com` and `tn.visit.v1` is not
+  written
 
 ## Out of scope
 
