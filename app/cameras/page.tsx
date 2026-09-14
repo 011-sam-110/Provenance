@@ -4,14 +4,24 @@ import { getDirectory } from "@/lib/seo/registrySnapshot";
 import { CAMERAS_ROOT, countryPath, formatCount, regionPath } from "@/lib/seo/paths";
 import { BRAND } from "@/lib/brand";
 import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
+import { DIRECTORY_CARD_SUBTITLE, cardHeadline, ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 
 export const revalidate = 86_400;
 
+const TITLE = `Live traffic cameras by country | ${BRAND.name}`;
+const DESCRIPTION =
+  "Browse every public road camera on the map by country and region. Each camera has its own page with a live image, its operator, its refresh interval and the cameras nearest to it.";
+
 export const metadata: Metadata = {
-  title: `Live traffic cameras by country | ${BRAND.name}`,
-  description:
-    "Browse every public road camera on the map by country and region. Each camera has its own page with a live image, its operator, its refresh interval and the cameras nearest to it.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: CAMERAS_ROOT },
+  ...shareMetadata({
+    title: TITLE,
+    description: DESCRIPTION,
+    path: CAMERAS_ROOT,
+    image: ogCardPath(cardHeadline(TITLE), DIRECTORY_CARD_SUBTITLE),
+  }),
 };
 
 export default async function CamerasIndex() {

@@ -11,6 +11,7 @@ import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 import { isPageableRoad } from "@/lib/seo/roads";
 import { PLACE_RADIUS_KM, placesNear } from "@/lib/seo/places";
 import { slugify } from "@/lib/seo/paths";
+import { ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 import {
   CAMERAS_ROOT,
   cameraDescription,
@@ -92,8 +93,13 @@ export async function generateMetadata({
     // Next serves this page for both the percent-encoded id and the raw-colon form.
     // Naming one canonical stops the two being read as duplicate pages.
     alternates: { canonical: cameraPath(cam.id) },
-    openGraph: { title, description, url: cameraPath(cam.id), type: "article" },
-    twitter: { title, description },
+    ...shareMetadata({
+      title,
+      description,
+      path: cameraPath(cam.id),
+      type: "article",
+      image: ogCardPath(cam.name, `live traffic camera · ${placeLabel(cam)}`),
+    }),
   };
 }
 

@@ -5,6 +5,7 @@ import { getPlacePage } from "@/lib/seo/registrySnapshot";
 import { CameraListing } from "@/components/directory/CameraListing";
 import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 import { PLACE_PAGE_SIZE, PLACE_RADIUS_KM } from "@/lib/seo/places";
+import { DIRECTORY_CARD_SUBTITLE, cardHeadline, ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 import {
   CAMERAS_ROOT,
   countryName,
@@ -44,15 +45,22 @@ export async function generateMetadata({
   const pages = regionPageCount(hit.total);
   const title = placeTitle(country, hit.label, hit.total, page);
 
+  const description =
+    page > 1
+      ? `Page ${page} of ${pages}: more live traffic cameras near ${hit.label}, ${countryName(country)}.`
+      : placeDescription(country, hit.label, hit.total, PLACE_RADIUS_KM);
+
   return {
     title,
-    description:
-      page > 1
-        ? `Page ${page} of ${pages}: more live traffic cameras near ${hit.label}, ${countryName(country)}.`
-        : placeDescription(country, hit.label, hit.total, PLACE_RADIUS_KM),
+    description,
     alternates: { canonical: placePath(country, hit.label, page) },
     robots: page > 1 ? { index: false, follow: true } : undefined,
-    openGraph: { title, url: placePath(country, hit.label, page) },
+    ...shareMetadata({
+      title,
+      description,
+      path: placePath(country, hit.label, page),
+      image: ogCardPath(cardHeadline(title), DIRECTORY_CARD_SUBTITLE),
+    }),
   };
 }
 
