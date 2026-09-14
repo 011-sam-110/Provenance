@@ -66,11 +66,13 @@ export function beaconConfig(env: Record<string, string | undefined> = process.e
  *                     It would deliver the metric as a number that is always wrong.
  *   "sessionStorage"  session-scoped, first-party, no cookie, and cleared when the tab
  *                     closes. Sessions are coherent, so bounce rate and time on page
- *                     are real, and nothing links one visit to the next.
+ *                     are real, and this identifier links nothing across visits. The one
+ *                     deliberate exception is the return flag (lib/analytics/returnFlag.ts),
+ *                     which keeps two dates on the device and sends no identifier.
  *   default           localStorage + cookie, which persists across visits and is the
  *                     thing app/(site)/privacy promises we do not do.
  *
- * So: no cookies, nothing that survives the tab, and metrics that mean something.
+ * So: no cookies, no identifier that survives the tab, and metrics that mean something.
  *
  * NOT PROXIED THROUGH OUR OWN DOMAIN, and that is a choice. Routing the beacon through
  * a first-party path is the standard trick for defeating blocklists and it would raise
@@ -96,6 +98,10 @@ export function beaconOptions(config: BeaconConfig) {
     disable_session_recording: true,
     disable_surveys: true,
     // Honour Do Not Track. Costs some coverage; the log still counts the request.
+    // A second layer only: Beacon.tsx already refuses to load the library for DNT or GPC.
     respect_dnt: true,
+    // No person profiles. Nothing here calls identify(), and "always" would build a
+    // profile per anonymous tab. Pinned by tests/unit/beacon-config.test.ts.
+    person_profiles: "identified_only" as const,
   };
 }

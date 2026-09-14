@@ -7,12 +7,35 @@
 // parsed and never runs — a self-hoster with no key pays nothing for it, and the
 // network tab shows no third-party request at all.
 //
+// WHO IS NOT COUNTED. armedConfig() is the only way to reach posthog-js. It applies
+// shouldCount() from lib/analytics/optOut.ts: the /privacy opt-out, Do Not Track,
+// Global Privacy Control and a German time zone. Each one stops the IMPORT, so that
+// browser loads nothing, sends nothing and gets no visit dates written.
+// tests/unit/beacon-config.test.ts fails if an import skips the gate.
+//
 // See lib/analytics/beacon.ts for WHY this exists alongside the access log and why
-// persistence is session-scoped rather than absent.
+// persistence is session-scoped rather than absent, and lib/analytics/returnFlag.ts for
+// the one thing that does outlive the tab.
 
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { beaconConfig, beaconOptions } from "@/lib/analytics/beacon";
+import { beaconConfig, beaconOptions, type BeaconConfig } from "@/lib/analytics/beacon";
+import { currentTimeZone, isOptedOut, privacySignal, shouldCount } from "@/lib/analytics/optOut";
+import { beginVisit } from "@/lib/analytics/returnFlag";
+import { bindBeacon } from "@/lib/analytics/track";
+
+/** The beacon config when THIS browser may be counted, otherwise null. */
+function armedConfig(): BeaconConfig | null {
+  const config = beaconConfig();
+  if (!config) return null;
+  const counted = shouldCount({
+    configured: true,
+    optedOut: isOptedOut(),
+    signal: privacySignal(navigator, window as Window & { doNotTrack?: string | null }),
+    timeZone: currentTimeZone(),
+  });
+  return counted ? config : null;
+}
 
 export function Beacon(): null {
   const pathname = usePathname();
@@ -21,7 +44,7 @@ export function Beacon(): null {
   // Init once. The empty dependency list is deliberate: posthog-js installs its own
   // listeners and re-initialising on navigation would double-count.
   useEffect(() => {
-    const config = beaconConfig();
+    const config = armedConfig();
     if (!config) return;
 
     let cancelled = false;
@@ -30,7 +53,18 @@ export function Beacon(): null {
     // every deployment, configured or not.
     void import("posthog-js").then(({ default: posthog }) => {
       if (cancelled) return;
-      posthog.init(config.key, beaconOptions(config));
+      posthog.init(config.key, {
+        ...beaconOptions(config),
+        // posthog-js 1.428.1 calls `loaded` synchronously inside init and schedules the
+        // first $pageview with setTimeout(..., 1) after it (dist/module.js). So what is
+        // registered here rides on that first view. An upgrade could change the order:
+        // the post-deploy check looks for visit_kind on the FIRST $pageview.
+        loaded: (ph) => {
+          bindBeacon(ph);
+          const props = beginVisit({ registered: ph.get_property("visit_kind"), now: new Date() });
+          if (props) ph.register(props);
+        },
+      });
     });
 
     return () => {
@@ -45,7 +79,7 @@ export function Beacon(): null {
   // bounce rate wrong, arriving by a different route.
   useEffect(() => {
     if (!pathname) return;
-    const config = beaconConfig();
+    const config = armedConfig();
     if (!config) return;
 
     void import("posthog-js").then(({ default: posthog }) => {
