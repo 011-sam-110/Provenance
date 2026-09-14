@@ -52,7 +52,7 @@ describe("beacon arming", () => {
 describe("beacon options pin what privacy promises", () => {
   const options = beaconOptions({ key: "phc_key", host: DEFAULT_BEACON_HOST });
 
-  it("stores nothing that outlives the tab, so it sets no cookie", () => {
+  it("keeps PostHog's own identifier inside the tab, so it sets no cookie", () => {
     // The default is "localStorage+cookie", which persists across visits and is exactly
     // what the privacy page says we do not do.
     expect(options.persistence).toBe("sessionStorage");
@@ -83,6 +83,12 @@ describe("beacon options pin what privacy promises", () => {
   it("honours Do Not Track", () => {
     expect(options.respect_dnt).toBe(true);
   });
+
+  it("builds no person profiles, because nothing here ever identifies a visitor", () => {
+    // identified_only is PostHog's default, pinned anyway: "always" would build a profile
+    // per anonymous tab, which is the individual-level record the ICO guidance warns about.
+    expect(options.person_profiles).toBe("identified_only");
+  });
 });
 
 describe("privacy page dependency count", () => {
@@ -103,5 +109,23 @@ describe("privacy page dependency count", () => {
     for (const claim of claims) {
       expect(claim, `the privacy page says "${claim} runtime deps" but package.json ships ${count} (${word})`).toBe(word);
     }
+  });
+});
+
+describe("a browser that is not counted never loads the library", () => {
+  // The opt-out, Do Not Track, GPC and the German time zone all work by stopping the
+  // dynamic import, not by asking posthog-js to hold back. That is only true if EVERY
+  // import passes the gate, so this reads the component and counts.
+  const src = readFileSync(join(ROOT, "components", "analytics", "Beacon.tsx"), "utf8").replace(/\/\/.*$/gm, "");
+
+  it("gates every posthog-js import behind armedConfig()", () => {
+    const imports = src.match(/import\("posthog-js"\)/g) ?? [];
+    const gates = src.match(/const config = armedConfig\(\);\s*if \(!config\) return;/g) ?? [];
+    expect(imports.length).toBe(2);
+    expect(gates.length).toBe(imports.length);
+  });
+
+  it("reads beaconConfig() in one place only, inside armedConfig()", () => {
+    expect(src.match(/beaconConfig\(\)/g) ?? []).toHaveLength(1);
   });
 });

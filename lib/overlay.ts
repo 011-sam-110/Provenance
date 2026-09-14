@@ -9,6 +9,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { WorldObject } from "./world";
+import { track } from "@/lib/analytics/track";
 
 export interface OverlayState {
   /** The clicked object, or null when the overlay is closed. */
@@ -26,6 +27,9 @@ export const overlay = {
   open(object: WorldObject) {
     state = { object };
     emit();
+    // One site covers every opener: map clicks, search, widgets and a restored share link
+    // (opening the link was the user's action). Only the kind is sent, never the object.
+    track({ name: "object_opened", kind: object.kind });
   },
   close() {
     if (state.object === null) return;

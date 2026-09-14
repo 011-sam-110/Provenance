@@ -18,6 +18,7 @@
 
 import { useMemo, useState } from "react";
 import { armableSources, triggersFor } from "@/lib/notify/sources";
+import { track } from "@/lib/analytics/track";
 import { rulesStore, useAreaRules } from "@/lib/notify/rules";
 import { isDiscordConfigured, useNotifications } from "@/lib/shell/notifications";
 import { isTelegramConfigured, useTelegram } from "@/lib/shell/telegram";
@@ -94,6 +95,8 @@ export default function RulesPanel({ areaId, areaLabel }: { areaId: string; area
       enabled: true, createdAt: Date.now(),
     };
     rulesStore.add(rule);
+    // No area, radius or source: only that an alert was armed.
+    track({ name: "alert_armed" });
   };
 
   const labelOf = (id: string) => sources.find((s) => s.id === id)?.label ?? id;

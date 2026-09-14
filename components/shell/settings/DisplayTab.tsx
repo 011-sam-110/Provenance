@@ -22,6 +22,7 @@ import { encodeLayout } from "@/lib/console/share";
 import { shellLayoutStore } from "@/lib/console/store";
 import { BUILTIN_PRESETS, applyPreset, listPresets, saveCustomPreset } from "@/lib/console/presets";
 import { useActivePreset } from "@/lib/console/activePreset";
+import { track } from "@/lib/analytics/track";
 
 /** A shareable URL that carries BOTH the map view state and the widget layout (?c=). */
 async function copyLayoutLink(): Promise<boolean> {
@@ -29,7 +30,7 @@ async function copyLayoutLink(): Promise<boolean> {
   const c = encodeLayout(shellLayoutStore.get());
   const url = `${base}${base.includes("?") ? "&" : "?"}c=${c}`;
   try {
-    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); return true; }
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); track({ name: "share_link_copied", what: "layout" }); return true; }
   } catch { /* fall through */ }
   try {
     const ta = document.createElement("textarea");
@@ -37,6 +38,7 @@ async function copyLayoutLink(): Promise<boolean> {
     document.body.appendChild(ta); ta.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
+    if (ok) track({ name: "share_link_copied", what: "layout" });
     return ok;
   } catch { return false; }
 }

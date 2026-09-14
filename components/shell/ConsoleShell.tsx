@@ -143,8 +143,8 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // An unrecognised id falls through to the first-run seed instead.
     const presetParam = params.get("preset");
     if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
-    else if (presetParam && presetById(presetParam)) applyPreset(presetParam);
-    else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID); // first-run seed
+    else if (presetParam && presetById(presetParam)) applyPreset(presetParam, { track: false });
+    else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID, { track: false }); // first-run seed
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
     // THE GUIDED TOUR IS GONE, and with it this effect's only cleanup.

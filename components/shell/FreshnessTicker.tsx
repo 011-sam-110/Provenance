@@ -11,6 +11,7 @@
 import { useFreshness, classifyFreshness, freshnessAgeMs, type FreshSourceId } from "@/lib/freshness";
 import { useLayers, layersStore, type LayerKey } from "@/lib/layers";
 import { useNow, formatAge } from "@/lib/shell/useNow";
+import { track } from "@/lib/analytics/track";
 
 const TO_LAYER: Record<FreshSourceId, LayerKey> = {
   cameras: "cameras",
@@ -44,7 +45,10 @@ export default function FreshnessTicker() {
               key={r.id}
               type="button"
               className={`tn-chip tn-chip-${state}`}
-              onClick={() => layersStore.toggle(layerKey)}
+              onClick={() => {
+                layersStore.toggle(layerKey);
+                track({ name: "layer_toggled", layer: layerKey });
+              }}
               title={
                 enabled
                   ? `${r.label}: ${state}${r.lastUpdate ? ` · updated ${formatAge(age)} ago` : ""}`
