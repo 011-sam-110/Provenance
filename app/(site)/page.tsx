@@ -7,6 +7,7 @@ import Mark from "@/components/brand/Mark";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import GlobeStage from "@/components/marketing/GlobeStage";
+import CommunityNote from "@/components/shell/CommunityNote";
 import {
   AUDIT_COUNTRIES,
   AUDIT_LAYERS,
@@ -683,6 +684,10 @@ export default async function Landing() {
           </div>
         </div>
       </footer>
+      {/* The Discord invitation. It gates itself (lib/shell/community.ts): an empty live
+          region until 40 seconds of visible time, and never again once answered here or
+          in the console. Most visitors land here and many never open /app. */}
+      <CommunityNote surface="landing" />
     </>
   );
 }
