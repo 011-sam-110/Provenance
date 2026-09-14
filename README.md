@@ -14,9 +14,16 @@
   <img src="https://img.shields.io/badge/unit%20tests-3%2C854-2ea44f" alt="3,854 unit tests">
 </p>
 
-Governments, space agencies, seismologists and UN clusters publish an enormous amount of live data for free, in formats almost nobody can read. Provenance renders **37 live layers on one globe**: government road cameras, aircraft, satellites, earthquakes, wildfires, undersea cables, national internet shutdowns, conflict coverage, displacement, markets and news. Every layer carries the body that published it, how its numbers were arrived at, and what it *cannot* tell you. The core map takes no key and no login.
+## TL;DR
 
-The repository used to be called `TrafficNerd-V2` and the product was briefly called OpenData. Both are now **Provenance**. It is the web rewrite of [TrafficNerd v1](https://github.com/011-sam-110/TrafficNerd), which was a London-only terminal app.
+- **What it is:** a free, live globe of public data. It shows about 20,000 official road cameras, 70,698 webcams, aircraft, satellites and 33 signal layers, for example earthquakes, wildfires and undersea cables.
+- **Why it is different:** every dot names who published it, how the number was made, and what it cannot tell you.
+- **Try it:** [provenance-online.com](https://provenance-online.com). The core map needs no key and no login. To run it locally: `npm install && npm run dev`.
+- **When a source fails:** the layer shows an empty set or its last good data. It never shows invented data. On 2026-09-14, satellites and 4 signal layers were empty.
+- **Licence:** AGPL-3.0 for the code. Each data source keeps its own terms.
+
+<details>
+<summary><b>Production check, 2026-09-14</b>: what the live site returned, and the open issues</summary>
 
 _Status: live at [provenance-online.com](https://provenance-online.com) and runs locally with no keys. Coverage is real but partial and depends on public upstreams staying open, so here is what production actually returned on **2026-09-14**, against `462f125`:_
 
@@ -37,7 +44,22 @@ All four empty layers still answered `200` with an empty set, which is the contr
 
 Every figure above will drift, which is why each one is dated and pinned to a commit rather than left floating. `CLAUDE.md` holds the command to re-measure each one, and [`docs/API_KEYS.md`](docs/API_KEYS.md) holds the canonical env-var names.
 
+</details>
+
 ## ✨ Features
+
+Governments, space agencies, seismologists and UN clusters publish an enormous amount of live data for free, in formats almost nobody can read. Provenance renders **37 live layers on one globe**, and every layer carries the body that published it, how its numbers were arrived at, and what it *cannot* tell you.
+
+- **Globe to map in one view.** A satellite Earth flattens into a street or topographic map as you zoom.
+- **Every layer is attributed.** Each one states its publisher, its method, a confidence class and a limitation.
+- **Truncation is declared.** A capped response says how many rows existed and how it chose the rows you see.
+- **Official road cameras, no key.** The cameras come directly from the agencies that operate them, one dot for each camera.
+- **Aircraft and satellites.** Live ADS-B positions worldwide. Your browser calculates the satellite orbits.
+- **A console for analysts** at `/app`: a widget catalogue, presets, shareable layouts, country dossiers and CSV or GeoJSON export.
+- **A landing page that cannot drift.** No count is typed into it. Each figure comes from a committed data file.
+
+<details>
+<summary><b>How each feature works</b>, with the sources and figures</summary>
 
 - **One continuous globe-to-map engine** - a single MapLibre `projection: 'globe'` instance shows a satellite Earth and flattens into a satellite, street or topographic map as you zoom. No cross-fade seam, one WebGL context. 3D mode calls `map.setTerrain()` against AWS `terrarium` raster-DEM tiles from zoom 6 (`TERRAIN_MIN_ZOOM`), because terrain crashes MapLibre's depth pass while the map is still a globe.
 - **37 layers, each independently attributed** - four core layers (cameras, webcams, aircraft, satellites) plus 33 global-signal layers, each opt-in and drawn as its own hazard pin: earthquakes (USGS and EMSC), wildfires, volcanoes, storms and floods (NASA EONET), GDACS disaster alerts, tropical cyclones, NASA FIRMS active fires, aurora and space weather (NOAA), rocket launches, undersea cables and their landing stations, GPS jamming, nuclear plants, airports, ports, national internet outages (IODA), cloud-provider outages, GDELT conflict and protest coverage, air quality (Open-Meteo plus OpenAQ stations), UK street crime, cyber command-and-control and ransomware (abuse.ch, Ransomware.live), forced displacement (UNHCR), ReliefWeb emergencies, ENTSO-E grid load, military ADS-B and AIS ships, Ukraine air-raid alerts. A 34th source, the composite Country Instability Index, is registered and documented but is deliberately **not** a map layer: it has no pin of its own and instead feeds the Brief, the Country Instability widget and the country dossier.
@@ -48,6 +70,8 @@ Every figure above will drift, which is why each one is dated and pinned to a co
 - **A terminal-style console** - a dense OSINT shell at `/app`: 65 widget types in a ⌘K catalogue, seven presets that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. A first visit opens the Globe preset, which is the map with no widgets in front of it. Every layer and every widget is one ⌘K entry away. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
 - **A landing page that cannot drift** - the hero globe at `/` draws every registered signal layer from the same `SOURCE_CATALOG` the app renders from, so adding an adapter updates it with no marketing-side edit. No count is typed into the page. Each one is read from a committed data file that is either pinned by a test, generated from a production run, or quoted from one published study.
 
+</details>
+
 ## 📸 Screenshots
 
 <p align="center">
@@ -56,7 +80,12 @@ Every figure above will drift, which is why each one is dated and pinned to a co
 
 **Streets** is a board of camera walls you compose yourself. Every tile holds a *list* of live views rather than one, so `47/60` is a slot cycling through the sixtieth camera it was given - sixty road cameras added in a single drag of a box across London. Search a place, paste a YouTube link, or arm a tile and pick straight off the map.
 
+<details>
+<summary><b>What a tile says about the road</b>, and what it refuses to say</summary>
+
 Each tile also states the conditions where its camera stands, and the interesting part is what it refuses to say. Where a road-weather station publishes a surface state and that reading survives every disqualification rule, the tile shows the operator's own word for it. Everywhere else it derives a line from air weather and says `from air` in the line itself, reporting rainfall rather than a road state - `rain 1h`, never `wet`, because an hour of rain does not tell you whether a surface is wet, frozen or already dry. Measured live on 2026-09-03: of 19,808 cameras, 912 carry a surface field and **649 survive every rule, which is 3.3%**. A reading from a station over 10 km away, or one the operator has flagged stale or faulty, is refused rather than downgraded, so a camera with a distant station shows *less* than one that never had a station at all. Open the tile and the panel discloses exactly what was refused and whose rule refused it - the 10 km limit is ours, the staleness verdicts are the operator's.
+
+</details>
 
 | The console at `/app`: brief, hazards and the live map | Cameras over London, before clustering was removed on 2026-09-03 |
 |---|---|
@@ -68,7 +97,12 @@ Each tile also states the conditions where its camera stands, and the interestin
 
 Next.js 15 (App Router) · TypeScript · React 19 · MapLibre GL JS v5 · hls.js · satellite.js (SGP4) · h3-js · react-grid-layout · zod · posthog-js · Vitest · Playwright · self-hosted on AWS Lightsail (Node behind Caddy) and served through Cloudflare.
 
-Data and tiles are keyless-first: TfL · Caltrans · SCDOT · Finland Digitraffic · Castle Rock 511 · Oregon TripCheck · DriveBC · NZTA · Iceland · Estonia · Traffic Scotland · CET-SP (Sao Paulo) · MUP Srbije · JP Putevi Srbije · BIHAMK · ACT (Puerto Rico) · Houston TranStar · Windy webcams · adsb.lol · adsb.fi · adsbdb · CelesTrak · USGS · EMSC · NASA EONET · NASA FIRMS · GDACS · NOAA · IODA · Open-Meteo · OpenAQ · GDELT · data.police.uk · abuse.ch · Ransomware.live · UNHCR · ReliefWeb · ENTSO-E · TeleGeography · The Space Devs · OurAirports · OpenStreetMap (Overpass) · gpsjam.org · alerts.com.ua · AISStream.io · UK FCDO (gov.uk) · CoinGecko · Frankfurter/ECB · Esri World Imagery · OpenFreeMap (OpenMapTiles) · CARTO (label fonts) · OpenTopoMap · Natural Earth · AWS Terrain Tiles.
+<details>
+<summary><b>All data and tile sources</b> (keyless first)</summary>
+
+TfL · Caltrans · SCDOT · Finland Digitraffic · Castle Rock 511 · Oregon TripCheck · DriveBC · NZTA · Iceland · Estonia · Traffic Scotland · CET-SP (Sao Paulo) · MUP Srbije · JP Putevi Srbije · BIHAMK · ACT (Puerto Rico) · Houston TranStar · Windy webcams · adsb.lol · adsb.fi · adsbdb · CelesTrak · USGS · EMSC · NASA EONET · NASA FIRMS · GDACS · NOAA · IODA · Open-Meteo · OpenAQ · GDELT · data.police.uk · abuse.ch · Ransomware.live · UNHCR · ReliefWeb · ENTSO-E · TeleGeography · The Space Devs · OurAirports · OpenStreetMap (Overpass) · gpsjam.org · alerts.com.ua · AISStream.io · UK FCDO (gov.uk) · CoinGecko · Frankfurter/ECB · Esri World Imagery · OpenFreeMap (OpenMapTiles) · CARTO (label fonts) · OpenTopoMap · Natural Earth · AWS Terrain Tiles.
+
+</details>
 
 ## 🚀 Run
 
@@ -90,7 +124,7 @@ app/(site)/page.tsx ─── the landing page: the hero globe draws every signa
                         SOURCE_CATALOG; its figures come from committed data files
 app/(console)/app/ ──── the console shell
   └── components/WorldMap.tsx ─ one maplibregl.Map (projection: 'globe')
-        basemap registry (dark / light / streets / satellite / topo) + 3D terrain
+        basemap registry (satellite / streets / topo) + 3D terrain
         per-hazard signal icons + clickable Natural Earth country layer
   ├── lib/sources/*      one adapter per camera feed -> Camera (zod), merged + last-good
   ├── lib/signals/*      one adapter + one registry entry per source (34, 33 of them map layers)
@@ -125,3 +159,7 @@ The AGPL covers **this codebase only**. Every upstream feed keeps its own separa
 ### Third-party code
 
 None. No code was copied from any other project; `koala73/worldmonitor` was read for factual endpoint information only, which is not copyrightable.
+
+## History
+
+The repository used to be called `TrafficNerd-V2` and the product was briefly called OpenData. Both are now **Provenance**. It is the web rewrite of [TrafficNerd v1](https://github.com/011-sam-110/TrafficNerd), which was a London-only terminal app.
