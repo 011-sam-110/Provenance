@@ -7,6 +7,7 @@ import {
   undocumentedLayerIds,
 } from "@/lib/signals/explain";
 import { SIGNALS } from "@/lib/signals/registry";
+import { computeInstability } from "@/lib/signals/instability";
 
 // This file IS the feature. Our nearest competitor shipped the same
 // source/confidence/limitations card and completed 8 of their 20 layers; the rest
@@ -88,6 +89,27 @@ describe("the caveats we most need to be right about", () => {
     const e = explainerFor("crime")!;
     expect(e.coverage).toMatch(/England|UK|Wales/i);
     expect(e.limitations.join(" ")).toMatch(/monthly/i);
+  });
+
+  // ACLED was removed on 2026-09-05. Two explainers kept talking about it as if it were
+  // still in the app: the instability card blamed "ACLED dormant" for a missing conflict
+  // factor (conflict comes from GDELT now), and the conflict card sent readers to "the
+  // ACLED layer", which does not exist. A trust card that points at a missing source is
+  // the same hole this file exists to close.
+  it("never describes a removed source as present or dormant", () => {
+    for (const e of allExplainers()) {
+      const text = [e.whatItShows, e.method, e.coverage, ...e.limitations].join(" ");
+      expect(text, `${e.id} still points at ACLED as part of the app`).not.toMatch(/ACLED (layer|dormant)|with ACLED/i);
+    }
+  });
+
+  it("states the instability ceiling the formula actually allows", () => {
+    // Every input at its maximum: the conflict ramp is hard-capped, so this is the top.
+    const [top] = computeInstability([
+      { iso3: "SYR", factors: { conflict: 1e9, food: 1, displacement: 1e9, outages: 1e9 } },
+    ]);
+    const ceiling = top!.props?.score as number;
+    expect(explainerFor("instability")!.limitations.join(" ")).toContain(`${ceiling}`);
   });
 
   it("admits the instability index is ours and is not validated", () => {

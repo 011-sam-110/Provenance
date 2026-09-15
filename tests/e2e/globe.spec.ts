@@ -1,12 +1,18 @@
 import { expect, test } from "@playwright/test";
 
-test("homepage renders the globe and a non-zero camera count", async ({ page }) => {
+// This test used to read `stat-line` off `/`, from when `/` WAS the Globe.GL homepage.
+// `stat-line` now lives in the console shell at `/app`, so the assertion had been failing
+// against a page that no longer contains the element — and nothing ran the suite to notice,
+// because no workflow runs Playwright. Re-pointed at the contract the homepage actually has
+// now: a globe canvas, and a non-zero measured figure printed beside it.
+test("homepage renders the globe and a non-zero measured count", async ({ page }) => {
   await page.goto("/");
-  // Globe.GL renders into a <canvas>
-  await expect(page.locator("canvas")).toBeVisible({ timeout: 30_000 });
-  const stat = page.getByTestId("stat-line");
-  // Regex avoids the substring trap where e.g. "870 cameras" contains "0 cameras".
-  await expect(stat).toContainText(/[1-9]\d* cameras/, { timeout: 30_000 });
+  // MapLibre renders the stage globe into a <canvas>.
+  await expect(page.locator("canvas").first()).toBeVisible({ timeout: 30_000 });
+  const strip = page.locator(".pv-hero-strip-inner p").first();
+  // Regex avoids the substring trap where e.g. "34 layers" contains "4 layers".
+  await expect(strip).toContainText(/[1-9]\d* layers · [1-9]\d* live/, { timeout: 30_000 });
+  await expect(strip).toContainText(/features placed in [1-9]\d* countries/);
 });
 
 test("the Earth texture is served locally (guards the black-globe regression)", async ({

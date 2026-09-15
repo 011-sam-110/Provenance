@@ -43,6 +43,23 @@ export function classifySignalFreshness(r: SignalFreshRecord, now: number): Sign
   return "live";
 }
 
+/**
+ * What to record for one /api/signals/<id> response.
+ *
+ * The route publishes the adapter's own `ok` (lib/signals/outcome.ts), but a 200
+ * used to be recorded as success regardless — so a layer answering
+ * `{ok:false, degradedReason:"no key", count:0}` classified as "empty" and the rail
+ * said "live · none right now" about a feed that never read anything.
+ *
+ * A failure that still carries rows is deliberately left as it was. Those rows can
+ * be fresh (gdacs "partial: VO failed" with 36 current events) or last-good
+ * (`degradedWith`), and "unavailable" is the wrong word for both. That case needs
+ * its own state, not this function.
+ */
+export function signalFreshnessFromPayload(d: { ok?: boolean; count: number }): { ok: boolean; count: number } {
+  return { ok: d.ok === true || d.count > 0, count: d.count };
+}
+
 /** Pure short label for a freshness state, given the age text. */
 export function signalFreshLabel(state: SignalFreshState, ageText: string): string {
   switch (state) {

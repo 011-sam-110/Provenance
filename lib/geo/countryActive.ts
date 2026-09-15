@@ -54,7 +54,7 @@ export function activeEventLine(signalId: string, feature: SignalFeature): strin
     case "internet-outages":
       return `Internet outage — ${s(p.severity) || "detected"}`;
     case "displacement":
-      return `${s(p.totalDisplaced) || "—"} forcibly displaced`;
+      return `${s(p.totalDisplaced) || "—"} displaced people in the country`;
     default:
       return feature.title || "Active signal";
   }

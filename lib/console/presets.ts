@@ -13,6 +13,7 @@ import { forgetBoardLayout, isBoardEdited, layoutSignature, readBoardLayout, wri
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { ringFromCircle, type CircleSpec } from "@/lib/map/circle";
+import { track } from "@/lib/analytics/track";
 
 // ── A PRESET IS NOW THE WHOLE WORKSPACE ─────────────────────────────────────
 //
@@ -512,7 +513,7 @@ function migrateOutgoing(presetId: string): void {
  *  3. Saved edits beat the template. `reset: true` is the one caller that wants
  *     the template back, and it is what makes "Reset this board" a real action.
  */
-export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): void {
+export function applyPreset(presetId: string, opts: { reset?: boolean; track?: boolean } = {}): void {
   const built = presetById(presetId);
   const custom = built ? undefined : loadCustom().find((p) => p.id === presetId);
   if (!built && !custom) return;
@@ -536,6 +537,12 @@ export function applyPreset(presetId: string, opts: { reset?: boolean } = {}): v
   const { core, signals } = layersForLayout(layout, built?.signals ?? [], built?.layers ?? []);
   layersStore.applyWorld(core);
   signalsStore.applyWorld(signals);
+  // A SWITCH, made by a person. Boot passes track: false, a reset is not a switch, and
+  // re-selecting the board already open changes nothing. A custom board's id never leaves
+  // the browser: it is sent as "custom".
+  if (opts.track !== false && !opts.reset && outgoing !== presetId) {
+    track({ name: "board_switched", board: built ? presetId : "custom" });
+  }
 }
 
 /**

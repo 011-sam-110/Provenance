@@ -5,6 +5,7 @@ import { getRoadPage } from "@/lib/seo/registrySnapshot";
 import { CameraListing } from "@/components/directory/CameraListing";
 import { DirectoryFooter } from "@/components/directory/DirectoryFooter";
 import { ROAD_PAGE_SIZE } from "@/lib/seo/roads";
+import { DIRECTORY_CARD_SUBTITLE, cardHeadline, ogCardPath, shareMetadata } from "@/lib/seo/shareCard";
 import {
   CAMERAS_ROOT,
   countryName,
@@ -50,17 +51,24 @@ export async function generateMetadata({
   const pages = regionPageCount(hit.total);
   const title = roadTitle(country, hit.label, hit.total, page);
 
+  const description =
+    page > 1
+      ? `Page ${page} of ${pages}: more live traffic cameras on ${hit.label} in ${countryName(country)}.`
+      : roadDescription(country, hit.label, hit.total);
+
   return {
     title,
-    description:
-      page > 1
-        ? `Page ${page} of ${pages}: more live traffic cameras on ${hit.label} in ${countryName(country)}.`
-        : roadDescription(country, hit.label, hit.total),
+    description,
     alternates: { canonical: roadPath(country, hit.label, page) },
     // Deep pages of a long list are real and crawlable but are not what should surface
     // for "I-95 cameras" — page 1 is. Same call as the region listing.
     robots: page > 1 ? { index: false, follow: true } : undefined,
-    openGraph: { title, url: roadPath(country, hit.label, page) },
+    ...shareMetadata({
+      title,
+      description,
+      path: roadPath(country, hit.label, page),
+      image: ogCardPath(cardHeadline(title), DIRECTORY_CARD_SUBTITLE),
+    }),
   };
 }
 

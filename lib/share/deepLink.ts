@@ -10,6 +10,7 @@ import { encodeViewState, decodeViewState, type ViewState } from "@/lib/share/ur
 import { layersStore, ACTIVE_LAYERS } from "@/lib/layers";
 import { mapViewStore } from "@/lib/mapView";
 import { overlay } from "@/lib/overlay";
+import { track } from "@/lib/analytics/track";
 
 const WRITE_DEBOUNCE_MS = 400;
 
@@ -83,6 +84,7 @@ export async function copyShareLink(): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(url);
+      track({ name: "share_link_copied", what: "view" });
       return true;
     }
   } catch {
@@ -97,6 +99,7 @@ export async function copyShareLink(): Promise<boolean> {
     ta.select();
     const ok = document.execCommand("copy");
     document.body.removeChild(ta);
+    if (ok) track({ name: "share_link_copied", what: "view" });
     return ok;
   } catch {
     return false;

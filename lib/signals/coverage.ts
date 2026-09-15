@@ -26,10 +26,10 @@
 // back and publishes it; the pure card projection turns it into a count label a
 // capped number cannot hide inside ("1,500 of 41,203", not "1,500").
 //
-// The side channel is a WeakMap keyed on the returned array rather than a new
-// field on SignalSource.fetch(), so `fetch(): Promise<SignalFeature[]>` is
-// unchanged and all 35 registered adapters keep compiling — including the ones
-// that legitimately declare nothing.
+// The side channel is a global-registry Symbol on the returned array (COVERAGE_KEY
+// below says why it is not a WeakMap) rather than a new field on
+// SignalSource.fetch(), so `fetch(): Promise<SignalFeature[]>` is unchanged and
+// every registered adapter keeps compiling — including the ones that declare nothing.
 //
 // HONESTY NOTE: absence of a coverage record means "this adapter did not declare
 // one", NOT "nothing was truncated". Never render "complete" off a missing record.

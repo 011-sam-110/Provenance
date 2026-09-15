@@ -47,6 +47,8 @@ interface Cached {
   outcome: ReturnType<typeof publishOutcome>;
 }
 const cache = new Map<string, Cached>();
+/** One in-flight refresh per id. See the single-flight note in GET. */
+const inflight = new Map<string, Promise<Cached>>();
 
 
 /**
@@ -112,6 +114,27 @@ export async function GET(
     });
   }
 
+  // SINGLE-FLIGHT. The cache above is written only when a fetch finishes, so without
+  // this every request that arrived during a slow upstream call started its own call.
+  // The landing page asks for every layer for every visitor, which turned a traffic
+  // spike into the same multiple of upstream load. Concurrent misses now share one
+  // promise, and the entry clears when it settles, so the next miss re-asks.
+  let pending = inflight.get(id);
+  if (!pending) {
+    pending = refreshSignal(id, source, hit).finally(() => inflight.delete(id));
+    inflight.set(id, pending);
+  }
+  const fresh = await pending;
+  return Response.json(payload(fresh.features, fresh.outcome), {
+    headers: cacheHeaders(source.refreshMs, fresh.features, fresh.outcome.ok),
+  });
+}
+
+async function refreshSignal(
+  id: string,
+  source: NonNullable<ReturnType<typeof getSignal>>,
+  hit: Cached | undefined,
+): Promise<Cached> {
   let features: SignalFeature[] = [];
   let outcome: ReturnType<typeof publishOutcome>;
   try {
@@ -138,8 +161,7 @@ export async function GET(
     };
     console.warn(`[signals:${id}] adapter threw:`, err);
   }
-  cache.set(id, { at: Date.now(), features, outcome });
-  return Response.json(payload(features, outcome), {
-    headers: cacheHeaders(source.refreshMs, features, outcome.ok),
-  });
+  const entry: Cached = { at: Date.now(), features, outcome };
+  cache.set(id, entry);
+  return entry;
 }

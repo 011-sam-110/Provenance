@@ -31,13 +31,14 @@ describe("beacon arming", () => {
     }
   });
 
-  it("arms on a real key and defaults to the EU host", () => {
+  it("arms on a real key and defaults to the US host", () => {
     const config = beaconConfig({ NEXT_PUBLIC_POSTHOG_KEY: "phc_realLookingKey123" });
     expect(config).not.toBeNull();
     expect(config?.key).toBe("phc_realLookingKey123");
-    // EU rather than US so visitor data does not leave the region.
+    // The production project is in PostHog's US region. A US key sent to the EU host is
+    // refused, so a wrong default loads the library and counts nothing.
     expect(config?.host).toBe(DEFAULT_BEACON_HOST);
-    expect(DEFAULT_BEACON_HOST).toContain("eu.");
+    expect(DEFAULT_BEACON_HOST).toBe("https://us.i.posthog.com");
   });
 
   it("lets a self-hoster point at their own instance", () => {
@@ -52,7 +53,7 @@ describe("beacon arming", () => {
 describe("beacon options pin what privacy promises", () => {
   const options = beaconOptions({ key: "phc_key", host: DEFAULT_BEACON_HOST });
 
-  it("stores nothing that outlives the tab, so it sets no cookie", () => {
+  it("keeps PostHog's own identifier inside the tab, so it sets no cookie", () => {
     // The default is "localStorage+cookie", which persists across visits and is exactly
     // what the privacy page says we do not do.
     expect(options.persistence).toBe("sessionStorage");
@@ -83,6 +84,12 @@ describe("beacon options pin what privacy promises", () => {
   it("honours Do Not Track", () => {
     expect(options.respect_dnt).toBe(true);
   });
+
+  it("builds no person profiles, because nothing here ever identifies a visitor", () => {
+    // identified_only is PostHog's default, pinned anyway: "always" would build a profile
+    // per anonymous tab, which is the individual-level record the ICO guidance warns about.
+    expect(options.person_profiles).toBe("identified_only");
+  });
 });
 
 describe("privacy page dependency count", () => {
@@ -103,5 +110,45 @@ describe("privacy page dependency count", () => {
     for (const claim of claims) {
       expect(claim, `the privacy page says "${claim} runtime deps" but package.json ships ${count} (${word})`).toBe(word);
     }
+  });
+});
+
+describe("a browser that is not counted never loads the library", () => {
+  // The opt-out, Do Not Track, GPC and the German time zone all work by stopping the
+  // dynamic import, not by asking posthog-js to hold back. That is only true if EVERY
+  // import passes the gate, so this reads the component and counts.
+  const src = readFileSync(join(ROOT, "components", "analytics", "Beacon.tsx"), "utf8").replace(/\/\/.*$/gm, "");
+
+  it("gates every posthog-js import behind armedConfig()", () => {
+    const imports = src.match(/import\("posthog-js"\)/g) ?? [];
+    const gates = src.match(/const config = armedConfig\(\);\s*if \(!config\) return;/g) ?? [];
+    expect(imports.length).toBe(2);
+    expect(gates.length).toBe(imports.length);
+  });
+
+  it("reads beaconConfig() in one place only, inside armedConfig()", () => {
+    expect(src.match(/beaconConfig\(\)/g) ?? []).toHaveLength(1);
+  });
+});
+
+describe("the key reaches the browser build", () => {
+  // Next.js puts a NEXT_PUBLIC_* value into the client bundle only where the source
+  // says process.env.NEXT_PUBLIC_X literally. Passing process.env as an object, for
+  // example as a default parameter, gives the browser an empty polyfill. Every unit
+  // test above passes its own env, so they all stayed green while production loaded
+  // no beacon from 2026-09-07 to 2026-09-14. The deploy build did not pass the key
+  // either. These two tests pin both halves.
+  const beacon = readFileSync(join(ROOT, "lib", "analytics", "beacon.ts"), "utf8").replace(/\/\/.*$/gm, "");
+  const deploy = readFileSync(join(ROOT, ".github", "workflows", "deploy.yml"), "utf8");
+
+  it("reads each variable as a literal process.env member, never the whole object", () => {
+    expect(beacon).not.toMatch(/=\s*process\.env\s*\)/);
+    expect(beacon).toMatch(/process\.env\.NEXT_PUBLIC_POSTHOG_KEY\b/);
+    expect(beacon).toMatch(/process\.env\.NEXT_PUBLIC_POSTHOG_HOST\b/);
+  });
+
+  it("passes the project key to the production build", () => {
+    const build = deploy.slice(deploy.indexOf("- name: Build"), deploy.indexOf("- name: Assemble the release"));
+    expect(build).toMatch(/NEXT_PUBLIC_POSTHOG_KEY:\s*\$\{\{\s*vars\.NEXT_PUBLIC_POSTHOG_KEY\s*\}\}/);
   });
 });

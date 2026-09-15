@@ -114,6 +114,32 @@ export function shouldInvite(state: CommunityState, ctx: CommunityGateContext): 
   return qualifies(state);
 }
 
+/* ── Surfaces ───────────────────────────────────────────────────────────── */
+
+/**
+ * The note is mounted in two places: the console, and (since 2026-09-14) the landing
+ * page, where most visitors arrive and many never open /app. Both read and write the
+ * SAME `tn.community.v1` state, so an answer on one surface is final on the other.
+ */
+export type CommunitySurface = "console" | "landing";
+
+/** The landing page has no cold-start plate, so its first evaluation waits only long
+ *  enough for the page to settle. That is far under the 40-second bar, so only a
+ *  `?discord=1` review can show the card this early. */
+export const LANDING_HOLD_MS = 1_500;
+
+/** How long the component waits before its first evaluation. The console passes its
+ *  own boot-derived hold, and gets it back unchanged. */
+export function initialHoldMs(surface: CommunitySurface, consoleHoldMs: number): number {
+  return surface === "landing" ? LANDING_HOLD_MS : consoleHoldMs;
+}
+
+/** The gate context for a surface. The landing page has no boot plate and no cinematic
+ *  dive, so neither can hold the card back there. The console's context is unchanged. */
+export function gateContext(surface: CommunitySurface, live: CommunityGateContext): CommunityGateContext {
+  return surface === "landing" ? { bootPlaying: false, diveActive: false } : live;
+}
+
 /**
  * `?discord=1` forces the invitation open for review — the same override precedent
  * `?feedback=1` and `?boot=1` set. It bypasses the qualifying time; it does NOT

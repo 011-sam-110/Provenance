@@ -25,11 +25,15 @@ export function generateMetadata(): Metadata {
   return {
     title: meta.title,
     description: meta.description,
+    // /app shares its title and description with `/`, so it names itself as canonical
+    // rather than leaving a crawler to guess which of the two it is.
+    alternates: { canonical: "/app" },
     openGraph: {
       // Next replaces (not deep-merges) the parent openGraph, so re-declare type +
       // siteName here or the primary shared route drops them.
       type: "website",
       siteName: BRAND.name,
+      url: "/app",
       title: meta.title,
       description: meta.description,
       images: [{ url: ogImage, width: 1200, height: 630, alt: meta.title }],
@@ -61,7 +65,7 @@ export function generateMetadata(): Metadata {
 // The same rule is already applied twice elsewhere and written down both times:
 // CLAUDE.md states it for the hero globe ("read from SOURCE_CATALOG in the server
 // component and passed down as a prop — never imported into the client, or all ~39
-// adapters land in the browser bundle"), and components/console/SourceCatalog.tsx
+// adapters land in the browser bundle"), and components/shell/SourceCatalog.tsx
 // derives its own count from CAMERA_REGIONS for exactly this reason.
 //
 // It stays DERIVED. CAMERA_FEED_COUNT is SOURCES.length, and the two pinning tests

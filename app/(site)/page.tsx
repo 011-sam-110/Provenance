@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { BRAND } from "@/lib/brand";
+import { BRAND, siteUrl } from "@/lib/brand";
+import { shareMetadata } from "@/lib/seo/shareCard";
+import { serializeJsonLd, websiteJsonLd } from "@/lib/seo/structuredData";
 import Mark from "@/components/brand/Mark";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import GlobeStage from "@/components/marketing/GlobeStage";
+import CommunityNote from "@/components/shell/CommunityNote";
 import {
   AUDIT_COUNTRIES,
   AUDIT_LAYERS,
@@ -29,10 +32,19 @@ import { UNIT_TESTS } from "@/lib/marketing/repo-facts.data";
 const REPO = "011-sam-110/Provenance";
 const REPO_URL = `https://github.com/${REPO}`;
 
+const HOME_TITLE = `${BRAND.name} · ${BRAND.tagline}`;
+
 export const metadata: Metadata = {
-  title: `${BRAND.name} · ${BRAND.tagline}`,
+  title: HOME_TITLE,
   description: BRAND.description,
   alternates: { canonical: "/" },
+  // The root layout no longer asserts og:url, so the home page states its own.
+  ...shareMetadata({
+    title: HOME_TITLE,
+    description: BRAND.description,
+    path: "/",
+    imageAlt: `${BRAND.name} live map preview`,
+  }),
 };
 
 /**
@@ -119,6 +131,11 @@ export default async function Landing() {
 
   return (
     <>
+      {/* WebSite name + alternateName for the site name Google shows. See lib/seo/structuredData. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(websiteJsonLd(siteUrl())) }}
+      />
       <GlobeStage
         layers={heroLayers}
         satColor={satColor}
@@ -599,6 +616,12 @@ export default async function Landing() {
             <h4>The product</h4>
             <a href="/app">Open the map</a>
             <a href="#coverage">Coverage by country</a>
+            {/*
+              The home page takes nearly every search click, and this is its only link into
+              the camera directory. Without it the camera, road and place pages are reachable
+              only through the sitemap. A plain <a> so a crawler follows it without script.
+            */}
+            <a href="/cameras">Browse every traffic camera</a>
             <a href="#layers">All {AUDIT_TOTALS.layers} layers</a>
             <a href={BRAND.discordUrl} target="_blank" rel="noreferrer noopener">
               Discord
@@ -661,6 +684,10 @@ export default async function Landing() {
           </div>
         </div>
       </footer>
+      {/* The Discord invitation. It gates itself (lib/shell/community.ts): an empty live
+          region until 40 seconds of visible time, and never again once answered here or
+          in the console. Most visitors land here and many never open /app. */}
+      <CommunityNote surface="landing" />
     </>
   );
 }

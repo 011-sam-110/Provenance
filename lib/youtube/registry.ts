@@ -52,21 +52,32 @@ export function rememberResolutions(resolutions: readonly Resolution[]): void {
 // above because it answers a different question ("everything this channel is
 // running") and is populated ON DEMAND, one channel at a time — see
 // listChannelLive for why eager resolution would be unaffordable.
-const channelCache = new Map<string, { value: ChannelLive; at: number }>();
+const channelCache = new Map<string, { value: ChannelLive; at: number; ttlMs: number }>();
 const channelInflight = new Map<string, Promise<ChannelLive>>();
+
+/** How long a "nothing live" answer is held. See channelTtlMs. */
+export const EMPTY_CHANNEL_TTL_MS = 2 * 60 * 1000;
+
+/**
+ * A positive (or dormant) answer is held for the full TTL. "Nothing live" is held
+ * for two minutes only. Ten minutes would hide a stream that started soon after, but
+ * holding it for NO time made each open of a quiet channel cost a 100-unit
+ * search.list: 100 opens spent the whole 10,000-unit daily quota, and after that the
+ * shared news-channel resolution failed too.
+ */
+export function channelTtlMs(value: ChannelLive): number {
+  return value.videos.length > 0 || value.dormant ? TTL_MS : EMPTY_CHANNEL_TTL_MS;
+}
 
 export async function getChannelLive(channelId: string): Promise<ChannelLive> {
   const hit = channelCache.get(channelId);
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.value;
+  if (hit && Date.now() - hit.at < hit.ttlMs) return hit.value;
 
   let pending = channelInflight.get(channelId);
   if (!pending) {
     pending = listChannelLive(channelId)
       .then((value) => {
-        // Only cache a positive answer. Caching "nothing live" for ten minutes
-        // would hide a stream that started thirty seconds later, and costs the
-        // user the thing they clicked on.
-        if (value.videos.length > 0 || value.dormant) channelCache.set(channelId, { value, at: Date.now() });
+        channelCache.set(channelId, { value, at: Date.now(), ttlMs: channelTtlMs(value) });
         return value;
       })
       .finally(() => channelInflight.delete(channelId));

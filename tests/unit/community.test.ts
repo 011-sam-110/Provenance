@@ -3,10 +3,13 @@ import {
   COMMUNITY_KEY,
   COMMUNITY_VERSION,
   EMPTY_COMMUNITY_STATE,
+  LANDING_HOLD_MS,
   QUALIFY_ACTIVE_MS,
   addActiveMs,
   blockedBy,
   forcedFromSearch,
+  gateContext,
+  initialHoldMs,
   loadCommunityState,
   markResolved,
   qualifies,
@@ -132,6 +135,36 @@ describe("the gate", () => {
 
   test("a recorded resolution outranks every other reason", () => {
     expect(blockedBy(stateWith({ resolved: "joined" }), { bootPlaying: true, diveActive: true })).toBe("joined");
+  });
+});
+
+describe("the landing surface", () => {
+  const CONSOLE_HOLD = 5_920;
+
+  test("the console keeps the hold it is given, unchanged", () => {
+    expect(initialHoldMs("console", CONSOLE_HOLD)).toBe(CONSOLE_HOLD);
+  });
+
+  test("the landing has no boot plate to wait for, so its hold is short and fixed", () => {
+    expect(initialHoldMs("landing", CONSOLE_HOLD)).toBe(LANDING_HOLD_MS);
+    // A normal visitor still cannot qualify inside the hold: the bar is forty seconds.
+    expect(LANDING_HOLD_MS).toBeLessThan(QUALIFY_ACTIVE_MS);
+  });
+
+  test("the landing is never held back by a boot plate or a dive, because it has neither", () => {
+    expect(gateContext("landing", { bootPlaying: true, diveActive: true })).toEqual(OPEN_CTX);
+    const live = { bootPlaying: true, diveActive: false };
+    expect(gateContext("console", live)).toEqual(live);
+  });
+
+  test("one answer covers both surfaces: they share one persisted state", () => {
+    const store = memoryStorage();
+    // Dismissed on the landing page…
+    saveCommunityState(markResolved(stateWith({ activeMs: QUALIFY_ACTIVE_MS }), "dismissed"), store);
+    // …is not asked again in the console.
+    const inConsole = loadCommunityState(store);
+    expect(shouldInvite(inConsole, gateContext("console", OPEN_CTX))).toBe(false);
+    expect(shouldInvite(inConsole, gateContext("landing", OPEN_CTX))).toBe(false);
   });
 });
 

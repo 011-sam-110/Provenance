@@ -160,6 +160,126 @@ export interface GlobeControls {
   rest(): void;
 }
 
+/**
+ * THE GLOBE'S GROUND, AND THE ONE RULE IT HAS TO OBEY: THE SEA IS DARKER THAN THE LAND.
+ *
+ * The basemap draws no land. Land is whatever `background` is showing through, and the
+ * only thing that gives a continent a shape is the coverage choropleth painted on top of
+ * it. So the reader's sense of "that is a country and that is ocean" comes entirely from
+ * these tones, and if the sea is the brighter of the two the globe inverts: the oceans
+ * read as landmasses and the countries read as holes.
+ *
+ * That is what shipped. OpenFreeMap's dark style paints `water` rgb(27,27,29) over a
+ * `background` of rgb(12,12,12), and an unmeasured country composited to rgb(16,22,27) —
+ * DARKER than the sea around it. Nothing was geometrically wrong: the pins were on their
+ * cities to within a kilometre. They just looked wrong, because there was no readable
+ * coastline to place them against, so a pin on Lahore read as a dot floating over a shape
+ * nobody could identify.
+ *
+ * `landReadsAboveSea()` states the invariant and `tests/unit/landing-globe-ground.test.ts`
+ * holds it, so a palette change cannot re-invert the globe without going red.
+ */
+export const GLOBE_SEA = "#05070c";
+export const COVERAGE_NO_DATA = "#141f27";
+export const COVERAGE_RAMP_LOW = "#1d3540";
+export const COVERAGE_RAMP_HIGH = "#3fb4ce";
+export const COVERAGE_OPACITY = 0.55;
+/** Country outlines, drawn from the coverage polygons themselves. See `pv-coverage-line`. */
+export const COVERAGE_BORDER = "rgba(214,229,236,0.42)";
+/** OpenFreeMap `dark`'s own background, which is what land is painted on. */
+export const BASEMAP_LAND = "#0c0c0c";
+
+/**
+ * Border width by zoom — and the floor is the load-bearing half.
+ *
+ * The first cut of this ramp was 0.4/0.7/1.1 and rendered as nothing. A sub-pixel line
+ * does not draw thin, it draws FAINT: the rasteriser spreads it over one pixel and scales
+ * the alpha to match, so 0.7 px at 26% opacity arrives at roughly 18% and vanishes into a
+ * near-black globe. Compared side by side on the running page at the resting zoom: at
+ * 0.7 px only Algeria and Libya could be traced, at 0.9 px the Mediterranean, Black Sea,
+ * Caspian and Gulf all read at a glance.
+ *
+ * So no stop may go under 0.9. The resting zoom is `zoomToFill(container)`, which is 2.84
+ * on a desktop stage and 1.62 on a phone — one ramp, two very different places on it, and
+ * the phone is the one a ramp starting at 0.4 lets down hardest.
+ */
+export const COVERAGE_BORDER_WIDTH: [number, number][] = [
+  [0, 0.9],
+  [3, 1],
+  [6, 1.4],
+];
+
+/** The width the ramp above yields at `zoom`. Exported so a test can hold the floor. */
+export function borderWidthAt(zoom: number): number {
+  const stops = COVERAGE_BORDER_WIDTH;
+  if (zoom <= stops[0][0]) return stops[0][1];
+  for (let i = 1; i < stops.length; i++) {
+    if (zoom > stops[i][0]) continue;
+    const [z0, w0] = stops[i - 1];
+    const [z1, w1] = stops[i];
+    return w0 + ((w1 - w0) * (zoom - z0)) / (z1 - z0);
+  }
+  return stops[stops.length - 1][1];
+}
+
+const hex = (c: string): [number, number, number] => [
+  parseInt(c.slice(1, 3), 16),
+  parseInt(c.slice(3, 5), 16),
+  parseInt(c.slice(5, 7), 16),
+];
+/** Rec. 709 relative luminance, 0-255. Good enough to order two near-blacks. */
+const luma = ([r, g, b]: [number, number, number]): number => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+/**
+ * Does the DARKEST land on the globe still read as brighter than the sea?
+ *
+ * The darkest land is an unmeasured country: `COVERAGE_NO_DATA` at `COVERAGE_OPACITY`
+ * over the basemap's background. Everything the ramp paints is brighter than that, so
+ * checking the floor checks the whole globe.
+ */
+export function landReadsAboveSea(sea = GLOBE_SEA, noData = COVERAGE_NO_DATA): boolean {
+  const base = hex(BASEMAP_LAND);
+  const top = hex(noData);
+  const composited = base.map((v, i) => v * (1 - COVERAGE_OPACITY) + top[i] * COVERAGE_OPACITY) as [
+    number,
+    number,
+    number,
+  ];
+  return luma(composited) > luma(hex(sea));
+}
+
+/** `#rrggbb` or `rgba(r,g,b,a)` to straight rgb plus its alpha. */
+const parseColor = (c: string): { rgb: [number, number, number]; a: number } => {
+  if (c.startsWith("#")) return { rgb: hex(c), a: 1 };
+  const n = c
+    .slice(c.indexOf("(") + 1, c.indexOf(")"))
+    .split(",")
+    .map(Number);
+  return { rgb: [n[0], n[1], n[2]], a: n[3] ?? 1 };
+};
+
+const over = (under: [number, number, number], top: string): [number, number, number] => {
+  const { rgb, a } = parseColor(top);
+  return under.map((v, i) => v * (1 - a) + rgb[i] * a) as [number, number, number];
+};
+
+/**
+ * Does a country outline still read as a line once it is drawn on the land?
+ *
+ * The hardest case is the BRIGHTEST land — the top of the coverage ramp — because
+ * everything else on the globe is darker than that, so a border that survives there
+ * survives everywhere. The 20-point floor is a judgement: a hairline at globe distance is
+ * anti-aliased into its neighbours, and a few points of luma is not a visible edge.
+ *
+ * The only outline the globe had before this was the choropleth own
+ * `fill-outline-color`, `rgba(5,7,12,0.7)` — near enough to `GLOBE_SEA` that a coastline
+ * was the colour of the water beside it.
+ */
+export function borderReadsOnLand(border = COVERAGE_BORDER): boolean {
+  const [r, g, b] = hex(COVERAGE_RAMP_HIGH);
+  const land = over(hex(BASEMAP_LAND), `rgba(${r},${g},${b},${COVERAGE_OPACITY})`);
+  return luma(over(land, border)) > luma(land) + 20;
+}
 export default function HeroGlobe({
   layers,
   satColor,
@@ -374,6 +494,16 @@ export default function HeroGlobe({
         if (layer.type === "symbol") map.setLayoutProperty(layer.id, "visibility", "none");
       }
 
+      // SINK THE SEA BELOW THE LAND. See the GLOBE_SEA block above for why this is not a
+      // taste change: upstream's water is brighter than an unmeasured country, which
+      // inverts the globe. Written as a paint override rather than a forked style for the
+      // same reason the labels are hidden rather than deleted — the style document comes
+      // from a URL we do not own and is re-fetched whole. A basemap that renames its water
+      // layer loses the correction and keeps the globe; it does not throw.
+      if (map.getLayer("water")) {
+        map.setPaintProperty("water", "fill-color", GLOBE_SEA);
+      }
+
       /**
        * THE COVERAGE CHOROPLETH — the land, shaded by how many signal layers reach it.
        *
@@ -405,32 +535,76 @@ export default function HeroGlobe({
               f.properties = { ...f.properties, pvLayers: shading[iso] ?? 0 };
             }
             map.addSource("pv-coverage", { type: "geojson", data: fc });
-            map.addLayer({
-              id: "pv-coverage",
-              type: "fill",
-              source: "pv-coverage",
-              paint: {
-                "fill-color": [
-                  "case",
-                  ["==", ["get", "pvLayers"], 0],
-                  "#141f27",
-                  [
+            // UNDER the signal layers — which is what the note further down always
+            // claimed and what the code did not do. The polygons arrive from a fetch, so
+            // by the time this ran the signal layers were already on the style and the
+            // choropleth was appended ON TOP of them: a 0.55-opacity fill over every dot
+            // the page is about. `beforeId` restores the documented order, guarded
+            // because the signal layers are only there if `style.load` got that far.
+            const under = map.getLayer("pv-fills") ? "pv-fills" : undefined;
+            map.addLayer(
+              {
+                id: "pv-coverage",
+                type: "fill",
+                source: "pv-coverage",
+                paint: {
+                  "fill-color": [
+                    "case",
+                    ["==", ["get", "pvLayers"], 0],
+                    COVERAGE_NO_DATA,
+                    [
+                      "interpolate",
+                      ["linear"],
+                      // The audit distribution is long-tailed — most countries sit in
+                      // single digits and one reaches 22 — so a linear ramp would leave
+                      // almost the whole map at the dark end. The same 0.6 exponent the
+                      // legend is drawn to.
+                      ["^", ["/", ["to-number", ["get", "pvLayers"]], max], 0.6],
+                      0,
+                      COVERAGE_RAMP_LOW,
+                      1,
+                      COVERAGE_RAMP_HIGH,
+                    ],
+                  ],
+                  "fill-opacity": COVERAGE_OPACITY,
+                  "fill-outline-color": "rgba(5,7,12,0.7)",
+                },
+              },
+              under,
+            );
+
+            /**
+             * THE BORDERS, and they are not decoration.
+             *
+             * Nothing else on this sphere draws a coastline. The basemap own
+             * `boundary_country_z0-4` is hsl(0,0%,23%) under a blur, invisible against a
+             * near-black globe, and the choropleth `fill-outline-color` is darker still.
+             * So the only edge between two countries was a difference in coverage
+             * brightness, and most of Europe measures the same — two neighbours merged
+             * into one shape and a reader had no way to tell which country a pin was
+             * standing in. Every pin was on its city to the kilometre and the map still
+             * read as wrong, because there was no geography under it to check against.
+             *
+             * Same source as the fill, so it costs no bytes and cannot draw a border the
+             * choropleth does not shade.
+             */
+            map.addLayer(
+              {
+                id: "pv-coverage-line",
+                type: "line",
+                source: "pv-coverage",
+                paint: {
+                  "line-color": COVERAGE_BORDER,
+                  "line-width": [
                     "interpolate",
                     ["linear"],
-                    // The audit's distribution is long-tailed — most countries sit in single
-                    // digits and one reaches 22 — so a linear ramp would leave almost the
-                    // whole map at the dark end. The same 0.6 exponent the legend is drawn to.
-                    ["^", ["/", ["to-number", ["get", "pvLayers"]], max], 0.6],
-                    0,
-                    "#1d3540",
-                    1,
-                    "#3fb4ce",
+                    ["zoom"],
+                    ...COVERAGE_BORDER_WIDTH.flat(),
                   ],
-                ],
-                "fill-opacity": 0.55,
-                "fill-outline-color": "rgba(5,7,12,0.7)",
+                },
               },
-            });
+              under,
+            );
           })
           // A globe with no land shading is the honest failure: the basemap, the signal
           // layers and the pins all still draw, and no claim on the page depends on it.

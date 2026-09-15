@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { VISIT_KEY } from "@/lib/analytics/returnFlag";
+import { OPT_OUT_KEY } from "@/lib/analytics/optOut";
+import { DEFAULT_BEACON_HOST } from "@/lib/analytics/beacon";
 
 // The /privacy page makes public factual claims about what the deployed software
 // does. Three of those claims are cheap to break by accident and expensive to have
@@ -41,8 +44,8 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-09-03"`);
-    expect(copy).toContain("3 September 2026");
+    expect(copy).toContain(`dateTime="2026-09-15"`);
+    expect(copy).toContain("15 September 2026");
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {
@@ -119,4 +122,68 @@ describe("AGPL-3.0 section 13 source offer", () => {
       expect(src).toContain("BRAND.license.url");
     });
   }
+});
+
+describe("privacy page: the return flag", () => {
+  // Three sentences became false when the beacon learned to tell a return from a new visit.
+  // If any of them comes back, or a storage key is renamed without the page, this fails.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+
+  it("names both storage keys", () => {
+    expect(copy).toContain(VISIT_KEY);
+    expect(copy).toContain(OPT_OUT_KEY);
+  });
+
+  it("no longer promises that nothing links one visit to the next", () => {
+    expect(copy).not.toContain("nothing that links this visit to your next one");
+    expect(copy).not.toContain("nothing that survives your tab");
+    expect(copy).not.toContain("neither follows you");
+  });
+
+  it("states the 13 months, both browser signals and the German time zone", () => {
+    expect(copy).toContain("13 months");
+    expect(copy).toContain("Global Privacy Control");
+    expect(copy).toContain("Germany&rsquo;s time zone");
+  });
+
+  it("never claims the dates are deleted on a timer, which localStorage cannot do", () => {
+    expect(copy).not.toMatch(/deleted (13 months|after 13)/);
+  });
+
+  it("renders the opt-out control", () => {
+    expect(copy).toContain("<CountingToggle />");
+  });
+});
+
+describe("privacy page: where PostHog keeps the data", () => {
+  // The region is fixed when the PostHog project is made, and the page tells visitors
+  // which one it is. On 2026-09-15 the project was found in the US region while this page
+  // said "European servers" twice. So the page and the default host are pinned together:
+  // to move region, change lib/analytics/beacon.ts and both sentences in one commit.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+
+  it("names the region the default beacon host is in", () => {
+    expect(DEFAULT_BEACON_HOST).toBe("https://us.i.posthog.com");
+    expect(copy.match(/servers in the United States/g) ?? []).toHaveLength(2);
+    expect(copy).not.toMatch(/Europe/);
+  });
+});
+
+describe("privacy page: PostHog is listed with the hosts that see your IP", () => {
+  // The beacon went live on 2026-09-15 with no card here, so the section that lists who
+  // sees a visitor's IP address left out a host that sees it on every page. This pins the
+  // card. It cannot check the PostHog project's "Discard client IP data" setting, which the
+  // card relies on: that setting lives in PostHog, not in this repo.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+  const section = copy.slice(
+    copy.indexOf("Who sees your IP address."),
+    copy.indexOf("Most camera imagery does not work this way."),
+  );
+
+  it("has a PostHog card that names both hosts and the discard setting", () => {
+    expect(section).toContain('<h3 className="pv-h3">PostHog</h3>');
+    expect(section).toContain("us.i.posthog.com");
+    expect(section).toContain("us-assets.i.posthog.com");
+    expect(section).toContain("does not store it with the event");
+  });
 });

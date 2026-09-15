@@ -20,6 +20,7 @@ import type { StageId } from "@/lib/console/types";
 import { placementStore } from "@/lib/console/placement";
 import { listPresets, applyPreset, saveCustomPreset, resetActiveBoard } from "@/lib/console/presets";
 import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
+import { track } from "@/lib/analytics/track";
 import { encodeLayout } from "@/lib/console/share";
 import { langStore, useLang } from "@/lib/i18n/store";
 import { LANGS } from "@/lib/i18n/catalog";
@@ -175,6 +176,7 @@ function buildCommands(close: () => void): Command[] {
       group: "Map layers",
       run: () => {
         layersStore.toggle(k);
+        track({ name: "layer_toggled", layer: k });
         close();
       },
     });
@@ -218,7 +220,7 @@ function buildCommands(close: () => void): Command[] {
     run: () => { resetActiveBoard(); close(); },
   });
   cmds.push({ id: "save-preset", label: "Save layout as preset…", hint: "save", group: "Workspace", run: () => { const t = window.prompt("Preset name?"); if (t) saveCustomPreset(t); close(); } });
-  cmds.push({ id: "share-layout", label: "Copy shareable link", hint: "share", group: "Workspace", run: () => { const url = `${location.origin}${location.pathname}?c=${encodeLayout(shellLayoutStore.get())}`; navigator.clipboard?.writeText(url); close(); } });
+  cmds.push({ id: "share-layout", label: "Copy shareable link", hint: "share", group: "Workspace", run: () => { const url = `${location.origin}${location.pathname}?c=${encodeLayout(shellLayoutStore.get())}`; void navigator.clipboard?.writeText(url).then(() => track({ name: "share_link_copied", what: "layout" }), () => {}); close(); } });
 
   return cmds;
 }

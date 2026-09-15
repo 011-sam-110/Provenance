@@ -113,7 +113,7 @@ import { ringBounds, toWatchRingFC } from "@/lib/map/circle";
 import { shellLayoutStore } from "@/lib/console/store";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
-import { signalFreshnessStore } from "@/lib/signals/freshness";
+import { signalFreshnessStore, signalFreshnessFromPayload } from "@/lib/signals/freshness";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { useTimeWindow, windowMsFor, withinWindow } from "@/lib/shell/timeWindow";
 import { viewModeStore } from "@/lib/shell/viewMode";
@@ -2700,7 +2700,7 @@ function SignalFeed({
           rawRef.current = objs;
           loadedOnceRef.current = true;
           publish(objs);
-          signalFreshnessStore.record(id, { ok: true, count: objs.length });
+          signalFreshnessStore.record(id, signalFreshnessFromPayload({ ok: d.ok, count: objs.length }));
         })
         .catch(() => {
           if (!alive) return;

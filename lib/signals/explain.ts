@@ -63,7 +63,7 @@ const EXPLAINERS: LayerExplainer[] = [
     coverage: "Every country for which at least one input factor has data.",
     limitations: [
       "This is OUR composite, not an established index. It is not INFORM, not Fragile States, and has not been validated against them.",
-      "The score is only as complete as its inputs: with ACLED dormant the conflict factor is missing entirely, which caps every score well below 100. The factor count shown beside the score tells you how much of the formula actually ran.",
+      "The score is a floor, not a measurement: a factor with no data counts as 0 and nothing is renormalised, so a country scored on one factor of four cannot score high. Even with every input present, the conflict factor (GDELT article volume) is hard-capped, so no score can exceed 82. The factor count shown beside the score tells you how much of the formula actually ran.",
       "A low score means we found little signal, which is not the same as a country being stable.",
       "Weights are a judgement call, not a fitted model.",
     ],
@@ -356,7 +356,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "The four-hour window is when GDELT FILED the records, not when anything happened. Each marker shows the best-covered event's own date, which carries day resolution at best and is sometimes years older.",
       "The marker sits on a national centroid, which is usually empty land. It is a country statistic drawn as a dot, not a location.",
       "Coverage follows press freedom and internet access, so the quietest countries on this layer are often the least covered.",
-      "For adjudicated, located incident records use the ACLED layer instead. This layer cannot substitute for it.",
+      "For adjudicated, located incident records you need a curated dataset such as ACLED, which this app no longer carries. This layer cannot substitute for one.",
     ],
   },
   {

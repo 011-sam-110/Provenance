@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BRAND } from "@/lib/brand";
+import { CountingToggle } from "@/components/analytics/CountingToggle";
 
 const REPO_URL = BRAND.repoUrl;
 const ISSUES_URL = `${REPO_URL}/issues`;
@@ -13,6 +14,39 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * statement, not a formality, so the rule for editing this page is the same as the
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
+ *
+ * WHAT CHANGED ON 2026-09-15:
+ *   - PostHog keeps the data in the UNITED STATES, not Europe. The production project is in
+ *     PostHog's US region, and a region cannot be changed after signup. The two sentences
+ *     that said "European servers" would have been false as soon as the key was set, so
+ *     both now say United States. DEFAULT_BEACON_HOST in lib/analytics/beacon.ts moved to
+ *     us.i.posthog.com in the same commit, and tests/unit/privacy-page.test.ts fails if
+ *     the page and the default host name different regions.
+ *   - PostHog now has a card under "Who sees your IP address". The beacon went live on
+ *     this day, and from then its two hosts see the IP address of every counted visitor,
+ *     but the section that lists those hosts did not name them. The PostHog project's
+ *     "Discard client IP data" setting was OFF, so PostHog also stored the address with
+ *     each event. It was switched on the same day, and the card says so. That setting
+ *     lives in PostHog, not in this repo, so no test can see it: check it at Project
+ *     settings -> Privacy before editing the card.
+ *
+ * WHAT CHANGED ON 2026-09-14:
+ *   - The page-view counter can now tell a new visit from a return. The browser keeps
+ *     tn.visit.v1 = { first, last } (lib/analytics/returnFlag.ts), and PostHog receives
+ *     only visit_kind and return_gap as super properties (components/analytics/Beacon.tsx).
+ *     So three sentences became false and were narrowed in this commit: "nothing that
+ *     links this visit to your next one" (top card), "neither follows you" (cookies
+ *     heading) and "nothing that survives your tab" (rights). tests/unit/privacy-page.test.ts
+ *     fails if any of them comes back.
+ *   - The 13 months are MAX_LIFETIME_DAYS = 395, counted from `first`. localStorage has no
+ *     expiry, so the dates are thrown away the next time the browser visits after that.
+ *     The page says exactly that and must NOT say "deleted after 13 months".
+ *   - The opt-out (components/analytics/CountingToggle.tsx), Do Not Track, Global Privacy
+ *     Control and the German time zones (EXCLUDED_TIME_ZONES in lib/analytics/optOut.ts)
+ *     all stop the dynamic import of posthog-js, so such a browser loads nothing.
+ *     tests/unit/beacon-config.test.ts pins the gate.
+ *   - Five named actions (lib/analytics/track.ts) carry enumerated values only. The
+ *     "recorded with the type of thing" sentence is made true by eventProperties().
  *
  * WHAT CHANGED ON 2026-09-08:
  *   - The CARTO card was narrowed AGAIN, to fonts only, and the OpenFreeMap card grew
@@ -88,7 +122,8 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     THIRD-PARTY, added 2026-09-08: a cookieless PostHog beacon
  *     (components/analytics/Beacon.tsx, configured by lib/analytics/beacon.ts). What it is
  *     NOT is the thing the page previously ruled out: `persistence: "sessionStorage"` sets
- *     no cookie and keeps nothing past the tab, `disable_session_recording` is on, and
+ *     no cookie and keeps its identifier inside the tab (the return flag, added 2026-09-14,
+ *     is the one thing that outlives it, and it sends no identifier), `disable_session_recording` is on, and
  *     there is no ad pixel and no cross-site identifier. tests/unit/beacon-config.test.ts
  *     pins each of those three, including the trap that the most private setting
  *     ("memory") would have made bounce rate read ~100% forever. It is DORMANT-SAFE: with
@@ -175,7 +210,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-09-03">3 September 2026</time>
+                Last updated <time dateTime="2026-09-15">15 September 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -212,8 +247,9 @@ export default function PrivacyPage() {
               <p>
                 Two counters, and neither sets a cookie. One is ours and lives three minutes:
                 how many browsers have the site open right now. The other counts page views and
-                clicks, on PostHog&rsquo;s European servers. No Google Analytics, no ad pixel, no
-                session recording, and nothing that links this visit to your next one.
+                clicks, on PostHog&rsquo;s servers in the United States, and can tell a new visit from a
+                return. No Google Analytics, no ad pixel, no session recording, and nothing that
+                says who you are.
               </p>
             </div>
           </div>
@@ -413,6 +449,24 @@ export default function PrivacyPage() {
                   </td>
                   <td>Local storage</td>
                   <td>No. The decision is made in your browser</td>
+                </tr>
+                <tr>
+                  <td>
+                    The day you first came and the day you last came, so the page-view counter can
+                    tell a return from a new visit
+                  </td>
+                  <td>
+                    Local storage <span className="pv-num">tn.visit.v1</span>, thrown away on your
+                    first visit after 13 months
+                  </td>
+                  <td>No. Only new or returning, and roughly how long ago, is sent to PostHog</td>
+                </tr>
+                <tr>
+                  <td>That you asked not to be counted, if you did</td>
+                  <td>
+                    Local storage <span className="pv-num">tn.analytics.optout.v1</span>
+                  </td>
+                  <td>No</td>
                 </tr>
                 <tr>
                   <td>
@@ -683,6 +737,18 @@ export default function PrivacyPage() {
                 autoplay as soon as the widget is on your board.
               </p>
             </div>
+            <div className="pv-card">
+              <h3 className="pv-h3">PostHog</h3>
+              <p>
+                <span className="pv-num">us.i.posthog.com</span> receives the page-view counter
+                described below, and <span className="pv-num">us-assets.i.posthog.com</span> serves
+                its library files, so PostHog sees your IP address on every page you open here. The
+                project is set to discard client IP data: PostHog may use the address to work out a
+                rough location, such as a country, and then does not store it with the event. None of
+                this loads if you turned counting off, or if your browser sends Do Not Track or Global
+                Privacy Control.
+              </p>
+            </div>
           </div>
           <div className="pv-prose">
             <p>
@@ -712,7 +778,7 @@ export default function PrivacyPage() {
               <span>Cookies</span>
               <span>Analytics</span>
             </p>
-            <h2 className="pv-h2">No cookies of ours. Two counters, and neither follows you.</h2>
+            <h2 className="pv-h2">No cookies of ours. Two counters, and neither knows who you are.</h2>
           </div>
           <div className="pv-prose">
             <p>
@@ -732,22 +798,44 @@ export default function PrivacyPage() {
               <a href="https://posthog.com/privacy" target="_blank" rel="noreferrer noopener">
                 PostHog
               </a>
-              , running on their European servers. It records which pages were opened, in what
+              , running on their servers in the United States. It records which pages were opened, in what
               order, how long each was open, and where on the page you clicked &mdash; including
               clicks that did nothing, which is how a broken control gets found. It exists because
               a server log physically cannot answer those questions: leaving a page sends no
-              request, and a click that fails to do anything sends nothing at all.
+              request, and a click that fails to do anything sends nothing at all. It also counts
+              five named actions: opening something on the map, switching a board, turning a layer
+              on or off, copying a share link and arming an alert. Each one is recorded with the
+              type of thing, never with a place, a name or anything you typed.
             </p>
             <p>
               What was <em>not</em> added matters as much. It sets <strong>no cookie</strong>. The
               identifier it uses to tell one page view from the next lives in your tab&rsquo;s own
-              memory and is destroyed when you close that tab, so there is nothing to link this
-              visit to your next one and nothing to follow you to another site. It does not record
-              your screen, your typing or your form fields &mdash; session replay is switched off
-              in the configuration, not merely unused. There is no ad pixel, no Google Analytics,
-              no Meta pixel and no fingerprinting library. And if your browser sends{" "}
-              <span className="pv-num">Do Not Track</span>, it does not count you at all.
+              memory and is destroyed when you close that tab, so it cannot follow you to another
+              site or to your next visit. It does not record your screen, your typing or your form
+              fields &mdash; session replay is switched off in the configuration, not merely unused.
+              There is no ad pixel, no Google Analytics, no Meta pixel and no fingerprinting library.
             </p>
+            <p>
+              <strong>One thing does outlive the tab.</strong> Your browser keeps two dates in its
+              own storage, under <span className="pv-num">tn.visit.v1</span>: the day you first came
+              and the day you last came. When you open the site, the counter is told only whether
+              this browser has been here before and, if so, roughly how long ago: the same day, the
+              day before, within a week, within a month, or longer. The dates are not sent. Every
+              browser that came back within a week sends the same words, so the counter can say how
+              many visits are returns but not whose. 13 months after your first visit, the dates are
+              thrown away the next time you come, and you count as new again. Coming back does not
+              extend the 13 months.
+            </p>
+            <p>
+              You can turn this off with the button below. It stops the page-view counter in this
+              browser, deletes the visit dates, and remembers your choice under{" "}
+              <span className="pv-num">tn.analytics.optout.v1</span>. If your browser sends{" "}
+              <span className="pv-num">Do Not Track</span> or{" "}
+              <span className="pv-num">Global Privacy Control</span>, the counter does not load and
+              nothing is written. It also does not load in a browser set to
+              Germany&rsquo;s time zone, because German law gives this kind of counting no exemption.
+            </p>
+            <CountingToggle />
             <p>
               Two honest consequences. Because it is a script, anything that blocks scripts blocks
               it &mdash; a good share of this site&rsquo;s visitors block it, so its numbers
@@ -875,8 +963,9 @@ export default function PrivacyPage() {
               persist. One is the server access log described above, which is IP-masked, rolled and
               deleted &mdash; together with the daily counts taken from it, which are kept but hold
               no address at any resolution. One is the page-view counter described above, which
-              holds no cookie and nothing that survives your tab, and which will not have counted
-              you at all if your browser sends Do Not Track. The third is a feedback answer, if you
+              sets no cookie, keeps only your first and last visit dates on your own device, and
+              does not run at all if you turned it off or your browser sends Do Not Track or Global
+              Privacy Control. The third is a feedback answer, if you
               chose to send one, which is sitting as a message in a private Telegram chat &mdash;
               that is the only place a name or an email you gave us can be, and asking will get it
               deleted. The fourth is historical: the page-view counts a previous host gathered
@@ -903,14 +992,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-09-03">3 September 2026</time>
+                <time dateTime="2026-09-15">15 September 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 3 September 2026. When the behaviour changes this
+              This describes the code as deployed on 15 September 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

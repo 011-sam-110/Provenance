@@ -66,6 +66,11 @@ jobs:
           # generated at build time and reads the BUILD's environment, so this has to be
           # here and not on the box.
           SITE_ENV: production
+          # The PostHog project key is a public, write-only key that ships in the client
+          # bundle, so it is a repo VARIABLE, not a secret. It must be here because
+          # NEXT_PUBLIC_* is fixed at build time. With the variable unset this is an
+          # empty string, and lib/analytics/beacon.ts then loads nothing.
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
         # NOTE ON WHAT IS ABSENT. No upstream API keys. Every fetch in this repo is
         # keyless-first and dormant-safe, and the pages that show live data are
         # regenerated at runtime on the box where the keys actually live. So the secrets

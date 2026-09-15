@@ -74,6 +74,29 @@ export interface EonetCategoryMeta {
    */
   maxAgeDays?: number;
   /**
+   * The order the category's coordinate pairs actually arrive in.
+   *
+   * GeoJSON says [lon, lat] and EONET honours that for every category but FLOODS,
+   * whose rings arrive [lat, lon]. Measured 2026-09-12 against
+   * `categories/floods?status=all`: all 60 open events are GDACS-relayed Polygons and
+   * all 60 are transposed — Indonesia at [-1.03, 98.24], Peru at [-13.39, -75.81],
+   * Iran at [36.50, 54.17]. The ones whose second value falls outside +-90 PROVE it;
+   * none prove the reverse.
+   *
+   * It is NOT the relay and it is NOT the geometry type, so do not widen this by
+   * guessing at either: GDACS-sourced WILDFIRE points in the same feed are correct
+   * [lon, lat], and ReliefWeb drought POLYGONS are correct too. The property belongs
+   * to this one category, which is why it is declared per category rather than
+   * sniffed per feature.
+   *
+   * `readPair` still range-checks whatever this asks for and falls back to the other
+   * order when the declared one is impossible, so if EONET ever fixes the feed the
+   * events that prove it keep working while this flag is stale. The events that do
+   * NOT prove it would flip, so the audit script asserts the order against live data
+   * on every run — see `assertFloodOrder` in scripts/country-event-breakdown.mts.
+   */
+  coordOrder?: "lonlat" | "latlon";
+  /**
    * Read this category from its own `status=all` feed instead of the shared
    * `status=open` one.
    *
@@ -116,18 +139,43 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     color: "#0ea5e9",
     maxAgeDays: 60,
     allStatuses: true,
+    // See `coordOrder` above. Measured, not assumed.
+    coordOrder: "latlon",
   },
 };
 
-/** Extract a representative [lon, lat] from a Point or (defensively) a Polygon. */
-export function representativePoint(geom: EonetGeometry | undefined): [number, number] | null {
+/**
+ * Read one coordinate pair in the order the category actually publishes.
+ *
+ * Returns [lon, lat] whatever went in. When the declared order yields a latitude that
+ * cannot exist, the other order is used instead: a pair proves its own ordering when one
+ * of its values is outside +-90, and a proof on the wire beats a flag in this file.
+ */
+function readPair(a: number, b: number, order: "lonlat" | "latlon"): [number, number] {
+  const [lon, lat] = order === "latlon" ? [b, a] : [a, b];
+  if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) return [lat, lon];
+  return [lon, lat];
+}
+
+/**
+ * Extract a representative [lon, lat] from a Point or (defensively) a Polygon.
+ *
+ * `order` is the order the SOURCE uses; the return value is always [lon, lat]. It
+ * defaults to the GeoJSON order, so every caller that does not pass one is unaffected.
+ */
+export function representativePoint(
+  geom: EonetGeometry | undefined,
+  order: "lonlat" | "latlon" = "lonlat",
+): [number, number] | null {
   const c = geom?.coordinates;
   if (!Array.isArray(c)) return null;
-  // Point: [lon, lat]
+  // Point
   if (typeof c[0] === "number" && typeof c[1] === "number") {
-    return [c[0], c[1]];
+    return readPair(c[0], c[1], order);
   }
-  // Polygon: [[[lon,lat], …]] — average the outer ring so an areal event still pins.
+  // Polygon: [[[…], …]] — average the outer ring so an areal event still pins. The ring
+  // is normalised vertex by vertex BEFORE averaging, so a ring that straddles the guard
+  // cannot average into a different answer than its own vertices give.
   const ring = (c as unknown[])[0];
   if (Array.isArray(ring) && ring.length) {
     let sx = 0;
@@ -135,8 +183,9 @@ export function representativePoint(geom: EonetGeometry | undefined): [number, n
     let n = 0;
     for (const pt of ring as unknown[]) {
       if (Array.isArray(pt) && typeof pt[0] === "number" && typeof pt[1] === "number") {
-        sx += pt[0];
-        sy += pt[1];
+        const [lon, lat] = readPair(pt[0] as number, pt[1] as number, order);
+        sx += lon;
+        sy += lat;
         n++;
       }
     }
@@ -166,7 +215,7 @@ export function eonetToFeatures(
       const t = Date.parse(last.date);
       if (Number.isFinite(t) && now - t > meta.maxAgeDays * 86_400_000) continue;
     }
-    const pt = representativePoint(last);
+    const pt = representativePoint(last, meta.coordOrder ?? "lonlat");
     if (!pt) continue;
     const [lon, lat] = pt;
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;

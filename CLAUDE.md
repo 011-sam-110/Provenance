@@ -1,7 +1,10 @@
 # CLAUDE.md — Provenance (repo `Provenance`)
 
 A Next.js 15 single-page global situational-awareness map. **Product name: Provenance.**
-**Prod domain: `provenance-online.vercel.app`** — that is the only domain we ship on.
+**Prod domain: `provenance-online.com`** — that is the only domain we ship on.
+`provenance-online.vercel.app` is the legacy host: `middleware.ts` 301s it here
+(`lib/brand.legacy.ts`), so never publish it as a link, and `curl` it without `-L` and
+you get "Redirecting..." rather than the site.
 Deployed product = `origin/main`.
 
 ## Licence — `AGPL-3.0-only`
@@ -110,7 +113,17 @@ obligations and are not satisfied by the licence.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
-  `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`.
+  `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
+  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, and the two
+  doors `middleware.ts` opens, `gate` and `private`.
+- **`middleware.ts` runs before every route its `matcher` does not exempt, and does three
+  things in a fixed order.** (1) 301s the legacy `.vercel.app` host to the `.com`
+  (`lib/brand.legacy.ts`) — first, so it still fires while the curtain is down. (2) The
+  maintenance curtain, armed by `MAINTENANCE_MODE` (`lib/gate/armed.ts`) and unlocked through
+  `/api/gate`. (3) The private endpoint (`lib/gate/private.ts`), unlocked through `/api/private`,
+  which rewrites to `/app`. The `matcher` must be a string literal, so it cannot import
+  `gateMatcher()`; `tests/unit/gate.test.ts` fails if the two drift. It is **not** the `/admin`
+  guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
@@ -221,7 +234,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 65 registered (2026-09-08) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
-| Unit tests | **3,791 cases / 373 files (2026-09-15)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
+| Unit tests | **3,947 cases / 385 files (2026-09-15)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds

@@ -19,7 +19,8 @@
 //   • Render    components/WorldMap.tsx — ONE aggregated `signals` GeoJSON source
 //                 + one data-driven circle+label layer (colour/radius from props)
 //   • Dossier   components/SignalDetail.tsx via lib/overlay-content.tsx (kind:"signal")
-//   • Rail      components/shell/LayerRail.tsx — auto-grouped "Global signals" section
+//   • Rail      components/shell/SourceCatalog.tsx — the six-section Sources rail,
+//                 its rows from lib/console/sources/railSources.ts
 //
 // POINTS, LINES and POLYGONS are all supported. A source whose features carry a
 // `geometry` (SignalFeature.geometry: LineString/MultiLineString → line layer,
