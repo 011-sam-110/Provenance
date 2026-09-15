@@ -168,3 +168,22 @@ describe("privacy page: where PostHog keeps the data", () => {
     expect(copy).not.toMatch(/Europe/);
   });
 });
+
+describe("privacy page: PostHog is listed with the hosts that see your IP", () => {
+  // The beacon went live on 2026-09-15 with no card here, so the section that lists who
+  // sees a visitor's IP address left out a host that sees it on every page. This pins the
+  // card. It cannot check the PostHog project's "Discard client IP data" setting, which the
+  // card relies on: that setting lives in PostHog, not in this repo.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+  const section = copy.slice(
+    copy.indexOf("Who sees your IP address."),
+    copy.indexOf("Most camera imagery does not work this way."),
+  );
+
+  it("has a PostHog card that names both hosts and the discard setting", () => {
+    expect(section).toContain('<h3 className="pv-h3">PostHog</h3>');
+    expect(section).toContain("us.i.posthog.com");
+    expect(section).toContain("us-assets.i.posthog.com");
+    expect(section).toContain("does not store it with the event");
+  });
+});
