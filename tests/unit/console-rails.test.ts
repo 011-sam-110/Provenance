@@ -3,7 +3,7 @@ import { railsFromRects, type LegacyWidgetLike } from "@/lib/terminal/rails";
 import type { GridRect, SegmentId } from "@/lib/console/types";
 
 // Every persisted `tn.console.v1` layout, every `?c=` share link written by an
-// older build, and all seven built-in presets speak either segment/order/height
+// older build, and the built-in presets speak either segment/order/height
 // (never had a rect) or rect/stageRect (free-dragged). `railsFromRects` is the
 // one place both migrate into rail placements — this is its migration contract,
 // replacing the `fromLegacy` coverage in the deleted terminal-layout-grid.test.ts.

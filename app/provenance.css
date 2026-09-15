@@ -59,7 +59,6 @@
   --pv-strip-h: 2.75rem;
 
   /* Type roles. TWO FACES NOW.
-
      Inter is NOT loaded here: this group nests inside app/layout.tsx, which
      self-hosts Inter via next/font and publishes it as `--tn-font-sans` on
      <html>. Reading that instead of loading a second copy is the only reason

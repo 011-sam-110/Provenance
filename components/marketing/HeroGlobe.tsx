@@ -280,7 +280,6 @@ export function borderReadsOnLand(border = COVERAGE_BORDER): boolean {
   const land = over(hex(BASEMAP_LAND), `rgba(${r},${g},${b},${COVERAGE_OPACITY})`);
   return luma(over(land, border)) > luma(land) + 20;
 }
-
 export default function HeroGlobe({
   layers,
   satColor,

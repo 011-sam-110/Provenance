@@ -266,10 +266,11 @@ describe("README console figures", () => {
   // "Presets", not "boards", and the word matters: lib/monitors.ts merged into
   // lib/console/presets.ts, so one preset is now the layers AND the board that
   // reads them. The README used to have to describe those as two separate
-  // features in the same sentence.
-  it("still describes seven presets, matching the preset list", () => {
-    expect(README).toContain("seven presets");
-    expect(BUILTIN_PRESETS.length).toBe(7);
+  // features in the same sentence. The count went 7 → 2 on 2026-09-15 when the
+  // five non-Globe/non-Streets boards were retired.
+  it("still describes two presets, matching the preset list", () => {
+    expect(README).toContain("two presets");
+    expect(BUILTIN_PRESETS.length).toBe(2);
   });
 });
 

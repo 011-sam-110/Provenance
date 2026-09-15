@@ -345,7 +345,6 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .tn-terminal .tnx-hdr-btn,
-.tn-terminal .tnx-hdr-board-reset,
 .tn-terminal .tn-note-btn {
   transition:
     color var(--tn-mo-fast) var(--tn-mo-ease-io),
@@ -354,7 +353,6 @@
     transform var(--tn-mo-exit) var(--tn-mo-ease-io);
 }
 .tn-terminal .tnx-hdr-btn:active,
-.tn-terminal .tnx-hdr-board-reset:active,
 .tn-terminal .tn-note-btn:active {
   transform: scale(calc(1 - var(--tn-mo-travel) * 0.06));
 }

@@ -168,14 +168,14 @@ describe("persistence — tn.console.sceneChrome.v1, version 1, via loadPersiste
 });
 
 describe("THE HEADLINE CASE, verbatim from the brief", () => {
-  it("hide a widget on WORLD, reload, open INTEL, come back to WORLD — still hidden on WORLD, never hidden on INTEL", async () => {
+  it("hide a widget on GLOBE, reload, open STREETS, come back to GLOBE — still hidden on GLOBE, never hidden on STREETS", async () => {
     const { sceneChromeStore: session1 } = await import("@/lib/console/sceneChrome");
 
-    // Hide a widget on WORLD.
-    session1.setHidden("world", "weather", true);
-    expect(session1.get("world").hidden).toContain("weather");
-    // And it was never hidden on INTEL to begin with.
-    expect(session1.get("intel").hidden).not.toContain("weather");
+    // Hide a widget on GLOBE.
+    session1.setHidden("overview", "weather", true);
+    expect(session1.get("overview").hidden).toContain("weather");
+    // And it was never hidden on STREETS to begin with.
+    expect(session1.get("streets").hidden).not.toContain("weather");
 
     // Simulate a reload: a brand-new module instance (fresh in-memory state — no
     // state is carried over by reference), rehydrated from whatever
@@ -186,23 +186,23 @@ describe("THE HEADLINE CASE, verbatim from the brief", () => {
     const { sceneChromeStore: session2 } = await import("@/lib/console/sceneChrome");
     session2.hydrate();
 
-    // Still hidden on WORLD after the reload.
-    expect(session2.get("world").hidden).toContain("weather");
+    // Still hidden on GLOBE after the reload.
+    expect(session2.get("overview").hidden).toContain("weather");
 
-    // Open INTEL — the widget was never hidden there, reload or not.
-    expect(session2.get("intel").hidden).not.toContain("weather");
+    // Open STREETS — the widget was never hidden there, reload or not.
+    expect(session2.get("streets").hidden).not.toContain("weather");
 
-    // Come back to WORLD — still hidden. Reading INTEL in between must not have
-    // leaked into or cleared WORLD's chrome.
-    expect(session2.get("world").hidden).toContain("weather");
-    expect(session2.get("world").hidden).toEqual(["weather"]);
+    // Come back to GLOBE — still hidden. Reading STREETS in between must not have
+    // leaked into or cleared GLOBE's chrome.
+    expect(session2.get("overview").hidden).toContain("weather");
+    expect(session2.get("overview").hidden).toEqual(["weather"]);
   });
 
   it("hiding on a second scene after the reload does not retroactively touch the first", async () => {
     // The other direction of the same isolation guarantee: chrome set AFTER a
     // reload on one scene must not bleed into a different scene that was already
     // populated before the reload. Distinct scene ids from the headline case
-    // (rather than reusing "world"/"intel") so this test does not depend on
+    // (rather than reusing "overview"/"streets") so this test does not depend on
     // whatever in-memory state a prior test in this file left behind on the
     // cached module — only on a real hydrate() from this test's own storage.
     const { sceneChromeStore: session1 } = await import("@/lib/console/sceneChrome");
@@ -228,7 +228,7 @@ describe("boardWidgetTypes — active scene reads the LIVE render, not the templ
     const { shellLayoutStore } = await import("@/lib/console/store");
     const { createDefaultLayout } = await import("@/lib/console/types");
 
-    activePresetStore.set("world");
+    activePresetStore.set("overview");
     const live = {
       ...createDefaultLayout(),
       widgets: [
@@ -238,7 +238,7 @@ describe("boardWidgetTypes — active scene reads the LIVE render, not the templ
     };
     shellLayoutStore.replace(live, { archive: false });
 
-    expect(boardWidgetTypes("world")).toEqual(["zz-live-only-a", "zz-live-only-b"]);
+    expect(boardWidgetTypes("overview")).toEqual(["zz-live-only-a", "zz-live-only-b"]);
   });
 });
 
@@ -249,15 +249,15 @@ describe("boardWidgetTypes — a non-active scene", () => {
     const { writeBoardLayout } = await import("@/lib/console/boards");
     const { createDefaultLayout } = await import("@/lib/console/types");
 
-    activePresetStore.set("world"); // active scene is something else entirely
-    writeBoardLayout("nature", {
+    activePresetStore.set("overview"); // active scene is something else entirely
+    writeBoardLayout("streets", {
       ...createDefaultLayout(),
       widgets: [
         { id: "w1", type: "zz-archived-only", segment: "left" as const, order: 0, height: 200, collapsed: false, config: {} },
       ],
     });
 
-    expect(boardWidgetTypes("nature")).toEqual(["zz-archived-only"]);
+    expect(boardWidgetTypes("streets")).toEqual(["zz-archived-only"]);
   });
 
   it("falls back to the built-in preset's own template when the scene has never been saved", async () => {
@@ -265,16 +265,22 @@ describe("boardWidgetTypes — a non-active scene", () => {
     const { activePresetStore } = await import("@/lib/console/activePreset");
     const { presetById } = await import("@/lib/console/presets");
 
-    activePresetStore.set("world"); // "skywatch" is neither active nor ever saved here
-    const templateTypes = presetById("skywatch")!.build().widgets.map((w) => w.type);
+    // "streets" is neither active nor ever saved here, and it IS a built-in, so
+    // boardWidgetTypes must resolve it through presetById rather than throwing.
+    // BOTH remaining built-ins template empty (Globe by design, Streets as an
+    // empty wall), so the honest expectation is the empty template, not a
+    // populated one — the assertion still pins that the fallback runs and
+    // matches what the preset authors.
+    activePresetStore.set("overview");
+    const templateTypes = presetById("streets")!.build().widgets.map((w) => w.type);
 
-    expect(boardWidgetTypes("skywatch")).toEqual(templateTypes);
+    expect(boardWidgetTypes("streets")).toEqual(templateTypes);
   });
 
   it("returns [] for an id that is neither the active scene, a saved board, nor a built-in preset", async () => {
     const { boardWidgetTypes } = await import("@/lib/console/sceneChrome");
     const { activePresetStore } = await import("@/lib/console/activePreset");
-    activePresetStore.set("world");
+    activePresetStore.set("overview");
 
     expect(boardWidgetTypes("not-a-real-board-id")).toEqual([]);
   });

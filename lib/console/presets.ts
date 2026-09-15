@@ -137,7 +137,7 @@ const RAIL_GAP_PX = 8;
 // `visibleShell()` returns the workspace band's `clientWidth` / `clientHeight`,
 // and `client*` INCLUDES that element's own padding — so the band always reports
 // more room than any rail inside it has. Measured live in Chrome at 1440x900,
-// on the Intel board (a right rail and a bottom strip):
+// on a two-rail board (a right rail and a bottom strip):
 //
 //   .tn-cw-shell     1440 x 862   padding-left 26px, for the Sources tab
 //   .tn-seg          1414 x 862   padding 8px all round; rows 610 | 0 | 220
@@ -217,7 +217,7 @@ export const MAX_CARDS_PER_RAIL = 4;
  * Cards are authored in priority order within each rail; the rails themselves
  * are declared in the order they should be filled. A board that needs more than
  * `MAX_CARDS_PER_RAIL` in one place spreads to a second rail rather than
- * scrolling — see the Infrastructure and Intel boards below.
+ * scrolling.
  *
  * The rails NOT named here keep size 0, and `ConsoleWorkspace` does not render a
  * rail with no size at all — so a one-rail board costs exactly what it did
@@ -348,24 +348,13 @@ export const STREETS_DEFAULT_AREA: CircleSpec = { lat: 32.7641, lon: -117.1577, 
 
 // ── THE LINEUP ──────────────────────────────────────────────────────────────
 //
-// SEVEN presets, up from two boards and six layer-only tiles.
-//
-// ── ON THE SHAPES ──────────────────────────────────────────────────────────
-// Every board opens against a different edge of the map, so the set does not
-// read as one template stamped seven times. All three rails are drawn by
-// `ConsoleWorkspace` today; until this change only the LEFT one had ever been
-// used, because `compose` hardcoded it. The right and bottom rails rendered
-// correctly and were simply never given a card.
-//
-// There is no board that puts cards in the MIDDLE. The map keeps the centre
-// everywhere except Streets, which is the pre-existing camera wall and is
-// untouched by this change.
-//
-// ── ON THE NAMES ───────────────────────────────────────────────────────────
-// GROUND and CALM are retired rather than given boards. Both were subtractive
-// layer states rather than workspaces — "cameras and webcams" and "cameras
-// only" — and both meant the thing STREETS already is. A preset that differs
-// from another only by having fewer layers on is a button, not a workspace.
+// TWO presets: Globe (the landing board, deliberately empty) and Streets (the
+// camera wall). The other five boards — World, Nature, Skywatch, Infrastructure
+// and Intel — were retired on 2026-09-15 on request: the console's navigation
+// bar carries exactly these two, and nothing else. Everything those boards
+// featured (their widgets and signal layers) is still registered and still
+// reachable from the Sources rail and the ⌘K palette, which is the same
+// guarantee `console-presets.test.ts` pins.
 //
 // The ids are NOT renamed. They are pinned by `?c=` share links, the first-run
 // seed and the saved-board archive; changing one would silently orphan every
@@ -393,112 +382,6 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // layout, so anyone with a saved board keeps the stage they had.
   { id: "overview", title: "Globe", icon: "🌍", blurb: "the world, and nothing in front of it",
     build: (shell = DEFAULT_SHELL) => compose("map3d", shell, []) },
-
-  // ── World — LEFT + BOTTOM ────────────────────────────────────────────────
-  // The general brief, and the first board that needed two rails: the three
-  // cards you read down the side, plus a strip along the bottom that captions
-  // what is actually lit on the map. Six cards in one column would have put the
-  // last two below the fold on a 1280x620 laptop.
-  { id: "world", title: "World", icon: "🌐", blurb: "a bit of everything, and what is moving today",
-    layers: ["cameras", "planes", "satellites"],
-    signals: ["earthquakes", "wildfires", "conflict"],
-    build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
-      { rail: "left", cards: [
-        { type: "anomaly", weight: 3 },
-        { type: "events", weight: 2 },
-        { type: "headlines", weight: 2 },
-      ] },
-      { rail: "bottom", cards: [
-        { type: "signal:conflict", weight: 1 },
-        { type: "signal:earthquakes", weight: 1 },
-        { type: "signal:wildfires", weight: 1 },
-      ] },
-    ]) },
-
-  // ── Nature — BOTTOM ──────────────────────────────────────────────────────
-  // Natural hazards, and the board that most wants the map at full width: every
-  // question here is "where", so nothing should take a column out of the map.
-  //
-  // The signal list is longer than the card list on purpose. Volcanoes, floods,
-  // cyclones and GDACS alerts are worth having ON THE MAP without spending a
-  // card each — the cards are the captions, the map is the picture.
-  { id: "nature", title: "Nature", icon: "🌋", blurb: "quakes, fires, storms and floods",
-    signals: ["earthquakes", "wildfires", "volcanoes", "severeStorms", "floods", "tropical-cyclones", "gdacs"],
-    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { rail: "bottom", cards: [
-        { type: "events", weight: 3 },
-        { type: "signal:earthquakes", weight: 2 },
-        { type: "signal:wildfires", weight: 2 },
-        { type: "signal:severeStorms", weight: 1 },
-      ] },
-    ]) },
-
-  // ── Skywatch — RIGHT ─────────────────────────────────────────────────────
-  // Air and space. Cards on the right leave the globe's left limb clear, which
-  // is the edge the eye follows on a rotating sphere.
-  { id: "skywatch", title: "Skywatch", icon: "🛰", blurb: "everything above the ground",
-    layers: ["planes", "satellites"],
-    signals: ["launches", "aurora", "space-weather", "military-air"],
-    build: (shell = DEFAULT_SHELL) => compose("map3d", shell, [
-      { rail: "right", cards: [
-        { type: "aviation", weight: 3 },
-        { type: "satellites", weight: 2 },
-        { type: "signal:launches", weight: 1 },
-        { type: "signal:aurora", weight: 1 },
-      ] },
-    ]) },
-
-  // ── Infrastructure — LEFT + RIGHT ────────────────────────────────────────
-  // Six cards and no natural hero among them: cables, outages and jamming are
-  // read together rather than in a ranking. Flanking gives each one room; one
-  // column of six would put every card on the 120px floor.
-  //
-  // `grid-load` is lit on the map but has no card, and that is deliberate — the
-  // ENTSO-E feed is key-gated and returns empty today, so a card for it would be
-  // a header over nothing.
-  { id: "infrastructure", title: "Infrastructure", icon: "🔌", blurb: "the cables, grids and chokepoints underneath",
-    signals: ["cables", "cable-landings", "nuclear", "airports", "ports", "gpsJamming", "internet-outages", "grid-load"],
-    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { rail: "left", cards: [
-        { type: "signal:internet-outages", weight: 3 },
-        { type: "signal:cables", weight: 2 },
-        { type: "signal:cable-landings", weight: 1 },
-      ] },
-      { rail: "right", cards: [
-        { type: "signal:gpsJamming", weight: 2 },
-        { type: "signal:nuclear", weight: 1 },
-        { type: "signal:ports", weight: 1 },
-      ] },
-    ]) },
-
-  // ── Intel — RIGHT + BOTTOM ───────────────────────────────────────────────
-  // Headlines gets the tall slot it needs on the right; the four coverage feeds
-  // run as a strip rather than four squeezed cards under it.
-  //
-  // `signal:instability` IS A WIDGET AND MUST NOT BE A SIGNAL. The Country
-  // Instability Index is the one `dataOnly` source in the registry — registered
-  // and fetchable, but not a map layer — so it is legal here as a card and
-  // illegal in the `signals` list above. It also cannot exceed 82/100 since
-  // ACLED was removed (the conflict factor is GDELT article volume alone, whose
-  // ramp caps at 0.55) and reads near 32 on the live feed, so it sits at weight
-  // 1 rather than leading the board.
-  //
-  // ReliefWeb is key-gated and empty today, which is exactly what weight 1 is
-  // for: a header and a line, not a full card announcing nothing.
-  { id: "intel", title: "Intel", icon: "📰", blurb: "who is reporting what, and from where",
-    signals: ["conflict", "protests", "displacement", "reliefweb"],
-    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
-      { rail: "right", cards: [
-        { type: "headlines", weight: 3 },
-        { type: "signal:instability", weight: 1 },
-      ] },
-      { rail: "bottom", cards: [
-        { type: "signal:conflict", weight: 1 },
-        { type: "signal:protests", weight: 1 },
-        { type: "signal:displacement", weight: 1 },
-        { type: "signal:reliefweb", weight: 1 },
-      ] },
-    ]) },
 
   // ── Streets — the camera wall, UNCHANGED ─────────────────────────────────
   // Built for a user request: "custom dashboards so I can see images from major
@@ -561,7 +444,7 @@ export function presetById(presetId: string): ConsolePreset | undefined {
  *
  * So the rail splits: pointed at the globe it applies the whole preset, and
  * pointed at an area it applies just this — the layer set — to that area. That
- * is the reading the old monitor tiles already had ("give this area the Nature
+ * is the reading the old monitor tiles already had ("give this area the board's
  * set"), and it is the half of a preset that means anything for an area, which
  * has a layer set but no board of its own.
  */

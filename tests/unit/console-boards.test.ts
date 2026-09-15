@@ -83,7 +83,7 @@ test("forgetting a board's layout is what makes Reset mean something", async () 
 //
 // layoutSignature used to fingerprint `w.rect` and `l.stageRect`. Left alone
 // once rects left the type, every board would report "edited" forever the
-// instant it was opened — the customised dot lighting on all seven built-ins
+// instant it was opened — the customised dot lighting on every built-in board
 // and Reset no longer meaning anything. These pin the replacement directly,
 // independent of `presets.ts` (a rail-order difference is constructed by hand
 // rather than through a board template).

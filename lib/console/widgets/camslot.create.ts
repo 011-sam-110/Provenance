@@ -96,7 +96,7 @@ export function createCamslot(opts: CreateCamslotOptions = {}): CreateCamslotRes
   // map ("send these cameras to a wall") and from the stage bar, where the user
   // is in the middle of a different task and a modal asking about layout would
   // interrupt it to ask something they have no opinion about yet. Left matches
-  // where `createDefaultLayout` and all seven built-in boards put things, so the
+  // where `createDefaultLayout` and the built-in boards put things, so the
   // answer is at least consistent. It can be moved from the ⋯ menu in one click.
   const res = shellLayoutStore.add("camslot", {
     segment: "left",

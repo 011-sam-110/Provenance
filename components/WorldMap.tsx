@@ -2374,7 +2374,7 @@ export default function WorldMap() {
   // to borrow it and give it back, and BOTH halves live in this one effect so they
   // cannot desync. The alternative, the constructor-only `boxZoomEnd` option,
   // suppresses fit-to-box unconditionally and would have silently deleted shift-drag
-  // zoom from all seven boards for everyone, armed or not.
+  // zoom from every board for everyone, armed or not.
   //
   // The re-enable is in the CLEANUP, not merely on disarm. StageHost.tsx:33,37
   // unmounts <WorldMap/> when a widget is focused, so the disable and the re-enable

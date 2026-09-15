@@ -245,6 +245,7 @@ type How = "iso" | "name" | "polygon" | "snap" | "geometry" | "title";
 type Resolved = Rec & { how: How };
 
 /**
+/**
  * EONET publishes the FLOODS category with its rings in [lat, lon] order while every
  * other category is GeoJSON [lon, lat]. Measured 2026-09-08 against
  * eonet.gsfc.nasa.gov/api/v3/categories/floods: of the 36 events whose ordering is
