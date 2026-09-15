@@ -84,6 +84,13 @@ describe("key requirements table", () => {
       // absolute origin the OG cards and metadataBase resolve against.
       "NEXT_PUBLIC_SITE_URL",
       "VERCEL_PROJECT_PRODUCTION_URL",
+      // The analytics beacon's project key and host. They unlock no capability that
+      // /api/status reports: with the key unset the site shows the same data and only
+      // stops counting. The key is public and write-only, and it ships in the client
+      // bundle by design. lib/analytics/beacon.ts reads both by name, because Next.js
+      // puts only a literal process.env.NEXT_PUBLIC_* read into the browser bundle.
+      "NEXT_PUBLIC_POSTHOG_KEY",
+      "NEXT_PUBLIC_POSTHOG_HOST",
       // Photo geolocation is a local sidecar, not a hosted capability with a key.
       "GEOLOCATE_BACKEND",
       "GEOLOCATE_GEOCLIP_URL",

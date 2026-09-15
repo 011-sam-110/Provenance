@@ -25,8 +25,13 @@
 // DORMANT-SAFE, like every other upstream in this repo: with no key set, nothing loads,
 // no request is made, and no placeholder pretends otherwise.
 
-/** PostHog EU cloud. EU rather than US so visitor data does not leave the region. */
-export const DEFAULT_BEACON_HOST = "https://eu.i.posthog.com";
+/**
+ * PostHog US cloud. The provenance-online.com project is in PostHog's US region, and a
+ * region cannot be changed after signup. /privacy says "in the United States" because of
+ * this line, and tests/unit/privacy-page.test.ts fails if the two name different regions.
+ * An EU project sets NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com instead.
+ */
+export const DEFAULT_BEACON_HOST = "https://us.i.posthog.com";
 
 export type BeaconConfig = {
   readonly key: string;
@@ -40,8 +45,19 @@ export type BeaconConfig = {
  * by design — every visitor's browser can read it — so it is not a secret and belongs
  * in NEXT_PUBLIC_*. It cannot read data back; that needs a separate personal API key
  * which must never appear here.
+ *
+ * THE DEFAULT READS EACH VARIABLE BY NAME, AND IT HAS TO. Next.js puts a NEXT_PUBLIC_*
+ * value into the client bundle only where the source says
+ * `process.env.NEXT_PUBLIC_POSTHOG_KEY` literally. The old default was the whole
+ * `process.env` object, which reaches the browser as an empty polyfill. So the beacon
+ * armed in every test and in no browser. tests/unit/beacon-config.test.ts pins this.
  */
-export function beaconConfig(env: Record<string, string | undefined> = process.env): BeaconConfig | null {
+export function beaconConfig(
+  env: Record<string, string | undefined> = {
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  },
+): BeaconConfig | null {
   const key = env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
   if (!key) return null;
 
