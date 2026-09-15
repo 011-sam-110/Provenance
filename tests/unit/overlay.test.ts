@@ -1,6 +1,8 @@
 import { beforeEach, expect, test } from "vitest";
 import { overlay } from "@/lib/overlay";
 import type { WorldObject } from "@/lib/world";
+import { railTabStore } from "@/lib/console/railTab";
+import { sourcesRailStore } from "@/lib/console/sourcesRail";
 
 const cam: WorldObject = {
   kind: "camera",
@@ -11,7 +13,11 @@ const cam: WorldObject = {
   meta: { available: true },
 };
 
-beforeEach(() => overlay.close());
+beforeEach(() => {
+  overlay.close();
+  railTabStore.set("sources");
+  sourcesRailStore.setOpen(false);
+});
 
 test("starts (and resets) closed", () => {
   expect(overlay.get().object).toBeNull();
@@ -51,4 +57,17 @@ test("close() is a no-op (no emit) when already closed", () => {
   overlay.close(); // already closed by beforeEach → early return, no emit
   unsub();
   expect(n).toBe(0);
+});
+
+test("open() points the Sources rail at the Inspector tab and expands it", () => {
+  overlay.open(cam);
+  expect(railTabStore.get().tab).toBe("inspector");
+  expect(sourcesRailStore.get().open).toBe(true);
+});
+
+test("close() returns the rail to the Sources tab but leaves it open", () => {
+  overlay.open(cam);
+  overlay.close();
+  expect(railTabStore.get().tab).toBe("sources");
+  expect(sourcesRailStore.get().open).toBe(true);
 });

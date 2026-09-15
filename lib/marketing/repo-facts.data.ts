@@ -13,10 +13,10 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-15 with `npx vitest list` on the merged nav-globe-streets tree.
+ * Measured 2026-09-15 with `npx vitest list` on the sources-inspector feature branch.
  */
 export const UNIT_TESTS = {
-  cases: 3947,
-  files: 385,
+  cases: 3952,
+  files: 386,
   measuredAt: "2026-09-15",
 } as const;

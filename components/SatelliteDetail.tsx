@@ -2,7 +2,7 @@
 // Body content for the overlay when a satellite is clicked. Renders the
 // satellite's identity + live SATELLITE IMAGERY of the ground directly beneath
 // it (the sub-satellite point) at click time, via Esri World Imagery's single-
-// image export. Renders body content only — it sits inside <FeedOverlay>'s panel.
+// image export. Renders body content only — it sits inside the rail's Inspector tab.
 
 import type { WorldObject } from "@/lib/world";
 import { TypeIcon } from "@/lib/icons/Icon";

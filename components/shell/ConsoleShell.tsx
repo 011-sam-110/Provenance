@@ -35,7 +35,6 @@ import FeedbackPrompt from "@/components/shell/FeedbackPrompt";
 import CommunityNote from "@/components/shell/CommunityNote";
 import DevNotice from "@/components/shell/DevNotice";
 import DrawBanner from "@/components/shell/DrawBanner";
-import { FeedOverlay } from "@/components/FeedOverlay";
 import { CinematicDive } from "@/components/CinematicDive";
 import { scopeStore } from "@/lib/shell/scope";
 import { viewModeStore } from "@/lib/shell/viewMode";
@@ -378,7 +377,8 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       */}
       <SelectionAnnouncer />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      <FeedOverlay />
+      {/* The old right-edge dossier (FeedOverlay) is retired; its detail now renders
+          in the Sources rail's Inspector tab. The dive below stays full-screen. */}
       <CinematicDive />
       {/* Gates itself entirely (lib/shell/feedback.ts) and renders null until it
           decides to ask, so mounting it unconditionally costs one interval. */}
