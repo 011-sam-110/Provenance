@@ -13,10 +13,10 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-12 with `npx vitest list` on a clean tree.
+ * Measured 2026-09-15 with `npx vitest list` on a clean tree.
  */
 export const UNIT_TESTS = {
-  cases: 3814,
-  files: 374,
-  measuredAt: "2026-09-12",
+  cases: 3791,
+  files: 373,
+  measuredAt: "2026-09-15",
 } as const;

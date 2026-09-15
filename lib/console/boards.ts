@@ -103,7 +103,7 @@ export function editedBoardIds(): string[] {
  *
  * THE TRAP THIS REPLACED: this used to fingerprint `w.rect` and `l.stageRect`.
  * Once rects left the type, that would have made every board compare unequal to
- * itself forever — the customised dot lighting on all seven built-ins the moment
+ * itself forever — the customised dot lighting on every built-in the moment
  * they were opened, and Reset no longer meaning anything. `segment`/`order` are
  * the rail equivalent of position, `height` of size; `segments` (sizes and
  * collapsed state) is included at the top level because dragging a splitter is

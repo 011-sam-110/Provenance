@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";
 import { useActivePreset } from "@/lib/console/activePreset";
 
-const FALLBACK = BUILTIN_PRESETS[0]; // World Overview — shown before the store hydrates
+const FALLBACK = BUILTIN_PRESETS[0]; // Globe — shown before the store hydrates
 
 export default function PresetPill() {
   const activeId = useActivePreset();

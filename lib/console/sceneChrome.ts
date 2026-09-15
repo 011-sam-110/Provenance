@@ -1,9 +1,10 @@
 "use client";
 // Per-scene chrome: which widget TYPES are hidden on a board, plus a small open
-// bag of per-board "quick settings" (today: just `compactCards`). This is the
-// persistence half of the Apple-style nav panel — `lib/console/navPanel.ts`
-// owns whether the panel is OPEN; this file owns what a scene's panel is
-// showing and what it remembers between visits.
+// bag of per-board "quick settings" (today: just `compactCards`, read by
+// ConsoleWorkspace's data-density attribute). The Apple-style nav panel that
+// used to expose both on screen (components/terminal/NavPanel.tsx) is deleted;
+// what survives here is the state half, consumed by ConsoleWorkspace and
+// WallWorkspace through `visibleWidgets`.
 //
 // ── WHY A SIBLING STORE, NOT A FIELD ON `ShellLayout` (nav-spec §2) ──────────
 // `boards.ts`'s `BoardArchive` holds real ARRANGEMENTS — rects, rail order,
@@ -27,8 +28,8 @@
 // Same shape as every other shell store in this tree — `activePreset.ts`,
 // `mapRail.ts`, `lib/shell/ui.ts` — module-level state, a listener `Set`,
 // `useSyncExternalStore` for the React binding. `setHidden`/`setQuick` have to
-// be callable from plain DOM event handlers in the nav panel's checkboxes,
-// which is the same reason those other stores aren't context.
+// be callable from whatever surface toggles them, which is the same reason
+// those other stores aren't context.
 //
 // ── SCENE = BOARD = PRESET, ONE THING (nav-spec §0) ──────────────────────────
 // `sceneId` everywhere below is exactly a `ConsolePreset.id` / board id — the
@@ -184,11 +185,10 @@ export function useSceneChrome(sceneId: string | null): SceneChrome {
  *    preset id that does not resolve.
  *
  * NOT deduplicated by type — a board can hold more than one instance of the
- * same widget type, and this reports one entry per instance. The nav panel,
- * which wants one row per TYPE, dedupes on its own side.
+ * same widget type, and this reports one entry per instance.
  *
  * Imports `boards.ts`/`presets.ts`/`rowBudget.ts`, which is why this function
- * lives here and not in a nav-shell component file.
+ * lives here and not in a workspace component file.
  */
 export function boardWidgetTypes(sceneId: string): string[] {
   if (sceneId === activePresetStore.get()) {

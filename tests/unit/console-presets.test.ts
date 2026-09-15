@@ -13,19 +13,19 @@ const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
 
-// SEVEN presets. A preset is the whole workspace now — core layers, signal layers
+// TWO presets. A preset is the whole workspace — core layers, signal layers
 // AND a board — because lib/monitors.ts merged into lib/console/presets.ts; the
-// Sources rail's tiles and the ⌘K Profiles list drive the same seven things.
+// Sources rail's tiles and the ⌘K Profiles list drive the same two things.
 //
 // Ids are stable (used by the first-run seed, the ⌘K Profiles section, the central
 // preset pill, and shared `?c=` URLs), which is why the landing board still carries
 // the id "overview" long after being renamed Globe.
 //
-// The six old MONITOR ids were world / skywatch / ground / nature / infrastructure /
-// calm. Four of them are presets here. GROUND and CALM are deliberately absent:
-// both were subtractive layer states rather than workspaces ("cameras and webcams",
-// "cameras only") and both meant the thing STREETS already is.
-const BOARD_IDS = ["overview", "world", "nature", "skywatch", "infrastructure", "intel", "streets"];
+// The other five boards — world, nature, skywatch, infrastructure, intel — were
+// retired on request (2026-09-15) along with the old monitor ids ground/calm.
+// What they featured is still registered and still reachable from ⌘K and the
+// Sources rail, which the registry-coverage test below pins.
+const BOARD_IDS = ["overview", "streets"];
 
 // BOTH BOARDS ARE DELIBERATELY EMPTY NOW, so "every board has at least one widget" is
 // no longer true and must not be asserted. Streets joined the landing board here in
@@ -42,7 +42,7 @@ const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID, "streets"]);
 // monitoring card, so it is exempt.
 const CORE_MONITORS = ["events", "news", "camslot", "aviation", "satellites", "markets", "headlines"];
 
-test("the board lineup is exactly the seven presets, each within the cap", () => {
+test("the board lineup is exactly the two presets, each within the cap", () => {
   const ids = BUILTIN_PRESETS.map((p) => p.id);
   expect(ids).toEqual(BOARD_IDS);
   for (const p of BUILTIN_PRESETS) {
@@ -179,10 +179,9 @@ test("no card is composed too small to read", () => {
 // 120px floor and starts the rail scrolling — which hides a card on a board
 // whose whole job is being readable in one look.
 //
-// It is a real constraint on authoring, not a description of it: Infrastructure
-// carries six cards and Intel six, and both are only legal because they spread
-// (left+right and right+bottom respectively). Squeezing either into one rail
-// fails here.
+// It is a real constraint on authoring, not a description of it: no built-in board
+// currently carries more than four cards in one rail, but the rule stays so a
+// future board author has to mean it when they exceed it.
 test("no rail opens holding more cards than it can show", () => {
   for (const shell of SHELLS) {
     for (const p of BUILTIN_PRESETS) {
@@ -207,9 +206,10 @@ test("no rail opens holding more cards than it can show", () => {
 // one here asks for something that can never light, and it would do so silently:
 // `layersForLayout` just writes the id into a state object nothing reads.
 //
-// The Country Instability Index is the only data-only source today and it IS on
-// the Intel board, as a `signal:instability` WIDGET. That is the legal way to
-// use one, and it is exactly the distinction this test exists to keep.
+// The Country Instability Index is the only data-only source today, and it is no
+// longer on any built-in board — it is registered and addable from ⌘K as a
+// `signal:instability` WIDGET. That is the legal way to use one, and it is
+// exactly the distinction this test exists to keep.
 test("every preset's signal layers are real map layers", () => {
   const mappable = new Set(MAP_SIGNALS.map((s) => s.id));
   for (const p of BUILTIN_PRESETS) {

@@ -146,25 +146,27 @@ obligations and are not satisfied by the licence.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
   `SIGNALS`. Importing `SIGNALS` into something that draws or lists layers silently turns every
   data-only source back into a layer. Today the only one is the Country Instability Index.
-- `lib/console/*` — widget registry, presets (**7 presets** in `presets.ts`), store, share (`?c=` layout URL).
+- `lib/console/*` — widget registry, presets (**2 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
-  them, and the Sources rail's tiles and the ⌘K Profiles list drive the same seven. There is
-  no `lib/monitors.ts` any more — its six layer-only "monitors" merged in here.
+  them, and the Sources rail's tiles and the ⌘K Profiles list drive the same two. There is
+  no `lib/monitors.ts` any more — its six layer-only "monitors" merged in here — and the
+  five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on
+  2026-09-15 on request, leaving Globe (empty by design) and Streets (the camera wall).
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
-- **The console top bar EXPANDS on hover, Apple-style** — `components/terminal/TerminalHeader.tsx`
-  + `NavPanel.tsx`, state in `lib/console/navPanel.ts`, per-scene memory in
-  `lib/console/sceneChrome.ts`. **Hover previews, click commits**: hovering a board tab
-  grows the whole bar into that board's quick settings + a widget show/hide list without
-  switching board; clicking still calls `applyPreset` exactly as before. **Scene = board =
-  preset**, one thing — `sceneId` IS a `ConsolePreset.id`; do not invent a second concept.
+- **The console top bar is exactly two board tabs, and nothing drops down from it.**
+  `components/terminal/TerminalHeader.tsx` renders the boards as tabs that call
+  `applyPreset` on click; the Apple-style hover panel that expanded the bar downward
+  (`NavPanel.tsx`, `lib/console/navPanel.ts`, `docs/CONSOLE_NAV.md`) was deleted on
+  2026-09-15 along with the five retired boards. Per-scene memory survives in
+  `lib/console/sceneChrome.ts`. **Scene = board = preset**, one thing — `sceneId` IS a
+  `ConsolePreset.id`; do not invent a second concept.
   Hiding is a **paint-time filter** (`visibleWidgets`, applied at two render sites), never a
   layout mutation: a hidden widget keeps its slot, its config and its place in the capacity
   count. Chrome is a **sibling store** (`tn.console.sceneChrome.v1`), deliberately orthogonal
   to `boards.ts`, so Reset and `?c=` links needed no changes — which also means share links
-  do NOT carry hidden state. Full write-up, including the two subscription traps that made
-  this silently do nothing while every unit test stayed green: `docs/CONSOLE_NAV.md`.
+  do NOT carry hidden state.
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
 - **Camera-tile conditions** — `lib/console/widgets/camslot.conditions.ts` (pure: what may be
@@ -215,11 +217,11 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
 | Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
 | Signal layers | **34 registered (33 map layers + 1 data-only); 32 returning data, 2 empty** (2026-09-08) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
-| Console presets | 7 (2026-09-07) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "seven presets"). Went 7 → 2 on 2026-09-04 and back to 7 now, but they are not the same seven and not the same kind of thing: a preset is the whole workspace (core layers + signal layers + board), because `lib/monitors.ts` merged into this file. Globe is still deliberately empty. **Ground** and **Calm** — two of the six old monitors — are retired rather than converted; both were subtractive layer states meaning "cameras", which is what Streets already is. |
-| Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling — Infrastructure is left+right, Intel and World are two rails each. Pinned at 1280x620, 1440x820 and 1920x1000. |
+| Console presets | 2 (2026-09-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "two presets"). Globe and Streets are the two survivors; the five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on 2026-09-15 on request, together with the Apple-style hover nav panel. Globe is deliberately empty; Streets is the camera wall. |
+| Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 65 registered (2026-09-08) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
-| Unit tests | **3,814 cases / 374 files (2026-09-12)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
+| Unit tests | **3,791 cases / 373 files (2026-09-15)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
