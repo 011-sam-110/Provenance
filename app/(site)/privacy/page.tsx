@@ -22,6 +22,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     both now say United States. DEFAULT_BEACON_HOST in lib/analytics/beacon.ts moved to
  *     us.i.posthog.com in the same commit, and tests/unit/privacy-page.test.ts fails if
  *     the page and the default host name different regions.
+ *   - PostHog now has a card under "Who sees your IP address". The beacon went live on
+ *     this day, and from then its two hosts see the IP address of every counted visitor,
+ *     but the section that lists those hosts did not name them. The PostHog project's
+ *     "Discard client IP data" setting was OFF, so PostHog also stored the address with
+ *     each event. It was switched on the same day, and the card says so. That setting
+ *     lives in PostHog, not in this repo, so no test can see it: check it at Project
+ *     settings -> Privacy before editing the card.
  *
  * WHAT CHANGED ON 2026-09-14:
  *   - The page-view counter can now tell a new visit from a return. The browser keeps
@@ -728,6 +735,18 @@ export default function PrivacyPage() {
                 <span className="pv-num">www.youtube.com</span> is embedded wherever a stream is a
                 YouTube one. Those embeds are Google&rsquo;s and can set Google&rsquo;s cookies. Some
                 autoplay as soon as the widget is on your board.
+              </p>
+            </div>
+            <div className="pv-card">
+              <h3 className="pv-h3">PostHog</h3>
+              <p>
+                <span className="pv-num">us.i.posthog.com</span> receives the page-view counter
+                described below, and <span className="pv-num">us-assets.i.posthog.com</span> serves
+                its library files, so PostHog sees your IP address on every page you open here. The
+                project is set to discard client IP data: PostHog may use the address to work out a
+                rough location, such as a country, and then does not store it with the event. None of
+                this loads if you turned counting off, or if your browser sends Do Not Track or Global
+                Privacy Control.
               </p>
             </div>
           </div>
