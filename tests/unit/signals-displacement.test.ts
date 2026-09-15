@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/unhcr-displacement.json";
 import { normalizeDisplacement, displacementColor, DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
-import { rowMetric } from "@/lib/console/signals/signalCard";
+import { rowLabel, rowMetric } from "@/lib/console/signals/signalCard";
 
 test("normalizes UNHCR displacement by country of asylum, skipping non-country rows", () => {
   const out = normalizeDisplacement(fixture as never);
@@ -45,6 +45,18 @@ test("declares a real numeric displaced-count metric that rowMetric resolves", (
   // Grouped. An ungrouped "3220946" sat beside a title that had already written
   // the same number as "3,220,946" — one row, one number, two spellings.
   expect(m).toEqual({ value: 3_220_946, domain: [0, 5_000_000], label: "3,220,946" });
+});
+
+// UNHCR counts by COUNTRY OF ASYLUM: the people a country hosts (refugees, asylum-seekers)
+// plus its own internally displaced. On prod (2026-09-12) the United States read
+// "United States — 4,176,592 displaced" — 3,718,945 asylum-seekers + 457,647 refugees +
+// 0 IDPs — which reads as four million displaced Americans. The text has to say WHERE the
+// people are, not whose they are.
+test("the title places the displaced in the country, and the card row keeps only the place", () => {
+  const out = normalizeDisplacement(fixture as never);
+  const afg = out.find((f) => f.id === "displacement:AFG")!;
+  expect(afg.title).toBe(`In Afghanistan — ${(3_220_946).toLocaleString()} displaced`);
+  expect(rowLabel(afg.title, rowMetric(afg, DISPLACEMENT_SOURCE.metric))).toBe("In Afghanistan");
 });
 
 test("displacement colour ramps by total", () => {

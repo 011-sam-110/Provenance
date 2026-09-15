@@ -55,8 +55,11 @@ describe("activeEventLine", () => {
     expect(activeEventLine("internet-outages", feat("x:SD", { severity: "severe" }))).toBe(
       "Internet outage — severe",
     );
+    // UNHCR's figure is who is IN the country (hosted refugees and asylum-seekers plus its
+    // own IDPs), not who was displaced FROM it: "forcibly displaced" on the US dossier read
+    // as 4.2M displaced Americans (2026-09-12: 3.7M were asylum-seekers, 0 IDPs).
     expect(activeEventLine("displacement", feat("x:AFG", { totalDisplaced: "3,220,946" }))).toBe(
-      "3,220,946 forcibly displaced",
+      "3,220,946 displaced people in the country",
     );
     // food-security had a fourth case here until 2026-09-05, removed with the layer.
     // The default branch is what a retired id hits now, so assert THAT rather than
