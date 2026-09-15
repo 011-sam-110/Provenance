@@ -82,6 +82,8 @@ import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
 import AreasPanel from "@/components/shell/inspector/AreasPanel";
+import InspectorPanel from "@/components/shell/InspectorPanel";
+import { railTabStore, useRailTab } from "@/lib/console/railTab";
 
 function CameraFilters() {
   const filter = useCameraFilter();
@@ -185,6 +187,7 @@ export default function SourceCatalog() {
   const keymap = useKeymap();
   const railOpen = rail.open;
   const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
+  const { tab } = useRailTab();
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
   const [query, setQuery] = useState("");
@@ -352,7 +355,30 @@ export default function SourceCatalog() {
     <>
     <aside className="tn-rail" aria-label="Sources">
       <div className="tn-rail-header">
-        <h2 className="tn-rail-title">Sources</h2>
+        <div className="tn-rail-tabs" role="tablist" aria-label="Sources rail views">
+          <button
+            type="button"
+            id="tn-rail-tab-sources"
+            role="tab"
+            aria-selected={tab === "sources"}
+            aria-controls="tn-rail-panel-sources"
+            className="tn-rail-tab"
+            onClick={() => railTabStore.set("sources")}
+          >
+            Sources
+          </button>
+          <button
+            type="button"
+            id="tn-rail-tab-inspector"
+            role="tab"
+            aria-selected={tab === "inspector"}
+            aria-controls="tn-rail-panel-inspector"
+            className="tn-rail-tab"
+            onClick={() => railTabStore.set("inspector")}
+          >
+            Inspector
+          </button>
+        </div>
         <span className="tn-cat-count" title="Widgets on your workspace right now">
           {consoleLayout.widgets.length} ▦
         </span>
@@ -367,22 +393,14 @@ export default function SourceCatalog() {
         </button>
       </div>
 
-      {/* ── THERE IS NO TAB STRIP ANY MORE ─────────────────────────────────────
-          This rail was two tabs, Sources and Presets, and the second one is gone.
-          Sam: "lets also get rid of the presets button, as the presets are already
-          at the top." They are: components/shell/PresetPill.tsx is the centre
-          navbar control, it lists every builtin AND every custom saved board, and
-          ⌘K carries the same seven under Profiles plus "Save layout as preset…".
-          A whole tab spent on a third copy cost every visitor a choice before they
-          could reach the thing the rail is for.
-
-          The tab's second tier — the four core-layer shortcuts — outlived it by
-          three days as LayerPresetRow and is now off the rail too, at Sam's ask.
-          Both files are left on disk and unmounted rather than deleted; restoring
-          a tab is cheap, un-deleting a component is not.
-
-          The context switcher is now the FIRST control in the rail, which is where
-          it belongs on its own merits: it says where everything below writes. */}
+      {/* ── TWO TABS NOW: Sources and Inspector ────────────────────────────────
+          The Sources tab is everything this rail was before — the context switcher,
+          the areas block, the search box and the six source sections. The Inspector
+          tab is the detail body that used to slide in as a right-edge dossier; it
+          opens here when something on the map is clicked. `tab` is railTabStore
+          (session-only), and overlay.open() points it at Inspector. */}
+      {tab === "sources" ? (
+        <div id="tn-rail-panel-sources" role="tabpanel" aria-labelledby="tn-rail-tab-sources">
       <ContextSwitcher />
 
       {/* Drawing an area and then turning sources on for it is one job, so the
@@ -461,6 +479,12 @@ export default function SourceCatalog() {
         Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
         right rail.
       </p>
+        </div>
+      ) : (
+        <div id="tn-rail-panel-inspector" role="tabpanel" aria-labelledby="tn-rail-tab-inspector">
+          <InspectorPanel />
+        </div>
+      )}
     </aside>
     <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
     </>

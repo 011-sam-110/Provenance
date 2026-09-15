@@ -1,5 +1,5 @@
 "use client";
-// In-overlay camera body. Rendered over the still-live globe by <FeedOverlay>.
+// In-overlay camera body. Rendered in the Sources rail's Inspector tab.
 // Reuses the SSRF-safe image proxy via <CameraImage>, shows the MANDATORY
 // attribution, name/coords/status, and a deep-link to the full /camera/[id]
 // page (which stays as a standalone fallback).

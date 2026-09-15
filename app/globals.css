@@ -328,7 +328,7 @@ a { color: var(--tn-accent); }
    (`--tn-surface` remaps to `--tnx-panel` inside `.tn-terminal`) rather than a
    literal, so it stays opaque in both the console and the legacy shell. */
 .tn-rail-header {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
   position: sticky; top: 0; z-index: 2;
   margin: 0 -12px 10px; padding: 12px 12px 8px;
   background: var(--tn-surface);
@@ -353,6 +353,50 @@ a { color: var(--tn-accent); }
 .tn-rail-collapse svg { width: 15px; height: 15px; }
 .tn-rail-collapse:hover { color: var(--tn-text); background: var(--tn-surface-2, rgba(0,0,0,.06)); }
 .tn-rail-collapse:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+
+/* ── Sources | Inspector tabs ───────────────────────────────────────────────
+   The rail's tab strip. A tab strip lived here once (Sources/Presets) and was
+   deleted with the Presets tab in a250852; it is back now that the rail has two
+   views again. The segmented control replaces the title word, the fill carries the
+   selected state (a pale-olive outline reads as unselected — the old note), and it
+   stretches to absorb the header row's slack so the counter and collapse stay right. */
+.tn-rail-tabs {
+  display: flex; gap: 2px; flex: 1 1 auto; min-width: 0;
+  padding: 2px; border-radius: 9px;
+  background: var(--tn-surface-2, rgba(0,0,0,.05));
+  border: 1px solid var(--tn-border);
+}
+.tn-rail-tab {
+  flex: 1; padding: 5px 0 6px; font: inherit; font-size: 13px; font-weight: 500;
+  border-radius: 7px; border: 1px solid transparent; background: none;
+  color: var(--tn-text-faint); cursor: pointer; white-space: nowrap;
+}
+.tn-rail-tab:hover { color: var(--tn-text); }
+.tn-rail-tab:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
+.tn-rail-tab[aria-selected="true"] {
+  background: var(--tn-surface); border-color: var(--tn-border);
+  color: var(--tn-text); font-weight: 600; box-shadow: var(--tn-shadow);
+}
+
+/* ── Inspector tab ───────────────────────────────────────────────────────── */
+.tn-inspector-bar {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.tn-inspector-close {
+  width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--tn-chip-bg); color: var(--tn-text-muted);
+  border: 1px solid var(--tn-border); font-size: 17px; line-height: 1; cursor: pointer;
+}
+.tn-inspector-close:hover { color: var(--tn-down); border-color: var(--tn-down); }
+.tn-inspector-export {
+  font: inherit; font-size: 12px; font-weight: 600; line-height: 1;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--tn-accent-strong); padding: 6px 8px; border-radius: 6px;
+}
+.tn-inspector-export:hover { background: var(--tn-surface-2, rgba(0,0,0,.06)); }
+.tn-inspector-body { display: grid; gap: 10px; }
+.tn-inspector-empty { padding: 4px 0; }
 
 .tn-rail-fab {
   position: fixed; top: calc(var(--tn-topbar-h) + 12px); left: 12px; z-index: 25;

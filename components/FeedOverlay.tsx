@@ -1,4 +1,10 @@
 "use client";
+// RETIRED — no longer mounted. The right-edge dossier was rehomed into the Sources
+// rail's Inspector tab (components/shell/InspectorPanel.tsx) on 2026-09-15; that
+// tab renders the same OverlayBody and carries the close/export/Esc affordances this
+// file used to own. Left on disk, unmounted, per the repo's convention for retired
+// chrome — restoring it is one import in ConsoleShell, un-deleting is not.
+//
 // The dossier — TrafficNerd's right-side slide-in detail panel. Subscribes to the
 // overlay store; when an object is open it slides in from the right with a shared
 // section layout (header → live media/preview → key facts → context), restyled

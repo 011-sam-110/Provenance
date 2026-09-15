@@ -1,7 +1,7 @@
 "use client";
-// kind → detail-component registry for the feed overlay.
+// kind → detail-component registry for the Sources rail's Inspector tab.
 //
-// <FeedOverlay> renders <OverlayBody object={openObject} />; this switch maps a
+// <InspectorPanel> renders <OverlayBody object={openObject} />; this switch maps a
 // WorldObject.kind to its detail view:
 //   • camera    → live proxied image + mandatory attribution (CameraDetail)
 //   • satellite → identity + Esri satellite imagery of the ground beneath it

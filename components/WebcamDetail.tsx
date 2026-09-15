@@ -1,6 +1,6 @@
 "use client";
 // In-overlay webcam body (the Windy "Webcams" layer — distinct from road CCTV).
-// Rendered over the still-live globe by <FeedOverlay>. The Windy image token is
+// Rendered in the Sources rail's Inspector tab. The Windy image token is
 // short-lived, so the picture is pulled through the SSRF-safe /api/webcam-image
 // proxy, which re-resolves a fresh URL server-side on every load. Windy's terms
 // REQUIRE the "Webcams provided by Windy.com" credit plus a link back to the

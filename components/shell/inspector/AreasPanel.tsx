@@ -62,7 +62,7 @@ export default function AreasPanel() {
             className="tn-insp-row"
             data-editing={state.editing === a.id ? "" : undefined}
             onClick={() =>
-              // The bbox CENTRE, not 0,0. FeedOverlay writes the object's lat/lon
+              // The bbox CENTRE, not 0,0. The Inspector panel writes the object's lat/lon
               // straight into its GeoJSON export, so a placeholder would hand the
               // user a downloaded file claiming every area sits at Null Island.
               // A position we do have must never be shipped as one we invented.
