@@ -15,6 +15,14 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-09-15:
+ *   - PostHog keeps the data in the UNITED STATES, not Europe. The production project is in
+ *     PostHog's US region, and a region cannot be changed after signup. The two sentences
+ *     that said "European servers" would have been false as soon as the key was set, so
+ *     both now say United States. DEFAULT_BEACON_HOST in lib/analytics/beacon.ts moved to
+ *     us.i.posthog.com in the same commit, and tests/unit/privacy-page.test.ts fails if
+ *     the page and the default host name different regions.
+ *
  * WHAT CHANGED ON 2026-09-14:
  *   - The page-view counter can now tell a new visit from a return. The browser keeps
  *     tn.visit.v1 = { first, last } (lib/analytics/returnFlag.ts), and PostHog receives
@@ -195,7 +203,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-09-14">14 September 2026</time>
+                Last updated <time dateTime="2026-09-15">15 September 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -232,7 +240,7 @@ export default function PrivacyPage() {
               <p>
                 Two counters, and neither sets a cookie. One is ours and lives three minutes:
                 how many browsers have the site open right now. The other counts page views and
-                clicks, on PostHog&rsquo;s European servers, and can tell a new visit from a
+                clicks, on PostHog&rsquo;s servers in the United States, and can tell a new visit from a
                 return. No Google Analytics, no ad pixel, no session recording, and nothing that
                 says who you are.
               </p>
@@ -771,7 +779,7 @@ export default function PrivacyPage() {
               <a href="https://posthog.com/privacy" target="_blank" rel="noreferrer noopener">
                 PostHog
               </a>
-              , running on their European servers. It records which pages were opened, in what
+              , running on their servers in the United States. It records which pages were opened, in what
               order, how long each was open, and where on the page you clicked &mdash; including
               clicks that did nothing, which is how a broken control gets found. It exists because
               a server log physically cannot answer those questions: leaving a page sends no
@@ -965,14 +973,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-09-14">14 September 2026</time>
+                <time dateTime="2026-09-15">15 September 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 14 September 2026. When the behaviour changes this
+              This describes the code as deployed on 15 September 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

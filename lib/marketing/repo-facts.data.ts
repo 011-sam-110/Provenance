@@ -13,10 +13,10 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-14 with `npx vitest list` on the fix/posthog-key-inline tree.
+ * Measured 2026-09-15 with `npx vitest list` on the fix/posthog-key-inline tree.
  */
 export const UNIT_TESTS = {
-  cases: 3962,
+  cases: 3963,
   files: 386,
-  measuredAt: "2026-09-14",
+  measuredAt: "2026-09-15",
 } as const;

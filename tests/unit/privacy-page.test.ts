@@ -3,6 +3,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { VISIT_KEY } from "@/lib/analytics/returnFlag";
 import { OPT_OUT_KEY } from "@/lib/analytics/optOut";
+import { DEFAULT_BEACON_HOST } from "@/lib/analytics/beacon";
 
 // The /privacy page makes public factual claims about what the deployed software
 // does. Three of those claims are cheap to break by accident and expensive to have
@@ -43,8 +44,8 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-09-14"`);
-    expect(copy).toContain("14 September 2026");
+    expect(copy).toContain(`dateTime="2026-09-15"`);
+    expect(copy).toContain("15 September 2026");
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {
@@ -151,5 +152,19 @@ describe("privacy page: the return flag", () => {
 
   it("renders the opt-out control", () => {
     expect(copy).toContain("<CountingToggle />");
+  });
+});
+
+describe("privacy page: where PostHog keeps the data", () => {
+  // The region is fixed when the PostHog project is made, and the page tells visitors
+  // which one it is. On 2026-09-15 the project was found in the US region while this page
+  // said "European servers" twice. So the page and the default host are pinned together:
+  // to move region, change lib/analytics/beacon.ts and both sentences in one commit.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+
+  it("names the region the default beacon host is in", () => {
+    expect(DEFAULT_BEACON_HOST).toBe("https://us.i.posthog.com");
+    expect(copy.match(/servers in the United States/g) ?? []).toHaveLength(2);
+    expect(copy).not.toMatch(/Europe/);
   });
 });

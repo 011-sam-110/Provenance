@@ -25,8 +25,13 @@
 // DORMANT-SAFE, like every other upstream in this repo: with no key set, nothing loads,
 // no request is made, and no placeholder pretends otherwise.
 
-/** PostHog EU cloud. EU rather than US so visitor data does not leave the region. */
-export const DEFAULT_BEACON_HOST = "https://eu.i.posthog.com";
+/**
+ * PostHog US cloud. The provenance-online.com project is in PostHog's US region, and a
+ * region cannot be changed after signup. /privacy says "in the United States" because of
+ * this line, and tests/unit/privacy-page.test.ts fails if the two name different regions.
+ * An EU project sets NEXT_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com instead.
+ */
+export const DEFAULT_BEACON_HOST = "https://us.i.posthog.com";
 
 export type BeaconConfig = {
   readonly key: string;

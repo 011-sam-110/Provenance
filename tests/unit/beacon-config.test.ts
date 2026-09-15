@@ -31,13 +31,14 @@ describe("beacon arming", () => {
     }
   });
 
-  it("arms on a real key and defaults to the EU host", () => {
+  it("arms on a real key and defaults to the US host", () => {
     const config = beaconConfig({ NEXT_PUBLIC_POSTHOG_KEY: "phc_realLookingKey123" });
     expect(config).not.toBeNull();
     expect(config?.key).toBe("phc_realLookingKey123");
-    // EU rather than US so visitor data does not leave the region.
+    // The production project is in PostHog's US region. A US key sent to the EU host is
+    // refused, so a wrong default loads the library and counts nothing.
     expect(config?.host).toBe(DEFAULT_BEACON_HOST);
-    expect(DEFAULT_BEACON_HOST).toContain("eu.");
+    expect(DEFAULT_BEACON_HOST).toBe("https://us.i.posthog.com");
   });
 
   it("lets a self-hoster point at their own instance", () => {
