@@ -7,10 +7,13 @@
 //
 // The board tabs are the console's whole navigation: exactly TWO — Globe and
 // Streets. The other five boards (World, Nature, Skywatch, Infrastructure,
-// Intel) were retired on request, and the Apple-style hover panel that used to
-// expand the bar downward (NavPanel) went with them: the tabs now switch
-// boards directly on click, with nothing dropping down and nothing to dismiss.
-// `lib/console/navPanel.ts` and `components/terminal/NavPanel.tsx` are deleted.
+// Intel) were retired on request, the Apple-style hover panel that used to
+// expand the bar downward (NavPanel) went with them, and News — a preset like
+// any other — simply has no tab: it stays reachable from the Sources rail
+// tiles and the ⌘K profiles list, which is where it can explain itself. The
+// tabs switch boards directly on click, with nothing dropping down and nothing
+// to dismiss. `lib/console/navPanel.ts` and `components/terminal/NavPanel.tsx`
+// are deleted.
 //
 // It is a *replacement*, not an addition, so everything StatusBar carried that has
 // no second home in the app is carried here verbatim:
@@ -29,7 +32,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useMetrics } from "@/lib/metrics";
 import { useLayers } from "@/lib/layers";
 import { useActivePreset } from "@/lib/console/activePreset";
-import { BUILTIN_PRESETS, applyPreset, listPresets } from "@/lib/console/presets";
+import { BUILTIN_PRESETS, TOP_BAR_PRESET_IDS, applyPreset, listPresets } from "@/lib/console/presets";
 import { isBoardEdited } from "@/lib/console/boards";
 import { useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
@@ -46,8 +49,14 @@ import { BRAND } from "@/lib/brand";
 const boardLabel = (title: string) => title.toUpperCase();
 
 /** The board ids in tab order — also the roving-focus / Home-End order.
- *  Derived from BUILTIN_PRESETS, so this file never has to learn a board id. */
-const BOARD_ORDER = BUILTIN_PRESETS.map((p) => p.id);
+ *  From TOP_BAR_PRESET_IDS (a subset of the lineup, pinned by
+ *  console-presets.test.ts), so this file never has to learn a board id. */
+const BOARD_ORDER: readonly string[] = [...TOP_BAR_PRESET_IDS];
+
+/** The presets the tabs render, resolved once. Every id is pinned to exist. */
+const TAB_PRESETS = TOP_BAR_PRESET_IDS.map(
+  (id) => BUILTIN_PRESETS.find((p) => p.id === id) as (typeof BUILTIN_PRESETS)[number],
+);
 
 /** One step through BOARD_ORDER for the arrow keys, wrapping at both ends. */
 function boardStep(from: string, dir: 1 | -1): string {
@@ -154,7 +163,7 @@ function BoardTabs() {
       aria-label="Boards"
       data-ind={measured ? "1" : undefined}
     >
-      {BUILTIN_PRESETS.map((p) => {
+      {TAB_PRESETS.map((p) => {
         const active = p.id === activePresetId;
         // A board is "edited" once its owner has moved, resized, added or removed
         // something on it. Merely opening a board does not count — see the

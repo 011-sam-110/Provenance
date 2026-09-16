@@ -172,13 +172,16 @@ obligations and are not satisfied by the licence.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
-- **The console top bar is exactly three board tabs, and nothing drops down from it.**
-  `components/terminal/TerminalHeader.tsx` renders the boards as tabs that call
-  `applyPreset` on click; the Apple-style hover panel that expanded the bar downward
-  (`NavPanel.tsx`, `lib/console/navPanel.ts`, `docs/CONSOLE_NAV.md`) was deleted on
-  2026-09-15 along with the five retired boards. Per-scene memory survives in
-  `lib/console/sceneChrome.ts`. **Scene = board = preset**, one thing — `sceneId` IS a
-  `ConsolePreset.id`; do not invent a second concept.
+- **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from it.**
+  `components/terminal/TerminalHeader.tsx` renders the tabs from `TOP_BAR_PRESET_IDS`
+  (a subset of the lineup, pinned by `console-presets.test.ts`); News left the
+  navbar on 2026-09-16 on request and stays a preset reachable from the Sources
+  rail tiles, the ⌘K profiles list and `?c=` links. The Apple-style hover panel
+  that expanded the bar downward (`NavPanel.tsx`, `lib/console/navPanel.ts`,
+  `docs/CONSOLE_NAV.md`) was deleted on 2026-09-15 along with the five retired
+  boards. Per-scene memory survives in `lib/console/sceneChrome.ts`.
+  **Scene = board = preset**, one thing — `sceneId` IS a `ConsolePreset.id`;
+  do not invent a second concept.
   Hiding is a **paint-time filter** (`visibleWidgets`, applied at two render sites), never a
   layout mutation: a hidden widget keeps its slot, its config and its place in the capacity
   count. Chrome is a **sibling store** (`tn.console.sceneChrome.v1`), deliberately orthogonal
