@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Next.js-15-black?logo=next.js" alt="Next.js 15">
   <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/MapLibre%20GL-v5-1a73e8" alt="MapLibre GL v5">
-  <img src="https://img.shields.io/badge/unit%20tests-4%2C049-2ea44f" alt="4,049 unit tests">
+  <img src="https://img.shields.io/badge/unit%20tests-4%2C186-2ea44f" alt="4,186 unit tests">
 </p>
 
 ## TL;DR
