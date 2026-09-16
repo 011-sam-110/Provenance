@@ -3,11 +3,11 @@
 // the link that reproduces both.
 //
 // NO MAP VIEW CONTROLS HERE, deliberately. Basemap, 2D/3D, terrain and buildings live in
-// the map rail's View group (components/console/maprail/ViewFlyout.tsx), and that file
-// argues the case against a second surface for one concept better than a comment here
-// could. There is no Appearance row to move either: the light/dark pair was deleted from
-// the product, and a segment with one option left in it is a control that cannot do
-// anything.
+// the Inspector rail's Map settings tool (components/shell/inspector/tools/SettingsTool.tsx),
+// and that file argues the case against a second surface for one concept better than a
+// comment here could. There is no Appearance row to move either: the light/dark pair was
+// deleted from the product, and a segment with one option left in it is a control that
+// cannot do anything.
 //
 // THE TRANSIENT STATE MOVED WITH THE MARKUP, and that is not incidental. Inactive tabs
 // unmount, so `copied` and its timer live here rather than in SettingsPanel — otherwise a

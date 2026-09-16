@@ -16,6 +16,7 @@ import type { WorldObject } from "./world";
 import { track } from "@/lib/analytics/track";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { railTabStore } from "@/lib/console/railTab";
+import { inspectorRailStore } from "@/lib/console/inspectorRail";
 
 export interface OverlayState {
   /** The clicked object, or null when the overlay is closed. */
@@ -41,6 +42,14 @@ export const overlay = {
     // is a no-op and only the tab flips.
     railTabStore.set("inspector");
     sourcesRailStore.setOpen(true);
+    // AND CLOSE ANY TOOL, which is the one line here that is not obvious. The
+    // Inspector pane shows one thing at a time (see components/shell/
+    // InspectorPanel.tsx): with Map settings open, a click on the map would land on
+    // a panel full of basemap rows while the thing the user clicked sat behind it.
+    // A click that selects an object is a request to SEE that object, which is the
+    // pane's null state — so opening an object closes the tool the same way it
+    // points the tab, and for the same reason: one opener, every door.
+    inspectorRailStore.close();
   },
   close() {
     if (state.object === null) return;

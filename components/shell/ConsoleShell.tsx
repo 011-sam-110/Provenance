@@ -24,7 +24,7 @@ import { variantStore } from "@/lib/variants/store";
 import TerminalHeader from "@/components/terminal/TerminalHeader";
 import BootSequence from "@/components/terminal/BootSequence";
 import { SIGNALS } from "@/lib/signals/registry";
-import { focusStageSearch } from "@/components/terminal/StageBar";
+import { focusInspectorSearch } from "@/components/shell/inspector/InspectorRail";
 import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
@@ -232,10 +232,12 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           return;
         }
         if (action === "search") {
-          // Only swallow the key if there was actually a search box to focus — the
-          // stage chrome unmounts while a widget is expanded onto the stage, and a
-          // preventDefault with nothing to show for it would look like a dead key.
-          if (focusStageSearch()) e.preventDefault();
+          // Only swallow the key if there was actually a search box to focus. The box
+          // lives on the Inspector panel's tool rail now (it was stage chrome until
+          // 2026-09-16), and the rail is hidden rather than unmounted on the narrow
+          // pass — so the helper answers "is the console's left rail on screen", and
+          // a preventDefault with nothing to show for it would look like a dead key.
+          if (focusInspectorSearch()) e.preventDefault();
           return;
         }
         if (action === "draw") {
