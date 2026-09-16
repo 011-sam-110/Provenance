@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { areaSummary, ringAreaKm2, type InspectorArea } from "@/lib/shell/inspector";
+import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
 
 const RING: [number, number][] = [
   [36.0, 49.8],
@@ -11,6 +12,9 @@ const RING: [number, number][] = [
 const AREA: InspectorArea = {
   id: "area:1",
   label: "Kharkiv corridor",
+  // Required on the type; all that matters here is that it is a colour the map can
+  // paint, since these assertions are about the summary line and the ring's area.
+  color: DEFAULT_AREA_COLOR,
   polygon: RING,
   bbox: [36, 49.8, 36.5, 50.2],
   createdAt: 1,

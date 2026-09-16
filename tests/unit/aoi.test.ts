@@ -190,7 +190,17 @@ test("the draft is centre-only until the pointer has moved", () => {
 // --- the drawn areas on the map ------------------------------------------------
 
 function area(id: string, ring: [number, number][] = RING) {
-  return { id, label: id, polygon: ring, bbox: [0, 0, 0, 0] as [number, number, number, number], createdAt: 0, sources: {} };
+  return {
+    id,
+    label: id,
+    // The colour travels as a FEATURE PROPERTY — that is what lets one area be
+    // recoloured without rebuilding a layer per colour. See areasCollection.
+    color: "#0ea5e9",
+    polygon: ring,
+    bbox: [0, 0, 0, 0] as [number, number, number, number],
+    createdAt: 0,
+    sources: {},
+  };
 }
 
 test("every area is painted, not only the one being edited", () => {

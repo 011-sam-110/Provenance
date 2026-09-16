@@ -31,14 +31,13 @@
 //                               and then ConsoleShell's ladder run exactly as before
 //
 // RUNG 0 IS NOT A NICETY, and it is why this is capture phase rather than a plain
-// listener. The Draw panel renames an area in an inline field; capture phase means
-// this handler sees Escape BEFORE the input's own React handler does, so without the
-// stand-down, Escape in a name field would close the whole panel instead of putting
-// the old name back. It is keyed on the TARGET rather than on a store flag because
-// the target is the thing that actually knows: `data-area-rename` is on the input
-// itself, so a second renaming surface works by carrying the same attribute, and the
-// search box — which deliberately does NOT carry it, because Escape there is how you
-// leave the tool — keeps its behaviour.
+// listener. Two surfaces inside this panel edit state in place: the Draw panel renames
+// an area in an inline field, and its colour picker is a popover over the same list.
+// Capture phase means this handler sees Escape BEFORE either of them does, so without
+// the stand-down, Escape in a name field would close the whole panel instead of putting
+// the old name back, and Escape in the picker would close the panel instead of the
+// picker. Both carry `data-owns-escape`, and that attribute is the whole protocol: a
+// third surface joins by carrying it too.
 //
 // Rung 1 is an explicit stand-down rather than an assumption about phase ordering,
 // which is what the retired stage rail did too. The gesture is armed from a button
@@ -175,10 +174,18 @@ export default function InspectorRail() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      // 0. A field being edited owns Escape. The attribute is on the input, so this
-      //    needs no store and no DOM query — the event target IS the focused field.
+      // 0. Anything holding its own Escape owns it. The marker is on the element the
+      //    key lands on — the area rename field, or a colour picker's popover — and
+      //    `closest` walks up from it, so one attribute covers a whole surface
+      //    without this handler having to know what is in there.
+      //
+      //    IT IS KEYED ON THE TARGET rather than on a store flag because the target is
+      //    the thing that actually knows, and because a second surface that owns
+      //    Escape works by carrying the same attribute. The SEARCH box deliberately
+      //    does not carry it: Escape there is how you leave the tool, a different
+      //    contract, and tests/e2e/inspector-rail.spec.ts asserts it.
       const target = e.target as HTMLElement | null;
-      if (target?.dataset?.areaRename !== undefined) return;
+      if (target?.closest?.("[data-owns-escape]")) return;
       // 1. A draw owns Escape. aoi.ts's bubble-phase listener is the one that
       //    abandons the ring, and it must be allowed to run.
       if (drawing.active) return;

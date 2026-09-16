@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import { filterToScopes, scopesForSource } from "@/lib/shell/sourceScope";
 import { aoiScope } from "@/lib/shell/scope";
 import type { InspectorArea, InspectorState } from "@/lib/shell/inspector";
+import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
 
 /** A square around Kharkiv, and one around Gaza. Deliberately far apart. */
 const KHARKIV: [number, number][] = [
@@ -18,7 +19,17 @@ const GAZA: [number, number][] = [
 ];
 
 function area(id: string, ring: [number, number][], sources: Record<string, boolean>): InspectorArea {
-  return { id, label: id, polygon: ring, bbox: [0, 0, 0, 0], createdAt: 1, sources };
+  // `color` is required on the type since areas became recolourable; nothing in this
+  // file reads it, because scope filtering is about geometry.
+  return {
+    id,
+    label: id,
+    color: DEFAULT_AREA_COLOR,
+    polygon: ring,
+    bbox: [0, 0, 0, 0],
+    createdAt: 1,
+    sources,
+  };
 }
 
 function state(partial: Partial<InspectorState> = {}): InspectorState {
