@@ -27,28 +27,31 @@ describe("railTools — which buttons are on the rail", () => {
   it("has no eye until a map click has selected something", () => {
     // Sam's rule: the View button APPEARS once there is something to view. An eye
     // that opens an empty pane is the dead control this codebase keeps writing about.
-    expect(railTools(false)).toEqual(["search", "settings", "draw"]);
-    expect(railTools(true)).toEqual(["search", "view", "settings", "draw"]);
+    expect(railTools(false)).toEqual(["search", "settings", "draw", "alerts"]);
+    expect(railTools(true)).toEqual(["search", "view", "settings", "draw", "alerts"]);
   });
 
-  it("keeps the declared order — search, view, settings, draw", () => {
+  it("keeps the declared order — search, view, settings, draw, alerts", () => {
     // Order is a UI decision, not an implementation detail: it is the render order
-    // AND the arrow-key order, and the two must not drift. Draw is last because it
-    // sits below the rule on screen.
-    expect([...TOOLS]).toEqual(["search", "view", "settings", "draw"]);
+    // AND the arrow-key order, and the two must not drift. Draw and Alerts are last
+    // because they sit below the rule on screen — neither is a map control.
+    expect([...TOOLS]).toEqual(["search", "view", "settings", "draw", "alerts"]);
     expect(railTools(true)).toEqual([...TOOLS]);
   });
 
-  it("INCLUDES DRAW, because the rail is one tab stop", () => {
+  it("INCLUDES EVERY BUTTON, because the rail is one tab stop", () => {
     // Draw was an action rather than a tool until Sam's second pass, and this list
     // was a second one (`railSlots`) that appended it. The failure that guarded
     // against is silent and total: the toolbar uses a roving tabindex, so a button
     // left out of the render order is not merely last — it is unreachable from a
-    // keyboard, since nothing else on the rail takes Tab. It is a tool now, so the
-    // two lists are one list, and this asserts the merge rather than the detail.
+    // keyboard, since nothing else on the rail takes Tab.
+    //
+    // ALERTS IS THE CASE THAT PROVES IT. It arrived as a section inside the Draw
+    // panel, went unfound ("i cant see the alerts and bell"), and became a tool.
     for (const hasObject of [true, false]) {
       expect(railTools(hasObject)).toContain("draw");
-      expect(railTools(hasObject).at(-1)).toBe("draw");
+      expect(railTools(hasObject)).toContain("alerts");
+      expect(railTools(hasObject).at(-1)).toBe("alerts");
     }
   });
 
@@ -92,8 +95,9 @@ describe("railStep / railEdge — roving tabindex arithmetic", () => {
     expect(railStep(slots, "search", 1)).toBe("view");
     expect(railStep(slots, "view", 1)).toBe("settings");
     expect(railStep(slots, "settings", 1)).toBe("draw");
-    expect(railStep(slots, "draw", 1)).toBe("search");
-    expect(railStep(slots, "search", -1)).toBe("draw");
+    expect(railStep(slots, "draw", 1)).toBe("alerts");
+    expect(railStep(slots, "alerts", 1)).toBe("search");
+    expect(railStep(slots, "search", -1)).toBe("alerts");
   });
 
   it("returns to where it started after a full lap in each direction", () => {
@@ -119,7 +123,7 @@ describe("railStep / railEdge — roving tabindex arithmetic", () => {
 
   it("Home and End hit the real ends", () => {
     expect(railEdge(slots, "first")).toBe("search");
-    expect(railEdge(slots, "last")).toBe("draw");
+    expect(railEdge(slots, "last")).toBe("alerts");
   });
 });
 

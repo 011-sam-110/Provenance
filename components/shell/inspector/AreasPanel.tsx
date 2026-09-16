@@ -35,10 +35,8 @@ import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector
 import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { useAoiDraw } from "@/lib/map/aoi";
 import { overlay } from "@/lib/overlay";
-import RulesPanel from "@/components/shell/inspector/RulesPanel";
-import { AlertGlyph, PencilGlyph } from "@/components/shell/inspector/ToolIcons";
+import { PencilGlyph } from "@/components/shell/inspector/ToolIcons";
 import { useAllRules } from "@/lib/notify/rules";
-import { WORLD_AREA_ID } from "@/lib/notify/types";
 
 /**
  * How long an area name may be. Not a database limit — a LAYOUT one.
@@ -226,36 +224,18 @@ export default function AreasPanel() {
         </div>
       </section>
 
-      {/* ── ALERTS, ITS OWN LITTLE AREA ─────────────────────────────────────────
-          "Alert me" is the one thing in this panel that is not the areas list: "what
-          areas do I have" above, "tell me when something happens in this one" below.
-          It has its own elevated heading and its own mark — the bell — so it reads as
-          a separate thing rather than as one more row that happens to be last.
+      {/* THE ALERTS SECTION LEFT THIS PANEL (2026-09-16), one round after it arrived.
+          It was moved here from the Sources tab for the same reason it has now gone:
+          it is about the areas, and this is where the areas are. But Sam could not
+          find it — "i cant see the alerts and bell" — and a bell you have to open a
+          different tool to see is not a feature, it is a rumour. It is the rail's own
+          Notifications button now (components/shell/inspector/tools/AlertsTool.tsx),
+          which carries the bell and opens on the composer directly.
 
-          ITS CARD IS RulesPanel'S OWN (`.tn-alert`), NOT A SECOND ONE WRAPPED AROUND
-          IT. The first draft put a tinted box here and the composer drew its own card
-          inside that — two borders and two radii around one control, which is exactly
-          the kind of doubling this codebase keeps deleting. The section that owns it
-          provides the indent; the composer provides the surface.
-
-          IT IS ALSO THE ONE PLACE A NOTIFICATION IS SET UP, which is what the bell is
-          for: the same mark names the feature wherever it appears (WidgetFrame's bell
-          opens this composer rather than a second copy of it — see RulesPanel's own
-          header). The composer is a disclosure, so closed it is one line. */}
-      <section className="tn-insp-group">
-        <h3 className="tn-src-sec-head">
-          <span className="tn-insp-head-glyph" aria-hidden>
-            <AlertGlyph />
-          </span>
-          <span className="tn-src-sec-name">Alerts</span>
-        </h3>
-        <div className="tn-insp-group-body">
-          <RulesPanel
-            areaId={state.editing ?? WORLD_AREA_ID}
-            areaLabel={state.areas.find((a) => a.id === state.editing)?.label ?? "World"}
-          />
-        </div>
-      </section>
+          SO THIS PANEL IS THE AREAS LIST AGAIN, and nothing else: what areas you have,
+          what they hold, and the button that makes another one. The rules armed on an
+          area still show on its row — the ▲ count below — because that is information
+          about the AREA, not about the alert composer. */}
     </div>
   );
 }

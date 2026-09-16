@@ -100,12 +100,13 @@ test("the rail is one toolbar, it is on BOTH tabs, and the eye waits for a selec
   // console's Escape ladder app-wide.
   await expect(rail).toHaveAttribute("role", "toolbar");
 
-  // THREE, and the names are asserted separately so a missing one reads as a missing
-  // one. Draw is below the rule and opens a panel like the rest.
-  expect(await slots(page)).toEqual(["search", "settings", "draw"]);
+  // FOUR, and the names are asserted separately so a missing one reads as a missing
+  // one. Draw and Alerts are below the rule and open panels like the rest.
+  expect(await slots(page)).toEqual(["search", "settings", "draw", "alerts"]);
   await expect(rail.getByRole("button", { name: "Search for a place" })).toBeVisible();
   await expect(rail.getByRole("button", { name: "Map settings" })).toBeVisible();
   await expect(rail.getByRole("button", { name: "Draw an area" })).toBeVisible();
+  await expect(rail.getByRole("button", { name: "Notifications" })).toBeVisible();
   // Sam's rule from the mockups: the eye APPEARS when a map click gives it something
   // to show. An eye with nothing to view is a button that opens an empty pane.
   await expect(rail.getByRole("button", { name: "View" })).toHaveCount(0);
@@ -142,7 +143,7 @@ test("a tool TAKES the panel body — it is not a card over the object", async (
   await selectArea(page);
 
   // The eye is here now, and it is the current view.
-  expect(await slots(page)).toEqual(["search", "view", "settings", "draw"]);
+  expect(await slots(page)).toEqual(["search", "view", "settings", "draw", "alerts"]);
   await expect(rail.getByRole("button", { name: "View" })).toHaveAttribute("aria-pressed", "true");
 
   // Open Map settings. Option D, and the assertion is an ABSENCE on purpose: if the
@@ -468,23 +469,31 @@ test("the panel's hierarchy is measurable, not just intended", async ({ page }) 
   await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
 });
 
-test("Alerts is its own area, and it is the one the bell names", async ({ page }) => {
+test("Alerts is its own rail button, and the bell is on it", async ({ page }) => {
+  // IT WAS A SECTION INSIDE THE DRAW PANEL, for one round. Sam: "i cant see the alerts
+  // and bell" — which is the whole argument for it being a tool: a bell you have to
+  // open a different tool to see is not a feature. So this asserts both halves of the
+  // move: it is on the rail, and it is NOT buried in Draw any more.
   await openInspector(page);
-  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
-  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
+  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveCount(1);
 
-  // Its own section, its own mark, and its own card — not one more row at the bottom
-  // of the areas list. The card is the composer's own; a second one wrapped around it
-  // was the first draft and read as a box inside a box.
+  await page.click(`${RAIL} .tn-insp-rail-btn-alerts`);
+  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Notifications/i);
+  // The composer is here, in a section of its own panel.
   const alerts = page.locator(".tn-insp-group", { has: page.getByText("Alerts", { exact: true }) });
   await expect(alerts).toHaveCount(1);
-  await expect(alerts.locator("h3 svg")).toHaveCount(1);
   await expect(alerts.locator(".tn-alert")).toHaveCount(1);
-  await expect(alerts.locator(".tn-insp-alert")).toHaveCount(0);
-  // The composer is inside the indented body of that section, which is what makes it
-  // read as belonging to the heading.
-  await expect(alerts.locator(".tn-insp-group-body .tn-alert")).toHaveCount(1);
   await expect(alerts.locator(".tn-alert-head")).toBeVisible();
+  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // The Draw panel is the areas list and nothing else now.
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
+  await expect(page.locator(".tn-alert")).toHaveCount(0);
+  await expect(page.locator(".tn-insp-group")).toHaveCount(1);
 });
 
 test("shots", async ({ page }) => {

@@ -36,6 +36,7 @@ import { BASEMAPS } from "@/lib/basemaps";
 import { mapViewStore, useMapView } from "@/lib/mapView";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import { basemapKeys, modeForStage, stageForMode } from "@/lib/console/viewControls";
+import ToolSection from "@/components/shell/inspector/ToolSection";
 
 /** One control row: what it is, what it does, and the thing you press. */
 function Field({
@@ -58,27 +59,6 @@ function Field({
   );
 }
 
-/**
- * A section of the panel: an elevated heading, and the controls it owns INDENTED
- * under it.
- *
- * THE NESTING IS THE POINT. Every control here belongs to the heading above it, and
- * before this they all sat at the same left edge as the headings — so "Terrain" and
- * "SURFACE" read as siblings rather than as a section and one of its settings. The
- * indent plus the guide rule is what makes the hierarchy visible without a second
- * type size.
- */
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="tn-insp-group">
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">{title}</span>
-      </h3>
-      <div className="tn-insp-group-body">{children}</div>
-    </section>
-  );
-}
-
 export default function SettingsTool() {
   const view = useMapView();
   const { stage } = useShellLayout();
@@ -86,7 +66,7 @@ export default function SettingsTool() {
 
   return (
     <>
-      <Section title="View">
+      <ToolSection title="View">
         <Field
           label="Projection"
           sub="The 3D globe, or the flat map"
@@ -110,9 +90,9 @@ export default function SettingsTool() {
             </span>
           }
         />
-      </Section>
+      </ToolSection>
 
-      <Section title="Basemap">
+      <ToolSection title="Basemap">
         {/* Iterated from the registry and never hand-listed: lib/basemaps.ts states
             that its key order is load-bearing. A sixth basemap appears here with no
             edit, and tests/unit/view-controls.test.ts fails if the registry and the
@@ -133,9 +113,9 @@ export default function SettingsTool() {
             </button>
           ))}
         </div>
-      </Section>
+      </ToolSection>
 
-      <Section title="Surface">
+      <ToolSection title="Surface">
         <Field
           label="Terrain"
           sub="Needs zoom 6+, on the flat map"
@@ -176,7 +156,7 @@ export default function SettingsTool() {
             </button>
           }
         />
-      </Section>
+      </ToolSection>
     </>
   );
 }

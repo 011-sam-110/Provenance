@@ -58,7 +58,7 @@ import {
   useInspectorRail,
   type InspectorTool,
 } from "@/lib/console/inspectorRail";
-import { DrawGlyph, PinGearGlyph, SearchGlyph, ViewGlyph } from "./ToolIcons";
+import { AlertGlyph, DrawGlyph, PinGearGlyph, SearchGlyph, ViewGlyph } from "./ToolIcons";
 import { INSPECTOR_SEARCH_ID } from "./tools/SearchTool";
 
 /** The id the console's own chrome can look for. */
@@ -112,6 +112,7 @@ const LABELS: Record<InspectorTool, string> = {
   view: "View",
   settings: "Map settings",
   draw: "Draw an area",
+  alerts: "Notifications",
 };
 
 // WRITTEN OUT, NOT BUILT WITH `tn-insp-rail-btn-${slot}`. The CSS and
@@ -123,6 +124,7 @@ const SLOT_CLASS: Record<InspectorTool, string> = {
   view: "tn-insp-rail-btn-view",
   settings: "tn-insp-rail-btn-settings",
   draw: "tn-insp-rail-btn-draw",
+  alerts: "tn-insp-rail-btn-alerts",
 };
 
 const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
@@ -130,7 +132,17 @@ const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
   view: ViewGlyph,
   settings: PinGearGlyph,
   draw: DrawGlyph,
+  alerts: AlertGlyph,
 };
+
+/**
+ * Which slots start a group, and so get a rule above them.
+ *
+ * Draw and Alerts are one group — neither is a map control — which is why the rule
+ * goes above Draw and NOT between the two. If that ever changes, this set is the only
+ * place the rail's grouping is written down.
+ */
+const RULE_BEFORE = new Set<InspectorTool>(["draw"]);
 
 export default function InspectorRail() {
   const open = useInspectorRail();
@@ -208,8 +220,9 @@ export default function InspectorRail() {
         return (
           <div className="tn-insp-rail-cell" key={slot}>
             {/* The rule that separates "what the map looks like" from "the areas you
-                define on it". Rendered BEFORE draw, and only there. */}
-            {slot === "draw" ? <span className="tn-insp-rail-rule" aria-hidden /> : null}
+                define on it, and what should be said about them". Rendered above a
+                slot that starts a group — see RULE_BEFORE. */}
+            {RULE_BEFORE.has(slot) ? <span className="tn-insp-rail-rule" aria-hidden /> : null}
             <button
               type="button"
               className={`tn-insp-rail-btn ${SLOT_CLASS[slot]}`}

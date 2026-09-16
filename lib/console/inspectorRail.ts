@@ -30,10 +30,19 @@
 // DRAW IS A TOOL NOW, AND IT WAS AN ACTION. It used to arm the map the moment you
 // clicked its button, which Sam judged wrong: the button is the way IN to drawing,
 // not the gesture itself, and a click that starts a map interaction from a panel the
-// user has not read yet is a click with no undo. So it opens a panel like the other
-// three, and the gesture starts from a button INSIDE it — which is also where the
-// areas list lives now, moved off the Sources tab, because "what areas do I have" and
-// "draw another one" are the same question.
+// user has not read yet is a click with no undo. So it opens a panel like the rest,
+// and the gesture starts from a button INSIDE it — which is also where the areas list
+// lives, moved off the Sources tab, because "what areas do I have" and "draw another
+// one" are the same question.
+//
+// ALERTS JOINED IT LATER, AND FOR A BLUNTER REASON: as a section inside the Draw panel
+// it went unfound. Sam's report was "i cant see the alerts and bell", and a control
+// nobody can find is not a control. It has its own button and its own panel now.
+//
+// DRAW AND ALERTS SIT BELOW ONE RULE TOGETHER, because neither is a map control: the
+// three above them change what the MAP looks like, these two are about the areas you
+// have drawn and what should be said about them. Both are in TOOLS like everything
+// else, so the roving-focus arithmetic never needs a special case for either.
 //
 // WHY THE REDUCERS ARE HERE AND NOT IN THE COMPONENT. vitest is configured
 // `environment: "node"` with `include: ["tests/unit/**/*.test.ts"]`, .tsx is not
@@ -51,7 +60,7 @@
 import { useSyncExternalStore } from "react";
 
 /** Everything the rail can put on screen, in render order, top to bottom. */
-export type InspectorTool = "search" | "view" | "settings" | "draw";
+export type InspectorTool = "search" | "view" | "settings" | "draw" | "alerts";
 
 /**
  * The tools the STORE can be holding. "view" is not one of them: the store's null IS
@@ -61,7 +70,13 @@ export type InspectorTool = "search" | "view" | "settings" | "draw";
 export type OpenTool = Exclude<InspectorTool, "view">;
 
 /** Render order. Also the arrow-key order and the roving-focus order. */
-export const TOOLS: readonly InspectorTool[] = ["search", "view", "settings", "draw"] as const;
+export const TOOLS: readonly InspectorTool[] = [
+  "search",
+  "view",
+  "settings",
+  "draw",
+  "alerts",
+] as const;
 
 /**
  * The tools that are actually on screen, in order.

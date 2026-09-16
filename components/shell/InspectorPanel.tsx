@@ -41,12 +41,14 @@ import {
 import AreasPanel from "@/components/shell/inspector/AreasPanel";
 import SearchTool from "@/components/shell/inspector/tools/SearchTool";
 import SettingsTool from "@/components/shell/inspector/tools/SettingsTool";
+import AlertsTool from "@/components/shell/inspector/tools/AlertsTool";
 
 /** The panel head's title per tool. One table, so the ✕ can name what it closes. */
 const TOOL_TITLE: Record<OpenTool, string> = {
   search: "Search",
   settings: "Map settings",
   draw: "Draw an area",
+  alerts: "Notifications",
 };
 
 export default function InspectorPanel() {
@@ -106,7 +108,15 @@ export default function InspectorPanel() {
     return (
       <div className="tn-insp-tool">
         <h2 className="tn-insp-tool-title">{TOOL_TITLE[tool]}</h2>
-        {tool === "search" ? <SearchTool /> : tool === "settings" ? <SettingsTool /> : <AreasPanel />}
+        {tool === "search" ? (
+          <SearchTool />
+        ) : tool === "settings" ? (
+          <SettingsTool />
+        ) : tool === "alerts" ? (
+          <AlertsTool />
+        ) : (
+          <AreasPanel />
+        )}
       </div>
     );
   }
