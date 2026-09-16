@@ -13,9 +13,9 @@ const SIGNAL_WIDGETS = new Set(SIGNALS.map((s) => `signal:${s.id}`));
 // The OSINT "Tools" board's query→response recon widgets (not live signal layers).
 const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon:bgp", "recon:ports", "recon:threat"]);
 
-// TWO presets. A preset is the whole workspace — core layers, signal layers
+// THREE presets. A preset is the whole workspace — core layers, signal layers
 // AND a board — because lib/monitors.ts merged into lib/console/presets.ts; the
-// Sources rail's tiles and the ⌘K Profiles list drive the same two things.
+// Sources rail's tiles and the ⌘K Profiles list drive the same three things.
 //
 // Ids are stable (used by the first-run seed, the ⌘K Profiles section, the central
 // preset pill, and shared `?c=` URLs), which is why the landing board still carries
@@ -25,7 +25,13 @@ const RECON_WIDGETS = new Set(["recon:dns", "recon:whois", "recon:certs", "recon
 // retired on request (2026-09-15) along with the old monitor ids ground/calm.
 // What they featured is still registered and still reachable from ⌘K and the
 // Sources rail, which the registry-coverage test below pins.
-const BOARD_IDS = ["overview", "streets"];
+//
+// "news" was added on 2026-09-16 and is NOT a reinstatement of the retired "intel":
+// intel was four GDELT-and-UN layers laid out in a bottom strip, this is the merged
+// headline stream (/api/news — six RSS feeds, one Telegram channel and everything the
+// NewsScraper host pushes) plus the coverage layer built from it. Before it, that
+// whole pipeline had no surface anywhere in the console.
+const BOARD_IDS = ["overview", "news", "streets"];
 
 // BOTH BOARDS ARE DELIBERATELY EMPTY NOW, so "every board has at least one widget" is
 // no longer true and must not be asserted. Streets joined the landing board here in
@@ -42,7 +48,7 @@ const MAY_BE_EMPTY = new Set([DEFAULT_PRESET_ID, "streets"]);
 // monitoring card, so it is exempt.
 const CORE_MONITORS = ["events", "news", "camslot", "aviation", "satellites", "markets", "headlines"];
 
-test("the board lineup is exactly the two presets, each within the cap", () => {
+test("the board lineup is exactly the three presets, each within the cap", () => {
   const ids = BUILTIN_PRESETS.map((p) => p.id);
   expect(ids).toEqual(BOARD_IDS);
   for (const p of BUILTIN_PRESETS) {
