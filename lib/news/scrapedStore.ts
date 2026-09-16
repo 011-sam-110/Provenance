@@ -17,9 +17,11 @@
 // as the first ever run — no special case, and nothing to remember to test.
 //
 // SINGLE PROCESS ASSUMPTION. Production is one long-lived next-server under systemd
-// (deploy/provenance.service), so module state is shared by every request. This would
-// NOT hold on a serverless host, where each instance would hold a different slice. If
-// this app ever moves back to one, this module is the thing that breaks.
+// (deploy/provenance.service), so one store per process means one store, full stop.
+// This would NOT hold on a serverless host, where each instance would hold a different
+// slice of the pushes and the rail would show whichever slice answered. If this app
+// ever moves back to one, this module is the thing that breaks — see the globalThis
+// note below for why per-process is already the narrowest scope that works.
 import type { ScrapedItem } from "@/lib/news/ingest";
 
 /**
@@ -49,14 +51,41 @@ export interface StoreStats {
   updatedAt: number;
 }
 
-/** Module-level so every request in this process sees the same store. */
-const items = new Map<string, ScrapedItem>();
-let cursorHighWater = "";
-let updatedAt = 0;
+/**
+ * THE STORE HANGS OFF globalThis, AND IT HAS TO.
+ *
+ * A plain module-level `const` does not work here, and it fails silently. Next
+ * bundles each route handler separately, so `/api/news/ingest` and `/api/news` can
+ * each get their OWN instance of this module: the push lands in one map and the read
+ * looks at a different, empty one. Every unit test still passes, because in vitest
+ * there is only ever one instance. It was an end-to-end POST-then-GET that caught it
+ * — the ingest reported `held: 3` while the rail served nothing.
+ *
+ * Keying off a symbol on globalThis gives one store per PROCESS instead of one per
+ * bundle, which is what "the scraper pushed it, so the rail can see it" requires. It
+ * also survives dev hot-reload, which would otherwise reset the store on every edit.
+ */
+const STORE = Symbol.for("provenance.news.scrapedStore");
+
+interface StoreState {
+  items: Map<string, ScrapedItem>;
+  cursorHighWater: string;
+  updatedAt: number;
+}
+
+const globalStore = globalThis as unknown as { [STORE]?: StoreState };
+
+function state(): StoreState {
+  const existing = globalStore[STORE];
+  if (existing) return existing;
+  const fresh: StoreState = { items: new Map(), cursorHighWater: "", updatedAt: 0 };
+  globalStore[STORE] = fresh;
+  return fresh;
+}
 
 /** Newest first. The order everything downstream wants. */
 function sorted(): ScrapedItem[] {
-  return Array.from(items.values()).sort((a, b) => b.ts - a.ts);
+  return Array.from(state().items.values()).sort((a, b) => b.ts - a.ts);
 }
 
 /**
@@ -65,6 +94,7 @@ function sorted(): ScrapedItem[] {
  * the stream, it just stops contributing a body to clustering.
  */
 function evict(): void {
+  const { items } = state();
   const order = sorted();
   for (const item of order.slice(MAX_ITEMS)) items.delete(item.id);
   for (const item of order.slice(MAX_TEXT_ITEMS, MAX_ITEMS)) {
@@ -78,6 +108,8 @@ function evict(): void {
  * without having to know whether the first one landed.
  */
 export function ingestItems(batch: ScrapedItem[], nowMs: number): IngestOutcome {
+  const store = state();
+  const { items } = store;
   let accepted = 0;
   let unchanged = 0;
 
@@ -110,12 +142,12 @@ export function ingestItems(batch: ScrapedItem[], nowMs: number): IngestOutcome 
       items.set(item.id, { ...item, text });
       accepted += 1;
     }
-    if (item.lastSeenAt > cursorHighWater) cursorHighWater = item.lastSeenAt;
+    if (item.lastSeenAt > store.cursorHighWater) store.cursorHighWater = item.lastSeenAt;
   }
 
   evict();
-  updatedAt = nowMs;
-  return { accepted, unchanged, cursor: cursorHighWater };
+  store.updatedAt = nowMs;
+  return { accepted, unchanged, cursor: store.cursorHighWater };
 }
 
 /** Newest-first snapshot. Callers must treat it as read-only. */
@@ -125,7 +157,7 @@ export function scrapedItems(limit = MAX_ITEMS): ScrapedItem[] {
 
 /** "" before the first push, and after every restart. The scraper reads it as "backfill". */
 export function scrapedCursor(): string {
-  return cursorHighWater;
+  return state().cursorHighWater;
 }
 
 export function scrapedStats(): StoreStats {
@@ -133,16 +165,17 @@ export function scrapedStats(): StoreStats {
   return {
     items: order.length,
     withText: order.reduce((n, it) => n + (it.text ? 1 : 0), 0),
-    cursor: cursorHighWater,
+    cursor: state().cursorHighWater,
     oldestTs: order.length ? order[order.length - 1].ts : 0,
     newestTs: order.length ? order[0].ts : 0,
-    updatedAt,
+    updatedAt: state().updatedAt,
   };
 }
 
 /** Tests only. Module state would otherwise leak between cases in one vitest file. */
 export function resetScrapedStore(): void {
-  items.clear();
-  cursorHighWater = "";
-  updatedAt = 0;
+  const store = state();
+  store.items.clear();
+  store.cursorHighWater = "";
+  store.updatedAt = 0;
 }
