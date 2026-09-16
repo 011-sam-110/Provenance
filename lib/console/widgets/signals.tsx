@@ -206,9 +206,17 @@ function makeSignalBody(source: SignalSource) {
     if (status === "loading" && projected.shown === 0) {
       return <p className="tn-w-empty">Loading {source.label}…</p>;
     }
-    if (status === "error" && projected.shown === 0) {
-      return <p className="tn-w-empty">{source.label} unavailable.</p>;
-    }
+    // THE BADGE COMES FIRST, AND THAT ORDER IS THE WHOLE POINT OF THE BADGE.
+    //
+    // A locked or refused layer that fetches nothing lands in `status === "error"`,
+    // because the route answers `ok: false` and useSignalFeed treats a declared
+    // failure as one. Reading the error branch first therefore printed "<layer>
+    // unavailable." over the one class of layer whose emptiness we can fully explain
+    // — the exact vague wording capabilityBadge exists to replace, and the reason the
+    // News coverage card read as broken while it was working as designed.
+    //
+    // Only locked/refused produce a badge, so this changes nothing for the layers that
+    // are genuinely down: they have no explanation to offer and still say so.
     if (badge) {
       // `refused` reads as a rejection, never as the same vague "unavailable"
       // a locked layer gets — the wording is built in capabilityBadge from
@@ -218,6 +226,9 @@ function makeSignalBody(source: SignalSource) {
           <span aria-hidden>{badge.icon}</span> {source.label}: {badge.long}
         </p>
       );
+    }
+    if (status === "error" && projected.shown === 0) {
+      return <p className="tn-w-empty">{source.label} unavailable.</p>;
     }
     if (projected.shown === 0) {
       // "Nothing in World." beside a header badge reading 8 is the contradiction

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+ <channel rdf:about="https://rss.dw.com/syndication/feeds/rss-en-world.4025.rdf">
+  <description>World | Deutsche Welle</description>
+  <link>https://www.dw.com/english/?maca=en-rss-en-world-4025-rdf</link>
+  <title>World | Deutsche Welle</title>
+  <dc:date>2026-09-16T10:38:04Z</dc:date>
+  <image rdf:resource="https://rss.dw.com/images/DW-L-RGB_whitebg.png"/>
+  <items>
+   <rdf:Seq>
+    <rdf:li rdf:resource="https://www.dw.com/en/kosovo-ex-president-thaci-sentenced-to-25-years-for-war-crimes/a-79286344"/>
+    <rdf:li rdf:resource="https://www.dw.com/en/turkey-s-rights-groups-eu-call-out-lgbtq-crackdown/a-79284021"/>
+   </rdf:Seq>
+  </items>
+ </channel>
+ <image rdf:about="https://rss.dw.com/images/DW-L-RGB_whitebg.png">
+  <url>https://rss.dw.com/images/DW-L-RGB_whitebg.png</url>
+  <link>https://www.dw.com/english/?maca=en-rss-en-world-4025-rdf</link>
+  <title>DW</title>
+  <description>News, Analysis and Service from Germany and Europe - in 30 Languages</description>
+ </image>
+ <item rdf:about="https://www.dw.com/en/kosovo-ex-president-thaci-sentenced-to-25-years-for-war-crimes/a-79286344">
+  <title>Kosovo ex-president Thaci sentenced to 25 years for war crimes</title>
+  <link>https://www.dw.com/en/kosovo-ex-president-thaci-sentenced-to-25-years-for-war-crimes/a-79286344</link>
+  <description>The verdict closes a chapter on the Kosovo war.</description>
+  <dc:date>2026-09-16T09:52:00Z</dc:date>
+ </item>
+ <item rdf:about="https://www.dw.com/en/turkey-s-rights-groups-eu-call-out-lgbtq-crackdown/a-79284021">
+  <title>Turkey&apos;s rights groups, EU call out LGBTQ+ crackdown</title>
+  <link>https://www.dw.com/en/turkey-s-rights-groups-eu-call-out-lgbtq-crackdown/a-79284021</link>
+  <description>Campaigners say a draft law would criminalise expression.</description>
+  <dc:date>2026-09-16T08:10:00Z</dc:date>
+ </item>
+</rdf:RDF>
