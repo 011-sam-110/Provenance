@@ -60,6 +60,7 @@
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { bboxOfRing, sanitiseRing } from "@/lib/shell/scope";
+import { DEFAULT_AREA_COLOR, coerceAreaColor, nextAreaColor } from "@/lib/shell/areaColors";
 
 /** id → on, for ONE context. Covers LayerKeys and signal ids in a single map. */
 export type SourceSet = Record<string, boolean>;
@@ -68,6 +69,15 @@ export interface InspectorArea {
   /** "area:<epoch ms>" — stable, and sorts by age without a second field. */
   id: string;
   label: string;
+  /**
+   * #rrggbb. Painted as this area's ring, and shown on its row in the Draw panel.
+   *
+   * ADDED 2026-09-16, so every area saved before it has no such field — hence
+   * coerceState sending a missing or malformed value through coerceAreaColor, which
+   * answers DEFAULT_AREA_COLOR. That default is the colour areas were ALREADY being
+   * painted in, so an old area does not change colour on upgrade.
+   */
+  color: string;
   /** OPEN ring of [lon, lat] — exactly what lib/shell/scope.ts speaks. */
   polygon: [number, number][];
   bbox: [number, number, number, number];
@@ -128,12 +138,14 @@ export function newArea(
   ring: readonly [number, number][],
   label: string,
   now: number,
+  color: string = DEFAULT_AREA_COLOR,
 ): InspectorArea | null {
   const clean = sanitiseRing(ring as unknown);
   if (!clean) return null;
   return {
     id: `area:${now}`,
     label,
+    color: coerceAreaColor(color),
     polygon: clean,
     bbox: bboxOfRing(clean),
     createdAt: now,
@@ -162,6 +174,22 @@ export function renameArea(
   label: string,
 ): InspectorArea[] {
   return areas.map((a) => (a.id === id ? { ...a, label } : a));
+}
+
+/**
+ * Pure: recolour by id.
+ *
+ * The colour is coerced on the way in, like everywhere else it is written: it ends up
+ * in a MapLibre paint expression, and an unparseable paint expression takes the whole
+ * LAYER with it rather than painting something wrong — see lib/shell/areaColors.ts.
+ */
+export function recolourArea(
+  areas: readonly InspectorArea[],
+  id: string,
+  color: string,
+): InspectorArea[] {
+  const next = coerceAreaColor(color);
+  return areas.map((a) => (a.id === id ? { ...a, color: next } : a));
 }
 
 /** Pure: the area being edited, or null for World (including a dangling id). */
@@ -305,6 +333,9 @@ export function coerceState(saved: unknown): InspectorState {
       areas.push({
         id: a.id,
         label: a.label,
+        // Missing on everything saved before the colour feature existed, and the
+        // fallback is the colour those areas were already being painted in.
+        color: coerceAreaColor(a.color),
         polygon: ring,
         bbox: bboxOfRing(ring),
         createdAt: typeof a.createdAt === "number" && Number.isFinite(a.createdAt) ? a.createdAt : 0,
@@ -414,7 +445,10 @@ export const inspectorStore = {
 
   /** Save a drawn ring as an area. Returns its id, or null for a ring that is not one. */
   add(ring: readonly [number, number][], label: string): string | null {
-    const area = newArea(ring, label, Date.now());
+    // A NEW AREA TAKES THE FIRST COLOUR NOT ALREADY ON THE MAP, so two rings drawn in
+    // a row are not two identical rings. See nextAreaColor for why it rotates rather
+    // than randomising.
+    const area = newArea(ring, label, Date.now(), nextAreaColor(state.areas.map((a) => a.color)));
     if (!area) return null;
     commit({ ...state, areas: addArea(state.areas, area) });
     return area.id;
@@ -430,6 +464,22 @@ export const inspectorStore = {
 
   rename(id: string, label: string) {
     commit({ ...state, areas: renameArea(state.areas, id, label) });
+  },
+
+  /**
+   * Set an area's ring colour. Unknown ids are ignored rather than throwing.
+   *
+   * The map follows on its own: lib/map/aoi.ts subscribes to this store and repaints
+   * the areas source, and the colour travels as a FEATURE PROPERTY — so one ring can
+   * change without touching the layers that draw the rest.
+   */
+  setColor(id: string, color: string) {
+    const next = recolourArea(state.areas, id, color);
+    // No-op writes must not wake every subscriber: recolourArea always builds a new
+    // array, so the guard has to be on the value, not on the array's identity.
+    const before = state.areas.find((a) => a.id === id);
+    if (!before || before.color === next.find((a) => a.id === id)?.color) return;
+    commit({ ...state, areas: next });
   },
 
   /**

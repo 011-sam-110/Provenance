@@ -23,6 +23,13 @@ test.beforeEach(async ({ page }) => {
     // ONE AREA, so the Sources tab has an areas LIST — which is also the only
     // remaining way to open an object without depending on what the globe happens to
     // be drawing. Its row calls overlay.open(), which is the door a map click uses.
+    //
+    // SEEDED ONLY IF ABSENT, and that guard is load-bearing for the colour test: this
+    // script runs on EVERY navigation, reloads included, so an unconditional write
+    // would put the colourless area back over whatever the app had just saved — and
+    // "the colour survives a reload" would then be asserting the seed rather than the
+    // app.
+    if (window.localStorage.getItem("tn.inspector.v1")) return;
     window.localStorage.setItem(
       "tn.inspector.v1",
       JSON.stringify({
@@ -509,6 +516,73 @@ test("Alerts is its own rail button AND its own group, and the Draw panel is onl
   await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
   await expect(page.locator(".tn-alert")).toHaveCount(0);
   await expect(page.locator(".tn-insp-group")).toHaveCount(1);
+});
+
+test("an area's colour can be changed, and the MAP is what changes", async ({ page }) => {
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await page.waitForSelector(".tn-insp-row-color", { timeout: 10_000 });
+
+  // The swatch shows the area's colour, so the list and the map agree before anything
+  // is clicked.
+  const swatch = page.locator(".tn-insp-row-color");
+  await expect(swatch).toHaveCSS("--c", "#0ea5e9");
+
+  await swatch.click();
+  const pop = page.locator(".tn-insp-color-pop");
+  await expect(pop).toBeVisible();
+  await expect(pop.getByRole("radio")).toHaveCount(8);
+  await expect(pop.getByRole("radio", { name: "Sky" })).toHaveAttribute("aria-checked", "true");
+
+  await pop.getByRole("radio", { name: "Amber" }).click();
+  await expect(swatch).toHaveCSS("--c", "#f59e0b");
+
+  // THE EFFECT, NOT THE SWATCH — the house rule from console.spec.ts, "so a button that
+  // highlights without driving the map still fails". The colour travels to MapLibre as a
+  // FEATURE PROPERTY on the areas source, which is what makes one area's change one
+  // area's change; so the assertion is on the data MapLibre is holding, not on the
+  // layers (whose paint expression is the same for every colour by design).
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const map = (window as unknown as { __map?: unknown }).__map as
+            | {
+                getSource: (id: string) =>
+                  | { serialize?: () => { data?: { features?: { properties?: Record<string, unknown> }[] } } }
+                  | undefined;
+              }
+            | undefined;
+          const f = map?.getSource("aoi-areas")?.serialize?.().data?.features?.[0];
+          return f?.properties?.color ?? null;
+        }),
+      { message: "the areas source never carried the chosen colour" },
+    )
+    .toBe("#f59e0b");
+
+  // AND IT SURVIVES A RELOAD, because the colour belongs to the persisted area rather
+  // than being a view setting.
+  await page.reload();
+  await page.waitForSelector(".map-canvas", { timeout: 30_000 });
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await expect(page.locator(".tn-insp-row-color")).toHaveCSS("--c", "#f59e0b");
+});
+
+test("Escape closes the colour picker and leaves the panel open", async ({ page }) => {
+  // Rung 0 of the rail's Escape ladder, for the second surface that uses it. Capture
+  // phase means the rail sees the key first, so without the stand-down Escape here would
+  // close the whole Draw panel instead of the popover.
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await page.click(".tn-insp-row-color");
+  const pop = page.locator(".tn-insp-color-pop");
+  await expect(pop).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(pop).toHaveCount(0);
+  await expect(page.locator(".tn-insp-tool")).toHaveCount(1);
+  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
 });
 
 test("shots", async ({ page }) => {

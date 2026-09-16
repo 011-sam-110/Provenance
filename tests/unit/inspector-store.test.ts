@@ -5,6 +5,7 @@ import {
   coerceState,
   editingSet,
   newArea,
+  recolourArea,
   removeArea,
   renameArea,
   replaceActive,
@@ -14,6 +15,7 @@ import {
   type InspectorArea,
   type InspectorState,
 } from "@/lib/shell/inspector";
+import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
 
 const RING: [number, number][] = [
   [36.0, 49.8],
@@ -23,7 +25,15 @@ const RING: [number, number][] = [
 ];
 
 function area(id: string, createdAt = 1): InspectorArea {
-  return { id, label: id, polygon: RING, bbox: [36, 49.8, 36.5, 50.2], createdAt, sources: {} };
+  return {
+    id,
+    label: id,
+    color: DEFAULT_AREA_COLOR,
+    polygon: RING,
+    bbox: [36, 49.8, 36.5, 50.2],
+    createdAt,
+    sources: {},
+  };
 }
 
 function state(partial: Partial<InspectorState> = {}): InspectorState {
@@ -37,6 +47,49 @@ test("newArea derives a bbox and keeps the ring open", () => {
   expect(a!.polygon).toHaveLength(4);
   expect(a!.label).toBe("Kharkiv corridor");
   expect(a!.sources).toEqual({});
+});
+
+test("newArea takes a colour, coerced, and defaults to the one areas already had", () => {
+  // The default matters more than it looks: every area saved before the colour feature
+  // existed has no colour field, and coerceState sends it here. #0ea5e9 is what the map
+  // hardcoded, so those areas keep the colour they were already drawn in.
+  expect(newArea(RING, "x", 1)!.color).toBe(DEFAULT_AREA_COLOR);
+  expect(newArea(RING, "x", 1, "#22c55e")!.color).toBe("#22c55e");
+  // Junk never reaches a pile of paint expressions: MapLibre drops the LAYER over one
+  // it cannot parse, which would take every area off the map rather than one.
+  expect(newArea(RING, "x", 1, "cornflowerblue")!.color).toBe(DEFAULT_AREA_COLOR);
+});
+
+test("recolourArea rewrites one area and coerces what it is given", () => {
+  const areas = [area("a"), area("b")];
+  const next = recolourArea(areas, "a", "#EF4444");
+  expect(next[0].color).toBe("#ef4444");
+  // Untouched, and by identity — the other areas must not be re-created by a write
+  // that had nothing to say about them.
+  expect(next[1]).toBe(areas[1]);
+  expect(recolourArea(areas, "nope", "#ef4444")[0].color).toBe(DEFAULT_AREA_COLOR);
+  expect(recolourArea(areas, "a", "not-a-colour")[0].color).toBe(DEFAULT_AREA_COLOR);
+});
+
+test("coerceState gives a colour to areas saved before there was one", () => {
+  // The upgrade path, and the reason `color` being required on the type is safe: an
+  // envelope written by an older build has no such field, and it comes back as the
+  // colour those areas were already being painted in rather than as undefined.
+  const saved = {
+    world: {},
+    editing: null,
+    areas: [
+      { id: "area:1", label: "old", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 1, sources: {} },
+      { id: "area:2", label: "stored", color: "#A855F7", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 2, sources: {} },
+      { id: "area:3", label: "junk", color: "chartreuse", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 3, sources: {} },
+    ],
+  };
+  const coerced = coerceState(saved);
+  expect(coerced.areas.map((a) => a.color)).toEqual([
+    DEFAULT_AREA_COLOR,
+    "#a855f7",
+    DEFAULT_AREA_COLOR,
+  ]);
 });
 
 test("newArea refuses a ring that is not an area", () => {

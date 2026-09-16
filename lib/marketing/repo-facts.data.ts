@@ -13,14 +13,14 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-16 with `npx vitest list`, rebased onto main at 6d3d1b1. Two
- * changes met here: the news route (#248) added its own cases, and this branch split
- * tests/unit/map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts
- * when the stage rail was retired — one file became two, which is the whole of the
- * move from 387 to 388.
+ * Measured 2026-09-16 with `npx vitest list`, rebased onto main at 6d3d1b1 and then
+ * with the area-colour feature on top. Three changes met here: the news route (#248)
+ * added its own cases; the inspector-rail branch split tests/unit/map-rail.test.ts into
+ * inspector-rail.test.ts and view-controls.test.ts when the stage rail was retired
+ * (387 -> 388); and the colour picker added tests/unit/area-colors.test.ts (388 -> 389).
  */
 export const UNIT_TESTS = {
-  cases: 3988,
-  files: 388,
+  cases: 4003,
+  files: 389,
   measuredAt: "2026-09-16",
 } as const;

@@ -20,6 +20,7 @@ import { useSyncExternalStore } from "react";
 import { haversineKm } from "@/lib/geo/haversine";
 import { aoiScope, scopeStore, WORLD_SCOPE, type Scope } from "@/lib/shell/scope";
 import { inspectorStore, type InspectorArea } from "@/lib/shell/inspector";
+import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
 
 const AOI_SRC = "aoi-scope";
 const AOI_FILL = "aoi-scope-fill";
@@ -349,7 +350,7 @@ export function areasCollection(
       .filter((a) => a.polygon.length >= MIN_VERTICES)
       .map((a) => {
         const f = ringToFeature(a.polygon);
-        return { ...f, properties: { id: a.id, editing: a.id === editingId } };
+        return { ...f, properties: { id: a.id, editing: a.id === editingId, color: a.color } };
       }),
   };
 }
@@ -416,6 +417,15 @@ function ensureLayers(map: MapLibreMap): boolean {
   // THREE LAYERS FOR TWO STATES, because line-dasharray is not data-driven in
   // MapLibre — a `case` expression on it is dropped silently, along with the layer.
   // So the dash is carried by which layer a feature lands in, and the filter picks.
+  //
+  // THE COLOUR IS A FEATURE PROPERTY, not a layer paint. Sam asked for areas that can
+  // be recoloured one at a time; `["get", "color"]` is what makes that one ring's
+  // change instead of every ring's, and it is the same mechanism that keeps this file
+  // from having to rebuild a layer per colour. `coalesce` is the guard on the way in:
+  // a feature with no colour — which cannot happen from the store, but can from a
+  // hand-made collection passed to setData in a test — paints the default rather than
+  // dropping the layer, which is what MapLibre does with a paint expression it cannot
+  // parse.
   if (!map.getLayer(AREAS_FILL)) {
     map.addLayer({
       id: AREAS_FILL,
@@ -425,7 +435,10 @@ function ensureLayers(map: MapLibreMap): boolean {
       // stacks washes over the basemap and says "these are more important than the
       // map" — they are a reference, not the subject.
       filter: ["==", ["get", "editing"], true],
-      paint: { "fill-color": "#0ea5e9", "fill-opacity": 0.06 },
+      paint: {
+        "fill-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
+        "fill-opacity": 0.06,
+      },
     });
   }
   if (!map.getLayer(AREAS_LINE)) {
@@ -435,7 +448,7 @@ function ensureLayers(map: MapLibreMap): boolean {
       source: AREAS_SRC,
       filter: ["!=", ["get", "editing"], true],
       paint: {
-        "line-color": "#0ea5e9",
+        "line-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
         "line-width": 1.25,
         "line-opacity": 0.5,
         "line-dasharray": [3, 2],
@@ -448,7 +461,11 @@ function ensureLayers(map: MapLibreMap): boolean {
       type: "line",
       source: AREAS_SRC,
       filter: ["==", ["get", "editing"], true],
-      paint: { "line-color": "#0ea5e9", "line-width": 2, "line-opacity": 0.95 },
+      paint: {
+        "line-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
+        "line-width": 2,
+        "line-opacity": 0.95,
+      },
     });
   }
   if (!map.getLayer(DRAFT_LINE)) {
