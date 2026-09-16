@@ -1,0 +1,60 @@
+name: Gate
+
+# The repo's own gate from CLAUDE.md — `npx tsc --noEmit && npm test` — run BEFORE a
+# merge instead of only after one.
+#
+# WHY THIS FILE EXISTS. The gate used to live only in deploy.yml, which triggers on
+# push to main. Pull requests ran CodeQL and nothing else, so a PR that broke a test was
+# green, merged clean, and failed on main — and a failure there does not block the PR
+# that caused it, it blocks DEPLOYMENT of everything already merged behind it. On
+# 2026-09-16 that put production five merges behind: #253 and #254 each added a test
+# file, the pinned count in lib/marketing/repo-facts.data.ts went stale, and the deploy
+# went red while six PRs were merged on top of it.
+#
+# The pinned-count guards (repo-facts, readme-counts, claude-md-counts, console-presets)
+# are the tests most likely to catch a branch this way, and they are exactly the ones
+# that are cheap to fix on the branch and expensive to fix after the merge. So they need
+# to run where the person who moved the number is still looking.
+#
+# This deliberately duplicates the Gate step in deploy.yml rather than replacing it.
+# Deploy must not trust that a PR ran: a direct push to main, a workflow_dispatch or an
+# admin merge all reach deploy without passing here.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # One run per branch. A force-push mid-run makes the in-flight result meaningless, so
+  # unlike the deploy this one IS safe to cancel — nothing has been swapped anywhere.
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches deploy.yml and the box. Kept in step with it deliberately: a suite
+          # that passes here on a different major than it ships on proves less.
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci --no-audit --fund=false
+
+      - name: Gate
+        run: |
+          npx tsc --noEmit
+          npm test
+
+      # NOT `next build`. That is deploy.yml's third check and it needs build-time
+      # secrets this workflow has no business holding — a PR from a fork would not get
+      # them anyway. Route-export mistakes still surface at deploy, as they did before.

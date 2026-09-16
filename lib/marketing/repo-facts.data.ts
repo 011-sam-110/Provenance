@@ -13,24 +13,28 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-16 with `npx vitest list` on feat/news-depth after merging
- * origin/main at f3771d0, which is the tree that ships. Four changes have met here
- * across the day: the news board (#249), the inspector rail (#250, which split
- * map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts), the area
- * colour picker (#252, which added area-colors.test.ts) and this branch, which added
- * news-rdf-feed.test.ts.
+ * Measured 2026-09-16 with `npx vitest list` on origin/main at c7d091b.
  *
- * WATCH THE FILE COUNT ACROSS A MERGE, BECAUSE GIT WILL NOT. This line has now been
- * wrong twice in one day for the same reason: two branches each add one test file, both
- * write the same new total, the text is identical on both sides, and git merges it
- * silently while the merged tree holds one more. Only `cases` differed, so only `cases`
- * conflicted — which is the only reason anyone looked at `files` at all. After ANY merge
- * that touches this file, re-measure both numbers on the merged tree. The guard catches
- * a `files` that is stale against disk, but nothing catches a `cases` that is merely
- * out of date, and nothing catches a number two branches agreed on and both got wrong.
+ * THIS LINE STOPPED SIX MERGES FROM REACHING PRODUCTION, and the reason is worth more
+ * than the number. The gate (`npx tsc --noEmit && npm test`) ran ONLY in deploy.yml, on
+ * push to main. Pull requests ran CodeQL and nothing else. So a PR that added a test
+ * file was green, merged clean, and then failed the gate on main — where the failure
+ * does not block the PR that caused it, it blocks DEPLOYMENT of everything already
+ * merged. #253 and #254 each added test files, this constant went stale, and prod sat
+ * on #251 while five later merges piled up behind a red deploy.
+ *
+ * The gate now runs on pull requests too, so this constant goes red on the branch that
+ * moves it, which is the only place anyone can fix it cheaply.
+ *
+ * WATCH THE FILE COUNT ACROSS A MERGE, BECAUSE GIT WILL NOT. It was wrong twice in one
+ * day before that: two branches each add one test file, both write the same new total,
+ * the text is identical on both sides, so git merges it silently while the merged tree
+ * holds one more. Only `cases` differs, so only `cases` conflicts — which is the only
+ * reason anyone looks at `files` at all. After ANY merge that touches this file,
+ * re-measure both numbers on the merged tree.
  */
 export const UNIT_TESTS = {
-  cases: 4049,
-  files: 391,
+  cases: 4186,
+  files: 396,
   measuredAt: "2026-09-16",
 } as const;
