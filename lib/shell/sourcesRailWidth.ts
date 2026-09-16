@@ -30,12 +30,18 @@ const PERSIST_VERSION = 1;
  *
  * Measured rather than picked: the longest row label in the catalogue is
  * "Borders & names", and a row is `label + ＋ + toggle` with an 8px gap and 6px of
- * row padding either side. At 300px the label column still has ~150px, which
- * clears every label in SECTIONS without ellipsis. Below that the labels start
+ * row padding either side. At 300px of CONTENT the label column still has ~150px,
+ * which clears every label in SECTIONS without ellipsis. Below that the labels start
  * truncating and the rail stops being readable, which is a worse failure than
  * simply refusing to go narrower.
+ *
+ * IT IS 340 AND IT WAS 300, because the panel grew a tool column on 2026-09-16 —
+ * `--tn-insp-rail-w` is 40px and it is chrome, so it comes out of the width before
+ * the rows see any of it. The floor moved by exactly that much, which is what keeps
+ * the sentence above true: 340 − 40 of rail − 24 of padding is the 300px of content
+ * the measurement was taken on.
  */
-export const SOURCES_RAIL_MIN = 300;
+export const SOURCES_RAIL_MIN = 340;
 
 /**
  * The widest.
@@ -45,8 +51,13 @@ export const SOURCES_RAIL_MIN = 300;
  * content plus 40px of padding and scrollbar — see the container query at
  * `@container (max-width: 561px)`). Capping at the old default would have made the
  * two-column layout unreachable, so the ceiling sits clear of it instead.
+ *
+ * 680, AND IT WAS 640, for the same reason the floor moved: two columns need 626px
+ * of panel now (562 of content + 24 of padding + 40 of tool rail), so a 640 ceiling
+ * would have put the fold out of reach — the exact regression the 640 was raised
+ * from 602 to prevent. 680 keeps ~54px of clearance above the fold.
  */
-export const SOURCES_RAIL_MAX = 640;
+export const SOURCES_RAIL_MAX = 680;
 
 /**
  * The default, and the number this whole change is about.

@@ -3668,17 +3668,23 @@ a.tn-w-place { display: flex; align-items: center; }
      one column sized to its own content rather than to two columns' worth.
 
      THE BOUNDS ARE STILL THE SAFETY, and they are why this stays a clamp rather
-     than becoming the bare variable. The upper bound is `min(640px, 100vw - 820px)`:
-     640 so the two-column layout is still REACHABLE by dragging (a ceiling at the
-     old 602 would have made it unreachable, since the fold needs >561px of content),
-     and `100vw - 820px` so the rail can never starve the stage — the console needs
-     STAGE_MIN_PX 360 plus RAIL_MIN.left 220 plus RAIL_MIN.right 220, plus gutters.
+     than becoming the bare variable. The upper bound is `min(680px, 100vw - 800px)`:
+     680 so the two-column layout is still REACHABLE by dragging (a ceiling at the
+     old 602 would have made it unreachable, since the fold needs >561px of content;
+     it is 680 rather than 640 since 2026-09-16 because 40px of every width now goes
+     to the tool column, so the fold needs 626px of panel), and `100vw - 800px` so the
+     rail can never starve the stage — the console needs STAGE_MIN_PX 360 plus
+     RAIL_MIN.left 220 plus RAIL_MIN.right 220, and that is 800 exactly.
+     IT WAS `100vw - 820px`, and the 20px of gutter slack it carried is what the tool
+     column was bought with: without it the rail could reach only 620px at a 1440px
+     viewport, six short of the fold, and the two-column catalogue would have become
+     unreachable on the width this product is mostly read at.
      A drag is clamped to the same ceiling in JS; this is the second line of defence,
      for a viewport that shrinks AFTER the width was chosen.
 
      Below 901px a separate rule re-homes the rail as a bottom sheet with
      width:auto, so none of this applies on a phone. */
-  --tn-rail-w: clamp(300px, var(--tn-rail-user-w, 452px), min(640px, calc(100vw - 820px)));
+  --tn-rail-w: clamp(340px, var(--tn-rail-user-w, 452px), min(680px, calc(100vw - 800px)));
   /* ── The design palette: THREE COLOURS AND WHITE ────────────────────────
      #262b15 ink · #464b37 accent · #afb4ad edge · #ffffff everything else.
 
@@ -6811,26 +6817,60 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    lying about where it applies, which is the reason that block's own header gave
    for not calling itself `.tn-rail*` in the first place.
 
-   TWO THINGS ABOUT THE PANEL THIS LIVES IN, both of which the rules below depend on
-   and neither of which is visible from here:
-     - `.tn-terminal .tn-cw-shell > .tn-rail` is `position: absolute; top: 0;
-       bottom: 0`, so the panel has a DEFINITE height — which is what lets the rail
-       stretch to the dossier's height instead of collapsing to its buttons.
-     - `.tn-rail` is its own SCROLLPORT (`overflow-y: auto` in the base rule), which
-       is what the sticky offsets below stick against. `top: 50px` is the sticky tab
-       header's measured height (12px padding + a 29px tab row + 8px padding + 1px
-       border). It is a measured constant rather than a derivation, for the same
-       reason the mock's caption was written by hand: if the header ever grows, the
-       failure is a partly-covered first button, not a broken layout — the header is
-       opaque, sits at z-index 2, and paints over this strip.
+   IT IS ON BOTH TABS AND IT IS NOT A STICKY COLUMN, which is the second thing Sam
+   asked for and the fix for the first thing he reported. The rail was a child of the
+   Inspector pane, `position: sticky` inside `.tn-rail`'s scrollport — and a sticky
+   element is only ever as tall as its containing block, so the strip came out
+   164px tall at a 300px panel, 127px at the 452 default and 112px at 620, changing
+   shape with the pane's text as it reflowed. That is the "wonky, doesn't fit right"
+   band. It is now a flex SIBLING of the panes (see SourceCatalog), so it stretches
+   to the panel's full height, keeps its width, and nothing about the content can
+   move it. The measured `top: 50px` constant that used to hold the buttons clear of
+   the sticky header is gone with it — there is no longer a scrollport under them.
+
+   WHAT THE PANEL'S OWN LAYOUT IS NOW, because the rules below assume it:
+     - `.tn-terminal .tn-cw-shell > .tn-rail` is a flex COLUMN with `overflow:
+       hidden`, and it is still `position: absolute; top: 0; bottom: 0`, so it has a
+       definite height for the rail to stretch into.
+     - `.tn-rail-main` is the row: `[.tn-rail-panes | .tn-insp-rail]`.
+     - `.tn-rail-panes` is the SCROLLPORT. It replaced the panel as one, which is
+       what lets the header stop being sticky and what keeps a scrollbar out of the
+       gap between the panes and the rail.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* The tab's own layout: the pane, then the rail. `align-items: stretch` is what
-   makes the rail run the height of whatever the pane needs — a dossier is tall, the
-   empty state is short, and the strip follows it rather than being pinned to a
-   number someone has to maintain. */
-.tn-insp-shell { display: flex; align-items: stretch; gap: 10px; }
-.tn-insp-pane { flex: 1 1 auto; min-width: 0; }
+/* ── The panel: a header, then [panes | tool rail] ───────────────────────────── */
+.tn-terminal .tn-cw-shell > .tn-rail {
+  display: flex;
+  flex-direction: column;
+  /* THE PANES SCROLL, NOT THE PANEL — see the block header. `padding: 0` because
+     the header and the panes carry their own now; the base rule's `0 12px 10px`
+     belonged to the era when this element was the scrollport whose padding the
+     sticky header had to span with negative margins. */
+  overflow: hidden;
+  padding: 0;
+}
+/* The header kept its `position: sticky; top: 0` until the panes took over the
+   scrolling, and it is a plain flex item now: there is nothing above it to scroll
+   under, and the negative side margins it needed to span the panel's padding are
+   gone with that padding. */
+.tn-terminal .tn-rail-header {
+  flex: 0 0 auto;
+  position: static;
+  margin: 0 0 10px;
+  padding: 12px 12px 8px;
+}
+.tn-terminal .tn-rail-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+.tn-terminal .tn-rail-panes {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
 
 .tn-insp-rail {
   /* Metrics as tokens so the narrow pass changes ONE value and everything derived
@@ -6839,36 +6879,19 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   --tn-insp-rail-w: 40px;
   --tn-insp-rail-btn: 30px;
   --tn-insp-rail-glyph: 18px;
-  --tn-insp-rail-top: 50px;
 
   flex: 0 0 var(--tn-insp-rail-w);
   width: var(--tn-insp-rail-w);
-  /* FLUSH TO THE PANEL'S EDGE. `.tn-rail` carries `padding: 0 12px 10px`, and the
-     negative right margin is what puts this strip's border on the panel's border
-     rather than 12px inside it — the same trick `.tn-rail-header` uses to span the
-     padding, and for the same reason: a strip that stops short of the edge reads as
-     a floating card, which is exactly what option D said it is not. */
-  margin: 0 -12px 0 0;
-  display: flex; flex-direction: column; align-items: center;
-  background: rgba(15, 23, 42, 0.028);
-  border-left: 1px solid var(--tn-border);
-}
-
-/* STICKY, AND THE REASON IS THE DOSSIER. The panel is one scrollport, so an
-   ordinary column carries the tools off the top of the screen the moment a
-   country's detail body is taller than the viewport — and the tool rail is the only
-   way back to search or the map settings. The geometry that makes sticky work here
-   is worth stating because it is invisible: this column must be SHORTER than the
-   strip around it, which is why the tinted strip and the button column are two
-   elements. Stretch the buttons to the strip's height and there is no room to
-   stick, so the row of icons would scroll away with the content it is pinned to. */
-.tn-insp-rail-col {
-  position: sticky;
-  top: var(--tn-insp-rail-top);
-  z-index: 1;
-  width: 100%;
+  /* FULL HEIGHT BY CONSTRUCTION, not by measurement. `align-items: stretch` on
+     `.tn-rail-main` gives this column the panel's height whether the tab beside it
+     holds three lines of empty state or a dossier taller than the screen, and
+     because it is outside the scrollport nothing that happens in the panes can move
+     it. Both halves of that were the bug: the strip used to change height with the
+     content and to be absent on the Sources tab altogether. */
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 6px 0 10px;
+  background: rgba(15, 23, 42, 0.028);
+  border-left: 1px solid var(--tn-border);
 }
 
 .tn-insp-rail-cell { position: relative; display: flex; justify-content: center; width: 100%; }
@@ -6949,8 +6972,7 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-insp-rail-btn[data-panel] .tn-insp-rail-tip { opacity: 0; visibility: hidden; }
 
 /* ── The tool pane ───────────────────────────────────────────────────────────── */
-.tn-insp-tool { display: flex; flex-direction: column; }
-.tn-insp-tool-head {
+.tn-insp-tool { display: flex; flex-direction: column; }.tn-insp-tool-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 0 0 9px; margin-bottom: 10px;
   border-bottom: 1px solid var(--tn-border-strong);
@@ -6983,6 +7005,36 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-insp-tool-foot {
   margin: 10px 0 0; font-size: var(--tnx-fs-sm); line-height: 1.55; color: var(--tn-text-muted);
+}
+
+/* THE BUTTON THAT STARTS THE GESTURE, in the Draw tool's panel — and the only one
+   that does. The rail's Draw button opens this panel; this arms the map (Sam: "a
+   user should click draw area on that page"), which is why the rule came back with
+   the button when the areas block moved onto the rail.
+
+   DASHED, and the original note for that still holds: a dashed 1.28:1 outline on
+   white is not a box, and this is the only control that creates an area. Dashed
+   still says "nothing here yet"; 3.04:1 says there is a control saying it. */
+.tn-insp-draw {
+  width: 100%; margin-top: 10px; padding: 10px 12px; min-height: 40px; text-align: left;
+  border: 1px dashed var(--tn-srx-edge); border-radius: 8px; background: none;
+  font: inherit; font-size: var(--tnx-fs); font-weight: 600;
+  color: var(--tn-accent); cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.tn-insp-draw:hover { background: var(--tn-accent-soft); }
+.tn-insp-draw:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+/* At the area cap it refuses, and says why in its own label — see lib/shell/
+   drawArea.ts. Dimmed text rather than a hidden button: the reason is the message,
+   and a control that vanishes when you reach a limit explains nothing. */
+.tn-insp-draw:disabled { color: var(--tn-text-faint); border-color: var(--tn-border); cursor: default; }
+.tn-insp-draw:disabled:hover { background: none; }
+/* ARMED. The gesture is on the map, so this is the receipt on the control that was
+   clicked: the dashes close up and the fill turns on, and the label changes with it.
+   The banner over the map is still the narration that cannot be dismissed. */
+.tn-insp-draw[data-armed] {
+  border-style: solid; border-color: var(--tn-accent);
+  background: var(--tn-accent-soft); color: var(--tn-accent-strong);
 }
 
 /* Projection. The one button is labelled with what you will GET rather than with
@@ -7413,13 +7465,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   border: 1px solid var(--tn-accent);
 }
 .tn-insp-pill-muted { color: var(--tn-text-muted); border-color: var(--tn-srx-edge); }
-/* `.tn-insp-draw` WAS HERE — the dashed "＋ Draw an area" button under the areas
-   list. Deleted with the button on 2026-09-16: the gesture moved onto the Inspector
-   tool rail (`.tn-insp-rail-btn-draw` at the end of this sheet), and the two
-   entry points left on the Sources tab went with it rather than being duplicated.
-   Its comment argued for a 3.04:1 dashed edge over a 1.28:1 one, which is worth
-   keeping in mind if a dashed "nothing here yet" control is ever wanted again —
-   not worth keeping as CSS for markup that no longer exists. */
+/* `.tn-insp-draw` WAS HERE, went with the button when the areas block left the
+   Sources tab, and came back with it — the gesture's button is in the Draw tool's
+   panel now, and the rule lives with the rest of that panel at the end of this
+   sheet. */
 /* Inert by design — it is a labelled COMING SOON card, not a control — so it keeps
    the softer edge. Nothing here is clickable, so 1.4.11 does not apply and a 3:1
    box would advertise an affordance the card does not have. */

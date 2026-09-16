@@ -81,8 +81,8 @@ import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
-import AreasPanel from "@/components/shell/inspector/AreasPanel";
 import InspectorPanel from "@/components/shell/InspectorPanel";
+import InspectorRail from "@/components/shell/inspector/InspectorRail";
 import { railTabStore, useRailTab } from "@/lib/console/railTab";
 
 function CameraFilters() {
@@ -393,98 +393,114 @@ export default function SourceCatalog() {
         </button>
       </div>
 
-      {/* ── TWO TABS NOW: Sources and Inspector ────────────────────────────────
-          The Sources tab is everything this rail was before — the context switcher,
-          the areas block, the search box and the six source sections. The Inspector
-          tab is the detail body that used to slide in as a right-edge dossier; it
-          opens here when something on the map is clicked. `tab` is railTabStore
-          (session-only), and overlay.open() points it at Inspector. */}
-      {tab === "sources" ? (
-        <div id="tn-rail-panel-sources" role="tabpanel" aria-labelledby="tn-rail-tab-sources">
-      <ContextSwitcher />
+      {/* ── TWO TABS, AND ONE TOOL RAIL BESIDE BOTH OF THEM ────────────────────
+          The Sources tab is the catalogue. The Inspector tab is the tool pane:
+          Search, Map settings, Draw, and the object's own view when no tool is open.
 
-      {/* Drawing an area and then turning sources on for it is one job, so the
-          areas block sits in the same scroll as the sources it configures. It used
-          to be a tab of its own and the round trip — draw here, switch there,
-          toggle, switch back to see what the area now says — was the reason it
-          moved. */}
-      <AreasPanel />
+          THE RAIL IS NOT INSIDE EITHER TAB. Sam's second pass: the buttons should be
+          there whichever tab is being read, and a click on one should land on the
+          Inspector with that tool open — so it is a sibling of the tab panels, and
+          InspectorRail's click does the switching. `tn-rail-main` is the flex row
+          that holds them; `.tn-rail-panes` is the scrollport, which is what keeps the
+          rail out of the scroll region (it used to be a sticky column inside it, and
+          a sticky column is only ever as tall as its content — see the CSS block).
 
-      <div className="tn-rail-divider" />
+          The areas block used to sit at the top of the Sources tab — "drawing an area
+          and then turning sources on for it is one job", which was true while the
+          only way to draw one was a button at the bottom of that tab. It is the Draw
+          tool's body now, on the rail, where the entry point is. */}
+      <div className="tn-rail-main">
+        <div className="tn-rail-panes">
+          {tab === "sources" ? (
+            <div id="tn-rail-panel-sources" role="tabpanel" aria-labelledby="tn-rail-tab-sources">
+          <ContextSwitcher />
 
-      {/* THE SEARCH BOX SITS HERE, directly above the list it filters, and not
-          under the header where it used to be. It moved into the slot the four
-          core-layer shortcuts vacated: from the header it was separated from its
-          own results by the context switcher and the whole areas block, so typing
-          in it changed something a scroll away. */}
-      <input
-        type="search"
-        className="tn-cat-search"
-        placeholder="Search sources…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label="Search sources"
-      />
-
-      {visible.length === 0 ? (
-        <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
-      ) : (
-        visible.map((section) => (
-          <SourceSection
-            key={section.id}
-            section={section}
-            isOn={isOn}
-            isPlaced={isPlaced}
-            onToggle={onToggle}
-            onDragHandle={onDragHandle}
-          />
-        ))
-      )}
-
-      {/* AFTER the six sections, not inside them. These filters belong to the
-          Cameras row, so the obvious place was under the section holding it —
-          but seen in the browser that injects ~220px of feed and region chips
-          between Ground and Air & space and breaks the run of six headings the
-          rail exists to give you. They are a refinement of one source rather
-          than a source, so they read better as a trailing panel. Shown only
-          while the layer they filter is actually on. */}
-      {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
-          and region filter for the whole console, not a per-context setting — so
-          these belong on screen whenever camera pins are being drawn anywhere.
-          Gated on the edited context they would vanish while you configured an
-          area, taking a global control off the page as a side effect of a choice
-          that has nothing to do with it. */}
-      {mapLayers.cameras ? (
-        <>
+          {/* THE SEARCH BOX SITS HERE, directly above the list it filters, and not
+              under the header where it used to be. It moved into the slot the four
+              core-layer shortcuts vacated, and then the areas block left this tab for
+              the Draw tool's panel, so it is now the only thing between the context
+              switcher and the list it filters. */}
           <div className="tn-rail-divider" />
-          <CameraFilters />
-        </>
-      ) : null}
 
-      <div className="tn-rail-divider" />
+          <input
+            type="search"
+            className="tn-cat-search"
+            placeholder="Search sources…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search sources"
+          />
 
-      <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
-        {t("btnCoverage")}
-      </button>
+          {visible.length === 0 ? (
+            <p className="tn-rail-foot">No source matches “{query.trim()}”.</p>
+          ) : (
+            visible.map((section) => (
+              <SourceSection
+                key={section.id}
+                section={section}
+                isOn={isOn}
+                isPlaced={isPlaced}
+                onToggle={onToggle}
+                onDragHandle={onDragHandle}
+              />
+            ))
+          )}
 
-      <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
-        {t("btnMarkets")}
-      </button>
+          {/* AFTER the six sections, not inside them. These filters belong to the
+              Cameras row, so the obvious place was under the section holding it —
+              but seen in the browser that injects ~220px of feed and region chips
+              between Ground and Air & space and breaks the run of six headings the
+              rail exists to give you. They are a refinement of one source rather
+              than a source, so they read better as a trailing panel. Shown only
+              while the layer they filter is actually on. */}
+          {/* THE UNION, not the edited context. cameraFilterStore is GLOBAL — one feed
+              and region filter for the whole console, not a per-context setting — so
+              these belong on screen whenever camera pins are being drawn anywhere.
+              Gated on the edited context they would vanish while you configured an
+              area, taking a global control off the page as a side effect of a choice
+              that has nothing to do with it. */}
+          {mapLayers.cameras ? (
+            <>
+              <div className="tn-rail-divider" />
+              <CameraFilters />
+            </>
+          ) : null}
 
-      <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
-        ★ {t("sectionSaved")}
-      </button>
+          <div className="tn-rail-divider" />
 
-      <p className="tn-rail-foot">
-        Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
-        right rail.
-      </p>
+          <button type="button" className="tn-coverage-open" onClick={() => coverageStore.open()}>
+            {t("btnCoverage")}
+          </button>
+
+          <button type="button" className="tn-coverage-open" onClick={() => marketsStore.open()}>
+            {t("btnMarkets")}
+          </button>
+
+          <button type="button" className="tn-coverage-open" onClick={() => watchlistPanelStore.open()}>
+            ★ {t("sectionSaved")}
+          </button>
+
+          <p className="tn-rail-foot">
+            Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
+            right rail.
+          </p>
+            </div>
+          ) : (
+            <div id="tn-rail-panel-inspector" role="tabpanel" aria-labelledby="tn-rail-tab-inspector">
+              <InspectorPanel />
+            </div>
+          )}
         </div>
-      ) : (
-        <div id="tn-rail-panel-inspector" role="tabpanel" aria-labelledby="tn-rail-tab-inspector">
-          <InspectorPanel />
-        </div>
-      )}
+
+        {/* ON BOTH TABS, OUTSIDE THE SCROLLPORT. It is a sibling of the panes rather
+            than a child of either one, and that is the fix for the wonky band Sam
+            reported while resizing: inside the scrollport a sticky column is only
+            ever as tall as its content (measured: 164px at a 300px panel, 127px at
+            the 452 default, 112px at 620 — and absent entirely on the Sources tab,
+            where the rail did not exist at all). Out here it stretches to the panel,
+            keeps its width, and cannot be moved by a scrollbar or a reflow. */}
+        <InspectorRail />
+      </div>
     </aside>
     <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
     </>

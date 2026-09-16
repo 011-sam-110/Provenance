@@ -67,19 +67,41 @@ function slots(page: Page): Promise<string[]> {
   );
 }
 
-test("the rail is one toolbar, and the eye does not exist until something is selected", async ({
+/**
+ * Select an object through the UI. The seeded area's row is the only opener that does
+ * not depend on what the globe happens to be drawing, and since the areas block moved
+ * onto the rail it lives in the Draw tool's panel — its own test asserts that.
+ *
+ * The row calls overlay.open(), which points the rail at the Inspector AND closes any
+ * open tool (see lib/overlay.ts), so this lands on the object's own view with the eye
+ * filled in.
+ */
+async function selectArea(page: Page) {
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await expect(page.locator(".tn-insp-row")).toHaveCount(1);
+  await page.click(".tn-insp-row");
+  await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
+}
+
+test("the rail is one toolbar, it is on BOTH tabs, and the eye waits for a selection", async ({
   page,
 }) => {
-  await openInspector(page);
+  // The rail belongs to the PANEL, not to the Inspector tab — Sam's second pass:
+  // "the buttons on the right should exist on both sources and inspector".
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.locator(".tn-rail")).toBeVisible();
+  await expect(page.locator(RAIL)).toBeVisible();
+  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+
+  await page.click("#tn-rail-tab-inspector");
   const rail = page.locator(RAIL);
   // role=toolbar, never role=dialog: ConsoleShell's global keydown handler early
   // returns while any dialog is mounted, so a dialog-flavoured rail would kill the
-  // console's Escape ladder app-wide for as long as the tab was open.
+  // console's Escape ladder app-wide.
   await expect(rail).toHaveAttribute("role", "toolbar");
 
   // THREE, and the names are asserted separately so a missing one reads as a missing
-  // one. Draw is below the rule and is an ACTION rather than a tool — it is a button
-  // on this toolbar all the same.
+  // one. Draw is below the rule and opens a panel like the rest.
   expect(await slots(page)).toEqual(["search", "settings", "draw"]);
   await expect(rail.getByRole("button", { name: "Search for a place" })).toBeVisible();
   await expect(rail.getByRole("button", { name: "Map settings" })).toBeVisible();
@@ -89,14 +111,35 @@ test("the rail is one toolbar, and the eye does not exist until something is sel
   await expect(rail.getByRole("button", { name: "View" })).toHaveCount(0);
 });
 
+test("a rail button clicked from the Sources tab lands on the Inspector with that tool", async ({
+  page,
+}) => {
+  // "If any of the buttons on the right rail are clicked, it should automatically
+  // take you to the inspector page, and that button." The rail is mounted outside
+  // both tab panels precisely so this can be true from either of them.
+  await page.keyboard.press("ControlOrMeta+k");
+  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+
+  await page.click(`${RAIL} .tn-insp-rail-btn-settings`);
+  await expect(page.locator("#tn-rail-tab-inspector")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".tn-insp-switch")).toHaveCount(2);
+  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-settings`)).toHaveAttribute("aria-pressed", "true");
+
+  // And it is not a one-off for one button: Draw behaves the same way, which is the
+  // path a user takes most often from the Sources tab.
+  await page.click("#tn-rail-tab-sources");
+  await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await expect(page.locator("#tn-rail-tab-inspector")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".tn-insp-draw")).toBeVisible();
+});
+
 test("a tool TAKES the panel body — it is not a card over the object", async ({ page }) => {
   await openInspector(page);
   const rail = page.locator(RAIL);
 
   // Open an object first, so there is something a card could have covered.
-  await page.click("#tn-rail-tab-sources");
-  await page.click(".tn-insp-row");
-  await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
+  await selectArea(page);
 
   // The eye is here now, and it is the current view.
   expect(await slots(page)).toEqual(["search", "view", "settings", "draw"]);
@@ -200,9 +243,7 @@ test("Escape closes the tool first, then the object", async ({ page }) => {
   // InspectorPanel plus ConsoleShell own rung 3. A single unsequenced press that did
   // both jobs would be the bug — closing the tool AND dropping the user's selection.
   await openInspector(page);
-  await page.click("#tn-rail-tab-sources");
-  await page.click(".tn-insp-row");
-  await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
+  await selectArea(page);
 
   await page.locator(RAIL).getByRole("button", { name: "Search for a place" }).click();
   await expect(page.locator("#inspector-search input")).toBeVisible();
@@ -217,41 +258,60 @@ test("Escape closes the tool first, then the object", async ({ page }) => {
   await expect(page.locator("#tn-rail-tab-sources")).toHaveAttribute("aria-selected", "true");
 });
 
-test("Draw is the only way in left, and it arms the map rather than opening a panel", async ({
-  page,
-}) => {
+test("Draw opens a panel, and the gesture starts from the button inside it", async ({ page }) => {
+  // TWO CLICKS, ON PURPOSE. Sam: "when you click the draw area button on the
+  // inspector, it shouldnt just automatically start drawing an area. A user should
+  // click draw area on that page." So the rail's button is the way IN to the tool,
+  // and the tool's own button arms the map.
   await openInspector(page);
 
-  // The Sources tab lost BOTH of its entry points on 2026-09-16 — the dashed button
-  // under the areas list and the action row inside the context switcher's menu. Both
-  // are asserted, because removing one and forgetting the other is exactly the
-  // half-done state that leaves a duplicate nobody notices for a month.
+  // The Sources tab no longer carries the areas block at all — it moved onto the
+  // rail with the button that creates them.
   await page.click("#tn-rail-tab-sources");
   await expect(page.locator(".tn-insp-draw")).toHaveCount(0);
+  await expect(page.locator(".tn-insp-row")).toHaveCount(0);
+  // ...nor does the context switcher's menu, which lost its action row in the first
+  // pass and has not grown one back.
   await page.click(".tn-ctxbar");
   await expect(page.locator(".tn-ctxbar-draw")).toHaveCount(0);
   await expect(page.getByRole("menuitem", { name: /Draw an area/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   await page.click("#tn-rail-tab-inspector");
-  const draw = page.locator(RAIL).getByRole("button", { name: "Draw an area" });
+  const draw = page.locator(`${RAIL} .tn-insp-rail-btn-draw`);
 
-  // It OPENS NOTHING. The panel keeps showing the object view empty state, and the
-  // only new thing on screen is the banner over the map — which is the one surface
-  // that cannot be dismissed while the map is swallowing clicks.
+  // FIRST CLICK — the panel, and nothing armed. The banner over the map is the
+  // observable that would appear if the gesture had started, so its absence is the
+  // assertion that the rail button no longer arms anything.
   await draw.click();
-  await expect(page.locator(".tn-drawbanner")).toBeVisible();
-  await expect(page.locator(".tn-insp-tool")).toHaveCount(0);
-  await expect(draw).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-draw`)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".tn-insp-tool-name")).toHaveText(/Draw an area/i);
+  await expect(page.locator(".tn-drawbanner")).toHaveCount(0);
+  await expect(page.locator(".map-canvas canvas").first()).not.toHaveCSS("cursor", "crosshair");
 
-  // And the gesture is really armed, not merely painted: MapLibre has the crosshair.
-  // Two observables on purpose — a button that sets a store and never reaches the map
-  // would satisfy the first alone.
+  // The areas block is this panel's body, seeded area and all.
+  await expect(page.locator(".tn-insp-row")).toHaveCount(1);
+  await expect(page.locator(".tn-insp-label")).toHaveText("West Pacific");
+
+  // SECOND CLICK — the gesture. Two observables on purpose: the banner proves the
+  // app believes a draw is running, the crosshair proves the MAP does. A button that
+  // sets a store and never reaches MapLibre would satisfy the first alone.
+  const start = page.locator(".tn-insp-draw");
+  await expect(start).toHaveText(/Draw an area/);
+  await start.click();
+  await expect(page.locator(".tn-drawbanner")).toBeVisible();
+  await expect(page.locator(".tn-drawbanner")).toContainText(/Drawing an area/);
+  await expect(start).toHaveAttribute("aria-pressed", "true");
+  await expect(start).toContainText(/Drawing/);
   await expect(page.locator(".map-canvas canvas").first()).toHaveCSS("cursor", "crosshair");
 
+  // Escape abandons the ring — and it has to do that rather than close the panel or
+  // drop the map selection, which is the ladder the rail's capture-phase handler
+  // stands down for.
   await page.keyboard.press("Escape");
   await expect(page.locator(".tn-drawbanner")).toHaveCount(0);
-  await expect(draw).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".tn-insp-draw")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator(".tn-insp-tool")).toHaveCount(1);
 });
 
 test("the map's right edge is plain map now, and the ⓘ attribution is not", async ({ page }) => {

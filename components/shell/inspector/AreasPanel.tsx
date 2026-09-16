@@ -1,27 +1,38 @@
 "use client";
-// The areas block — the ones you have drawn, and what is armed on them.
+// The DRAW tool's panel — the areas you have, and the button that starts another.
 //
-// WAS THE "INSPECTOR" TAB. It is now a block INSIDE the Sources tab, sitting where
-// the presets block used to, for the reason it moved: drawing an area and then
-// turning sources on for it is one continuous job, and it used to be split across
-// two tabs — draw here, switch there, toggle, switch back to see what the area now
-// says.
+// IT MOVED HERE FROM THE SOURCES TAB (2026-09-16), and the move is Sam's second pass
+// at this surface. The block is now the body of the Inspector rail's Draw tool, so
+// "what areas do I have" and "draw another one" are in the same place — which they
+// were not while the list lived on the Sources tab and the only way in was a button
+// at the bottom of it. The rail carries the entry point on BOTH tabs; this panel
+// holds the state.
 //
-// IT NO LONGER STARTS A DRAW. "＋ Draw an area" was this block's last button and it
-// is gone, together with the matching row in the context switcher's menu: Sam moved
-// the gesture onto the Inspector rail's toolbar on 2026-09-16, alongside the search
-// box and the map settings. That makes this block a LIST — the areas, their source
-// counts, their rules — which is what it had become anyway.
+// AND THE RAIL BUTTON NO LONGER STARTS A DRAW. It opens this panel; the gesture
+// starts from the button below. Sam's words: "when you click the draw area button on
+// the inspector, it shouldnt just automatically start drawing an area. A user should
+// click draw area on that page." That is also what keeps the panel's promise honest —
+// a click that immediately started a map interaction from a page nobody had read yet
+// was a click with no undo.
 //
-// SOURCES ARE STILL NOT CONFIGURED HERE. The context switcher above the tabs points
-// the rail at an area; the source list below then writes to it. Duplicating a source
-// list in this block would give the user two places to change one thing.
+// SOURCES ARE STILL NOT CONFIGURED HERE. The context switcher at the top of the
+// Sources tab points the rail at an area; the source list below then writes to it.
+// Duplicating a source list in this panel would give the user two places to change
+// one thing.
 //
-// A ROW OPENS THE DOSSIER, it does not select. Selecting is the switcher's job now,
-// and detail belongs in the pane on the right, which already exists and already
-// handles focus, escape and mobile. See lib/overlay-content.tsx.
+// A ROW OPENS THE DOSSIER, it does not select. Selecting is the switcher's job, and
+// detail belongs in this panel, which already handles focus, escape and mobile. See
+// lib/overlay-content.tsx.
+//
+// ONE IMPLEMENTATION, ONE CALL SITE. `drawArea` used to be called from here AND from
+// the context switcher's menu AND from the rail; the menu row and the rail's direct
+// arm are both gone, so this button is now the only door. `onFinish` inside
+// lib/shell/drawArea.ts is the part that must never drift — without it a saved area
+// silently becomes a console-wide filter.
 
 import { areaSummary, useInspector } from "@/lib/shell/inspector";
+import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
+import { useAoiDraw } from "@/lib/map/aoi";
 import { overlay } from "@/lib/overlay";
 import RulesPanel from "@/components/shell/inspector/RulesPanel";
 import { useAllRules } from "@/lib/notify/rules";
@@ -32,16 +43,16 @@ export default function AreasPanel() {
   // ONE subscription, counted per row. A hook cannot be called once per area — the
   // list changes length — so the count is derived from the whole set here.
   const rules = useAllRules();
+  const drawing = useAoiDraw();
+  const capped = atAreaCap(state.areas.length);
 
   return (
     <div className="tn-insp">
-      {/* THE SAME HEADING AS "AIR & SPACE", not a second, quieter one.
-          It was `.tn-subhead` (12px) while every source section was
-          `.tn-src-sec-head` (14px small caps), so the one block in this rail
-          that is NOT a list of sources was also the one heading that did not
-          look like a heading. Sam's words: "'AREAS' needs to be capital and
-          bold a bit like 'AIR & SPACE'." Sharing the class is what makes that
-          true permanently rather than until the next retune. */}
+      {/* THE SAME HEADING AS "AIR & SPACE", not a second, quieter one. It was
+          `.tn-subhead` (12px) while every source section was `.tn-src-sec-head`
+          (14px small caps), so the one block in this rail that is NOT a list of
+          sources was also the one heading that did not look like a heading. Sam's
+          words: "'AREAS' needs to be capital and bold a bit like 'AIR & SPACE'." */}
       <h3 className="tn-src-sec-head">
         <span className="tn-src-sec-name">Areas</span>
         <span className="tn-src-sec-n tn-num">{state.areas.length}</span>
@@ -95,17 +106,33 @@ export default function AreasPanel() {
         ))
       )}
 
+      {/* THE GESTURE STARTS HERE, and this is the only button that starts it.
+          REFUSES AT THE CAP rather than drawing over the oldest area — see
+          atAreaCap. `disabled` and not merely `aria-disabled`, because this is not
+          inside a composite widget whose roving focus would be broken by skipping
+          it, and the reason is stated in the label itself so the refusal is never a
+          dead-looking click.
 
-      {/* THE DRAW BUTTON LEFT THIS BLOCK ON 2026-09-16, and so did the one inside
-          the context switcher's menu. Sam moved the gesture onto the Inspector
-          rail's own toolbar (components/shell/inspector/InspectorRail.tsx), beside
-          the search box and the map settings — the three map controls he asked to
-          have in one place — and asked for both of this tab's entry points to go
-          rather than be duplicated. What this block still does is list the areas
-          you have and open their dossiers; `drawArea` now has exactly one caller.
-
-          The button was also this block's only connection to lib/shell/drawArea.ts,
-          which is why the imports for it are gone rather than left warm. */}
+          THE ARMED STATE IS SHOWN HERE TOO, now that the button is the way in: a
+          click that leaves the panel looking identical and moves the whole gesture
+          onto the map is the "did that work?" report this rail keeps answering. The
+          banner over the map is still the narration that cannot be dismissed —
+          this is the receipt on the control that was clicked. */}
+      <button
+        type="button"
+        className="tn-insp-draw"
+        data-armed={drawing.active ? "" : undefined}
+        aria-pressed={drawing.active}
+        onClick={() => drawArea(state.areas.length)}
+        disabled={capped}
+        title={capped ? AREA_CAP_MESSAGE : undefined}
+      >
+        {capped
+          ? `＋ Draw an area — ${AREA_CAP_MESSAGE}`
+          : drawing.active
+            ? "Drawing — click the map to place corners"
+            : "＋ Draw an area"}
+      </button>
 
       {/* "Alert me" IS THE CONTROL NOW, not a placeholder pill. It arms against
           whichever context the rail is pointed at — `editing === null` already means

@@ -3,11 +3,10 @@ import {
   TOOLS,
   inspectorRailStore,
   railEdge,
-  railSlots,
   railStep,
   railTools,
   toggleTool,
-  type RailSlot,
+  type InspectorTool,
 } from "@/lib/console/inspectorRail";
 
 // vitest here is node-environment and collects .ts only — there is no React testing
@@ -16,51 +15,46 @@ import {
 // is where those invariants are held.
 //
 // THIS FILE REPLACES tests/unit/map-rail.test.ts. The stage rail it covered is gone
-// (Search and View settings moved onto the Inspector panel's tool column on
-// 2026-09-16, and Draw an area moved with them from the Sources tab), and the
-// assertions moved with the behaviour rather than being deleted: "one thing open at
-// a time", the roving-focus arithmetic and the store's emit contract are the same
-// invariants, held against the same shapes. What has NO replacement is
-// `railHoldsOpen` — it guarded a flyout that could be left open over an armed map,
-// and a tool that takes the panel body has no such state.
+// (Search and View settings moved onto the Sources rail's tool column on 2026-09-16,
+// and Draw an area moved with them off the Sources tab), and the assertions moved with
+// the behaviour rather than being deleted: "one thing open at a time", the
+// roving-focus arithmetic and the store's emit contract are the same invariants, held
+// against the same shapes. What has NO replacement is `railHoldsOpen` — it guarded a
+// flyout that could be left open over an armed map, and a tool that takes the panel
+// body has no such state.
 
 describe("railTools — which buttons are on the rail", () => {
   it("has no eye until a map click has selected something", () => {
     // Sam's rule: the View button APPEARS once there is something to view. An eye
     // that opens an empty pane is the dead control this codebase keeps writing about.
-    expect(railTools(false)).toEqual(["search", "settings"]);
-    expect(railTools(true)).toEqual(["search", "view", "settings"]);
+    expect(railTools(false)).toEqual(["search", "settings", "draw"]);
+    expect(railTools(true)).toEqual(["search", "view", "settings", "draw"]);
   });
 
-  it("keeps the declared order — search, view, settings", () => {
+  it("keeps the declared order — search, view, settings, draw", () => {
     // Order is a UI decision, not an implementation detail: it is the render order
-    // AND the arrow-key order, and the two must not drift.
-    expect([...TOOLS]).toEqual(["search", "view", "settings"]);
+    // AND the arrow-key order, and the two must not drift. Draw is last because it
+    // sits below the rule on screen.
+    expect([...TOOLS]).toEqual(["search", "view", "settings", "draw"]);
     expect(railTools(true)).toEqual([...TOOLS]);
+  });
+
+  it("INCLUDES DRAW, because the rail is one tab stop", () => {
+    // Draw was an action rather than a tool until Sam's second pass, and this list
+    // was a second one (`railSlots`) that appended it. The failure that guarded
+    // against is silent and total: the toolbar uses a roving tabindex, so a button
+    // left out of the render order is not merely last — it is unreachable from a
+    // keyboard, since nothing else on the rail takes Tab. It is a tool now, so the
+    // two lists are one list, and this asserts the merge rather than the detail.
+    for (const hasObject of [true, false]) {
+      expect(railTools(hasObject)).toContain("draw");
+      expect(railTools(hasObject).at(-1)).toBe("draw");
+    }
   });
 
   it("never invents a tool that is not in TOOLS", () => {
     for (const hasObject of [true, false]) {
       for (const id of railTools(hasObject)) expect(TOOLS).toContain(id);
-    }
-  });
-});
-
-describe("railSlots — the focus order", () => {
-  it("puts draw last, after the tools", () => {
-    expect(railSlots(true)).toEqual(["search", "view", "settings", "draw"]);
-    expect(railSlots(false)).toEqual(["search", "settings", "draw"]);
-  });
-
-  it("INCLUDES DRAW, because the rail is one tab stop", () => {
-    // The failure this pins is silent and total: the toolbar uses a roving tabindex,
-    // so a slot left out of this list is not merely last — it is unreachable from a
-    // keyboard, since nothing else on the rail takes Tab. Draw is an action rather
-    // than a tool, which is why it is not in TOOLS, and it is still a button on the
-    // same toolbar, which is why it is here.
-    for (const hasObject of [true, false]) {
-      expect(railSlots(hasObject)).toContain("draw");
-      expect(railSlots(hasObject).at(-1)).toBe("draw");
     }
   });
 });
@@ -78,12 +72,21 @@ describe("toggleTool — one panel at a time", () => {
 
   it("replaces rather than stacking", () => {
     expect(toggleTool("search", "settings")).toBe("settings");
-    expect(toggleTool("settings", "search")).toBe("search");
+    expect(toggleTool("settings", "draw")).toBe("draw");
+    expect(toggleTool("draw", "search")).toBe("search");
+  });
+
+  it("treats draw like any other tool, which is the change", () => {
+    // It used to arm the map on click and hold no panel state at all, so there was
+    // nothing to toggle. Sam: "when you click the draw area button on the inspector,
+    // it shouldnt just automatically start drawing an area."
+    expect(toggleTool(null, "draw")).toBe("draw");
+    expect(toggleTool("draw", "draw")).toBe(null);
   });
 });
 
 describe("railStep / railEdge — roving tabindex arithmetic", () => {
-  const slots = railSlots(true);
+  const slots = railTools(true);
 
   it("walks the rendered order and wraps at both ends", () => {
     expect(railStep(slots, "search", 1)).toBe("view");
@@ -95,8 +98,8 @@ describe("railStep / railEdge — roving tabindex arithmetic", () => {
 
   it("returns to where it started after a full lap in each direction", () => {
     for (const slot of slots) {
-      let f: RailSlot = slot;
-      let b: RailSlot = slot;
+      let f: InspectorTool = slot;
+      let b: InspectorTool = slot;
       for (let i = 0; i < slots.length; i++) {
         f = railStep(slots, f, 1);
         b = railStep(slots, b, -1);
@@ -164,7 +167,7 @@ describe("inspectorRailStore", () => {
     // `open` asserts; `toggle` is the click. Knowing which one a caller wants is the
     // difference between a map click landing on the object and landing on the tool
     // the user left open — lib/overlay.ts calls close() on every open for that
-    // reason, and InspectorRail calls toggle().
+    // reason, InspectorRail calls toggle().
     inspectorRailStore.open("search");
     inspectorRailStore.open("search");
     expect(inspectorRailStore.get()).toBe("search");

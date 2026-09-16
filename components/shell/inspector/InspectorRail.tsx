@@ -1,13 +1,14 @@
 "use client";
-// THE INSPECTOR RAIL — the tool column on the right edge of the Sources rail's
-// INSPECTOR tab. Search and Map settings came off the map's edge (they were the
-// stage rail's two groups), Draw an area came off the Sources tab, and they are one
-// toolbar here. See lib/console/inspectorRail.ts for the state and the reasons.
+// THE INSPECTOR RAIL — the tool column on the right edge of the Sources rail. It is
+// on BOTH tabs, and a click on any of its buttons lands on the Inspector with that
+// tool open. See lib/console/inspectorRail.ts for the state and the reasons.
 //
 // IT IS ON THE RIGHT EDGE, NOT THE LEFT. Blender's tool shelf is on the left of its
 // viewport because the viewport is what it acts on; this panel's viewport is the
 // MAP, which is on the right. Sam chose this edge from rendered options
-// (~/Desktop/rail-options/, option C) and the pane body from option D.
+// (~/Desktop/rail-options/, option C) and the pane body from option D — and then, in
+// review, asked for the column itself to belong to the PANEL rather than to one tab,
+// which is why it is mounted from SourceCatalog and not from InspectorPanel.
 //
 // CLICK, NOT HOVER, for the fourth time in this codebase's history: SourceRow's
 // header, the camera picker's arm control and the rail's own mobile pass all argue
@@ -29,25 +30,23 @@
 //                            and then ConsoleShell's ladder run exactly as before
 //
 // Rung 1 is an explicit stand-down rather than an assumption about phase ordering,
-// which is what the retired stage rail did too — and it is not decoration: the rail
-// now carries the Draw button itself, so a user who arms a draw and presses Escape
-// is one keystroke away from a handler that would otherwise eat the gesture's own
-// cancel key.
+// which is what the retired stage rail did too — and it is not decoration: the draw
+// gesture is armed from a button inside this rail's own Draw panel, so a user who
+// arms one and presses Escape is one keystroke away from a handler that would
+// otherwise eat the gesture's own cancel key.
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAoiDraw } from "@/lib/map/aoi";
 import { useOverlay } from "@/lib/overlay";
-import { useInspector } from "@/lib/shell/inspector";
-import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
-import { railTabStore } from "@/lib/console/railTab";
+import { railTabStore, useRailTab } from "@/lib/console/railTab";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import {
   inspectorRailStore,
   railEdge,
-  railSlots,
   railStep,
+  railTools,
   useInspectorRail,
-  type RailSlot,
+  type InspectorTool,
 } from "@/lib/console/inspectorRail";
 import { DrawGlyph, PinGearGlyph, SearchGlyph, ViewGlyph } from "./ToolIcons";
 import { INSPECTOR_SEARCH_ID } from "./tools/SearchTool";
@@ -98,7 +97,7 @@ export function focusInspectorSearch(): boolean {
   return true;
 }
 
-const LABELS: Record<RailSlot, string> = {
+const LABELS: Record<InspectorTool, string> = {
   search: "Search for a place",
   view: "View",
   settings: "Map settings",
@@ -109,14 +108,14 @@ const LABELS: Record<RailSlot, string> = {
 // tests/e2e/inspector-rail.spec.ts both name these strings, and neither can find a
 // class that is assembled at runtime — the retired stage rail kept the same rule
 // for the same reason.
-const SLOT_CLASS: Record<RailSlot, string> = {
+const SLOT_CLASS: Record<InspectorTool, string> = {
   search: "tn-insp-rail-btn-search",
   view: "tn-insp-rail-btn-view",
   settings: "tn-insp-rail-btn-settings",
   draw: "tn-insp-rail-btn-draw",
 };
 
-const GLYPH: Record<RailSlot, () => React.ReactElement> = {
+const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
   search: SearchGlyph,
   view: ViewGlyph,
   settings: PinGearGlyph,
@@ -126,12 +125,11 @@ const GLYPH: Record<RailSlot, () => React.ReactElement> = {
 export default function InspectorRail() {
   const open = useInspectorRail();
   const { object } = useOverlay();
-  const state = useInspector();
+  const { tab } = useRailTab();
   const drawing = useAoiDraw();
 
-  const slots = railSlots(object != null);
-  const capped = atAreaCap(state.areas.length);
-  const btnRefs = useRef<Partial<Record<RailSlot, HTMLButtonElement | null>>>({});
+  const slots = railTools(object != null);
+  const btnRefs = useRef<Partial<Record<InspectorTool, HTMLButtonElement | null>>>({});
 
   // Read through a ref so the Escape listener below does not have to be torn down
   // and rebuilt every time the rail's state changes.
@@ -162,10 +160,10 @@ export default function InspectorRail() {
     return () => window.removeEventListener("keydown", onKey, true);
   }, [drawing.active, closeAndRefocus]);
 
-  const onKeyDown = (e: React.KeyboardEvent, slot: RailSlot) => {
+  const onKeyDown = (e: React.KeyboardEvent, slot: InspectorTool) => {
     // Arrow keys move focus along the rail; they do NOT open. Click-only means Enter
     // and Space are the open gesture, and they are handled natively.
-    let next: RailSlot | null = null;
+    let next: InspectorTool | null = null;
     if (e.key === "ArrowDown") next = railStep(slots, slot, 1);
     else if (e.key === "ArrowUp") next = railStep(slots, slot, -1);
     else if (e.key === "Home") next = railEdge(slots, "first");
@@ -177,7 +175,7 @@ export default function InspectorRail() {
 
   // Roving tabindex: the rail is ONE tab stop. The open tool is the stop, or the
   // first slot when nothing is open — the WAI-APG toolbar pattern.
-  const tabStop: RailSlot = open ?? slots[0];
+  const tabStop: InspectorTool = open ?? slots[0];
 
   return (
     <div
@@ -187,85 +185,62 @@ export default function InspectorRail() {
       aria-orientation="vertical"
       aria-label="Inspector tools"
     >
-      {/* TWO ELEMENTS, AND THE OUTER ONE IS NOT DECORATION. The tinted strip has to
-          run the height of the pane, and the buttons have to stay on screen while
-          that pane scrolls — and one element cannot do both: `position: sticky` only
-          moves an element SHORTER than its containing block, so stretching the
-          buttons to the strip's height would pin nothing. See the CSS header. */}
-      <div className="tn-insp-rail-col">
-        {slots.map((slot) => {
-          const isDraw = slot === "draw";
-          // The eye IS the view, so it reads as current exactly when no panel is
-          // covering the object. A tool is current when it is the open one.
-          const active = isDraw ? drawing.active : slot === "view" ? open === null : open === slot;
-          const Glyph = GLYPH[slot];
-          const label = LABELS[slot];
-          return (
-            <div className="tn-insp-rail-cell" key={slot}>
-              {/* The rule that separates "what the panel shows" from "what acts on
-                  the map". Rendered BEFORE draw, and only there. */}
-              {isDraw ? <span className="tn-insp-rail-rule" aria-hidden /> : null}
-              <button
-                type="button"
-                className={`tn-insp-rail-btn ${SLOT_CLASS[slot]}`}
-                data-slot={slot}
-                ref={(el) => {
-                  btnRefs.current[slot] = el;
-                }}
-                aria-pressed={active}
-                // Hides this button's hover label while its own panel is open. The
-                // panel's head names the tool and sits directly under the label, so
-                // the two say the same word on top of each other — and the label is
-                // the one that has to go, because it is the transient one.
-                //
-                // THE EYE HAS NO PANEL, so it is never marked and its label always
-                // shows. That asymmetry is the point: `open === slot` can only be
-                // true for a tool, while the eye's pressed state is the view itself —
-                // and "View" appears nowhere else on screen, so hiding it there would
-                // leave the button unlabelled in the state it is in most of the time.
-                data-panel={!isDraw && open === slot ? "" : undefined}
-                // A REFUSAL IS STATED, NOT SILENT. At the cap, drawArea() toasts; a
-                // title says the same thing before the click, and the button stays in
-                // the toolbar's focus order rather than becoming a hole the arrow
-                // keys stall in — see lib/shell/drawArea.ts for the cap itself.
-                aria-disabled={isDraw && capped ? true : undefined}
-                aria-label={label}
-                title={
-                  isDraw && capped
-                    ? `Draw an area — ${AREA_CAP_MESSAGE}`
-                    : isDraw && drawing.active
-                      ? "Drawing an area. Press Escape to cancel."
-                      : label
-                }
-                tabIndex={tabStop === slot ? 0 : -1}
-                onClick={() => {
-                  if (isDraw) {
-                    // ALWAYS CALLED, EVEN WHILE ARMED, and that is deliberate rather
-                    // than lazy: startAreaDraw() answers "a drawing is already
-                    // running" and drawArea() toasts it. A silent no-op would leave a
-                    // second click looking like a dead button, and the gesture
-                    // already has two honest ways to stop — Escape, and the Cancel on
-                    // the banner over the map.
-                    drawArea(state.areas.length);
-                    return;
-                  }
-                  inspectorRailStore.toggle(slot);
-                }}
-                onKeyDown={(e) => onKeyDown(e, slot)}
-              >
-                <Glyph />
-                {/* The hover/focus label. `aria-hidden`, because `aria-label` above
-                    already gives a screen reader this exact string and a visible copy
-                    would have it announced twice. It opens to the LEFT — into the
-                    pane — because this rail's right edge is the panel's edge. */}
-                <span className="tn-insp-rail-tip" aria-hidden="true">
-                  {label}
-                </span>
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      {slots.map((slot) => {
+        // The eye IS the view, so it reads as current exactly when no panel is
+        // covering the object. A tool is current when it is the open one.
+        const active = slot === "view" ? open === null : open === slot;
+        const Glyph = GLYPH[slot];
+        const label = LABELS[slot];
+        return (
+          <div className="tn-insp-rail-cell" key={slot}>
+            {/* The rule that separates "what the map looks like" from "the areas you
+                define on it". Rendered BEFORE draw, and only there. */}
+            {slot === "draw" ? <span className="tn-insp-rail-rule" aria-hidden /> : null}
+            <button
+              type="button"
+              className={`tn-insp-rail-btn ${SLOT_CLASS[slot]}`}
+              data-slot={slot}
+              ref={(el) => {
+                btnRefs.current[slot] = el;
+              }}
+              aria-pressed={active}
+              // Hides this button's hover label while its own panel is open. The
+              // panel's head names the tool and sits directly under the label, so the
+              // two say the same word on top of each other — and the label is the one
+              // that has to go, because it is the transient one.
+              //
+              // THE EYE HAS NO PANEL, so it is never marked and its label always
+              // shows. That asymmetry is the point: `open === slot` can only be true
+              // for a tool, while the eye's pressed state is the view itself — and
+              // "View" appears nowhere else on screen, so hiding it there would leave
+              // the button unlabelled in the state it is in most of the time.
+              data-panel={open === slot ? "" : undefined}
+              aria-label={label}
+              title={label}
+              tabIndex={tabStop === slot ? 0 : -1}
+              onClick={() => {
+                // EVERY BUTTON LANDS ON THE INSPECTOR, including from the Sources
+                // tab — Sam's rule, and the reason the rail is mounted on the panel
+                // rather than inside either tab. A tool is a view of the Inspector;
+                // switching to it and leaving the viewer on Sources would be a click
+                // that appears to do nothing.
+                if (tab !== "inspector") railTabStore.set("inspector");
+                inspectorRailStore.toggle(slot);
+              }}
+              onKeyDown={(e) => onKeyDown(e, slot)}
+            >
+              <Glyph />
+              {/* The hover/focus label. `aria-hidden`, because `aria-label` above
+                  already gives a screen reader this exact string and a visible copy
+                  would have it announced twice. It opens to the LEFT — into the
+                  panels — because this rail's right edge is the panel's edge. */}
+              <span className="tn-insp-rail-tip" aria-hidden="true">
+                {label}
+              </span>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
