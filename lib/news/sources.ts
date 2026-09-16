@@ -38,6 +38,12 @@ const TABLE: Record<string, Omit<SourceMeta, "name">> = {
   "al arabiya": { domain: "alarabiya.net", region: "Middle East", type: "Broadcaster" },
   "cbc": { domain: "cbc.ca", region: "North America", type: "Public broadcaster" },
   "sky news": { domain: "news.sky.com", region: "UK", type: "Broadcaster" },
+  // Pushed by the NewsScraper host rather than pulled from a feed. Attribution works
+  // the same either way — the badge describes the outlet, not how we reached it.
+  "pbs newshour": { domain: "pbs.org", region: "US", type: "Public broadcaster" },
+  "pbs": { domain: "pbs.org", region: "US", type: "Public broadcaster" },
+  "the new york times": { domain: "nytimes.com", region: "US", type: "Newspaper" },
+  "new york times": { domain: "nytimes.com", region: "US", type: "Newspaper" },
   // Open-source conflict monitor scraped from its keyless Telegram channel. Typed
   // "OSINT monitor" — NOT a vetted newswire — so the badge is honest about the
   // unverified, self-published provenance rather than implying wire-grade sourcing.
