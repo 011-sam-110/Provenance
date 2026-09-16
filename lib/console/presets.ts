@@ -463,6 +463,17 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
     build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [], STREETS_DEFAULT_AREA) },
 ];
 
+// ── THE TOP BAR ─────────────────────────────────────────────────────────────
+//
+// The top bar's board tabs are a SUBSET of the lineup, not the whole lineup.
+// News left the navbar on 2026-09-16 on request: the board itself stays a
+// preset — the Sources rail tiles, the ⌘K profiles list and `?c=` share links
+// all still open it — it simply has no tab, so the bar is exactly two: Globe
+// and Streets (the ids' order IS the tab order). `console-presets.test.ts`
+// pins this list against the lineup so a preset added or retired cannot drift
+// away from the tabs silently.
+export const TOP_BAR_PRESET_IDS = ["overview", "streets"] as const;
+
 /** Look up a preset by id. */
 export function presetById(presetId: string): ConsolePreset | undefined {
   return BUILTIN_PRESETS.find((p) => p.id === presetId);

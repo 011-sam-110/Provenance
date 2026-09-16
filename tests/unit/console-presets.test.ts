@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from "vitest";
-import { BUILTIN_PRESETS, DEFAULT_PRESET_ID, MAX_CARDS_PER_RAIL, STREETS_DEFAULT_AREA } from "@/lib/console/presets";
+import { BUILTIN_PRESETS, DEFAULT_PRESET_ID, MAX_CARDS_PER_RAIL, STREETS_DEFAULT_AREA, TOP_BAR_PRESET_IDS } from "@/lib/console/presets";
 import { MAP_SIGNALS, SIGNALS, signalsByGroup } from "@/lib/signals/registry";
 import { MAX_WIDGETS, type SegmentId } from "@/lib/console/types";
 import { dockSize, effectiveRailSize, RAIL_MAX } from "@/lib/terminal/rails";
@@ -58,6 +58,17 @@ test("the board lineup is exactly the three presets, each within the cap", () =>
     }
     expect(l.widgets.length).toBeLessThanOrEqual(MAX_WIDGETS);
   }
+});
+
+test("the top bar is exactly Globe and Streets — News stays a preset without a tab", () => {
+  // The tab list is a SUBSET of the lineup: News left the navbar on request,
+  // but the preset itself must survive (rail tiles, ⌘K profiles, ?c= links).
+  expect(TOP_BAR_PRESET_IDS).toEqual(["overview", "streets"]);
+  const byId = new Map(BUILTIN_PRESETS.map((p) => [p.id, p]));
+  for (const id of TOP_BAR_PRESET_IDS) {
+    expect(byId.get(id), `top-bar id "${id}" resolves to a preset`).toBeDefined();
+  }
+  expect(byId.get("news"), "News must remain a preset").toBeDefined();
 });
 
 // ── The invariants, restated for rails ──────────────────────────────────────
