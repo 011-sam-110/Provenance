@@ -84,8 +84,8 @@ export interface MapViewState {
  * bought nothing measurable and cost the layer its position — added later it would
  * append above the camera pins instead of sitting under them.
  *
- * The rail toggles (components/console/maprail/ViewFlyout.tsx) are untouched: this
- * is a change to what an untouched map costs, not to what the map can do.
+ * The rail toggles (components/shell/inspector/tools/SettingsTool.tsx) are untouched:
+ * this is a change to what an untouched map costs, not to what the map can do.
  */
 let state: MapViewState = { basemap: DEFAULT_BASEMAP, terrain: false, buildings: false };
 let flyToFn: ((view: RegionView) => void) | null = null;

@@ -12,17 +12,20 @@
 //  2. A PANEL'S NARRATION CAN GO AWAY WHILE THE GESTURE IS STILL LIVE — and a panel
 //     was never guaranteed to be there in the first place.
 //
-//     The stage rail keeps ONE group open at a time (lib/console/mapRail.ts), so
-//     opening any other group mid-draw took the draw group's readout with it, and
-//     with it the Cancel button that lived in it. Escape still worked, and nothing
-//     on screen said so. That flyout has since been removed from the rail entirely,
-//     which turns reason 2 from a risk into the whole story.
+//     The stage rail kept ONE group open at a time, so opening any other group
+//     mid-draw took the draw group's readout with it, and with it the Cancel button
+//     that lived in it. Escape still worked, and nothing on screen said so. That
+//     group is gone; the draw has no panel at all now — the Inspector rail's Draw
+//     button arms the map and draws nothing but its own pressed state (see
+//     components/shell/inspector/InspectorRail.tsx, and lib/console/inspectorRail.ts
+//     for why one tool at a time is still the rail's rule). Reason 2 is the whole
+//     story rather than a risk, which is why this pill is the only narration left.
 //
-//     A draw starts from several surfaces, none of them the rail: the `draw` key
-//     action arms the polygon tool directly (Ctrl+Q by default and rebindable — see
-//     lib/shell/keymap.ts), and `AreasPanel`, the Sources rail's context switcher
-//     and `camslot.area` each call `startDraw` from their own panel. The narration
-//     has to outlive all of them.
+//     A draw starts from several surfaces: the `draw` key action arms the polygon
+//     tool directly (Ctrl+Q by default and rebindable — see lib/shell/keymap.ts), the
+//     Inspector rail's Draw button, and `camslot.area` from the camera wall's own
+//     panel each call `startDraw` from their own surface. The narration has to
+//     outlive all of them.
 //
 //     SO THIS IS THE ONE THAT CANNOT BE TAKEN AWAY. It is mounted from ConsoleShell
 //     and keys off the draw store alone, which means no rail group, no panel and no

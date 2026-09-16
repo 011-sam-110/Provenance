@@ -26,7 +26,7 @@
 //
 // This file is now the shell only — scrim, dialog, head, tab strip, panel host. Each tab's
 // body lives in components/shell/settings/, following components/shell/sources/ and
-// components/console/maprail/: one directory, one file per part. The point is the import
+// components/shell/inspector/tools/: one directory, one file per part. The point is the import
 // list. This used to pull seventeen symbols from eleven modules with nothing to say which
 // section owned which; now each tab file's imports describe what that tab does.
 //

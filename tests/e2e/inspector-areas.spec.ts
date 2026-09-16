@@ -146,10 +146,12 @@ function drawnInsideRing(page: Page): Promise<number> {
  * "above the tabs" is what this used to say; the rail's tab strip is gone and the
  * switcher is the first control in it now.
  *
- * `:not(.tn-ctxbar-draw)` because that menu also carries a "Draw an area" ACTION
- * sharing the row class. No context name collides with its text today, so this is
- * a guard against a future one rather than a fix — but a context picker that could
- * silently arm a draw is not a failure anyone would enjoy debugging.
+ * `:not(.tn-ctxbar-draw)` IS KEPT AFTER THE ROW IT EXCLUDED WAS REMOVED (2026-09-16).
+ * "Draw an area" was an ACTION sharing the `.tn-ctxbar-opt` row class, and the
+ * exclusion stopped a context picker from silently arming a draw; it lives on the
+ * Inspector rail's toolbar now, so the selector currently excludes nothing. It stays
+ * because the hazard is a property of the menu — one row class for two kinds of row —
+ * and a future action row would reintroduce it the moment nobody was looking.
  */
 async function switchContext(page: Page, name: string) {
   await page.locator(".tn-ctxbar").click();
