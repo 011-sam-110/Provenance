@@ -2,8 +2,12 @@ import { describe, expect, test } from "vitest";
 import {
   buildCoverageFeatures,
   describePrecision,
+  humanLabel,
   MAX_FEATURES,
+  MAX_QUOTE_CHARS,
   NEWS_COVERAGE_SOURCE,
+  pinsEnabled,
+  trimQuote,
 } from "@/lib/signals/news-coverage";
 import { placeKey, placeQuery, pickPlace } from "@/lib/news/places";
 import type { NewsEvent, ScrapedItem } from "@/lib/news/ingest";
@@ -25,11 +29,14 @@ import type { GeocodeResult } from "@/lib/geo/geocode";
 
 const EVENT: NewsEvent = {
   isPhysical: true,
-  category: "natural disaster",
+  category: "natural_disaster",
   eventDate: "2026-09-15",
   placeName: "Bayeux",
   placeWithin: "Normandy",
-  placeCountry: "France",
+  // ISO alpha-2, which is what the scraper's schema check requires and what a real
+  // row carries. The first cut of this layer tested with "France" and would have
+  // refused every genuine pin.
+  placeCountry: "FR",
   placeKind: "city",
   quote: "The flooding reached the centre of Bayeux by Tuesday evening.",
   otherPlaces: ["Paris"],
@@ -66,6 +73,7 @@ const BAYEUX: ResolvedPlace = {
   lon: -0.7024,
   label: "Bayeux, Calvados, France",
   type: "city",
+  countryCode: "FR",
 };
 
 function placed(...pairs: Array<[string, ResolvedPlace | null]>): Map<string, ResolvedPlace | null> {
@@ -73,8 +81,15 @@ function placed(...pairs: Array<[string, ResolvedPlace | null]>): Map<string, Re
 }
 
 describe("what we ask the geocoder", () => {
-  test("carries the containing region and country, because a bare name is ambiguous", () => {
-    expect(placeQuery(EVENT)).toBe("Bayeux, Normandy, France");
+  test("carries the containing region, because a bare name is ambiguous", () => {
+    expect(placeQuery(EVENT)).toBe("Bayeux, Normandy");
+  });
+
+  // A bare "FR" is at best noise in a search string and at worst a match of its own.
+  // Measured on 2026-09-16: Photon returns an identical top three with and without it.
+  test("does not put an ISO country code in the query, only a country name", () => {
+    expect(placeQuery({ ...EVENT, placeCountry: "FR" })).toBe("Bayeux, Normandy");
+    expect(placeQuery({ ...EVENT, placeCountry: "France" })).toBe("Bayeux, Normandy, France");
   });
 
   test("drops a context part that repeats the name rather than asking a worse question", () => {
@@ -101,8 +116,8 @@ describe("what we ask the geocoder", () => {
 
 describe("what we accept back", () => {
   const results: GeocodeResult[] = [
-    { name: "Bayeux, Quebec, Canada", lat: 46.1, lon: -70.9, type: "village" },
-    { name: "Bayeux, Calvados, France", lat: 49.2764, lon: -0.7024, type: "city" },
+    { name: "Bayeux, Quebec, Canada", lat: 46.1, lon: -70.9, type: "village", countryCode: "CA" },
+    { name: "Bayeux, Calvados, France", lat: 49.2764, lon: -0.7024, type: "city", countryCode: "FR" },
   ];
 
   // THE ONE HARD GUARD. Photon ranks globally and a name repeats; the article told us
@@ -113,14 +128,37 @@ describe("what we accept back", () => {
       lon: -0.7024,
       label: "Bayeux, Calvados, France",
       type: "city",
+      countryCode: "FR",
     });
+  });
+
+  // THE BUG THIS PINS. The check used to search the geocoder LABEL for the country,
+  // which works only when the sender ships an English country name. A real row carries
+  // "FR", which appears in no label, so every genuine pin was refused while a harness
+  // that sent "France" passed. Photon labels are localised too ("Normandie"), so there
+  // was never a spelling both sides would have agreed on.
+  test("matches an ISO code against the code, not against the localised label", () => {
+    const localised: GeocodeResult[] = [
+      { name: "Bayeux, Normandie", lat: 49.2764, lon: -0.7024, type: "town", countryCode: "FR" },
+    ];
+    expect(pickPlace(localised, EVENT)?.lat).toBe(49.2764);
+  });
+
+  test("a match carrying no country code cannot clear an ISO check", () => {
+    expect(pickPlace([{ name: "Bayeux, Normandie", lat: 49.2764, lon: -0.7024 }], EVENT)).toBeNull();
+  });
+
+  test("still accepts a country NAME, for a sender that ships one", () => {
+    expect(pickPlace(results, { ...EVENT, placeCountry: "France" })?.label).toBe(
+      "Bayeux, Calvados, France",
+    );
   });
 
   test("takes the top match when the article named no country to check against", () => {
     expect(pickPlace(results, { ...EVENT, placeCountry: null })?.label).toBe("Bayeux, Quebec, Canada");
   });
 
-  test("refuses everything rather than guessing when no match mentions the country", () => {
+  test("refuses everything rather than guessing when no match is in the right country", () => {
     expect(pickPlace([results[0]], EVENT)).toBeNull();
     expect(pickPlace([], EVENT)).toBeNull();
   });
@@ -128,7 +166,7 @@ describe("what we accept back", () => {
 
 describe("what ends up beside a pin", () => {
   test("a story with no resolved place is not pinned at all", () => {
-    expect(buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", null]))).toEqual([]);
+    expect(buildCoverageFeatures([item()], placed(["Bayeux, Normandy", null]))).toEqual([]);
     // Nothing resolved this cycle at all — the budget ran out, say — is the same case.
     expect(buildCoverageFeatures([item()], new Map())).toEqual([]);
   });
@@ -140,7 +178,7 @@ describe("what ends up beside a pin", () => {
         item({ id: "st_2", outlet: "bbc", title: "Bayeux floods", url: "https://www.bbc.co.uk/news/2" }),
         item({ id: "st_3", outlet: "guardian", title: "Normandy floods", url: "https://www.theguardian.com/3" }),
       ],
-      placed(["Bayeux, Normandy, France", BAYEUX]),
+      placed(["Bayeux, Normandy", BAYEUX]),
     );
 
     expect(features).toHaveLength(1);
@@ -160,7 +198,7 @@ describe("what ends up beside a pin", () => {
           ts: Date.parse("2026-09-15T23:00:00Z"),
         }),
       ],
-      placed(["Bayeux, Normandy, France", BAYEUX]),
+      placed(["Bayeux, Normandy", BAYEUX]),
     );
 
     expect(features[0].props?.latest).toBe("Bayeux evacuations begin");
@@ -169,14 +207,31 @@ describe("what ends up beside a pin", () => {
 
   // Both halves of the inference are published. Where they disagree, the reader can
   // see the disagreement rather than only the dot it produced.
-  test("publishes the place the article named AND the place the geocoder matched", () => {
-    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", BAYEUX]));
-    expect(f.props?.placeAsWritten).toBe("Bayeux, Normandy, France");
+  test("publishes the place the geocoder matched", () => {
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
     expect(f.props?.resolvedTo).toBe("Bayeux, Calvados, France");
   });
 
+  // placeName ALONE. It is the one place field the scraper verified, by requiring it to
+  // appear inside the verbatim quote; placeWithin is unchecked model output, and the
+  // scraper contract forbids publishing that.
+  test("publishes only the place field that was checked, not the geocoder query", () => {
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
+    expect(f.props?.placeAsWritten).toBe("Bayeux");
+    expect(JSON.stringify(f.props)).not.toContain("Normandy");
+  });
+
+  // Context the model wrote and nothing checked. Carried on the wire for matching,
+  // never rendered.
+  test("never publishes the other places or the entities the model listed", () => {
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
+    const rendered = JSON.stringify(f.props);
+    expect(rendered).not.toContain("Paris");
+    expect(rendered).not.toContain("Prefecture of Calvados");
+  });
+
   test("publishes the sentence the place was read from, and calls the category a coding", () => {
-    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", BAYEUX]));
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
     expect(f.props?.basis).toContain("The flooding reached the centre of Bayeux");
     expect(f.props?.codedAs).toBe("natural disaster");
   });
@@ -185,14 +240,14 @@ describe("what ends up beside a pin", () => {
   // unattributed assertion. Every feature has to carry the disclaimer itself, not
   // delegate it to a panel the reader has to go and open.
   test("every feature states that neither the location nor the event was verified", () => {
-    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", BAYEUX]));
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
     expect(String(f.props?.reading)).toMatch(/not a verified location/);
     expect(String(f.props?.reading)).toMatch(/not a verified incident/);
   });
 
   // A count of articles is not a severity, and `magnitude` scales the marker radius.
   test("the story count never rides on magnitude", () => {
-    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", BAYEUX]));
+    const [f] = buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]));
     expect(f.props?.magnitude).toBeUndefined();
     expect(NEWS_COVERAGE_SOURCE.metric).toEqual({ field: "stories", domain: [1, 8] });
   });
@@ -200,7 +255,7 @@ describe("what ends up beside a pin", () => {
   test("a fallback publication time is labelled as first-seen, never presented as one", () => {
     const [f] = buildCoverageFeatures(
       [item({ tsExact: false })],
-      placed(["Bayeux, Normandy, France", BAYEUX]),
+      placed(["Bayeux, Normandy", BAYEUX]),
     );
     expect(String(f.props?.latestAt)).toContain("first seen");
   });
@@ -214,11 +269,11 @@ describe("what ends up beside a pin", () => {
         item({ id: "st_2", outlet: "bbc", url: "https://www.bbc.co.uk/news/2" }),
         item({ id: "st_3", outlet: "pbs", url: "https://www.pbs.org/3", event: rouenEvent }),
       ],
-      placed(["Bayeux, Normandy, France", BAYEUX], ["Rouen, Seine-Maritime, France", rouen]),
+      placed(["Bayeux, Normandy", BAYEUX], ["Rouen, Seine-Maritime", rouen]),
     );
 
     expect(features.map((f) => f.props?.stories)).toEqual([2, 1]);
-    expect(buildCoverageFeatures([item()], placed(["Bayeux, Normandy, France", BAYEUX]), 0)).toEqual([]);
+    expect(buildCoverageFeatures([item()], placed(["Bayeux, Normandy", BAYEUX]), 0)).toEqual([]);
     expect(MAX_FEATURES).toBeGreaterThan(0);
   });
 
@@ -227,7 +282,7 @@ describe("what ends up beside a pin", () => {
     const nearby: NewsEvent = { ...EVENT, placeName: "Bayeux centre" };
     const features = buildCoverageFeatures(
       [item(), item({ id: "st_2", outlet: "bbc", url: "https://www.bbc.co.uk/news/2", event: nearby })],
-      placed(["Bayeux, Normandy, France", BAYEUX], ["Bayeux centre, Normandy, France", nudged]),
+      placed(["Bayeux, Normandy", BAYEUX], ["Bayeux centre, Normandy", nudged]),
     );
     expect(features).toHaveLength(1);
     expect(features[0].props?.stories).toBe(2);
@@ -256,5 +311,83 @@ describe("the registry entry", () => {
   test("credits the publishers and the geocoder, because both are upstreams", () => {
     expect(NEWS_COVERAGE_SOURCE.attribution).toMatch(/publishers/);
     expect(NEWS_COVERAGE_SOURCE.attribution).toMatch(/OpenStreetMap/);
+  });
+});
+
+describe("the evidence quote is capped, and cut around the name", () => {
+  const long =
+    "Officials said late on Monday that after three days of continuous rain across the "
+    + "region the river burst its banks in several places overnight, and the flooding "
+    + "reached the centre of Bayeux by Tuesday evening, cutting the road to the coast "
+    + "and forcing the evacuation of about two hundred households from the low-lying "
+    + "streets beside the cathedral before first light on Wednesday morning.";
+
+  test("a short quote is published whole", () => {
+    expect(trimQuote("The river burst its banks.", "Bayeux")).toBe("The river burst its banks.");
+  });
+
+  // Cutting from the left can remove the very words the pin rests on, leaving evidence
+  // with the evidence taken out.
+  test("a long quote keeps the place name rather than the opening words", () => {
+    const out = trimQuote(long, "Bayeux");
+    expect(out).toContain("Bayeux");
+    expect(out.replace(/…/g, "").length).toBeLessThanOrEqual(MAX_QUOTE_CHARS);
+    expect(out.startsWith("…")).toBe(true);
+  });
+
+  test("falls back to the opening when the name is not in the quote", () => {
+    const out = trimQuote(long, "Rouen");
+    expect(out.startsWith("Officials said")).toBe(true);
+    expect(out.replace(/…/g, "").length).toBeLessThanOrEqual(MAX_QUOTE_CHARS);
+  });
+
+  test("the pin publishes the trimmed quote, not the whole paragraph", () => {
+    const [f] = buildCoverageFeatures(
+      [item({ event: { ...EVENT, quote: long } })],
+      placed(["Bayeux, Normandy", BAYEUX]),
+    );
+    expect(String(f.props?.basis).length).toBeLessThan(long.length);
+  });
+});
+
+describe("the category is reformatted, never rewritten", () => {
+  test("snake_case ids read as words", () => {
+    expect(humanLabel("natural_disaster")).toBe("natural disaster");
+    expect(humanLabel("crime")).toBe("crime");
+  });
+
+  // The taxonomy is the scraper own closed list and the id IS the claim. Mapping ids to
+  // friendlier wording here would put this app words behind their coding.
+  test("no id is mapped to different wording", () => {
+    for (const id of ["disaster", "armed_conflict", "civil_unrest", "accident"]) {
+      expect(humanLabel(id)).toBe(id.replace(/_/g, " "));
+    }
+  });
+});
+
+describe("the accuracy gate", () => {
+  // Pins are OFF until a labelled sample passes. The two known failure modes are
+  // LABEL faults, not geocoding faults, so a correct coordinate does not clear them and
+  // the end-to-end probe cannot see them.
+  test("publishes nothing without NEWS_COVERAGE_PINS, and says why", async () => {
+    const held = process.env.NEWS_COVERAGE_PINS;
+    delete process.env.NEWS_COVERAGE_PINS;
+    try {
+      expect(pinsEnabled()).toBe(false);
+      await expect(NEWS_COVERAGE_SOURCE.fetch()).resolves.toEqual([]);
+    } finally {
+      if (held !== undefined) process.env.NEWS_COVERAGE_PINS = held;
+    }
+  });
+
+  test("the flag is what turns it on", () => {
+    const held = process.env.NEWS_COVERAGE_PINS;
+    process.env.NEWS_COVERAGE_PINS = "on";
+    try {
+      expect(pinsEnabled()).toBe(true);
+    } finally {
+      if (held === undefined) delete process.env.NEWS_COVERAGE_PINS;
+      else process.env.NEWS_COVERAGE_PINS = held;
+    }
   });
 });

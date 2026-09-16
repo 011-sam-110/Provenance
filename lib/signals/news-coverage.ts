@@ -21,6 +21,10 @@
 // corroboration visible — "4 stories · Reuters, BBC, The Guardian" — rather than
 // inflating the map.
 //
+// OFF UNTIL SOMEBODY MEASURES IT. The layer publishes nothing without
+// NEWS_COVERAGE_PINS — see pinsEnabled() below for why that is the standing decision
+// and not caution.
+//
 // DORMANT BY DEFAULT AND BY CONSTRUCTION. Before the first push, and after every
 // restart, the store is empty. That state is reported as DEGRADED rather than as an
 // empty layer — nothing has reported, which is not the same as a quiet world — and
@@ -40,6 +44,42 @@ export const MAX_FEATURES = 250;
 export const PLACE_DP = 2;
 /** Outlets named on a pin before it says "and N more". */
 const MAX_NAMED_OUTLETS = 4;
+/**
+ * Characters of the evidence quote that are published.
+ *
+ * The agreed contract with the scraper caps the displayed evidence at 200, trimmed
+ * around the place name and attributed to the outlet. The model picks the span, so a
+ * quote can arrive longer than that, and "one sentence of evidence" and "four sentences
+ * of somebody else's article" are different things to be publishing.
+ *
+ * The cap is on the QUOTED TEXT; an ellipsis marking each cut end is added on top, so a
+ * trimmed string can measure two characters more than this.
+ */
+export const MAX_QUOTE_CHARS = 200;
+
+/**
+ * THE PINS ARE OFF UNTIL SOMEBODY MEASURES THEM.
+ *
+ * The layer is registered, documented and fully wired, and it publishes NOTHING unless
+ * NEWS_COVERAGE_PINS is set. That is not caution for its own sake: the standing
+ * decision on the scraper side is that no pin ships until a labelled sample passes an
+ * accuracy gate (at most 3 wrong in 153), and nothing has been labelled yet.
+ *
+ * What is already known about how these go wrong is the reason the gate exists rather
+ * than a hunch. The scraper's own review of a real extraction run found a line saying
+ * where someone SPOKE TO A REPORTER read as the event place, and a SCHEDULED hearing
+ * read as one that had happened — each around 1% to 1.5% of pinnable stories, together
+ * close to the whole error budget. Neither is a geocoding fault, so the end-to-end
+ * probe in scripts/ cannot see them: it proves a name becomes the right coordinate,
+ * which is a different question from whether the name was the right name.
+ *
+ * That is the GDELT lesson in its exact original shape — there, too, the geocoding was
+ * fine and the LABELS were wrong. Same env-flag pattern as NEWS_INGEST_SECRET: the
+ * feature lands, reviewable, and Sam turns it on.
+ */
+export function pinsEnabled(): boolean {
+  return Boolean(process.env.NEWS_COVERAGE_PINS);
+}
 
 export const NEWS_COVERAGE_ATTRIBUTION =
   "Headlines © their publishers · places read by a language model · geocoding © Photon/OpenStreetMap contributors";
@@ -103,7 +143,14 @@ function toFeature(key: string, bucket: PlaceBucket): SignalFeature {
   // The place AS THE ARTICLE WROTE IT, not as the geocoder rewrote it. The two are
   // published side by side on purpose — where they disagree, that disagreement is the
   // most useful thing on the card.
-  const asWritten = placeQuery(newest.event) ?? place.label;
+  //
+  // `placeName` ALONE, not the geocoder query. The query also carries `placeWithin`,
+  // which is unchecked model output; `placeName` is the one place field the scraper
+  // verified, by requiring it to appear inside the verbatim quote. Publishing the
+  // fuller string would be rendering model-written text the scraper's contract says
+  // not to render, and would also be presenting an unverified part as if the article
+  // had written it.
+  const asWritten = newest.event?.placeName ?? place.label;
 
   return {
     id: `news:${key}`,
@@ -127,13 +174,54 @@ function toFeature(key: string, bucket: PlaceBucket): SignalFeature {
       placeAsWritten: asWritten,
       resolvedTo: place.label,
       pinPrecision: describePrecision(newest.event?.placeKind ?? null, place.type),
-      ...(newest.event?.category ? { codedAs: newest.event.category } : {}),
-      ...(newest.event?.quote ? { basis: `"${newest.event.quote}"` } : {}),
+      ...(newest.event?.category ? { codedAs: humanLabel(newest.event.category) } : {}),
+      ...(newest.event?.quote
+        ? { basis: `"${trimQuote(newest.event.quote, newest.event.placeName)}"` }
+        : {}),
       ...(newest.event?.eventDate ? { eventDated: newest.event.eventDate } : {}),
       reading:
         "A language model read this place out of the article text and this app geocoded the name — not a verified location, and not a verified incident",
     },
   };
+}
+
+/**
+ * The extractor's category id, as words. `natural_disaster` -> `natural disaster`.
+ *
+ * A PRESENTATION CHANGE AND NOTHING MORE. The taxonomy is a closed list of snake_case
+ * ids on the scraper's side, and the id is the claim; swapping underscores for spaces
+ * makes it readable without editing what it says. Do NOT map ids to friendlier wording
+ * here — the label is theirs, it is published as `codedAs`, and rewriting it would put
+ * this app's words behind their coding.
+ */
+export function humanLabel(category: string): string {
+  return category.trim().replace(/_+/g, " ");
+}
+
+/**
+ * The evidence quote, capped at MAX_QUOTE_CHARS and centred on the place name.
+ *
+ * Centring matters more than it looks. A long quote truncated from the left can cut off
+ * the very words the pin rests on, leaving a sentence that no longer shows why this
+ * place was chosen — evidence with the evidence removed. Where the name is found, the
+ * window is taken around it; where it is not, the opening of the quote is kept. An
+ * ellipsis marks each end that was cut, so nothing reads as a complete sentence when it
+ * is not.
+ */
+export function trimQuote(quote: string, placeName: string | null | undefined, cap = MAX_QUOTE_CHARS): string {
+  const text = quote.trim().replace(/\s+/g, " ");
+  if (text.length <= cap) return text;
+
+  const at = placeName ? text.toLowerCase().indexOf(placeName.trim().toLowerCase()) : -1;
+  if (at < 0) return `${text.slice(0, cap).trimEnd()}…`;
+
+  // Put the name in the middle of the window, then clamp the window to the string.
+  const half = Math.floor((cap - placeName!.length) / 2);
+  let start = Math.max(0, at - half);
+  if (start + cap > text.length) start = Math.max(0, text.length - cap);
+  const end = Math.min(text.length, start + cap);
+
+  return `${start > 0 ? "…" : ""}${text.slice(start, end).trim()}${end < text.length ? "…" : ""}`;
 }
 
 /**
@@ -168,6 +256,8 @@ export const NEWS_COVERAGE_SOURCE: SignalSource = {
     // `Date.now()` would report a layer as freshly read every 15 minutes while the
     // stories behind it aged for a day, which is the exact claim lib/signals/outcome.ts
     // exists to stop.
+    // The accuracy gate, before anything else. See pinsEnabled() above.
+    if (!pinsEnabled()) return degraded("pins withheld pending accuracy review");
     const { updatedAt } = scrapedStats();
     // NOT `observed([])`. An empty store means nothing has been pushed — the upstream
     // has not reported, which is a degraded layer, not a quiet world. This is what

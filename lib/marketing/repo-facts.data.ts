@@ -16,7 +16,7 @@
  * Measured 2026-09-15 with `npx vitest list` on the sources-inspector feature branch.
  */
 export const UNIT_TESTS = {
-  cases: 4013,
+  cases: 4027,
   files: 388,
   measuredAt: "2026-09-16",
 } as const;

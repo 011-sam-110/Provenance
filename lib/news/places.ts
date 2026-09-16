@@ -9,10 +9,11 @@
 // THREE RULES, AND NONE OF THEM ARE STYLE.
 //
 // 1. A GEOCODER IS A GUESS. "Springfield" matches dozens of places and Photon will
-//    happily rank one first. So the query carries every scrap of context the extractor
-//    gave (name, containing region, country), and any result whose own label does not
-//    contain the country the article named is REFUSED rather than pinned. A refused
-//    story stays in the rail; it just does not get a dot.
+//    happily rank one first. So the query carries the context the extractor gave, and
+//    any result that is not in the country the article named is REFUSED rather than
+//    pinned — checked against Photon's ISO country code, because the labels are
+//    localised and the scraper stores a code. A refused story stays in the rail; it
+//    just does not get a dot.
 //
 // 2. WHAT WE PINNED IS PUBLISHED. `resolvedTo` carries Photon's own label for the
 //    match, so a reader can see that "Bayeux" became "Bayeux, Calvados, France" and
@@ -48,6 +49,8 @@ export interface ResolvedPlace {
   label: string;
   /** OSM class/value for the match, e.g. "city", "village", "country". */
   type?: string;
+  /** ISO 3166-1 alpha-2 for the match, upper-cased. What the country guard checks. */
+  countryCode?: string;
 }
 
 // --- pure: what we ask, and what we accept back ----------------------------------
@@ -56,16 +59,24 @@ export interface ResolvedPlace {
  * The geocoder query for one extracted event, or null when there is nothing to ask.
  *
  * Context is included because it is the only thing that disambiguates: Photon ranks
- * "Bayeux" globally, but "Bayeux, Normandy, France" has one sensible answer. Duplicate
- * parts are dropped so "Paris, Paris, France" does not become a worse query than "Paris".
+ * "Bayeux" globally, but "Bayeux, Normandy" has one sensible answer. Duplicate parts are
+ * dropped so "Paris, Paris" does not become a worse query than "Paris".
+ *
+ * AN ISO COUNTRY CODE IS NOT ASKED, ONLY CHECKED. The scraper stores "FR", and a bare
+ * two-letter token is at best noise in a search string and at worst a match of its own
+ * ("IN", "IT"). Measured against Photon on 2026-09-16, "Bayeux, Normandy, FR" and
+ * "Bayeux, Normandy" return an identical top three, so dropping it costs nothing and
+ * the code does its real work in pickPlace() instead. A sender that ships a country
+ * NAME still gets it included — that is a genuine disambiguator.
  */
 export function placeQuery(event: NewsEvent | null): string | null {
   if (!event || !event.isPhysical) return null;
   const name = event.placeName?.trim();
   if (!name) return null;
 
+  const country = event.placeCountry?.trim();
   const parts = [name];
-  for (const part of [event.placeWithin, event.placeCountry]) {
+  for (const part of [event.placeWithin, country && /^[A-Za-z]{2}$/.test(country) ? null : country]) {
     const p = part?.trim();
     if (p && !parts.some((held) => held.toLowerCase() === p.toLowerCase())) parts.push(p);
   }
@@ -80,17 +91,34 @@ export function placeKey(query: string): string {
 /**
  * Choose a result, or refuse. Pure, so the refusal rule is testable without a network.
  *
- * The one hard check is the country: if the article named a country and the match's
- * label does not mention it, the geocoder has found a different place with the same
- * name and we have no business pinning it. This is the cheap half of the ambiguity
- * problem — it cannot catch two Springfields in the same country, which is why
- * `resolvedTo` is published beside every pin rather than trusted silently.
+ * The one hard check is the country: if the article named a country and the match is in
+ * a different one, the geocoder has found a different place with the same name and we
+ * have no business pinning it. This is the cheap half of the ambiguity problem — it
+ * cannot catch two Springfields in the same country, which is why `resolvedTo` is
+ * published beside every pin rather than trusted silently.
+ *
+ * THE COMPARISON HAS TWO FORMS AND THE FIRST ONE IS THE REAL ONE. The scraper stores
+ * an ISO alpha-2 code, not a name — its own schema check requires two letters — so a
+ * real row carries "FR". Photon labels are LOCALISED, so the match reads "Bayeux,
+ * Calvados, France" in one query and "Normandie" or "Deutschland" in the next. Matching
+ * a code against a label therefore refuses every real pin, which is exactly what the
+ * first cut of this did: it only passed a harness that helpfully sent "France".
+ *
+ * So a two-letter value is compared against Photon's own `countrycode`, and anything
+ * longer falls back to a label search — that path is for a hand-written fixture or a
+ * future sender that ships names, and it is deliberately the weaker of the two.
  */
 export function pickPlace(results: GeocodeResult[], event: NewsEvent | null): ResolvedPlace | null {
-  const country = event?.placeCountry?.trim().toLowerCase();
+  const stated = event?.placeCountry?.trim();
+  const iso = stated && /^[A-Za-z]{2}$/.test(stated) ? stated.toUpperCase() : null;
+  const name = stated && !iso ? stated.toLowerCase() : null;
+
   for (const r of results) {
-    if (country && !r.name.toLowerCase().includes(country)) continue;
-    return { lat: r.lat, lon: r.lon, label: r.name, type: r.type };
+    // A match with no country code cannot clear an ISO check. Refusing is the right
+    // direction: an unplaced story stays in the rail, a misplaced one is a false pin.
+    if (iso && r.countryCode !== iso) continue;
+    if (name && !r.name.toLowerCase().includes(name)) continue;
+    return { lat: r.lat, lon: r.lon, label: r.name, type: r.type, countryCode: r.countryCode };
   }
   return null;
 }

@@ -355,6 +355,8 @@ const EXPLAINERS: LayerExplainer[] = [
       "The story count is attention, not severity. A royal visit and a massacre both count one story per outlet.",
       "A story with no place, or one the geocoder refused, is not dropped from the news feed — it simply does not appear here. The map is a subset of the rail, never the whole of it.",
       "Categories come from the model and are shown as what it coded, never as a finding.",
+      "The two ways this is known to go wrong are not geocoding faults, so a correct coordinate does not rule them out: a line saying where someone SPOKE TO A REPORTER read as the place the event happened, and a SCHEDULED hearing read as one that already has. Each ran at roughly 1% to 1.5% of pinnable stories in the scraper's own review.",
+      "Pins are OFF until a labelled sample passes an accuracy gate, so an empty layer here usually means nobody has measured it yet rather than that the world is quiet.",
       "Place names are resolved at most 12 per cycle to stay a good guest on a community geocoder, so after a backfill the map fills in over several hours rather than at once.",
     ],
   },

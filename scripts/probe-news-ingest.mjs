@@ -1,8 +1,12 @@
 // scripts/probe-news-ingest.mjs
 // End-to-end proof that a signed push from the NewsScraper host reaches the rail.
 //
-//   NEWS_INGEST_SECRET=<secret> npx next dev -p 3117
+//   NEWS_INGEST_SECRET=<secret> NEWS_COVERAGE_PINS=1 npx next dev -p 3117
 //   SECRET=<same secret> node scripts/probe-news-ingest.mjs
+//
+// NEWS_COVERAGE_PINS is what lets the map layer publish at all. Without it the last
+// block below fails with an empty layer, which is the correct production default -
+// pins are held until a labelled sample passes the accuracy gate.
 //
 // WHY THIS EXISTS AND WHY THE UNIT TESTS ARE NOT ENOUGH. The first run of this probe
 // failed two checks with every one of the suite's unit tests passing: the ingest route
@@ -175,7 +179,11 @@ const placeable = item({
     eventDate: "2026-09-15",
     placeName: "Bayeux",
     placeWithin: "Normandy",
-    placeCountry: "France",
+    // ISO alpha-2, because that is what a real extractions row carries. Sending
+    // "France" here is what hid the country-guard bug: the guard searched the
+    // geocoder label, which no ISO code appears in, so the harness passed and every
+    // real pin would have been refused.
+    placeCountry: "FR",
     placeKind: "city",
     quote: "SECRET-QUOTE the flooding reached the centre of Bayeux.",
     otherPlaces: ["Paris"],
