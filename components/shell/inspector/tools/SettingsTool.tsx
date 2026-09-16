@@ -58,6 +58,27 @@ function Field({
   );
 }
 
+/**
+ * A section of the panel: an elevated heading, and the controls it owns INDENTED
+ * under it.
+ *
+ * THE NESTING IS THE POINT. Every control here belongs to the heading above it, and
+ * before this they all sat at the same left edge as the headings — so "Terrain" and
+ * "SURFACE" read as siblings rather than as a section and one of its settings. The
+ * indent plus the guide rule is what makes the hierarchy visible without a second
+ * type size.
+ */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="tn-insp-group">
+      <h3 className="tn-src-sec-head">
+        <span className="tn-src-sec-name">{title}</span>
+      </h3>
+      <div className="tn-insp-group-body">{children}</div>
+    </section>
+  );
+}
+
 export default function SettingsTool() {
   const view = useMapView();
   const { stage } = useShellLayout();
@@ -65,103 +86,97 @@ export default function SettingsTool() {
 
   return (
     <>
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">View</span>
-      </h3>
+      <Section title="View">
+        <Field
+          label="Projection"
+          sub="The 3D globe, or the flat map"
+          control={
+            // A RADIOGROUP, not two buttons that look like buttons. `aria-checked` says
+            // which one is on rather than leaving a screen reader to infer it from a
+            // label that changes under it.
+            <span className="tn-insp-seg" role="radiogroup" aria-label="Projection">
+              {(["3d", "2d"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m}
+                  className="tn-insp-seg-btn"
+                  onClick={() => shellLayoutStore.stage(stageForMode(m))}
+                >
+                  {m === "3d" ? "3D" : "2D"}
+                </button>
+              ))}
+            </span>
+          }
+        />
+      </Section>
 
-      <Field
-        label="Projection"
-        sub="The 3D globe, or the flat map"
-        control={
-          // A RADIOGROUP, not two buttons that look like buttons. `aria-checked` says
-          // which one is on rather than leaving a screen reader to infer it from a
-          // label that changes under it.
-          <span className="tn-insp-seg" role="radiogroup" aria-label="Projection">
-            {(["3d", "2d"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="radio"
-                aria-checked={mode === m}
-                className="tn-insp-seg-btn"
-                onClick={() => shellLayoutStore.stage(stageForMode(m))}
-              >
-                {m === "3d" ? "3D" : "2D"}
-              </button>
-            ))}
-          </span>
-        }
-      />
+      <Section title="Basemap">
+        {/* Iterated from the registry and never hand-listed: lib/basemaps.ts states
+            that its key order is load-bearing. A sixth basemap appears here with no
+            edit, and tests/unit/view-controls.test.ts fails if the registry and the
+            helper disagree. */}
+        <div className="tn-insp-choices" role="radiogroup" aria-label="Basemap">
+          {basemapKeys().map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={view.basemap === k}
+              tabIndex={view.basemap === k ? 0 : -1}
+              className="tn-insp-choice"
+              onClick={() => mapViewStore.setBasemap(k)}
+            >
+              <span className="tn-insp-choice-dot" aria-hidden />
+              {BASEMAPS[k].label}
+            </button>
+          ))}
+        </div>
+      </Section>
 
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">Basemap</span>
-      </h3>
+      <Section title="Surface">
+        <Field
+          label="Terrain"
+          sub="Needs zoom 6+, on the flat map"
+          control={
+            <button
+              type="button"
+              className="tn-insp-switch"
+              role="switch"
+              aria-checked={view.terrain}
+              aria-label="Terrain"
+              // Honest about when it does anything. WorldMap only attaches the DEM above
+              // TERRAIN_MIN_ZOOM (6) and only outside the globe regime, so switching this
+              // on at world zoom changes nothing you can see. The condition is printed on
+              // the row rather than hidden in a `title`, because a tooltip is not where a
+              // caveat like that survives contact with a user.
+              title="3D terrain. Takes effect once you zoom past about level 6, on the flat map."
+              onClick={() => mapViewStore.setTerrain(!view.terrain)}
+            >
+              <span className="tn-insp-switch-knob" aria-hidden />
+            </button>
+          }
+        />
 
-      {/* Iterated from the registry and never hand-listed: lib/basemaps.ts states
-          that its key order is load-bearing. A sixth basemap appears here with no
-          edit, and tests/unit/view-controls.test.ts fails if the registry and the
-          helper disagree. */}
-      <div className="tn-insp-choices" role="radiogroup" aria-label="Basemap">
-        {basemapKeys().map((k) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={view.basemap === k}
-            tabIndex={view.basemap === k ? 0 : -1}
-            className="tn-insp-choice"
-            onClick={() => mapViewStore.setBasemap(k)}
-          >
-            <span className="tn-insp-choice-dot" aria-hidden />
-            {BASEMAPS[k].label}
-          </button>
-        ))}
-      </div>
-
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">Surface</span>
-      </h3>
-
-      <Field
-        label="Terrain"
-        sub="Needs zoom 6+, on the flat map"
-        control={
-          <button
-            type="button"
-            className="tn-insp-switch"
-            role="switch"
-            aria-checked={view.terrain}
-            aria-label="Terrain"
-            // Honest about when it does anything. WorldMap only attaches the DEM above
-            // TERRAIN_MIN_ZOOM (6) and only outside the globe regime, so switching this
-            // on at world zoom changes nothing you can see. The condition is printed on
-            // the row rather than hidden in a `title`, because a tooltip is not where a
-            // caveat like that survives contact with a user.
-            title="3D terrain. Takes effect once you zoom past about level 6, on the flat map."
-            onClick={() => mapViewStore.setTerrain(!view.terrain)}
-          >
-            <span className="tn-insp-switch-knob" aria-hidden />
-          </button>
-        }
-      />
-
-      <Field
-        label="Buildings"
-        sub="Raised blocks at street level"
-        control={
-          <button
-            type="button"
-            className="tn-insp-switch"
-            role="switch"
-            aria-checked={view.buildings}
-            aria-label="Buildings"
-            title="Raise buildings at street level"
-            onClick={() => mapViewStore.setBuildings(!view.buildings)}
-          >
-            <span className="tn-insp-switch-knob" aria-hidden />
-          </button>
-        }
-      />
+        <Field
+          label="Buildings"
+          sub="Raised blocks at street level"
+          control={
+            <button
+              type="button"
+              className="tn-insp-switch"
+              role="switch"
+              aria-checked={view.buildings}
+              aria-label="Buildings"
+              title="Raise buildings at street level"
+              onClick={() => mapViewStore.setBuildings(!view.buildings)}
+            >
+              <span className="tn-insp-switch-knob" aria-hidden />
+            </button>
+          }
+        />
+      </Section>
     </>
   );
 }

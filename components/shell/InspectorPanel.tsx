@@ -35,7 +35,6 @@ import { overlay, useOverlay } from "@/lib/overlay";
 import { OverlayBody } from "@/lib/overlay-content";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
 import {
-  inspectorRailStore,
   useInspectorRail,
   type OpenTool,
 } from "@/lib/console/inspectorRail";
@@ -93,23 +92,20 @@ export default function InspectorPanel() {
   };
 
   if (tool) {
-    // THE TOOL OWNS THE PANE (option D). Its head is rendered HERE rather than by
-    // each tool, so the name, the ordering and the ✕ that closes it exist once; a
-    // tool renders its body and nothing else.
+    // THE TOOL OWNS THE PANE (option D). The title is rendered HERE rather than by
+    // each tool, so the name and the ordering exist once; a tool renders its body and
+    // nothing else.
+    //
+    // THERE IS NO ✕ IN THIS HEAD ANY MORE. Sam: "make Map settings the prominent main
+    // title by increasing its font size and weight while removing competing title
+    // elements like the secondary x close button." It competed with the title it sat
+    // beside, and it was never the only way out — the rail button that opened the tool
+    // closes it, and so does Escape, both of which the panel's own tests cover. Two
+    // ways out that the user already knows beat three where one is a small glyph with
+    // no label.
     return (
       <div className="tn-insp-tool">
-        <div className="tn-insp-tool-head">
-          <span className="tn-insp-tool-name">{TOOL_TITLE[tool]}</span>
-          <button
-            type="button"
-            className="tn-insp-tool-close"
-            aria-label={`Close ${TOOL_TITLE[tool].toLowerCase()}`}
-            title="Back to the selected object"
-            onClick={() => inspectorRailStore.close()}
-          >
-            ×
-          </button>
-        </div>
+        <h2 className="tn-insp-tool-title">{TOOL_TITLE[tool]}</h2>
         {tool === "search" ? <SearchTool /> : tool === "settings" ? <SettingsTool /> : <AreasPanel />}
       </div>
     );

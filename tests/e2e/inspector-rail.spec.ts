@@ -158,8 +158,12 @@ test("a tool TAKES the panel body — it is not a card over the object", async (
   await expect(page.locator("#inspector-search input")).toBeVisible();
   await expect(page.locator(".tn-insp-switch")).toHaveCount(0);
 
-  // Clicking the open tool again, or its ✕, puts the object's view back.
-  await page.click(".tn-insp-tool-close");
+  // Clicking the open tool again puts the object's view back. THAT IS THE ONLY WAY
+  // OUT BESIDES ESCAPE, since the ✕ left this panel's head on Sam's ask — it competed
+  // with the title it sat beside, and the button that opened the tool is the control
+  // the user already has in hand.
+  await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
+  await rail.getByRole("button", { name: "Search for a place" }).click();
   await expect(page.locator(".tn-inspector[role=dialog]")).toHaveCount(1);
   await expect(rail.getByRole("button", { name: "View" })).toHaveAttribute("aria-pressed", "true");
 });
@@ -297,7 +301,7 @@ test("Draw opens a panel, and the gesture starts from the button inside it", asy
   // assertion that the rail button no longer arms anything.
   await draw.click();
   await expect(page.locator(`${RAIL} .tn-insp-rail-btn-draw`)).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".tn-insp-tool-name")).toHaveText(/Draw an area/i);
+  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
   await expect(page.locator(".tn-drawbanner")).toHaveCount(0);
   await expect(page.locator(".map-canvas canvas").first()).not.toHaveCSS("cursor", "crosshair");
 
@@ -426,6 +430,61 @@ test("the rail's marks are big enough to hit and to read", async ({ page }) => {
   if (!btn) throw new Error("the search button has no box");
   expect(btn.width).toBeGreaterThanOrEqual(40);
   expect(box.width / btn.width).toBeLessThan(0.72);
+});
+
+test("the panel's hierarchy is measurable, not just intended", async ({ page }) => {
+  // Sam's brief was about visual weight, and visual weight is exactly the kind of
+  // thing a later retune undoes without noticing. So the three claims are MEASURED:
+  // the title outweighs a section heading, a section heading outweighs the rows under
+  // it, and the rows are indented past the heading they belong to.
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-settings`);
+
+  const css = (sel: string, prop: string) =>
+    page.locator(sel).first().evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
+
+  const titleSize = parseFloat(await css(".tn-insp-tool-title", "font-size"));
+  const titleWeight = parseInt(await css(".tn-insp-tool-title", "font-weight"), 10);
+  const headSize = parseFloat(await css(".tn-insp-group .tn-src-sec-head", "font-size"));
+  const headWeight = parseInt(await css(".tn-insp-group .tn-src-sec-head", "font-weight"), 10);
+  const rowWeight = parseInt(await css(".tn-insp-field-label", "font-weight"), 10);
+
+  expect(titleSize).toBeGreaterThan(headSize);
+  expect(titleWeight).toBeGreaterThanOrEqual(700);
+  // THE HEADING IS NOT MERELY BOLDER TEXT — it carries its own surface, which is what
+  // separates it from the rows rather than a 1px step in weight.
+  expect(await css(".tn-insp-group .tn-src-sec-head", "background-color")).not.toBe(
+    "rgba(0, 0, 0, 0)",
+  );
+  expect(headWeight).toBeGreaterThan(rowWeight);
+
+  // The rows sit inside the section, to the right of their heading.
+  const head = await page.locator(".tn-insp-group .tn-src-sec-head").first().boundingBox();
+  const row = await page.locator(".tn-insp-group .tn-insp-field").first().boundingBox();
+  if (!head || !row) throw new Error("no box for the heading or its first row");
+  expect(row.x).toBeGreaterThan(head.x + 4);
+
+  // The ✕ that competed with the title is gone.
+  await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
+});
+
+test("Alerts is its own area, and it is the one the bell names", async ({ page }) => {
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Draw an area/i);
+
+  // Its own section, its own mark, and its own card — not one more row at the bottom
+  // of the areas list. The card is the composer's own; a second one wrapped around it
+  // was the first draft and read as a box inside a box.
+  const alerts = page.locator(".tn-insp-group", { has: page.getByText("Alerts", { exact: true }) });
+  await expect(alerts).toHaveCount(1);
+  await expect(alerts.locator("h3 svg")).toHaveCount(1);
+  await expect(alerts.locator(".tn-alert")).toHaveCount(1);
+  await expect(alerts.locator(".tn-insp-alert")).toHaveCount(0);
+  // The composer is inside the indented body of that section, which is what makes it
+  // read as belonging to the heading.
+  await expect(alerts.locator(".tn-insp-group-body .tn-alert")).toHaveCount(1);
+  await expect(alerts.locator(".tn-alert-head")).toBeVisible();
 });
 
 test("shots", async ({ page }) => {

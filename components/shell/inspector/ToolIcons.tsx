@@ -112,6 +112,35 @@ export function DrawGlyph() {
 }
 
 /**
+ * Notifications — a bell with an alert badge on its shoulder.
+ *
+ * THE BELL IS TRIMMED, NOT PAINTED OVER. Its right shoulder runs under the badge, and
+ * at heading size two strokes crossing there read as a smudge — so the dome's right
+ * arc stops where the badge begins and the left wall carries the shape. That is the
+ * trim rule in this file's header doing real work rather than being quoted.
+ *
+ * The badge is the reference art's warning triangle: three sides, rounded at the
+ * corners by `strokeLinejoin`, with the mark drawn SHORT so the triangle's own edges
+ * stay clean where a full-height mark would touch them.
+ */
+export function AlertGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.8}>
+      {/* the bell */}
+      <path d="M10.6 3.6v1.5" />
+      <path d="M10.6 5.1a5.1 5.1 0 0 0-5.1 5.1v5.5" />
+      <path d="M10.6 5.1a5.1 5.1 0 0 1 2.9.9" />
+      <path d="M4.4 15.7h12.4" />
+      <path d="M8.8 18.3a2 2 0 0 0 3.6 0" />
+      {/* the badge */}
+      <path d="M14.9 9.8 17.3 4.9a1.3 1.3 0 0 1 2.3 0l2.4 4.9z" />
+      <path d="M18.45 6.2v1.9" />
+      <circle cx={18.45} cy={8.9} r={0.5} />
+    </svg>
+  );
+}
+
+/**
  * Rename — a pencil, drawn at 45° with the nib down-left.
  *
  * NOT ON THE RAIL. This one lives inside a row (the areas list), which is why it is

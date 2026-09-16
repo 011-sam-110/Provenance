@@ -36,7 +36,7 @@ import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { useAoiDraw } from "@/lib/map/aoi";
 import { overlay } from "@/lib/overlay";
 import RulesPanel from "@/components/shell/inspector/RulesPanel";
-import { PencilGlyph } from "@/components/shell/inspector/ToolIcons";
+import { AlertGlyph, PencilGlyph } from "@/components/shell/inspector/ToolIcons";
 import { useAllRules } from "@/lib/notify/rules";
 import { WORLD_AREA_ID } from "@/lib/notify/types";
 
@@ -85,25 +85,23 @@ export default function AreasPanel() {
 
   return (
     <div className="tn-insp">
-      {/* THE SAME HEADING AS "AIR & SPACE", not a second, quieter one. It was
-          `.tn-subhead` (12px) while every source section was `.tn-src-sec-head`
-          (14px small caps), so the one block in this rail that is NOT a list of
-          sources was also the one heading that did not look like a heading. Sam's
-          words: "'AREAS' needs to be capital and bold a bit like 'AIR & SPACE'."
-          Sharing the class is what makes that true permanently rather than until the
-          next retune. */}
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">Areas</span>
-        <span className="tn-src-sec-n tn-num">{state.areas.length}</span>
-      </h3>
+      {/* THE SAME HEADING AS "AIR & SPACE", not a second, quieter one, and the same
+          nesting the Map settings tool uses: the list belongs to the heading above it,
+          so it is indented under it rather than sharing its left edge. */}
+      <section className="tn-insp-group">
+        <h3 className="tn-src-sec-head">
+          <span className="tn-src-sec-name">Areas</span>
+          <span className="tn-src-sec-n tn-num">{state.areas.length}</span>
+        </h3>
 
-      {state.areas.length === 0 ? (
-        <p className="tn-rail-foot">
-          No areas yet. Draw one on the map to give it its own sources — they show
-          inside it, and the globe keeps everything it already had.
-        </p>
-      ) : (
-        state.areas.map((a) => (
+        <div className="tn-insp-group-body">
+          {state.areas.length === 0 ? (
+            <p className="tn-rail-foot">
+              No areas yet. Draw one on the map to give it its own sources — they show
+              inside it, and the globe keeps everything it already had.
+            </p>
+          ) : (
+            state.areas.map((a) => (
           // A DIV, NOT A BUTTON, since the pencil joined it. Two buttons cannot nest,
           // and the alternative — an absolutely positioned pencil inside a button —
           // would have made the label's own hit area depend on paint order. So the row
@@ -219,29 +217,45 @@ export default function AreasPanel() {
         disabled={capped}
         title={capped ? AREA_CAP_MESSAGE : undefined}
       >
-        {capped
-          ? `＋ Draw an area — ${AREA_CAP_MESSAGE}`
-          : drawing.active
-            ? "Drawing — click the map to place corners"
-            : "＋ Draw an area"}
-      </button>
+            {capped
+            ? `＋ Draw an area — ${AREA_CAP_MESSAGE}`
+            : drawing.active
+              ? "Drawing — click the map to place corners"
+              : "＋ Draw an area"}
+        </button>
+        </div>
+      </section>
 
-      {/* "Alert me" IS THE CONTROL NOW, not a placeholder pill. It arms against
-          whichever context the rail is pointed at — `editing === null` already means
-          World everywhere else in this store (see editingSet), so the composer reads
-          the same way rather than inventing a second idea of "current area".
+      {/* ── ALERTS, ITS OWN LITTLE AREA ─────────────────────────────────────────
+          "Alert me" is the one thing in this panel that is not the areas list: "what
+          areas do I have" above, "tell me when something happens in this one" below.
+          It has its own elevated heading and its own mark — the bell — so it reads as
+          a separate thing rather than as one more row that happens to be last.
 
-          UNDER ITS OWN HEADING, because it is the one thing in this panel that is not
-          the areas list: "what areas do I have" above, "tell me when something happens
-          in this one" below. Same heading class as "Areas", so the two read as two
-          sections of one panel rather than as a list and whatever follows it. */}
-      <h3 className="tn-src-sec-head">
-        <span className="tn-src-sec-name">Alerts</span>
-      </h3>
-      <RulesPanel
-        areaId={state.editing ?? WORLD_AREA_ID}
-        areaLabel={state.areas.find((a) => a.id === state.editing)?.label ?? "World"}
-      />
+          ITS CARD IS RulesPanel'S OWN (`.tn-alert`), NOT A SECOND ONE WRAPPED AROUND
+          IT. The first draft put a tinted box here and the composer drew its own card
+          inside that — two borders and two radii around one control, which is exactly
+          the kind of doubling this codebase keeps deleting. The section that owns it
+          provides the indent; the composer provides the surface.
+
+          IT IS ALSO THE ONE PLACE A NOTIFICATION IS SET UP, which is what the bell is
+          for: the same mark names the feature wherever it appears (WidgetFrame's bell
+          opens this composer rather than a second copy of it — see RulesPanel's own
+          header). The composer is a disclosure, so closed it is one line. */}
+      <section className="tn-insp-group">
+        <h3 className="tn-src-sec-head">
+          <span className="tn-insp-head-glyph" aria-hidden>
+            <AlertGlyph />
+          </span>
+          <span className="tn-src-sec-name">Alerts</span>
+        </h3>
+        <div className="tn-insp-group-body">
+          <RulesPanel
+            areaId={state.editing ?? WORLD_AREA_ID}
+            areaLabel={state.areas.find((a) => a.id === state.editing)?.label ?? "World"}
+          />
+        </div>
+      </section>
     </div>
   );
 }

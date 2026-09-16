@@ -6982,35 +6982,67 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    which is what the first pass did: bare 11px uppercase labels and hairlines. */
 .tn-insp-tool { display: flex; flex-direction: column; }
 
-/* The panel's own title. Sentence case at 13.5px so it reads as the NAME of the tool
-   rather than as another tier of uppercase label — the group headings below it are
-   uppercase and the row labels are neither, which is the whole hierarchy. */
-.tn-insp-tool-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  margin-bottom: 4px; padding: 0 0 8px;
+/* The panel's own title — THE prominent thing in the pane, on Sam's ask: "make Map
+   settings the prominent main title by increasing its font size and weight". It is
+   17px/800 against the section headings' 12px/800 and the rows' 13px/500, and it has
+   no ✕ beside it any more, which was the other half of the same ask: a close glyph
+   sitting at the title's own weight competes with it for the first thing you see. */
+.tn-insp-tool-title {
+  margin: 0 0 14px; padding: 0 0 10px;
+  font-size: var(--tnx-fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--tn-text);
   border-bottom: 1px solid var(--tn-border-strong);
 }
-.tn-insp-tool-name {
-  font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tn-text);
-  letter-spacing: -0.01em;
-}
-/* Sized and shaped like `.tn-rail-collapse` next door — the two closes are 40px
-   apart on the same panel, and they must not read as two different controls. */
-.tn-insp-tool-close {
-  width: 30px; height: 30px; flex: none; margin-right: -6px;
-  display: grid; place-items: center;
-  padding: 0; font-size: var(--tnx-fs-lg); line-height: 1; cursor: pointer;
-  background: none; color: var(--tn-text-faint);
-  border: 1px solid transparent; border-radius: 8px;
-}
-.tn-insp-tool-close:hover { color: var(--tn-text); background: var(--tn-surface-2); border-color: var(--tn-border); }
-.tn-insp-tool-close:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
-/* Group headings inside a tool, on the Sources tab's own class. The first one sits
-   directly under the panel title and takes no top margin; the rest separate their
-   section from the one above. */
-.tn-insp-tool > .tn-src-sec-head { margin: 14px 0 8px; }
-.tn-insp-tool > .tn-insp-tool-head + .tn-src-sec-head { margin-top: 0; }
+/* ── Sections inside a tool ────────────────────────────────────────────────────
+   An elevated heading over an INDENTED body. The heading is the Sources tab's own
+   class (.tn-src-sec-head, reused rather than re-styled) with the elevation added
+   here: a filled bar, a heavier weight, and an accent tick at the left. That is what
+   makes VIEW outweigh "Projection" — before this the two were one weight apart and
+   read as a list of peers.
+
+   THE BODY IS INDENTED AND RULED, which is the whole hierarchy in two declarations:
+   every control in a tool belongs to the heading above it, and the guide line says so
+   without a second type size or a nested background. */
+.tn-insp-tool .tn-src-sec-head,
+.tn-insp .tn-src-sec-head {
+  position: relative;
+  margin: 0 0 8px;
+  padding: 7px 10px 7px 14px;
+  border-bottom: 0;
+  border-radius: 8px;
+  background: var(--tn-surface-2);
+  font-size: var(--tnx-fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  color: var(--tn-text);
+}
+.tn-insp-tool .tn-src-sec-head::before,
+.tn-insp .tn-src-sec-head::before {
+  content: "";
+  position: absolute; left: 6px; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 2px;
+  background: var(--tn-accent);
+}
+.tn-insp-group { margin-top: 16px; }
+.tn-insp-tool-title + .tn-insp-group,
+.tn-insp > .tn-insp-group:first-child { margin-top: 0; }
+.tn-insp-group-body {
+  margin-left: 7px;
+  padding-left: 12px;
+  border-left: 2px solid var(--tn-border);
+}
+/* The bell that names the Alerts section, sized and inked with its heading rather
+   than with the rail — it is a heading mark, not a control. */
+.tn-insp-head-glyph { display: inline-flex; flex: none; color: var(--tn-accent); }
+.tn-insp-head-glyph svg { width: 16px; height: 16px; display: block; }
+/* The alerts composer keeps its own card (`.tn-alert`, further down this sheet) and
+   loses the top margin it carried as a standalone block: the section heading above it
+   is what spaces it now. */ 
+.tn-insp-group-body .tn-alert { margin-top: 0; }
 
 /* A control row: what it is, what it does, and the thing you press. The sub-line is
    not decoration — two of these controls do nothing until you zoom, and a row that
@@ -7055,9 +7087,15 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   background: none; border: 1px solid transparent; border-radius: 8px;
 }
 .tn-insp-choice:hover { background: var(--tn-surface-2); }
+/* A STRONGER ACTIVE STATE, on Sam's ask. It was an accent wash with a filled dot,
+   which at a glance was the same weight as hover; the border is the accent now and
+   the label goes bold, so the chosen row is the one your eye lands on. */
 .tn-insp-choice[aria-checked="true"] {
-  background: var(--tn-accent-soft); border-color: var(--tn-border);
-  color: var(--tn-accent-strong); font-weight: 600;
+  background: var(--tn-accent-soft);
+  border-color: var(--tn-accent);
+  color: var(--tn-accent-strong);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--tn-accent);
 }
 .tn-insp-choice:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 .tn-insp-choice-dot {
@@ -7106,22 +7144,31 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 
 /* Terrain and buildings. A real switch, with the knob moving — `aria-checked` is
    the state a screen reader reads, and the fill plus the knob are what a sighted
-   user reads; both come off the same attribute so they cannot disagree. */
+   user reads; both come off the same attribute so they cannot disagree.
+   
+   BIGGER AND MORE DECISIVE THAN THE FIRST VERSION, on Sam's "stronger active states":
+   the track is 40x22 rather than 36x20, the off state is a flat grey with a hairline
+   rather than a light tint that read as "disabled", and the on state keeps the accent
+   fill with a white knob and a shadow under it. */
 .tn-insp-switch {
   position: relative; flex: none;
-  width: 36px; height: 20px; padding: 0; cursor: pointer;
-  background: var(--tn-border-strong); border: 0; border-radius: 999px;
+  width: 40px; height: 22px; padding: 0; cursor: pointer;
+  background: #c3ccd8; border: 0; border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
   transition: background 0.15s ease;
 }
-.tn-insp-switch[aria-checked="true"] { background: var(--tn-accent); }
+.tn-insp-switch[aria-checked="true"] {
+  background: var(--tn-accent);
+  box-shadow: inset 0 0 0 1px rgba(11, 97, 117, 0.4);
+}
 .tn-insp-switch:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
 .tn-insp-switch-knob {
   position: absolute; top: 2px; left: 2px;
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #ffffff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #ffffff; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35);
   transition: left 0.14s ease;
 }
-.tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { left: 18px; }
+.tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { left: 20px; }
 
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
    translateX(-50%)` — it was built to float over the top-centre of the globe, and
@@ -7203,7 +7250,6 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   /* iOS zooms the page when a focused input is under 16px. Carried over from the
      stage rail's mobile rule, where it was load-bearing. */
   .tn-insp-search .tn-mapsearch-input { font-size: var(--tnx-fs-lg); min-height: 44px; }
-  .tn-insp-tool-close { width: 34px; height: 34px; }
   .tn-insp-choice, .tn-insp-seg-btn { min-height: 40px; }
 }
 /* ── end inspector tool rail ─────────────────────── */
