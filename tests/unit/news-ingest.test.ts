@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   INGEST_MAX_ITEMS,
+  bodyDigestHex,
   outletDisplayName,
   parseSnapshot,
   signIngest,
+  signingString,
   toNewsItems,
   verifyIngest,
   type ScrapedItem,
@@ -130,6 +132,80 @@ describe("ingest signature", () => {
   });
 });
 
+/**
+ * CROSS-REPO CONTRACT VECTORS.
+ *
+ * These three are the shared exit check between this repo and the NewsScraper repo:
+ * the same secret, timestamp and body must produce the same hex on both sides, or the
+ * two implementations have silently diverged and every push will 401 with nothing in
+ * either log to explain why. The scraper host cannot generate them (no shell in that
+ * session), so they are generated here and pinned here.
+ *
+ * The expected values were computed independently with node:crypto — a different
+ * implementation from the WebCrypto one under test — so this asserts agreement between
+ * two libraries, not that a function agrees with itself.
+ *
+ * IF ONE OF THESE FAILS, THE PROTOCOL CHANGED. Do not update the literal to make it
+ * pass; the other repo is pinned to the same numbers.
+ */
+const CONTRACT_VECTORS = [
+  {
+    name: "empty cursor probe",
+    secret: "provenance-news-ingest-test-secret-0001",
+    ts: 1789000000000,
+    body: '{"version":1,"generatedAt":"2026-09-16T09:00:00Z","cursor":"","items":[]}',
+    digest: "6edc00c60cf2533a432d016cc1e9ba1c26aaa842fa5fa874657b6bdda6d521fb",
+    signature: "797a07a7e7de6038936f1160c36e11cd21ec49b911b79a825d913a5172107665",
+  },
+  {
+    name: "one minimal item",
+    secret: "provenance-news-ingest-test-secret-0001",
+    ts: 1789000060000,
+    body:
+      '{"version":1,"generatedAt":"2026-09-16T09:01:00Z","cursor":"2026-09-16T09:00:00Z","items":' +
+      '[{"id":"st_0000000000000001","outlet":"reuters","title":"Test headline",' +
+      '"url":"https://www.reuters.com/world/test","published":"2026-09-16T08:00:00Z",' +
+      '"firstSeenAt":"2026-09-16T08:30:00Z","lastSeenAt":"2026-09-16T09:00:00Z"}]}',
+    digest: "2c050c9b87721dac286b822fd887aa5763fd1cc8a6b9764a6fffdfacefc4c96e",
+    signature: "2d518bb8e14b27e579db1000a7f985fb809b9236ee29d0d49ec82a4127960569",
+  },
+  {
+    // Non-ASCII in the body, because UTF-8 versus UTF-16 byte counting is the classic
+    // way two HMAC implementations agree on ASCII and disagree in production.
+    //
+    // THE ESCAPES ARE DELIBERATE, and the first draft of this vector proved why: it
+    // was generated from a DECOMPOSED "é" (U+0065 U+0301) and written here as the
+    // PRECOMPOSED one (U+00E9). Same glyph on screen, different bytes, different
+    // digest — which is precisely the bug a Unicode vector exists to catch, and it
+    // caught it before either repo shipped. Written as escapes, neither side's editor
+    // can normalise it back into ambiguity. Codepoints: U+00E9, U+2192.
+    name: "unicode body",
+    secret: "provenance-news-ingest-test-secret-0002",
+    ts: 1789000120000,
+    body:
+      '{"version":1,"generatedAt":"2026-09-16T09:02:00Z","cursor":"","items":' +
+      '[{"id":"st_0000000000000002","outlet":"guardian","title":"Café protests → Paris",' +
+      '"url":"https://www.theguardian.com/world/x","published":"2026-09-16T08:00:00Z",' +
+      '"firstSeenAt":"2026-09-16T08:30:00Z","lastSeenAt":"2026-09-16T09:01:00Z"}]}',
+    digest: "b581623336e7514388c58a7eb856651db5de051f1e93efd6cbd13f6038a47e51",
+    signature: "2238dcdc7d2d6c78e0f261028dec88b7f35cdaae7844a042eef5962a0aeade1d",
+  },
+] as const;
+
+describe("cross-repo signature vectors", () => {
+  it.each(CONTRACT_VECTORS)("$name: digest matches the pinned value", async (v) => {
+    expect(await bodyDigestHex(v.body)).toBe(v.digest);
+  });
+
+  it.each(CONTRACT_VECTORS)("$name: signature matches the pinned value", async (v) => {
+    expect(await signIngest(v.secret, v.ts, v.body)).toBe(`sha256=${v.signature}`);
+  });
+
+  it.each(CONTRACT_VECTORS)("$name: the canonical string is what both sides sign", (v) => {
+    expect(signingString(v.ts, v.digest)).toBe(`provenance-news-ingest-v1:${v.ts}:${v.digest}`);
+  });
+});
+
 describe("parseSnapshot", () => {
   it("maps a real wire item to the domain shape", () => {
     const result = parseSnapshot(snapshot([wireItem()]));
@@ -164,7 +240,7 @@ describe("parseSnapshot", () => {
     expect(result.snapshot.items[0].tsExact).toBe(false);
   });
 
-  it("drops malformed rows but keeps the rest of the batch", () => {
+  it("drops malformed rows, keeps the rest, and names what it dropped", () => {
     const result = parseSnapshot(
       snapshot([
         wireItem(),
@@ -176,6 +252,27 @@ describe("parseSnapshot", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.snapshot.items.map((i) => i.id)).toEqual(["st_9f3c1a0b77de2415", "st_4"]);
+    // Named, so the sender can log the loss rather than rewinding its cursor to
+    // retry rows that will fail validation identically next time.
+    expect(result.snapshot.received).toBe(4);
+    expect(result.snapshot.droppedIds).toEqual(["st_2", "st_3"]);
+  });
+
+  it("reports a row too broken to carry an id, rather than dropping it silently", () => {
+    const result = parseSnapshot(snapshot([{ outlet: "bbc" } as Record<string, unknown>]));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.snapshot.droppedIds).toEqual(["(unidentifiable)"]);
+  });
+
+  it("does not carry author names across, whatever the sender sends", () => {
+    // docs/ARCHITECTURE.md:538 in the scraper repo forbids article text, descriptions
+    // and author names in a published body. Nothing here renders a byline, so not
+    // reading the field is free and removes one field from that conflict.
+    const result = parseSnapshot(snapshot([wireItem({ authors: ["Zane Irwin"] })]));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(JSON.stringify(result.snapshot.items[0])).not.toContain("Zane Irwin");
   });
 
   it("reports the cursor we accepted, never the one the sender claimed", () => {

@@ -95,7 +95,6 @@ export interface ScrapedItem {
   itemHash: string | null;
   sections: string[];
   formatFlags: string[];
-  authors: string[];
   wordCount: number | null;
   thumbnail: string | null;
   /** SHA-256 of the article text, or null. Half of the idempotency key. */
@@ -117,7 +116,19 @@ export interface Snapshot {
   generatedAt: number;
   cursor: string;
   items: ScrapedItem[];
+  /** How many rows the batch carried, before validation. */
+  received: number;
+  /**
+   * Ids of rows refused by validation, capped for the response. A refusal is about
+   * the row's SHAPE, so it will be refused again — the sender must treat these as a
+   * permanent loss to log, NOT as a reason to rewind its cursor and resend. Resending
+   * a row that cannot parse is an infinite loop with extra steps.
+   */
+  droppedIds: string[];
 }
+
+/** Ids reported back. A batch that is broken wholesale should not produce a 500-id body. */
+export const INGEST_MAX_REPORTED_DROPS = 20;
 
 export type SnapshotResult =
   | { ok: true; snapshot: Snapshot }
@@ -271,7 +282,10 @@ function parseItem(raw: unknown): ScrapedItem | null {
     itemHash: str(r.itemHash),
     sections: strList(r.sections),
     formatFlags: strList(r.formatFlags, 16),
-    authors: strList(r.authors, 16),
+    // `authors` is deliberately NOT read. The scraper's own contract
+    // (docs/ARCHITECTURE.md:538) forbids article text, descriptions and author names
+    // in a published body. Nothing here renders a byline, so dropping it on the floor
+    // costs this app nothing and removes one of the three fields in that conflict.
     wordCount: typeof r.wordCount === "number" && Number.isFinite(r.wordCount) ? r.wordCount : null,
     thumbnail: safeUrl(r.thumbnail),
     textHash: str(r.textHash),
@@ -295,9 +309,17 @@ export function parseSnapshot(raw: unknown): SnapshotResult {
   if (r.items.length > INGEST_MAX_ITEMS) return { ok: false, reason: "too-many-items" };
 
   const items: ScrapedItem[] = [];
+  const droppedIds: string[] = [];
   for (const entry of r.items) {
     const item = parseItem(entry);
-    if (item) items.push(item);
+    if (item) {
+      items.push(item);
+    } else if (droppedIds.length < INGEST_MAX_REPORTED_DROPS) {
+      // Name it where we can. A row too broken to carry an id is reported as the
+      // count alone, which is still better than silence.
+      const id = entry && typeof entry === "object" ? str((entry as Record<string, unknown>).id) : null;
+      droppedIds.push(id ?? "(unidentifiable)");
+    }
   }
 
   // The cursor the scraper resumes from is the high-water mark of what we ACCEPTED,
@@ -312,6 +334,8 @@ export function parseSnapshot(raw: unknown): SnapshotResult {
       generatedAt: epochMs(r.generatedAt) || 0,
       cursor,
       items,
+      received: r.items.length,
+      droppedIds,
     },
   };
 }

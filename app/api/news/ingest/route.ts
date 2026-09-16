@@ -130,12 +130,27 @@ export async function POST(request: Request): Promise<Response> {
 
   const outcome = ingestItems(parsed.snapshot.items, Date.now());
   const stats = scrapedStats();
+  const { received, droppedIds } = parsed.snapshot;
+
+  // THE SENDER MUST COMPARE `stored`, NOT `accepted`.
+  //
+  // `accepted` counts rows that were new or had changed. On a steady-state run most
+  // rows are `unchanged`, so a sender watching `accepted < received` to detect losses
+  // would read a healthy batch as a mass drop and rewind its cursor over the whole
+  // window, every run. `stored` is the honest "we took it" number and `dropped` is
+  // the honest "we did not" one, so neither side has to infer anything.
+  const stored = outcome.accepted + outcome.unchanged;
   return Response.json({
     ok: true,
+    received,
+    stored,
     accepted: outcome.accepted,
     unchanged: outcome.unchanged,
-    // What WE hold, not what the batch claimed. A row dropped as malformed must not
-    // be skipped by the next run.
+    dropped: received - stored,
+    // Refused for their shape, so they will be refused again. Log them; do not
+    // rewind the cursor to retry them.
+    droppedIds,
+    // What WE hold, not what the batch claimed.
     cursor: scrapedCursor(),
     held: stats.items,
     withText: stats.withText,
