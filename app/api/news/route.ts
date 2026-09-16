@@ -1,5 +1,7 @@
 import { parseRss, mergeNews, type NewsItem, type NewsPayload } from "@/lib/news";
 import { parseTelegram } from "@/lib/news/telegram";
+import { toNewsItems } from "@/lib/news/ingest";
+import { scrapedItems } from "@/lib/news/scrapedStore";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,13 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 // Higher than the docked list needs on purpose: the focus view clusters these
 // into stories, so more raw material = richer, better-corroborated mega-cards.
 const LIMIT = 60;
+
+/**
+ * How many pushed stories join the merge. The scraper holds far more than the rail
+ * can show; this is the candidate pool clustering gets to choose from, not a display
+ * count — mergeNews still cuts the result to LIMIT.
+ */
+const SCRAPED_POOL = 200;
 
 let cache: NewsPayload | null = null;
 
@@ -82,6 +91,16 @@ export async function GET() {
     ...FEEDS.map(fetchFeed),
     ...TELEGRAM.map(fetchTelegram),
   ]);
+  // Stories pushed by the NewsScraper host join the same merge as the feeds. They
+  // are ADDITIVE, not a replacement: the scraper covers Reuters and PBS, which have
+  // no usable public feed, while the RSS set covers Al Jazeera, NPR, DW and France 24,
+  // which it does not scrape. mergeNews de-duplicates on URL and headline, so a BBC
+  // story arriving down both paths appears once.
+  //
+  // Dormant-safe by construction: before the first push, and after every restart of
+  // this process, the store is empty and this contributes [] — exactly what a dead
+  // feed contributes. Nothing here can fail a request.
+  lists.push(toNewsItems(scrapedItems(SCRAPED_POOL)));
   const items = mergeNews(lists, LIMIT);
   // Keep the last good list if a transient outage emptied everything.
   if (items.length === 0 && cache && cache.items.length > 0) {

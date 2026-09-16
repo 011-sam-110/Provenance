@@ -107,6 +107,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
   },
   {
     kind: "enhancement",
+    id: "news-ingest",
+    label: "Pushed newsroom stories (NewsScraper host)",
+    env: ["NEWS_INGEST_SECRET"],
+    degrades:
+      "The news rail still renders, keylessly, from the six RSS feeds and Liveuamap. The secret opens /api/news/ingest so the scraper host can push Reuters and PBS — neither of which publishes a usable feed — plus article text for clustering and enough history for velocity. Without it that endpoint answers 404 and nothing else changes.",
+    obtain:
+      "Self-issued: a random string of 32 characters or more, set identically here and in the scraper host's newsfeed.env. It is a shared HMAC secret, not a third-party credential — nobody issues it and nothing can recover it, so rotating it means changing both ends together.",
+  },
+  {
+    kind: "enhancement",
     id: "markets-equities",
     label: "Real-time equities",
     env: ["FINNHUB_API_KEY"],
@@ -167,6 +177,9 @@ export const NON_SIGNAL_IDS = new Set([
   "geolocate-vision",
   // A product-feedback channel, not a data capability.
   "feedback-prompt",
+  // An inbound door rather than an upstream: this one is the only entry in the table
+  // that we do not fetch FROM. The scraper host pushes through it.
+  "news-ingest",
 ]);
 
 const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));
