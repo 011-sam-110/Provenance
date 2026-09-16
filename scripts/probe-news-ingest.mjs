@@ -1,8 +1,12 @@
 // scripts/probe-news-ingest.mjs
 // End-to-end proof that a signed push from the NewsScraper host reaches the rail.
 //
-//   NEWS_INGEST_SECRET=<secret> npx next dev -p 3117
+//   NEWS_INGEST_SECRET=<secret> NEWS_COVERAGE_PINS=1 npx next dev -p 3117
 //   SECRET=<same secret> node scripts/probe-news-ingest.mjs
+//
+// NEWS_COVERAGE_PINS is what lets the map layer publish at all. Without it the last
+// block below fails with an empty layer, which is the correct production default -
+// pins are held until a labelled sample passes the accuracy gate.
 //
 // WHY THIS EXISTS AND WHY THE UNIT TESTS ARE NOT ENOUGH. The first run of this probe
 // failed two checks with every one of the suite's unit tests passing: the ingest route
@@ -14,6 +18,10 @@
 //
 // It signs with node:crypto, a different implementation from the route's WebCrypto one,
 // so a passing run also means the two libraries agree on the wire format.
+//
+// The last block goes one route further, to /api/signals/news-coverage — a THIRD bundle,
+// and the only check anywhere that makes a real Photon call. It costs exactly one
+// geocoder lookup per run; keep it that way.
 
 import { createHash, createHmac } from "node:crypto";
 import { gzipSync } from "node:zlib";
@@ -148,6 +156,80 @@ check("pushed story appears in /api/news", Boolean(mine), mine ? `source=${mine.
 check("attributed to the outlet, not the slug", mine?.source === "Reuters", mine?.source);
 check("article body is NOT served", !raw.includes("SECRET-ARTICLE-BODY"));
 check("author name is NOT served", !raw.includes("Should Not Appear"));
+
+// --- the map path ----------------------------------------------------------------
+//
+// Same reasoning as above, one step further out. The coverage layer reads the store
+// from a THIRD route (/api/signals/news-coverage), so it is a third bundle and a third
+// chance for the module-instance fault. It also makes a real Photon call, which no unit
+// test does — a passing run here is the only proof that the geocoder answers the shape
+// `normalizePhoton` expects.
+//
+// This posts ONE placeable story and therefore costs ONE upstream lookup. Keep it that
+// way: Photon is a community server.
+const placeable = item({
+  id: "st_harness_place",
+  itemHash: "hash-place",
+  title: "Harness story: flooding reaches Bayeux",
+  url: "https://www.reuters.com/world/europe/harness-bayeux",
+  placeHints: ["France"],
+  event: {
+    isPhysical: true,
+    category: "natural disaster",
+    eventDate: "2026-09-15",
+    placeName: "Bayeux",
+    placeWithin: "Normandy",
+    // ISO alpha-2, because that is what a real extractions row carries. Sending
+    // "France" here is what hid the country-guard bug: the guard searched the
+    // geocoder label, which no ISO code appears in, so the harness passed and every
+    // real pin would have been refused.
+    placeCountry: "FR",
+    placeKind: "city",
+    quote: "SECRET-QUOTE the flooding reached the centre of Bayeux.",
+    otherPlaces: ["Paris"],
+    keyEntities: [],
+  },
+});
+
+r = await post(batch([placeable]));
+check("placeable story accepted", r.status === 200 && r.json?.accepted === 1, JSON.stringify(r.json));
+
+const sigRes = await fetch(`${BASE}/api/signals/news-coverage`);
+const sig = await sigRes.json();
+const pin = (sig.features ?? sig.items ?? []).find((f) =>
+  String(f.title ?? "").toLowerCase().includes("bayeux"),
+);
+check("the coverage layer answers 200", sigRes.status === 200, `got ${sigRes.status}`);
+check(
+  "the pushed story is geocoded and pinned",
+  Boolean(pin) && Number.isFinite(pin?.lat) && Number.isFinite(pin?.lon),
+  pin ? `${pin.title} @ ${pin.lat},${pin.lon}` : `no Bayeux pin in ${(sig.features ?? []).length} features`,
+);
+// Roughly Normandy. A pin in Quebec would mean the country guard did not fire.
+check(
+  "pinned in the country the article named",
+  pin ? Math.abs(pin.lat - 49.28) < 1 && Math.abs(pin.lon + 0.7) < 1 : false,
+  pin ? `${pin.lat},${pin.lon}` : "no pin",
+);
+check(
+  "the pin publishes what the article said AND what the geocoder matched",
+  Boolean(pin?.props?.placeAsWritten) && Boolean(pin?.props?.resolvedTo),
+  JSON.stringify(pin?.props ?? {}),
+);
+check(
+  "the pin states that neither the location nor the incident is verified",
+  /not a verified location/.test(String(pin?.props?.reading ?? "")) &&
+    /not a verified incident/.test(String(pin?.props?.reading ?? "")),
+  String(pin?.props?.reading ?? ""),
+);
+// The quote is EVIDENCE and is meant to be served — but it is one sentence, published
+// as the basis for a pin, not the article. This check exists so that stays deliberate.
+check(
+  "the quote is served as the basis, and the article body still is not",
+  String(pin?.props?.basis ?? "").includes("SECRET-QUOTE") &&
+    !JSON.stringify(sig).includes("SECRET-ARTICLE-BODY"),
+  String(pin?.props?.basis ?? ""),
+);
 
 const failed = checks.filter((c) => !c.pass);
 console.log(`\n${checks.length - failed.length}/${checks.length} checks passed`);

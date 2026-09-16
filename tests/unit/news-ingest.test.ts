@@ -312,6 +312,72 @@ describe("parseSnapshot", () => {
   });
 });
 
+describe("the extracted event block", () => {
+  // The ONLY field on the wire that can put a story on the map. placeHints cannot,
+  // by contract, and the scraper holds the same rule at its end.
+  it("carries the place, the category and the sentence they were read from", () => {
+    const result = parseSnapshot(
+      snapshot([
+        wireItem({
+          event: {
+            isPhysical: true,
+            category: "natural disaster",
+            eventDate: "2026-09-15",
+            placeName: "Bayeux",
+            placeWithin: "Normandy",
+            placeCountry: "France",
+            placeKind: "city",
+            quote: "The flooding reached the centre of Bayeux.",
+            otherPlaces: ["Paris"],
+            keyEntities: ["Prefecture of Calvados"],
+          },
+        }),
+      ]),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { event } = result.snapshot.items[0];
+    expect(event?.isPhysical).toBe(true);
+    expect(event?.placeName).toBe("Bayeux");
+    expect(event?.placeCountry).toBe("France");
+    expect(event?.quote).toBe("The flooding reached the centre of Bayeux.");
+    expect(event?.otherPlaces).toEqual(["Paris"]);
+  });
+
+  // The extraction stage has not run on most of the archive, and a row without it is
+  // a perfectly good news item. It simply cannot be placed.
+  it("is null when the scraper sent none, and a missing row is not dropped for it", () => {
+    const result = parseSnapshot(snapshot([wireItem()]));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.snapshot.items).toHaveLength(1);
+    expect(result.snapshot.items[0].event).toBeNull();
+  });
+
+  // `isPhysical` decides whether anything gets pinned, so anything other than a real
+  // true has to read as false rather than as truthy.
+  it("treats a non-boolean isPhysical as false rather than as truthy", () => {
+    const result = parseSnapshot(
+      snapshot([wireItem({ event: { isPhysical: "yes", placeName: "Bayeux" } })]),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.snapshot.items[0].event?.isPhysical).toBe(false);
+  });
+
+  it("tolerates a half-filled block without dropping the story", () => {
+    const result = parseSnapshot(
+      snapshot([wireItem({ event: { isPhysical: true, placeName: "  ", otherPlaces: "Paris" } })]),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { event } = result.snapshot.items[0];
+    expect(event?.placeName).toBeNull();
+    expect(event?.otherPlaces).toEqual([]);
+    expect(result.snapshot.droppedIds).toEqual([]);
+  });
+});
+
 describe("toNewsItems", () => {
   it("maps to the shape /api/news already merges, and carries no article text", () => {
     const parsed = parseSnapshot(snapshot([wireItem({ outlet: "reuters" })]));
