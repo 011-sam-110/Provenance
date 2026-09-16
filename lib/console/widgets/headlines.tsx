@@ -30,6 +30,15 @@ function rel(ts: number, now: number): string {
 
 const POLL_MS = 120_000;
 
+/**
+ * Rows the docked card renders. It is a scrolling list, so this is a DOM budget and
+ * not an editorial one: the route now serves up to 300 headlines and clustering
+ * collapses them to rather fewer stories, and a card that stopped at 60 would hide
+ * the rest of a feed the reader has already paid to fetch. The focus view shows the
+ * same clusters with their corroborating sources.
+ */
+const MAX_ROWS = 300;
+
 function HeadlinesBody() {
   const { data, status, lastOk, ok } = useJsonPoll<NewsPayload>("/api/news", POLL_MS, EMPTY);
   const items = data.items ?? [];
@@ -55,7 +64,7 @@ function HeadlinesBody() {
   const now = Date.now();
   return (
     <ul className="tn-w-list">
-      {stories.slice(0, 60).map((c, i) => {
+      {stories.slice(0, MAX_ROWS).map((c, i) => {
         const r = rel(c.lead.ts, now);
         return (
           <li key={c.id || i}>

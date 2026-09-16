@@ -116,7 +116,13 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
       "Self-issued: a random string of 32 characters or more, set identically here and in the scraper host's newsfeed.env. It is a shared HMAC secret rather than a third-party credential. Nobody issues it and nothing can recover it, so rotating it means changing both ends together.",
   },
   {
-    kind: "enhancement",
+    // "required", because the definition here is "dead without it" and that is
+    // literally true: with no NEWS_COVERAGE_PINS the adapter returns before it reads
+    // anything. Typed as an "enhancement" first, which resolved to `upgradable`, which
+    // earns no badge — so the board showed a red DOWN chip over the words "News
+    // coverage unavailable." for a layer that is deliberately held and working exactly
+    // as designed. The state feeds the dormant flag on the freshness chip too.
+    kind: "required",
     id: "news-coverage",
     label: "News coverage pins",
     env: ["NEWS_COVERAGE_PINS"],

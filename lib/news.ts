@@ -68,13 +68,33 @@ function parseDate(block: string): number {
 }
 
 /**
+ * The element that opens a feed entry, and the two lookaheads are load-bearing.
+ *
+ * `<(item|entry)` ALONE ALSO MATCHES `<items>`, and RSS 1.0 (RDF) opens its channel
+ * with exactly that: an `<items><rdf:Seq>…</rdf:Seq></items>` table of contents. The
+ * lazy body then ran to the first `</item`, which is inside `</items>` — so the very
+ * first "entry" parsed out of a DW feed was a 2,880-character block spanning the Seq,
+ * the closing `</channel>`, the feed's `<image>` element and THE FIRST REAL STORY.
+ *
+ * Both halves of that were wrong and only one of them was visible. The visible half
+ * was a headline reading "DW" linking to dw.com, picked up from the `<image>` title.
+ * The silent half is the one that mattered: the first story of the feed was eaten
+ * every time, on every refresh, and nothing could have noticed — a feed that serves
+ * 12 of its 13 items looks exactly like a feed that has 12.
+ *
+ * So the open tag must be followed by whitespace, `/` or `>`, and the close tag may
+ * only carry whitespace before its own `>`.
+ */
+const FEED_ENTRY = /<(item|entry)(?=[\s/>])[\s\S]*?<\/\1\s*>/gi;
+
+/**
  * Pure: one feed's XML → NewsItem[]. Tolerates RSS <item> and Atom <entry>.
  * Skips entries with no title or no http(s) link. `source` is the display name.
  */
 export function parseRss(xml: string | null | undefined, source: string): NewsItem[] {
   if (!xml) return [];
   const out: NewsItem[] = [];
-  const blocks = xml.match(/<(item|entry)[\s\S]*?<\/\1>/gi) ?? [];
+  const blocks = xml.match(FEED_ENTRY) ?? [];
   for (const block of blocks) {
     const title = cleanText(tag(block, "title"));
     const url = extractLink(block);
