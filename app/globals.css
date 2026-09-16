@@ -5211,8 +5211,8 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   height: 30px !important;
   border-radius: 999px !important;
   background-color: transparent !important;
-  /* Stroked, not filled, and 1.9 — the same weight components/console/maprail/
-     RailIcons.tsx draws every rail glyph at, so the two controls on this stage
+  /* Stroked, not filled, and 1.9 — the same weight components/shell/inspector/
+     ToolIcons.tsx draws every rail glyph at, so the two controls on this stage
      look like they came from one set. */
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23464b37' stroke-width='1.9' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E") !important;
   background-size: 17px 17px !important;
@@ -5596,10 +5596,11 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 
      THE MAP CONTROLS ARE NO LONGER HIDDEN HERE. `.tnx-stage-right` used to go with
      this rule, which meant restrict-to-area, pick cameras, draw an area and new
-     wall did not exist on a phone at all. They live in `.tnx-maprail` now, which is
-     a 44px column rather than a 200px stack of text buttons, and hiding it would
-     also take the basemap picker and the 2D/3D switch with it. See the stage-rail
-     block at the end of this sheet. */
+     wall did not exist on a phone at all. They then lived in `.tnx-maprail` on the
+     stage's right edge, which was a 44px column rather than a 200px stack of text
+     buttons; since 2026-09-16 they are on the Sources rail's INSPECTOR tab, whose
+     tool column the narrow pass keeps for the same reason — see the inspector
+     tool-rail block at the end of this sheet. */
   .tn-terminal .tnx-stage-foot { display: none; }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
@@ -6793,147 +6794,133 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 /* ── end sources rail splitter ────────────────── */
 
-/* ══ STAGE RAIL — prefix .tnx-maprail ══════════════════════════════════════════
-   Two icon groups on the RIGHT edge of the map stage, one flyout open at a time,
-   expanding LEFTWARD into the map. It was four: Draw and Cameras were removed on
-   request, and the rules that were only ever theirs are marked as gone below rather
-   than left behind as selectors nothing matches.
+/* ══ INSPECTOR TOOL RAIL — prefix .tn-insp-rail / .tn-insp-tool ═════════════════
+   The tool column on the RIGHT edge of the Sources rail's INSPECTOR tab, and the
+   pane it drives. It carries what used to be on the map: Search and View settings
+   were the stage rail's two groups (components/console/maprail/, deleted with this
+   change), and Draw an area was a button in the Sources tab. Sam chose the edge
+   (option C) and the pane behaviour (option D) from rendered mockups; the rejected
+   layouts are in ~/Desktop/rail-options/ with the rest of that decision.
 
-   NOT `.tn-rail*`. That family (.tn-rail, .tn-rail-col, .tn-rail-fab,
-   --tnx-rail-tab-w and thirteen more) belongs to the Sources rail and the widget
-   rail columns, and a `.tnx-rail-btn` sitting next to `--tnx-rail-tab-w` is a grep
-   hazard for whoever comes next. `maprail` appears nowhere else in this sheet.
+   WHY THIS IS NOT `.tnx-maprail`, which is what it replaces. That block's whole
+   geometry was "float over the map, expand leftward, centred on the stage's right
+   edge" — chip widths chosen to stay LATERAL, a flyout that emerged from its own
+   row, and a container query against the stage. None of it survives the move: this
+   rail is a COLUMN IN A PANEL, docked rather than floating, and sized by the panel
+   rather than by the stage. Keeping the old prefix would have left every rule
+   lying about where it applies, which is the reason that block's own header gave
+   for not calling itself `.tn-rail*` in the first place.
 
-   REPLACES `.tnx-stage-search` (the centred geocoder) and `.tnx-stage-right`
-   (AoiControl + CameraPickControl). Both families are deleted below this block. The
-   two controls `.tnx-stage-right` held have since been removed from the rail as
-   well; the search box it replaced is what the rail still carries.
-
-   CENTRED AND CONTENT-HEIGHT, not full-height. A rail down the whole edge would put
-   its ends over `.tnx-stage-foot` (the clock strip) and over MapLibre's attribution
-   button at `bottom:28px; right:8px` — and that button is a licence obligation, not
-   chrome we may cover. See lib/map/attribution.ts.
-
-   Z-INDEX 8 AND 9, CHOSEN. Every other stage overlay sits at 6, and the collision
-   documented around line 2483 happened precisely because two of them SHARED that
-   value with overlapping boxes, so paint order decided which was clickable and the
-   3D button was dead at five widths. Its own tier makes "the rail is above ambient
-   chrome" a rule instead of a DOM-order accident. Both stay BELOW `.tn-tray` (25)
-   and `.tn-arm-hint` (30): the tray is the receipt for work in flight, and a panel
-   the user can close must never cover it.
-
-   MOBILE IS THE LAST THING IN THIS BLOCK AND MUST STAY THERE. See the
-   `MOBILE — RE-ASSERTED OVER THE TERMINAL SKIN` banner earlier in this sheet: a
-   media query adds no specificity, so any `.tn-terminal .tnx-maprail` rule appended
-   AFTER the @media below silently kills it.
+   TWO THINGS ABOUT THE PANEL THIS LIVES IN, both of which the rules below depend on
+   and neither of which is visible from here:
+     - `.tn-terminal .tn-cw-shell > .tn-rail` is `position: absolute; top: 0;
+       bottom: 0`, so the panel has a DEFINITE height — which is what lets the rail
+       stretch to the dossier's height instead of collapsing to its buttons.
+     - `.tn-rail` is its own SCROLLPORT (`overflow-y: auto` in the base rule), which
+       is what the sticky offsets below stick against. `top: 50px` is the sticky tab
+       header's measured height (12px padding + a 29px tab row + 8px padding + 1px
+       border). It is a measured constant rather than a derivation, for the same
+       reason the mock's caption was written by hand: if the header ever grows, the
+       failure is a partly-covered first button, not a broken layout — the header is
+       opaque, sits at z-index 2, and paints over this strip.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* Metrics as tokens on the shared positioned ancestor, so the mobile pass changes
-   ONE value and every derived measure follows. Declared on `.tn-cw-stage` rather
-   than `.tn-terminal` deliberately: it is the common positioned ancestor of the rail
-   and its flyouts, and it keeps these out of the `.tn-terminal` rule block that
-   tests/unit/terminal-tokens.test.ts parses. */
-.tn-terminal .tn-cw-stage {
-  --tnx-maprail-btn: 40px;
-  --tnx-maprail-glyph: 25px;
-  /* ZERO, and the rail is one capsule now rather than four floating chips. The
-     token stays because the flyout and the hover label both offset themselves by
-     it, and at 0 they would have opened flush against the toolbar's edge — so
-     that offset is its own number. */
-  --tnx-maprail-gap: 0px;
-  --tnx-maprail-pad: 5px;
-  --tnx-maprail-out: 10px;
+/* The tab's own layout: the pane, then the rail. `align-items: stretch` is what
+   makes the rail run the height of whatever the pane needs — a dossier is tall, the
+   empty state is short, and the strip follows it rather than being pinned to a
+   number someone has to maintain. */
+.tn-insp-shell { display: flex; align-items: stretch; gap: 10px; }
+.tn-insp-pane { flex: 1 1 auto; min-width: 0; }
+
+.tn-insp-rail {
+  /* Metrics as tokens so the narrow pass changes ONE value and everything derived
+     follows. Declared here rather than on `.tn-terminal`: that block is parsed by
+     tests/unit/terminal-tokens.test.ts and this rail has no business in it. */
+  --tn-insp-rail-w: 40px;
+  --tn-insp-rail-btn: 30px;
+  --tn-insp-rail-glyph: 18px;
+  --tn-insp-rail-top: 50px;
+
+  flex: 0 0 var(--tn-insp-rail-w);
+  width: var(--tn-insp-rail-w);
+  /* FLUSH TO THE PANEL'S EDGE. `.tn-rail` carries `padding: 0 12px 10px`, and the
+     negative right margin is what puts this strip's border on the panel's border
+     rather than 12px inside it — the same trick `.tn-rail-header` uses to span the
+     padding, and for the same reason: a strip that stops short of the edge reads as
+     a floating card, which is exactly what option D said it is not. */
+  margin: 0 -12px 0 0;
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(15, 23, 42, 0.028);
+  border-left: 1px solid var(--tn-border);
 }
 
-.tn-terminal .tnx-maprail {
-  position: absolute;
-  top: 50%;
-  translate: 0 -50%;
-  right: 8px;
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  gap: var(--tnx-maprail-gap);
-  /* ONE CONTROL, NOT FOUR. The chrome — surface, edge, radius and shadow — moved
-     from each button up to the column, so the rail reads as a single toolbar.
-     Two consequences worth stating:
-
-     POINTER-EVENTS IS NOW `auto`, reversing the `.tnx-stage-right` convention
-     this rule used to follow. That convention exists so the gaps between floating
-     controls stay clickable map; with no gaps there is nothing to click through
-     to, and leaving it `none` would have meant a painted, shadowed, opaque
-     toolbar that a click passed straight through into the globe underneath.
-
-     THE BUTTONS LOSE THEIR OWN BORDERS, so hover is doing the work four outlines
-     used to: it fills the button with --tnx-accent-soft, which is the only thing
-     on screen that says where one button ends and the next begins. A hairline
-     divider was tried and dropped — it argues with "connected", and at 1px on
-     white it was invisible anyway. */
-  pointer-events: auto;
-  padding: var(--tnx-maprail-pad);
-  background: var(--tnx-panel);
-  border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r-lg);
-  box-shadow: var(--tnx-shadow-1);
+/* STICKY, AND THE REASON IS THE DOSSIER. The panel is one scrollport, so an
+   ordinary column carries the tools off the top of the screen the moment a
+   country's detail body is taller than the viewport — and the tool rail is the only
+   way back to search or the map settings. The geometry that makes sticky work here
+   is worth stating because it is invisible: this column must be SHORTER than the
+   strip around it, which is why the tinted strip and the button column are two
+   elements. Stretch the buttons to the strip's height and there is no room to
+   stick, so the row of icons would scroll away with the content it is pinned to. */
+.tn-insp-rail-col {
+  position: sticky;
+  top: var(--tn-insp-rail-top);
+  z-index: 1;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 0 10px;
 }
 
-.tn-terminal .tnx-maprail-group {
+.tn-insp-rail-cell { position: relative; display: flex; justify-content: center; width: 100%; }
+/* The rule between "what the panel shows" and "what acts on the map". */
+.tn-insp-rail-rule { width: 20px; height: 1px; background: var(--tn-border-strong); margin: 5px 0; }
+
+.tn-insp-rail-btn {
   position: relative;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.tn-terminal .tnx-maprail-btn {
-  pointer-events: auto;
-  width: var(--tnx-maprail-btn);
-  height: var(--tnx-maprail-btn);
+  width: var(--tn-insp-rail-btn);
+  height: var(--tn-insp-rail-btn);
   flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
-  color: var(--tnx-ink-dim);
-  border: 0;
-  /* Inset by the rail's own padding, so a button's corner is concentric with the
-     capsule's rather than a second, tighter curve inside it. */
-  border-radius: calc(var(--tnx-r-lg) - var(--tnx-maprail-pad));
-  box-shadow: none;
-  transition: color 0.15s ease, background 0.15s ease;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; cursor: pointer;
+  background: transparent; color: var(--tn-text-muted);
+  border: 1px solid transparent; border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
-.tn-terminal .tnx-maprail-btn:hover { color: var(--tnx-ink); background: var(--tnx-accent-soft); }
-/* OPEN IS A FILL, NOT AN OUTLINE. With no border left to tint, a soft wash would
-   have read the same as hover and nothing would say which group is open. White on
-   --tnx-accent measures 9.04, so the glyph is legible reversed. */
-.tn-terminal .tnx-maprail-btn[aria-expanded="true"] {
+.tn-insp-rail-btn:hover { color: var(--tn-text); background: var(--tn-accent-soft); }
+/* PRESSED IS A FILL, NOT AN OUTLINE, and the reason is the same one the stage rail
+   wrote down when it had four groups: at 30px with a 1px border, a tinted outline
+   and a hover wash are the same picture, so nothing would say which tool owns the
+   pane. White on --tn-accent is 4.9:1 — legible reversed, which is what a fill
+   demands. */
+.tn-insp-rail-btn[aria-pressed="true"] {
   color: #ffffff;
-  background: var(--tnx-accent);
+  background: var(--tn-accent);
+  border-color: var(--tn-accent);
 }
-.tn-terminal .tnx-maprail-btn:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
+/* AT THE AREA CAP the draw button refuses — see lib/shell/drawArea.ts. It is
+   dimmed rather than `disabled` on purpose: the rail is ONE tab stop with roving
+   focus, so a truly disabled button is a hole the arrow keys stall in. */
+.tn-insp-rail-btn[aria-disabled="true"] { opacity: 0.5; }
+.tn-insp-rail-btn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+/* One rule sizes every glyph on the rail, which is why ToolIcons takes no size
+   prop. ToolIcons draws at strokeWidth 1.8-2 on a 24-unit viewBox, which at 18px is
+   a ~1.4px stroke: still a hairline, and the reason the geometry is trimmed where
+   strokes meet. */
+.tn-insp-rail-btn svg { width: var(--tn-insp-rail-glyph); height: var(--tn-insp-rail-glyph); display: block; }
 
-/* The hover/focus label beside a rail button. Four icons with no words needed one:
-   the accessible name was there from the start, and a sighted mouse user had only
-   the native `title`, which takes about a second, paints in OS chrome that ignores
-   the skin, and cannot be told which side of the button to appear on.
+/* The hover/focus label. A 30px column of glyphs cannot name anything on its own,
+   and the native `title` takes about a second, paints in OS chrome that ignores the
+   skin, and cannot be told which side of the button to appear on. It opens to the
+   LEFT — into the pane — because this rail's right edge is the panel's edge.
 
-   POSITIONED ON THE BUTTON, NOT THE GROUP. `.tnx-maprail-group` is also the
-   flyout's positioning context, and anchoring both to it put the tip and the panel
-   in the same place with the tip on top. The button gets `position: relative` here
-   for that reason — it is the row's own box and nothing else is positioned against
-   it.
-
-   HIDDEN WHILE THE GROUP IS OPEN. The flyout occupies exactly this space, so a tip
-   that stayed would sit over the panel the click just opened — and by then the
-   panel names the group anyway.
-
-   `pointer-events: none` because a label that swallows a click on its way to the
-   map would be worse than no label at all. */
-.tn-terminal .tnx-maprail-btn { position: relative; }
-.tn-terminal .tnx-maprail-tip {
+   NOT HIDDEN WHILE PRESSED, which is a deliberate difference from the stage rail's
+   tip. There the flyout occupied exactly this space; here the pane is beside the
+   rail, so the label covers a sliver of it and nothing else. Hiding it would take
+   the eye's label away in the state the eye is in most of the time. */
+.tn-insp-rail-tip {
   pointer-events: none;
   position: absolute;
-  right: calc(100% + var(--tnx-maprail-out));
+  right: calc(100% + 8px);
   top: 50%;
   translate: 0 -50%;
   z-index: 9;
@@ -6944,234 +6931,186 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   text-transform: uppercase;
   line-height: 1.35;
   padding: 4px 8px;
-  color: var(--tnx-ink);
-  background: var(--tnx-panel);
-  border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r-sm);
-  box-shadow: var(--tnx-shadow-1);
+  color: var(--tn-text);
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong);
+  border-radius: 6px;
+  box-shadow: var(--tn-shadow);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.12s ease;
 }
-.tn-terminal .tnx-maprail-btn:hover .tnx-maprail-tip,
-.tn-terminal .tnx-maprail-btn:focus-visible .tnx-maprail-tip {
-  opacity: 1;
-  visibility: visible;
+.tn-insp-rail-btn:hover .tn-insp-rail-tip,
+.tn-insp-rail-btn:focus-visible .tn-insp-rail-tip { opacity: 1; visibility: visible; }
+/* ...unless this button's own panel is open: the panel's head names the tool two
+   rows under the label, and the label is the transient of the two. `[data-panel]` is
+   set only for tools — the eye's pressed state is the view, not a panel, and its word
+   appears nowhere else. See InspectorRail.tsx. */
+.tn-insp-rail-btn[data-panel] .tn-insp-rail-tip { opacity: 0; visibility: hidden; }
+
+/* ── The tool pane ───────────────────────────────────────────────────────────── */
+.tn-insp-tool { display: flex; flex-direction: column; }
+.tn-insp-tool-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 0 0 9px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--tn-border-strong);
 }
-.tn-terminal .tnx-maprail-btn[aria-expanded="true"] .tnx-maprail-tip {
-  opacity: 0;
-  visibility: hidden;
+.tn-insp-tool-name {
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--tn-text-muted);
 }
-@media (prefers-reduced-motion: reduce) {
-  .tn-terminal .tnx-maprail-tip { transition: none; }
+.tn-insp-tool-close {
+  width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+  padding: 0; font-size: var(--tnx-fs-lg); line-height: 1; cursor: pointer;
+  background: none; color: var(--tn-text-faint);
+  border: 1px solid transparent; border-radius: 7px;
 }
-/* No hover on touch, so the tip can only ever be a focus artefact there — and a
-   label wide enough to name a group would run off a 390px screen from a rail
-   already pinned to the right edge. The button keeps its accessible name. */
-@media (hover: none) {
-  .tn-terminal .tnx-maprail-tip { display: none; }
+.tn-insp-tool-close:hover { color: var(--tn-text); background: var(--tn-surface-2); border-color: var(--tn-border); }
+.tn-insp-tool-close:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+
+.tn-insp-tool-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--tn-border);
 }
-/* One rule sizes all four glyphs, which is why RailIcons takes no size prop.
-   The glyph and its button are ONE ratio (27/44 = 0.61), so the token pair above
-   moves together: shrinking the button without the glyph is what pushes stroke
-   geometry into the 1px border. RailIcons draws at strokeWidth 1.9-2 on a 24-unit
-   viewBox, which at 27px is a ~2.1px stroke — still a hairline, not a slab. */
-.tn-terminal .tnx-maprail-btn svg {
-  width: var(--tnx-maprail-glyph);
-  height: var(--tnx-maprail-glyph);
-  display: block;
+.tn-insp-tool-lab { font-size: var(--tnx-fs); color: var(--tn-text); }
+.tn-insp-tool-lab-row {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 0; border-bottom: 1px solid var(--tn-border);
+}
+.tn-insp-tool-lab-row > .tn-insp-tool-lab {
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--tn-text-faint);
+}
+.tn-insp-tool-foot {
+  margin: 10px 0 0; font-size: var(--tnx-fs-sm); line-height: 1.55; color: var(--tn-text-muted);
 }
 
-/* The flyout. A SIBLING of the button it belongs to, inside a relatively-positioned
-   group, so it emerges from its own row with no measurement, no ResizeObserver and
-   no map-level pointer listeners — which is how the hit-test budget set by the
-   one-shared-hit-test work stays intact.
+/* Projection. The one button is labelled with what you will GET rather than with
+   what is on — this product's own convention, and the reason one button can carry a
+   two-state switch. */
+.tn-insp-proj {
+  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.35;
+  padding: 5px 12px; cursor: pointer; flex: none;
+  background: none; color: var(--tn-text-muted);
+  border: 1px solid var(--tn-border-strong); border-radius: 6px;
+}
+.tn-insp-proj:hover { color: var(--tn-text); border-color: var(--tn-accent); }
+.tn-insp-proj:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
-   `width: max-content` is what keeps the strip LATERAL. The group box is only as
-   wide as its button, so without it an absolutely-positioned flex row shrink-wraps
-   to that width and the View strip folds into a vertical column. */
-.tn-terminal .tnx-maprail-pop {
-  pointer-events: auto;
-  position: absolute;
-  right: calc(100% + var(--tnx-maprail-out));
-  top: 50%;
-  translate: 0 -50%;
-  z-index: 9;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
-  width: max-content;
-  max-width: min(560px, 70cqw);
-  padding: 5px;
-  min-height: var(--tnx-maprail-btn);
-  background: var(--tnx-panel);
-  border: 1px solid var(--tnx-line-strong);
-  /* The same radius as the toolbar it grows out of, not --tnx-r. The two sit
-     10px apart on the same stage, and a 8px corner beside a 14px one reads as
-     two components that happen to be adjacent rather than one control opening. */
-  border-radius: var(--tnx-r-lg);
-  box-shadow: var(--tnx-shadow-1);
-  animation: tnx-maprail-sweep 0.16s cubic-bezier(0.2, 0.7, 0.3, 1);
-  transform-origin: right center;
+/* Basemap. A full-width row each, because three full names do not fit across a
+   panel as chips with any breathing room — and this is the one setting on the tool
+   whose options are worth reading rather than decoding. */
+.tn-insp-choice {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 7px 8px; cursor: pointer;
+  font: inherit; font-size: var(--tnx-fs); text-align: left; color: var(--tn-text);
+  background: none; border: 1px solid transparent; border-radius: 7px;
 }
-@keyframes tnx-maprail-sweep {
-  from { opacity: 0; transform: scaleX(0.82); }
-  to   { opacity: 1; transform: none; }
+.tn-insp-choice:hover { background: var(--tn-surface-2); }
+.tn-insp-choice[aria-checked="true"] {
+  background: var(--tn-accent-soft); border-color: var(--tn-border);
+  color: var(--tn-accent-strong); font-weight: 600;
 }
-@media (prefers-reduced-motion: reduce) {
-  .tn-terminal .tnx-maprail-pop { animation: none; }
+.tn-insp-choice:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-insp-choice-dot {
+  width: 12px; height: 12px; flex: none; border-radius: 50%;
+  border: 1.6px solid var(--tn-border-strong);
+}
+.tn-insp-choice[aria-checked="true"] .tn-insp-choice-dot {
+  border-color: var(--tn-accent); background: var(--tn-accent);
+  box-shadow: inset 0 0 0 2.4px var(--tn-surface-solid);
 }
 
-/* The button face inside a flyout. Carried over from `.tn-aoi-btn`, which this
-   replaces — same uppercase micro-label, same weight and tracking — plus the
-   painted pressed state `.tn-aoi-btn.is-on` never actually had. "Picking cameras"
-   used to rely on a glyph swap alone to say it was on. */
-.tn-terminal .tnx-maprail-act {
-  font: inherit;
-  font-size: var(--tnx-fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  line-height: 1.35;
-  white-space: nowrap;
-  padding: 4px 8px;
-  cursor: pointer;
-  background: none;
-  color: var(--tnx-ink-dim);
-  border: 1px solid var(--tnx-line-strong);
-  border-radius: var(--tnx-r-sm);
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+/* Terrain and buildings. A real switch, with the knob moving — `aria-checked` is
+   the state a screen reader reads, and the fill plus the knob are what a sighted
+   user reads; both come off the same attribute so they cannot disagree. */
+.tn-insp-switch {
+  position: relative; flex: none;
+  width: 36px; height: 20px; padding: 0; cursor: pointer;
+  background: var(--tn-border-strong); border: 0; border-radius: 999px;
+  transition: background 0.15s ease;
 }
-.tn-terminal .tnx-maprail-act:hover { color: var(--tnx-ink); border-color: var(--tnx-accent); }
-.tn-terminal .tnx-maprail-act[aria-pressed="true"],
-.tn-terminal .tnx-maprail-act[aria-checked="true"] {
-  color: var(--tnx-accent);
-  border-color: var(--tnx-accent);
-  background: var(--tnx-accent-soft);
+.tn-insp-switch[aria-checked="true"] { background: var(--tn-accent); }
+.tn-insp-switch:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-insp-switch-knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #ffffff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25);
+  transition: left 0.14s ease;
 }
-.tn-terminal .tnx-maprail-act:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
-
-/* `.tnx-maprail-act-icon` IS GONE — a flyout button carrying a glyph as well as its
-   word. Only the Draw and Cameras flyouts ever wore it, and both were deleted with
-   their groups. If a flyout button ever needs a mark again, the rule it wants is an
-   18px glyph and NOT `--tnx-maprail-glyph` (27px): a mark inside a panel is labelled
-   by the word beside it, where a mark on the rail is the only thing identifying its
-   button. Plus `flex: none`, or a long adjacent label squeezes the glyph into an
-   ellipse on a strip whose job is to stay lateral. */
-
-.tn-terminal .tnx-maprail-seg { display: flex; align-items: center; gap: 4px; }
-.tn-terminal .tnx-maprail-rule {
-  width: 1px;
-  align-self: stretch;
-  background: var(--tnx-line-strong);
-  margin: 0 2px;
-  flex: none;
-}
-.tn-terminal .tnx-maprail-label {
-  font-size: var(--tnx-fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--tnx-ink-ghost);
-  padding-left: 3px;
-}
-/* `.tnx-maprail-live` (the vertex/radius readout) and `.tnx-maprail-note` (the "map
-   is still loading" line) went with the Draw and Cameras flyouts. Nothing left in
-   the rail narrates a gesture — the one surface that still does is `.tn-drawbanner`
-   further down this sheet, which is mounted from ConsoleShell and cannot be closed
-   by anything except the gesture ending. */
+.tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { left: 18px; }
 
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
-   translateX(-50%)`, so it has to be flattened or it re-centres itself inside the
-   flyout instead of filling it. Restyled, never forked — one geocoder in the app.
-   Lifted from the deleted `.tnx-stage-search` rules. */
-.tn-terminal .tnx-maprail-search {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 6px;
-  width: min(360px, 60cqw);
+   translateX(-50%)` — it was built to float over the top-centre of the globe, and
+   inside an absolutely-positioned panel it would anchor to the PANEL and re-centre
+   itself there. So it is flattened, never forked: one geocoder in the app. Ported
+   from the stage rail's `.tnx-maprail-search` rules, which did the same job inside
+   a flyout. */
+.tn-insp-search { display: flex; align-items: flex-start; gap: 7px; }
+.tn-insp-search-pfx {
+  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tn-accent);
+  flex: none; padding-top: 6px;
 }
-.tn-terminal .tnx-maprail-search-pfx {
-  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tnx-accent); flex: none;
+.tn-insp-search .tn-mapsearch {
+  position: static; transform: none; width: 100%; max-width: none;
+  flex: 1; min-width: 0; padding: 0;
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch {
-  position: static; transform: none; width: 100%; max-width: none; flex: 1; min-width: 0; padding: 0;
+.tn-insp-search .tn-mapsearch-bar {
+  background: none; border: 0; box-shadow: none; padding: 4px 0; gap: 0;
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-bar {
-  background: none; border: 0; box-shadow: none; border-radius: var(--tnx-r); padding: 4px 0; gap: 0;
+.tn-insp-search .tn-mapsearch-icon { display: none; }
+.tn-insp-search .tn-mapsearch-input {
+  font-size: var(--tnx-fs); color: var(--tn-text); font-family: inherit; min-height: 0;
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-icon { display: none; }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-input {
-  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); font-family: inherit; min-height: 0;
+.tn-insp-search .tn-mapsearch-input::placeholder { color: var(--tn-text-muted); }
+.tn-insp-search .tn-mapsearch-results {
+  margin-top: 6px; border-radius: 8px;
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong); box-shadow: none;
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-input::placeholder { color: var(--tnx-ink-ghost); }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-results {
-  margin-top: 5px; border-radius: var(--tnx-r); background: var(--tnx-glass-solid);
-  border: 1px solid var(--tnx-line-strong); box-shadow: none;
+.tn-insp-search .tn-mapsearch-item {
+  font-size: var(--tnx-fs); color: var(--tn-text); padding: 6px 8px;
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-item {
-  font-size: var(--tnx-fs-sm); color: var(--tnx-ink); padding: 5px 8px;
+.tn-insp-search .tn-mapsearch-item:hover { background: var(--tn-accent-soft); }
+.tn-insp-search .tn-mapsearch-item-meta,
+.tn-insp-search .tn-mapsearch-status { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+
+/* NO HOVER ON TOUCH, so the label can only ever be a focus artefact there — and the
+   button keeps its accessible name either way. */
+@media (hover: none) {
+  .tn-insp-rail-tip { display: none; }
 }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-item:hover { background: var(--tnx-accent-soft); }
-.tn-terminal .tnx-maprail-search .tn-mapsearch-item-meta,
-.tn-terminal .tnx-maprail-search .tn-mapsearch-status {
-  font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint);
+@media (prefers-reduced-motion: reduce) {
+  .tn-insp-rail-btn, .tn-insp-rail-tip, .tn-insp-switch, .tn-insp-switch-knob { transition: none; }
 }
 
-/* A CONTAINER query, not a viewport one, and the difference is the whole point:
-   the Streets board sets the stage's `gridColumn` INLINE, so the stage can be
-   narrow inside a wide window. A viewport query cannot tell those apart and would
-   leave a 560px strip inside a 400px stage. The stage already declares
-   `container-type: inline-size; container-name: tnstage`. */
-@container tnstage (max-width: 620px) {
-  .tn-terminal .tnx-maprail-pop {
-    max-width: calc(100cqw - var(--tnx-maprail-btn) - 26px);
-  }
-  .tn-terminal .tnx-maprail-search { width: auto; flex: 1; min-width: 0; }
-}
-
-/* MOBILE — and the rail STAYS. `.tnx-stage-right` was hidden below 900px, which
-   meant restrict-to-area, pick cameras, draw an area and new wall did not exist on
-   a phone at all. The rail is two 44px buttons now; hiding it would take the search
-   box, the basemap picker and the 2D/3D switch with it, which is a strictly bigger
-   loss than it ever was. The removal of the two map-arming groups was a product
-   decision taken at every width — NOT the old "hide it on a phone because the
-   gesture is awkward" move, which is exactly how the area filter became unreachable
-   the first time, and which this block was written to refuse.
-
-   44px is the measured target from the touch pass, technique (a): real size, since
-   the rail is a column with room around it and does not need a transparent ::before.
-
-   THE 44px RE-DECLARATION BELOW NOW MATCHES DESKTOP AND IS DELIBERATELY KEPT. The
-   desktop button was 30px when this pass was written; the glyph rescale took it to
-   44px, so the two agree today. It stays as an explicit floor: it is the line that
-   fails a future desktop shrink loudly here rather than silently taking the touch
-   target under 44px on a phone.
-   THIS @media IS LAST IN THE BLOCK ON PURPOSE — see the header. */
+/* MOBILE — and the rail STAYS. Below 900px the panel becomes a bottom sheet
+   (`.tn-terminal .tn-cw-shell > .tn-rail`, max-height 66dvh); hiding this rail would
+   take the search box, the map settings and the only draw entry point with it,
+   which is the strictly bigger loss the stage rail's own mobile pass already argued
+   about once. 40px is the measured touch target, technique (a): real size, since the
+   column has room around it and does not need a transparent ::before.
+   THIS @media IS LAST IN THE BLOCK ON PURPOSE — a media query adds no specificity,
+   so any `.tn-insp-rail` rule appended after it would silently kill it. */
 @media (max-width: 900px) {
-  .tn-terminal .tn-cw-stage { --tnx-maprail-btn: 44px; }
-  .tn-terminal .tnx-maprail { right: 6px; }
-  .tn-terminal .tnx-maprail-pop {
-    max-width: calc(100vw - var(--tnx-maprail-btn) - 24px);
-  }
-  .tn-terminal .tnx-maprail-act { min-height: 34px; }
-  .tn-terminal .tnx-maprail-search { width: auto; flex: 1; min-width: 0; }
+  .tn-insp-rail { --tn-insp-rail-btn: 40px; --tn-insp-rail-glyph: 20px; }
+  .tn-insp-rail-rule { width: 24px; }
   /* iOS zooms the page when a focused input is under 16px. Carried over from the
-     deleted `.tnx-stage-search` mobile rule, where it was load-bearing. */
-  .tn-terminal .tnx-maprail-search .tn-mapsearch-input {
-    font-size: var(--tnx-fs-lg); min-height: 44px;
-  }
+     stage rail's mobile rule, where it was load-bearing. */
+  .tn-insp-search .tn-mapsearch-input { font-size: var(--tnx-fs-lg); min-height: 44px; }
+  .tn-insp-tool-close { width: 34px; height: 34px; }
+  .tn-insp-proj, .tn-insp-choice { min-height: 40px; }
 }
-/* ── end stage rail ──────────────────────────────── */
+/* ── end inspector tool rail ─────────────────────── */
 
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
 /* ── The drawing banner ───────────────────────────────────────────────────
    Over the map for as long as a draw gesture runs. TOP-CENTRE is the one free
    band on this stage: the header owns the row above it, the rail FAB sits at the
-   same height on the LEFT margin, the map rail is centred on the right edge, and
-   the toast (z 1200) is bottom-centre.
+   same height on the LEFT margin, and the toast (z 1200) is bottom-centre. The map
+   rail that used to be centred on the right edge is gone — the map's own controls
+   are on the Inspector panel's tool rail now — so the right edge is plain map.
 
    CENTRED ON THE MAP STAGE, NOT ON THE VIEWPORT. `left`, `top` and `max-width` are
    overwritten inline by components/shell/DrawBanner.tsx from the stage's measured
@@ -7474,17 +7413,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   border: 1px solid var(--tn-accent);
 }
 .tn-insp-pill-muted { color: var(--tn-text-muted); border-color: var(--tn-srx-edge); }
-.tn-insp-draw {
-  width: 100%; margin-top: 8px; padding: 9px 10px; min-height: 36px; text-align: left;
-  /* A dashed 1.28:1 outline on white is not a box, and this is the only control
-     that creates an area. Dashed still says "nothing here yet"; 3.04:1 says there
-     is a control saying it. */
-  border: 1px dashed var(--tn-srx-edge); border-radius: 8px; background: none;
-  font: inherit; font-size: var(--tnx-fs); font-weight: 600;
-  color: var(--tn-accent); cursor: pointer;
-}
-.tn-insp-draw:hover { background: var(--tn-accent-soft); }
-.tn-insp-draw:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+/* `.tn-insp-draw` WAS HERE — the dashed "＋ Draw an area" button under the areas
+   list. Deleted with the button on 2026-09-16: the gesture moved onto the Inspector
+   tool rail (`.tn-insp-rail-btn-draw` at the end of this sheet), and the two
+   entry points left on the Sources tab went with it rather than being duplicated.
+   Its comment argued for a 3.04:1 dashed edge over a 1.28:1 one, which is worth
+   keeping in mind if a dashed "nothing here yet" control is ever wanted again —
+   not worth keeping as CSS for markup that no longer exists. */
 /* Inert by design — it is a labelled COMING SOON card, not a control — so it keeps
    the softer edge. Nothing here is clickable, so 1.4.11 does not apply and a 3:1
    box would advertise an affordance the card does not have. */

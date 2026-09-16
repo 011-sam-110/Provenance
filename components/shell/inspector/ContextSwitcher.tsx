@@ -46,7 +46,6 @@ import { areaSummary, editingArea, inspectorStore, useInspector } from "@/lib/sh
 import { clearAoi } from "@/lib/map/aoi";
 import { useScope } from "@/lib/shell/scope";
 import { clearAreaLabel, needsClearArea } from "@/lib/shell/clearArea";
-import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 
 /**
  * The ✕, drawn rather than typed.
@@ -112,27 +111,6 @@ export default function ContextSwitcher() {
   };
 
   const showClear = needsClearArea(state.editing, scope.mode);
-  const capped = atAreaCap(state.areas.length);
-
-  /**
-   * Start a draw from the menu.
-   *
-   * THE MENU CLOSES FIRST, and that ordering is the whole point of doing it here
-   * rather than inline. The gesture's next event is a click on the map, and that
-   * click is the first VERTEX — a popover still open over the stage would swallow
-   * it, and the user would be left placing a point that never landed.
-   *
-   * Focus goes back to the trigger rather than nowhere. `beginGesture` binds its
-   * own document-level Enter handler and preventDefaults it precisely so a focused
-   * button cannot turn "finish the shape" into "arm another one" (see the note in
-   * lib/map/aoi.ts), so this is safe and it keeps a keyboard user somewhere real.
-   */
-  const draw = () => {
-    if (capped) return;
-    setOpen(false);
-    triggerRef.current?.focus();
-    drawArea(state.areas.length);
-  };
 
   /**
    * Both halves, because both can be true at once and a control that undid one
@@ -244,40 +222,17 @@ export default function ContextSwitcher() {
             </button>
           ))}
 
-          {/* ── AN ACTION, NOT A CONTEXT ─────────────────────────────────────
-              `role="menuitem"` with NO `aria-checked`, below a real separator.
-              Every row above is a `menuitemradio` because it SELECTS which
-              context the rail writes to; this one performs a gesture and closes.
-              Leaving it in the radio group would tell a screen reader the group
-              has an unchecked option that can never be checked, which misreports
-              every other row as well as this one.
+          {/* THE "DRAW AN AREA" ROW IS GONE FROM THIS MENU (2026-09-16), together
+              with the button that used to sit under the areas list. Both were the
+              only doors into the gesture from this tab; Sam moved it to the
+              Inspector rail's toolbar, beside the search box and the map settings.
 
-              WHY IT IS HERE AT ALL: opening this menu to point the rail at an
-              area, finding you have none, and then having to close it and hunt
-              for the dashed button further down the rail is the gap. The area
-              you want to edit does not exist yet, and this is where you looked.
-
-              AT THE CAP IT REFUSES AND SAYS WHY, in the row itself. It keeps
-              `aria-disabled` rather than the `disabled` attribute so it stays
-              focusable — WAI-APG's menu pattern keeps disabled items in the
-              roving order, and `onListKey` walks `.tn-ctxbar-opt`, so a truly
-              disabled button would be a hole the arrow keys stall in. */}
-          <div role="separator" className="tn-ctxbar-sep" />
-          <button
-            type="button"
-            role="menuitem"
-            className="tn-ctxbar-opt tn-ctxbar-draw"
-            aria-disabled={capped || undefined}
-            onClick={draw}
-          >
-            <span className="tn-ctxbar-glyph" aria-hidden>＋</span>
-            <span className="tn-insp-main">
-              <span className="tn-insp-label">Draw an area</span>
-              <span className="tn-insp-sub">
-                {capped ? AREA_CAP_MESSAGE : "Click the map to place its corners"}
-              </span>
-            </span>
-          </button>
+              It was added here for a real gap — opening this menu to point the rail
+              at an area, finding you have none, and having to close it and hunt for
+              a dashed button further down the rail. That gap is why the rail button
+              now sits at the top of the panel the switcher is on, permanently, with
+              a label on hover: the same distance to travel, and no longer something
+              you can only reach by opening a menu to look for it. */}
 
           {/* Stated rather than left to be inferred from the map. It is the one thing
               about this model that is not visible from the control itself, and the

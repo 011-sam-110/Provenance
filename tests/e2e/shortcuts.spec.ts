@@ -56,12 +56,17 @@ test("A SEMICOLON TYPED INTO A BOX IS A SEMICOLON", async ({ page }) => {
 });
 
 test("Ctrl+Q arms the draw tool, and the banner is what says so", async ({ page }) => {
-  // THE RAIL'S DRAW GROUP IS GONE, so this key no longer opens a flyout — it only
+  // THE RAIL'S DRAW GROUP IS GONE, so this key no longer opens a panel — it only
   // arms. That makes the assertion better rather than weaker: the flyout could
   // always be closed mid-gesture by opening another group, which is precisely why
   // DrawBanner exists (see its header). The banner is mounted from ConsoleShell and
   // keys off the draw store alone, so it is the one thing that cannot be dismissed
   // while the map is still swallowing clicks, and it is now the only narration.
+  //
+  // THE DRAW BUTTON ITSELF IS ELSEWHERE NOW — on the Inspector panel's tool rail
+  // (components/shell/inspector/InspectorRail.tsx) — and it arms the same gesture
+  // without opening anything either. tests/e2e/inspector-rail.spec.ts covers that
+  // door; this case is about the key.
   //
   // TWO OBSERVABLES, DELIBERATELY. The banner proves the app believes a draw is
   // running; the crosshair proves the MAP does. A shortcut that set the store and
@@ -77,9 +82,13 @@ test("Ctrl+Q arms the draw tool, and the banner is what says so", async ({ page 
   await expect(banner.getByRole("button", { name: /Cancel/ })).toBeVisible();
   await expect(page.locator(".map-canvas canvas").first()).toHaveCSS("cursor", "crosshair");
 
-  // And no flyout opened. The rail has two groups now; a Draw panel appearing would
-  // mean the group came back rather than that the shortcut worked.
+  // And nothing opened anywhere: no panel on the map's edge (the stage rail is
+  // deleted), and the Inspector rail not even mounted — Ctrl+Q arms the map, it does
+  // not open the Sources rail or a tool on it. The Draw button there is an action
+  // rather than a tool, and it shows its own armed state only when the panel is on
+  // screen to show it with.
   await expect(page.locator(".tnx-maprail-pop-draw")).toHaveCount(0);
+  await expect(page.locator("#inspector-rail")).toHaveCount(0);
 
   // Escape abandons the ring, and the banner goes with it — the gesture ending is
   // the only thing that can remove it.

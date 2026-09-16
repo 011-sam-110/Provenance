@@ -26,7 +26,7 @@
 //
 // ── WHY MODULE STATE + LISTENER SET, NOT REACT CONTEXT ───────────────────────
 // Same shape as every other shell store in this tree — `activePreset.ts`,
-// `mapRail.ts`, `lib/shell/ui.ts` — module-level state, a listener `Set`,
+// `inspectorRail.ts`, `lib/shell/ui.ts` — module-level state, a listener `Set`,
 // `useSyncExternalStore` for the React binding. `setHidden`/`setQuick` have to
 // be callable from whatever surface toggles them, which is the same reason
 // those other stores aren't context.
@@ -109,7 +109,7 @@ export const sceneChromeStore = {
 
   /** hidden=true adds typeId to the hidden set, false removes it. No-ops (no
    *  emit) if already in that state — the same "a redundant write must not
-   *  wake every subscriber" contract `mapRail.ts`'s `set()` keeps. */
+   *  wake every subscriber" contract `inspectorRail.ts`'s `set()` keeps. */
   setHidden(sceneId: string, typeId: string, hidden: boolean): void {
     const current = chrome[sceneId] ?? DEFAULT_SCENE_CHROME;
     const isHidden = current.hidden.includes(typeId);

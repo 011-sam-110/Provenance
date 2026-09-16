@@ -3,10 +3,10 @@
 // WHY THE COPY LEFT THE COMPONENT. vitest here is `environment: "node"` over
 // `tests/unit/**/*.test.ts` and no React testing library is installed, so anything
 // written inside components/shell/DrawBanner.tsx cannot be tested at all. The
-// banner is the only on-screen narration of a live draw once the map rail's flyout
-// is closed, and its wording carries decisions a later edit would quietly undo —
-// see `steps` below. Same split, and the same reason, as lib/shell/devnotice.ts and
-// lib/console/mapRail.ts.
+// banner is the only on-screen narration of a live draw — the rail's Draw button has
+// no panel to show a count in, and its wording carries decisions a later edit would
+// quietly undo — see `steps` below. Same split, and the same reason, as
+// lib/shell/devnotice.ts and lib/console/inspectorRail.ts.
 //
 // WHY THE GEOMETRY IS HERE TOO. `placeBanner` is the arithmetic that stops the pill
 // sitting off-centre over the map; it is the half of the fix most likely to be got

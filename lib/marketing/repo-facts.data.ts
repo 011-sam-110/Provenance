@@ -13,10 +13,14 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-15 with `npx vitest list` on the sources-inspector feature branch.
+ * Measured 2026-09-16 with `npx vitest list`, rebased onto main at 6d3d1b1. Two
+ * changes met here: the news route (#248) added its own cases, and this branch split
+ * tests/unit/map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts
+ * when the stage rail was retired — one file became two, which is the whole of the
+ * move from 387 to 388.
  */
 export const UNIT_TESTS = {
-  cases: 3986,
-  files: 387,
+  cases: 3988,
+  files: 388,
   measuredAt: "2026-09-16",
 } as const;

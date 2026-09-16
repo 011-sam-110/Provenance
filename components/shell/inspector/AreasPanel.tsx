@@ -1,24 +1,27 @@
 "use client";
-// The areas block — draw one, and see the ones you have drawn.
+// The areas block — the ones you have drawn, and what is armed on them.
 //
 // WAS THE "INSPECTOR" TAB. It is now a block INSIDE the Sources tab, sitting where
-// the presets block used to, and the presets have taken its place as the rail's
-// second tab. Sam asked for the swap and the reason it holds is traffic: drawing an
-// area and then turning sources on for it is one continuous job, and it used to be
-// split across two tabs — draw here, switch there, toggle, switch back to see what
-// the area now says. Presets are a one-tap act you do occasionally, which is what a
-// second tab is for.
+// the presets block used to, for the reason it moved: drawing an area and then
+// turning sources on for it is one continuous job, and it used to be split across
+// two tabs — draw here, switch there, toggle, switch back to see what the area now
+// says.
+//
+// IT NO LONGER STARTS A DRAW. "＋ Draw an area" was this block's last button and it
+// is gone, together with the matching row in the context switcher's menu: Sam moved
+// the gesture onto the Inspector rail's toolbar on 2026-09-16, alongside the search
+// box and the map settings. That makes this block a LIST — the areas, their source
+// counts, their rules — which is what it had become anyway.
 //
 // SOURCES ARE STILL NOT CONFIGURED HERE. The context switcher above the tabs points
 // the rail at an area; the source list below then writes to it. Duplicating a source
 // list in this block would give the user two places to change one thing.
 //
 // A ROW OPENS THE DOSSIER, it does not select. Selecting is the switcher's job now,
-// and detail belongs in the dossier on the right, which already exists at 384px and
-// already handles focus, escape and mobile. See lib/overlay-content.tsx.
+// and detail belongs in the pane on the right, which already exists and already
+// handles focus, escape and mobile. See lib/overlay-content.tsx.
 
 import { areaSummary, useInspector } from "@/lib/shell/inspector";
-import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { overlay } from "@/lib/overlay";
 import RulesPanel from "@/components/shell/inspector/RulesPanel";
 import { useAllRules } from "@/lib/notify/rules";
@@ -29,11 +32,6 @@ export default function AreasPanel() {
   // ONE subscription, counted per row. A hook cannot be called once per area — the
   // list changes length — so the count is derived from the whole set here.
   const rules = useAllRules();
-  // TWO ENTRY POINTS, ONE IMPLEMENTATION. The context switcher's menu can start
-  // the same gesture, and `onFinish` is the part that must not drift between them
-  // — without it a saved area silently becomes a console-wide filter. The whole
-  // rule, and the reason it is load-bearing now, is in lib/shell/drawArea.ts.
-  const capped = atAreaCap(state.areas.length);
 
   return (
     <div className="tn-insp">
@@ -98,26 +96,16 @@ export default function AreasPanel() {
       )}
 
 
-      {/* IT STAYS, even though the context switcher's menu now offers the same
-          action. This one sits directly under the "No areas yet…" empty state,
-          which is where a first-time user is already looking; the menu entry is
-          for someone who opened the switcher to point at an area and found they
-          had none. Discovery and convenience are different jobs.
+      {/* THE DRAW BUTTON LEFT THIS BLOCK ON 2026-09-16, and so did the one inside
+          the context switcher's menu. Sam moved the gesture onto the Inspector
+          rail's own toolbar (components/shell/inspector/InspectorRail.tsx), beside
+          the search box and the map settings — the three map controls he asked to
+          have in one place — and asked for both of this tab's entry points to go
+          rather than be duplicated. What this block still does is list the areas
+          you have and open their dossiers; `drawArea` now has exactly one caller.
 
-          REFUSES AT THE CAP rather than drawing over the oldest area — see
-          atAreaCap. `disabled` and not merely `aria-disabled`, because unlike a
-          menu item this is not inside a composite widget whose roving focus
-          would be broken by skipping it, and the reason is stated in the label
-          itself so the refusal is never a dead-looking click. */}
-      <button
-        type="button"
-        className="tn-insp-draw"
-        onClick={() => drawArea(state.areas.length)}
-        disabled={capped}
-        title={capped ? AREA_CAP_MESSAGE : undefined}
-      >
-        {capped ? `＋ Draw an area — ${AREA_CAP_MESSAGE}` : "＋ Draw an area"}
-      </button>
+          The button was also this block's only connection to lib/shell/drawArea.ts,
+          which is why the imports for it are gone rather than left warm. */}
 
       {/* "Alert me" IS THE CONTROL NOW, not a placeholder pill. It arms against
           whichever context the rail is pointed at — `editing === null` already means
