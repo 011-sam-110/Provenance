@@ -15,6 +15,15 @@ export interface GeocodeResult {
   lon: number;
   /** OSM class/value hint, e.g. "peak", "city", "distillery". */
   type?: string;
+  /**
+   * ISO 3166-1 alpha-2, upper-cased, as Photon reports it.
+   *
+   * Surfaced separately from `name` because the label is LOCALISED - Photon writes
+   * "Normandie", "Deutschland", "Espana" - so matching a country by searching the
+   * label only works if the caller happens to hold the same spelling Photon chose.
+   * A code has one spelling. lib/news/places.ts checks a pinned place against this.
+   */
+  countryCode?: string;
   /** [west, south, east, north] — present only when the feature carries an extent. */
   bbox?: [number, number, number, number];
 }
@@ -88,6 +97,7 @@ export function normalizePhoton(json: unknown, limit = 8): GeocodeResult[] {
       lat,
       lon,
       type: p.osm_value || p.type || p.osm_key || undefined,
+      countryCode: p.countrycode ? p.countrycode.trim().toUpperCase() : undefined,
       bbox: toBbox(p.extent),
     });
     if (out.length >= limit) break;

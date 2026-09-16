@@ -267,10 +267,11 @@ describe("README console figures", () => {
   // lib/console/presets.ts, so one preset is now the layers AND the board that
   // reads them. The README used to have to describe those as two separate
   // features in the same sentence. The count went 7 → 2 on 2026-09-15 when the
-  // five non-Globe/non-Streets boards were retired.
-  it("still describes two presets, matching the preset list", () => {
-    expect(README).toContain("two presets");
-    expect(BUILTIN_PRESETS.length).toBe(2);
+  // five non-Globe/non-Streets boards were retired, and 2 → 3 on 2026-09-16 when
+  // the News board gave the merged headline stream a surface.
+  it("still describes three presets, matching the preset list", () => {
+    expect(README).toContain("three presets");
+    expect(BUILTIN_PRESETS.length).toBe(3);
   });
 });
 

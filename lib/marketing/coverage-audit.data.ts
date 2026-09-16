@@ -329,6 +329,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": ""
   },
   {
+    "id": "news-coverage",
+    "label": "News coverage",
+    "group": "Intel",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-09-16, after AUDIT_MEASURED_AT, so there is no measurement of it to report and a zero here is the honest placeholder rather than a reading. It is also genuinely dormant until the NewsScraper host pushes its first batch. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "ukraineAlerts",
     "label": "Ukraine air-raid alerts",
     "group": "Conflict",
@@ -3316,10 +3328,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 34,
+  "layers": 35,
   "live": 29,
   "partial": 1,
-  "down": 2,
+  "down": 3,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

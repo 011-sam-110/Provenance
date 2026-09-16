@@ -13,14 +13,17 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-16 with `npx vitest list`, rebased onto main at 6d3d1b1 and then
- * with the area-colour feature on top. Three changes met here: the news route (#248)
- * added its own cases; the inspector-rail branch split tests/unit/map-rail.test.ts into
- * inspector-rail.test.ts and view-controls.test.ts when the stage rail was retired
- * (387 -> 388); and the colour picker added tests/unit/area-colors.test.ts (388 -> 389).
+ * Measured 2026-09-16 with `npx vitest list` on feat/area-colours after merging
+ * feat/inspector-tool-rail (which had itself merged origin/main at 184218a). Three
+ * changes met here: the news board (#249) added its own cases and one test file
+ * (signals-news-coverage.test.ts); the inspector-rail branch split
+ * tests/unit/map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts when
+ * the stage rail was retired — one file became two; and the area-colour feature added
+ * tests/unit/area-colors.test.ts. The file count is 390; the case count below is
+ * measured over the merged tree, which is the tree that ships.
  */
 export const UNIT_TESTS = {
-  cases: 4003,
-  files: 389,
+  cases: 4044,
+  files: 390,
   measuredAt: "2026-09-16",
 } as const;

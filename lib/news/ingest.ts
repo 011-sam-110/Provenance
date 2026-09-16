@@ -109,6 +109,92 @@ export interface ScrapedItem {
    * a dateline says where the reporter filed from, not where the event happened.
    */
   placeHints: string[];
+  /**
+   * What the scraper's extraction stage read out of the article body, or null when
+   * it has not run on this story. This is the ONLY field that can put a story on the
+   * map — `placeHints` above cannot, by contract.
+   */
+  event: NewsEvent | null;
+}
+
+/**
+ * A model-extracted event. EVERY FIELD HERE IS A READING OF AN ARTICLE, NOT A FACT
+ * ABOUT THE WORLD, and the map copy has to keep saying so.
+ *
+ * The precedent is GDELT, and it is worth not relearning: a layer that presented
+ * coded article metadata as incidents put "Use of military force, Bristol" on the map
+ * from a story about a TikTok livestream. Nothing was broken — the upstream genuinely
+ * said that. What was wrong was asserting it. So `category` is rendered as "coded as",
+ * `quote` carries the sentence the place was taken from, and the layer is called
+ * coverage rather than events.
+ */
+export interface NewsEvent {
+  /**
+   * The extractor's judgement that the story describes something that happened
+   * somewhere. THE GATE on whether a pin can be drawn at all, so it is read strictly:
+   * see parseEvent.
+   */
+  isPhysical: boolean;
+  /** The extractor's category label. Attributed, never asserted. */
+  category: string | null;
+  /** When the event happened, as opposed to when the story ran. */
+  eventDate: string | null;
+  /** Place name as written in the article, e.g. "Bayeux". */
+  placeName: string | null;
+  /** Containing place, e.g. "Normandy" — disambiguates a name that repeats worldwide. */
+  placeWithin: string | null;
+  /**
+   * ISO 3166-1 alpha-2, as the scraper's own schema check requires. A country NAME is
+   * accepted too and handled separately downstream, but a real row carries "FR".
+   * UNVALIDATED either way — the scraper's country check is unbuilt, so this says what
+   * the model wrote, not what is true.
+   */
+  placeCountry: string | null;
+  /** city / region / facility / … — how precise the place is meant to be. */
+  placeKind: string | null;
+  /**
+   * The sentence the place was read from, VERBATIM. The evidence a reader can check,
+   * and the only article text this app publishes — capped and attributed where it is
+   * rendered (lib/signals/news-coverage.ts).
+   *
+   * The scraper's own checks make this stronger than it looks: where `isPhysical` is
+   * true, its quote and date checks have already passed, so the sentence is verbatim
+   * and `placeName` appears inside it. A row that failed a check arrives with
+   * `isPhysical` false and no place fields at all.
+   */
+  quote: string | null;
+  /**
+   * Other places the story mentions, and the entities in it. Both are UNCHECKED model
+   * output — unlike `placeName` and `quote`, nothing verified them against the article.
+   * They are carried for matching and debugging only, and nothing renders them. Do not
+   * start: the scraper's own contract forbids publishing model-written text.
+   */
+  otherPlaces: string[];
+  keyEntities: string[];
+}
+
+function parseEvent(raw: unknown): NewsEvent | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  return {
+    // `true` OR the number 1, and NOTHING else — not "yes", not "1", not truthy.
+    //
+    // Strict, because this decides whether a pin is drawn. Two values rather than one,
+    // because the scraper holds it in SQLite as an INTEGER: a sender that passes the
+    // column straight through ships `1`, and reading that as false would silently
+    // publish an empty layer with every other check green. Two spellings of the same
+    // boolean is a much smaller risk than a whole feature failing quietly.
+    isPhysical: r.isPhysical === true || r.isPhysical === 1,
+    category: str(r.category),
+    eventDate: str(r.eventDate),
+    placeName: str(r.placeName),
+    placeWithin: str(r.placeWithin),
+    placeCountry: str(r.placeCountry),
+    placeKind: str(r.placeKind),
+    quote: str(r.quote),
+    otherPlaces: strList(r.otherPlaces, 12),
+    keyEntities: strList(r.keyEntities, 12),
+  };
 }
 
 export interface Snapshot {
@@ -292,6 +378,7 @@ function parseItem(raw: unknown): ScrapedItem | null {
     text,
     keywords: strList(r.keywords),
     placeHints: strList(r.placeHints, 32),
+    event: parseEvent(r.event),
   };
 }
 

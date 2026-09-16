@@ -343,6 +343,24 @@ const EXPLAINERS: LayerExplainer[] = [
 
   // --- Intel / conflict -----------------------------------------------------
   {
+    id: "news-coverage",
+    whatItShows: "A place that stories pushed by the NewsScraper host were read as being about, with the outlets carrying them and the newest headline. One pin per place, not per story, so five outlets covering one earthquake read as corroboration rather than as five events.",
+    method: "The scraper fetches each outlet's front pages hourly and a language model reads a place name, a category and the sentence it took them from out of the article body. This app geocodes that NAME through Photon (OpenStreetMap) and refuses any match whose own label does not mention the country the article named. Stories sharing a coordinate to 2 decimal places (≈1.1 km) become one pin.",
+    confidence: "modelled",
+    coverage: "Whatever the scraper reads: Reuters, BBC, The Guardian, PBS NewsHour and The New York Times. World and top-news sections, not full archives. Empty until the host pushes, and empty again after this app restarts.",
+    limitations: [
+      "The place is a MODEL'S READING of an article, not a verified location. Nothing here checked that the event happened, that it happened there, or that the model read the right sentence. The sentence it used is published on the pin so you can judge it yourself.",
+      "The geocoder is a second guess on top of the first. It matches a name, and names repeat: the country check catches a Springfield in the wrong country and cannot catch one in the right country. What it matched is published as `resolvedTo` — where that disagrees with what the article said, trust neither.",
+      "This is COVERAGE, and coverage follows newsrooms. Five English-language outlets decide what is on this map, so an unreported event is absent and a heavily-covered one is prominent. Absence of a pin is not absence of the thing.",
+      "The story count is attention, not severity. A royal visit and a massacre both count one story per outlet.",
+      "A story with no place, or one the geocoder refused, is not dropped from the news feed — it simply does not appear here. The map is a subset of the rail, never the whole of it.",
+      "Categories come from the model and are shown as what it coded, never as a finding.",
+      "The two ways this is known to go wrong are not geocoding faults, so a correct coordinate does not rule them out: a line saying where someone SPOKE TO A REPORTER read as the place the event happened, and a SCHEDULED hearing read as one that already has. Each ran at roughly 1% to 1.5% of pinnable stories in the scraper's own review.",
+      "Pins are OFF until a labelled sample passes an accuracy gate, so an empty layer here usually means nobody has measured it yet rather than that the world is quiet.",
+      "Place names are resolved at most 12 per cycle to stay a good guest on a community geocoder, so after a backfill the map fills in over several hours rather than at once.",
+    ],
+  },
+  {
     id: "conflict",
     whatItShows: "How much conflict-coded news reporting mentions each COUNTRY — GDELT's machine coder tagged articles as assault, armed clash or mass violence and filed them in the last four hours. It is a map of reporting volume, not of confirmed incidents, and the marker sits on a national centroid.",
     method: "GDELT codes global news into CAMEO event records, each with an action location. We keep roots 18/19/20 at QuadClass 4 (material conflict), require at least two source documents AND at least one TYPED actor, collapse GDELT's repeated actor-pair rows, then total the remaining articles PER COUNTRY. The dot is sized by that total.",

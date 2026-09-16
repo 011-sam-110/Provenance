@@ -115,6 +115,16 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
  * providers. Shown as multiple provider links + a "derived estimate" flag.
  */
 export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
+  // News coverage is composite because a pin is two upstreams stacked: a publisher
+  // wrote the story and OpenStreetMap supplied the coordinate for the name a model
+  // read out of it. There is no single page that stands behind a pin, and the
+  // "derived estimate" flag a composite carries is exactly the right claim about a
+  // LOCATION arrived at that way. Individual features carry a `link` to the article,
+  // which is preferred over this fallback wherever one exists.
+  "news-coverage": [
+    { label: "Photon (Komoot)", url: "https://photon.komoot.io/" },
+    { label: "OpenStreetMap", url: "https://www.openstreetmap.org/copyright" },
+  ],
   instability: [
     { label: "ACLED", url: "https://acleddata.com/" },
     { label: "WFP HungerMap", url: "https://hungermap.wfp.org/" },

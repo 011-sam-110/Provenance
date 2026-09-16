@@ -153,22 +153,26 @@ obligations and are not satisfied by the licence.
   registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
   Tile rows are POSITIONAL and read by index — never add a column on one side only; see
   `TILE_VERSION` and the parity test.
-- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**34 registered, 33 of them map layers**).
+- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**35 registered, 34 of them map layers**).
   A source may set `dataOnly: true` (see `types.ts`) meaning registered + fetchable but NOT a
   map layer: no catalog entry, no rail row, no pin, unreachable from monitors/variants/`?sig=`.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
   `SIGNALS`. Importing `SIGNALS` into something that draws or lists layers silently turns every
   data-only source back into a layer. Today the only one is the Country Instability Index.
-- `lib/console/*` — widget registry, presets (**2 presets** in `presets.ts`), store, share (`?c=` layout URL).
+- `lib/console/*` — widget registry, presets (**3 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
-  them, and the Sources rail's tiles and the ⌘K Profiles list drive the same two. There is
+  them, and the Sources rail's tiles and the ⌘K Profiles list drive the same three. There is
   no `lib/monitors.ts` any more — its six layer-only "monitors" merged in here — and the
   five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on
   2026-09-15 on request, leaving Globe (empty by design) and Streets (the camera wall).
+  **News was added on 2026-09-16** and is the third: the merged headline stream plus the
+  `news-coverage` map layer built from it. It is NOT a reinstatement of Intel — Intel was
+  four GDELT-and-UN layers in a bottom strip; this is the `/api/news` stream, which until
+  then had no surface in the console at all.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
-- **The console top bar is exactly two board tabs, and nothing drops down from it.**
+- **The console top bar is exactly three board tabs, and nothing drops down from it.**
   `components/terminal/TerminalHeader.tsx` renders the boards as tabs that call
   `applyPreset` on click; the Apple-style hover panel that expanded the bar downward
   (`NavPanel.tsx`, `lib/console/navPanel.ts`, `docs/CONSOLE_NAV.md`) was deleted on
@@ -229,12 +233,12 @@ Re-measure before putting a number in a README, a CV or a PR description.
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
 | Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
-| Signal layers | **34 registered (33 map layers + 1 data-only); 32 returning data, 2 empty** (2026-09-08) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
-| Console presets | 2 (2026-09-15) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "two presets"). Globe and Streets are the two survivors; the five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on 2026-09-15 on request, together with the Apple-style hover nav panel. Globe is deliberately empty; Streets is the camera wall. |
+| Signal layers | **35 registered (34 map layers + 1 data-only); 32 returning data, 2 empty, 1 unmeasured** (2026-09-16) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. The unmeasured one is `news-coverage`, registered 2026-09-16: it publishes nothing until the NewsScraper host pushes its first batch, and it has never been run against production, so `lib/marketing/coverage-audit.data.ts` carries a zero row saying exactly that — re-run the breakdown after the next deploy to replace it. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
+| Console presets | 3 (2026-09-16) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "three presets"). Globe, News and Streets. The five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on 2026-09-15 on request, together with the Apple-style hover nav panel; News was added on 2026-09-16 to give the merged headline stream a surface. Globe is deliberately empty; Streets is the camera wall. |
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Widget types | 65 registered (2026-09-08) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`. NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
-| Unit tests | **3,952 cases / 386 files (2026-09-15)** | `npx vitest list` (collects without running — safe alongside other agents). This row said **1,414 / 215** until today, measured 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
+| Widget types | 66 registered (2026-09-16) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`, and 65 until `signal:news-coverage` registered with its layer on 2026-09-16 (every signal source mints a widget). NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
+| Unit tests | **4,044 cases / 390 files (2026-09-16)** | `npx vitest list` (collects without running — safe alongside other agents). Measured again on feat/area-colours after merging feat/inspector-tool-rail, which is the tree that ships: the row said 4,029 / 389 earlier the same day, before the area-colour picker added area-colors.test.ts. This row said **1,414 / 215** until 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
