@@ -111,9 +111,9 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     label: "Pushed newsroom stories (NewsScraper host)",
     env: ["NEWS_INGEST_SECRET"],
     degrades:
-      "The news rail still renders, keylessly, from the six RSS feeds and Liveuamap. The secret opens /api/news/ingest so the scraper host can push Reuters and PBS — neither of which publishes a usable feed — plus article text for clustering and enough history for velocity. Without it that endpoint answers 404 and nothing else changes.",
+      "The news rail still renders, keylessly, from the six RSS feeds and Liveuamap. The secret opens /api/news/ingest so the scraper host can push Reuters and PBS, neither of which publishes a usable feed, plus article text for clustering and enough history for velocity. Without it that endpoint answers 404 and nothing else changes.",
     obtain:
-      "Self-issued: a random string of 32 characters or more, set identically here and in the scraper host's newsfeed.env. It is a shared HMAC secret, not a third-party credential — nobody issues it and nothing can recover it, so rotating it means changing both ends together.",
+      "Self-issued: a random string of 32 characters or more, set identically here and in the scraper host's newsfeed.env. It is a shared HMAC secret rather than a third-party credential. Nobody issues it and nothing can recover it, so rotating it means changing both ends together.",
   },
   {
     kind: "enhancement",
