@@ -7542,12 +7542,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    heading is `.tn-src-sec-head`, so it needs the same air above it that
    `.tn-src-sec` gives the source sections. */
 .tn-insp { margin-top: 12px; }
-/* THE AREAS ROW IS A BOX WITH TWO CONTROLS, not a button — the pencil renamed it.
-   Two buttons cannot nest, so the row carries the layout and `.tn-insp-row-main` is
-   the big target inside it. The row keeps the hover and the EDITING fill, because
-   those are about the row. */
+/* THE AREAS ROW IS A BOX WITH THREE CONTROLS, not a button — the pencil renamed it and
+   the swatch recoloured it. Two buttons cannot nest, so the row carries the layout and
+   `.tn-insp-row-main` is the big target inside it. The row keeps the hover and the
+   EDITING fill, because those are about the row. */
 .tn-insp-row {
-  display: flex; align-items: center; gap: 4px;
+  position: relative;
+  display: flex; align-items: center; gap: 2px;
   padding: 3px 6px 3px 0; margin: 0 -6px;
   border-radius: 8px;
 }
@@ -7559,6 +7560,75 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   font: inherit; text-align: left; color: inherit; cursor: pointer;
 }
 .tn-insp-row-main:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
+
+/* ── The colour swatch, and the palette it opens ───────────────────────────────
+   Sam: "alongside the rename icon, but be a circle of colour. The user can click the
+   colour and change it." So it is a circle of the area's own colour, the size of the
+   pencil beside it, and it IS the button.
+   
+   `position: relative` ON THE ROW (not here) is the popover's anchor: anchored to the
+   swatch, a 172px panel would open under the button that was just clicked. */
+.tn-insp-row-color {
+  flex: none; width: 30px; height: 30px;
+  display: grid; place-items: center;
+  background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+}
+.tn-insp-row-color::before {
+  content: "";
+  width: 17px; height: 17px; border-radius: 50%;
+  background: var(--c);
+  /* A hairline of ink, because several palette colours are light enough to vanish
+     against the panel on their own. */
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
+  transition: transform 0.12s ease;
+}
+.tn-insp-row-color:hover { background: var(--tn-surface-2); border-color: var(--tn-border); }
+.tn-insp-row-color:hover::before { transform: scale(1.12); }
+.tn-insp-row-color[data-open] { background: var(--tn-surface-2); border-color: var(--tn-accent); }
+.tn-insp-row-color:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+
+.tn-insp-color-pop {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 6;
+  width: 172px; padding: 10px;
+  border-radius: 10px;
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong);
+  box-shadow: var(--tn-shadow);
+}
+.tn-insp-color-head {
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--tn-text-faint);
+}
+.tn-insp-color-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px;
+  margin: 8px 0;
+}
+.tn-insp-color-dot {
+  aspect-ratio: 1; width: 100%; padding: 0;
+  border: 2px solid transparent; border-radius: 50%;
+  background: var(--c); cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+.tn-insp-color-dot:hover { border-color: var(--tn-border-strong); }
+.tn-insp-color-dot:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+/* THE CURRENT ONE IS RINGED, and the ring is drawn OUTSIDE the dot with a gap of panel
+   between them — a border on the circle itself reads as a ninth colour rather than as
+   a selection. */
+.tn-insp-color-dot[aria-checked="true"] {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18), 0 0 0 2px var(--tn-surface-solid),
+    0 0 0 4px var(--tn-accent);
+}
+.tn-insp-color-custom {
+  display: flex; align-items: center; gap: 8px;
+  padding-top: 8px; border-top: 1px solid var(--tn-border);
+  font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); cursor: pointer;
+}
+.tn-insp-color-custom input[type="color"] {
+  width: 32px; height: 22px; flex: none; padding: 0;
+  border: 1px solid var(--tn-border-strong); border-radius: 6px;
+  background: none; cursor: pointer;
+}
+.tn-insp-color-custom:hover { color: var(--tn-text); }
 /* The pencil. ALWAYS VISIBLE, never a hover reveal — the same rule the ＋ on a source
    row and the rail's own buttons follow, and on a touch screen a hover reveal is a
    control that does not exist. */

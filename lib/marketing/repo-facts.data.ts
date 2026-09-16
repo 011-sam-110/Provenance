@@ -14,20 +14,23 @@
  * be checked cheaply.
  *
  * Measured 2026-09-16 with `npx vitest list` on feat/news-depth after merging
- * origin/main at 05487bf.
+ * origin/main at f3771d0, which is the tree that ships. Four changes have met here
+ * across the day: the news board (#249), the inspector rail (#250, which split
+ * map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts), the area
+ * colour picker (#252, which added area-colors.test.ts) and this branch, which added
+ * news-rdf-feed.test.ts.
  *
- * WATCH THE FILE COUNT ACROSS A MERGE, BECAUSE GIT WILL NOT. Two branches arrived at
- * `files: 389` from 388 by adding a different file each — the inspector rail (#250)
- * split map-rail.test.ts into inspector-rail.test.ts and view-controls.test.ts, and
- * this branch added news-rdf-feed.test.ts. Identical text on both sides, so the line
- * merged cleanly and silently, and the merged tree holds 390. Only `cases` conflicted,
- * which is the only reason anyone looked. Re-measure after a merge even when nothing
- * asked you to: the guard catches a stale `files`, but it cannot catch a stale
- * `cases`, and neither can catch a number that two branches agreed on and both got
- * wrong.
+ * WATCH THE FILE COUNT ACROSS A MERGE, BECAUSE GIT WILL NOT. This line has now been
+ * wrong twice in one day for the same reason: two branches each add one test file, both
+ * write the same new total, the text is identical on both sides, and git merges it
+ * silently while the merged tree holds one more. Only `cases` differed, so only `cases`
+ * conflicted — which is the only reason anyone looked at `files` at all. After ANY merge
+ * that touches this file, re-measure both numbers on the merged tree. The guard catches
+ * a `files` that is stale against disk, but nothing catches a `cases` that is merely
+ * out of date, and nothing catches a number two branches agreed on and both got wrong.
  */
 export const UNIT_TESTS = {
-  cases: 4034,
-  files: 390,
+  cases: 4049,
+  files: 391,
   measuredAt: "2026-09-16",
 } as const;

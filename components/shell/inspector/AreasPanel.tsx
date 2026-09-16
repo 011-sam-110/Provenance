@@ -36,7 +36,15 @@ import { AREA_CAP_MESSAGE, atAreaCap, drawArea } from "@/lib/shell/drawArea";
 import { useAoiDraw } from "@/lib/map/aoi";
 import { overlay } from "@/lib/overlay";
 import { PencilGlyph } from "@/components/shell/inspector/ToolIcons";
+import AreaColorPicker from "@/components/shell/inspector/AreaColorPicker";
 import { useAllRules } from "@/lib/notify/rules";
+
+/**
+ * The colour popover's id. ONE id, not one per area: only one picker is open at a time
+ * (see the `colouring` state), so a page can never hold two elements carrying it — and
+ * an id that varied per row would exist only to be referenced once.
+ */
+const AREA_COLOR_POP_ID = "tn-area-color-pop";
 
 /**
  * How long an area name may be. Not a database limit — a LAYOUT one.
@@ -62,10 +70,19 @@ export default function AreasPanel() {
   // decide what committing it means.
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  // ...and which row's colour picker is open. Same one-at-a-time rule, and the two
+  // close each other: a row cannot be renamed and recoloured at once.
+  const [colouring, setColouring] = useState<string | null>(null);
 
   const startRename = (id: string, label: string) => {
     setDraft(label);
+    setColouring(null);
     setRenaming(id);
+  };
+
+  const startColouring = (id: string) => {
+    setRenaming(null);
+    setColouring((open) => (open === id ? null : id));
   };
 
   /**
@@ -112,10 +129,10 @@ export default function AreasPanel() {
             {renaming === a.id ? (
               <input
                 className="tn-insp-rename"
-                // THE RAIL'S ESCAPE HANDLER STANDS DOWN FOR THIS, and the attribute
-                // is how it knows — see the ladder in InspectorRail.tsx. Escape in a
-                // field being edited means "put it back", not "close the panel".
-                data-area-rename=""
+                // THE RAIL'S ESCAPE HANDLER STANDS DOWN FOR THIS, and the attribute is
+                // how it knows — see the ladder in InspectorRail.tsx. Escape in a field
+                // being edited means "put it back", not "close the panel".
+                data-owns-escape=""
                 value={draft}
                 autoFocus
                 maxLength={MAX_NAME}
@@ -155,7 +172,12 @@ export default function AreasPanel() {
                     })
                   }
                 >
-                  <span className="tn-insp-glyph" aria-hidden>▣</span>
+                  {/* THE ROW'S MARK WEARS THE AREA'S COLOUR, which is what ties the
+                      list to the map: this is the same colour as the ring drawn round
+                      the area, so "which one is that?" is answered without reading a
+                      name. It was the console accent for every row before areas could
+                      differ. */}
+                  <span className="tn-insp-glyph" aria-hidden style={{ color: a.color }}>▣</span>
                   <span className="tn-insp-main">
                     <span className="tn-insp-label">{a.label}</span>
                     <span className="tn-insp-sub">{areaSummary(a)}</span>
@@ -174,11 +196,28 @@ export default function AreasPanel() {
                     </span>
                   ) : null}
                 </button>
-                {/* ALWAYS VISIBLE, never a hover reveal — the same rule the ＋ on a
-                    source row and the rail's own buttons follow. It is also the only
-                    way to rename, so hiding it until the pointer arrives would put the
-                    product's one naming control behind a gesture that a touch screen
-                    does not have. */}
+                {/* THE COLOUR SWATCH, beside the pencil as Sam asked. It shows what the
+                    area is drawn in on the map, and opens the palette.
+
+                    BOTH CONTROLS ARE ALWAYS VISIBLE, never hover reveals — the same
+                    rule the ＋ on a source row and the rail's own buttons follow, and on
+                    a touch screen a hover reveal is a control that does not exist. */}
+                <button
+                  type="button"
+                  className="tn-insp-row-color"
+                  data-open={colouring === a.id ? "" : undefined}
+                  style={{ ["--c" as string]: a.color }}
+                  aria-label={`Colour for ${a.label}`}
+                  // `aria-expanded` + `aria-controls`, NOT `aria-haspopup`. The popover
+                  // is role="group" (see AreaColorPicker's header for why it is not a
+                  // dialog), and aria-haspopup has no value that means "a group": its
+                  // menu/dialog/listbox/tree/grid set would each promise the user a
+                  // widget this is not.
+                  aria-controls={colouring === a.id ? AREA_COLOR_POP_ID : undefined}
+                  aria-expanded={colouring === a.id}
+                  title="Change this area's colour"
+                  onClick={() => startColouring(a.id)}
+                />
                 <button
                   type="button"
                   className="tn-insp-row-edit"
@@ -190,6 +229,14 @@ export default function AreasPanel() {
                 </button>
               </>
             )}
+            {colouring === a.id ? (
+              <AreaColorPicker
+                id={AREA_COLOR_POP_ID}
+                area={a}
+                onPick={(hex) => inspectorStore.setColor(a.id, hex)}
+                onClose={() => setColouring(null)}
+              />
+            ) : null}
           </div>
         ))
       )}
