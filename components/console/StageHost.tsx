@@ -6,6 +6,8 @@ import { viewModeStore } from "@/lib/shell/viewMode";
 import { useShellLayout } from "@/lib/console/store";
 import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
+import Hud from "@/components/hud/Hud";
+import IssOrbit from "@/components/console/IssOrbit";
 
 // The map is the product's centre stage, so give it a real loading state. It used
 // to fall back to `null`, which meant any failure to mount rendered a silent grey
@@ -35,5 +37,16 @@ export default function StageHost({ stage }: { stage: StageId }) {
   if (focused) return <WidgetDetail instance={focused} />;
   // The old full-screen "clock" stage is retired (the world clock is an ambient map
   // overlay now); a persisted clock stage falls back to the map.
-  return <WorldMap />;
+  // The map plus its two opt-in overlays, mounted as SIBLINGS: WorldMap fills
+  // the stage cell (`.tn-cw-stage` is the positioned ancestor both overlays
+  // anchor inside). Hud renders null while its Map-settings pref is off;
+  // IssOrbit renders null ALWAYS — it exists to drive the camera while the
+  // ISS-orbit pref is on. A focused widget unmounts all three together.
+  return (
+    <>
+      <WorldMap />
+      <Hud />
+      <IssOrbit />
+    </>
+  );
 }

@@ -1,0 +1,314 @@
+/* The HUD + split-flap skin, scoped to the /demo-hud surface (CSS module).
+ *
+ * CALM LIGHT IDENTITY, not GEV's dark ops look: every colour is an existing
+ * --tn-* token from app/globals.css, the one typeface is the repo's Inter
+ * (--tn-mono / --tn-sans both resolve to it), tabular numerals come from
+ * font-variant-numeric, and there is no glow anywhere — depth is a hairline
+ * seam and the repo's own soft shadows.
+ *
+ * The flip glyphs are PSEUDO-ELEMENTS driven by data attributes (data-from /
+ * data-to) on each cell, so the cell's real text node always carries the truth
+ * and is never moved; SplitFlap.tsx is the only writer of those attributes.
+ */
+
+/* ── Overlay root ─────────────────────────────────────────────────────────── */
+
+.hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 40;
+  pointer-events: none; /* the map underneath keeps every gesture */
+  font-family: var(--tn-sans);
+  color: var(--tn-text);
+  background: var(--tn-surface);
+  border: 1px solid var(--tn-border);
+  border-radius: 10px;
+  box-shadow: var(--tn-shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px 12px;
+  max-width: calc(100vw - 28px);
+}
+
+/* Opacity is driven by the hudStore preference on the element's inline style;
+   nothing here re-sets it. */
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.blockTitle {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tn-text-faint);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chips {
+  display: flex;
+  gap: 4px;
+}
+
+.chip {
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--tn-accent-soft);
+  color: var(--tn-accent-strong);
+  border: 1px solid var(--tn-border);
+}
+
+/* Corner brackets — four quiet L marks, no glow. */
+.corner {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid var(--tn-accent);
+  pointer-events: none;
+}
+
+.corner[data-corner="tl"] { top: 3px; left: 3px; border-top-width: 2px; border-left-width: 2px; }
+.corner[data-corner="tr"] { top: 3px; right: 3px; border-top-width: 2px; border-right-width: 2px; }
+.corner[data-corner="bl"] { bottom: 3px; left: 3px; border-bottom-width: 2px; border-left-width: 2px; }
+.corner[data-corner="br"] { bottom: 3px; right: 3px; border-bottom-width: 2px; border-right-width: 2px; }
+
+/* ── Split-flap readout ───────────────────────────────────────────────────── */
+
+.flap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+/* The truth, announced. Visually hidden; aria-live rides on this span so a
+   screen reader hears "Cameras online: 19,112" once per change, never per flap. */
+.announce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.label {
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--tn-text-faint);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.board {
+  display: inline-flex;
+  gap: 1px;
+  padding: 2px 3px;
+  background: var(--tn-surface-2);
+  border: 1px solid var(--tn-border);
+  border-radius: 6px;
+  font-family: var(--tn-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+/* One column. The REAL text node is transparent — it exists to hold the truth
+   and to size the column (1ch, tabular); the visible glyphs are the two
+   pseudo-elements. The horizontal seam is a gradient behind them, so a fold
+   never needs a second element. */
+.cell {
+  position: relative;
+  display: inline-block;
+  width: 1ch;
+  min-width: 1ch;
+  height: 1.35em;
+  line-height: 1.35em;
+  text-align: center;
+  color: transparent;
+  perspective: 220px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 49%,
+    var(--tn-border-strong) 49%,
+    var(--tn-border-strong) 51%,
+    transparent 51%,
+    transparent 100%
+  );
+}
+
+.cell::before,
+.cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--tn-text);
+  background: var(--tn-surface-solid);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: 50% 50%;
+}
+
+/* At rest: the FROM panel is the visible glyph; the TO panel is folded away. */
+.cell::before { content: attr(data-from); transform: rotateX(0deg); }
+.cell::after { content: attr(data-to); transform: rotateX(-90deg); }
+
+/* A flipping column: the outgoing panel folds away while the incoming one folds
+   down into place. Timing comes from data attributes written by SplitFlap —
+   the CSS animation is the whole animation loop there is. */
+.flipCell::before {
+  animation: hudFlapOut var(--flap-dur, 240ms) ease-in var(--flap-delay, 0ms) both;
+}
+
+.flipCell::after {
+  animation: hudFlapIn var(--flap-dur, 240ms) ease-out var(--flap-delay, 0ms) both;
+}
+
+@keyframes hudFlapOut {
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(90deg); }
+}
+
+@keyframes hudFlapIn {
+  from { transform: rotateX(-90deg); }
+  to { transform: rotateX(0deg); }
+}
+
+/* Sizes — font-size drives every 1ch/em dimension above. */
+.sm { font-size: 11px; }
+.md { font-size: 13px; }
+.lg { font-size: 18px; }
+
+/* ── Demo page chrome ─────────────────────────────────────────────────────── */
+
+.demo {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--tn-bg);
+  font-family: var(--tn-sans);
+  color: var(--tn-text);
+}
+
+.demoMap {
+  position: absolute;
+  inset: 0;
+}
+
+.demoStrip {
+  position: absolute;
+  left: 14px;
+  bottom: 22px;
+  z-index: 40;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  padding: 10px 12px;
+  background: var(--tn-surface);
+  border: 1px solid var(--tn-border);
+  border-radius: 10px;
+  box-shadow: var(--tn-shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.demoVariants {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--tn-surface);
+  border: 1px solid var(--tn-border);
+  border-radius: 9px;
+  box-shadow: var(--tn-shadow-sm);
+}
+
+.demoVariantBtn {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--tn-text-faint);
+}
+
+.demoVariantBtn:hover { color: var(--tn-text); }
+.demoVariantBtn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
+
+.demoVariantOn {
+  background: var(--tn-accent-soft);
+  color: var(--tn-accent-strong);
+  border-color: var(--tn-border);
+}
+
+.demoHint {
+  position: absolute;
+  left: 14px;
+  bottom: 0;
+  z-index: 40;
+  font-size: 10.5px;
+  color: var(--tn-text-faint);
+  background: var(--tn-topbar-pill);
+  padding: 3px 8px;
+  border-radius: 6px 6px 0 0;
+  pointer-events: none;
+}
+
+.demoHint kbd {
+  font-family: var(--tn-mono);
+  font-weight: 700;
+  color: var(--tn-text);
+}
+
+.demoLoading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--tn-text-muted);
+  font-size: 13px;
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────────
+   Belt and braces: the JS planner already collapses to instant under
+   prefers-reduced-motion, so the flip class is never applied; this kills any
+   animation that slipped through anyway. */
+
+@media (prefers-reduced-motion: reduce) {
+  .flipCell::before,
+  .flipCell::after {
+    animation: none !important;
+  }
+}
