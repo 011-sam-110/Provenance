@@ -1,0 +1,169 @@
+/* /demo-cinematic — calm light demo chrome, built on the repo's .tn-* tokens
+   (globals.css publishes them on :root, so var(--tn-*) works inside the module). */
+
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--tn-sans, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  color: var(--tn-text, #1f2a37);
+  background: var(--tn-bg, #e9edf2);
+}
+
+/* WorldMap renders .world-map/.map-canvas at position:absolute inset:0 — this
+   wrapper is the positioned ancestor it needs (see the note in globals.css). */
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+.header {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 10;
+  max-width: 420px;
+  padding: 12px 16px;
+  border-radius: var(--tn-cw-radius, 12px);
+  background: var(--tn-surface, rgba(255, 255, 255, 0.92));
+  border: 1px solid var(--tn-border, rgba(15, 23, 42, 0.1));
+  box-shadow: var(--tn-shadow-sm, 0 2px 10px rgba(15, 23, 42, 0.08));
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--tn-text-muted, #54606d);
+}
+
+.back {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--tn-accent, #0e7d97);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--tn-accent-strong, #0b6175);
+  text-decoration: underline;
+}
+
+.strip {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 10;
+  width: 560px;
+  max-width: calc(100vw - 28px);
+  padding: 12px 14px;
+  border-radius: var(--tn-cw-radius, 12px);
+  background: var(--tn-surface, rgba(255, 255, 255, 0.92));
+  border: 1px solid var(--tn-border, rgba(15, 23, 42, 0.1));
+  box-shadow: var(--tn-shadow, 0 12px 38px rgba(15, 23, 42, 0.14));
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.buttons button {
+  appearance: none;
+  border: 1px solid var(--tn-border-strong, rgba(15, 23, 42, 0.16));
+  background: var(--tn-surface-solid, #ffffff);
+  color: var(--tn-text, #1f2a37);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  padding: 7px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.buttons button:hover:not(:disabled) {
+  border-color: var(--tn-accent, #0e7d97);
+  color: var(--tn-accent-strong, #0b6175);
+  background: var(--tn-accent-soft, rgba(14, 125, 151, 0.1));
+}
+
+.buttons button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.readoutRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+/* The artificial horizon: MapLibre has no camera-roll axis, so the banked roll is
+   rendered here — the line rotates against the bank, exactly like a flight dial. */
+.horizon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tn-surface-2, #f2f5f9);
+  border: 1px solid var(--tn-border, rgba(15, 23, 42, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.horizon::before,
+.horizon::after {
+  content: "";
+  position: absolute;
+  width: 36px;
+  height: 18px;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+}
+
+.horizon::before {
+  background: var(--tn-accent-soft, rgba(14, 125, 151, 0.1));
+  transform: translateY(-1px);
+}
+
+.horizon::after {
+  background: var(--tn-bg, #e9edf2);
+  transform: translateY(5px);
+}
+
+.horizonLine {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--tn-accent, #0e7d97);
+  will-change: transform;
+}
+
+.readout {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tn-text-faint, #626e7d);
+  font-variant-numeric: tabular-nums;
+  min-height: 18px;
+}
+
+.status {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--tn-text-muted, #54606d);
+}
