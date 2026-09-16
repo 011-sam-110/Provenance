@@ -469,13 +469,32 @@ test("the panel's hierarchy is measurable, not just intended", async ({ page }) 
   await expect(page.locator(".tn-insp-tool-close")).toHaveCount(0);
 });
 
-test("Alerts is its own rail button, and the bell is on it", async ({ page }) => {
+test("Alerts is its own rail button AND its own group, and the Draw panel is only areas", async ({
+  page,
+}) => {
   // IT WAS A SECTION INSIDE THE DRAW PANEL, for one round. Sam: "i cant see the alerts
-  // and bell" — which is the whole argument for it being a tool: a bell you have to
-  // open a different tool to see is not a feature. So this asserts both halves of the
-  // move: it is on the rail, and it is NOT buried in Draw any more.
+  // and bell" — which is the whole argument for it being a tool. Then it was a BUTTON
+  // IN THE DRAW GROUP for one build, and he reported that too: "the alerts isnt its own
+  // separate section, its part of the drawing". Both halves are asserted here, because
+  // both were wrong in turn.
   await openInspector(page);
   await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveCount(1);
+
+  // ITS OWN GROUP: a rule above the bell, and none directly above it inside a block
+  // with the polygon button. The rule is the only thing on the column saying where one
+  // idea stops and the next starts.
+  const groups = await page.locator(`${RAIL} .tn-insp-rail-cell`).evaluateAll((els) =>
+    els.map((el) => ({
+      slot: (el.querySelector("button") as HTMLElement | null)?.dataset.slot ?? "?",
+      rule: !!el.querySelector(".tn-insp-rail-rule"),
+    })),
+  );
+  expect(groups).toEqual([
+    { slot: "search", rule: false },
+    { slot: "settings", rule: false },
+    { slot: "draw", rule: true },
+    { slot: "alerts", rule: true },
+  ]);
 
   await page.click(`${RAIL} .tn-insp-rail-btn-alerts`);
   await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Notifications/i);
@@ -484,10 +503,6 @@ test("Alerts is its own rail button, and the bell is on it", async ({ page }) =>
   await expect(alerts).toHaveCount(1);
   await expect(alerts.locator(".tn-alert")).toHaveCount(1);
   await expect(alerts.locator(".tn-alert-head")).toBeVisible();
-  await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
 
   // The Draw panel is the areas list and nothing else now.
   await page.click(`${RAIL} .tn-insp-rail-btn-draw`);

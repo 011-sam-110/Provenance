@@ -138,11 +138,16 @@ const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
 /**
  * Which slots start a group, and so get a rule above them.
  *
- * Draw and Alerts are one group — neither is a map control — which is why the rule
- * goes above Draw and NOT between the two. If that ever changes, this set is the only
- * place the rail's grouping is written down.
+ * THREE GROUPS, NOT TWO: the map's own controls (search, view, settings), then the
+ * areas you define (draw), then what is said about them (notifications). The rules are
+ * what draw that boundary — with only one of them, the bell sat in the same block as
+ * the polygon button and read as part of drawing, which is exactly how Sam reported it
+ * after the first attempt: "the alerts isnt its own separate section, its part of the
+ * drawing". The approved mock had a rule above the bell; the build did not.
+ *
+ * If the grouping changes, this set is the only place it is written down.
  */
-const RULE_BEFORE = new Set<InspectorTool>(["draw"]);
+const RULE_BEFORE = new Set<InspectorTool>(["draw", "alerts"]);
 
 export default function InspectorRail() {
   const open = useInspectorRail();

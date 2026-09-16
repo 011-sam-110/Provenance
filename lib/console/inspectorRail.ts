@@ -39,10 +39,15 @@
 // it went unfound. Sam's report was "i cant see the alerts and bell", and a control
 // nobody can find is not a control. It has its own button and its own panel now.
 //
-// DRAW AND ALERTS SIT BELOW ONE RULE TOGETHER, because neither is a map control: the
-// three above them change what the MAP looks like, these two are about the areas you
-// have drawn and what should be said about them. Both are in TOOLS like everything
-// else, so the roving-focus arithmetic never needs a special case for either.
+// DRAW AND ALERTS ARE SEPARATE GROUPS ON THE RAIL, each opening with its own rule:
+// the three above them change what the MAP looks like, Draw defines the areas you
+// have, and Alerts says what should be said about them. They were one group for one
+// build and that was wrong in a way only Sam could see — "the alerts isnt its own
+// separate section, its part of the drawing" — because a rule is the only thing on
+// that column saying where one idea stops and the next starts.
+//
+// Both are in TOOLS like everything else, so the roving-focus arithmetic never needs a
+// special case for either.
 //
 // WHY THE REDUCERS ARE HERE AND NOT IN THE COMPONENT. vitest is configured
 // `environment: "node"` with `include: ["tests/unit/**/*.test.ts"]`, .tsx is not
