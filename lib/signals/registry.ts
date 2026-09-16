@@ -65,6 +65,7 @@ import { AIR_QUALITY_STATIONS_SOURCE } from "@/lib/signals/airquality-stations";
 import { TROPICAL_CYCLONES_SOURCE } from "@/lib/signals/tropical-cyclones";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
+import { NEWS_COVERAGE_SOURCE } from "@/lib/signals/news-coverage";
 
 /** Every registered signal layer, in rail display order. */
 export const SIGNALS: SignalSource[] = [
@@ -98,6 +99,9 @@ export const SIGNALS: SignalSource[] = [
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
   // Intel (GDELT geolocated news coverage)
   CONFLICT_SOURCE,
+  // Stories pushed by the NewsScraper host, placed by name through Photon. Dormant
+  // until the first push and after every restart — see lib/signals/news-coverage.ts.
+  NEWS_COVERAGE_SOURCE,
   UKRAINE_ALERTS_SOURCE,
   PROTESTS_SOURCE,
   // Environment & civic (keyless Open-Meteo + data.police.uk)

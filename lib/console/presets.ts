@@ -348,10 +348,12 @@ export const STREETS_DEFAULT_AREA: CircleSpec = { lat: 32.7641, lon: -117.1577, 
 
 // ── THE LINEUP ──────────────────────────────────────────────────────────────
 //
-// TWO presets: Globe (the landing board, deliberately empty) and Streets (the
-// camera wall). The other five boards — World, Nature, Skywatch, Infrastructure
-// and Intel — were retired on 2026-09-15 on request: the console's navigation
-// bar carries exactly these two, and nothing else. Everything those boards
+// THREE presets: Globe (the landing board, deliberately empty), News (the merged
+// headline stream plus the coverage layer) and Streets (the camera wall). It was two
+// until 2026-09-16 — World, Nature, Skywatch, Infrastructure and Intel were retired on
+// 2026-09-15 on request, and News is not a reinstatement of Intel: Intel was four
+// GDELT-and-UN layers in a strip, this is the scraped-and-RSS headline stream that had
+// no surface anywhere in the console. Everything the retired boards
 // featured (their widgets and signal layers) is still registered and still
 // reachable from the Sources rail and the ⌘K palette, which is the same
 // guarantee `console-presets.test.ts` pins.
@@ -382,6 +384,42 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // layout, so anyone with a saved board keeps the stage they had.
   { id: "overview", title: "Globe", icon: "🌍", blurb: "the world, and nothing in front of it",
     build: (shell = DEFAULT_SHELL) => compose("map3d", shell, []) },
+
+  // ── News — every outlet we read, grouped and placed ──────────────────────
+  //
+  // The board the scraped feed exists for. `/api/news` already merges the six RSS
+  // feeds, the Liveuamap channel and everything the NewsScraper host pushes, and
+  // already clusters them into stories (lib/news/cluster.ts) — but until now nothing
+  // in the console opened on it. Globe is deliberately empty and Streets is the camera
+  // wall, so the whole news pipeline had no surface at all.
+  //
+  // THE STAGE IS map2d, NOT map3d. A globe hides half the pins it draws, and this
+  // board's second half is where the stories are. Intel, the retired board this one
+  // replaces, made the same call for the same reason.
+  //
+  // THE MAP LAYER IS COVERAGE, NOT EVENTS. `news-coverage` pins places that a language
+  // model read out of article text and this app geocoded by name. Every pin says so —
+  // see lib/signals/news-coverage.ts, which carries the reasoning and the GDELT
+  // precedent behind it.
+  //
+  // NO `layers`. Cameras, planes, satellites and webcams all stay off: this board is
+  // about who is reporting what, and a layer of 19,000 camera pins under it is noise.
+  { id: "news", title: "News", icon: "📰", blurb: "every outlet we read, grouped and placed",
+    // ONE signal layer, and the omission is deliberate. GDELT's "Conflict coverage"
+    // is the obvious neighbour and it is NOT seeded here: it draws ~70 country
+    // centroids in conflict red, which at world zoom buries a layer whose pins are
+    // actual places, and an audit of its rows found most were not events at all. It
+    // is one tap away in the Sources rail for anyone who wants it.
+    signals: ["news-coverage"],
+    build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
+      { rail: "right", cards: [
+        // The merged, clustered stream — the card this board exists for.
+        { type: "headlines", weight: 3 },
+        // The same stories as a place list, so a reader can go the other way round:
+        // from a pin they can see on the map to the outlets carrying it.
+        { type: "signal:news-coverage", weight: 2 },
+      ] },
+    ]) },
 
   // ── Streets — the camera wall, UNCHANGED ─────────────────────────────────
   // Built for a user request: "custom dashboards so I can see images from major
