@@ -110,3 +110,28 @@ export function DrawGlyph() {
     </svg>
   );
 }
+
+/**
+ * Rename — a pencil, drawn at 45° with the nib down-left.
+ *
+ * NOT ON THE RAIL. This one lives inside a row (the areas list), which is why it is
+ * drawn at the row's own ink weight rather than the rail's: the CSS sizes every rail
+ * mark from one rule, and a mark inside a list is sized by the list.
+ *
+ * BUILT FROM A ROTATED GROUP rather than pre-rotated coordinates, so the three parts
+ * stay readable as what they are — a barrel, a ferrule and a nib — and so a change
+ * to the angle is one number. The nib is an OPEN path: the barrel's edge is already
+ * there, and closing the triangle as well would pile three strokes onto the same
+ * pixel at this size, which is the trim rule in this file's header.
+ */
+export function PencilGlyph() {
+  return (
+    <svg {...BASE} strokeWidth={1.7}>
+      <g transform="rotate(45 12 12)">
+        <rect x={8.6} y={2.4} width={6.8} height={15.4} rx={1} />
+        <line x1={8.6} y1={6.6} x2={15.4} y2={6.6} />
+        <path d="M8.6 17.8 12 21.6 15.4 17.8" />
+      </g>
+    </svg>
+  );
+}

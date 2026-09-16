@@ -35,13 +35,13 @@ const PERSIST_VERSION = 1;
  * truncating and the rail stops being readable, which is a worse failure than
  * simply refusing to go narrower.
  *
- * IT IS 340 AND IT WAS 300, because the panel grew a tool column on 2026-09-16 —
- * `--tn-insp-rail-w` is 40px and it is chrome, so it comes out of the width before
- * the rows see any of it. The floor moved by exactly that much, which is what keeps
- * the sentence above true: 340 − 40 of rail − 24 of padding is the 300px of content
- * the measurement was taken on.
+ * IT IS 372 AND IT WAS 300, because the panel grew a tool column on 2026-09-16 —
+ * `--tn-insp-rail-w`, which is 48px since Sam asked for the icons half again as big.
+ * The column is chrome, so it comes out of the width before the rows see any of it,
+ * and the floor moved by exactly that much plus the panes' 24px of padding: the
+ * sentence above stays true at 372 − 48 − 24 = 300.
  */
-export const SOURCES_RAIL_MIN = 340;
+export const SOURCES_RAIL_MIN = 372;
 
 /**
  * The widest.
@@ -52,10 +52,16 @@ export const SOURCES_RAIL_MIN = 340;
  * `@container (max-width: 561px)`). Capping at the old default would have made the
  * two-column layout unreachable, so the ceiling sits clear of it instead.
  *
- * 680, AND IT WAS 640, for the same reason the floor moved: two columns need 626px
- * of panel now (562 of content + 24 of padding + 40 of tool rail), so a 640 ceiling
+ * 680, AND IT WAS 640, for the same reason the floor moved: two columns need 634px
+ * of panel now (562 of content + 24 of padding + 48 of tool column), so a 640 ceiling
  * would have put the fold out of reach — the exact regression the 640 was raised
- * from 602 to prevent. 680 keeps ~54px of clearance above the fold.
+ * from 602 to prevent. 680 keeps 46px of clearance above the fold.
+ *
+ * WHAT THIS DOES NOT PROMISE: that the fold is reachable at every viewport. The CSS
+ * ceiling is `min(680px, 100vw - 800px)` — the reserve that stops the rail starving
+ * the map stage — so at a 1440px window the panel tops out at 640 and its 568px of
+ * content sits just above the fold. On a narrower window it does not, and that is the
+ * stage's floor winning rather than an oversight.
  */
 export const SOURCES_RAIL_MAX = 680;
 

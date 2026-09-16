@@ -1302,7 +1302,9 @@ a { color: var(--tn-accent); }
   background: var(--tn-surface, #fff); border: 1px solid var(--tn-border, #d6dee6);
 }
 .tn-cat-search:focus { outline: none; border-color: var(--tn-accent, #0e7d97); }
-.tn-cat-count { font: 700 11px/1 var(--tn-sans); color: var(--tn-text-dim, #64748b); margin-left: auto; padding-right: 8px; font-variant-numeric: tabular-nums; }
+/* `.tn-cat-count` WAS HERE TOO, in the legacy left-rail block. The "0 ▦" counter it
+   styled was removed from the header on 2026-09-16; see the console block near the
+   end of this sheet for the note. Nothing else ever carried the class. */
 .tn-subhead-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 /* Always-on intel column (WorldMonitor-style permanent right rail) ----------- */
@@ -3669,22 +3671,22 @@ a.tn-w-place { display: flex; align-items: center; }
 
      THE BOUNDS ARE STILL THE SAFETY, and they are why this stays a clamp rather
      than becoming the bare variable. The upper bound is `min(680px, 100vw - 800px)`:
-     680 so the two-column layout is still REACHABLE by dragging (a ceiling at the
-     old 602 would have made it unreachable, since the fold needs >561px of content;
-     it is 680 rather than 640 since 2026-09-16 because 40px of every width now goes
-     to the tool column, so the fold needs 626px of panel), and `100vw - 800px` so the
-     rail can never starve the stage — the console needs STAGE_MIN_PX 360 plus
-     RAIL_MIN.left 220 plus RAIL_MIN.right 220, and that is 800 exactly.
+     680 so the two-column layout is REACHABLE by dragging (a ceiling at the old 602
+     would have made it unreachable, since the fold needs >561px of content; it is 680
+     rather than 640 since 2026-09-16 because 48px of every width now goes to the tool
+     column, so the fold needs 634px of panel), and `100vw - 800px` so the rail can
+     never starve the stage — the console needs STAGE_MIN_PX 360 plus RAIL_MIN.left 220
+     plus RAIL_MIN.right 220, and that is 800 exactly.
      IT WAS `100vw - 820px`, and the 20px of gutter slack it carried is what the tool
-     column was bought with: without it the rail could reach only 620px at a 1440px
-     viewport, six short of the fold, and the two-column catalogue would have become
-     unreachable on the width this product is mostly read at.
+     column was bought with: without it the rail could reach only 640px at a 1440px
+     viewport, and the two-column catalogue would have been pushed further out of reach
+     on the width this product is mostly read at.
      A drag is clamped to the same ceiling in JS; this is the second line of defence,
      for a viewport that shrinks AFTER the width was chosen.
 
      Below 901px a separate rule re-homes the rail as a bottom sheet with
      width:auto, so none of this applies on a phone. */
-  --tn-rail-w: clamp(340px, var(--tn-rail-user-w, 452px), min(680px, calc(100vw - 800px)));
+  --tn-rail-w: clamp(372px, var(--tn-rail-user-w, 452px), min(680px, calc(100vw - 800px)));
   /* ── The design palette: THREE COLOURS AND WHITE ────────────────────────
      #262b15 ink · #464b37 accent · #afb4ad edge · #ffffff everything else.
 
@@ -6876,9 +6878,9 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   /* Metrics as tokens so the narrow pass changes ONE value and everything derived
      follows. Declared here rather than on `.tn-terminal`: that block is parsed by
      tests/unit/terminal-tokens.test.ts and this rail has no business in it. */
-  --tn-insp-rail-w: 40px;
-  --tn-insp-rail-btn: 30px;
-  --tn-insp-rail-glyph: 18px;
+  --tn-insp-rail-w: 48px;
+  --tn-insp-rail-btn: 42px;
+  --tn-insp-rail-glyph: 27px;
 
   flex: 0 0 var(--tn-insp-rail-w);
   width: var(--tn-insp-rail-w);
@@ -6971,40 +6973,100 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    appears nowhere else. See InspectorRail.tsx. */
 .tn-insp-rail-btn[data-panel] .tn-insp-rail-tip { opacity: 0; visibility: hidden; }
 
-/* ── The tool pane ───────────────────────────────────────────────────────────── */
-.tn-insp-tool { display: flex; flex-direction: column; }.tn-insp-tool-head {
+/* ── The tool pane ─────────────────────────────────────────────────────────────
+   THE PANELS SPEAK THE SOURCES TAB'S LANGUAGE, which is what Sam asked for: "sources
+   looks a lot better than the new things you have made". Concretely that means the
+   same section-heading class (.tn-src-sec-head, REUSED rather than re-styled), the
+   same row rhythm, and a label + sub-line pair wherever a control does something
+   worth stating. Nothing here introduces a second visual system for the same panel,
+   which is what the first pass did: bare 11px uppercase labels and hairlines. */
+.tn-insp-tool { display: flex; flex-direction: column; }
+
+/* The panel's own title. Sentence case at 13.5px so it reads as the NAME of the tool
+   rather than as another tier of uppercase label — the group headings below it are
+   uppercase and the row labels are neither, which is the whole hierarchy. */
+.tn-insp-tool-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 0 0 9px; margin-bottom: 10px;
+  margin-bottom: 4px; padding: 0 0 8px;
   border-bottom: 1px solid var(--tn-border-strong);
 }
 .tn-insp-tool-name {
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.15em;
-  text-transform: uppercase; color: var(--tn-text-muted);
+  font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tn-text);
+  letter-spacing: -0.01em;
 }
+/* Sized and shaped like `.tn-rail-collapse` next door — the two closes are 40px
+   apart on the same panel, and they must not read as two different controls. */
 .tn-insp-tool-close {
-  width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+  width: 30px; height: 30px; flex: none; margin-right: -6px;
+  display: grid; place-items: center;
   padding: 0; font-size: var(--tnx-fs-lg); line-height: 1; cursor: pointer;
   background: none; color: var(--tn-text-faint);
-  border: 1px solid transparent; border-radius: 7px;
+  border: 1px solid transparent; border-radius: 8px;
 }
 .tn-insp-tool-close:hover { color: var(--tn-text); background: var(--tn-surface-2); border-color: var(--tn-border); }
 .tn-insp-tool-close:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 
-.tn-insp-tool-row {
+/* Group headings inside a tool, on the Sources tab's own class. The first one sits
+   directly under the panel title and takes no top margin; the rest separate their
+   section from the one above. */
+.tn-insp-tool > .tn-src-sec-head { margin: 14px 0 8px; }
+.tn-insp-tool > .tn-insp-tool-head + .tn-src-sec-head { margin-top: 0; }
+
+/* A control row: what it is, what it does, and the thing you press. The sub-line is
+   not decoration — two of these controls do nothing until you zoom, and a row that
+   says so is the difference between a setting and a mystery. */
+.tn-insp-field {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 9px 0; border-bottom: 1px solid var(--tn-border);
+  padding: 7px 0;
 }
-.tn-insp-tool-lab { font-size: var(--tnx-fs); color: var(--tn-text); }
-.tn-insp-tool-lab-row {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 0; border-bottom: 1px solid var(--tn-border);
-}
-.tn-insp-tool-lab-row > .tn-insp-tool-lab {
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.13em;
-  text-transform: uppercase; color: var(--tn-text-faint);
-}
+.tn-insp-field-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.tn-insp-field-label { font-size: var(--tnx-fs); font-weight: 500; color: var(--tn-text); }
+.tn-insp-field-sub { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
 .tn-insp-tool-foot {
-  margin: 10px 0 0; font-size: var(--tnx-fs-sm); line-height: 1.55; color: var(--tn-text-muted);
+  margin: 12px 0 0; font-size: var(--tnx-fs-sm); line-height: 1.55; color: var(--tn-text-muted);
+}
+
+/* Projection — a segmented pair, the same control the rail's own tabs use. See
+   SettingsTool.tsx for why the single "click for the other one" button went. */
+.tn-insp-seg {
+  display: flex; gap: 2px; flex: none; padding: 2px;
+  border-radius: 8px; background: var(--tn-surface-2); border: 1px solid var(--tn-border);
+}
+.tn-insp-seg-btn {
+  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 600;
+  padding: 5px 13px; border-radius: 6px; cursor: pointer;
+  background: none; border: 1px solid transparent; color: var(--tn-text-faint);
+}
+.tn-insp-seg-btn:hover { color: var(--tn-text); }
+.tn-insp-seg-btn[aria-checked="true"] {
+  background: var(--tn-surface-solid); border-color: var(--tn-border);
+  color: var(--tn-text); box-shadow: var(--tn-shadow);
+}
+.tn-insp-seg-btn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -1px; }
+
+/* Basemap. A full-width row each, because three full names do not fit across a
+   panel as chips with any breathing room — and this is the one setting on the tool
+   whose options are worth reading rather than decoding. */
+.tn-insp-choices { display: flex; flex-direction: column; gap: 2px; }
+.tn-insp-choice {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 8px 9px; cursor: pointer;
+  font: inherit; font-size: var(--tnx-fs); text-align: left; color: var(--tn-text);
+  background: none; border: 1px solid transparent; border-radius: 8px;
+}
+.tn-insp-choice:hover { background: var(--tn-surface-2); }
+.tn-insp-choice[aria-checked="true"] {
+  background: var(--tn-accent-soft); border-color: var(--tn-border);
+  color: var(--tn-accent-strong); font-weight: 600;
+}
+.tn-insp-choice:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-insp-choice-dot {
+  width: 12px; height: 12px; flex: none; border-radius: 50%;
+  border: 1.6px solid var(--tn-border-strong);
+}
+.tn-insp-choice[aria-checked="true"] .tn-insp-choice-dot {
+  border-color: var(--tn-accent); background: var(--tn-accent);
+  box-shadow: inset 0 0 0 2.4px var(--tn-surface-solid);
 }
 
 /* THE BUTTON THAT STARTS THE GESTURE, in the Draw tool's panel — and the only one
@@ -7037,42 +7099,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   background: var(--tn-accent-soft); color: var(--tn-accent-strong);
 }
 
-/* Projection. The one button is labelled with what you will GET rather than with
-   what is on — this product's own convention, and the reason one button can carry a
-   two-state switch. */
-.tn-insp-proj {
-  font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700;
-  letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.35;
-  padding: 5px 12px; cursor: pointer; flex: none;
-  background: none; color: var(--tn-text-muted);
-  border: 1px solid var(--tn-border-strong); border-radius: 6px;
-}
-.tn-insp-proj:hover { color: var(--tn-text); border-color: var(--tn-accent); }
-.tn-insp-proj:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
-
-/* Basemap. A full-width row each, because three full names do not fit across a
-   panel as chips with any breathing room — and this is the one setting on the tool
-   whose options are worth reading rather than decoding. */
-.tn-insp-choice {
-  display: flex; align-items: center; gap: 9px;
-  width: 100%; padding: 7px 8px; cursor: pointer;
-  font: inherit; font-size: var(--tnx-fs); text-align: left; color: var(--tn-text);
-  background: none; border: 1px solid transparent; border-radius: 7px;
-}
-.tn-insp-choice:hover { background: var(--tn-surface-2); }
-.tn-insp-choice[aria-checked="true"] {
-  background: var(--tn-accent-soft); border-color: var(--tn-border);
-  color: var(--tn-accent-strong); font-weight: 600;
-}
-.tn-insp-choice:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
-.tn-insp-choice-dot {
-  width: 12px; height: 12px; flex: none; border-radius: 50%;
-  border: 1.6px solid var(--tn-border-strong);
-}
-.tn-insp-choice[aria-checked="true"] .tn-insp-choice-dot {
-  border-color: var(--tn-accent); background: var(--tn-accent);
-  box-shadow: inset 0 0 0 2.4px var(--tn-surface-solid);
-}
+/* Projection's old single chip (`.tn-insp-proj`) and the hairline rows
+   (`.tn-insp-tool-row`, `.tn-insp-tool-lab*`) are gone with the prettiness pass:
+   the projection is a segmented pair now and the rows are label + sub + control. See
+   the block above. */
 
 /* Terrain and buildings. A real switch, with the knob moving — `aria-checked` is
    the state a screen reader reads, and the fill plus the knob are what a sighted
@@ -7098,18 +7128,32 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    inside an absolutely-positioned panel it would anchor to the PANEL and re-centre
    itself there. So it is flattened, never forked: one geocoder in the app. Ported
    from the stage rail's `.tnx-maprail-search` rules, which did the same job inside
-   a flyout. */
-.tn-insp-search { display: flex; align-items: flex-start; gap: 7px; }
+   a flyout.
+   
+   IT IS A BOXED FIELD NOW, and the results DROP OUT OF IT rather than pushing the
+   panel down. The first version was a bare input with a "/" glyph in front of it,
+   floating on the panel background — which is not how any other input in this product
+   looks, and the catalogue's own search box two tabs over is the comparison Sam made.
+   `position: relative` here is what the results anchor to; `.tn-mapsearch` must stay
+   `static` or it becomes the anchor instead and the list lands under the wrong box. */
+.tn-insp-search {
+  position: relative;
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 10px; min-height: 38px;
+  border-radius: 9px;
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong);
+}
+.tn-insp-search:focus-within { border-color: var(--tn-accent); }
 .tn-insp-search-pfx {
-  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tn-accent);
-  flex: none; padding-top: 6px;
+  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tn-accent); flex: none;
 }
 .tn-insp-search .tn-mapsearch {
   position: static; transform: none; width: 100%; max-width: none;
   flex: 1; min-width: 0; padding: 0;
 }
 .tn-insp-search .tn-mapsearch-bar {
-  background: none; border: 0; box-shadow: none; padding: 4px 0; gap: 0;
+  background: none; border: 0; box-shadow: none; padding: 8px 0; gap: 0;
 }
 .tn-insp-search .tn-mapsearch-icon { display: none; }
 .tn-insp-search .tn-mapsearch-input {
@@ -7117,16 +7161,24 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-insp-search .tn-mapsearch-input::placeholder { color: var(--tn-text-muted); }
 .tn-insp-search .tn-mapsearch-results {
-  margin-top: 6px; border-radius: 8px;
+  position: absolute; left: -1px; right: -1px; top: calc(100% + 5px); z-index: 5;
+  margin: 0; border-radius: 9px; overflow: hidden;
   background: var(--tn-surface-solid);
-  border: 1px solid var(--tn-border-strong); box-shadow: none;
+  border: 1px solid var(--tn-border-strong);
+  box-shadow: var(--tn-shadow);
 }
 .tn-insp-search .tn-mapsearch-item {
-  font-size: var(--tnx-fs); color: var(--tn-text); padding: 6px 8px;
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--tnx-fs); color: var(--tn-text); padding: 8px 10px;
+  border-bottom: 1px solid var(--tn-border);
 }
+.tn-insp-search .tn-mapsearch-item:last-child { border-bottom: 0; }
 .tn-insp-search .tn-mapsearch-item:hover { background: var(--tn-accent-soft); }
 .tn-insp-search .tn-mapsearch-item-meta,
-.tn-insp-search .tn-mapsearch-status { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-insp-search .tn-mapsearch-status {
+  font-size: var(--tnx-fs-sm); color: var(--tn-text-muted);
+}
+.tn-insp-search .tn-mapsearch-status { padding: 8px 10px; }
 
 /* NO HOVER ON TOUCH, so the label can only ever be a focus artefact there — and the
    button keeps its accessible name either way. */
@@ -7146,13 +7198,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    THIS @media IS LAST IN THE BLOCK ON PURPOSE — a media query adds no specificity,
    so any `.tn-insp-rail` rule appended after it would silently kill it. */
 @media (max-width: 900px) {
-  .tn-insp-rail { --tn-insp-rail-btn: 40px; --tn-insp-rail-glyph: 20px; }
+  .tn-insp-rail { --tn-insp-rail-btn: 44px; --tn-insp-rail-glyph: 28px; }
   .tn-insp-rail-rule { width: 24px; }
   /* iOS zooms the page when a focused input is under 16px. Carried over from the
      stage rail's mobile rule, where it was load-bearing. */
   .tn-insp-search .tn-mapsearch-input { font-size: var(--tnx-fs-lg); min-height: 44px; }
   .tn-insp-tool-close { width: 34px; height: 34px; }
-  .tn-insp-proj, .tn-insp-choice { min-height: 40px; }
+  .tn-insp-choice, .tn-insp-seg-btn { min-height: 40px; }
 }
 /* ── end inspector tool rail ─────────────────────── */
 
@@ -7444,13 +7496,47 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    heading is `.tn-src-sec-head`, so it needs the same air above it that
    `.tn-src-sec` gives the source sections. */
 .tn-insp { margin-top: 12px; }
+/* THE AREAS ROW IS A BOX WITH TWO CONTROLS, not a button — the pencil renamed it.
+   Two buttons cannot nest, so the row carries the layout and `.tn-insp-row-main` is
+   the big target inside it. The row keeps the hover and the EDITING fill, because
+   those are about the row. */
 .tn-insp-row {
-  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px;
-  margin: 0 -8px; border: none; border-radius: 8px; background: none;
-  font: inherit; text-align: left; color: inherit; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  padding: 3px 6px 3px 0; margin: 0 -6px;
+  border-radius: 8px;
 }
 .tn-insp-row:hover { background: var(--tn-surface-2, rgba(0,0,0,.04)); }
 .tn-insp-row[data-editing] { background: var(--tn-accent-soft, rgba(0,0,0,.06)); }
+.tn-insp-row-main {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 0 6px 6px; border: none; border-radius: 8px; background: none;
+  font: inherit; text-align: left; color: inherit; cursor: pointer;
+}
+.tn-insp-row-main:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: -2px; }
+/* The pencil. ALWAYS VISIBLE, never a hover reveal — the same rule the ＋ on a source
+   row and the rail's own buttons follow, and on a touch screen a hover reveal is a
+   control that does not exist. */
+.tn-insp-row-edit {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  color: var(--tn-text-faint); cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.tn-insp-row-edit svg { width: 16px; height: 16px; display: block; }
+.tn-insp-row-edit:hover {
+  color: var(--tn-accent-strong); background: var(--tn-surface-2); border-color: var(--tn-border);
+}
+.tn-insp-row-edit:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+/* The rename field, in the row's place. Focused border in the accent, because it is
+   the only field in this panel and the row it replaces is what says which area it is
+   editing. */
+.tn-insp-rename {
+  flex: 1 1 auto; min-width: 0; margin-left: 6px; padding: 7px 9px;
+  font: inherit; font-size: var(--tnx-fs); font-weight: 600; color: var(--tn-text);
+  background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-accent); border-radius: 8px;
+}
+.tn-insp-rename:focus-visible { outline: 2px solid var(--tn-accent-soft); outline-offset: 0; }
 .tn-insp-glyph { color: var(--tn-accent); flex: 0 0 auto; }
 .tn-insp-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .tn-insp-label { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -7500,7 +7586,11 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   border: 1px solid var(--tn-srx-edge);
 }
 .tn-terminal .tn-cat-search::placeholder { color: var(--tn-text-muted); }
-.tn-terminal .tn-cat-count { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+/* `.tn-cat-count` WAS HERE — the "0 ▦" widget counter in the rail's header, which
+   Sam asked to have removed. Both rules went with the element: the base one below the
+   legacy rail and the console's re-assertion here. `consoleLayout` is still
+   subscribed by SourceCatalog — the source rows use it to say which sources already
+   have a widget open. */
 /* The four core-layer shortcuts. They kept the base rule's 11.5px while they were
    the quiet second tier of a tab most people never opened; they are on the Sources
    tab itself now, so they take the same 12px floor and 3.04:1 edge as every other

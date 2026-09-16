@@ -22,18 +22,28 @@
 // draw, and ConsoleShell's ladder is a bubble-phase window listener that clears the
 // map selection. This handler is CAPTURE phase on `window`, so it runs first and:
 //
-//   1. a draw is running   → do nothing at all; let aoi.ts abandon the ring
-//   2. a tool is open      → close it, refocus its button, stop propagating, so one
-//                            press does not ALSO close the object behind it or clear
-//                            the selection on the map
-//   3. otherwise           → stand down completely; the object view's own listener
-//                            and then ConsoleShell's ladder run exactly as before
+//   0. a field is being edited → do nothing; Escape belongs to the field
+//   1. a draw is running      → do nothing at all; let aoi.ts abandon the ring
+//   2. a tool is open         → close it, refocus its button, stop propagating, so one
+//                               press does not ALSO close the object behind it or clear
+//                               the selection on the map
+//   3. otherwise              → stand down completely; the object view's own listener
+//                               and then ConsoleShell's ladder run exactly as before
+//
+// RUNG 0 IS NOT A NICETY, and it is why this is capture phase rather than a plain
+// listener. The Draw panel renames an area in an inline field; capture phase means
+// this handler sees Escape BEFORE the input's own React handler does, so without the
+// stand-down, Escape in a name field would close the whole panel instead of putting
+// the old name back. It is keyed on the TARGET rather than on a store flag because
+// the target is the thing that actually knows: `data-area-rename` is on the input
+// itself, so a second renaming surface works by carrying the same attribute, and the
+// search box — which deliberately does NOT carry it, because Escape there is how you
+// leave the tool — keeps its behaviour.
 //
 // Rung 1 is an explicit stand-down rather than an assumption about phase ordering,
-// which is what the retired stage rail did too — and it is not decoration: the draw
-// gesture is armed from a button inside this rail's own Draw panel, so a user who
-// arms one and presses Escape is one keystroke away from a handler that would
-// otherwise eat the gesture's own cancel key.
+// which is what the retired stage rail did too. The gesture is armed from a button
+// inside this rail's own Draw panel, so a user who arms one and presses Escape is one
+// keystroke away from a handler that would otherwise eat the gesture's own cancel key.
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAoiDraw } from "@/lib/map/aoi";
@@ -143,11 +153,15 @@ export default function InspectorRail() {
   }, []);
 
   // ── Escape ────────────────────────────────────────────────────────────────
-  // Rungs 1 and 2 of the ladder in this file's header. Rung 3 is the absence of a
-  // branch: with no tool open this listener returns without touching the event.
+  // Rungs 0 and 1 stand down; rung 2 is the only branch here; rung 3 is the absence
+  // of one. The ladder is written out in this file's header.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      // 0. A field being edited owns Escape. The attribute is on the input, so this
+      //    needs no store and no DOM query — the event target IS the focused field.
+      const target = e.target as HTMLElement | null;
+      if (target?.dataset?.areaRename !== undefined) return;
       // 1. A draw owns Escape. aoi.ts's bubble-phase listener is the one that
       //    abandons the ring, and it must be allowed to run.
       if (drawing.active) return;

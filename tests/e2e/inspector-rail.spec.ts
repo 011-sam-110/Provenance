@@ -164,17 +164,24 @@ test("a tool TAKES the panel body — it is not a card over the object", async (
   await expect(rail.getByRole("button", { name: "View" })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("Map settings: 2D/3D is ONE button, three basemaps are radios, and the map follows", async ({
+test("Map settings: a projection pair, three basemap radios, and the map follows", async ({
   page,
 }) => {
   await openInspector(page);
   await page.locator(RAIL).getByRole("button", { name: "Map settings" }).click();
   const tool = page.locator(".tn-insp-tool");
 
-  // Exactly one projection button, not a 2D|3D pair. The board's landing stage is the
-  // globe, so it is labelled with the target: "2D".
-  await expect(tool.getByRole("button", { name: /^(2D|3D)$/ })).toHaveCount(1);
-  await expect(tool.getByRole("button", { name: "2D" })).toBeVisible();
+  // A SEGMENTED PAIR NOW, both states visible, the current one checked. The first
+  // version was ONE button labelled with what you would get, and its stated reason was
+  // width — which this panel has. `aria-checked` rather than a changed label, so a
+  // screen reader is told which is on instead of inferring it from wording.
+  const projection = tool.getByRole("radiogroup", { name: "Projection" });
+  await expect(projection.getByRole("radio")).toHaveCount(2);
+  // The board's landing stage is the globe, so 3D is the checked one.
+  await expect(projection.getByRole("radio", { name: "3D" })).toHaveAttribute("aria-checked", "true");
+  await projection.getByRole("radio", { name: "2D" }).click();
+  await expect(projection.getByRole("radio", { name: "2D" })).toHaveAttribute("aria-checked", "true");
+  await expect(projection.getByRole("radio", { name: "3D" })).toHaveAttribute("aria-checked", "false");
 
   // THE DARK/LIGHT PAIR IS GONE and its absence is asserted rather than dropped: Dark
   // and Positron left the basemap registry with the console's dark skin, so an option
@@ -184,10 +191,15 @@ test("Map settings: 2D/3D is ONE button, three basemaps are radios, and the map 
   // A RADIOGROUP, not a strip of chips — the rail is a column now and each basemap is
   // a full-width row. Full names, so the abbreviations the lateral strip needed are
   // gone with it (lib/console/viewControls.ts).
+  //
+  // SCOPED TO ITS OWN GROUP, since the projection above is a radiogroup too: an
+  // unscoped `getByRole("radio")` would count five and pass while one of them was
+  // missing.
+  const basemaps = tool.getByRole("radiogroup", { name: "Basemap" });
   for (const n of ["Streets", "Satellite", "Topographic"]) {
-    await expect(tool.getByRole("radio", { name: n })).toBeVisible();
+    await expect(basemaps.getByRole("radio", { name: n })).toBeVisible();
   }
-  await expect(tool.getByRole("radio")).toHaveCount(3);
+  await expect(basemaps.getByRole("radio")).toHaveCount(3);
 
   // THE EFFECT, NOT THE BUTTON — the house rule from console.spec.ts, "so a button
   // that highlights without driving the map still fails". OpenTopoMap declares its own
@@ -195,8 +207,8 @@ test("Map settings: 2D/3D is ONE button, three basemaps are radios, and the map 
   // swapped, and it is the one observable a highlight cannot fake. (The control is
   // collapsed, so the text is in the DOM but hidden; toContainText reads textContent
   // and does not require visibility.)
-  await tool.getByRole("radio", { name: "Topographic" }).click();
-  await expect(tool.getByRole("radio", { name: "Topographic" })).toHaveAttribute("aria-checked", "true");
+  await basemaps.getByRole("radio", { name: "Topographic" }).click();
+  await expect(basemaps.getByRole("radio", { name: "Topographic" })).toHaveAttribute("aria-checked", "true");
   await expect(page.locator(".maplibregl-ctrl-attrib")).toContainText(/OpenTopoMap/, {
     timeout: 15_000,
   });
@@ -347,6 +359,73 @@ test("the map's right edge is plain map now, and the ⓘ attribution is not", as
   if (!box) throw new Error("the search button has no box on a phone");
   expect(box.width).toBeGreaterThanOrEqual(40);
   expect(box.height).toBeGreaterThanOrEqual(40);
+});
+
+test("areas are renamed from the Draw panel, and Escape puts it back", async ({ page }) => {
+  await openInspector(page);
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await page.waitForSelector(".tn-insp-row-edit", { timeout: 10_000 });
+  await expect(page.locator(".tn-insp-label")).toHaveText("West Pacific");
+
+  // The pencil replaces the row with a field holding the current name.
+  await page.click(".tn-insp-row-edit");
+  const field = page.locator(".tn-insp-rename");
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue("West Pacific");
+
+  // ESCAPE PUTS THE OLD NAME BACK AND LEAVES THE PANEL OPEN. That second half is the
+  // rung-0 case in the rail's ladder: its Escape handler is capture phase, so without
+  // the stand-down this key would close the whole panel instead of the field.
+  await field.fill("Cancelled name");
+  await page.keyboard.press("Escape");
+  await expect(field).toHaveCount(0);
+  await expect(page.locator(".tn-insp-tool")).toHaveCount(1);
+  await expect(page.locator(".tn-insp-label")).toHaveText("West Pacific");
+
+  // Enter commits, and the name is trimmed.
+  await page.click(".tn-insp-row-edit");
+  await page.locator(".tn-insp-rename").fill("  North Atlantic watch  ");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".tn-insp-rename")).toHaveCount(0);
+  await expect(page.locator(".tn-insp-label")).toHaveText("North Atlantic watch");
+
+  // ONE NAME, EVERYWHERE IT IS PRINTED: the row, the dossier header, the dossier's own
+  // field, and the context switcher's trigger all read the same store. A rename that
+  // landed in only one of them would be four names for one area.
+  await page.click(".tn-insp-row-main");
+  await expect(page.locator(".tn-inspector[role=dialog]")).toHaveAttribute(
+    "aria-label",
+    "North Atlantic watch",
+  );
+  await expect(page.locator("[data-tn-area-label]")).toHaveValue("North Atlantic watch");
+
+  // A BLANK NAME REVERTS rather than saving, because the label is the only thing
+  // identifying the row in four places at once.
+  await page.click(".tn-inspector-close");
+  await page.click(`${RAIL} .tn-insp-rail-btn-draw`);
+  await page.click(".tn-insp-row-edit");
+  await page.locator(".tn-insp-rename").fill("   ");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".tn-insp-label")).toHaveText("North Atlantic watch");
+});
+
+test("the rail's marks are big enough to hit and to read", async ({ page }) => {
+  // Sam asked for the icons "50% bigger" and the number is 18px → 27px, but the
+  // assertion is on the RENDERED box rather than on the token: a future rule that
+  // sizes `.tn-insp-rail-btn svg` from somewhere else would leave the token correct
+  // and the mark small, which is the failure this is for.
+  await openInspector(page);
+  const glyph = page.locator(`${RAIL} .tn-insp-rail-btn-search svg`);
+  const box = await glyph.boundingBox();
+  if (!box) throw new Error("the search glyph has no box");
+  expect(box.width).toBeGreaterThanOrEqual(26);
+  expect(box.height).toBeGreaterThanOrEqual(26);
+
+  // And the button around it grew with the mark, or the fill would be a hairline.
+  const btn = await page.locator(`${RAIL} .tn-insp-rail-btn-search`).boundingBox();
+  if (!btn) throw new Error("the search button has no box");
+  expect(btn.width).toBeGreaterThanOrEqual(40);
+  expect(box.width / btn.width).toBeLessThan(0.72);
 });
 
 test("shots", async ({ page }) => {

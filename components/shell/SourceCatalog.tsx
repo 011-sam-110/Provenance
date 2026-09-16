@@ -379,9 +379,13 @@ export default function SourceCatalog() {
             Inspector
           </button>
         </div>
-        <span className="tn-cat-count" title="Widgets on your workspace right now">
-          {consoleLayout.widgets.length} ▦
-        </span>
+        {/* THE WIDGET COUNTER IS GONE (2026-09-16), on Sam's ask: "0 ▦". It counted
+            the widgets on the workspace and sat between the tab strip and the close
+            mark, where it was the only thing in the header that was neither a control
+            nor a label for one — a number with a glyph that needed its own title
+            attribute to be understood, and one that read "0" for anyone who had not
+            placed a widget. `consoleLayout` is still subscribed below: the source rows
+            use it to say which sources already have a widget open. */}
         <button
           type="button"
           className="tn-rail-collapse"
