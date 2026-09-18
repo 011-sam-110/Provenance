@@ -15,9 +15,30 @@ interface Feed {
   source: string;
 }
 
-// All six confirmed live (RSS/RDF 2026-07-09). A dead one drops out silently.
-// The extra European broadcasters (DW, France 24) widen cross-source story
-// clustering and give the region/type facet matrix real diversity.
+// Every feed below was fetched and parsed before being added (2026-09-18), and
+// every URL is the PUBLISHER'S OWN. That second rule cost the Associated Press a
+// place here: AP has no public feed of its own any more, and the mirrors that
+// carry it are third parties republishing someone else's wire. A site whose whole
+// argument is that you can check where a claim came from cannot source its news
+// from an unattributable middleman. CBC was dropped for a duller reason — it
+// timed out on two of three attempts, and a feed that usually is not there is
+// not a source, it is latency.
+//
+// WHY THERE ARE FOURTEEN OF THEM. The focus view clusters these headlines into
+// cross-source stories, and with the original six that view had almost nothing to
+// show: measured against a live pull of 300 headlines, 93% of its "stories" had a
+// single source, so the board was a chronological list wearing story cards. The
+// cause was not the clustering — it was that six world feeds mostly cover
+// different events. Re-measured on the same snapshot with these feeds added, the
+// count of genuinely corroborated stories went from 19 to 52. No change to
+// lib/news/cluster.ts came close to that, and several were tried.
+//
+// The additions are also deliberately not all Anglo-American. Blindspot detection
+// (lib/news/diversity.ts) reports which parts of the world covered a story and
+// which ignored it, and that report is worthless if the only outlets present are
+// British and American — it would find a blindspot in every story on earth.
+// SCMP, Times of India and the Jerusalem Post are there to give that measurement
+// something real to measure.
 const FEEDS: Feed[] = [
   { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC" },
   { url: "https://www.aljazeera.com/xml/rss/all.xml", source: "Al Jazeera" },
@@ -25,8 +46,15 @@ const FEEDS: Feed[] = [
   { url: "https://www.theguardian.com/world/rss", source: "The Guardian" },
   { url: "https://rss.dw.com/rdf/rss-en-world", source: "DW" },
   { url: "https://www.france24.com/en/rss", source: "France 24" },
+  { url: "https://feeds.skynews.com/feeds/rss/world.xml", source: "Sky News" },
+  { url: "https://www.cbsnews.com/latest/rss/world", source: "CBS News" },
+  { url: "https://abcnews.com/abcnews/internationalheadlines", source: "ABC News" },
+  { url: "https://www.independent.co.uk/news/world/rss", source: "The Independent" },
+  { url: "https://www.euronews.com/rss?level=theme&name=news", source: "Euronews" },
+  { url: "https://www.scmp.com/rss/91/feed/", source: "SCMP" },
+  { url: "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms", source: "Times of India" },
+  { url: "https://www.jpost.com/rss/rssfeedsinternational", source: "The Jerusalem Post" },
 ];
-
 // Keyless Telegram channels, scraped from their public t.me/s web preview (no API,
 // no key). Merged into the same stream as the RSS feeds; attribution stays honest
 // via lib/news/sources.ts ("OSINT monitor"). Add a channel = add a line here.
@@ -57,12 +85,28 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
  *     about 40 KB over the wire once compressed. Behind a 5-minute server cache and
  *     Cloudflare, that is a fair cost for the whole feed instead of a third of it.
  *   • Clustering. clusterNews is O(n^2) over small token sets: 60 items is ~1,800
- *     comparisons, 300 is ~45,000, which is still well under a frame in the browser.
- *   • Supply. There is no point going far past what the sources hold. 300 leaves
- *     headroom over today's ~143 for the Telegram channel and the pushed stories,
- *     without the cap pretending to a depth the feeds do not have.
+ *     comparisons, 500 is ~125,000 — measured at 88 ms through the real clusterer,
+ *     once per two-minute poll rather than per frame.
+ *   • Supply. There is no point going far past what the sources hold.
+ *
+ * RAISED FROM 300 TO 500 ON 2026-09-18, because with fourteen feeds the cap became
+ * the binding constraint rather than the supply. The feeds now offer well over 500
+ * recent items between them, and mergeNews keeps the newest LIMIT — so the eight
+ * feeds added that day were DISPLACING older headlines instead of adding to the
+ * pool, and a story's second and third reports were being cut before the clusterer
+ * ever saw them. Measured on one snapshot, clustering the newest n of a 545-item
+ * pool:
+ *
+ *     n=300   ~26 ms    25 corroborated stories
+ *     n=400   ~48 ms    44
+ *     n=500   ~88 ms    50
+ *     n=545   ~91 ms    52
+ *
+ * The yield curve flattens after 500 and the cost curve does not, which is where
+ * the number came from. It is a straight trade of 60 ms per poll for twice the
+ * corroborated stories, and the whole point of this board is the corroborated ones.
  */
-const LIMIT = 300;
+const LIMIT = 500;
 
 /**
  * How many pushed stories join the merge. The scraper holds far more than the rail
@@ -74,7 +118,7 @@ const LIMIT = 300;
  * the difference, so the scraper would be throttled by this constant rather than by
  * how recent its stories actually are.
  */
-const SCRAPED_POOL = 400;
+const SCRAPED_POOL = 700;
 
 let cache: NewsPayload | null = null;
 
