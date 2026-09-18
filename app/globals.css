@@ -6739,6 +6739,9 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   background: var(--tn-toggle-off);
 }
 .tn-src-row[data-on="true"] .tn-src-toggle { background: var(--tn-src-dot); }
+/* A widget-only row has no toggle. The slot is still held so the labels and the
+   ＋ stay on the same columns as every other row in the rail. */
+.tn-src-toggle-none { flex: none; width: 30px; height: 17px; }
 .tn-src-toggle::after {
   content: "";
   position: absolute;

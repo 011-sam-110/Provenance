@@ -34,7 +34,7 @@ _Status: live at [provenance-online.com](https://provenance-online.com) and runs
 | `GET /api/planes` | **3,000 aircraft**, a proportional spatial sample capped from at least 4,106 seen. Only 1 of the 4 type batches answered on that read, so the upstream figure is a lower bound |
 | `GET /api/satellites` | **0 satellites**. The route answered `celestrak_unavailable` on two reads about three minutes apart |
 | webcam layer | **70,698 webcams** in 196 static tiles under `public/webcams/`, harvested from Windy on 2026-09-05. `GET /api/webcams`, the live fallback, returned 1,609 |
-| `npx vitest list` | **4,214 tests across 399 files** collected. This counts the suite and does not run it |
+| `npx vitest list` | **4,222 tests across 400 files** collected. This counts the suite and does not run it |
 
 All four empty layers still answered `200` with an empty set, which is the contract: a dormant or failing upstream degrades to an honest blank, never a 5xx and never invented data. The same contract is why satellites read 0 instead of an error page. Two of the blanks are not explained yet: FIRMS has its key and Ransomware.live needs none, so neither one is waiting on configuration.
 
@@ -111,7 +111,7 @@ npm install
 npm run dev                 # landing page at http://localhost:3000, console at /app
 # production build:
 npm run build && npm run start
-npm test                    # 4,214 tests across 399 files (Vitest), counted on 2026-09-18
+npm test                    # 4,222 tests across 400 files (Vitest), counted on 2026-09-18
 npx vitest list             # enumerate the suite without running it
 ```
 

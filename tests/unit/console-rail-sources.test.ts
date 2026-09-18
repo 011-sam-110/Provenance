@@ -3,6 +3,7 @@ import {
   EXTRA_MAP_LAYER_IDS,
   OMITTED_LAYERS,
   RAIL_SOURCES,
+  WIDGET_ONLY_SOURCE_IDS,
 } from "@/lib/console/sources/railSources";
 import { buildSourceSections } from "@/lib/console/sources/sections";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
@@ -40,8 +41,23 @@ test("an extra map layer is not already in the catalog", () => {
 });
 
 test("the rail lists the whole catalog plus the extras, with no duplicates", () => {
-  expect(RAIL_SOURCES.length).toBe(SOURCE_CATALOG.length + EXTRA_MAP_LAYER_IDS.length);
+  expect(RAIL_SOURCES.length).toBe(
+    SOURCE_CATALOG.length + EXTRA_MAP_LAYER_IDS.length + WIDGET_ONLY_SOURCE_IDS.length,
+  );
   expect(new Set(RAIL_SOURCES.map((s) => s.id)).size).toBe(RAIL_SOURCES.length);
+});
+
+test("a widget-only row is not in the catalog and claims no map layer", () => {
+  const catalogIds = new Set(SOURCE_CATALOG.map((s) => s.id));
+  expect(WIDGET_ONLY_SOURCE_IDS.length).toBeGreaterThan(0);
+  for (const id of WIDGET_ONLY_SOURCE_IDS) {
+    expect(catalogIds.has(id), `${id} is already a catalog source`).toBe(false);
+    expect(ALL_LAYER_KEYS as string[], `${id} is a real map layer`).not.toContain(id);
+    const row = RAIL_SOURCES.find((s) => s.id === id);
+    expect(row?.widgetOnly, `${id} must be flagged widgetOnly or the rail draws it a toggle`).toBe(
+      true,
+    );
+  }
 });
 
 // The borders row is the one this whole module exists for, so it is named.

@@ -34,6 +34,8 @@ export interface SourceRowModel {
   color: string;
   attribution: string;
   keyEnv?: string;
+  /** No map layer behind this row, so it gets a ＋ and no toggle. */
+  widgetOnly?: boolean;
 }
 
 export interface SourceSectionModel {
@@ -107,6 +109,7 @@ export function buildSourceSections(
       color: s.color,
       attribution: s.attribution,
       keyEnv: s.keyEnv,
+      widgetOnly: s.widgetOnly,
     };
     const list = rowsBySection.get(sectionId);
     if (list) list.push(row);

@@ -9,6 +9,7 @@ import { useWidgetReport } from "@/components/console/WidgetFrame";
 import type { NewsItem } from "@/lib/news";
 import { useJsonPoll } from "@/lib/console/widgets/useJsonPoll";
 import { clusterNews } from "@/lib/news/cluster";
+import { NEWS_ATTRIBUTION } from "@/lib/news/sources";
 import HeadlinesDetail from "@/lib/console/widgets/headlines.detail";
 
 interface NewsPayload {
@@ -100,8 +101,7 @@ export const HEADLINES_WIDGET = {
   detail: HeadlinesDetail,
   help: {
     what: "The latest world headlines, clustered so the same story from several outlets reads as one line. Each links out to the original.",
-    source:
-      "14 world RSS feeds (BBC, Al Jazeera, NPR, Guardian, DW, France 24, Sky News, CBS, ABC, The Independent, Euronews, SCMP, Times of India, The Jerusalem Post) + the Liveuamap Telegram channel — all keyless",
+    source: NEWS_ATTRIBUTION,
   },
 };
 registerWidget(HEADLINES_WIDGET);

@@ -172,3 +172,16 @@ export function sourceInitial(name: string): string {
   const m = s.match(/[a-z0-9]/i);
   return m ? m[0].toUpperCase() : "?";
 }
+
+/**
+ * What the World Headlines widget reads, in one string.
+ *
+ * Lives here, not beside the widget, because the Sources rail states it too
+ * (lib/console/sources/railSources.ts) and a rail row that credits a different
+ * set of outlets from the widget it places is the kind of small lie this app
+ * cannot afford. One constant, two readers, no drift.
+ *
+ * It must keep naming exactly the feeds in FEEDS in app/api/news/route.ts.
+ */
+export const NEWS_ATTRIBUTION =
+  "14 world RSS feeds (BBC, Al Jazeera, NPR, Guardian, DW, France 24, Sky News, CBS, ABC, The Independent, Euronews, SCMP, Times of India, The Jerusalem Post) + the Liveuamap Telegram channel — all keyless";
