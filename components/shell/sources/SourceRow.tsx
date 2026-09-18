@@ -149,14 +149,25 @@ export default function SourceRow({
       >
         ＋
       </button>
-      <button
-        type="button"
-        className="tn-src-toggle"
-        role="switch"
-        aria-checked={on}
-        aria-label={`Show ${row.label} on the map`}
-        onClick={onToggle}
-      />
+      {/*
+        A widget-only row has no map layer, so it has no toggle. Rendering a
+        switch labelled "Show X on the map" beside something the map cannot draw
+        would be a control that lies; worse, the rail's onToggle falls through to
+        signalsStore for any id it does not recognise, so the switch would have
+        written a phantom signal and then reported itself as off.
+      */}
+      {row.widgetOnly ? (
+        <span className="tn-src-toggle-none" aria-hidden />
+      ) : (
+        <button
+          type="button"
+          className="tn-src-toggle"
+          role="switch"
+          aria-checked={on}
+          aria-label={`Show ${row.label} on the map`}
+          onClick={onToggle}
+        />
+      )}
       {open ? (
         <div className="tn-src-pop" id={popId} role="tooltip">
           <div className="tn-src-pop-grades">

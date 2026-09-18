@@ -40,7 +40,13 @@ function cleanText(raw: string | undefined): string {
   s = s.replace(/<[^>]+>/g, " "); // drop literal inline markup (CDATA HTML)
   s = decodeEntities(s); // entity-encoded markup (e.g. Guardian's &lt;p&gt;) becomes real tags…
   s = s.replace(/<[^>]+>/g, " "); // …strip those too, else raw <p>/<a href> leak into the snippet
-  return s.replace(/\s+/g, " ").trim();
+  s = s.replace(/\s+/g, " ").trim();
+  // Feeds append a call-to-action to the snippet — the Guardian does it on about
+  // one item in seven. It is the site's furniture, not the story's words, and it
+  // leaks: the framing comparison (lib/news/framing.ts) reads these snippets to
+  // find the vocabulary one outlet used and the others did not, so "Continue"
+  // would surface as a Guardian house term on every story it carried.
+  return s.replace(/\s*(?:continue reading|read more|read the full story)\s*[.…]*\s*$/i, "").trim();
 }
 
 /** First inner value of <tag>…</tag> within `block`, or undefined. */

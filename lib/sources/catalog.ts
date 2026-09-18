@@ -19,6 +19,16 @@ export interface CatalogSource {
   refreshMs: number;
   /** Env var that unlocks the source, if key-gated (drives the "needs key" state later). */
   keyEnv?: string;
+  /**
+   * This source has no map layer — it is only ever a console widget.
+   *
+   * Absent (the normal case) means the row gets a map toggle. Set, the rail draws
+   * the row with its ＋ and NO toggle, because a switch labelled "show on the map"
+   * beside something the map cannot draw is a control that lies. Nothing in
+   * SOURCE_CATALOG sets it; see WIDGET_ONLY_SOURCES in
+   * lib/console/sources/railSources.ts.
+   */
+  widgetOnly?: boolean;
 }
 
 export const CORE_IDS = ["cameras", "planes", "satellites", "webcams"] as const;

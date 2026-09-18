@@ -19,6 +19,7 @@
 import type { CatalogSource } from "@/lib/sources/catalog";
 import { SOURCE_CATALOG } from "@/lib/sources/catalog";
 import { PLANNED_LAYERS, type LayerKey } from "@/lib/layers";
+import { NEWS_ATTRIBUTION } from "@/lib/news/sources";
 
 /**
  * Map layers that are toggleable but are not catalog sources.
@@ -43,6 +44,40 @@ const EXTRA_MAP_LAYERS: CatalogSource[] = [
 export const EXTRA_MAP_LAYER_IDS: readonly string[] = EXTRA_MAP_LAYERS.map((l) => l.id);
 
 /**
+ * Rail rows that are a CONSOLE WIDGET and nothing else.
+ *
+ * The mirror image of EXTRA_MAP_LAYERS above: those are layers with no widget,
+ * these are widgets with no layer. World Headlines reads 14 publisher RSS feeds
+ * and groups them by story — there is no geometry in any of it, so it draws
+ * nothing on the map and carries no toggle.
+ *
+ * It was reachable only from the shortcuts palette, which means it was reachable
+ * only by someone who already knew it existed. The rail is where a reader goes
+ * to find out WHAT this app can show them, so a widget missing from it is a
+ * widget most people never discover.
+ *
+ * Group "Intel" puts it beside News coverage, the GDELT layer, under "Conflict &
+ * security" — an existing group, so the rail gains a row and not a heading, and
+ * the section guard in tests/unit/console-source-sections.test.ts stays quiet.
+ */
+const WIDGET_ONLY_SOURCES: CatalogSource[] = [
+  {
+    id: "news",
+    kind: "core",
+    label: "World Headlines",
+    group: "Intel",
+    color: "#0e7490",
+    attribution: NEWS_ATTRIBUTION,
+    // The widget polls on its own schedule; nothing here reads this.
+    refreshMs: 0,
+    widgetOnly: true,
+  },
+];
+
+/** The ids this module adds that place a widget but never paint the map. */
+export const WIDGET_ONLY_SOURCE_IDS: readonly string[] = WIDGET_ONLY_SOURCES.map((s) => s.id);
+
+/**
  * Layer keys the rail deliberately does not draw, with the reason.
  *
  * Exported so the guard test can assert the set is EXHAUSTIVE rather than just
@@ -51,5 +86,9 @@ export const EXTRA_MAP_LAYER_IDS: readonly string[] = EXTRA_MAP_LAYERS.map((l) =
  */
 export const OMITTED_LAYERS: readonly LayerKey[] = PLANNED_LAYERS;
 
-/** Catalog sources plus the map layers that are not in the catalog. */
-export const RAIL_SOURCES: readonly CatalogSource[] = [...SOURCE_CATALOG, ...EXTRA_MAP_LAYERS];
+/** Catalog sources, plus the map layers and the widget-only rows that are not in it. */
+export const RAIL_SOURCES: readonly CatalogSource[] = [
+  ...SOURCE_CATALOG,
+  ...EXTRA_MAP_LAYERS,
+  ...WIDGET_ONLY_SOURCES,
+];

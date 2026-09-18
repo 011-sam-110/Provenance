@@ -1,6 +1,6 @@
 "use client";
 // World Headlines widget — the RSS news data piece as a monitor card. Reads the
-// keyless /api/news payload (BBC / Al Jazeera / NPR / Guardian world feeds) and
+// keyless /api/news payload (fourteen world RSS feeds — see app/api/news/route.ts) and
 // lists the latest headlines with source + relative time, each linking out.
 
 import { useEffect, useMemo } from "react";
@@ -9,6 +9,7 @@ import { useWidgetReport } from "@/components/console/WidgetFrame";
 import type { NewsItem } from "@/lib/news";
 import { useJsonPoll } from "@/lib/console/widgets/useJsonPoll";
 import { clusterNews } from "@/lib/news/cluster";
+import { NEWS_ATTRIBUTION } from "@/lib/news/sources";
 import HeadlinesDetail from "@/lib/console/widgets/headlines.detail";
 
 interface NewsPayload {
@@ -100,7 +101,7 @@ export const HEADLINES_WIDGET = {
   detail: HeadlinesDetail,
   help: {
     what: "The latest world headlines, clustered so the same story from several outlets reads as one line. Each links out to the original.",
-    source: "BBC, Al Jazeera, NPR, Guardian, DW & France 24 world RSS + the Liveuamap Telegram channel (keyless)",
+    source: NEWS_ATTRIBUTION,
   },
 };
 registerWidget(HEADLINES_WIDGET);

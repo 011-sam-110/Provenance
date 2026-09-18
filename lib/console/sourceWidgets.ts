@@ -6,7 +6,7 @@
 // widget registry can never drift apart.
 //
 // Three cases:
-//   • a core layer that already has a bespoke console widget → that widget
+//   • a source that already has a bespoke console widget → that widget
 //     ("planes" is shown by the Aviation card, not a second planes card),
 //   • any other core layer → the generic leaf registered in widgets/sources.tsx,
 //   • a signal → the per-signal card widgets/signals.tsx already registers.
@@ -17,11 +17,21 @@
 
 import { kindOf } from "@/lib/sources/catalog";
 
-/** Core layers whose data is already shown by a bespoke console widget. */
-const CORE_TO_WIDGET: Record<string, string> = {
+/**
+ * Sources whose data is already shown by a bespoke console widget.
+ *
+ * Mostly core map layers. `news` is the exception and the reason this map is
+ * consulted BEFORE the signal branch below: it is a rail row with no map layer
+ * and no adapter, so kindOf() reports it as a signal — the fallback for anything
+ * it does not recognise — and the ＋ would have asked for a "signal:news" widget
+ * that no registry entry defines. See WIDGET_ONLY_SOURCES in
+ * lib/console/sources/railSources.ts.
+ */
+const SOURCE_TO_WIDGET: Record<string, string> = {
   cameras: "camslot",
   planes: "aviation",
   satellites: "satellites",
+  news: "headlines",
 };
 
 /** Prefix for the generic per-source leaf card (core sources with no bespoke widget). */
@@ -39,8 +49,10 @@ export function rollupWidgetId(group: string): string {
 
 /** The console widget type that shows this catalog source. */
 export function widgetTypeForSource(id: string): string {
+  const bespoke = SOURCE_TO_WIDGET[id];
+  if (bespoke) return bespoke;
   if (kindOf(id) === "signal") return `signal:${id}`;
-  return CORE_TO_WIDGET[id] ?? sourceWidgetId(id);
+  return sourceWidgetId(id);
 }
 
 /** The console widget type that shows this catalog group's roll-up. */
@@ -50,5 +62,5 @@ export function widgetTypeForGroup(group: string): string {
 
 /** Core ids that need the generic leaf card registering (no bespoke widget). */
 export function genericCoreIds(coreIds: readonly string[]): string[] {
-  return coreIds.filter((id) => !(id in CORE_TO_WIDGET));
+  return coreIds.filter((id) => !(id in SOURCE_TO_WIDGET));
 }

@@ -37,3 +37,19 @@ describe("parseRss description", () => {
     expect(items[2].description).not.toContain("href");
   });
 });
+
+it("drops a feed's call-to-action tail from the snippet", () => {
+  const xml = `<rss><channel>
+    <item><title>Flood hits the valley</title><link>https://g/1</link>
+      <description>Rescue teams reached the village at dawn. Continue reading...</description></item>
+    <item><title>Second story</title><link>https://g/2</link>
+      <description>The court gave its ruling on Friday. Read more</description></item>
+    <item><title>Third story</title><link>https://g/3</link>
+      <description>Nothing to strip here.</description></item>
+  </channel></rss>`;
+  const items = parseRss(xml, "The Guardian");
+  expect(items[0].description).toBe("Rescue teams reached the village at dawn.");
+  expect(items[1].description).toBe("The court gave its ruling on Friday.");
+  // Only a TRAILING call-to-action goes; the body is never touched.
+  expect(items[2].description).toBe("Nothing to strip here.");
+});
