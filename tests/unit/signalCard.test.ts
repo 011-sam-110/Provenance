@@ -17,6 +17,28 @@ describe("projectSignal", () => {
     expect(r.rows.map((x) => x.id)).toEqual(["b", "c", "a"]);
   });
 
+  it("ranks by the declared metric, not the capped magnitude-radius proxy, when the two disagree", () => {
+    // Reproduces displacement in prod (measured 2026-09-12): countMagnitude caps the
+    // radius proxy at 10 from ~316K people up, so Austria (308K) and Bangladesh (1.18M)
+    // tie on magnitude — the panel that DOES rank by the declared metric (signalDetail's
+    // sortFeatures/rowValue) already orders these correctly; only the card's own ranking
+    // disagreed with it.
+    const metric: SignalMetric = { field: "displacedCount", domain: [0, 5_000_000] };
+    const r = projectSignal([
+      sf({ id: "austria", title: "Austria", props: { magnitude: 10, displacedCount: 308_000 } }),
+      sf({ id: "bangladesh", title: "Bangladesh", props: { magnitude: 10, displacedCount: 1_180_000 } }),
+    ], WORLD_SCOPE, {}, metric);
+    expect(r.rows.map((x) => x.id)).toEqual(["bangladesh", "austria"]);
+  });
+
+  it("still ranks by magnitude when the source declares no metric (unchanged behaviour)", () => {
+    const r = projectSignal([
+      sf({ id: "a", props: { magnitude: 4 } }),
+      sf({ id: "b", props: { magnitude: 7 } }),
+    ], WORLD_SCOPE, {});
+    expect(r.rows.map((x) => x.id)).toEqual(["b", "a"]);
+  });
+
   it("ranks by recency desc when no feature has a magnitude (undated last)", () => {
     const r = projectSignal([
       sf({ id: "old", ts: "2026-06-20T00:00:00Z" }),
