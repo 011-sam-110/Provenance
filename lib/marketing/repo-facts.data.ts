@@ -13,7 +13,9 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-09-16 with `npx vitest list` on origin/main at c7d091b.
+ * Measured 2026-09-18 with `npx vitest list` on origin/main at ac4bf8d, plus this branch's
+ * 2 new cases in an existing file (fix/signalcard-rank-by-declared-metric), so `files` is
+ * unchanged and only `cases` moves.
  *
  * THIS LINE STOPPED SIX MERGES FROM REACHING PRODUCTION, and the reason is worth more
  * than the number. The gate (`npx tsc --noEmit && npm test`) ran ONLY in deploy.yml, on
@@ -34,7 +36,7 @@
  * re-measure both numbers on the merged tree.
  */
 export const UNIT_TESTS = {
-  cases: 4222,
+  cases: 4224,
   files: 400,
   measuredAt: "2026-09-18",
 } as const;
