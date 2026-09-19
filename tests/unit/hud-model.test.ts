@@ -58,10 +58,10 @@ describe("defaults and variants", () => {
 
   it("chips label the four core layers, short", () => {
     expect(HUD_CHIP_LABEL).toEqual({
-      cameras: "CAM",
+      livecams: "LIVE",
+      staticcams: "STIL",
       planes: "PLN",
       satellites: "SAT",
-      webcams: "WBC",
     });
   });
 });

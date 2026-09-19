@@ -13,11 +13,19 @@ import { useLayers, layersStore, type LayerKey } from "@/lib/layers";
 import { useNow, formatAge } from "@/lib/shell/useNow";
 import { track } from "@/lib/analytics/track";
 
-const TO_LAYER: Record<FreshSourceId, LayerKey> = {
-  cameras: "cameras",
-  planes: "planes",
-  satellites: "satellites",
-  webcams: "webcams",
+/**
+ * Which layer toggles a freshness chip stands for.
+ *
+ * A LIST, NOT ONE KEY, because a chip tracks a FETCH and a fetch can feed more than
+ * one layer. `cameras` is the road-camera registry — one request, drawn by both the
+ * live and the static tier — so the chip is lit while either tier is on and its click
+ * has to move both, or clicking a chip reading "paused" would leave it reading paused.
+ */
+const TO_LAYERS: Record<FreshSourceId, readonly LayerKey[]> = {
+  cameras: ["livecams", "staticcams"],
+  planes: ["planes"],
+  satellites: ["satellites"],
+  webcams: ["staticcams"],
 };
 
 export default function FreshnessTicker() {
@@ -35,8 +43,8 @@ export default function FreshnessTicker() {
       <span className="tn-ticker-label">SOURCES</span>
       <div className="tn-ticker-chips">
         {records.map((r) => {
-          const layerKey = TO_LAYER[r.id];
-          const enabled = layers[layerKey];
+          const layerKeys = TO_LAYERS[r.id];
+          const enabled = layerKeys.some((k) => layers[k]);
           const state = enabled ? classifyFreshness(r, now) : "paused";
           const age = freshnessAgeMs(r, now);
           const ageText = r.local ? "local" : state === "unknown" ? "—" : formatAge(age);
@@ -46,8 +54,11 @@ export default function FreshnessTicker() {
               type="button"
               className={`tn-chip tn-chip-${state}`}
               onClick={() => {
-                layersStore.toggle(layerKey);
-                track({ name: "layer_toggled", layer: layerKey });
+                // Off when any is on, on when none is — so one click always changes
+                // what the chip says about itself.
+                const next = !enabled;
+                for (const k of layerKeys) layersStore.set(k, next);
+                track({ name: "layer_toggled", layer: layerKeys[0] });
               }}
               title={
                 enabled

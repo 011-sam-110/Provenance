@@ -52,7 +52,11 @@ describe("every catalog row maps to a widget the console can render", () => {
     // Planes are shown by the Aviation card. Adding a second "Planes" widget beside
     // it would be two cards over one feed, which is how a workspace fills with noise.
     expect(widgetTypeForSource("planes")).toBe("aviation");
-    expect(widgetTypeForSource("cameras")).toBe("camslot");
+    // BOTH camera tiers place the same slot. They are one registry cut in two, and
+    // the picker behind the slot reads both (PICK_LAYERS), so a second card would be
+    // two widgets over one pool.
+    expect(widgetTypeForSource("livecams")).toBe("camslot");
+    expect(widgetTypeForSource("staticcams")).toBe("camslot");
     expect(widgetTypeForSource("satellites")).toBe("satellites");
   });
 
@@ -62,8 +66,11 @@ describe("every catalog row maps to a widget the console can render", () => {
       expect(getWidgetType(sourceWidgetId(id))).toBeDefined();
     }
     // Whatever that set is today, it must not have swallowed a core layer that
-    // already has a bespoke card.
-    expect(genericCoreIds(CORE_IDS)).not.toContain("planes");
+    // already has a bespoke card. It is EMPTY today — every core row has one — so
+    // the loop above is vacuous and this is the assertion carrying the guard.
+    for (const id of ["planes", "satellites", "livecams", "staticcams"]) {
+      expect(genericCoreIds(CORE_IDS)).not.toContain(id);
+    }
   });
 
   it("gives every registered roll-up a title that names its category", () => {

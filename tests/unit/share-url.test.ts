@@ -8,7 +8,7 @@ test("full view state round-trips encode → decode unchanged", () => {
     lat: 51.5074,
     lon: -0.1278,
     zoom: 11.5,
-    layers: ["cameras", "planes"],
+    layers: ["livecams", "planes"],
     basemap: "satellite",
     obj: "tfl:JamCams_00001",
   };
@@ -45,8 +45,27 @@ test("garbage params are dropped, never thrown", () => {
 });
 
 test("invalid layer keys are filtered, valid kept in canonical order", () => {
-  const out = rt("layers=planes,cameras,bogus");
-  expect(out.layers).toEqual(["cameras", "planes"]);
+  const out = rt("layers=planes,satellites,bogus");
+  expect(out.layers).toEqual(["planes", "satellites"]);
+});
+
+// A link someone sent before the camera layers were renamed. These are out in the
+// world and cannot be reissued, so the decoder still answers them — and `cameras`
+// expands to BOTH tiers, because that is the set of pins that link drew. Dropping
+// the token instead would open the link with the cameras off, which reads as a
+// broken link rather than a renamed layer. See LEGACY_LAYER_ALIASES in lib/layers.ts.
+test("a link minted with the retired camera keys still opens the layers it drew", () => {
+  expect(rt("layers=cameras,planes").layers).toEqual(["livecams", "staticcams", "planes"]);
+  expect(rt("layers=webcams").layers).toEqual(["staticcams"]);
+  expect(rt("layers=cameras,webcams").layers).toEqual(["livecams", "staticcams"]);
+});
+
+// The expansion is one-way: nothing WRITES a retired key, so a link minted today
+// carries only live ones and a round-trip cannot reintroduce the old vocabulary.
+test("encode never emits a retired key", () => {
+  const qs = encodeViewState({ layers: ["livecams", "staticcams", "planes", "satellites"] });
+  expect(qs).not.toContain("cameras=");
+  expect(qs).toBe("layers=livecams%2Cstaticcams%2Cplanes%2Csatellites");
 });
 
 test("empty layers (all off) round-trips as []", () => {

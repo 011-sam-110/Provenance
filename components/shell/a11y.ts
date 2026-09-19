@@ -40,8 +40,24 @@ export function stageRegionLabel(input: {
  * ACTIVE_LAYERS in lib/layers.ts (the keys that have a real map layer); the
  * borders/names reference layer is left out because it is not a data feed.
  */
-export const STATUS_LAYERS = ["cameras", "planes", "satellites", "webcams"] as const;
+export const STATUS_LAYERS = ["livecams", "staticcams", "planes", "satellites"] as const;
 export type StatusLayerKey = (typeof STATUS_LAYERS)[number];
+
+/**
+ * What the status line CALLS each layer.
+ *
+ * The key used to be readable on its own — "cameras, planes, satellites, webcams"
+ * was a sentence. `livecams` and `staticcams` are not words, and a screen reader
+ * would say them as one run-together token, so the spoken name is written out.
+ * These match the Sources rail's labels exactly: a listener and a looker have to be
+ * given the same name for the same control.
+ */
+const SPOKEN: Record<StatusLayerKey, string> = {
+  livecams: "live cams",
+  staticcams: "static cams",
+  planes: "planes",
+  satellites: "satellites",
+};
 
 /**
  * The polite status sentence for the top bar.
@@ -65,7 +81,7 @@ export function appStatusLine(input: {
       ? "No data layers are on."
       : off.length === 0
         ? "All data layers are on."
-        : `Layers on: ${on.join(", ")}. Off: ${off.join(", ")}.`;
+        : `Layers on: ${on.map((k) => SPOKEN[k]).join(", ")}. Off: ${off.map((k) => SPOKEN[k]).join(", ")}.`;
   return [board, layers].filter(Boolean).join(" ");
 }
 

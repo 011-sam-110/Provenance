@@ -14,19 +14,32 @@ export interface Metrics {
   camerasOnline: number;
   /** Cameras in the registry, regardless of health. */
   camerasTotal: number;
+  /**
+   * The registry split by what a pin actually shows — the two camera LAYERS, where
+   * `camerasTotal` is the one FETCH they share. They sum to `camerasTotal`.
+   *
+   * Counted from the loaded rows, never assumed: `liveCameras` is the subset whose
+   * stream /api/hls can play, which on the live registry is a small minority. A rail
+   * row showing `camerasTotal` beside a label saying "Live cams" would be the exact
+   * overstatement the tier split exists to remove.
+   */
+  liveCameras: number;
+  stillCameras: number;
   planes: number;
   satellites: number;
-  /** Windy webcams currently loaded (a DISTINCT layer from the road cameras). */
+  /** Windy webcams currently loaded — drawn on the Static cams layer beside `stillCameras`. */
   webcams: number;
 }
 
-let state: Metrics = { camerasOnline: 0, camerasTotal: 0, planes: 0, satellites: 0, webcams: 0 };
+let state: Metrics = { camerasOnline: 0, camerasTotal: 0, liveCameras: 0, stillCameras: 0, planes: 0, satellites: 0, webcams: 0 };
 const listeners = new Set<() => void>();
 
 function shallowEqual(a: Metrics, b: Metrics): boolean {
   return (
     a.camerasOnline === b.camerasOnline &&
     a.camerasTotal === b.camerasTotal &&
+    a.liveCameras === b.liveCameras &&
+    a.stillCameras === b.stillCameras &&
     a.planes === b.planes &&
     a.satellites === b.satellites &&
     a.webcams === b.webcams

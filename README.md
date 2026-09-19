@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Next.js-15-black?logo=next.js" alt="Next.js 15">
   <img src="https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/MapLibre%20GL-v5-1a73e8" alt="MapLibre GL v5">
-  <img src="https://img.shields.io/badge/unit%20tests-4%2C186-2ea44f" alt="4,186 unit tests">
+  <img src="https://img.shields.io/badge/unit%20tests-4%2C241-2ea44f" alt="4,241 unit tests">
 </p>
 
 ## TL;DR
@@ -34,7 +34,7 @@ _Status: live at [provenance-online.com](https://provenance-online.com) and runs
 | `GET /api/planes` | **3,000 aircraft**, a proportional spatial sample capped from at least 4,106 seen. Only 1 of the 4 type batches answered on that read, so the upstream figure is a lower bound |
 | `GET /api/satellites` | **0 satellites**. The route answered `celestrak_unavailable` on two reads about three minutes apart |
 | webcam layer | **70,698 webcams** in 196 static tiles under `public/webcams/`, harvested from Windy on 2026-09-05. `GET /api/webcams`, the live fallback, returned 1,609 |
-| `npx vitest list` | **4,222 tests across 400 files** collected. This counts the suite and does not run it |
+| `npx vitest list` | **4,241 tests across 402 files** collected. This counts the suite and does not run it |
 
 All four empty layers still answered `200` with an empty set, which is the contract: a dormant or failing upstream degrades to an honest blank, never a 5xx and never invented data. The same contract is why satellites read 0 instead of an error page. Two of the blanks are not explained yet: FIRMS has its key and Ransomware.live needs none, so neither one is waiting on configuration.
 
@@ -67,7 +67,7 @@ Governments, space agencies, seismologists and UN clusters publish an enormous a
 - **Truncation is declared, not hidden** - an endpoint that caps its response says so in a coverage record: how many rows existed upstream, how many are here, and how the survivors were chosen. On 2026-09-14, UK crime returned 1,500 of 11,181 that way, GPS jamming 400 of 475, rocket launches 30 of 363, and aircraft 3,000 of at least 4,106 (a spatial sample, so every region keeps its share).
 - **17 camera feeds, 26 agency networks, 11 countries, keyless** - the actual agency feeds (TfL, Caltrans, SCDOT, Finland Digitraffic, Castle Rock 511, Oregon TripCheck, DriveBC, NZTA, Iceland, Estonia, Traffic Scotland, CET-SP Sao Paulo, two Serbian operators - MUP border crossings and JP Putevi Srbije toll plazas - BIHAMK in Bosnia and Herzegovina, ACT in Puerto Rico, and Houston TranStar, the first network added by discovery rather than by hand). Feeds and networks are not the same count here, because Castle Rock alone carries ten separate 511 deployments (Florida, Georgia, New York, Idaho, Louisiana, New England, Ontario, Alberta, Nova Scotia, New Brunswick), which is what takes 17 feeds to 26 agencies. All of it is normalised into one `Camera` shape and drawn as one dot per camera at every zoom - no count badges, no aggregation. Cameras clustered until 2026-09-03; the badges covered a measured 51.9% of the Europe rectangle at world zoom, which is a poor trade for hiding a circle layer the GPU draws without complaint. Each camera opens its live still or HLS video through a closed proxy that takes a camera **id**, never an arbitrary URL, resolves it behind a host allowlist and caches at that source's own cadence. A feed that fails keeps its last-good cameras instead of silently deleting its region.
 - **Aircraft and satellites** - live ADS-B from adsb.lol, pulled worldwide by ICAO type in four paced requests and capped as a proportional spatial sample so every region keeps its share, with breadcrumb trails and route enrichment fetched on click; satellites propagated in the browser from CelesTrak TLEs with SGP4, so the server never ticks orbits and the constellation moves at frame rate.
-- **A terminal-style console** - a dense OSINT shell at `/app`: 66 widget types in a ⌘K catalogue, three presets that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. A first visit opens the Globe preset, which is the map with no widgets in front of it. Every layer and every widget is one ⌘K entry away. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
+- **A terminal-style console** - a dense OSINT shell at `/app`: 65 widget types in a ⌘K catalogue, three presets that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. A first visit opens the Globe preset, which is the map with no widgets in front of it. Every layer and every widget is one ⌘K entry away. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
 - **A landing page that cannot drift** - the hero globe at `/` draws every registered signal layer from the same `SOURCE_CATALOG` the app renders from, so adding an adapter updates it with no marketing-side edit. No count is typed into the page. Each one is read from a committed data file that is either pinned by a test, generated from a production run, or quoted from one published study.
 
 </details>
@@ -111,7 +111,7 @@ npm install
 npm run dev                 # landing page at http://localhost:3000, console at /app
 # production build:
 npm run build && npm run start
-npm test                    # 4,222 tests across 400 files (Vitest), counted on 2026-09-18
+npm test                    # 4,241 tests across 402 files (Vitest), counted on 2026-09-19
 npx vitest list             # enumerate the suite without running it
 ```
 

@@ -94,9 +94,9 @@ export default function SourceRow({
   const popId = useId();
 
   const widgetType = widgetTypeForSource(row.id);
-  // The ＋ names the WIDGET; the row names the SOURCE. The Cameras row stays
-  // "Cameras" even when the thing it places is called something else, because the
-  // toggle beside it acts on the map layer.
+  // The ＋ names the WIDGET; the row names the SOURCE. A camera row stays "Live
+  // cams" / "Static cams" even though the thing it places is called something else,
+  // because the toggle beside it acts on the map layer.
   //
   // NO SILENT FALLBACK TO row.label. If the registry has no widget of this type,
   // the ＋ would be claiming to place something that does not exist, so it says so

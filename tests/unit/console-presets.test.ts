@@ -558,6 +558,6 @@ describe("the Streets board opens on a monitored area", () => {
   });
 
   it("still asks for the camera and webcam layers", () => {
-    expect(streets.layers).toEqual(["cameras", "webcams"]);
+    expect(streets.layers).toEqual(["livecams", "staticcams"]);
   });
 });

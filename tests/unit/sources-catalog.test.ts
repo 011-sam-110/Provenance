@@ -53,6 +53,7 @@ test("catalogByGroup preserves order and partitions every source exactly once", 
 });
 
 test("kindOf classifies core vs signal", () => {
-  expect(kindOf("cameras")).toBe("core");
+  expect(kindOf("livecams")).toBe("core");
+  expect(kindOf("staticcams")).toBe("core");
   expect(kindOf(SIGNALS[0].id)).toBe("signal");
 });

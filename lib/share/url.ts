@@ -10,7 +10,8 @@
 // Param names are short + stable (they show up in shared URLs):
 //   lat, lon — map centre (clamped to ±90 / ±180)
 //   z        — map zoom (clamped 0–18, the engine's maxZoom)
-//   layers   — csv of the ACTIVE layers currently ON (e.g. "cameras,planes")
+//   layers   — csv of the ACTIVE layers currently ON (e.g. "livecams,planes").
+//              Retired keys are still ACCEPTED on the way in — see decodeViewState.
 //   base     — basemap key, validated against the live registry, so every entry in
 //              lib/basemaps.ts deep-links with no edit here (dark | positron |
 //              streets | satellite | topo)
@@ -25,7 +26,7 @@
 // default board with the param falling out of the address bar on the first write.
 // Same defect, same fix as `/` — see tests/unit/console-static.test.ts.
 
-import { ACTIVE_LAYERS, type LayerKey } from "@/lib/layers";
+import { ACTIVE_LAYERS, LEGACY_LAYER_ALIASES, type LayerKey } from "@/lib/layers";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 
@@ -110,10 +111,18 @@ export function decodeViewState(params: URLSearchParams): ViewState {
   if (zoom != null) out.zoom = clamp(zoom, ZOOM_MIN, ZOOM_MAX);
 
   if (params.has("layers")) {
+    // A RETIRED KEY IS EXPANDED, NOT DROPPED. `?layers=cameras,planes` links were
+    // minted against the old vocabulary and are out in the world where nobody can
+    // reissue them; dropping the token would silently open those links with the
+    // cameras off, which reads as a broken link rather than a renamed layer. See
+    // LEGACY_LAYER_ALIASES in lib/layers.ts for the mapping and why `cameras`
+    // expands to both tiers.
     const keys = (params.get("layers") ?? "")
       .split(",")
       .map((s) => s.trim())
-      .filter((s): s is LayerKey => VALID_LAYERS.has(s));
+      .flatMap((s): LayerKey[] =>
+        VALID_LAYERS.has(s) ? [s as LayerKey] : [...(LEGACY_LAYER_ALIASES[s] ?? [])],
+      );
     out.layers = ACTIVE_LAYERS.filter((k) => keys.includes(k)); // de-dupe + canonical order
   }
 

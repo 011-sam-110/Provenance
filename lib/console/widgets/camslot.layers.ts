@@ -31,15 +31,15 @@
 // on before they started, so "restore" would mean "turn off", which is a
 // different thing and wrong for anyone who had them on all along.
 //
-// THE COST, STATED RATHER THAN BURIED. `webcams` defaults to false on purpose and
-// is deliberately excluded from the layer presets — lib/layers.ts explains why it
-// is a keyed, rate-limited global sample that stays opt-in. This reverses that for
-// one gesture, and that is a real trade, not an oversight. What keeps it honest is
-// WHERE the call sits: it fires on the arming action, never on mount and never on
-// opening the flyout, so nothing fetches Windy until someone has deliberately
-// pressed a button that says it is about to collect cameras. The opt-in did not
-// disappear; it moved from a toggle users could not find to the gesture they
-// actually performed.
+// THE COST, STATED RATHER THAN BURIED. This switches BOTH camera tiers on, and
+// `staticcams` is the expensive half: it carries the whole Windy catalogue as well
+// as the registry's stills. The tier is on by default now, where the old `webcams`
+// key was off, so this gesture no longer reverses a default — but it can still pull
+// the Windy tiles in early, since the fetch is otherwise held back until the map
+// crosses WEBCAM_MIN_ZOOM. What keeps it honest is WHERE the call sits: it fires on
+// the arming action, never on mount and never on opening the flyout, so nothing is
+// fetched until someone has deliberately pressed a button that says it is about to
+// collect cameras.
 
 import { layersStore, type LayerKey } from "@/lib/layers";
 import { pickStore } from "@/lib/console/widgets/camslot.pick";
@@ -48,14 +48,15 @@ import { pickStore } from "@/lib/console/widgets/camslot.pick";
  * The core layers a camera pick draws from.
  *
  * These are exactly the two stores the pick paths read — `loadedCamerasStore`
- * (road cameras) and `loadedWebcamsStore` (the Windy sample) — and each is
- * populated only while its layer is on, because WorldMap gates the feed
- * component itself (`{layers.webcams && <WebcamsFeed …/>}`). Switching the layer
+ * (the road registry, which both tiers draw from) and `loadedWebcamsStore` (the
+ * Windy sample, which rides on `staticcams`) — and each is populated only while its
+ * layer is on, because WorldMap gates the feed component itself
+ * (`{layers.staticcams && webcamTierArmed && <WebcamsFeed …/>}`). Switching the layer
  * on is therefore what starts the fetch, not merely what reveals it.
  *
  * Exported so a test can assert the list rather than restate it.
  */
-export const PICK_LAYERS: readonly LayerKey[] = ["cameras", "webcams"];
+export const PICK_LAYERS: readonly LayerKey[] = ["livecams", "staticcams"];
 
 /**
  * Switch on every layer a pick can draw from. Idempotent — `layersStore.set`

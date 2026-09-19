@@ -15,23 +15,96 @@
 // wrong — the behaviour appears to confirm it. tn.layers.v1 is a dead key.
 
 import { useSyncExternalStore } from "react";
+import { RETIRED_LAYER_KEYS } from "@/lib/layerAliases";
 
 // Active layers have a live CORE map layer today. The two "planned" keys never got
 // one. ships still ships as the AIS signal layer; weather no longer has one — its
 // adapter was unregistered in #177. Neither is drawn in the rail; see OMITTED_LAYERS
 // in lib/console/sources/railSources.ts.
-export type LayerKey = "cameras" | "satellites" | "planes" | "ships" | "webcams" | "weather" | "countries";
+//
+// THE CAMERA KEYS ARE CUT BY WHAT A PIN SHOWS YOU, NOT BY WHICH FEED IT CAME FROM.
+// They used to be `cameras` (the road-camera registry) and `webcams` (Windy), which
+// named the SUPPLIER and told a reader nothing about what they would get. It also
+// made the obvious relabel a lie: only ~1,467 of the registry's ~20,400 cameras
+// carry a stream /api/hls can play, so a toggle called "Live cams" over the whole
+// registry would have overstated the product by a factor of thirteen.
+//
+//   livecams   — moving video we can actually play. Registry cameras whose
+//                `live` flag is true, and nothing else.
+//   staticcams — a still image on a refresh interval. The other ~18,900 registry
+//                cameras PLUS every Windy webcam.
+//
+// `live` is derived per camera in lib/cameras/body.ts and rides on the row the map
+// already loads, so the split costs no extra request.
+//
+// WHY EVERY WINDY WEBCAM IS ON THE STILL SIDE, AND WHAT WOULD CHANGE IT. Not because
+// Windy has no live cameras — because this app never asks for them. `WebcamSchema`
+// (lib/types.ts) carries `imageUrl`/`thumbnailUrl` and NO stream field, and
+// lib/sources/windy.ts requests `include=images,location,urls,categories`, which
+// omits Windy's `player` include (day/month/live embeds). So "0 live webcams" is a
+// fact about our adapter, not about the catalogue, and it has never been measured
+// the other way. Add `player` and a row could arrive live — at which point this
+// split has to read the same per-row flag for webcams that it reads for registry
+// cameras, instead of assuming the tier from the source.
+export type LayerKey = "livecams" | "staticcams" | "satellites" | "planes" | "ships" | "weather" | "countries";
 export type LayerState = Record<LayerKey, boolean>;
 
-export const ACTIVE_LAYERS: readonly LayerKey[] = ["cameras", "planes", "satellites", "webcams"];
+export const ACTIVE_LAYERS: readonly LayerKey[] = ["livecams", "staticcams", "planes", "satellites"];
 export const PLANNED_LAYERS: readonly LayerKey[] = ["ships", "weather"];
 
+/**
+ * Retired layer keys, and which live keys they become.
+ *
+ * READ BOUNDARIES ONLY — a saved variant override (tn.variant.v1), a saved area, and
+ * every `?layers=` link anyone has already sent. Those links were minted against the
+ * old names and there is no way to reissue them, so the decoder keeps answering.
+ *
+ * `cameras` maps to BOTH tiers because that is what it drew: the whole registry, live
+ * and still together. `webcams` was the Windy layer, which is entirely stills, so it
+ * lands in staticcams alone. Nothing maps back the other way — these names are gone
+ * from everything this code WRITES.
+ */
+export const LEGACY_LAYER_ALIASES = RETIRED_LAYER_KEYS as Readonly<Record<string, readonly LayerKey[]>>;
+
+/**
+ * A saved or authored layer map with retired keys expanded into the live ones.
+ *
+ * Used on the two paths that can still be carrying the old vocabulary: a persisted
+ * variant override, and a user-authored variant — both live in `tn.variant.v1`, both
+ * were written before the rename, and neither is reachable for a rewrite. The share
+ * link takes the same expansion in lib/share/url.ts, and a saved source context in
+ * lib/shell/inspector.ts; the reasoning for `true` winning a collision is written out
+ * once, there.
+ *
+ * Unknown keys are dropped rather than carried: an override is spread over
+ * DEFAULT_STATE, so a stray key would ride along in the state object forever.
+ */
+export function expandLegacyLayers(saved: unknown): Partial<LayerState> {
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+  const known = new Set<string>(Object.keys(DEFAULT_STATE));
+  const out: Partial<LayerState> = {};
+  const expanded: Partial<LayerState> = {};
+  for (const [k, v] of Object.entries(saved as Record<string, unknown>)) {
+    if (typeof v !== "boolean") continue;
+    if (known.has(k)) out[k as LayerKey] = v;
+    else for (const key of RETIRED_LAYER_KEYS[k] ?? []) {
+      expanded[key as LayerKey] = (expanded[key as LayerKey] ?? false) || v;
+    }
+  }
+  return { ...expanded, ...out };
+}
+
 export const DEFAULT_STATE: LayerState = {
-  cameras: true,
+  livecams: true,
+  // ON, where `webcams` was off. The still tier is most of the road-camera registry
+  // and that registry has always been on by default — keeping it off would have hidden
+  // ~18,900 cameras the product has drawn since it shipped. The Windy webcams inside
+  // this tier are the part that is new to the default, and they are zoom-gated rather
+  // than dumped on the globe — see WEBCAM_MIN_ZOOM in components/WorldMap.tsx.
+  staticcams: true,
   satellites: true,
   planes: true,
   ships: false,
-  webcams: false,
   weather: false,
   // A base reference layer (borders + names + click), not a data feed — on by
   // default and intentionally left out of ACTIVE/PLANNED + the quick presets so a
@@ -42,32 +115,37 @@ export const DEFAULT_STATE: LayerState = {
 
 
 export type PresetId = "all" | "none" | "cameras" | "air-space";
-// Labels have to match presetState() below, which they did not: the "all" preset
-// switches cameras/planes/satellites and forces webcams OFF, and "none" deliberately
-// leaves the countries reference layer ON. A button labelled "All" that turns a
-// visible layer off is a false claim, so the label says what it does and `hint`
-// (rendered as the button's title) states the exception outright.
+// Labels have to match presetState() below, and `hint` (rendered as the button's
+// title) states anything the one-word label cannot. "None" deliberately leaves the
+// countries reference layer ON, so it says so rather than claiming more than it does.
+//
+// The old "Core" exception is gone with the key rename: it existed because the preset
+// forced `webcams` off while calling itself All, and there is no longer a camera layer
+// held out of it. "Cameras" now means both tiers.
+//
+// NOTHING MOUNTED RENDERS THIS TODAY. Its two renderers — components/shell/PresetBar
+// and components/shell/sources/LayerPresetRow — are both unmounted, each kept with its
+// reasoning on disk. The set is maintained rather than extended for that reason: a
+// fifth chip here would be a control no one can press.
 export const LAYER_PRESETS: { id: PresetId; label: string; hint: string }[] = [
-  { id: "all", label: "Core", hint: "Cameras, planes and satellites on — webcams stay opt-in" },
+  { id: "all", label: "All", hint: "Live cams, static cams, planes and satellites on" },
   { id: "none", label: "None", hint: "Every data layer off — borders and names stay on" },
-  { id: "cameras", label: "Cameras", hint: "Road cameras only" },
+  { id: "cameras", label: "Cameras", hint: "Both camera tiers, nothing else" },
   { id: "air-space", label: "Air + space", hint: "Planes and satellites only" },
 ];
 
-// Presets switch the core cameras/planes/satellites layers. Webcams is active
-// (a live toggle) but stays OUT of the presets on purpose: it is a keyed,
-// rate-limited global sample, so it stays opt-in rather than being pulled in by
-// a one-tap preset. ships/weather have no core layer to switch (their data lives in
-// lib/signals), so a preset can never turn them on and they stay false throughout.
+// Presets switch the four ACTIVE_LAYERS. ships/weather have no core layer to switch
+// (their data lives in lib/signals), so a preset can never turn them on and they stay
+// false throughout.
 export function presetState(id: PresetId): LayerState {
-  const off: LayerState = { ...DEFAULT_STATE, cameras: false, satellites: false, planes: false };
+  const off: LayerState = { ...DEFAULT_STATE, livecams: false, staticcams: false, satellites: false, planes: false };
   switch (id) {
     case "all":
-      return { ...off, cameras: true, planes: true, satellites: true };
+      return { ...off, livecams: true, staticcams: true, planes: true, satellites: true };
     case "none":
       return off;
     case "cameras":
-      return { ...off, cameras: true };
+      return { ...off, livecams: true, staticcams: true };
     case "air-space":
       return { ...off, planes: true, satellites: true };
   }

@@ -149,13 +149,13 @@ test("an empty area reads every layer OFF in the rail, and adds nothing to the m
   // area's — flooring an area with it would silently hand the user a context they
   // never configured, and would drift again the day a default flips.
   //
-  // NOTHING IS FORCED ON. ALWAYS_ON_SOURCES used to pin cameras and webcams true
+  // NOTHING IS FORCED ON. ALWAYS_ON_SOURCES used to pin the camera layers true
   // here so an area could not load to a blank map; loading an area cannot blank the
   // map any more, and with every area live at once a forced source would be camera
   // pins inside every ring ever drawn, with a toggle that says off. See inspector.ts.
   expect(layersStore.editing()).toEqual({
-    cameras: false,
-    webcams: false,
+    livecams: false,
+    staticcams: false,
     satellites: false,
     planes: false,
     ships: false,

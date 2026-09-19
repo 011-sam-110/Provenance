@@ -19,9 +19,9 @@ import { PICK_LAYERS, armPicking, revealPickLayers } from "@/lib/console/widgets
 
 // Both stores are module singletons, so state leaks between tests unless it is
 // reset. "none" is the honest baseline here rather than "all": it is the only
-// preset that leaves BOTH cameras and webcams off, which is the state the change
-// exists to fix. (webcams is false in every preset — see lib/layers.ts — so an
-// "all" baseline would make the webcams assertions pass for the wrong reason.)
+// preset that leaves BOTH camera tiers off, which is the state the change exists to
+// fix. Every other preset lights at least one of them, so any other baseline would
+// make these assertions pass for the wrong reason.
 beforeEach(() => {
   layersStore.applyPreset("none");
   pickStore.setMode("off");
@@ -31,21 +31,21 @@ afterEach(() => {
   pickStore.setMode("off");
 });
 
-test("the picker draws from exactly the cameras and webcams layers", () => {
+test("the picker draws from exactly the two camera tiers", () => {
   // Pinned as a list, not asserted loosely, because it is the whole contract: if a
   // third source of pins is added to the pick paths and not added here, arming will
   // silently stop covering it.
-  expect(PICK_LAYERS).toEqual(["cameras", "webcams"]);
+  expect(PICK_LAYERS).toEqual(["livecams", "staticcams"]);
 });
 
 test("revealPickLayers switches both pick layers on from cold", () => {
-  expect(layersStore.get().cameras).toBe(false);
-  expect(layersStore.get().webcams).toBe(false);
+  expect(layersStore.get().livecams).toBe(false);
+  expect(layersStore.get().staticcams).toBe(false);
 
   revealPickLayers();
 
-  expect(layersStore.get().cameras).toBe(true);
-  expect(layersStore.get().webcams).toBe(true);
+  expect(layersStore.get().livecams).toBe(true);
+  expect(layersStore.get().staticcams).toBe(true);
 });
 
 test("armPicking turns the pins on as well as the mode", () => {
@@ -56,8 +56,8 @@ test("armPicking turns the pins on as well as the mode", () => {
   armPicking();
 
   expect(pickStore.get().mode).toBe("picking");
-  expect(layersStore.get().cameras).toBe(true);
-  expect(layersStore.get().webcams).toBe(true);
+  expect(layersStore.get().livecams).toBe(true);
+  expect(layersStore.get().staticcams).toBe(true);
 });
 
 test("arming leaves the other core layers alone", () => {
@@ -79,16 +79,16 @@ test("stopping picking leaves the layers up", () => {
   pickStore.setMode("off");
 
   expect(pickStore.get().mode).toBe("off");
-  expect(layersStore.get().cameras).toBe(true);
-  expect(layersStore.get().webcams).toBe(true);
+  expect(layersStore.get().livecams).toBe(true);
+  expect(layersStore.get().staticcams).toBe(true);
 });
 
 test("arming twice is idempotent", () => {
   armPicking();
   armPicking();
 
-  expect(layersStore.get().cameras).toBe(true);
-  expect(layersStore.get().webcams).toBe(true);
+  expect(layersStore.get().livecams).toBe(true);
+  expect(layersStore.get().staticcams).toBe(true);
   expect(pickStore.get().mode).toBe("picking");
 });
 

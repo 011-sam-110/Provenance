@@ -28,11 +28,11 @@ describe("stageRegionLabel", () => {
 });
 
 describe("appStatusLine", () => {
-  const allOn = { cameras: true, planes: true, satellites: true, webcams: true };
+  const allOn = { livecams: true, staticcams: true, planes: true, satellites: true };
 
   it("reports the board and splits the layers into on and off", () => {
-    expect(appStatusLine({ boardTitle: "World Overview", layers: { cameras: true, planes: false, satellites: true, webcams: false } }))
-      .toBe("World Overview board. Layers on: cameras, satellites. Off: planes, webcams.");
+    expect(appStatusLine({ boardTitle: "World Overview", layers: { livecams: true, staticcams: false, planes: false, satellites: true } }))
+      .toBe("World Overview board. Layers on: live cams, satellites. Off: static cams, planes.");
   });
 
   it("collapses the all-on and all-off cases instead of listing an empty side", () => {
@@ -50,21 +50,21 @@ describe("appStatusLine", () => {
   // would make a screen reader recite the camera total every few seconds.
   it("contains no digits, so a ticking count can never churn the live region", () => {
     expect(appStatusLine({ boardTitle: "World Overview", layers: allOn })).not.toMatch(/\d/);
-    expect(appStatusLine({ boardTitle: "Air · Sea · Space", layers: { cameras: true } })).not.toMatch(/\d/);
+    expect(appStatusLine({ boardTitle: "Air · Sea · Space", layers: { livecams: true } })).not.toMatch(/\d/);
   });
 
   it("is stable across re-renders that change nothing", () => {
-    const a = appStatusLine({ boardTitle: "Earth Systems", layers: { cameras: true, satellites: true } });
-    const b = appStatusLine({ boardTitle: "Earth Systems", layers: { cameras: true, satellites: true } });
+    const a = appStatusLine({ boardTitle: "Earth Systems", layers: { livecams: true, satellites: true } });
+    const b = appStatusLine({ boardTitle: "Earth Systems", layers: { livecams: true, satellites: true } });
     expect(a).toBe(b);
   });
 
   it("treats a missing key as off rather than throwing", () => {
-    expect(appStatusLine({ layers: { cameras: true } }))
-      .toBe("Layers on: cameras. Off: planes, satellites, webcams.");
+    expect(appStatusLine({ layers: { livecams: true } }))
+      .toBe("Layers on: live cams. Off: static cams, planes, satellites.");
   });
 
   it("only ever talks about the four real data layers", () => {
-    expect([...STATUS_LAYERS]).toEqual(["cameras", "planes", "satellites", "webcams"]);
+    expect([...STATUS_LAYERS]).toEqual(["livecams", "staticcams", "planes", "satellites"]);
   });
 });

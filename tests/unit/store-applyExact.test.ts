@@ -4,9 +4,10 @@ import { signalsStore } from "@/lib/signals/store";
 
 describe("applyExact", () => {
   it("layersStore.applyExact replaces the on-set over defaults", () => {
-    layersStore.applyExact({ cameras: false, planes: true, satellites: true, ships: false, webcams: false, weather: false, countries: true });
+    layersStore.applyExact({ livecams: false, staticcams: false, planes: true, satellites: true, ships: false, weather: false, countries: true });
     expect(layersStore.get().planes).toBe(true);
-    expect(layersStore.get().cameras).toBe(false);
+    expect(layersStore.get().livecams).toBe(false);
+    expect(layersStore.get().staticcams).toBe(false);
   });
   it("signalsStore.applyExact replaces the whole on-set", () => {
     signalsStore.set("earthquakes", true);

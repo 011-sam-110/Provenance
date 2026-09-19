@@ -174,10 +174,10 @@ function useRollupCount(ids: string[]): number | null {
   const sig = useSignalCounts();
   const counts: Record<string, number | undefined> = {};
   for (const id of ids) {
-    if (id === "cameras") counts[id] = m.camerasTotal || undefined;
+    if (id === "livecams") counts[id] = m.liveCameras || undefined;
+    else if (id === "staticcams") counts[id] = (m.stillCameras + m.webcams) || undefined;
     else if (id === "planes") counts[id] = m.planes || undefined;
     else if (id === "satellites") counts[id] = m.satellites || undefined;
-    else if (id === "webcams") counts[id] = m.webcams || undefined;
     else counts[id] = sig[id] ?? undefined;
   }
   return rollupCount(counts, ids);

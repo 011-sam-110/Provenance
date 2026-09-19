@@ -172,6 +172,22 @@ const SAT_LAYER = "satellite-core";
 const WEBCAM_SRC = "webcams";
 const WEBCAM_DOT_LAYER = "webcam-dots"; // every webcam as its own rose dot
 const WEBCAM_LAYER = "webcam-markers"; // detailed webcam icons on descent
+/**
+ * The zoom at which the Windy tier of `staticcams` switches on — both the pins and
+ * the tile fetch behind them.
+ *
+ * WHY THERE IS A FLOOR AT ALL. `staticcams` is ON by default (lib/layers.ts), and the
+ * Windy catalogue is 70,698 webcams against the road registry's ~20,400. Painting all
+ * of it on the globe is the "dot-soup" this file's own header sets out to avoid, and
+ * it would put 3.5x the features on screen at the zoom where they are least
+ * distinguishable — the one view every visitor starts in. The registry's still
+ * cameras are NOT gated, so the toggle visibly does something at any zoom; this is
+ * the extra tier arriving when there is room for it.
+ *
+ * IT ALSO BOUNDS THE LOAD. Nothing is fetched until the map crosses this line, so the
+ * 196 tiles are paid for by someone who has zoomed in, not by every page view.
+ */
+const WEBCAM_MIN_ZOOM = 3;
 const DEM_SRC = "terrain-dem";
 const HILLSHADE_LAYER = "hillshade";
 // Global signals — THREE aggregated sources carrying the union of every ON
@@ -503,6 +519,18 @@ export default function WorldMap() {
   const [satellites, setSatellites] = useState<WorldObject[]>([]);
   const [planesLayer, setPlanesLayer] = useState<PlanesLayer>({ objects: [], trails: [] });
   const [webcams, setWebcams] = useState<WorldObject[]>([]);
+  /**
+   * Has the map crossed WEBCAM_MIN_ZOOM? Gates the Windy tier's FETCH, where the
+   * layer's own `minzoom` gates only its paint.
+   *
+   * ONE STATE CHANGE PER CROSSING, NOT PER FRAME. MapLibre fires "zoom" once per
+   * render frame while a zoom is in flight, and this console has already been
+   * profiled for idle cost — setting React state from that handler would re-render
+   * the whole map component on every frame of every pinch. The handler compares
+   * against the previous side of the line and returns without touching state unless
+   * it has actually changed sides.
+   */
+  const [webcamTierArmed, setWebcamTierArmed] = useState(false);
   // Global signals are merged from per-source <SignalFeed> children into one map
   // (id → that source's objects); `signals` is the flattened union the aggregated
   // MapLibre source renders. Toggling a signal off unmounts its feed, which clears
@@ -562,13 +590,22 @@ export default function WorldMap() {
     [pts],
   );
 
-  // Apply the camera sub-filters (region + live-only). camFilter is the dep.
+  // Which registry cameras are drawn: the two TIER toggles first, then the per-source
+  // region sub-filter. One source, one layer pair, one setData — the tiers select
+  // rows here rather than owning a MapLibre layer each, so the click handlers, the
+  // hit-test list and the live-thumbnail pool all keep working unchanged.
+  //
+  // BOTH TIERS OFF IS A REAL STATE and it yields an empty array, not "everything":
+  // the feeds below only mount when one of them is on, so this cannot be reached with
+  // stale data behind it.
   const filteredCameras = useMemo<WorldObject[]>(
     () =>
-      cameraObjects.filter((c) =>
-        cameraFilterStore.passes((c.meta?.source as string) ?? "", Boolean(c.meta?.live)),
-      ),
-    [cameraObjects, camFilter],
+      cameraObjects.filter((c) => {
+        const live = Boolean(c.meta?.live);
+        if (!(live ? layers.livecams : layers.staticcams)) return false;
+        return cameraFilterStore.passes((c.meta?.source as string) ?? "", live);
+      }),
+    [cameraObjects, camFilter, layers.livecams, layers.staticcams],
   );
 
   // --- Shared stores the calm shell reads (counts + freshness) ----------------
@@ -577,9 +614,17 @@ export default function WorldMap() {
   // arrives. Satellites are local (propagated in-browser) so we only stamp them
   // on a count change, never per 1s tick — keeps the chrome from re-rendering.
   const camerasOnline = useMemo(() => pts.filter((p) => p.available).length, [pts]);
+  // Counted from the rows, not split by a ratio: the two tier counts are what the
+  // rail prints beside "Live cams" and "Static cams".
+  const liveCameras = useMemo(() => pts.filter((p) => p.live).length, [pts]);
   useEffect(() => {
-    metricsStore.set({ camerasOnline, camerasTotal: pts.length });
-  }, [camerasOnline, pts.length]);
+    metricsStore.set({
+      camerasOnline,
+      camerasTotal: pts.length,
+      liveCameras,
+      stillCameras: pts.length - liveCameras,
+    });
+  }, [camerasOnline, liveCameras, pts.length]);
   useEffect(() => {
     metricsStore.set({ planes: planesLayer.objects.length });
     freshnessStore.record("planes", { count: planesLayer.objects.length, ok: true });
@@ -697,12 +742,18 @@ export default function WorldMap() {
     const set = (id: string, on: boolean) => {
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis(on));
     };
-    set(CAM_DOT_LAYER, l.cameras);
-    set(CAM_LAYER, l.cameras);
+    // ONE registry layer pair for BOTH camera tiers — which rows reach it is decided
+    // in `filteredCameras`, not here, so this asks only whether either tier wants the
+    // pair drawn at all. Hiding a layer the other tier still needs would take both out.
+    const anyCameras = l.livecams || l.staticcams;
+    set(CAM_DOT_LAYER, anyCameras);
+    set(CAM_LAYER, anyCameras);
     set(SAT_GLOW_LAYER, l.satellites);
     set(SAT_LAYER, l.satellites);
-    set(WEBCAM_DOT_LAYER, l.webcams);
-    set(WEBCAM_LAYER, l.webcams);
+    // The Windy tier rides on `staticcams`. Its own zoom floor is a layer minzoom, so
+    // "on" here still means "drawn from WEBCAM_MIN_ZOOM up".
+    set(WEBCAM_DOT_LAYER, l.staticcams);
+    set(WEBCAM_LAYER, l.staticcams);
     set(TRAIL_LAYER, l.planes);
     set(PLANE_LAYER, l.planes);
     // Countries: borders + click everywhere; name labels only on the raster basemaps.
@@ -994,7 +1045,7 @@ export default function WorldMap() {
           id: CAM_DOT_LAYER,
           type: "circle",
           source: CAM_SRC,
-          layout: { visibility: vis(layersRef.current.cameras) },
+          layout: { visibility: vis(layersRef.current.livecams || layersRef.current.staticcams) },
           paint: {
             // Live → region colour; down → muted slate (= CAMERA_OFFLINE_COLOR) so
             // a dead feed reads as dead even as a faint glow.
@@ -1039,7 +1090,7 @@ export default function WorldMap() {
             "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 13, 0.7, 17, 0.9],
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
-            visibility: vis(layersRef.current.cameras),
+            visibility: vis(layersRef.current.livecams || layersRef.current.staticcams),
           },
           paint: { "icon-opacity": ["case", ["get", "available"], 1, 0.45] },
         });
@@ -1049,7 +1100,10 @@ export default function WorldMap() {
           id: WEBCAM_DOT_LAYER,
           type: "circle",
           source: WEBCAM_SRC,
-          layout: { visibility: vis(layersRef.current.webcams) },
+          // The Windy tier's zoom floor — see WEBCAM_MIN_ZOOM. The registry's still
+          // cameras carry no floor, so `staticcams` still paints at globe zoom.
+          minzoom: WEBCAM_MIN_ZOOM,
+          layout: { visibility: vis(layersRef.current.staticcams) },
           paint: {
             "circle-color": WEBCAM_COLOR,
             // Mirrors the camera ramp. Webcams are a far smaller global sample, so
@@ -1074,7 +1128,7 @@ export default function WorldMap() {
             "icon-size": ["interpolate", ["linear"], ["zoom"], 11, 0.46, 13, 0.65, 17, 0.85],
             "icon-allow-overlap": true,
             "icon-ignore-placement": true,
-            visibility: vis(layersRef.current.webcams),
+            visibility: vis(layersRef.current.staticcams),
           },
         });
       }
@@ -2002,6 +2056,17 @@ export default function WorldMap() {
     armStyleWatchdog();
     // Engage/disengage 3D terrain as we cross the mercator threshold (see syncTerrain).
     map.on("zoom", () => syncTerrain(map));
+    // Arm the Windy tier once the map is close enough in for it to mean something.
+    // Read once up front too: a deep-linked view can LAND past the floor, and a map
+    // that never zooms afterwards would otherwise never fire this.
+    const syncWebcamTier = () => {
+      setWebcamTierArmed((was) => {
+        const now = map.getZoom() >= WEBCAM_MIN_ZOOM;
+        return now === was ? was : now;
+      });
+    };
+    syncWebcamTier();
+    map.on("zoomend", syncWebcamTier);
 
     // Direct user input (native events, not programmatic camera moves) breaks a live
     // plane follow. That is now the ONLY thing these listeners do.
@@ -2575,10 +2640,10 @@ export default function WorldMap() {
 
       {/* Gating feeds: a layer's data hook is mounted only while it is visible,
           so a hidden layer does not fetch or tick. They render no DOM. */}
-      {layers.cameras && <CamerasFeed onData={setPts} />}
+      {(layers.livecams || layers.staticcams) && <CamerasFeed onData={setPts} />}
       {layers.planes && <PlanesFeed onData={setPlanesLayer} />}
       {layers.satellites && <SatellitesFeed onData={setSatellites} />}
-      {layers.webcams && <WebcamsFeed onData={setWebcams} />}
+      {layers.staticcams && webcamTierArmed && <WebcamsFeed onData={setWebcams} />}
 
       {/* One gating feed per ON signal — mounted only while its toggle is on, so a
           hidden signal never fetches (mirrors CamerasFeed). Each lifts its objects

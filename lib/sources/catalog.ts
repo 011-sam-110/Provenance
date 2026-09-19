@@ -31,13 +31,24 @@ export interface CatalogSource {
   widgetOnly?: boolean;
 }
 
-export const CORE_IDS = ["cameras", "planes", "satellites", "webcams"] as const;
+export const CORE_IDS = ["livecams", "staticcams", "planes", "satellites"] as const;
+
+/** Every operator in the road-camera registry. Both camera tiers are drawn from it. */
+const REGISTRY_ATTRIBUTION =
+  "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC · MUP Srbije · Putevi Srbije";
 
 // Core-layer descriptors. refreshMs mirrors lib/freshness.ts seed(); groups use the
 // roll-up vocabulary (a group with one source still yields a valid 1-source roll-up).
+//
+// THE TWO CAMERA ROWS ARE ONE REGISTRY CUT IN TWO, PLUS WINDY ON THE STILL SIDE.
+// They are not two upstreams — see the note on LayerKey in lib/layers.ts for why the
+// split is by what a pin shows rather than by which feed it came from. Both carry the
+// registry's attribution because both draw from it; the still row names Windy as well,
+// because the Windy webcams are drawn on that row and their terms are separate from
+// ours (see the licence note in CLAUDE.md).
 const CORE_SOURCES: CatalogSource[] = [
-  { id: "cameras",    kind: "core", label: "Cameras",    group: "Cameras",  color: "#0e7d97", attribution: "TfL · Caltrans · SCDOT · Digitraffic · 511 · DriveBC · MUP Srbije · Putevi Srbije", refreshMs: 300_000 },
-  { id: "webcams",    kind: "core", label: "Webcams",    group: "Cameras",  color: "#ec4899", attribution: "Windy.com — global webcams", refreshMs: 600_000 },
+  { id: "livecams",   kind: "core", label: "Live cams",   group: "Cameras",  color: "#0e7d97", attribution: REGISTRY_ATTRIBUTION, refreshMs: 300_000 },
+  { id: "staticcams", kind: "core", label: "Static cams", group: "Cameras",  color: "#ec4899", attribution: `${REGISTRY_ATTRIBUTION} · Windy.com — global webcams`, refreshMs: 300_000 },
   // adsb.lol, not OpenSky: OpenSky's global /states/all was the source until it was
   // removed on licensing grounds (app/api/planes/route.ts, lib/sources/opensky.ts
   // fetchAircraftOnce). Everything since has come from adsb.lol — a 40-cell sweep
