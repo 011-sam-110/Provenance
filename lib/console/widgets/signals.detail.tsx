@@ -21,6 +21,8 @@ import { signalsStore } from "@/lib/signals/store";
 import { shellLayoutStore } from "@/lib/console/store";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { humaniseKey } from "@/lib/text/humanise";
+import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import type { StatusEntry } from "@/lib/sources/statusReport";
 import {
   distribution, timeModel, sortFeatures, relativeAge, filterDetailFeatures, detailKpis, rowValue,
   freshness, type SortKey,
@@ -31,8 +33,24 @@ import { makeScheduleDetail } from "./schedule.detail";
 import { makeForecastDetail } from "./forecast.detail";
 import { makeAisDetail } from "./ais.detail";
 
-// Sources whose upstream needs a key that may be unset — surface an honest dormant note.
-const KEYED = new Set(["acled", "firms", "aisstream", "openaq", "reliefweb", "entsoe"]);
+/**
+ * Whether the footer should say "needs an API key". Reads the SAME live status the rail
+ * badge and the generic widget body use (lib/sources/useStatus.ts → GET /api/status),
+ * rather than a hand-maintained id list.
+ *
+ * That list used to be here (`const KEYED = new Set(["acled", "firms", "aisstream",
+ * "openaq", "reliefweb", "entsoe"])`) and had drifted from the real signal ids: of the
+ * six, only "reliefweb" matched a real source. "acled" named a layer removed on
+ * 2026-09-05; "firms", "aisstream" and "openaq" were the upstream/vendor names, not the
+ * registry ids (`fire-active`, `ais`, `air-quality-stations`), and "entsoe" should have
+ * been `grid-load`. So four of the five real key-gated layers could sit locked with an
+ * empty footer and no explanation — the inventory finding W7 (2026-09-12,
+ * `.claude/local/WIDGETS_INVENTARIO.md`). Reading the live status instead of a second,
+ * hand-copied list means there is no list left to drift.
+ */
+export function needsKeyNote(capability: Pick<StatusEntry, "state"> | null | undefined): boolean {
+  return capability?.state === "locked";
+}
 
 /** Fixed reference severity swatches for the map legend (theme-independent status hues). */
 const SEV_SEVERE = "#d9534f";
@@ -64,6 +82,7 @@ export function makeSignalDetail(source: SignalSource) {
   function SignalDetailView(_props: WidgetDetailProps) {
     const scope = useScope();
     const { features, status, updatedAt } = useSignalFeed(source.id, source.refreshMs);
+    const capability = useCapabilityStatus(source.id);
     const [sortKey, setSortKey] = useState<SortKey>("magnitude");
     const [dir, setDir] = useState<1 | -1>(-1);
     const [open, setOpen] = useState<string | null>(null);
@@ -332,7 +351,7 @@ export function makeSignalDetail(source: SignalSource) {
         )}
 
         <footer className="tn-sd-foot">
-          <span className="tn-sd-attr">{source.attribution}{KEYED.has(source.id) && " · needs an API key (dormant when unset)"}</span>
+          <span className="tn-sd-attr">{source.attribution}{needsKeyNote(capability) && " · needs an API key (dormant when unset)"}</span>
           <span className="tn-sd-actions">
             <button onClick={showOnMap}>🗺 Show on map</button>
             <button disabled={!exportRows.length} onClick={() => downloadText(`${exportFilename(`signal-${source.id}`, Date.now())}.csv`, "text/csv", toCsv(exportRows))}>⬇ CSV</button>
