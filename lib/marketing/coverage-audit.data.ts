@@ -341,6 +341,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-09-16, after AUDIT_MEASURED_AT, so there is no measurement of it to report and a zero here is the honest placeholder rather than a reading. It is also genuinely dormant until the NewsScraper host pushes its first batch. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
+    "id": "headline-places",
+    "label": "Headline places",
+    "group": "Intel",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-09-19, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is NOT dormant, which is what makes this row different from news-coverage above it: measured directly through its own fetch() against the live feeds on 2026-09-19T07:14Z, it served 71 pins (59 countries, 12 cities) reaching 60 countries, from 231 of 440 headlines (52.5%) that named a place in the committed gazetteer. Reproduce with `npx vite-node -c vitest.config.ts scripts/probe-headline-places.mts`; re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "ukraineAlerts",
     "label": "Ukraine air-raid alerts",
     "group": "Conflict",
@@ -3328,10 +3340,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 35,
+  "layers": 36,
   "live": 29,
   "partial": 1,
-  "down": 3,
+  "down": 4,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

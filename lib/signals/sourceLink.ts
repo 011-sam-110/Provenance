@@ -125,6 +125,12 @@ export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
     { label: "Photon (Komoot)", url: "https://photon.komoot.io/" },
     { label: "OpenStreetMap", url: "https://www.openstreetmap.org/copyright" },
   ],
+  // No geocoder and no upstream of its own: the coordinates are committed tables in this
+  // repo and the headlines are the publishers'. The dataset the centroids were generated
+  // from is credited because "a table in our repo" is not a source a reader can check.
+  "headline-places": [
+    { label: "Country centroids (eesur/country-codes-lat-long)", url: "https://github.com/eesur/country-codes-lat-long" },
+  ],
   instability: [
     { label: "ACLED", url: "https://acleddata.com/" },
     { label: "WFP HungerMap", url: "https://hungermap.wfp.org/" },
