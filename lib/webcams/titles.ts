@@ -100,7 +100,8 @@ export function useWebcamDirectory(): WebcamRow[] {
   // asked for it otherwise. The map-rail Draw filter still applies on top of both.
   // See lib/shell/sourceScope.ts.
   const scope = useScope();
-  const rings = useSourceScopes("webcams");
+  // The Windy tier rides on the Static cams toggle — see lib/layers.ts.
+  const rings = useSourceScopes("staticcams");
   const at = (w: WebcamRow) =>
     typeof w.lat === "number" && typeof w.lon === "number" ? { lat: w.lat, lon: w.lon } : null;
   return useMemo(

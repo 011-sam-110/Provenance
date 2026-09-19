@@ -224,7 +224,16 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               was serving 3,000 aircraft and the layer was simply not switched on.
               Reporting a disabled layer as a zero count is the same error as a
               frozen feed reporting "live". */}
-          {m.camerasTotal.toLocaleString()} cameras ·{" "}
+          {/* ONE TIER AT A TIME, under the same rule. The cameras half used to be a
+              single unconditional `camerasTotal` — the whole registry, reported
+              whether or not a camera was on the map, and now also whether or not the
+              tier that holds most of them is switched on. With Live cams alone up
+              that read "19,520 cameras" for about 1,500 pins, which is the same
+              audit trap the note above describes, pointing the other way. */}
+          {layers.livecams ? `${m.liveCameras.toLocaleString()} live cams` : "live cams off"} ·{" "}
+          {layers.staticcams
+            ? `${(m.stillCameras + m.webcams).toLocaleString()} static cams`
+            : "static cams off"} ·{" "}
           {layers.planes ? `${m.planes.toLocaleString()} planes` : "planes off"} ·{" "}
           {layers.satellites ? `${m.satellites.toLocaleString()} satellites` : "satellites off"}
         </span>

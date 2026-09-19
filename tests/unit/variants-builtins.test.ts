@@ -8,7 +8,8 @@ describe("built-in variants", () => {
     expect(DEFAULT_VARIANT_ID).toBe("explore");
     const explore = BUILTIN_BY_ID["explore"];
     expect(explore).toBeTruthy();
-    expect(explore.layers.cameras).toBe(true);
+    expect(explore.layers.livecams).toBe(true);
+    expect(explore.layers.staticcams).toBe(true);
     expect(explore.layers.planes).toBe(true);
     expect(explore.signals).toBeUndefined(); // no intel layers in the calm default
     // Calm view: the only persistent chrome panel is the layer rail.

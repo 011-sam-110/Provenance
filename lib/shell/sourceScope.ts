@@ -45,24 +45,31 @@ import { filterToScope } from "@/lib/scopeFilter";
 let cacheState: InspectorState | null = null;
 let cache = new Map<string, Scope[] | null>();
 
-export function scopesForSource(state: InspectorState, id: string): Scope[] | null {
+export function scopesForSource(state: InspectorState, id: string | readonly string[]): Scope[] | null {
   if (state !== cacheState) {
     cacheState = state;
     cache = new Map();
   }
-  const hit = cache.get(id);
+  // One cache slot per REQUEST, so asking for ["livecams","staticcams"] does not
+  // collide with either of its members asked for alone.
+  const key = typeof id === "string" ? id : id.join("|");
+  const hit = cache.get(key);
   if (hit !== undefined) return hit;
   const areas = sourceRegions(state, id);
   // `aoiScope` re-derives the bbox from the ring rather than reusing the area's own.
   // They agree — coerceState recomputes it on load for exactly this reason — but the
   // derivation is cheap and one owner of that maths is better than two.
   const out = areas === null ? null : areas.map((a) => aoiScope(a.polygon, a.label));
-  cache.set(id, out);
+  cache.set(key, out);
   return out;
 }
 
 /** Hook form. `null` = this source is not cropped to any ring. */
-export function useSourceScopes(id: string): Scope[] | null {
+export function useSourceScopes(id: string | readonly string[]): Scope[] | null {
+  // The array form must be a STABLE reference from the caller (a module constant),
+  // or the snapshot getter below closes over a new one each render. It only reaches
+  // the cache as a joined string, so a fresh array is not itself a loop — but it does
+  // defeat the memo on every render, which is the same cost in a different place.
   return useSyncExternalStore(
     inspectorStore.subscribe,
     () => scopesForSource(inspectorStore.get(), id),

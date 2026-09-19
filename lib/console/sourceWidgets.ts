@@ -28,7 +28,13 @@ import { kindOf } from "@/lib/sources/catalog";
  * lib/console/sources/railSources.ts.
  */
 const SOURCE_TO_WIDGET: Record<string, string> = {
-  cameras: "camslot",
+  // BOTH camera tiers place the same widget. The camera wall picks from the road
+  // registry and the Windy catalogue together (see PICK_LAYERS in
+  // camslot.layers.ts), so there is one slot to place from either row — and a row
+  // with no entry here would fall through to the signal branch and ask for a widget
+  // type that does not exist.
+  livecams: "camslot",
+  staticcams: "camslot",
   planes: "aviation",
   satellites: "satellites",
   news: "headlines",

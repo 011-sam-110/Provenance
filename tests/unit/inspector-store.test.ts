@@ -217,7 +217,10 @@ test("coerceState reads the field's old `loaded` name — a returning user keeps
 
 test("coerceState drops areas whose ring is not an area, and a dangling id", () => {
   const s = coerceState({
-    world: { cameras: true, junk: "yes" },
+    // `planes`, not a camera key: a RETIRED key would be expanded by cleanSet on the
+    // way in (see the migration test below), which is a different behaviour from the
+    // "keep the booleans, drop everything else" rule this test is about.
+    world: { planes: true, junk: "yes" },
     areas: [
       { id: "good", label: "Good", polygon: RING, createdAt: 1, sources: { planes: true } },
       { id: "bad", label: "Bad", polygon: [[0, 0]], createdAt: 2, sources: {} },
@@ -225,7 +228,7 @@ test("coerceState drops areas whose ring is not an area, and a dangling id", () 
     editing: "bad",
   });
   expect(s.areas.map((a) => a.id)).toEqual(["good"]);
-  expect(s.world).toEqual({ cameras: true });
+  expect(s.world).toEqual({ planes: true });
   expect(s.editing).toBeNull();
 });
 

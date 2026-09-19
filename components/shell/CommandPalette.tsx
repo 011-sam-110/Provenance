@@ -52,11 +52,11 @@ function zoomForResult(r: GeocodeResult): number {
 }
 
 const LAYER_NAMES: Record<LayerKey, string> = {
-  cameras: "Cameras",
+  livecams: "Live cams",
+  staticcams: "Static cams",
   planes: "Planes",
   satellites: "Satellites",
   ships: "Ships",
-  webcams: "Webcams",
   weather: "Weather",
   countries: "Borders & names",
 };

@@ -62,9 +62,11 @@ test("the rail credits the same feeds the widget does", () => {
 // Routing news through the bespoke-widget map must not change what the four core
 // layers resolve to, which is what genericCoreIds reads the same map for.
 test("the core layers still resolve exactly as before", () => {
-  expect(widgetTypeForSource("cameras")).toBe("camslot");
+  expect(widgetTypeForSource("livecams")).toBe("camslot");
   expect(widgetTypeForSource("planes")).toBe("aviation");
   expect(widgetTypeForSource("satellites")).toBe("satellites");
-  expect(widgetTypeForSource("webcams")).toBe("source:webcams");
-  expect(genericCoreIds(CORE_IDS)).toEqual(["webcams"]);
+  expect(widgetTypeForSource("staticcams")).toBe("camslot");
+  // EMPTY, where it used to hold the old `webcams` row: every core row now has a
+  // bespoke card, so nothing falls through to the generic leaf.
+  expect(genericCoreIds(CORE_IDS)).toEqual([]);
 });

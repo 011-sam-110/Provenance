@@ -135,10 +135,10 @@ export function formatCount(n: number): string {
 }
 
 /** Short chip label per core layer key — the HUD's chips are narrow by design. */
-export type HudChipKey = "cameras" | "planes" | "satellites" | "webcams";
+export type HudChipKey = "livecams" | "staticcams" | "planes" | "satellites";
 export const HUD_CHIP_LABEL: Record<HudChipKey, string> = {
-  cameras: "CAM",
+  livecams: "LIVE",
+  staticcams: "STIL",
   planes: "PLN",
   satellites: "SAT",
-  webcams: "WBC",
 };

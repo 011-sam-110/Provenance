@@ -61,6 +61,8 @@ import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { bboxOfRing, sanitiseRing } from "@/lib/shell/scope";
 import { DEFAULT_AREA_COLOR, coerceAreaColor, nextAreaColor } from "@/lib/shell/areaColors";
+// A LEAF module, deliberately — see its header for why this is not lib/layers.ts.
+import { RETIRED_LAYER_KEYS } from "@/lib/layerAliases";
 
 /** id → on, for ONE context. Covers LayerKeys and signal ids in a single map. */
 export type SourceSet = Record<string, boolean>;
@@ -123,14 +125,35 @@ const EMPTY: InspectorState = Object.freeze({ world: {}, areas: [], editing: nul
 
 // --- pure -------------------------------------------------------------------
 
-/** Pure: a source map with only boolean values kept. */
+/**
+ * A saved set, with retired layer keys expanded into the ones that replaced them.
+ *
+ * THE MIGRATION LIVES HERE BECAUSE THIS IS THE ONLY READ BOUNDARY. Every saved set
+ * — World's and each area's — comes through this function, so a rename handled here
+ * cannot be forgotten on one of the two paths. Nothing WRITES a retired key, so this
+ * is a one-way door: a set saved after this change has nothing to expand.
+ *
+ * `true` WINS WHEN TWO OLD KEYS LAND ON ONE NEW ONE. The set every returning user
+ * actually has is `{cameras: true, webcams: false}` — the shipped default — and both
+ * of those map onto `staticcams`. Taking the last one written would switch off the
+ * ~18,900 still cameras they have been looking at since the day they arrived, which
+ * is the opposite of what their saved state says they wanted. An explicitly saved NEW
+ * key always wins over anything expanded, because it was chosen under this vocabulary.
+ */
 function cleanSet(value: unknown): SourceSet {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: SourceSet = {};
+  const expanded: SourceSet = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof v === "boolean") out[k] = v;
+    if (typeof v !== "boolean") continue;
+    const aliases = RETIRED_LAYER_KEYS[k];
+    if (aliases) {
+      for (const key of aliases) expanded[key] = (expanded[key] ?? false) || v;
+    } else {
+      out[k] = v;
+    }
   }
-  return out;
+  return { ...expanded, ...out };
 }
 
 /** Pure: build an area from a drawn ring. Null when the ring is not an area. */
@@ -237,9 +260,16 @@ export function unionSet(state: InspectorState): SourceSet {
  * is on nowhere, which callers should never see for a source they are drawing, but
  * is the honest answer and is cheaper to return than to forbid.
  */
-export function sourceRegions(state: InspectorState, id: string): InspectorArea[] | null {
-  if (state.world[id] === true) return null;
-  return state.areas.filter((a) => a.sources[id] === true);
+export function sourceRegions(state: InspectorState, id: string | readonly string[]): InspectorArea[] | null {
+  const ids = typeof id === "string" ? [id] : id;
+  // SEVERAL IDS MEANS "WHERE ANY OF THEM MAY APPEAR", because the caller is one
+  // FETCH feeding more than one toggle — the road-camera registry, drawn by both
+  // camera tiers, is the case this exists for. Cropping it to the intersection would
+  // hide cameras an area explicitly asked for; cropping per tier is a finer answer
+  // than the single fetch can act on, since the rows are split downstream once they
+  // are already loaded.
+  if (ids.some((k) => state.world[k] === true)) return null;
+  return state.areas.filter((a) => ids.some((k) => a.sources[k] === true));
 }
 
 /**

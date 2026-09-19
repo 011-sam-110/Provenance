@@ -24,10 +24,12 @@ export interface SourceLive {
 
 function coreCount(id: string, m: Metrics): number | null {
   switch (id) {
-    case "cameras": return m.camerasTotal || null;
+    case "livecams": return m.liveCameras || null;
+    // The still registry PLUS the Windy catalogue — both are drawn on this one row,
+    // so reporting either alone understates what the toggle turns on.
+    case "staticcams": return (m.stillCameras + m.webcams) || null;
     case "planes": return m.planes || null;
     case "satellites": return m.satellites || null;
-    case "webcams": return m.webcams || null;
     default: return null;
   }
 }

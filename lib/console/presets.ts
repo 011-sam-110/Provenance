@@ -43,8 +43,8 @@ export interface ConsolePreset {
    *  Sources-rail tile's tooltip. */
   blurb: string;
   /**
-   * Core world layers this preset lights — cameras / planes / satellites /
-   * webcams. Every core layer NOT listed here (and not implied by a card) is
+   * Core world layers this preset lights — live cams / static cams / planes /
+   * satellites. Every core layer NOT listed here (and not implied by a card) is
    * switched off, so a previous preset's planes cannot linger under this one.
    *
    * This is `mapCore` renamed. It was documented as an escape hatch for boards
@@ -402,7 +402,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // see lib/signals/news-coverage.ts, which carries the reasoning and the GDELT
   // precedent behind it.
   //
-  // NO `layers`. Cameras, planes, satellites and webcams all stay off: this board is
+  // NO `layers`. Both camera tiers, planes and satellites all stay off: this board is
   // about who is reporting what, and a layer of 19,000 camera pins under it is noise.
   { id: "news", title: "News", icon: "📰", blurb: "every outlet we read, grouped and placed",
     // ONE signal layer, and the omission is deliberate. GDELT's "Conflict coverage"
@@ -426,13 +426,13 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // cities' high pedestrian zones throughout the day."
   //
   // Not called "Cameras": that word already names a widget, a widget category, a
-  // ⌘K palette section and a map layer key, and a fifth meaning would make the
-  // palette ambiguous.
+  // ⌘K palette section and the Sources rail group holding both camera layers, and a
+  // fifth meaning would make the palette ambiguous.
   //
   // THE ONLY `mode: "wall"` BOARD, and the only board this change does not
   // touch. Everything else on the console is on rails.
   //
-  // `layers` is REQUIRED. presetLayers hard-resets cameras/webcams to false on
+  // `layers` is REQUIRED. presetLayers hard-resets both camera tiers to false on
   // every board switch and only maps a handful of widget types back on; without
   // this the board would open with a map showing no camera pins at all.
   //
@@ -459,7 +459,7 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // on a board whose whole promise is live cameras. `STREETS_DEFAULT_AREA` above
   // records where the area starts and what was measured to choose it.
   { id: "streets", title: "Streets", icon: "📷", blurb: "city squares and crossings, live",
-    layers: ["cameras", "webcams"],
+    layers: ["livecams", "staticcams"],
     build: (shell = DEFAULT_SHELL) => composeWall("map2d", shell, [], STREETS_DEFAULT_AREA) },
 ];
 

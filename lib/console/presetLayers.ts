@@ -13,12 +13,16 @@ import type { ShellLayout } from "@/lib/console/types";
 const WIDGET_TO_CORE: Record<string, LayerKey> = {
   aviation: "planes",
   satellites: "satellites",
-  // A camera slot is a camera widget, so it implies the camera pins wherever it is
-  // dropped — including on a board that was not authored around it. It deliberately
-  // does NOT imply webcams: that layer stays a per-board choice made through
-  // `mapCore`, because a board asking for road cameras has not asked for a
-  // third-party webcam sample as well.
-  camslot: "cameras",
+  // A camera slot is a camera widget, so it implies camera pins wherever it is
+  // dropped — including on a board that was not authored around it.
+  //
+  // IT IMPLIES THE LIVE TIER ONLY, which is the same judgement the old mapping made
+  // in the old vocabulary: it used to switch on `cameras` (the whole road registry)
+  // and pointedly not `webcams`, so that a board asking for road cameras did not also
+  // get a third-party still sample. `staticcams` now holds both kinds of still, so
+  // implying it would hand every camslot board ~89,000 pins it never asked for. A
+  // board that wants the stills says so through `mapCore`.
+  camslot: "livecams",
 };
 
 const SIGNAL_PREFIX = "signal:";
@@ -32,7 +36,7 @@ export interface PersonaLayers {
  * Derive the map layers a persona's board should switch ON from its widgets:
  *   • `signal:<id>` widget            → signal layer <id> ON
  *   • cameras / aviation / satellites → that core layer ON
- * Every other core data layer (cameras/planes/satellites/webcams) is forced OFF so a
+ * Every other core data layer (live/static cams, planes, satellites) is forced OFF so a
  * previous persona's planes don't linger under an emergency board; the `countries`
  * base layer (borders + click target) always stays ON. Works for custom presets too
  * since it reads the ShellLayout, not the preset spec.
@@ -44,10 +48,10 @@ export function layersForLayout(
 ): PersonaLayers {
   const core: LayerState = {
     ...DEFAULT_STATE,
-    cameras: false,
+    livecams: false,
+    staticcams: false,
     planes: false,
     satellites: false,
-    webcams: false,
   };
   const signals: SignalState = {};
   for (const w of layout.widgets) {
@@ -68,10 +72,10 @@ export function layersForLayout(
   // I can read is on the map I can see". The cards are the captions; this is the
   // picture they caption.
   for (const id of extraSignals) signals[id] = true;
-  // The same escape hatch for CORE layers. Webcams is the case that needs it:
-  // there is no webcams widget, so WIDGET_TO_CORE can never imply it, and the
-  // reset above forces it off — which means no board could show webcams however
-  // it was composed. Applied after the widget pass so an explicit request wins.
+  // The same escape hatch for CORE layers. `staticcams` is the case that needs it:
+  // no widget implies it, and the reset above forces it off — which means no board
+  // could show the still tier however it was composed. Applied after the widget pass
+  // so an explicit request wins.
   for (const key of extraCore) core[key] = true;
   return { core, signals };
 }

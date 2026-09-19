@@ -42,6 +42,12 @@ interface Entry {
 }
 
 const EMPTY: CamerasFeed = { cameras: [], status: "loading", updatedAt: null };
+
+/**
+ * The two toggles this ONE fetch feeds. A module constant because useSourceScopes
+ * memoises per request and a per-render array would defeat it.
+ */
+const CAMERA_TIERS = ["livecams", "staticcams"] as const;
 const REFRESH_MS = 60_000;
 
 let entry: Entry | null = null;
@@ -103,7 +109,7 @@ export function useCameras(): CamerasFeed {
   // asked for it otherwise. The map-rail Draw filter still applies on top of both.
   // See lib/shell/sourceScope.ts.
   const scope = useScope();
-  const rings = useSourceScopes("cameras");
+  const rings = useSourceScopes(CAMERA_TIERS);
   return useMemo(() => {
     const cameras = filterToScopes(filterToScope(feed.cameras, scope, (c) => c), rings, (c) => c);
     if (cameras === feed.cameras) return feed; // unrestricted: keep status/updatedAt identity

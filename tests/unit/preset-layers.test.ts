@@ -50,9 +50,9 @@ test("list-only widgets (events/markets/headlines/locate) imply no map layer", (
   const { core, signals } = layersForLayout(
     createDefaultLayout(),
     ["conflict", "earthquakes", "gdacs", "wildfires"],
-    ["cameras"],
+    ["livecams"],
   );
-  expect(Object.entries(core).filter(([k, v]) => v && k !== "countries").map(([k]) => k).sort()).toEqual(["cameras"]);
+  expect(Object.entries(core).filter(([k, v]) => v && k !== "countries").map(([k]) => k).sort()).toEqual(["livecams"]);
   expect(Object.entries(signals).filter(([, v]) => v).map(([k]) => k).sort())
     .toEqual(["conflict", "earthquakes", "gdacs", "wildfires"]);
 
@@ -91,7 +91,7 @@ test("recon widgets imply no layer and no core", () => {
 // own signals/layers alongside its widgets, so leaving them out here would make
 // the assertion stricter than the product actually is. Streets is exactly the board
 // that exposes the gap: it now opens on no widgets at all, so with layers left out
-// it would read as a blank map despite lighting cameras + webcams for real.
+// it would read as a blank map despite lighting both camera tiers for real.
 test("no board except the landing globe opens on a blank map", () => {
   for (const p of BUILTIN_PRESETS) {
     const { core, signals } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
@@ -109,33 +109,34 @@ test("no board except the landing globe opens on a blank map", () => {
 // --- core-layer escape hatch (mapCore) --------------------------------------
 
 test("a board can light a core layer that no widget implies", () => {
-  // Webcams is the case this exists for: there is no webcams widget, so
-  // WIDGET_TO_CORE can never imply it and the reset forces it off — meaning
-  // before `extraCore` no board could show webcams however it was composed.
+  // The still tier is the case this exists for: no widget implies `staticcams`
+  // (camslot implies the live tier only — see WIDGET_TO_CORE), and the reset forces
+  // it off, so without `extraCore` no board could show it however it was composed.
   const bare = createDefaultLayout();
-  expect(layersForLayout(bare).core.webcams).toBe(false);
-  expect(layersForLayout(bare, [], ["webcams"]).core.webcams).toBe(true);
+  expect(layersForLayout(bare).core.staticcams).toBe(false);
+  expect(layersForLayout(bare, [], ["staticcams"]).core.staticcams).toBe(true);
 });
 
 test("an explicit core request wins over the reset, and leaves the others alone", () => {
-  const { core } = layersForLayout(createDefaultLayout(), [], ["webcams"]);
-  expect(core.webcams).toBe(true);
-  expect(core.cameras).toBe(false);
+  const { core } = layersForLayout(createDefaultLayout(), [], ["staticcams"]);
+  expect(core.staticcams).toBe(true);
+  expect(core.livecams).toBe(false);
   expect(core.planes).toBe(false);
   expect(core.satellites).toBe(false);
 });
 
-// ONE board lights webcams now, not two. The landing board dropped its `layers` with
-// its widgets, so Streets is the only one left — and it is the one that always had the
-// stronger claim: the webcam layer IS the pedestrian-zone content that board exists to
-// show, since the road-camera feeds are junctions and carriageways. Everywhere else it
-// stays off, which is the point of this test.
-const WEBCAM_BOARDS = new Set(["streets"]);
+// ONE board lights the still tier, not two. The landing board dropped its `layers`
+// with its widgets, so Streets is the only one left — and it is the one that always
+// had the stronger claim: the still cameras and the Windy webcams on that layer ARE
+// the pedestrian-zone content the board exists to show, since the road-camera feeds
+// are junctions and carriageways. Everywhere else it stays off, which is the point of
+// this test — a board-switch must not silently pull in ~89,000 pins.
+const STATIC_CAM_BOARDS = new Set(["streets"]);
 
-test("no OTHER board turns webcams on — it stays opt-in everywhere else", () => {
+test("no OTHER board turns the still tier on — it stays opt-in everywhere else", () => {
   for (const p of BUILTIN_PRESETS) {
-    if (WEBCAM_BOARDS.has(p.id)) continue;
+    if (STATIC_CAM_BOARDS.has(p.id)) continue;
     const { core } = layersForLayout(p.build(), p.signals ?? [], p.layers ?? []);
-    expect(core.webcams, `${p.id} unexpectedly lights webcams`).toBe(false);
+    expect(core.staticcams, `${p.id} unexpectedly lights the still tier`).toBe(false);
   }
 });

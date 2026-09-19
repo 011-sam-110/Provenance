@@ -73,16 +73,23 @@ test("toggling a CLOSED signal source asks which rail, and adds nothing yet", as
   expect(shellLayoutStore.get().widgets.length).toBe(before);
 });
 
-test("a CORE source with no bespoke widget asks for its generic leaf card", async () => {
+test("a CORE source asks for its bespoke card, carrying the row's own label", async () => {
   const { toggleSourceWidget } = await import("@/lib/widgets/dock");
   const { placementStore } = await import("@/lib/console/placement");
 
-  // The other half of the mapping: a core layer the console has no bespoke card
-  // for opens the `source:` leaf. Both branches are exercised so a change to
+  // The other half of the mapping: a core layer resolves through SOURCE_TO_WIDGET
+  // rather than the signal branch. Both are exercised so a change to
   // sourceWidgets.ts cannot quietly send one kind of row to the wrong widget.
-  toggleSourceWidget("webcams", "Webcams");
+  //
+  // THIS USED TO BE THE `source:` LEAF CASE, asked of the old `webcams` row. There
+  // is no core row left without a bespoke card — both camera tiers place the camera
+  // slot — so the leaf branch has no subject to ask it of. It is still guarded, in
+  // tests/unit/source-widgets.test.ts, which asserts that whatever set
+  // `genericCoreIds` returns resolves to a REGISTERED leaf, and that nothing
+  // registers a leaf the catalog no longer describes.
+  toggleSourceWidget("staticcams", "Static cams");
 
-  expect(placementStore.get()).toEqual({ type: "source:webcams", label: "Webcams" });
+  expect(placementStore.get()).toEqual({ type: "camslot", label: "Static cams" });
 });
 
 test("no widget-added toast fires on the ask", async () => {

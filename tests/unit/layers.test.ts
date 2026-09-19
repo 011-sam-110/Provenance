@@ -6,15 +6,15 @@ import { layersStore, presetState, ACTIVE_LAYERS, PLANNED_LAYERS } from "@/lib/l
 afterEach(() => layersStore.applyPreset("all"));
 
 test("active and planned layer sets are disjoint and complete", () => {
-  expect(ACTIVE_LAYERS).toEqual(["cameras", "planes", "satellites", "webcams"]);
+  expect(ACTIVE_LAYERS).toEqual(["livecams", "staticcams", "planes", "satellites"]);
   expect(PLANNED_LAYERS).toEqual(["ships", "weather"]);
 });
 
 test("presets only ever switch active layers; planned stay off; countries (a base reference) stays on", () => {
-  expect(presetState("all")).toEqual({ cameras: true, planes: true, satellites: true, ships: false, webcams: false, weather: false, countries: true });
-  expect(presetState("none")).toEqual({ cameras: false, planes: false, satellites: false, ships: false, webcams: false, weather: false, countries: true });
-  expect(presetState("cameras")).toEqual({ cameras: true, planes: false, satellites: false, ships: false, webcams: false, weather: false, countries: true });
-  expect(presetState("air-space")).toEqual({ cameras: false, planes: true, satellites: true, ships: false, webcams: false, weather: false, countries: true });
+  expect(presetState("all")).toEqual({ livecams: true, staticcams: true, planes: true, satellites: true, ships: false, weather: false, countries: true });
+  expect(presetState("none")).toEqual({ livecams: false, staticcams: false, planes: false, satellites: false, ships: false, weather: false, countries: true });
+  expect(presetState("cameras")).toEqual({ livecams: true, staticcams: true, planes: false, satellites: false, ships: false, weather: false, countries: true });
+  expect(presetState("air-space")).toEqual({ livecams: false, staticcams: false, planes: true, satellites: true, ships: false, weather: false, countries: true });
 });
 
 test("applyPreset drives the live store", () => {
@@ -26,7 +26,8 @@ test("toggle flips a single layer without touching the others", () => {
   layersStore.applyPreset("all");
   layersStore.toggle("planes");
   expect(layersStore.get().planes).toBe(false);
-  expect(layersStore.get().cameras).toBe(true);
+  expect(layersStore.get().livecams).toBe(true);
+  expect(layersStore.get().staticcams).toBe(true);
   expect(layersStore.get().satellites).toBe(true);
 });
 
@@ -34,7 +35,7 @@ test("subscribers fire on change", () => {
   let n = 0;
   const unsub = layersStore.subscribe(() => n++);
   layersStore.applyPreset("none");
-  layersStore.toggle("cameras");
+  layersStore.toggle("livecams");
   unsub();
   layersStore.applyPreset("all"); // not counted
   expect(n).toBe(2);

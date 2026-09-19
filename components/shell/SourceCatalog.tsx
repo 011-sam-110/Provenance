@@ -94,6 +94,10 @@ function CameraFilters() {
           the source sections' 14px small caps — so the rail read as two
           competing tiers of heading with no rule saying which outranked which.
           They are section headings, so they use the section heading. */}
+      {/* The chips NAME the two feed shapes; they are not controls and never were.
+          The "Live video only" button that used to sit beside them IS a control, and
+          it has moved up into the rail proper as the Live cams / Static cams rows —
+          see lib/cameraFilter.ts for why one question may not have two answers. */}
       <h3 className="tn-src-sec-head"><span className="tn-src-sec-name">Feed</span></h3>
       <div className="tn-feed-row">
         {feeds.map((f) => (
@@ -101,15 +105,6 @@ function CameraFilters() {
             {f.label}
           </span>
         ))}
-        <button
-          type="button"
-          className="tn-liveonly"
-          aria-pressed={filter.liveOnly}
-          onClick={() => cameraFilterStore.setLiveOnly(!filter.liveOnly)}
-        >
-          <span className="tn-liveonly-dot" data-on={filter.liveOnly} />
-          Live video only
-        </button>
       </div>
       <h3 className="tn-src-sec-head"><span className="tn-src-sec-name">Region — click to filter</span></h3>
       <div className="tn-region-grid">
@@ -463,7 +458,7 @@ export default function SourceCatalog() {
               Gated on the edited context they would vanish while you configured an
               area, taking a global control off the page as a side effect of a choice
               that has nothing to do with it. */}
-          {mapLayers.cameras ? (
+          {mapLayers.livecams || mapLayers.staticcams ? (
             <>
               <div className="tn-rail-divider" />
               <CameraFilters />

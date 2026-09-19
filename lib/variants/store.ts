@@ -5,11 +5,10 @@ import { BUILTIN_BY_ID, BUILTIN_VARIANTS, DEFAULT_VARIANT_ID } from "@/lib/varia
 import type { OverrideDelta, PanelPlacement, Variant } from "@/lib/variants/types";
 import { resolveSignals } from "@/lib/variants/resolveSignals";
 import { diffFromVariant, isEmptyDelta } from "@/lib/variants/diff";
-import { layersStore, DEFAULT_STATE, type LayerState } from "@/lib/layers";
+import { layersStore, DEFAULT_STATE, expandLegacyLayers, type LayerState } from "@/lib/layers";
 import { inspectorStore } from "@/lib/shell/inspector";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
 import { uiStore } from "@/lib/shell/ui";
-import { cameraFilterStore } from "@/lib/cameraFilter";
 import { mapViewStore } from "@/lib/mapView";
 import { decodeViewState } from "@/lib/share/url";
 
@@ -48,12 +47,34 @@ function applyVariant(v: Variant, override?: OverrideDelta, sigFromUrl?: string[
     signalsStore.applyWorld(signals);
 
     uiStore.setTheme(override?.theme ?? v.theme);
-    cameraFilterStore.setLiveOnly(v.cameraFilter?.liveOnly ?? false);
     if (typeof document !== "undefined") document.documentElement.style.setProperty("--accent", v.accent);
     if (v.view && typeof window !== "undefined") mapViewStore.flyToPoint({ lat: v.view.lat, lon: v.view.lon, zoom: v.view.zoom });
   } finally {
     applying = false;
   }
+}
+
+/**
+ * Saved overrides and user variants, with retired layer keys expanded.
+ *
+ * This store is the ONE place holding layer state that was WRITTEN under the old
+ * vocabulary and is replayed onto the globe on every boot. Left alone, an override
+ * saying `{cameras: false}` would land as an unknown key on a spread over
+ * DEFAULT_STATE and quietly do nothing — so someone who had deliberately switched
+ * the cameras off would find them back on, with no event to explain it.
+ *
+ * Returns only the two fields it touches, so the caller's spread stays honest about
+ * what this function is allowed to change.
+ */
+function migrateLayerKeys(saved: VariantStoreState): Partial<VariantStoreState> {
+  const overrides: Record<string, OverrideDelta> = {};
+  for (const [id, delta] of Object.entries(saved.overrides ?? {})) {
+    overrides[id] = delta?.layers ? { ...delta, layers: expandLegacyLayers(delta.layers) } : delta;
+  }
+  const userVariants = (saved.userVariants ?? []).map((v) =>
+    v?.layers ? { ...v, layers: expandLegacyLayers(v.layers) } : v,
+  );
+  return { overrides, userVariants };
 }
 
 function persist() { savePersisted(PERSIST_KEY, PERSIST_VERSION, state); }
@@ -97,7 +118,7 @@ export const variantStore = {
    */
   bootstrap(params: URLSearchParams) {
     const saved = loadPersisted<VariantStoreState>(PERSIST_KEY, PERSIST_VERSION);
-    if (saved) state = { ...state, ...saved };
+    if (saved) state = { ...state, ...saved, ...migrateLayerKeys(saved) };
     const url = decodeViewState(params);
     const id =
       (BUILTIN_BY_ID[state.activeId] || state.userVariants.find((v) => v.id === state.activeId))

@@ -190,7 +190,7 @@ export function decorate(commands: Command[], s: PaletteSnapshot): Command[] {
 /**
  * The id of the first layer-set whose on/off state exactly matches `current`, or
  * null when the live layers match no named set (an honest "custom" state). Compares
- * the union of keys so an extra layer being on (e.g. webcams) correctly means
+ * the union of keys so an extra layer being on (e.g. static cams) correctly means
  * "no set matches".
  */
 export function matchingSetId(
