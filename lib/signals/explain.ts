@@ -361,6 +361,25 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "headline-places",
+    whatItShows:
+      "Which places the current World Headlines stream NAMES, and the headlines that name them. One pin per place, not per story, so six outlets writing about one summit read as corroboration rather than as six events.",
+    method:
+      "Every headline in the merged feed is scanned for place names from two tables committed to this repo — country centroids and the ~50-city list the weather layers use. Matching is literal and deterministic: word boundaries only, longest name first (so “South Africa” beats “Africa” and “Nigeria” beats “Niger”), short forms such as US and UK matched case-sensitively, and no demonyms. Where a headline names a city and that city’s own country, only the city is kept. No model reads anything and no geocoder is called.",
+    confidence: "measured",
+    coverage:
+      "The same 14 world RSS feeds and one Telegram channel the World Headlines rail serves, plus anything the NewsScraper host has pushed. Only places in the two committed tables can be matched, so a town is invisible unless its country is named too.",
+    limitations: [
+      "THE CLAIM IS ONLY THAT THE HEADLINE CONTAINS THE NAME. Not that anything happened there, not that the story is about there. “US sanctions Iran” names two countries and locates nothing; both get a pin, and neither pin means an event.",
+      "A country pin sits on a centroid, which is a label anchor for the whole country and not a location. A pin in the middle of Kazakhstan means Kazakhstan was named, not that anything is at that point.",
+      "The gazetteer is small on purpose — about 250 countries and 50 cities. A headline about Bayeux or Bakhmut pins nothing at all unless it also names France or Ukraine, so an empty region means nobody wrote a matchable name, not that nothing happened there.",
+      "Names that are also common words or personal names are dropped rather than guessed at: Georgia (the US state), Jordan, Chad and Guinea never pin. That loses real stories about those countries, which is the trade made deliberately — a wrong pin is on the map and a missing one is not.",
+      "Headline counts are attention, not severity. A royal visit and a massacre both count one headline per outlet.",
+      "This is coverage, and coverage follows newsrooms. Fifteen mostly English-language sources decide what is on this map, so an unreported event is absent and a heavily covered one is prominent.",
+      "Every pin publishes the headlines behind it. If a match looks wrong, it is wrong — read the headline on the card and judge it, which is the one thing this layer is built to let you do.",
+    ],
+  },
+  {
     id: "conflict",
     whatItShows: "How much conflict-coded news reporting mentions each COUNTRY — GDELT's machine coder tagged articles as assault, armed clash or mass violence and filed them in the last four hours. It is a map of reporting volume, not of confirmed incidents, and the marker sits on a national centroid.",
     method: "GDELT codes global news into CAMEO event records, each with an action location. We keep roots 18/19/20 at QuadClass 4 (material conflict), require at least two source documents AND at least one TYPED actor, collapse GDELT's repeated actor-pair rows, then total the remaining articles PER COUNTRY. The dot is sized by that total.",
