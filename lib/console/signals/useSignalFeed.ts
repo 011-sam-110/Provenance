@@ -23,6 +23,11 @@ export interface SignalFeed {
   /** Did the most recent attempt succeed? Keeping last-good features on failure is
    *  right, but without this flag the widget cannot tell that it is doing so. */
   ok: boolean;
+  /** Epoch ms of the newest thing INSIDE the data, when the adapter declared one —
+   *  distinct from `updatedAt`, which is when WE last read it. Null when the
+   *  adapter has no better answer than "the read instant is the data's age" (most
+   *  of them), or serving last-good rows before any successful load ever set it. */
+  sourceAt: number | null;
 }
 
 interface Entry {
@@ -34,7 +39,7 @@ interface Entry {
   refCount: number;
 }
 
-const EMPTY: SignalFeed = { features: [], status: "loading", updatedAt: null, ok: true };
+const EMPTY: SignalFeed = { features: [], status: "loading", updatedAt: null, ok: true, sourceAt: null };
 const MIN_REFRESH_MS = 60_000;
 const DEFAULT_REFRESH_MS = 5 * 60_000;
 const feeds = new Map<string, Entry>();
@@ -82,6 +87,7 @@ function load(id: string, e: Entry) {
         status: "idle",
         updatedAt: Date.now(),
         ok: true,
+        sourceAt: typeof d?.sourceAt === "number" ? d.sourceAt : null,
       };
       emit(e);
     })
@@ -89,12 +95,15 @@ function load(id: string, e: Entry) {
       // Keep the last good features; only show "error" if we never had any. Note
       // updatedAt is deliberately NOT advanced — it means "last success", and the
       // freshness chip reads it to age the widget honestly while we serve stale data.
+      // sourceAt carries over the same way: the rows on screen are exactly as old
+      // as they were before this failed poll, not any older or newer.
       e.state = {
         features: e.state.features,
         coverage: e.state.coverage,
         status: e.state.updatedAt ? "idle" : "error",
         updatedAt: e.state.updatedAt,
         ok: false,
+        sourceAt: e.state.sourceAt,
       };
       emit(e);
     });

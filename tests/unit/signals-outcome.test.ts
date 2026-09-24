@@ -44,6 +44,27 @@ describe("outcome side-channel", () => {
   });
 });
 
+describe("sourceAt — the age of the DATA, distinct from the age of the READ", () => {
+  it("is absent when the adapter has no better answer than the read instant", () => {
+    // The common case: earthquakes, storms — the read instant IS the data's age.
+    expect(readOutcome(observed([{ id: "a" }], 1_000))?.sourceAt).toBeUndefined();
+    expect(publishOutcome(observed([{ id: "a" }], 1_000))).not.toHaveProperty("sourceAt");
+  });
+
+  it("carries a declared sourceAt through observed() to the published envelope, unchanged by `at`", () => {
+    // UNHCR's 2025 annual stats, fetched fresh today: two true, different ages.
+    const rows = observed([{ id: "a" }], 1_700_000_000, 1_600_000_000);
+    expect(readOutcome(rows)).toMatchObject({ at: 1_700_000_000, sourceAt: 1_600_000_000 });
+    expect(publishOutcome(rows)).toMatchObject({ observedAt: 1_700_000_000, sourceAt: 1_600_000_000 });
+  });
+
+  it("does not survive a malformed or non-numeric value", () => {
+    const rows: unknown[] = [];
+    markOutcome(rows, { ok: true, at: 1, sourceAt: "not a number" as unknown as number });
+    expect(readOutcome(rows)?.sourceAt).toBeUndefined();
+  });
+});
+
 describe("compiled — a layer with no upstream is not a broken layer", () => {
   it("is ok:true with basis compiled, because nothing failed", () => {
     // ports.ts publishes a complete curated world and has no feed to call. Marking
