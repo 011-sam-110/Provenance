@@ -61,6 +61,14 @@ export interface SignalOutcome {
    * Defaults to "live", so every existing call site keeps its current meaning.
    */
   basis?: "live" | "compiled";
+  /**
+   * ABSOLUTE epoch ms of the newest thing INSIDE the data — distinct from `at`,
+   * which is when WE read it. A five-second-old fetch of UNHCR's 2025 annual
+   * statistics is `at: now, sourceAt: end of 2025` — two true, different ages,
+   * and a freshness chip that only has `at` cannot tell an annual snapshot from
+   * a live feed. Omit when the adapter has no better answer than "just read it".
+   */
+  sourceAt?: number;
 }
 
 const OUTCOME_KEY = Symbol.for("opendata.signals.outcome");
@@ -92,6 +100,7 @@ export function readOutcome(features: unknown): SignalOutcome | undefined {
     at: o.at,
     reason: o.reason,
     basis: o.basis === "compiled" ? "compiled" : "live",
+    sourceAt: typeof o.sourceAt === "number" ? o.sourceAt : undefined,
   };
 }
 
@@ -101,9 +110,14 @@ export function readOutcome(features: unknown): SignalOutcome | undefined {
  * Orthogonal to how many features came back. `observed([])` is the honest way to
  * say "the upstream answered and there is genuinely nothing right now" — the exact
  * state the old code could not express.
+ *
+ * `sourceAt` is optional and separate from `at`: pass it only when the adapter
+ * knows a real "as of" moment for the DATA itself (a published year, a payload's
+ * own generatedAt) that can be older than the read. Most adapters have no such
+ * moment — the read instant IS the data's age — and omit it.
  */
-export function observed<T>(features: T[], at: number = Date.now()): T[] {
-  return markOutcome(features, { ok: true, at });
+export function observed<T>(features: T[], at: number = Date.now(), sourceAt?: number): T[] {
+  return markOutcome(features, { ok: true, at, sourceAt });
 }
 
 /**
@@ -172,7 +186,7 @@ export function compiled<T>(features: T[], at: number): T[] {
 export function publishOutcome(
   features: unknown,
   now: number = Date.now(),
-): { ok: boolean; observedAt: number; basis: "live" | "compiled"; degradedReason?: string } {
+): { ok: boolean; observedAt: number; basis: "live" | "compiled"; degradedReason?: string; sourceAt?: number } {
   const outcome = readOutcome(features);
   if (!outcome) {
     return { ok: false, observedAt: now, basis: "live", degradedReason: "not declared" };
@@ -183,6 +197,9 @@ export function publishOutcome(
     // Always published, like `ok`, so a consumer never has to infer it. A missing
     // field would send it back to guessing, and the guess is always "live".
     basis: outcome.basis ?? "live",
+    // Absent unless the adapter declared one — never fabricated as "now", which
+    // would be the exact lie this field exists to prevent.
+    ...(outcome.sourceAt != null ? { sourceAt: outcome.sourceAt } : {}),
     ...(outcome.ok ? {} : { degradedReason: outcome.reason ?? "upstream failed" }),
   };
 }

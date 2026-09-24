@@ -1,8 +1,9 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import fixture from "@/tests/fixtures/unhcr-displacement.json";
-import { normalizeDisplacement, displacementColor, DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
+import { normalizeDisplacement, displacementColor, sourceAtForYear, DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { centroidByIso3 } from "@/lib/signals/country-centroids.data";
 import { rowLabel, rowMetric } from "@/lib/console/signals/signalCard";
+import { readOutcome } from "@/lib/signals/outcome";
 
 test("normalizes UNHCR displacement by country of asylum, skipping non-country rows", () => {
   const out = normalizeDisplacement(fixture as never);
@@ -65,4 +66,33 @@ test("displacement colour ramps by total", () => {
   expect(displacementColor(300_000)).toBe("#ea580c");
   expect(displacementColor(60_000)).toBe("#f59e0b");
   expect(displacementColor(1_000)).toBe("#fbbf24");
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+// THE ROOT of the "LIVE in green over a year-old number" finding: this source's
+// refreshMs (a daily cache) only ever measured how recently WE read UNHCR, never
+// how old their published statistics are. sourceAtForYear + fetch() wiring it
+// through is what lets a freshness chip say "data from 2025" instead of staying
+// silent about the gap between a five-second-old fetch and a year-old figure.
+test("sourceAtForYear stamps the last instant of that year (UTC) — always in the past, never 'now'", () => {
+  const at = sourceAtForYear(2025);
+  expect(new Date(at).toISOString()).toBe("2025-12-31T23:59:59.999Z");
+  expect(at).toBeLessThan(Date.now());
+});
+
+test("fetch() declares the queried year as sourceAt, distinct from the read instant", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => ({ ok: true, json: async () => ({ items: fixture }) })),
+  );
+  const rows = await DISPLACEMENT_SOURCE.fetch();
+  const outcome = readOutcome(rows);
+  const expectedYear = new Date().getUTCFullYear() - 1;
+  expect(outcome?.sourceAt).toBe(sourceAtForYear(expectedYear));
+  // The read instant is always later than the data's own year-end stamp — the two
+  // clocks freshChip.ts exists to keep separate.
+  expect(outcome?.at).toBeGreaterThan(outcome!.sourceAt!);
 });

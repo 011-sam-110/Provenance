@@ -158,6 +158,9 @@ async function refreshSignal(
       // the previous basis — "live" is the honest default for an unknown read.
       basis: "live",
       degradedReason: "adapter threw",
+      // The last-good ROWS being served are still whatever age they always were;
+      // an adapter throwing does not make that content any newer.
+      ...(hit?.outcome.sourceAt != null ? { sourceAt: hit.outcome.sourceAt } : {}),
     };
     console.warn(`[signals:${id}] adapter threw:`, err);
   }
