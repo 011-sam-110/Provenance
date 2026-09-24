@@ -66,11 +66,22 @@ const HUMAN = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.3
 // tests testing the job rather than an artefact of the fixture.
 let tick = 0;
 
+// A fixed calendar date rots past FINALISE_LAG_MS (36h) within two days of being
+// written, and then every test below that relies on the default `line()`/`day()`
+// date silently stops testing "the day stays open in state" — the job finalises it
+// to disk and reopens it on every single run() instead, a different code path this
+// file already has its own dedicated test for ("does not double a finalised day...").
+// Anchored to now minus a few hours so it stays inside that window no matter when
+// the suite runs.
+const RECENT = new Date(Date.now() - 6 * 60 * 60 * 1000);
+const RECENT_DATE = RECENT.toISOString().slice(0, 10);
+const RECENT_TS = Math.floor(RECENT.getTime() / 1000);
+
 /** One access-log line of the shape deploy/Caddyfile actually produces. */
 function line(opts: { uri?: string; ts?: number; ua?: string; status?: number; ip?: string } = {}): string {
   const {
     uri = "/",
-    ts = Date.parse("2026-09-07T12:00:00Z") / 1000 + (tick += 1) / 1e6,
+    ts = RECENT_TS + (tick += 1) / 1e6,
     ua = HUMAN,
     status = 200,
     ip = "86.20.0.0",
@@ -112,7 +123,7 @@ function state(): RollupState {
   return JSON.parse(readFileSync(statePath(out), "utf8")) as RollupState;
 }
 
-function day(date = "2026-09-07"): DayRollup {
+function day(date = RECENT_DATE): DayRollup {
   const s = state();
   return s.days[date] ?? (readDay(out, date) as DayRollup);
 }
@@ -237,13 +248,29 @@ describe("the rollup job, end to end", () => {
   });
 
   it("counts rows on both sides of midnight into their own days", () => {
+    const before = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const after = new Date(before.getTime() + 24 * 60 * 60 * 1000);
+    const d1 = before.toISOString().slice(0, 10);
+    const d2 = after.toISOString().slice(0, 10);
     writeFileSync(
       join(logs, "provenance.log"),
-      line({ ts: Date.parse("2026-09-07T23:59:59Z") / 1000 }) + line({ ts: Date.parse("2026-09-08T00:00:01Z") / 1000 }),
+      line({ ts: Date.parse(`${d1}T23:59:59Z`) / 1000 }) + line({ ts: Date.parse(`${d2}T00:00:01Z`) / 1000 }),
     );
     run();
-    expect(day("2026-09-07").requests).toBe(1);
-    expect(day("2026-09-08").requests).toBe(1);
+    expect(day(d1).requests).toBe(1);
+    expect(day(d2).requests).toBe(1);
+  });
+
+  it("keeps today's day open in state instead of finalising it immediately", () => {
+    // Regression for the rot itself: with a fixture pinned to a literal calendar
+    // date, every test above that relies on the default `line()`/`day()` date would
+    // fail this same assertion once that date aged past FINALISE_LAG_MS (36h) — the
+    // job finalises it to disk within the same run() that wrote it, silently
+    // switching every test above from testing "the day stays open" to testing
+    // finalise-and-reopen instead.
+    writeFileSync(join(logs, "provenance.log"), line());
+    run();
+    expect(state().days[RECENT_DATE]).toBeDefined();
   });
 
   it("writes a finished day out to days/ and stops carrying it in state", () => {
