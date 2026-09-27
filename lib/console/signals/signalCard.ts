@@ -243,11 +243,20 @@ export function projectSignal(
     metric: rowMetric(f, metric),
   }));
 
-  const hasMagnitude = rows.some((r) => r.magnitude != null);
+  // Rank by the source's declared METRIC when it has one — the real scalar (e.g.
+  // instability's score, displacement's headcount) — falling back to the plain
+  // magnitude-radius proxy otherwise. Mirrors signalDetail.ts's rowValue() precedence
+  // exactly, so the card and the detail panel agree on order. Before this, the card
+  // ranked by `magnitude` alone, which several sources cap or overload as a draw radius
+  // (countMagnitude tops out at 10 from ~316K people): measured in prod 2026-09-12,
+  // 51 of 171 displacement rows tied on magnitude 10 and fell back to insertion order,
+  // so Austria (308K) could sit above Bangladesh (1.18M).
+  const rankValue = (r: SignalRow) => r.metric?.value ?? r.magnitude;
+  const hasRank = rows.some((r) => rankValue(r) != null);
   const now = config.now ?? Date.now();
   rows.sort((a, b) => {
-    if (hasMagnitude) {
-      const diff = (b.magnitude ?? -Infinity) - (a.magnitude ?? -Infinity);
+    if (hasRank) {
+      const diff = (rankValue(b) ?? -Infinity) - (rankValue(a) ?? -Infinity);
       if (diff !== 0) return diff;
     }
     // A future ts is a SCHEDULE (launches), not an observation: the next one is the
