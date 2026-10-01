@@ -1,4 +1,6 @@
 import { describe, expect, test } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   COMMUNITY_KEY,
   COMMUNITY_VERSION,
@@ -184,5 +186,20 @@ describe("the invite URL", () => {
     // on the clipboard when you copy a channel, and it is NOT joinable — someone
     // who is not already a member lands on their own last-used server instead.
     expect(BRAND.discordUrl).toMatch(/^https:\/\/discord\.gg\/[A-Za-z0-9-]+$/);
+  });
+});
+
+describe("the Ko-fi link", () => {
+  test("is read from BRAND.kofiUrl, never typed into a component", () => {
+    // BRAND is the single place the support link is edited ("one edit to rename"). A
+    // literal in a component keeps working until the link changes, then that one button
+    // silently points at the old page while every other Support link moves.
+    const offenders = ["components", "app"].flatMap((dir) =>
+      (readdirSync(dir, { recursive: true }) as string[])
+        .filter((f) => /\.tsx?$/.test(f))
+        .map((f) => join(dir, f))
+        .filter((f) => readFileSync(f, "utf8").includes("ko-fi.com")),
+    );
+    expect(offenders).toEqual([]);
   });
 });
