@@ -339,7 +339,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               opt-in way to support it. */}
           <a
             className="tnx-hdr-btn"
-            href="https://ko-fi.com/opendata"
+            href={BRAND.kofiUrl}
             target="_blank"
             rel="noreferrer noopener"
             title={`Support ${BRAND.name} on Ko-fi`}
