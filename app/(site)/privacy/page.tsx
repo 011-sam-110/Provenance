@@ -15,6 +15,20 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-04:
+ *   - The counter now gets one `visit` event per browser per local day, and on a browser's
+ *     first visit of a calendar week that event carries cohort_week: the Monday of the week
+ *     of the FIRST visit (beginVisit and classifyVisit in lib/analytics/returnFlag.ts, sent
+ *     by startVisit in components/analytics/Beacon.tsx). So "The dates are not sent" became
+ *     false and is gone. The page now says that the last date is never sent and the first
+ *     date is sent only as its week. tests/unit/privacy-page.test.ts fails if the old
+ *     sentence comes back or the new one goes.
+ *   - "When you open the site" became "on your first visit of each day": a tab left open is
+ *     classified again when the day changes, and a page that is loaded but never shown is
+ *     not classified at all. tests/unit/return-flag.test.ts pins both.
+ *   - Nothing else on the page moved. No new storage key: the two dates are still the only
+ *     thing kept, under tn.visit.v1.
+ *
  * WHAT CHANGED ON 2026-09-15:
  *   - PostHog keeps the data in the UNITED STATES, not Europe. The production project is in
  *     PostHog's US region, and a region cannot be changed after signup. The two sentences
@@ -210,7 +224,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-09-15">15 September 2026</time>
+                Last updated <time dateTime="2026-10-04">4 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -459,7 +473,10 @@ export default function PrivacyPage() {
                     Local storage <span className="pv-num">tn.visit.v1</span>, thrown away on your
                     first visit after 13 months
                   </td>
-                  <td>No. Only new or returning, and roughly how long ago, is sent to PostHog</td>
+                  <td>
+                    No. New or returning, and roughly how long ago, is sent to PostHog. Once a week,
+                    so is the week you first came
+                  </td>
                 </tr>
                 <tr>
                   <td>That you asked not to be counted, if you did</td>
@@ -818,13 +835,20 @@ export default function PrivacyPage() {
             <p>
               <strong>One thing does outlive the tab.</strong> Your browser keeps two dates in its
               own storage, under <span className="pv-num">tn.visit.v1</span>: the day you first came
-              and the day you last came. When you open the site, the counter is told only whether
-              this browser has been here before and, if so, roughly how long ago: the same day, the
-              day before, within a week, within a month, or longer. The dates are not sent. Every
-              browser that came back within a week sends the same words, so the counter can say how
-              many visits are returns but not whose. 13 months after your first visit, the dates are
-              thrown away the next time you come, and you count as new again. Coming back does not
-              extend the 13 months.
+              and the day you last came. The counter is told only whether this browser has been
+              here before and, if so, roughly how long ago: the same day, the day before, within a
+              week, within a month, or longer. On your first visit of each day it also sends one
+              count named <span className="pv-num">visit</span>, so that a browser is counted once
+              a day however many tabs it has open. On your first visit of each week, that count
+              says which week you first came, written as the date of that week&rsquo;s Monday.
+            </p>
+            <p>
+              Your last date is never sent, and your first date is sent only as its week. Every
+              browser that first came in the same week and came back after the same gap sends the
+              same words, so the counter can say how many visits are returns, and how many of one
+              week&rsquo;s new visitors came back, but not whose. 13 months after your first visit,
+              the dates are thrown away the next time you come, and you count as new again. Coming
+              back does not extend the 13 months.
             </p>
             <p>
               You can turn this off with the button below. It stops the page-view counter in this
@@ -992,14 +1016,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-09-15">15 September 2026</time>
+                <time dateTime="2026-10-04">4 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 15 September 2026. When the behaviour changes this
+              This describes the code as deployed on 4 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

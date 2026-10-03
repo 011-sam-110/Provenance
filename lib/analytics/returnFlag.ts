@@ -3,9 +3,18 @@
 // so the node tests can drive it, like lib/shell/feedback.ts.
 //
 // WHAT IS KEPT: two local calendar dates, { first, last }, under tn.visit.v1.
-// WHAT IS SENT: visit_kind (new | returning) and return_gap (a bucket). Never the dates.
-// Every browser that came back within a week sends the same two words, so PostHog can
-// count returns but cannot tell whose they are.
+// WHAT IS SENT: visit_kind (new | returning) and return_gap (a bucket), on every event of
+// the tab. Once per browser per local day, one `visit` event. On the first visit of a
+// calendar week, that event also carries cohort_week: the Monday of the week of `first`.
+// `last` is never sent, and `first` is sent only as its week. Every browser that first came
+// in the same week and came back after the same gap sends the same words, so PostHog can
+// count returns, and say how many of one week's new browsers came back, but not whose.
+//
+// WHY AN EVENT AND NOT ONLY PROPERTIES. A property rides on every event of every tab, so
+// counting browsers from it means guessing which tabs are one browser. Measured in PostHog
+// on 2026-10-03: 96 of 2,513 tabs were used on two or more days, and a tab was classified
+// once, so each of those returns was invisible. One event per browser per day is the unit
+// itself. docs/analytics/retention-dashboard.md has the queries that count it.
 //
 // THE 13 MONTHS RUN FROM `first` AND A VISIT NEVER EXTENDS THEM. CNIL's
 // audience-measurement exemption asks for that. localStorage has no expiry, so the cap
@@ -30,6 +39,18 @@ export interface VisitRecord {
 /** A `type`, not an interface, so it is assignable to posthog-js's `Properties`. */
 export type VisitProperties = { visit_kind: "new" | "returning"; return_gap: ReturnGap | "none" };
 export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/** The one event that counts a browser, once per local day. The dashboard reads it by this name. */
+export const VISIT_EVENT = "visit";
+/** A `type`, like VisitProperties. cohort_week is a Monday, YYYY-MM-DD, and is absent on
+ *  every visit that is not the browser's first of a calendar week. */
+export type VisitEventProperties = { cohort_week?: string };
+export interface VisitStart {
+  /** Registered on the tab, so each event the tab sends carries them. */
+  properties: VisitProperties;
+  /** What the `visit` event carries, or null when this browser was already counted today. */
+  event: VisitEventProperties | null;
+}
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DAY_MS = 86_400_000;
@@ -57,6 +78,15 @@ export function dayNumber(date: string): number | null {
   return Math.round(ms / DAY_MS);
 }
 
+/** The Monday of the week a date is in, or null for anything that is not a real date. */
+export function weekStart(date: string): string | null {
+  const n = dayNumber(date);
+  if (n === null) return null;
+  // Day 0, 1970-01-01, was a Thursday, so n + 3 counts the days since a Monday.
+  const monday = n - ((((n + 3) % 7) + 7) % 7);
+  return new Date(monday * DAY_MS).toISOString().slice(0, 10);
+}
+
 export function gapBucket(days: number): ReturnGap {
   if (days <= 0) return "same_day";
   if (days === 1) return "next_day";
@@ -65,23 +95,44 @@ export function gapBucket(days: number): ReturnGap {
   return "over_30d";
 }
 
-/** The whole decision. Anything that does not read as a sane record is a NEW visit and
- *  starts over; a corrupt record is never guessed at. */
-export function classifyVisit(record: unknown, today: string): { visit: VisitClass; next: VisitRecord } {
-  const fresh = { visit: { kind: "new" } as VisitClass, next: { first: today, last: today } };
-  const t = dayNumber(today);
-  if (t === null || !record || typeof record !== "object") return fresh;
-
+/** A stored record with both dates real and in order, or null. */
+function readRecord(record: unknown): (VisitRecord & { f: number; l: number }) | null {
+  if (!record || typeof record !== "object") return null;
   const { first, last } = record as Partial<Record<keyof VisitRecord, unknown>>;
-  if (typeof first !== "string" || typeof last !== "string") return fresh;
-
+  if (typeof first !== "string" || typeof last !== "string") return null;
   const f = dayNumber(first);
   const l = dayNumber(last);
-  // first > last is corrupt; last > today means the clock moved back. Both start over.
-  if (f === null || l === null || f > l || l > t) return fresh;
-  if (t - f >= MAX_LIFETIME_DAYS) return fresh;
+  // first > last is corrupt.
+  if (f === null || l === null || f > l) return null;
+  return { first, last, f, l };
+}
 
-  return { visit: { kind: "returning", gap: gapBucket(t - l) }, next: { first, last: today } };
+/** The whole decision. Anything that does not read as a sane record is a NEW visit and
+ *  starts over; a corrupt record is never guessed at.
+ *
+ *  cohortWeek is the week of the FIRST visit, and it is set only on a browser's first visit
+ *  of a calendar week. So a count of visits that carry it is a count of browsers for that
+ *  week, and no visit in between says which week the browser first came. */
+export function classifyVisit(
+  record: unknown,
+  today: string,
+): { visit: VisitClass; next: VisitRecord; cohortWeek: string | null } {
+  const fresh = {
+    visit: { kind: "new" } as VisitClass,
+    next: { first: today, last: today },
+    cohortWeek: weekStart(today),
+  };
+  const t = dayNumber(today);
+  const r = readRecord(record);
+  // last > today means the clock moved back. It starts over, like a corrupt record.
+  if (t === null || !r || r.l > t) return fresh;
+  if (t - r.f >= MAX_LIFETIME_DAYS) return fresh;
+
+  return {
+    visit: { kind: "returning", gap: gapBucket(t - r.l) },
+    next: { first: r.first, last: today },
+    cohortWeek: weekStart(r.last) === weekStart(today) ? null : weekStart(r.first),
+  };
 }
 
 export function visitProperties(visit: VisitClass): VisitProperties {
@@ -91,20 +142,51 @@ export function visitProperties(visit: VisitClass): VisitProperties {
 }
 
 /**
- * Classify this tab's visit once. `registered` is the tab's current `visit_kind` super
- * property. posthog-js keeps it in sessionStorage, so it survives a reload in the same
- * tab. When it is already set, this returns null and touches no storage. Otherwise a
+ * Classify this tab's visit, at most once per local day. Returns what to register on the
+ * tab and what the `visit` event carries, or null when there is nothing to do.
+ *
+ * `registered` is the tab's current `visit_kind` super property. posthog-js keeps it in
+ * sessionStorage, so it survives a reload in the same tab. A registered tab is left alone
+ * for the rest of the day it was classified on, and no storage is touched. Otherwise a
  * reload would turn a new visit into returning/same_day.
+ *
+ * A REGISTERED TAB IS CLASSIFIED AGAIN WHEN THE DAY CHANGES. A console tab left open is
+ * the most loyal visitor there is. Until 2026-10-04 it was classified once and stayed
+ * "new" for as long as it lived. The stored `last` day is the test, so two tabs open across
+ * midnight give one visit: the first one shown moves `last`, and the second finds today.
+ *
+ * A HIDDEN PAGE IS NOT A VISIT. A tab the browser restores in the background was loaded,
+ * not looked at. Beacon.tsx calls this again when the page is shown.
  *
  * Call this only for a browser that may be counted: Beacon.tsx reaches it after
  * armedConfig() has passed.
  */
-export function beginVisit(opts: { registered: unknown; now: Date; storage?: StorageLike }): VisitProperties | null {
-  if (opts.registered === "new" || opts.registered === "returning") return null;
+export function beginVisit(opts: {
+  registered: unknown;
+  now: Date;
+  storage?: StorageLike;
+  visible?: boolean;
+}): VisitStart | null {
+  if (opts.visible === false) return null;
+  const today = localDay(opts.now);
   const record = loadPersisted<unknown>(VISIT_KEY, VISIT_VERSION, opts.storage);
-  const { visit, next } = classifyVisit(record, localDay(opts.now));
+
+  if (opts.registered === "new" || opts.registered === "returning") {
+    const r = readRecord(record);
+    const t = dayNumber(today);
+    // Today, or a stored day ahead of the clock: a traveller who went west. Starting that
+    // tab over would throw the first date away, so it waits for the clock to catch up.
+    if (r && t !== null && r.l >= t) return null;
+  }
+
+  const { visit, next, cohortWeek } = classifyVisit(record, today);
   savePersisted<VisitRecord>(VISIT_KEY, VISIT_VERSION, next, opts.storage);
-  return visitProperties(visit);
+  // A second tab on a day this browser was already counted sends no event.
+  const counted = visit.kind === "new" || visit.gap !== "same_day";
+  return {
+    properties: visitProperties(visit),
+    event: counted ? (cohortWeek ? { cohort_week: cohortWeek } : {}) : null,
+  };
 }
 
 /** Delete the visit dates. Used by the opt-out. */

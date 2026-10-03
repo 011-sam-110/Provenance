@@ -44,8 +44,9 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-09-15"`);
-    expect(copy).toContain("15 September 2026");
+    expect(copy).toContain(`dateTime="2026-10-04"`);
+    expect(copy).toContain("4 October 2026");
+    expect(copy).not.toContain("15 September 2026");
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {
@@ -152,6 +153,14 @@ describe("privacy page: the return flag", () => {
 
   it("renders the opt-out control", () => {
     expect(copy).toContain("<CountingToggle />");
+  });
+
+  it("says that the week of the first visit is sent, and no longer that no date is", () => {
+    // lib/analytics/returnFlag.ts sends cohort_week, the Monday of the week of the first
+    // visit. "The dates are not sent" was true until then and is false after it.
+    expect(copy).not.toContain("The dates are not sent");
+    expect(copy).toContain("which week you first came");
+    expect(copy).toContain("your first visit of each day");
   });
 });
 
