@@ -160,7 +160,7 @@ function relativeTime(ts: string | undefined, now: number): string {
 function makeSignalBody(source: SignalSource) {
   function SignalBody({ config }: WidgetBodyProps) {
     const scope = useScope();
-    const { features, status, updatedAt, ok, coverage } = useSignalFeed(source.id, source.refreshMs);
+    const { features, status, updatedAt, ok, coverage, sourceAt } = useSignalFeed(source.id, source.refreshMs);
     // A key-gated layer with no key is DORMANT, not quiet. Without this the chip
     // read "none now" and the tooltip said "Connected, but there is nothing to
     // report right now — that is a real answer, not a failure" for layers that
@@ -199,9 +199,14 @@ function makeSignalBody(source: SignalSource) {
           count: features.length,
           refreshMs: source.refreshMs,
           dormant: capability?.state === "locked",
+          // The one field this generic body used to drop on the floor: how old the
+          // DATA is, not how long ago we fetched it. Null for the ~55 sources that
+          // never declare one (the read instant IS the data's age for those), but
+          // wired now for the ones that do — see displacement.ts for the first.
+          sourceAt,
         },
       });
-    }, [projected, report, updatedAt, ok, features.length, capability?.state]);
+    }, [projected, report, updatedAt, ok, features.length, capability?.state, sourceAt]);
 
     if (status === "loading" && projected.shown === 0) {
       return <p className="tn-w-empty">Loading {source.label}…</p>;

@@ -35,6 +35,16 @@ interface UnRow {
   year?: number;
 }
 
+/**
+ * UNHCR's population statistics are a year-end snapshot, not a live count — the
+ * `year` field IS the data's age, whatever moment we happen to fetch it. Stamped
+ * to the last instant of that year (UTC) so a chip reading it says "data from
+ * 2025", not "live", regardless of how fresh the fetch itself was.
+ */
+export function sourceAtForYear(year: number): number {
+  return Date.UTC(year, 11, 31, 23, 59, 59, 999);
+}
+
 /** Amber→red ramp by total displaced. */
 export function displacementColor(total: number): string {
   if (total >= 2_000_000) return "#7f1d1d";
@@ -130,9 +140,9 @@ export const DISPLACEMENT_SOURCE: SignalSource = {
         });
         if (!res2.ok) return degraded(`http ${res2.status}`);
         const json2 = (await res2.json()) as { items?: UnRow[] };
-        return observed(normalizeDisplacement(Array.isArray(json2.items) ? json2.items : []));
+        return observed(normalizeDisplacement(Array.isArray(json2.items) ? json2.items : []), Date.now(), sourceAtForYear(prev));
       }
-      return observed(out);
+      return observed(out, Date.now(), sourceAtForYear(year));
     } catch {
       return degraded("fetch failed");
     }
