@@ -13,8 +13,9 @@
 
    THE ONE SCROLL SUBSCRIBER is now GlobeStage.tsx, and it does not even add a
    listener — it reads scrollY inside the rAF loop it already runs, writes four
-   custom properties onto `.pv-stage`, and writes `opacity` onto the step items.
-   Never add a second scroll listener, and never set React state per frame.
+   custom properties onto `.pv-stage`, two more onto `.pv-root` (the hero
+   furniture's fade-out, see `--pv-hero-out`), and writes `opacity` onto the step
+   items. Never add a second scroll listener, and never set React state per frame.
    =========================================================================== */
 
 .pv-root {
@@ -57,6 +58,15 @@
      ticker has to clear it and the two are written in different files by different owners.
      `.pv-hero-strip-inner` is sized from this; `.pv-stage-status` is offset by it. */
   --pv-strip-h: 2.75rem;
+
+  /* How far the hero's furniture (that strip and the boot ticker) has faded out: 0 at the
+     top of the page, 1 once the reader is ~120px down. GlobeStage writes it onto this
+     element from its rAF loop, rounded to hundredths, and steps it straight from 0 to 1
+     under reduced motion. `--pv-hero-vis` flips to `hidden` at 1, because a number cannot
+     drive `visibility` and a faded-out pair should leave the accessibility tree too.
+     These are the defaults the server-rendered page paints with, before the loop runs. */
+  --pv-hero-out: 0;
+  --pv-hero-vis: visible;
 
   /* Type roles. TWO FACES NOW.
      Inter is NOT loaded here: this group nests inside app/layout.tsx, which
@@ -130,12 +140,14 @@
   }
 }
 
+/* No `to` on purpose. The hero strip is the only user, and its resting opacity is not a
+   constant: it is whatever the scroll fade says (`--pv-hero-out`). A missing end keyframe
+   resolves to the element's own opacity, so the intro fades in TO that value. At the top of
+   the page it is 1 and the intro is unchanged; a reader who reloads halfway down, or scrolls
+   inside the first 2.5s, is not shown a band the scroll has already taken away. */
 @keyframes pv-fade {
   from {
     opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 
@@ -321,7 +333,15 @@
    Below 60rem it is not drawn at all (see the breakpoint under this rule): at phone width
    there is no room for a second line of mono down there, and the strip's claim wins.
 
-   tests/e2e/landing.spec.ts asserts the two boxes do not intersect. */
+   It is positioned off the strip, so it leaves with the strip. Fixed, it would otherwise
+   stay at the bottom of the viewport for the whole page and print its line over whichever
+   section heading scrolled under it. It fades SIX TIMES faster than the strip, gone by
+   ~20px of scroll: the strip moves with the hero and the ticker does not, so the strip's
+   text slides up into the ticker's line after ~22px, and the ticker has to be gone before
+   the two meet or the page smears two sentences together on its way out.
+
+   tests/e2e/landing.spec.ts asserts the two boxes do not intersect at the top, and that
+   both are hidden 400px down. */
 .pv-stage-status {
   position: fixed;
   left: calc(50% - var(--pv-col) / 2);
@@ -335,6 +355,8 @@
   font-variant-numeric: tabular-nums;
   color: var(--pv-fg-mute);
   pointer-events: none;
+  opacity: calc(1 - min(1, var(--pv-hero-out) * 6));
+  visibility: var(--pv-hero-vis);
 }
 
 @media (max-width: 60rem) {
@@ -713,8 +735,19 @@
    moved visibly behind it as the stage re-parked and the strip read as one more layer
    of the parallax rather than as a caption on it. It is the page's first factual claim
    and it should sit still on top of the stage, not travel with it. A solid ground also
-   means the figures are read against one colour at every scroll position instead of
-   against whatever part of the sphere happens to be passing under them. */
+   means the figures are read against one colour instead of against whatever part of the
+   sphere happens to be passing under them.
+
+   AND IT BELONGS TO THE TOP OF THE PAGE ONLY. It is nailed to the hero's bottom edge, so
+   it scrolls up with the hero, and an opaque band is exactly the wrong thing to drag up
+   the screen: 400px down it sat as a hard bar across the middle of the viewport and the
+   globe. So it fades out over the first ~120px of scroll and comes back on the way up,
+   off `--pv-hero-out` (written by GlobeStage; never transitioned, because the scroll is
+   the timeline). At 1 `--pv-hero-vis` takes it out of the accessibility tree as well.
+
+   The intro runs with `backwards`, not `both`: a held forward fill would pin the opacity
+   at the intro's end value and the scroll fade could never reach the element. See the
+   note on `pv-fade` for why the intro still lands on the right value. */
 .pv-hero-strip {
   position: absolute;
   left: 0;
@@ -723,7 +756,9 @@
   border-top: 1px solid var(--pv-rule);
   background: var(--pv-stage);
   pointer-events: none;
-  animation: pv-fade 1s ease 1.5s both;
+  opacity: calc(1 - var(--pv-hero-out));
+  visibility: var(--pv-hero-vis);
+  animation: pv-fade 1s ease 1.5s backwards;
 }
 
 /* The height is taken from `--pv-strip-h` rather than from padding plus whatever the mono

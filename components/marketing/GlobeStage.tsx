@@ -20,9 +20,9 @@ const HeroGlobe = dynamic(() => import("./HeroGlobe"), { ssr: false });
  * `CLAUDE.md` allows this page a single scroll subscriber and forbids React state per
  * frame. This component adds NO scroll listener: it reads `window.scrollY` inside the rAF
  * loop it already runs. It sets NO React state after mount. Everything it animates is
- * either a CSS custom property on one element (compositor work, no React, no layout) or
- * `style.opacity` written straight onto the step elements, and only when the active step
- * actually changes.
+ * either a CSS custom property (the globe's four on `.pv-stage`, the hero's fade-out pair on
+ * `.pv-root`; compositor work, no React, no layout) or `style.opacity` written straight
+ * onto the step elements, and only when the active step actually changes.
  *
  * The camera is driven through `GlobeControls`, handed over once on mount, so turning the
  * globe to a country is an imperative call rather than a prop change per step.
@@ -61,6 +61,21 @@ interface Keyframe {
   y: number;
   s: [x: number, y: number, scale: number, opacity: number];
 }
+
+/**
+ * The hero's furniture — the measurement strip nailed to the hero's bottom edge, and the
+ * boot ticker fixed above it — belongs to the top of the page and nowhere else. The strip
+ * scrolls WITH the hero, so 400px down it was a hard opaque band across the middle of the
+ * screen and the globe; the ticker is fixed to the viewport, so 400px down it was printed
+ * over the next section's heading. Both now fade out over the first HERO_FADE_PX of scroll
+ * and come back on the way up (provenance.css reads `--pv-hero-out` for that).
+ *
+ * Under reduced motion there is no fade: the pair swaps out at HERO_SWAP_PX. That is small
+ * on purpose. The ticker is fixed and the strip is not, so the strip's text slides up into
+ * the ticker's line after roughly 22px of scroll; the swap has to happen before they meet.
+ */
+const HERO_FADE_PX = 120;
+const HERO_SWAP_PX = 16;
 
 export default function GlobeStage({
   layers,
@@ -131,6 +146,14 @@ export default function GlobeStage({
     let activeWatch = -1;
     let activeCov = -1;
     let last: [number, number, number, number] | null = null;
+
+    // The hero's fade-out is written on `.pv-root`, not on `.pv-stage`: the strip lives in
+    // the hero and the ticker beside the stage, and `.pv-root` is the one element both of
+    // them inherit from. The media query is read on every pass rather than subscribed to,
+    // so a preference flipped mid-visit lands on the loop's next periodic refresh.
+    const root = stage.closest<HTMLElement>(".pv-root");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let lastOut = -1;
 
     interface Metrics {
       w: number;
@@ -211,6 +234,26 @@ export default function GlobeStage({
       const y = window.scrollY;
       if (y === lastY && frameN % 30 !== 0) return;
       lastY = y;
+
+      // ── the hero's furniture ─────────────────────────────────────────────────────────
+      // 0 at the top, 1 once the reader is HERO_FADE_PX down. Rounded to hundredths so a
+      // slow trackpad does not mint a new value every frame, and written only when it
+      // moves, like the globe's four below. `--pv-hero-vis` exists because a number cannot
+      // drive `visibility`: at 1 the pair leaves the accessibility tree as well as the
+      // screen, so a faded band is not still read out and the ticker's live region stops
+      // announcing under a section it is no longer beside.
+      const out = reduce.matches
+        ? y > HERO_SWAP_PX
+          ? 1
+          : 0
+        : Math.round(Math.min(1, Math.max(0, y / HERO_FADE_PX)) * 100) / 100;
+      if (root && out !== lastOut) {
+        root.style.setProperty("--pv-hero-out", String(out));
+        if ((out >= 1) !== (lastOut >= 1)) {
+          root.style.setProperty("--pv-hero-vis", out >= 1 ? "hidden" : "visible");
+        }
+        lastOut = out;
+      }
 
       if (!m || m.h !== window.innerHeight || m.w !== window.innerWidth || frameN % 90 === 0) measure();
       if (!m) return;
@@ -311,6 +354,10 @@ export default function GlobeStage({
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", onResize);
+      // `.pv-root` is the layout's element and outlives this page (it also wraps /privacy),
+      // so take the pair back off rather than leave a stale fade on it.
+      root?.style.removeProperty("--pv-hero-out");
+      root?.style.removeProperty("--pv-hero-vis");
     };
   }, [watchPlaces, covPlaces]);
 
