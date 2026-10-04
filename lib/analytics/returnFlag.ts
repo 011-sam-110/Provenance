@@ -2,13 +2,19 @@
 // anything that says who the visitor is? PURE: no React, no window. Storage is injected
 // so the node tests can drive it, like lib/shell/feedback.ts.
 //
-// WHAT IS KEPT: two local calendar dates, { first, last }, under tn.visit.v1.
+// WHAT IS KEPT: two local calendar dates and a count, { first, last, days }, under
+// tn.visit.v1. `days` is how many local days this browser has come.
 // WHAT IS SENT: visit_kind (new | returning) and return_gap (a bucket), on every event of
-// the tab. Once per browser per local day, one `visit` event. On the first visit of a
-// calendar week, that event also carries cohort_week: the Monday of the week of `first`.
-// `last` is never sent, and `first` is sent only as its week. Every browser that first came
-// in the same week and came back after the same gap sends the same words, so PostHog can
-// count returns, and say how many of one week's new browsers came back, but not whose.
+// the tab. Once per browser per local day, one `visit` event, with visit_days: a bucket of
+// `days`. On the first visit of a calendar week, that event also carries cohort_week: the
+// Monday of the week of `first`. `last` and the count itself are never sent, and `first` is
+// sent only as its week. Every browser that first came in the same week, came back after
+// the same gap and has come about as often sends the same words, so PostHog can count
+// returns, and regulars, and say how many of one week's new browsers came back, but not whose.
+//
+// WHY THE COUNT. The two dates say that a browser came back, not how often. "Do we have
+// regulars, people who come more than six times?" had no answer: on 2026-10-04 the only
+// evidence was 4 tabs that had been left open and used on more than six days.
 //
 // WHY AN EVENT AND NOT ONLY PROPERTIES. A property rides on every event of every tab, so
 // counting browsers from it means guessing which tabs are one browser. Measured in PostHog
@@ -31,10 +37,14 @@ export const VISIT_VERSION = 1;
 export const MAX_LIFETIME_DAYS = 395;
 
 export type ReturnGap = "same_day" | "next_day" | "2_7d" | "8_30d" | "over_30d";
+/** How many local days a browser has come, as a bucket. The count itself is never sent. */
+export type VisitDays = "1" | "2_3" | "4_6" | "7_14" | "15_plus";
 export type VisitClass = { kind: "new" } | { kind: "returning"; gap: ReturnGap };
 export interface VisitRecord {
   first: string;
   last: string;
+  /** Local days this browser has come. A record stored before 2026-10-04 has none: see readRecord(). */
+  days: number;
 }
 /** A `type`, not an interface, so it is assignable to posthog-js's `Properties`. */
 export type VisitProperties = { visit_kind: "new" | "returning"; return_gap: ReturnGap | "none" };
@@ -44,7 +54,7 @@ export type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export const VISIT_EVENT = "visit";
 /** A `type`, like VisitProperties. cohort_week is a Monday, YYYY-MM-DD, and is absent on
  *  every visit that is not the browser's first of a calendar week. */
-export type VisitEventProperties = { cohort_week?: string };
+export type VisitEventProperties = { visit_days: VisitDays; cohort_week?: string };
 export interface VisitStart {
   /** Registered on the tab, so each event the tab sends carries them. */
   properties: VisitProperties;
@@ -95,16 +105,30 @@ export function gapBucket(days: number): ReturnGap {
   return "over_30d";
 }
 
+/** The edges are pinned by tests/unit/return-flag.test.ts, and /privacy states them. */
+export function daysBucket(days: number): VisitDays {
+  if (days <= 1) return "1";
+  if (days <= 3) return "2_3";
+  if (days <= 6) return "4_6";
+  if (days <= 14) return "7_14";
+  return "15_plus";
+}
+
 /** A stored record with both dates real and in order, or null. */
 function readRecord(record: unknown): (VisitRecord & { f: number; l: number }) | null {
   if (!record || typeof record !== "object") return null;
-  const { first, last } = record as Partial<Record<keyof VisitRecord, unknown>>;
+  const { first, last, days } = record as Partial<Record<keyof VisitRecord, unknown>>;
   if (typeof first !== "string" || typeof last !== "string") return null;
   const f = dayNumber(first);
   const l = dayNumber(last);
   // first > last is corrupt.
   if (f === null || l === null || f > l) return null;
-  return { first, last, f, l };
+  // A record from before the count has no `days`. Its FLOOR is one day when it holds one
+  // date and two when the dates differ: the browser may have come more often, and the count
+  // never claims so. A count that the dates cannot hold gets the same floor.
+  const floor = f === l ? 1 : 2;
+  const sane = typeof days === "number" && Number.isInteger(days) && days >= floor && days <= l - f + 1;
+  return { first, last, days: sane ? days : floor, f, l };
 }
 
 /** The whole decision. Anything that does not read as a sane record is a NEW visit and
@@ -119,7 +143,7 @@ export function classifyVisit(
 ): { visit: VisitClass; next: VisitRecord; cohortWeek: string | null } {
   const fresh = {
     visit: { kind: "new" } as VisitClass,
-    next: { first: today, last: today },
+    next: { first: today, last: today, days: 1 },
     cohortWeek: weekStart(today),
   };
   const t = dayNumber(today);
@@ -130,7 +154,8 @@ export function classifyVisit(
 
   return {
     visit: { kind: "returning", gap: gapBucket(t - r.l) },
-    next: { first: r.first, last: today },
+    // A second tab on a day already counted adds nothing.
+    next: { first: r.first, last: today, days: t === r.l ? r.days : r.days + 1 },
     cohortWeek: weekStart(r.last) === weekStart(today) ? null : weekStart(r.first),
   };
 }
@@ -185,7 +210,9 @@ export function beginVisit(opts: {
   const counted = visit.kind === "new" || visit.gap !== "same_day";
   return {
     properties: visitProperties(visit),
-    event: counted ? (cohortWeek ? { cohort_week: cohortWeek } : {}) : null,
+    event: counted
+      ? { visit_days: daysBucket(next.days), ...(cohortWeek ? { cohort_week: cohortWeek } : {}) }
+      : null,
   };
 }
 
