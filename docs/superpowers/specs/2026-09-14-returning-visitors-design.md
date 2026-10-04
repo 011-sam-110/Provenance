@@ -199,6 +199,29 @@ Research on 2026-09-14 by a background agent, from primary sources. **This is no
 | 6 | No person profiles, no session replay, reads use totals only | `person_profiles`, `disable_session_recording`, a working rule | this change + practice |
 | 7 | A decision on German visitors | option (b), decided by Sam 2026-09-14 | this change |
 
+> **Correction, 2026-10-04. Row 5 was wrong in two ways.** The rest of this document is the
+> record of 14 September and is not changed.
+>
+> - **There is no retention setting.** PostHog's documentation says: "Your retention period
+>   comes from your plan", 1 year on the free plan and 7 years on a paid plan, and "You cannot
+>   make your retention period shorter to remove data, and a shorter period is not available
+>   on request." (<https://posthog.com/docs/data/events-retention>, read 2026-10-04.) The
+>   project was on the free plan on 2026-10-03, so events are kept for 1 year and Sam has
+>   nothing to set. On a paid plan the period is 7 years, which is longer than 25 months.
+> - **25 months is a recommendation, not a condition.** The CNIL lists it under "la CNIL
+>   recommande également que", next to the 13-month life of the dates. It is not a condition
+>   of the consent exemption, and it is not a UK rule.
+>   (<https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience>,
+>   read 2026-10-04.)
+>
+> Row 1 holds. The ICO says that to rely on the statistics exception, "your third party
+> provider must be a processor, not a joint controller". PostHog's DPA is made at
+> `app.posthog.com/legal`, on any plan. This is not legal advice.
+>
+> Two readings from the PostHog project on 2026-10-03, neither changed: "Discard client IP
+> data" is on, and session replay is switched on at the project level with no recording
+> stored. The site sets `disable_session_recording`, which is what stops it.
+
 **Still uncertain, and not created by this change:** PostHog keeps one row per event, with a per-tab
 id. It is not clear whether that is "anonymous statistics" (CNIL) or retained individual-level
 information (ICO). The beacon has had this property since 8 Sep. This change adds an objection path and

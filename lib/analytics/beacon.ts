@@ -70,6 +70,20 @@ export function beaconConfig(
 }
 
 /**
+ * Must a route change send its own $pageview?
+ *
+ * NOT FOR THE FIRST ROUTE. posthog-js sends that one itself (capture_pageview below). The
+ * route effect in Beacon.tsx used to skip only while the library was still loading, on the
+ * belief that it always ran before init had finished. It runs just after: both effects wait
+ * on the same import, and init's callback is queued first. So every full page load sent two
+ * $pageview events from 2026-09-15 until this rule. Measured in PostHog on 2026-10-03:
+ * 7,099 page views, 4,740 without the doubles.
+ */
+export function navigationPageview(state: { first: boolean; loaded: boolean }): boolean {
+  return !state.first && state.loaded;
+}
+
+/**
  * Runtime options for posthog-js.
  *
  * `persistence: "sessionStorage"` IS THE LOAD-BEARING LINE, and it is a compromise

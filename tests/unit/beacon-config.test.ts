@@ -9,7 +9,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beaconConfig, beaconOptions, DEFAULT_BEACON_HOST } from "@/lib/analytics/beacon";
+import { beaconConfig, beaconOptions, DEFAULT_BEACON_HOST, navigationPageview } from "@/lib/analytics/beacon";
 
 const ROOT = join(__dirname, "..", "..");
 
@@ -128,6 +128,42 @@ describe("a browser that is not counted never loads the library", () => {
 
   it("reads beaconConfig() in one place only, inside armedConfig()", () => {
     expect(src.match(/beaconConfig\(\)/g) ?? []).toHaveLength(1);
+  });
+});
+
+describe("one page view per page", () => {
+  // From 2026-09-15 to the cohort release, every full page load sent TWO $pageview events:
+  // posthog-js sends one at init, and the route effect sent another as soon as init had
+  // finished. Measured in PostHog on 2026-10-03: 7,099 page views, 4,740 after removing the
+  // doubles. Bounce rate and pages per visit were both wrong for as long as that lasted.
+  const src = readFileSync(join(ROOT, "components", "analytics", "Beacon.tsx"), "utf8").replace(/\/\/.*$/gm, "");
+
+  it("never sends its own page view for the first route, because init already did", () => {
+    expect(navigationPageview({ first: true, loaded: true })).toBe(false);
+    expect(navigationPageview({ first: true, loaded: false })).toBe(false);
+  });
+
+  it("sends one for a later route, once the library has loaded", () => {
+    expect(navigationPageview({ first: false, loaded: true })).toBe(true);
+    expect(navigationPageview({ first: false, loaded: false })).toBe(false);
+  });
+
+  it("captures $pageview in one place, behind that rule", () => {
+    expect(src.match(/capture\("\$pageview"\)/g) ?? []).toHaveLength(1);
+    expect(src).toMatch(/if \(!navigationPageview\(/);
+  });
+});
+
+describe("one visit event per browser per day", () => {
+  const src = readFileSync(join(ROOT, "components", "analytics", "Beacon.tsx"), "utf8").replace(/\/\/.*$/gm, "");
+
+  it("sends the visit event from one place, with what beginVisit returned", () => {
+    expect(src.match(/capture\(VISIT_EVENT/g) ?? []).toHaveLength(1);
+    expect(src.match(/beginVisit\(/g) ?? []).toHaveLength(1);
+  });
+
+  it("tells beginVisit whether the page is visible", () => {
+    expect(src).toMatch(/visible: document\.visibilityState === "visible"/);
   });
 });
 
