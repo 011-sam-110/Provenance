@@ -14,9 +14,11 @@
 // the e2e suite), so this adds no packages. `sharp` and `resvg` would each have
 // been a new native dependency for a script that runs by hand a few times a year.
 //
-// The mark's own geometry is duplicated below rather than imported: Mark.tsx is a
-// .tsx React component and this is a plain node script with no build step. The
-// duplication is deliberate and small, and gen-icons verifies it — see verifySync().
+// Mark.tsx is a .tsx React component and this is a plain node script with no build
+// step, so this file cannot import it. Both read lib/brand/markPaths.json instead:
+// the traced figure AND the measured rings and dots. Only the styling below (stroke
+// width, opacity, the dot radius) is repeated here, and it must match the
+// stylesheet and Mark.tsx by hand.
 
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -36,14 +38,14 @@ const TRACED = JSON.parse(readFileSync(resolve(ROOT, "lib", "brand", "markPaths.
 // fill-rule="evenodd" is mandatory: the traced contours include the inner
 // boundaries of the lens ring and of every continent. Under the default nonzero
 // rule those inner loops fill solid and the globe renders as a plain disc.
+const { outer, inner } = TRACED.rings;
 const MARK_BODY = `
   <g fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.55">
-    <circle cx="64" cy="63" r="46"/>
-    <circle cx="64" cy="56" r="37"/>
+    <ellipse cx="${outer.cx}" cy="${outer.cy}" rx="${outer.rx}" ry="${outer.ry}"/>
+    <path d="${inner.d}"/>
   </g>
   <g fill="currentColor" opacity="0.75">
-    <circle cx="18" cy="63" r="2.4"/>
-    <circle cx="110" cy="63" r="2.4"/>
+    ${TRACED.dots.map((d) => `<circle cx="${d.cx}" cy="${d.cy}" r="2.4"/>`).join("\n    ")}
   </g>
   <path fill="currentColor" fill-rule="evenodd" d="${TRACED.glass.join(" ")}"/>
   <path fill="currentColor" fill-rule="evenodd" d="${TRACED.book.join(" ")}"/>`;
