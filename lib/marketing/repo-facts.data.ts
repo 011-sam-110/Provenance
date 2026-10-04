@@ -13,9 +13,9 @@
  * checkable. So the case count is measured, dated, and pinned to the file count that CAN
  * be checked cheaply.
  *
- * Measured 2026-10-04 on feat/retention-cohorts at origin/main cb44be0, by the run itself:
- * `vitest run` reported 4,299 passed across 403 files. This branch adds 24 cases to three
- * existing files (return-flag, beacon-config, privacy-page), so `files` is main's own count.
+ * Measured 2026-10-04 on feat/visit-days at origin/main 27c5bad, by the run itself:
+ * `vitest run` reported 4,322 passed across 403 files. This branch adds 23 cases to two
+ * existing files (return-flag, privacy-page), so `files` is main's own count.
  *
  * THIS LINE STOPPED SIX MERGES FROM REACHING PRODUCTION, and the reason is worth more
  * than the number. The gate (`npx tsc --noEmit && npm test`) ran ONLY in deploy.yml, on
@@ -36,7 +36,7 @@
  * re-measure both numbers on the merged tree.
  */
 export const UNIT_TESTS = {
-  cases: 4299,
+  cases: 4322,
   files: 403,
   measuredAt: "2026-10-04",
 } as const;

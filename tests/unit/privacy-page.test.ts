@@ -162,6 +162,14 @@ describe("privacy page: the return flag", () => {
     expect(copy).toContain("which week you first came");
     expect(copy).toContain("your first visit of each day");
   });
+
+  it("says that a count of visit days is kept, and that only a rough size of it is sent", () => {
+    // lib/analytics/returnFlag.ts keeps `days` beside the two dates and sends visit_days, a
+    // bucket. "keeps two dates" alone was true until then and is short by one item after it.
+    expect(copy).toContain("how many days you have come");
+    expect(copy).toContain("7 to 14");
+    expect(copy).not.toContain("Your browser keeps two dates in its");
+  });
 });
 
 describe("privacy page: where PostHog keeps the data", () => {
