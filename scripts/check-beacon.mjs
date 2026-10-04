@@ -124,8 +124,9 @@ check("first load sends one page view", views.length === 1, `${views.length} sen
 check("it carries visit_kind new", kind(views[0]) === "new/none", kind(views[0]));
 check("first load sends one visit event", visits.length === 1, `${visits.length} sent`);
 check("the visit is new, with this week as its cohort", kind(visits[0]) === "new/none" && visits[0]?.properties?.cohort_week === monday(today), `${kind(visits[0])} cohort_week=${visits[0]?.properties?.cohort_week}, want ${monday(today)}`);
+check("it says this is the browser's first day", visits[0]?.properties?.visit_days === "1", `visit_days=${visits[0]?.properties?.visit_days}`);
 const record = await page.evaluate(() => localStorage.getItem("tn.visit.v1"));
-check("the two dates are kept in the browser", record === JSON.stringify({ v: 1, d: { first: today, last: today } }), record ?? "nothing stored");
+check("the two dates and the count are kept in the browser", record === JSON.stringify({ v: 1, d: { first: today, last: today, days: 1 } }), record ?? "nothing stored");
 const cookies = await context.cookies(BASE);
 check("no cookie is set", cookies.length === 0, cookies.map((c) => c.name).join(", "));
 
@@ -143,19 +144,22 @@ check("a route change sends one page view", named(from, "$pageview").length === 
 
 // ── The day changes while the tab stays open ─────────────────────────────────────────
 // The stored dates are moved back, which is what a later day looks like to the page. Eight
-// days is always an earlier week, so the cohort week must be sent whatever today is.
-const first = iso(dayMs(today) - 10 * DAY_MS);
+// days is always an earlier week, so the cohort week must be sent whatever today is. The
+// stored count is six days, so this visit is the seventh.
+const first = iso(dayMs(today) - 20 * DAY_MS);
 const last = iso(dayMs(today) - 8 * DAY_MS);
 from = events.length;
 await page.evaluate((d) => {
   localStorage.setItem("tn.visit.v1", JSON.stringify({ v: 1, d }));
   document.dispatchEvent(new Event("visibilitychange"));
   document.dispatchEvent(new Event("visibilitychange"));
-}, { first, last });
+}, { first, last, days: 6 });
 await settle(page, from, "visit");
 visits = named(from, "visit");
 check("an open tab is counted again on a later day, once", visits.length === 1 && kind(visits[0]) === "returning/8_30d", `${visits.length} sent, ${kind(visits[0])}`);
 check("in a new week it sends the week of the FIRST visit", visits[0]?.properties?.cohort_week === monday(first), `cohort_week=${visits[0]?.properties?.cohort_week}, want ${monday(first)}`);
+const counted = await page.evaluate(() => JSON.parse(localStorage.getItem("tn.visit.v1") ?? "{}")?.d?.days);
+check("the seventh day is sent as 7 to 14, and the count stays in the browser", visits[0]?.properties?.visit_days === "7_14" && counted === 7 && !Object.values(visits[0]?.properties ?? {}).includes(7), `visit_days=${visits[0]?.properties?.visit_days}, stored days=${counted}`);
 
 // ── A second tab on the same day ─────────────────────────────────────────────────────
 from = events.length;

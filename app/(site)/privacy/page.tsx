@@ -26,8 +26,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *   - "When you open the site" became "on your first visit of each day": a tab left open is
  *     classified again when the day changes, and a page that is loaded but never shown is
  *     not classified at all. tests/unit/return-flag.test.ts pins both.
- *   - Nothing else on the page moved. No new storage key: the two dates are still the only
- *     thing kept, under tn.visit.v1.
+ *   - Later the same day, a count joined the two dates: tn.visit.v1 = { first, last, days },
+ *     where `days` is how many local days the browser has come. The `visit` event carries
+ *     visit_days, a bucket of it (daysBucket in lib/analytics/returnFlag.ts): 1, 2 to 3,
+ *     4 to 6, 7 to 14, 15 or more. The count itself is never sent. So "keeps two dates"
+ *     became short by one item, and the page now names the count and the buckets.
+ *     tests/unit/privacy-page.test.ts pins both.
+ *   - No new storage key: everything kept is still under tn.visit.v1.
  *
  * WHAT CHANGED ON 2026-09-15:
  *   - PostHog keeps the data in the UNITED STATES, not Europe. The production project is in
@@ -466,16 +471,17 @@ export default function PrivacyPage() {
                 </tr>
                 <tr>
                   <td>
-                    The day you first came and the day you last came, so the page-view counter can
-                    tell a return from a new visit
+                    The day you first came, the day you last came and how many days you have come,
+                    so the page-view counter can tell a return from a new visit and a regular from
+                    a second visit
                   </td>
                   <td>
                     Local storage <span className="pv-num">tn.visit.v1</span>, thrown away on your
                     first visit after 13 months
                   </td>
                   <td>
-                    No. New or returning, and roughly how long ago, is sent to PostHog. Once a week,
-                    so is the week you first came
+                    No. New or returning, roughly how long ago and roughly how many days you have
+                    come are sent to PostHog. Once a week, so is the week you first came
                   </td>
                 </tr>
                 <tr>
@@ -833,19 +839,23 @@ export default function PrivacyPage() {
               There is no ad pixel, no Google Analytics, no Meta pixel and no fingerprinting library.
             </p>
             <p>
-              <strong>One thing does outlive the tab.</strong> Your browser keeps two dates in its
-              own storage, under <span className="pv-num">tn.visit.v1</span>: the day you first came
-              and the day you last came. The counter is told only whether this browser has been
+              <strong>One thing does outlive the tab.</strong> Your browser keeps two dates and a
+              count in its own storage, under <span className="pv-num">tn.visit.v1</span>: the day
+              you first came, the day you last came and how many days you have come. The counter is
+              told only whether this browser has been
               here before and, if so, roughly how long ago: the same day, the day before, within a
               week, within a month, or longer. On your first visit of each day it also sends one
               count named <span className="pv-num">visit</span>, so that a browser is counted once
-              a day however many tabs it has open. On your first visit of each week, that count
-              says which week you first came, written as the date of that week&rsquo;s Monday.
+              a day however many tabs it has open. That count says roughly how many days you have
+              come: one, 2 to 3, 4 to 6, 7 to 14, or 15 or more. On your first visit of each week,
+              it also says which week you first came, written as the date of that week&rsquo;s
+              Monday.
             </p>
             <p>
-              Your last date is never sent, and your first date is sent only as its week. Every
-              browser that first came in the same week and came back after the same gap sends the
-              same words, so the counter can say how many visits are returns, and how many of one
+              Your last date and the exact number of days are never sent, and your first date is
+              sent only as its week. Every browser that first came in the same week, came back after
+              the same gap and has come about as often sends the same words, so the counter can say
+              how many visits are returns, how many visitors are regulars, and how many of one
               week&rsquo;s new visitors came back, but not whose. 13 months after your first visit,
               the dates are thrown away the next time you come, and you count as new again. Coming
               back does not extend the 13 months.
@@ -987,8 +997,8 @@ export default function PrivacyPage() {
               persist. One is the server access log described above, which is IP-masked, rolled and
               deleted &mdash; together with the daily counts taken from it, which are kept but hold
               no address at any resolution. One is the page-view counter described above, which
-              sets no cookie, keeps only your first and last visit dates on your own device, and
-              does not run at all if you turned it off or your browser sends Do Not Track or Global
+              sets no cookie, keeps only your first and last visit dates and a count of your visit
+              days on your own device, and does not run at all if you turned it off or your browser sends Do Not Track or Global
               Privacy Control. The third is a feedback answer, if you
               chose to send one, which is sitting as a message in a private Telegram chat &mdash;
               that is the only place a name or an email you gave us can be, and asking will get it

@@ -7,6 +7,7 @@ import {
   beginVisit,
   classifyVisit,
   dayNumber,
+  daysBucket,
   forgetVisit,
   gapBucket,
   localDay,
@@ -81,7 +82,7 @@ describe("classifyVisit", () => {
   const t = dayNumber(today)!;
   const iso = (n: number) => new Date(n * 86_400_000).toISOString().slice(0, 10);
   // 2026-09-14 is a Monday, so a browser that is new today is in the cohort of that week.
-  const fresh = { visit: { kind: "new" }, next: { first: today, last: today }, cohortWeek: today };
+  const fresh = { visit: { kind: "new" }, next: { first: today, last: today, days: 1 }, cohortWeek: today };
 
   it("calls a browser with no record new, and starts the record today", () => {
     expect(classifyVisit(null, today)).toEqual(fresh);
@@ -90,7 +91,8 @@ describe("classifyVisit", () => {
   it("calls a return returning, with the gap measured from the LAST visit", () => {
     expect(classifyVisit({ first: "2026-08-01", last: "2026-09-10" }, today)).toEqual({
       visit: { kind: "returning", gap: "2_7d" },
-      next: { first: "2026-08-01", last: today },
+      // The record is from before the count existed, so it starts at its floor of two days.
+      next: { first: "2026-08-01", last: today, days: 3 },
       cohortWeek: "2026-07-27",
     });
   });
@@ -171,7 +173,7 @@ describe("the cohort week", () => {
     const record = { first: "2026-09-14", last: "2026-09-15" };
     expect(classifyVisit(record, "2026-09-16")).toEqual({
       visit: { kind: "returning", gap: "next_day" },
-      next: { first: "2026-09-14", last: "2026-09-16" },
+      next: { first: "2026-09-14", last: "2026-09-16", days: 3 },
       cohortWeek: null,
     });
   });
@@ -201,16 +203,19 @@ describe("beginVisit", () => {
     const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-01", last: "2026-09-13" }) });
     expect(beginVisit({ registered: undefined, now, storage: s })).toEqual({
       properties: { visit_kind: "returning", return_gap: "next_day" },
-      event: { cohort_week: "2026-08-31" },
+      event: { visit_days: "2_3", cohort_week: "2026-08-31" },
     });
-    expect(JSON.parse(s.map.get(VISIT_KEY)!)).toEqual({ v: 1, d: { first: "2026-09-01", last: "2026-09-14" } });
+    expect(JSON.parse(s.map.get(VISIT_KEY)!)).toEqual({
+      v: 1,
+      d: { first: "2026-09-01", last: "2026-09-14", days: 3 },
+    });
   });
 
   it("sends a new browser's visit with this week as its cohort", () => {
     const s = memoryStorage();
     expect(beginVisit({ registered: undefined, now, storage: s })).toEqual({
       properties: { visit_kind: "new", return_gap: "none" },
-      event: { cohort_week: "2026-09-14" },
+      event: { visit_days: "1", cohort_week: "2026-09-14" },
     });
   });
 
@@ -219,7 +224,7 @@ describe("beginVisit", () => {
     const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-14", last: "2026-09-14" }) });
     expect(beginVisit({ registered: undefined, now: tuesday, storage: s })).toEqual({
       properties: { visit_kind: "returning", return_gap: "next_day" },
-      event: {},
+      event: { visit_days: "2_3" },
     });
   });
 
@@ -247,9 +252,12 @@ describe("beginVisit", () => {
     const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-10", last: "2026-09-13" }) });
     expect(beginVisit({ registered: "new", now, storage: s })).toEqual({
       properties: { visit_kind: "returning", return_gap: "next_day" },
-      event: { cohort_week: "2026-09-07" },
+      event: { visit_days: "2_3", cohort_week: "2026-09-07" },
     });
-    expect(JSON.parse(s.map.get(VISIT_KEY)!)).toEqual({ v: 1, d: { first: "2026-09-10", last: "2026-09-14" } });
+    expect(JSON.parse(s.map.get(VISIT_KEY)!)).toEqual({
+      v: 1,
+      d: { first: "2026-09-10", last: "2026-09-14", days: 3 },
+    });
   });
 
   it("leaves a registered tab alone when the stored day is ahead of the clock", () => {
@@ -263,7 +271,7 @@ describe("beginVisit", () => {
     const s = memoryStorage();
     expect(beginVisit({ registered: "returning", now, storage: s })).toEqual({
       properties: { visit_kind: "new", return_gap: "none" },
-      event: { cohort_week: "2026-09-14" },
+      event: { visit_days: "1", cohort_week: "2026-09-14" },
     });
     expect(s.writes).toEqual([VISIT_KEY]);
   });
@@ -291,5 +299,79 @@ describe("beginVisit", () => {
     const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-01", last: "2026-09-13" }) });
     forgetVisit(s);
     expect(s.map.has(VISIT_KEY)).toBe(false);
+  });
+});
+
+describe("how many days a browser has come", () => {
+  // The question the two dates cannot answer: does anyone come back again and again? The
+  // browser keeps a count of its visit days and sends only a bucket of it, on the visit event.
+  const today = "2026-09-14";
+  const now = new Date(2026, 8, 14, 12, 0);
+
+  it.each([
+    [1, "1"],
+    [2, "2_3"],
+    [3, "2_3"],
+    [4, "4_6"],
+    [6, "4_6"],
+    [7, "7_14"],
+    [14, "7_14"],
+    [15, "15_plus"],
+    [395, "15_plus"],
+  ] as const)("%i days is %s", (days, bucket) => {
+    expect(daysBucket(days)).toBe(bucket);
+  });
+
+  it("starts a new browser at one day", () => {
+    expect(classifyVisit(null, today).next.days).toBe(1);
+  });
+
+  it("adds one on a new day", () => {
+    expect(classifyVisit({ first: "2026-09-01", last: "2026-09-13", days: 6 }, today).next.days).toBe(7);
+  });
+
+  it("does not add for a second tab on the same day", () => {
+    expect(classifyVisit({ first: "2026-09-01", last: today, days: 6 }, today).next.days).toBe(6);
+  });
+
+  it("starts a record from before the count at one day when it has one date", () => {
+    expect(classifyVisit({ first: "2026-09-13", last: "2026-09-13" }, today).next.days).toBe(2);
+  });
+
+  it("starts a record from before the count at two days when its dates differ", () => {
+    // Two is a floor. The browser may have come more often, and the count never claims so.
+    expect(classifyVisit({ first: "2026-08-01", last: "2026-09-13" }, today).next.days).toBe(3);
+  });
+
+  it.each([
+    ["zero", 0],
+    ["a negative number", -3],
+    ["a fraction", 2.5],
+    ["a string", "7"],
+    ["more days than the dates hold", 999],
+  ])("does not trust %s, and falls back to the floor", (_label, days) => {
+    // 10 to 13 September is four days, so a count above four cannot be true.
+    expect(classifyVisit({ first: "2026-09-10", last: "2026-09-13", days }, today).next.days).toBe(3);
+  });
+
+  it("starts again at one after the 13-month reset", () => {
+    const t = dayNumber(today)!;
+    const iso = (n: number) => new Date(n * 86_400_000).toISOString().slice(0, 10);
+    const record = { first: iso(t - MAX_LIFETIME_DAYS), last: iso(t - 1), days: 200 };
+    expect(classifyVisit(record, today).next.days).toBe(1);
+  });
+
+  it("sends the bucket on the visit event, and never the count", () => {
+    const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-01", last: "2026-09-13", days: 6 }) });
+    const start = beginVisit({ registered: undefined, now, storage: s });
+    expect(start?.event).toEqual({ visit_days: "7_14", cohort_week: "2026-08-31" });
+    expect(Object.values(start?.event ?? {})).not.toContain(7);
+    expect(JSON.parse(s.map.get(VISIT_KEY)!).d.days).toBe(7);
+  });
+
+  it("does not register the bucket on the tab, so only the visit event carries it", () => {
+    const s = memoryStorage({ [VISIT_KEY]: stored({ first: "2026-09-01", last: "2026-09-13", days: 6 }) });
+    const start = beginVisit({ registered: undefined, now, storage: s });
+    expect(Object.keys(start?.properties ?? {}).sort()).toEqual(["return_gap", "visit_kind"]);
   });
 });

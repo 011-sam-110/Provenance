@@ -36,6 +36,16 @@ The `visit` event did not exist before the cohort release. For the days before t
 - A later day with only `$pageleave` or `$web_vitals` is not a return. That is a tab that
   was closed, not a tab that was used. On 2026-10-03 this rule removed 32 of 166 such days.
 
+**Regulars.** The browser also keeps a count of the days it has come, and the `visit` event
+carries `visit_days`, a bucket of that count: `1`, `2_3`, `4_6`, `7_14`, `15_plus`. The
+count itself is never sent. Tile 7 counts each browser once a week, on the visit that carries
+`cohort_week`. A browser that came before the count existed starts at a floor of 1 or 2
+days, so the first weeks understate the regulars.
+
+Before the count existed, the only evidence of regulars was tabs left open. On 2026-10-04,
+6 tabs had been used on 6 or more days, and 4 of them on more than 6 (8, 8, 9 and 11 of 19
+days). That is a floor: a visitor who opens a new tab each time could not be followed.
+
 The local day comes from `$timezone_offset`, which posthog-js sends with every event.
 
 **Count with the `visit` event, not with `visit_kind` on other events.** `visit_kind` rides
@@ -224,6 +234,30 @@ LEFT JOIN (
   GROUP BY cohort
 ) r ON r.cohort = s.cohort
 ORDER BY s.cohort
+```
+
+### 7 · Regulars: browsers by how many days they have come
+
+One row per week (Monday start). Each browser is counted once, on its first visit of that week, by how many days it had come by then. The count started with the visit-days release: a browser that came before it starts at 1 or 2 days, so '7 or more' needs five more visit days and shows from the week after that. The first week is not complete.
+
+Shown as: a table.
+
+```sql
+SELECT week_starting,
+       count() AS browsers,
+       countIf(d = '1') AS first_day,
+       countIf(d = '2_3') AS came_2_to_3_days,
+       countIf(d = '4_6') AS came_4_to_6_days,
+       countIf(d = '7_14') AS came_7_to_14_days,
+       countIf(d = '15_plus') AS came_15_or_more_days,
+       countIf(d IN ('7_14', '15_plus')) AS regulars_7_or_more
+FROM (
+  SELECT toStartOfWeek(toDate(timestamp - toIntervalMinute(ifNull(toInt(properties.$timezone_offset), 0))), 1) AS week_starting, toString(properties.visit_days) AS d
+  FROM events
+  WHERE event = 'visit' AND properties.cohort_week IS NOT NULL AND properties.visit_days IS NOT NULL
+)
+GROUP BY week_starting
+ORDER BY week_starting
 ```
 
 ## The first reading, 2026-10-03
