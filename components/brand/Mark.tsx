@@ -14,13 +14,19 @@
 // into abstract texture — a different mark wearing the same layout, which for a
 // product logo is not a near miss, it is the wrong logo. The geometry in
 // lib/brand/markPaths.json is traced from public/brand/mark.png by
-// scripts/trace-mark.mjs (marching squares + Douglas-Peucker, deterministic), so
-// what renders here IS the approved artwork.
+// scripts/trace-mark.mjs (sub-pixel iso-contours + fitted Bezier curves,
+// deterministic), so what renders here IS the approved artwork.
 //
-// The two orbit rings and their dots are the exception: they are authored as
-// <circle> rather than traced. They are hairlines at low contrast in the source,
-// so thresholding shreds them into arcs — and the stroke-draw animation needs a
-// continuous path anyway. You cannot draw-on a set of disconnected fragments.
+// The two orbit rings and their dots are the exception: they are stroked and
+// filled shapes rather than traced outlines. They are hairlines at low contrast
+// in the source, so thresholding shreds them into arcs. The stroke-draw
+// animation needs a continuous path anyway. You cannot draw-on a set of
+// disconnected fragments. Their POSITIONS are still measured, not typed: the
+// trace script fits them to the artwork and writes them into the same JSON.
+// The artwork's rings are slightly tall ellipses (the lens beside them is round),
+// and the inner ring stops where the book and the lens handle cross it, so it is
+// an arc, not a closed shape. Until 2026-10-04 the rings and dots were typed-in
+// circles, and the dots sat on the outer ring instead of between the rings.
 //
 // NOT rendered through <use href="#symbol">: a `use` builds a shadow tree, and
 // document CSS does not reliably cross it with descendant selectors, so
@@ -43,6 +49,12 @@ export interface MarkProps {
   title?: string;
 }
 
+/** The dots' radius is a size decision, not a measurement: the artwork's dots are
+ *  under 1 unit and would vanish at header size. */
+const DOT_R = 2.4;
+
+const { outer, inner } = markPaths.rings;
+
 export default function Mark({ size = 24, playing = false, idle = false, className, title }: MarkProps) {
   const cls = ["tn-mark", playing ? "is-playing" : "", className ?? ""].filter(Boolean).join(" ");
   return (
@@ -59,13 +71,27 @@ export default function Mark({ size = 24, playing = false, idle = false, classNa
       {/* `pathLength` normalises both rings to 100 units, so the stroke-draw
           dasharray is one number in CSS rather than a circumference per radius. */}
       <g className="mk-rings">
-        <circle className="mk-ring mk-ring-1" cx="64" cy="63" r="46" pathLength={100} />
-        <circle className="mk-ring mk-ring-2" cx="64" cy="56" r="37" pathLength={100} />
+        <ellipse
+          className="mk-ring mk-ring-1"
+          cx={outer.cx}
+          cy={outer.cy}
+          rx={outer.rx}
+          ry={outer.ry}
+          pathLength={100}
+        />
+        <path className="mk-ring mk-ring-2" d={inner.d} pathLength={100} />
       </g>
 
-      <g className={`mk-dots${idle ? " is-idle" : ""}`}>
-        <circle className="mk-dot" cx="18" cy="63" r="2.4" />
-        <circle className="mk-dot" cx="110" cy="63" r="2.4" />
+      {/* The idle orbit turns the dots about the rings' measured centre. The
+          stylesheet's own origin is the box centre (64, 64), which would swing
+          the dots across the inner ring at the top of the orbit. */}
+      <g
+        className={`mk-dots${idle ? " is-idle" : ""}`}
+        style={idle ? { transformOrigin: `${outer.cx}px ${outer.cy}px` } : undefined}
+      >
+        {markPaths.dots.map((d) => (
+          <circle key={d.cx} className="mk-dot" cx={d.cx} cy={d.cy} r={DOT_R} />
+        ))}
       </g>
 
       {/* fill-rule="evenodd" is mandatory: the traced contours include the INNER
