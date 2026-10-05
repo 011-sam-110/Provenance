@@ -114,9 +114,29 @@ function compile(gl: WebGLRenderingContext, type: number, src: string): WebGLSha
  *
  * `aria-hidden` because it is decoration; the canvas it replaces had no accessible
  * name either, for the same reason.
+ *
+ * `still` HOLDS THE SKY AT ONE ORIENTATION AND STOPS THE POLL. Without it this component
+ * behaves exactly as it always has: it reads the hero globe's camera from
+ * lib/marketing/heroView every frame, so the sky turns with a MapLibre globe. The landing
+ * page no longer mounts that globe. Its Earth is a Canvas 2D render that never publishes a
+ * camera, so there is nothing to follow, and a rAF loop that polls for a view nobody writes
+ * is a loop running at rest for no reason. With `still` set the sky is drawn when the
+ * texture arrives, when the canvas is resized, when it comes on screen and when the tab
+ * comes back, and at no other time.
+ *
+ * The two numbers mean what `HeroView.lngDeg` / `latDeg` mean: the longitude and latitude a
+ * globe would be centred on to put this sky behind it.
  */
-export default function Starfield({ className = "pv-hero-stars" }: { className?: string }) {
+export default function Starfield({
+  className = "pv-hero-stars",
+  still,
+}: {
+  className?: string;
+  still?: { lngDeg: number; latDeg: number };
+}) {
   const ref = useRef<HTMLCanvasElement | null>(null);
+  const stillLng = still?.lngDeg;
+  const stillLat = still?.latDeg;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -294,24 +314,27 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       raf = 0;
       if (disposed || !onScreen || document.hidden) return;
       const resized = resize();
-      const view = getHeroView();
+      const fixed = stillLng !== undefined && stillLat !== undefined;
+      const view = fixed ? null : getHeroView();
       // No globe in front of this sky (the closing section) — hold a fixed
       // orientation rather than guessing one, exactly as getHeroView's own contract
       // says a caller must decide.
-      const lon = view ? view.lngDeg : 0;
-      const lat = view ? view.latDeg : 0;
+      const lon = fixed ? stillLng : view ? view.lngDeg : 0;
+      const lat = fixed ? stillLat : view ? view.latDeg : 0;
       // Nothing moved and nothing resized: do not redraw. The globe settles after
       // ~8 seconds and then holds still, so without this the GPU would keep redrawing
       // an identical frame for the life of the page.
       if (!resized && ready && lon === lastLon && lat === lastLat) {
-        schedule();
+        // A still sky has no camera to wait for, so it does not ask for another frame.
+        // `invalidate()` is what draws it again.
+        if (!fixed) schedule();
         return;
       }
       lastLon = lon;
       lastLat = lat;
       gl!.uniformMatrix3fv(uRot, false, rotation(lon, lat));
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-      schedule();
+      if (!fixed) schedule();
     }
 
     function schedule() {
@@ -352,7 +375,7 @@ export default function Starfield({ className = "pv-hero-stars" }: { className?:
       gl.deleteShader(vs);
       gl.deleteShader(fs);
     };
-  }, []);
+  }, [stillLng, stillLat]);
 
   return <canvas ref={ref} className={className} aria-hidden />;
 }
