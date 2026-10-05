@@ -44,8 +44,12 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-10-04"`);
-    expect(copy).toContain("4 October 2026");
+    expect(copy).toContain(`dateTime="2026-10-05"`);
+    expect(copy).toContain("5 October 2026");
+    // The date before this one, in the two shapes it was printed in. Not the bare
+    // "4 October 2026": that string is inside "14 October 2026" too.
+    expect(copy).not.toContain(`dateTime="2026-10-04"`);
+    expect(copy).not.toContain("deployed on 4 October 2026");
     expect(copy).not.toContain("15 September 2026");
   });
 
@@ -202,5 +206,62 @@ describe("privacy page: PostHog is listed with the hosts that see your IP", () =
     expect(section).toContain("us.i.posthog.com");
     expect(section).toContain("us-assets.i.posthog.com");
     expect(section).toContain("does not store it with the event");
+  });
+});
+
+describe("privacy page: the front page loads no map", () => {
+  // From 2026-09-08 to 2026-10-05 the front page's globe was MapLibre on OpenFreeMap tiles,
+  // and the OpenFreeMap card said so: "on the landing page it sees you without your opening
+  // anything". The rebuild of 2026-10-05 replaced that globe with a 2D canvas drawing one
+  // committed file, so the sentence became false: it named a third party that no longer sees
+  // a front-page visitor. Both cards now say the front page loads no map tiles.
+  //
+  // That is a claim about code, so the second case connects it to the code, the same way
+  // the IP claim above is connected to the API routes. It is a source guard on the three
+  // files that ARE the landing page's globe. It cannot see a tile request made some other
+  // way; tests/e2e/landing.spec.ts watches the network for that, and no workflow runs it.
+  const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+  const section = copy.slice(
+    copy.indexOf("Who sees your IP address."),
+    copy.indexOf("Most camera imagery does not work this way."),
+  );
+
+  it("no longer says a map host sees a front-page visitor, and says when that stopped", () => {
+    expect(copy).not.toContain("serves the globe on the FRONT page");
+    expect(copy).not.toContain("it sees you without your");
+    expect(copy).not.toContain("the globe there moved");
+    expect(section).toContain("so the front page loads no map tiles and OpenFreeMap no longer sees you there");
+    expect(section).toContain("since 5 October 2026 it loads no map tiles from");
+    // The console half of both cards is unchanged and must stay: it still loads these.
+    expect(section).toContain("serves the Streets map");
+    expect(section).toContain("serves the label fonts");
+  });
+
+  it("is true of the code: nothing that draws the landing globe imports MapLibre or a basemap", () => {
+    const MAP_IMPORT =
+      /(?:from\s+|import\s*\(\s*)["'](?:maplibre-gl|@\/lib\/basemaps|@\/components\/WorldMap|@\/components\/marketing\/(?:GlobeStage|HeroGlobe))["']/;
+    const files = [
+      LANDING,
+      join("components", "marketing", "LandingStage.tsx"),
+      join("lib", "marketing", "landingGlobe.ts"),
+    ];
+    const offenders = files.filter((f) => MAP_IMPORT.test(readFileSync(f, "utf8")));
+    expect(
+      offenders,
+      "The landing page imports a map again. /privacy says the front page loads no map " +
+        "tiles, so update the OpenFreeMap and CARTO cards in app/(site)/privacy/page.tsx " +
+        "before changing this list.",
+    ).toEqual([]);
+  });
+
+  it("says every typeface is self-hosted, now that there is more than one", () => {
+    expect(copy).toContain("Every typeface is self-hosted.");
+    expect(copy).toContain("your browser never contacts Google Fonts");
+    expect(copy).not.toContain("The typeface is self-hosted");
+    // The landing face is loaded through next/font, which is what makes the sentence true.
+    // A <link> to fonts.googleapis.com would make it false with no other test noticing.
+    const landing = readFileSync(LANDING, "utf8");
+    expect(landing).toMatch(/from\s+["']next\/font\/google["']/);
+    expect(stripComments(landing)).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
   });
 });

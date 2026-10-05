@@ -1,148 +1,281 @@
 import { expect, test, type Page } from "@playwright/test";
+import { BRAND } from "@/lib/brand";
 
 /**
- * The landing page's bottom band carries two separate lines that are written by two
- * different owners:
+ * The landing page, held to the things the rest of the repo says about it.
  *
- *   - `.pv-hero-strip`, a bar absolutely positioned at the bottom of the hero, holding the
- *     page's first factual claim (the measured layer/feature counts) and the attributions.
- *   - `.pv-stage-status`, the boot ticker, which `GlobeStage` fixes to the viewport and
- *     fills from the queue of lines the globe hands up as each layer lands.
+ * WHAT THIS FILE USED TO BE. Five tests about `.pv-hero-strip` and `.pv-stage-status`, the
+ * hero's bottom band and the boot ticker: that they did not overlap, and that both were gone
+ * 400px down. The 2026-10-05 rebuild removed both elements with the MapLibre hero they
+ * belonged to, so those tests had nothing left to find and are deleted, not skipped.
  *
- * The ticker's whole life is spent during boot — which is exactly when the hero, and so
- * the strip, is the thing on screen. Fixing it to the bottom-left of the viewport put it
- * on top of the strip's first line, so the two read as one smear of overlapping text for
- * the first seconds of every visit. Neither owner can see the other in review, so the
- * geometry is asserted here instead.
- */
-test("the boot ticker does not collide with the hero strip", async ({ page }) => {
-  await page.goto("/");
-
-  const status = page.locator(".pv-stage-status");
-  const strip = page.locator(".pv-hero-strip");
-
-  // The strip fades in on a 1.5s delay; the ticker carries a line from first paint.
-  await expect(strip).toBeVisible({ timeout: 30_000 });
-  await expect(status).toBeVisible({ timeout: 30_000 });
-  await expect(status).not.toBeEmpty();
-
-  const a = await status.boundingBox();
-  const b = await strip.boundingBox();
-  expect(a, "the ticker should have a box").not.toBeNull();
-  expect(b, "the hero strip should have a box").not.toBeNull();
-
-  const overlaps =
-    a!.x < b!.x + b!.width &&
-    b!.x < a!.x + a!.width &&
-    a!.y < b!.y + b!.height &&
-    b!.y < a!.y + a!.height;
-
-  expect(
-    overlaps,
-    `ticker ${JSON.stringify(a)} overlaps hero strip ${JSON.stringify(b)}`,
-  ).toBe(false);
-});
-
-/**
- * The ticker is hidden below 60rem, where there is no room beside the strip for it. If the
- * breakpoint is ever dropped, the collision comes back on phones only — where nobody runs
- * a desktop review. Asserted rather than trusted.
- */
-test("the boot ticker is not drawn at phone width", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await expect(page.locator(".pv-hero-strip")).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator(".pv-stage-status")).toBeHidden();
-});
-
-/**
- * The strip is nailed to the bottom of the hero, so it scrolls WITH the hero: 400px down it
- * is a hard opaque band across the middle of the screen and the globe. The ticker is fixed
- * to the viewport, so 400px down it is printed over the next section's heading. Both were
- * reported from a real screenshot at that position. They now belong to scroll 0 only:
- * `GlobeStage` writes `--pv-hero-out` and both rules fade on it.
+ * WHAT IT ASSERTS NOW. The page is one continuous scroll in which one globe changes state,
+ * and almost everything a reviewer would check by eye is choreography. None of that is
+ * asserted here, because a pixel position is a design decision and this file would have to
+ * be edited every time one moved. What IS asserted is what other files depend on:
  *
- * `toBeHidden` and not an opacity check alone: Playwright counts an opacity-0 box as
- * visible, and so does the accessibility tree. A faded band that is still exposed to a
- * screen reader, or a live region still announcing under the next section, is the bug in
- * a quieter form.
+ *   - the eight sections exist, in order, each under its id;
+ *   - nothing scrolls sideways, at either width, in either motion mode;
+ *   - with reduced motion the page is a complete document that needs no scrolling to read;
+ *   - the page asks this site's API for nothing, and a visit contacts no third party except
+ *     the visit counter. `CLAUDE.md` states the first, and `/privacy` tells the public which
+ *     hosts a visitor's browser reaches, so each is a factual claim with nothing else
+ *     checking it;
+ *   - the links the licence and the camera directory depend on are still there.
+ *
+ * THE HOOKS. Section ids `hero inset split plates layers flat street close`, the globe
+ * canvas `[data-testid="landing-globe"]`, and `window.__pvLanding.ready`, which
+ * `LandingStage` sets. If one is renamed, rename it here in the same change; do not loosen a
+ * selector to make a rename pass.
+ *
+ * The gate (`npx tsc --noEmit && npm test`) does NOT run this file. See CLAUDE.md, "Build gate".
  */
-const opacityOf = (sel: string) => (page: Page) =>
-  page.evaluate((s) => {
-    const el = document.querySelector(s);
-    return el ? getComputedStyle(el).opacity : "missing";
-  }, sel);
 
-const scrollToY = (page: Page, y: number) =>
-  // "instant", because a smooth scroll would still be travelling when the assertion reads.
-  page.evaluate((top) => window.scrollTo({ top, behavior: "instant" as ScrollBehavior }), y);
+const SECTIONS = ["hero", "inset", "split", "plates", "layers", "flat", "street", "close"] as const;
 
-/**
- * The fade is written by GlobeStage's rAF loop, which starts at hydration. The server HTML
- * paints the strip before that, so a test that scrolls on the bare HTML is timing the
- * build's hydration rather than the page (it did, once, under `next dev`). The MapLibre
- * canvas only mounts after hydration, so its presence says the loop is running.
- */
-const stageRunning = (page: Page) =>
-  expect(page.locator(".pv-stage-globe canvas").first()).toBeAttached({ timeout: 30_000 });
-
-for (const vp of [
+const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "phone", width: 390, height: 844 },
-]) {
-  test(`the hero strip and the ticker are gone once the reader scrolls (${vp.name})`, async ({ page }) => {
-    await page.setViewportSize({ width: vp.width, height: vp.height });
-    await page.goto("/");
+] as const;
 
-    const strip = page.locator(".pv-hero-strip");
-    const status = page.locator(".pv-stage-status");
+const MOTION = ["no-preference", "reduce"] as const;
 
-    // At the top: the strip as it always was, once its 1.5s-delayed intro fade has run.
-    await expect(strip).toBeVisible({ timeout: 30_000 });
-    await expect.poll(() => opacityOf(".pv-hero-strip")(page), { timeout: 10_000 }).toBe("1");
-    if (vp.width > 960) await expect(status).toBeVisible();
-    await stageRunning(page);
+/**
+ * Wait until the stage is running and has its data.
+ *
+ * The canvas is in the server HTML, so "the canvas is attached" says nothing about
+ * hydration. `LandingStage` publishes `window.__pvLanding` when its effect runs, for the
+ * review screenshots and for this file, and `ready` turns true once the snapshot and the
+ * stills have arrived. Before that the pinned sections have not been given their heights,
+ * and a test that scrolls is measuring the server layout and not the page.
+ *
+ * If this times out, the snapshot or an image failed to load, or the handle was renamed.
+ */
+const stageReady = (page: Page) =>
+  page.waitForFunction(
+    () => (window as unknown as { __pvLanding?: { ready: boolean } }).__pvLanding?.ready === true,
+    null,
+    { timeout: 30_000 },
+  );
 
-    // Where the screenshot was taken.
-    await scrollToY(page, 400);
-    await expect(strip).toBeHidden();
-    await expect(status).toBeHidden();
-    expect(await opacityOf(".pv-hero-strip")(page)).toBe("0");
-
-    // And back.
-    await scrollToY(page, 0);
-    await expect(strip).toBeVisible();
-    await expect.poll(() => opacityOf(".pv-hero-strip")(page)).toBe("1");
-    if (vp.width > 960) await expect(status).toBeVisible();
+/**
+ * Scroll from the top to the bottom the way a reader does, most of a screen at a time.
+ *
+ * "instant", because a smooth scroll would still be travelling when the next line reads.
+ * Two animation frames after each step: the stage smooths one scroll value inside its own
+ * loop, and anything a section starts when it comes into view starts on a frame.
+ */
+async function scrollThrough(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const frame = () => new Promise<void>((done) => requestAnimationFrame(() => done()));
+    const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
+    for (let y = 0; ; y += step) {
+      window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior });
+      await frame();
+      await frame();
+      // Read the height on every pass. A pinned section can change it after hydration.
+      if (y >= document.documentElement.scrollHeight - window.innerHeight) break;
+    }
   });
 }
 
+test("the eight sections are on the page, in order", async ({ page }) => {
+  await page.goto("/");
+  // One selector for all eight, so the result comes back in DOCUMENT order. A missing id, a
+  // duplicated id and two sections swapped all show up as a different array.
+  const found = await page.evaluate(
+    (ids) => Array.from(document.querySelectorAll(ids.map((id) => `#${id}`).join(","))).map((el) => el.id),
+    [...SECTIONS],
+  );
+  expect(found).toEqual([...SECTIONS]);
+});
+
 /**
- * Under `prefers-reduced-motion: reduce` there is no fade at all: the strip is either there
- * or not, so a scroll that would leave the full-motion version part-way through its fade
- * must find it already gone.
+ * Sideways scroll is measured all the way down the page, most of a screen at a time, not once
+ * at load. The page pins stages and slides a row of cards across one of them, so the document
+ * can be exactly as wide as the window at scroll 0 and wider 9,000px down.
+ *
+ * A sweep of the document and not "the top of each section": two of the sections are scenes
+ * inside one pinned stage, so a section's own box does not say where in the scroll it plays.
+ *
+ * Both motion modes, because they are two layouts. Reduced motion un-pins everything and
+ * lays the stills out in normal flow, and an image that was clipped by its pinned stage is
+ * not clipped there.
  */
-test("with reduced motion the strip swaps out instead of fading", async ({ browser }) => {
-  const ctx = await browser.newContext({
-    reducedMotion: "reduce",
-    viewport: { width: 1440, height: 900 },
-  });
-  const page = await ctx.newPage();
-  try {
-    await page.goto("/");
-    const strip = page.locator(".pv-hero-strip");
-    await expect(strip).toBeVisible({ timeout: 30_000 });
-    expect(await opacityOf(".pv-hero-strip")(page)).toBe("1");
-    await stageRunning(page);
+for (const vp of VIEWPORTS) {
+  for (const motion of MOTION) {
+    test(`nothing scrolls sideways (${vp.name}, motion ${motion})`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.emulateMedia({ reducedMotion: motion });
+      await page.goto("/");
+      // Both modes publish the handle. In reduced motion it means the in-flow globes have
+      // been drawn, which is when that layout has its final boxes.
+      await stageReady(page);
 
-    await scrollToY(page, 40);
-    await expect.poll(() => opacityOf(".pv-hero-strip")(page)).toBe("0");
-    await expect(strip).toBeHidden();
+      const wider = await page.evaluate(async () => {
+        const frame = () => new Promise<void>((done) => requestAnimationFrame(() => done()));
+        const out: string[] = [];
+        const step = Math.max(200, Math.floor(window.innerHeight * 0.8));
+        let samples = 0;
+        for (let y = 0; ; y += step) {
+          window.scrollTo({ top: y, behavior: "instant" as ScrollBehavior });
+          await frame();
+          await frame();
+          samples += 1;
+          const width = document.documentElement.scrollWidth;
+          if (width > window.innerWidth) {
+            out.push(`at scrollY ${Math.round(window.scrollY)}: scrollWidth ${width} > innerWidth ${window.innerWidth}`);
+          }
+          if (y >= document.documentElement.scrollHeight - window.innerHeight) break;
+        }
+        // The precondition. A page one screen tall has nothing to sweep, and "no overflow
+        // found" would then be a statement about the hero alone.
+        if (samples < 5) out.push(`only ${samples} scroll positions: the page is not the long document this test expects`);
+        return out;
+      });
 
-    await scrollToY(page, 0);
-    await expect.poll(() => opacityOf(".pv-hero-strip")(page)).toBe("1");
-    await expect(strip).toBeVisible();
-  } finally {
-    await ctx.close();
+      expect(wider).toEqual([]);
+    });
   }
+}
+
+/**
+ * `prefers-reduced-motion: reduce` is not "the same page with the easing removed". The fixed
+ * canvas is hidden and every section shows a still, so the page has to read from top to
+ * bottom with no scroll position driving anything.
+ *
+ * So this test NEVER SCROLLS, and that is the assertion. A heading whose opacity or position
+ * waits on a scroll-driven custom property is still waiting when the checks run.
+ *
+ * Opacity is multiplied up the ancestors by hand: Playwright's `toBeVisible` counts an
+ * opacity-0 box as visible, and a faded-out heading is the likely way for this to break.
+ * The poll allows a load-in transition to finish. It does not allow a scroll to happen.
+ *
+ * LIMIT. A heading hidden by an ancestor's `clip-path` passes every check here. Nothing
+ * short of a screenshot sees that.
+ */
+test("with reduced motion every section's heading reads without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+
+  for (const id of SECTIONS) {
+    const heading = page.locator(`#${id}`).locator("h1, h2, h3").first();
+    await expect(heading, `#${id} has no h1, h2 or h3`).toBeAttached();
+    await expect(heading, `the heading of #${id} is not visible`).toBeVisible();
+  }
+
+  const hiddenHeadings = () =>
+    page.evaluate((ids) => {
+      const out: string[] = [];
+      for (const id of ids) {
+        const heading = document.getElementById(id)?.querySelector("h1, h2, h3");
+        if (!heading) {
+          out.push(`#${id}: no heading`);
+          continue;
+        }
+        let opacity = 1;
+        for (let el: Element | null = heading; el; el = el.parentElement) {
+          opacity *= Number(getComputedStyle(el).opacity);
+        }
+        if (opacity < 0.99) out.push(`#${id}: heading opacity ${opacity.toFixed(2)}`);
+        if (heading.textContent?.trim() === "") out.push(`#${id}: heading is empty`);
+      }
+      return out;
+    }, [...SECTIONS]);
+
+  await expect.poll(hiddenHeadings, { timeout: 10_000 }).toEqual([]);
+  expect(await page.evaluate(() => window.scrollY), "this test must not scroll").toBe(0);
+});
+
+/**
+ * `CLAUDE.md` says the landing page makes no `/api` call: its globe draws one committed
+ * snapshot and its figures are imported at build time. That is why `/` costs no function
+ * invocation per visitor, and it is one `fetch("/api/...")` in a client component away from
+ * being false with nothing else to notice.
+ *
+ * Requests are collected from before navigation until after a scroll to the bottom, since a
+ * section that fetched when it came into view would not have fetched yet at load.
+ */
+test("the page asks this site's API for nothing, from load to the bottom", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const requested: string[] = [];
+  page.on("request", (req) => requested.push(req.url()));
+
+  await page.goto("/");
+  await stageReady(page);
+  await scrollThrough(page);
+  // A request is recorded when it is sent, so this only has to outlast the frame or two
+  // between a section coming into view and whatever it starts.
+  await page.waitForTimeout(1_500);
+
+  const origin = new URL(page.url()).origin;
+  const apiCalls = requested.filter((url) => {
+    const u = new URL(url);
+    return u.origin === origin && u.pathname.startsWith("/api/");
+  });
+  expect(apiCalls).toEqual([]);
+  // The precondition, or an empty list proves nothing: the page did load things.
+  expect(requested.length).toBeGreaterThan(0);
+});
+
+/**
+ * `/privacy` lists who sees a visitor's IP address, and since 2026-10-05 it says the front
+ * page loads no map tiles from anyone and that every typeface is served from this domain.
+ * Before that the hero globe was MapLibre on OpenFreeMap tiles, so a landing visit reached a
+ * tile host without the visitor opening anything.
+ *
+ * This is an allow-list on purpose. A deny-list of the map and font hosts would pass the day
+ * a new third party arrived, which is exactly the day `/privacy` needs an edit. The one
+ * third party allowed is the visit counter, which has its own card on that page; it is not
+ * loaded at all unless NEXT_PUBLIC_POSTHOG_KEY is set, so most local runs see none.
+ *
+ * A red here means: either remove the request, or add the host to `/privacy` and then here.
+ */
+test("a visit contacts this site and the visit counter, and no other host", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const requested: string[] = [];
+  page.on("request", (req) => requested.push(req.url()));
+
+  await page.goto("/");
+  await stageReady(page);
+  await scrollThrough(page);
+  await page.waitForTimeout(1_500);
+
+  const origin = new URL(page.url()).origin;
+  const others = new Set<string>();
+  for (const url of requested) {
+    const u = new URL(url);
+    // data: and blob: never leave the browser.
+    if (u.protocol !== "http:" && u.protocol !== "https:") continue;
+    if (u.origin === origin) continue;
+    if (/(^|\.)posthog\.com$/.test(u.hostname)) continue;
+    others.add(u.hostname);
+  }
+  expect([...others].sort()).toEqual([]);
+});
+
+/**
+ * Four links, each load-bearing somewhere else:
+ *
+ *   /app      the product. The first one in the document must be visible at load, without
+ *             a scroll, or the page has no call to action on its first screen.
+ *   /cameras  the home page takes nearly every search click, and this is its only link into
+ *             the camera directory. Without it those pages are reachable through the
+ *             sitemap alone. tests/unit/seo-share-cards.test.ts pins the source; this pins
+ *             that it renders.
+ *   /privacy  or the privacy page is orphaned.
+ *   the repo  AGPL-3.0 section 13: a hosted AGPL program must offer its source to the people
+ *             using it. Removing this link is a licence breach, not a styling decision.
+ */
+test("the calls to action and the footer links are on the page", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator('a[href="/app"]').first()).toBeVisible();
+  await expect(page.locator('a[href="/cameras"]').first()).toBeAttached();
+  await expect(page.locator('a[href="/privacy"]').first()).toBeAttached();
+  await expect(
+    page.locator(`a[href="${BRAND.repoUrl}"], a[href="${BRAND.repoUrl}/"]`).first(),
+    `no link to ${BRAND.repoUrl}`,
+  ).toBeAttached();
 });

@@ -15,6 +15,27 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-05:
+ *   - The front page stopped loading a map. Its globe is now a 2D canvas
+ *     (lib/marketing/landingGlobe.ts, mounted by components/marketing/LandingStage.tsx)
+ *     that draws one committed file, public/marketing/globe-snapshot.json, served from
+ *     this domain. So "Since 8 September 2026 it also serves the globe on the FRONT page
+ *     ... it sees you without your opening anything" became false and is gone: a visit to
+ *     the front page no longer reaches tiles.openfreemap.org. The OpenFreeMap card and the
+ *     CARTO card both say so, with the date. Nothing about the console changed. It loads
+ *     its basemaps exactly as those cards describe.
+ *   - "The typeface is self-hosted" became "Every typeface is self-hosted". The front page
+ *     now sets its own face (Archivo, loaded by app/(site)/page.tsx through next/font), so
+ *     there is more than one. Each is still downloaded at build time and served from here.
+ *   - Checked, not assumed: app/(site)/page.tsx, LandingStage.tsx and landingGlobe.ts import
+ *     no maplibre-gl and no lib/basemaps, and tests/unit/privacy-page.test.ts fails if one
+ *     of them starts to. The browser-level check is tests/e2e/landing.spec.ts, which fails
+ *     if a visit to / contacts any host other than this site and the PostHog counter. NO
+ *     WORKFLOW RUNS PLAYWRIGHT, so run that spec by hand before editing either card.
+ *   - components/marketing/HeroGlobe.tsx, which the two entries below cite, is still in
+ *     the tree and still reads DARK_STYLE_URL. Nothing mounts it. If it is mounted on the
+ *     front page again, both cards are false again.
+ *
  * WHAT CHANGED ON 2026-10-04:
  *   - The counter now gets one `visit` event per browser per local day, and on a browser's
  *     first visit of a calendar week that event carries cohort_week: the Monday of the week
@@ -73,10 +94,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     (tiles.openfreemap.org/styles/dark) instead of the inline CARTO Dark Matter
  *     style, so basemaps.cartocdn.com is no longer contacted by a landing-page visit.
  *     The move was forced: CARTO began watermarking unauthenticated tiles.
+ *     (SUPERSEDED 2026-10-05 - see above. The front page no longer mounts HeroGlobe, so
+ *     it loads no basemap from OpenFreeMap or from anyone.)
  *   - "CARTO sees you whether or not you open the console" was TRUE when written and
  *     is now false, which is the whole reason this header exists. A visitor who only
  *     ever sees the front page now reaches OpenFreeMap and not CARTO, and both cards
  *     say so. CARTO is still contacted from the console, for label fonts only.
+ *     (SUPERSEDED 2026-10-05 - see above. That visitor now reaches neither.)
  *   - Checked, not assumed: the landing-page and hero credit lines said CARTO and were
  *     correct until this commit. They are updated here in the same change rather than
  *     left for later, because a credit line naming a host we no longer contact is the
@@ -204,8 +228,10 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * set (route.ts:87-91), but those can be set at any moment without a code change, so
  * a page that said "this does not happen" would rot into a false statement silently.
  *
- * Visually this page is the landing page's own stylesheet and nothing new: .pv-doc
- * grid, .pv-block sections, .pv-ledger tables. It renders on the ink ground because
+ * Visually this page is app/provenance.css and nothing new: .pv-doc grid, .pv-block
+ * sections, .pv-ledger tables. That sheet was the landing page's own until 2026-10-05,
+ * when the landing page moved to app/landing.css; this page is what still reads it, so
+ * do not delete it with the old landing rules. It renders on the ink ground because
  * (site)/layout.tsx server-renders `.pv-night` and nothing runs here to lift
  * `--pv-g` off 1 — so `.pv-ground` is mandatory, not decorative. Without it the
  * night foreground tokens paint light type onto the globals.css light body.
@@ -229,7 +255,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-04">4 October 2026</time>
+                Last updated <time dateTime="2026-10-05">5 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -717,9 +743,9 @@ export default function PrivacyPage() {
                 building shapes the 3D buildings are drawn from. It was the console&rsquo;s default
                 map until 7 September 2026; the default is now Satellite, so inside the console
                 OpenFreeMap only sees you if you open a detail card, the Locate page, or the Streets
-                map itself. Since 8 September 2026 it also serves the globe on the FRONT page,
-                which CARTO used to serve &mdash; so on the landing page it sees you without your
-                opening anything.
+                map itself. From 8 September to 5 October 2026 it also served the globe on the
+                front page. That globe is now drawn in your browser from a file this site serves,
+                so the front page loads no map tiles and OpenFreeMap no longer sees you there.
               </p>
             </div>
             <div className="pv-card">
@@ -728,9 +754,9 @@ export default function PrivacyPage() {
                 <span className="pv-num">basemaps.cartocdn.com</span> serves the label fonts the
                 Satellite and Topographic maps use. Satellite is the console&rsquo;s default map, so
                 those fonts load on almost every visit to the console. It no longer serves any map
-                tiles, and it is no longer contacted by the front page at all: the globe there moved
-                to OpenFreeMap on 8 September 2026. If you never open the console, CARTO does not
-                see you.
+                tiles, and it is no longer contacted by the front page at all: the globe there left
+                CARTO on 8 September 2026, and since 5 October 2026 it loads no map tiles from
+                anyone. If you never open the console, CARTO does not see you.
               </p>
             </div>
             <div className="pv-card">
@@ -788,8 +814,8 @@ export default function PrivacyPage() {
               whatever host you gave it.
             </p>
             <p>
-              The typeface is self-hosted. It is downloaded at build time and served from this
-              domain, so your browser never contacts Google Fonts.
+              Every typeface is self-hosted. Each one is downloaded at build time and served from
+              this domain, so your browser never contacts Google Fonts.
             </p>
           </div>
         </section>
@@ -1026,14 +1052,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-04">4 October 2026</time>
+                <time dateTime="2026-10-05">5 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 4 October 2026. When the behaviour changes this
+              This describes the code as deployed on 5 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.
