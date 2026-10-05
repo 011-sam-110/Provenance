@@ -1,0 +1,409 @@
+/* ===========================================================================
+   The landing page at `/`. Imported by app/(site)/page.tsx and by nothing else.
+
+   EVERY RULE IS UNDER `.lp-root`. The (site) layout wraps this page, /privacy and
+   nothing else in `.pv-root`, and app/provenance.css still styles /privacy and
+   the Discord note from there. This sheet must not reach either, so each
+   selector starts at `.lp-root` and each class carries the `lp-` prefix. Two
+   rules leave the root, both at the bottom and both behind `:has(.lp-root)`, so
+   they only match while this page is mounted: the document ground, and the
+   corner the Discord note sits in.
+
+   ONE NIGHT SYSTEM. Space is the ground, amber is the only action colour, and
+   three fields (cobalt, amber, frost) each fill one whole section. The four
+   layer colours belong to the data: they never colour text or an action.
+
+   THE NUMBERS THAT MOVE ARE NOT IN THIS FILE. components/marketing/LandingStage.tsx
+   runs the page's one scroll listener and one rAF loop, and writes the custom
+   properties read below (`--hp`, `--r`, `--tx`, `--so` ...). Each has a default
+   here that equals its value at scroll 0, so the server-rendered page and the
+   first frame of the engine are the same picture.
+
+   REDUCED MOTION IS A SECOND LAYOUT, at the foot of this file. It is a media
+   query and not a class, so it applies before any script runs.
+   =========================================================================== */
+
+.lp-root {
+  --space: #05070d;       /* page ground: hero, street, close, footer */
+  --frost: #eef2f7;       /* text on dark; the flat-map field */
+  --mist: #a3adbd;        /* secondary text on space */
+  --amber: #ffb547;       /* the one accent: every action, the card field, focus */
+  --amber-hi: #ffc773;
+  --ink: #0a1122;         /* text on amber and frost; the globe's ocean */
+  --cobalt: #123a9b;      /* the split field */
+  --on-cobalt: #cfdbf7;   /* secondary text on cobalt */
+  --slate: #465270;       /* secondary text on frost */
+  /* layer colours: the same four everywhere a dot or a swatch appears.
+     lib/marketing/landingGlobe.ts paints the canvas dots in the same hexes. */
+  --cam: #4cc9ff;
+  --air: #f4f6fb;
+  --haz: #ff6b4a;
+  --infra: #b79bff;
+  /* `--lp-font` is published by next/font on this element (app/(site)/page.tsx). */
+  --font: var(--lp-font, "Archivo"), "Helvetica Neue", Arial, sans-serif;
+  --gutter: clamp(16px, 4.2vw, 64px);
+  --nav-h: 64px;
+  --fs-display: clamp(3.25rem, 7.4vw, 6rem);
+  --fs-h2: clamp(2.25rem, 4.3vw, 4rem);
+  --fs-lede: clamp(1.125rem, 1.35vw, 1.3125rem);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+
+  /* The root sets its own ground, ink and type. `.pv-root` above it sets 17px Inter in
+     another palette for /privacy, and none of that may show through. */
+  position: relative;
+  /* Its own stacking context: the z-indexes below (canvas 1, pinned copy 2, footer 3,
+     nav 20) are local, and the Discord note outside this root always sits above it. */
+  isolation: isolate;
+  background: var(--space);
+  color: var(--frost);
+  font-family: var(--font);
+  font-stretch: 100%;
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  /* `clip`, never `hidden`: hidden makes this a scroll container and every pinned stage
+     below stops sticking. */
+  overflow-x: clip;
+}
+.lp-root ::selection { background: var(--amber); color: var(--ink); }
+.lp-root img { display: block; max-width: 100%; }
+.lp-root a { color: inherit; text-underline-offset: .22em; text-decoration-thickness: 1px; }
+.lp-root h1, .lp-root h2, .lp-root h3, .lp-root p, .lp-root figure { margin: 0; }
+/* Doubled on purpose. provenance.css has `.pv-root a:focus-visible` at (0,2,1) with a teal
+   ring, which a single `.lp-root :focus-visible` would lose to. */
+.lp-root.lp-root :focus-visible { outline: 2px solid var(--focus, var(--amber)); outline-offset: 3px; border-radius: 4px; }
+.lp-root.lp-root .lp-btn:focus-visible, .lp-root.lp-root .lp-skip:focus-visible { border-radius: 999px; }
+.lp-root .lp-skip { position: fixed; left: 12px; top: -60px; z-index: 50; background: var(--amber); color: var(--ink); padding: 10px 16px; border-radius: 999px; font-weight: 600; text-decoration: none; }
+.lp-root .lp-skip:focus { top: 12px; }
+
+/* ------------------------------------------------------------------ type: Archivo only, wide for display, 100 for text */
+.lp-root .lp-display { font-size: var(--fs-display); font-stretch: 125%; font-weight: 290; letter-spacing: -.03em; line-height: .94; max-width: 8.6ch; text-wrap: balance; }
+.lp-root .lp-h2 { font-size: var(--fs-h2); font-stretch: 120%; font-weight: 310; letter-spacing: -.025em; line-height: 1.02; text-wrap: balance; }
+.lp-root .lp-h3 { font-size: 1.375rem; font-stretch: 112%; font-weight: 520; letter-spacing: -.01em; line-height: 1.15; }
+.lp-root .lp-lede { font-size: var(--fs-lede); line-height: 1.5; color: var(--mist); max-width: 32ch; }
+.lp-root .lp-body { font-size: 1.0625rem; line-height: 1.6; color: var(--mist); max-width: 40ch; }
+.lp-root .lp-small { font-size: .875rem; line-height: 1.5; font-stretch: 104%; color: var(--mist); }
+
+/* ------------------------------------------------------------------ controls: anything you can press is a pill */
+.lp-root .lp-btn { display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 24px; border-radius: 999px; font: inherit; font-size: 1rem; font-weight: 600; font-stretch: 108%; letter-spacing: .005em; text-decoration: none; white-space: nowrap; cursor: pointer; touch-action: manipulation; transition: background-color .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), transform .25s var(--ease); }
+.lp-root .lp-btn:active { transform: scale(.98); }
+.lp-root .lp-btn-primary { background: var(--amber); color: var(--ink); }
+.lp-root .lp-btn-primary:hover { background: var(--amber-hi); transform: translateY(-1px); }
+.lp-root .lp-btn-ghost { color: var(--frost); border: 1px solid rgba(238, 242, 247, .34); }
+.lp-root .lp-btn-ghost:hover { border-color: var(--frost); }
+.lp-root .lp-btn-sm { height: 44px; padding: 0 18px; font-size: .9375rem; }
+.lp-root .lp-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+
+/* a layer swatch is always a dot on a piece of the globe's ocean */
+.lp-root .lp-chip { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 1px solid rgba(238, 242, 247, .16); }
+.lp-root .lp-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+
+/* ------------------------------------------------------------------ the one stage: a fixed canvas between the fields and the text */
+.lp-root .lp-globe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.lp-root .lp-lens-tag { position: fixed; left: 0; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 7px; background: rgba(10, 17, 34, .88); color: var(--frost); font-size: .875rem; font-weight: 560; font-stretch: 104%; white-space: nowrap; pointer-events: none; opacity: var(--o, 0); transform: translate3d(var(--x, 0px), var(--y, 0px), 0); }
+
+/* ------------------------------------------------------------------ nav: no bar, its ink follows the field under it */
+.lp-root .lp-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: var(--nav-h); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--gutter); color: var(--frost); --scrim: 5, 7, 13; transition: color .35s var(--ease); }
+.lp-root .lp-nav::before { content: ""; position: absolute; inset: 0 0 -24px; z-index: -1; background: linear-gradient(to bottom, rgba(var(--scrim), .88), rgba(var(--scrim), 0)); pointer-events: none; transition: opacity .35s var(--ease); }
+.lp-root .lp-nav[data-tone="cobalt"] { --scrim: 18, 58, 155; }
+.lp-root .lp-nav[data-tone="photo"]::before, .lp-root .lp-nav[data-tone="clear"]::before { opacity: 0; }
+.lp-root .lp-nav[data-tone="amber"] { color: var(--ink); --scrim: 255, 181, 71; --focus: var(--ink); }
+.lp-root .lp-nav[data-tone="frost"] { color: var(--ink); --scrim: 238, 242, 247; --focus: var(--ink); }
+.lp-root .lp-nav[data-tone="amber"] .lp-btn-primary { background: var(--ink); color: var(--amber); }
+/* Over the footer's text the scrim is a solid band down to the foot of the nav, then fades.
+   The stage sets `data-over` when the first line of the footer reaches the nav, which only
+   happens where the footer is taller than the screen. See `footInk` in LandingStage.tsx. */
+.lp-root .lp-nav[data-over="footer"]::before { background: linear-gradient(to bottom, var(--space) 76%, rgba(5, 7, 13, 0)); }
+.lp-root .lp-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-stretch: 118%; font-weight: 560; font-size: 1.0625rem; letter-spacing: .01em; min-height: 44px; }
+/* components/brand/Mark.tsx. `.tn-mark` asks for a console token that does not exist here,
+   so the colour is stated: the mark takes the ink of the text beside it. */
+.lp-root .lp-mark { width: 30px; height: 30px; flex: none; color: inherit; }
+.lp-root .lp-nav-links { display: flex; align-items: center; gap: 24px; }
+.lp-root .lp-nav-link { display: inline-flex; align-items: center; min-height: 44px; font-size: .9375rem; font-weight: 500; text-decoration: none; }
+.lp-root .lp-nav-link:hover { text-decoration: underline; }
+
+/* ------------------------------------------------------------------ pinned stages (CSS sticky, no JS pinning)
+
+   THE HEIGHTS BELOW ARE THE SCROLL BUDGET OF EACH PIN, RESERVED IN CSS. The engine sets the
+   same heights in px when it mounts (`pinHeights` in lib/marketing/landingGlobe.ts, from the
+   `PIN` table there). Stating them here first means the document is already its final
+   length when the HTML arrives, so nothing jumps under a reader who scrolled early or a
+   reload that restores a scroll position. If a number changes there, change it here. */
+.lp-root .lp-hero, .lp-root .lp-split, .lp-root .lp-photos, .lp-root .lp-band, .lp-root .lp-dive, .lp-root .lp-close { position: relative; }
+.lp-root .lp-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.lp-root .lp-split { height: 310vh; height: 310svh; }
+.lp-root .lp-photos { height: 490vh; height: 490svh; }
+/* 1.45 screens of lead, plus the distance the card track travels. That distance is the
+   track (64px inset, nine cards of max(300px, 26vw), eight gaps of 2.5vw) less the part of
+   the 60vw window that stays filled (55vw): see `bandMetrics`. Nine is the card count. */
+.lp-root .lp-band { height: calc(145vh + 64px + max(2700px, 234vw) - 35vw); height: calc(145svh + 64px + max(2700px, 234vw) - 35vw); }
+.lp-root .lp-dive { height: 630vh; height: 630svh; }
+
+/* ------------------------------------------------------------------ 1. hero: the photoreal Earth on space */
+.lp-root .lp-hero { min-height: 100vh; min-height: 100svh; display: grid; align-items: end; padding: calc(var(--nav-h) + 24px) var(--gutter) clamp(48px, 11vh, 120px); }
+.lp-root .lp-hero-copy { position: relative; z-index: 2; transform: translate3d(0, calc(var(--hp, 0) * -9vh), 0); opacity: calc(1 - var(--hp, 0) * 1.5); will-change: transform, opacity; }
+.lp-root .lp-hero .lp-lede { margin-top: 24px; }
+/* The night sky behind the hero and the close: components/marketing/Starfield.tsx, held
+   still. It is the site's own star texture, drawn once, and it fades out before the edge of
+   its section so the stars never end on a hard line.
+
+   `scaleX(-1)` IS NOT DECORATION. The Starfield shader draws right ascension increasing to
+   the RIGHT, which is the sky as seen from outside the celestial sphere: a mirror image.
+   Measured on this page before the flip: Sirius sat to the lower right of Orion, and in the
+   real sky it is to the lower left. While that sky turned behind a globe nobody could tell.
+   Held still with Orion framed, it is plainly back to front, and the footer says the star
+   positions are real. Flipping the canvas makes that sentence true without touching the
+   shader, which the old hero still uses. Remove the flip only together with a fix there. */
+.lp-root .lp-sky { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; transform: scaleX(-1); }
+/* Stars behind the copy are at half strength, so a bright one cannot read as punctuation.
+   The veil is the ground's own colour, so it shows on nothing but the stars.
+
+   IT BELONGS TO THE SECTION AND NOT TO THE COPY BLOCK, and the layer is the reason. The copy
+   is at z-index 2, above the globe canvas, so a veil inside it also lies over the Earth and
+   greys the limb wherever the two meet (measured in the hero at 1440 wide: a hard edge down
+   the Earth at x 666). Here it is at z-index 0: after the sky in the tree, so over it, and
+   under the canvas at z-index 1. Its edges are soft, so it needs no measurement of the text,
+   and the reduced-motion Earth images below take z-index 1 to stay above it. */
+.lp-root .lp-hero::after, .lp-root .lp-close::after { content: ""; position: absolute; z-index: 0; pointer-events: none; }
+.lp-root .lp-hero::after { left: 0; bottom: 0; width: min(100%, 58rem); height: 68%; background: radial-gradient(ellipse 60% 58% at 38% 62%, rgba(5, 7, 13, .5) 62%, rgba(5, 7, 13, 0) 100%); }
+.lp-root .lp-close::after { left: 50%; top: 0; width: min(100%, 52rem); height: calc(var(--nav-h) + 12vh + 26rem); transform: translateX(-50%); background: radial-gradient(ellipse 50% 50% at 50% 55%, rgba(5, 7, 13, .5) 60%, rgba(5, 7, 13, 0) 100%); }
+.lp-root .lp-hero .lp-sky { -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .4) 0, #000 13%, #000 70%, transparent 100%); mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .4) 0, #000 13%, #000 70%, transparent 100%); }
+.lp-root .lp-close .lp-sky { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 62%, transparent 96%); mask-image: linear-gradient(to bottom, transparent 0, #000 20%, #000 62%, transparent 96%); }
+/* space thins into the cobalt field: the Earth flies through this on its way to the inset */
+.lp-root .lp-bridge { height: 55vh; background: linear-gradient(to bottom, var(--space) 0%, #071231 32%, #0c2466 66%, var(--cobalt) 100%); }
+
+/* ------------------------------------------------------------------ 2 + 3. cobalt field: the framed inset, then the four separations */
+.lp-root .lp-split { background: var(--cobalt); color: var(--frost); }
+/* Above the canvas, with no ground of its own: the globe shows through and the copy sits on it. */
+.lp-root .lp-split .lp-stage { z-index: 2; }
+.lp-root .lp-scene { position: absolute; inset: 0; }
+.lp-root .lp-scene-inset { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px; align-items: center; align-content: center; padding: var(--nav-h) var(--gutter) 0; opacity: calc(1 - var(--s1o, 0)); transform: translate3d(0, calc(var(--s1o, 0) * -28px), 0); }
+.lp-root .lp-inset { grid-column: 1 / span 5; justify-self: end; width: min(41vh, 100%); }
+.lp-root .lp-frame { position: relative; aspect-ratio: 1; border: 1.5px solid rgba(238, 242, 247, .92); }
+.lp-root .lp-frame::after { content: ""; position: absolute; inset: 6px; border: 1px solid rgba(238, 242, 247, .42); }
+.lp-root .lp-readout { margin-top: 12px; font-size: .875rem; font-stretch: 104%; line-height: 1.3; color: var(--on-cobalt); font-variant-numeric: tabular-nums; }
+.lp-root .lp-inset-copy { grid-column: 7 / span 6; }
+.lp-root .lp-inset-copy .lp-lede { margin-top: 20px; color: var(--on-cobalt); max-width: 36ch; }
+.lp-root .lp-key { list-style: none; margin: 30px 0 0; padding: 0; display: grid; gap: 12px; font-size: 1.0625rem; font-stretch: 104%; font-weight: 500; }
+.lp-root .lp-key li { display: flex; align-items: center; gap: 12px; }
+.lp-root .lp-seps-copy { position: absolute; top: calc(var(--nav-h) + 3.5vh); left: var(--gutter); right: var(--gutter); opacity: var(--s2, 0); transform: translate3d(0, calc((1 - var(--s2, 0)) * 18px), 0); }
+.lp-root .lp-seps-copy .lp-lede { margin-top: 18px; color: var(--on-cobalt); max-width: 36ch; }
+.lp-root .lp-seps { list-style: none; margin: 0; padding: 0; }
+.lp-root .lp-sep { position: absolute; left: 0; top: 0; width: max-content; max-width: 18ch; text-align: center; transform: translate3d(var(--px, -999px), var(--py, -999px), 0) translateX(-50%); opacity: var(--s, 0); font-weight: 560; font-stretch: 106%; font-size: clamp(.875rem, 1.2vw, 1.125rem); line-height: 1.3; text-wrap: balance; }
+.lp-root .lp-rm-globe, .lp-root .lp-rm-flat { display: none; }
+
+/* ------------------------------------------------------------------ 4. photographs open out of the globe through an iris */
+.lp-root .lp-photos { background: var(--cobalt); color: var(--frost); }
+/* No z-index: this stage sits UNDER the canvas, so the lens rides on the photographs. A
+   pinned stage is either above the canvas with a clear ground (split, dive) or below it
+   with an opaque one (photos, band). Giving this one a z-index hides the lens. */
+.lp-root .lp-photos .lp-stage { background: var(--cobalt); }
+.lp-root .lp-photo { position: absolute; inset: 0; clip-path: circle(var(--r, 0px) at var(--x, 50%) var(--y, 50%)); background: var(--ink); }
+.lp-root .lp-photo.is-open { clip-path: none; }
+.lp-root .lp-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(var(--ps, 1)); will-change: transform; }
+.lp-root .lp-photo::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(5, 7, 13, .88) 0%, rgba(5, 7, 13, .56) 26%, rgba(5, 7, 13, 0) 56%), linear-gradient(to bottom, rgba(5, 7, 13, .5) 0%, rgba(5, 7, 13, 0) 20%); }
+.lp-root .lp-cap { position: absolute; left: var(--gutter); right: var(--gutter); bottom: clamp(32px, 7vh, 72px); z-index: 2; max-width: 760px; opacity: var(--ca, 0); transform: translate3d(0, var(--cy, 0px), 0); }
+.lp-root .lp-cap p { margin-top: 18px; font-size: var(--fs-lede); line-height: 1.5; max-width: 44ch; color: rgba(238, 242, 247, .86); }
+.lp-root .lp-cap .lp-credit { margin-top: 22px; font-size: .875rem; font-stretch: 104%; color: rgba(238, 242, 247, .74); }
+
+/* ------------------------------------------------------------------ 5. amber field: the layers, a pinned band of cards */
+.lp-root .lp-band { background: var(--amber); color: var(--ink); --focus: var(--ink); }
+.lp-root .lp-band .lp-stage { background: var(--amber); }
+.lp-root .lp-band-head { position: absolute; left: var(--gutter); top: clamp(88px, 13vh, 128px); width: min(34vw, 540px); z-index: 2; }
+.lp-root .lp-band-head p { margin-top: 16px; max-width: 34ch; font-size: 1.0625rem; line-height: 1.55; color: rgba(10, 17, 34, .82); }
+.lp-root .lp-window { position: absolute; top: 0; bottom: 0; left: 40vw; right: 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 56px); mask-image: linear-gradient(90deg, transparent 0, #000 56px); }
+/* `--cw`, `--gap` and `--start` are set in px by the engine. The fallbacks are the same
+   sizes in viewport units, so the cards do not change size when it mounts. */
+.lp-root .lp-track { position: absolute; top: 50%; left: 0; display: flex; gap: var(--gap, 2.5vw); padding-left: var(--start, 64px); transform: translate3d(var(--tx, 0px), -44%, 0); will-change: transform; }
+.lp-root .lp-card { flex: none; width: var(--cw, max(300px, 26vw)); transition: transform .5s var(--ease); }
+.lp-root .lp-card .lp-ph { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: var(--amber); }
+.lp-root .lp-card img { position: absolute; top: 0; left: -10%; width: 120%; max-width: none; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.18) brightness(1.04); mix-blend-mode: multiply; transform: translate3d(var(--par, 0px), 0, 0); transition: filter .6s var(--ease); }
+.lp-root .lp-card.is-active img { filter: none; mix-blend-mode: normal; }
+.lp-root .lp-card.is-active { transform: translateY(-10px); }
+.lp-root .lp-card figcaption { padding-top: 16px; }
+.lp-root .lp-card .lp-h3 { display: flex; align-items: center; gap: 10px; }
+.lp-root .lp-card p { margin-top: 8px; font-size: 1.0625rem; line-height: 1.5; color: rgba(10, 17, 34, .82); max-width: 30ch; }
+.lp-root .lp-card-end { align-self: stretch; background: var(--ink); color: var(--frost); padding: 28px; display: flex; flex-direction: column; justify-content: space-between; --focus: var(--amber); }
+.lp-root .lp-card-end .lp-h3 { font-size: 1.75rem; font-weight: 400; font-stretch: 118%; }
+.lp-root .lp-card-end p { color: var(--mist); max-width: 26ch; margin-top: 14px; }
+.lp-root .lp-card-end .lp-btn { align-self: flex-start; margin-top: 24px; }
+
+/* ------------------------------------------------------------------ 6 + 7. one pin, two acts: the globe unrolls on frost, then night falls and it goes down to the street */
+.lp-root .lp-dive { background: var(--frost); }
+.lp-root .lp-dive .lp-stage { z-index: 2; opacity: calc(1 - var(--sx, 0)); }
+.lp-root .lp-flat { position: absolute; inset: 0; color: var(--ink); opacity: calc(1 - var(--fo, 0)); --focus: var(--ink); }
+.lp-root .lp-flat-h { position: absolute; top: calc(var(--nav-h) + 2.5vh); left: var(--gutter); max-width: 11em; padding: 4px 16px 12px 0; background: var(--frost); clip-path: inset(-2px calc(50% - var(--uh, 0) * 50%) -2px calc(50% - var(--uh, 0) * 50%)); }
+.lp-root .lp-facts { position: absolute; left: var(--gutter); bottom: clamp(20px, 5vh, 56px); max-width: 33ch; padding: 12px 16px 12px 0; background: var(--frost); font-size: var(--fs-lede); line-height: 1.45; opacity: var(--hl, 0); transform: translate3d(0, calc((1 - var(--hl, 0)) * 18px), 0); }
+.lp-root .lp-keyline { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: .875rem; font-stretch: 104%; color: var(--slate); }
+.lp-root .lp-street { position: absolute; inset: 0; color: var(--frost); }
+.lp-root .lp-screen { position: absolute; left: var(--gutter); top: 0; bottom: 0; margin: auto 0; width: min(62vw, 1040px); aspect-ratio: 1200 / 571; border-radius: 14px; overflow: hidden; background: #0d1220; border: 1px solid rgba(238, 242, 247, .1); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7); clip-path: inset(calc((1 - var(--so, 0)) * 50%) round 14px); opacity: calc(var(--so, 0) * 5); }
+.lp-root .lp-screen.is-open { clip-path: none; }
+.lp-root .lp-shot { position: absolute; inset: 0; }
+.lp-root .lp-shot img { width: 100%; height: 100%; object-fit: cover; }
+.lp-root .lp-shot-1 img { transform: scale(calc(1 + (1 - var(--so, 0)) * .3)); }
+.lp-root .lp-shot-2 { --t: clamp(0, calc((var(--gp, 0) - .2) / .24), 1); clip-path: inset(calc((1 - var(--t)) * 26%) calc((1 - var(--t)) * 55%) calc((1 - var(--t)) * 70%) calc((1 - var(--t)) * 41%) round 12px); }
+.lp-root .lp-shot-2 img { transform: scale(calc(1 + (1 - var(--t)) * 1.6)); transform-origin: 44% 29%; }
+.lp-root .lp-shot-3 { --t: clamp(0, calc((var(--gp, 0) - .56) / .24), 1); clip-path: inset(calc((1 - var(--t)) * 16%) calc((1 - var(--t)) * 48%) calc((1 - var(--t)) * 80%) calc((1 - var(--t)) * 45%) round 12px); }
+.lp-root .lp-shot-3 img { transform: scale(calc(1 + (1 - var(--t)) * 1.6)); transform-origin: 48% 18%; }
+.lp-root .lp-street-copy { position: absolute; right: var(--gutter); top: calc(var(--nav-h) + 30vh); width: min(25vw, 23rem); opacity: var(--sc, 0); transform: translate3d(0, calc((1 - var(--sc, 0)) * 14px), 0); }
+.lp-root .lp-street .lp-body { margin-top: 18px; }
+.lp-root .lp-steps { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 4px; }
+.lp-root .lp-steps li { padding: 9px 0 9px 16px; border-left: 1px solid rgba(238, 242, 247, .18); color: var(--mist); font-size: .9375rem; transition: color .35s var(--ease), border-color .35s var(--ease); }
+.lp-root .lp-dive[data-step="1"] .lp-steps li:nth-child(1), .lp-root .lp-dive[data-step="2"] .lp-steps li:nth-child(2), .lp-root .lp-dive[data-step="3"] .lp-steps li:nth-child(3) { color: var(--frost); border-left-color: var(--amber); }
+
+/* ------------------------------------------------------------------ 8. close: the whole Earth rises, then the footer */
+.lp-root .lp-close { min-height: 135vh; padding: calc(var(--nav-h) + 12vh) var(--gutter) 0; text-align: center; }
+.lp-root .lp-close-copy { position: relative; z-index: 2; display: grid; justify-items: center; }
+.lp-root .lp-close .lp-h2 { font-size: clamp(2.5rem, 5.4vw, 5rem); max-width: 14ch; opacity: calc(.15 + var(--rp, 1) * .85); }
+.lp-root .lp-close .lp-lede { margin-top: 20px; max-width: 34ch; }
+.lp-root .lp-close .lp-ctas { justify-content: center; }
+.lp-root .lp-footer { position: relative; z-index: 3; background: linear-gradient(to bottom, rgba(5, 7, 13, 0), var(--space) 150px); padding: 160px var(--gutter) 40px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px 64px; }
+.lp-root .lp-foot-brand p { margin-top: 14px; max-width: 36ch; }
+.lp-root .lp-foot-links { display: grid; grid-template-columns: repeat(2, max-content); gap: 6px 40px; align-content: start; justify-content: end; }
+.lp-root .lp-foot-links a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; font-weight: 500; }
+.lp-root .lp-foot-links a:hover { text-decoration: underline; }
+.lp-root .lp-foot-legal { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 24px; border-top: 1px solid rgba(238, 242, 247, .08); max-width: 96ch; }
+.lp-root .lp-rm-still { display: none; }
+
+/* ------------------------------------------------------------------ phone */
+@media (max-width: 759px) {
+  .lp-root { --nav-h: 58px; --fs-h2: 2rem; }
+  .lp-root .lp-nav-link { display: none; }
+  .lp-root .lp-hero { padding-bottom: 40px; }
+  .lp-root .lp-hero .lp-ctas { margin-top: 26px; }
+  .lp-root .lp-hero::after { width: 100%; height: 56%; background: linear-gradient(to top, rgba(5, 7, 13, .5) 62%, rgba(5, 7, 13, 0) 100%); }
+  .lp-root .lp-close::after { background: radial-gradient(ellipse 90% 50% at 50% 42%, rgba(5, 7, 13, .5) 60%, rgba(5, 7, 13, 0) 100%); }
+  .lp-root .lp-bridge { height: 48vh; }
+  /* 16px inset, nine cards of 66vw, eight 16px gaps, less the window (100vw - 16px). */
+  .lp-root .lp-band { height: calc(145vh + 160px + 494vw); height: calc(145svh + 160px + 494vw); }
+  .lp-root .lp-card { width: var(--cw, 66vw); }
+  /* inset: heading left, frame right */
+  .lp-root .lp-scene-inset { grid-template-columns: minmax(0, 1fr) 36vw; column-gap: 16px; row-gap: 22px; }
+  .lp-root .lp-inset { grid-column: 2; grid-row: 1; width: 100%; justify-self: auto; }
+  .lp-root .lp-inset-copy { display: contents; }
+  .lp-root .lp-inset-copy .lp-h2 { grid-column: 1; grid-row: 1; align-self: center; }
+  .lp-root .lp-inset-copy .lp-lede, .lp-root .lp-key { grid-column: 1 / -1; margin-top: 0; }
+  .lp-root .lp-key { font-size: 1rem; gap: 10px; }
+  .lp-root .lp-readout { margin-top: 8px; font-size: .8125rem; }
+  .lp-root .lp-seps-copy { top: calc(var(--nav-h) + 2vh); }
+  .lp-root .lp-seps-copy .lp-lede { margin-top: 12px; }
+  .lp-root .lp-sep { max-width: 15ch; }
+  .lp-root .lp-cap { bottom: 28px; }
+  .lp-root .lp-cap p { margin-top: 12px; }
+  .lp-root .lp-cap .lp-credit { margin-top: 14px; }
+  .lp-root .lp-band-head { top: 72px; right: var(--gutter); width: auto; }
+  .lp-root .lp-band-head p { display: none; }
+  .lp-root .lp-window { left: 0; -webkit-mask-image: none; mask-image: none; }
+  .lp-root .lp-track { top: auto; bottom: 6vh; gap: var(--gap, 16px); padding-left: var(--start, 16px); transform: translate3d(var(--tx, 0px), 0, 0); }
+  .lp-root .lp-card .lp-ph { aspect-ratio: 4 / 3; }
+  .lp-root .lp-card .lp-h3 { font-size: 1.25rem; }
+  .lp-root .lp-card p { font-size: 1rem; }
+  .lp-root .lp-card-end { padding: 22px; }
+  .lp-root .lp-flat-h { right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 1.5vh); }
+  .lp-root .lp-facts { right: var(--gutter); max-width: none; bottom: 20px; }
+  .lp-root .lp-street { display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: calc(var(--nav-h) + 40px) var(--gutter) 28px; }
+  .lp-root .lp-screen { position: relative; left: auto; top: auto; bottom: auto; margin: 0; width: 100%; border-radius: 10px; order: 2; flex: none; }
+  .lp-root .lp-street-copy { display: contents; }
+  .lp-root .lp-street .lp-h2, .lp-root .lp-street .lp-body, .lp-root .lp-steps { opacity: var(--sc, 0); }
+  .lp-root .lp-street .lp-h2 { max-width: 9ch; order: 1; }
+  .lp-root .lp-street .lp-body { font-size: 1rem; margin-top: -10px; order: 1; max-width: 30ch; }
+  .lp-root .lp-steps { order: 3; margin: 0; }
+  .lp-root .lp-steps li { padding: 5px 0 5px 12px; font-size: .875rem; }
+  .lp-root .lp-close { min-height: 125vh; padding-top: calc(var(--nav-h) + 8vh); }
+  .lp-root .lp-footer { grid-template-columns: 1fr; }
+  .lp-root .lp-foot-links { justify-content: start; }
+}
+
+/* ------------------------------------------------------------------ reduced motion: a complete static page, nothing pinned, nothing scrubbed
+
+   `(scripting: none)` rides along: a reader with no JavaScript gets the same static page
+   instead of pinned stages that nothing drives. A browser that does not know the feature
+   ignores that half of the list.
+
+   WHY EVERY SELECTOR STARTS `:root .lp-root`. Each rule here has to beat the motion rule
+   for the same element, and several of those are two classes deep (`.lp-hero .lp-lede`).
+   `:root` adds one class of weight to all of them at once, which keeps this block winning
+   by weight and not by where it sits in the file. Do not trim it.
+
+   The engine reads the same media query and starts no loop and no scroll listener here.
+   It draws each globe once into the `.lp-rm-globe` / `.lp-rm-flat` canvases below. */
+@media (prefers-reduced-motion: reduce), (scripting: none) {
+  :root .lp-root .lp-globe, :root .lp-root .lp-lens-tag { display: none; }
+  :root .lp-root .lp-nav { position: absolute; }
+  :root .lp-root .lp-rm-still { display: block; }
+  :root .lp-root .lp-hero { overflow: hidden; }
+  :root .lp-root .lp-hero-copy { transform: none; opacity: 1; }
+  /* `z-index: 1` ON BOTH EARTH IMAGES IS LOAD-BEARING. The sky is an opaque canvas at z-index
+     0. On a phone the hero is a flex column and this image takes `order: -1`, and `order`
+     moves an item in PAINT order as well as in layout: the sky then paints after the image
+     and covers it, and the hero is stars with no Earth (seen at 390 wide). */
+  :root .lp-root .lp-rm-hero { position: absolute; z-index: 1; right: -6vw; top: 50%; width: min(96vh, 60vw); height: auto; transform: translateY(-46%); }
+  :root .lp-root .lp-bridge { height: 18vh; }
+  :root .lp-root .lp-split, :root .lp-root .lp-photos, :root .lp-root .lp-band, :root .lp-root .lp-dive { height: auto !important; }
+  :root .lp-root .lp-stage { position: relative; height: auto; overflow: visible; }
+  :root .lp-root .lp-scene { position: relative; inset: auto; opacity: 1; transform: none; }
+  :root .lp-root .lp-scene-inset { padding: 12vh var(--gutter) 8vh; }
+  :root .lp-root .lp-scene-seps { padding: 6vh var(--gutter) 14vh; }
+  :root .lp-root .lp-seps-copy { position: relative; top: auto; left: auto; right: auto; opacity: 1; transform: none; }
+  :root .lp-root .lp-seps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; margin-top: 48px; }
+  :root .lp-root .lp-sep { position: relative; width: auto; max-width: none; transform: none; opacity: 1; display: grid; gap: 14px; justify-items: center; }
+  :root .lp-root .lp-rm-globe { display: block; width: 100%; aspect-ratio: 1; }
+  :root .lp-root .lp-frame .lp-rm-globe { position: absolute; inset: 0; height: 100%; }
+  :root .lp-root .lp-photo { position: relative; height: 100vh; min-height: 520px; clip-path: none; }
+  :root .lp-root .lp-photo img { transform: none; }
+  :root .lp-root .lp-cap { opacity: 1; transform: none; }
+  :root .lp-root .lp-band { padding: 120px var(--gutter) 96px; }
+  :root .lp-root .lp-band .lp-stage { background: none; }
+  :root .lp-root .lp-band-head { position: relative; left: 0; top: 0; width: auto; max-width: 640px; margin-bottom: 48px; }
+  :root .lp-root .lp-band-head p { display: block; }
+  :root .lp-root .lp-window { position: relative; left: 0; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  :root .lp-root .lp-track { position: relative; top: auto; bottom: auto; transform: none; padding: 0; flex-wrap: wrap; gap: 48px 32px; }
+  :root .lp-root .lp-card { width: min(100%, 300px); transform: none; }
+  :root .lp-root .lp-card img { filter: none; mix-blend-mode: normal; left: 0; width: 100%; transform: none; }
+  :root .lp-root .lp-dive { background: none; }
+  :root .lp-root .lp-dive .lp-stage { opacity: 1; }
+  :root .lp-root .lp-flat { position: relative; inset: auto; opacity: 1; background: var(--frost); padding: 14vh var(--gutter) 12vh; }
+  :root .lp-root .lp-flat-h { position: relative; top: auto; left: auto; right: auto; clip-path: none; padding: 0; }
+  :root .lp-root .lp-rm-flat { display: block; width: 100%; aspect-ratio: 2 / 1; margin: 32px 0 20px; }
+  :root .lp-root .lp-facts { position: relative; left: auto; right: auto; bottom: auto; opacity: 1; transform: none; padding: 0; }
+  :root .lp-root .lp-street { position: relative; inset: auto; display: flex; flex-direction: column; gap: 0; justify-content: flex-start; background: var(--space); padding: 14vh var(--gutter) 12vh; }
+  :root .lp-root .lp-street-copy { display: block; order: 1; position: relative; right: auto; top: auto; width: auto; max-width: 40rem; opacity: 1; transform: none; }
+  :root .lp-root .lp-street .lp-h2, :root .lp-root .lp-street .lp-body, :root .lp-root .lp-steps { opacity: 1; }
+  :root .lp-root .lp-street .lp-h2 { max-width: none; }
+  :root .lp-root .lp-steps li { color: var(--frost); }
+  :root .lp-root .lp-screen { order: 2; position: relative; left: auto; top: auto; bottom: auto; margin: 40px 0 0; width: auto; aspect-ratio: auto; background: none; box-shadow: none; display: grid; gap: 20px; overflow: visible; clip-path: none; opacity: 1; }
+  :root .lp-root .lp-shot { position: relative; inset: auto; clip-path: none; }
+  :root .lp-root .lp-shot img { transform: none; border-radius: 12px; height: auto; }
+  :root .lp-root .lp-close { overflow: hidden; }
+  :root .lp-root .lp-close .lp-h2 { opacity: 1; }
+  :root .lp-root .lp-rm-whole { position: relative; z-index: 1; width: min(110vh, 96vw); height: auto; margin: 6vh auto -30vh; -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 78%); mask-image: linear-gradient(to bottom, #000 55%, transparent 78%); }
+  :root .lp-root *, :root .lp-root *::before, :root .lp-root *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 759px), (scripting: none) and (max-width: 759px) {
+  :root .lp-root .lp-hero { display: flex; flex-direction: column; justify-content: flex-end; }
+  :root .lp-root .lp-rm-hero { position: relative; right: auto; top: auto; width: 110vw; max-width: none; margin: 0 -5vw; transform: none; order: -1; }
+  :root .lp-root .lp-seps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :root .lp-root .lp-rm-flat { aspect-ratio: 3 / 2; }
+}
+
+/* ------------------------------------------------------------------ the first of two rules outside the root
+
+   The document's own ground and scrollbar, so an overscroll bounce and a classic scrollbar
+   track are space and not the console's light page colour. `:has()` scopes it to documents
+   that hold this page: on /privacy and /app it matches nothing. Literal hexes, because the
+   tokens above live on `.lp-root` and are not in scope on `html`. */
+html:has(.lp-root) { background: #05070d; scrollbar-color: #2a3552 #05070d; }
+
+/* ------------------------------------------------------------------ the Discord note, on this page only
+
+   app/provenance.css parks the note bottom LEFT. On this page that corner holds the hero
+   buttons and the copy of every photograph, so at its 40-second mark the note landed on
+   the primary button. Bottom right is this page's emptiest corner (the Earth, a
+   photograph, the flat map). Wide screens only: on a phone the note spans the width either
+   way. `:has()` again, so /privacy keeps the left corner. This is the second and last rule
+   that leaves `.lp-root`. */
+@media (min-width: 721px) {
+  .pv-root:has(.lp-root) .tn-note { left: auto; right: 16px; }
+}

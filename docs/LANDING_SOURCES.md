@@ -13,6 +13,50 @@ Last verified: 2026-09-12. Every URL below was opened on that date.
 
 ---
 
+## 2026-10-05: the page was rebuilt, and most of these figures left it
+
+Read this section first. The landing page was replaced on 2026-10-05, and the sections below
+this one now describe figures that `/` no longer prints.
+
+**What left the page.** The public-budget receipts, the most-watched places (the ranking, the
+reputation check, the averages and the study's caveat), the "Why this exists" ledger with
+its unit-test count, the coverage audit (the three tiers and the five best-covered
+countries), the table of every layer, and the hero strip and boot ticker that carried the
+first measured counts.
+
+**What did not leave the repo.** Every data file and every generator behind those sections is
+still here, and each test that pins one still runs:
+
+- `lib/marketing/surveillance.data.ts`, with its sources recorded below;
+- `lib/marketing/coverage-audit.data.ts`, `scripts/gen-landing-audit.mjs` and
+  `scripts/country-event-breakdown.mts`;
+- `lib/marketing/repo-facts.data.ts`.
+
+So the entries below are kept as the record for those files. They are not a description of
+the live page. If one of those figures goes back on `/`, its source is already written down
+here; check the URL again and move the "Last verified" date before it ships.
+
+**Where the page's figures come from now.** Three committed files, and nothing typed:
+
+| Figure on the page | File | How it stays true |
+|---|---|---|
+| Camera feeds, countries, catalogued webcams | `lib/marketing/camera-facts.data.ts` | `tests/unit/landing-camera-facts.test.ts` recomputes all three |
+| The number of layers | `lib/marketing/coverage-audit.data.ts` (`AUDIT_TOTALS.layers`) | generated from a production run; `tests/unit/landing-audit.test.ts` fails if its layer ids drift from the registry |
+| The date of the globe | `lib/marketing/globe-snapshot.meta.ts` (`GLOBE_SNAPSHOT.takenAt`) | written by `scripts/gen-landing-snapshot.mjs`; `tests/unit/landing-snapshot.test.ts` fails if it disagrees with the snapshot |
+
+None of the three is an outside source, so none needs an entry in this file.
+
+**The globe is a snapshot, and the page prints its date.** The dots on the landing globe are
+one saved read of the production map, `public/marketing/globe-snapshot.json`, written by
+`node scripts/gen-landing-snapshot.mjs`. They are not live. The page states the date where
+the data first appears and again in the footer, both from `GLOBE_SNAPSHOT.takenAt`. The
+script refuses to write anything if a layer fails or comes back empty.
+
+**Images.** The photographs, the two Earth renders and the console screenshots have their
+own record: `docs/IMAGE-LICENSES.md`.
+
+---
+
 ## Public money
 
 ### €5.421 billion — Copernicus, 2021 to 2027

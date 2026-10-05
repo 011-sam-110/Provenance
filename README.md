@@ -68,7 +68,7 @@ Governments, space agencies, seismologists and UN clusters publish an enormous a
 - **17 camera feeds, 26 agency networks, 11 countries, keyless** - the actual agency feeds (TfL, Caltrans, SCDOT, Finland Digitraffic, Castle Rock 511, Oregon TripCheck, DriveBC, NZTA, Iceland, Estonia, Traffic Scotland, CET-SP Sao Paulo, two Serbian operators - MUP border crossings and JP Putevi Srbije toll plazas - BIHAMK in Bosnia and Herzegovina, ACT in Puerto Rico, and Houston TranStar, the first network added by discovery rather than by hand). Feeds and networks are not the same count here, because Castle Rock alone carries ten separate 511 deployments (Florida, Georgia, New York, Idaho, Louisiana, New England, Ontario, Alberta, Nova Scotia, New Brunswick), which is what takes 17 feeds to 26 agencies. All of it is normalised into one `Camera` shape and drawn as one dot per camera at every zoom - no count badges, no aggregation. Cameras clustered until 2026-09-03; the badges covered a measured 51.9% of the Europe rectangle at world zoom, which is a poor trade for hiding a circle layer the GPU draws without complaint. Each camera opens its live still or HLS video through a closed proxy that takes a camera **id**, never an arbitrary URL, resolves it behind a host allowlist and caches at that source's own cadence. A feed that fails keeps its last-good cameras instead of silently deleting its region.
 - **Aircraft and satellites** - live ADS-B from adsb.lol, pulled worldwide by ICAO type in four paced requests and capped as a proportional spatial sample so every region keeps its share, with breadcrumb trails and route enrichment fetched on click; satellites propagated in the browser from CelesTrak TLEs with SGP4, so the server never ticks orbits and the constellation moves at frame rate.
 - **A terminal-style console** - a dense OSINT shell at `/app`: 66 widget types in a ⌘K catalogue, three presets that rearrange the workspace and re-skin the map layers in one tap, 13 monitor variants, a drag-and-snap widget grid, and any layout shareable as a `?c=` URL. A first visit opens the Globe preset, which is the map with no widgets in front of it. Every layer and every widget is one ⌘K entry away. Countries are clickable for a sourced dossier (UK FCDO travel advice, the instability index with each contributing layer linked, and the signals active there), and every widget dumps its visible rows as CSV or GeoJSON.
-- **A landing page that cannot drift** - the hero globe at `/` draws every registered signal layer from the same `SOURCE_CATALOG` the app renders from, so adding an adapter updates it with no marketing-side edit. No count is typed into the page. Each one is read from a committed data file that is either pinned by a test, generated from a production run, or quoted from one published study.
+- **A landing page that cannot drift** - no count is typed into the page. Each one is read from a committed data file that is either pinned by a test or generated from a production run. The globe at `/` is a 2D canvas that draws one saved snapshot of the live map, written by `scripts/gen-landing-snapshot.mjs`, and the page prints the snapshot's date.
 
 </details>
 
@@ -120,8 +120,8 @@ No API keys are needed for the core map. Optional keys unlock the dormant extras
 ## 🧠 How it works
 
 ```
-app/(site)/page.tsx ─── the landing page: the hero globe draws every signal layer from
-                        SOURCE_CATALOG; its figures come from committed data files
+app/(site)/page.tsx ─── the landing page: a 2D canvas globe drawn from one saved snapshot
+                        of the live map; its figures come from committed data files
 app/(console)/app/ ──── the console shell
   └── components/WorldMap.tsx ─ one maplibregl.Map (projection: 'globe')
         basemap registry (satellite / streets / topo) + 3D terrain
@@ -140,7 +140,7 @@ API routes:  /api/cameras · /api/camera · /api/coverage · /api/status · /api
              /api/near · /api/geocode · /api/flight · /api/geolocate · /api/og
 ```
 
-Adding a camera source or a signal layer is one adapter file, one registry entry and a fixture test. A signal layer then appears on the map, in the rail, in the widget catalogue and on the landing page's hero globe with no further edits. The normalisation layer, the proxy that fronts every image, and the rule that a failing upstream resolves to an empty set or the last good answer are the core of the project.
+Adding a camera source or a signal layer is one adapter file, one registry entry and a fixture test. A signal layer then appears on the map, in the rail and in the widget catalogue with no further edits. The normalisation layer, the proxy that fronts every image, and the rule that a failing upstream resolves to an empty set or the last good answer are the core of the project.
 
 ## Licence
 
@@ -155,6 +155,8 @@ Concretely, the running app links to this repository from the console header and
 ### The data is not covered by this licence
 
 The AGPL covers **this codebase only**. Every upstream feed keeps its own separate terms, and some require attribution that is reproduced in the app: TfL Open Data, Windy.com webcams, OpenFreeMap, OpenMapTiles, CARTO and OpenStreetMap basemaps, NASA EONET and FIRMS, USGS, GDACS, TeleGeography and adsb.lol, among others. Redistributing this code does not grant you any right to their data, so check each source before relying on it.
+
+The photographs on the landing page are not covered by it either: they are from Pexels under the Pexels License, which allows use and modification without attribution and forbids selling unaltered copies or redistributing them on other stock photo or wallpaper platforms, and [`docs/IMAGE-LICENSES.md`](docs/IMAGE-LICENSES.md) lists the source and terms of every image.
 
 ### Third-party code
 

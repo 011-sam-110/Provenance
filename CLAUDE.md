@@ -74,42 +74,66 @@ obligations and are not satisfied by the licence.
   or `?c=` to `/app` with the query intact — shared links and OG cards were minted
   against `/`, so removing that shim breaks every link anyone has already sent.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
-  (`GlobeStage.tsx`) publishes CSS custom properties; nothing else may add a scroll
-  listener and nothing may set React state per frame. `.pv-*` tokens in
-  `app/provenance.css`, scoped to `.pv-root` so they cannot reach the console.
-- **The whole page is ONE night, and the globe is its only stage.** `GlobeStage`
-  mounts a single fixed `HeroGlobe` behind every section and choreographs it from a
-  rAF loop: it writes `--pv-globe-x/y/scale/alpha` on `.pv-stage`, and calls
-  `controls.focus(lon, lat, label)` / `controls.rest()` as the reader enters and
-  leaves a stepped section. There is no second globe and no remount — a step change
-  is an `easeTo`, not a new map.
-  The old **night → day → night** ground ramp is GONE, along with `--pv-g`,
-  `--pv-bar-g` and the sticky bar that straddled two grounds. `.pv-night` is still
-  server-rendered in `(site)/layout.tsx` but is now a no-op alias: `provenance.css`'s
-  base tokens ARE the night set. The class stays because `/privacy` keys off it.
-- **Pin labels are built from the same rows the copy prints.** `page.tsx` derives
-  every `focus()` label from the record the section renders beside it, so the globe
-  cannot caption a figure the text does not say. Do not hand-write a pin label.
-- The hero globe renders **every registered signal layer**, drained into three
-  aggregated MapLibre sources (points / lines / fills) exactly like `WorldMap`. The
-  layer list is read from `SOURCE_CATALOG` in the server component and passed down
-  as a prop — never imported into the client, or all ~39 adapters land in the
-  browser bundle. Adding an adapter adds it to the globe with no edit to the hero.
-- `zoomToFill()` in `HeroGlobe` uses a MEASURED constant, not a derivation:
-  MapLibre's globe is a perspective render, so apparent diameter is not linear in
-  2^z. `verify-provenance.mjs` asserts the fill ratio so an upgrade that moves it
-  fails loudly instead of quietly reframing the hero.
+  (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
+  rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's
+  state changed, writes CSS custom properties for every section effect, and stops when
+  the page is at rest, so an idle page draws nothing. Nothing else may add a scroll
+  listener and nothing may set React state per frame: a new effect is computed in
+  that loop from the same value. Pins are CSS `position: sticky`. The page's styles are
+  `app/landing.css`, imported by `app/(site)/page.tsx` alone, with every rule under
+  `.lp-root` so none can reach `/privacy` or the console (the two rules outside it,
+  `html:has(.lp-root)` and the Discord note's corner, match only while this page is
+  mounted).
+- **The globe on `/` is a 2D canvas drawing ONE saved snapshot. It is not a map and it
+  is not live.** `lib/marketing/landingGlobe.ts` is the whole renderer and touches no
+  DOM: scroll position in, plain state objects out, pixels on a context it is handed.
+  It draws `public/marketing/globe-snapshot.json` and nothing else. **The landing page
+  makes no `/api` call and loads no MapLibre**: no style, no tile, no WebGL context
+  for the globe. `/privacy` states the no-tiles half in public,
+  `tests/unit/privacy-page.test.ts` pins the imports behind it, and
+  `tests/e2e/landing.spec.ts` watches the network for both halves (not in the gate).
+  The snapshot is written only by `node scripts/gen-landing-snapshot.mjs`, which reads
+  production and writes NOTHING if any layer fails or comes back empty, so a bad fetch
+  cannot ship an empty globe. The same run writes `lib/marketing/globe-snapshot.meta.ts`,
+  the page prints `GLOBE_SNAPSHOT.takenAt` from it where the data first appears and in
+  the footer, and `tests/unit/landing-snapshot.test.ts` fails if the two files disagree.
+  Do not point the globe at `/api/*` to freshen it: one live layer beside ten dated
+  ones makes the printed date false.
+- **The globe draws the eleven layers in the snapshot, not the registry.** Adding a
+  signal layer no longer changes `/`. To put a layer on the landing globe, add it in
+  one change to `LAYERS` in `scripts/gen-landing-snapshot.mjs`, to `LAYERS` in
+  `landingGlobe.ts` and to `LAYER_IDS` in `landing-snapshot.test.ts`; a layer the file
+  lacks draws nothing and does not throw.
+- **`GlobeStage.tsx`, `HeroGlobe.tsx` and the old `.pv-*` landing rules are unused
+  leftovers, pending removal in a follow-up.** Nothing has mounted either component
+  since 2026-10-05, and `landing-globe-ground` and `hero-basemap` are the tests that
+  still pin them and leave with them (`Starfield.tsx` is NOT a leftover: the new page
+  mounts it, held still, behind the hero and the close). `app/provenance.css` is not dead
+  either: `(site)/layout.tsx` still imports it and wraps `/` and `/privacy` in
+  `.pv-root`, `/privacy` is built from its `.pv-doc` / `.pv-block` / `.pv-ledger` rules,
+  and the Discord note on `/` is styled by its `.pv-root .tn-note` block, which
+  `community-mounts.test.ts` pins. Delete the landing-only rules, never the file.
 - **Never type a count into the landing page.** `lib/marketing/wall.ts` and the source
-  wall it fed are gone; the rule outlived them. Every figure on `/` now comes from one
-  of three committed files, each of which can be re-derived:
-  `coverage-audit.data.ts` (GENERATED by `scripts/gen-landing-audit.mjs` from a
-  production run of `scripts/country-event-breakdown.mts` — never hand-edit it, and it
-  carries its own `AUDIT_MEASURED_AT`, which the page prints beside every figure taken
-  from it), `camera-facts.data.ts` and `repo-facts.data.ts` (measured, each pinned by a
-  test that recomputes it), and `surveillance.data.ts` (one published study, at one
-  scope, with the verbatim quote behind every row recorded in `docs/LANDING_SOURCES.md`).
-  That doc also lists the figures REMOVED from the first draft because no source carried
-  them — read it before adding a number, it is the more useful half.
+  wall it fed are gone; the rule outlived them, and it outlived the 2026-10-05 rebuild
+  too. Every figure on `/` comes from one of three committed files, each of which can
+  be re-derived: `camera-facts.data.ts` (measured, pinned by a test that recomputes
+  it), `coverage-audit.data.ts` (GENERATED by `scripts/gen-landing-audit.mjs` from a
+  production run of `scripts/country-event-breakdown.mts` — never hand-edit it; it
+  carries its own `AUDIT_MEASURED_AT`) and `globe-snapshot.meta.ts` (GENERATED, above).
+  If a sentence needs a number none of those carries, the sentence loses the number.
+  `repo-facts.data.ts` and `surveillance.data.ts` are no longer read by the page; both
+  files stay, with the tests and generators that belong to the data files, and
+  `docs/LANDING_SOURCES.md` records
+  what left the page on 2026-10-05, the source behind every outside figure, and the
+  figures REMOVED from the first draft because no source carried them — read it before
+  adding a number, it is the more useful half.
+- **Image licences live in `docs/IMAGE-LICENSES.md`.** The landing page's photographs
+  are under the Pexels License, NOT the AGPL. Its two Earth renders (NASA imagery,
+  rendered in Blender) and the console screenshots are this project's own work; the
+  file records what third-party material each shows. An image goes under `public/`, is
+  served from this origin, and gets its row in that file in the same change. Every
+  line of the landing footer's credits is a claim about what the page loads, so a
+  credit arrives and leaves with its asset.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
@@ -211,9 +235,9 @@ obligations and are not satisfied by the licence.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
 - Calm light identity; `.tn-*` CSS tokens in `app/globals.css`.
-- **ONE typeface: Inter, everywhere — with one route-scoped exception.** Loaded once, self-hosted by next/font in
-  `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads a
-  font — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
+- **ONE typeface: Inter, everywhere — with two route-scoped exceptions.** Loaded once, self-hosted by next/font in
+  `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads
+  Inter — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
   The role tokens (`--tn-mono`, `--tn-sans`, `--tn-title`, `--tnx-font-*`, `--pv-*`) all
   survive and all resolve to it, so a `font-family:` rule almost never needs editing;
   repoint the token instead. **Losing the mono face means the digits no longer align on
@@ -222,11 +246,18 @@ obligations and are not satisfied by the licence.
   pages, `/admin`, `/locate`, `/`) has to ask for it per rule. Two surfaces are NOT
   Inter and cannot cheaply be: `app/api/og/route.tsx` (Satori needs font bytes) and
   MapLibre's own labels (`MAP_LABEL_FONT` is served by the basemap's glyph server).
-  **The exception is Permanent Marker**, loaded by `(site)/layout.tsx` as
-  `--pv-font-marker` and used only for the graffiti scrawled over the surveillance
-  section. It is loaded in the ROUTE GROUP, not the root layout, so `/app` never
-  downloads it, and it is credited in the footer beside Inter. One marketing face, one
-  route group, one credit — do not let a second one in on this precedent.
+  **The landing page is the live exception: Archivo**, loaded by `app/(site)/page.tsx`
+  through next/font (self-hosted, no request to Google) and published as `--lp-font`
+  on `.lp-root`, where `app/landing.css` reads it. It is loaded in the PAGE, not in a
+  layout, so no other route downloads it: not `/app`, and not `/privacy`, which shares
+  the `(site)` layout. It is credited in the landing footer beside Inter, which still
+  sets the Discord note there.
+  **Permanent Marker was the first exception and is now a leftover.** `(site)/layout.tsx`
+  still loads it as `--pv-font-marker`, but the graffiti it was for left `/` with the
+  surveillance section on 2026-10-05, so nothing on `/` or `/privacy` uses it and the
+  landing footer no longer credits it. Remove that loader in the follow-up that removes
+  the old `.pv-*` landing rules. One marketing face, one route, one credit — do not
+  let a third one in on this precedent.
 
 ## Numbers, and how to re-check them
 Never quote a count from memory — every figure below was measured, and each rots.

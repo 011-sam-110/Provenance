@@ -18,6 +18,12 @@ import { BASEMAPS, DARK_FALLBACK_STYLE, DARK_STYLE_URL, type BasemapKey } from "
  * basemap must not be served by a host that does this to us. That is a weaker check
  * than "is there a watermark", and it is deliberately weaker — see the note on the
  * last case about what still has to be done by eye.
+ *
+ * 2026-10-05: THE LANDING PAGE NO LONGER LOADS THIS BASEMAP, OR ANY BASEMAP. Its globe is
+ * a 2D canvas drawn from a committed snapshot (lib/marketing/landingGlobe.ts).
+ * components/marketing/HeroGlobe.tsx, the one reader of DARK_STYLE_URL, is still in the
+ * tree but nothing mounts it. These cases still pass because they pin lib/basemaps.ts as
+ * it stands. Delete this file in the change that deletes HeroGlobe and the two exports.
  */
 describe("hero basemap", () => {
   it("is not served by CARTO, which watermarks unauthenticated tiles", () => {
@@ -59,8 +65,10 @@ describe("hero basemap", () => {
     // Kept as an executable comment. A provider that starts stamping its tiles
     // tomorrow serves them with the same 200 and the same byte-ish size, and every
     // assertion above still passes. The check that would have caught the CARTO
-    // change is visual — scripts/verify-provenance.mjs shoots the hero, and somebody
-    // has to look at it. Do not read a green suite here as "the hero looks right".
+    // change is visual: somebody has to look at the map. scripts/verify-provenance.mjs
+    // used to shoot the hero for that. It was deleted on 2026-10-05 with the page it
+    // checked, so nothing shoots this basemap now. Do not read a green suite here as
+    // "the hero looks right".
     expect(DARK_STYLE_URL).toBeTypeOf("string");
   });
 });
