@@ -1,6 +1,6 @@
 // Save one snapshot of the live map for the landing page's globe.
 //
-// WHY THIS EXISTS. The globe on `/` is a 2D canvas (`lib/marketing/landingGlobe.ts`) and it
+// WHY THIS EXISTS. The globe on `/` (`lib/marketing/landingGlobe.ts`) is not a map: it
 // draws ONE committed file, `public/marketing/globe-snapshot.json`. The landing page makes no
 // `/api` call and loads no MapLibre, so the dots a visitor sees are whatever this script wrote
 // on the day it last ran. That is cheaper than a live globe and it is also a claim with a

@@ -20,7 +20,7 @@ import { BASEMAPS, DARK_FALLBACK_STYLE, DARK_STYLE_URL, type BasemapKey } from "
  * last case about what still has to be done by eye.
  *
  * 2026-10-05: THE LANDING PAGE NO LONGER LOADS THIS BASEMAP, OR ANY BASEMAP. Its globe is
- * a 2D canvas drawn from a committed snapshot (lib/marketing/landingGlobe.ts).
+ * drawn from a committed snapshot, with no map (lib/marketing/landingGlobe.ts).
  * components/marketing/HeroGlobe.tsx, the one reader of DARK_STYLE_URL, is still in the
  * tree but nothing mounts it. These cases still pass because they pin lib/basemaps.ts as
  * it stands. Delete this file in the change that deletes HeroGlobe and the two exports.

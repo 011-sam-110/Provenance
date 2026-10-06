@@ -24,6 +24,9 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     the front page no longer reaches tiles.openfreemap.org. The OpenFreeMap card and the
  *     CARTO card both say so, with the date. Nothing about the console changed. It loads
  *     its basemaps exactly as those cards describe.
+ *     (2026-10-07: the dots and lines of that globe are now drawn with WebGL, on a second
+ *     canvas, by lib/marketing/landingGlobeGL.ts. It is still one committed file from this
+ *     domain: no map, no tile, no request. Nothing on this page changes.)
  *   - "The typeface is self-hosted" became "Every typeface is self-hosted". The front page
  *     now sets its own face (Archivo, loaded by app/(site)/page.tsx through next/font), so
  *     there is more than one. Each is still downloaded at build time and served from here.

@@ -84,13 +84,31 @@ obligations and are not satisfied by the licence.
   `.lp-root` so none can reach `/privacy` or the console (the two rules outside it,
   `html:has(.lp-root)` and the Discord note's corner, match only while this page is
   mounted).
-- **The globe on `/` is a 2D canvas drawing ONE saved snapshot. It is not a map and it
-  is not live.** `lib/marketing/landingGlobe.ts` is the whole renderer and touches no
-  DOM: scroll position in, plain state objects out, pixels on a context it is handed.
+- **The globe on `/` draws ONE saved snapshot, on two stacked canvases. It is not a map
+  and it is not live.** `lib/marketing/landingGlobe.ts` is the choreography and the 2D
+  painter, and touches no DOM: scroll position in, plain state objects out, pixels on a
+  context it is handed. The lower canvas is 2D: the stills, the ocean discs, the rims.
+  The upper canvas is WebGL: the land, the cables and the dots, drawn by
+  `lib/marketing/landingGlobeGL.ts`. That one exists because Chrome rasterises a 2D
+  path of 20,000 round strokes on the CPU, in the GPU process: the page ran at 8 to 48
+  frames per second on a 120 Hz laptop while its own paint timer read 10 ms (measured
+  2026-10-07). **So count frames, never `drawMs`:** `node scripts/landing-fps.mjs` does
+  it per section in headed Chrome, and `node scripts/landing-look.mjs` puts the two
+  painters side by side (neither is in the gate). The 2D painter of the dots and lines
+  is NOT dead code. It is the fallback when WebGL is refused, fails or is lost, and it
+  is the only painter of the reduced-motion page, which asks for no WebGL context.
+  Both painters read every width, alpha, size and colour from `contentStyle` in
+  `landingGlobe.ts`; a style number in the WebGL file is a second source of truth and
+  `tests/unit/landing-globe-gl.test.ts` fails on one. Three rules in the WebGL painter
+  are not style preferences: (a) a layer of dots is ONE SHAPE, gathered in an offscreen
+  target before it is coloured, because blending each dot by itself burns every city
+  to white; (b) two LAYERS do add, as two paths do on the 2D canvas, so each layer has
+  a channel of the target to itself; (c) a line under one device pixel wide builds up
+  along a shared route, because that is how Chrome's 2D canvas draws a hairline and the
+  design was approved looking at it.
   It draws `public/marketing/globe-snapshot.json` and nothing else. **The landing page
-  makes no `/api` call and loads no MapLibre**: no style, no tile, no WebGL context
-  for the globe. `/privacy` states the no-tiles half in public,
-  `tests/unit/privacy-page.test.ts` pins the imports behind it, and
+  makes no `/api` call and loads no MapLibre**: no style and no tile. `/privacy` states
+  the no-tiles half in public, `tests/unit/privacy-page.test.ts` pins the imports behind it, and
   `tests/e2e/landing.spec.ts` watches the network for both halves (not in the gate).
   The snapshot is written only by `node scripts/gen-landing-snapshot.mjs`, which reads
   production and writes NOTHING if any layer fails or comes back empty, so a bad fetch

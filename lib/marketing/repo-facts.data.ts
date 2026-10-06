@@ -36,7 +36,7 @@
  * re-measure both numbers on the merged tree.
  */
 export const UNIT_TESTS = {
-  cases: 4330,
-  files: 404,
-  measuredAt: "2026-10-05",
+  cases: 4379,
+  files: 405,
+  measuredAt: "2026-10-07",
 } as const;

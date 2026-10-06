@@ -29,7 +29,7 @@ import { expect, test } from "vitest";
  * 2026-09-08 it no longer settles — it turns until you drag it or scroll past.
  * It no longer imports the `lib/map/spin.ts` envelope either. Only the console is
  * pinned still, and this file pins only the console.
- * (2026-10-05: nothing mounts HeroGlobe any more. The landing globe is a 2D canvas,
+ * (2026-10-05: nothing mounts HeroGlobe any more. The landing globe is drawn by
  * `lib/marketing/landingGlobe.ts`, and it draws nothing while the page is at rest. That
  * component still spins if it is ever mounted, and this file still does not govern it.)
  */

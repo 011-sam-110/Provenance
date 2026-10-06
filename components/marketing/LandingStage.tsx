@@ -33,10 +33,18 @@ import {
   type LandGeoJson,
   type Stage,
 } from "@/lib/marketing/landingGlobe";
+import { createGlobeGL, GL_CONTEXT_ATTRIBUTES, type GlobeGL } from "@/lib/marketing/landingGlobeGL";
 
 /**
- * The landing page's one stage: a fixed canvas between the section grounds and the copy,
- * and the loop that drives it.
+ * The landing page's one stage: two fixed canvases between the section grounds and the copy,
+ * and the loop that drives them.
+ *
+ * TWO CANVASES, ONE PICTURE. The lower one is 2D: the stills, the ocean discs, the rims and
+ * the bezels. The upper one is WebGL: the land, the cables and the dots
+ * (`lib/marketing/landingGlobeGL.ts` says why). If the browser has no WebGL, if the context
+ * lacks something the painter needs, if a draw throws, or if the context is lost, the upper
+ * canvas is hidden and the 2D painter draws the dots and lines too, as it did before the
+ * WebGL painter existed. `window.__pvLanding.renderer` says which one is drawing.
  *
  * HOW THIS OBEYS THE ONE-SCROLL-SUBSCRIBER RULE. `CLAUDE.md` allows `/` a single scroll
  * subscriber and forbids React state per frame. This component IS that subscriber. It adds
@@ -55,7 +63,8 @@ import {
  *
  * REDUCED MOTION is a different page, not a slower one. `app/landing.css` lays every section
  * out in normal flow under `prefers-reduced-motion: reduce`, and this component then draws
- * each globe once into an in-flow canvas and starts no loop and no scroll listener.
+ * each globe once into an in-flow canvas and starts no loop and no scroll listener. That page
+ * is painted in 2D only, and this component asks for no WebGL context there.
  */
 
 const SNAPSHOT_URL = "/marketing/globe-snapshot.json";
@@ -75,6 +84,11 @@ interface LandingDebug {
   /** How long the last paint took, ms. */
   readonly drawMs: number;
   readonly reducedMotion: boolean;
+  /** Which painter draws the dots and lines right now. */
+  readonly renderer: "webgl" | "2d";
+  /** Where each globe is on screen right now, in CSS px. `flat` is true while it is unrolled
+      into the map, which can reach any part of the screen. For scripts/landing-look.mjs. */
+  globes(): Array<{ cx: number; cy: number; R: number; flat: boolean }>;
   /** Named scroll positions, one per moment of the page. */
   marks(): Record<string, number>;
   /** Scroll to a named moment. Returns the scroll position, or -1 for an unknown name. */
@@ -203,6 +217,8 @@ function startStatic(root: HTMLElement): () => void {
     draws: 0,
     drawMs: 0,
     reducedMotion: true,
+    renderer: "2d",
+    globes: () => [],
     marks: () => ({}),
     go: () => -1,
   };
@@ -217,7 +233,7 @@ function startStatic(root: HTMLElement): () => void {
 
 /* ------------------------------------------------------------------ motion: one listener, one loop */
 
-function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
+function startMotion(root: HTMLElement, canvas: HTMLCanvasElement, glCanvas: HTMLCanvasElement): () => void {
   const ctx = canvas.getContext("2d");
   const q = <T extends HTMLElement = HTMLElement>(sel: string, el: ParentNode = root) => el.querySelector<T>(sel);
   const qq = <T extends HTMLElement = HTMLElement>(sel: string, el: ParentNode = root) => Array.from(el.querySelectorAll<T>(sel));
@@ -286,6 +302,9 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
     dpr = Math.min(window.devicePixelRatio || 1, mob ? 1.75 : 2);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
+    /* Setting a size clears a canvas and reallocates a WebGL one, so only on a real change. */
+    if (glCanvas.width !== canvas.width) glCanvas.width = canvas.width;
+    if (glCanvas.height !== canvas.height) glCanvas.height = canvas.height;
 
     const bm = bandMetrics(W, mob, cards.length);
     writer.set(track!, "--cw", bm.cw + "px");
@@ -482,6 +501,62 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
     }
   }
 
+  /* ---- the WebGL painter of the dots and lines. Every way it can fail ends in `glr = null`,
+     and from then on `paint` draws the dots and lines itself. */
+  let glr: GlobeGL | null = null;
+  function stopGL() {
+    if (glr) {
+      try {
+        glr.dispose();
+      } catch {
+        /* A lost context refuses nothing and frees nothing. Either way it is gone. */
+      }
+    }
+    glr = null;
+    glCanvas.style.visibility = "hidden";
+    lastKey = "";
+  }
+  function startGL() {
+    glr = null;
+    try {
+      const gl = glCanvas.getContext("webgl", GL_CONTEXT_ATTRIBUTES);
+      glr = gl ? createGlobeGL(gl) : null;
+      if (glr && data) glr.setData(data);
+    } catch {
+      stopGL();
+      return;
+    }
+    glCanvas.style.visibility = glr ? "" : "hidden";
+    lastKey = "";
+  }
+  /* The data reaches both painters through here, so the two cannot hold different sets. */
+  function useData(d: GlobeData) {
+    data = d;
+    if (glr) {
+      try {
+        glr.setData(d);
+      } catch {
+        stopGL();
+      }
+    }
+    lastKey = "";
+  }
+  /* A browser may take a WebGL context away (a driver reset, too many contexts, a long sleep).
+     `preventDefault` is what allows it to come back. Until it does, 2D draws everything. */
+  const onGlLost = (e: Event) => {
+    e.preventDefault();
+    glr = null;
+    glCanvas.style.visibility = "hidden";
+    lastKey = "";
+    wake();
+  };
+  const onGlRestored = () => {
+    startGL();
+    wake();
+  };
+  glCanvas.addEventListener("webglcontextlost", onGlLost);
+  glCanvas.addEventListener("webglcontextrestored", onGlRestored);
+
   /* ---- the one loop */
   let cur = window.scrollY;
   let raf = 0;
@@ -489,6 +564,7 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
   let lastKey = "";
   let draws = 0;
   let drawMs = 0;
+  let shown: readonly GlobeSpec[] = [];
   function tick(now: number) {
     raf = 0;
     if (disposed || !stage) return;
@@ -518,9 +594,18 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
     const key = stateKey(st.rend, st.specs, !!data);
     if (key !== lastKey) {
       const t0 = performance.now();
-      paint(ctx!, W, H, dpr, st.rend, st.specs, data);
+      if (glr) {
+        try {
+          glr.draw(W, H, dpr, st.rend, st.specs);
+        } catch {
+          stopGL();
+        }
+      }
+      /* The 2D painter leaves the dots and lines out only while the WebGL painter has them. */
+      paint(ctx!, W, H, dpr, st.rend, st.specs, data, !glr);
       drawMs = performance.now() - t0;
       lastKey = key;
+      shown = st.specs;
       draws++;
     }
     if (cur !== target || moving || (heroT0 && heroIn < 1)) raf = requestAnimationFrame(tick);
@@ -579,7 +664,7 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
       rw = window.innerWidth;
       rh = window.innerHeight;
       layout();
-      if (raw && was !== mob) data = prepareGlobeData(raw[0], raw[1], mob);
+      if (raw && was !== mob) useData(prepareGlobeData(raw[0], raw[1], mob));
       wake();
     }, 120);
   };
@@ -596,13 +681,13 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
   }
 
   layout();
+  startGL();
   wake();
   loadRaw()
     .then((r) => {
       if (disposed) return;
       raw = r;
-      data = prepareGlobeData(r[0], r[1], mob);
-      lastKey = "";
+      useData(prepareGlobeData(r[0], r[1], mob));
       wake();
     })
     .catch(() => {
@@ -620,6 +705,10 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
       return drawMs;
     },
     reducedMotion: false,
+    get renderer() {
+      return glr ? ("webgl" as const) : ("2d" as const);
+    },
+    globes: () => shown.filter((g) => g.a > 0.004).map((g) => ({ cx: g.cx, cy: g.cy, R: g.R, flat: g.u > 0 })),
     marks: () => (stage ? marks(stage) : {}),
     go(name) {
       const y = stage ? marks(stage)[name] : undefined;
@@ -651,24 +740,38 @@ function startMotion(root: HTMLElement, canvas: HTMLCanvasElement): () => void {
     tagChip.style.setProperty("--c", `var(--${LENS_TAGS.london.fam})`);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    glCanvas.removeEventListener("webglcontextlost", onGlLost);
+    glCanvas.removeEventListener("webglcontextrestored", onGlRestored);
+    if (glr) {
+      try {
+        glr.draw(W, H, dpr, [], []);
+        glr.dispose();
+      } catch {
+        /* Nothing to hand back from a context that is gone. */
+      }
+      glr = null;
+    }
+    glCanvas.style.removeProperty("visibility");
     delete window.__pvLanding;
   };
 }
 
 export default function LandingStage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const glRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const glCanvas = glRef.current;
     const root = canvas?.closest<HTMLElement>(".lp-root");
-    if (!canvas || !root) return;
+    if (!canvas || !glCanvas || !root) return;
     /* ONE effect owns the engine. The media query is read here, not in React state, so a
        visitor who turns reduced motion on mid-visit gets the static page without a render. */
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let stop = mq.matches ? startStatic(root) : startMotion(root, canvas);
+    let stop = mq.matches ? startStatic(root) : startMotion(root, canvas, glCanvas);
     const onChange = () => {
       stop();
-      stop = mq.matches ? startStatic(root) : startMotion(root, canvas);
+      stop = mq.matches ? startStatic(root) : startMotion(root, canvas, glCanvas);
     };
     mq.addEventListener("change", onChange);
     return () => {
@@ -680,6 +783,9 @@ export default function LandingStage() {
   return (
     <>
       <canvas ref={canvasRef} className="lp-globe" data-testid="landing-globe" aria-hidden="true" />
+      {/* The dots and lines, in WebGL. Same class, so the same box, and after the 2D canvas in
+          the tree, so above it. */}
+      <canvas ref={glRef} className="lp-globe" data-testid="landing-globe-gl" aria-hidden="true" />
       <div className="lp-lens-tag" aria-hidden="true">
         <span className="lp-chip" style={{ "--c": `var(--${LENS_TAGS.london.fam})` } as CSSProperties}>
           <i />

@@ -217,7 +217,7 @@ describe("privacy page: the front page loads no map", () => {
   // a front-page visitor. Both cards now say the front page loads no map tiles.
   //
   // That is a claim about code, so the second case connects it to the code, the same way
-  // the IP claim above is connected to the API routes. It is a source guard on the three
+  // the IP claim above is connected to the API routes. It is a source guard on the four
   // files that ARE the landing page's globe. It cannot see a tile request made some other
   // way; tests/e2e/landing.spec.ts watches the network for that, and no workflow runs it.
   const copy = stripComments(readFileSync(PRIVACY, "utf8"));
@@ -244,6 +244,7 @@ describe("privacy page: the front page loads no map", () => {
       LANDING,
       join("components", "marketing", "LandingStage.tsx"),
       join("lib", "marketing", "landingGlobe.ts"),
+      join("lib", "marketing", "landingGlobeGL.ts"),
     ];
     const offenders = files.filter((f) => MAP_IMPORT.test(readFileSync(f, "utf8")));
     expect(

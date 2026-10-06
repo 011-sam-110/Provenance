@@ -101,6 +101,9 @@
 .lp-root .lp-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
 
 /* ------------------------------------------------------------------ the one stage: a fixed canvas between the fields and the text */
+/* TWO canvases carry this class and share this box: the 2D one (stills, discs, rims) and,
+   after it in the tree and so above it, the WebGL one (land, cables, dots). They must stay
+   the same size and the same z-index, or the dots leave their globes. */
 .lp-root .lp-globe { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 .lp-root .lp-lens-tag { position: fixed; left: 0; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 7px; background: rgba(10, 17, 34, .88); color: var(--frost); font-size: .875rem; font-weight: 560; font-stretch: 104%; white-space: nowrap; pointer-events: none; opacity: var(--o, 0); transform: translate3d(var(--x, 0px), var(--y, 0px), 0); }
 
