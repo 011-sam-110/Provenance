@@ -1,5 +1,6 @@
 /**
- * The landing page's globe: one Canvas 2D renderer and the scroll choreography that drives it.
+ * The landing page's globe: the scroll choreography, the Canvas 2D painter, and the one table
+ * of styles that the WebGL painter of the dots and lines also reads.
  *
  * WHAT THIS IS. The page at `/` shows ONE globe from the hero to the footer. It starts as a
  * photograph of Earth (a Blender still), becomes the data, splits into four layer globes,
@@ -18,6 +19,14 @@
  * file's date beside the globe (`lib/marketing/globe-snapshot.meta.ts`). Do not "fix" the
  * globe by pointing it at `/api/*`: the landing page is static and must stay static, and a
  * globe that silently mixes a live layer with a dated one makes the printed date false.
+ *
+ * THE DOTS AND LINES HAVE TWO PAINTERS. `drawContent` in this file strokes them on the 2D
+ * context. `lib/marketing/landingGlobeGL.ts` draws the same things on a second canvas with
+ * WebGL, and it is the one the page uses whenever the browser has WebGL, because Chrome
+ * rasterises a 2D path of 20,000 round strokes on the CPU and the page then ran at about
+ * 10 frames per second (measured 2026-10-06). The 2D painter stays whole: it is the fallback
+ * when there is no WebGL, and it is the only painter of the reduced-motion page. Both read
+ * every width, alpha, size and colour from `contentStyle`. Change the look there, once.
  *
  * NOTHING IN THIS FILE TOUCHES THE DOM. The component (`components/marketing/LandingStage.tsx`)
  * measures the page, runs the one rAF loop and writes CSS custom properties. Everything here
@@ -100,8 +109,8 @@ const C_LAND = { dark: hex("#22345f"), paper: hex("#c9d2e4") };
 const C_COAST = { dark: hex("#5672b4"), paper: hex("#93a3c2") };
 const INK = "#0a1122";
 const FROST = "#eef2f7";
-/** Dots shrink a little toward the limb. */
-const BUCKET = [0.5, 0.68, 0.85, 1];
+/** Dots shrink a little toward the limb. Four depth bands, back to front. */
+export const BUCKET: readonly number[] = [0.5, 0.68, 0.85, 1];
 
 /** One number per point layer, plus one for the cables. */
 export type LayerArray = Float32Array;
@@ -236,7 +245,7 @@ export interface LandGeoJson {
   }>;
 }
 
-interface Poly {
+export interface Poly {
   n: number;
   lam: Float32Array;
   phi: Float32Array;
@@ -245,7 +254,7 @@ interface Poly {
   /** 1 where a new polyline starts. */
   brk: Uint8Array;
 }
-interface PointSet {
+export interface PointSet {
   n: number;
   lam: Float32Array;
   phi: Float32Array;
@@ -502,7 +511,7 @@ export interface Still {
    kept while the curvature relaxes to zero, so the same data reads as the same data. The
    unroll needs lat = 0. */
 
-interface View {
+export interface GlobeView {
   cx: number;
   cy: number;
   Rz: number;
@@ -522,7 +531,8 @@ let PX = 0;
 let PY = 0;
 let PZ = 0;
 
-function view(g: GlobeSpec): View {
+/** The numbers the projection runs on, for one globe state. The WebGL painter sends the same ones to its shader. */
+export function globeView(g: GlobeSpec): GlobeView {
   const a = ease(clamp(g.u / 0.6));
   const b = ease(clamp((g.u - 0.2) / 0.8));
   const pk = g.u > 0 ? 0 : g.pk;
@@ -542,7 +552,7 @@ function view(g: GlobeSpec): View {
   };
 }
 
-function project(lam: number, phi: number, cph: number, sph: number, v: View): boolean {
+function project(lam: number, phi: number, cph: number, sph: number, v: GlobeView): boolean {
   let l = lam - v.l0;
   l -= TAU * Math.floor((l + PI) / TAU);
   if (v.u <= 0) {
@@ -583,13 +593,13 @@ export function projectLonLat(
   g: GlobeSpec,
 ): { x: number; y: number; depth: number } | null {
   const la = latDeg * D2R;
-  if (!project(lonDeg * D2R, la, Math.cos(la), Math.sin(la), view(g))) return null;
+  if (!project(lonDeg * D2R, la, Math.cos(la), Math.sin(la), globeView(g))) return null;
   return { x: PX, y: PY, depth: PZ };
 }
 
 /* ------------------------------------------------------------------ drawing */
 
-function strokeLines(c: CanvasRenderingContext2D, Gm: Poly, v: View): void {
+function strokeLines(c: CanvasRenderingContext2D, Gm: Poly, v: GlobeView): void {
   let pen = false;
   let px = 0;
   /* Never draw across the map seam: a segment that jumps most of the map is a wrap, not a line. */
@@ -608,10 +618,99 @@ function strokeLines(c: CanvasRenderingContext2D, Gm: Poly, v: View): void {
   }
 }
 
-function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v: View, W: number, H: number): void {
+/* ONE TABLE, TWO PAINTERS. Everything about how the land, the cables and the dots look in
+   one globe state. `drawContent` below and `lib/marketing/landingGlobeGL.ts` both read it,
+   so the two cannot drift apart. */
+
+type RGB3 = readonly [number, number, number];
+
+/** One point layer that is on in this state. */
+export interface DotStyle {
+  /** Index into `LAYERS` and into `GlobeData.pts`. */
+  i: number;
+  /** Index into `FAMILIES`: which colour. */
+  fam: number;
+  /** Alpha of the core. */
+  alpha: number;
+  /** Core diameter at the front of the globe, CSS px. */
+  size: number;
+  /** Alpha of the soft halo, as a share of `alpha`. */
+  halo: number;
+}
+
+export interface ContentStyle {
+  /** The content is magnified, and clipped to the disc. */
+  lens: boolean;
+  /** True on the flat map's paper: a dot covers what is under it and has no halo. False on
+      the night globe: a dot is light, added to what is under it. */
+  paper: boolean;
+  /** Inks, 0..255. `fam` is in the order of `FAMILIES`. */
+  land: RGB3;
+  coast: RGB3;
+  cable: RGB3;
+  fam: readonly RGB3[];
+  /** Line widths in CSS px, and alphas. `cableA` is 0 when the cables are off. */
+  scanW: number;
+  scanA: number;
+  coastW: number;
+  coastA: number;
+  cableW: number;
+  cableA: number;
+  /** Antarctica's share of the land alphas. It fades as the globe unrolls. */
+  south: number;
+  /** The layers that are on, in draw order. */
+  dots: DotStyle[];
+}
+
+const mix3 = (A: RGB, B: RGB, t: number): RGB3 => [
+  Math.round(lerp(A[0], B[0], t)),
+  Math.round(lerp(A[1], B[1], t)),
+  Math.round(lerp(A[2], B[2], t)),
+];
+
+export function contentStyle(g: GlobeSpec): ContentStyle {
   const Reff = g.R * g.zoom;
-  const lens = g.zoom > 1.001;
-  if (lens) {
+  const la = g.a * (1 - 0.3 * g.hl);
+  const cw = g.w[CABLES] * (1 - 0.75 * g.hl);
+  const scale = clamp(Reff / 380 + 0.45 * g.u, 0.6, 1.3);
+  const dots: DotStyle[] = [];
+  for (let i = 0; i < NL; i++) {
+    const ly = LAYERS[i];
+    const cam = ly.id === "cameras";
+    const alpha = g.a * g.w[i] * (cam ? 1 : 1 - 0.82 * g.hl);
+    if (alpha < 0.012) continue;
+    dots.push({
+      i,
+      fam: FAMILIES.indexOf(ly.fam),
+      alpha,
+      size: ly.size * scale * g.b[i] * (cam ? 1 + 0.55 * g.hl : 1),
+      halo: ly.halo,
+    });
+  }
+  return {
+    lens: g.zoom > 1.001,
+    paper: g.pp > 0.5,
+    land: mix3(C_LAND.dark, C_LAND.paper, g.pp),
+    coast: mix3(C_COAST.dark, C_COAST.paper, g.pp),
+    cable: mix3(FAM.infra.dark, FAM.infra.paper, g.pp),
+    fam: FAMILIES.map((f) => mix3(FAM[f].dark, FAM[f].paper, g.pp)),
+    scanW: clamp((1.05 * Reff) / 380, 0.55, 1.5) * (1 + 0.15 * g.u),
+    scanA: la * clamp(1.7 - Reff / 420, 0.16, 1),
+    coastW: clamp((0.9 * Reff) / 380, 0.5, 1.2),
+    coastA: la,
+    cableW: clamp((0.7 * Reff) / 380, 0.4, 0.9) * g.b[CABLES],
+    cableA: cw > 0.01 ? g.a * cw * lerp(0.62, 0.4, g.pp) : 0,
+    south: 1 - clamp(g.u * 1.6),
+    dots,
+  };
+}
+
+/** The halo of a dot is this many core diameters wide. */
+export const HALO_WIDTH = 3.2;
+
+function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v: GlobeView, W: number, H: number): void {
+  const s = contentStyle(g);
+  if (s.lens) {
     c.save();
     c.beginPath();
     c.arc(g.cx, g.cy, g.R, 0, TAU);
@@ -620,56 +719,46 @@ function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v:
   c.lineCap = "round";
   c.lineJoin = "round";
   /* Land tone (scanlines), then coasts and borders, then cables. */
-  const la = g.a * (1 - 0.3 * g.hl);
-  const south = 1 - clamp(g.u * 1.6);
-  const scanA = clamp(1.7 - Reff / 420, 0.16, 1);
-  c.strokeStyle = "rgb(" + mixRGB(C_LAND.dark, C_LAND.paper, g.pp) + ")";
-  c.lineWidth = clamp((1.05 * Reff) / 380, 0.55, 1.5) * (1 + 0.15 * g.u);
-  c.globalAlpha = la * scanA;
+  c.strokeStyle = "rgb(" + s.land.join(",") + ")";
+  c.lineWidth = s.scanW;
+  c.globalAlpha = s.scanA;
   c.beginPath();
   strokeLines(c, D.scan, v);
   c.stroke();
-  if (south > 0.01) {
-    c.globalAlpha = la * scanA * south;
+  if (s.south > 0.01) {
+    c.globalAlpha = s.scanA * s.south;
     c.beginPath();
     strokeLines(c, D.scanS, v);
     c.stroke();
   }
-  c.strokeStyle = "rgb(" + mixRGB(C_COAST.dark, C_COAST.paper, g.pp) + ")";
-  c.lineWidth = clamp((0.9 * Reff) / 380, 0.5, 1.2);
-  c.globalAlpha = la;
+  c.strokeStyle = "rgb(" + s.coast.join(",") + ")";
+  c.lineWidth = s.coastW;
+  c.globalAlpha = s.coastA;
   c.beginPath();
   strokeLines(c, D.coast, v);
   c.stroke();
-  if (south > 0.01) {
-    c.globalAlpha = la * south;
+  if (s.south > 0.01) {
+    c.globalAlpha = s.coastA * s.south;
     c.beginPath();
     strokeLines(c, D.coastS, v);
     c.stroke();
   }
-  const cw = g.w[CABLES] * (1 - 0.75 * g.hl);
-  if (cw > 0.01) {
-    c.globalAlpha = g.a * cw * lerp(0.62, 0.4, g.pp);
-    c.strokeStyle = "rgb(" + mixRGB(FAM.infra.dark, FAM.infra.paper, g.pp) + ")";
-    c.lineWidth = clamp((0.7 * Reff) / 380, 0.4, 0.9) * g.b[CABLES];
+  if (s.cableA > 0) {
+    c.globalAlpha = s.cableA;
+    c.strokeStyle = "rgb(" + s.cable.join(",") + ")";
+    c.lineWidth = s.cableW;
     c.beginPath();
     strokeLines(c, D.cables, v);
     c.stroke();
   }
   /* Dots: a soft halo pass and a core pass per layer, added as light on the dark globe.
-     A dot is a zero-length round-capped stroke, so one path per depth bucket draws them all. */
-  const paper = g.pp > 0.5;
+     A dot is a zero-length round-capped stroke, so one path per depth bucket draws them all.
+     One path is ONE SHAPE: a hundred dots on one city are drawn at one alpha, not a hundred. */
   c.globalAlpha = 1;
-  c.globalCompositeOperation = paper ? "source-over" : "lighter";
-  const scale = clamp(Reff / 380 + 0.45 * g.u, 0.6, 1.3);
-  const clipR2 = lens ? (g.R + 6) * (g.R + 6) : 0;
-  for (let i = 0; i < NL; i++) {
-    const ly = LAYERS[i];
-    const P = D.pts[i];
-    const cam = ly.id === "cameras";
-    const alpha = g.a * g.w[i] * (cam ? 1 : 1 - 0.82 * g.hl);
-    if (alpha < 0.012) continue;
-    const size = ly.size * scale * g.b[i] * (cam ? 1 + 0.55 * g.hl : 1);
+  c.globalCompositeOperation = s.paper ? "source-over" : "lighter";
+  const clipR2 = s.lens ? (g.R + 6) * (g.R + 6) : 0;
+  for (const d of s.dots) {
+    const P = D.pts[d.i];
     let m = 0;
     for (let j = 0; j < P.n; j++) {
       if (!project(P.lam[j], P.phi[j], P.cph[j], P.sph[j], v) || PX < -8 || PY < -8 || PX > W + 8 || PY > H + 8) {
@@ -690,11 +779,11 @@ function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v:
       m++;
     }
     if (!m) continue;
-    const rgb = mixRGB(FAM[ly.fam].dark, FAM[ly.fam].paper, g.pp);
-    for (let pass = paper ? 1 : 0; pass < 2; pass++) {
-      c.strokeStyle = "rgba(" + rgb + "," + (pass ? alpha : alpha * ly.halo).toFixed(3) + ")";
+    const rgb = s.fam[d.fam].join(",");
+    for (let pass = s.paper ? 1 : 0; pass < 2; pass++) {
+      c.strokeStyle = "rgba(" + rgb + "," + (pass ? d.alpha : d.alpha * d.halo).toFixed(3) + ")";
       for (let b = 0; b < 4; b++) {
-        c.lineWidth = size * BUCKET[b] * (pass ? 1 : 3.2);
+        c.lineWidth = d.size * BUCKET[b] * (pass ? 1 : HALO_WIDTH);
         c.beginPath();
         for (let j = 0; j < P.n; j++) {
           if (P.bk[j] === b) {
@@ -707,7 +796,7 @@ function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v:
     }
   }
   c.globalCompositeOperation = "source-over";
-  if (lens) c.restore();
+  if (s.lens) c.restore();
 }
 
 /**
@@ -715,6 +804,9 @@ function drawContent(c: CanvasRenderingContext2D, D: GlobeData, g: GlobeSpec, v:
  *
  * `data` may be null. The discs, rims and stills still draw, so the page reads before the
  * snapshot has arrived and when it never does.
+ *
+ * `content` false leaves the land, the cables and the dots out: the caller has handed them
+ * to the WebGL painter, which draws them on a canvas above this one.
  */
 export function paint(
   c: CanvasRenderingContext2D,
@@ -724,6 +816,7 @@ export function paint(
   rend: readonly Still[],
   specs: readonly GlobeSpec[],
   data: GlobeData | null,
+  content = true,
 ): void {
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.clearRect(0, 0, W, H);
@@ -775,7 +868,7 @@ export function paint(
     c.fill();
   }
   c.globalAlpha = 1;
-  if (data) for (const g of specs) if (g.a > 0.004) drawContent(c, data, g, view(g), W, H);
+  if (data && content) for (const g of specs) if (g.a > 0.004) drawContent(c, data, g, globeView(g), W, H);
   /* Over each disc: rim light, lens bezel, orbit ring. */
   for (const g of specs) {
     const ra = g.a * g.rim * g.disc;

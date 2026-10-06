@@ -21,10 +21,14 @@ import { BRAND } from "@/lib/brand";
  *     the visit counter. `CLAUDE.md` states the first, and `/privacy` tells the public which
  *     hosts a visitor's browser reaches, so each is a factual claim with nothing else
  *     checking it;
- *   - the links the licence and the camera directory depend on are still there.
+ *   - the links the licence and the camera directory depend on are still there;
+ *   - the dots and lines are drawn by the WebGL painter, and by the 2D painter when WebGL is
+ *     refused, lost, or not wanted (reduced motion). `lib/marketing/landingGlobeGL.ts` says
+ *     the page still draws when WebGL fails, and nothing else checks that it does.
  *
- * THE HOOKS. Section ids `hero inset split plates layers flat street close`, the globe
- * canvas `[data-testid="landing-globe"]`, and `window.__pvLanding.ready`, which
+ * THE HOOKS. Section ids `hero inset split plates layers flat street close`, the two globe
+ * canvases `[data-testid="landing-globe"]` (2D) and `[data-testid="landing-globe-gl"]`
+ * (WebGL), and `window.__pvLanding` (`ready`, `renderer`, `draws`, `go`), which
  * `LandingStage` sets. If one is renamed, rename it here in the same change; do not loosen a
  * selector to make a rename pass.
  *
@@ -278,4 +282,207 @@ test("the calls to action and the footer links are on the page", async ({ page }
     page.locator(`a[href="${BRAND.repoUrl}"], a[href="${BRAND.repoUrl}/"]`).first(),
     `no link to ${BRAND.repoUrl}`,
   ).toBeAttached();
+});
+
+/* ------------------------------------------------------------------ the two painters */
+
+type Handle = { ready: boolean; renderer: "webgl" | "2d"; draws: number; go(name: string): number };
+const handle = (page: Page) =>
+  page.evaluate(() => {
+    const h = (window as unknown as { __pvLanding?: Handle }).__pvLanding;
+    return h ? { renderer: h.renderer, draws: h.draws } : null;
+  });
+
+/**
+ * Go to the moment where the four layer globes stand in a row, and count the camera-blue
+ * pixels on each canvas in the LAST frame the stage paints on its way there.
+ *
+ * WHY CAMERA BLUE. The first of the four globes shows the cameras alone, and nothing else
+ * on either canvas is that colour at that moment: the ocean discs are dark and the rims are
+ * faint. So "camera blue on a canvas" means "that canvas drew the dots".
+ *
+ * WHY THE LAST PAINTED FRAME. The stage eases its scroll value for a few hundred
+ * milliseconds after a jump and paints on each of those frames, and on the way it passes
+ * the hero, whose photograph of Earth has plenty of light blue in it. A count taken on those
+ * frames is a count of ocean. `draws` moves once per paint, so the frame after which it
+ * stops moving is the four globes at rest. The jump starts from another mark, because a
+ * stage that is already there has nothing to paint.
+ *
+ * WHY INSIDE A FRAME, AND AFTER THE STAGE. The WebGL canvas does not keep its picture after
+ * the browser has shown it, so it can only be read in the frame that drew it, after the
+ * stage's own callback has run. Frame callbacks run in the order they were asked for, and
+ * the stage asks for its next one from inside its current one. So this asks for each of its
+ * frames from a timer, which runs after the stage has asked, and reads second. Ask for it
+ * directly and it reads first, every frame, and sees a canvas that has already been cleared.
+ * Each canvas is drawn over black before it is read, because a dot of light is colour with
+ * no alpha and would read back as nothing.
+ */
+async function cameraBlue(page: Page): Promise<{ gl: number; flat: number; frames: number }> {
+  return page.evaluate(async () => {
+    const h = (window as unknown as { __pvLanding: Handle }).__pvLanding;
+    const flat = document.querySelector<HTMLCanvasElement>('[data-testid="landing-globe"]')!;
+    const gl = document.querySelector<HTMLCanvasElement>('[data-testid="landing-globe-gl"]')!;
+    const probe = document.createElement("canvas");
+    probe.width = flat.width;
+    probe.height = flat.height;
+    const px = probe.getContext("2d", { willReadFrequently: true })!;
+    const count = (cv: HTMLCanvasElement) => {
+      px.fillStyle = "#000";
+      px.fillRect(0, 0, probe.width, probe.height);
+      if (cv.width && cv.height) px.drawImage(cv, 0, 0);
+      const d = px.getImageData(0, 0, probe.width, probe.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] < 160 && d[i + 1] > 150 && d[i + 2] > 200) n++;
+      return n;
+    };
+    const frameAfterStage = () => new Promise<void>((done) => setTimeout(() => requestAnimationFrame(() => done()), 0));
+    h.go("inset");
+    for (let f = 0; f < 12; f++) await frameAfterStage();
+    h.go("split");
+    const out = { gl: 0, flat: 0, frames: 0 };
+    let last = h.draws;
+    for (let f = 0, quiet = 0; f < 400 && quiet < 15; f++) {
+      await frameAfterStage();
+      if (h.draws === last) {
+        quiet++;
+        continue;
+      }
+      last = h.draws;
+      quiet = 0;
+      out.gl = count(gl);
+      out.flat = count(flat);
+      out.frames++;
+    }
+    return out;
+  });
+}
+
+/** Everything the page logs as an error, and every exception it throws. */
+function collectErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  page.on("console", (m) => {
+    if (m.type() === "error") errors.push(m.text());
+  });
+  return errors;
+}
+
+/**
+ * The normal case. The WebGL canvas carries the dots, the 2D canvas under it does not draw
+ * them a second time, and a page at rest draws nothing at all.
+ *
+ * If `renderer` reads "2d" here, the browser this test ran in gave the globe no usable
+ * WebGL context. That is the fallback working, and it is also this test failing, because a
+ * suite that cannot see the WebGL painter is not checking it.
+ */
+test("the WebGL canvas draws the dots, the 2D canvas does not draw them twice, and rest is rest", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await stageReady(page);
+  expect((await handle(page))?.renderer).toBe("webgl");
+
+  const blue = await cameraBlue(page);
+  // The precondition, or two zeros prove nothing: the stage painted while this watched.
+  expect(blue.frames, "the stage did not paint on its way to the four globes").toBeGreaterThan(2);
+  expect(blue.gl, "no camera dots on the WebGL canvas").toBeGreaterThan(200);
+  expect(blue.flat, "the 2D canvas drew the camera dots as well").toBe(0);
+
+  // Let the eased scroll settle, then nothing may paint.
+  await page.waitForTimeout(1_500);
+  const before = (await handle(page))!.draws;
+  await page.waitForTimeout(1_000);
+  expect((await handle(page))!.draws - before, "the stage painted while the page was at rest").toBe(0);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * WebGL refused. Only the globe's own canvas is refused a context, so this is the fallback
+ * and nothing else: the 2D painter must draw the dots, and nothing may be logged.
+ */
+test("with WebGL refused to the globe, the 2D painter draws the dots", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => {
+    const real = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      if (this.dataset.testid === "landing-globe-gl" && String(type).startsWith("webgl")) return null;
+      return (real as (...a: unknown[]) => unknown).call(this, type, ...rest);
+    } as typeof real;
+  });
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await stageReady(page);
+  expect((await handle(page))?.renderer).toBe("2d");
+  await expect(page.getByTestId("landing-globe-gl")).toBeHidden();
+
+  const blue = await cameraBlue(page);
+  expect(blue.flat, "the 2D painter did not draw the camera dots").toBeGreaterThan(200);
+  expect(blue.gl).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * A browser can take a WebGL context away at any time. The 2D painter must take over in
+ * that moment, and the WebGL painter must come back when the context does.
+ */
+test("a lost WebGL context hands the dots to the 2D painter, and a restored one takes them back", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const errors = collectErrors(page);
+  await page.goto("/");
+  await stageReady(page);
+  expect((await handle(page))?.renderer).toBe("webgl");
+
+  const renderer = () => handle(page).then((h) => h?.renderer);
+  // The extension is fetched ONCE and kept: a lost context answers every getExtension with null,
+  // so the handle that restores it has to be in hand before it is lost.
+  const lose = (how: "loseContext" | "restoreContext") =>
+    page.evaluate((fn) => {
+      const w = window as unknown as { __lose?: WEBGL_lose_context | null };
+      if (w.__lose === undefined) {
+        const cv = document.querySelector<HTMLCanvasElement>('[data-testid="landing-globe-gl"]')!;
+        // The same context the stage holds: a canvas has one.
+        w.__lose = cv.getContext("webgl")!.getExtension("WEBGL_lose_context");
+      }
+      if (!w.__lose) throw new Error("this browser has no WEBGL_lose_context, so the test cannot run");
+      w.__lose[fn]();
+    }, how);
+
+  await lose("loseContext");
+  await expect.poll(renderer, { timeout: 5_000 }).toBe("2d");
+  expect((await cameraBlue(page)).flat, "the 2D painter did not take over").toBeGreaterThan(200);
+
+  await lose("restoreContext");
+  await expect.poll(renderer, { timeout: 5_000 }).toBe("webgl");
+  const blue = await cameraBlue(page);
+  expect(blue.gl, "the WebGL painter did not come back").toBeGreaterThan(200);
+  expect(blue.flat).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+/**
+ * The reduced-motion page is painted in 2D only. It must not ask for a WebGL context for the
+ * globe at all: that page starts no loop, and a context it never draws with is pure cost.
+ */
+test("with reduced motion the globe asks for no WebGL context", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(() => {
+    const asked: string[] = [];
+    (window as unknown as { __asked: string[] }).__asked = asked;
+    const real = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      asked.push(`${this.dataset.testid ?? this.className}:${type}`);
+      return (real as (...a: unknown[]) => unknown).call(this, type, ...rest);
+    } as typeof real;
+  });
+  await page.goto("/");
+  await stageReady(page);
+  expect((await handle(page))?.renderer).toBe("2d");
+  const asked = await page.evaluate(() => (window as unknown as { __asked: string[] }).__asked);
+  expect(asked.filter((a) => a.startsWith("landing-globe-gl:"))).toEqual([]);
+  // The precondition: the in-flow globes did ask for their 2D contexts, so the hook works.
+  expect(asked.some((a) => a.endsWith(":2d"))).toBe(true);
 });

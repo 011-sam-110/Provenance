@@ -6,9 +6,15 @@ import { expect, test, type Page } from "@playwright/test";
 //   1. It read `stat-line` off `/`, from when `/` WAS the Globe.GL homepage.
 //   2. It read a MapLibre canvas and the measured counts in `.pv-hero-strip`, from when the
 //      hero was a live MapLibre globe.
-//   3. Now (2026-10-05): the globe on `/` is a 2D canvas drawn by
-//      `lib/marketing/landingGlobe.ts` from one committed snapshot. There is no MapLibre on
-//      the page, no map tile and no `/api` call, and the hero strip is gone.
+//   3. Now (2026-10-05): the globe on `/` is drawn by `lib/marketing/landingGlobe.ts`
+//      from one committed snapshot. There is no MapLibre on the page, no map tile and no
+//      `/api` call, and the hero strip is gone.
+//
+// 2026-10-07: THE CANVAS THIS FILE READS NO LONGER CARRIES THE DOTS. It is the 2D canvas, and
+// it now holds the Earth photograph, the ocean discs and the rims. The land, the cables and
+// the dots are on a second, WebGL canvas above it. "Not blank" below is still true of this
+// canvas and still worth asserting. Whether the dots are drawn, and by which painter, is
+// asserted in landing.spec.ts.
 //
 // The second test used to request `/textures/earth-night.jpg`, the Globe.GL texture. No code
 // references that file any more, so the test was guarding an asset nothing loads. Its
@@ -76,8 +82,8 @@ test("the landing globe is on the page and draws", async ({ page }) => {
     .poll(() => distinctColours(page), { timeout: 30_000, message: "the canvas is blank at the top of the page" })
     .toBeGreaterThan(1);
 
-  // At the "inset" moment it holds the data globe at full strength, with the photograph
-  // faded out. Two positions, because they are two different draws.
+  // At the "inset" moment the photograph has faded out and this canvas holds the data
+  // globe's ocean disc and rim. Two positions, because they are two different draws.
   //
   // Reached through the stage's own named mark and not through the box of `#inset`: the
   // inset and the split are two scenes inside one pinned stage, so the section's box does

@@ -118,7 +118,7 @@ function compile(gl: WebGLRenderingContext, type: number, src: string): WebGLSha
  * `still` HOLDS THE SKY AT ONE ORIENTATION AND STOPS THE POLL. Without it this component
  * behaves exactly as it always has: it reads the hero globe's camera from
  * lib/marketing/heroView every frame, so the sky turns with a MapLibre globe. The landing
- * page no longer mounts that globe. Its Earth is a Canvas 2D render that never publishes a
+ * page no longer mounts that globe. Its Earth is drawn by LandingStage, which never publishes a
  * camera, so there is nothing to follow, and a rAF loop that polls for a view nobody writes
  * is a loop running at rest for no reason. With `still` set the sky is drawn when the
  * texture arrives, when the canvas is resized, when it comes on screen and when the tab
