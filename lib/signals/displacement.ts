@@ -109,6 +109,8 @@ export function normalizeDisplacement(
 
 export const DISPLACEMENT_SOURCE: SignalSource = {
   id: "displacement",
+  // A UNHCR total for each country of asylum, placed on a centroid.
+  precision: "country",
   label: "Forced displacement",
   group: "Human cost",
   color: "#ea580c",

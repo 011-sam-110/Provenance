@@ -188,6 +188,8 @@ export function __nuclearRefreshSettled(): Promise<SignalFeature[] | null> {
 
 export const NUCLEAR_SOURCE: SignalSource = {
   id: "nuclear",
+  // A named plant.
+  precision: "facility",
   label: "Nuclear plants",
   group: "Infrastructure",
   color: "#16a34a",

@@ -75,6 +75,8 @@ function entsoeStamp(d: Date): string {
 
 export const GRID_LOAD_SOURCE: SignalSource = {
   id: "grid-load",
+  // A bidding zone.
+  precision: "area",
   label: "Electricity grid load (ENTSO-E)",
   group: "Infrastructure",
   color: "#f59e0b",

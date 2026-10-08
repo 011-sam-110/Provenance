@@ -69,6 +69,8 @@ export function normalizeRansomware(rows: RwRow[]): SignalFeature[] {
 
 export const CYBER_RANSOMWARE_SOURCE: SignalSource = {
   id: "cyber-ransomware",
+  // A count for each country, placed on a centroid.
+  precision: "country",
   label: "Ransomware victims",
   group: "Cyber threat",
   color: "#9333ea",

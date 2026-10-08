@@ -874,6 +874,8 @@ export function dormantNotice(meta: { signalId: string; label: string }, reason:
 function makeSource(meta: GdeltLayerMeta): SignalSource {
   return {
     id: meta.signalId,
+    // One total for each country (aggregateGdeltByCountry). Never a place of an event.
+    precision: "country",
     label: meta.label,
     group: "Intel",
     color: meta.color,

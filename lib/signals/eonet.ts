@@ -1,4 +1,4 @@
-import type { SignalFeature, SignalMetric, SignalSource } from "@/lib/signals/types";
+import type { SignalFeature, SignalMetric, SignalPrecision, SignalSource } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // NASA EONET (Earth Observatory Natural Event Tracker) — open natural events of
@@ -60,6 +60,12 @@ export interface EonetCategoryMeta {
   category: string; // EONET category id to filter on
   label: string;
   color: string;
+  /**
+   * How precise the category's places are (see SignalPrecision). A fire, a volcano
+   * and a storm centre arrive as one reported coordinate. A flood arrives as a
+   * polygon that this adapter reduces to one representative point, so it is an area.
+   */
+  precision: SignalPrecision;
   /** Real per-feature scalar for the monitor bar. Only severe storms carry one
    *  (wind in kts); wildfires/volcanoes/floods have no numeric scalar → dot only. */
   metric?: SignalMetric;
@@ -117,14 +123,15 @@ export interface EonetCategoryMeta {
 }
 
 export const CATEGORIES: Record<string, EonetCategoryMeta> = {
-  wildfires: { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316", maxAgeDays: 30 },
+  wildfires: { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316", precision: "exact", maxAgeDays: 30 },
   // No window: an open volcanic event is routinely observed months apart.
-  volcanoes: { signalId: "volcanoes", category: "volcanoes", label: "Volcanoes", color: "#dc2626" },
+  volcanoes: { signalId: "volcanoes", category: "volcanoes", label: "Volcanoes", color: "#dc2626", precision: "exact" },
   severeStorms: {
     signalId: "severeStorms",
     category: "severeStorms",
     label: "Severe storms",
     color: "#6366f1",
+    precision: "exact",
     // EONET severe-storm geometries carry sustained wind in knots. Tropical-storm
     // floor (~35 kt) → Cat-5 (~140 kt) fills the bar across the real intensity range.
     metric: { field: "windKt", domain: [35, 140], unit: " kts" },
@@ -137,6 +144,7 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     category: "floods",
     label: "Floods",
     color: "#0ea5e9",
+    precision: "area",
     maxAgeDays: 60,
     allStatuses: true,
     // See `coordOrder` above. Measured, not assumed.
@@ -194,6 +202,12 @@ export function representativePoint(
   return null;
 }
 
+/** True when the geometry is a single coordinate pair, false for a polygon ring. */
+function isPointGeometry(geom: EonetGeometry | undefined): boolean {
+  const c = geom?.coordinates;
+  return Array.isArray(c) && typeof c[0] === "number" && typeof c[1] === "number";
+}
+
 /**
  * Pure: EONET events → SignalFeature[] for ONE category. Takes the latest
  * geometry of each matching event, skips events with no usable point.
@@ -217,6 +231,9 @@ export function eonetToFeatures(
     }
     const pt = representativePoint(last, meta.coordOrder ?? "lonlat");
     if (!pt) continue;
+    // A polygon was averaged into this point, so the place is an area whatever the
+    // category's default says.
+    const fromPolygon = !isPointGeometry(last);
     const [lon, lat] = pt;
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
@@ -244,6 +261,7 @@ export function eonetToFeatures(
       lon,
       title: e.title?.trim() || meta.label,
       signalId: meta.signalId,
+      ...(fromPolygon && meta.precision !== "area" ? { precision: "area" as const } : {}),
       color: meta.color,
       link: e.link ?? e.sources?.[0]?.url,
       ts: last?.date,
@@ -377,6 +395,7 @@ function lastRead(meta: EonetCategoryMeta): { at: number | null; failure: string
 function makeSource(meta: EonetCategoryMeta): SignalSource {
   return {
     id: meta.signalId,
+    precision: meta.precision,
     label: meta.label,
     group: "Natural hazards",
     color: meta.color,
