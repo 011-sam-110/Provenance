@@ -97,12 +97,14 @@ export function normalizeReliefWeb(
     const primaryType = f.type?.[0];
     const status = (f.status ?? "current").toLowerCase();
     const country = pc?.name?.trim() || "Unknown";
+    const iso3 = (pc?.iso3 ?? "").trim().toUpperCase();
     out.push({
       id: `reliefweb:${id}`,
       lat,
       lon,
       title: f.name?.trim() || `${country} emergency`,
       signalId: "reliefweb",
+      ...(/^[A-Z]{3}$/.test(iso3) ? { countryIso3: iso3 } : {}),
       color: disasterColor(primaryType?.code ?? ""),
       ts: f.date?.changed ?? f.date?.created ?? undefined,
       link: f.url,

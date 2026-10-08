@@ -20,6 +20,7 @@ export function buildSignalObject(f: SignalFeature, sourceLabel: string): WorldO
       // Present on every feature the /api/signals route served. Absent only for a
       // feature built by hand, where SignalDetail falls back to the layer default.
       ...(f.precision ? { precision: f.precision } : {}),
+      ...(f.countryIso3 ? { countryIso3: f.countryIso3 } : {}),
       props: f.props ?? {},
       sourceLabel,
       link: f.link,

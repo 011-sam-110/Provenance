@@ -2,6 +2,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { countMagnitude } from "@/lib/signals/aggregate";
 import { markOutcome, observed } from "@/lib/signals/outcome";
+import { centroidByName } from "@/lib/signals/country-centroids.data";
 
 // GDELT — geolocated conflict and protest events, from the raw 15-minute EVENT
 // EXPORT rather than an API endpoint.
@@ -565,12 +566,17 @@ export function aggregateGdeltByCountry(
   return carryCoverage(ranked, ranked.map((b) => {
     const lat = b.anchor ? b.anchor.lat : b.lats.reduce((s, v) => s + v, 0) / b.lats.length;
     const lon = b.anchor ? b.anchor.lon : meanLon(b.lons);
+    // GDELT codes countries in FIPS 10-4, which is not ISO ("UK", not "GB"), so the
+    // ISO code is read from the country NAME. A name the table does not know leaves
+    // the code off, and the map then draws a dashed ring in place of the outline.
+    const iso3 = centroidByName(b.name)?.iso3;
     return {
       id: `gdelt:${meta.signalId}:country:${b.key}`,
       lat,
       lon,
       title: b.name || b.key,
       signalId: meta.signalId,
+      ...(iso3 ? { countryIso3: iso3 } : {}),
       color: meta.color,
       link: /^https?:\/\//i.test(b.top.sourceUrl) ? b.top.sourceUrl : undefined,
       ts: b.top.ts,

@@ -3240,6 +3240,33 @@ a { color: var(--tn-accent); }
   box-shadow: 0 6px 18px rgba(0, 0, 0, .22);
 }
 
+/* ── Map legend: which mark means what (components/console/MarkLegend.tsx) ────
+   Top-right of the stage, the one corner nothing else on the map uses. OPAQUE, like
+   every panel that sits on the map: a translucent key over a data surface is a
+   legibility bug. pointer-events:none, so the map under it still drags and clicks.
+   It is not there at all while no signal layer draws a mark. */
+.tn-markkey {
+  position: absolute; z-index: 6; top: 10px; right: 10px; pointer-events: none;
+  max-width: 250px; padding: 8px 10px 9px; border-radius: 8px;
+  color: var(--tn-text); background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+  font-size: 11.5px; line-height: 1.3;
+}
+.tn-markkey-title {
+  margin-bottom: 5px; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--tn-text-muted);
+}
+.tn-markkey-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.tn-markkey-row { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: center; }
+.tn-markkey-row svg { display: block; }
+.tn-markkey-row b { display: block; font-weight: 650; }
+.tn-markkey-meaning { display: block; color: var(--tn-text-muted); }
+/* A narrow stage keeps the marks and their names and drops the sentence. */
+@media (max-width: 900px) {
+  .tn-markkey { max-width: 150px; padding: 6px 8px; }
+  .tn-markkey-meaning { display: none; }
+}
+
 /* ── Right-click "Add pin here" menu ───────────────────────────────────────── */
 .tn-pinmenu {
   position: absolute; z-index: 7; display: flex; flex-direction: column; gap: 2px; padding: 4px;

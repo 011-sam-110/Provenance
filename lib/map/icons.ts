@@ -121,3 +121,59 @@ export async function loadSignalIcons(map: maplibregl.Map): Promise<void> {
     }),
   );
 }
+
+// ── The dashed ring: a country figure with no outline to shade ───────────────
+//
+// lib/map/precisionMarks.ts gives a country-level feature a dashed ring when the
+// outline file does not hold its country. A circle layer cannot be dashed, so the
+// ring is a small image, one for each colour, drawn on a canvas when the style asks
+// for it (WorldMap wires `styleimagemissing` to addRingImage).
+//
+// It is drawn to look UNLIKE a pin: no solid disc, no white edge ring, no pictogram.
+// A pale centre, tinted with the colour of the feature, holds the figure. The dashes
+// are dark ink on a thin white under-stroke, because the first version drew them in
+// the feature colour and a pale amber dash on white could not be seen at all.
+
+/** Prefix of every ring image id. The colour follows it: "sig-ring-#ea580c". */
+export const RING_IMAGE_PREFIX = "sig-ring-";
+
+const RING_PX = 68; // canvas pixels; 34 CSS px at pixelRatio 2
+
+/**
+ * Register the dashed ring for one image id, when the id is a ring id and the style
+ * does not have it yet. Returns true when it added an image. Any other id is left
+ * for whoever owns it.
+ */
+export function addRingImage(map: maplibregl.Map, id: string): boolean {
+  if (!id.startsWith(RING_IMAGE_PREFIX) || map.hasImage(id)) return false;
+  const color = id.slice(RING_IMAGE_PREFIX.length);
+  // A colour straight from feature data: accept a hex colour and nothing else.
+  const tint = /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : "#64748b";
+  const canvas = document.createElement("canvas");
+  canvas.width = RING_PX;
+  canvas.height = RING_PX;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+  const c = RING_PX / 2;
+  const r = c - 6;
+  ctx.beginPath();
+  ctx.arc(c, c, r, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.78)";
+  ctx.fill();
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = tint;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // A solid white line first, so the gaps between the dashes read on dark imagery.
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.stroke();
+  ctx.setLineDash([8.5, 6]);
+  ctx.lineCap = "butt";
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = "#0f172a";
+  ctx.stroke();
+  const d = ctx.getImageData(0, 0, RING_PX, RING_PX);
+  map.addImage(id, { width: RING_PX, height: RING_PX, data: new Uint8Array(d.data.buffer.slice(0)) }, { pixelRatio: 2 });
+  return true;
+}
