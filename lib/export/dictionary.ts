@@ -25,6 +25,8 @@ const SHARED: Record<string, string> = {
   lat: "Latitude in decimal degrees, WGS 84. North is positive.",
   lon: "Longitude in decimal degrees, WGS 84. East is positive.",
   id: "The id of the record in Provenance. It starts with a short name of the feed and a colon.",
+  precision:
+    "How precise the place is: exact, facility, area or country. For area and country, lat and lon are an anchor for the mark, not the place of an event.",
 };
 
 const SIGNAL: Record<string, string> = {
@@ -177,10 +179,17 @@ export interface DictionaryInput {
   extra?: Record<string, string>;
 }
 
-/** Pure: every key of a list of objects, in the order of first appearance. */
-function keysOf(items: (Record<string, unknown> | undefined | null)[]): string[] {
+/**
+ * Pure: every key of a list of objects, in the order of first appearance.
+ * `written` leaves out a key that no object gives a value: JSON drops an undefined
+ * property, so the GeoJSON and the KML never hold it. The CSV does hold a column for
+ * such a key, so its section keeps it.
+ */
+function keysOf(items: (Record<string, unknown> | undefined | null)[], written = false): string[] {
   const seen = new Set<string>();
-  for (const item of items) for (const k of Object.keys(item ?? {})) seen.add(k);
+  for (const item of items) {
+    for (const [k, v] of Object.entries(item ?? {})) if (!written || v !== undefined) seen.add(k);
+  }
   return Array.from(seen);
 }
 
@@ -201,9 +210,14 @@ export function toDataDictionary(input: DictionaryInput): string {
   const rows = input.rows ?? [];
   const geo = (input.geo ?? []).filter((p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lon));
   const csvColumns = keysOf(rows);
-  const geoProperties = keysOf(geo.map((p) => p.properties));
+  const geoProperties = keysOf(geo.map((p) => p.properties), true);
   const base = exportFilename(input.name, input.at);
   const files = [rows.length > 0 ? ".csv" : "", geo.length > 0 ? ".geojson" : "", geo.length > 0 ? ".kml" : ""].filter(Boolean);
+
+  const records = [
+    rows.length > 0 ? `${rows.length} in the CSV` : "",
+    geo.length > 0 ? `${geo.length} in the GeoJSON and the KML` : "",
+  ].filter(Boolean);
 
   const lines = [
     "PROVENANCE DATA DICTIONARY",
@@ -212,7 +226,7 @@ export function toDataDictionary(input: DictionaryInput): string {
     `Time of the export:  ${new Date(input.at).toISOString()} (UTC)`,
     `Source of the data:  ${input.source?.trim() || NO_SOURCE}`,
     `Files it describes:  ${files.length > 0 ? `${base}${files.join(", ")}` : "none: the export was empty"}`,
-    `Records:             ${rows.length} in the CSV, ${geo.length} in the GeoJSON and the KML`,
+    `Records:             ${records.length > 0 ? records.join(", ") : "none"}`,
     "",
     "The files hold what the panel showed at the time of the export. Filters of the panel apply.",
     "A file name carries the minute of its own download, so it can differ from the name above by a minute.",

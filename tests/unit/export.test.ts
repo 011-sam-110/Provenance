@@ -320,6 +320,17 @@ describe("toDataDictionary", () => {
     expect(geoOnly).toContain("Files it describes:  opendata-dossier-signal-2026-10-08T05-59Z.geojson, .kml");
     expect(geoOnly).not.toContain("COLUMNS OF THE CSV FILE");
     expect(toDataDictionary({ name: "events", at: AT })).toContain("Files it describes:  none: the export was empty");
+    expect(csvOnly).toContain("Records:             1 in the CSV\r\n");
+    expect(geoOnly).toContain("Records:             1 in the GeoJSON and the KML\r\n");
+    expect(toDataDictionary({ name: "events", at: AT })).toContain("Records:             none\r\n");
+  });
+
+  it("leaves out a property that no point gives a value, because the files do not hold it", () => {
+    const points: GeoPoint[] = [{ lat: 1, lon: 2, properties: { kind: "signal", sourceUrl: undefined, link: null } }];
+    const dictionary = toDataDictionary({ name: "dossier-signal", kind: "dossier", geo: points, at: AT });
+    expect(dictionary).toContain("PROPERTIES OF THE GEOJSON AND THE KML (2)");
+    expect(dictionary).not.toContain("sourceUrl");
+    expect(Object.keys(JSON.parse(toGeoJson(points)).features[0].properties)).toEqual(["kind", "link"]);
   });
 
   it("is a pure function of its input: the time comes from the caller", () => {

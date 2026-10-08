@@ -479,7 +479,7 @@ export default function EventsDetail({ instanceId, config }: WidgetDetailProps) 
             kind="events"
             rows={exportRows}
             geo={exportGeo}
-            source={perSource.map((s) => `${s.label} (${s.attribution})`).join("; ")}
+            source={perSource.map((s) => (s.label.includes(s.attribution) ? s.label : `${s.label} (${s.attribution})`)).join("; ")}
           />
         </div>
       </footer>
