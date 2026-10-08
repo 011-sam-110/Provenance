@@ -17,6 +17,7 @@ import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import { timeBins } from "@/lib/widgets/buckets";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import { signalsStore } from "@/lib/signals/store";
 import { shellLayoutStore } from "@/lib/console/store";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
@@ -356,6 +357,7 @@ export function makeSignalDetail(source: SignalSource) {
             <button onClick={showOnMap}>🗺 Show on map</button>
             <button disabled={!exportRows.length} onClick={() => downloadText(`${exportFilename(`signal-${source.id}`, Date.now())}.csv`, "text/csv", toCsv(exportRows))}>⬇ CSV</button>
             <button disabled={!exportGeo.length} onClick={() => downloadText(`${exportFilename(`signal-${source.id}`, Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}>⬇ GeoJSON</button>
+            <ExportExtras name={`signal-${source.id}`} kind="signal" rows={exportRows} geo={exportGeo} source={`${source.label}: ${source.attribution}`} />
           </span>
         </footer>
       </div>

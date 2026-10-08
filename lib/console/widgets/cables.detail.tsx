@@ -16,6 +16,7 @@ import { signalsStore } from "@/lib/signals/store";
 import { shellLayoutStore } from "@/lib/console/store";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import {
   cableAssets,
   filterCables,
@@ -208,6 +209,7 @@ function makeCableDetail(source: SignalSource) {
             <button onClick={showAll}>🗺 Show on map</button>
             <button disabled={!exportRows.length} onClick={() => downloadText(`${exportFilename("cables", Date.now())}.csv`, "text/csv", toCsv(exportRows))}>⬇ CSV</button>
             <button disabled={!exportGeo.length} onClick={() => downloadText(`${exportFilename("cables", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}>⬇ GeoJSON</button>
+            <ExportExtras name={"cables"} kind="cables" rows={exportRows} geo={exportGeo} source={`${source.label}: ${source.attribution}`} />
           </span>
         </footer>
       </div>

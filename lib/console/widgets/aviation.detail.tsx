@@ -24,6 +24,7 @@ import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import PlaneDetail from "@/components/PlaneDetail";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 
 const MS_TO_KT = 1.94384;
 const MS_TO_KMH = 3.6;
@@ -359,6 +360,7 @@ export default function AviationDetail({ instanceId, config }: WidgetDetailProps
             disabled={exportGeo.length === 0}
             onClick={() => downloadText(`${exportFilename("aviation", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}
           >⬇ GeoJSON</button>
+          <ExportExtras name="aviation" kind="aviation" rows={exportRows} geo={exportGeo} source="Aircraft: adsb.lol. Enrichment: adsbdb." />
         </span>
       </footer>
     </div>

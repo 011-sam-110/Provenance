@@ -55,10 +55,10 @@ describe("widget chrome draws its icons", () => {
     expect(controlBody(detail, cls)).toContain(`<Icon name="${name}"`);
   });
 
-  it("expanded masthead: both export buttons draw the download icon", () => {
+  it("expanded masthead: the four export buttons (CSV, GeoJSON, KML, data dictionary) draw the download icon", () => {
     const bare = detail.replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
     const acts = [...bare.matchAll(/tn-detail-act[\s\S]*?<\/button>/g)].map((m) => m[0]);
-    expect(acts).toHaveLength(2);
+    expect(acts).toHaveLength(4);
     for (const a of acts) expect(a).toContain('<Icon name="download"');
   });
 

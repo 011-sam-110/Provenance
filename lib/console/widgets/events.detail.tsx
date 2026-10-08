@@ -27,6 +27,7 @@ import { Chart, type ChartPoint } from "@/components/Chart";
 import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import { groupByRegion, groupByType, regionOf, REGION_LABEL, TYPE_LABEL, type RegionId, type EventGroup } from "@/lib/events/regions";
 import { readGroupBy, readCollapsed, isCollapsed, toggleCollapsed, type GroupBy } from "@/lib/events/opsConfig";
 import { readFilters, applyEventFilters, toggleAllowSet, isAllowed } from "@/lib/events/filters";
@@ -473,6 +474,13 @@ export default function EventsDetail({ instanceId, config }: WidgetDetailProps) 
             disabled={exportGeo.length === 0}
             onClick={() => downloadText(`${exportFilename("events", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}
           >⬇ GeoJSON</button>
+          <ExportExtras
+            name="events"
+            kind="events"
+            rows={exportRows}
+            geo={exportGeo}
+            source={perSource.map((s) => (s.label.includes(s.attribution) ? s.label : `${s.label} (${s.attribution})`)).join("; ")}
+          />
         </div>
       </footer>
     </div>

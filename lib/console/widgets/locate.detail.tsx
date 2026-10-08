@@ -12,10 +12,16 @@ import { mapViewStore } from "@/lib/mapView";
 import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import "./locate.css";
 
 // Photo geolocation is coarse — land the globe at a regional zoom, not street level.
 const FLY_ZOOM = 9;
+
+/** The source line of the data dictionary. /api/geolocate runs GeoCLIP when one is
+ *  configured and falls back to a vision language model (see locate.tsx). */
+const LOCATE_SOURCE =
+  "An estimate that a model made from the photo you gave: GeoCLIP when it is configured, else a vision language model. Not a measurement.";
 
 const METHOD_LABEL: Record<string, string> = {
   "vision-ai": "vision-AI estimate",
@@ -186,6 +192,7 @@ export default function LocateDetail(_props: WidgetDetailProps) {
               <button
                 onClick={() => downloadText(`${exportFilename("locate", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}
               >⬇ GeoJSON</button>
+              <ExportExtras name="locate" kind="locate" rows={exportRows} geo={exportGeo} source={LOCATE_SOURCE} />
             </div>
           )}
         </section>

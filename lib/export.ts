@@ -1,4 +1,4 @@
-// Pure CSV / GeoJSON serializers + a browser download helper. The serializers are
+// Pure CSV / GeoJSON / KML serializers + a browser download helper. The serializers are
 // isomorphic and unit-tested; download() is the only browser-only piece. Every
 // widget/dossier can hand its visible rows here so the data isn't trapped on screen.
 
@@ -39,6 +39,80 @@ export function toGeoJson(points: GeoPoint[]): string {
       properties: p.properties ?? {},
     }));
   return JSON.stringify({ type: "FeatureCollection", features }, null, 2);
+}
+
+/** The media type of a KML file. */
+export const KML_MIME = "application/vnd.google-earth.kml+xml";
+
+/**
+ * Pure: text that is safe inside an XML element or a double-quoted attribute.
+ *
+ * Every `&`, `<`, `>`, `"` and `'` becomes an entity, so no value can open a tag,
+ * close an attribute, or end a CDATA section: `]]>` leaves as `]]&gt;`, and this
+ * file writes no CDATA section for it to end. Characters that XML 1.0 forbids (most
+ * control characters, a lone surrogate, U+FFFE, U+FFFF) are dropped, because one of
+ * them makes the whole file unreadable to a strict parser.
+ */
+export function escapeXml(value: string): string {
+  return value
+    // A surrogate pair is kept whole. A surrogate with no partner is dropped.
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDFFF]/g, (m) => (m.length === 2 ? m : ""))
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+/** A coordinate as plain decimal text: 7 places (about 1 cm), no exponent, no "-0". */
+function kmlNumber(n: number): string {
+  const fixed = n.toFixed(7).replace(/\.?0+$/, "");
+  return fixed === "-0" ? "0" : fixed;
+}
+
+/** The property that names a placemark, in order of preference. */
+const KML_NAME_KEYS = ["name", "title", "label", "callsign", "cable", "place", "vessel", "mission", "id"];
+
+function kmlText(v: unknown): string {
+  return typeof v === "string" ? v : typeof v === "object" ? JSON.stringify(v) : String(v);
+}
+
+/**
+ * Pure: points → a KML 2.2 document string, one Placemark for each point.
+ *
+ * The same points as `toGeoJson` (it skips the same invalid coordinates), so the two
+ * files of one export hold the same features. KML writes a coordinate as
+ * `longitude,latitude`, the reverse of how people say it. Each property becomes an
+ * ExtendedData value, which Google Earth lists in the balloon of the placemark. The
+ * placemark is named from the first of name, title, label, … that the point carries.
+ */
+export function toKml(points: GeoPoint[], opts: { name?: string } = {}): string {
+  const lines = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<kml xmlns="http://www.opengis.net/kml/2.2">',
+    "  <Document>",
+  ];
+  if (opts.name) lines.push(`    <name>${escapeXml(opts.name)}</name>`);
+  for (const p of points ?? []) {
+    if (!p || !Number.isFinite(p.lat) || !Number.isFinite(p.lon)) continue;
+    const props = p.properties ?? {};
+    const nameKey = KML_NAME_KEYS.find((k) => props[k] != null && props[k] !== "");
+    lines.push("    <Placemark>");
+    if (nameKey) lines.push(`      <name>${escapeXml(kmlText(props[nameKey]))}</name>`);
+    const data = Object.entries(props).filter(([, v]) => v != null && v !== "");
+    if (data.length > 0) {
+      lines.push("      <ExtendedData>");
+      for (const [k, v] of data) {
+        lines.push(`        <Data name="${escapeXml(k)}"><value>${escapeXml(kmlText(v))}</value></Data>`);
+      }
+      lines.push("      </ExtendedData>");
+    }
+    lines.push(`      <Point><coordinates>${kmlNumber(p.lon)},${kmlNumber(p.lat)}</coordinates></Point>`);
+    lines.push("    </Placemark>");
+  }
+  lines.push("  </Document>", "</kml>");
+  return lines.join("\n") + "\n";
 }
 
 /** A UTC-stamped filename base, e.g. "opendata-markets-2026-07-08T04-59Z".

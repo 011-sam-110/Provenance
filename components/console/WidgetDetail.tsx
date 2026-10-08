@@ -40,6 +40,8 @@ import { shellLayoutStore } from "@/lib/console/store";
 import { resolveWidgetHelp } from "@/lib/console/help";
 import { notificationsStore, useRule, requestNotifyPermission } from "@/lib/shell/notifications";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import { saveDataDictionary, saveKml } from "@/lib/export/save";
+import { DICTIONARY_TITLE, KML_TITLE } from "@/components/console/ExportExtras";
 import FreshChip from "@/components/console/FreshChip";
 import { Icon } from "@/components/console/WidgetIcons";
 import { ReportCtx, type Report } from "@/components/console/WidgetFrame";
@@ -58,10 +60,13 @@ export default function WidgetDetail({ instance }: { instance: WidgetInstance })
   const rows = report.export?.rows;
   const geo = report.export?.geo;
 
-  const doExport = (kind: "csv" | "geojson") => {
-    const base = exportFilename(report.export?.name ?? instance.type, Date.now());
+  const doExport = (kind: "csv" | "geojson" | "kml" | "dictionary") => {
+    const name = report.export?.name ?? instance.type;
+    const base = exportFilename(name, Date.now());
     if (kind === "csv" && rows) downloadText(`${base}.csv`, "text/csv", toCsv(rows));
     if (kind === "geojson" && geo) downloadText(`${base}.geojson`, "application/geo+json", toGeoJson(geo));
+    if (kind === "kml" && geo) saveKml(name, geo);
+    if (kind === "dictionary") saveDataDictionary({ name, rows, geo, source: help.source });
   };
 
   return (
@@ -98,6 +103,12 @@ export default function WidgetDetail({ instance }: { instance: WidgetInstance })
         )}
         {geo && geo.length > 0 && (
           <button className="tn-detail-act" onClick={() => doExport("geojson")}><Icon name="download" /> GeoJSON</button>
+        )}
+        {geo && geo.length > 0 && (
+          <button className="tn-detail-act" title={KML_TITLE} onClick={() => doExport("kml")}><Icon name="download" /> KML</button>
+        )}
+        {((rows && rows.length > 0) || (geo && geo.length > 0)) && (
+          <button className="tn-detail-act" title={DICTIONARY_TITLE} onClick={() => doExport("dictionary")}><Icon name="download" /> Data dictionary</button>
         )}
       </header>
 
