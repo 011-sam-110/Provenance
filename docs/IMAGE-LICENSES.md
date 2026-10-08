@@ -144,6 +144,35 @@ not, and it keeps its own terms exactly as it does in the running app:
 
 ---
 
+## README demo recording (1)
+
+File: `docs/media/console-demo.gif`. The README shows it under the title. The site does not
+serve it.
+
+| File | Shows |
+|---|---|
+| `console-demo.gif` | The console on production on 2026-10-08, 39 seconds: a question in the command palette becomes filter chips, the map goes to the United States and draws the earthquakes, one earthquake opens in the detail panel, the static cameras go on, and one road camera opens with its picture. |
+
+This is our own screen recording of this project's console. The interface in it is this
+project's work. What the console showed in that minute is not, and it keeps its own terms as
+it does in the running app:
+
+- the satellite map is Esri World Imagery. The console credits it as "Imagery © Esri,
+  Maxar, Earthstar Geographics" (`lib/basemaps.ts`);
+- the country outlines are Natural Earth 110m (public domain);
+- the earthquakes are from the U.S. Geological Survey. The console credits them as
+  "Earthquake data © U.S. Geological Survey (USGS)" (`lib/signals/usgs.ts`);
+- the camera dots are the positions of the road-camera sources and of the Windy.com webcam
+  catalogue;
+- the one camera frame is "US-89 Bear Lake, UT" of the Idaho Transportation Department's 511
+  service. The console credits it as "Live traffic camera data © Idaho Transportation Dept
+  (511)". The frame itself carries the mark of the Utah Department of Transportation.
+
+The recording was made with Recordly, which also drew the pointer and the zooms. The file in
+this repository is an 800 px GIF made from Recordly's MP4 export with ffmpeg.
+
+---
+
 ## The star sky (1)
 
 File: `public/sky/sky-equirect.jpg`. It was on the landing page before the 2026-10-05
@@ -158,7 +187,7 @@ the same licence, and the credit in the site footer must stay.
 
 ## The renders, the screenshots and this file
 
-The two renders and the three screenshots are this project's own work. This file records
+The two renders, the three screenshots and the recording are this project's own work. This file records
 where they came from and which third-party material each one shows.
 
 ## Adding an image
