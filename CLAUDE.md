@@ -206,6 +206,15 @@ obligations and are not satisfied by the licence.
   point. A feature sets its own level only where one layer mixes levels. The route
   writes the resolved level on every feature (`lib/signals/precision.ts`) and
   `SignalDetail` says it in one line.
+  **The map draws by that level** (`lib/map/precisionMarks.ts`): `exact` and `facility`
+  keep the pin; an `area` is its own polygon or a soft disc; a `country` is its shaded
+  outline from `public/geo/countries-110m.geojson` with the layer's metric as the
+  figure, or a dashed ring when that file has no outline (it has 177). An area or a
+  country never gets a pin, and `tests/unit/precision-marks.test.ts` holds that for
+  every registered layer. A country-level adapter sends `countryIso3`. The shading is
+  not a click target: a click on it opens the country dossier, the figure opens the
+  signal. `components/console/MarkLegend.tsx` is the key, top right of the map, and
+  lists only the marks on the map now.
 - `lib/console/*` — widget registry, presets (**3 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
   them, and the Sources rail's tiles and the ⌘K Profiles list drive the same three. There is
