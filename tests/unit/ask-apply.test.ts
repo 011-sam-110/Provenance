@@ -94,12 +94,20 @@ describe("resolving a place", () => {
     expect(partsOfGeometry(COUNTRY)).toHaveLength(2);
     expect(partsOfGeometry({ type: "Point", coordinates: [0, 0] })).toBeNull();
   });
-  it("a country is its outline, and the view goes to its largest part", () => {
+  it("a country is its outline, and the view takes all of a country that fits", () => {
     const p = placeFromCountry("Testland", COUNTRY)!;
     expect(p.shape).toBe("country");
     expect(p.parts).toHaveLength(2);
-    expect(p.center).toEqual({ lat: 5, lon: 5 });
+    expect(p.center).toEqual({ lat: 11, lon: 11 }); // the mainland and the island
     expect(p.note).toMatch(/border of Testland/);
+    // An earthquake off the coast is not in the country. The chip says so.
+    expect(p.note).toMatch(/at sea is outside/);
+  });
+  it("the view of a country with a far part goes to its largest part", () => {
+    const far: [number, number][] = [[-170, 50], [-168, 50], [-168, 52], [-170, 52], [-170, 50]];
+    const p = placeFromCountry("Wideland", { type: "MultiPolygon", coordinates: [[MAINLAND], [far]] })!;
+    expect(p.parts).toHaveLength(2); // the crop still has both parts
+    expect(p.center).toEqual({ lat: 5, lon: 5 });
   });
   it("a geocoded place with an extent is a box around it", () => {
     const p = placeFromGeocode({ name: "Madrid, Spain", lat: 40.4, lon: -3.7, bbox: [-3.9, 40.3, -3.5, 40.6] })!;

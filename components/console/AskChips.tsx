@@ -18,9 +18,15 @@ import { KIND_LABEL } from "@/lib/shell/ask";
 import { removeApplied, useAppliedChips, type AppliedChip } from "@/lib/shell/askApplied";
 
 export function AppliedChipButton({ chip, onRemoved }: { chip: AppliedChip; onRemoved?: () => void }) {
-  const remove = () => {
+  // The button goes away with its filter, and focus would fall to the page. So it
+  // moves first: to where the caller says (the palette's input), or to the chip
+  // beside this one, so a keyboard user can remove the next filter from where they are.
+  const remove = (from: HTMLElement) => {
+    const li = from.closest("li");
+    const beside = (li?.nextElementSibling ?? li?.previousElementSibling)?.querySelector<HTMLElement>("button");
     removeApplied(chip);
-    onRemoved?.();
+    if (onRemoved) onRemoved();
+    else beside?.focus();
   };
   return (
     <button
@@ -30,11 +36,11 @@ export function AppliedChipButton({ chip, onRemoved }: { chip: AppliedChip; onRe
       data-ask-chip=""
       title={`${chip.note} Press to remove this filter.`}
       aria-label={`Remove filter: ${KIND_LABEL[chip.kind]}, ${chip.label}`}
-      onClick={remove}
+      onClick={(e) => remove(e.currentTarget)}
       onKeyDown={(e) => {
         if (e.key === "Delete" || e.key === "Backspace") {
           e.preventDefault();
-          remove();
+          remove(e.currentTarget);
         }
       }}
     >

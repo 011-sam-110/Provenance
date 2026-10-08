@@ -4,6 +4,15 @@
 // open it and belongs to the Sources rail since the keymap landed (lib/shell/keymap.ts).
 // keyboard-first way to compose the view: toggle a layer, apply a preset, switch
 // basemap, or fly to a covered region. Open/close is owned by ConsoleShell.
+//
+// IT ALSO READS A TYPED QUESTION. "fires in Spain last 24h" becomes a layer, a
+// place and a time window (lib/shell/ask.ts: rules only, no model). The palette
+// shows each filter it read as a chip BEFORE anything is applied, and the words it
+// did not understand beside them, so a wrong reading is seen and not applied in
+// silence. Enter applies the chips; a removed chip removes its words. The applied
+// filters stay on chips: on the map (components/console/AskChips.tsx) and here,
+// under the input. When the reader understands nothing, none of this renders and
+// the palette is the one it was before.
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { layersStore, ACTIVE_LAYERS, useEditingLayers, type LayerKey } from "@/lib/layers";
@@ -38,6 +47,19 @@ import {
   type PaletteSnapshot,
 } from "@/lib/console/paletteGroups";
 import type { GeocodeResult } from "@/lib/geo/geocode";
+import { parseAsk, removeSpans, chipLabel, KIND_LABEL, type AskFilter } from "@/lib/shell/ask";
+import { askContext } from "@/lib/shell/askContext";
+import { applyAsk, useAppliedChips } from "@/lib/shell/askApplied";
+import { lookupPlace } from "@/lib/shell/askPlaceLookup";
+import type { ResolvedPlace } from "@/lib/shell/askPlace";
+import { AppliedChipList } from "@/components/console/AskChips";
+
+type PlaceFilter = Extract<AskFilter, { kind: "place" }>;
+/** Where the lookup of the question's place is. `for` names the place it is about. */
+type PlaceState = { for: string; status: "looking" | "found" | "missing"; place: ResolvedPlace | null };
+const placeKey = (f: PlaceFilter) => `${f.countryIso3 ?? ""}|${f.text}`;
+/** `active` is this when the highlighted row is the question's own "Apply". */
+const ASK_ROW = -1;
 
 // Pick a fly-to zoom from a geocode result's extent (wider areas frame out).
 function zoomForResult(r: GeocodeResult): number {
@@ -333,6 +355,66 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     });
   }, [columns]);
 
+  // ── The question reader ─────────────────────────────────────────────────────
+  // The typed text, read into filters. Pure and cheap, so it runs on each key.
+  const ask = useMemo(() => parseAsk(query, askContext()), [query]);
+  const hasAsk = ask.filters.length > 0;
+  const askPlace = ask.filters.find((f): f is PlaceFilter => f.kind === "place");
+  const askPlaceKey = askPlace ? placeKey(askPlace) : null;
+  // The filters that are on the map now. Shown here too, so they can be removed
+  // from the keyboard with the palette open.
+  const applied = useAppliedChips();
+
+  // Find the place while the user types, so its chip can say what was found before
+  // anything is applied. A country the reader knows needs no geocoder call; another
+  // place waits 300 ms, as the place search above does. The latest text wins.
+  const [placeState, setPlaceState] = useState<PlaceState | null>(null);
+  const askPlaceRef = useRef(askPlace);
+  askPlaceRef.current = askPlace;
+  useEffect(() => {
+    const f = askPlaceRef.current;
+    if (!f || !askPlaceKey) { setPlaceState(null); return; }
+    let alive = true;
+    setPlaceState({ for: askPlaceKey, status: "looking", place: null });
+    const t = setTimeout(() => {
+      void lookupPlace(f).then((place) => {
+        if (alive) setPlaceState({ for: askPlaceKey, status: place ? "found" : "missing", place });
+      });
+    }, f.countryIso3 ? 0 : 300);
+    return () => { alive = false; clearTimeout(t); };
+  }, [askPlaceKey]);
+  const placeNow = placeState && placeState.for === askPlaceKey ? placeState : null;
+
+  const [applying, setApplying] = useState(false);
+  const applyQuestion = async () => {
+    if (!hasAsk || applying) return;
+    let place: ResolvedPlace | null = null;
+    if (askPlace && askPlaceKey) {
+      const known = placeNow && placeNow.status !== "looking" ? placeNow : null;
+      if (known) {
+        place = known.place;
+      } else {
+        // Enter came before the lookup did. Wait for it, and if the place is not
+        // found, stay open: the user has not yet seen a chip that says so.
+        setApplying(true);
+        place = await lookupPlace(askPlace);
+        setApplying(false);
+        setPlaceState({ for: askPlaceKey, status: place ? "found" : "missing", place });
+        if (!place) return;
+      }
+    }
+    applyAsk(ask.filters, place);
+    for (const f of ask.filters) if (f.kind === "layer") track({ name: "layer_toggled", layer: f.layerId });
+    onClose();
+  };
+
+  const focusInput = () => inputRef.current?.focus();
+  /** Remove a chip before it is applied: the chip is the text, so its words go. */
+  const removeAsked = (f: AskFilter) => {
+    setQuery(removeSpans(query, f.spans));
+    focusInput();
+  };
+
   const activeRef = useRef<HTMLLIElement | null>(null);
   useEffect(() => { activeRef.current?.scrollIntoView({ block: "nearest" }); }, [active]);
 
@@ -346,13 +428,26 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     }
   }, [open]);
 
+  // A text the reader understood puts its Apply row first, so Enter applies what
+  // the chips say. Any other text starts on the first command, as before.
   useEffect(() => {
-    setActive(0);
-  }, [query]);
+    setActive(hasAsk ? ASK_ROW : 0);
+  }, [query, hasAsk]);
 
   if (!open) return null;
 
   const onKey = (e: React.KeyboardEvent) => {
+    // A focused chip or the Apply button is a button: Enter and Space are its own
+    // click, and the left and right keys walk the chips. Without this the palette
+    // would run the highlighted command under a chip that the user meant to remove.
+    const control = (e.target as HTMLElement).closest?.("[data-ask-chip], [data-ask-apply]") as HTMLElement | null;
+    if (control && (e.key === "Enter" || e.key === " ")) return;
+    if (control && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+      e.preventDefault();
+      const all = Array.from(e.currentTarget.querySelectorAll<HTMLElement>("[data-ask-chip], [data-ask-apply]"));
+      all[all.indexOf(control) + (e.key === "ArrowRight" ? 1 : -1)]?.focus();
+      return;
+    }
     if (e.key === "Escape") {
       e.preventDefault();
       onClose();
@@ -361,8 +456,10 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       setActive((a) => Math.min(a + 1, flat.length - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActive((a) => Math.max(a - 1, 0));
+      setActive((a) => Math.max(a - 1, hasAsk ? ASK_ROW : 0));
     } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      // In the text of a question the two keys move the caret, as in any input.
+      if (active === ASK_ROW) return;
       e.preventDefault();
       const delta = e.key === "ArrowRight" ? 1 : -1;
       setActive((a) => {
@@ -375,9 +472,34 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
       });
     } else if (e.key === "Enter") {
       e.preventDefault();
-      flat[active]?.run();
+      if (active === ASK_ROW && hasAsk) void applyQuestion();
+      else flat[active]?.run();
     }
   };
+
+  // The place chip says what the lookup found, and says so when it found nothing.
+  const placeMissing = Boolean(askPlace) && placeNow?.status === "missing";
+  const askChipText = (f: AskFilter): string => {
+    if (f.kind !== "place") return chipLabel(f);
+    if (placeNow?.status === "found" && placeNow.place) return placeNow.place.label;
+    return placeNow?.status === "missing" ? chipLabel(f) : `${chipLabel(f)}…`;
+  };
+  const askChipTitle = (f: AskFilter): string => {
+    if (f.kind !== "place") return "Press to remove this filter from your question.";
+    if (placeNow?.status === "found" && placeNow.place) return `${placeNow.place.note} Press to remove this filter from your question.`;
+    if (placeNow?.status === "missing") return "This place was not found. No place filter is applied. Press to remove these words.";
+    return "Looking for this place.";
+  };
+  // One sentence for a screen reader, said again when the reading changes.
+  const askSummary = hasAsk
+    ? [
+        `Understood: ${ask.filters
+          .map((f) => (f.kind === "place" && placeMissing ? `place not found, ${chipLabel(f)}` : `${KIND_LABEL[f.kind]}, ${askChipText(f)}`))
+          .join("; ")}.`,
+        ask.unknown.length ? `Not understood: ${ask.unknown.join("; ")}.` : "",
+        "Press Enter to apply.",
+      ].filter(Boolean).join(" ")
+    : "";
 
   return (
     <div className="tn-palette-root" role="dialog" aria-modal="true" aria-label="Command palette">
@@ -386,13 +508,76 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
         <input
           ref={inputRef}
           className="tn-palette-input"
-          placeholder="Search actions — switch profile, add a widget, fly to any place…"
+          placeholder="Search actions, or ask: fires in Spain last 24h"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Command search"
         />
+        {(hasAsk || applied.length > 0) && (
+          <div className="tn-ask" data-testid="ask-strip">
+            <span className="tn-sr-only" aria-live="polite">{askSummary}</span>
+            {hasAsk && (
+              <div className="tn-ask-row" role="group" aria-label="Filters read from your question">
+                <span className="tn-ask-title" aria-hidden="true">Understood</span>
+                <ul className="tn-ask-chips">
+                  {ask.filters.map((f) => {
+                    const missing = f.kind === "place" && placeMissing;
+                    const kind = missing ? "Place not found" : KIND_LABEL[f.kind];
+                    const text = askChipText(f);
+                    return (
+                      <li key={f.kind === "layer" ? `layer:${f.layerId}` : f.kind}>
+                        <button
+                          type="button"
+                          className={`tn-ask-chip${missing ? " is-unknown" : ""}`}
+                          data-kind={f.kind}
+                          data-ask-chip=""
+                          title={askChipTitle(f)}
+                          aria-label={missing ? `Remove words: place not found, ${text}` : `Remove filter: ${kind}, ${text}`}
+                          onClick={() => removeAsked(f)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeAsked(f); }
+                          }}
+                        >
+                          <span className="tn-ask-chip-kind">{kind}</span>
+                          <span className="tn-ask-chip-label">{text}</span>
+                          <span className="tn-ask-chip-x" aria-hidden="true">×</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {ask.unknown.map((words, i) => (
+                    <li key={`unknown:${i}:${words}`}>
+                      <span className="tn-ask-chip is-unknown is-static" title="The reader did not understand these words. They change nothing on the map.">
+                        <span className="tn-ask-chip-kind">Not understood</span>
+                        <span className="tn-ask-chip-label">{words}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className={`tn-ask-apply${active === ASK_ROW ? " is-active" : ""}`}
+                  data-ask-apply=""
+                  disabled={applying}
+                  onMouseEnter={() => setActive(ASK_ROW)}
+                  onClick={() => void applyQuestion()}
+                >
+                  {applying ? "Finding the place" : "Apply to the map"} <span className="tn-kbd" aria-hidden="true">↵</span>
+                </button>
+              </div>
+            )}
+            {applied.length > 0 && (
+              <div className="tn-ask-row" role="group" aria-label="Filters on the map now">
+                <span className="tn-ask-title" aria-hidden="true">On the map</span>
+                <AppliedChipList chips={applied} onRemoved={focusInput} />
+              </div>
+            )}
+          </div>
+        )}
         {flat.length === 0 ? (
-          <div className="tn-palette-empty">No matching commands</div>
+          // A question matches no command, and that is not an error: its chips are
+          // the result. The line is for a text that is neither.
+          hasAsk ? null : <div className="tn-palette-empty">No matching commands</div>
         ) : (
           <div className="tn-palette-cols" role="listbox">
             {columns.map((col, ci) => (

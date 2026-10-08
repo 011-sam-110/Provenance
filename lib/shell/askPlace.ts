@@ -42,16 +42,16 @@ export function partsOfGeometry(geometry: GeoJSON.Geometry | null | undefined): 
   return null;
 }
 
-/** A map zoom that frames a place of this many degrees across. */
+/**
+ * A map zoom that frames a place of this many degrees across. At zoom z the world
+ * is 512 * 2^z px wide, so a span of 360 / 2^z degrees is 512 px; the 0.4 on top
+ * makes the place about 675 px, which fills a laptop stage and leaves its
+ * neighbours in view. Held between a whole-globe view and a street view.
+ */
 export function zoomForSpan(degrees: number): number {
-  if (degrees > 90) return 2;
-  if (degrees > 30) return 3;
-  if (degrees > 12) return 4;
-  if (degrees > 4) return 5;
-  if (degrees > 1) return 7;
-  if (degrees > 0.2) return 9;
-  if (degrees > 0.04) return 11;
-  return 13;
+  if (!(degrees > 0)) return 9;
+  const zoom = Math.log2(360 / degrees) + 0.4;
+  return Math.round(Math.min(13, Math.max(1.5, zoom)) * 10) / 10;
 }
 
 function frame(ring: readonly [number, number][]): { center: { lat: number; lon: number }; zoom: number } {
@@ -59,10 +59,15 @@ function frame(ring: readonly [number, number][]): { center: { lat: number; lon:
   return { center: { lat: (s + n) / 2, lon: (w + e) / 2 }, zoom: zoomForSpan(Math.max(e - w, n - s)) };
 }
 
+/** A country wider than this is framed by its largest part and not by all of it. */
+export const WHOLE_COUNTRY_MAX_SPAN = 60;
+
 /**
- * A country from its outline. The view goes to the LARGEST part: the envelope of
- * the whole country is no use for one that has a part on each side of the date line
- * (its middle is the wrong side of the planet).
+ * A country from its outline. The CROP is every part of it. The VIEW is all of it
+ * when it fits in 60 degrees (Indonesia, Japan), and its largest part when it does
+ * not: the envelope of a country with a part on each side of the date line has its
+ * middle on the wrong side of the planet (Russia), and the envelope of one with a
+ * far territory has its middle in the sea (the file draws French Guiana as France).
  */
 export function placeFromCountry(label: string, outline: GeoJSON.Geometry | null | undefined): ResolvedPlace | null {
   const parts = partsOfGeometry(outline);
@@ -80,12 +85,15 @@ export function placeFromCountry(label: string, outline: GeoJSON.Geometry | null
     }
   }
   if (!largest) return null;
+  const all = parts.flatMap((part) => part[0] ?? []);
+  const [w, s, e, n] = bboxOfRing(all);
+  const whole = Math.max(e - w, n - s) <= WHOLE_COUNTRY_MAX_SPAN;
   return {
     label,
     shape: "country",
     parts,
-    ...frame(largest),
-    note: `The map shows only what is inside the border of ${label}. The border is a coarse outline.`,
+    ...frame(whole ? all : largest),
+    note: `The map shows only what is inside the border of ${label}. The border is a coarse outline of the land: an item at sea is outside it.`,
   };
 }
 
