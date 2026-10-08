@@ -22,6 +22,7 @@ import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 import SatelliteDetail from "@/components/SatelliteDetail";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import { useLiveVideoIds } from "@/lib/console/news/useLiveVideoIds";
 
 // The satellite meta the propagation hook attaches (see lib/satellites/useSatellites).
@@ -378,6 +379,7 @@ export default function SatellitesDetail(props: WidgetDetailProps) {
             disabled={exportGeo.length === 0}
             onClick={() => downloadText(`${exportFilename("satellites", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}
           >⬇ GeoJSON</button>
+          <ExportExtras name="satellites" kind="satellites" rows={exportRows} geo={exportGeo} source="Orbit elements (TLEs): CelesTrak. Positions computed in the browser with SGP4 (satellite.js)." />
         </span>
       </footer>
     </div>

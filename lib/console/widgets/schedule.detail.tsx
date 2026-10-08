@@ -15,6 +15,7 @@ import { signalsStore } from "@/lib/signals/store";
 import { shellLayoutStore } from "@/lib/console/store";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import { humaniseKey } from "@/lib/text/humanise";
 import { freshness } from "@/lib/console/signals/signalDetail";
 import { countdown, scheduleHeading, scheduleClock, type Countdown } from "@/lib/console/signals/schedule";
@@ -165,6 +166,7 @@ export function makeScheduleDetail(source: SignalSource) {
             <button onClick={showOnMap}>🗺 Show on map</button>
             <button disabled={!exportRows.length} onClick={() => downloadText(`${exportFilename(source.id, Date.now())}.csv`, "text/csv", toCsv(exportRows))}>⬇ CSV</button>
             <button disabled={!exportGeo.length} onClick={() => downloadText(`${exportFilename(source.id, Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}>⬇ GeoJSON</button>
+            <ExportExtras name={source.id} kind="schedule" rows={exportRows} geo={exportGeo} source={`${source.label}: ${source.attribution}`} />
           </span>
         </footer>
       </div>

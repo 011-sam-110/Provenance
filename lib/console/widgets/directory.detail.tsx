@@ -25,6 +25,7 @@ import { signalsStore } from "@/lib/signals/store";
 import { shellLayoutStore } from "@/lib/console/store";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import ExportExtras from "@/components/console/ExportExtras";
 import { humaniseKey } from "@/lib/text/humanise";
 import { freshness } from "@/lib/console/signals/signalDetail";
 import { rowMetric } from "@/lib/console/signals/signalCard";
@@ -153,6 +154,13 @@ export function makeDirectoryDetail(source: SignalSource) {
       lat: f.lat, lon: f.lon,
     }));
     const exportGeo = rows.map((f) => ({ lat: f.lat, lon: f.lon, properties: { id: f.id, name: f.title, ...(f.props ?? {}) } }));
+    // The three columns that are named after this layer's own fields. Only this view
+    // knows what they are, so it tells the data dictionary.
+    const exportMeanings: Record<string, string> = {
+      ...(hasMetric ? { [metric!.field]: `The layer's own measure of the record${metric!.unit ? `, in ${metric!.unit}` : ""}.` } : {}),
+      ...(codeKey ? { [codeKey]: `${codeLabel}: the short code of the record, as the layer gives it.` } : {}),
+      ...(detailKey ? { [detailKey]: `${detailLabel}, as the layer gives it.` } : {}),
+    };
 
     // Props to hide from the drill-down (they already have their own column).
     const shownKeys = new Set<string>(["rank", "region", "country"]);
@@ -278,6 +286,7 @@ export function makeDirectoryDetail(source: SignalSource) {
             <button onClick={showOnMap}>🗺 Show on map</button>
             <button disabled={!exportRows.length} onClick={() => downloadText(`${exportFilename(source.id, Date.now())}.csv`, "text/csv", toCsv(exportRows))}>⬇ CSV</button>
             <button disabled={!exportGeo.length} onClick={() => downloadText(`${exportFilename(source.id, Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}>⬇ GeoJSON</button>
+            <ExportExtras name={source.id} kind="directory" rows={exportRows} geo={exportGeo} source={`${source.label}: ${source.attribution}`} extra={exportMeanings} />
           </span>
         </footer>
       </div>

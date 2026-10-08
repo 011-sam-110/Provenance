@@ -14,6 +14,7 @@ import { resolveWidgetHelp } from "@/lib/console/help";
 import { topSeverity, type Alert } from "@/lib/console/alerts";
 import { WidgetErrorBoundary } from "@/components/console/WidgetErrorBoundary";
 import { toCsv, toGeoJson, downloadText, exportFilename, type GeoPoint } from "@/lib/export";
+import { saveDataDictionary, saveKml } from "@/lib/export/save";
 import {
   notificationsStore, useRule, useNotifications, dispatch, isDiscordConfigured, requestNotifyPermission,
 } from "@/lib/shell/notifications";
@@ -556,6 +557,12 @@ export default function WidgetFrame({
           )}
           {report.export?.geo && report.export.geo.length > 0 && (
             <button onClick={() => { const base = exportFilename(report.export!.name ?? instance.type, Date.now()); downloadText(`${base}.geojson`, "application/geo+json", toGeoJson(report.export!.geo!)); setMenuOpen(false); }}>⬇ Export GeoJSON</button>
+          )}
+          {report.export?.geo && report.export.geo.length > 0 && (
+            <button onClick={() => { saveKml(report.export!.name ?? instance.type, report.export!.geo!); setMenuOpen(false); }}>⬇ Export KML</button>
+          )}
+          {((report.export?.rows?.length ?? 0) > 0 || (report.export?.geo?.length ?? 0) > 0) && (
+            <button onClick={() => { saveDataDictionary({ name: report.export!.name ?? instance.type, rows: report.export!.rows, geo: report.export!.geo, source: help.source }); setMenuOpen(false); }}>⬇ Data dictionary</button>
           )}
           <button className="tn-cw-danger" onClick={() => shellLayoutStore.remove(instance.id)}>✕ Remove</button>
         </div>

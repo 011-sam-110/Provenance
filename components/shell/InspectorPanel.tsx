@@ -34,6 +34,7 @@ import { useEffect, useRef } from "react";
 import { overlay, useOverlay } from "@/lib/overlay";
 import { OverlayBody } from "@/lib/overlay-content";
 import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
+import { saveDataDictionary, saveKml } from "@/lib/export/save";
 import {
   useInspectorRail,
   type OpenTool,
@@ -75,22 +76,47 @@ export default function InspectorPanel() {
     return () => window.removeEventListener("keydown", onKey);
   }, [object]);
 
+  // One record: what the three exports of an inspection hold.
+  const exportProps = (o: NonNullable<typeof object>): Record<string, unknown> => ({
+    kind: o.kind,
+    id: o.id,
+    label: o.label,
+    lat: o.lat,
+    lon: o.lon,
+    ...(o.meta ?? {}),
+  });
+  const hasPlace = !!object && Number.isFinite(object.lat) && Number.isFinite(object.lon);
+
   const exportObject = () => {
     if (!object) return;
-    const props = {
-      kind: object.kind,
-      id: object.id,
-      label: object.label,
-      lat: object.lat,
-      lon: object.lon,
-      ...(object.meta ?? {}),
-    };
+    const props = exportProps(object);
     const base = exportFilename(`dossier-${object.kind}`, Date.now());
-    if (Number.isFinite(object.lat) && Number.isFinite(object.lon)) {
+    if (hasPlace) {
       downloadText(`${base}.geojson`, "application/geo+json", toGeoJson([{ lat: object.lat, lon: object.lon, properties: props }]));
     } else {
       downloadText(`${base}.csv`, "text/csv", toCsv([props]));
     }
+  };
+
+  const exportObjectKml = () => {
+    if (!object || !hasPlace) return;
+    saveKml(`dossier-${object.kind}`, [{ lat: object.lat, lon: object.lon, properties: exportProps(object) }]);
+  };
+
+  // The dictionary describes the file that "Export" gives: the GeoJSON (and the KML)
+  // when the object has a place, else the CSV.
+  const exportObjectDictionary = () => {
+    if (!object) return;
+    const props = exportProps(object);
+    const meta = object.meta ?? {};
+    const credit = [meta.sourceLabel, meta.attribution].filter((v): v is string => typeof v === "string" && v.trim() !== "");
+    saveDataDictionary({
+      name: `dossier-${object.kind}`,
+      kind: "dossier",
+      rows: hasPlace ? [] : [props],
+      geo: hasPlace ? [{ lat: object.lat, lon: object.lon, properties: props }] : [],
+      source: credit.join(": ") || undefined,
+    });
   };
 
   if (tool) {
@@ -127,6 +153,19 @@ export default function InspectorPanel() {
         <div className="tn-inspector-bar">
           <button type="button" className="tn-inspector-export" onClick={exportObject} aria-label="Export this inspection">
             ⬇ Export
+          </button>
+          {hasPlace && (
+            <button type="button" className="tn-inspector-export" onClick={exportObjectKml} aria-label="Export this inspection as KML, for Google Earth">
+              ⬇ KML
+            </button>
+          )}
+          <button
+            type="button"
+            className="tn-inspector-export"
+            onClick={exportObjectDictionary}
+            title="What each field of the export means, the source of the data and the time of the export (plain text)"
+          >
+            ⬇ Data dictionary
           </button>
           <button
             ref={closeRef}
