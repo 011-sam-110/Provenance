@@ -18,7 +18,7 @@
 import type { Map as MapLibreMap, GeoJSONSource } from "maplibre-gl";
 import { useSyncExternalStore } from "react";
 import { haversineKm } from "@/lib/geo/haversine";
-import { aoiScope, scopeStore, WORLD_SCOPE, type Scope } from "@/lib/shell/scope";
+import { aoiScope, scopeStore, WORLD_SCOPE, type Scope, type ScopeParts } from "@/lib/shell/scope";
 import { inspectorStore, type InspectorArea } from "@/lib/shell/inspector";
 import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
 
@@ -141,6 +141,24 @@ export function ringToFeature(ring: readonly [number, number][]): GeoJSON.Featur
     type: "Feature",
     properties: {},
     geometry: { type: "Polygon", coordinates: [closed as [number, number][]] },
+  };
+}
+
+/**
+ * Pure: the parts of a named place as one MultiPolygon feature. Each ring is closed
+ * here when it is not closed already (a country outline is, a generated circle is
+ * not), because GeoJSON needs the first vertex again at the end.
+ */
+export function partsToFeature(parts: ScopeParts): GeoJSON.Feature {
+  const close = (ring: [number, number][]) => {
+    const first = ring[0];
+    const last = ring[ring.length - 1];
+    return first && last && (first[0] !== last[0] || first[1] !== last[1]) ? [...ring, first] : ring;
+  };
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: { type: "MultiPolygon", coordinates: parts.map((part) => part.map(close)) },
   };
 }
 
@@ -516,6 +534,12 @@ function setData(map: MapLibreMap, id: string, data: GeoJSON.Feature | GeoJSON.F
  */
 export function paintScope(map: MapLibreMap, scope: Scope): boolean {
   if (!ensureLayers(map)) return false;
+  // A named place (the question reader's "in Spain") is drawn as every part of it,
+  // islands and holes included, so the outline on the map is the crop itself.
+  if (scope.mode === "aoi" && scope.parts && scope.parts.length > 0) {
+    setData(map, AOI_SRC, partsToFeature(scope.parts));
+    return true;
+  }
   const ring = scope.mode === "aoi" ? scope.polygon : undefined;
   setData(map, AOI_SRC, ring && ring.length >= MIN_VERTICES ? ringToFeature(ring) : EMPTY);
   return true;

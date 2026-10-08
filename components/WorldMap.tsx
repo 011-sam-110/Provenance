@@ -132,8 +132,10 @@ import {
   type MarkContext,
 } from "@/lib/map/precisionMarks";
 import MarkLegend from "@/components/console/MarkLegend";
+import AskChips from "@/components/console/AskChips";
 import { centroidByName } from "@/lib/signals/country-centroids.data";
 import { useTimeWindow, windowMsFor, withinWindow } from "@/lib/shell/timeWindow";
+import { passesPrecision, usePrecisionFilter } from "@/lib/shell/precisionFilter";
 import { viewModeStore } from "@/lib/shell/viewMode";
 import { useNow } from "@/lib/shell/useNow";
 import {
@@ -607,6 +609,7 @@ export default function WorldMap() {
   const timeWindow = useTimeWindow();
   const windowMs = windowMsFor(timeWindow);
   const nowCoarse = useNow(30_000);
+  const precisionFilter = usePrecisionFilter();
 
   // Cameras → WorldObject[] (shape = feed, colour = region).
   const cameraObjects = useMemo<WorldObject[]>(
@@ -696,9 +699,18 @@ export default function WorldMap() {
   // Time-window-filtered signals — what the map actually renders. Untimed features
   // (no `ts`) pass through unconditionally (withinWindow returns true), so the
   // filter only ever hides timed events that are older than the chosen window.
+  //
+  // The precision filter is applied in the same place: "exact points only" or "no
+  // country figures", set by the question reader of the command palette. With no
+  // rule set it passes every item (lib/shell/precisionFilter.ts).
   const visibleSignals = useMemo(
-    () => signals.filter((s) => withinWindow(s.meta?.ts as string | undefined, windowMs, nowCoarse)),
-    [signals, windowMs, nowCoarse],
+    () =>
+      signals.filter(
+        (s) =>
+          withinWindow(s.meta?.ts as string | undefined, windowMs, nowCoarse) &&
+          passesPrecision(s.meta?.precision, precisionFilter),
+      ),
+    [signals, windowMs, nowCoarse, precisionFilter],
   );
   const signalsRef = useRef<WorldObject[]>([]);
   signalsRef.current = visibleSignals;
@@ -2830,6 +2842,8 @@ export default function WorldMap() {
       {/* Which mark means what. Lists only the marks on the map now, and renders
           nothing while no signal layer draws one. */}
       <MarkLegend marks={legendMarks} />
+      {/* The filters a typed question put on this map, each one removable here. */}
+      <AskChips />
 
       {/* The hovered cable's name, floating at the cursor. Presentational only —
           the dossier it opens is the accessible surface, and a tooltip that

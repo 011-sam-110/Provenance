@@ -31,9 +31,26 @@ export interface Scope {
    * closes it.
    */
   polygon?: [number, number][];
+  /**
+   * A NAMED PLACE as its real shape: every part of it, each part a list of rings
+   * (the outer ring first, then its holes), [lon, lat]. A country is more than one
+   * ring when it has islands or an enclave, and one `polygon` cannot say that. When
+   * present it is the test: a point is inside when it is inside an odd number of
+   * the rings (see withinParts). Set only by `placeScope`.
+   */
+  parts?: ScopeParts;
+  /**
+   * "place" when the question reader of the command palette set this scope from a
+   * place name (lib/shell/askApplied.ts). The chip that removes the filter reads
+   * it, and `coerceSavedScope` drops such a scope on reload. Absent for a drawn area.
+   */
+  origin?: "place";
   /** Human label for the top bar + the feed's honest empty state. */
   label: string;
 }
+
+/** The parts of a named place: parts -> rings -> [lon, lat]. A MultiPolygon's coordinates. */
+export type ScopeParts = [number, number][][][];
 
 export const WORLD_SCOPE: Scope = { mode: "world", label: "World" };
 export const DEFAULT_RADIUS_KM = 250;
@@ -73,6 +90,48 @@ export function bboxOfRing(ring: readonly [number, number][]): [number, number, 
   return [w, s, e, n];
 }
 
+/**
+ * Pure: is [lon, lat] inside a place made of parts?
+ *
+ * EVEN-ODD OVER EVERY RING. The parts of one place do not overlap and a hole lies
+ * inside its own outer ring, so a point in the place is inside exactly one ring, a
+ * point in a hole is inside two, and a point outside is inside none. One count gives
+ * the islands and the holes with no special case for either.
+ */
+export function withinParts(lon: number, lat: number, parts: ScopeParts): boolean {
+  let inside = false;
+  for (const part of parts) {
+    for (const ring of part) {
+      if (ring.length >= 3 && pointInRing(lon, lat, ring)) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** Pure: the [west, south, east, north] envelope of every ring of a place. */
+export function bboxOfParts(parts: ScopeParts): [number, number, number, number] {
+  return bboxOfRing(parts.flat(2));
+}
+
+/**
+ * Build the scope for a named place from its parts. Rings with fewer than three
+ * finite vertices are dropped; with no ring left the answer is World, because a
+ * scope that admits nothing would empty the map and say a place name beside it.
+ */
+export function placeScope(label: string, parts: ScopeParts): Scope {
+  const finite = (ring: [number, number][]) =>
+    ring.filter((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]));
+  const clean: ScopeParts = [];
+  for (const part of parts) {
+    const [outer, ...holes] = part.map(finite);
+    // A part with no outer ring is no part, and its holes go with it.
+    if (!outer || outer.length < 3) continue;
+    clean.push([outer, ...holes.filter((ring) => ring.length >= 3)]);
+  }
+  if (clean.length === 0) return WORLD_SCOPE;
+  return { mode: "aoi", origin: "place", label, parts: clean, bbox: bboxOfParts(clean) };
+}
+
 /** Pure: is a point inside the scope? Malformed centre/aoi scopes admit
  *  everything — we never silently hide data we cannot test. */
 export function withinScope(lat: number, lon: number, scope: Scope): boolean {
@@ -82,6 +141,15 @@ export function withinScope(lat: number, lon: number, scope: Scope): boolean {
       if (!scope.center || scope.radiusKm == null) return true;
       return haversineKm(scope.center.lat, scope.center.lon, lat, lon) <= scope.radiusKm;
     case "aoi": {
+      // A named place first: its parts are the whole test, behind the same cheap
+      // envelope reject the drawn ring uses below.
+      if (scope.parts && scope.parts.length > 0) {
+        if (scope.bbox) {
+          const [w, s, e, n] = scope.bbox;
+          if (lon < w || lon > e || lat < s || lat > n) return false;
+        }
+        return withinParts(lon, lat, scope.parts);
+      }
       // Polygon first when one was drawn. The bbox is kept alongside it as a cheap
       // reject: point-in-polygon is O(vertices) and this runs per feature per
       // render across every scoped widget, so the ~99% of the world that is
@@ -145,6 +213,10 @@ export function coerceSavedScope(saved: unknown): Scope {
   const s = saved as Scope | null;
   if (!s || typeof s !== "object" || typeof s.mode !== "string") return WORLD_SCOPE;
   if (s.mode === "near-me" || s.mode === "region") return WORLD_SCOPE;
+  // A place set by the question reader goes too. The time and precision filters of
+  // the same question are not persisted, so a restored place would be one third of
+  // a question, and the chip that removes it would be the only sign of it.
+  if (s.origin === "place") return WORLD_SCOPE;
   if (s.mode === "aoi") {
     // localStorage is user-writable and this drives what a feed HIDES. A ring that
     // survived as junk would silently filter the console down to nothing with no

@@ -90,6 +90,14 @@ export const timeWindowStore = {
    * What it does instead: nothing, so `state` stays DEFAULT_TIME_WINDOW ("all"), which
    * `withinWindow` treats as "never filter". Everyone sees everything.
    *
+   * ONE WRITER SINCE 2026-10-08, and it does not change the rule above. The question
+   * reader of the command palette calls `set` ("fires in Spain last 24h", see
+   * lib/shell/askApplied.ts). While a window is set, a Time chip on the map says so and
+   * removes it (components/console/AskChips.tsx). A reload still opens on "all", because
+   * this is still a no-op: a restored window would be a filter from an earlier visit.
+   * If the lines below are restored, the chip bar still shows the restored window, so
+   * the filter stays visible; decide then if a filter should outlive the visit at all.
+   *
    * The persisted value is deliberately NOT deleted, and the store, the key and the pure
    * `withinWindow` test are all still here and still exercised. Re-mount a control that
    * calls `set`, restore the two lines below, and the feature is back with the user's old
