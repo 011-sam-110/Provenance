@@ -14,6 +14,11 @@
   <img src="https://img.shields.io/badge/unit%20tests-4%2C264-2ea44f" alt="4,264 unit tests">
 </p>
 
+<p align="center">
+  <img src="docs/media/console-demo.gif" width="820" alt="A 39-second recording of the Provenance console. The question 'quakes in the USA last 24h' is typed in the command palette and becomes three filter chips: layer Earthquakes, place USA, time Last 24 hours. The map flies to the United States and draws the earthquakes. One earthquake in Texas opens with its precision line, 'Exact point', and links that open the same spot in Google Earth, Google Maps, Copernicus Browser, OpenStreetMap and Wikimapia. Then the static cameras are switched on, and one Idaho road camera at Bear Lake opens with its live picture.">
+</p>
+<p align="center"><sub>Recorded on the live site on 2026-10-08. Nothing in it is staged: the earthquakes, the cameras and the camera picture are what production served.</sub></p>
+
 ## TL;DR
 
 - **What it is:** a free, live globe of public data. It shows about 20,000 official road cameras, 70,698 webcams, aircraft, satellites and 35 signal layers, for example earthquakes, wildfires and undersea cables.
