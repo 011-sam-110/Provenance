@@ -47,6 +47,10 @@ export const PIN_HIT_LAYERS: readonly string[] = [
   "webcam-markers", "webcam-dots",
   "plane-markers", "satellite-core",
   "signal-dots", "signal-icons", "signal-line-paths", "signal-fill-areas",
+  // The marks that are not pins (lib/map/precisionMarks.ts): a soft disc, a dashed
+  // ring, and the transparent target on a country figure. The shaded country fill is
+  // NOT here on purpose: a click on it must still open the country dossier.
+  "signal-area-discs", "signal-area-rings", "signal-area-hit",
   "user-pin-dots",
 ];
 

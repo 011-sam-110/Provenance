@@ -168,6 +168,25 @@ obligations and are not satisfied by the licence.
   guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
+- **The command palette reads a typed question into filters, with rules and no model.**
+  `lib/shell/ask.ts` (pure, `parseAsk`) turns "fires in Spain last 24h" into a layer, a
+  place, a time window and a precision rule, and gives back the words it did not
+  understand. Layer names come from `MAP_SIGNALS` through `lib/shell/askContext.ts`,
+  plus the `LAYER_SYNONYMS` table; `tests/unit/ask.test.ts` holds the table of
+  questions and fails on a synonym for a layer that does not exist. A new form of
+  question is a new row in that table first.
+  **One rule is not a style preference: no filter without a chip.** The palette shows
+  each filter as a chip before it applies it, and `components/console/AskChips.tsx`
+  shows the applied ones on the map. Both render from the live stores
+  (`appliedChips` in `lib/shell/askApplied.ts`), and each chip removes its filter. So
+  the three filter stores this feature writes are not persisted: the time window
+  (`timeWindow.ts`, whose `hydrate` stays a no-op), the precision filter
+  (`precisionFilter.ts`) and a place scope (`origin: "place"` in `scope.ts`, dropped by
+  `coerceSavedScope`). Do not persist one of them without the chip bar reading it back.
+  A place is a real shape, never a guess: a country is its outline from
+  `countries-110m.geojson`, any other place is the geocoder's box or a 25 km circle
+  (`lib/shell/askPlace.ts`), and the chip's tooltip says which. The reader does not
+  round: a time length with no window ("last 48h", "today") is shown as not understood.
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
 - `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (17 feeds).
   Sixteen are hand-written adapters; the seventeenth was admitted through discovery and shares
@@ -206,6 +225,15 @@ obligations and are not satisfied by the licence.
   point. A feature sets its own level only where one layer mixes levels. The route
   writes the resolved level on every feature (`lib/signals/precision.ts`) and
   `SignalDetail` says it in one line.
+  **The map draws by that level** (`lib/map/precisionMarks.ts`): `exact` and `facility`
+  keep the pin; an `area` is its own polygon or a soft disc; a `country` is its shaded
+  outline from `public/geo/countries-110m.geojson` with the layer's metric as the
+  figure, or a dashed ring when that file has no outline (it has 177). An area or a
+  country never gets a pin, and `tests/unit/precision-marks.test.ts` holds that for
+  every registered layer. A country-level adapter sends `countryIso3`. The shading is
+  not a click target: a click on it opens the country dossier, the figure opens the
+  signal. `components/console/MarkLegend.tsx` is the key, top right of the map, and
+  lists only the marks on the map now.
 - `lib/console/*` — widget registry, presets (**3 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
   them, and the Sources rail's tiles and the ⌘K Profiles list drive the same three. There is

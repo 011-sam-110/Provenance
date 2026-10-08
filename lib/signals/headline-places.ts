@@ -35,6 +35,7 @@ import { mergedNews } from "@/lib/news/feed";
 import { matchPlaces, type GazetteerEntry } from "@/lib/news/headlinePlaces";
 import { NEWS_ATTRIBUTION } from "@/lib/news/sources";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 
 /** Pins published. A map with a thousand dots communicates nothing. */
 export const MAX_FEATURES = 250;
@@ -99,6 +100,7 @@ function toFeature(bucket: PlaceBucket): SignalFeature {
     signalId: "headline-places",
     // A country name is a country, not a place in it. A city keeps the layer default.
     ...(entry.kind === "country" ? { precision: "country" as const } : {}),
+    ...(entry.kind === "country" && centroidByIso2(entry.iso2) ? { countryIso3: centroidByIso2(entry.iso2)!.iso3 } : {}),
     link: newest.url,
     ts: newest.ts > 0 ? new Date(newest.ts).toISOString() : undefined,
     props: {

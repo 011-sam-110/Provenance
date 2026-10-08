@@ -34,6 +34,7 @@ import type { ScrapedItem } from "@/lib/news/ingest";
 import { outletDisplayName } from "@/lib/news/ingest";
 import { scrapedItems, scrapedStats } from "@/lib/news/scrapedStore";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { placeKey, placeQuery, resolvePlaces, type ResolvedPlace } from "@/lib/news/places";
 
 /** Stories considered per cycle. The store holds more than any map should draw. */
@@ -163,6 +164,9 @@ function toFeature(key: string, bucket: PlaceBucket): SignalFeature {
     // The geocoder matched a whole country, so the point is a centroid. Every other
     // match is a named place and keeps the layer default.
     ...(place.type?.trim().toLowerCase() === "country" ? { precision: "country" as const } : {}),
+    ...(place.type?.trim().toLowerCase() === "country" && centroidByIso2(place.countryCode ?? "")
+      ? { countryIso3: centroidByIso2(place.countryCode ?? "")!.iso3 }
+      : {}),
     link: newest.url,
     ts: new Date(newest.ts).toISOString(),
     props: {

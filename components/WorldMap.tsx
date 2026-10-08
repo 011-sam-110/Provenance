@@ -84,7 +84,15 @@ import { toCountryLabelFC, buildCountryObject, type CountryProps } from "@/lib/g
 // re-declared here: the cursor event NAME (a second literal would drift the day one
 // side is renamed) and the selection store the highlight ring is driven by.
 import { useTerminalSelection, type TerminalSelection } from "@/lib/terminal/selection";
-import { loadCameraIcons, loadPlaneIcons, loadSatelliteIcons, loadWebcamIcons, loadSignalIcons } from "@/lib/map/icons";
+import {
+  loadCameraIcons,
+  loadPlaneIcons,
+  loadSatelliteIcons,
+  loadWebcamIcons,
+  loadSignalIcons,
+  addRingImage,
+  RING_IMAGE_PREFIX,
+} from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
 import { aoiDrawStore, attachAoi } from "@/lib/map/aoi";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
@@ -115,7 +123,19 @@ import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore, signalFreshnessFromPayload } from "@/lib/signals/freshness";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { resolvePrecision } from "@/lib/signals/precision";
+import {
+  buildCountryOutlines,
+  marksPresent,
+  pinSignals,
+  toSignalAnchorFC,
+  toSignalCountryFC,
+  type MarkContext,
+} from "@/lib/map/precisionMarks";
+import MarkLegend from "@/components/console/MarkLegend";
+import AskChips from "@/components/console/AskChips";
+import { centroidByName } from "@/lib/signals/country-centroids.data";
 import { useTimeWindow, windowMsFor, withinWindow } from "@/lib/shell/timeWindow";
+import { passesPrecision, usePrecisionFilter } from "@/lib/shell/precisionFilter";
 import { viewModeStore } from "@/lib/shell/viewMode";
 import { useNow } from "@/lib/shell/useNow";
 import {
@@ -191,13 +211,16 @@ const WEBCAM_LAYER = "webcam-markers"; // detailed webcam icons on descent
 const WEBCAM_MIN_ZOOM = 3;
 const DEM_SRC = "terrain-dem";
 const HILLSHADE_LAYER = "hillshade";
-// Global signals — THREE aggregated sources carrying the union of every ON
-// signal's features, split by geometry so each MapLibre layer type gets its own:
-//   • SIGNAL_SRC   — points  → circle + label layers
+// Global signals — FIVE aggregated sources carrying the union of every ON
+// signal's features. The first three are split by geometry so each MapLibre layer
+// type gets its own; the last two (declared below SIGNAL_FILL_OUTLINE) draw the
+// features whose place is an area or a country, which never get a pin:
+//   • SIGNAL_SRC   — points that are exact or a named site → circle + label layers
 //   • SIGNAL_LINE_SRC — LineString/MultiLineString → line layer (e.g. cables)
 //   • SIGNAL_FILL_SRC — Polygon/MultiPolygon → fill + outline layers (e.g. jamming)
 // The point circle layer is unaffected by line/area features (toSignalFC excludes
-// them), and a click on ANY of them resolves to the SAME signal dossier.
+// them) and by area/country points (pinSignals excludes those), and a click on ANY
+// mark resolves to the SAME signal dossier.
 const SIGNAL_SRC = "signals";
 const SIGNAL_LAYER = "signal-dots";
 const SIGNAL_ICON_LAYER = "signal-icons"; // white hazard pictogram drawn over the disc
@@ -214,6 +237,24 @@ const SIGNAL_LINE_HIT = "signal-line-hit";
 const SIGNAL_FILL_SRC = "signal-fills";
 const SIGNAL_FILL_LAYER = "signal-fill-areas";
 const SIGNAL_FILL_OUTLINE = "signal-fill-outline";
+// DRAWN BY PRECISION (lib/map/precisionMarks.ts). An area or a country figure is
+// never a pin, so those features leave SIGNAL_SRC and are drawn from two more
+// aggregated sources:
+//   • SIGNAL_COUNTRY_SRC — the outline of each country a country-level feature
+//     stands for → a shaded fill + outline
+//   • SIGNAL_ANCHOR_SRC  — one anchor point for each disc, country and ring mark
+//     → the soft disc, the dashed ring, the figure, the name and the click target
+const SIGNAL_COUNTRY_SRC = "signal-country-shapes";
+const SIGNAL_COUNTRY_FILL = "signal-country-fill";
+const SIGNAL_COUNTRY_OUTLINE = "signal-country-outline";
+const SIGNAL_ANCHOR_SRC = "signal-area-marks";
+const SIGNAL_DISC_LAYER = "signal-area-discs";
+const SIGNAL_RING_LAYER = "signal-area-rings";
+const SIGNAL_ANCHOR_HIT = "signal-area-hit"; // transparent click target on a country figure
+const SIGNAL_FIGURE_LAYER = "signal-area-figures";
+const SIGNAL_ANCHOR_LABEL = "signal-area-labels";
+/** The declared metric of each layer: the figure a shaded mark prints. */
+const SIGNAL_METRICS = new Map(MAP_SIGNALS.map((s) => [s.id, s.metric] as const));
 // Clickable countries — bundled Natural Earth polygons (borders + click hit-area)
 // plus our own centroid name labels (raster basemaps only; Light labels itself).
 const COUNTRY_SRC = "country-polys";
@@ -568,6 +609,7 @@ export default function WorldMap() {
   const timeWindow = useTimeWindow();
   const windowMs = windowMsFor(timeWindow);
   const nowCoarse = useNow(30_000);
+  const precisionFilter = usePrecisionFilter();
 
   // Cameras → WorldObject[] (shape = feed, colour = region).
   const cameraObjects = useMemo<WorldObject[]>(
@@ -657,12 +699,38 @@ export default function WorldMap() {
   // Time-window-filtered signals — what the map actually renders. Untimed features
   // (no `ts`) pass through unconditionally (withinWindow returns true), so the
   // filter only ever hides timed events that are older than the chosen window.
+  //
+  // The precision filter is applied in the same place: "exact points only" or "no
+  // country figures", set by the question reader of the command palette. With no
+  // rule set it passes every item (lib/shell/precisionFilter.ts).
   const visibleSignals = useMemo(
-    () => signals.filter((s) => withinWindow(s.meta?.ts as string | undefined, windowMs, nowCoarse)),
-    [signals, windowMs, nowCoarse],
+    () =>
+      signals.filter(
+        (s) =>
+          withinWindow(s.meta?.ts as string | undefined, windowMs, nowCoarse) &&
+          passesPrecision(s.meta?.precision, precisionFilter),
+      ),
+    [signals, windowMs, nowCoarse, precisionFilter],
   );
   const signalsRef = useRef<WorldObject[]>([]);
   signalsRef.current = visibleSignals;
+  // What lib/map/precisionMarks needs to choose a mark: the country outlines (null
+  // until the file loads, and then every country figure is a dashed ring, never a
+  // pin) and the metric of each layer. State, not only a ref, so the marks are
+  // rebuilt when the outlines arrive.
+  const [countryOutlines, setCountryOutlines] = useState<Map<string, GeoJSON.Geometry> | null>(null);
+  const markCtx = useMemo<MarkContext>(
+    () => ({
+      countryOutline: (iso3) => countryOutlines?.get(iso3),
+      metricOf: (signalId) => SIGNAL_METRICS.get(signalId),
+      iso3OfName: (name) => centroidByName(name)?.iso3,
+    }),
+    [countryOutlines],
+  );
+  const markCtxRef = useRef(markCtx);
+  markCtxRef.current = markCtx;
+  // Which marks are on the map now. The legend lists these and no others.
+  const legendMarks = useMemo(() => marksPresent(visibleSignals, markCtx), [visibleSignals, markCtx]);
   const layersRef = useRef<LayerState>(layers);
   layersRef.current = layers;
 
@@ -925,7 +993,9 @@ export default function WorldMap() {
       ensureGeoJSON(map, PIN_SRC, toPinFC(pinsRef.current.pins, pinsRef.current.activeId));
       ensureGeoJSON(map, SIGNAL_FILL_SRC, toSignalFillFC(signalsRef.current));
       ensureGeoJSON(map, SIGNAL_LINE_SRC, toSignalLineFC(signalsRef.current));
-      ensureGeoJSON(map, SIGNAL_SRC, toSignalFC(signalsRef.current));
+      ensureGeoJSON(map, SIGNAL_SRC, toSignalFC(pinSignals(signalsRef.current, markCtxRef.current)));
+      ensureGeoJSON(map, SIGNAL_COUNTRY_SRC, toSignalCountryFC(signalsRef.current, markCtxRef.current));
+      ensureGeoJSON(map, SIGNAL_ANCHOR_SRC, toSignalAnchorFC(signalsRef.current, markCtxRef.current));
 
       // Clickable countries — added FIRST so borders/labels sit beneath every pin.
       // generateId powers the hover feature-state; the polygons stream in via the
@@ -1166,6 +1236,68 @@ export default function WorldMap() {
           },
         });
       }
+      // Global signals — COUNTRY figures. The whole country is shaded in the colour
+      // of the feature, because the figure is about the country and not about a
+      // point in it. Beneath every other signal layer, so a pin in a shaded country
+      // stays on top. The fill is NOT a click target: a click on it still opens the
+      // country dossier, and the figure (SIGNAL_ANCHOR_HIT) opens the signal.
+      if (!map.getLayer(SIGNAL_COUNTRY_FILL)) {
+        map.addLayer({
+          id: SIGNAL_COUNTRY_FILL,
+          type: "fill",
+          source: SIGNAL_COUNTRY_SRC,
+          paint: {
+            "fill-color": ["get", "color"],
+            "fill-opacity": 0.34,
+          },
+        });
+      }
+      if (!map.getLayer(SIGNAL_COUNTRY_OUTLINE)) {
+        map.addLayer({
+          id: SIGNAL_COUNTRY_OUTLINE,
+          type: "line",
+          source: SIGNAL_COUNTRY_SRC,
+          layout: { "line-join": "round" },
+          paint: {
+            "line-color": ["get", "color"],
+            // Never under 1 px: MapLibre draws a thinner line FAINT, not thin.
+            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 1, 4, 1.4, 8, 2],
+            "line-opacity": 0.85,
+          },
+        });
+      }
+      // Global signals — AREA marks with no polygon of their own (a city, an oblast,
+      // a grid cell). A soft shaded disc: no white ring and no pictogram, so it
+      // cannot be read as a pin.
+      if (!map.getLayer(SIGNAL_DISC_LAYER)) {
+        map.addLayer({
+          id: SIGNAL_DISC_LAYER,
+          type: "circle",
+          source: SIGNAL_ANCHOR_SRC,
+          filter: ["==", ["get", "mark"], "disc"],
+          paint: {
+            "circle-color": ["get", "color"],
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              0,
+              ["*", ["get", "radius"], 0.7],
+              6,
+              ["get", "radius"],
+              12,
+              ["*", ["get", "radius"], 1.5],
+            ],
+            // Strong enough to be seen on satellite imagery: at 0.26 with a faint
+            // edge the disc could not be found there and only its figure showed.
+            "circle-opacity": 0.4,
+            "circle-blur": 0.15,
+            "circle-stroke-color": ["get", "color"],
+            "circle-stroke-width": 1.5,
+            "circle-stroke-opacity": 0.9,
+          },
+        });
+      }
       // Global signals — AREA fill (Polygon/MultiPolygon, e.g. GPS jamming). Added
       // first so it sits beneath the line + circle layers; per-feature `color`
       // tints both the fill and its outline. Always visible (source = ON signals).
@@ -1310,6 +1442,94 @@ export default function WorldMap() {
             "text-offset": [0, 1.1],
             "text-anchor": "top",
             "text-optional": true, // drop the label rather than hide the dot
+          },
+          paint: {
+            "text-color": "#0f172a",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.2,
+          },
+        });
+      }
+
+      // Global signals — a COUNTRY figure for a country the outline file does not
+      // hold (it has 177 outlines: no Bahrain, Malta, Singapore...). A dashed ring
+      // with the figure inside. The ring image is drawn on demand, one for each
+      // colour (see the `styleimagemissing` handler in wireInteractions).
+      if (!map.getLayer(SIGNAL_RING_LAYER)) {
+        map.addLayer({
+          id: SIGNAL_RING_LAYER,
+          type: "symbol",
+          source: SIGNAL_ANCHOR_SRC,
+          filter: ["==", ["get", "mark"], "ring"],
+          layout: {
+            "icon-image": ["concat", RING_IMAGE_PREFIX, ["get", "color"]],
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "text-field": ["get", "figure"],
+            "text-font": [...MAP_LABEL_FONT],
+            "text-size": 10,
+            "text-allow-overlap": true,
+            "text-ignore-placement": true,
+            "text-optional": true,
+          },
+          paint: {
+            "text-color": "#0f172a",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.2,
+          },
+        });
+      }
+      // The click target of a country figure. Transparent, and wider than the glyphs
+      // of the figure, which are too small to hit. `circle-opacity: 0` still renders
+      // the geometry for queryRenderedFeatures; `visibility: none` would take it out
+      // of hit-testing too (same trick as SIGNAL_LINE_HIT).
+      if (!map.getLayer(SIGNAL_ANCHOR_HIT)) {
+        map.addLayer({
+          id: SIGNAL_ANCHOR_HIT,
+          type: "circle",
+          source: SIGNAL_ANCHOR_SRC,
+          filter: ["!=", ["get", "mark"], "disc"],
+          paint: { "circle-radius": 15, "circle-color": "#000000", "circle-opacity": 0 },
+        });
+      }
+      // The figure on a shaded country and on a soft disc. The larger figure keeps
+      // its label when two collide.
+      if (!map.getLayer(SIGNAL_FIGURE_LAYER)) {
+        map.addLayer({
+          id: SIGNAL_FIGURE_LAYER,
+          type: "symbol",
+          source: SIGNAL_ANCHOR_SRC,
+          filter: ["all", ["!=", ["get", "mark"], "ring"], ["!=", ["get", "figure"], ""]],
+          layout: {
+            "text-field": ["get", "figure"],
+            "text-font": [...MAP_LABEL_FONT],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 1, 11, 5, 13],
+            "symbol-sort-key": ["*", -1, ["get", "weight"]],
+            "text-padding": 3,
+          },
+          paint: {
+            // A dark ink in the hue of its own layer (figureInk), so two country
+            // layers on at once do not print two figures in one shared black.
+            "text-color": ["get", "ink"],
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 1.8,
+          },
+        });
+      }
+      // The name under an area or country mark, on the same terms as SIGNAL_LABEL.
+      if (!map.getLayer(SIGNAL_ANCHOR_LABEL)) {
+        map.addLayer({
+          id: SIGNAL_ANCHOR_LABEL,
+          type: "symbol",
+          source: SIGNAL_ANCHOR_SRC,
+          minzoom: 4,
+          layout: {
+            "text-field": ["get", "label"],
+            "text-font": [...MAP_LABEL_FONT],
+            "text-size": 11,
+            "text-offset": [0, 1.3],
+            "text-anchor": "top",
+            "text-optional": true,
           },
           paint: {
             "text-color": "#0f172a",
@@ -1581,6 +1801,16 @@ export default function WorldMap() {
     map.on("click", SIGNAL_ICON_LAYER, signalClick);
     map.on("click", SIGNAL_LINE_LAYER, signalClick);
     map.on("click", SIGNAL_FILL_LAYER, signalClick);
+    // The marks that are not pins open the same dossier: a soft disc, a dashed ring,
+    // and the figure on a shaded country (through its transparent target).
+    map.on("click", SIGNAL_DISC_LAYER, signalClick);
+    map.on("click", SIGNAL_RING_LAYER, signalClick);
+    map.on("click", SIGNAL_ANCHOR_HIT, signalClick);
+
+    // The dashed ring is one small image for each colour, drawn when the style first
+    // asks for it. A handler and not a preload: the colours come from the data, and
+    // setStyle wipes every image, so a swap of the basemap asks again by itself.
+    map.on("styleimagemissing", (e) => addRingImage(map, e.id));
 
     // ── Cables: a hairline you can actually hit ────────────────────────────
     // The four handlers above only fire when the pointer is ON the drawn
@@ -1966,6 +2196,8 @@ export default function WorldMap() {
       .then((geo) => {
         if (!geo) return;
         countryGeoRef.current = geo;
+        // The same file gives the country figures their outlines.
+        setCountryOutlines(buildCountryOutlines(geo));
         (mapRef.current?.getSource(COUNTRY_SRC) as GeoJSONSource | undefined)?.setData(geo);
       })
       .catch(() => {});
@@ -2231,10 +2463,14 @@ export default function WorldMap() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    (map.getSource(SIGNAL_SRC) as GeoJSONSource | undefined)?.setData(toSignalFC(visibleSignals));
+    // Pins: exact points and named facilities only. An area or a country figure
+    // goes to the two sources below and never to this one.
+    (map.getSource(SIGNAL_SRC) as GeoJSONSource | undefined)?.setData(toSignalFC(pinSignals(visibleSignals, markCtx)));
     (map.getSource(SIGNAL_LINE_SRC) as GeoJSONSource | undefined)?.setData(toSignalLineFC(visibleSignals));
     (map.getSource(SIGNAL_FILL_SRC) as GeoJSONSource | undefined)?.setData(toSignalFillFC(visibleSignals));
-  }, [visibleSignals]);
+    (map.getSource(SIGNAL_COUNTRY_SRC) as GeoJSONSource | undefined)?.setData(toSignalCountryFC(visibleSignals, markCtx));
+    (map.getSource(SIGNAL_ANCHOR_SRC) as GeoJSONSource | undefined)?.setData(toSignalAnchorFC(visibleSignals, markCtx));
+  }, [visibleSignals, markCtx]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -2603,6 +2839,12 @@ export default function WorldMap() {
         </div>
       )}
 
+      {/* Which mark means what. Lists only the marks on the map now, and renders
+          nothing while no signal layer draws one. */}
+      <MarkLegend marks={legendMarks} />
+      {/* The filters a typed question put on this map, each one removable here. */}
+      <AskChips />
+
       {/* The hovered cable's name, floating at the cursor. Presentational only —
           the dossier it opens is the accessible surface, and a tooltip that
           tracks a pointer has no keyboard equivalent to announce. */}
@@ -2743,6 +2985,9 @@ function SignalFeed({
               // How precise the place is. The route writes the resolved level on
               // every feature; the layer default covers a payload that predates it.
               precision: resolvePrecision(f, source),
+              // The country a country-level feature stands for (ISO alpha-3), so the
+              // map can shade its outline. See lib/map/precisionMarks.ts.
+              ...(f.countryIso3 ? { countryIso3: f.countryIso3 } : {}),
               props: f.props ?? {},
               attribution: source.attribution,
               sourceLabel: source.label,

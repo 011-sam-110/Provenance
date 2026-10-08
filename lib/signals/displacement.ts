@@ -84,6 +84,7 @@ export function normalizeDisplacement(
       // "In", because the count is who is in this country (hosted + its own IDPs), not whose.
       title: `In ${ctr.name} — ${total.toLocaleString()} displaced`,
       signalId: "displacement",
+      countryIso3: iso3,
       color: displacementColor(total),
       props: {
         country: ctr.name,

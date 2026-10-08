@@ -87,6 +87,7 @@ export function normalizeOutages(json: { data?: IodaRow[] }): SignalFeature[] {
       lon: c.lon,
       title: `Internet outage — ${name}`,
       signalId: "internet-outages",
+      countryIso3: c.iso3,
       color: "#b91c1c", // censorship/outage red
       props: {
         country: name,
