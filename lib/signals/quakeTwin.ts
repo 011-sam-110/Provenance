@@ -48,15 +48,17 @@ export function twinLayerOf(signalId: string | undefined): QuakeLayerId | undefi
 
 /** The three things a comparison reads off an event. */
 export interface QuakeFacts {
+  /** The event's id in its own layer: the panel holds a copy from the click, the list is re-read. */
+  id?: string;
   lat: number;
   lon: number;
   ts?: string;
   magnitude?: number;
 }
 
-export function quakeFacts(f: Pick<SignalFeature, "lat" | "lon" | "ts" | "props">): QuakeFacts {
+export function quakeFacts(f: Pick<SignalFeature, "id" | "lat" | "lon" | "ts" | "props">): QuakeFacts {
   const m = f.props?.magnitude;
-  return { lat: f.lat, lon: f.lon, ts: f.ts, magnitude: typeof m === "number" ? m : undefined };
+  return { id: f.id, lat: f.lat, lon: f.lon, ts: f.ts, magnitude: typeof m === "number" ? m : undefined };
 }
 
 /** Both adapters turn a missing magnitude into 0, so 0 means "not given" here. */
@@ -121,6 +123,8 @@ export function findQuakeTwin(subject: QuakeFacts, theirs: readonly SignalFeatur
   if (best) {
     const twinFacts = quakeFacts(best.f);
     for (const o of ours) {
+      // The subject's own entry is not "another event": its copy here may be a later reading.
+      if (subject.id !== undefined && o.id === subject.id) continue;
       const back = fitGap(twinFacts, quakeFacts(o));
       if (back && back.score < best.gap.score - 1e-9) return { kind: "ambiguous" };
     }

@@ -51,6 +51,12 @@ describe("findQuakeTwin — the same event in the other catalogue", () => {
     expect(v.kind === "match" && v.twin.id).toBe("emsc:20261007_0000323");
   });
 
+  test("and from the EMSC side: its entry finds the USGS row that USGS labels an explosion", () => {
+    expect(usgs("nn00925437").props?.type).toBe("explosion");
+    const v = findQuakeTwin(facts(emsc("20261007_0000323")), USGS, EMSC);
+    expect(v.kind === "match" && v.twin.id).toBe("usgs:nn00925437");
+  });
+
   test("it keeps the twin's credited network, because a catalogue can carry the other's solution", () => {
     const v = findQuakeTwin(facts(usgs("tx2026tueaim")), EMSC, USGS);
     expect(v.kind === "match" && v.twin.props?.agency).toBe("NEIC");
@@ -81,6 +87,27 @@ describe("findQuakeTwin — when it must not claim", () => {
     expect(near.kind === "match" && near.twin.id).toBe("emsc:20261008_0000097");
     const far = findQuakeTwin(facts(usgs("hv75052077")), EMSC, USGS);
     expect(far.kind).toBe("ambiguous");
+  });
+
+  test("a panel opened on an earlier reading still matches: its own entry in the list is not 'another event'", () => {
+    // The dossier holds the event as it was when clicked; the list is re-read and the
+    // upstream revises location and magnitude. Measured on this fixture: 15 of 20
+    // matches turned 'ambiguous' on a 2 km shift and 19 of 20 on a 0.1 magnitude one.
+    for (const id of ["us6000u0yr", "ci41344855", "us6000u0xn"]) {
+      const row = usgs(id);
+      const base = { ...facts(row), id: row.id };
+      const stale = [
+        { ...base, lat: base.lat + 0.02 },
+        { ...base, magnitude: (base.magnitude ?? 0) + 0.1 },
+      ];
+      expect(findQuakeTwin(base, EMSC, USGS).kind).toBe("match");
+      for (const s of stale) expect(findQuakeTwin(s, EMSC, USGS).kind, id).toBe("match");
+    }
+  });
+
+  test("the exemption is for the event's own id only: a different USGS event that fits better still blocks the claim", () => {
+    const far = usgs("hv75052077");
+    expect(findQuakeTwin({ ...facts(far), id: far.id }, EMSC, USGS).kind).toBe("ambiguous");
   });
 
   test("nothing fits inside the span the other list covers: 'none', not a verdict about the event", () => {

@@ -156,7 +156,7 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
       {signalId && twinLayerOf(signalId) && (
         <QuakeTwin
           signalId={signalId}
-          facts={quakeFacts({ lat: object.lat, lon: object.lon, ts: meta.ts as string | undefined, props })}
+          facts={quakeFacts({ id: object.id, lat: object.lat, lon: object.lon, ts: meta.ts as string | undefined, props })}
         />
       )}
 
