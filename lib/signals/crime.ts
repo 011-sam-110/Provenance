@@ -114,6 +114,8 @@ export function capCrime(features: SignalFeature[], cap = CRIME_CAP): SignalFeat
 
 export const UK_CRIME_SOURCE: SignalSource = {
   id: "crime",
+  // data.police.uk moves every record to a nearby anonymous map point ("On or near X Street").
+  precision: "area",
   label: "UK street crime",
   group: "Civic safety",
   color: "#9333ea",

@@ -117,6 +117,8 @@ let cache: { features: SignalFeature[]; at: number } | null = null;
 
 export const AIRPORTS_SOURCE: SignalSource = {
   id: "airports",
+  // A named airport.
+  precision: "facility",
   label: "Major airports",
   group: "Infrastructure",
   color: "#2563eb",

@@ -64,6 +64,8 @@ export function normalizeFeodoC2(rows: FeodoRow[]): SignalFeature[] {
 
 export const CYBER_C2_SOURCE: SignalSource = {
   id: "cyber-c2",
+  // A count for each country, placed on a centroid.
+  precision: "country",
   label: "Botnet C2 servers",
   group: "Cyber threat",
   color: "#dc2626",

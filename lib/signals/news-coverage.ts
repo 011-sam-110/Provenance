@@ -160,6 +160,9 @@ function toFeature(key: string, bucket: PlaceBucket): SignalFeature {
     // title, and a headline at map scale is unreadable. The headline is `latest`.
     title: place.label,
     signalId: "news-coverage",
+    // The geocoder matched a whole country, so the point is a centroid. Every other
+    // match is a named place and keeps the layer default.
+    ...(place.type?.trim().toLowerCase() === "country" ? { precision: "country" as const } : {}),
     link: newest.url,
     ts: new Date(newest.ts).toISOString(),
     props: {
@@ -238,6 +241,8 @@ export function describePrecision(placeKind: string | null, matchedType: string 
 
 export const NEWS_COVERAGE_SOURCE: SignalSource = {
   id: "news-coverage",
+  // A geocoded place NAME. A match on a whole country sets its own level per feature.
+  precision: "area",
   kind: "event",
   // NOT "News events". The layer knows about coverage; whether there was an event is
   // the publisher's claim and the model's reading, neither of which this app verified.

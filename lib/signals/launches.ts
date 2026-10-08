@@ -129,6 +129,8 @@ async function tryFetch(url: string): Promise<SignalFeature[] | null> {
 
 export const LAUNCHES_SOURCE: SignalSource = {
   id: "launches",
+  // The launch pad.
+  precision: "facility",
   label: "Rocket launches",
   group: "Space",
   color: "#a855f7",

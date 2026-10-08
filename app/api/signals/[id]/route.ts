@@ -1,9 +1,10 @@
 import { getSignal } from "@/lib/signals/registry";
 import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
-import type { SignalFeature } from "@/lib/signals/types";
+import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
 import { edgeCacheHeaders } from "@/lib/http/cache";
 import { publishOutcome } from "@/lib/signals/outcome";
+import { withResolvedPrecision } from "@/lib/signals/precision";
 
 export const dynamic = "force-dynamic";
 // Most adapters are a single fast upstream call. A few (e.g. submarine cables,
@@ -59,14 +60,23 @@ const inflight = new Map<string, Promise<Cached>>();
  * denominator", whereas an absent outcome would leave a consumer to guess, and the
  * guess everyone makes is "fine". `publishOutcome` therefore resolves undeclared to
  * `ok: false, degradedReason: "not declared"` rather than omitting the field.
+ *
+ * Every feature leaves with its `precision` written on it: its own level where the
+ * adapter set one, else its layer's default (lib/signals/precision.ts). Coverage is
+ * read from the adapter's array FIRST, because the record rides on that array and
+ * the stamped copy is a new one.
  */
-function payload(features: SignalFeature[], outcome: ReturnType<typeof publishOutcome>) {
+function payload(
+  source: Pick<SignalSource, "precision">,
+  features: SignalFeature[],
+  outcome: ReturnType<typeof publishOutcome>,
+) {
   const coverage = readCoverage(features);
   return {
     ...outcome,
     count: features.length,
     ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
-    features,
+    features: withResolvedPrecision(features, source),
   };
 }
 
@@ -109,7 +119,7 @@ export async function GET(
   // case: the in-process cache answered first and never re-asked.
   const holdBriefly = hit ? hit.features.length === 0 || !hit.outcome.ok : false;
   if (hit && Date.now() - hit.at < cacheTtlMs(source.refreshMs, holdBriefly)) {
-    return Response.json(payload(hit.features, hit.outcome), {
+    return Response.json(payload(source, hit.features, hit.outcome), {
       headers: cacheHeaders(source.refreshMs, hit.features, hit.outcome.ok),
     });
   }
@@ -125,7 +135,7 @@ export async function GET(
     inflight.set(id, pending);
   }
   const fresh = await pending;
-  return Response.json(payload(fresh.features, fresh.outcome), {
+  return Response.json(payload(source, fresh.features, fresh.outcome), {
     headers: cacheHeaders(source.refreshMs, fresh.features, fresh.outcome.ok),
   });
 }

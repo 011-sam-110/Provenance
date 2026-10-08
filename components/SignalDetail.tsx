@@ -8,6 +8,8 @@
 import type { WorldObject } from "@/lib/world";
 import { humaniseKey } from "@/lib/text/humanise";
 import { resolveSignalSources, isCompositeSignal } from "@/lib/signals/sourceLink";
+import { getSignal } from "@/lib/signals/registry";
+import { PRECISION_WORDING, precisionOfObject } from "@/lib/signals/precision";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 
 /**
@@ -49,6 +51,8 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
   const signalId = meta.signalId as string | undefined;
   const sourceUrl = meta.sourceUrl as string | undefined;
   const accent = object.color ?? "var(--tn-accent)";
+  // How precise the place is: the level the route resolved, else the layer default.
+  const precision = precisionOfObject(meta, (id) => getSignal(id)?.precision);
 
   // Mandatory, always-clickable provenance: the exact upstream record when the
   // adapter deep-links one, else the provider's dataset page. A composite layer
@@ -113,7 +117,30 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
         </dl>
       )}
 
-      <div style={{ marginTop: 12, fontSize: 12, color: "var(--tn-text-muted)" }}>
+      {/* ── How precise the place is. One plain line, above the coordinates it
+             qualifies: a country figure has a latitude and a longitude too, and
+             without this line they read as the place of an event. ── */}
+      {precision && (
+        <div
+          data-testid="place-precision"
+          data-precision={precision}
+          style={{
+            marginTop: 12,
+            padding: "6px 9px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            lineHeight: 1.35,
+            color: "var(--tn-text)",
+            border: "1px solid var(--tn-border)",
+            borderLeft: `3px solid ${accent}`,
+            borderRadius: 4,
+          }}
+        >
+          {PRECISION_WORDING[precision].line}
+        </div>
+      )}
+
+      <div style={{ marginTop: precision ? 6 : 12, fontSize: 12, color: "var(--tn-text-muted)" }}>
         {object.lat.toFixed(3)}, {object.lon.toFixed(3)}
       </div>
 

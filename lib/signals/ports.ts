@@ -66,6 +66,8 @@ export function normalizePorts(records: PortRecord[]): SignalFeature[] {
 
 export const PORTS_SOURCE: SignalSource = {
   id: "ports",
+  // A named port.
+  precision: "facility",
   label: "Major ports",
   group: "Infrastructure",
   kind: "asset", // permanent infrastructure → the asset-directory focus view, not the event template

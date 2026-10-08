@@ -81,6 +81,8 @@ export function normalizeMilitaryAir(json: { ac?: AcRow[] }): SignalFeature[] {
 
 export const MILITARY_AIR_SOURCE: SignalSource = {
   id: "military-air",
+  // A reported ADS-B position.
+  precision: "exact",
   label: "Military flights",
   group: "Military",
   color: "#3f6212",

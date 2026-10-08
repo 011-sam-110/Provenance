@@ -126,6 +126,8 @@ export function normalizeReliefWeb(
 
 export const RELIEFWEB_SOURCE: SignalSource = {
   id: "reliefweb",
+  // ReliefWeb places a disaster on its primary country, not at a point.
+  precision: "country",
   label: "Humanitarian emergencies (ReliefWeb)",
   group: "Human cost",
   color: "#dc2626",

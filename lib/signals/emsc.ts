@@ -89,6 +89,8 @@ export function normalizeEmsc(
 
 export const EMSC_SOURCE: SignalSource = {
   id: "emsc-quakes",
+  // An instrument-located epicentre.
+  precision: "exact",
   label: "Earthquakes (EMSC)",
   group: "Natural hazards",
   color: "#f59e0b",
