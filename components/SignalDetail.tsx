@@ -11,6 +11,8 @@ import { resolveSignalSources, isCompositeSignal } from "@/lib/signals/sourceLin
 import { getSignal } from "@/lib/signals/registry";
 import { PRECISION_WORDING, precisionOfObject } from "@/lib/signals/precision";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
+import SpotElsewhere from "@/components/SpotElsewhere";
+import { spotKindOf } from "@/lib/map/elsewhere";
 
 /**
  * Curated [label, value] rows for the two cable ASSET kinds. Cables carry no
@@ -143,6 +145,10 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
       <div style={{ marginTop: precision ? 6 : 12, fontSize: 12, color: "var(--tn-text-muted)" }}>
         {object.lat.toFixed(3)}, {object.lon.toFixed(3)}
       </div>
+
+      {/* ── The same coordinates in outside tools. An area, a line or a country
+             figure is labelled as a centre or an anchor, never as a spot. ── */}
+      <SpotElsewhere lat={object.lat} lon={object.lon} kind={spotKindOf(meta, precision)} />
 
       {/* ── Source (mandatory, always a real clickable upstream) ── */}
       {sources.length > 0 && (
