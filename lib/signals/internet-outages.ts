@@ -104,6 +104,8 @@ export function normalizeOutages(json: { data?: IodaRow[] }): SignalFeature[] {
 
 export const INTERNET_OUTAGES_SOURCE: SignalSource = {
   id: "internet-outages",
+  // One IODA figure for each country, placed on a centroid.
+  precision: "country",
   label: "Internet outages (IODA)",
   group: "Infrastructure",
   color: "#b91c1c",

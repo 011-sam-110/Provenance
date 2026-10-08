@@ -133,6 +133,8 @@ let cache: { features: SignalFeature[]; at: number } | null = null;
 
 export const GPS_JAMMING_SOURCE: SignalSource = {
   id: "gpsJamming",
+  // An H3 hexagon. The feature carries the polygon.
+  precision: "area",
   label: "GPS jamming",
   group: "Infrastructure",
   color: "#dc2626",

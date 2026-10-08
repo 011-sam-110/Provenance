@@ -97,6 +97,8 @@ function toFeature(bucket: PlaceBucket): SignalFeature {
     // title, and a headline at map scale is unreadable. The headlines are in the props.
     title: entry.name,
     signalId: "headline-places",
+    // A country name is a country, not a place in it. A city keeps the layer default.
+    ...(entry.kind === "country" ? { precision: "country" as const } : {}),
     link: newest.url,
     ts: newest.ts > 0 ? new Date(newest.ts).toISOString() : undefined,
     props: {
@@ -124,6 +126,8 @@ function toFeature(bucket: PlaceBucket): SignalFeature {
 
 export const HEADLINE_PLACES_SOURCE: SignalSource = {
   id: "headline-places",
+  // A place NAME from a headline. A city is an area; a country sets its own level per feature.
+  precision: "area",
   kind: "event",
   // NOT "World news" or "Headlines". The layer knows which places are NAMED; where the
   // news happened is a different question and lib/signals/news-coverage.ts is the layer

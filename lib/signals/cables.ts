@@ -510,6 +510,8 @@ function declareOutcome(rows: SignalFeature[], layerFailure?: string): SignalFea
 
 export const CABLES_SOURCE: SignalSource = {
   id: "cables",
+  // A named cable, drawn on the route its operator publishes.
+  precision: "facility",
   kind: "asset",
   label: "Submarine cables",
   group: "Infrastructure",
@@ -524,6 +526,8 @@ export const CABLES_SOURCE: SignalSource = {
 
 export const CABLE_LANDINGS_SOURCE: SignalSource = {
   id: "cable-landings",
+  // A named landing station.
+  precision: "facility",
   kind: "asset",
   label: "Cable landing stations",
   group: "Infrastructure",

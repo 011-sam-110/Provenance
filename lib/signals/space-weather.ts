@@ -88,6 +88,8 @@ export function normalizeSpaceWeather(input: SpaceWeatherInput): SignalFeature[]
 
 export const SPACE_WEATHER_SOURCE: SignalSource = {
   id: "space-weather",
+  // A planet-wide index. The mark is an anchor at the geomagnetic pole, not a place.
+  precision: "area",
   label: "Space weather (NOAA Kp/storms)",
   group: "Space weather",
   color: "#16a34a",

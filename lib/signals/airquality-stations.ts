@@ -83,6 +83,8 @@ export function normalizeAirStations(json: { results?: AqLatest[] }): SignalFeat
 
 export const AIR_QUALITY_STATIONS_SOURCE: SignalSource = {
   id: "air-quality-stations",
+  // A named monitoring station.
+  precision: "facility",
   label: "Air quality — stations (OpenAQ)",
   group: "Environment",
   color: "#dc2626",

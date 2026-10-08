@@ -157,6 +157,8 @@ async function fetchVendor(vendor: CloudVendor): Promise<VendorRead> {
 
 export const CLOUD_STATUS_SOURCE: SignalSource = {
   id: "cloud-status",
+  // A vendor, marked at its head office. The outage itself has no place.
+  precision: "facility",
   label: "Cloud & platform outages",
   group: "Infrastructure",
   color: "#dc2626",
