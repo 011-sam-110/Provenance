@@ -190,6 +190,7 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
       lon: ctr.lon,
       title,
       signalId: "instability",
+      countryIso3: ctr.iso3,
       color: instabilityColor(score),
       props: {
         country: ctr.name,

@@ -62,6 +62,13 @@ export interface SignalFeature {
    */
   precision?: SignalPrecision;
   /**
+   * ISO 3166-1 alpha-3 code of the country a COUNTRY-level feature stands for, when
+   * the adapter knows it. The map uses it to shade that country's outline in place
+   * of a mark at `lat`/`lon`. Absent means the map has no outline to shade, and it
+   * draws a dashed ring at the anchor: never a pin.
+   */
+  countryIso3?: string;
+  /**
    * Optional line/area geometry. Absent ⇒ a plain point (the circle layer).
    * Present ⇒ rendered by WorldMap's signal `line` (LineString/MultiLineString)
    * or `fill` (Polygon/MultiPolygon) layer, anchored at lat/lon for interaction.

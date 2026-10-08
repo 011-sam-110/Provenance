@@ -46,6 +46,7 @@ export function normalizeFeodoC2(rows: FeodoRow[]): SignalFeature[] {
       lon: ctr.lon,
       title: `${ctr.name} — ${list.length} botnet C2${list.length === 1 ? "" : "s"}`,
       signalId: "cyber-c2",
+      countryIso3: ctr.iso3,
       color: c2Color(list.length),
       // Snapshot of currently-tracked infrastructure — no per-feature `ts` (the
       // time-window filter shouldn't hide a live threat picture; lastSeen is a prop).

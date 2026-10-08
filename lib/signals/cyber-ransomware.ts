@@ -53,6 +53,7 @@ export function normalizeRansomware(rows: RwRow[]): SignalFeature[] {
       lon: ctr.lon,
       title: `${ctr.name} — ${list.length} ransomware victim${list.length === 1 ? "" : "s"}`,
       signalId: "cyber-ransomware",
+      countryIso3: ctr.iso3,
       color: ransomwareColor(list.length),
       props: {
         country: ctr.name,
