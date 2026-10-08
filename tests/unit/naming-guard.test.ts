@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { BRAND } from "@/lib/brand";
 
 // A competitor's product name must never ship inside our UI.
 //
@@ -61,5 +62,16 @@ describe("naming guard", () => {
       }
     }
     expect(offenders, `competitor branding in shipped code:\n${offenders.join("\n")}`).toEqual([]);
+  });
+});
+
+// The reverse leak: a retired name of OURS. The repo was TrafficNerd-V2 and the product
+// was briefly OpenData; both are Provenance now. `docs/API_KEYS.md` kept the old title
+// for six weeks because its hyphen is U+2011, so a grep for "TrafficNerd-V2" skipped it.
+describe("retired product names", () => {
+  it("titles the API key guide with the product name", () => {
+    const title = readFileSync("docs/API_KEYS.md", "utf8").split(/\r?\n/)[0];
+    expect(title).toContain(BRAND.name);
+    expect(title).not.toMatch(/traffic[^a-z]?nerd/i);
   });
 });
