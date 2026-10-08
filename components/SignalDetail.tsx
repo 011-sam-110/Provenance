@@ -12,6 +12,8 @@ import { getSignal } from "@/lib/signals/registry";
 import { PRECISION_WORDING, precisionOfObject } from "@/lib/signals/precision";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import SpotElsewhere from "@/components/SpotElsewhere";
+import QuakeTwin from "@/components/QuakeTwin";
+import { quakeFacts, twinLayerOf } from "@/lib/signals/quakeTwin";
 import { spotKindOf } from "@/lib/map/elsewhere";
 
 /**
@@ -149,6 +151,14 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
       {/* ── The same coordinates in outside tools. An area, a line or a country
              figure is labelled as a centre or an anchor, never as a spot. ── */}
       <SpotElsewhere lat={object.lat} lon={object.lon} kind={spotKindOf(meta, precision)} />
+
+      {/* ── Is the same event in the other earthquake layer? Only USGS and EMSC. ── */}
+      {signalId && twinLayerOf(signalId) && (
+        <QuakeTwin
+          signalId={signalId}
+          facts={quakeFacts({ id: object.id, lat: object.lat, lon: object.lon, ts: meta.ts as string | undefined, props })}
+        />
+      )}
 
       {/* ── Source (mandatory, always a real clickable upstream) ── */}
       {sources.length > 0 && (
