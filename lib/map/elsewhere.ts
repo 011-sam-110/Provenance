@@ -11,13 +11,14 @@
 // Browser has been deprecated" with no map, and that page itself sends public-data
 // users to Copernicus Browser. The link goes there.
 
-import type { SignalGeometry } from "@/lib/signals/types";
+import type { SignalGeometry, SignalPrecision } from "@/lib/signals/types";
 import { isCountryScopedSignal } from "@/lib/map/hitTest";
 
 /**
  * What the coordinates of a feature stand for.
  *   - "point"   the place of the thing itself.
- *   - "area"    a polygon. The coordinates are its representative centre.
+ *   - "area"    a polygon, or a place that is a region, a zone or a city. The
+ *               coordinates are the point that stands for it.
  *   - "line"    a line (a cable). The coordinates are its anchor point.
  *   - "country" a country figure. The coordinates are the centre of the country.
  */
@@ -138,22 +139,25 @@ export function elsewhereLinks(lat: unknown, lon: unknown, kind: SpotKind = "poi
 }
 
 /**
- * Pure: what a signal's coordinates stand for, read from the types that exist today.
+ * Pure: what a signal's coordinates stand for, read from typed facts only.
  *
- * Two facts are typed. A feature with a `geometry` is a line or an area, and its
- * lat/lon is "a representative centroid" (lib/signals/types.ts). A signal id in
- * COUNTRY_SCOPED_SIGNALS has its marker "on the country centroid" (lib/map/hitTest.ts).
+ * Three facts are typed. A feature with a `geometry` is a line or an area, and its
+ * lat/lon is "a representative centroid" (lib/signals/types.ts). The precision level
+ * of the feature says "area" or "country" when its lat/lon is an anchor and not the
+ * place of the thing (lib/signals/precision.ts); the caller resolves it with
+ * `precisionOfObject` and passes it in. A signal id in COUNTRY_SCOPED_SIGNALS has its
+ * marker "on the country centroid" (lib/map/hitTest.ts).
  *
- * NOT typed today: the layers that put one marker per country on a centroid
- * (displacement, the two cyber layers, conflict coverage, headline places). Nothing
- * on their features says so, and this function must not guess from a layer name. They
- * read as "point" until a typed precision field exists; map it here when it does.
+ * The function keeps no list of layer names of its own. With no precision passed, a
+ * layer that puts one marker per country on a centroid reads as "point".
  */
-export function spotKindOf(meta: Record<string, unknown> | undefined): SpotKind {
+export function spotKindOf(meta: Record<string, unknown> | undefined, precision?: SignalPrecision): SpotKind {
   const geometry = meta?.geometry as SignalGeometry | undefined;
   const type = geometry && typeof geometry === "object" ? geometry.type : undefined;
-  if (type === "Polygon" || type === "MultiPolygon") return "area";
+  // The shape is the more exact fact: a cable is a line whatever level its layer has.
   if (type === "LineString" || type === "MultiLineString") return "line";
+  if (precision === "country") return "country";
+  if (type === "Polygon" || type === "MultiPolygon" || precision === "area") return "area";
   if (isCountryScopedSignal(meta?.signalId as string | undefined)) return "country";
   return "point";
 }
@@ -172,7 +176,7 @@ export const SPOT_WORDING: Record<SpotKind, SpotWording> = {
   point: { heading: "Open this spot elsewhere", copy: "Copy coordinates" },
   area: {
     heading: "Open the centre of this area elsewhere",
-    note: "This is an area. The links open its centre, which is not the place of an event.",
+    note: "This is an area. The links open the point that stands for it, which is not the place of an event.",
     copy: "Copy centre coordinates",
   },
   line: {

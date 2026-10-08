@@ -224,6 +224,8 @@ async function collectAis(key: string, ms: number): Promise<AisCollection> {
 
 export const AIS_SOURCE: SignalSource = {
   id: "ais",
+  // A reported AIS position.
+  precision: "exact",
   label: "Ships (AIS chokepoints)",
   group: "Maritime",
   color: "#0d9488",

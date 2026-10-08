@@ -25,6 +25,24 @@ export type SignalGeometry =
   | { type: "Polygon"; coordinates: [number, number][][] }
   | { type: "MultiPolygon"; coordinates: [number, number][][][] };
 
+/**
+ * How precise the PLACE of a signal feature is. The rule it serves: a place NAME is
+ * never to be read as a precise point.
+ *
+ *   - "exact"    the source gives the coordinates of the thing itself: a quake
+ *                epicentre, a satellite fire detection, a vessel or aircraft position.
+ *   - "facility" a named, fixed site: a port, an airport, a plant, a launch pad, a
+ *                monitoring station. The mark is on the site.
+ *   - "area"     a region, a zone, a city, a grid cell or a polygon. `lat`/`lon` is an
+ *                anchor inside the area, not the place of an event.
+ *   - "country"  a per-country figure. `lat`/`lon` is a centroid, a label anchor only.
+ *
+ * Every layer declares one on its `SignalSource` (required, so the compiler refuses a
+ * layer without one). A feature sets its own only where one layer mixes levels.
+ * Resolve with `resolvePrecision()` in lib/signals/precision.ts, never by hand.
+ */
+export type SignalPrecision = "exact" | "facility" | "area" | "country";
+
 /** One renderable signal: a point, or (with `geometry`) a line / area. */
 export interface SignalFeature {
   /** Globally-unique, namespaced id, e.g. "usgs:nc75385096", "eonet:EONET_20558". */
@@ -37,6 +55,12 @@ export interface SignalFeature {
   title: string;
   /** Which registry source produced this feature (rides into the GeoJSON props). */
   signalId: string;
+  /**
+   * How precise this feature's place is, when it differs from its layer's default
+   * (`SignalSource.precision`). Absent means the layer default applies. The
+   * /api/signals/<id> route writes the resolved level on every feature it serves.
+   */
+  precision?: SignalPrecision;
   /**
    * Optional line/area geometry. Absent ⇒ a plain point (the circle layer).
    * Present ⇒ rendered by WorldMap's signal `line` (LineString/MultiLineString)
@@ -149,6 +173,12 @@ export interface SignalSource {
   group: string;
   /** Representative colour for the rail dot + per-feature fallback. */
   color: string;
+  /**
+   * How precise the places of this layer are: the default for every feature that
+   * does not set its own `precision`. Required. State what the data is, not what the
+   * marker looks like: a country figure placed on a centroid is "country".
+   */
+  precision: SignalPrecision;
   /** Suggested client refresh + server cache TTL, in ms. */
   refreshMs: number;
   /** Mandatory upstream credit, shown in the rail and the dossier. */

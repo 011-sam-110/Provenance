@@ -218,10 +218,27 @@ describe("spotKindOf: only what the types say today", () => {
     for (const signalId of COUNTRY_SCOPED_SIGNALS) expect(spotKindOf({ signalId })).toBe("country");
   });
 
-  it("does not guess a country figure from a layer that no type marks", () => {
-    // These layers DO put one marker per country on a centroid. No type says so today,
-    // so the answer is "point": the function must not keep a list of layer names of
-    // its own. A typed field on the feature is the way to change this answer.
+  it("reads the typed precision level: a country figure and an area are not a spot", () => {
+    expect(spotKindOf({ signalId: "displacement" }, "country")).toBe("country");
+    expect(spotKindOf({ signalId: "ukraine-alerts" }, "area")).toBe("area");
+    expect(spotKindOf({ signalId: "earthquakes" }, "exact")).toBe("point");
+    expect(spotKindOf({ signalId: "ports" }, "facility")).toBe("point");
+  });
+
+  it("keeps a line a line, whatever level its layer has", () => {
+    const line = { type: "MultiLineString", coordinates: [[[0, 0], [1, 1]]] };
+    expect(spotKindOf({ signalId: "cables", geometry: line }, "facility")).toBe("line");
+    expect(spotKindOf({ geometry: line }, "country")).toBe("line");
+  });
+
+  it("a country figure with an area shape is still a country figure", () => {
+    const ring: [number, number][] = [[0, 0], [1, 0], [1, 1], [0, 0]];
+    expect(spotKindOf({ geometry: { type: "Polygon", coordinates: [ring] } }, "country")).toBe("country");
+  });
+
+  it("keeps no list of layer names of its own: with no level passed, the answer is a point", () => {
+    // These layers DO put one marker per country on a centroid. The level is the
+    // typed fact that says so, and the panel passes it in.
     for (const signalId of ["displacement", "cyber-c2", "cyber-ransomware"]) {
       expect(spotKindOf({ signalId })).toBe("point");
     }

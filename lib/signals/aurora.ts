@@ -149,6 +149,8 @@ export function normalizeAurora(json: OvationGrid, opts: AuroraOptions = {}): Si
 
 export const AURORA_SOURCE: SignalSource = {
   id: "aurora",
+  // A cell of a modelled grid: the peak of one 8 by 4 degree bucket, not a sighting.
+  precision: "area",
   label: "Aurora",
   group: "Space weather",
   color: "#22c55e",

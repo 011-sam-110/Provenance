@@ -201,6 +201,11 @@ obligations and are not satisfied by the licence.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
   `SIGNALS`. Importing `SIGNALS` into something that draws or lists layers silently turns every
   data-only source back into a layer. Today the only one is the Country Instability Index.
+  **Every source declares a `precision`** (`exact`, `facility`, `area` or `country`, see
+  `types.ts`): how precise its places are. A per-country figure is `country`, never a
+  point. A feature sets its own level only where one layer mixes levels. The route
+  writes the resolved level on every feature (`lib/signals/precision.ts`) and
+  `SignalDetail` says it in one line.
 - `lib/console/*` — widget registry, presets (**3 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
   them, and the Sources rail's tiles and the ⌘K Profiles list drive the same three. There is

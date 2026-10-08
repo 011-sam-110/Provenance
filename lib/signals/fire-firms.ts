@@ -106,6 +106,8 @@ export function normalizeFirms(csv: string, cap = FIRMS_CAP): SignalFeature[] {
 
 export const FIRE_FIRMS_SOURCE: SignalSource = {
   id: "fire-active",
+  // One satellite detection: the centre of a 375 m VIIRS pixel.
+  precision: "exact",
   label: "Active fires (FIRMS)",
   group: "Natural hazards",
   color: "#dc2626",

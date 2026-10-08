@@ -191,6 +191,8 @@ let cache: { features: SignalFeature[]; at: number } | null = null;
 
 export const UKRAINE_ALERTS_SOURCE: SignalSource = {
   id: "ukraineAlerts",
+  // An oblast. The anchor is its capital city, not the place of a strike.
+  precision: "area",
   kind: "event",
   label: "Ukraine air-raid alerts",
   group: "Conflict",

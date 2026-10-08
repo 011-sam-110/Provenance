@@ -392,6 +392,8 @@ export const INSTABILITY_SOURCE: SignalSource = {
   // Brief, the Country Instability widget, the Strategic Risk panel and the dossier.
   dataOnly: true,
   id: "instability",
+  // A composite score for each country.
+  precision: "country",
   label: "Country Instability Index",
   group: "Synthesis",
   color: "#dc2626",

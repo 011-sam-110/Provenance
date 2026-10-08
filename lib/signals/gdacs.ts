@@ -93,6 +93,13 @@ function gdacsTimeToIso(s: string | undefined): string | undefined {
   return Number.isFinite(t) ? new Date(t).toISOString() : undefined;
 }
 
+/**
+ * GDACS hazard codes whose point is the place of the thing itself: an epicentre, a
+ * volcano, a storm centre. Every other code (flood, drought, wildfire) is one
+ * centroid that stands for an affected area, which is the layer's default.
+ */
+const GDACS_EXACT_TYPES: ReadonlySet<string> = new Set(["EQ", "VO", "TC"]);
+
 /** Maps GDACS alert level to a 0–10 normalized magnitude for the severity ramp. */
 const GDACS_MAG: Record<string, number> = { Green: 3, Orange: 6, Red: 8 };
 
@@ -122,6 +129,7 @@ export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFe
       lon,
       title: p.name?.trim() || `${typeLabel}${p.country ? ` in ${p.country}` : ""}`,
       signalId: "gdacs",
+      ...(GDACS_EXACT_TYPES.has((p.eventtype ?? "").trim().toUpperCase()) ? { precision: "exact" as const } : {}),
       color: gdacsAlertColor(level),
       link: p.url?.report ?? undefined,
       ts: gdacsTimeToIso(p.fromdate),
@@ -182,6 +190,8 @@ export function mergeGdacsResults(results: GdacsTypeResult[], at: number): Signa
 
 export const GDACS_SOURCE: SignalSource = {
   id: "gdacs",
+  // Default for floods, droughts and wildfires: one centroid for an affected area. Quakes, volcanoes and cyclones set "exact" per feature.
+  precision: "area",
   label: "Disaster alerts",
   group: "Natural hazards",
   color: "#e11d48",

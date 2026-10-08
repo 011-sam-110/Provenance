@@ -84,6 +84,8 @@ export function normalizeAirQuality(points: AqPoint[], cities: City[] = WORLD_CI
 
 export const AIR_QUALITY_SOURCE: SignalSource = {
   id: "airquality",
+  // A city-scale model value from Open-Meteo, not a measurement at a point.
+  precision: "area",
   label: "Air quality",
   group: "Environment",
   color: "#65a30d",

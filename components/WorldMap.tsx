@@ -114,6 +114,7 @@ import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore, signalFreshnessFromPayload } from "@/lib/signals/freshness";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import { resolvePrecision } from "@/lib/signals/precision";
 import { useTimeWindow, windowMsFor, withinWindow } from "@/lib/shell/timeWindow";
 import { viewModeStore } from "@/lib/shell/viewMode";
 import { useNow } from "@/lib/shell/useNow";
@@ -2739,6 +2740,9 @@ function SignalFeed({
             typeLabel: source.label,
             meta: {
               signalId: f.signalId,
+              // How precise the place is. The route writes the resolved level on
+              // every feature; the layer default covers a payload that predates it.
+              precision: resolvePrecision(f, source),
               props: f.props ?? {},
               attribution: source.attribution,
               sourceLabel: source.label,

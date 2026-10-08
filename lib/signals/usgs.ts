@@ -83,6 +83,8 @@ export function normalizeUsgs(geojson: { features?: UsgsFeature[] }): SignalFeat
 
 export const EARTHQUAKES_SOURCE: SignalSource = {
   id: "earthquakes",
+  // An instrument-located epicentre.
+  precision: "exact",
   label: "Earthquakes",
   group: "Natural hazards",
   color: "#f97316",

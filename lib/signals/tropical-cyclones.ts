@@ -108,6 +108,8 @@ export function normalizeCyclones(json: { activeStorms?: NhcStorm[] }): SignalFe
 
 export const TROPICAL_CYCLONES_SOURCE: SignalSource = {
   id: "tropical-cyclones",
+  // The storm centre from the current NHC advisory.
+  precision: "exact",
   label: "Tropical cyclones (NHC)",
   group: "Natural hazards",
   color: "#dc2626",
