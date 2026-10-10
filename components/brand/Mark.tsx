@@ -1,104 +1,70 @@
 // components/brand/Mark.tsx
 //
-// The OpenData mark, as SVG.
+// The Provenance mark: the camera sphere, its screens filled.
 //
-// WHY IT STOPPED BEING A PNG. A raster cannot do any of the three things this
-// mark now has to do: animate its parts for the boot sequence, recolour for the
-// light skin (the PNG has a baked near-black plate, so on paper it sat as a dark
-// square in the header), or act as the one source the favicon and PWA icons are
-// generated from — which is what stopped the browser tab showing June's teal
-// globe while the header showed this.
+// WHAT IT IS. Since 2026-10-10 the logo is a screenshot of the landing intro's photo sphere run
+// through a filter (scripts/gen-sphere-mark.mjs): every screen on the ball, filled, with the
+// gaps between them open, exactly as the WebGL ball renders them. The filter writes white
+// images whose alpha is the screens, at five sizes, to public/brand/sphere-mark-<size>.png, and lists them
+// in lib/brand/sphereMark.json, which this component, scripts/gen-icons.mjs and the intro read,
+// so the header, the boot plate, the landing nav and the favicon cannot show different logos.
 //
-// WHY IT IS TRACED AND NOT REDRAWN. The first attempt was hand-authored from the
-// artwork. It got the rings and the book close and turned the globe's continents
-// into abstract texture — a different mark wearing the same layout, which for a
-// product logo is not a near miss, it is the wrong logo. The geometry in
-// lib/brand/markPaths.json is traced from public/brand/mark.png by
-// scripts/trace-mark.mjs (sub-pixel iso-contours + fitted Bezier curves,
-// deterministic), so what renders here IS the approved artwork.
+// WHAT IT REPLACED. Until then the mark was the traced OpenData logo (rings, a lens over a
+// globe, a book): lib/brand/markPaths.json, traced from public/brand/mark.png by
+// scripts/trace-mark.mjs. Those files are no longer read by anything.
 //
-// The two orbit rings and their dots are the exception: they are stroked and
-// filled shapes rather than traced outlines. They are hairlines at low contrast
-// in the source, so thresholding shreds them into arcs. The stroke-draw
-// animation needs a continuous path anyway. You cannot draw-on a set of
-// disconnected fragments. Their POSITIONS are still measured, not typed: the
-// trace script fits them to the artwork and writes them into the same JSON.
-// The artwork's rings are slightly tall ellipses (the lens beside them is round),
-// and the inner ring stops where the book and the lens handle cross it, so it is
-// an arc, not a closed shape. Until 2026-10-04 the rings and dots were typed-in
-// circles, and the dots sat on the outer ring instead of between the rings.
+// IT TAKES currentColor, as the old SVG did: the PNG is a CSS mask over a box filled with the
+// text colour, so it is white on the dark nav and the dark console skin and dark ink on a light
+// one. Which PNG depends on the size it is drawn at and the screen's density (`image-set`), so
+// the gaps stay open: a 512 px image shrunk to 24 px blurs them shut.
 //
-// NOT rendered through <use href="#symbol">: a `use` builds a shadow tree, and
-// document CSS does not reliably cross it with descendant selectors, so
-// `.is-playing .mk-ring` would silently never match and the sequence would render
-// as a static logo with no error anywhere.
+// THE BOOT SEQUENCE plays it in (`playing`): it opens from the centre outwards, the order the
+// intro lights its screens in. The timing is in globals.css and pinned by
+// tests/unit/mark-timeline.test.ts against MARK_ASSEMBLE_MS. `idle` is kept for the callers
+// that pass it and does nothing: the old mark's orbiting dots have no counterpart in a still.
 
-import markPaths from "@/lib/brand/markPaths.json";
+import type { CSSProperties } from "react";
+import sphereMark from "@/lib/brand/sphereMark.json";
 
 export interface MarkProps {
-  /** Rendered size in px (square). */
+  /** Rendered size in px (square). A stylesheet width wins over it. */
   size?: number;
-  /** Runs the assemble animation — rings draw, glass pops, book unfolds. */
+  /** Runs the assemble animation: the mark opens from the centre. */
   playing?: boolean;
-  /** Slow orbit on the two ring dots: the ambient "system is live" tell. */
+  /** Kept for existing callers; the still mark has no ambient motion. */
   idle?: boolean;
   className?: string;
-  /** Give it a label only where it is NOT beside the wordmark. Next to the h1 it
-   *  is a decorative duplicate, and a second "OpenData" in the accessibility tree
-   *  is noise. */
+  /** Give it a label only where it is NOT beside the wordmark. Next to the name it is a
+   *  decorative duplicate, and a second "Provenance" in the accessibility tree is noise. */
   title?: string;
 }
 
-/** The dots' radius is a size decision, not a measurement: the artwork's dots are
- *  under 1 unit and would vanish at header size. */
-const DOT_R = 2.4;
+const FILES = Object.entries(sphereMark.files)
+  .map(([px, url]) => ({ px: Number(px), url }))
+  .sort((a, b) => a.px - b.px);
 
-const { outer, inner } = markPaths.rings;
+/** The smallest image with at least `px` pixels, or the largest there is. */
+const fileFor = (px: number) => (FILES.find((f) => f.px >= px) ?? FILES[FILES.length - 1]).url;
 
-export default function Mark({ size = 24, playing = false, idle = false, className, title }: MarkProps) {
+/** One image per screen density, each close to the pixels it will fill, so the browser
+    hardly resamples it and the gaps between screens stay open. */
+export function markImage(size: number): string {
+  return `image-set(url(${fileFor(size)}) 1x, url(${fileFor(size * 2)}) 2x, url(${fileFor(size * 3)}) 3x)`;
+}
+
+export default function Mark({ size = 24, playing = false, idle: _idle = false, className, title }: MarkProps) {
   const cls = ["tn-mark", playing ? "is-playing" : "", className ?? ""].filter(Boolean).join(" ");
+  const set = markImage(size);
+  const face: CSSProperties = { maskImage: set, WebkitMaskImage: set.replace("image-set(", "-webkit-image-set(") };
   return (
-    <svg
+    <span
       className={cls}
-      viewBox={markPaths.viewBox}
-      width={size}
-      height={size}
+      style={{ "--mark-size": `${size}px` } as CSSProperties}
       role={title ? "img" : undefined}
       aria-label={title}
       aria-hidden={title ? undefined : true}
-      focusable="false"
     >
-      {/* `pathLength` normalises both rings to 100 units, so the stroke-draw
-          dasharray is one number in CSS rather than a circumference per radius. */}
-      <g className="mk-rings">
-        <ellipse
-          className="mk-ring mk-ring-1"
-          cx={outer.cx}
-          cy={outer.cy}
-          rx={outer.rx}
-          ry={outer.ry}
-          pathLength={100}
-        />
-        <path className="mk-ring mk-ring-2" d={inner.d} pathLength={100} />
-      </g>
-
-      {/* The idle orbit turns the dots about the rings' measured centre. The
-          stylesheet's own origin is the box centre (64, 64), which would swing
-          the dots across the inner ring at the top of the orbit. */}
-      <g
-        className={`mk-dots${idle ? " is-idle" : ""}`}
-        style={idle ? { transformOrigin: `${outer.cx}px ${outer.cy}px` } : undefined}
-      >
-        {markPaths.dots.map((d) => (
-          <circle key={d.cx} className="mk-dot" cx={d.cx} cy={d.cy} r={DOT_R} />
-        ))}
-      </g>
-
-      {/* fill-rule="evenodd" is mandatory: the traced contours include the INNER
-          boundaries of the lens ring and of every continent. Under the default
-          nonzero rule those inner loops fill solid and the globe becomes a disc. */}
-      <path className="mk-glass mk-fill" fillRule="evenodd" d={markPaths.glass.join(" ")} />
-      <path className="mk-book mk-fill" fillRule="evenodd" d={markPaths.book.join(" ")} />
-    </svg>
+      <span className="mk-face" style={face} />
+    </span>
   );
 }

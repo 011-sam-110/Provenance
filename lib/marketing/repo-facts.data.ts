@@ -34,9 +34,13 @@
  * holds one more. Only `cases` differs, so only `cases` conflicts — which is the only
  * reason anyone looks at `files` at all. After ANY merge that touches this file,
  * re-measure both numbers on the merged tree.
+ *
+ * Re-measured 2026-10-10 by `vitest run` on the camera-sphere branch rebased onto main at #276:
+ * 4,669 cases across 414 files. The branch adds three files: camera-sphere, sphere-intro and
+ * sphere-mark.
  */
 export const UNIT_TESTS = {
-  cases: 4630,
-  files: 411,
-  measuredAt: "2026-10-08",
+  cases: 4669,
+  files: 414,
+  measuredAt: "2026-10-10",
 } as const;

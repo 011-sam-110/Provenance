@@ -120,8 +120,9 @@
    happens where the footer is taller than the screen. See `footInk` in LandingStage.tsx. */
 .lp-root .lp-nav[data-over="footer"]::before { background: linear-gradient(to bottom, var(--space) 76%, rgba(5, 7, 13, 0)); }
 .lp-root .lp-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-stretch: 118%; font-weight: 560; font-size: 1.0625rem; letter-spacing: .01em; min-height: 44px; }
-/* components/brand/Mark.tsx. `.tn-mark` asks for a console token that does not exist here,
-   so the colour is stated: the mark takes the ink of the text beside it. */
+/* components/brand/Mark.tsx, the camera sphere with its screens filled. `.tn-mark` asks for a console token
+   that does not exist here, so the colour is stated: the mark takes the ink of the text beside
+   it, which is white on every dark tone of the nav. */
 .lp-root .lp-mark { width: 30px; height: 30px; flex: none; color: inherit; }
 .lp-root .lp-nav-links { display: flex; align-items: center; gap: 24px; }
 .lp-root .lp-nav-link { display: inline-flex; align-items: center; min-height: 44px; font-size: .9375rem; font-weight: 500; text-decoration: none; }
@@ -270,6 +271,107 @@
 .lp-root .lp-foot-legal { grid-column: 1 / -1; display: grid; gap: 6px; padding-top: 24px; border-top: 1px solid rgba(238, 242, 247, .08); max-width: 96ch; }
 .lp-root .lp-rm-still { display: none; }
 
+/* ------------------------------------------------------------------ 0. the opening intro: the camera sphere lands beside the wordmark, then docks into the nav brand
+
+   components/marketing/SphereIntro.tsx drives it and lib/marketing/sphereIntro.ts holds its
+   numbers. Everything here is off until the inline gate script in the server HTML puts
+   `data-on` on `.lp-intro` before the first paint, so with no script, with reduced motion and
+   on a visit that has already seen it, none of this shows.
+
+   `.lp-intro` IS A PLAIN BLOCK ON PURPOSE: no position, opacity, transform or z-index, so it
+   makes no stacking context. Its three children are fixed layers in `.lp-root`'s own context,
+   which is what lets the canvas's `mix-blend-mode: screen` reach the page: the ball's black
+   ground vanishes and only the ball shows over the hero as it docks. Fade the wrapper instead
+   of the layers and the docking ball drags a black rectangle with it.
+
+   Layers: ground 40, ball 41, word 42, all above the nav (20) and below the skip links (50+). */
+.lp-root .lp-intro > * { display: none; }
+.lp-root .lp-intro[data-on] > * { display: block; position: fixed; pointer-events: none; }
+.lp-root .lp-intro-ground { inset: 0; z-index: 40; background: var(--space); }
+/* While the curtain hides the page it takes the first click, so that click skips the intro
+   rather than landing on a link nobody can see. From the handover on, clicks reach the page. */
+.lp-root .lp-intro[data-phase="wait"] > .lp-intro-ground, .lp-root .lp-intro[data-phase="play"] > .lp-intro-ground { pointer-events: auto; cursor: default; }
+.lp-root .lp-intro-ball { inset: 0; z-index: 41; width: 100%; height: 100%; mix-blend-mode: screen; }
+/* The same face, width, weight and tracking as `.lp-brand`, which is what lets the word land on
+   the brand's text. The script sets the size, the position and the per-frame transform. */
+.lp-root .lp-intro-word { left: 0; top: 0; z-index: 42; font-family: var(--font); font-stretch: 118%; font-weight: 560; font-size: min(112px, 9vw); letter-spacing: .01em; line-height: 1; color: var(--frost); white-space: nowrap; transform-origin: 0 0; will-change: transform; }
+.lp-root .lp-intro-word span { display: inline-block; opacity: 0; will-change: transform, opacity; }
+.lp-root .lp-intro-word .lp-intro-base { width: 0; height: 0; opacity: 1; vertical-align: baseline; }
+/* The nav brand steps aside while the lockup flies to it, and fades back in as it arrives. */
+.lp-root .lp-nav .lp-brand { transition: opacity .22s var(--ease); }
+.lp-root:has(.lp-intro[data-phase="play"], .lp-intro[data-phase="hand"]) .lp-nav .lp-brand { opacity: 0; }
+/* THE FAILSAFE. If no script takes the curtain over (a failed bundle, a crash before
+   hydration), it fades away by itself. The script claims it well before this fires
+   (`INTRO.claimBy`), and from then on `data-phase` is set and this rule stops matching. */
+.lp-root .lp-intro[data-on]:not([data-phase]) > * { animation: lp-intro-failsafe .4s ease 3s forwards; }
+@keyframes lp-intro-failsafe { to { opacity: 0; visibility: hidden; } }
+/* "Skip intro": outside the aria-hidden curtain, visually hidden until it has focus, and
+   only there while the intro is. */
+.lp-root .lp-intro-skip { position: fixed; left: 12px; top: -60px; z-index: 51; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--amber); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+.lp-root .lp-intro-skip:focus { top: 12px; }
+.lp-root .lp-intro:not([data-on]) ~ .lp-intro-skip, .lp-root .lp-intro[data-phase="out"] ~ .lp-intro-skip { display: none; }
+
+/* THE INTRO TUNER, on `/?tune` only (components/marketing/IntroTuner.tsx): a dev panel for
+   Leon's numbers. It sits above the curtain (40 to 42) and the skip button (51) so it stays
+   usable while the intro plays, on the globe's ocean so it reads as part of the page. */
+.lp-root .lp-tune-panel { position: fixed; z-index: 55; right: 16px; top: calc(var(--nav-h) + 8px); width: 328px; max-height: calc(100svh - var(--nav-h) - 24px); overflow: auto; overscroll-behavior: contain; padding: 16px 16px 18px; border: 1px solid rgba(238, 242, 247, .12); border-radius: 16px; background: rgba(10, 17, 34, .95); color: var(--frost); box-shadow: 0 18px 48px rgba(2, 4, 10, .5); font-size: .875rem; line-height: 1.4; accent-color: var(--amber); scrollbar-width: thin; scrollbar-color: rgba(238, 242, 247, .24) transparent; }
+.lp-root .lp-tune-pill { position: fixed; z-index: 55; right: 16px; bottom: 16px; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--amber); color: var(--ink); font: inherit; font-weight: 600; font-stretch: 108%; cursor: pointer; box-shadow: 0 10px 28px rgba(2, 4, 10, .45); }
+.lp-root .lp-tune-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lp-root .lp-tune-head h2 { margin: 0; font-size: 1rem; font-weight: 620; font-stretch: 112%; letter-spacing: .005em; }
+.lp-root .lp-tune-btn { display: inline-flex; align-items: center; justify-content: center; height: 34px; padding: 0 14px; border: 1px solid rgba(238, 242, 247, .26); border-radius: 999px; background: transparent; color: var(--frost); font: inherit; font-weight: 560; white-space: nowrap; cursor: pointer; touch-action: manipulation; transition: background-color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease); }
+.lp-root .lp-tune-btn:hover:not(:disabled) { border-color: var(--frost); }
+.lp-root .lp-tune-btn:active:not(:disabled) { transform: scale(.97); }
+.lp-root .lp-tune-btn:disabled { opacity: .4; cursor: default; }
+.lp-root .lp-tune-primary { border-color: transparent; background: var(--amber); color: var(--ink); min-width: 76px; }
+.lp-root .lp-tune-primary:hover:not(:disabled) { border-color: transparent; background: var(--amber-hi); }
+.lp-root .lp-tune-quiet { height: 30px; padding: 0 12px; border-color: transparent; color: var(--mist); }
+.lp-root .lp-tune-quiet:hover { color: var(--frost); }
+.lp-root .lp-tune-transport { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+/* While a run plays the panel fades back so the lockup can be watched through it; a pointer or
+   focus on it brings it straight back. */
+.lp-root .lp-tune-panel { transition: opacity .3s var(--ease); }
+.lp-root .lp-tune-panel[data-state="playing"]:not(:hover):not(:focus-within) { opacity: .16; }
+.lp-root .lp-tune-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.lp-root .lp-tune-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(238, 242, 247, .08); }
+.lp-root .lp-tune-seg button { height: 30px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--mist); font: inherit; font-size: .8125rem; font-variant-numeric: tabular-nums; cursor: pointer; transition: background-color .2s var(--ease), color .2s var(--ease); }
+.lp-root .lp-tune-seg button:hover { color: var(--frost); }
+.lp-root .lp-tune-seg button[aria-pressed="true"] { background: var(--frost); color: var(--ink); }
+.lp-root .lp-tune input[type="range"] { display: block; width: 100%; height: 22px; margin: 0; cursor: pointer; }
+.lp-root .lp-tune input[type="range"]:disabled { opacity: .4; cursor: default; }
+.lp-root .lp-tune-scrub { position: relative; margin-top: 14px; }
+/* Where the move, the letters, the handover and the arrival fall on the time slider. Inset by
+   half a thumb, which is where a native range's track starts and ends. */
+.lp-root .lp-tune-ticks { position: relative; height: 6px; margin: 2px 8px 0; }
+.lp-root .lp-tune-ticks i { position: absolute; top: 0; width: 1px; height: 6px; background: rgba(238, 242, 247, .5); }
+.lp-root .lp-tune-status { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+.lp-root .lp-tune-times, .lp-root .lp-tune-hint, .lp-root .lp-tune-note { color: var(--mist); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.lp-root .lp-tune-times { margin: 4px 0 0; }
+.lp-root .lp-tune-check { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; }
+.lp-root .lp-tune-check input { width: 16px; height: 16px; margin: 0; }
+.lp-root .lp-tune-group { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(238, 242, 247, .1); }
+.lp-root .lp-tune-group h3 { margin: 0 0 2px; font-size: .9375rem; font-weight: 620; font-stretch: 112%; }
+.lp-root .lp-tune-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 8px; margin-top: 10px; }
+.lp-root .lp-tune-row > input, .lp-root .lp-tune-row > .lp-tune-hint { grid-column: 1 / -1; }
+.lp-root .lp-tune-row > input { margin-top: 2px; }
+.lp-root .lp-tune-val { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.lp-root .lp-tune-row[data-changed] .lp-tune-val output, .lp-root .lp-tune-row-seg[data-changed] > span { color: var(--amber); }
+.lp-root .lp-tune-reset { padding: 0; border: 0; background: none; color: var(--mist); font: inherit; font-size: .8125rem; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.lp-root .lp-tune-reset:hover { color: var(--frost); }
+.lp-root .lp-tune-row-seg { grid-template-columns: 1fr; gap: 6px; }
+.lp-root .lp-tune-row-seg .lp-tune-seg { justify-self: start; }
+.lp-root .lp-tune-foot { display: flex; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(238, 242, 247, .1); }
+.lp-root .lp-tune-note { margin: 10px 0 0; }
+.lp-root .lp-tune-note code { font-size: .75rem; color: var(--frost); }
+@media (max-width: 759px) {
+  /* A bottom sheet: the lockup sits on the screen's middle line, just above it. */
+  .lp-root .lp-tune-panel { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; max-height: 44svh; padding: 12px 14px 14px; }
+  .lp-root .lp-tune-pill { right: 12px; bottom: 12px; }
+}
+@media (pointer: coarse) {
+  .lp-root .lp-tune-btn, .lp-root .lp-tune-seg button { height: 40px; }
+  .lp-root .lp-tune input[type="range"] { height: 32px; }
+}
+
 /* ------------------------------------------------------------------ phone */
 @media (max-width: 759px) {
   .lp-root { --nav-h: 58px; --fs-h2: 2rem; }
@@ -334,6 +436,8 @@
    It draws each globe once into the `.lp-rm-globe` / `.lp-rm-flat` canvases below. */
 @media (prefers-reduced-motion: reduce), (scripting: none) {
   :root .lp-root .lp-globe, :root .lp-root .lp-lens-tag { display: none; }
+  /* No intro at all: the gate script already says no here, and this holds without it. */
+  :root .lp-root .lp-intro, :root .lp-root .lp-intro-skip { display: none; }
   :root .lp-root .lp-nav { position: absolute; }
   :root .lp-root .lp-rm-still { display: block; }
   :root .lp-root .lp-hero { overflow: hidden; }

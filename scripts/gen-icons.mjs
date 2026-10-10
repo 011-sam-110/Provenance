@@ -15,10 +15,8 @@
 // been a new native dependency for a script that runs by hand a few times a year.
 //
 // Mark.tsx is a .tsx React component and this is a plain node script with no build
-// step, so this file cannot import it. Both read lib/brand/markPaths.json instead:
-// the traced figure AND the measured rings and dots. Only the styling below (stroke
-// width, opacity, the dot radius) is repeated here, and it must match the
-// stylesheet and Mark.tsx by hand.
+// step, so this file cannot import it. Both read lib/brand/sphereMark.json instead,
+// and the images it lists.
 
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -32,30 +30,34 @@ const BRAND = resolve(ROOT, "public", "brand");
 // The mark, read from the SAME artefact components/brand/Mark.tsx renders.
 // Not a copy with a drift check — one file, two consumers — because a copy is
 // how the app and its favicon came to show different logos in the first place.
-// scripts/trace-mark.mjs regenerates it from public/brand/mark.png.
-const TRACED = JSON.parse(readFileSync(resolve(ROOT, "lib", "brand", "markPaths.json"), "utf8"));
+// Since 2026-10-10 that is the camera sphere, its screens filled: filtered
+// screenshots of the ball at several sizes, listed in lib/brand/sphereMark.json by
+// scripts/gen-sphere-mark.mjs.
+const MARK = JSON.parse(readFileSync(resolve(ROOT, "lib", "brand", "sphereMark.json"), "utf8"));
+const MARK_FILES = Object.entries(MARK.files)
+  .map(([px, url]) => ({ px: Number(px), file: resolve(ROOT, "public", url.replace(/^\//, "")) }))
+  .sort((a, b) => a.px - b.px);
 
-// fill-rule="evenodd" is mandatory: the traced contours include the inner
-// boundaries of the lens ring and of every continent. Under the default nonzero
-// rule those inner loops fill solid and the globe renders as a plain disc.
-const { outer, inner } = TRACED.rings;
-const MARK_BODY = `
-  <g fill="none" stroke="currentColor" stroke-width="1.1" opacity="0.55">
-    <ellipse cx="${outer.cx}" cy="${outer.cy}" rx="${outer.rx}" ry="${outer.ry}"/>
-    <path d="${inner.d}"/>
-  </g>
-  <g fill="currentColor" opacity="0.75">
-    ${TRACED.dots.map((d) => `<circle cx="${d.cx}" cy="${d.cy}" r="2.4"/>`).join("\n    ")}
-  </g>
-  <path fill="currentColor" fill-rule="evenodd" d="${TRACED.glass.join(" ")}"/>
-  <path fill="currentColor" fill-rule="evenodd" d="${TRACED.book.join(" ")}"/>`;
+// The mark is white with the screens in its alpha. Used as a mask over the ink,
+// it takes the icon's ink as the app's mark takes currentColor. The smallest
+// image at least as large as the space it fills keeps its gaps open; a large one
+// shrunk to 32px would blur them shut.
+function markBody(px) {
+  const pick = MARK_FILES.find((f) => f.px >= px) ?? MARK_FILES[MARK_FILES.length - 1];
+  const href = `data:image/png;base64,${readFileSync(pick.file).toString("base64")}`;
+  return `
+  <mask id="mk" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128">
+    <image href="${href}" x="0" y="0" width="128" height="128"/>
+  </mask>
+  <rect width="128" height="128" fill="currentColor" mask="url(#mk)"/>`;
+}
 
 /** `maskable` fills the frame and keeps the art inside Android's ~80% safe zone. */
 function svg({ size, ink, plate, radius, pad }) {
   const inner = 128 * (1 - pad * 2);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 128 128">
   <rect width="128" height="128" rx="${radius}" fill="${plate}"/>
-  <g color="${ink}" transform="translate(${128 * pad} ${128 * pad}) scale(${inner / 128})">${MARK_BODY}</g>
+  <g color="${ink}" transform="translate(${128 * pad} ${128 * pad}) scale(${inner / 128})">${markBody((size * inner) / 128)}</g>
 </svg>`;
 }
 

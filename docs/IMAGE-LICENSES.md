@@ -173,6 +173,80 @@ this repository is an 800 px GIF made from Recordly's MP4 export with ffmpeg.
 
 ---
 
+## Camera stills in the photo sphere (35)
+
+Files: `public/marketing/sphere/`. Listed in code by `lib/marketing/sphere-stills.data.ts`.
+
+Each is one frame from a public road camera, taken on 8 October 2026 through this project's
+camera API (`/api/camera/<id>`, which names the upstream image), cropped to 4:3 at 480 x 360
+and saved as WebP. They are a dated snapshot, like the globe, and the page must not call them
+live. They come from the LBSiUK/provenance-sphere-animation sketch, whose `stills/CREDITS.md`
+is the source of the rows below.
+
+Only operators whose terms allow reuse with attribution were used:
+
+- **Transport for London**, under the [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/). Attribution: "Powered by TfL Open Data".
+- **DriveBC** (BC Ministry of Transportation and Infrastructure), under the [Open Government Licence – British Columbia](https://www2.gov.bc.ca/gov/content/data/policy-standards/open-data/open-government-licence-bc).
+- **Fintraffic Digitraffic**, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Attribution: "Fintraffic / Digitraffic".
+
+Two TfL "camera in use" placeholder cards and one corrupted frame were removed by hand. A build
+that takes new stills must filter those out automatically.
+
+| File | Camera | Operator | Licence | Attribution | Original image | sha256 of the JPEG before WebP |
+|---|---|---|---|---|---|---|
+| `cam-01.webp` | Pentonville Road / Penton Rise | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.07355.jpg | `f15388c2198c6b76263f65d730f0fba2b3bfd1726bac0aec1dd2cf76e82fbc64` |
+| `cam-02.webp` | Stonecot Hill/Hill Top | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.04675.jpg | `d9fc46a3a829483248f59289c7f4d0a62f846020d57db649764c5bfea61f5e29` |
+| `cam-03.webp` | Balham High Rd/Ramsden Rd | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.04661.jpg | `c96d3ee12b012b042ed6df39a1e28998e161788ab195634d0718f28945bd3973` |
+| `cam-04.webp` | A20 Lee High Rd/Belmont Park | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.03703.jpg | `7c82794aa5b05e8684bbc6bf240a4d340fa687e55f73f6e1a2ef9af61bd51b1d` |
+| `cam-05.webp` | A406 Fulbourne Road | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00002.00864.jpg | `081b7f8fc410b64625f5d6bc94f4c04a249e346e051bd61424dbae8c4bd09eca` |
+| `cam-06.webp` | Uxbridge Road/Greenford Road | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.06697.jpg | `fdd22871dcbee141951c573c6e410e848283ce7f5df9a247f7f598af550bfe50` |
+| `cam-07.webp` | Great Eastern Rd/Angel Lane Bridge | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.02146.jpg | `4f14a817b733a3063c4f5eedb306c017719abc1d62b16b693730faae4d0c5adb` |
+| `cam-08.webp` | EIDT East Ramp | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00002.00618.jpg | `236abc9b3fbdef25aa0520cc895981ccc8fa083aa27f61b3d0fed8fe30f9e6db` |
+| `cam-11.webp` | Camden Rd/St Pancras Way | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.09560.jpg | `02f4f9e9cfab02a093c5405ffa78e8caff8910bf46163b468d0d551cda569e77` |
+| `cam-12.webp` | Romford Rd / Vicarage Lane | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.02152.jpg | `966eae8a3899129b6cdaab5ef2fb0bde1e7358d1c4d02848b7fb96801cb7bd6d` |
+| `cam-13.webp` | Bayswater Rd/Lancaster Terrace | tfl | OGL | Powered by TfL Open Data | https://s3-eu-west-1.amazonaws.com/jamcams.tfl.gov.uk/00001.06660.jpg | `770a77e1c809d4ff3f3635f05c58c413bf0bdefacc5bf757d2195c66136b660f` |
+| `cam-14.webp` | Burton Main Road | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/755.jpg | `de2ebf164263961af5ef5e32ca9cd67b98d7ec1a90fbc05f849036a8ce6ebeda` |
+| `cam-15.webp` | Comox Road - N | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/737.jpg | `f49d204a99ad27ebd3a76d4cad0e0837a2c8a1ac2f19c844ec620f201359ced5` |
+| `cam-16.webp` | Mackenzie Junction | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/376.jpg | `4275883995e8b0b35919ba0627c0599c96353240653eb485ee377d115893607b` |
+| `cam-17.webp` | Agassiz-Rosedale Bridge - N | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/841.jpg | `4755b89270e77613132d1f0baff40baedc6d576f2624a653c091cf3724413823` |
+| `cam-18.webp` | Elko - E | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/929.jpg | `68d90ed4942d1304b91f8717f177aca95e6255a25b1638909949d4ba684b34f1` |
+| `cam-19.webp` | Elkford - W | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/937.jpg | `9ac415a9d033695733a6698c8db7464f20a090f8a6509f531b76cd8cfe1e0d7f` |
+| `cam-20.webp` | Lougheed Highway | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/192.jpg | `4a06ab4207ad69c6e82993ba57cd2f720c5be85e67b28dc3fa0d87849710e258` |
+| `cam-21.webp` | Crest Lake | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/600.jpg | `9839bdaecbee8f091a7fe6746fab383cef0f886329f235a90a9013364cb2498b` |
+| `cam-22.webp` | Lorimer Road - E | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/847.jpg | `e560c46cad616421454c47758c2c7e662ac52bd3c2df9eb4f0a9f27cc8103095` |
+| `cam-23.webp` | Hwy 19A at Ryan Road - E | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/1037.jpg | `07ca7dc11f09683e0d43fc79617a171532ed869fd7821a8848128ccab7203db9` |
+| `cam-24.webp` | Sayward Road - E | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/1042.jpg | `f7dfc2f67044323019df97f0ea94f98fb38d3e4e13b1ebfa40ee59d37b876433` |
+| `cam-25.webp` | Nelson Street - W | drivebc | Open Government Licence – British Columbia | Live webcam data © DriveBC / BC Ministry of Transportation and Infrastructure | https://www.drivebc.ca/images/954.jpg | `a4838f3007fa7267a9d1a9088f8d751caa3c774c1187b34f970f9bb038e39f92` |
+| `cam-26.webp` | st180_Kaarina_Kirjalansalmi | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0255001.jpg | `73bab05443dc33d08617838a84f8af8960300897c27fe34c4325db3f7db48fe4` |
+| `cam-27.webp` | kt65_Tampere_Lielahti | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0454801.jpg | `1e1c23ee7c87e416e56ece61c30d21f1470e9bd77b21903a50d1e3e11b0a6c84` |
+| `cam-28.webp` | vt24_Asikkala_Iso-Äiniö | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0452201.jpg | `c35ee78487cbb09d8e4c9c047d5f2c967a9c72f4d86af5a94bfa95951cd83e5f` |
+| `cam-29.webp` | vt8_Pyhäjoki_Hanhikivi | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C1258801.jpg | `31ed12e0ae5c811562de2a869d8ed1e6495bf3d922dabe78e5ab8ff54e02549c` |
+| `cam-30.webp` | st945_Kemijärvi_Lehtola | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C1456601.jpg | `76bf7ee2aa2588e968538d4e2fa135ad2711b331ebc3330f01a479660a325fd9` |
+| `cam-31.webp` | st476_Heinävesi | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0651601.jpg | `c5716ef52a0f1c148e8acaae41ff07cbe996e94087fcdae08b5d70e3b8967973` |
+| `cam-32.webp` | vt6_Lapinjärvi_Kimonkylä | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0167301.jpg | `185b30f1b6d701e6c55ff97bc297ba4eace21fa463dc40d4da8703b57363892b` |
+| `cam-33.webp` | vt6_Sotkamo_Juurikkalahti | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C1256401.jpg | `fcf14a814f6216157265b8af55a635782e342c4de6bff86dd34ad513325f62be` |
+| `cam-34.webp` | st167_Lahti_Uudenmaankatu | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0462200.jpg | `5bbbfcf2d1518f9e30dac8754ed20c5cd231408462de6c41b431f545d75d11cd` |
+| `cam-35.webp` | Mt912_Kuhmo_Kattilakoski | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C1265101.jpg | `9b875db030999f96ba07cf701805b860e6f9dc2e4c69fe9c9df29e8ca1506572` |
+| `cam-36.webp` | kt74_Joensuu_Onkimäki | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C0750801.jpg | `ad4fac59246c2e5ccbcaeb2becc1e3fffae953eac58a4449d93b26f97f1013b9` |
+| `cam-37.webp` | vt13_Oksakoski | digitraffic | CC BY 4.0 (Fintraffic) | Live weather-camera data © Fintraffic / Digitraffic | https://weathercam.digitraffic.fi/C1051701.jpg | `3c402675d2b9b61bf5fd1758c7386dc89a6878a6d0891f18c2108e8f301dc1fa` |
+
+---
+
+## The mark (5)
+
+Files: `public/brand/sphere-mark-32.png`, `-64`, `-96`, `-192` and `-512.png`, listed by
+`lib/brand/sphereMark.json`; the favicon and app icons under `public/icons/` and `public/` are
+drawn from them by `scripts/gen-icons.mjs`.
+
+This project's own work. Since 2026-10-10 the Provenance mark is a filter
+(`scripts/gen-sphere-mark.mjs`) over a screenshot of the landing intro's camera sphere,
+`scripts/assets/sphere-source.png`, taken by `scripts/capture-sphere-source.mjs` with every
+camera still replaced by a flat grey card on the way into the page. So the mark shows the
+shape of the ball's screens and nothing from any photograph: none of the TfL,
+DriveBC or Digitraffic stills above is in it, and it owes them no credit.
+
+---
+
 ## The star sky (1)
 
 File: `public/sky/sky-equirect.jpg`. It was on the landing page before the 2026-10-05
