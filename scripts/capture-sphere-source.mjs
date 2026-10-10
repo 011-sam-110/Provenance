@@ -14,7 +14,10 @@
 //
 // It renders the real thing: the sphere module, its camera, its layout and its lighting, on the
 // build that is running, through the intro's own tuner handle (`/?tune`): fill sped up so every
-// screen is lit while the ball is still centred, and held there.
+// screen is lit while the ball is still centred, and held there. The start size is pinned at
+// 0.91 of the screen's height (`sz`), the ball whole in the frame, whatever INTRO's own start
+// size is (1.6 since 2026-10-11, larger than the screen); scripts/gen-sphere-mark.mjs expects
+// that framing.
 
 import { writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -49,7 +52,7 @@ async function main() {
   await page.setContent("<!doctype html><title>card</title>");
   const card = await greyCard(page);
   await page.route(/\/marketing\/sphere\/cam-\d+\.webp/, (route) => route.fulfill({ status: 200, contentType: "image/png", body: card }));
-  await page.goto(`${BASE}/?tune&fs=2&ms=6`, { waitUntil: "load" });
+  await page.goto(`${BASE}/?tune&fs=2&ms=6&sz=0.91`, { waitUntil: "load" });
   await page.waitForFunction(() => (window.__pvIntro?.control?.screens ?? 0) > 0, null, { timeout: 180000 });
   const r0 = await page.evaluate(() => {
     document.querySelectorAll(".lp-tune-panel, .lp-tune-pill, .tn-note-live, nextjs-portal").forEach((n) => {

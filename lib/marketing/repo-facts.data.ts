@@ -35,12 +35,12 @@
  * reason anyone looks at `files` at all. After ANY merge that touches this file,
  * re-measure both numbers on the merged tree.
  *
- * Re-measured 2026-10-10 by `vitest run` on the camera-sphere branch rebased onto main at #276:
- * 4,669 cases across 414 files. The branch adds three files: camera-sphere, sphere-intro and
- * sphere-mark.
+ * Re-measured 2026-10-11 by `vitest run` on the camera-sphere branch (on main at #276), with
+ * the intro's tuned numbers: 4,670 cases across 414 files. The branch adds three files:
+ * camera-sphere, sphere-intro and sphere-mark.
  */
 export const UNIT_TESTS = {
-  cases: 4669,
+  cases: 4670,
   files: 414,
-  measuredAt: "2026-10-10",
+  measuredAt: "2026-10-11",
 } as const;

@@ -34,12 +34,15 @@ import {
 const tl = introTimeline(INTRO_WORD.length);
 
 describe("the intro's timeline", () => {
-  it("keeps the numbers settled on 2026-10-08", () => {
-    expect(tl.moveStart).toBe(3.44);
-    expect(tl.moveEnd).toBeCloseTo(4.29, 9);
-    expect(tl.lettersAt).toBeCloseTo(3.44 + 0.85 * 0.4, 9);
+  it("keeps the numbers Leon tuned on 2026-10-11", () => {
+    expect(INTRO.fillSpeed).toBe(0.85);
+    expect(INTRO.fillRatio).toBe(0.7);
+    expect(INTRO.startDiameter).toBe(1.6);
+    expect(tl.moveStart).toBe(2.81);
+    expect(tl.moveEnd).toBeCloseTo(3.76, 9);
+    expect(tl.lettersAt).toBeCloseTo(2.81 + 0.95 * 0.4, 9);
     // ten letters, 45 ms apart, 0.34 s each
-    expect(tl.lettersEnd).toBeCloseTo(3.78 + 9 * 0.045 + 0.34, 9);
+    expect(tl.lettersEnd).toBeCloseTo(3.19 + 9 * 0.045 + 0.34, 9);
   });
 
   it("starts the letters before the ball lands, left to right", () => {
@@ -120,7 +123,7 @@ describe("the eases", () => {
   });
 
   it("leaves the start slowly: the move is a strong ease-in", () => {
-    expect(INTRO.moveEase[0]).toBe(0.8);
+    expect(INTRO.moveEase[0]).toBe(0.9);
     expect(MOVE_EASE(0.2)).toBeLessThan(0.05);
   });
 });
@@ -147,10 +150,17 @@ describe("the toggles", () => {
 });
 
 describe("the fill", () => {
-  it("is the sketch's at speed 1, and a faster fill divides every gap", () => {
-    expect(fillSchedule(40)).toEqual(fillTimes(40));
-    const fast = fillSchedule(40, { ...INTRO_DEFAULTS, fillSpeed: 2 });
+  it("is the sketch's at speed 1 and its ratio, and a faster fill divides every gap", () => {
+    const sketch = { ...INTRO_DEFAULTS, fillSpeed: 1, fillRatio: 0.85 };
+    expect(fillSchedule(40, sketch)).toEqual(fillTimes(40));
+    const fast = fillSchedule(40, { ...sketch, fillSpeed: 2 });
     fast.forEach((t, i) => expect(t).toBeCloseTo(fillTimes(40)[i] / 2, 9));
+  });
+
+  it("lights all 59 screens of the settled ball by 3.42 s", () => {
+    const T0 = fillSchedule(59);
+    expect(T0[1]).toBeCloseTo(0.5 / 0.85, 9);
+    expect(T0[58]).toBeCloseTo(3.415, 3);
   });
 
   it("holds the handover until the last screen has faded on", () => {
@@ -203,7 +213,7 @@ describe("the tuner's numbers", () => {
       expect(src).toContain(`  ${key}:`);
     }
     expect(introSnippet(INTRO_DEFAULTS)).toContain(`moveStart: ${INTRO.moveStart},`);
-    expect(introSnippet(INTRO_DEFAULTS)).toContain("moveEase: [0.8, 0, 0.16, 1] as const,");
+    expect(introSnippet(INTRO_DEFAULTS)).toContain("moveEase: [0.9, 0, 0.16, 1] as const,");
     /* a step of 0.025 keeps three places: the sketch's 0.225 s fade must not become 0.23 */
     expect(introSnippet(INTRO_DEFAULTS)).toContain("fillFade: 0.225,");
     expect(readTuneParams("?tune&fd=0.225").fillFade).toBe(0.225);

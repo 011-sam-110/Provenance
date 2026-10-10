@@ -25,14 +25,17 @@ import { FILL, SCREEN_DEG, clamp01, cubicBezier, fillTimes, smoothstep } from "@
  * THE STILLS ARE A DATED SNAPSHOT. Nothing here may call the sphere live.
  */
 
-/** Every tunable number, in one place. Times are seconds from the first screen. */
+/** Every tunable number, in one place. Times are seconds from the first screen. The fill, the
+    start size and the move were tuned by Leon on `/?tune` on 2026-10-11; the rest are the
+    numbers settled on 2026-10-08, which he kept. */
 export const INTRO = {
   /* ---- the fill, from the sketch (lib/marketing/cameraSphere.ts holds its first two gaps) */
   /** Divides every gap between screens, so the shape of the fill holds and only its pace
-      changes. At 1 the 59 screens of the 17° ball are all lit by 3.84 s. */
-  fillSpeed: 1,
-  /** Each gap after the second is this share of the one before it. */
-  fillRatio: FILL.ratio,
+      changes. With the ratio below, the 59 screens of the 17° ball are all lit by 3.42 s: the
+      first two gaps are slower than the sketch's, the rest speed up much faster. */
+  fillSpeed: 0.85,
+  /** Each gap after the second is this share of the one before it (the sketch's was 0.85). */
+  fillRatio: 0.7,
   /** The shortest gap the speed-up may reach, s (before `fillSpeed` divides it). */
   fillFloor: FILL.floor,
   /** How long one screen takes to fade on, s. */
@@ -51,17 +54,17 @@ export const INTRO = {
   minMarginPx: 20,
 
   /* ---- the ball at the start, centred */
-  /** Its diameter as a share of the shorter side of the screen. The sketch's 91% of the frame
-      height on a wide screen; on a phone the width is the shorter side, so the ball starts
-      smaller and does not run off the sides. */
-  startDiameter: 0.91,
+  /** Its diameter as a share of the shorter side of the screen: 1.6, so the ball starts larger
+      than the screen, running off the top and bottom on a wide screen and off the sides on a
+      phone, and the move pulls it in from there. (The sketch's was 0.91, the ball whole.) */
+  startDiameter: 1.6,
 
   /* ---- the move to the left of the word */
-  moveStart: 3.44,
-  moveDur: 0.85,
-  /** cubic-bezier handles. More ease-in than the drop into the O had (.7). The tuner moves the
-      first handle only. */
-  moveEase: [0.8, 0, 0.16, 1] as const,
+  moveStart: 2.81,
+  moveDur: 0.95,
+  /** cubic-bezier handles: a strong ease-in, so the ball leaves the start slowly. The tuner
+      moves the first handle only. */
+  moveEase: [0.9, 0, 0.16, 1] as const,
 
   /* ---- the letters, left to right, starting before the ball lands */
   /** Share of the move at which the first letter starts. */
