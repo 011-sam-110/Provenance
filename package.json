@@ -29,6 +29,7 @@
     "react-dom": "19.0.0",
     "react-grid-layout": "^2.2.3",
     "satellite.js": "^7.0.1",
+    "three": "^0.186.1",
     "zod": "3.24.1"
   },
   "devDependencies": {
@@ -36,6 +37,7 @@
     "@types/node": "22.10.5",
     "@types/react": "19.0.4",
     "@types/react-dom": "19.0.2",
+    "@types/three": "^0.186.0",
     "typescript": "5.7.3",
     "vitest": "2.1.8"
   },

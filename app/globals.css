@@ -4186,21 +4186,19 @@ a.tn-w-place { display: flex; align-items: center; }
 }
 
 /* ── The mark, and the boot sequence ───────────────────────────────────────
-   Every part of the mark is its own group so it can assemble rather than just
-   appear. All of it draws from currentColor, so one file serves both skins and
-   the header, the boot overlay and the generated icons cannot drift apart. */
-.tn-mark { display: block; color: var(--tnx-ink); }
-.tn-mark .mk-ring {
-  fill: none; stroke: currentColor; stroke-width: 1.1; opacity: 0.55;
+   The mark is the camera sphere, its screens filled: a filtered screenshot of the landing
+   intro's ball (components/brand/Mark.tsx). The PNG is a mask over a box filled
+   with currentColor, so one file serves both skins, and the header, the boot
+   overlay and the generated icons cannot drift apart. */
+.tn-mark { display: block; position: relative; width: var(--mark-size, 24px); aspect-ratio: 1 / 1; color: var(--tnx-ink); }
+.tn-mark .mk-face {
+  position: absolute; inset: 0; background-color: currentColor;
+  -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center;
+  mask-size: contain; mask-repeat: no-repeat; mask-position: center;
 }
-/* 3.4, not 5.5. A heavier ring closes the aperture at icon sizes and the globe
-   inside collapses into an undifferentiated blob. */
-.tn-mark .mk-lens { fill: none; stroke: currentColor; stroke-width: 3.4; }
-.tn-mark .mk-fill { fill: currentColor; }
-.tn-mark .mk-dot { fill: currentColor; opacity: 0.75; }
 
-/* The assemble timeline. `pathLength: 100` on the circles is what lets the
-   dasharray be a plain 100 here instead of a circumference per radius.
+/* The assemble timeline: the mark opens from its centre outwards, the order the
+   intro lights its screens in.
 
    EVERY DURATION HERE IS SCALED, and none of them may be written bare. The boot
    sequence no longer runs at a fixed length — it plays compressed and ends when the
@@ -4208,51 +4206,22 @@ a.tn-w-place { display: flex; align-items: center; }
    This animation is the one piece of that timeline the component does not schedule
    itself, so it takes the same factor through `--tn-mark-scale`, published on the
    boot overlay. Left unscaled, a compressed sequence would reach the `identify`
-   stage while the rings were still drawing and the logo would snap to its finished
+   stage while the mark was still opening and the logo would snap to its finished
    state mid-animation.
 
-   The default of 1 is what the header and the marketing bar get: they only ever
-   pass `idle`, never `playing`, so nothing outside the boot reads these rules at
-   all. MARK_ASSEMBLE_MS in lib/terminal/boot.ts is the longest chain below
-   (`.mk-book`, 700 + 480), and tests/unit/mark-timeline.test.ts reads this file to
-   keep the two honest. */
-.tn-mark.is-playing .mk-ring {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: tnx-mark-draw calc(700ms * var(--tn-mark-scale, 1)) cubic-bezier(0.33, 1, 0.68, 1) forwards;
+   The default of 1 is what the header and the marketing bar get: they never pass
+   `playing`, so nothing outside the boot reads these rules at all.
+   MARK_ASSEMBLE_MS in lib/terminal/boot.ts is the chain below (120 + 1060), and
+   tests/unit/mark-timeline.test.ts reads this file to keep the two honest. The end
+   state is the resting state (a clip just wider than the ball, full opacity), so
+   taking `is-playing` off afterwards changes nothing on screen. */
+.tn-mark.is-playing .mk-face {
+  clip-path: circle(0% at 50% 50%); opacity: 0;
+  animation: tnx-mark-open calc(1060ms * var(--tn-mark-scale, 1)) calc(120ms * var(--tn-mark-scale, 1)) cubic-bezier(0.45, 0, 0.25, 1) forwards;
 }
-.tn-mark.is-playing .mk-ring-2 { animation-delay: calc(110ms * var(--tn-mark-scale, 1)); }
-.tn-mark.is-playing .mk-dots {
-  opacity: 0;
-  animation: tnx-mark-in calc(400ms * var(--tn-mark-scale, 1)) calc(620ms * var(--tn-mark-scale, 1)) forwards;
-}
-.tn-mark.is-playing .mk-glass {
-  opacity: 0; transform-origin: 50% 44%;
-  animation: tnx-mark-pop calc(520ms * var(--tn-mark-scale, 1)) calc(380ms * var(--tn-mark-scale, 1)) cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
-}
-.tn-mark.is-playing .mk-book {
-  opacity: 0; transform-origin: 50% 78%;
-  animation: tnx-mark-unfold calc(480ms * var(--tn-mark-scale, 1)) calc(700ms * var(--tn-mark-scale, 1)) cubic-bezier(0.33, 1, 0.68, 1) forwards;
-}
-
-/* The ambient "system is live" tell on the header mark. Deliberately 22s: fast
-   enough to notice if you look, slow enough never to pull the eye off the data. */
-.tn-mark .mk-dots.is-idle {
-  transform-origin: 50% 50%;
-  animation: tnx-mark-orbit 22s linear infinite;
-}
-
-@keyframes tnx-mark-draw { to { stroke-dashoffset: 0; } }
-@keyframes tnx-mark-in { to { opacity: 1; } }
-@keyframes tnx-mark-pop {
-  from { opacity: 0; transform: scale(0.82); }
-  to { opacity: 1; transform: scale(1); }
-}
-@keyframes tnx-mark-unfold {
-  from { opacity: 0; transform: scaleY(0.3) translateY(6px); }
-  to { opacity: 1; transform: scaleY(1) translateY(0); }
-}
-@keyframes tnx-mark-orbit { to { transform: rotate(360deg); } }
+/* 50% of the box is just past the ball's edge (61.8 of 128 units), so the opening spends the
+   whole beat on the ball instead of finishing early and widening over nothing. */
+@keyframes tnx-mark-open { to { clip-path: circle(50% at 50% 50%); opacity: 1; } }
 
 /* ╔══════════════════════════════════════════════════════════════════════════╗
    ║ THE LAUNCH SEQUENCE                                                      ║
@@ -4384,11 +4353,6 @@ a.tn-w-place { display: flex; align-items: center; }
 }
 .tnx-boot.is-assemble .tnx-boot-mark { animation: tnx-boot-mark-in 460ms ease forwards; }
 
-/* The rings are 1.1px at 0.55 alpha, which is right in a 24px header chip and
-   invisible blown up to 170px on near-black — the first browser pass had a blank
-   screen for the whole of the ring draw. Scoped to the boot so the header mark and
-   the generated icons keep the weight they were tuned at. */
-.tnx-boot-mark .mk-ring { stroke-width: 1.7; opacity: 0.85; }
 
 /* The power-on. A hairline snaps open across the mark's own row and fades as the
    mark draws over it — without it the sequence opens on ~700ms of black while the
@@ -4514,11 +4478,9 @@ a.tn-w-place { display: flex; align-items: center; }
    the plate still fades rather than cutting, because a hard swap from a
    full-screen plate to the terminal is its own kind of jolt. */
 @media (prefers-reduced-motion: reduce) {
-  .tn-mark.is-playing .mk-ring,
-  .tn-mark.is-playing .mk-dots,
-  .tn-mark.is-playing .mk-glass,
-  .tn-mark.is-playing .mk-book,
-  .tn-mark .mk-dots.is-idle { animation: none; opacity: 1; stroke-dashoffset: 0; transform: none; }
+  /* `>` rather than a space: tests/unit/mark-timeline.test.ts reads the space form as the
+     assemble timeline, and this is its absence. */
+  .tn-mark.is-playing > .mk-face { animation: none; clip-path: none; opacity: 1; }
 
   .tnx-boot { transition: opacity 160ms linear; }
   .tnx-boot-core { transition: opacity 160ms linear; }
