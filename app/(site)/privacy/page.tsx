@@ -184,7 +184,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     has to carry whatever the app does. It terminates TLS, so it necessarily sees
  *     every visitor's full IP address before we do. What reaches our log is masked; what
  *     reaches Cloudflare is not, and no wording on our side changes that.
- *   • persistence — package.json ships ten runtime deps and not one is a database
+ *   • persistence — package.json ships eleven runtime deps and not one is a database
  *     client. The guard in tests/unit/discovery-admin-gate.test.ts is now TWO checks and
  *     the difference matters to the copy below.
  *
@@ -361,7 +361,7 @@ export default function PrivacyPage() {
           <div className="pv-prose">
             <p>
               This is the strongest thing on the page, so it is the one worth checking. The app has
-              ten runtime dependencies and not one of them is a database client. There is no
+              eleven runtime dependencies and not one of them is a database client. There is no
               key-value store, no object store and no cloud storage account. Nothing this site
               serves writes a file.
             </p>

@@ -1,0 +1,15 @@
+{
+  "source": "scripts/assets/sphere-source.png",
+  "files": {
+    "32": "/brand/sphere-mark-32.png",
+    "64": "/brand/sphere-mark-64.png",
+    "96": "/brand/sphere-mark-96.png",
+    "192": "/brand/sphere-mark-192.png",
+    "512": "/brand/sphere-mark-512.png"
+  },
+  "orb": {
+    "cx": 64,
+    "cy": 64,
+    "r": 61.811
+  }
+}

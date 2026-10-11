@@ -6,6 +6,7 @@ import { shareMetadata } from "@/lib/seo/shareCard";
 import { serializeJsonLd, websiteJsonLd } from "@/lib/seo/structuredData";
 import Mark from "@/components/brand/Mark";
 import LandingStage from "@/components/marketing/LandingStage";
+import SphereIntro from "@/components/marketing/SphereIntro";
 import Starfield from "@/components/marketing/Starfield";
 import CommunityNote from "@/components/shell/CommunityNote";
 import { AUDIT_TOTALS } from "@/lib/marketing/coverage-audit.data";
@@ -135,6 +136,11 @@ export default function Landing() {
       />
 
       <div className={`lp-root ${archivo.variable}`}>
+        {/* The opening intro: a curtain over the hero below, which is rendered here in full and
+            reads without it. It shows only when its own gate script says so before the first
+            paint, and any input skips it. components/marketing/SphereIntro.tsx. */}
+        <SphereIntro />
+
         <a className="lp-skip" href="#main">
           Skip to content
         </a>
@@ -623,6 +629,11 @@ export default function Landing() {
               by David Nash (astronexus), licensed CC BY-SA 4.0. Star positions are real. The sky
               is shown at a wider angle than the camera of the Earth renders, so whole
               constellations fit the frame.
+            </p>
+            <p>
+              Camera stills in the photo sphere, taken on 8 October 2026: Powered by TfL Open Data
+              (Open Government Licence); DriveBC / BC Ministry of Transportation and Infrastructure
+              (Open Government Licence – British Columbia); Fintraffic / Digitraffic (CC BY 4.0).
             </p>
             <p>
               Photographs from Pexels by Jakub Zerdzicki, Luis D. Alvarez, Carlos Ruiz, Dominik

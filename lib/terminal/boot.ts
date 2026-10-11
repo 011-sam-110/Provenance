@@ -63,8 +63,8 @@ export const BOOT_FADE_MS = 420;
 export const BOOT_READY_HOLD_MS = 400;
 
 /** The mark's own assemble timeline in app/globals.css, measured from the moment
- *  the `assemble` beat sets `is-playing`. Longest chain: `.mk-book`, 700ms delay +
- *  480ms.
+ *  the `assemble` beat sets `is-playing`. One chain: `.mk-face` opening from the
+ *  centre, 120ms delay + 1060ms.
  *
  *  IT IS A DURATION IN CSS AND A NUMBER HERE, WHICH IS THE ONE COUPLING THIS FILE
  *  EXISTS TO AVOID — so it is scaled by the same factor as the beats (via

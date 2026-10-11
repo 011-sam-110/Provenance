@@ -44,8 +44,8 @@ function scaledMs(body: string): number[] {
 describe("the mark's assemble timeline", () => {
   const rules = playingRules();
 
-  it("has the four parts the sequence animates", () => {
-    expect([...rules.keys()].sort()).toEqual(["mk-book", "mk-dots", "mk-glass", "mk-ring", "mk-ring-2"]);
+  it("animates the one part the mark has: its face, opening from the centre", () => {
+    expect([...rules.keys()].sort()).toEqual(["mk-face"]);
   });
 
   it("writes no duration bare — every one is scaled", () => {
@@ -72,14 +72,11 @@ describe("the mark's assemble timeline", () => {
 
   it("agrees with MARK_ASSEMBLE_MS about the longest chain", () => {
     // Per rule, the animation shorthand's numbers are (duration, delay) — their SUM
-    // is when that part lands, whichever order they appear in. `.mk-ring-2` carries
-    // only a delay and inherits `.mk-ring`'s duration, so it is the one chain that
-    // spans two rules.
+    // is when that part lands, whichever order they appear in.
     const landing = new Map<string, number>();
     for (const [part, body] of rules) {
       landing.set(part, scaledMs(body).reduce((a, b) => a + b, 0));
     }
-    landing.set("mk-ring-2", (landing.get("mk-ring-2") ?? 0) + (landing.get("mk-ring") ?? 0));
 
     expect(Math.max(...landing.values())).toBe(MARK_ASSEMBLE_MS);
   });
