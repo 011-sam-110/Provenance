@@ -1,0 +1,1415 @@
+{
+ "_about": "Verbatim rows from GET /api/signals/earthquakes and /api/signals/emsc-quakes on provenance-online.com, observed 1791484203423 (usgs) and 1791484205076 (emsc). The usgs list keeps the rows the tests use plus its oldest and newest; the emsc list keeps the rows near those, six that USGS does not list, and the oldest row of its page. Neither is a full list: the window rule reads only the oldest and newest ts, which are kept.",
+ "usgs": [
+  {
+   "id": "usgs:ci41345111",
+   "lat": 34.1005,
+   "lon": -117.480166666667,
+   "title": "M 1.6 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41345111",
+   "ts": "2026-10-08T16:39:58.260Z",
+   "props": {
+    "magnitude": 1.6,
+    "depth": "5.9 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41345095",
+   "lat": 34.1011666666667,
+   "lon": -117.483166666667,
+   "title": "M 0.9 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41345095",
+   "ts": "2026-10-08T16:30:20.930Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.6 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41345071",
+   "lat": 34.0975,
+   "lon": -117.490166666667,
+   "title": "M 0.7 - 3 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41345071",
+   "ts": "2026-10-08T15:23:59.510Z",
+   "props": {
+    "magnitude": 0.7,
+    "depth": "6.0 km",
+    "place": "3 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41345047",
+   "lat": 34.101,
+   "lon": -117.482666666667,
+   "title": "M 1.1 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41345047",
+   "ts": "2026-10-08T14:30:04.990Z",
+   "props": {
+    "magnitude": 1.1,
+    "depth": "6.5 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0yr",
+   "lat": -10.0202,
+   "lon": 122.2936,
+   "title": "M 4.9 - 113 km NW of Baa, Indonesia",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0yr",
+   "ts": "2026-10-08T14:11:49.678Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "10.0 km",
+    "place": "113 km NW of Baa, Indonesia",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344975",
+   "lat": 34.0971666666667,
+   "lon": -117.486666666667,
+   "title": "M 1.0 - 3 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344975",
+   "ts": "2026-10-08T11:51:41.720Z",
+   "props": {
+    "magnitude": 1,
+    "depth": "5.0 km",
+    "place": "3 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344967",
+   "lat": 34.164,
+   "lon": -117.481833333333,
+   "title": "M 0.4 - 8 km NNW of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344967",
+   "ts": "2026-10-08T11:48:37.410Z",
+   "props": {
+    "magnitude": 0.4,
+    "depth": "6.8 km",
+    "place": "8 km NNW of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344951",
+   "lat": 34.0976666666667,
+   "lon": -117.484166666667,
+   "title": "M 1.2 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344951",
+   "ts": "2026-10-08T10:49:06.580Z",
+   "props": {
+    "magnitude": 1.2,
+    "depth": "6.9 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344943",
+   "lat": 34.1016666666667,
+   "lon": -117.477333333333,
+   "title": "M 0.9 - 2 km WNW of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344943",
+   "ts": "2026-10-08T10:40:05.140Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.9 km",
+    "place": "2 km WNW of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344927",
+   "lat": 34.0986666666667,
+   "lon": -117.482833333333,
+   "title": "M 0.9 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344927",
+   "ts": "2026-10-08T10:35:00.370Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.9 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344919",
+   "lat": 34.0966666666667,
+   "lon": -117.4875,
+   "title": "M 1.2 - 3 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344919",
+   "ts": "2026-10-08T10:15:04.900Z",
+   "props": {
+    "magnitude": 1.2,
+    "depth": "6.8 km",
+    "place": "3 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0xn",
+   "lat": -18.0147,
+   "lon": -178.4545,
+   "title": "M 5.1 - 236 km E of Levuka, Fiji",
+   "signalId": "earthquakes",
+   "color": "#f97316",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0xn",
+   "ts": "2026-10-08T10:07:28.642Z",
+   "props": {
+    "magnitude": 5.1,
+    "depth": "602.3 km",
+    "place": "236 km E of Levuka, Fiji",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344911",
+   "lat": 34.0981666666667,
+   "lon": -117.485333333333,
+   "title": "M 1.0 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344911",
+   "ts": "2026-10-08T10:01:54.550Z",
+   "props": {
+    "magnitude": 1,
+    "depth": "6.7 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0xi",
+   "lat": -15.5411,
+   "lon": 168.1889,
+   "title": "M 6.3 - 102 km NE of Norsup, Vanuatu",
+   "signalId": "earthquakes",
+   "color": "#dc2626",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0xi",
+   "ts": "2026-10-08T09:00:07.768Z",
+   "props": {
+    "magnitude": 6.3,
+    "depth": "10.0 km",
+    "place": "102 km NE of Norsup, Vanuatu",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344863",
+   "lat": 34.0991666666667,
+   "lon": -117.481666666667,
+   "title": "M 1.1 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344863",
+   "ts": "2026-10-08T08:24:53.040Z",
+   "props": {
+    "magnitude": 1.1,
+    "depth": "6.5 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344855",
+   "lat": 34.1021666666667,
+   "lon": -117.481833333333,
+   "title": "M 2.7 - 2 km WNW of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#facc15",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344855",
+   "ts": "2026-10-08T08:09:03.190Z",
+   "props": {
+    "magnitude": 2.7,
+    "depth": "6.1 km",
+    "place": "2 km WNW of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344847",
+   "lat": 34.0978333333333,
+   "lon": -117.488166666667,
+   "title": "M 1.4 - 3 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344847",
+   "ts": "2026-10-08T08:08:53.090Z",
+   "props": {
+    "magnitude": 1.4,
+    "depth": "6.7 km",
+    "place": "3 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0x4",
+   "lat": 5.6006,
+   "lon": 125.1521,
+   "title": "M 5.5 - 17 km SW of Burias, Philippines",
+   "signalId": "earthquakes",
+   "color": "#f97316",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0x4",
+   "ts": "2026-10-08T08:07:59.114Z",
+   "props": {
+    "magnitude": 5.5,
+    "depth": "52.1 km",
+    "place": "17 km SW of Burias, Philippines",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344831",
+   "lat": 34.1031666666667,
+   "lon": -117.478666666667,
+   "title": "M 0.9 - 2 km WNW of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344831",
+   "ts": "2026-10-08T07:51:34.810Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.6 km",
+    "place": "2 km WNW of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0x2",
+   "lat": 5.4545,
+   "lon": 94.7814,
+   "title": "M 4.6 - 61 km W of Banda Aceh, Indonesia",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0x2",
+   "ts": "2026-10-08T07:45:12.588Z",
+   "props": {
+    "magnitude": 4.6,
+    "depth": "97.5 km",
+    "place": "61 km W of Banda Aceh, Indonesia",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tunrkp",
+   "lat": 31.642,
+   "lon": -104.454,
+   "title": "M 1.8 - 59 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tunrkp",
+   "ts": "2026-10-08T07:12:49.116Z",
+   "props": {
+    "magnitude": 1.8,
+    "depth": "7.1 km",
+    "place": "59 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tunqfj",
+   "lat": 31.65,
+   "lon": -104.439,
+   "title": "M 1.8 - 58 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tunqfj",
+   "ts": "2026-10-08T07:11:26.115Z",
+   "props": {
+    "magnitude": 1.8,
+    "depth": "6.2 km",
+    "place": "58 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0ws",
+   "lat": -52.5475,
+   "lon": 140.2121,
+   "title": "M 5.5 - west of Macquarie Island",
+   "signalId": "earthquakes",
+   "color": "#f97316",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0ws",
+   "ts": "2026-10-08T06:46:47.971Z",
+   "props": {
+    "magnitude": 5.5,
+    "depth": "10.0 km",
+    "place": "west of Macquarie Island",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tulyxx",
+   "lat": 31.659,
+   "lon": -104.419,
+   "title": "M 2.4 - 57 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tulyxx",
+   "ts": "2026-10-08T06:24:56.760Z",
+   "props": {
+    "magnitude": 2.4,
+    "depth": "5.8 km",
+    "place": "57 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344807",
+   "lat": 34.1,
+   "lon": -117.484,
+   "title": "M 0.9 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344807",
+   "ts": "2026-10-08T05:54:47.620Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.4 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0wh",
+   "lat": -22.1924,
+   "lon": -68.6682,
+   "title": "M 4.5 - 39 km NE of Calama, Chile",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0wh",
+   "ts": "2026-10-08T05:35:56.016Z",
+   "props": {
+    "magnitude": 4.5,
+    "depth": "121.4 km",
+    "place": "39 km NE of Calama, Chile",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0wb",
+   "lat": -9.421,
+   "lon": 118.8068,
+   "title": "M 4.7 - 47 km W of Tambolaka, Indonesia",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0wb",
+   "ts": "2026-10-08T05:06:52.046Z",
+   "props": {
+    "magnitude": 4.7,
+    "depth": "65.3 km",
+    "place": "47 km W of Tambolaka, Indonesia",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0wa",
+   "lat": -7.7761,
+   "lon": 120.5395,
+   "title": "M 5.0 - 92 km N of Ruteng, Indonesia",
+   "signalId": "earthquakes",
+   "color": "#f97316",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0wa",
+   "ts": "2026-10-08T04:48:59.943Z",
+   "props": {
+    "magnitude": 5,
+    "depth": "10.0 km",
+    "place": "92 km N of Ruteng, Indonesia",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0w0",
+   "lat": 39.2061,
+   "lon": 14.3516,
+   "title": "M 4.9 - 81 km NNW of Malfa, Italy",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0w0",
+   "ts": "2026-10-08T03:42:52.895Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "367.1 km",
+    "place": "81 km NNW of Malfa, Italy",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tufoij",
+   "lat": 31.66,
+   "lon": -104.467,
+   "title": "M 1.6 - 57 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tufoij",
+   "ts": "2026-10-08T03:07:53.112Z",
+   "props": {
+    "magnitude": 1.6,
+    "depth": "5.2 km",
+    "place": "57 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0vw",
+   "lat": -7.8993,
+   "lon": 121.0443,
+   "title": "M 4.7 - 101 km NE of Ruteng, Indonesia",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0vw",
+   "ts": "2026-10-08T03:00:01.461Z",
+   "props": {
+    "magnitude": 4.7,
+    "depth": "10.0 km",
+    "place": "101 km NE of Ruteng, Indonesia",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344799",
+   "lat": 34.1031666666667,
+   "lon": -117.483666666667,
+   "title": "M 1.1 - 2 km WNW of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344799",
+   "ts": "2026-10-08T02:37:30.140Z",
+   "props": {
+    "magnitude": 1.1,
+    "depth": "6.0 km",
+    "place": "2 km WNW of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tuelqq",
+   "lat": 31.668,
+   "lon": -104.448,
+   "title": "M 1.7 - 56 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tuelqq",
+   "ts": "2026-10-08T02:34:45.975Z",
+   "props": {
+    "magnitude": 1.7,
+    "depth": "6.7 km",
+    "place": "56 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tuedbl",
+   "lat": 31.654,
+   "lon": -104.439,
+   "title": "M 3.0 - 58 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#facc15",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tuedbl",
+   "ts": "2026-10-08T02:24:49.886Z",
+   "props": {
+    "magnitude": 3,
+    "depth": "6.2 km",
+    "place": "58 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344791",
+   "lat": 34.0993333333333,
+   "lon": -117.4845,
+   "title": "M 1.5 - 2 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344791",
+   "ts": "2026-10-08T02:24:24.200Z",
+   "props": {
+    "magnitude": 1.5,
+    "depth": "6.6 km",
+    "place": "2 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:tx2026tueaim",
+   "lat": 31.659,
+   "lon": -104.44,
+   "title": "M 3.6 - 57 km S of Whites City, New Mexico",
+   "signalId": "earthquakes",
+   "color": "#facc15",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/tx2026tueaim",
+   "ts": "2026-10-08T02:21:27.461Z",
+   "props": {
+    "magnitude": 3.6,
+    "depth": "6.1 km",
+    "place": "57 km S of Whites City, New Mexico",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344775",
+   "lat": 34.096,
+   "lon": -117.491833333333,
+   "title": "M 0.9 - 3 km W of Fontana, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344775",
+   "ts": "2026-10-08T01:39:02.480Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "6.5 km",
+    "place": "3 km W of Fontana, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:uw714117751",
+   "lat": 48.4783333333333,
+   "lon": -123.5105,
+   "title": "M 1.5 Explosion - 3 km N of Langford, Canada",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/uw714117751",
+   "ts": "2026-10-08T00:22:38.570Z",
+   "props": {
+    "magnitude": 1.5,
+    "depth": "-0.2 km",
+    "place": "3 km N of Langford, Canada",
+    "type": "explosion"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:uw714117721",
+   "lat": 49.0808333333333,
+   "lon": -122.1225,
+   "title": "M 1.2 Explosion - 9 km ENE of Abbotsford, Canada",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/uw714117721",
+   "ts": "2026-10-07T22:49:07.280Z",
+   "props": {
+    "magnitude": 1.2,
+    "depth": "-0.7 km",
+    "place": "9 km ENE of Abbotsford, Canada",
+    "type": "explosion"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:uw714117711",
+   "lat": 45.8591666666667,
+   "lon": -122.464166666667,
+   "title": "M 1.1 Explosion - 4 km W of Yacolt, Washington",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/uw714117711",
+   "ts": "2026-10-07T22:47:19.670Z",
+   "props": {
+    "magnitude": 1.1,
+    "depth": "-0.6 km",
+    "place": "4 km W of Yacolt, Washington",
+    "type": "explosion"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:nn00925438",
+   "lat": 35.4563,
+   "lon": -115.5388,
+   "title": "M 1.5 Explosion - 40 km SSE of Sandy Valley, Nevada",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/nn00925438",
+   "ts": "2026-10-07T22:03:11.052Z",
+   "props": {
+    "magnitude": 1.5,
+    "depth": "0.0 km",
+    "place": "40 km SSE of Sandy Valley, Nevada",
+    "type": "explosion"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:nn00925437",
+   "lat": 38.7259,
+   "lon": -117.0945,
+   "title": "M 2.1 Explosion - 53 km S of Kingston, Nevada",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/nn00925437",
+   "ts": "2026-10-07T21:22:53.906Z",
+   "props": {
+    "magnitude": 2.1,
+    "depth": "0.0 km",
+    "place": "53 km S of Kingston, Nevada",
+    "type": "explosion"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0uq",
+   "lat": 12.6946,
+   "lon": -86.9041,
+   "title": "M 4.6 - 18 km NNE of Posoltega, Nicaragua",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0uq",
+   "ts": "2026-10-07T20:56:51.318Z",
+   "props": {
+    "magnitude": 4.6,
+    "depth": "206.3 km",
+    "place": "18 km NNE of Posoltega, Nicaragua",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41344679",
+   "lat": 32.8263333333333,
+   "lon": -117.0585,
+   "title": "M 0.9 Quarry Blast - 7 km NNW of La Mesa, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41344679",
+   "ts": "2026-10-07T20:13:24.190Z",
+   "props": {
+    "magnitude": 0.9,
+    "depth": "-0.1 km",
+    "place": "7 km NNW of La Mesa, CA",
+    "type": "quarry blast"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0uc",
+   "lat": 36.5238,
+   "lon": 139.3334,
+   "title": "M 4.6 - 9 km NNE of Midori, Japan",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0uc",
+   "ts": "2026-10-07T19:36:46.284Z",
+   "props": {
+    "magnitude": 4.6,
+    "depth": "95.6 km",
+    "place": "9 km NNE of Midori, Japan",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:us6000u0u7",
+   "lat": 35.6751,
+   "lon": 140.3957,
+   "title": "M 4.9 - 3 km WSW of Shibayama, Japan",
+   "signalId": "earthquakes",
+   "color": "#fb923c",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0u7",
+   "ts": "2026-10-07T19:13:50.830Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "73.0 km",
+    "place": "3 km WSW of Shibayama, Japan",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:hv75052082",
+   "lat": 19.415,
+   "lon": -155.235166666667,
+   "title": "M 1.0 - 3 km S of Volcano, Hawaii",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/hv75052082",
+   "ts": "2026-10-08T06:51:07.520Z",
+   "props": {
+    "magnitude": 1,
+    "depth": "26.1 km",
+    "place": "3 km S of Volcano, Hawaii",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:hv75052077",
+   "lat": 19.1586666107178,
+   "lon": -155.505004882812,
+   "title": "M 1.8 - 5 km SSW of Pāhala, Hawaii",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/hv75052077",
+   "ts": "2026-10-08T06:49:37.510Z",
+   "props": {
+    "magnitude": 1.8,
+    "depth": "27.4 km",
+    "place": "5 km SSW of Pāhala, Hawaii",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:hv75051802",
+   "lat": 19.4123333333333,
+   "lon": -155.616166666667,
+   "title": "M 2.4 - 26 km E of Honaunau-Napoopoo, Hawaii",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/hv75051802",
+   "ts": "2026-10-07T18:33:57.090Z",
+   "props": {
+    "magnitude": 2.4,
+    "depth": "42.1 km",
+    "place": "26 km E of Honaunau-Napoopoo, Hawaii",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "usgs:ci41345159",
+   "lat": 35.0581666666667,
+   "lon": -118.338333333333,
+   "title": "M 1.1 - 13 km SE of Tehachapi, CA",
+   "signalId": "earthquakes",
+   "color": "#a3e635",
+   "link": "https://earthquake.usgs.gov/earthquakes/eventpage/ci41345159",
+   "ts": "2026-10-08T18:11:35.620Z",
+   "props": {
+    "magnitude": 1.1,
+    "depth": "-0.8 km",
+    "place": "13 km SE of Tehachapi, CA",
+    "type": "earthquake"
+   },
+   "precision": "exact"
+  }
+ ],
+ "emsc": [
+  {
+   "id": "emsc:20261008_0000208",
+   "lat": -7.91,
+   "lon": 120.83,
+   "title": "M 4.0 — FLORES SEA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000208",
+   "ts": "2026-10-08T14:14:40.0Z",
+   "props": {
+    "magnitude": 4,
+    "depth": "10.0 km",
+    "region": "FLORES SEA",
+    "magType": "m",
+    "agency": "BMKG"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000210",
+   "lat": -10.0202,
+   "lon": 122.2936,
+   "title": "M 4.9 — SAVU SEA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000210",
+   "ts": "2026-10-08T14:11:49.678Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "10.0 km",
+    "region": "SAVU SEA",
+    "magType": "mb",
+    "agency": "NEIC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000146",
+   "lat": -17.9472,
+   "lon": -178.4516,
+   "title": "M 5.1 — FIJI REGION",
+   "signalId": "emsc-quakes",
+   "color": "#f97316",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000146",
+   "ts": "2026-10-08T10:07:28.69Z",
+   "props": {
+    "magnitude": 5.1,
+    "depth": "600.3 km",
+    "region": "FIJI REGION",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000124",
+   "lat": -15.5306,
+   "lon": 168.2879,
+   "title": "M 6.3 — VANUATU",
+   "signalId": "emsc-quakes",
+   "color": "#dc2626",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000124",
+   "ts": "2026-10-08T09:00:09.38Z",
+   "props": {
+    "magnitude": 6.3,
+    "depth": "10.0 km",
+    "region": "VANUATU",
+    "magType": "mw",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000108",
+   "lat": 34.1022,
+   "lon": -117.4818,
+   "title": "M 2.7 — GREATER LOS ANGELES AREA, CALIF.",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000108",
+   "ts": "2026-10-08T08:09:03.19Z",
+   "props": {
+    "magnitude": 2.7,
+    "depth": "6.1 km",
+    "region": "GREATER LOS ANGELES AREA, CALIF.",
+    "magType": "ml",
+    "agency": "SCSN"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000110",
+   "lat": 5.6898,
+   "lon": 125.2548,
+   "title": "M 5.5 — MINDANAO, PHILIPPINES",
+   "signalId": "emsc-quakes",
+   "color": "#f97316",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000110",
+   "ts": "2026-10-08T08:07:58.44Z",
+   "props": {
+    "magnitude": 5.5,
+    "depth": "35.0 km",
+    "region": "MINDANAO, PHILIPPINES",
+    "magType": "mw",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000107",
+   "lat": 5.4545,
+   "lon": 94.7814,
+   "title": "M 4.6 — NORTHERN SUMATRA, INDONESIA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000107",
+   "ts": "2026-10-08T07:45:12.02Z",
+   "props": {
+    "magnitude": 4.6,
+    "depth": "97.5 km",
+    "region": "NORTHERN SUMATRA, INDONESIA",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000115",
+   "lat": 31.568,
+   "lon": -103.949,
+   "title": "M 2.0 — WESTERN TEXAS",
+   "signalId": "emsc-quakes",
+   "color": "#a3e635",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000115",
+   "ts": "2026-10-08T07:06:43.092157Z",
+   "props": {
+    "magnitude": 2,
+    "depth": "7.9 km",
+    "region": "WESTERN TEXAS",
+    "magType": "ml",
+    "agency": "TX"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000096",
+   "lat": -52.5331,
+   "lon": 140.2835,
+   "title": "M 5.5 — WEST OF MACQUARIE ISLAND",
+   "signalId": "emsc-quakes",
+   "color": "#f97316",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000096",
+   "ts": "2026-10-08T06:46:48.15Z",
+   "props": {
+    "magnitude": 5.5,
+    "depth": "4.7 km",
+    "region": "WEST OF MACQUARIE ISLAND",
+    "magType": "mw",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000103",
+   "lat": 31.659,
+   "lon": -104.419,
+   "title": "M 2.5 — WESTERN TEXAS",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000103",
+   "ts": "2026-10-08T06:24:56.760317Z",
+   "props": {
+    "magnitude": 2.5,
+    "depth": "5.8 km",
+    "region": "WESTERN TEXAS",
+    "magType": "ml",
+    "agency": "TX"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000078",
+   "lat": -22.235,
+   "lon": -68.6067,
+   "title": "M 4.5 — ANTOFAGASTA, CHILE",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000078",
+   "ts": "2026-10-08T05:35:55.51Z",
+   "props": {
+    "magnitude": 4.5,
+    "depth": "118.0 km",
+    "region": "ANTOFAGASTA, CHILE",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000074",
+   "lat": -7.95,
+   "lon": 120.89,
+   "title": "M 3.2 — FLORES SEA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000074",
+   "ts": "2026-10-08T05:17:40.0Z",
+   "props": {
+    "magnitude": 3.2,
+    "depth": "16.0 km",
+    "region": "FLORES SEA",
+    "magType": "m",
+    "agency": "BMKG"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000081",
+   "lat": -9.5452,
+   "lon": 118.8479,
+   "title": "M 4.7 — SUMBAWA REGION, INDONESIA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000081",
+   "ts": "2026-10-08T05:06:45.4Z",
+   "props": {
+    "magnitude": 4.7,
+    "depth": "10.0 km",
+    "region": "SUMBAWA REGION, INDONESIA",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000065",
+   "lat": -7.7293,
+   "lon": 120.4156,
+   "title": "M 5.0 — FLORES SEA",
+   "signalId": "emsc-quakes",
+   "color": "#f97316",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000065",
+   "ts": "2026-10-08T04:49:00.19Z",
+   "props": {
+    "magnitude": 5,
+    "depth": "7.1 km",
+    "region": "FLORES SEA",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000063",
+   "lat": -8.09,
+   "lon": 120.19,
+   "title": "M 3.0 — FLORES REGION, INDONESIA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000063",
+   "ts": "2026-10-08T04:40:24.0Z",
+   "props": {
+    "magnitude": 3,
+    "depth": "10.0 km",
+    "region": "FLORES REGION, INDONESIA",
+    "magType": "m",
+    "agency": "BMKG"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000044",
+   "lat": 38.868,
+   "lon": 14.5729,
+   "title": "M 4.9 — SICILY, ITALY",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000044",
+   "ts": "2026-10-08T03:42:52.72Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "360.9 km",
+    "region": "SICILY, ITALY",
+    "magType": "mw",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000036",
+   "lat": -7.9525,
+   "lon": 120.9692,
+   "title": "M 4.7 — FLORES SEA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000036",
+   "ts": "2026-10-08T03:00:02.17Z",
+   "props": {
+    "magnitude": 4.7,
+    "depth": "10.0 km",
+    "region": "FLORES SEA",
+    "magType": "mb",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000028",
+   "lat": 31.6341,
+   "lon": -104.4837,
+   "title": "M 3.0 — WESTERN TEXAS",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000028",
+   "ts": "2026-10-08T02:24:49.343Z",
+   "props": {
+    "magnitude": 3,
+    "depth": "6.3 km",
+    "region": "WESTERN TEXAS",
+    "magType": "ml",
+    "agency": "NEIC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000024",
+   "lat": 31.6292,
+   "lon": -104.4887,
+   "title": "M 3.6 — WESTERN TEXAS",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000024",
+   "ts": "2026-10-08T02:21:26.786Z",
+   "props": {
+    "magnitude": 3.6,
+    "depth": "8.3 km",
+    "region": "WESTERN TEXAS",
+    "magType": "ml",
+    "agency": "NEIC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261007_0000323",
+   "lat": 38.7259,
+   "lon": -117.0945,
+   "title": "M 2.1 — NEVADA",
+   "signalId": "emsc-quakes",
+   "color": "#a3e635",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261007_0000323",
+   "ts": "2026-10-07T21:22:53.906Z",
+   "props": {
+    "magnitude": 2.1,
+    "depth": "0.0 km",
+    "region": "NEVADA",
+    "magType": "ml",
+    "agency": "NN"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261007_0000317",
+   "lat": 12.619,
+   "lon": -86.974,
+   "title": "M 4.6 — NICARAGUA",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261007_0000317",
+   "ts": "2026-10-07T20:56:51.0Z",
+   "props": {
+    "magnitude": 4.6,
+    "depth": "188.0 km",
+    "region": "NICARAGUA",
+    "magType": "mb",
+    "agency": "INET"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261007_0000292",
+   "lat": 36.5238,
+   "lon": 139.3334,
+   "title": "M 3.9 — EASTERN HONSHU, JAPAN",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261007_0000292",
+   "ts": "2026-10-07T19:36:46.284Z",
+   "props": {
+    "magnitude": 3.9,
+    "depth": "95.6 km",
+    "region": "EASTERN HONSHU, JAPAN",
+    "magType": "m",
+    "agency": "NEIC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261007_0000285",
+   "lat": 35.5831,
+   "lon": 140.5389,
+   "title": "M 4.9 — NEAR EAST COAST OF HONSHU, JAPAN",
+   "signalId": "emsc-quakes",
+   "color": "#fb923c",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261007_0000285",
+   "ts": "2026-10-07T19:13:47.56Z",
+   "props": {
+    "magnitude": 4.9,
+    "depth": "46.0 km",
+    "region": "NEAR EAST COAST OF HONSHU, JAPAN",
+    "magType": "mw",
+    "agency": "EMSC"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000097",
+   "lat": 19.415,
+   "lon": -155.2352,
+   "title": "M 1.0 — ISLAND OF HAWAII, HAWAII",
+   "signalId": "emsc-quakes",
+   "color": "#a3e635",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000097",
+   "ts": "2026-10-08T06:51:07.52Z",
+   "props": {
+    "magnitude": 1,
+    "depth": "26.1 km",
+    "region": "ISLAND OF HAWAII, HAWAII",
+    "magType": "ml",
+    "agency": "HV"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000247",
+   "lat": 14.372,
+   "lon": -90.103,
+   "title": "M 3.7 — GUATEMALA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000247",
+   "ts": "2026-10-08T18:14:06.0Z",
+   "props": {
+    "magnitude": 3.7,
+    "depth": "4.0 km",
+    "region": "GUATEMALA",
+    "magType": "m",
+    "agency": "INET"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000248",
+   "lat": -8.2,
+   "lon": 120.58,
+   "title": "M 3.4 — FLORES REGION, INDONESIA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000248",
+   "ts": "2026-10-08T18:13:04.0Z",
+   "props": {
+    "magnitude": 3.4,
+    "depth": "10.0 km",
+    "region": "FLORES REGION, INDONESIA",
+    "magType": "m",
+    "agency": "BMKG"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000244",
+   "lat": 55.784,
+   "lon": -157.67,
+   "title": "M 3.2 — ALASKA PENINSULA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000244",
+   "ts": "2026-10-08T18:07:03.770394Z",
+   "props": {
+    "magnitude": 3.2,
+    "depth": "14.7 km",
+    "region": "ALASKA PENINSULA",
+    "magType": "ml",
+    "agency": "AK"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000243",
+   "lat": 63.717,
+   "lon": -23.274,
+   "title": "M 3.4 — ICELAND REGION",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000243",
+   "ts": "2026-10-08T17:50:27.7Z",
+   "props": {
+    "magnitude": 3.4,
+    "depth": "8.9 km",
+    "region": "ICELAND REGION",
+    "magType": "ml",
+    "agency": "IMO"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000238",
+   "lat": -26.44,
+   "lon": 27.366,
+   "title": "M 3.0 — SOUTH AFRICA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000238",
+   "ts": "2026-10-08T17:01:16.0Z",
+   "props": {
+    "magnitude": 3,
+    "depth": "10.0 km",
+    "region": "SOUTH AFRICA",
+    "magType": "m",
+    "agency": "SASN"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261008_0000235",
+   "lat": -30.5096,
+   "lon": 117.8133,
+   "title": "M 3.3 — WESTERN AUSTRALIA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261008_0000235",
+   "ts": "2026-10-08T16:46:49.413439Z",
+   "props": {
+    "magnitude": 3.3,
+    "depth": "4.5 km",
+    "region": "WESTERN AUSTRALIA",
+    "magType": "m",
+    "agency": "AUST"
+   },
+   "precision": "exact"
+  },
+  {
+   "id": "emsc:20261007_0000100",
+   "lat": -31.107,
+   "lon": -67.47,
+   "title": "M 2.9 — SAN JUAN, ARGENTINA",
+   "signalId": "emsc-quakes",
+   "color": "#facc15",
+   "link": "https://www.seismicportal.eu/eventdetails.html?unid=20261007_0000100",
+   "ts": "2026-10-07T07:00:59.0Z",
+   "props": {
+    "magnitude": 2.9,
+    "depth": "110.0 km",
+    "region": "SAN JUAN, ARGENTINA",
+    "magType": "m",
+    "agency": "NSNA"
+   },
+   "precision": "exact"
+  }
+ ]
+}
