@@ -44,9 +44,13 @@
  * 412/414 while the merged tree already held 416 files. `npx vitest list` on that tree: 4,715
  * cases across 416 files (`find tests/unit -name '*.test.ts' -o -name '*.test.tsx' | wc -l`
  * agrees independently).
+ *
+ * Re-measured 2026-10-12 (same day) on this branch, stacked on the previous fix: this branch adds
+ * ONE file (`signal-dossier-props.test.ts`, 4 cases) for the GDACS-magnitude-dossier-label fix.
+ * 416 + 1 = 417 files; 4,715 + 4 = 4,719 cases. `npm test` on this tree: 417 files / 4,719 tests.
  */
 export const UNIT_TESTS = {
-  cases: 4715,
-  files: 416,
+  cases: 4719,
+  files: 417,
   measuredAt: "2026-10-12",
 } as const;

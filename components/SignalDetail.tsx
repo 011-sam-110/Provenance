@@ -10,6 +10,7 @@ import { humaniseKey } from "@/lib/text/humanise";
 import { resolveSignalSources, isCompositeSignal } from "@/lib/signals/sourceLink";
 import { getSignal } from "@/lib/signals/registry";
 import { PRECISION_WORDING, precisionOfObject } from "@/lib/signals/precision";
+import { visibleDossierProps } from "@/lib/signals/dossierProps";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import SpotElsewhere from "@/components/SpotElsewhere";
 import QuakeTwin from "@/components/QuakeTwin";
@@ -66,9 +67,10 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
   const derived = isCompositeSignal(signalId);
 
   const assetKind = typeof props.assetKind === "string" ? (props.assetKind as string) : undefined;
+  const metric = signalId ? getSignal(signalId)?.metric : undefined;
   const entries: [string, string][] = assetKind
     ? assetEntries(assetKind, props)
-    : Object.entries(props)
+    : visibleDossierProps(props, metric)
         .filter(([, v]) => v != null && v !== "")
         .map(([k, v]) => [humaniseKey(k), String(v)]);
 
