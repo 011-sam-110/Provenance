@@ -38,9 +38,15 @@
  * Re-measured 2026-10-11 by `vitest run` on the camera-sphere branch (on main at #276), with
  * the intro's tuned numbers: 4,670 cases across 414 files. The branch adds three files:
  * camera-sphere, sphere-intro and sphere-mark.
+ *
+ * Re-measured 2026-10-12 on origin/main at f3029a8 (after #277/#278/#279/#280 merged), which is
+ * exactly the drift that broke `Deploy production` (run 38143429861): this file still said
+ * 412/414 while the merged tree already held 416 files. `npx vitest list` on that tree: 4,715
+ * cases across 416 files (`find tests/unit -name '*.test.ts' -o -name '*.test.tsx' | wc -l`
+ * agrees independently).
  */
 export const UNIT_TESTS = {
-  cases: 4670,
-  files: 414,
-  measuredAt: "2026-10-11",
+  cases: 4715,
+  files: 416,
+  measuredAt: "2026-10-12",
 } as const;
