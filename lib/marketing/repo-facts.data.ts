@@ -49,9 +49,13 @@
  * `tests/unit/signal-dossier-props.test.ts`, so this constant went stale again the same way.
  * `npx vitest list` on that tree: 4,719 cases across 417 files (`find tests/unit -name
  * '*.test.ts' -o -name '*.test.tsx' | wc -l` agrees independently).
+ *
+ * Re-measured 2026-10-15 on feat/accounts-m1: it adds `tests/unit/account-config.test.ts`
+ * and `tests/unit/account-sync-keys.test.ts`.
+ * `npx vitest list`: 4,731 cases across 419 files.
  */
 export const UNIT_TESTS = {
-  cases: 4719,
-  files: 417,
-  measuredAt: "2026-10-14",
+  cases: 4731,
+  files: 419,
+  measuredAt: "2026-10-15",
 } as const;

@@ -230,6 +230,19 @@ not a middleware-shaped limiter that costs an invocation to say no.
 **Scope, stated plainly:** the gate hides a URL, not a fact. Anything also reachable on
 a public route is still public; this only controls who can reach it *at this path*.
 
+## 7 - Accounts (IN PROGRESS - do not set before launch)
+
+| Variable | Where it goes | Public? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | GitHub Actions **variable** (build step of `deploy.yml`) AND the box's `/srv/provenance/shared/.env` | yes |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | GitHub Actions **variable** AND the box's `.env` | yes, by design |
+| `SUPABASE_SECRET_KEY` | the box's `.env` only | **no** |
+
+The two public values are inlined into the browser bundle at build time, so they must be
+in the build. They are ALSO needed on the box at runtime, because `/api/status` reads
+`process.env` on the server to report the capability. With either public value unset there
+is no sign-in and nothing about the console changes. Full setup: `docs/ACCOUNTS.md`.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
@@ -270,6 +283,11 @@ FRED_API_KEY=
 # --- Feedback prompt (BUILT - the deployment's OWN bot, not the visitor's) ---
 FEEDBACK_TELEGRAM_BOT_TOKEN=
 FEEDBACK_TELEGRAM_CHAT_ID=
+
+# --- Accounts (in progress - do not set before launch) ---
+# NEXT_PUBLIC_SUPABASE_URL=
+# NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+# SUPABASE_SECRET_KEY=
 ```
 
 > These env‑var names are the contract — when I build each key‑gated adapter it reads

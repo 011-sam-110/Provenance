@@ -294,6 +294,8 @@ describe("buildStatusReport", () => {
     const rep = buildStatusReport(reg, {}, NOW);
     expect(rep.capabilities.map((c) => c.id).sort()).toEqual(
       [
+        "accounts",
+        "accounts-delete",
         "ai-brief",
         "feedback-prompt",
         "geolocate-vision",
