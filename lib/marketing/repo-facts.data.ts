@@ -44,9 +44,14 @@
  * 412/414 while the merged tree already held 416 files. `npx vitest list` on that tree: 4,715
  * cases across 416 files (`find tests/unit -name '*.test.ts' -o -name '*.test.tsx' | wc -l`
  * agrees independently).
+ *
+ * Re-measured 2026-10-14 on origin/main at e9da759 (after #281/#282 merged): #282 added
+ * `tests/unit/signal-dossier-props.test.ts`, so this constant went stale again the same way.
+ * `npx vitest list` on that tree: 4,719 cases across 417 files (`find tests/unit -name
+ * '*.test.ts' -o -name '*.test.tsx' | wc -l` agrees independently).
  */
 export const UNIT_TESTS = {
-  cases: 4715,
-  files: 416,
-  measuredAt: "2026-10-12",
+  cases: 4719,
+  files: 417,
+  measuredAt: "2026-10-14",
 } as const;
