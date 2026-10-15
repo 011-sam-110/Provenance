@@ -15,6 +15,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-15:
+ *   - package.json gained a new dependency, @supabase/supabase-js, for optional
+ *     accounts. So far only the database schema, a config module and the sync allowlist
+ *     exist, and no page imports the client. The old sentence (eleven, none a database client) stopped being
+ *     true, so it now gives the new count and says the client is loaded by no page.
+ *     Nothing the site sends or stores changed.
+ *
  * WHAT CHANGED ON 2026-10-05:
  *   - The front page stopped loading a map. Its globe is now a 2D canvas
  *     (lib/marketing/landingGlobe.ts, mounted by components/marketing/LandingStage.tsx)
@@ -184,9 +191,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     has to carry whatever the app does. It terminates TLS, so it necessarily sees
  *     every visitor's full IP address before we do. What reaches our log is masked; what
  *     reaches Cloudflare is not, and no wording on our side changes that.
- *   • persistence — package.json ships eleven runtime deps and not one is a database
- *     client. The guard in tests/unit/discovery-admin-gate.test.ts is now TWO checks and
- *     the difference matters to the copy below.
+ *   • persistence — package.json ships twelve runtime deps. One, @supabase/supabase-js, is
+ *     a database client. No file under app/, lib/ or components/ imports it. Only the
+ *     dev-only scripts/check-account-rls.mjs does (2026-10-15). The guard in
+ *     tests/unit/discovery-admin-gate.test.ts is now TWO checks and the difference
+ *     matters to the copy below.
  *
  *     WRITING: a grep for writeFileSync|appendFileSync|writeFile\(|createWriteStream|
  *     renameSync|mkdirSync|rmSync|unlinkSync|truncateSync|copyFileSync over app/ lib/
@@ -258,7 +267,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-05">5 October 2026</time>
+                Last updated <time dateTime="2026-10-15">15 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -361,7 +370,8 @@ export default function PrivacyPage() {
           <div className="pv-prose">
             <p>
               This is the strongest thing on the page, so it is the one worth checking. The app has
-              eleven runtime dependencies and not one of them is a database client. There is no
+              twelve runtime dependencies. One of them, the Supabase client, can talk to a database.
+              No page loads it, and the site sends no data to Supabase. There is no
               key-value store, no object store and no cloud storage account. Nothing this site
               serves writes a file.
             </p>
@@ -1055,14 +1065,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-05">5 October 2026</time>
+                <time dateTime="2026-10-15">15 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 5 October 2026. When the behaviour changes this
+              This describes the code as deployed on 15 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

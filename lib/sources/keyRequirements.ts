@@ -180,6 +180,26 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "Free - @BotFather on Telegram issues the token; the chat id is the destination chat. Unlike the /api/telegram relay, these are the DEPLOYMENT'S own credentials, not the visitor's.",
   },
+  {
+    kind: "required",
+    id: "accounts",
+    label: "Accounts and settings sync",
+    env: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"],
+    degrades:
+      "There is no sign-in. The console works as before and keeps every setting in this browser only.",
+    obtain:
+      "Free - a Supabase project (supabase.com). Both values are public by design and are fixed at build time. See docs/ACCOUNTS.md.",
+  },
+  {
+    kind: "required",
+    id: "accounts-delete",
+    label: "Self-serve account deletion",
+    env: ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SECRET_KEY"],
+    degrades:
+      "Self-serve account deletion is off.",
+    obtain:
+      "The secret key of the same Supabase project. It belongs on the server only, never in CI or in the browser.",
+  },
 ];
 
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
@@ -196,6 +216,9 @@ export const NON_SIGNAL_IDS = new Set([
   // An inbound door rather than an upstream: this one is the only entry in the table
   // that we do not fetch FROM. The scraper host pushes through it.
   "news-ingest",
+  // Accounts are a console capability, not a map layer.
+  "accounts",
+  "accounts-delete",
 ]);
 
 const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));
