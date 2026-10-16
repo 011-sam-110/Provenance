@@ -3412,10 +3412,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 41,
+  "layers": 42,
   "live": 29,
   "partial": 1,
-  "down": 9,
+  "down": 10,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,
