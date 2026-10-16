@@ -557,6 +557,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "13 at sea or in orbit."
   },
   {
+    "id": "gliders",
+    "label": "Gliders & FLARM",
+    "group": "Aviation",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: its own fetch() against the live Open Glider Network feed served 74 aircraft at 2026-10-16T20:15Z, run from a home network rather than from production (40 gliders, 17 paragliders, 7 helicopters, 6 tow planes, 3 hang gliders, 1 drone, at night in October). Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "ais",
     "label": "Ships (AIS chokepoints)",
     "group": "Maritime",
@@ -3412,10 +3424,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 42,
+  "layers": 43,
   "live": 29,
   "partial": 1,
-  "down": 10,
+  "down": 11,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

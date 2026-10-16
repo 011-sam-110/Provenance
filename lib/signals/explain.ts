@@ -506,6 +506,19 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
 
+  {
+    id: "gliders",
+    whatItShows: "A glider, paraglider, hang glider, tow plane, helicopter, balloon or drone whose FLARM or OGN tracker was heard in the last ten minutes.",
+    method: "Read from the Open Glider Network's live map feed: volunteer receivers hear the trackers' own position broadcasts. ADS-B traffic that OGN also relays is left out, because the planes layer draws it. A device whose owner chose not to be tracked in OGN's device database is dropped, and one whose owner chose not to be identified shows no registration.",
+    confidence: "measured",
+    coverage: "Where OGN receivers are: dense over the Alps and the rest of Europe, sparse in North America, Australia and South Africa, and almost absent elsewhere. Gliding is a daytime, fair-weather activity, so the layer is near empty at night and in winter.",
+    limitations: [
+      "Gaps are receiver coverage, not empty sky, and many light aircraft carry no tracker at all.",
+      "A device OGN's database does not know shows a type but no registration, and when the database cannot be read, no device shows one.",
+      "Aircraft types are what the pilot set on the tracker, so a type can be wrong.",
+    ],
+  },
+
   // --- Weather / environment -----------------------------------------------
   {
     id: "airquality",

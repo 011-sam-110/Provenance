@@ -1,0 +1,34 @@
+{
+ "devices": [
+  {
+   "device_type": "F",
+   "device_id": "DDAA0E",
+   "aircraft_model": "LS-1 f",
+   "registration": "OO-YLS",
+   "cn": "1F",
+   "tracked": "Y",
+   "identified": "Y",
+   "aircraft_type": 1
+  },
+  {
+   "device_type": "F",
+   "device_id": "F797C8",
+   "aircraft_model": "SGS 2-33A",
+   "registration": "N2985H",
+   "cn": "85H",
+   "tracked": "Y",
+   "identified": "Y",
+   "aircraft_type": 1
+  },
+  {
+   "device_type": "O",
+   "device_id": "FD55D1",
+   "aircraft_model": "Paraglider",
+   "registration": "DanZPG2",
+   "cn": "",
+   "tracked": "Y",
+   "identified": "Y",
+   "aircraft_type": 6
+  }
+ ]
+}

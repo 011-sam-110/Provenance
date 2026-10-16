@@ -122,6 +122,12 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   reliefweb: { label: "ReliefWeb", url: "https://reliefweb.int/" },
   "grid-load": { label: "ENTSO-E", url: "https://transparency.entsoe.eu/" },
   "military-air": { label: "adsb.lol", url: "https://adsb.lol/" },
+  // OGN data are ODbL, which asks that the licence be named alongside the data.
+  gliders: {
+    label: "Open Glider Network",
+    url: "https://www.glidernet.org/",
+    licence: { label: "ODbL", url: "https://opendatacommons.org/licenses/odbl/1-0/" },
+  },
   ais: { label: "AISStream", url: "https://aisstream.io/" },
 };
 

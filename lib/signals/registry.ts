@@ -57,6 +57,7 @@ import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
 import { DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { MILITARY_AIR_SOURCE } from "@/lib/signals/military-air";
+import { GLIDERS_SOURCE } from "@/lib/signals/ogn";
 import { AIS_SOURCE } from "@/lib/signals/ais";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { SPACE_WEATHER_SOURCE } from "@/lib/signals/space-weather";
@@ -136,6 +137,8 @@ export const SIGNALS: SignalSource[] = [
   GRID_LOAD_SOURCE,
   // Military (keyless unfiltered military ADS-B)
   MILITARY_AIR_SOURCE,
+  // Aviation (keyless Open Glider Network: gliders and FLARM trackers ADS-B never sees)
+  GLIDERS_SOURCE,
   // Maritime (real-time AIS vessel positions at strategic chokepoints; key-gated: AISSTREAM_API_KEY)
   AIS_SOURCE,
 ];
