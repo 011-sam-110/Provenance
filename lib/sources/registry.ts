@@ -177,6 +177,7 @@ export interface FeedHealth {
 }
 
 let lastGood = new Map<string, Camera[]>();
+let collapses = new Map<string, number>();
 let health: FeedHealth[] = [];
 let cache: { cameras: Camera[]; at: number } | null = null;
 let inflight: Promise<Camera[]> | null = null;
@@ -192,19 +193,48 @@ let inflight: Promise<Camera[]> | null = null;
  *
  * Losing a feed for one cycle is normal. Losing 4,000 cameras and saying nothing
  * is not. The `stale` flag on each feed's health says which is which.
+ *
+ * A COLLAPSE IS A FAILURE TOO. A feed that answers with far fewer cameras than it
+ * gave last time has usually lost pages or districts, not cameras: a fan-out adapter
+ * resolves whatever part of its upstream answered, so a partial round arrives as a
+ * success. That is how prod served Georgia 0 of 4,331 and Caltrans 897 of 3,598 while
+ * every feed read `ok: true` (2026-10-16 audit). Below COLLAPSE_RATIO of the last-good
+ * count, the round is treated like a failure and last-good is served, marked stale.
+ * A network that really shrank must not be frozen at its old size forever, so after
+ * COLLAPSE_MAX_ROUNDS collapsed rounds in a row the smaller set is accepted.
  */
+export const COLLAPSE_RATIO = 0.8;
+export const COLLAPSE_MAX_ROUNDS = 3;
+
 export function mergeResults(
   results: PromiseSettledResult<Camera[]>[],
   previous: Map<string, Camera[]>,
   feeds: { key: string }[] = SOURCES,
-): { cameras: Camera[]; lastGood: Map<string, Camera[]>; health: FeedHealth[] } {
+  previousCollapses: Map<string, number> = new Map(),
+): {
+  cameras: Camera[];
+  lastGood: Map<string, Camera[]>;
+  health: FeedHealth[];
+  /** Consecutive collapsed rounds per feed, to pass back in next round. */
+  collapses: Map<string, number>;
+} {
   const nextGood = new Map(previous);
   const nextHealth: FeedHealth[] = [];
+  const nextCollapses = new Map<string, number>();
   const cameras: Camera[] = [];
 
   results.forEach((r, i) => {
     const key = feeds[i]?.key ?? `feed-${i}`;
     if (r.status === "fulfilled" && r.value.length > 0) {
+      const before = previous.get(key)?.length ?? 0;
+      const streak = (previousCollapses.get(key) ?? 0) + 1;
+      if (r.value.length < before * COLLAPSE_RATIO && streak < COLLAPSE_MAX_ROUNDS) {
+        const kept = previous.get(key)!;
+        nextCollapses.set(key, streak);
+        cameras.push(...kept);
+        nextHealth.push({ key, ok: false, count: kept.length, stale: true });
+        return;
+      }
       nextGood.set(key, r.value);
       cameras.push(...r.value);
       nextHealth.push({ key, ok: true, count: r.value.length, stale: false });
@@ -216,14 +246,14 @@ export function mergeResults(
     nextHealth.push({ key, ok: false, count: kept.length, stale: kept.length > 0 });
   });
 
-  return { cameras, lastGood: nextGood, health: nextHealth };
+  return { cameras, lastGood: nextGood, health: nextHealth, collapses: nextCollapses };
 }
 
 async function refresh(): Promise<Camera[]> {
   const results = await Promise.allSettled(
     SOURCES.map((f) => withTimeout(f.fetch(), feedBudgetMs(f), f.key)),
   );
-  const merged = mergeResults(results, lastGood);
+  const merged = mergeResults(results, lastGood, SOURCES, collapses);
   if (merged.cameras.length === 0) {
     // Cold start with every feed down — surface it rather than caching an empty
     // world as if it were the answer.
@@ -231,6 +261,7 @@ async function refresh(): Promise<Camera[]> {
     return cache.cameras;
   }
   lastGood = merged.lastGood;
+  collapses = merged.collapses;
   health = merged.health;
   cache = { cameras: merged.cameras, at: Date.now() };
   return merged.cameras;
