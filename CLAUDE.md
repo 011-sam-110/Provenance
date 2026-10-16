@@ -420,6 +420,10 @@ Re-measure before putting a number in a README, a CV or a PR description.
   82/100** and conflict can be out-ranked as a driver by displacement. And on the live feed today
   it tops out near **32/100 with most countries on 1 of 4 factors** — the food and ACLED inputs
   are both gone, so nearly every score is a floor. Read the Brief's numbers with that in mind.
+  **Superseded 2026-10-16:** the index was rebuilt on seven factors (UCDP deaths, INFORM
+  Severity, FEWS NET, INFORM Risk + WGI, UNHCR as a share of population, GDELT capped,
+  IODA critical alerts; see lib/signals/instability.ts). Its ceiling is now 99, and a
+  measured zero counts toward coverage, so the countries FEWS NET monitors read 7/7.
 - Key-gated layers dormant in prod: none of the old ones. Grid load is keyless for GB, France, Denmark and
   Australia since 2026-10-16; only its ENTSO-E and EIA parts wait for their keys. ReliefWeb is keyless
   since 2026-10-16: it reads ReliefWeb's own weekly export on HDX plus IFRC GO appeals. Live with keys: OpenAQ
