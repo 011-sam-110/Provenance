@@ -495,11 +495,12 @@ const EXPLAINERS: LayerExplainer[] = [
     // exactly the "every Dash 8 marked military" complaint users report. Per this
     // file's own house rule, `confidence` describes the DATA's provenance, and the
     // datum here is "this is military", not "an aircraft is at this lat/lon".
-    method: "The position is measured from the aircraft's own transponder. The military classification is not ours and is not measured: it is inherited unchanged from community-maintained registration lists, and we render their call as they made it.",
+    method: "Two community receiver networks, adsb.lol and adsb.fi, are asked every cycle and joined by the aircraft's ICAO address; where both saw an aircraft, the fresher position is drawn and the dossier says which networks saw it. The position is measured from the aircraft's own transponder. The military classification is not ours and is not measured: it is inherited unchanged from community-maintained registration lists, and we render their call as they made it.",
     confidence: "reported",
-    coverage: "Wherever volunteer ADS-B receivers listen — good over Europe and North America, poor over oceans, deserts and much of Africa and Asia.",
+    coverage: "Wherever volunteer ADS-B receivers listen — good over Europe and North America, poor over oceans, deserts and much of Africa and Asia. On 2026-10-16 about 85% of the aircraft shown were over North America, most of them US forces; the Middle East, Ukraine and Russia, and the Taiwan Strait were almost empty.",
     limitations: [
-      "Aircraft on sensitive missions routinely switch their transponder off or broadcast a false identity. This layer shows what is willing to be seen.",
+      "Aircraft on sensitive missions routinely switch their transponder off or broadcast a false identity. This layer shows what is willing to be seen, so a near-empty conflict zone means transponders are off, not that nothing is flying.",
+      "The flag covers state aircraft, not only armed forces: government and royal VIP jets, US forces' civil-registered aircraft and aero clubs, contract trainers and civil-protection tankers carry it too. Where the network's database names an owner, the dossier shows it.",
       "Classification is community-maintained and imperfect: government, contractor and test aircraft are inconsistently labelled.",
       "Gaps are receiver coverage, not empty sky.",
     ],

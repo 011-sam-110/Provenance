@@ -1,0 +1,140 @@
+{
+ "_note": "Verbatim rows (fields trimmed) from https://api.adsb.lol/v2/mil and https://opendata.adsb.fi/api/v2/mil, captured 2026-10-16 ~21:03 UTC from provenance-1, plus one adsb.fi junk row with no position. That pull: adsb.lol 246 positioned, adsb.fi 238, 225 in both, union 259.",
+ "lol": {
+  "ac": [
+   {
+    "hex": "ae2672",
+    "flight": "C6524   ",
+    "r": "6524",
+    "t": "AS65",
+    "alt_baro": 3850,
+    "gs": 128.0,
+    "track": 180.45,
+    "squawk": "3670",
+    "lat": 21.770107,
+    "lon": -159.094391,
+    "seen_pos": 0.348,
+    "dbFlags": 1,
+    "category": "A7"
+   },
+   {
+    "hex": "af3be4",
+    "flight": "C6067   ",
+    "r": "6067",
+    "t": "H60",
+    "alt_baro": 1000,
+    "gs": 116.6,
+    "track": 233.72,
+    "squawk": "5567",
+    "lat": 57.702301,
+    "lon": -152.561731,
+    "seen_pos": 0.18,
+    "dbFlags": 1,
+    "category": "A7"
+   },
+   {
+    "hex": "ae03ec",
+    "flight": "DINOCO1 ",
+    "r": "165348",
+    "t": "C130",
+    "alt_baro": 18000,
+    "gs": 122.0,
+    "track": 49.0,
+    "squawk": "1016",
+    "lat": 37.026038,
+    "lon": -119.616391,
+    "seen_pos": 29.164,
+    "dbFlags": 1,
+    "category": "A3"
+   },
+   {
+    "hex": "a3ca1d",
+    "flight": "N343TA  ",
+    "r": "N343TA",
+    "t": "P28A",
+    "gs": 80.2,
+    "track": 93.58,
+    "squawk": "1200",
+    "lat": 38.209984,
+    "lon": -121.70093,
+    "seen_pos": 0.0,
+    "dbFlags": 1,
+    "category": "A1"
+   }
+  ],
+  "now": 1792181005501
+ },
+ "fi": {
+  "ac": [
+   {
+    "hex": "ae2672",
+    "flight": "C6524   ",
+    "r": "6524",
+    "t": "AS65",
+    "desc": "Eurocopter MH-65D Dolphin",
+    "alt_baro": 3825,
+    "gs": 127.0,
+    "track": 181.35,
+    "squawk": "3670",
+    "lat": 21.763733,
+    "lon": -159.094466,
+    "seen_pos": 0.15,
+    "dbFlags": 1,
+    "category": "A7"
+   },
+   {
+    "hex": "af3be4",
+    "flight": "C6067   ",
+    "r": "6067",
+    "t": "H60",
+    "desc": "SIKORSKY UH-60 Black Hawk",
+    "alt_baro": 975,
+    "gs": 98.5,
+    "track": 237.44,
+    "squawk": "5567",
+    "lat": 57.699097,
+    "lon": -152.569284,
+    "seen_pos": 0.179,
+    "dbFlags": 1,
+    "category": "A7"
+   },
+   {
+    "hex": "ae26b1",
+    "flight": "C6591   ",
+    "r": "6591",
+    "t": "AS65",
+    "desc": "Eurocopter MH-65D Dolphin",
+    "alt_baro": "ground",
+    "gs": 0.0,
+    "squawk": "1200",
+    "lat": 21.300877,
+    "lon": -158.071002,
+    "seen_pos": 4.688,
+    "dbFlags": 1,
+    "category": "A7"
+   },
+   {
+    "hex": "a3ca1d",
+    "flight": "N343TA  ",
+    "r": "N343TA",
+    "t": "P28A",
+    "desc": "PIPER PA-28-140/150/160/180",
+    "ownOp": "US AIR FORCE",
+    "gs": 80.1,
+    "track": 87.14,
+    "squawk": "1200",
+    "lat": 38.209854,
+    "lon": -121.695966,
+    "seen_pos": 0.0,
+    "dbFlags": 1,
+    "category": "A1"
+   },
+   {
+    "hex": "adf7c1",
+    "flight": "TEST1234",
+    "t": "TWR"
+   }
+  ],
+  "now": 1792181016001
+ }
+}

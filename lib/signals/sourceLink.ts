@@ -126,6 +126,20 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
 };
 
 /**
+ * Record links on a host that belongs to a DIFFERENT named provider than the layer's.
+ *
+ * A layer that merges two networks (military-air: adsb.lol and adsb.fi) deep-links
+ * each row to the map of the network whose position it draws. Without this table an
+ * adsb.fi row would wear the layer's provider name, "adsb.lol", on a link to
+ * adsb.fi, and its provider chip would point at adsb.lol's home page. adsb.fi's terms
+ * require a citation AND a link to its home page, so for these hosts both the record
+ * chip and the provider chip come from here. Exact hostnames only.
+ */
+export const RECORD_HOST_PROVIDERS: Record<string, Provider> = {
+  "globe.adsb.fi": { label: "adsb.fi", url: "https://adsb.fi/" },
+};
+
+/**
  * Composite layers (derived, no single upstream): the full set of contributing
  * providers. Shown as multiple provider links + a "derived estimate" flag.
  */
@@ -211,8 +225,10 @@ export function resolveSignalSources(input: {
   };
 
   const composite = SIGNAL_COMPOSITE_SOURCES[id];
+  const recordProvider = isHttpUrl(input.link) ? RECORD_HOST_PROVIDERS[hostOf(input.link).toLowerCase()] : undefined;
   const provider: Provider | undefined =
     composite?.[0] ??
+    recordProvider ??
     (isHttpUrl(input.sourceUrl)
       ? { label: hostLabel(input.sourceUrl), url: input.sourceUrl }
       : SIGNAL_PROVIDER_URLS[id]);
