@@ -607,6 +607,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "UK only, and released MONTHLY — this is historical data, never live.",
       "Locations are deliberately snapped to anonymised map points, so a pin is approximate by design and never a specific address.",
       "It records reported crime. Under-reporting varies enormously by offence type.",
+      "It is a sample, not a census: a one-mile circle round each of eleven city centres, with an equal share of the markers for each. Greater Manchester is left out because its force publishes almost nothing to this dataset.",
     ],
   },
   {

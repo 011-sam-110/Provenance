@@ -1,6 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
-import { degraded, observed } from "@/lib/signals/outcome";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
 // UK street-level crime — keyless data.police.uk. The richest open, geocoded crime
 // feed available without a key (England, Wales & Northern Ireland; Police Scotland
@@ -16,15 +16,33 @@ const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 export const POLICE_UK_ATTRIBUTION =
   "Crime data © data.police.uk, Open Government Licence v3.0";
 
-/** City centres sampled (England & Wales — the keyless dataset's coverage). */
-const CRIME_CITIES: { name: string; lat: number; lng: number }[] = [
+/**
+ * City centres sampled (England, Wales and Northern Ireland — the keyless dataset's
+ * coverage; Police Scotland does not publish to it, so Glasgow and Edinburgh answer 0).
+ *
+ * MANCHESTER IS NOT HERE ON PURPOSE. Measured 2026-10-16: a city-centre query returns
+ * 2 rows for August and 6 for July, because Greater Manchester Police's street-level
+ * data is effectively missing from data.police.uk. Every city below answered 1,200 to
+ * 4,200 rows for the same month.
+ */
+export const CRIME_CITIES: { name: string; lat: number; lng: number }[] = [
   { name: "London", lat: 51.5074, lng: -0.1278 },
-  { name: "Manchester", lat: 53.4808, lng: -2.2426 },
   { name: "Birmingham", lat: 52.4862, lng: -1.8904 },
   { name: "Leeds", lat: 53.8008, lng: -1.5491 },
   { name: "Liverpool", lat: 53.4084, lng: -2.9916 },
   { name: "Bristol", lat: 51.4545, lng: -2.5879 },
+  { name: "Sheffield", lat: 53.3811, lng: -1.4701 },
+  { name: "Newcastle", lat: 54.9783, lng: -1.6178 },
+  { name: "Nottingham", lat: 52.9548, lng: -1.1581 },
+  { name: "Leicester", lat: 52.6369, lng: -1.1398 },
+  { name: "Cardiff", lat: 51.4816, lng: -3.1791 },
+  { name: "Belfast", lat: 54.5973, lng: -5.9301 },
 ];
+
+/** Parallel city queries, attempts per city, and the pause before a retry (see fetch). */
+const CRIME_CONCURRENCY = 2;
+const CRIME_ATTEMPTS = 3;
+const CRIME_RETRY_MS = 1_500;
 
 /** Total markers kept after merge (each city can return 1–5k points/month). */
 export const CRIME_CAP = 1500;
@@ -61,10 +79,26 @@ interface CrimeRow {
 }
 
 /**
+ * Pure: the outcome line for one record.
+ *
+ * A null `outcome_status` is NOT "under investigation". Anti-social behaviour has no
+ * outcomes in this dataset at all, so every ASB row arrives with null; reading that as
+ * "Under investigation" put a false status on 35% of what prod showed (527 of 1,500).
+ */
+export function crimeOutcome(category: string | undefined, outcome: CrimeRow["outcome_status"]): string {
+  const stated = outcome?.category?.trim();
+  if (stated) return stated;
+  return category === "anti-social-behaviour"
+    ? "No outcome recorded (anti-social behaviour has no outcomes in this dataset)"
+    : "No outcome recorded";
+}
+
+/**
  * Pure: data.police.uk rows → SignalFeature[]. Dedupes by crime id and skips rows
  * with a null/garbled location (the API returns location:null for some records).
+ * `city` names the sampled city the rows came from, so the cap can share by city.
  */
-export function normalizeCrime(rows: CrimeRow[]): SignalFeature[] {
+export function normalizeCrime(rows: CrimeRow[], city?: string): SignalFeature[] {
   const out: SignalFeature[] = [];
   const seen = new Set<string>();
   for (const r of rows) {
@@ -89,8 +123,9 @@ export function normalizeCrime(rows: CrimeRow[]): SignalFeature[] {
       props: {
         category: label,
         street,
-        outcome: r.outcome_status?.category?.trim() || "Under investigation",
+        outcome: crimeOutcome(r.category, r.outcome_status),
         month: r.month ?? "—",
+        ...(city ? { city } : {}),
       },
     });
   }
@@ -100,15 +135,32 @@ export function normalizeCrime(rows: CrimeRow[]): SignalFeature[] {
 /**
  * Pure: trim the merged multi-city set to the render cap, recording what that hid.
  *
- * The merged list is in CITY-QUERY order (London first), not ranked — a monthly
- * crime count has no severity scalar to rank by — so the cap is a positional cut,
- * and the recorded rule says so. Six city centres routinely merge to well over
- * 1,500 records, which is exactly why "1,500 crimes" must not read as a total.
+ * The cap is SHARED BY CITY: one record from each city in turn, in the order the
+ * cities were sampled, until the cap is reached. It used to be a positional cut of the
+ * merged list, and London alone returns about 4,000 rows a month, so all 1,500 markers
+ * on prod sat inside one square mile of central London (measured 2026-10-16) on a layer
+ * labelled "UK street crime". A monthly crime count has no severity to rank by, so this
+ * is still not a ranking, and the recorded rule says so.
  */
 export function capCrime(features: SignalFeature[], cap = CRIME_CAP): SignalFeature[] {
-  return applyCap(features, cap, {
+  const byCity = new Map<string, SignalFeature[]>();
+  for (const f of features) {
+    const key = String(f.props?.city ?? "");
+    let list = byCity.get(key);
+    if (!list) {
+      list = [];
+      byCity.set(key, list);
+    }
+    list.push(f);
+  }
+  const lists = [...byCity.values()];
+  const interleaved: SignalFeature[] = [];
+  for (let i = 0; interleaved.length < features.length; i++) {
+    for (const list of lists) if (i < list.length) interleaved.push(list[i]!);
+  }
+  return applyCap(interleaved, cap, {
     noun: "crime records",
-    rule: "the first found in city order (London, Manchester, Birmingham, Leeds, Liverpool, Bristol) — not a ranking",
+    rule: "an equal share for each sampled city, one record from each in turn — not a ranking",
   });
 }
 
@@ -123,30 +175,51 @@ export const UK_CRIME_SOURCE: SignalSource = {
   attribution: POLICE_UK_ATTRIBUTION,
   async fetch() {
     try {
-      // Each city in parallel; omitting `date` makes the API use the latest month.
-      // `null` = that city's query FAILED, `[]` = it answered with no crimes. The
-      // per-city helper only reports the difference; the outcome is marked below,
-      // because an outcome attached in here would be dropped by the merge.
-      const perCity = await Promise.all(
-        CRIME_CITIES.map(async (c) => {
+      // Omitting `date` makes the API use the latest month. `null` = that city's query
+      // FAILED, `[]` = it answered with no crimes.
+      //
+      // TWO AT A TIME, WITH A RETRY. data.police.uk rate-limits by IP and answers 429 to a
+      // burst: all eleven cities fired at once lost five of them on 2026-10-16, and the
+      // old six-city burst is how prod lost Bristol. Two workers and a retry after a pause
+      // fit inside the limit; the whole read still takes a few seconds once every 6 hours.
+      const perCity: (SignalFeature[] | null)[] = new Array(CRIME_CITIES.length).fill(null);
+      const readCity = async (c: (typeof CRIME_CITIES)[number]): Promise<SignalFeature[] | null> => {
+        for (let attempt = 0; attempt < CRIME_ATTEMPTS; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, CRIME_RETRY_MS * attempt));
           try {
             const res = await fetch(`${STREET_ENDPOINT}?lat=${c.lat}&lng=${c.lng}`, {
               headers: { "User-Agent": UA, Accept: "application/json" },
               signal: AbortSignal.timeout(20_000),
             });
+            if (res.status === 429 || res.status >= 500) continue;
             if (!res.ok) return null;
-            return (await res.json()) as CrimeRow[];
+            const rows = (await res.json()) as CrimeRow[];
+            return Array.isArray(rows) ? normalizeCrime(rows, c.name) : null;
           } catch {
-            return null;
+            // a timeout or a dropped connection: try again
+          }
+        }
+        return null;
+      };
+      let next = 0;
+      await Promise.all(
+        Array.from({ length: CRIME_CONCURRENCY }, async () => {
+          while (next < CRIME_CITIES.length) {
+            const i = next++;
+            perCity[i] = await readCity(CRIME_CITIES[i]!);
           }
         }),
       );
-      // Every city failed ⇒ we never read data.police.uk at all. One survivor is
-      // still a real (if partial) read of the month, so it counts as observed.
-      const answered = perCity.filter((rows): rows is CrimeRow[] => rows !== null);
-      if (answered.length === 0) return degraded("all city queries failed");
-      const merged = answered.flat();
-      return observed(capCrime(normalizeCrime(merged)));
+      const failed = CRIME_CITIES.filter((_, i) => perCity[i] === null).map((c) => c.name);
+      if (failed.length === CRIME_CITIES.length) return degraded("all city queries failed");
+      // De-duplicate across cities (two 1-mile circles can overlap) before the cap.
+      const seen = new Set<string>();
+      const merged = perCity.flatMap((rows) => rows ?? []).filter((f) => !seen.has(f.id) && seen.add(f.id) !== undefined);
+      const capped = capCrime(merged);
+      // A city that failed is a GAP, not a city with no crime. Prod lost Bristol this way
+      // without a word, because one surviving city counted as a full read.
+      if (failed.length > 0) return degradedWith(capped, `${failed.length} of ${CRIME_CITIES.length} cities failed: ${failed.join(", ")}`);
+      return observed(capped);
     } catch {
       return degraded("read failed");
     }
