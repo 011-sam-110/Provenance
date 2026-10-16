@@ -7,7 +7,7 @@ import type { Camera } from "@/lib/types";
 // in-flight round and the per-feed health — across rounds. The registry keeps that state
 // at module scope, so every test re-imports it fresh.
 
-// The sixteen hand-written adapters, replaced so a round touches no network. Each one
+// Every hand-written adapter, replaced so a round touches no network. Each one
 // answers through `feeds`, so a test can make any feed succeed, fail or hang.
 const feeds = vi.hoisted(() => {
   const behaviour: Record<string, () => Promise<unknown[]>> = {};
@@ -42,6 +42,32 @@ vi.mock("@/lib/sources/vdot", () => ({ fetchRegistry: () => feeds.run("vdot") })
 vi.mock("@/lib/sources/wsdot", () => ({ fetchRegistry: () => feeds.run("wsdot") }));
 vi.mock("@/lib/sources/midrive", () => ({ fetchRegistry: () => feeds.run("midrive") }));
 vi.mock("@/lib/sources/txdot", () => ({ fetchRegistry: () => feeds.run("txdot") }));
+// The feeds added in the source audit of 2026-10-16.
+vi.mock("@/lib/sources/tamar", () => ({ fetchRegistry: () => feeds.run("tamar") }));
+vi.mock("@/lib/sources/ne-utmc", () => ({ fetchRegistry: () => feeds.run("ne-utmc") }));
+vi.mock("@/lib/sources/toronto", () => ({ fetchRegistry: () => feeds.run("toronto") }));
+vi.mock("@/lib/sources/calgary", () => ({ fetchRegistry: () => feeds.run("calgary") }));
+vi.mock("@/lib/sources/vancouver", () => ({ fetchRegistry: () => feeds.run("vancouver") }));
+vi.mock("@/lib/sources/ottawa", () => ({ fetchRegistry: () => feeds.run("ottawa") }));
+vi.mock("@/lib/sources/my511-mb", () => ({ fetchRegistry: () => feeds.run("my511-mb") }));
+vi.mock("@/lib/sources/my511-nl", () => ({ fetchRegistry: () => feeds.run("my511-nl") }));
+vi.mock("@/lib/sources/my511-yt", () => ({ fetchRegistry: () => feeds.run("my511-yt") }));
+vi.mock("@/lib/sources/vegvesen", () => ({ fetchRegistry: () => feeds.run("vegvesen") }));
+vi.mock("@/lib/sources/dgt", () => ({ fetchRegistry: () => feeds.run("dgt") }));
+vi.mock("@/lib/sources/lyon", () => ({ fetchRegistry: () => feeds.run("lyon-criter") }));
+vi.mock("@/lib/sources/eismoinfo", () => ({ fetchRegistry: () => feeds.run("eismoinfo") }));
+vi.mock("@/lib/sources/utinform", () => ({ fetchRegistry: () => feeds.run("utinform-hu") }));
+vi.mock("@/lib/sources/dars-si", () => ({ fetchRegistry: () => feeds.run("dars-si") }));
+vi.mock("@/lib/sources/roads-mk", () => ({ fetchRegistry: () => feeds.run("roads-mk") }));
+vi.mock("@/lib/sources/hktd", () => ({ fetchRegistry: () => feeds.run("hktd") }));
+vi.mock("@/lib/sources/qldtraffic", () => ({ fetchRegistry: () => feeds.run("qldtraffic") }));
+vi.mock("@/lib/sources/qldtraffic-flood", () => ({ fetchRegistry: () => feeds.run("qldtraffic-flood") }));
+vi.mock("@/lib/sources/livetraffic-nsw", () => ({ fetchRegistry: () => feeds.run("livetraffic-nsw") }));
+vi.mock("@/lib/sources/tdx-thb", () => ({ fetchRegistry: () => feeds.run("tdx-thb") }));
+vi.mock("@/lib/sources/bellingen", () => ({ fetchRegistry: () => feeds.run("bellingen") }));
+vi.mock("@/lib/sources/usgs-nims", () => ({ fetchRegistry: () => feeds.run("usgs-nims") }));
+vi.mock("@/lib/sources/alertcalifornia", () => ({ fetchRegistry: () => feeds.run("alertcalifornia") }));
+vi.mock("@/lib/sources/avo", () => ({ fetchRegistry: () => feeds.run("avo") }));
 // Admitted feeds are committed data, and one of them would fetch for real.
 vi.mock("@/lib/sources/discovered", () => ({ discoveredCameraFeeds: () => [] }));
 // The per-state fan-outs register several keys from one module, and every one of them
@@ -55,6 +81,15 @@ const KEYS = [
   "midrive",
   "wsdot",
   "vdot",
+  "tamar", "toronto", "calgary", "vancouver", "vegvesen", "dgt", "lyon-criter",
+  "eismoinfo", "utinform-hu", "roads-mk", "hktd", "qldtraffic", "qldtraffic-flood",
+  "livetraffic-nsw", "tdx-thb", "bellingen", "usgs-nims", "alertcalifornia", "avo",
+];
+
+// Keyed feeds. The test environment holds none of their credentials, so every one of
+// them is DORMANT here: never asked, and reported as dormant rather than failed.
+const DORMANT = [
+  "ne-utmc", "ottawa", "my511-mb", "my511-nl", "my511-yt", "dars-si",
 ];
 
 const cam = (id: string): Camera => ({
@@ -181,9 +216,21 @@ describe("getRegistry — warm cache", () => {
     await settle();
 
     expect(ids(await getRegistry())).toEqual(ids(first));
-    expect(feedHealth()).toHaveLength(KEYS.length);
-    expect(feedHealth().every((h) => !h.ok && h.stale && h.count === 1)).toBe(true);
+    expect(feedHealth()).toHaveLength(KEYS.length + DORMANT.length);
+    expect(feedHealth().filter((h) => !h.dormant).every((h) => !h.ok && h.stale && h.count === 1)).toBe(true);
     expect(callsTo("tfl")).toBe(2); // the first round, then the one failed round
+  });
+});
+
+describe("refresh — keyed feeds without their credential", () => {
+  test("are never asked, hold no cameras, and say dormant rather than failed", async () => {
+    const { getRegistry, feedHealth } = await load();
+    const cams = await getRegistry();
+    expect(cams).toHaveLength(KEYS.length);
+    for (const k of DORMANT) expect(callsTo(k), k).toBe(0);
+    const health = new Map(feedHealth().map((h) => [h.key, h]));
+    for (const k of DORMANT) expect(health.get(k)).toMatchObject({ ok: false, count: 0, stale: false, dormant: true });
+    for (const k of KEYS) expect(health.get(k)?.dormant, k).toBeUndefined();
   });
 });
 

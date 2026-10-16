@@ -39,6 +39,9 @@ export async function GET() {
         // Feeds serving last-good data because this round failed. Their cameras are
         // still counted in `total` above, so the caller can say so.
         stale: health.filter((h) => h.stale).map((h) => h.key),
+        // Feeds not asked because their credential is not set. They hold no cameras,
+        // and they are not outages.
+        dormant: health.filter((h) => h.dormant).map((h) => h.key),
         detail: health,
       },
     },

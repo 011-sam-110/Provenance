@@ -276,6 +276,70 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "The secret key of the same Supabase project. It belongs on the server only, never in CI or in the browser.",
   },
+  // --- camera networks (lib/sources/registry.ts `keyId`) ----------------------
+  // Each is one camera feed that stays DORMANT until its credential is set: the
+  // registry does not ask it, and /api/coverage lists it under `dormant`, not as an
+  // outage. Added in the source audit of 2026-10-16.
+  {
+    kind: "required",
+    id: "cams-ne-utmc",
+    label: "Cameras: Tyne and Wear UTMC (North East England)",
+    env: ["NE_UTMC_USER", "NE_UTMC_PASS"],
+    degrades:
+      "About 370 council traffic cameras across Tyne and Wear, Northumberland and Durham stay off the map. Every other camera network is unaffected.",
+    obtain:
+      "Free, self-serve: an account at netraveldata.co.uk (username and email). The account's username and password are the HTTP Basic credentials for /api/v2/cctv/*.",
+  },
+  {
+    kind: "required",
+    id: "cams-ottawa",
+    label: "Cameras: City of Ottawa",
+    env: ["OTTAWA_CAMERA_CERT"],
+    degrades:
+      "About 390 City of Ottawa traffic cameras stay off the map. The list is keyless, but the pictures need the certificate, so without it nothing is shown.",
+    obtain:
+      "Free: the Certificate Request Form on traffic.ottawa.ca/en/opendata; the City emails the certificate. It is added to image requests on the server only.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-mb",
+    label: "Cameras: Manitoba 511",
+    env: ["MANITOBA_511_KEY"],
+    degrades:
+      "Manitoba's 46 highway camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on manitoba511.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-nl",
+    label: "Cameras: 511 Newfoundland and Labrador",
+    env: ["NL_511_KEY"],
+    degrades:
+      "Newfoundland and Labrador's 48 highway camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on 511nl.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-yt",
+    label: "Cameras: 511 Yukon",
+    env: ["YUKON_511_KEY"],
+    degrades:
+      "Yukon's 15 highway weather-camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on 511yukon.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-dars-si",
+    label: "Cameras: DARS and DRSI via NAP Slovenia",
+    env: ["NAP_SLOVENIA_USER", "NAP_SLOVENIA_PASS"],
+    degrades:
+      "About 470 Slovenian motorway and state-road cameras stay off the map.",
+    obtain:
+      "Free: a B2B account at nap.si/en/registration (name, organisation, address, phone). The account's username and password are the HTTP Basic credentials.",
+  },
 ];
 
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
@@ -303,6 +367,12 @@ export const NON_SIGNAL_IDS = new Set([
   // Accounts are a console capability, not a map layer.
   "accounts",
   "accounts-delete",
+  "cams-ne-utmc",
+  "cams-ottawa",
+  "cams-my511-mb",
+  "cams-my511-nl",
+  "cams-my511-yt",
+  "cams-dars-si",
 ]);
 
 const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));

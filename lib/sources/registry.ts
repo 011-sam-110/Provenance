@@ -20,7 +20,34 @@ import { fetchRegistry as fetchWsdot } from "@/lib/sources/wsdot";
 import { fetchRegistry as fetchMiDrive } from "@/lib/sources/midrive";
 import { fetchRegistry as fetchTxdot } from "@/lib/sources/txdot";
 import { carsCameraFeeds } from "@/lib/sources/cars";
+import { fetchRegistry as fetchTamar } from "@/lib/sources/tamar";
+import { fetchRegistry as fetchNeUtmc } from "@/lib/sources/ne-utmc";
+import { fetchRegistry as fetchToronto } from "@/lib/sources/toronto";
+import { fetchRegistry as fetchCalgary } from "@/lib/sources/calgary";
+import { fetchRegistry as fetchVancouver } from "@/lib/sources/vancouver";
+import { fetchRegistry as fetchOttawa } from "@/lib/sources/ottawa";
+import { fetchRegistry as fetchMy511Mb } from "@/lib/sources/my511-mb";
+import { fetchRegistry as fetchMy511Nl } from "@/lib/sources/my511-nl";
+import { fetchRegistry as fetchMy511Yt } from "@/lib/sources/my511-yt";
+import { fetchRegistry as fetchVegvesen } from "@/lib/sources/vegvesen";
+import { fetchRegistry as fetchDgt } from "@/lib/sources/dgt";
+import { fetchRegistry as fetchLyon } from "@/lib/sources/lyon";
+import { fetchRegistry as fetchEismoinfo } from "@/lib/sources/eismoinfo";
+import { fetchRegistry as fetchUtinform } from "@/lib/sources/utinform";
+import { fetchRegistry as fetchDarsSi } from "@/lib/sources/dars-si";
+import { fetchRegistry as fetchRoadsMk } from "@/lib/sources/roads-mk";
+import { fetchRegistry as fetchHktd } from "@/lib/sources/hktd";
+import { fetchRegistry as fetchQld } from "@/lib/sources/qldtraffic";
+import { fetchRegistry as fetchQldFlood } from "@/lib/sources/qldtraffic-flood";
+import { fetchRegistry as fetchNsw } from "@/lib/sources/livetraffic-nsw";
+import { fetchRegistry as fetchTdxThb } from "@/lib/sources/tdx-thb";
+import { fetchRegistry as fetchBellingen } from "@/lib/sources/bellingen";
+import { fetchRegistry as fetchUsgsNims } from "@/lib/sources/usgs-nims";
+import { fetchRegistry as fetchAlertCa } from "@/lib/sources/alertcalifornia";
+import { fetchRegistry as fetchAvo } from "@/lib/sources/avo";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
+import { missingEnvFor } from "@/lib/sources/keyRequirements";
+import { dropNearDuplicates } from "@/lib/sources/overlap";
 import { findById, nearest } from "@/lib/sources/select";
 
 /**
@@ -108,6 +135,27 @@ export interface CameraFeed {
    * point of the default is that it still bounds everything else.
    */
   budgetMs?: number;
+  /**
+   * The KEY_REQUIREMENTS id (lib/sources/keyRequirements.ts) of the credential this
+   * feed needs. While that credential is missing the feed is DORMANT: it is not
+   * asked, it holds no cameras, and its health says `dormant` rather than failed, so
+   * a key nobody has set yet does not read as an outage.
+   */
+  keyId?: string;
+  /**
+   * Feeds that already carry some of this feed's cameras. A camera of this feed
+   * within 150 m of one of theirs is dropped, so a junction a 511 system relays and
+   * the city also publishes shows once (lib/sources/overlap.ts).
+   */
+  yieldsTo?: readonly string[];
+}
+
+/** Whether a feed's credential is missing. Pure apart from the env it is handed. */
+export function isDormant(
+  feed: Pick<CameraFeed, "keyId">,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return !!feed.keyId && missingEnvFor(feed.keyId, env).length > 0;
 }
 
 /** The budget one feed gets this round. Pure. */
@@ -172,6 +220,39 @@ const SOURCES: CameraFeed[] = [
   // 511 Virginia. The same Iteris camera layer as SCDOT, read through its normaliser;
   // stills only. See lib/sources/vdot.ts.
   { key: "vdot", fetch: fetchVdot },
+  // Added in the source audit of 2026-10-16, grouped as the audit grouped them: UK,
+  // Canada, northern Europe, south-east Europe, the rest of the world, and the
+  // operator still cameras the Windy audit found (USGS, ALERTCalifornia, AVO). Each
+  // adapter's header says what it reads, how it decides a camera is live and what
+  // licence the operator states. Keyed feeds name their credential in `keyId` and are
+  // dormant until it is set. City feeds that a 511 system already relays name it in
+  // `yieldsTo`. None declares a budgetMs: each one bounds its own waiting (frame
+  // probes stop at a few seconds and finish in the background).
+  { key: "tamar", fetch: fetchTamar },
+  { key: "ne-utmc", fetch: fetchNeUtmc, keyId: "cams-ne-utmc" },
+  { key: "toronto", fetch: fetchToronto, yieldsTo: ["castlerock"] },
+  { key: "calgary", fetch: fetchCalgary, yieldsTo: ["castlerock"] },
+  { key: "vancouver", fetch: fetchVancouver, yieldsTo: ["drivebc"] },
+  { key: "ottawa", fetch: fetchOttawa, keyId: "cams-ottawa", yieldsTo: ["castlerock"] },
+  { key: "my511-mb", fetch: fetchMy511Mb, keyId: "cams-my511-mb" },
+  { key: "my511-nl", fetch: fetchMy511Nl, keyId: "cams-my511-nl" },
+  { key: "my511-yt", fetch: fetchMy511Yt, keyId: "cams-my511-yt" },
+  { key: "vegvesen", fetch: fetchVegvesen },
+  { key: "dgt", fetch: fetchDgt },
+  { key: "lyon-criter", fetch: fetchLyon },
+  { key: "eismoinfo", fetch: fetchEismoinfo },
+  { key: "utinform-hu", fetch: fetchUtinform },
+  { key: "dars-si", fetch: fetchDarsSi, keyId: "cams-dars-si" },
+  { key: "roads-mk", fetch: fetchRoadsMk },
+  { key: "hktd", fetch: fetchHktd },
+  { key: "qldtraffic", fetch: fetchQld },
+  { key: "qldtraffic-flood", fetch: fetchQldFlood },
+  { key: "livetraffic-nsw", fetch: fetchNsw },
+  { key: "tdx-thb", fetch: fetchTdxThb },
+  { key: "bellingen", fetch: fetchBellingen },
+  { key: "usgs-nims", fetch: fetchUsgsNims },
+  { key: "alertcalifornia", fetch: fetchAlertCa },
+  { key: "avo", fetch: fetchAvo },
   // Networks found by discovery and admitted by a reviewer, one entry each rather
   // than one entry for all of them — last-good is kept PER FEED, so a shared key
   // would let one network's outage discard every other discovered network's
@@ -196,7 +277,14 @@ export interface FeedHealth {
   count: number;
   /** True when `count` is last-good data kept after this feed failed. */
   stale: boolean;
+  /** True when the feed was not asked because its credential is not set. */
+  dormant?: boolean;
 }
+
+/** source -> the sources it yields to, from the feed table. */
+const YIELDS: Record<string, readonly string[]> = Object.fromEntries(
+  SOURCES.filter((f) => f.yieldsTo?.length).map((f) => [f.key, f.yieldsTo!]),
+);
 
 let lastGood = new Map<string, Camera[]>();
 let collapses = new Map<string, number>();
@@ -272,10 +360,15 @@ export function mergeResults(
 }
 
 async function refresh(): Promise<Camera[]> {
+  const dormant = new Set(SOURCES.filter((f) => isDormant(f)).map((f) => f.key));
   const results = await Promise.allSettled(
-    SOURCES.map((f) => withTimeout(f.fetch(), feedBudgetMs(f), f.key)),
+    SOURCES.map((f) =>
+      dormant.has(f.key) ? Promise.resolve([] as Camera[]) : withTimeout(f.fetch(), feedBudgetMs(f), f.key),
+    ),
   );
   const merged = mergeResults(results, lastGood, SOURCES, collapses);
+  merged.cameras = dropNearDuplicates(merged.cameras, YIELDS);
+  merged.health = merged.health.map((h) => (dormant.has(h.key) ? { ...h, dormant: true } : h));
   if (merged.cameras.length === 0) {
     // Cold start with every feed down — surface it rather than caching an empty
     // world as if it were the answer.

@@ -298,6 +298,29 @@ process memory; the sender refills it after a restart.
 Unset, every push answers 401 (never a 5xx) and the relayed feeds read as "no relay yet".
 The feed ids, schemas and size caps are in `lib/relay/feeds.ts`.
 
+## 8 - Camera networks (BUILT, dormant until set)
+
+Each of these is one camera feed in `lib/sources/registry.ts`, named by its `keyId`. While
+its credential is missing the registry does not ask it, it holds no cameras, and
+`/api/coverage` lists it under `feeds.dormant` instead of reporting an outage. The moment
+the value is set the feed goes live on the next refresh, with no code change. Every one is
+free. None of these values ever reaches a browser: the Basic credentials and the Ottawa
+certificate are added by `/api/proxy` on the server (`lib/proxy/allowlist.ts`).
+
+| Network | Env var(s) | How to get it |
+|---------|------------|---------------|
+| Tyne and Wear UTMC (North East England) | `NE_UTMC_USER` + `NE_UTMC_PASS` | Free, self-serve: an account at netraveldata.co.uk (username and email). The account's username and password are the HTTP Basic credentials for /api/v2/cctv/*. |
+| City of Ottawa | `OTTAWA_CAMERA_CERT` | Free: the Certificate Request Form on traffic.ottawa.ca/en/opendata; the City emails the certificate. It is added to image requests on the server only. |
+| Manitoba 511 | `MANITOBA_511_KEY` | Free: a My511 account on manitoba511.ca, then a developer key from /developers/doc. |
+| 511 Newfoundland and Labrador | `NL_511_KEY` | Free: a My511 account on 511nl.ca, then a developer key from /developers/doc. |
+| 511 Yukon | `YUKON_511_KEY` | Free: a My511 account on 511yukon.ca, then a developer key from /developers/doc. |
+| DARS and DRSI via NAP Slovenia | `NAP_SLOVENIA_USER` + `NAP_SLOVENIA_PASS` | Free: a B2B account at nap.si/en/registration (name, organisation, address, phone). The account's username and password are the HTTP Basic credentials. |
+
+Two credentials named in the same audit are NOT wired yet, on purpose:
+`TRAFFIC_SCOTLAND_FTP_USER` / `TRAFFIC_SCOTLAND_FTP_PASS` need an FTP mirror on the box
+before an adapter can read them, and `TRAFFIC_WALES_KEY` needs the DATEX feed URL that
+Traffic Wales sends with the approval, which is not published.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
@@ -350,6 +373,16 @@ OPS_TELEGRAM_CHAT_ID=
 
 # --- Source relay (BUILT - shared HMAC secret with the provenance-1 sender) ---
 RELAY_SIGNING_SECRET=
+
+# --- Camera networks (BUILT, dormant until set; see section 8) ---
+NE_UTMC_USER=
+NE_UTMC_PASS=
+OTTAWA_CAMERA_CERT=
+MANITOBA_511_KEY=
+NL_511_KEY=
+YUKON_511_KEY=
+NAP_SLOVENIA_USER=
+NAP_SLOVENIA_PASS=
 
 # --- Accounts (in progress - do not set before launch) ---
 # NEXT_PUBLIC_SUPABASE_URL=
