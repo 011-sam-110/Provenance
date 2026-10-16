@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { markCoverage, withCoverage } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
+import { isVagueSchedule, netLabel } from "@/lib/signals/schedulePrecision";
 
 // The Space Devs — Launch Library 2 "upcoming launches". Keyless JSON; the
 // canonical open feed of scheduled orbital + suborbital launches. Each launch is
@@ -42,6 +43,10 @@ interface LL2Launch {
   url?: string;
   name?: string;
   net?: string | null;
+  /** Second / Minute / Hour / Day / Month / Quarter N / Year Half N / Year. */
+  net_precision?: { name?: string | null; abbrev?: string | null } | null;
+  window_start?: string | null;
+  window_end?: string | null;
   status?: { name?: string | null } | null;
   launch_service_provider?: { name?: string | null } | null;
   rocket?: { configuration?: { name?: string | null } | null } | null;
@@ -89,6 +94,11 @@ export function normalizeLaunches(
     const status = l.status?.name ?? undefined;
     const provider = l.launch_service_provider?.name ?? undefined;
     const rocket = l.rocket?.configuration?.name ?? undefined;
+    const netPrecision = l.net_precision?.name?.trim() || undefined;
+    // A Day-or-coarser `net` is LL2's placeholder for a date class (a Year launch
+    // sits on 31 Dec 00:00), so it must not be published as an exact launch time.
+    const vague = isVagueSchedule(netPrecision);
+    const net = l.net ?? undefined;
     out.push({
       id: `launch:${id}`,
       lat,
@@ -102,7 +112,12 @@ export function normalizeLaunches(
         ...(provider ? { provider } : {}),
         ...(rocket ? { rocket } : {}),
         ...(status ? { status } : {}),
-        ...(l.net ? { launchTime: l.net } : {}),
+        ...(net && !vague ? { launchTime: net } : {}),
+        ...(net && vague ? { launchDate: netLabel(net, netPrecision) } : {}),
+        ...(netPrecision ? { netPrecision } : {}),
+        ...(!vague && l.window_start && l.window_end && l.window_start !== l.window_end
+          ? { window: `${l.window_start} – ${l.window_end}` }
+          : {}),
         ...(pad?.name ? { pad: pad.name } : {}),
         ...(pad?.location?.name ? { site: pad.location.name } : {}),
       },

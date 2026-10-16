@@ -104,7 +104,8 @@ export const EXPORT_DICTIONARIES: Record<string, Record<string, string>> = {
   schedule: {
     mission: "The name of the scheduled item.",
     name: "The name of the scheduled item.",
-    when: "The scheduled time, ISO 8601.",
+    when: "The scheduled time, ISO 8601. Read it with the precision column: a Day, Month, Quarter or Year precision means the source knows only that date class, and this stamp is its placeholder.",
+    precision: "How precise the scheduled time is, as the source states it (Second, Minute, Hour, Day, Month, Quarter, Year).",
     countdown: "The time left to the scheduled time at the moment of the export, as text.",
     provider: "The launch provider, as the source names it.",
     rocket: "The rocket, as the source names it.",

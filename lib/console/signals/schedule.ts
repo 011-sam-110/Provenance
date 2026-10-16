@@ -18,11 +18,18 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
 
+// Date precision (LL2 `net_precision`) lives beside the adapter that reads it, so
+// lib/signals never imports from lib/console; the view re-exports it from here.
+export { precisionRank, isVagueSchedule, netLabel } from "@/lib/signals/schedulePrecision";
+import { isVagueSchedule, netLabel, precisionRank } from "@/lib/signals/schedulePrecision";
+
 /** Time from `now` to a scheduled ISO time as a human countdown. */
-export function countdown(ts: string | undefined | null, now: number): Countdown {
+export function countdown(ts: string | undefined | null, now: number, precision?: string | null): Countdown {
   if (!ts) return { label: "Unscheduled", state: "unknown", ms: null };
   const t = Date.parse(ts);
   if (!Number.isFinite(t)) return { label: "Unscheduled", state: "unknown", ms: null };
+  // A date class has no countdown: "T- 76d 4h" to a Year placeholder is invented.
+  if (isVagueSchedule(precision)) return { label: netLabel(ts, precision), state: "unknown", ms: null };
   const ms = t - now;
   if (ms <= 0) {
     // LL2 keeps a launch in "upcoming" through its window; treat the last 2h as live.
@@ -42,11 +49,16 @@ export function dayOffsetUTC(t: number, now: number): number {
   return Math.floor(t / DAY) - Math.floor(now / DAY);
 }
 
-/** Day-group heading for a scheduled ISO time: Today / Tomorrow / Earlier / a UTC date. */
-export function scheduleHeading(ts: string | undefined | null, now: number): string {
+/**
+ * Day-group heading for a scheduled ISO time: Today / Tomorrow / Earlier / a UTC
+ * date. A Day-precision row keeps its date heading (the date is known); anything
+ * coarser is headed by its class ("NET Q4 2026"), never by LL2's placeholder date.
+ */
+export function scheduleHeading(ts: string | undefined | null, now: number, precision?: string | null): string {
   if (!ts) return "Unscheduled";
   const t = Date.parse(ts);
   if (!Number.isFinite(t)) return "Unscheduled";
+  if (precisionRank(precision) > 2) return netLabel(ts, precision);
   const off = dayOffsetUTC(t, now);
   if (off < 0) return "Earlier";
   if (off === 0) return "Today";
@@ -54,9 +66,9 @@ export function scheduleHeading(ts: string | undefined | null, now: number): str
   return new Date(t).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-/** Absolute clock label for a row, e.g. "14:30 UTC". "" when the time is unknown. */
-export function scheduleClock(ts: string | undefined | null): string {
-  if (!ts) return "";
+/** Absolute clock label for a row, e.g. "14:30 UTC". "" when the time is unknown or only a date class. */
+export function scheduleClock(ts: string | undefined | null, precision?: string | null): string {
+  if (!ts || isVagueSchedule(precision)) return "";
   const t = Date.parse(ts);
   if (!Number.isFinite(t)) return "";
   const hh = String(new Date(t).getUTCHours()).padStart(2, "0");

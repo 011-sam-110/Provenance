@@ -18,7 +18,7 @@ import { toCsv, toGeoJson, downloadText, exportFilename } from "@/lib/export";
 import ExportExtras from "@/components/console/ExportExtras";
 import { humaniseKey } from "@/lib/text/humanise";
 import { freshness } from "@/lib/console/signals/signalDetail";
-import { countdown, scheduleHeading, scheduleClock, type Countdown } from "@/lib/console/signals/schedule";
+import { countdown, scheduleHeading, scheduleClock, precisionRank, type Countdown } from "@/lib/console/signals/schedule";
 import InsetMap from "@/components/InsetMap";
 import type { InsetPoint } from "@/lib/map/inset";
 
@@ -26,6 +26,8 @@ const strProp = (f: SignalFeature, key: string): string => {
   const v = f.props?.[key];
   return typeof v === "string" ? v : "";
 };
+/** The row's date precision (LL2 `net_precision`), "" when the layer sends none. */
+const prec = (f: SignalFeature): string => strProp(f, "netPrecision");
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
@@ -45,12 +47,14 @@ export function makeScheduleDetail(source: SignalSource) {
       const rows = q
         ? scoped.filter((f) => [f.title, strProp(f, "provider"), strProp(f, "rocket"), strProp(f, "site")].join(" ").toLowerCase().includes(q))
         : scoped;
-      // Soonest first; items with no valid time sink to the bottom.
+      // Soonest first; items with no valid time sink to the bottom. Equal stamps
+      // order finest precision first, so LL2's shared 31 Dec placeholders group
+      // under one heading each (Q4, H2, Year) instead of alternating.
       const key = (f: SignalFeature) => { const t = Date.parse(f.ts ?? ""); return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY; };
-      return [...rows].sort((a, b) => key(a) - key(b));
+      return [...rows].sort((a, b) => key(a) - key(b) || precisionRank(prec(a)) - precisionRank(prec(b)));
     }, [scoped, query]);
 
-    const cds = useMemo(() => new Map(filtered.map((f) => [f.id, countdown(f.ts, now)] as const)), [filtered, now]);
+    const cds = useMemo(() => new Map(filtered.map((f) => [f.id, countdown(f.ts, now, prec(f))] as const)), [filtered, now]);
     const hero = useMemo(() => filtered.find((f) => { const c = cds.get(f.id); return c && c.ms != null && c.ms > -2 * HOUR; }) ?? null, [filtered, cds]);
     const next24 = useMemo(() => filtered.filter((f) => { const c = cds.get(f.id); return c && c.ms != null && c.ms > -2 * HOUR && c.ms <= DAY; }).length, [filtered, cds]);
     const providers = useMemo(() => new Set(filtered.map((f) => strProp(f, "provider")).filter(Boolean)).size, [filtered]);
@@ -63,10 +67,10 @@ export function makeScheduleDetail(source: SignalSource) {
     const flyTo = (f: SignalFeature) => { signalsStore.set(source.id, true); openSignalFeature(f, source.label, 5); shellLayoutStore.unfocus(); };
     const showOnMap = () => { signalsStore.set(source.id, true); shellLayoutStore.unfocus(); };
 
-    const exportRows = filtered.map((f) => ({ id: f.id, mission: f.title, when: f.ts ?? "", countdown: cds.get(f.id)?.label ?? "", provider: strProp(f, "provider"), rocket: strProp(f, "rocket"), site: strProp(f, "site"), status: strProp(f, "status"), lat: f.lat, lon: f.lon }));
+    const exportRows = filtered.map((f) => ({ id: f.id, mission: f.title, when: f.ts ?? "", precision: prec(f), countdown: cds.get(f.id)?.label ?? "", provider: strProp(f, "provider"), rocket: strProp(f, "rocket"), site: strProp(f, "site"), status: strProp(f, "status"), lat: f.lat, lon: f.lon }));
     const exportGeo = filtered.map((f) => ({ lat: f.lat, lon: f.lon, properties: { id: f.id, name: f.title, ...(f.props ?? {}) } }));
 
-    const cd = (f: SignalFeature): Countdown => cds.get(f.id) ?? countdown(f.ts, now);
+    const cd = (f: SignalFeature): Countdown => cds.get(f.id) ?? countdown(f.ts, now, prec(f));
     // Build the day-grouped agenda: emit a heading row whenever the day bucket changes.
     let lastHeading = "";
 
@@ -83,7 +87,7 @@ export function makeScheduleDetail(source: SignalSource) {
           <div className="tn-sch-hero" style={{ borderLeftColor: hero.color ?? source.color }}>
             <div className="tn-sch-hero-cd">
               <span className={`tn-sch-cd is-${cd(hero).state}`}>{cd(hero).label}</span>
-              <span className="tn-sch-hero-when">{scheduleHeading(hero.ts, now)} · {scheduleClock(hero.ts) || "time TBD"}</span>
+              <span className="tn-sch-hero-when">{scheduleHeading(hero.ts, now, prec(hero))} · {scheduleClock(hero.ts, prec(hero)) || "time TBD"}</span>
             </div>
             <div className="tn-sch-hero-name">{hero.title}</div>
             <div className="tn-sch-hero-meta">
@@ -95,7 +99,7 @@ export function makeScheduleDetail(source: SignalSource) {
 
         {scoped.length > 0 && (
           <div className="tn-sd-kpis">
-            <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Next up</div><div className="tn-sd-kpi-value" style={{ fontSize: 15 }}>{hero ? cd(hero).label : "—"}</div><div className="tn-sd-kpi-sub">{hero ? scheduleClock(hero.ts) || "time TBD" : "nothing scheduled"}</div></div>
+            <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Next up</div><div className="tn-sd-kpi-value" style={{ fontSize: 15 }}>{hero ? cd(hero).label : "—"}</div><div className="tn-sd-kpi-sub">{hero ? scheduleClock(hero.ts, prec(hero)) || "time TBD" : "nothing scheduled"}</div></div>
             <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Next 24h</div><div className="tn-sd-kpi-value">{next24}</div><div className="tn-sd-kpi-sub">launches</div></div>
             <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">In view</div><div className="tn-sd-kpi-value">{filtered.length}</div><div className="tn-sd-kpi-sub">of {features.length} listed</div></div>
             <div className="tn-sd-kpi"><div className="tn-sd-kpi-label">Providers</div><div className="tn-sd-kpi-value">{providers}</div><div className="tn-sd-kpi-sub">distinct</div></div>
@@ -116,13 +120,13 @@ export function makeScheduleDetail(source: SignalSource) {
         {filtered.length > 0 && (
           <div className="tn-sch-agenda">
             {filtered.map((f) => {
-              const heading = scheduleHeading(f.ts, now);
+              const heading = scheduleHeading(f.ts, now, prec(f));
               const showHeading = heading !== lastHeading;
               lastHeading = heading;
               const isOpen = open === f.id;
               const c = cd(f);
               const meta = [strProp(f, "provider"), strProp(f, "rocket"), strProp(f, "site")].filter(Boolean).join(" · ");
-              const shown = new Set(["provider", "rocket", "site", "status", "launchTime"]);
+              const shown = new Set(["provider", "rocket", "site", "status", "launchTime", "netPrecision"]);
               const entries = Object.entries(f.props ?? {}).filter(([k, v]) => v != null && v !== "" && !shown.has(k));
               return (
                 <Fragment key={f.id}>
@@ -130,7 +134,7 @@ export function makeScheduleDetail(source: SignalSource) {
                   <div id={`schrow-${f.id}`} className={`tn-sch-row${isOpen ? " is-open" : ""}`} onClick={() => setOpen(isOpen ? null : f.id)}>
                     <span className="tn-sch-when">
                       <span className={`tn-sch-cd is-${c.state}`}>{c.label}</span>
-                      <span className="tn-sch-clock">{scheduleClock(f.ts) || "TBD"}</span>
+                      <span className="tn-sch-clock">{scheduleClock(f.ts, prec(f)) || "TBD"}</span>
                     </span>
                     <span className="tn-sch-body">
                       <span className="tn-sch-name">{f.title}</span>

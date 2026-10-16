@@ -5,6 +5,8 @@ import { normalizeLaunches, launchStatusColor, LAUNCHES_SOURCE, resetLaunchesCac
 import { readOutcome } from "@/lib/signals/outcome";
 import { readCoverage } from "@/lib/signals/coverage";
 import { countdown } from "@/lib/console/signals/schedule";
+import { projectSignal } from "@/lib/console/signals/signalCard";
+import { WORLD_SCOPE } from "@/lib/shell/scope";
 
 test("normalizes LL2 launches to pad points, skipping pad-less ones", () => {
   const out = normalizeLaunches(fixture as never);
@@ -127,4 +129,29 @@ test("reads the 2.3.0 shape: numeric pad coordinates, LL2 total as an exact N of
   expect(mmx?.ts).toBe("2026-10-19T19:41:03Z");
   expect(out.every((f) => Number.isFinite(f.lat) && Number.isFinite(f.lon))).toBe(true);
   expect(readCoverage(out)).toMatchObject({ available: 476, availableExact: true, capped: true, cap: 100 });
+});
+
+test("net_precision rides into props, and a date class is never published as an exact launch time", () => {
+  const out = normalizeLaunches(ll23 as never);
+  const byName = (part: string) => out.find((f) => f.title.includes(part))!;
+  const mmx = byName("MMX"); // Second
+  expect(mmx.props?.netPrecision).toBe("Second");
+  expect(mmx.props?.launchTime).toBe("2026-10-19T19:41:03Z");
+  expect(mmx.props?.launchDate).toBeUndefined();
+  const vulcan = byName("Amazon Leo"); // Day
+  expect(vulcan.props?.launchTime).toBeUndefined();
+  expect(vulcan.props?.launchDate).toBe("NET Oct 29");
+  const year = byName("BlackSky"); // Year, LL2 stamps 2026-12-31T00:00:00Z
+  expect(year.props?.netPrecision).toBe("Year");
+  expect(year.props?.launchTime).toBeUndefined();
+  expect(year.props?.launchDate).toBe("NET 2026");
+  // ts stays the upstream stamp so ordering holds; the view reads the precision.
+  expect(year.ts).toBe("2026-12-31T00:00:00Z");
+  expect(countdown(year.ts, Date.parse("2026-10-16T20:00:00Z"), String(year.props?.netPrecision)).ms).toBeNull();
+});
+
+test("the layer card shows a date class in place of a countdown to the placeholder", () => {
+  const rows = projectSignal(normalizeLaunches(ll23 as never), WORLD_SCOPE, { now: Date.parse("2026-10-16T20:00:00Z") }).rows;
+  expect(rows.find((r) => r.title.includes("BlackSky"))?.when).toBe("NET 2026");
+  expect(rows.find((r) => r.title.includes("MMX"))?.when).toBeUndefined();
 });
