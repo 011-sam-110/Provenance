@@ -658,15 +658,16 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Maritime -------------------------------------------------------------
   {
     id: "ais",
-    whatItShows: "A vessel broadcasting AIS near a monitored maritime chokepoint.",
-    method: "Measured from the ship's own AIS transponder, relayed by AISStream.",
+    whatItShows: "A vessel broadcasting AIS near a monitored maritime chokepoint, heard in the last 20 minutes.",
+    method: "Measured from the ship's own AIS transponder, relayed by AISStream (a long-lived stream), Fintraffic's Digitraffic (the Gulf of Finland) and, with its free client set, BarentsWatch (the Barents Sea). A ship two feeds hear is shown once, at its newest report.",
     confidence: "measured",
-    coverage: "A sample near selected chokepoints — NOT all shipping, and not a full picture of any one strait.",
+    coverage: "Eleven chokepoint boxes. AISStream's volunteer receivers cover the busy European waters well and Hormuz, the Red Sea, Panama, the Taiwan Strait and the Bosphorus thinly; Digitraffic covers the Gulf of Finland in full.",
     limitations: [
-      "A sample, not a census. Vessel counts here must not be read as traffic volume.",
+      "A sample, not a census: not all shipping, and not a full picture of any one strait. A strait with few receivers looks emptier than it is, so vessel counts here must not be read as traffic volume.",
       "AIS can be switched off or spoofed, which is exactly what sanctioned and illicit shipping does — so the vessels most worth seeing are the ones most likely to be missing.",
       "Terrestrial AIS reception is limited to roughly the coastal horizon; mid-ocean gaps are normal.",
-      "Requires an AISStream key. Without one this layer is empty, which looks the same as a quiet strait.",
+      "For the first two minutes after a server restart the AISStream part is still filling, and says so.",
+      "Requires an AISStream key for nine of the eleven boxes. Without one only the Gulf of Finland shows, which looks the same as quiet water everywhere else.",
     ],
   },
 ];

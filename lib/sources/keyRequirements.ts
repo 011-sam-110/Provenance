@@ -51,8 +51,21 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     id: "ais",
     label: "Ship traffic (AIS)",
     env: ["AISSTREAM_API_KEY"],
-    degrades: "No live vessel positions at chokepoints and ports.",
+    degrades:
+      "No live vessel positions at the nine AISStream chokepoints (Hormuz, the Red Sea, Malacca and the rest). Only the Gulf of Finland still shows, from Digitraffic, which is keyless.",
     obtain: "Free — aisstream.io.",
+  },
+  {
+    // A second, optional feed of the ais layer. It has its own id because the layer's
+    // own entry is AISStream's REQUIRED key, and one entry per id is the table's rule.
+    kind: "enhancement",
+    id: "ais-barentswatch",
+    label: "Ship traffic: Barents Sea (BarentsWatch)",
+    env: ["BARENTSWATCH_CLIENT_ID", "BARENTSWATCH_CLIENT_SECRET"],
+    degrades:
+      "The ship layer has no Norwegian coastal AIS, so the Barents Sea and North Cape box shows only what AISStream's volunteer receivers hear there. Nothing else changes.",
+    obtain:
+      "Free, no card - a personal account at barentswatch.no, then My page > create an API client (OAuth client credentials, scope ais). Data is NLOD.",
   },
   {
     kind: "required",
@@ -242,6 +255,8 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
 export const NON_SIGNAL_IDS = new Set([
   "webcams",
+  // An optional upstream of the ais layer, not a layer of its own.
+  "ais-barentswatch",
   // Console capability, not a map layer — resolves channel ids to live video ids.
   "youtube-live",
   "markets-equities",

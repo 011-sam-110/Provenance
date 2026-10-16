@@ -45,6 +45,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
 | 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
 | 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly) | Free, instant, email only | `EIA_API_KEY` |
+| 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
 
 ### Where to get each
 
@@ -75,6 +76,9 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 9. **EIA** — register at <https://www.eia.gov/opendata/register.php> (name and email;
    the key arrives at once). EIA data is US public domain; credit "Source: U.S. Energy
    Information Administration". `DEMO_KEY` works for a quick test only (tight rate limit).
+10. **BarentsWatch** — create a personal account at <https://www.barentswatch.no>, then
+   *My page* → create an API client. The layer uses the OAuth client-credentials grant
+   with scope `ais` against `id.barentswatch.no`. Data is under NLOD.
 
 ---
 
@@ -310,6 +314,8 @@ ACLED_PASSWORD=
 RELIEFWEB_APPNAME=
 ISOC_PULSE_API_KEY=
 EIA_API_KEY=
+BARENTSWATCH_CLIENT_ID=
+BARENTSWATCH_CLIENT_SECRET=
 
 # --- Optional enhancements ---
 EIA_API_KEY=

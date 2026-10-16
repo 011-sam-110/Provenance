@@ -62,6 +62,8 @@ describe("AIS_SOURCE.fetch credential-refusal wiring", () => {
     resetEvidence();
     sockets.length = 0;
     process.env.AISSTREAM_API_KEY = "test-key";
+    // The REST feeds (Digitraffic, BarentsWatch) are not under test here: they answer 503.
+    vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
     vi.stubGlobal(
       "WebSocket",
       class extends FakeWebSocket {
@@ -138,6 +140,8 @@ describe("AIS_SOURCE.fetch keeps one socket open across fetches", () => {
     resetAisCollector();
     sockets.length = 0;
     process.env.AISSTREAM_API_KEY = "test-key";
+    // The REST feeds (Digitraffic, BarentsWatch) are not under test here: they answer 503.
+    vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
     vi.stubGlobal(
       "WebSocket",
       class extends FakeWebSocket {

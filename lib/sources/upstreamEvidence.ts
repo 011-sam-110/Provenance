@@ -78,6 +78,7 @@ export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
   "air-quality-stations": ["api.openaq.org"],
   "grid-load": ["web-api.tp.entsoe.eu", "api.eia.gov"],
   "internet-outages": ["pulse-api.internetsociety.org"],
+  "ais-barentswatch": ["id.barentswatch.no", "live.ais.barentswatch.no"],
   reliefweb: ["api.reliefweb.int"],
   webcams: ["api.windy.com"],
   "markets-equities": ["finnhub.io"],

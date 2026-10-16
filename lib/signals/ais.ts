@@ -2,11 +2,18 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { recordCredentialRefusal } from "@/lib/sources/upstreamEvidence";
+import { DIGITRAFFIC_CREDIT, fetchDigitraffic } from "@/lib/signals/aisDigitraffic";
+import { BARENTSWATCH_CREDIT, fetchBarentswatch } from "@/lib/signals/aisBarentswatch";
 
-// Real-time ship tracking — AISStream.io (free WebSocket). AISStream streams live
-// vessel positions; there is no REST snapshot. Key-gated: set AISSTREAM_API_KEY
-// (free, no card); dormant (→ []) until then. Coverage is terrestrial-station AIS
-// (~200 km offshore), so mid-ocean is patchy.
+// Real-time ship tracking at strategic chokepoints, from three feeds:
+//   AISStream.io  free WebSocket, the only free source for the Gulf, the Red Sea and
+//                 the Asian straits. AISSTREAM_API_KEY; dormant without it.
+//   Digitraffic   Fintraffic's own receivers, keyless, CC BY 4.0: the Gulf of Finland
+//                 (lib/signals/aisDigitraffic.ts).
+//   BarentsWatch  Kystverket's, NLOD: the Barents Sea and North Cape. Dormant until
+//                 BARENTSWATCH_CLIENT_ID + _SECRET exist (lib/signals/aisBarentswatch.ts).
+// The same ship heard by two feeds is shown once, at its newest report. Coverage is
+// terrestrial-station AIS (~200 km offshore), so mid-ocean is patchy.
 //
 // ONE LONG-LIVED SOCKET, NOT ONE PER REQUEST (2026-10-16). The adapter used to open
 // the socket inside each fetch, listen for 4.5 s and close it. AIS transponders
@@ -57,6 +64,11 @@ export const CHOKEPOINTS: Chokepoint[] = [
   { name: "Panama Canal", bbox: [[8, -80.5], [9.6, -79]] },
   { name: "Taiwan Strait", bbox: [[21.5, 119], [25.5, 122]] },
   { name: "Danish Straits", bbox: [[55, 10], [58, 13]] }, // Baltic approaches
+  // Approaches to Primorsk, Ust-Luga and St Petersburg: shadow-fleet tanker routes and
+  // the Baltic cable incidents. Digitraffic covers it in full.
+  { name: "Gulf of Finland", bbox: [[59, 22], [61, 30.5]] },
+  // North Cape approaches to Murmansk. BarentsWatch covers it once its client is set.
+  { name: "Barents Sea – North Cape", bbox: [[68, 15], [72, 35]] },
 ];
 
 /** The bounding boxes in the raw [[swLat,swLon],[neLat,neLon]] shape AISStream subscribes to. */
@@ -87,6 +99,8 @@ export const WARM_MS = 2 * 60_000;
 const REFUSED_RETRY_MS = 30 * 60_000;
 
 export const AISSTREAM_ATTRIBUTION = "Vessel positions © AISStream.io";
+/** Each feed's own credit; the layer names all three. */
+export const AIS_ATTRIBUTION = [AISSTREAM_ATTRIBUTION, DIGITRAFFIC_CREDIT, BARENTSWATCH_CREDIT].join(" · ");
 
 export interface AisVessel {
   MMSI?: number;
@@ -98,6 +112,11 @@ export interface AisVessel {
   TrueHeading?: number | null;
   NavigationalStatus?: number | null;
   time_utc?: string;
+  /** Which feed heard it. Absent means AISStream. */
+  source?: "AISStream" | "Digitraffic" | "BarentsWatch";
+  /** Ship type, where the feed carries it (Digitraffic, BarentsWatch). */
+  shipType?: string;
+  destination?: string;
 }
 
 /** AIS navigational-status code → label (the common ones). */
@@ -154,8 +173,36 @@ export function vesselFeature(v: AisVessel): SignalFeature | null {
       heading: typeof v.TrueHeading === "number" && v.TrueHeading !== 511 ? `${v.TrueHeading}°` : "—",
       status: navStatusLabel(v.NavigationalStatus),
       ...(cp ? { chokepoint: cp } : {}),
+      source: v.source ?? "AISStream",
+      ...(v.shipType ? { shipType: v.shipType } : {}),
+      ...(v.destination ? { destination: v.destination } : {}),
     },
   };
+}
+
+/** Time of a vessel report, epoch ms, or -Infinity when it has none. */
+function reportedAt(v: AisVessel): number {
+  const iso = aisTimeToIso(v.time_utc) ?? v.time_utc;
+  const t = Date.parse(iso ?? "");
+  return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+}
+
+/**
+ * Pure: merge vessels from several feeds. A ship heard by two feeds is kept once,
+ * with its NEWER report; vessels outside every chokepoint box are dropped, because
+ * this layer is the chokepoints and Digitraffic reports the whole Baltic.
+ */
+export function mergeVessels(...feeds: (AisVessel[] | null | undefined)[]): AisVessel[] {
+  const by = new Map<number, AisVessel>();
+  for (const feed of feeds) {
+    for (const v of feed ?? []) {
+      if (!v.MMSI || typeof v.latitude !== "number" || typeof v.longitude !== "number") continue;
+      if (!chokepointFor(v.latitude, v.longitude)) continue;
+      const prev = by.get(v.MMSI);
+      if (!prev || reportedAt(v) > reportedAt(prev)) by.set(v.MMSI, v);
+    }
+  }
+  return [...by.values()];
 }
 
 /**
@@ -422,24 +469,46 @@ export const AIS_SOURCE: SignalSource = {
   group: "Maritime",
   color: "#0d9488",
   refreshMs: 60_000, // a snapshot of the long-lived stream, at most ~once a minute
-  attribution: AISSTREAM_ATTRIBUTION,
+  attribution: AIS_ATTRIBUTION,
   sourceUrl: "https://aisstream.io/", // real-time AIS stream (dossier source)
   async fetch() {
     const key = (process.env.AISSTREAM_API_KEY ?? "").trim();
-    if (!key) return degraded("no key"); // dormant until the free key is set
     try {
-      const { c, fresh } = collectorFor(key);
-      if (fresh) await firstWindow(c, FIRST_WINDOW_MS);
+      const barents = CHOKEPOINTS.find((c) => c.name.startsWith("Barents"))!.bbox;
+      // The collector is started before anything is awaited, so its socket opens at
+      // once and a cold start's first window runs alongside the two REST reads.
+      const held = key ? collectorFor(key) : null;
+      const [digitraffic, barentswatch] = await Promise.all([
+        fetchDigitraffic(VESSEL_TTL_MS),
+        fetchBarentswatch(barents, VESSEL_TTL_MS),
+        held?.fresh ? firstWindow(held.c, FIRST_WINDOW_MS) : Promise.resolve(),
+      ]);
+      let stream: AisVessel[] = [];
+      let streamFailure: string | undefined;
+      let streamDown = false;
+      let firstOpenAt: number | null = null;
+      let lastMessageAt: number | null = null;
+      if (held) {
+        const { c } = held;
+        const t = Date.now();
+        pruneHeard(c.heard, t);
+        stream = liveVessels(c.heard, t);
+        streamFailure = c.failure;
+        streamDown = !c.ws && Boolean(c.failure);
+        firstOpenAt = c.firstOpenAt;
+        lastMessageAt = c.lastMessageAt;
+      }
       const now = Date.now();
-      pruneHeard(c.heard, now);
-      const vessels = liveVessels(c.heard, now);
-      // Nothing heard and the socket failed: that is the upstream, not quiet water —
-      // the chokepoints are never empty.
-      if (vessels.length === 0 && c.failure) return degraded(c.failure);
-      const features = normalizeAis(vessels, snapshotRule(c.firstOpenAt, now));
-      // The socket is down but recent positions are still inside the TTL: serve them,
-      // and say the stream is not live right now, as of the last report.
-      if (!c.ws && c.failure) return degradedWith(features, c.failure, c.lastMessageAt ?? now);
+      const vessels = mergeVessels(stream, digitraffic, barentswatch);
+      // Nothing heard anywhere and nothing answered: that is the upstreams, not quiet
+      // water — the chokepoints are never empty.
+      if (vessels.length === 0 && !digitraffic && !barentswatch && (!key || streamFailure)) {
+        return degraded(streamFailure ?? "no key");
+      }
+      const features = normalizeAis(vessels, snapshotRule(key ? firstOpenAt : now - WARM_MS, now));
+      // The AISStream socket is down: serve what is still inside the TTL plus the
+      // REST feeds, and say the main stream is not live right now.
+      if (key && streamDown) return degradedWith(features, streamFailure!, lastMessageAt ?? now);
       return observed(features, now);
     } catch {
       return degraded("read failed");

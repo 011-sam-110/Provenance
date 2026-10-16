@@ -298,6 +298,7 @@ describe("buildStatusReport", () => {
         "accounts",
         "accounts-delete",
         "ai-brief",
+        "ais-barentswatch",
         "feedback-prompt",
         "geolocate-vision",
         "markets-equities",

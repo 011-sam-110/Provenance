@@ -131,7 +131,7 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
     url: "https://www.glidernet.org/",
     licence: { label: "ODbL", url: "https://opendatacommons.org/licenses/odbl/1-0/" },
   },
-  ais: { label: "AISStream", url: "https://aisstream.io/" },
+  ais: { label: "AISStream, Digitraffic, BarentsWatch", url: "https://aisstream.io/" },
 };
 
 /**
