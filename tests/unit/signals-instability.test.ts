@@ -10,6 +10,7 @@ import {
   factorLabel,
   iso3FromGdeltPlace,
   conflictArticlesByIso3,
+  foodFromFewsNet,
   FACTOR_WEIGHTS,
   type CountryInput,
 } from "@/lib/signals/instability";
@@ -222,4 +223,33 @@ test("conflictArticlesByIso3 skips the dormant notice and falls back to the coun
     { ...base, id: "d", props: { status: "unavailable", articles: 99 } },
   ]);
   expect(Object.fromEntries(byIso)).toEqual({ UKR: 10, SYR: 5, LBY: 3 });
+});
+
+// --- food factor: FEWS NET IPC population (replaced WFP HungerMap, which 401s) ----
+
+test("foodFromFewsNet reads the newest Current Situation share of IPC 3+ per country", () => {
+  const rows = JSON.parse(readFileSync(join(process.cwd(), "tests/fixtures/fewsnet-ipc-population.json"), "utf8"));
+  const food = foodFromFewsNet(rows);
+  // Captured 2026-10-16: Sudan 45-50 % (Sept CS), South Sudan 60-65 %, Yemen 50-55 %.
+  expect(food.get("SDN")).toBeCloseTo(0.475);
+  expect(food.get("SSD")).toBeCloseTo(0.625);
+  expect(food.get("YEM")).toBeCloseTo(0.525);
+  expect(food.size).toBeGreaterThanOrEqual(30);
+  for (const v of food.values()) {
+    expect(v).toBeGreaterThan(0);
+    expect(v).toBeLessThanOrEqual(1);
+  }
+});
+
+test("foodFromFewsNet skips projections, missing bands and unknown codes, and keeps the newest month", () => {
+  const food = foodFromFewsNet([
+    { country_code: "SD", phase: "3+", scenario: "CS", reporting_date: "2026-08-01", pct_population_min: 10, pct_population_max: 20 },
+    { country_code: "SD", phase: "3+", scenario: "CS", reporting_date: "2026-09-01", pct_population_min: 40, pct_population_max: 50 },
+    { country_code: "SD", phase: "3+", scenario: "CS", reporting_date: "2026-07-01", pct_population_min: 90, pct_population_max: 99 },
+    { country_code: "YE", phase: "3+", scenario: "ML", reporting_date: "2026-09-01", pct_population_min: 50, pct_population_max: 55 },
+    { country_code: "SO", phase: "3+", scenario: "CS", reporting_date: "2026-09-01", pct_population_min: null, pct_population_max: null },
+    { country_code: "ZZ", phase: "3+", scenario: "CS", reporting_date: "2026-09-01", pct_population_min: 5, pct_population_max: 10 },
+  ]);
+  expect(Object.fromEntries(food)).toEqual({ SDN: 0.45 });
+  expect(foodFromFewsNet(null as unknown as [])).toEqual(new Map());
 });

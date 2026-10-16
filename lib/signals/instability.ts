@@ -51,7 +51,10 @@ import { degraded, observed } from "@/lib/signals/outcome";
 //                                                 it had already been falling
 //                                                 through to GDELT on every cycle.
 //                                                 Deleting it changed no score.
-//   food insecurity (WFP prevalence)   0.25   — acute hunger, instability accelerant
+//   food insecurity (FEWS NET IPC 3+)  0.25   — share of the population in IPC phase 3
+//                                                 or worse (acute hunger). WFP HungerMap
+//                                                 supplied this until its keyless URL
+//                                                 began answering 401.
 //   displacement-from (UNHCR origin)   0.25   — people displaced FROM the country
 //   internet outages (IODA severity)   0.10   — shutdowns track unrest/crackdowns
 // ============================================================================
@@ -96,7 +99,7 @@ export function normalizeFactor(key: FactorKey, raw: number, conflictSource: Con
   if (!(raw > 0)) return 0;
   switch (key) {
     case "food":
-      return clamp01(raw / 0.5); // prevalence; 50%+ of the population insecure = max
+      return clamp01(raw / 0.5); // share of the population in IPC 3+; 50%+ = max
     case "displacement":
       return clamp01(Math.log10(1 + raw) / 7); // people displaced-from; ~10M = max
     case "outages":
@@ -294,18 +297,61 @@ async function getJson<T>(url: string, ms = 18_000): Promise<T | null> {
   }
 }
 
-/** Food-insecurity prevalence (0..1) by ISO-3, from WFP HungerMap. */
-async function foodFactor(): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  const json = await getJson<{ body?: { countries?: { country?: { iso3?: string }; metrics?: { fcs?: { prevalence?: number } } }[] } }>(
-    "https://api.hungermapdata.org/v1/foodsecurity/country",
-  );
-  for (const c of json?.body?.countries ?? []) {
-    const iso3 = (c.country?.iso3 ?? "").toUpperCase();
-    const p = c.metrics?.fcs?.prevalence;
-    if (iso3 && typeof p === "number" && p > 0) out.set(iso3, p);
+/** One country row of FEWS NET's `ipcpopulationsize` endpoint (fields=simple). */
+export interface FewsPopulationRow {
+  country_code?: string;
+  phase?: string;
+  scenario?: string;
+  reporting_date?: string;
+  pct_population_min?: number | string | null;
+  pct_population_max?: number | string | null;
+}
+
+/**
+ * Pure: FEWS NET country rows → share of the population (0..1) in IPC phase 3 or worse,
+ * by ISO-3. Only the "Current Situation" (CS) scenario counts, and per country only the
+ * newest reporting month. FEWS NET publishes the share as a band ("45 to 50 %"), so the
+ * value is the band's midpoint. A row without a band is skipped, never guessed.
+ */
+export function foodFromFewsNet(rows: FewsPopulationRow[]): Map<string, number> {
+  const newest = new Map<string, { date: string; share: number }>();
+  for (const r of rows ?? []) {
+    if (r?.phase !== "3+" || r?.scenario !== "CS") continue;
+    const c = centroidByIso2(String(r.country_code ?? "").toUpperCase());
+    const lo = Number(r.pct_population_min);
+    const hi = Number(r.pct_population_max);
+    const date = String(r.reporting_date ?? "");
+    if (!c || !date || r.pct_population_min == null || r.pct_population_max == null) continue;
+    if (!Number.isFinite(lo) || !Number.isFinite(hi) || hi < lo) continue;
+    const prev = newest.get(c.iso3);
+    if (prev && prev.date >= date) continue;
+    newest.set(c.iso3, { date, share: (lo + hi) / 200 });
   }
+  const out = new Map<string, number>();
+  for (const [iso3, v] of newest) if (v.share > 0) out.set(iso3, v.share);
   return out;
+}
+
+/** Days of FEWS NET reports to ask for. Country briefs come monthly; 150 days reaches
+ *  the last brief of a country that skipped a few months. */
+const FEWS_WINDOW_DAYS = 150;
+
+/**
+ * Food insecurity by ISO-3: the share of each country's population in IPC phase 3+
+ * (Crisis or worse), from FEWS NET. Keyless. The country-level endpoint is ~0.3 MB;
+ * the per-area `ipcphase` endpoint the audit first named is ~26 MB and ~45 s for the
+ * same window, so this reads the country figure FEWS NET itself publishes.
+ * Replaced WFP HungerMap on 2026-10-16: its keyless URL answers 401.
+ */
+async function foodFactor(): Promise<Map<string, number>> {
+  const end = new Date();
+  const start = new Date(end.getTime() - FEWS_WINDOW_DAYS * 86_400_000);
+  const day = (d: Date) => d.toISOString().slice(0, 10);
+  const json = await getJson<FewsPopulationRow[]>(
+    `https://fdw.fews.net/api/ipcpopulationsize/?format=json&fields=simple&start_date=${day(start)}&end_date=${day(end)}`,
+    30_000,
+  );
+  return foodFromFewsNet(Array.isArray(json) ? json : []);
 }
 
 /** People displaced FROM each country (refugees+asylum-seekers+IDPs), by ISO-3, from UNHCR origin stats. */
@@ -425,7 +471,7 @@ export const INSTABILITY_SOURCE: SignalSource = {
   group: "Synthesis",
   color: "#dc2626",
   refreshMs: 60 * 60 * 1000, // composite of slow-moving inputs; hourly is ample
-  attribution: "Composite — GDELT article volume · WFP HungerMap · UNHCR · IODA",
+  attribution: "Composite — GDELT article volume · FEWS NET (IPC population in phase 3+) · UNHCR · IODA",
   metric: { field: "score", domain: [0, 100] }, // 0-100 composite → ranked score bar (green→dark-red)
   async fetch() {
     try {

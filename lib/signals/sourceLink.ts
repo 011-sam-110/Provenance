@@ -170,8 +170,8 @@ export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
     { label: "Country centroids (eesur/country-codes-lat-long)", url: "https://github.com/eesur/country-codes-lat-long" },
   ],
   instability: [
-    { label: "ACLED", url: "https://acleddata.com/" },
-    { label: "WFP HungerMap", url: "https://hungermap.wfp.org/" },
+    { label: "GDELT", url: "https://www.gdeltproject.org/" },
+    { label: "FEWS NET", url: "https://fews.net/" },
     { label: "UNHCR", url: "https://www.unhcr.org/refugee-statistics/" },
     { label: "IODA", url: "https://ioda.inetintel.cc.gatech.edu/" },
   ],
