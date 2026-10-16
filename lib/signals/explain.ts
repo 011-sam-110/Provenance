@@ -633,8 +633,8 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Human cost -----------------------------------------------------------
   {
     id: "displacement",
-    whatItShows: "Forced-displacement figures for a country, from UNHCR's Refugee Data Finder.",
-    method: "Compiled by UNHCR from government and agency reporting.",
+    whatItShows: "The forcibly displaced people a country hosts or holds: refugees, asylum-seekers, its own internally displaced, other people in need of international protection, and Palestine refugees under UNRWA. European countries also show Eurostat's monthly temporary-protection and first-time asylum figures.",
+    method: "Compiled by UNHCR (Refugee Population Statistics Database, including UNRWA's figures) from government and agency reporting. The Eurostat figures are shown beside the total and are not added to it.",
     confidence: "official",
     coverage: "Global, at country level only.",
     limitations: [

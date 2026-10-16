@@ -44,7 +44,16 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
       { href: "https://www.ransomware.live/", label: "Ransomware.live", scope: "provider" },
     ]);
     expect(resolveSignalSources({ signalId: "displacement" })).toEqual([
-      { href: "https://www.unhcr.org/refugee-statistics/", label: "UNHCR", scope: "provider" },
+      {
+        href: "https://www.unhcr.org/refugee-statistics/",
+        label: "UNHCR",
+        scope: "provider",
+        // UNHCR's dataset terms (clause 4) require a link to the terms.
+        licence: {
+          label: "CC BY 4.0 (UNHCR terms)",
+          url: "https://www.unhcr.org/what-we-do/data-and-publications/data-and-statistics/terms-use-datasets",
+        },
+      },
     ]);
   });
 

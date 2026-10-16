@@ -120,7 +120,15 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   crime: { label: "data.police.uk", url: "https://data.police.uk/" },
   "cyber-c2": { label: "abuse.ch", url: "https://feodotracker.abuse.ch/" },
   "cyber-ransomware": { label: "Ransomware.live", url: "https://www.ransomware.live/" },
-  displacement: { label: "UNHCR", url: "https://www.unhcr.org/refugee-statistics/" },
+  // UNHCR's dataset terms (clause 4) ask for a link to the terms themselves.
+  displacement: {
+    label: "UNHCR",
+    url: "https://www.unhcr.org/refugee-statistics/",
+    licence: {
+      label: "CC BY 4.0 (UNHCR terms)",
+      url: "https://www.unhcr.org/what-we-do/data-and-publications/data-and-statistics/terms-use-datasets",
+    },
+  },
   "food-security": { label: "WFP HungerMap", url: "https://hungermap.wfp.org/" },
   reliefweb: { label: "ReliefWeb", url: "https://reliefweb.int/" },
   "grid-load": { label: "ENTSO-E and grid operators", url: "https://transparency.entsoe.eu/" },

@@ -96,3 +96,74 @@ test("fetch() declares the queried year as sourceAt, distinct from the read inst
   // clocks freshChip.ts exists to keep separate.
   expect(outcome?.at).toBeGreaterThan(outcome!.sourceAt!);
 });
+
+// --- 2026-10-16: oip, UNRWA and Eurostat -------------------------------------
+
+import population2025 from "@/tests/fixtures/unhcr-population-2025.json";
+import unrwa2025 from "@/tests/fixtures/unhcr-unrwa-2025.json";
+import tpFixture from "@/tests/fixtures/eurostat-migr-asytpsm.json";
+import ftFixture from "@/tests/fixtures/eurostat-migr-asyappctzm.json";
+import { eurostatLatestByIso3, attachEurostat, UNHCR_ATTRIBUTION } from "@/lib/signals/displacement";
+
+const ROWS = (population2025 as unknown as { items: never[] }).items;
+const UNRWA = (unrwa2025 as unknown as { items: never[] }).items;
+
+test("other people in need of international protection (oip) count in the total", () => {
+  const col = normalizeDisplacement(ROWS).find((f) => f.id === "displacement:COL")!;
+  // refugees 1,464 + asylum 17,421 + IDPs 7,157,716 + oip 2,810,778 (captured 2026-10-16)
+  expect(col.props?.displacedCount).toBe(1_464 + 17_421 + 7_157_716 + 2_810_778);
+  expect(col.props?.otherInNeedOfProtection).toBe((2_810_778).toLocaleString());
+  // "-" is UNHCR's "none": the US row carries no oip prop and an unchanged total.
+  const usa = normalizeDisplacement(ROWS).find((f) => f.id === "displacement:USA")!;
+  expect(usa.props?.otherInNeedOfProtection).toBeUndefined();
+  expect(usa.props?.displacedCount).toBe(457_647 + 3_718_945);
+});
+
+test("UNRWA refugees create the missing Palestine marker and add to Jordan, Lebanon and Syria", () => {
+  const without = normalizeDisplacement(ROWS);
+  expect(without.find((f) => f.id === "displacement:PSE")).toBeUndefined();
+  const out = normalizeDisplacement(ROWS, 1000, UNRWA);
+  const pse = out.find((f) => f.id === "displacement:PSE")!;
+  expect(pse.countryIso3).toBe("PSE");
+  expect(pse.props?.palestineRefugeesUnrwa).toBe((2_484_580).toLocaleString());
+  expect(pse.props?.displacedCount).toBeGreaterThanOrEqual(2_484_580);
+  const jor = out.find((f) => f.id === "displacement:JOR")!;
+  const jorBefore = without.find((f) => f.id === "displacement:JOR")!;
+  expect(Number(jor.props?.displacedCount) - Number(jorBefore.props?.displacedCount)).toBe(2_398_179);
+  // UNRWA's "Unknown" row (495,764) has no country and makes no marker.
+  expect(out.length).toBe(without.length + 1);
+});
+
+test("Eurostat JSON-stat decodes to the newest month per country, skipping the EU aggregate", () => {
+  const tp = eurostatLatestByIso3(tpFixture);
+  expect(tp.has("DEU")).toBe(true);
+  expect(tp.has("POL")).toBe(true);
+  expect(tp.has("GRC")).toBe(true); // Eurostat's EL
+  expect([...tp.keys()].some((k) => k.startsWith("EU"))).toBe(false);
+  for (const v of tp.values()) expect(v.month).toMatch(/^2026-0[789]$/);
+  const ft = eurostatLatestByIso3(ftFixture);
+  expect(ft.has("MNE")).toBe(true); // outside the EU, still placed
+  expect(ft.has("GBR")).toBe(false); // "UK" is listed, but with no value in any of the 3 months
+  // Newest month WITH a value: Germany has no September figure yet, so August.
+  expect(tp.get("DEU")).toEqual({ value: 1_295_205, month: "2026-08" });
+  expect(eurostatLatestByIso3(null).size).toBe(0);
+  expect(eurostatLatestByIso3({ id: ["geo"], size: [1], value: {} }).size).toBe(0);
+});
+
+test("Eurostat figures ride on the markers as props and never change the UNHCR total", () => {
+  const feats = normalizeDisplacement(ROWS);
+  const before = feats.find((f) => f.id === "displacement:DEU")!.props?.displacedCount;
+  attachEurostat(feats, eurostatLatestByIso3(tpFixture), eurostatLatestByIso3(ftFixture));
+  const deu = feats.find((f) => f.id === "displacement:DEU")!;
+  expect(deu.props?.displacedCount).toBe(before);
+  expect(deu.props?.tempProtectionNow).toBeDefined();
+  expect(String(deu.props?.tempProtectionMonth)).toMatch(/^2026-\d\d$/);
+  expect(deu.props?.firstTimeAsylumApplicants).toBeDefined();
+  // A country outside Eurostat gets nothing.
+  expect(feats.find((f) => f.id === "displacement:COL")!.props?.tempProtectionNow).toBeUndefined();
+});
+
+test("attribution uses the wording UNHCR's dataset terms require", () => {
+  expect(UNHCR_ATTRIBUTION).toContain("UNHCR Refugee Population Statistics Database");
+  expect(UNHCR_ATTRIBUTION).toContain("terms-use-datasets");
+});
