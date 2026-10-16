@@ -1,0 +1,314 @@
+[
+ {
+  "id": "mSFVt6PiP557bjRyYsut",
+  "number": "2779651412601232975",
+  "begin": "2026-10-08T11:00:00+00:00",
+  "created": "2026-10-08T18:24:18+00:00",
+  "end": "2026-10-09T16:46:00+00:00",
+  "modified": "2026-10-14T07:24:12+00:00",
+  "external_desc": "Google Cloud Storage (GCS) customers experienced elevated latencies and error rates when performing upload or write operations.",
+  "most_recent_update": {
+   "created": "2026-10-14T07:15:32+00:00",
+   "modified": "2026-10-14T07:17:30+00:00",
+   "when": "2026-10-14T07:15:32+00:00",
+   "text": "## Incident Report\n## Date/Time of the Issue (All time US/Pacific)\n**Incident First Occurrence**\nIncident Start: 08 October 2026 04:00\nIncident End: 08 October 2026 16:30\nDuration: 12 hours, 30 minute",
+   "status": "AVAILABLE",
+   "affected_locations": []
+  },
+  "status_impact": "SERVICE_DISRUPTION",
+  "severity": "medium",
+  "service_key": "UwaYoXQ5bHYHG6EdiPB8",
+  "service_name": "Google Cloud Storage",
+  "affected_products": [
+   {
+    "title": "Google Cloud Storage",
+    "id": "UwaYoXQ5bHYHG6EdiPB8",
+    "current_title": "Google Cloud Storage"
+   }
+  ],
+  "uri": "incidents/mSFVt6PiP557bjRyYsut",
+  "currently_affected_locations": [],
+  "previously_affected_locations": [
+   {
+    "title": "Iowa (us-central1)",
+    "id": "us-central1"
+   }
+  ]
+ },
+ {
+  "id": "J5ia5t9p3g9Q5Wi7r8Ev",
+  "number": "847028556969787721",
+  "begin": "2026-09-01T14:44:00+00:00",
+  "created": "2026-09-01T16:03:12+00:00",
+  "end": "2026-09-01T18:52:00+00:00",
+  "modified": "2026-09-29T16:09:46+00:00",
+  "external_desc": "Multiple products in us-central1-b are experiencing network service degradation.",
+  "most_recent_update": {
+   "created": "2026-09-29T16:09:46+00:00",
+   "modified": "2026-09-29T16:09:46+00:00",
+   "when": "2026-09-29T16:09:46+00:00",
+   "text": "## Addendum to Incident Report\nThis addendum extends the Detailed Description of Impact from the previous message. Though only two clusters in a datacenter in us-central1-b and us-central1-f experienc",
+   "status": "AVAILABLE",
+   "affected_locations": []
+  },
+  "status_impact": "SERVICE_DISRUPTION",
+  "severity": "medium",
+  "service_key": "zall",
+  "service_name": "Multiple Products",
+  "affected_products": [
+   {
+    "title": "AlloyDB for PostgreSQL",
+    "id": "fPovtKbaWN9UTepMm3kJ",
+    "current_title": "AlloyDB for PostgreSQL"
+   },
+   {
+    "title": "Apigee",
+    "id": "9Y13BNFy4fJydvjdsN3X",
+    "current_title": "Apigee"
+   },
+   {
+    "title": "Cloud Filestore",
+    "id": "jog4nyYkquiLeSK5s26q",
+    "current_title": "Cloud Filestore"
+   },
+   {
+    "title": "Cloud Run",
+    "id": "9D7d2iNBQWN24zc1VamE",
+    "current_title": "Cloud Run"
+   },
+   {
+    "title": "Cloud Spanner",
+    "id": "EcNGGUgBtBLrtm4mWvqC",
+    "current_title": "Cloud Spanner"
+   },
+   {
+    "title": "Google App Engine",
+    "id": "kchyUtnkMHJWaAva8aYc",
+    "current_title": "Google App Engine"
+   },
+   {
+    "title": "Google BigQuery",
+    "id": "9CcrhHUcFevXPSVaSxkf",
+    "current_title": "Google BigQuery"
+   },
+   {
+    "title": "Google Cloud Bigtable",
+    "id": "LfZSuE3xdQU46YMFV5fy",
+    "current_title": "Google Cloud Bigtable"
+   },
+   {
+    "title": "Google Cloud Dataflow",
+    "id": "T9bFoXPqG8w8g1YbWTKY",
+    "current_title": "Google Cloud Dataflow"
+   },
+   {
+    "title": "Google Cloud SQL",
+    "id": "hV87iK5DcEXKgWU2kDri",
+    "current_title": "Google Cloud SQL"
+   },
+   {
+    "title": "Google Compute Engine",
+    "id": "L3ggmi3Jy4xJmgodFA9K",
+    "current_title": "Google Compute Engine"
+   },
+   {
+    "title": "Google Kubernetes Engine",
+    "id": "LCSbT57h59oR4W98NHuz",
+    "current_title": "Google Kubernetes Engine"
+   },
+   {
+    "title": "Hybrid Connectivity",
+    "id": "5x6CGnZvSHQZ26KtxpK1",
+    "current_title": "Hybrid Connectivity"
+   },
+   {
+    "title": "Looker (Google Cloud core)",
+    "id": "QEyA1YSaAS3rJS6O8wHp",
+    "current_title": "Looker (Google Cloud core)"
+   },
+   {
+    "title": "Virtual Private Cloud (VPC)",
+    "id": "BSGtCUnz6ZmyajsjgTKv",
+    "current_title": "Virtual Private Cloud (VPC)"
+   }
+  ],
+  "uri": "incidents/J5ia5t9p3g9Q5Wi7r8Ev",
+  "currently_affected_locations": [],
+  "previously_affected_locations": [
+   {
+    "title": "Iowa (us-central1)",
+    "id": "us-central1"
+   }
+  ]
+ },
+ {
+  "id": "utF3FMFdQfwBzJcGG6vf",
+  "number": "5789456648280872492",
+  "begin": "2026-08-20T15:40:00+00:00",
+  "created": "2026-08-20T16:44:37+00:00",
+  "end": "2026-08-20T19:20:00+00:00",
+  "modified": "2026-08-27T21:45:02+00:00",
+  "external_desc": "We are investigating an issue where customers may experience timeouts, service degradations, errors, and elevated latencies across multiple products in the us-west1 region.",
+  "most_recent_update": {
+   "created": "2026-08-27T21:45:02+00:00",
+   "modified": "2026-08-27T21:45:02+00:00",
+   "when": "2026-08-27T21:45:02+00:00",
+   "text": "# Incident Report\n## Summary\nOn Thursday, 20 August 2026, from 08:00 to 10:22 US/Pacific (15:00 to 17:22 UTC), multiple Google Cloud services in the us-west1 region experienced elevated latency, provi",
+   "status": "AVAILABLE",
+   "affected_locations": []
+  },
+  "status_impact": "SERVICE_OUTAGE",
+  "severity": "high",
+  "service_key": "zall",
+  "service_name": "Multiple Products",
+  "affected_products": [
+   {
+    "title": "AlloyDB for PostgreSQL",
+    "id": "fPovtKbaWN9UTepMm3kJ",
+    "current_title": "AlloyDB for PostgreSQL"
+   },
+   {
+    "title": "Apigee Edge Public Cloud",
+    "id": "SumcdgBT6GQBzp1vmdXu",
+    "current_title": "Apigee Edge Public Cloud"
+   },
+   {
+    "title": "Apigee X",
+    "id": "yWJWs53wK43DqGpQRhPV",
+    "current_title": "Apigee X"
+   },
+   {
+    "title": "Artifact Registry",
+    "id": "QbBuuiRdsLpMr9WmGwm5",
+    "current_title": "Artifact Registry"
+   },
+   {
+    "title": "BigQuery Data Transfer Service",
+    "id": "UdjkJSWTHMj2b11ftW6E",
+    "current_title": "BigQuery Data Transfer Service"
+   },
+   {
+    "title": "Cloud Build",
+    "id": "fw8GzBdZdqy4THau7e1y",
+    "current_title": "Cloud Build"
+   },
+   {
+    "title": "Cloud Data Fusion",
+    "id": "rLKDHeeaBiXTeutF1air",
+    "current_title": "Cloud Data Fusion"
+   },
+   {
+    "title": "Cloud Filestore",
+    "id": "jog4nyYkquiLeSK5s26q",
+    "current_title": "Cloud Filestore"
+   },
+   {
+    "title": "Cloud Key Management Service",
+    "id": "67cSySTL7dwJZo9JWUGU",
+    "current_title": "Cloud Key Management Service"
+   },
+   {
+    "title": "Cloud Monitoring",
+    "id": "3zaaDb7antc73BM1UAVT",
+    "current_title": "Cloud Monitoring"
+   },
+   {
+    "title": "Cloud Run",
+    "id": "9D7d2iNBQWN24zc1VamE",
+    "current_title": "Cloud Run"
+   },
+   {
+    "title": "Contact Center AI Platform",
+    "id": "eSAGSSEKoxh8tTJucdYg",
+    "current_title": "Contact Center AI Platform"
+   },
+   {
+    "title": "Dataproc Metastore",
+    "id": "PXZh68NPz9auRyo4tVfy",
+    "current_title": "Dataproc Metastore"
+   },
+   {
+    "title": "Google App Engine",
+    "id": "kchyUtnkMHJWaAva8aYc",
+    "current_title": "Google App Engine"
+   },
+   {
+    "title": "Google BigQuery",
+    "id": "9CcrhHUcFevXPSVaSxkf",
+    "current_title": "Google BigQuery"
+   },
+   {
+    "title": "Google Cloud Bigtable",
+    "id": "LfZSuE3xdQU46YMFV5fy",
+    "current_title": "Google Cloud Bigtable"
+   },
+   {
+    "title": "Google Cloud Dataflow",
+    "id": "T9bFoXPqG8w8g1YbWTKY",
+    "current_title": "Google Cloud Dataflow"
+   },
+   {
+    "title": "Google Cloud Dataproc",
+    "id": "yjXrEg3Yvy26BauMwr69",
+    "current_title": "Google Cloud Dataproc"
+   },
+   {
+    "title": "Google Cloud Pub/Sub",
+    "id": "dFjdLh2v6zuES6t9ADCB",
+    "current_title": "Google Cloud Pub/Sub"
+   },
+   {
+    "title": "Google Cloud SQL",
+    "id": "hV87iK5DcEXKgWU2kDri",
+    "current_title": "Google Cloud SQL"
+   },
+   {
+    "title": "Google Cloud Storage",
+    "id": "UwaYoXQ5bHYHG6EdiPB8",
+    "current_title": "Google Cloud Storage"
+   },
+   {
+    "title": "Google Compute Engine",
+    "id": "L3ggmi3Jy4xJmgodFA9K",
+    "current_title": "Google Compute Engine"
+   },
+   {
+    "title": "Google Kubernetes Engine",
+    "id": "LCSbT57h59oR4W98NHuz",
+    "current_title": "Google Kubernetes Engine"
+   },
+   {
+    "title": "Identity and Access Management",
+    "id": "adnGEDEt9zWzs8uF1oKA",
+    "current_title": "Identity and Access Management"
+   },
+   {
+    "title": "Google Cloud Composer",
+    "id": "YxkG5FfcC42cQmvBCk4j",
+    "current_title": "Managed Airflow"
+   },
+   {
+    "title": "Managed Service for Apache Kafka",
+    "id": "QMZ3IpyG3Ooxotv7JOKV",
+    "current_title": "Managed Service for Apache Kafka"
+   },
+   {
+    "title": "Persistent Disk",
+    "id": "SzESm2Ux129pjDGKWD68",
+    "current_title": "Persistent Disk"
+   }
+  ],
+  "uri": "incidents/utF3FMFdQfwBzJcGG6vf",
+  "currently_affected_locations": [],
+  "previously_affected_locations": [
+   {
+    "title": "Global",
+    "id": "global"
+   },
+   {
+    "title": "Oregon (us-west1)",
+    "id": "us-west1"
+   }
+  ]
+ }
+]

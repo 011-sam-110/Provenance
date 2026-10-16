@@ -1,0 +1,619 @@
+{
+ "warnings": [
+  {
+   "warning": "incomplete return",
+   "description": "The API can only return 5000 rows in JSON format.  Please consider constraining your request with facet, start, or end, or using offset to paginate results."
+  }
+ ],
+ "response": {
+  "total": "4594546",
+  "dateFormat": "YYYY-MM-DD\"T\"HH24",
+  "frequency": "hourly",
+  "data": [
+   {
+    "period": "2026-10-16T19",
+    "respondent": "AECI",
+    "respondent-name": "Associated Electric Cooperative, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1968",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "AVA",
+    "respondent-name": "Avista Corporation",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1405",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "AZPS",
+    "respondent-name": "Arizona Public Service Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2859",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "BANC",
+    "respondent-name": "Balancing Authority of Northern California",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1885",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "BHBA",
+    "respondent-name": "Black Hills Energy",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "939",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "BPAT",
+    "respondent-name": "Bonneville Power Administration",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "7314",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CAL",
+    "respondent-name": "California",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "37493",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CAR",
+    "respondent-name": "Carolinas",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "32939",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CENT",
+    "respondent-name": "Central",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "31738",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CHPD",
+    "respondent-name": "Public Utility District No. 1 of Chelan County",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "202",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CISO",
+    "respondent-name": "California Independent System Operator",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "31357",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CPLE",
+    "respondent-name": "Duke Energy Progress East",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "9224",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "CPLW",
+    "respondent-name": "Duke Energy Progress West",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "587",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "DOPD",
+    "respondent-name": "PUD No. 1 of Douglas County",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "255",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "DUK",
+    "respondent-name": "Duke Energy Carolinas",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "15575",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "EPE",
+    "respondent-name": "El Paso Electric Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "848",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "ERCO",
+    "respondent-name": "Electric Reliability Council of Texas, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "53192",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "FLA",
+    "respondent-name": "Florida",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "44322",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "FMPP",
+    "respondent-name": "Florida Municipal Power Pool",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3104",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "FPC",
+    "respondent-name": "Duke Energy Florida, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "9595",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "FPL",
+    "respondent-name": "Florida Power & Light Co.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "24546",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "GCPD",
+    "respondent-name": "Public Utility District No. 2 of Grant County, Washington",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "727",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "GVL",
+    "respondent-name": "Gainesville Regional Utilities",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "344",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "HST",
+    "respondent-name": "City of Homestead",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "101",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "IID",
+    "respondent-name": "Imperial Irrigation District",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "376",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "IPCO",
+    "respondent-name": "Idaho Power Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1836",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "ISNE",
+    "respondent-name": "ISO New England",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "13428",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "JEA",
+    "respondent-name": "JEA",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2107",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "LDWP",
+    "respondent-name": "Los Angeles Department of Water and Power",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3559",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "LGEE",
+    "respondent-name": "LG&E and KU Services Company as agent for Louisville Gas and Electric Company and Kentucky Utilities Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "0",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "MIDA",
+    "respondent-name": "Mid-Atlantic",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "94909",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "MIDW",
+    "respondent-name": "Midwest",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "80583",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "MISO",
+    "respondent-name": "Midcontinent Independent System Operator, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "78615",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NE",
+    "respondent-name": "New England",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "13428",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NEVP",
+    "respondent-name": "Nevada Power Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3901",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NW",
+    "respondent-name": "Northwest",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "39076",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NWMT",
+    "respondent-name": "NorthWestern Corporation",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1226",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NY",
+    "respondent-name": "New York",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "16775",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "NYIS",
+    "respondent-name": "New York Independent System Operator",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "16775",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PACE",
+    "respondent-name": "PacifiCorp East",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "6466",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PACW",
+    "respondent-name": "PacifiCorp West",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2208",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PGE",
+    "respondent-name": "Portland General Electric Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2561",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PJM",
+    "respondent-name": "PJM Interconnection, LLC",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "94909",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PNM",
+    "respondent-name": "Public Service Company of New Mexico",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1394",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PSCO",
+    "respondent-name": "Public Service Company of Colorado",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3251",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "PSEI",
+    "respondent-name": "Puget Sound Energy, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2735",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SC",
+    "respondent-name": "South Carolina Public Service Authority",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3979",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SCEG",
+    "respondent-name": "Dominion Energy South Carolina, Inc.",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3574",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SCL",
+    "respondent-name": "Seattle City Light",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1007",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SE",
+    "respondent-name": "Southeast",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "32982",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SEC",
+    "respondent-name": "Seminole Electric Cooperative",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "372",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SOCO",
+    "respondent-name": "Southern Company Services, Inc. - Trans",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "32982",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SPA",
+    "respondent-name": "Southwestern Power Administration",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "23",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SRP",
+    "respondent-name": "Salt River Project Agricultural Improvement and Power District",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3093",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SW",
+    "respondent-name": "Southwest",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "10280",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SWPP",
+    "respondent-name": "Southwest Power Pool",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "31715",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "SWPW",
+    "respondent-name": "Southwest Power Pool West Balancing Authority Area",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "2534",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TAL",
+    "respondent-name": "City of Tallahassee",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "440",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TEC",
+    "respondent-name": "Tampa Electric Company",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "3713",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TEN",
+    "respondent-name": "Tennessee",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "19277",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TEPC",
+    "respondent-name": "Tucson Electric Power",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "1213",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TEX",
+    "respondent-name": "Texas",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "53192",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TIDC",
+    "respondent-name": "Turlock Irrigation District",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "316",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TPWR",
+    "respondent-name": "City of Tacoma, Department of Public Utilities, Light Division",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "509",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "TVA",
+    "respondent-name": "Tennessee Valley Authority",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "19277",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "US48",
+    "respondent-name": "United States Lower 48",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "506994",
+    "value-units": "megawatthours"
+   },
+   {
+    "period": "2026-10-16T19",
+    "respondent": "WALC",
+    "respondent-name": "Western Area Power Administration - Desert Southwest Region",
+    "type": "D",
+    "type-name": "Demand",
+    "value": "873",
+    "value-units": "megawatthours"
+   }
+  ]
+ },
+ "ExcelAddInVersion": "2.1.0"
+}

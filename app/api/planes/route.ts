@@ -6,13 +6,14 @@ import { edgeCacheHeaders } from "@/lib/http/cache";
 export const dynamic = "force-dynamic";
 
 /**
- * Shared-cache lifetime, deliberately far shorter than the 240 s upstream cadence.
+ * Shared-cache lifetime, deliberately far shorter than the 90 s upstream cadence.
  *
  * This body is the one read response carrying a RELATIVE age (`staleness.ageMs`),
  * and a cached copy freezes that number while the clock keeps running — so the TTL
  * is the maximum amount by which this endpoint can under-report staleness. 20 s
- * against a 240 s refresh keeps that error under 10% of one cycle, which is inside
- * what the staleness gate already tolerates. Do not raise it to "save invocations"
+ * against a 90 s refresh is under a quarter of one cycle, which is inside the
+ * minute of margin the staleness gate's FRESH_CEILING_MS already allows, and the
+ * body also carries the absolute `fetchedAt` the console now reads its age from. Do not raise it to "save invocations"
  * without also making the age absolute; the saving is small and the cost is the
  * freshness claim.
  */
@@ -21,7 +22,7 @@ const PLANES_TTL_MS = 20_000;
 /**
  * Headroom for the adsb.lol type pull, which is rate-limit-paced and budgets itself
  * 20 s wall clock, retries included (lib/sources/adsb.ts PULL_BUDGET_MS). Only the
- * request that triggers a Data Cache revalidation pays it — at most once per 240 s
+ * request that triggers a Data Cache revalidation pays it — at most once per 90 s
  * for the whole deployment — but that request must not be killed mid-pull, or the
  * cache never commits and the layer stays empty. One pull per invocation (see
  * fetchAircraftSnapshot), so 60 is three times the budget; the old 30 sat two
@@ -36,8 +37,8 @@ export const maxDuration = 60;
  * route never throws and users never trigger their own upstream pull.
  *
  * WORLDWIDE, WITH TWO STATED LIMITS. adsb.lol's `/v2/type/{list}` answers for the
- * whole receiver network in one request, so four paced requests cover the world
- * (~9,700 positioned aircraft on 2026-09-06). Coverage is still a lower bound and
+ * whole receiver network in one request, so one request naming every listed type
+ * covers the world (10,346 positioned aircraft on 2026-10-16). Coverage is still a lower bound and
  * the coverage record says why: receivers are wherever volunteers run them, and
  * only listed types are asked for, so an aircraft broadcasting no type code does
  * not appear. Until 2026-09-06 this was a 40-cell point+radius sweep that Vercel's

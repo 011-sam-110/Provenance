@@ -1,0 +1,13 @@
+{
+ "base_path": "/foreign-travel-advice/kenya",
+ "public_updated_at": "2026-10-16T13:02:22+01:00",
+ "details": {
+  "change_description": "New information about Ebola screening (‘Entry requirements’ page).",
+  "updated_at": "2026-10-16T12:02:22Z",
+  "country": {
+   "name": "Kenya",
+   "slug": "kenya",
+   "synonyms": []
+  }
+ }
+}

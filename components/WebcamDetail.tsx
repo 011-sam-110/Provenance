@@ -3,8 +3,9 @@
 // Rendered in the Sources rail's Inspector tab. The Windy image token is
 // short-lived, so the picture is pulled through the SSRF-safe /api/webcam-image
 // proxy, which re-resolves a fresh URL server-side on every load. Windy's terms
-// REQUIRE the "Webcams provided by Windy.com" credit plus a link back to the
-// webcam's own Windy page, so both are shown beneath the image.
+// REQUIRE the "Webcams provided by windy.com - add new webcam" credit, with links to
+// windy.com (here the webcam's own Windy page) and to windy.com/webcams/add, so both
+// are shown beneath the image.
 
 import { useEffect, useState } from "react";
 import type { WorldObject } from "@/lib/world";
@@ -18,6 +19,7 @@ import {
   isBenched,
 } from "@/lib/console/widgets/camslot.health";
 import { streamKey } from "@/lib/console/widgets/camslot.model";
+import { WINDY_ADD_WEBCAM_URL } from "@/lib/webcams/attribution";
 
 const REFRESH_SECONDS = 600; // matches the free-tier ~10 min image-token cadence
 
@@ -73,10 +75,15 @@ export default function WebcamDetail({ object }: { object: WorldObject }) {
           />
         )}
         <figcaption>
+          {/* The wording and both links are what Windy's Webcams API Terms of Use require. */}
           <span className="attribution" data-testid="attribution">
             Webcams provided by{" "}
             <a href={detailUrl} target="_blank" rel="noopener noreferrer">
-              Windy.com
+              windy.com
+            </a>{" "}
+            -{" "}
+            <a href={WINDY_ADD_WEBCAM_URL} target="_blank" rel="noopener noreferrer">
+              add new webcam
             </a>
           </span>
         </figcaption>

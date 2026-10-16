@@ -1,47 +1,81 @@
 import { expect, test } from "vitest";
-import fixture from "@/tests/fixtures/gdacs-events.json";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
-  normalizeGdacs,
+  normalizeGdacsRss,
   gdacsEventLabel,
   gdacsAlertColor,
-  gdacsEndpointFor,
-  mergeGdacsResults,
+  isClosedGdacsEvent,
+  GDACS_RSS,
   GDACS_SOURCE,
-  GDACS_EVENT_TYPES,
-  type GdacsTypeResult,
 } from "@/lib/signals/gdacs";
-import { readOutcome } from "@/lib/signals/outcome";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
-test("normalizes the GDACS multi-hazard FeatureCollection", () => {
-  const out = normalizeGdacs(fixture as never);
-  expect(out).toHaveLength(5); // FL, EQ, TC, WF, DR — all have coords + an event id
-  expect(new Set(out.map((f) => f.signalId))).toEqual(new Set(["gdacs"]));
+// A live capture of https://www.gdacs.org/xml/rss.xml from 2026-10-16 ~20:10 UTC,
+// trimmed to at most three items per (event type, iscurrent) pair: 23 of 245 items.
+const XML = readFileSync(resolve(__dirname, "../fixtures/gdacs-rss.xml"), "utf8");
+const rows = normalizeGdacsRss(XML);
 
-  const eq = out.find((f) => f.props?.hazard === "Earthquake");
-  expect(eq).toBeDefined();
-  expect(eq!.id).toMatch(/^gdacs:\d+:\d+$/);
-  expect(eq!.title).toContain("Papua New Guinea");
-  expect(eq!.color).toBe(gdacsAlertColor("Green"));
-  expect(typeof eq!.ts).toBe("string"); // fromdate parsed as UTC
-  expect(eq!.props?.country).toBe("Papua New Guinea");
+test("reads the RSS: current events only, every hazard type, one row per event and episode", () => {
+  // 23 items, 10 of them closed (iscurrent=false).
+  expect(rows).toHaveLength(13);
+  expect(new Set(rows.map((f) => f.signalId))).toEqual(new Set(["gdacs"]));
+  expect(new Set(rows.map((f) => f.props?.hazard))).toEqual(
+    new Set(["Tropical cyclone", "Earthquake", "Wildfire", "Flood", "Drought"]),
+  );
+  expect(new Set(rows.map((f) => f.id)).size).toBe(rows.length);
 });
 
-test("skips features with missing/invalid coordinates", () => {
-  const bad = { features: [{ geometry: { coordinates: [null, null] }, properties: { eventid: 1, eventtype: "EQ" } }] };
-  expect(normalizeGdacs(bad as never)).toHaveLength(0);
+test("a cyclone: its name, alert colour, the event's score and an exact point", () => {
+  const champi = rows.find((f) => f.id === "gdacs:1001338:9")!;
+  expect(champi.title).toBe("Tropical cyclone CHAMPI-26");
+  expect(champi.lat).toBe(11.4);
+  expect(champi.lon).toBe(151.4);
+  expect(champi.precision).toBe("exact");
+  expect(champi.color).toBe(gdacsAlertColor("Orange"));
+  expect(champi.props?.alertScore).toBe(2); // event Orange (2), latest episode Green (1)
+  expect(champi.props?.country).toBe("Guam");
+  expect(champi.ts).toBe("2026-10-14T12:00:00.000Z"); // fromdate: when GDACS opened the event
+  expect(champi.link).toBe("https://www.gdacs.org/report.aspx?eventtype=TC&eventid=1001338");
 });
 
-test("dedupes repeated event+episode entries (GDACS lists the same event twice)", () => {
-  const dup = {
-    features: [
-      { geometry: { coordinates: [10, 20] }, properties: { eventid: 42, episodeid: 3, eventtype: "TC", alertlevel: "Red" } },
-      { geometry: { coordinates: [10, 20] }, properties: { eventid: 42, episodeid: 3, eventtype: "TC", alertlevel: "Red" } },
-    ],
-  };
-  const out = normalizeGdacs(dup as never);
-  expect(out).toHaveLength(1); // one id → one row (no duplicate React keys)
-  expect(out[0].id).toBe("gdacs:42:3");
+test("an earthquake scores 1 on the bar, as its Green alert says, not the RSS's 0", () => {
+  const eq = rows.find((f) => f.id === "gdacs:1571917:1740457")!;
+  expect(eq.title).toBe("Earthquake in Russia");
+  expect(eq.props?.alertLevel).toBe("Green");
+  expect(eq.props?.alertScore).toBe(1);
+  expect(eq.props?.severity).toContain("Magnitude 6.9M");
+  const m = rowMetric(eq, GDACS_SOURCE.metric)!;
+  expect(m.value).toBe(1);
+  expect(m.domain).toEqual([0, 3]);
+});
+
+test("a wildfire and a drought are areas (the layer default), and HTML entities are decoded", () => {
+  const fire = rows.find((f) => f.props?.hazard === "Wildfire")!;
+  expect(fire.precision).toBeUndefined();
+  expect(GDACS_SOURCE.precision).toBe("area");
+  const europe = rows.find((f) => f.id === "gdacs:1018332:24")!;
+  expect(europe.props?.country).toContain("Bosnia & Herzegovina");
+});
+
+// Measured 2026-10-16: 10 of the 12 drought rows were closed, one opened in 2022,
+// and all drew as live alerts.
+test("a closed event (iscurrent=false) is dropped", () => {
+  expect(rows.some((f) => f.id === "gdacs:1027450:11")).toBe(false); // East Africa drought, closed
+  expect(isClosedGdacsEvent("False")).toBe(true);
+  expect(isClosedGdacsEvent(undefined)).toBe(false);
+});
+
+test("an item without a point or an event id is skipped, a repeated event+episode kept once", () => {
+  const item = (inner: string) => `<item>${inner}</item>`;
+  const xml =
+    "<rss><channel>" +
+    item("<gdacs:eventid>1</gdacs:eventid><gdacs:episodeid>1</gdacs:episodeid><gdacs:eventtype>FL</gdacs:eventtype>") +
+    item("<geo:lat>10</geo:lat><geo:long>20</geo:long><gdacs:eventtype>FL</gdacs:eventtype>") +
+    item("<geo:lat>10</geo:lat><geo:long>20</geo:long><gdacs:eventid>2</gdacs:eventid><gdacs:episodeid>1</gdacs:episodeid>") +
+    item("<geo:lat>10</geo:lat><geo:long>20</geo:long><gdacs:eventid>2</gdacs:eventid><gdacs:episodeid>1</gdacs:episodeid>") +
+    "</channel></rss>";
+  expect(normalizeGdacsRss(xml).map((f) => f.id)).toEqual(["gdacs:2:1"]);
 });
 
 test("event-type labels and alert-level colours", () => {
@@ -54,110 +88,19 @@ test("event-type labels and alert-level colours", () => {
 });
 
 test("alertLevel maps to the expected magnitude (0–10 ramp)", () => {
-  const make = (alertlevel: string) => ({
-    features: [
-      {
-        geometry: { coordinates: [10, 20] },
-        properties: { eventid: 1, episodeid: 1, eventtype: "EQ", alertlevel },
-      },
-    ],
-  });
-  expect(normalizeGdacs(make("Red") as never)[0].props?.magnitude).toBe(8);
-  expect(normalizeGdacs(make("Orange") as never)[0].props?.magnitude).toBe(6);
-  expect(normalizeGdacs(make("Green") as never)[0].props?.magnitude).toBe(3);
-  expect(normalizeGdacs(make("Unknown") as never)[0].props?.magnitude).toBe(5);
+  const one = (level: string) =>
+    normalizeGdacsRss(
+      `<item><geo:lat>1</geo:lat><geo:long>1</geo:long><gdacs:eventid>9</gdacs:eventid><gdacs:alertlevel>${level}</gdacs:alertlevel></item>`,
+    )[0]!.props?.magnitude;
+  expect(one("Red")).toBe(8);
+  expect(one("Orange")).toBe(6);
+  expect(one("Green")).toBe(3);
+  expect(one("Unknown")).toBe(5);
 });
 
-test("declares GDACS's real alert score (0–3) as the metric and it resolves per feature", () => {
-  expect(GDACS_SOURCE.metric).toEqual({ field: "alertScore", domain: [0, 3] });
-
-  const out = normalizeGdacs(fixture as never);
-  const eq = out.find((f) => f.props?.hazard === "Earthquake")!;
-  // Real numeric scalar from the provider (not the 0–10 ramp), so rowMetric accepts it.
-  expect(typeof eq.props?.alertScore).toBe("number");
-  expect(Number.isFinite(eq.props?.alertScore as number)).toBe(true);
-
-  const m = rowMetric(eq, GDACS_SOURCE.metric);
-  expect(m).toBeDefined();
-  expect(m!.value).toBe(1); // Green earthquake → GDACS alertscore 1
-  expect(m!.domain).toEqual([0, 3]);
-  expect(m!.label).toBe("1");
-
-  // Every fixture feature carries a finite alert score → a bar, never a bare dot.
-  for (const f of out) {
-    expect(rowMetric(f, GDACS_SOURCE.metric)).toBeDefined();
-  }
-});
-
-// ── Regression: the layer was silently empty in production, twice ───────────
-//
-// Round one (2026-08-13): GDACS began rejecting a bare event-list call with HTTP
-// 400 {"message":"Eventtype is required."}. Round two (2026-08-28): the fix for
-// round one — one request, all six codes semicolon-joined — started failing the
-// same way with {"message":"Please specify only 1 eventtype."}. Both times
-// GDACS_SOURCE.fetch() turned a hard 400 into a clean, quiet zero, indistinguishable
-// from "no disasters today". The parser was never wrong either time; the request
-// shape was. These assert the request shape, which is the thing that actually broke.
-
-test("each hazard type gets its own single-type URL", () => {
-  for (const type of GDACS_EVENT_TYPES) {
-    const url = gdacsEndpointFor(type);
-    const value = new URL(url).searchParams.get("eventtype");
-    expect(value).toBe(type);
-    // The round-two regression: GDACS now rejects more than one type per request.
-    expect(value).not.toContain(";");
-    expect(value).not.toContain(",");
-  }
-});
-
-test("every hazard code we request is one the label map understands", () => {
-  for (const code of GDACS_EVENT_TYPES) {
-    expect(gdacsEventLabel(code)).not.toBe("Disaster"); // "Disaster" is the fallback
-  }
-});
-
-test("requests all six hazard types, so the layer is not quietly single-hazard", () => {
-  expect([...GDACS_EVENT_TYPES].sort()).toEqual(["DR", "EQ", "FL", "TC", "VO", "WF"]);
-});
-
-// ── mergeGdacsResults: the fan-out/fan-in this fix introduced ────────────────
-
-const okResult = (type: string, eventId: number): GdacsTypeResult => ({
-  type,
-  ok: true,
-  features: [
-    { geometry: { coordinates: [10, 20] }, properties: { eventid: eventId, episodeid: 1, eventtype: type, alertlevel: "Green" } },
-  ],
-});
-const failResult = (type: string, reason: string): GdacsTypeResult => ({ type, ok: false, reason });
-
-test("all six types succeeding merges into one observed result", () => {
-  const results = GDACS_EVENT_TYPES.map((t, i) => okResult(t, i + 1));
-  const out = mergeGdacsResults(results, 1000);
-  expect(readOutcome(out)).toMatchObject({ ok: true, at: 1000 });
-  expect(out).toHaveLength(6);
-});
-
-test("all six types failing reports nothing, not a false quiet day", () => {
-  const results = GDACS_EVENT_TYPES.map((t) => failResult(t, "http 400"));
-  const out = mergeGdacsResults(results, 1000);
-  expect(readOutcome(out)).toMatchObject({ ok: false, reason: "http 400", at: 1000 });
-  expect(out).toHaveLength(0);
-});
-
-test("one type failing keeps the other five, flagged degraded rather than silently OK", () => {
-  const results: GdacsTypeResult[] = [
-    okResult("EQ", 1),
-    okResult("TC", 2),
-    okResult("FL", 3),
-    okResult("VO", 4),
-    okResult("DR", 5),
-    failResult("WF", "http 500"),
-  ];
-  const out = mergeGdacsResults(results, 2000);
-  const outcome = readOutcome(out);
-  expect(outcome?.ok).toBe(false); // partial is not success, even with real rows attached
-  expect(outcome?.reason).toContain("WF");
-  expect(outcome?.reason).toContain("http 500");
-  expect(out).toHaveLength(5); // the five that succeeded are not thrown away
+// The request shape is what broke this layer three times (see the header of
+// lib/signals/gdacs.ts). It is now ONE request for every hazard type.
+test("reads one document for every hazard type, not one request per type", () => {
+  expect(GDACS_RSS).toBe("https://www.gdacs.org/xml/rss.xml");
+  expect(GDACS_SOURCE.refreshMs).toBeGreaterThanOrEqual(60_000); // robots.txt: Request-rate 1/60
 });

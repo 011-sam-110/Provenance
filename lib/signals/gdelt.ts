@@ -938,5 +938,10 @@ function makeSource(meta: GdeltLayerMeta): SignalSource {
   };
 }
 
-export const CONFLICT_SOURCE = makeSource(GDELT_LAYERS.conflict);
-export const PROTESTS_SOURCE = makeSource(GDELT_LAYERS.protests);
+// NOT REGISTERED since 2026-10-16. The `conflict` and `protests` layers now read UCDP,
+// U.S. Embassy alerts and official travel advice (lib/signals/conflict.ts), because an
+// audit that day found 86% of GDELT's conflict rows and 58% of its protest rows were
+// not an event of that kind at that place. These sources are kept, unregistered, for
+// the scripts and tests that study GDELT; nothing on the map or in the index reads them.
+export const GDELT_CONFLICT_SOURCE = makeSource(GDELT_LAYERS.conflict);
+export const GDELT_PROTESTS_SOURCE = makeSource(GDELT_LAYERS.protests);

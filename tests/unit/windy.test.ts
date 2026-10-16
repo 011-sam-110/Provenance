@@ -22,7 +22,7 @@ test("maps id, title, coords, country and the attribution link", () => {
   expect(first.lat).toBeCloseTo(51.508, 3);
   expect(first.lon).toBeCloseTo(-0.128, 3);
   expect(first.country).toBe("GB");
-  expect(first.attribution).toBe("Webcams provided by Windy.com");
+  expect(first.attribution).toBe("Webcams provided by windy.com - add new webcam");
   expect(first.available).toBe(true);
 });
 
@@ -66,4 +66,15 @@ test("country code is upper-cased to ISO-3166 alpha-2", () => {
     location: { latitude: 1, longitude: 2, country_code: "fr" },
   };
   expect(normalizeWindyWebcam(lower)!.country).toBe("FR");
+});
+
+// Windy's Terms of Use name both links; the "add new webcam" one was missing.
+test("the credit carries Windy's required add-new-webcam link", async () => {
+  const { WINDY_ADD_WEBCAM_URL, WINDY_HOME_URL } = await import("@/lib/sources/windy");
+  expect(WINDY_ADD_WEBCAM_URL).toBe("https://www.windy.com/webcams/add");
+  expect(WINDY_HOME_URL).toBe("https://www.windy.com/");
+  const fs = await import("node:fs");
+  const detail = fs.readFileSync("components/WebcamDetail.tsx", "utf8");
+  expect(detail).toContain("WINDY_ADD_WEBCAM_URL");
+  expect(detail).toContain("add new webcam");
 });

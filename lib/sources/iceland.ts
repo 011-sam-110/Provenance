@@ -11,7 +11,10 @@ import { Camera, CameraArray, Source } from "@/lib/types";
 export const ICELAND_SOURCE: Source = {
   id: "iceland",
   name: "Vegagerðin (Icelandic Road & Coastal Administration)",
-  license: "Vegagerðin (IRCA) — Open Data Terms of Use",
+  // The operator's own terms (vegagerdin.is, "Terms and conditions" for its web
+  // services) put data AND photographs, road-camera images included, under CC BY 4.0
+  // with credit to IRCA. This string said "Open Data Terms of Use" until 2026-10-16.
+  license: "CC BY 4.0 (Vegagerðin / IRCA)",
   attribution:
     "Live road-camera data © Vegagerðin (Icelandic Road & Coastal Administration)",
   refreshSeconds: 300, // road-weather cams update slowly

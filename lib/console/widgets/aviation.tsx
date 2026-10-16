@@ -14,7 +14,7 @@ import AviationDetail from "./aviation.detail";
  * Aviation widget body.
  *
  * Field-mapping notes (real usePlanes() shape vs brief's assumed fields):
- * - usePlanes() returns PlanesLayer { objects: WorldObject[], trails: PlaneTrail[] }
+ * - usePlanes() returns PlanesLayer { objects: WorldObject[], trails: PlaneTrail[], fetchedAt }
  *   → we use .objects (not the top-level array the brief assumed).
  * - WorldObject.label  → callsign (lib/sources/adsb.ts sets label = the row's own
  *   `flight` callsign, falling back to its `hex` ICAO24 address when there is no
@@ -60,17 +60,12 @@ function AviationBody({ config }: WidgetBodyProps) {
     return r.slice(0, 200);
   }, [planes, sortKey]);
 
-  // The freshness chip's expected cadence for "planes" is 12s — this widget's own
-  // POLL_INTERVAL_MS in lib/planes/usePlanes.ts, mirrored in lib/freshness.ts's
-  // seed() and lib/sources/catalog.ts's "planes" entry. That is NOT an upstream
-  // cadence, and it is not OpenSky's — opensky.ts no longer contacts OpenSky at
-  // all; the sole source is adsb.lol's type pull (lib/sources/adsb.ts). It also
-  // only catches a poll that stops SUCCEEDING (e.g. /api/planes starts erroring),
-  // within ~24-72s of that happening. It does NOT catch a poll that keeps
-  // returning 200 with an unchanged snapshot: the pull is cached for the whole
-  // deployment and revalidated at most every REVALIDATE_S=240s (4 min, see
-  // opensky.ts), so up to ~4 minutes of real staleness can hide behind an
-  // unbroken "live" chip.
+  // The freshness chip for "planes" reads the age of the DATA since 2026-10-16:
+  // WorldMap records it at the snapshot's own `fetchedAt` (the instant the server
+  // pulled the positions), not at the moment the 12 s poll returned, and its
+  // expected cadence is the 90 s upstream window (lib/freshness.ts seed(),
+  // mirrored in lib/sources/catalog.ts). Before that the chip was stamped per
+  // poll against a 12 s cadence, so a snapshot four minutes old read "live".
   const fresh = useFreshness().find((r) => r.id === "planes");
 
   const report = useWidgetReport();
@@ -116,7 +111,7 @@ export const AVIATION_WIDGET = {
   // note now says where military traffic actually lives.
   help: {
     what: "Aircraft airborne right now, from open ADS-B, listed by altitude. An emergency squawk (7500/7600/7700) raises a critical alert; military traffic is its own signal layer, not this one.",
-    source: "adsb.lol community ADS-B receivers, pulled worldwide by aircraft type (keyless)",
+    source: "adsb.lol community ADS-B receivers, pulled worldwide by aircraft type, plus adsb.fi over thinly covered cities (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };

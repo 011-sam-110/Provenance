@@ -31,38 +31,51 @@
 // ===========================================================================
 
 import type { SignalSource } from "@/lib/signals/types";
-import { EARTHQUAKES_SOURCE } from "@/lib/signals/usgs";
-import {
-  WILDFIRES_SOURCE,
-  VOLCANOES_SOURCE,
-  SEVERE_STORMS_SOURCE,
-  FLOODS_SOURCE,
-} from "@/lib/signals/eonet";
+import { EARTHQUAKES_SOURCE } from "@/lib/signals/earthquakes";
+// The four natural-hazard event layers were NASA EONET until 2026-10-16. Each now
+// merges its primary sources (EONET stays inside severe storms and, as a background,
+// volcanoes) — see the header of each module.
+import { WILDFIRES_SOURCE } from "@/lib/signals/wildfires";
+import { VOLCANOES_SOURCE } from "@/lib/signals/volcanoes";
+import { SEVERE_STORMS_SOURCE } from "@/lib/signals/severe-storms";
+import { FLOODS_SOURCE } from "@/lib/signals/floods";
 import { AURORA_SOURCE } from "@/lib/signals/aurora";
 import { LAUNCHES_SOURCE } from "@/lib/signals/launches";
 import { CABLES_SOURCE, CABLE_LANDINGS_SOURCE } from "@/lib/signals/cables";
+import { CABLE_ROUTES_SOURCE } from "@/lib/signals/cable-routes";
 import { GPS_JAMMING_SOURCE } from "@/lib/signals/gpsjam";
+import { GPS_JAMMING_LIVE_SOURCE } from "@/lib/signals/gpsjam-live";
+import { GNSS_NOTAMS_SOURCE } from "@/lib/signals/gnss-notams";
 import { NUCLEAR_SOURCE } from "@/lib/signals/nuclear";
 import { AIRPORTS_SOURCE } from "@/lib/signals/airports";
 import { PORTS_SOURCE } from "@/lib/signals/ports";
-import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/gdelt";
+import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/conflict";
 import { UKRAINE_ALERTS_SOURCE } from "@/lib/signals/ukraine-alerts";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
-import { EMSC_SOURCE } from "@/lib/signals/emsc";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
+import { US_CITY_CRIME_SOURCE } from "@/lib/signals/crime-us";
 import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
 import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
+import { CYBER_DISCLOSURES_SOURCE } from "@/lib/signals/cyber-disclosures";
+import { CYBER_ATTACKERS_SOURCE } from "@/lib/signals/cyber-attackers";
 import { DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { MILITARY_AIR_SOURCE } from "@/lib/signals/military-air";
+import { GLIDERS_SOURCE } from "@/lib/signals/ogn";
 import { AIS_SOURCE } from "@/lib/signals/ais";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { SPACE_WEATHER_SOURCE } from "@/lib/signals/space-weather";
+import { GEOMAG_STATIONS_SOURCE } from "@/lib/signals/geomag-stations";
 import { INSTABILITY_SOURCE } from "@/lib/signals/instability";
 import { AIR_QUALITY_STATIONS_SOURCE } from "@/lib/signals/airquality-stations";
 import { TROPICAL_CYCLONES_SOURCE } from "@/lib/signals/tropical-cyclones";
+import { CYCLONE_FORECASTS_SOURCE } from "@/lib/signals/cyclone-forecasts";
+import { TSUNAMI_SOURCE } from "@/lib/signals/tsunami";
+import { VOLCANO_ALERTS_SOURCE } from "@/lib/signals/volcano-alerts";
+import { CEMS_ACTIVATIONS_SOURCE } from "@/lib/signals/cems-activations";
+import { WEATHER_WARNINGS_SOURCE } from "@/lib/signals/weather-warnings";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 import { NEWS_COVERAGE_SOURCE } from "@/lib/signals/news-coverage";
@@ -76,29 +89,39 @@ export const SIGNALS: SignalSource[] = [
   // Brief, the Country Instability widget, the Strategic Risk panel and the country
   // dossier all still read it through /api/signals/instability.
   INSTABILITY_SOURCE,
+  // USGS, EMSC and eight national catalogues, each quake shown once. EMSC was its own
+  // layer (`emsc-quakes`) until 2026-10-16; lib/layerAliases.ts maps the old id here.
   EARTHQUAKES_SOURCE,
   WILDFIRES_SOURCE,
   VOLCANOES_SOURCE,
   SEVERE_STORMS_SOURCE,
   FLOODS_SOURCE,
   GDACS_SOURCE, // multi-hazard GDACS alerts (EQ/TC/FL/VO/DR/WF), alert-coloured
-  TROPICAL_CYCLONES_SOURCE, // NOAA NHC active named storms (keyless; empty in quiet season)
-  FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (key-gated: FIRMS_MAP_KEY)
-  EMSC_SOURCE, // EMSC quakes — a 2nd, faster Euro-Med catalogue alongside USGS
+  TROPICAL_CYCLONES_SOURCE, // every warned storm: NOAA NHC + JTWC, with JMA/CMA readings (keyless)
+  CYCLONE_FORECASTS_SOURCE, // NHC forecast cones + tropical weather outlook areas (keyless)
+  TSUNAMI_SOURCE, // NOAA PTWC + NTWC latest tsunami bulletins (keyless)
+  VOLCANO_ALERTS_SOURCE, // official volcano alert levels: USGS HANS + JMA (keyless)
+  CEMS_ACTIVATIONS_SOURCE, // Copernicus EMS rapid-mapping activations (keyless)
+  WEATHER_WARNINGS_SOURCE, // official NWS (US) + ECCC (Canada) weather alerts (keyless)
+  FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (keyless global 24 h files)
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)
+  GEOMAG_STATIONS_SOURCE, // FMI + USGS magnetometers: MEASURED disturbance at named stations (keyless)
   // Space
   LAUNCHES_SOURCE,
   // Infrastructure (cables = line layer + landing-station nodes, gpsJamming = fill layer)
   CABLES_SOURCE,
   CABLE_LANDINGS_SOURCE,
+  CABLE_ROUTES_SOURCE, // surveyed routes: NOAA (US) + EMODnet (Europe), keyless
   GPS_JAMMING_SOURCE,
+  GPS_JAMMING_LIVE_SOURCE, // the last hour, computed from live adsb.lol NACp (keyless)
+  GNSS_NOTAMS_SOURCE, // official GNSS jamming NOTAMs via EUROCONTROL AUGUR (keyless)
   NUCLEAR_SOURCE,
   AIRPORTS_SOURCE,
   PORTS_SOURCE,
   INTERNET_OUTAGES_SOURCE, // IODA national internet-shutdown detection (keyless, country-aggregated)
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
-  // Intel (GDELT geolocated news coverage)
+  // Intel (UCDP verified events, U.S. Embassy alerts, UK and Canadian travel advice)
   CONFLICT_SOURCE,
   // Stories pushed by the NewsScraper host, placed by name through Photon. Dormant
   // until the first push and after every restart — see lib/signals/news-coverage.ts.
@@ -113,16 +136,21 @@ export const SIGNALS: SignalSource[] = [
   AIR_QUALITY_SOURCE,
   AIR_QUALITY_STATIONS_SOURCE, // real OpenAQ station PM2.5 (key-gated: OPENAQ_API_KEY)
   UK_CRIME_SOURCE,
+  US_CITY_CRIME_SOURCE, // police departments' own portals, last 7 days, block-level (keyless)
   // Cyber threat (keyless abuse.ch + Ransomware.live, country-aggregated)
   CYBER_C2_SOURCE,
   CYBER_RANSOMWARE_SOURCE,
+  CYBER_DISCLOSURES_SOURCE, // incidents the victims confirmed: SEC 8-K Item 1.05 + Washington AG (keyless, US only)
+  CYBER_ATTACKERS_SOURCE, // SANS ISC DShield top 20 attacking /24s, by registered country (keyless)
   // Human cost (keyless UNHCR displacement, country-aggregated)
   DISPLACEMENT_SOURCE,
-  RELIEFWEB_SOURCE, // UN OCHA humanitarian emergencies (key-gated: RELIEFWEB_APPNAME)
+  RELIEFWEB_SOURCE, // humanitarian emergencies: ReliefWeb's HDX export + IFRC GO appeals (keyless)
   // Energy / grid (key-gated: ENTSOE_API_TOKEN)
   GRID_LOAD_SOURCE,
   // Military (keyless unfiltered military ADS-B)
   MILITARY_AIR_SOURCE,
+  // Aviation (keyless Open Glider Network: gliders and FLARM trackers ADS-B never sees)
+  GLIDERS_SOURCE,
   // Maritime (real-time AIS vessel positions at strategic chokepoints; key-gated: AISSTREAM_API_KEY)
   AIS_SOURCE,
 ];

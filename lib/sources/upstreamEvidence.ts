@@ -44,6 +44,7 @@
 // hostname, an HTTP status, timestamps and counts.
 
 import type { CredentialVerdict } from "./keyRequirements";
+import { readOutcome } from "@/lib/signals/outcome";
 
 /** HTTP statuses we treat as "the upstream refused the credential we sent". */
 export const REFUSAL_STATUSES = new Set([401, 402, 403]);
@@ -70,12 +71,14 @@ export const REFUSAL_TTL_MS = 24 * 60 * 60 * 1000;
  *                        the map, not from the reasoning.
  *   ai-brief           — FREELLMAPI_BASE_URL, configured per deployment. No fixed host.
  *   geolocate-vision   — same gateway, same reason.
+ *   fire-active        — keyless since 2026-10-16 (the global 24 h files). The key it
+ *                        used to send was the one FIRMS refused with HTTP 400.
  */
 export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
   "air-quality-stations": ["api.openaq.org"],
-  "fire-active": ["firms.modaps.eosdis.nasa.gov"],
-  "grid-load": ["web-api.tp.entsoe.eu"],
-  reliefweb: ["api.reliefweb.int"],
+  "grid-load": ["web-api.tp.entsoe.eu", "api.eia.gov"],
+  "internet-outages": ["pulse-api.internetsociety.org"],
+  "ais-barentswatch": ["id.barentswatch.no", "live.ais.barentswatch.no"],
   webcams: ["api.windy.com"],
   "markets-equities": ["finnhub.io"],
   "markets-macro": ["api.stlouisfed.org"],
@@ -85,7 +88,11 @@ export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
 export interface UpstreamEvidence {
   /** Epoch ms the layer's adapter last finished a server-side fetch (ok or not). */
   lastFetchAt: number | null;
-  /** Did that adapter fetch resolve rather than throw? null before the first one. */
+  /**
+   * Did that adapter fetch succeed? False when it threw, and false when it resolved
+   * but declared its own failure (`degraded` / `degradedWith`, lib/signals/outcome.ts).
+   * null before the first one.
+   */
   lastFetchOk: boolean | null;
   /** Rows that fetch produced. 0 is a real answer; null means never observed. */
   lastRows: number | null;
@@ -324,6 +331,21 @@ export interface InstrumentableSource<T> {
 const INSTRUMENTED = new WeakSet<object>();
 
 /**
+ * Pure: did a resolved adapter fetch succeed?
+ *
+ * Every adapter swallows its own failure and resolves, and declares the failure on the
+ * array (lib/signals/outcome.ts). Counting "it resolved" as success is the bug this
+ * fixes: /api/status published `ok: true, rows: 0` for fire-active for five weeks while
+ * every read of FIRMS answered HTTP 400. A declared outcome is now believed. An array
+ * with NO outcome counts as success here, as before: this ledger records whether the
+ * fetch failed, and the registry test is what refuses an undeclared adapter.
+ */
+export function fetchSucceeded(rows: unknown): boolean {
+  const outcome = readOutcome(rows);
+  return outcome ? outcome.ok : true;
+}
+
+/**
  * Wrap each registry source's fetch() so the row count and completion time of the
  * real server-side fetch land in the ledger. Idempotent per source object.
  *
@@ -342,7 +364,12 @@ export function instrumentSignalRegistry<T>(sources: InstrumentableSource<T>[]):
       try {
         const rows = await original();
         try {
-          recordFetchOutcome(source.id, { ok: true, rows: Array.isArray(rows) ? rows.length : 0 });
+          // A resolved fetch is not a healthy one: adapters declare a failure on the
+          // array they return. Measured 2026-10-16: /api/signals/gdacs published
+          // ok:false "partial: VO failed (http 404)" while this ledger said ok:true,
+          // so the status board hid the partial state. An undeclared outcome keeps
+          // the old reading (resolved = ok); the registry test stops that shipping.
+          recordFetchOutcome(source.id, { ok: fetchSucceeded(rows), rows: Array.isArray(rows) ? rows.length : 0 });
         } catch {
           // never let bookkeeping break a layer
         }

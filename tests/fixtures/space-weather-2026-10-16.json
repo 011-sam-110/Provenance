@@ -1,0 +1,629 @@
+{
+ "_capture": "NOAA SWPC + GFZ, fetched 2026-10-16T19:47:20Z. Reduced: kp = last 4 blocks, kp1m = last 10 rows, alerts = 8 newest, xray = GOES 0.1-0.8 nm rows of xrays-1-day.json thinned to every 30th minute plus the 24 h peak and the newest row.",
+ "capturedAt": "2026-10-16T19:47:20Z",
+ "kp": [
+  {
+   "time_tag": "2026-10-16T06:00:00",
+   "Kp": 1.67,
+   "a_running": 6,
+   "station_count": 8
+  },
+  {
+   "time_tag": "2026-10-16T09:00:00",
+   "Kp": 2.33,
+   "a_running": 9,
+   "station_count": 8
+  },
+  {
+   "time_tag": "2026-10-16T12:00:00",
+   "Kp": 1.67,
+   "a_running": 6,
+   "station_count": 8
+  },
+  {
+   "time_tag": "2026-10-16T15:00:00",
+   "Kp": 3.33,
+   "a_running": 18,
+   "station_count": 8
+  }
+ ],
+ "scales": {
+  "-1": {
+   "DateStamp": "2026-10-15",
+   "TimeStamp": "19:45:00",
+   "R": {
+    "Scale": "1",
+    "Text": "minor",
+    "MinorProb": null,
+    "MajorProb": null
+   },
+   "S": {
+    "Scale": "0",
+    "Text": "none",
+    "Prob": null
+   },
+   "G": {
+    "Scale": "0",
+    "Text": "none"
+   }
+  },
+  "0": {
+   "DateStamp": "2026-10-16",
+   "TimeStamp": "19:45:00",
+   "R": {
+    "Scale": "0",
+    "Text": "none",
+    "MinorProb": null,
+    "MajorProb": null
+   },
+   "S": {
+    "Scale": "0",
+    "Text": "none",
+    "Prob": null
+   },
+   "G": {
+    "Scale": null,
+    "Text": null
+   }
+  }
+ },
+ "kp1m": [
+  {
+   "time_tag": "2026-10-16T19:34:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:35:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:36:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:37:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:38:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:39:00",
+   "kp_index": 4,
+   "estimated_kp": 3.67,
+   "kp": "4M"
+  },
+  {
+   "time_tag": "2026-10-16T19:40:00",
+   "kp_index": 3,
+   "estimated_kp": 3.33,
+   "kp": "3P"
+  },
+  {
+   "time_tag": "2026-10-16T19:41:00",
+   "kp_index": 3,
+   "estimated_kp": 3.0,
+   "kp": "3Z"
+  },
+  {
+   "time_tag": "2026-10-16T19:42:00",
+   "kp_index": 3,
+   "estimated_kp": 3.0,
+   "kp": "3Z"
+  },
+  {
+   "time_tag": "2026-10-16T19:43:00",
+   "kp_index": 3,
+   "estimated_kp": 3.33,
+   "kp": "3P"
+  }
+ ],
+ "alerts": [
+  {
+   "product_id": "K04A",
+   "issue_datetime": "2026-10-16 19:39:45.267",
+   "message": "Space Weather Message Code: ALTK04\r\nSerial Number: 2691\r\nIssue Time: 2026 Oct 16 1939 UTC\r\n\r\nALERT: Geomagnetic K-index of 4 \nThreshold Reached: 2026 Oct 16 1940 UTC\nSynoptic Period: 1800-2100\nActive Warning: YES\nComment: \r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+   "product_id": "K04W",
+   "issue_datetime": "2026-10-16 19:38:53.387",
+   "message": "Space Weather Message Code: WARK04\r\nSerial Number: 5436\r\nIssue Time: 2026 Oct 16 1938 UTC\r\n\r\nWARNING: Geomagnetic K-index of 4 expected \nValid From: 2026 Oct 16 1938 UTC\nValid To: 2026 Oct 17 0300 UTC\nWarning Conditions: Onset\nComment: \r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+   "product_id": "EF3A",
+   "issue_datetime": "2026-10-16 14:19:49.850",
+   "message": "Space Weather Message Code: ALTEF3\r\nSerial Number: 3754\r\nIssue Time: 2026 Oct 16 1419 UTC\r\n\r\nALERT: Electron 2MeV Integral Flux exceeded 1,000pfu \nThreshold Reached: 2026 Oct 16 1345 UTC\nStation: GOES-19\nComment: "
+  },
+  {
+   "product_id": "K04W",
+   "issue_datetime": "2026-10-13 20:58:58.750",
+   "message": "Space Weather Message Code: WARK04\r\nSerial Number: 5435\r\nIssue Time: 2026 Oct 13 2058 UTC\r\n\r\nEXTENDED WARNING: Geomagnetic K-index of 4 expected\nExtension to Serial Number: 5434\nValid From: 2026 Oct 13 0115 UTC\nNow Valid Until: 2026 Oct 14 1200 UTC\nWarning Condition: Persistence\n\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+   "product_id": "K04W",
+   "issue_datetime": "2026-10-13 14:31:37.343",
+   "message": "Space Weather Message Code: WARK04\r\nSerial Number: 5434\r\nIssue Time: 2026 Oct 13 1431 UTC\r\n\r\nEXTENDED WARNING: Geomagnetic K-index of 4 expected\nExtension to Serial Number: 5433\nValid From: 2026 Oct 13 0115 UTC\nNow Valid Until: 2026 Oct 13 2100 UTC\nWarning Condition: Persistence\n\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+   "product_id": "K04W",
+   "issue_datetime": "2026-10-13 01:15:49.670",
+   "message": "Space Weather Message Code: WARK04\r\nSerial Number: 5433\r\nIssue Time: 2026 Oct 13 0115 UTC\r\n\r\nWARNING: Geomagnetic K-index of 4 expected \nValid From: 2026 Oct 13 0115 UTC\nValid To: 2026 Oct 13 1500 UTC\nWarning Conditions: Onset\nComment: \r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nAurora - Aurora may be visible at high latitudes such as Canada and Alaska."
+  },
+  {
+   "product_id": "A20F",
+   "issue_datetime": "2026-10-11 19:11:07.000",
+   "message": "Space Weather Message Code: WATA20\r\nSerial Number: 1129\r\nIssue Time: 2026 Oct 11 1911 UTC\r\n\r\nWATCH: Geomagnetic Storm Category G1 Predicted \nHighest Storm Level Predicted by Day:\nOct 12:  None (Below G1)   Oct 13:  G1 (Minor)   Oct 14:  None (Below G1)   \nTHIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT\nComment: \r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.\r\nInduced Currents - Weak power grid fluctuations can occur.\r\nSpacecraft - Minor impact on satellite operations possible.\r\nAurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine."
+  },
+  {
+   "product_id": "A30F",
+   "issue_datetime": "2026-10-11 17:02:59.390",
+   "message": "Space Weather Message Code: WATA30\r\nSerial Number: 286\r\nIssue Time: 2026 Oct 11 1702 UTC\r\n\r\nCANCEL WATCH: Geomagnetic Storm Category G2 Predicted \nCancel Serial Number: 285\nOriginal Issue Time: 2026 Oct 09 1636 UTC\nCancelled Level Predicted:\nOct 11  : None (Below G1)  \nConditions no longer warrant a G2 Watch.\r\n\r\nNOAA Space Weather Scale descriptions can be found at\r\nwww.swpc.noaa.gov/noaa-scales-explanation\r\n\r\nPotential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.\r\nInduced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.\r\nSpacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.\r\nRadio - HF (high frequency) radio propagation can fade at higher latitudes.\r\nAurora - Aurora may be seen as low as New York to Wisconsin to Washington state."
+  }
+ ],
+ "xray": [
+  {
+   "time_tag": "2026-10-15T19:47:00Z",
+   "satellite": 18,
+   "flux": 1.0217958106295555e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T20:17:00Z",
+   "satellite": 18,
+   "flux": 1.010355163089116e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T20:47:00Z",
+   "satellite": 18,
+   "flux": 8.194738256861456e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T21:17:00Z",
+   "satellite": 18,
+   "flux": 8.348499704879941e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T21:47:00Z",
+   "satellite": 18,
+   "flux": 8.737339953768242e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T22:17:00Z",
+   "satellite": 18,
+   "flux": 7.156590413615049e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T22:47:00Z",
+   "satellite": 18,
+   "flux": 8.351854035026918e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T23:17:00Z",
+   "satellite": 18,
+   "flux": 8.133650339914311e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-15T23:47:00Z",
+   "satellite": 18,
+   "flux": 1.1102780490546138e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T00:17:00Z",
+   "satellite": 18,
+   "flux": 2.9333311886148294e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T00:47:00Z",
+   "satellite": 18,
+   "flux": 1.029465806823282e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T01:17:00Z",
+   "satellite": 18,
+   "flux": 3.0941971544962144e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T01:47:00Z",
+   "satellite": 18,
+   "flux": 1.3919021739638993e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T02:17:00Z",
+   "satellite": 18,
+   "flux": 8.18028809135285e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T02:47:00Z",
+   "satellite": 18,
+   "flux": 9.264750815418665e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T03:17:00Z",
+   "satellite": 18,
+   "flux": 8.413099976678495e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T03:47:00Z",
+   "satellite": 18,
+   "flux": 9.519768013888097e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T04:17:00Z",
+   "satellite": 18,
+   "flux": 8.180980444194574e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T04:47:00Z",
+   "satellite": 18,
+   "flux": 1.0444977078805096e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T05:17:00Z",
+   "satellite": 18,
+   "flux": 6.555631557603192e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T05:47:00Z",
+   "satellite": 18,
+   "flux": 6.955374374228995e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T06:17:00Z",
+   "satellite": 18,
+   "flux": 8.644244644528953e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T06:47:00Z",
+   "satellite": 18,
+   "flux": 6.513718062706175e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T07:17:00Z",
+   "satellite": 18,
+   "flux": 6.058584745005646e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T07:47:00Z",
+   "satellite": 18,
+   "flux": 6.303426403064805e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T08:17:00Z",
+   "satellite": 18,
+   "flux": 6.622645400966576e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T08:47:00Z",
+   "satellite": 18,
+   "flux": 8.758970579947345e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T09:17:00Z",
+   "satellite": 18,
+   "flux": 6.962573593227717e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T09:47:00Z",
+   "satellite": 18,
+   "flux": 9.469234214520839e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T10:17:00Z",
+   "satellite": 18,
+   "flux": 7.256024332491506e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T10:47:00Z",
+   "satellite": 18,
+   "flux": 1.2242454658917268e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T11:17:00Z",
+   "satellite": 18,
+   "flux": 1.4688231431136956e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T11:47:00Z",
+   "satellite": 18,
+   "flux": 1.8652956441655988e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T12:17:00Z",
+   "satellite": 18,
+   "flux": 1.6814850596347242e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T12:47:00Z",
+   "satellite": 18,
+   "flux": 1.8035016182693653e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T13:17:00Z",
+   "satellite": 18,
+   "flux": 1.1051001820305828e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T13:47:00Z",
+   "satellite": 18,
+   "flux": 1.0206142633251147e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T14:17:00Z",
+   "satellite": 18,
+   "flux": 8.783234761722269e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T14:47:00Z",
+   "satellite": 18,
+   "flux": 9.584297231413075e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T15:17:00Z",
+   "satellite": 18,
+   "flux": 1.098576603908441e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T15:42:00Z",
+   "satellite": 18,
+   "flux": 1.3757357010035776e-05,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T15:47:00Z",
+   "satellite": 18,
+   "flux": 2.2492865809908835e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T16:17:00Z",
+   "satellite": 18,
+   "flux": 7.377239512607048e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T16:47:00Z",
+   "satellite": 18,
+   "flux": 7.069253911140549e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T17:17:00Z",
+   "satellite": 18,
+   "flux": 7.424355885632394e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T17:47:00Z",
+   "satellite": 18,
+   "flux": 8.535037068213569e-07,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T18:17:00Z",
+   "satellite": 18,
+   "flux": 1.6318812186000287e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T18:47:00Z",
+   "satellite": 18,
+   "flux": 1.295621018471138e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T19:17:00Z",
+   "satellite": 18,
+   "flux": 2.9209820695541566e-06,
+   "energy": "0.1-0.8nm"
+  },
+  {
+   "time_tag": "2026-10-16T19:44:00Z",
+   "satellite": 18,
+   "flux": 1.3779483651887858e-06,
+   "energy": "0.1-0.8nm"
+  }
+ ],
+ "wind": [
+  {
+   "proton_speed": 452,
+   "time_tag": "2026-10-16T19:38:00Z"
+  }
+ ],
+ "mag": [
+  {
+   "bt": 5,
+   "bz_gsm": -3,
+   "time_tag": "2026-10-16T19:38:00Z"
+  }
+ ],
+ "gfzHp30": {
+  "Hp30": [
+   2.333,
+   1.333,
+   2.333,
+   3.0,
+   3.0,
+   2.667,
+   2.333,
+   1.333,
+   1.667,
+   2.0,
+   2.333,
+   3.333,
+   3.667,
+   3.333,
+   2.333,
+   1.333,
+   0.667,
+   1.667,
+   1.333,
+   2.333,
+   1.333,
+   1.667,
+   2.0,
+   1.667,
+   2.0,
+   1.333,
+   1.333,
+   2.0,
+   2.333,
+   2.333,
+   1.333,
+   2.667,
+   2.0,
+   1.0,
+   1.667,
+   1.0,
+   1.667,
+   2.333,
+   2.0,
+   3.333,
+   3.667,
+   3.667,
+   3.333,
+   4.0,
+   4.0,
+   3.333,
+   5.333
+  ],
+  "datetime": [
+   "2026-10-15T20:00:00Z",
+   "2026-10-15T20:30:00Z",
+   "2026-10-15T21:00:00Z",
+   "2026-10-15T21:30:00Z",
+   "2026-10-15T22:00:00Z",
+   "2026-10-15T22:30:00Z",
+   "2026-10-15T23:00:00Z",
+   "2026-10-15T23:30:00Z",
+   "2026-10-16T00:00:00Z",
+   "2026-10-16T00:30:00Z",
+   "2026-10-16T01:00:00Z",
+   "2026-10-16T01:30:00Z",
+   "2026-10-16T02:00:00Z",
+   "2026-10-16T02:30:00Z",
+   "2026-10-16T03:00:00Z",
+   "2026-10-16T03:30:00Z",
+   "2026-10-16T04:00:00Z",
+   "2026-10-16T04:30:00Z",
+   "2026-10-16T05:00:00Z",
+   "2026-10-16T05:30:00Z",
+   "2026-10-16T06:00:00Z",
+   "2026-10-16T06:30:00Z",
+   "2026-10-16T07:00:00Z",
+   "2026-10-16T07:30:00Z",
+   "2026-10-16T08:00:00Z",
+   "2026-10-16T08:30:00Z",
+   "2026-10-16T09:00:00Z",
+   "2026-10-16T09:30:00Z",
+   "2026-10-16T10:00:00Z",
+   "2026-10-16T10:30:00Z",
+   "2026-10-16T11:00:00Z",
+   "2026-10-16T11:30:00Z",
+   "2026-10-16T12:00:00Z",
+   "2026-10-16T12:30:00Z",
+   "2026-10-16T13:00:00Z",
+   "2026-10-16T13:30:00Z",
+   "2026-10-16T14:00:00Z",
+   "2026-10-16T14:30:00Z",
+   "2026-10-16T15:00:00Z",
+   "2026-10-16T15:30:00Z",
+   "2026-10-16T16:00:00Z",
+   "2026-10-16T16:30:00Z",
+   "2026-10-16T17:00:00Z",
+   "2026-10-16T17:30:00Z",
+   "2026-10-16T18:00:00Z",
+   "2026-10-16T18:30:00Z",
+   "2026-10-16T19:00:00Z"
+  ],
+  "meta": {
+   "license": "CC BY 4.0",
+   "source": "GFZ Potsdam"
+  }
+ },
+ "gfzKp": {
+  "Kp": [
+   2.333,
+   3.0,
+   1.0,
+   1.333,
+   2.333,
+   1.667,
+   3.333,
+   4.333
+  ],
+  "datetime": [
+   "2026-10-15T21:00:00Z",
+   "2026-10-16T00:00:00Z",
+   "2026-10-16T03:00:00Z",
+   "2026-10-16T06:00:00Z",
+   "2026-10-16T09:00:00Z",
+   "2026-10-16T12:00:00Z",
+   "2026-10-16T15:00:00Z",
+   "2026-10-16T18:00:00Z"
+  ],
+  "meta": {
+   "license": "CC BY 4.0",
+   "source": "GFZ Potsdam"
+  },
+  "status": [
+   "pre",
+   "pre",
+   "pre",
+   "pre",
+   "pre",
+   "pre",
+   "pre",
+   "pre"
+  ]
+ }
+}

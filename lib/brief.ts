@@ -144,7 +144,7 @@ export function buildBriefPrompt(s: BriefSnapshot): string {
     "Do not invent specific events, casualty figures, or news the data does not contain. Do not speculate or give advice. Neutral, measured tone.",
     "",
     "Country Instability Index — highest-pressure countries right now: " + list + ".",
-    "(The index composites armed conflict, food insecurity, forced displacement and internet outages; a higher score means more concurrent pressure.)",
+    "(The index composites armed-conflict deaths (UCDP), crisis severity (INFORM), food insecurity (FEWS NET), structural risk (INFORM Risk, World Bank WGI), forced displacement, press coverage of conflict and internet outages; a higher score means more concurrent pressure.)",
   ].join("\n");
 }
 

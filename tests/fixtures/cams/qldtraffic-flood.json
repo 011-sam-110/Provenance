@@ -1,0 +1,63 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "crs": {
+     "type": "name",
+     "properties": {
+      "name": "EPSG:7844"
+     }
+    },
+    "coordinates": [
+     145.371718,
+     -16.451611
+    ]
+   },
+   "properties": {
+    "id": 190,
+    "url": "https://api.qldtraffic.qld.gov.au/v1/floodcams/190",
+    "description": "Mossman - Mossman Daintree Road at Foxton bridge - North",
+    "direction": "North",
+    "district": "Far North",
+    "locality": "Mossman",
+    "postcode": "4873",
+    "image_url": "https://cameras.qldtraffic.qld.gov.au/resized/7d90cbc7-264e-4aba-a95a-41f8b1fb676c.jpg",
+    "image_sourced_from": "Douglas Shire Council",
+    "isCustom": true,
+    "extra_info": ""
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "crs": {
+     "type": "name",
+     "properties": {
+      "name": "EPSG:7844"
+     }
+    },
+    "coordinates": [
+     151.269421,
+     -27.391531
+    ]
+   },
+   "properties": {
+    "id": 193,
+    "url": "https://api.qldtraffic.qld.gov.au/v1/floodcams/193",
+    "description": "St Ruth - Dalby - Cecil Plains Road at Ashall Creek",
+    "direction": "North",
+    "district": "Darling Downs",
+    "locality": "St Ruth",
+    "postcode": "4405",
+    "image_url": "https://cameras.qldtraffic.qld.gov.au/Flood_Cameras/Darling_Downs/cecil-plains-ashall-creek.jpg",
+    "image_sourced_from": null,
+    "isCustom": false,
+    "extra_info": "New images available every 30 minutes.\nImages between 6pm and 6am may be of reduced quality"
+   }
+  }
+ ]
+}

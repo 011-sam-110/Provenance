@@ -129,7 +129,16 @@ export function parseMupPortal(html: string): MupPortalStream[] {
  * SERBIA_BORDER_SITES is DROPPED, not placed at a guessed point — if MUP adds a
  * seventeenth crossing it stays off the map until somebody geolocates it.
  */
-export function normalizeSerbiaBorders(streams: MupPortalStream[]): Camera[] {
+export function normalizeSerbiaBorders(
+  streams: MupPortalStream[],
+  /**
+   * This round's playlist probe per stream URL: true = the playlist answered, false =
+   * it did not (a 404 or other refusal). A stream with no entry was not probed and is
+   * taken as live, as every stream was before probing existed.
+   */
+  probes: ReadonlyMap<string, boolean> = new Map(),
+  probedAt?: number,
+): Camera[] {
   const sites = new Map(SERBIA_BORDER_SITES.map((s) => [s.key.toLowerCase(), s]));
   const cams: Camera[] = [];
   for (const s of streams) {
@@ -148,10 +157,42 @@ export function normalizeSerbiaBorders(streams: MupPortalStream[]): Camera[] {
       refreshSeconds: SERBIA_BORDERS_SOURCE.refreshSeconds,
       license: SERBIA_BORDERS_SOURCE.license,
       attribution: SERBIA_BORDERS_SOURCE.attribution,
-      available: true,
+      available: probes.get(s.streamUrl) ?? true,
+      ...(probes.get(s.streamUrl) === true && probedAt !== undefined
+        ? { lastSampledAt: new Date(probedAt).toISOString() }
+        : {}),
     });
   }
   return cams;
+}
+
+/**
+ * GET one playlist and say whether it plays.
+ *
+ * WHY EVERY STREAM IS PROBED (audit 2026-10-16). The portal lists 32 streams and
+ * half of them are dead at the source: Horgoš, Jabuka, Kelebija, Mali Zvornik,
+ * Preševo, Špiljani, Sremska Rača and Trbušnica answered 404 for both cameras, from
+ * two places, 36 minutes apart, and the operator's own viewer shows the same
+ * errors. Without a probe this adapter called all 32 live, so the map offered 16
+ * cameras that could only play an error. A playlist is a few hundred bytes, so a
+ * round of 32 costs less than one still image.
+ *
+ * `false` only for an answer that says no (a non-2xx, or a body that is not a
+ * playlist). A network failure is `undefined`: we could not ask, which is not the
+ * same as being told the camera is dead.
+ */
+export async function probePlaylist(url: string): Promise<boolean | undefined> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
+      signal: AbortSignal.timeout(6_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return false;
+    return (await res.text()).trimStart().startsWith("#EXTM3U");
+  } catch {
+    return undefined;
+  }
 }
 
 export async function fetchRegistry(): Promise<Camera[]> {
@@ -167,7 +208,15 @@ export async function fetchRegistry(): Promise<Camera[]> {
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`MUP border cameras: ${res.status}`);
-  const cams = normalizeSerbiaBorders(parseMupPortal(await res.text()));
+  const streams = parseMupPortal(await res.text());
+  const probedAt = Date.now();
+  const results = await Promise.all(streams.map((s) => probePlaylist(s.streamUrl)));
+  const probes = new Map<string, boolean>();
+  streams.forEach((s, i) => {
+    const r = results[i];
+    if (r !== undefined) probes.set(s.streamUrl, r);
+  });
+  const cams = normalizeSerbiaBorders(streams, probes, probedAt);
   // A 200 that parses to nothing means the portal's markup moved. Throwing lets
   // registry.ts keep this feed's last-good cameras instead of silently emptying
   // Serbia's border layer.

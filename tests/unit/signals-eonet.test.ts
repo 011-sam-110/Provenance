@@ -8,21 +8,34 @@ import fixture from "@/tests/fixtures/eonet-events.json";
 const FIXTURE_NOW = Date.parse("2026-06-26T00:00:00Z");
 import {
   eonetToFeatures,
-  categoryFeedUrl,
   representativePoint,
   CATEGORIES,
-  SEVERE_STORMS_SOURCE,
-  WILDFIRES_SOURCE,
-  VOLCANOES_SOURCE,
-  FLOODS_SOURCE,
+  type EonetCategoryMeta,
   type EonetEvent,
 } from "@/lib/signals/eonet";
+import { SEVERE_STORMS_SOURCE } from "@/lib/signals/severe-storms";
+import { WILDFIRES_SOURCE } from "@/lib/signals/wildfires";
+import { VOLCANOES_SOURCE } from "@/lib/signals/volcanoes";
+import { FLOODS_SOURCE } from "@/lib/signals/floods";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
 const events = (fixture as { events: EonetEvent[] }).events;
 
+// EONET's wildfire category is no longer a layer input (2026-10-16: its GDACS relay
+// died in 2025 and lib/signals/wildfires.ts reads NIFC and GDACS directly). The
+// normaliser is generic, so these tests keep exercising it on the fixture's wildfire
+// events through a category declared here.
+const WILDFIRE_META: EonetCategoryMeta = {
+  signalId: "wildfires",
+  category: "wildfires",
+  label: "Wildfires",
+  color: "#f97316",
+  precision: "exact",
+  maxAgeDays: 30,
+};
+
 test("filters to one category and skips events with no usable geometry", () => {
-  const fires = eonetToFeatures(events, CATEGORIES.wildfires, FIXTURE_NOW);
+  const fires = eonetToFeatures(events, WILDFIRE_META, FIXTURE_NOW);
   // EONET_W1 (point) + EONET_WP (polygon) — EONET_NOGEOM has no geometry → skipped.
   expect(fires.map((f) => f.id)).toEqual(["eonet:EONET_W1", "eonet:EONET_WP"]);
   expect(fires.every((f) => f.signalId === "wildfires")).toBe(true);
@@ -42,7 +55,7 @@ test("maps the LATEST geometry point + surfaces intensity for storms", () => {
 });
 
 test("a polygon event pins to its averaged outer-ring centroid", () => {
-  const fires = eonetToFeatures(events, CATEGORIES.wildfires, FIXTURE_NOW);
+  const fires = eonetToFeatures(events, WILDFIRE_META, FIXTURE_NOW);
   const poly = fires.find((f) => f.id === "eonet:EONET_WP")!;
   expect(poly.lon).toBeCloseTo(10.8, 6);
   expect(poly.lat).toBeCloseTo(20.8, 6);
@@ -55,10 +68,6 @@ test("representativePoint handles Point and Polygon, rejects junk", () => {
   ).toEqual([2, 2]);
   expect(representativePoint(undefined)).toBeNull();
   expect(representativePoint({ type: "Point", coordinates: [] })).toBeNull();
-});
-
-test("floods category yields nothing from this slice (dormant-safe empty)", () => {
-  expect(eonetToFeatures(events, CATEGORIES.floods, FIXTURE_NOW)).toEqual([]);
 });
 
 test("severe storms carry a numeric windKt scalar that resolves via the metric", () => {
@@ -76,11 +85,13 @@ test("severe storms carry a numeric windKt scalar that resolves via the metric",
 });
 
 test("categorical hazards (fires/volcanoes/floods) declare NO metric — honest dot", () => {
+  // These are the registered layers now (lib/signals/wildfires.ts, volcanoes.ts,
+  // floods.ts), each merging several sources; none of them has one scalar.
   expect(WILDFIRES_SOURCE.metric).toBeUndefined();
   expect(VOLCANOES_SOURCE.metric).toBeUndefined();
   expect(FLOODS_SOURCE.metric).toBeUndefined();
   // and their features carry no windKt scalar
-  const fires = eonetToFeatures(events, CATEGORIES.wildfires, FIXTURE_NOW);
+  const fires = eonetToFeatures(events, WILDFIRE_META, FIXTURE_NOW);
   expect(fires.every((f) => f.props?.windKt === undefined)).toBe(true);
 });
 
@@ -112,7 +123,7 @@ describe("per-category staleness window", () => {
 
   it("drops a wildfire and a storm nobody has observed in months", () => {
     expect(
-      eonetToFeatures([evAt("W1", "wildfires", "2026-06-15T00:00:00Z")] as never, CATEGORIES.wildfires, NOW_W),
+      eonetToFeatures([evAt("W1", "wildfires", "2026-06-15T00:00:00Z")] as never, WILDFIRE_META, NOW_W),
     ).toHaveLength(0);
     expect(
       eonetToFeatures([evAt("S1", "severeStorms", "2026-06-15T00:00:00Z")] as never, CATEGORIES.severeStorms, NOW_W),
@@ -121,7 +132,7 @@ describe("per-category staleness window", () => {
 
   it("keeps a recent wildfire", () => {
     expect(
-      eonetToFeatures([evAt("W2", "wildfires", "2026-08-05T00:00:00Z")] as never, CATEGORIES.wildfires, NOW_W),
+      eonetToFeatures([evAt("W2", "wildfires", "2026-08-05T00:00:00Z")] as never, WILDFIRE_META, NOW_W),
     ).toHaveLength(1);
   });
 
@@ -129,52 +140,13 @@ describe("per-category staleness window", () => {
   // reason that has nothing to do with the event.
   it("keeps an event whose date is unparsable rather than silently hiding it", () => {
     expect(
-      eonetToFeatures([evAt("W3", "wildfires", "not-a-date")] as never, CATEGORIES.wildfires, NOW_W),
+      eonetToFeatures([evAt("W3", "wildfires", "not-a-date")] as never, WILDFIRE_META, NOW_W),
     ).toHaveLength(1);
   });
 });
 
-// ── Regression: the floods layer was empty in production ────────────────────
-//
-// EONET closes a flood within days of the water receding, so the shared
-// `status=open` feed matched none of them — measured 2026-08-13, the open feed
-// held 7,058 events and ZERO floods, while the category feed held 9 that month
-// and 62 the month before, all closed. The parser was fine; the feed was wrong.
-
-test("floods reads its own full-status feed, because open never matches a flood", () => {
-  expect(CATEGORIES.floods.allStatuses).toBe(true);
-});
-
-test("the categories that legitimately mean open by staying open still use the shared feed", () => {
-  expect(CATEGORIES.wildfires.allStatuses).toBeUndefined();
-  expect(CATEGORIES.volcanoes.allStatuses).toBeUndefined();
-  expect(CATEGORIES.severeStorms.allStatuses).toBeUndefined();
-});
-
-test("floods keeps a recency bound, since a full-status feed reaches back years", () => {
-  // Without this, allStatuses would pull in floods from previous years.
-  expect(CATEGORIES.floods.maxAgeDays).toBe(60);
-});
-
-test("the category feed asks for all statuses and bounds the page", () => {
-  const url = new URL(categoryFeedUrl("floods"));
-  expect(url.pathname).toContain("/categories/floods");
-  expect(url.searchParams.get("status")).toBe("all");
-  expect(Number(url.searchParams.get("limit"))).toBeGreaterThanOrEqual(200);
-});
-
-test("a closed flood inside the window is kept, and one outside it is dropped", () => {
-  const now = Date.parse("2026-08-13T00:00:00Z");
-  const mk = (id: string, date: string) => ({
-    id,
-    title: `Flood ${id}`,
-    categories: [{ id: "floods" }],
-    geometry: [{ type: "Point", coordinates: [10, 20], date }],
-  });
-  const out = eonetToFeatures(
-    [mk("recent", "2026-08-10T00:00:00Z"), mk("ancient", "2026-01-01T00:00:00Z")],
-    CATEGORIES.floods,
-    now,
-  );
-  expect(out.map((f) => f.id)).toEqual(["eonet:recent"]);
+test("EONET feeds only volcanoes and severe storms now; floods and wildfires left it", () => {
+  // 2026-10-16: floods read GDACS directly (EONET's relay sent new events [lon, lat] and
+  // old ones [lat, lon]); wildfires read NIFC + GDACS (EONET's GDACS relay died in 2025).
+  expect(Object.keys(CATEGORIES).sort()).toEqual(["severeStorms", "volcanoes"]);
 });

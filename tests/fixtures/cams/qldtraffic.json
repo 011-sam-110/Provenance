@@ -1,0 +1,63 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "crs": {
+     "type": "name",
+     "properties": {
+      "name": "EPSG:7844"
+     }
+    },
+    "coordinates": [
+     153.0086975,
+     -27.5551796
+    ]
+   },
+   "properties": {
+    "id": 1,
+    "url": "https://api.qldtraffic.qld.gov.au/v1/webcams/1",
+    "description": "Archerfield - Ipswich Motorway & Granard Rd - North",
+    "direction": "NorthEast",
+    "district": "Metropolitan",
+    "locality": "Archerfield",
+    "postcode": "4108",
+    "image_url": "https://cameras.qldtraffic.qld.gov.au/Metropolitan/Archerfield_Ipswich_Mwy_sth.jpg",
+    "image_sourced_from": null,
+    "isCustom": false,
+    "extra_info": null
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "crs": {
+     "type": "name",
+     "properties": {
+      "name": "EPSG:7844"
+     }
+    },
+    "coordinates": [
+     153.4118042,
+     -28.0112896
+    ]
+   },
+   "properties": {
+    "id": 3,
+    "url": "https://api.qldtraffic.qld.gov.au/v1/webcams/3",
+    "description": "Bundall - Bundall Road & Ashmore Road - South",
+    "direction": "South",
+    "district": "South Coast",
+    "locality": "Bundall",
+    "postcode": "4217",
+    "image_url": "https://cameras.qldtraffic.qld.gov.au/Gold_Coast/bundall-ashmore-south.jpg",
+    "image_sourced_from": null,
+    "isCustom": false,
+    "extra_info": null
+   }
+  }
+ ]
+}

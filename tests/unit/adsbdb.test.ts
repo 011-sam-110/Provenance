@@ -1,40 +1,9 @@
 import { expect, test } from "vitest";
-import { parseFlightRoute, parseAircraft } from "@/lib/sources/adsbdb";
+import { parseAircraft } from "@/lib/sources/adsbdb";
 
-// Fixtures captured verbatim from the live adsbdb API on 2026-06-27.
-
-const ROUTE_OK = {
-  response: {
-    flightroute: {
-      callsign: "BAW117",
-      callsign_icao: "BAW117",
-      callsign_iata: "BA117",
-      airline: { name: "British Airways", icao: "BAW", iata: "BA", country: "United Kingdom" },
-      origin: {
-        country_iso_name: "GB",
-        country_name: "United Kingdom",
-        elevation: 83,
-        iata_code: "LHR",
-        icao_code: "EGLL",
-        latitude: 51.4706,
-        longitude: -0.461941,
-        municipality: "London",
-        name: "London Heathrow Airport",
-      },
-      destination: {
-        country_iso_name: "US",
-        country_name: "United States",
-        elevation: 13,
-        iata_code: "JFK",
-        icao_code: "KJFK",
-        latitude: 40.639801,
-        longitude: -73.7789,
-        municipality: "New York",
-        name: "John F Kennedy International Airport",
-      },
-    },
-  },
-};
+// Fixtures captured verbatim from the live adsbdb API on 2026-06-27. The route lookup
+// and its tests left on 2026-10-16 (routes now come from lib/sources/vrsRoutes.ts,
+// tested in vrs-routes.test.ts).
 
 const AIRCRAFT_OK = {
   response: {
@@ -51,25 +20,6 @@ const AIRCRAFT_OK = {
     },
   },
 };
-
-test("parseFlightRoute normalizes origin → destination airports", () => {
-  const r = parseFlightRoute(ROUTE_OK);
-  expect(r).not.toBeNull();
-  expect(r?.callsign).toBe("BAW117");
-  expect(r?.airline).toBe("British Airways");
-  expect(r?.origin).toMatchObject({ icao: "EGLL", iata: "LHR", municipality: "London", lat: 51.4706 });
-  expect(r?.destination).toMatchObject({ icao: "KJFK", iata: "JFK", municipality: "New York" });
-  expect(r?.destination?.lon).toBeCloseTo(-73.7789, 4);
-});
-
-test("parseFlightRoute returns null for an unknown callsign (string response)", () => {
-  expect(parseFlightRoute({ response: "unknown callsign" })).toBeNull();
-  expect(parseFlightRoute({})).toBeNull();
-});
-
-test("parseFlightRoute returns null when no usable airport is present", () => {
-  expect(parseFlightRoute({ response: { flightroute: { callsign: "X", origin: null, destination: null } } })).toBeNull();
-});
 
 test("parseAircraft normalizes the airframe fields", () => {
   const a = parseAircraft(AIRCRAFT_OK);

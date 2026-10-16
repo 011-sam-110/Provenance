@@ -22,8 +22,13 @@
  *   70 bizjet / GA / helicopter types       2,932 rows  2,619 positioned  1.4 MB
  *
  * ≈9,700 positioned aircraft spanning 12 of 12 thirty-degree longitude bands, from
- * three requests instead of forty. Four batches below (the lists grew), still four
- * requests per snapshot.
+ * three requests instead of forty. Four batches below (the lists grew).
+ *
+ * ONE REQUEST SINCE 2026-10-16, NOT FOUR. The four batches are still how the list is
+ * written and tested, but they are sent as ONE comma-separated URL (TYPE_REQUESTS).
+ * Measured from provenance-1 that day: all 243 codes in one GET (1,235 characters)
+ * answered 200 with 10,346 positioned aircraft, 5.7 MB, in 0.8 s. Four requests
+ * per snapshot is what lost batch D on prod: see RATE LIMIT below.
  *
  * ── THE HONESTY BOUNDARY ────────────────────────────────────────────────────
  * Two things make every count here a LOWER BOUND, so `availableExact` is always
@@ -38,13 +43,17 @@
  * include them, so that is a small visible change.
  *
  * ── RATE LIMIT ──────────────────────────────────────────────────────────────
- * Token bucket, burst of roughly 3-5, refill of about one request per second or
- * slower: on 2026-09-06 the 6th request at 1.5 s spacing was refused. Hence
- * PACE_MS between batches, a backoff on 429 only, and a hard PULL_BUDGET_MS.
- * `lib/signals/military-air.ts` draws on the same bucket (`/v2/mil`, at most once
- * per 20 s per warm instance); together that is well under the refill, and the
- * only collision is one `/v2/mil` token landing in a pacing gap, which the 429
- * retry absorbs.
+ * Per-IP token bucket. On 2026-09-06 the 6th request at 1.5 s spacing was refused.
+ * Re-measured from provenance-1 on 2026-10-16, it is tighter than that: after a
+ * minute's rest, three requests answered and the fourth got 429 at 2 s spacing,
+ * and the refill then took 10-20 s per request. The old comment here said the one
+ * `/v2/mil` token from `lib/signals/military-air.ts` "lands in a pacing gap" and is
+ * absorbed. It is not: replaying A, B, `/v2/mil`, C, D at prod's spacing gave 429
+ * on C and D twice in a row, and prod's own coverage rule showed batch D missing in
+ * 3 of 5 snapshots that evening. So the pull is one request now, and every adsb.lol
+ * request from this process, the military layer's included, takes its turn in one
+ * host lane (`lib/http/hostLane.ts`) at least 2 s apart. A 429 still gets a backoff
+ * and a retry inside PULL_BUDGET_MS.
  *
  * Failures are COUNTED and LOGGED, never swallowed: `console.warn` once per failed
  * batch, and `batchesSucceeded < batchesPlanned` in the coverage record. The sweep
@@ -61,8 +70,14 @@ import { classifyPlaneDetailed } from "@/lib/planes/classify";
 import { sampleSpatially } from "@/lib/planes/sample";
 import { PLANE_META } from "@/lib/icons/svg";
 import { withCoverage } from "@/lib/signals/coverage";
+import { laneFetch } from "@/lib/http/hostLane";
 
-export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol (community ADS-B receivers)";
+/**
+ * adsb.lol publishes its API and all its data under the ODbL 1.0 (`info.license` in
+ * https://api.adsb.lol/api/openapi.json, read 2026-10-16), which allows display with
+ * attribution, so the credit names the licence.
+ */
+export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use)";
 
 // ---------------------------------------------------------------------------
 // The type lists
@@ -75,7 +90,8 @@ export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol (community ADS-B rece
  * recognisable world; one that holds only light aircraft is not (see
  * `mainlineSucceeded`).
  *
- * Each batch stays at or under 75 codes so its URL stays under 400 characters.
+ * The batches are no longer separate requests (see TYPE_REQUESTS), so their size
+ * no longer bounds a URL; the one URL is pinned under 1,500 characters instead.
  * Every code appears once across all batches (pinned by a test), so `dedupeById`
  * below is a guard against an upstream quirk, not something the lists rely on.
  * Codes are checked against the bizjet detector in lib/planes/bizjet.ts: every
@@ -118,15 +134,31 @@ export const TYPE_BATCHES: readonly (readonly string[])[] = [
     "EC35", "AS50", "EC45", "A139", "B06", "R44", "B407", "S76", "A109", "EC30",
     "EC20", "B412", "S92", "EC55", "EC75", "EC25", "A169", "A189", "R66", "R22",
     "B429", "B505", "H500", "EXPL", "A119", "AS65", "MD52", "B212",
+    // Added 2026-10-16: the civil types a whole-network snapshot carried most often
+    // that this list did not ask for (source audit, 9.5% of aircraft were never
+    // requested). Measured in one pull that day: 261 positioned aircraft between
+    // them, S22T alone 74.
+    "S22T", "C72R", "BE30", "P46T", "C82S", "C150", "BE35", "CRJX", "P32R", "RV12",
+    "T206", "PA30", "BE95", "T210", "PA23", "C82T", "P208",
   ],
 ];
 
+/**
+ * What the pull actually sends: every code in TYPE_BATCHES, mainline first, as ONE
+ * request. A tail batch cannot be dropped by the rate limit when there is no tail.
+ */
+export const TYPE_REQUESTS: readonly (readonly string[])[] = [TYPE_BATCHES.flat()];
+
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
-/** Between batches. The bucket refills under this; do not lower it without re-measuring. */
+/** Between requests of one pull, when a caller passes more than one. */
 export const PACE_MS = 2_000;
-/** Per batch, on 429 only. Distinct from PACE_MS so a log line says which one it was. */
-export const RETRY_BACKOFF_MS: readonly number[] = [2_500, 5_000];
+/**
+ * Per request, on 429 only. Distinct from PACE_MS so a log line says which one it
+ * was. 4 s and 8 s because the measured refill is 10-20 s per token (2026-10-16):
+ * the old 2.5 s first retry nearly always met a second 429.
+ */
+export const RETRY_BACKOFF_MS: readonly number[] = [4_000, 8_000];
 /**
  * Wall clock for the whole pull, retries included. The planes route runs one pull
  * per request under `maxDuration = 60`, so this leaves headroom rather than racing
@@ -160,6 +192,8 @@ export interface AdsbRow {
   category?: string; // ADS-B emitter category, e.g. "A3"
   lat?: number;
   lon?: number;
+  seen_pos?: number; // seconds since the network last had a position
+  dbFlags?: number; // readsb database flags; bit 1 = military
 }
 
 // Unit conversions, named so the parser reads as physics rather than magic numbers.
@@ -402,11 +436,11 @@ function describeError(err: unknown): string {
  * warn line is what makes it visible in runtime logs.
  */
 export async function fetchAdsbTypePull(
-  batches: readonly (readonly string[])[] = TYPE_BATCHES,
+  batches: readonly (readonly string[])[] = TYPE_REQUESTS,
   deps: PullDeps = {},
 ): Promise<PullResult> {
   const d: Required<PullDeps> = {
-    fetchImpl: deps.fetchImpl ?? ((url, init) => fetch(url, init)),
+    fetchImpl: deps.fetchImpl ?? laneFetch,
     now: deps.now ?? Date.now,
     sleep: deps.sleep ?? realSleep,
   };
@@ -464,7 +498,12 @@ export async function fetchAdsbTypePull(
  * (lib/planes/sample.ts), never a prefix — a prefix is how the globe came to show
  * two dense discs and nothing else.
  */
-export function pullToObjects(result: PullResult, cap: number): WorldObject[] {
+export function pullToObjects(
+  result: PullResult,
+  cap: number,
+  /** Aircraft adsb.fi added in its gap-fill cells (lib/sources/adsbfi.ts), already in `result.objects`. */
+  gapFill?: { added: number; cellsSucceeded: number; cellsPlanned: number },
+): WorldObject[] {
   const hasCap = Number.isFinite(cap) && cap > 0;
   const localCapped = hasCap && result.objects.length > cap;
   const out = localCapped ? sampleSpatially(result.objects, cap) : result.objects.slice();
@@ -492,9 +531,13 @@ export function pullToObjects(result: PullResult, cap: number): WorldObject[] {
     noun: "aircraft",
     rule:
       `${sample}aircraft broadcasting one of ${result.typesPlanned} listed ICAO type designators, ` +
-      `seen by community ADS-B receivers across ${result.batchesSucceeded} of ` +
-      `${result.batchesPlanned} type batches` +
+      `seen by community ADS-B receivers, from ${result.batchesSucceeded} of ` +
+      `${result.batchesPlanned} type requests` +
       (caveats.length ? ` (${caveats.join("; ")})` : "") +
-      " - aircraft without a type code are not requested, so a lower bound, not a global count",
+      " - aircraft without a type code are not requested, so a lower bound, not a global count" +
+      (gapFill && gapFill.added > 0
+        ? `; plus ${gapFill.added} aircraft of any type that only adsb.fi's receivers heard, within ` +
+          `250 nm of ${gapFill.cellsSucceeded} of ${gapFill.cellsPlanned} thinly covered cities`
+        : ""),
   });
 }

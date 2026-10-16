@@ -1,0 +1,72 @@
+[
+ {
+  "type": "Feature",
+  "id": "023651ee-389c-4677-978e-d39b6c24c1e7",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    151.10533,
+    -34.02977
+   ]
+  },
+  "properties": {
+   "region": "SYD_SOUTH",
+   "title": "5 Ways (Miranda)",
+   "view": "5 Ways at The Boulevarde looking west towards Sutherland.",
+   "direction": "W",
+   "href": "https://webcams.transport.nsw.gov.au/livetraffic-webcams/cameras/5_ways_miranda.jpeg",
+   "searchDates": ", , , "
+  },
+  "eventCategory": "liveCams",
+  "path": "5-ways-miranda",
+  "eventType": "liveCams"
+ },
+ {
+  "type": "Feature",
+  "id": "9ca3da77-7d9c-4820-a23a-df48d4712522",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    151.161891,
+    -33.933667
+   ]
+  },
+  "properties": {
+   "region": "SYD_MET",
+   "title": "Airport Drive (Mascot)",
+   "view": "Airport Drive at Marsh Street looking east towards the city.",
+   "direction": "E",
+   "href": "https://webcams.transport.nsw.gov.au/livetraffic-webcams/cameras/airport_dr_mascot.jpeg",
+   "searchDates": ", , , "
+  },
+  "eventCategory": "liveCams",
+  "path": "airport-drive-mascot",
+  "eventType": "liveCams"
+ },
+ {
+  "type": "Feature",
+  "id": "d3e2777-2",
+  "geometry": {
+   "type": "Point",
+   "coordinates": [
+    150.28481,
+    -33.51141
+   ]
+  },
+  "properties": {
+   "href": "hvcs/d3e2777-2.html",
+   "heading": "Heavy vehicle checking station",
+   "accessibility": "Bell, Bells Line Of Road",
+   "locationadvice1": "123kms west of Sydney, 20kms east of Lithgow.",
+   "locationadvice2": "Westbound traffic must cross the eastbound lane to enter thechecking station. Intercepts vehicles over 8 tonne GVM.",
+   "webLinks": [
+    {
+     "Heavy vehicles": "https://www.rms.nsw.gov.au/business-industry/heavy-vehicles/index.html"
+    }
+   ],
+   "searchDates": ", , , "
+  },
+  "eventCategory": "hvcs",
+  "eventType": "hvcs"
+ }
+]

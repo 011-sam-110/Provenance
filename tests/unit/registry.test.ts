@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mergeResults } from "@/lib/sources/registry";
+import { COLLAPSE_MAX_ROUNDS, mergeResults } from "@/lib/sources/registry";
 import type { Camera } from "@/lib/types";
 
 const cam = (id: string, source = "x"): Camera => ({
@@ -60,5 +60,48 @@ describe("mergeResults", () => {
     const m = mergeResults([fail(), fail()], empty(), FEEDS);
     expect(m.cameras).toEqual([]);
     expect(m.health.every((h) => !h.ok && !h.stale)).toBe(true);
+  });
+});
+
+// A fan-out adapter resolves whatever part of its upstream answered, so a round that
+// lost most of its pages arrives as a success. Prod served Georgia 0 of 4,331 and
+// Caltrans 897 of 3,598 that way with every feed reading ok (2026-10-16 audit).
+describe("mergeResults collapse guard", () => {
+  const many = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => cam(`${prefix}${i}`));
+
+  test("a round far below last-good is served as last-good, marked stale", () => {
+    const previous = new Map([["alpha", many("a", 100)]]);
+    const m = mergeResults([ok(many("a", 30)), ok([cam("b")])], previous, FEEDS);
+    expect(m.cameras.filter((c) => c.id.startsWith("a"))).toHaveLength(100);
+    expect(m.health[0]).toEqual({ key: "alpha", ok: false, count: 100, stale: true });
+    expect(m.lastGood.get("alpha")).toHaveLength(100);
+    expect(m.collapses.get("alpha")).toBe(1);
+  });
+
+  test("an ordinary dip is accepted as the new count", () => {
+    const previous = new Map([["alpha", many("a", 100)]]);
+    const m = mergeResults([ok(many("a", 85)), ok([cam("b")])], previous, FEEDS);
+    expect(m.health[0]).toEqual({ key: "alpha", ok: true, count: 85, stale: false });
+    expect(m.collapses.has("alpha")).toBe(false);
+  });
+
+  test("a network that really shrank is accepted after the guard's last round", () => {
+    let previous = new Map([["alpha", many("a", 100)]]);
+    let collapses = new Map<string, number>();
+    for (let round = 1; round < COLLAPSE_MAX_ROUNDS; round++) {
+      const m = mergeResults([ok(many("a", 30)), ok([cam("b")])], previous, FEEDS, collapses);
+      expect(m.health[0].stale).toBe(true);
+      previous = m.lastGood;
+      collapses = m.collapses;
+    }
+    const last = mergeResults([ok(many("a", 30)), ok([cam("b")])], previous, FEEDS, collapses);
+    expect(last.health[0]).toEqual({ key: "alpha", ok: true, count: 30, stale: false });
+    expect(last.lastGood.get("alpha")).toHaveLength(30);
+    expect(last.collapses.has("alpha")).toBe(false);
+  });
+
+  test("a feed with no last-good is never held back", () => {
+    const m = mergeResults([ok(many("a", 3)), ok([cam("b")])], empty(), FEEDS);
+    expect(m.health[0]).toEqual({ key: "alpha", ok: true, count: 3, stale: false });
   });
 });

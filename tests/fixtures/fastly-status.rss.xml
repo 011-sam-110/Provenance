@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:sc="http://statuscast.com">
+    <channel>
+        <link>https://www.fastlystatus.com/rss</link>
+        <title>fastly rss feed</title>
+        <description>Recent history of StatusCast postings for fastly</description>
+        <lastBuildDate>Fri, 16 Oct 2026 19:54:04 +0000</lastBuildDate>
+        <pubDate>Fri, 16 Oct 2026 19:54:04 +0000</pubDate>
+        <copyright>Copyright 2026 StatusCast. All rights reserved.</copyright>
+            <item>
+                <title>Data Center Capacity Expansion for Toronto (YYZ)</title>
+                <description>This scheduled maintenance has been completed.</description>
+                <link>https://www.fastlystatus.com/incident/378904</link>
+                <guid isPermaLink="false">/378904/817523</guid>
+                <pubDate>Fri, 16 Oct 2026 18:00:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Data Center Capacity Expansion for Toronto (YYZ)</title>
+                <description>&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;The scheduled maintenance has been extended to 16 October 2026 at 18:00 UTC. We will provide updates as necessary.&lt;/span&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378904</link>
+                <guid isPermaLink="false">/378904/817522</guid>
+                <pubDate>Fri, 16 Oct 2026 12:25:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Delhi (QAG) Rerouted Traffic</title>
+                <description>&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica; font-color: #636363&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;This incident has been resolved.&lt;/span&gt;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378903</link>
+                <guid isPermaLink="false">/378903/817518</guid>
+                <pubDate>Thu, 15 Oct 2026 21:41:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Data Center Capacity Expansion for Toronto (YYZ)</title>
+                <description>&lt;p&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-size: inherit; font-family: Helvetica&quot;&gt;Fastly will be adding capacity at our Toronto (YYZ) POP. End-users may observe connection resets as traffic is migrated onto new hardware starting on 15 October 2026 at 04:00 UTC.&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;br&gt;&#xA;&#x9;&lt;span style=&quot;font-family: Helvetica&quot;&gt;&#xA;&#x9;&lt;/span&gt;&#xA;&lt;/p&gt;&#xA;&lt;span style=&quot;font-family: Helvetica&quot;&gt;Our estimated duration is 1d.&lt;/span&gt;&#xA;&lt;p&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&#xA;&lt;span style=&quot;font-family: Helvetica&quot;&gt;When this change is applied, customers may observe additional origin traffic as new cache nodes retrieve content from origin. Please verify that your origin access lists allow the full range of Fastly IP addresses (&lt;/span&gt;&#xA;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&#x9;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&#x9;&#x9;&lt;a target=&quot;_blank&quot; href=&quot;https://docs.fastly.com/en/guides/accessing-fastlys-ip-ranges&quot; rel=&quot;noopener noreferrer&quot; style=&quot;color: #1264a3&quot;&gt;https://docs.fastly.com/en/guides/accessing-fastlys-ip-ranges&lt;/a&gt;&#xA;&#x9;&#x9;&lt;/span&gt;&#xA;&#x9;&lt;/span&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica&quot;&gt;). Customers with any questions or concerns should contact Fastly&#x2019;s Support team at &lt;/span&gt;&#xA;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&#x9;&lt;span style=&quot;color: inherit&quot;&gt;&#xA;&#x9;&#x9;&#x9;&lt;a target=&quot;_blank&quot; href=&quot;https://support.fastly.com&quot; rel=&quot;noopener noreferrer&quot; style=&quot;color: #1264a3&quot;&gt;https://support.fastly.com&lt;/a&gt;&#xA;&#x9;&#x9;&lt;/span&gt;&#xA;&#x9;&lt;/span&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica&quot;&gt;.&lt;/span&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378904</link>
+                <guid isPermaLink="false">/378904/817495</guid>
+                <pubDate>Thu, 15 Oct 2026 04:00:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Elevated Errors for Singapore (QPG)</title>
+                <description>&lt;p&gt;&#xA;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;font color=&quot;#636363&quot;&gt;&#xA;&#x9;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&#xA;&#x9;&lt;/span&gt;&#xA;&#x9;&lt;font face=&quot;Helvetica&quot; style=&quot;&quot;&gt;&#xA;&#x9;&#x9;&lt;span style=&quot;font-size: 14px&quot;&gt;&#xA;&#x9;&#x9;&#x9;&lt;span style=&quot;font-family: Helvetica&quot;&gt;Engineering has confirmed that Singapore (QPG) &lt;/span&gt;POP&amp;nbsp;&lt;span style=&quot;font-family: Helvetica&quot;&gt;has been fully restored. Customers may have experienced elevated errors&lt;/span&gt;&amp;nbsp;&lt;span style=&quot;font-family: Helvetica&quot;&gt;from 2:50&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-family: Helvetica&quot;&gt;to 3:53&lt;/span&gt;&amp;nbsp;&lt;span style=&quot;font-family: Helvetica&quot;&gt;UTC.&lt;/span&gt;&#xA;&#x9;&#x9;&lt;/span&gt;&#xA;&#x9;&lt;/font&gt;&#xA;&lt;/font&gt;&#xA;&lt;br&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&#xA;&#x9;&lt;font color=&quot;#636363&quot;&gt;This incident is resolved.&lt;/font&gt;&#xA;&lt;/span&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;Affected customers may have experienced impact to varying degrees and to a shorter duration than as set forth above.&lt;/font&gt;&#xA;&lt;/span&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&lt;br class=&quot;Apple-interchange-newline&quot;&gt;&lt;/p&gt;&lt;hr&gt;&lt;p&gt;&lt;span style=&quot;color: #636363; font-weight: bolder&quot;&gt;&lt;span style=&quot;font-family: Helvetica; font-size: 10px&quot;&gt;Note:&amp;nbsp;&lt;/span&gt;&amp;nbsp;&lt;/span&gt;&lt;font face=&quot;Helvetica&quot;&gt;&lt;span style=&quot;font-size: 10px&quot;&gt;&lt;i&gt;&lt;font color=&quot;#636363&quot;&gt;Our Customer Escalation Management team will update the start date and time of the initial &quot;&lt;span style=&quot;background-color: #efefef&quot;&gt;investigating&lt;/span&gt;&quot; status post upon the resolution of this incident. This update is meant to provide our customers and their end users with a potential impact window. The date and time mentioned in the message above indicates when the status post was requested by our Acute Incident Response team.&lt;/font&gt;&lt;/i&gt;&lt;/span&gt;&lt;/font&gt;&lt;/p&gt;&lt;div&gt;&lt;span style=&quot;color: #636363; font-family: Helvetica; font-size: 14px&quot;&gt;&lt;span style=&quot;font-weight: bolder&quot;&gt;&lt;span style=&quot;font-size: 10px&quot;&gt;Status Post, Created Date/Time:&lt;/span&gt;&amp;nbsp;&lt;span style=&quot;font-size: 10px&quot;&gt;&amp;nbsp;&lt;/span&gt;&amp;nbsp;&lt;/span&gt;&lt;/span&gt;&lt;span style=&quot;color: #636363&quot;&gt;&lt;/span&gt;&lt;span style=&quot;color: #636363; font-family: Helvetica; font-size: 10px&quot;&gt;2026-10-13 03:46:16 UTC&lt;/span&gt;&lt;span style=&quot;color: #636363&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;color: #636363; font-family: Helvetica; font-size: 10px&quot;&gt;&amp;nbsp;&lt;/span&gt;&lt;/div&gt;&lt;p&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378911</link>
+                <guid isPermaLink="false">/378911/817515</guid>
+                <pubDate>Tue, 13 Oct 2026 04:26:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Elevated Errors for Singapore (QPG)</title>
+                <description>&lt;p&gt;&#xA;&lt;font face=&quot;Helvetica&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;&#xA;&#x9;&lt;/font&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;&#xA;&#x9;&#x9;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;Engineering has confirmed the impact to Singapore (QPG) &lt;/span&gt;&lt;span style=&quot;font-family: Helvetica&quot;&gt;POP&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;has been mitigated.&lt;/span&gt;&lt;/font&gt;&#xA;&#x9;&lt;/span&gt;&#xA;&lt;/font&gt;&#xA;&lt;span style=&quot;font-size: 14px&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;br&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378911</link>
+                <guid isPermaLink="false">/378911/817512</guid>
+                <pubDate>Tue, 13 Oct 2026 04:06:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Elevated Errors for Singapore (QPG)</title>
+                <description>&lt;p&gt;&lt;font color=&quot;#636363&quot; face=&quot;Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;Our engineers believe they have identified contributing factor causing the issue impacting the&amp;nbsp;&lt;/span&gt;&lt;/font&gt;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;Singapore (QPG) status page component&lt;/span&gt;&lt;font color=&quot;#636363&quot; face=&quot;Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;. &lt;/span&gt;&lt;/font&gt;&lt;/p&gt;&lt;p&gt;&lt;font color=&quot;#636363&quot; face=&quot;Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;We are now developing a fix, and will post a new update once it has been fully implemented and we see signs of recovery.&lt;/span&gt;&lt;/font&gt;&lt;/p&gt;&lt;p&gt;&lt;font color=&quot;#636363&quot; face=&quot;Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;All other products and services are unaffected by this incident.&lt;/span&gt;&lt;/font&gt;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378911</link>
+                <guid isPermaLink="false">/378911/817509</guid>
+                <pubDate>Tue, 13 Oct 2026 04:05:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Elevated Errors for Singapore (QPG)</title>
+                <description>&lt;p&gt;&#xA;&lt;font color=&quot;#636363&quot;&gt;&#xA;&#x9;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;We are investigating elevated errors to our Singapore (QPG) Point of Presence (POP).&lt;br&gt;&#xA;&#x9;&lt;br&gt;All other products and services are unaffected by this incident.&lt;/span&gt;&#xA;&lt;/font&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378911</link>
+                <guid isPermaLink="false">/378911/817506</guid>
+                <pubDate>Tue, 13 Oct 2026 02:50:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Retrospective: Impacted Performance in Cape Town (CPT)</title>
+                <description>&lt;p&gt;&lt;span style=&quot;font-family: Helvetica&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;During this incident, customers may have experienced elevated errors&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;from 03:12&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;to 03:57&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;UTC.&lt;/span&gt;&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;This incident is resolved.&lt;/font&gt;&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot;font-family: Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;For more information about this retrospective stat&lt;/font&gt;&lt;/span&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;&lt;font color=&quot;#636363&quot;&gt;us post, please reach out to Support through&lt;/font&gt; &lt;/span&gt;&lt;/span&gt;&lt;a href=&quot;https://support.fastly.com&quot; target=&quot;_blank&quot;&gt;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;https://support.fastly.com&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot;font-family: Helvetica&quot;&gt;&lt;span style=&quot;font-size: 14px&quot;&gt;.&lt;/span&gt;&lt;/span&gt;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378908</link>
+                <guid isPermaLink="false">/378908/817503</guid>
+                <pubDate>Sat, 10 Oct 2026 03:57:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Retrospective: Impacted Performance in Cape Town (CPT)</title>
+                <description>&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica; font-color: #636363&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;Fastly Engineers detected a performance impacting event affecting the Cape Town (CPT) data center. &lt;/span&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&#xA;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;All other data centers and services were unaffected. The issue has been resolved and we are monitoring performance closely.&lt;/span&gt;&#xA;&lt;br&gt;&#xA;&lt;/p&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378908</link>
+                <guid isPermaLink="false">/378908/817500</guid>
+                <pubDate>Sat, 10 Oct 2026 03:12:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Sambalpur (QAK) Rerouted Traffic</title>
+                <description>&lt;p&gt;&#xA;&lt;/p&gt;&#xA;&lt;p&gt;&#xA;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&#xA;&lt;/span&gt;&#xA;&lt;span style=&quot;font-family: Helvetica; font-size: 14px&quot;&gt;This event has been resolved.&lt;/span&gt;&lt;/p&gt;&lt;div&gt;&#xA;&#x9;&lt;/div&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378907</link>
+                <guid isPermaLink="false">/378907/817499</guid>
+                <pubDate>Fri, 09 Oct 2026 23:30:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+<item>
+                <title>Shielding Migration: Milan (MXP) to Milan (BGY)</title>
+                <description>&lt;p&gt;&lt;span style=&quot;font-size: 14px; font-family: Helvetica&quot;&gt;&lt;/span&gt;&lt;span style=&quot;background-color: rgba(0, 0, 0, 0); font-size: 10pt; font-family: Inter, sans-serif; color: #666666&quot;&gt;Our engineers are conducting scheduled maintenance to decommission the Milan (MXP) POP. This update will help to consolidate our network footprint in the Italy region. To learn more about shielding concepts, please read: &lt;/span&gt;&lt;a href=&quot;https://www.fastly.com/documentation/guides/getting-started/hosts/shielding/&quot; style=&quot;background-color: #ffffff; font-size: inherit&quot;&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #1155cc; background-color: rgba(0, 0, 0, 0)&quot;&gt;https://www.fastly.com/documentation/guides/getting-started/hosts/shielding/&lt;/span&gt;&lt;/a&gt;&lt;br&gt;&lt;/p&gt;&lt;span id=&quot;docs-internal-guid-e010f015-7fff-b862-53db-7a1c7d02364f&quot;&gt;&lt;h3 dir=&quot;ltr&quot; style=&quot;margin-top: 10pt; margin-bottom: 0&quot;&gt;&lt;span style=&quot;font-size: 12pt; font-family: Inter, sans-serif; color: #00759c; background-color: rgba(0, 0, 0, 0)&quot;&gt;What&#x2019;s changing?&lt;/span&gt;&lt;/h3&gt;&lt;p dir=&quot;ltr&quot; style=&quot;line-height: 1.68; margin-top: 10pt; margin-bottom: 0&quot;&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #666666; background-color: rgba(0, 0, 0, 0)&quot;&gt;Beginning October 26, 2026, and concluding by November 2, 2026, Fastly will gradually redirect shield traffic for the mxp-milan-it shield location to our Milan (BGY) POP. Services that use mxp-milan-it will continue to reference it, and the redirect will happen automatically.&lt;/span&gt;&lt;/p&gt;&lt;h3 dir=&quot;ltr&quot; style=&quot;margin-top: 10pt; margin-bottom: 0&quot;&gt;&lt;span style=&quot;font-size: 12pt; font-family: Inter, sans-serif; color: #00759c; background-color: rgba(0, 0, 0, 0)&quot;&gt;What&#x2019;s next? What do I have to do?&lt;/span&gt;&lt;/h3&gt;&lt;p dir=&quot;ltr&quot; style=&quot;line-height: 1.68; margin-top: 10pt; margin-bottom: 0&quot;&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #666666; background-color: rgba(0, 0, 0, 0)&quot;&gt;No action is required. You may update your service configuration to select the new shield location (bgy-milan-it) if you do not want Fastly to automatically transition your shielded content. If you elect to change your shield selection, your origin servers may experience a temporary increase in request volume while the cache re-establishes in BGY.&lt;/span&gt;&lt;/p&gt;&lt;p dir=&quot;ltr&quot; style=&quot;line-height: 1.68; margin-top: 10pt; margin-bottom: 0&quot;&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #666666; background-color: rgba(0, 0, 0, 0)&quot;&gt;If you have any questions or concerns, please contact our Support team through &lt;/span&gt;&lt;a href=&quot;https://support.fastly.com&quot;&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #1155cc; background-color: rgba(0, 0, 0, 0)&quot;&gt;https://support.fastly.com&lt;/span&gt;&lt;/a&gt;&lt;span style=&quot;font-size: 10pt; font-family: Inter, sans-serif; color: #666666; background-color: rgba(0, 0, 0, 0)&quot;&gt; or your account team.&lt;/span&gt;&lt;/p&gt;&lt;br&gt;&lt;/span&gt;</description>
+                <link>https://www.fastlystatus.com/incident/378900</link>
+                <guid isPermaLink="false">/378900/817491</guid>
+                <pubDate>Thu, 08 Oct 2026 00:10:00 +0000</pubDate>
+                    <sc:customfields>[]</sc:customfields>
+            </item>
+</channel>
+</rss>

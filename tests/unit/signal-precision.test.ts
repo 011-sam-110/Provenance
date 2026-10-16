@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import usgsFixture from "@/tests/fixtures/usgs-quakes.json";
 import unhcrFixture from "@/tests/fixtures/unhcr-displacement.json";
-import gdacsFixture from "@/tests/fixtures/gdacs-events.json";
 import eonetFixture from "@/tests/fixtures/eonet-events.json";
 import { SIGNALS } from "@/lib/signals/registry";
 import type { SignalFeature, SignalPrecision, SignalSource } from "@/lib/signals/types";
@@ -15,13 +14,18 @@ import {
   resolvePrecision,
   withResolvedPrecision,
 } from "@/lib/signals/precision";
-import { EARTHQUAKES_SOURCE, normalizeUsgs } from "@/lib/signals/usgs";
+import { normalizeUsgs } from "@/lib/signals/usgs";
+import { EARTHQUAKES_SOURCE } from "@/lib/signals/earthquakes";
 import { PORTS_SOURCE, normalizePorts } from "@/lib/signals/ports";
 import { MAJOR_PORTS } from "@/lib/signals/ports.data";
 import { UKRAINE_ALERTS_SOURCE, normalizeUkraineAlerts } from "@/lib/signals/ukraine-alerts";
 import { DISPLACEMENT_SOURCE, normalizeDisplacement } from "@/lib/signals/displacement";
-import { GDACS_SOURCE, normalizeGdacs } from "@/lib/signals/gdacs";
-import { CATEGORIES, WILDFIRES_SOURCE, eonetToFeatures, type EonetEvent } from "@/lib/signals/eonet";
+import { GDACS_SOURCE, normalizeGdacs, normalizeGdacsRss, gdacsToLayerFeatures } from "@/lib/signals/gdacs";
+import { eonetToFeatures, type EonetEvent } from "@/lib/signals/eonet";
+import { VOLCANOES_SOURCE } from "@/lib/signals/volcanoes";
+import { WILDFIRES_SOURCE, normalizeWfigs } from "@/lib/signals/wildfires";
+import wfigsFixture from "@/tests/fixtures/wfigs-incidents.json";
+import gdacsWfFixture from "@/tests/fixtures/gdacs-search-wf.json";
 import { HEADLINE_PLACES_SOURCE, buildHeadlinePlaceFeatures } from "@/lib/signals/headline-places";
 import type { NewsItem } from "@/lib/news";
 
@@ -50,9 +54,9 @@ describe("one real layer for each level", () => {
 
   test("area: a Ukrainian oblast under an alert", () => {
     const payload = JSON.parse(
-      readFileSync(join(process.cwd(), "tests", "fixtures", "ukraine-alerts.states.json"), "utf8"),
+      readFileSync(join(process.cwd(), "tests", "fixtures", "ukraine-alerts.alerts-in-ua.json"), "utf8"),
     ) as unknown;
-    const { features } = normalizeUkraineAlerts(payload, Date.parse("2026-09-08T12:00:00Z"));
+    const { features } = normalizeUkraineAlerts(payload, Date.parse("2026-10-16T18:50:00Z"));
     expect(features.length).toBeGreaterThan(0);
     expect(new Set(levels(features, UKRAINE_ALERTS_SOURCE))).toEqual(new Set(["area"]));
   });
@@ -65,21 +69,36 @@ describe("one real layer for each level", () => {
 });
 
 describe("a layer that mixes levels sets the level on the feature", () => {
-  test("GDACS: a quake and a cyclone are exact, a flood and a drought are areas", () => {
-    const out = normalizeGdacs(gdacsFixture as never);
+  test("GDACS: a quake and a cyclone are exact, a flood, a wildfire and a drought are areas", () => {
+    const out = normalizeGdacsRss(readFileSync(join(__dirname, "../fixtures/gdacs-rss.xml"), "utf8"));
     const byHazard = new Map(out.map((f) => [String(f.props?.hazard), resolvePrecision(f, GDACS_SOURCE)]));
     expect(byHazard.get("Earthquake")).toBe("exact");
     expect(byHazard.get("Tropical cyclone")).toBe("exact");
     expect(byHazard.get("Flood")).toBe("area");
+    expect(byHazard.get("Wildfire")).toBe("area");
     expect(byHazard.get("Drought")).toBe("area");
   });
 
-  test("EONET: a wildfire reported as a polygon is an area, one reported as a point is exact", () => {
+  test("EONET: an event reported as a polygon is an area, one reported as a point is exact", () => {
     const events = (eonetFixture as { events: EonetEvent[] }).events;
-    const fires = eonetToFeatures(events, CATEGORIES.wildfires, Date.parse("2026-06-26T00:00:00Z"));
-    const byId = new Map(fires.map((f) => [f.id, resolvePrecision(f, WILDFIRES_SOURCE)]));
+    const meta = { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316", precision: "exact" as const };
+    const fires = eonetToFeatures(events, meta, Date.parse("2026-06-26T00:00:00Z"));
+    const byId = new Map(fires.map((f) => [f.id, resolvePrecision(f, VOLCANOES_SOURCE)]));
     expect(byId.get("eonet:EONET_W1")).toBe("exact");
     expect(byId.get("eonet:EONET_WP")).toBe("area");
+  });
+
+  test("wildfires: a WFIGS incident is its point of origin, a GDACS fire event is an area", () => {
+    const wfigs = normalizeWfigs(wfigsFixture as never);
+    const gdacs = gdacsToLayerFeatures((gdacsWfFixture as unknown as { features: never[] }).features, {
+      signalId: "wildfires",
+      idPrefix: "wildfires:gdacs",
+      sourceLabel: "GDACS",
+    });
+    expect(wfigs.length).toBeGreaterThan(0);
+    expect(gdacs.length).toBeGreaterThan(0);
+    expect(levels(wfigs, WILDFIRES_SOURCE).every((l) => l === "exact")).toBe(true);
+    expect(levels(gdacs, WILDFIRES_SOURCE).every((l) => l === "area")).toBe(true);
   });
 
   test("headline places: a country name is a country, a city name is an area", () => {
@@ -104,9 +123,10 @@ describe("every registered layer", () => {
   test("a per-country figure is declared a country, on every layer that publishes one", () => {
     // The layers the rule exists for. Each draws ONE feature per country on a centroid.
     // A layer that leaves this list must leave it on purpose.
+    // conflict and protests left on purpose on 2026-10-16: they stopped being GDELT
+    // country totals and now carry events and alerts, each feature at its own level
+    // (tests/unit/signals-conflict.test.ts holds that).
     const perCountry = [
-      "conflict",
-      "protests",
       "displacement",
       "internet-outages",
       "cyber-c2",

@@ -1,6 +1,17 @@
 import { expect, test } from "vitest";
 import { readFileSync } from "node:fs";
-import { normalizeFirms, fireColor } from "@/lib/signals/fire-firms";
+import {
+  normalizeFirms,
+  fireColor,
+  parseFirmsCsv,
+  mergeFirmsResults,
+  FIRE_FIRMS_SOURCE,
+  FIRMS_CAP,
+  FIRMS_FILES,
+  FIRMS_WINDOW_MS,
+  type FirmsFileResult,
+} from "@/lib/signals/fire-firms";
+import { readOutcome } from "@/lib/signals/outcome";
 
 const csv = readFileSync(new URL("../fixtures/firms-fires.csv", import.meta.url), "utf-8");
 
@@ -26,4 +37,83 @@ test("confidence flags and the FRP colour ramp", () => {
   expect(fireColor(25)).toBe("#dc2626");
   expect(fireColor(8)).toBe("#ea580c");
   expect(fireColor(1)).toBe("#f97316");
+});
+
+// --- keyless 24 h files (2026-10-16) -----------------------------------------
+// Captured from SUOMI_VIIRS_C2_Global_24h.csv on 2026-10-16 ~19:40 UTC: the first two
+// rows (10-15 01:07), two from the middle, the two most intense, the last two.
+const viirs24h = readFileSync(new URL("../fixtures/firms-viirs-snpp-24h.csv", import.meta.url), "utf-8");
+const AT = Date.parse("2026-10-16T19:40:00Z");
+
+test("the keyless 24 h file parses with the same columns as the old API", () => {
+  const dets = parseFirmsCsv(viirs24h);
+  expect(dets).toHaveLength(8);
+  expect(dets[0]).toMatchObject({ satellite: "Suomi NPP (VIIRS)", daynight: "night", confidence: "nominal" });
+  expect(dets[0].at).toBe(Date.parse("2026-10-15T01:07:00Z"));
+});
+
+test("the '24h' file spans ~42 h, so only the last 24 h are kept", () => {
+  const out = normalizeFirms(viirs24h, FIRMS_CAP, { now: AT });
+  // Every 10-15 row (01:07 to 18:21) is older than 24 h at 10-16 19:40; the four 10-16 rows stay.
+  expect(out).toHaveLength(4);
+  expect(out.every((f) => Date.parse(f.ts!) >= AT - FIRMS_WINDOW_MS)).toBe(true);
+  expect(out[0].props?.frp).toBe("543.7 MW");
+});
+
+test("the source reads the keyless file and needs no key", async () => {
+  const prev = process.env.FIRMS_MAP_KEY;
+  delete process.env.FIRMS_MAP_KEY;
+  const urls: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const u = String(input);
+    urls.push(u);
+    // Only FIRMS answers here. The geostationary operators are refused, which must
+    // leave the FIRMS rows standing and say what failed.
+    if (!u.startsWith("https://firms.modaps.eosdis.nasa.gov/")) return new Response("", { status: 503 });
+    return new Response(viirs24h, { status: 200, headers: { "last-modified": "Fri, 16 Oct 2026 18:49:12 GMT" } });
+  }) as typeof fetch;
+  try {
+    const out = await FIRE_FIRMS_SOURCE.fetch();
+    const firms = urls.filter((u) => u.startsWith("https://firms.modaps.eosdis.nasa.gov/"));
+    expect(firms.length).toBe(FIRMS_FILES.length);
+    expect(firms.every((u) => u.startsWith("https://firms.modaps.eosdis.nasa.gov/data/active_fire/"))).toBe(true);
+    expect(urls.some((u) => u.includes("/api/area/"))).toBe(false);
+    const o = readOutcome(out)!;
+    expect(o.ok).toBe(false);
+    expect(o.reason).toMatch(/^partial: .*DEA.*HMS.*INPE.* failed \(http 503\)$/);
+  } finally {
+    globalThis.fetch = realFetch;
+    if (prev != null) process.env.FIRMS_MAP_KEY = prev;
+  }
+});
+
+test("one file failing keeps the others and says which failed", () => {
+  const good: FirmsFileResult = { key: "VIIRS S-NPP", ok: true, dets: parseFirmsCsv(viirs24h), at: AT };
+  const bad: FirmsFileResult = { key: "VIIRS NOAA-20", ok: false, dets: [], at: null, reason: "http 503" };
+  const out = mergeFirmsResults([good, bad], AT);
+  expect(out).toHaveLength(4);
+  const o = readOutcome(out)!;
+  expect(o.ok).toBe(false);
+  expect(o.reason).toBe("partial: VIIRS NOAA-20 failed (http 503)");
+
+  const none = mergeFirmsResults([{ ...bad, key: "VIIRS S-NPP", reason: "http 400" }], AT);
+  expect(none).toHaveLength(0);
+  expect(readOutcome(none)).toMatchObject({ ok: false, reason: "http 400" });
+});
+
+test("MODIS rows parse through the same reader (brightness column, numeric confidence)", () => {
+  const modis = [
+    "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,confidence,version,bright_t31,frp,daynight",
+    "37.39068,138.58585,308.31,2,1.38,2026-10-15,0016,T,51,6.1NRT,290.3,20.46,D",
+    "42.64405,-123.02656,307.7,1,1,2026-10-16,1720,A,85,6.1NRT,293.77,7.78,D",
+  ].join("\n");
+  const dets = parseFirmsCsv(modis);
+  expect(dets.map((d) => d.satellite)).toEqual(["Terra (MODIS)", "Aqua (MODIS)"]);
+  expect(dets.map((d) => d.confidence)).toEqual(["nominal", "high"]);
+  expect(dets[0].brightness).toBe("308 K");
+});
+
+test("all four keyless files are read: three VIIRS satellites and MODIS", () => {
+  expect(FIRMS_FILES.map((f) => f.key)).toEqual(["VIIRS S-NPP", "VIIRS NOAA-20", "VIIRS NOAA-21", "MODIS"]);
 });

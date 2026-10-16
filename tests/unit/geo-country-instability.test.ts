@@ -13,7 +13,7 @@ import type { SignalFeature } from "@/lib/signals/types";
 // + spread per-factor breakdown + coverage).
 const SYR_INPUT: CountryInput = {
   iso3: "SYR",
-  factors: { conflict: 1000, food: 0.45, displacement: 6_000_000, outages: 50_000 },
+  factors: { conflict: 130, severity: 8.4, food: 0.225, structural: 0.8, displacement: 0.35, attention: 120, outages: 1 },
 };
 const [syr] = computeInstability([SYR_INPUT]);
 // The CII source names countries from the centroid set ("Syrian Arab Republic"),
@@ -50,20 +50,25 @@ test("deriveInstabilityView exposes score, ordered drivers and factor breakdown"
   const view = deriveInstabilityView(syr);
   expect(view.score).toBe(Number(syr.props?.score));
   expect(view.color).toBe(syr.color);
-  expect(view.coverage).toBe("4/4 factors");
-  // Drivers ordered by weighted CONTRIBUTION, not by weight. Conflict still holds the
-  // largest weight (0.40) but its GDELT ramp caps at 0.55, so on this fixture it
-  // contributes 0.220 against displacement's 0.243 and lands third. It also carries the
-  // proxy label, because since ACLED's removal every conflict number is press volume.
-  expect(view.drivers[0]).toBe("displacement");
+  expect(view.coverage).toBe("7/7 factors");
+  // Drivers ordered by weighted CONTRIBUTION, not by weight. Conflict holds the largest
+  // weight (0.30) but 130 deaths ramp to 0.37 (0.112), so crisis severity (0.25 x 0.84 =
+  // 0.21) leads.
+  expect(view.drivers[0]).toBe("crisis severity (INFORM)");
   // Breakdown mirrors the drivers ordering and parses the "NN%" values.
-  expect(view.factors[0].label).toBe("displacement");
-  expect(view.factors.map((f) => f.label).sort()).toEqual(
-    ["armed conflict (GDELT article-volume proxy)", "displacement", "food insecurity", "internet outages"],
-  );
+  expect(view.factors[0].label).toBe("crisis severity (INFORM)");
+  expect(view.factors.map((f) => f.label).sort()).toEqual([
+    "armed conflict (UCDP fatalities)",
+    "conflict coverage (GDELT article volume)",
+    "crisis severity (INFORM)",
+    "displacement",
+    "food insecurity",
+    "internet outages",
+    "structural risk (INFORM Risk, WGI)",
+  ]);
   const food = view.factors.find((f) => f.label === "food insecurity")!;
-  expect(food.value).toBe("90%");
-  expect(food.pct).toBe(90);
+  expect(food.value).toBe("45%");
+  expect(food.pct).toBe(45);
   // Reserved keys never leak into the breakdown.
   expect(view.factors.some((f) => ["country", "score", "coverage"].includes(f.label))).toBe(false);
 });

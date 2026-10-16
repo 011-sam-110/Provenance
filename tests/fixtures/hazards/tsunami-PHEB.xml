@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <feed xmlns="http://www.w3.org/2005/Atom" xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#" xmlns:georss="http://www.georss.org/georss">
+    <id>urn:uuid:3c6f3c6f-74ce-4659-bb17-2425665b6c80</id><title>        TSUNAMI INFORMATION STATEMENT NUMBER   1        </title>
+    <updated>2026-10-16T03:46:40Z</updated>
+    <author>
+      <name>NWS PACIFIC TSUNAMI WARNING CENTER HONOLULU HI</name>
+<uri>https://www.tsunami.gov/</uri>
+     <email>ntwc@noaa.gov</email>
+    </author>
+<icon>https://www.tsunami.gov/images/favicon.ico</icon>
+<link type="application/atom+xml" rel="self" title="self" href="https://www.tsunami.gov/events/xml/PAAQAtom.xml"/>
+ <link rel="related" title="Energy Map" href="https://www.tsunami.gov/events/PHEB/2026/10/16/26289000/1/WEGM42/ " type="image/jpeg" /> 
+
+   <entry>
+
+    <title>NEAR THE EAST COAST OF KAMCHATKA  RUSSIA</title><updated>2026-10-16T03:46:40Z</updated>
+<geo:lat>51.86</geo:lat>
+<geo:long>157.428</geo:long>
+<summary type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml">
+     <strong>Category:</strong> Information<br/><strong>Bulletin Issue Time: </strong> 2026.10.16 03:46:40 UTC <br/><strong>Preliminary Magnitude: </strong>7.0(Mwp)<br/><strong>Lat/Lon: </strong>51.86 / 157.428<br/><strong>Affected Region: </strong>NEAR THE EAST COAST OF KAMCHATKA  RUSSIA<br/><b>Note:</b>  <br/><strong>Definition: </strong><a href="https://www.tsunami.gov/events/PHEB/2026/10/16/26289000/1/WEGM42/WEGM42.txt">View bulletin</a><img src="https://www.tsunami.gov/events/PHEB/2026/10/16/26289000/1/WEGM42/ " alt="Energy Map" /> 
+ </div></summary>
+    <id>urn:uuid:b72803ee-9dd0-4628-a519-e04cc92e0e9f</id><link rel="related" title="CapXML document" href="https://www.tsunami.gov/events/PHEB/2026/10/16/26289000/1/WEGM42/PHEBCAP.xml" type="application/cap+xml" />
+<link rel="alternate" title="Bulletin" href="https://www.tsunami.gov/events/PHEB/2026/10/16/26289000/1/WEGM42/WEGM42.txt" type="application/xml" />
+</entry>
+</feed>

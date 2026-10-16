@@ -34,3 +34,8 @@ test("maps Breidd→lat, Lengd→lon and uses the station's first view image", (
   expect(c.imageUrl).toBe("https://www.vegagerdin.is/vgdata/vefmyndavelar/hellisheidi_1.jpg");
   expect(c.road).toBe("Hringvegur");
 });
+
+test("the licence is the operator's own CC BY 4.0", () => {
+  const [c] = normalizeIceland(fixture as never);
+  expect(c.license).toBe("CC BY 4.0 (Vegagerðin / IRCA)");
+});

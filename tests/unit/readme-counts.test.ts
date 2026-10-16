@@ -10,6 +10,7 @@ import { allExplainers } from "@/lib/signals/explain";
 import { CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { CASTLEROCK_SYSTEMS } from "@/lib/sources/castlerock";
 import { DISCOVERED_FEEDS } from "@/lib/sources/discovered";
+import { CARS_SYSTEMS } from "@/lib/sources/cars";
 
 // The README is the first thing a recruiter, a client or a YC reader sees, and on
 // 2026-08-18 an audit of it found four separate figures that had rotted: the test
@@ -80,6 +81,10 @@ function feedAdapterModules(): Map<string, string> {
   // CAMERA_FEED_COUNT went to 15. Reading the admitted rows here restores what the
   // function claims to return: an accounting of every registered feed.
   for (const feed of DISCOVERED_FEEDS) byKey.set(feed.key, "discovered");
+  // A fan-out module that registers ONE KEY PER SYSTEM (cars.ts) is the third shape:
+  // several feeds, one module. Its keys are read from the module's own system table,
+  // for the same reason the discovered rows are.
+  for (const system of CARS_SYSTEMS) byKey.set(system.key, "cars");
   return byKey;
 }
 
@@ -107,6 +112,10 @@ function feedAdapterModules(): Map<string, string> {
 function agencyNetworkCount(): number {
   const dir = join(ROOT, "lib", "sources");
   let total = 0;
+  // A module is counted once however many feed keys it registers: cars.ts declares six
+  // agencies and registers six keys, and counting its declarations per key would make
+  // that thirty-six.
+  const counted = new Set<string>();
   for (const [, mod] of feedAdapterModules()) {
     // An admitted network is exactly one agency: it was reviewed as one operator, and
     // reading discovered.ts for `agency:` literals would count the SHARED adapter once
@@ -115,6 +124,8 @@ function agencyNetworkCount(): number {
       total += 1;
       continue;
     }
+    if (counted.has(mod)) continue;
+    counted.add(mod);
     const src = readFileSync(join(dir, `${mod}.ts`), "utf8");
     const declared = new Set([...src.matchAll(/agency:\s*"([^"]+)"/g)].map((m) => m[1]));
     total += declared.size > 0 ? declared.size : 1;

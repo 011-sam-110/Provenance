@@ -1,7 +1,7 @@
 /**
  * The aircraft layer. The sole source is an adsb.lol pull by ICAO type designator
- * (lib/sources/adsb.ts): four paced requests that together cover the whole receiver
- * network, capped as a proportional spatial sample. See `fetchAircraftOnce` for why
+ * (lib/sources/adsb.ts): one request naming every listed type, which covers the whole
+ * receiver network, capped as a proportional spatial sample. See `fetchAircraftOnce` for why
  * OpenSky was removed — the reason is its licence, not its reliability.
  *
  * FILENAME. This module is still called `opensky.ts` even though it no longer
@@ -13,8 +13,8 @@
  * was a sweep of 40 point+radius cells, and on Vercel the shared egress IP tripped
  * adsb.lol's per-IP rate limit so hard that prod served 1 of 40 cells. The type
  * pull replaced it: `/v2/type/{list}` answers worldwide in one request, so the
- * layer needs four requests per snapshot instead of forty, and the cap became a
- * spatial sample instead of a prefix (which is what had drawn two dense discs on
+ * layer needed four requests per snapshot instead of forty (one since 2026-10-16),
+ * and the cap became a spatial sample instead of a prefix (which is what had drawn two dense discs on
  * the globe). Coverage is still a lower bound — receivers are where volunteers put
  * them, and only listed types are asked for — and the coverage record says so.
  *
@@ -48,7 +48,16 @@ import {
   withCoverage,
   type SignalCoverage,
 } from "@/lib/signals/coverage";
-import { fetchAdsbTypePull, pullToObjects } from "@/lib/sources/adsb";
+import { fetchAdsbTypePull, pullToObjects, PULL_BUDGET_MS } from "@/lib/sources/adsb";
+import {
+  FAILOVER_CELLS,
+  GAP_CELLS,
+  MIN_FAILOVER_AIRCRAFT,
+  fetchAdsbFiCells,
+  mergeGapFill,
+  shouldFailOver,
+  sweepToObjects,
+} from "@/lib/sources/adsbfi";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -290,7 +299,7 @@ export interface AircraftSnapshot {
    * count without reading this cannot describe it correctly. Undefined only for a
    * snapshot that predates this field or carries no aircraft.
    */
-  source?: "opensky" | "adsb.lol";
+  source?: "opensky" | "adsb.lol" | "adsb.fi";
 }
 
 /** Pure: lift the coverage a capped array carries into a JSON-serializable snapshot. */
@@ -303,10 +312,15 @@ export function toAircraftSnapshot(planes: WorldObject[]): AircraftSnapshot {
 // Snapshot fetch — one adsb.lol sweep, cached deployment-wide, dormant-safe
 // ---------------------------------------------------------------------------
 
-// Deployment-wide revalidate, unchanged at 240 s. This used to be sized against
-// OpenSky's ~400-credits/day anonymous budget; adsb.lol publishes no such cap, so
-// the number now exists only to bound how often the four-request pull runs.
-const REVALIDATE_S = 240;
+// Deployment-wide revalidate: 90 s since 2026-10-16, 240 s before. 240 was sized
+// against OpenSky's ~400-credits/day anonymous budget and then kept for a four-request
+// pull. Upstream positions are under a second old, but at 240 s each aircraft jumped
+// once every 4-6 minutes on prod (stale-while-revalidate re-pulls only when a request
+// arrives after the window), up to 60 km at cruise. The pull is one request now, and
+// with military-air's /v2/mil every 20 s that is about 3.7 adsb.lol requests a minute,
+// inside the refill measured the same day (one token per 10-20 s). Lower it only after
+// re-measuring that bucket.
+const REVALIDATE_S = 90;
 
 /**
  * One aircraft snapshot, from the adsb.lol type pull (lib/sources/adsb.ts).
@@ -335,11 +349,14 @@ const REVALIDATE_S = 240;
  * call, adsb.lol sees only where volunteers run receivers and only the types we
  * list — and the coverage record says so on every response.
  *
- * adsb.lol carries no equivalent restriction: its feeders waive rights under CC0 and
- * no term on its site restricts API use, commercial use or redistribution. Verified
- * against content/en/privacy-license/index.md in the adsblol/website repo, 2026-08-14.
- * That is "no restriction exists", which is a slightly weaker claim than "a licence
- * expressly grants this" — worth knowing before anyone builds a paid product on it.
+ * adsb.lol's terms are the ODbL 1.0, not "no restriction" as this paragraph said
+ * until 2026-10-16. Its OpenAPI document states: "The license for the API as well as
+ * all data ADSB.lol makes public is ODbL" (`info.license`,
+ * https://api.adsb.lol/api/openapi.json). The ODbL allows display and reuse with
+ * attribution and share-alike on a derived database, so the layer is fine; the credit
+ * (ADSB_ATTRIBUTION) names the licence. The same document says a future API key will
+ * go to feeders only, and asks production users to get in touch. Both are open items
+ * for the owner, not for this code.
  *
  * THROWS, deliberately, on a pull that returns nothing OR that lost its mainline
  * batch. `unstable_cache` commits whatever this returns, so returning a poor
@@ -347,25 +364,91 @@ const REVALIDATE_S = 240;
  * revalidate window while reading as "fresh": a general-aviation-only sky of a few
  * hundred aircraft standing in for 3,000. Throwing leaves the previous Data Cache
  * entry in place for the staleness gate to judge — see `decideStaleness`.
+ *
+ * THE ONE EXCEPTION (2026-10-16): when adsb.lol has given this process nothing for
+ * FAILOVER_AFTER_MS, the last good snapshot is close to the staleness gate's ceiling
+ * and the layer is about to go empty. Then an adsb.fi sweep of the busiest hubs is
+ * served instead, with `source: "adsb.fi"` and a coverage rule that says it is
+ * regional (lib/sources/adsbfi.ts). It still throws when that sweep is small.
+ *
+ * Every cycle, adsb.fi's gap-fill cells add the aircraft adsb.lol did not hear over
+ * thinly covered cities; adsb.lol's row wins for any aircraft both heard.
  */
 async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
-  const pull = await fetchAdsbTypePull();
-  if (!pull.mainlineSucceeded) {
-    throw new Error(
-      `adsb.lol mainline batch did not answer (${pull.batchesSucceeded} of ${pull.batchesPlanned} batches); ` +
-        "refusing to cache a snapshot without the airline fleet",
+  const started = Date.now();
+  // adsb.fi's gap-fill cells run beside the adsb.lol request: another host, so they
+  // spend none of adsb.lol's allowance, and they finish inside the same budget.
+  const [pull, gap] = await Promise.all([
+    fetchAdsbTypePull(),
+    fetchAdsbFiCells(GAP_CELLS, { deadline: started + PULL_BUDGET_MS }),
+  ]);
+
+  if (pull.mainlineSucceeded && pull.objects.length) {
+    noteAdsbLolOk(Date.now());
+    const merged = mergeGapFill(pull.objects, gap.objects);
+    const objects = pullToObjects({ ...pull, objects: merged.objects }, MAX_PLANES, {
+      added: merged.added,
+      cellsSucceeded: gap.cellsSucceeded,
+      cellsPlanned: gap.cellsPlanned,
+    });
+    const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+    // One line per revalidation so runtime logs show the pool, the served set and the
+    // cached entry's size against the Data Cache's 2 MB limit.
+    console.info(
+      `adsb.lol snapshot: serving ${objects.length} of ${merged.objects.length} aircraft ` +
+        `from ${pull.batchesSucceeded}/${pull.batchesPlanned} requests, +${merged.added} from adsb.fi ` +
+        `(${gap.cellsSucceeded}/${gap.cellsPlanned} cells), ${JSON.stringify(snapshot).length} bytes`,
     );
+    return snapshot;
   }
-  if (!pull.objects.length) throw new Error("adsb.lol type pull returned zero positioned aircraft");
-  const objects = pullToObjects(pull, MAX_PLANES);
-  const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
-  // One line per revalidation so runtime logs show the pool, the served set and the
-  // cached entry's size against the Data Cache's 2 MB limit.
-  console.info(
-    `adsb.lol snapshot: serving ${objects.length} of ${pull.objects.length} aircraft ` +
-      `from ${pull.batchesSucceeded}/${pull.batchesPlanned} batches, ${JSON.stringify(snapshot).length} bytes`,
+
+  const why = pull.mainlineSucceeded
+    ? "adsb.lol type pull returned zero positioned aircraft"
+    : `adsb.lol did not answer (${pull.batchesSucceeded} of ${pull.batchesPlanned} requests)`;
+  // A blip: keep the last good adsb.lol snapshot, which the staleness gate serves
+  // with its age. Refusing to cache is what keeps it in place.
+  if (!shouldFailOver(adsbLolOkAt(), Date.now())) throw new Error(`${why}; keeping the last good snapshot`);
+
+  // An outage: adsb.lol has not answered for FAILOVER_AFTER_MS. Widen adsb.fi's sweep
+  // to the hubs and serve that, labelled regional.
+  const more = await fetchAdsbFiCells(FAILOVER_CELLS, { deadline: started + FAILOVER_BUDGET_MS });
+  const pool = mergeGapFill(gap.objects, more.objects).objects;
+  const sweep = {
+    objects: pool,
+    cellsPlanned: gap.cellsPlanned + more.cellsPlanned,
+    cellsAttempted: gap.cellsAttempted + more.cellsAttempted,
+    cellsSucceeded: gap.cellsSucceeded + more.cellsSucceeded,
+    answered: [...gap.answered, ...more.answered],
+  };
+  if (pool.length < MIN_FAILOVER_AIRCRAFT) {
+    throw new Error(`${why}, and adsb.fi failover heard only ${pool.length} aircraft`);
+  }
+  const objects = sweepToObjects(sweep, MAX_PLANES);
+  console.warn(
+    `${why}; serving adsb.fi failover: ${objects.length} of ${pool.length} aircraft from ` +
+      `${sweep.cellsSucceeded}/${sweep.cellsPlanned} cells`,
   );
-  return snapshot;
+  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.fi" };
+}
+
+/**
+ * The failover sweep's whole wall clock, gap cells included. Inside the route's
+ * maxDuration of 60 s, with room for the response.
+ */
+const FAILOVER_BUDGET_MS = 45_000;
+
+// When adsb.lol last gave this process a good pull. On globalThis because the planes
+// route is its own bundle; one process serves prod (the box), so this is the
+// deployment's memory. A restart forgets it, so the first failed cycle after one
+// fails over at once even if the Data Cache still holds an adsb.lol snapshot. That
+// costs one cycle of a labelled regional snapshot, not a wrong one.
+const OK_KEY = Symbol.for("provenance.planes.adsbLolOkAt.v1");
+function adsbLolOkAt(): number | null {
+  const v = (globalThis as unknown as Record<symbol, unknown>)[OK_KEY];
+  return typeof v === "number" ? v : null;
+}
+function noteAdsbLolOk(at: number): void {
+  (globalThis as unknown as Record<symbol, unknown>)[OK_KEY] = at;
 }
 
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
@@ -391,17 +474,20 @@ function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
 
 /**
  * Below this age a snapshot is ordinary cache latency, not evidence anything
- * failed: under healthy operation the Data Cache refreshes at least this often
- * (REVALIDATE_S), so no caveat is warranted.
+ * failed. Under healthy operation an entry is at most REVALIDATE_S old when a
+ * request triggers its refresh, that request is still answered from the old entry,
+ * and the refresh itself can take PULL_BUDGET_MS. The extra minute covers both, so
+ * a healthy cycle is never labelled stale (at 240 s with no margin, prod labelled
+ * healthy snapshots stale at 244-297 s on 2026-10-16).
  */
-export const FRESH_CEILING_MS = REVALIDATE_S * 1000; // 240_000 ms = 4 min
+export const FRESH_CEILING_MS = REVALIDATE_S * 1000 + 60_000; // 150_000 ms = 2.5 min
 
 /**
  * Above this age, refuse to serve at all — prefer an honest empty layer over
  * ghosts. A widebody cruises at up to ~900 km/h (~250 m/s); at 15 minutes that
  * is up to ~225 km of possible drift, which is not "this aircraft, a little
  * late" — it's a plotted point that can no longer be trusted as this aircraft's
- * position. 15 min is also ~3.75 REVALIDATE_S windows, chosen so a few
+ * position. 15 min is also 10 REVALIDATE_S windows, chosen so a few
  * consecutive failed polls (rate-limit, timeout) are ridden out with a
  * disclosed-stale serve before the layer gives up and goes empty — a
  * deliberate ceiling, not a leftover default.
@@ -462,9 +548,9 @@ export function gateSnapshot(snapshot: AircraftSnapshot, now: number = Date.now(
  * — cache hit or fallback — passes through `gateSnapshot` before it leaves this
  * function, so nothing older than STALE_CEILING_MS is ever returned.
  *
- * CACHE KEY: `planes-aircraft-v5`, bumped from v4 when the sweep became the type
- * pull so the first deploy starts clean rather than serving a sweep-era entry until
- * it revalidated. (`unstable_cache` also folds the callback's source text into the
+ * CACHE KEY: `planes-aircraft-v6`. v5 was the four-request type pull, v4 the sweep;
+ * each bump makes the first deploy start clean rather than serve the older shape
+ * until it revalidated. (`unstable_cache` also folds the callback's source text into the
  * key, so in practice every deploy that touches `fetchAircraftOnce` starts cold.)
  *
  * ONE ATTEMPT PER REQUEST. A cold cache (first request after a deploy) runs the pull
@@ -486,7 +572,7 @@ export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
   try {
     snapshot = cache
       ? rehydrate(
-          await cache.unstable_cache(fetchAircraftOnce, ["planes-aircraft-v5"], {
+          await cache.unstable_cache(fetchAircraftOnce, ["planes-aircraft-v6"], {
             revalidate: REVALIDATE_S,
           })(),
         )

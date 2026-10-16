@@ -9,7 +9,7 @@ import { normalizeAis, AIS_CAP } from "@/lib/signals/ais";
 import { normalizeAirStations, OPENAQ_CAP } from "@/lib/signals/airquality-stations";
 import { normalizeEmsc, EMSC_REQUEST_LIMIT } from "@/lib/signals/emsc";
 import { normalizeLaunches, LAUNCHES_PAGE_LIMIT } from "@/lib/signals/launches";
-import { normalizeUsgs } from "@/lib/signals/usgs";
+import { normalizeUsgs, USGS_COVERAGE_RULE } from "@/lib/signals/usgs";
 import { projectSignal } from "@/lib/console/signals/signalCard";
 import { WORLD_SCOPE } from "@/lib/shell/scope";
 
@@ -23,9 +23,9 @@ test("the declared caps are what the adapters ship", () => {
   expect(FIRMS_CAP).toBe(1500);
   expect(CRIME_CAP).toBe(1500);
   expect(AIS_CAP).toBe(1200);
-  expect(OPENAQ_CAP).toBe(1000);
-  expect(EMSC_REQUEST_LIMIT).toBe(500);
-  expect(LAUNCHES_PAGE_LIMIT).toBe(30);
+  expect(OPENAQ_CAP).toBe(4000); // 4 pages of 1,000 since the 3 h window (2026-10-16)
+  expect(EMSC_REQUEST_LIMIT).toBe(2000);
+  expect(LAUNCHES_PAGE_LIMIT).toBe(100);
 });
 
 describe("fire-active (NASA FIRMS)", () => {
@@ -164,8 +164,11 @@ describe("aurora (NOAA OVATION)", () => {
 });
 
 describe("ais (AISStream chokepoints)", () => {
-  test("a saturated collection window is a LOWER BOUND, never a vessel count", () => {
-    const vessels = Array.from({ length: AIS_CAP }, (_, i) => ({
+  // The stream used to close at AIS_CAP, so a full snapshot was a lower bound. Since
+  // 2026-10-16 the socket stays open and nothing stops at the cap: the total heard is
+  // known, and a busy snapshot is cut to the cap with that total as its denominator.
+  test("a busy snapshot is cut to the cap, with the real total beside it", () => {
+    const vessels = Array.from({ length: AIS_CAP + 200 }, (_, i) => ({
       MMSI: 100000 + i,
       ShipName: `Ship ${i}`,
       latitude: 25 + (i % 10) * 0.01,
@@ -174,9 +177,9 @@ describe("ais (AISStream chokepoints)", () => {
     }));
     const c = readCoverage(normalizeAis(vessels))!;
     expect(c.capped).toBe(true);
-    expect(c.availableExact).toBe(false);
-    expect(c.upstreamLimit).toBe(AIS_CAP);
-    expect(coverageCountLabel(c)).toBe("1,200 of 1,200+");
+    expect(c.availableExact).toBe(true);
+    expect(c.cap).toBe(AIS_CAP);
+    expect(coverageCountLabel(c)).toBe("1,200 of 1,400");
   });
 
   test("a quiet chokepoint snapshot is complete and says so", () => {
@@ -186,7 +189,8 @@ describe("ais (AISStream chokepoints)", () => {
 });
 
 describe("air-quality-stations (OpenAQ)", () => {
-  test("a full page means '1,000 of 1,000+', not '1,000 stations worldwide'", () => {
+  const AQ_NOW = Date.parse("2026-08-10T10:00:00Z"); // the rows are 1 h old
+  test("full pages mean '4,000 of 4,000+', not '4,000 stations worldwide'", () => {
     const results = Array.from({ length: OPENAQ_CAP }, (_, i) => ({
       locationsId: i + 1,
       sensorsId: i + 1,
@@ -194,14 +198,14 @@ describe("air-quality-stations (OpenAQ)", () => {
       coordinates: { latitude: 10 + (i % 80) * 0.5, longitude: 20 + (i % 100) * 0.5 },
       datetime: { utc: "2026-08-10T09:00:00Z" },
     }));
-    const c = readCoverage(normalizeAirStations({ results }))!;
+    const c = readCoverage(normalizeAirStations({ results }, AQ_NOW))!;
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
-    expect(coverageCountLabel(c)).toBe("1,000 of 1,000+");
+    expect(coverageCountLabel(c)).toBe("4,000 of 4,000+");
   });
 
   test("hygiene-dropped rows do not hide the fact the PAGE was full", () => {
-    // 1,000 rows back, but 200 are error sentinels — the page was still saturated.
+    // 4,000 rows back, but 200 are error sentinels — the pages were still saturated.
     const results = Array.from({ length: OPENAQ_CAP }, (_, i) => ({
       locationsId: i + 1,
       sensorsId: i + 1,
@@ -209,13 +213,13 @@ describe("air-quality-stations (OpenAQ)", () => {
       coordinates: { latitude: 10 + (i % 80) * 0.5, longitude: 20 + (i % 100) * 0.5 },
       datetime: { utc: "2026-08-10T09:00:00Z" },
     }));
-    const c = readCoverage(normalizeAirStations({ results }))!;
-    expect(c.returned).toBe(800);
+    const c = readCoverage(normalizeAirStations({ results }, AQ_NOW))!;
+    expect(c.returned).toBe(3800);
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
-    // The provable floor is the saturated PAGE (1,000), not the 800 that survived
+    // The provable floor is the saturated PAGES (4,000), not the 3,800 that survived
     // hygiene — so the label must not understate what exists upstream.
-    expect(coverageCountLabel(c)).toBe("800 of 1,000+");
+    expect(coverageCountLabel(c)).toBe("3,800 of 4,000+");
   });
 });
 
@@ -233,7 +237,7 @@ describe("emsc-quakes (EMSC FDSN)", () => {
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
     expect(c.upstreamLimit).toBe(EMSC_REQUEST_LIMIT);
-    expect(coverageCountLabel(c)).toBe("500 of 500+");
+    expect(coverageCountLabel(c)).toBe("2,000 of 2,000+");
   });
 
   test("a short page is a real, complete measurement", () => {
@@ -260,9 +264,9 @@ describe("launches (Launch Library 2)", () => {
   });
 
   test("without a total, a full page falls back to a lower bound", () => {
-    const c = readCoverage(normalizeLaunches({ results: Array.from({ length: 30 }, (_, i) => launch(i)) }))!;
+    const c = readCoverage(normalizeLaunches({ results: Array.from({ length: LAUNCHES_PAGE_LIMIT }, (_, i) => launch(i)) }))!;
     expect(c.availableExact).toBe(false);
-    expect(coverageCountLabel(c)).toBe("30 of 30+");
+    expect(coverageCountLabel(c)).toBe("100 of 100+");
   });
 });
 
@@ -289,7 +293,7 @@ describe("uncapped layers stay uncapped", () => {
       available: 1,
       availableExact: true,
       capped: false,
-      rule: "all earthquakes in the past 24 hours",
+      rule: USGS_COVERAGE_RULE,
     });
     // Uncapped stays uncapped: no invented denominator, no truncation note.
     expect(coverageCountLabel(c)).toBe("1");

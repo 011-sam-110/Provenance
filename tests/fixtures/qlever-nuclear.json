@@ -1,0 +1,238 @@
+{
+ "head": {
+  "vars": [
+   "osm",
+   "name",
+   "nameEn",
+   "output",
+   "operator",
+   "start",
+   "wikidata",
+   "centroid"
+  ]
+ },
+ "results": {
+  "bindings": [
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/node/8645134918"
+    },
+    "name": {
+     "type": "literal",
+     "value": "RHF de l'Institut Laue Langevin"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "High-flux Reactor"
+    },
+    "output": {
+     "type": "literal",
+     "value": "57 MW"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(5.692845 45.206100)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/1035905414"
+    },
+    "output": {
+     "type": "literal",
+     "value": "yes"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(129.300831 35.327492)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/23652365"
+    },
+    "name": {
+     "type": "literal",
+     "value": "Чорнобильська Атомна Електростанція"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "Chornobyl Nuclear Power Plant"
+    },
+    "output": {
+     "type": "literal",
+     "value": "0"
+    },
+    "operator": {
+     "type": "literal",
+     "value": "НАЕК Енергоатом"
+    },
+    "start": {
+     "type": "literal",
+     "value": "1978-05-27"
+    },
+    "wikidata": {
+     "type": "literal",
+     "value": "Q215419"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(30.104223 51.389813)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/299942571"
+    },
+    "name": {
+     "type": "literal",
+     "value": "台山核电站"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "Taishan Nuclear Power Plant"
+    },
+    "output": {
+     "type": "literal",
+     "value": "3320 MW"
+    },
+    "wikidata": {
+     "type": "literal",
+     "value": "Q1519910"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(112.981448 21.917349)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/435061160"
+    },
+    "name": {
+     "type": "literal",
+     "value": "台山核电站"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "Taishan Nuclear Power Plant"
+    },
+    "output": {
+     "type": "literal",
+     "value": "yes"
+    },
+    "wikidata": {
+     "type": "literal",
+     "value": "Q1519910"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(112.979543 21.911768)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/4800321"
+    },
+    "name": {
+     "type": "literal",
+     "value": "Hartlepool Nuclear Power Station"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "Hartlepool Nuclear Power Station"
+    },
+    "output": {
+     "type": "literal",
+     "value": "1180 MW"
+    },
+    "operator": {
+     "type": "literal",
+     "value": "EDF Energy"
+    },
+    "start": {
+     "type": "literal",
+     "value": "1983"
+    },
+    "wikidata": {
+     "type": "literal",
+     "value": "Q572403"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(-1.181088 54.635101)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/582056234"
+    },
+    "name": {
+     "type": "literal",
+     "value": "Plutonium Production 2 & 3"
+    },
+    "output": {
+     "type": "literal",
+     "value": "yes"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(72.172126 32.008894)"
+    }
+   },
+   {
+    "osm": {
+     "type": "uri",
+     "value": "https://www.openstreetmap.org/way/880625927"
+    },
+    "name": {
+     "type": "literal",
+     "value": "Akkuyu Nükleer Enerji Santrali"
+    },
+    "nameEn": {
+     "type": "literal",
+     "value": "Akkuyu Nuclear Power Plant"
+    },
+    "output": {
+     "type": "literal",
+     "value": "4800 MW"
+    },
+    "operator": {
+     "type": "literal",
+     "value": "Rosatom"
+    },
+    "start": {
+     "type": "literal",
+     "value": "2023-05-01"
+    },
+    "wikidata": {
+     "type": "literal",
+     "value": "Q1630042"
+    },
+    "centroid": {
+     "datatype": "http://www.opengis.net/ont/geosparql#wktLiteral",
+     "type": "literal",
+     "value": "POINT(33.535776 36.144255)"
+    }
+   }
+  ]
+ },
+ "meta": {
+  "query-time-ms": 312,
+  "result-size-total": 221
+ }
+}

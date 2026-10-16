@@ -51,40 +51,96 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     id: "ais",
     label: "Ship traffic (AIS)",
     env: ["AISSTREAM_API_KEY"],
-    degrades: "No live vessel positions at chokepoints and ports.",
+    degrades:
+      "No live vessel positions at the nine AISStream chokepoints (Hormuz, the Red Sea, Malacca and the rest). Only the Gulf of Finland still shows, from Digitraffic, which is keyless.",
     obtain: "Free — aisstream.io.",
   },
   {
-    kind: "required",
+    // A second, optional feed of the ais layer. It has its own id because the layer's
+    // own entry is AISStream's REQUIRED key, and one entry per id is the table's rule.
+    kind: "enhancement",
+    id: "ais-barentswatch",
+    label: "Ship traffic: Barents Sea (BarentsWatch)",
+    env: ["BARENTSWATCH_CLIENT_ID", "BARENTSWATCH_CLIENT_SECRET"],
+    degrades:
+      "The ship layer has no Norwegian coastal AIS, so the Barents Sea and North Cape box shows only what AISStream's volunteer receivers hear there. Nothing else changes.",
+    obtain:
+      "Free, no card - a personal account at barentswatch.no, then My page > create an API client (OAuth client credentials, scope ais). Data is NLOD.",
+  },
+  {
+    // An enhancement since 2026-10-16: the layer reads AirNow, DEFRA, NEA and
+    // Sensor.Community keylessly, and the key adds OpenAQ's stations on top.
+    kind: "enhancement",
     id: "air-quality-stations",
     label: "Air-quality monitoring stations",
     env: ["OPENAQ_API_KEY"],
-    degrades: "No station-level air quality; the modelled air-quality layer still works.",
+    degrades:
+      "The layer still shows AirNow (US, Canada, US embassies), DEFRA (UK), NEA (Singapore) and Sensor.Community readings. The key adds OpenAQ's stations in the rest of Europe, Africa, the Middle East, Latin America and much of Asia.",
     obtain: "Free — openaq.org.",
   },
   {
-    kind: "required",
-    id: "fire-active",
-    label: "NASA FIRMS active fires",
-    env: ["FIRMS_MAP_KEY"],
-    degrades: "No satellite thermal-anomaly detections; the EONET wildfire layer still works.",
-    obtain: "Free — firms.modaps.eosdis.nasa.gov/api/map_key.",
+    // A source inside the air-quality layers, not a layer of its own, so its id is
+    // synthetic (see NON_SIGNAL_IDS).
+    kind: "enhancement",
+    id: "air-quality-cpcb",
+    label: "India CPCB air-quality stations",
+    env: ["DATA_GOV_IN_KEY"],
+    degrades:
+      "No CPCB stations in India. The air-quality layers still show the US Embassy monitors in New Delhi and Mumbai (AirNow) and the modelled values.",
+    obtain: "Free — register at data.gov.in and copy the API key from My Account. Read through api.data.gov.in.",
   },
   {
-    kind: "required",
+    kind: "enhancement",
+    id: "nuclear",
+    label: "Nuclear plants: US megawatts offline (EIA)",
+    env: ["EIA_API_KEY"],
+    degrades: "US plants show NRC's percent power but not how many megawatts are offline; the plant list, Wikidata status and GB/Ontario output are unaffected.",
+    obtain: "Free — email-only form at www.eia.gov/opendata/register.php.",
+  },
+  {
+    // An enhancement since 2026-10-16: Elexon (GB), RTE (France), Energinet (Denmark)
+    // and AEMO (Australia) are keyless, so the layer shows data with neither key. Each
+    // key adds its own areas; "enhanced" needs both.
+    kind: "enhancement",
     id: "grid-load",
-    label: "European grid load",
-    env: ["ENTSOE_API_TOKEN"],
-    degrades: "No electricity demand or generation for the European grid.",
-    obtain: "Free — register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days).",
+    label: "Grid load: continental Europe and the US",
+    env: ["ENTSOE_API_TOKEN", "EIA_API_KEY"],
+    degrades:
+      "GB, France, Denmark and Australia still show from their own operators. ENTSOE_API_TOKEN adds about 20 more European bidding zones; EIA_API_KEY adds about 50 US balancing authorities.",
+    obtain:
+      "Both free. ENTSO-E: register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days). EIA: eia.gov/opendata/register.php (name and email, instant).",
+  },
+  {
+    // An enhancement: the layer is IODA's measured outages, keyless. The token adds the
+    // verified, intentional shutdowns Pulse logs (cause, type, affected region).
+    kind: "enhancement",
+    id: "internet-outages",
+    label: "Internet shutdowns (ISOC Pulse)",
+    env: ["ISOC_PULSE_API_KEY"],
+    degrades:
+      "IODA's measured outages still show. Without the token the layer has no verified intentional shutdowns (elections, exams, protests), which are the regional and mobile-only cuts IODA most often misses, and the instability index cannot count them.",
+    obtain:
+      "Free - a Pulse account at pulse.internetsociety.org, then generate an API token. Pulse terms: non-commercial use only, and the credit 'Provided by Internet Society' must be shown.",
+  },
+  {
+    kind: "enhancement",
+    id: "cyber-ransomware",
+    label: "Ransomware victims (Ransomware.live PRO)",
+    env: ["RANSOMWARE_LIVE_API_KEY"],
+    degrades:
+      "The layer still renders from the legacy keyless endpoint, which Ransomware.live keeps for compatibility only and describes as personal use. The key moves it to the supported PRO endpoint.",
+    obtain:
+      "Free personal key, no card: a magic-link email sign-up at my.ransomware.live. Sent as the X-API-KEY header.",
   },
   {
     kind: "required",
-    id: "reliefweb",
-    label: "ReliefWeb situation reports",
-    env: ["RELIEFWEB_APPNAME"],
-    degrades: "No UN OCHA humanitarian situation reports.",
-    obtain: "Free, no signup — ReliefWeb only wants an identifying app-name string.",
+    id: "ukraineAlerts",
+    label: "Ukraine air-raid alerts",
+    env: ["ALERTS_IN_UA_TOKEN"],
+    degrades:
+      "No air-raid alert state for Ukraine. The layer says it is unavailable rather than showing an empty map, which would read as all-clear.",
+    obtain:
+      "Free token from alerts.in.ua (name, email and a written purpose): alerts.in.ua/api-request.html. Replies take 1 to 7 days. Keep it on the server; their terms require a visible link to alerts.in.ua.",
   },
   // --- capabilities that are not signal layers ------------------------------
   {
@@ -220,11 +276,77 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "The secret key of the same Supabase project. It belongs on the server only, never in CI or in the browser.",
   },
+  // --- camera networks (lib/sources/registry.ts `keyId`) ----------------------
+  // Each is one camera feed that stays DORMANT until its credential is set: the
+  // registry does not ask it, and /api/coverage lists it under `dormant`, not as an
+  // outage. Added in the source audit of 2026-10-16.
+  {
+    kind: "required",
+    id: "cams-ne-utmc",
+    label: "Cameras: Tyne and Wear UTMC (North East England)",
+    env: ["NE_UTMC_USER", "NE_UTMC_PASS"],
+    degrades:
+      "About 370 council traffic cameras across Tyne and Wear, Northumberland and Durham stay off the map. Every other camera network is unaffected.",
+    obtain:
+      "Free, self-serve: an account at netraveldata.co.uk (username and email). The account's username and password are the HTTP Basic credentials for /api/v2/cctv/*.",
+  },
+  {
+    kind: "required",
+    id: "cams-ottawa",
+    label: "Cameras: City of Ottawa",
+    env: ["OTTAWA_CAMERA_CERT"],
+    degrades:
+      "About 390 City of Ottawa traffic cameras stay off the map. The list is keyless, but the pictures need the certificate, so without it nothing is shown.",
+    obtain:
+      "Free: the Certificate Request Form on traffic.ottawa.ca/en/opendata; the City emails the certificate. It is added to image requests on the server only.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-mb",
+    label: "Cameras: Manitoba 511",
+    env: ["MANITOBA_511_KEY"],
+    degrades:
+      "Manitoba's 46 highway camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on manitoba511.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-nl",
+    label: "Cameras: 511 Newfoundland and Labrador",
+    env: ["NL_511_KEY"],
+    degrades:
+      "Newfoundland and Labrador's 48 highway camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on 511nl.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-my511-yt",
+    label: "Cameras: 511 Yukon",
+    env: ["YUKON_511_KEY"],
+    degrades:
+      "Yukon's 15 highway weather-camera sites stay off the map.",
+    obtain:
+      "Free: a My511 account on 511yukon.ca, then a developer key from /developers/doc.",
+  },
+  {
+    kind: "required",
+    id: "cams-dars-si",
+    label: "Cameras: DARS and DRSI via NAP Slovenia",
+    env: ["NAP_SLOVENIA_USER", "NAP_SLOVENIA_PASS"],
+    degrades:
+      "About 470 Slovenian motorway and state-road cameras stay off the map.",
+    obtain:
+      "Free: a B2B account at nap.si/en/registration (name, organisation, address, phone). The account's username and password are the HTTP Basic credentials.",
+  },
 ];
 
 /** Ids in KEY_REQUIREMENTS that are capabilities rather than signal layers. */
 export const NON_SIGNAL_IDS = new Set([
   "webcams",
+  // An optional upstream of the ais layer, not a layer of its own.
+  "ais-barentswatch",
   // Console capability, not a map layer — resolves channel ids to live video ids.
   "youtube-live",
   "markets-equities",
@@ -240,9 +362,17 @@ export const NON_SIGNAL_IDS = new Set([
   "news-ingest",
   // The same kind of inbound door, for relayed upstream snapshots (lib/relay).
   "source-relay",
+  // A keyed source inside the two air-quality layers, not a layer of its own.
+  "air-quality-cpcb",
   // Accounts are a console capability, not a map layer.
   "accounts",
   "accounts-delete",
+  "cams-ne-utmc",
+  "cams-ottawa",
+  "cams-my511-mb",
+  "cams-my511-nl",
+  "cams-my511-yt",
+  "cams-dars-si",
 ]);
 
 const BY_ID = new Map(KEY_REQUIREMENTS.map((r) => [r.id, r]));

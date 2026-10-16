@@ -15,7 +15,8 @@ import type { CapabilityState } from "@/lib/sources/keyRequirements";
 // hand-copied list of ids.
 
 const OLD_KEYED = new Set(["acled", "firms", "aisstream", "openaq", "reliefweb", "entsoe"]);
-const REAL_LOCKABLE_IDS = ["fire-active", "ais", "air-quality-stations", "grid-load", "reliefweb"];
+// "reliefweb" left this list on 2026-10-16: the layer now reads a keyless export.
+const REAL_LOCKABLE_IDS = ["fire-active", "ais", "air-quality-stations", "grid-load"];
 
 const status = (state: CapabilityState) => ({ state });
 
@@ -47,7 +48,7 @@ describe("needsKeyNote", () => {
   it("documents which real ids the old hand-maintained set actually had wrong", () => {
     const wrong = REAL_LOCKABLE_IDS.filter((id) => !OLD_KEYED.has(id));
     expect(wrong.sort()).toEqual(["air-quality-stations", "ais", "fire-active", "grid-load"]);
-    // The one id the old set happened to spell correctly.
+    // The one id the old set happened to spell correctly (no longer key-gated).
     expect(OLD_KEYED.has("reliefweb")).toBe(true);
   });
 });

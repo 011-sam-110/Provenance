@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { SIGNALS } from "@/lib/signals/registry";
+import { RETIRED_SIGNAL_IDS } from "@/lib/layerAliases";
 import {
   AUDIT_COUNTRIES,
   AUDIT_LAYERS,
@@ -23,7 +24,13 @@ import {
 describe("the committed coverage audit still describes this repo", () => {
   test("every registered signal layer appears in the audit, and nothing else does", () => {
     const registry = SIGNALS.map((s) => s.id).sort();
-    const audited = AUDIT_LAYERS.map((l) => l.id).sort();
+    // A layer RETIRED after the run (lib/layerAliases.ts) keeps its measured row until the
+    // next run: its features are inside every total below, so dropping the row by hand
+    // would break the reconciliation, and the run did measure it. emsc-quakes became part
+    // of earthquakes on 2026-10-16. A retired id that is still registered is an error.
+    const retired = new Set(Object.keys(RETIRED_SIGNAL_IDS));
+    for (const id of retired) expect(registry, `${id} is retired but still registered`).not.toContain(id);
+    const audited = AUDIT_LAYERS.map((l) => l.id).filter((id) => !retired.has(id)).sort();
     expect(
       audited,
       "The audit no longer matches lib/signals/registry.ts. Re-measure against production:\n" +

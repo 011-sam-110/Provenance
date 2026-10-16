@@ -130,8 +130,12 @@ const DORMANT_OPACITY = 0.3;
 
 /**
  * The layers that publish ONE labelled placeholder feature instead of an empty
- * array when they break: conflict and protests (lib/signals/gdelt.ts
- * `dormantNotice`). Their broken payload is `count: 1, ok: true`, which the
+ * array when they break. EMPTY since 2026-10-16: conflict and protests were the last
+ * two (GDELT's `dormantNotice`), and their new sources (lib/signals/conflict.ts) report
+ * a failure through the outcome instead. The mechanism stays for any layer that needs it.
+ *
+ * What it was for: those layers' broken payload was `count: 1, ok: true`, which the
+ * freshness classifier — correctly, on the evidence it has — calls "live". Their broken payload is `count: 1, ok: true`, which the
  * freshness classifier — correctly, on the evidence it has — calls "live".
  *
  * food-security was the third and was removed on 2026-09-05: WFP withdrew the keyless
@@ -144,10 +148,7 @@ const DORMANT_OPACITY = 0.3;
  * cell reported as down. We do not downgrade them on suspicion alone — that
  * would be the mirror-image lie.
  */
-export const PLACEHOLDER_NOTICE_LAYERS: ReadonlySet<string> = new Set([
-  "conflict",
-  "protests",
-]);
+export const PLACEHOLDER_NOTICE_LAYERS: ReadonlySet<string> = new Set<string>([]);
 
 /** One /api/status entry, structurally — StatusEntry satisfies this. */
 interface FeedStatusEntryLike {

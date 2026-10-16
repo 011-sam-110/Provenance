@@ -27,6 +27,7 @@ import {
   type UpstreamEvidence,
 } from "@/lib/sources/upstreamEvidence";
 import { SIGNALS } from "@/lib/signals/registry";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -56,7 +57,7 @@ describe("key requirements table", () => {
 
   it("treats anything not in the table as keyless — that is the default", () => {
     expect(isKeyless("earthquakes")).toBe(true);
-    expect(isKeyless("reliefweb")).toBe(false);
+    expect(isKeyless("grid-load")).toBe(false);
   });
 
   // THE GUARD THAT WAS MISSING. /api/status reported food-security as "keyless"
@@ -209,7 +210,8 @@ describe("capabilityState", () => {
   it("separates an optional upgrade from a hard gate", () => {
     expect(capabilityState("markets-equities", {})).toBe("upgradable");
     expect(capabilityState("markets-equities", { FINNHUB_API_KEY: "k" })).toBe("enhanced");
-    expect(capabilityState("reliefweb", {})).toBe("locked");
+    expect(capabilityState("grid-load", {})).toBe("upgradable"); // keyless for GB, FR, DK and AU since 2026-10-16
+    expect(capabilityState("ais", {})).toBe("locked");
   });
 
   // `configured` says we hold the credential. It does NOT say the upstream
@@ -233,9 +235,12 @@ describe("lockedReason", () => {
 });
 
 describe("buildStatusReport", () => {
+  // webcams stands in for a layer behind a REQUIRED key with an HTTP host. Since 2026-10-16
+  // no signal layer has one: grid load and the OpenAQ stations became enhancements, and
+  // ReliefWeb went keyless.
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000, attribution: "USGS" },
-    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
+    { id: "webcams", label: "Windy webcams", group: "Cameras", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
 
@@ -279,10 +284,10 @@ describe("buildStatusReport", () => {
 
   it("explains a locked layer and stays quiet about a working one", () => {
     const rep = buildStatusReport(reg, {}, NOW);
-    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
-    expect(reliefweb.state).toBe("locked");
-    expect(reliefweb.missingEnv).toEqual(["RELIEFWEB_APPNAME"]);
-    expect(reliefweb.degrades).toContain("situation reports");
+    const webcams = rep.layers.find((l) => l.id === "webcams")!;
+    expect(webcams.state).toBe("locked");
+    expect(webcams.missingEnv).toEqual(["WINDY_WEBCAMS_API_KEY"]);
+    expect(webcams.degrades).toContain("webcam layer");
 
     const quakes = rep.layers.find((l) => l.id === "earthquakes")!;
     expect(quakes.state).toBe("keyless");
@@ -297,6 +302,14 @@ describe("buildStatusReport", () => {
         "accounts",
         "accounts-delete",
         "ai-brief",
+        "air-quality-cpcb",
+        "ais-barentswatch",
+        "cams-dars-si",
+        "cams-my511-mb",
+        "cams-my511-nl",
+        "cams-my511-yt",
+        "cams-ne-utmc",
+        "cams-ottawa",
         "feedback-prompt",
         "geolocate-vision",
         "markets-equities",
@@ -313,7 +326,7 @@ describe("buildStatusReport", () => {
 
   // The report is public. A leak here would be a live credential on the open web.
   it("never carries an env VALUE anywhere in the payload", () => {
-    const secrets = { RELIEFWEB_APPNAME: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
+    const secrets = { WINDY_WEBCAMS_API_KEY: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
     const json = JSON.stringify(buildStatusReport(reg, secrets, NOW));
     for (const v of Object.values(secrets)) expect(json).not.toContain(v);
   });
@@ -322,17 +335,17 @@ describe("buildStatusReport", () => {
   // is publishable; a query string that carried the key would not be, so the
   // refusal record stores a HOSTNAME and this proves the whole payload stays clean.
   it("never carries an env VALUE once refusal evidence is attached either", () => {
-    const secrets = { RELIEFWEB_APPNAME: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
+    const secrets = { WINDY_WEBCAMS_API_KEY: "sekrit-appname", AISSTREAM_API_KEY: "sekrit-ais" };
     const rep = buildStatusReport(reg, secrets, NOW, {
       evidence: {
-        reliefweb: ev({ lastRefusalAt: NOW - 1_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 3 }),
+        "webcams": ev({ lastRefusalAt: NOW - 1_000, lastRefusalStatus: 403, lastRefusalHost: "api.windy.com", refusals: 3 }),
         ais: ev({ lastFetchAt: NOW - 500, lastFetchOk: true, lastRows: 0, fetches: 9 }),
       },
       observingSince: NOW - 60_000,
     });
     const json = JSON.stringify(rep);
     for (const v of Object.values(secrets)) expect(json).not.toContain(v);
-    expect(json).toContain("api.reliefweb.int"); // the host IS published, deliberately
+    expect(json).toContain("api.windy.com"); // the host IS published, deliberately
   });
 
   it("runs over the real registry without inventing or dropping a layer", () => {
@@ -423,7 +436,7 @@ describe("credentialVerdict", () => {
 
 describe("attributeUpstream", () => {
   it("maps a credentialed host to the capability whose key goes there", () => {
-    expect(attributeUpstream("https://api.reliefweb.int/v1/reports?appname=x")).toBe("reliefweb");
+    expect(attributeUpstream("https://web-api.tp.entsoe.eu/v1/reports?appname=x")).toBe("grid-load");
     expect(attributeUpstream("https://api.openaq.org/v3/parameters/2/latest")).toBe("air-quality-stations");
     expect(attributeUpstream("https://api.windy.com/webcams/api/v3/webcams")).toBe("webcams");
   });
@@ -436,8 +449,8 @@ describe("attributeUpstream", () => {
   // Exact hostname, not a suffix match: a lookalike host must never be able to
   // stamp "refused" on a layer whose credential it never saw.
   it("does not match a lookalike or a subdomain of a credentialed host", () => {
-    expect(attributeUpstream("https://evil-api.reliefweb.int/v1")).toBeNull();
-    expect(attributeUpstream("https://api.reliefweb.int.example.net/v1")).toBeNull();
+    expect(attributeUpstream("https://evil-web-api.tp.entsoe.eu/v1")).toBeNull();
+    expect(attributeUpstream("https://web-api.tp.entsoe.eu.example.net/v1")).toBeNull();
   });
 
   it("shrugs off a string that is not a URL", () => {
@@ -452,10 +465,10 @@ describe("observeUpstreamResponse", () => {
   it("turns a 401/402/403 from a credentialed host into evidence, and nothing else does", () => {
     for (const status of [401, 402, 403]) {
       resetEvidence();
-      observeUpstreamResponse("https://api.reliefweb.int/v1/reports", status, NOW);
-      const rec = readEvidence("reliefweb")!;
+      observeUpstreamResponse("https://web-api.tp.entsoe.eu/v1/reports", status, NOW);
+      const rec = readEvidence("grid-load")!;
       expect(rec.lastRefusalStatus).toBe(status);
-      expect(rec.lastRefusalHost).toBe("api.reliefweb.int");
+      expect(rec.lastRefusalHost).toBe("web-api.tp.entsoe.eu");
       expect(rec.refusals).toBe(1);
     }
   });
@@ -464,19 +477,19 @@ describe("observeUpstreamResponse", () => {
   // rejected" would put a red state on a perfectly good credential.
   it("does not read a rate-limit or a server error as a credential refusal", () => {
     for (const status of [404, 429, 500, 502, 503]) {
-      observeUpstreamResponse("https://api.reliefweb.int/v1/reports", status, NOW);
+      observeUpstreamResponse("https://web-api.tp.entsoe.eu/v1/reports", status, NOW);
     }
     // Nothing is filed at all — not a refusal, not a zero-count placeholder.
-    expect(readEvidence("reliefweb")?.lastRefusalAt ?? null).toBeNull();
-    expect(readEvidence("reliefweb")?.refusals ?? 0).toBe(0);
-    expect(credentialVerdict(readEvidence("reliefweb"), NOW)).toBe("unknown");
+    expect(readEvidence("grid-load")?.lastRefusalAt ?? null).toBeNull();
+    expect(readEvidence("grid-load")?.refusals ?? 0).toBe(0);
+    expect(credentialVerdict(readEvidence("grid-load"), NOW)).toBe("unknown");
   });
 
   it("records a 2xx so a later success can clear an earlier refusal", () => {
-    observeUpstreamResponse("https://api.reliefweb.int/v1/reports", 403, NOW);
-    expect(credentialVerdict(readEvidence("reliefweb"), NOW)).toBe("refused");
-    observeUpstreamResponse("https://api.reliefweb.int/v1/reports", 200, NOW + 1_000);
-    expect(credentialVerdict(readEvidence("reliefweb"), NOW + 1_000)).toBe("accepted");
+    observeUpstreamResponse("https://web-api.tp.entsoe.eu/v1/reports", 403, NOW);
+    expect(credentialVerdict(readEvidence("grid-load"), NOW)).toBe("refused");
+    observeUpstreamResponse("https://web-api.tp.entsoe.eu/v1/reports", 200, NOW + 1_000);
+    expect(credentialVerdict(readEvidence("grid-load"), NOW + 1_000)).toBe("accepted");
   });
 
   it("files nothing at all for an unmapped host", () => {
@@ -520,48 +533,51 @@ describe("credentialed host table", () => {
 });
 
 describe("buildStatusReport — refused", () => {
+  // webcams stands in for a layer behind a REQUIRED key with an HTTP host. Since 2026-10-16
+  // no signal layer has one: grid load and the OpenAQ stations became enhancements, and
+  // ReliefWeb went keyless.
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000 },
-    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
+    { id: "webcams", label: "Windy webcams", group: "Cameras", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
-  const held = { RELIEFWEB_APPNAME: "a", AISSTREAM_API_KEY: "k" };
+  const held = { WINDY_WEBCAMS_API_KEY: "a", AISSTREAM_API_KEY: "k" };
 
   // THE BUG. "We hold the key" was published as if it meant "the key works".
   it("stops calling a rejected credential 'configured'", () => {
     const before = buildStatusReport(reg, held, NOW);
-    expect(before.layers.find((l) => l.id === "reliefweb")!.state).toBe("configured");
+    expect(before.layers.find((l) => l.id === "webcams")!.state).toBe("configured");
 
     const after = buildStatusReport(reg, held, NOW, {
       evidence: {
-        reliefweb: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 2 }),
+        "webcams": ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.windy.com", refusals: 2 }),
       },
     });
-    const reliefweb = after.layers.find((l) => l.id === "reliefweb")!;
-    expect(reliefweb.state).toBe("refused");
+    const webcams = after.layers.find((l) => l.id === "webcams")!;
+    expect(webcams.state).toBe("refused");
     // Still empty, and that is now the informative part: we HAVE the vars.
-    expect(reliefweb.missingEnv).toEqual([]);
-    expect(reliefweb.refusal).toEqual({
+    expect(webcams.missingEnv).toEqual([]);
+    expect(webcams.refusal).toEqual({
       since: NOW - 2_000,
       status: 403,
-      host: "api.reliefweb.int",
+      host: "api.windy.com",
       count: 2,
-      observed: expect.stringContaining("api.reliefweb.int answered HTTP 403"),
+      observed: expect.stringContaining("api.windy.com answered HTTP 403"),
     });
     // A refused layer must tell the reader what they are losing and how to fix it,
     // exactly like a locked one.
-    expect(reliefweb.degrades).toContain("situation reports");
-    expect(reliefweb.obtain).toContain("app-name");
+    expect(webcams.degrades).toContain("webcam layer");
+    expect(webcams.obtain).toContain("api.windy.com");
     expect(after.summary.layersRefused).toBe(1);
     expect(after.summary.layersConfigured).toBe(1); // ais, still only "we hold it"
-    expect(after.summary.layersNotKeyBlocked).toBe(2); // earthquakes + ais, not reliefweb
+    expect(after.summary.layersNotKeyBlocked).toBe(2); // earthquakes + ais, not webcams
   });
 
   // The rule that stops this becoming a hardcoded blame list.
   it("leaves a layer with no evidence either way as configured", () => {
     const rep = buildStatusReport(reg, held, NOW, {
       evidence: {
-        reliefweb: ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 1 }),
+        "webcams": ev({ lastRefusalAt: NOW - 2_000, lastRefusalStatus: 403, lastRefusalHost: "api.windy.com", refusals: 1 }),
       },
     });
     // AIS is a WebSocket, so no fetch-level refusal can ever be observed for it. It
@@ -575,33 +591,34 @@ describe("buildStatusReport — refused", () => {
     const rep = buildStatusReport(reg, {}, NOW, {
       evidence: {
         earthquakes: ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "x.example", refusals: 9 }),
-        reliefweb: ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "api.reliefweb.int", refusals: 9 }),
+        "webcams": ev({ lastRefusalAt: NOW - 10, lastRefusalStatus: 403, lastRefusalHost: "api.windy.com", refusals: 9 }),
       },
     });
     expect(rep.layers.find((l) => l.id === "earthquakes")!.state).toBe("keyless");
-    expect(rep.layers.find((l) => l.id === "reliefweb")!.state).toBe("locked");
+    expect(rep.layers.find((l) => l.id === "webcams")!.state).toBe("locked");
     expect(rep.summary.layersRefused).toBe(0);
   });
 
   it("goes back to configured once the refusal is superseded by a 2xx", () => {
     const rep = buildStatusReport(reg, held, NOW, {
       evidence: {
-        reliefweb: ev({
+        "webcams": ev({
           lastRefusalAt: NOW - 5_000,
           lastRefusalStatus: 403,
-          lastRefusalHost: "api.reliefweb.int",
+          lastRefusalHost: "api.windy.com",
           refusals: 1,
           lastUpstreamOkAt: NOW - 100,
         }),
       },
     });
-    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
-    expect(reliefweb.state).toBe("configured");
-    expect(reliefweb.refusal).toBeUndefined();
+    const webcams = rep.layers.find((l) => l.id === "webcams")!;
+    expect(webcams.state).toBe("configured");
+    expect(webcams.refusal).toBeUndefined();
   });
 
   it("applies the same rule to the non-layer capabilities", () => {
-    const rep = buildStatusReport(reg, { WINDY_WEBCAMS_API_KEY: "k" }, NOW, {
+    // webcams is this describe's stand-in layer; here it is the capability again, so it leaves the registry.
+    const rep = buildStatusReport(reg.filter((l) => l.id !== "webcams"), { WINDY_WEBCAMS_API_KEY: "k" }, NOW, {
       evidence: {
         webcams: ev({ lastRefusalAt: NOW - 1, lastRefusalStatus: 401, lastRefusalHost: "api.windy.com", refusals: 1 }),
       },
@@ -621,7 +638,7 @@ describe("buildStatusReport — refused", () => {
 describe("buildStatusReport — flow", () => {
   const reg = [
     { id: "earthquakes", label: "Earthquakes", group: "Natural hazards", refreshMs: 300_000 },
-    { id: "reliefweb", label: "Humanitarian emergencies", group: "Human cost", refreshMs: 900_000 },
+    { id: "grid-load", label: "European grid load", group: "Infrastructure", refreshMs: 900_000 },
     { id: "ais", label: "Ships", group: "Maritime", refreshMs: 60_000 },
   ];
 
@@ -655,9 +672,9 @@ describe("buildStatusReport — flow", () => {
     const ais = rep.layers.find((l) => l.id === "ais")!;
     expect(ais.flow.rows).toBe(0);
     expect(ais.flow.observed).toBe(true);
-    const reliefweb = rep.layers.find((l) => l.id === "reliefweb")!;
-    expect(reliefweb.flow.rows).toBeNull();
-    expect(reliefweb.flow.observed).toBe(false);
+    const gridLoad = rep.layers.find((l) => l.id === "grid-load")!;
+    expect(gridLoad.flow.rows).toBeNull();
+    expect(gridLoad.flow.observed).toBe(false);
   });
 
   it("totals the flow taxonomy over observed layers only", () => {
@@ -665,7 +682,7 @@ describe("buildStatusReport — flow", () => {
       evidence: {
         earthquakes: ev({ lastFetchAt: NOW - 1_000, lastFetchOk: true, lastRows: 317, fetches: 2 }),
         ais: ev({ lastFetchAt: NOW - 2_000, lastFetchOk: true, lastRows: 0, fetches: 2 }),
-        reliefweb: ev({ lastFetchAt: NOW - 3_000, lastFetchOk: false, lastRows: null, fetches: 1 }),
+        "grid-load": ev({ lastFetchAt: NOW - 3_000, lastFetchOk: false, lastRows: null, fetches: 1 }),
       },
     });
     expect(rep.summary.layersObserved).toBe(3);
@@ -701,6 +718,23 @@ describe("instrumentSignalRegistry", () => {
     expect(rec.lastFetchAt).not.toBeNull();
   });
 
+  it("records a fetch that resolved but declared its own failure as not ok", async () => {
+    // /api/signals/gdacs said ok:false "partial: VO failed (http 404)" while this
+    // ledger said ok:true, because it only asked whether fetch() resolved.
+    const partial = degradedWith([{ id: "a" }], "partial: VO failed (http 404)");
+    const source = { id: "demo", fetch: async () => partial };
+    instrumentSignalRegistry([source]);
+    expect(await source.fetch()).toBe(partial);
+    const rec = readEvidence("demo")!;
+    expect(rec.lastFetchOk).toBe(false);
+    expect(rec.lastRows).toBe(1);
+
+    const quiet = { id: "demo2", fetch: async () => observed([]) };
+    instrumentSignalRegistry([quiet]);
+    await quiet.fetch();
+    expect(readEvidence("demo2")!.lastFetchOk).toBe(true);
+  });
+
   it("is idempotent, so a second /api/status hit does not double-wrap", async () => {
     const source = { id: "demo", fetch: async () => [{ id: "a" }] };
     expect(instrumentSignalRegistry([source])).toBe(1);
@@ -720,6 +754,28 @@ describe("instrumentSignalRegistry", () => {
     expect(rec.fetches).toBe(1);
   });
 
+  it("records a fetch that resolved with a declared failure as NOT ok", async () => {
+    // fire-active on prod, 2026-10-16: FIRMS answered 400, the adapter returned
+    // degraded("http 400"), and /api/status published ok:true, rows:0 for five weeks.
+    const source = { id: "demo", fetch: async () => degraded<{ id: string }>("http 400") };
+    instrumentSignalRegistry([source]);
+    await source.fetch();
+    const rec = readEvidence("demo")!;
+    expect(rec.lastFetchOk).toBe(false);
+    expect(rec.lastRows).toBe(0);
+  });
+
+  it("records a last-good serve (degradedWith) as NOT ok, and an observed one as ok", async () => {
+    const stale = { id: "stale", fetch: async () => degradedWith([{ id: "a" }], "timeout", NOW) };
+    const fresh = { id: "fresh", fetch: async () => observed([{ id: "a" }], NOW) };
+    instrumentSignalRegistry([stale, fresh]);
+    await stale.fetch();
+    await fresh.fetch();
+    expect(readEvidence("stale")!.lastFetchOk).toBe(false);
+    expect(readEvidence("stale")!.lastRows).toBe(1);
+    expect(readEvidence("fresh")!.lastFetchOk).toBe(true);
+  });
+
   it("keeps a failed fetch from erasing the last known row count", async () => {
     recordFetchOutcome("demo", { ok: true, rows: 40 }, NOW);
     recordFetchOutcome("demo", { ok: false, rows: null }, NOW + 1);
@@ -733,10 +789,10 @@ describe("evidence ledger hygiene", () => {
   beforeEach(resetEvidence);
 
   it("hands out copies, so a caller cannot mutate the ledger through the report", () => {
-    recordCredentialRefusal("reliefweb", 403, "api.reliefweb.int", NOW);
+    recordCredentialRefusal("grid-load", 403, "web-api.tp.entsoe.eu", NOW);
     const snap = snapshotEvidence();
-    snap.reliefweb.refusals = 999;
-    expect(readEvidence("reliefweb")!.refusals).toBe(1);
+    snap["grid-load"].refusals = 999;
+    expect(readEvidence("grid-load")!.refusals).toBe(1);
   });
 
   it("stores a hostname and a status — never a URL that could carry a key", () => {

@@ -33,6 +33,12 @@ export interface SignalRow {
   /** props.magnitude when it is a finite number (drives ranking + radius elsewhere). */
   magnitude?: number;
   ts?: string;
+  /**
+   * A date class to show in place of the relative time, when the source knows only
+   * the day, month, quarter or year (a launch at "NET Q4 2026"). Its `ts` is then a
+   * placeholder, and "in 76d" to it would be invented.
+   */
+  when?: string;
   link?: string;
   /** Per-feature severity-ramp colour → the row's bar/dot. */
   color?: string;
@@ -238,6 +244,7 @@ export function projectSignal(
     title: f.title,
     magnitude: magnitudeOf(f),
     ts: f.ts,
+    ...(typeof f.props?.launchDate === "string" ? { when: f.props.launchDate } : {}),
     link: f.link,
     color: f.color,
     metric: rowMetric(f, metric),

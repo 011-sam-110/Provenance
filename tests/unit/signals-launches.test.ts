@@ -1,7 +1,12 @@
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import fixture from "@/tests/fixtures/launches.json";
-import { normalizeLaunches, launchStatusColor, LAUNCHES_SOURCE } from "@/lib/signals/launches";
+import ll23 from "@/tests/fixtures/launches-ll2-2.3.0.json";
+import { normalizeLaunches, launchStatusColor, LAUNCHES_SOURCE, resetLaunchesCacheForTest } from "@/lib/signals/launches";
+import { readOutcome } from "@/lib/signals/outcome";
+import { readCoverage } from "@/lib/signals/coverage";
 import { countdown } from "@/lib/console/signals/schedule";
+import { projectSignal } from "@/lib/console/signals/signalCard";
+import { WORLD_SCOPE } from "@/lib/shell/scope";
 
 test("normalizes LL2 launches to pad points, skipping pad-less ones", () => {
   const out = normalizeLaunches(fixture as never);
@@ -65,4 +70,88 @@ test("countdown states escalate as a launch approaches, and survive the window",
   expect(countdown(pegasus.ts, Date.parse("2026-06-27T08:50:00Z")).label).toBe("T- 10m");
   expect(countdown(pegasus.ts, Date.parse("2026-06-27T09:30:00Z")).label).toBe("in progress");
   expect(countdown(pegasus.ts, Date.parse("2026-06-27T13:00:00Z")).label).toBe("launched");
+});
+
+// --- fetch path: no dev-mirror fallback ------------------------------------------
+// lldev.thespacedevs.com was a six-day-old snapshot on 2026-10-16 (178 launches
+// against production's 476), and the adapter stamped its rows as a live read.
+// A refusal from production must now serve the last good rows, marked degraded,
+// and must never ask the dev host.
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+  resetLaunchesCacheForTest();
+});
+
+test("a production 429 with nothing cached is degraded and never calls the dev host", async () => {
+  resetLaunchesCacheForTest();
+  const calls: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => { calls.push(String(url)); return { ok: false, status: 429, json: async () => ({}) }; }));
+  const out = await LAUNCHES_SOURCE.fetch();
+  expect(out).toEqual([]);
+  expect(readOutcome(out)?.ok).toBe(false);
+  expect(calls).toHaveLength(1);
+  expect(calls.every((u) => u.startsWith("https://ll.thespacedevs.com/"))).toBe(true);
+  expect(calls.some((u) => u.includes("lldev"))).toBe(false);
+});
+
+test("a production 429 after a good read keeps the last good rows, stamped when they were read", async () => {
+  resetLaunchesCacheForTest();
+  vi.useFakeTimers();
+  const readAt = Date.parse("2026-10-16T12:00:00Z");
+  vi.setSystemTime(readAt);
+  const calls: string[] = [];
+  let refuse = false;
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+    calls.push(String(url));
+    return refuse ? { ok: false, status: 429, json: async () => ({}) } : { ok: true, status: 200, json: async () => fixture };
+  }));
+  const first = await LAUNCHES_SOURCE.fetch();
+  expect(first).toHaveLength(3);
+  expect(readOutcome(first)?.ok).toBe(true);
+  refuse = true;
+  vi.setSystemTime(readAt + 2 * 60 * 60 * 1000); // past the 1 h cache
+  const second = await LAUNCHES_SOURCE.fetch();
+  expect(second).toHaveLength(3);
+  expect(readOutcome(second)?.ok).toBe(false);
+  expect(readOutcome(second)?.at).toBe(readAt);
+  expect(calls.some((u) => u.includes("lldev"))).toBe(false);
+});
+
+// --- LL2 2.3.0 (captured 2026-10-16) --------------------------------------------
+
+test("reads the 2.3.0 shape: numeric pad coordinates, LL2 total as an exact N of M", () => {
+  const out = normalizeLaunches(ll23 as never);
+  expect(out).toHaveLength(ll23.results.length);
+  const mmx = out.find((f) => f.title.includes("MMX"));
+  expect(mmx?.props?.provider).toBeTruthy();
+  expect(mmx?.ts).toBe("2026-10-19T19:41:03Z");
+  expect(out.every((f) => Number.isFinite(f.lat) && Number.isFinite(f.lon))).toBe(true);
+  expect(readCoverage(out)).toMatchObject({ available: 476, availableExact: true, capped: true, cap: 100 });
+});
+
+test("net_precision rides into props, and a date class is never published as an exact launch time", () => {
+  const out = normalizeLaunches(ll23 as never);
+  const byName = (part: string) => out.find((f) => f.title.includes(part))!;
+  const mmx = byName("MMX"); // Second
+  expect(mmx.props?.netPrecision).toBe("Second");
+  expect(mmx.props?.launchTime).toBe("2026-10-19T19:41:03Z");
+  expect(mmx.props?.launchDate).toBeUndefined();
+  const vulcan = byName("Amazon Leo"); // Day
+  expect(vulcan.props?.launchTime).toBeUndefined();
+  expect(vulcan.props?.launchDate).toBe("NET Oct 29");
+  const year = byName("BlackSky"); // Year, LL2 stamps 2026-12-31T00:00:00Z
+  expect(year.props?.netPrecision).toBe("Year");
+  expect(year.props?.launchTime).toBeUndefined();
+  expect(year.props?.launchDate).toBe("NET 2026");
+  // ts stays the upstream stamp so ordering holds; the view reads the precision.
+  expect(year.ts).toBe("2026-12-31T00:00:00Z");
+  expect(countdown(year.ts, Date.parse("2026-10-16T20:00:00Z"), String(year.props?.netPrecision)).ms).toBeNull();
+});
+
+test("the layer card shows a date class in place of a countdown to the placeholder", () => {
+  const rows = projectSignal(normalizeLaunches(ll23 as never), WORLD_SCOPE, { now: Date.parse("2026-10-16T20:00:00Z") }).rows;
+  expect(rows.find((r) => r.title.includes("BlackSky"))?.when).toBe("NET 2026");
+  expect(rows.find((r) => r.title.includes("MMX"))?.when).toBeUndefined();
 });

@@ -28,15 +28,16 @@ export interface WordingContext {
  * states on screen, because the message travels without the screen.
  */
 export const SOURCE_WORDING: Record<string, { suffix?: string; verb?: Partial<Record<NotifyEvent["kind"], string>> }> = {
-  // GDELT rows are coded news COVERAGE, not verified incidents. lib/signals/gdelt.ts
-  // already refuses to state a CAMEO label as fact; the message must not undo that.
-  // One article about a livestream once seeded pins on three cities.
+  // The conflict layer mixes UCDP's verified events (weeks old) with official alerts
+  // and travel-advice changes, which are WARNINGS. The protests layer is warnings only,
+  // often issued before the protest. The message says so, because it travels without
+  // the dossier that explains each row.
   conflict: {
-    suffix: "Reported coverage, not a verified incident.",
+    suffix: "A verified past event or an official warning, not a live report.",
     verb: { appears: "was reported in", count: "reports in" },
   },
   protests: {
-    suffix: "Reported coverage, not a verified incident.",
+    suffix: "An official warning, often in advance, not a report that it happened.",
     verb: { appears: "was reported in", count: "reports in" },
   },
   // Terrestrial receivers only. A vessel leaving coverage and a vessel switching off

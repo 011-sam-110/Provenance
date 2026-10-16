@@ -1,5 +1,6 @@
 import { Webcam, WebcamArray, Source } from "@/lib/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
+import { WINDY_ADD_WEBCAM_URL, WINDY_ATTRIBUTION, WINDY_HOME_URL } from "@/lib/webcams/attribution";
 
 // Windy.com Webcams API v3 — ~73k global webcams. UNLIKE the road-CCTV adapters
 // this one is KEYED: every request carries an `x-windy-api-key` header injected
@@ -14,11 +15,13 @@ import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 //   Free-tier caps: limit ≤ 50, offset ≤ 1000 (paging past 1000 → HTTP 400),
 //     image URLs are tokened and expire ~10 min → re-fetch, never cache them.
 //   total: 73,320 webcams globally. bbox order is north,east,south,west.
-// Mandatory attribution: "Webcams provided by Windy.com" + a per-webcam link
+// Mandatory attribution: "Webcams provided by windy.com - add new webcam" + a per-webcam link
 // back to its Windy page (urls.detail).
 
 const BASE = "https://api.windy.com/webcams/api/v3/webcams";
-const ATTRIBUTION = "Webcams provided by Windy.com";
+// The exact credit Windy's Terms of Use require; see lib/webcams/attribution.ts.
+const ATTRIBUTION = WINDY_ATTRIBUTION;
+export { WINDY_ADD_WEBCAM_URL, WINDY_HOME_URL };
 
 export const WINDY_SOURCE: Source = {
   id: "windy",

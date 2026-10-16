@@ -1,180 +1,217 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
-// alerts.com.ua — Ukraine's oblast-level air-raid alert state. Keyless JSON,
-// `GET /api/states` → 25 oblasts + Kyiv city, each with a boolean `alert` and the
-// timestamp it last changed. Verified live 2026-09-08: two oblasts under alert, most
-// recent state change the previous afternoon.
+// Ukraine air-raid alert state, from the alerts.in.ua API (`/v1/alerts/active.json`).
+// Dormant until ALERTS_IN_UA_TOKEN is set: the token is free (name and email), and the
+// API answers 401 without it.
+//
+// WHY THE SOURCE CHANGED (audited 2026-10-16). The layer used to read alerts.com.ua,
+// which reports ONE flag per oblast and sets it only when the alert covers the WHOLE
+// oblast. Ukraine now declares nearly every alert per raion or per hromada, so that
+// flag almost never moves: during an alert that covered 64 to 85 areas in about 18
+// oblasts, prod showed one row (Luhansk's standing alert) and so read as "all clear".
+// The scraper behind it has not been maintained since 2023. It is not used as a
+// fallback either, because a fallback that says "all clear" during an alert is the
+// most dangerous wrong answer this layer can give: with no token the layer is
+// unavailable and says so.
 //
 // WHY THIS SOURCE AND NOT A CAMERA. Ukraine restricts publishing footage of strikes and
 // air-defence work, because a public feed showing where something landed is targeting and
 // damage-assessment help for whoever fired it. So this project does not go looking for
-// live cameras inside the active conflict zone. The air-raid alert state is the opposite
-// kind of data: it is published BY the authorities so that civilians see it, it is already
-// on every phone in the country, and it says only "shelter is advised in this oblast" —
-// no location, no outcome, no target. It is the honest thing to put on a situational map.
+// live cameras inside the active conflict zone. The alert state is the opposite kind of
+// data: it is published so that civilians see it, it is already on every phone in the
+// country, and it says only "shelter is advised here" — no outcome, no target.
 //
-// WHAT THE FEED IS AND IS NOT. It is the ALERT STATE, not an event log: `alert: true`
-// means an alert is active in that oblast right now. It is not a strike, not a
-// casualty count, and not evidence that anything was hit — an alert is a warning, and
-// most warnings end with nothing happening where you are standing. `title` and the
-// dossier props say so, because a red dot on a map invites exactly the wrong reading.
+// WHAT A MARKER IS. One marker per oblast with any active air-raid alert, on the oblast's
+// main city. "Whole oblast" when the alert covers the oblast; "partial" with the named
+// raions and hromadas when only part of it is under alert. The marker is an anchor, never
+// a location: the dossier lists the areas by name. Raion-level markers need a raion anchor
+// table this repo does not have yet.
 //
-// OFFICIAL vs THIS ONE. The Ukrainian government's own api.ukrainealarm.com answers 403
-// without an issued key, and alerts.in.ua answers 401 — both measured 2026-09-08. This
-// endpoint is keyless and is the same data those serve. If a key is ever obtained,
-// switching upstream is a change to `fetch()` alone; `normalizeUkraineAlerts` is the part
-// with the rules in it and does not care where the rows came from.
+// TERMS (alerts.in.ua/terms-of-usage): a visible link to alerts.in.ua is required (8.4),
+// the token stays on the server, and the limit is 8 to 12 requests a minute per IP.
 
-const CACHE_TTL_MS = 60_000; // an alert is time-critical; a minute is already generous
+const CACHE_TTL_MS = 60_000; // an alert is time-critical; a minute is the rate limit's floor
 const REQUEST_TIMEOUT_MS = 15_000;
-const ENDPOINT = "https://alerts.com.ua/api/states";
+const ENDPOINT = "https://api.alerts.in.ua/v1/alerts/active.json";
+const SITE = "https://alerts.in.ua/";
 
-export const UKRAINE_ALERTS_ATTRIBUTION = "Air-raid alert state © alerts.com.ua";
+export const UKRAINE_ALERTS_ATTRIBUTION = "Air-raid alert state © alerts.in.ua";
 
-/** One row as the upstream publishes it. */
-export interface UaStateRow {
+/** One alert as `/v1/alerts/active.json` publishes it (devs.alerts.in.ua). */
+export interface AlertsInUaRow {
   id?: number;
-  name?: string;
-  name_en?: string;
-  alert?: boolean;
-  changed?: string;
+  location_title?: string;
+  location_title_en?: string;
+  location_type?: string; // "oblast" | "raion" | "hromada" | "city"
+  started_at?: string;
+  finished_at?: string | null;
+  updated_at?: string;
+  alert_type?: string; // "air_raid" | "artillery_shelling" | "urban_fights" | "chemical" | "nuclear"
+  location_uid?: string | number;
+  location_oblast?: string;
+  location_oblast_uid?: string | number;
+  location_raion?: string;
+  alert_level?: string; // "red" | "yellow"
 }
 
 /**
- * Oblast anchor points.
+ * Oblast anchor points, keyed by alerts.in.ua's `location_oblast_uid` (its "Location
+ * UID" table: 27 regions, the 24 oblasts, Crimea, Sevastopol and Kyiv city).
  *
- * The feed carries no geometry at all — only a name and a boolean — so a coordinate has
- * to come from somewhere, and this is that somewhere. Each is the administrative centre
- * of the oblast (the city the oblast is named for), NOT a geometric centroid of its area,
- * because an alert is a civil-defence instruction to the people in it and the population
- * is where the city is.
+ * Each is the administrative centre of the oblast (the city it is named for), NOT a
+ * geometric centroid, because an alert is a civil-defence instruction to the people in
+ * it and the population is where the city is. An oblast is up to ~300 km across, so the
+ * dot is an ANCHOR and never a location.
  *
- * That choice has a consequence worth stating: the dot marks the oblast's main city, and
- * an oblast is up to ~300 km across, so the dot is an ANCHOR and never a location. The
- * dossier says "oblast-wide" for the same reason.
- *
- * Keyed by the upstream's `id`, which is stable, rather than by name — the names arrive in
- * Ukrainian and a rename or a transliteration change must not silently drop an oblast off
- * the map. An id the table does not know is reported, not guessed.
+ * Keyed by the stable uid rather than by name, so a rename or a transliteration change
+ * cannot silently drop an oblast off the map.
  */
 export const OBLAST_ANCHORS: Readonly<Record<number, { en: string; lat: number; lon: number }>> = {
-  1: { en: "Vinnytsia", lat: 49.2331, lon: 28.4682 },
-  2: { en: "Volyn", lat: 50.7472, lon: 25.3254 },
-  3: { en: "Dnipropetrovsk", lat: 48.4647, lon: 35.0462 },
-  4: { en: "Donetsk", lat: 48.0159, lon: 37.8029 },
-  5: { en: "Zhytomyr", lat: 50.2547, lon: 28.6587 },
-  6: { en: "Zakarpattia", lat: 48.6208, lon: 22.2879 },
-  7: { en: "Zaporizhzhia", lat: 47.8388, lon: 35.1396 },
-  8: { en: "Ivano-Frankivsk", lat: 48.9226, lon: 24.7111 },
+  3: { en: "Khmelnytskyi", lat: 49.4229, lon: 26.9871 },
+  4: { en: "Vinnytsia", lat: 49.2331, lon: 28.4682 },
+  5: { en: "Rivne", lat: 50.6199, lon: 26.2516 },
+  8: { en: "Volyn", lat: 50.7472, lon: 25.3254 },
+  9: { en: "Dnipropetrovsk", lat: 48.4647, lon: 35.0462 },
+  10: { en: "Zhytomyr", lat: 50.2547, lon: 28.6587 },
+  11: { en: "Zakarpattia", lat: 48.6208, lon: 22.2879 },
+  12: { en: "Zaporizhzhia", lat: 47.8388, lon: 35.1396 },
+  13: { en: "Ivano-Frankivsk", lat: 48.9226, lon: 24.7111 },
   // Kyiv oblast is the one place the "administrative centre" rule breaks: its centre is
-  // Kyiv, which the feed carries SEPARATELY as id 25, so both would land on the same
+  // Kyiv, which the API carries SEPARATELY as uid 31, so both would land on the same
   // pixel and one alert would hide the other. Anchored on Bila Tserkva, the oblast's
-  // largest city, which keeps the two dots distinguishable and still puts the marker
-  // where the oblast's people are.
-  9: { en: "Kyiv oblast", lat: 49.7950, lon: 30.1310 },
-  10: { en: "Kirovohrad", lat: 48.5079, lon: 32.2623 },
-  11: { en: "Luhansk", lat: 48.5740, lon: 39.3078 },
-  12: { en: "Lviv", lat: 49.8397, lon: 24.0297 },
-  13: { en: "Mykolaiv", lat: 46.9750, lon: 31.9946 },
-  14: { en: "Odesa", lat: 46.4825, lon: 30.7233 },
-  15: { en: "Poltava", lat: 49.5883, lon: 34.5514 },
-  16: { en: "Rivne", lat: 50.6199, lon: 26.2516 },
-  17: { en: "Sumy", lat: 50.9077, lon: 34.7981 },
-  18: { en: "Ternopil", lat: 49.5535, lon: 25.5948 },
-  19: { en: "Kharkiv", lat: 49.9935, lon: 36.2304 },
-  20: { en: "Kherson", lat: 46.6354, lon: 32.6169 },
-  21: { en: "Khmelnytskyi", lat: 49.4229, lon: 26.9871 },
-  22: { en: "Cherkasy", lat: 49.4444, lon: 32.0598 },
-  23: { en: "Chernivtsi", lat: 48.2921, lon: 25.9358 },
-  24: { en: "Chernihiv", lat: 51.4982, lon: 31.2893 },
-  25: { en: "Kyiv city", lat: 50.4501, lon: 30.5234 },
+  // largest city, which keeps the two dots distinguishable.
+  14: { en: "Kyiv oblast", lat: 49.795, lon: 30.131 },
+  15: { en: "Kirovohrad", lat: 48.5079, lon: 32.2623 },
+  16: { en: "Luhansk", lat: 48.574, lon: 39.3078 },
+  17: { en: "Mykolaiv", lat: 46.975, lon: 31.9946 },
+  18: { en: "Odesa", lat: 46.4825, lon: 30.7233 },
+  19: { en: "Poltava", lat: 49.5883, lon: 34.5514 },
+  20: { en: "Sumy", lat: 50.9077, lon: 34.7981 },
+  21: { en: "Ternopil", lat: 49.5535, lon: 25.5948 },
+  22: { en: "Kharkiv", lat: 49.9935, lon: 36.2304 },
+  23: { en: "Kherson", lat: 46.6354, lon: 32.6169 },
+  24: { en: "Cherkasy", lat: 49.4444, lon: 32.0598 },
+  25: { en: "Chernihiv", lat: 51.4982, lon: 31.2893 },
+  26: { en: "Chernivtsi", lat: 48.2921, lon: 25.9358 },
+  27: { en: "Lviv", lat: 49.8397, lon: 24.0297 },
+  28: { en: "Donetsk", lat: 48.0159, lon: 37.8029 },
+  29: { en: "Crimea", lat: 44.9521, lon: 34.1024 },
+  30: { en: "Sevastopol", lat: 44.6166, lon: 33.5254 },
+  31: { en: "Kyiv city", lat: 50.4501, lon: 30.5234 },
 };
 
 /**
  * Above this, an "alert" is reporting a standing condition rather than a live warning.
- *
- * FOUND BY RUNNING IT, NOT BY READING IT. The live feed on 2026-09-08 returned Luhansk
- * with `changed: "2023-10-29"` — an alert that has not cleared in nearly three years,
- * because the oblast is occupied and its siren state simply stays on. A fixture would
- * never have shown this; only calling the real endpoint did.
- *
- * Dropping the row would be worse than keeping it: the feed genuinely says the alert is
- * active, and deleting inconvenient data is how a source stops being trustworthy. So it
- * is kept, and it is LABELLED — different title, different colour, and an explicit
- * "how long" so a reader cannot mistake a three-year condition for tonight's warning.
- *
- * A day is the threshold because a real air-raid alert is minutes to hours. Anything
- * running past a full day is not the thing this layer is for.
+ * Occupied regions (Luhansk since 2022, Crimea) keep their siren state on permanently.
+ * Dropping the row would be worse than keeping it — the source genuinely says the alert
+ * is active — so it is kept and LABELLED. A real air-raid alert is minutes to hours.
  */
 export const STANDING_ALERT_HOURS = 24;
 
 /** Hours an alert has been active, or undefined when the upstream gave no timestamp. */
-export function activeHours(changed: string | undefined, now: number): number | undefined {
-  if (!changed) return undefined;
-  const at = Date.parse(changed);
+export function activeHours(since: string | undefined, now: number): number | undefined {
+  if (!since) return undefined;
+  const at = Date.parse(since);
   if (!Number.isFinite(at)) return undefined;
   const hours = (now - at) / 3_600_000;
   // A future timestamp means clock skew, not a negative-duration alert.
   return hours < 0 ? 0 : hours;
 }
 
+const num = (v: unknown): number | undefined => {
+  const n = typeof v === "number" ? v : typeof v === "string" && v.trim() ? Number(v) : NaN;
+  return Number.isFinite(n) ? n : undefined;
+};
+
 /**
- * Pure: upstream rows → the oblasts currently under alert.
+ * Pure: `/v1/alerts/active.json` → one feature per oblast under an air-raid alert.
  *
- * ONLY oblasts with `alert === true` become features. A quiet oblast is not a signal, and
- * drawing 25 dots of which 23 mean "nothing is happening" would make the layer read as
- * activity everywhere. `=== true` and not truthiness, so a string or a 1 from a changed
- * upstream cannot quietly turn every oblast red.
+ * Only active (`finished_at` empty) `air_raid` rows count; the other alert types
+ * (artillery shelling, urban fighting) are a different warning from the one this layer
+ * names. A row whose `location_uid` IS its oblast's uid covers the whole oblast; any
+ * other row is a raion, hromada or city inside it, and the oblast is "partial".
  *
- * An unknown oblast id is skipped and counted rather than placed at 0,0 — the Gulf of
- * Guinea is where every un-geocoded row in every product goes to be believed.
+ * An oblast uid the table does not know is skipped and returned in `unknownIds`, never
+ * placed at 0,0.
  */
 export function normalizeUkraineAlerts(
   payload: unknown,
   now: number = Date.now(),
 ): { features: SignalFeature[]; unknownIds: number[] } {
-  const states = (payload as { states?: unknown })?.states;
-  if (!Array.isArray(states)) return { features: [], unknownIds: [] };
+  const alerts = (payload as { alerts?: unknown })?.alerts;
+  if (!Array.isArray(alerts)) return { features: [], unknownIds: [] };
 
-  const features: SignalFeature[] = [];
-  const unknownIds: number[] = [];
+  interface Group {
+    uid: number;
+    whole?: AlertsInUaRow;
+    parts: AlertsInUaRow[];
+    since?: string;
+    red: boolean;
+  }
+  const groups = new Map<number, Group>();
+  const unknown = new Set<number>();
 
-  for (const raw of states as UaStateRow[]) {
+  for (const raw of alerts as AlertsInUaRow[]) {
     if (!raw || typeof raw !== "object") continue;
-    if (raw.alert !== true) continue;
-
-    const id = Number(raw.id);
-    if (!Number.isFinite(id)) continue;
-    const anchor = OBLAST_ANCHORS[id];
-    if (!anchor) {
-      unknownIds.push(id);
+    if (raw.alert_type !== "air_raid") continue;
+    if (raw.finished_at) continue;
+    const uid = num(raw.location_oblast_uid) ?? num(raw.location_uid);
+    if (uid === undefined) continue;
+    if (!OBLAST_ANCHORS[uid]) {
+      unknown.add(uid);
       continue;
     }
+    let g = groups.get(uid);
+    if (!g) {
+      g = { uid, parts: [], red: false };
+      groups.set(uid, g);
+    }
+    if (num(raw.location_uid) === uid) g.whole = raw;
+    else g.parts.push(raw);
+    const started = typeof raw.started_at === "string" ? raw.started_at : undefined;
+    if (started && (!g.since || Date.parse(started) < Date.parse(g.since))) g.since = started;
+    if (raw.alert_level === "red") g.red = true;
+  }
 
-    const name = raw.name_en?.trim() || anchor.en;
-    const changed = typeof raw.changed === "string" ? raw.changed : undefined;
-    const hours = activeHours(changed, now);
-    const standing = hours !== undefined && hours >= STANDING_ALERT_HOURS;
+  const features: SignalFeature[] = [];
+  for (const g of [...groups.values()].sort((a, b) => a.uid - b.uid)) {
+    const anchor = OBLAST_ANCHORS[g.uid]!;
+    const whole = Boolean(g.whole);
+    const since = whole ? (g.whole!.started_at ?? g.since) : g.since;
+    const hours = activeHours(since, now);
+    const standing = whole && hours !== undefined && hours >= STANDING_ALERT_HOURS;
+    const name = g.whole?.location_title_en?.trim() || anchor.en;
+    const areas = [...new Set(g.parts.map((r) => (r.location_title_en || r.location_title || "").trim()).filter(Boolean))];
+
+    const title = standing
+      ? `Standing alert — ${name}`
+      : whole
+        ? `Air-raid alert — ${name} (whole oblast)`
+        : `Air-raid alert in part of ${anchor.en} — ${areas.length} area${areas.length === 1 ? "" : "s"}`;
 
     features.push({
-      id: `ukraine-alerts:${id}`,
+      id: `ukraine-alerts:${g.uid}`,
       lat: anchor.lat,
       lon: anchor.lon,
-      title: standing ? `Standing alert — ${name}` : `Air-raid alert — ${name}`,
+      title,
       signalId: "ukraineAlerts",
-      // A years-old alert is not a fresh warning and must not compete visually with one.
-      color: standing ? "#a16207" : "#dc2626",
-      ts: changed,
-      link: "https://alerts.com.ua/",
+      // A years-old alert is not a fresh warning and must not compete visually with one;
+      // a partial alert is a real warning for fewer people than a whole-oblast one.
+      color: standing ? "#a16207" : whole ? "#dc2626" : "#ea580c",
+      ts: since,
+      link: SITE,
       props: {
-        oblast: name,
-        oblastLocal: raw.name?.trim() || undefined,
-        status: standing ? "Alert continuously active" : "Alert active",
-        since: changed,
+        oblast: anchor.en,
+        status: standing ? "Alert continuously active" : whole ? "Alert active in the whole oblast" : "Alert active in part of the oblast",
+        extent: whole ? "Whole oblast" : "Partial",
+        areasUnderAlert: areas.length ? areas.slice(0, 12).join(", ") + (areas.length > 12 ? ` and ${areas.length - 12} more` : "") : undefined,
+        areaCount: whole ? undefined : areas.length,
+        level: g.red ? "red" : "yellow",
+        since,
         activeForHours: hours !== undefined ? Math.round(hours) : undefined,
         standing: standing || undefined,
-        scope: "Oblast-wide — the marker is the administrative centre, not a location",
+        scope: "The marker is the oblast's main city, not a location. The alert covers the areas named.",
         // Said in the data and not only in a comment, because the dossier is where a
         // reader decides what a red dot means.
         meaning: standing
@@ -184,14 +221,14 @@ export function normalizeUkraineAlerts(
     });
   }
 
-  return { features, unknownIds };
+  return { features, unknownIds: [...unknown].sort((a, b) => a - b) };
 }
 
-let cache: { features: SignalFeature[]; at: number } | null = null;
+let cache: { features: SignalFeature[]; at: number; lastModified?: string } | null = null;
 
 export const UKRAINE_ALERTS_SOURCE: SignalSource = {
   id: "ukraineAlerts",
-  // An oblast. The anchor is its capital city, not the place of a strike.
+  // An oblast. The anchor is its main city, not the place of a strike.
   precision: "area",
   kind: "event",
   label: "Ukraine air-raid alerts",
@@ -199,34 +236,43 @@ export const UKRAINE_ALERTS_SOURCE: SignalSource = {
   color: "#dc2626",
   refreshMs: CACHE_TTL_MS,
   attribution: UKRAINE_ALERTS_ATTRIBUTION,
-  sourceUrl: "https://alerts.com.ua/",
+  sourceUrl: SITE,
 
   async fetch() {
+    const token = (process.env.ALERTS_IN_UA_TOKEN ?? "").trim();
+    if (!token) return degraded("no key"); // dormant until the free alerts.in.ua token is set
     if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
-      const res = await fetch(ENDPOINT, {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": "Provenance/2.0 (+https://github.com/011-sam-110/Provenance)",
-        },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "Provenance/2.0 (+https://github.com/011-sam-110/Provenance)",
+      };
+      if (cache?.lastModified) headers["If-Modified-Since"] = cache.lastModified;
+      const res = await fetch(ENDPOINT, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+      if (res.status === 304 && cache) {
+        cache = { ...cache, at: Date.now() };
+        return observed(cache.features, cache.at);
+      }
       if (!res.ok) {
         // Last-good rather than nothing: an alert layer that empties on one blip reads
         // as "all clear", which is the most dangerous wrong answer this source can give.
-        if (cache) return degradedWith(cache.features, `alerts.com.ua HTTP ${res.status}`, cache.at);
-        return degraded(`alerts.com.ua HTTP ${res.status}`);
+        if (cache) return degradedWith(cache.features, `alerts.in.ua HTTP ${res.status}`, cache.at);
+        return degraded(`alerts.in.ua HTTP ${res.status}`);
       }
-      const { features, unknownIds } = normalizeUkraineAlerts(await res.json());
-      cache = { features, at: Date.now() };
-      if (unknownIds.length) {
-        // An oblast we cannot place is a GAP, not an all-clear, and the layer says so
-        // rather than quietly serving a shorter list.
-        return degradedWith(features, `unmapped oblast ids: ${unknownIds.join(", ")}`, cache.at);
+      const body = (await res.json()) as unknown;
+      if (!Array.isArray((body as { alerts?: unknown })?.alerts)) {
+        if (cache) return degradedWith(cache.features, "alerts.in.ua bad body", cache.at);
+        return degraded("alerts.in.ua bad body");
       }
+      const { features } = normalizeUkraineAlerts(body);
+      // An uid outside the anchor table is skipped, not degraded: the API also carries
+      // regions this layer does not cover, and one of those must not mark the whole read
+      // as failed. The 27 regions it does cover are all in the table, and a test holds that.
+      cache = { features, at: Date.now(), lastModified: res.headers.get("last-modified") ?? undefined };
       return observed(features, cache.at);
     } catch (err) {
-      const reason = err instanceof Error ? err.message : "alerts.com.ua unreachable";
+      const reason = (err as Error)?.name === "TimeoutError" ? "alerts.in.ua timeout" : "alerts.in.ua unreachable";
       if (cache) return degradedWith(cache.features, reason, cache.at);
       return degraded(reason);
     }

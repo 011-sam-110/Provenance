@@ -1,0 +1,85 @@
+{
+ "count": 5,
+ "results": [
+  {
+   "code": "EMSR934",
+   "countries": [
+    "Panama"
+   ],
+   "eventTime": "2026-10-09T17:56:00",
+   "name": "Earthquake in Los Santos, Panama",
+   "centroid": "POINT (-80.67084785156305 8.006692455305458)",
+   "activationTime": "2026-10-09T23:19:00",
+   "category": "Earthquake",
+   "lastUpdate": "2026-10-16T19:22:28.670529",
+   "closed": false,
+   "gdacsId": "EQ1570339",
+   "n_aois": 9,
+   "n_products": 9
+  },
+  {
+   "code": "EMSR933",
+   "countries": [
+    "Greece"
+   ],
+   "eventTime": "2026-10-01T07:00:00",
+   "name": "Flood in Crete, Greece",
+   "centroid": "POINT (24.978601792058495 35.22506250241993)",
+   "activationTime": "2026-10-04T11:02:00",
+   "category": "Flood",
+   "lastUpdate": "2026-10-13T07:56:53.539027",
+   "closed": true,
+   "gdacsId": null,
+   "n_aois": 8,
+   "n_products": 18
+  },
+  {
+   "code": "EMSR932",
+   "countries": [
+    "Spain"
+   ],
+   "eventTime": "2026-09-15T13:00:00",
+   "name": "Wildfire in Huelva Province, Spain",
+   "centroid": "POINT (-7.213497 37.789542)",
+   "activationTime": "2026-09-15T16:58:00",
+   "category": "Wildfire",
+   "lastUpdate": "2026-09-17T12:50:19.784825",
+   "closed": true,
+   "gdacsId": null,
+   "n_aois": 1,
+   "n_products": 1
+  },
+  {
+   "code": "EMSR930",
+   "countries": [
+    "Italy"
+   ],
+   "eventTime": "2026-09-02T13:00:00",
+   "name": "Storm in Basilicata, Italy.",
+   "centroid": "POINT (16.688524454669405 40.230673340667245)",
+   "activationTime": "2026-09-07T14:44:00",
+   "category": "Storm",
+   "lastUpdate": "2026-09-15T14:01:14.382140",
+   "closed": true,
+   "gdacsId": null,
+   "n_aois": 2,
+   "n_products": 3
+  },
+  {
+   "code": "EMSR927",
+   "countries": [
+    "Nepal"
+   ],
+   "eventTime": "2026-08-25T22:00:00",
+   "name": "Flood in Nepal",
+   "centroid": "POINT (85.35376299877846 28.212231792029492)",
+   "activationTime": "2026-08-26T09:53:00",
+   "category": "Flood",
+   "lastUpdate": "2026-09-14T07:16:09.150534",
+   "closed": true,
+   "gdacsId": "FL1104124",
+   "n_aois": 6,
+   "n_products": 6
+  }
+ ]
+}

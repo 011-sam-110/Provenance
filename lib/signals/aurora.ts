@@ -3,7 +3,10 @@ import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { degraded, observed } from "@/lib/signals/outcome";
 
 // NOAA SWPC OVATION aurora forecast — the modelled probability (%) of visible
-// aurora on a 1°×1° global grid for the next ~30 min. Keyless JSON:
+// aurora on a 1°×1° global grid, valid at the grid's own "Forecast Time". That lead
+// is the solar wind's travel time from the L1 monitor, NOT a fixed half hour: it was
+// 61 to 65 minutes on 2026-10-16, and SWPC's product is still named "30 minute
+// forecast". Keyless JSON:
 //   { "Observation Time", "Forecast Time", "Data Format", "coordinates", "type" }
 // `coordinates` is a flat array of [lon, lat, aurora%] triples, lon 0–359 (wrapped
 // to −180..180 here), lat −90..90 → 360 × 181 = 65,160 cells every run.
@@ -25,15 +28,47 @@ import { degraded, observed } from "@/lib/signals/outcome";
 // run: 162 northern, 214 southern). The cap is a backstop for storm conditions.
 
 const ENDPOINT = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json";
+// OVATION's hemispheric power (GW per hemisphere, every 5 min): the standard
+// one-number summary of the same run, 13 KB. Same operator, so it adds no
+// independence, but it says how strong the oval is without reading 600 cells.
+// Optional: on any failure the cells are drawn without it.
+const HEMI_POWER_URL = "https://services.swpc.noaa.gov/text/aurora-nowcast-hemi-power.txt";
+/** A power row whose forecast time is further than this (ms) from the grid's is not attached. */
+const HEMI_POWER_MAX_SKEW_MS = 30 * 60 * 1000;
 /** Cells below this viewing probability (%) are not drawn. */
 const MIN_PROBABILITY = 5;
 /** Downsampling bucket size in degrees — one point per bucket, the bucket's peak. */
 const LON_STEP = 8;
 const LAT_STEP = 4;
-/** Backstop cap on the point count once bucketed (storms widen the oval). */
-const MAX_POINTS = 400;
+/**
+ * Cells nearer the equator than this (degrees of latitude) are not drawn.
+ *
+ * WHY: OVATION's grid carries a SEAM at the equator. On 2026-10-16 two runs in a row
+ * had up to 6 % in the latitude 0 row (144 and 155 of its 360 cells at 5 % or more)
+ * and 1 to 3 % at latitude -1, while latitude +1 was all zero; a third run at 19:31Z
+ * had it at -2..0, up to 7 %. Aurora at the equator at Kp 2 to 4 is physically
+ * impossible, and at the 5 % floor the seam made 19 to 21 buckets that read
+ * "Aurora 5% likely" on the equator. Even the great storms that pushed the aurora to
+ * low latitudes did so as a continuous oval from the pole, which a 20 degree cut
+ * leaves standing; a one-row band at 0 is a grid artefact.
+ */
+export const EQUATOR_BAND_DEG = 20;
+/**
+ * Backstop cap on the point count once bucketed (storms widen the oval).
+ *
+ * Was 400 until 2026-10-16, when it BIT on an ordinary active night: the 18:24Z run
+ * had 501 buckets at 5 % or more and prod served 400, hiding 101. The cap keeps the
+ * highest probabilities, so what it hid was the whole 5-6 % equatorward edge of the
+ * oval: the part a viewer in the UK, the northern US or southern Australia asks
+ * about ("how far south does it reach?"). Without the equator seam the same night
+ * is 466 to 481 buckets, so 600 draws all of it and still bounds a storm.
+ */
+export const AURORA_MAX_POINTS = 600;
+const MAX_POINTS = AURORA_MAX_POINTS;
 
-export const AURORA_ATTRIBUTION = "Aurora forecast © NOAA Space Weather Prediction Center";
+// A US Government work carries no copyright, so the credit names the source
+// without a "©" (the 2026-10-16 source audit).
+export const AURORA_ATTRIBUTION = "Aurora forecast: NOAA Space Weather Prediction Center (OVATION)";
 
 export interface OvationGrid {
   "Observation Time"?: string;
@@ -48,8 +83,36 @@ export interface AuroraOptions {
   lonStep?: number;
   /** Downsample bucket height in degrees of latitude. Default 4. */
   latStep?: number;
-  /** Hard cap on the returned point count. Default 400. */
+  /** Hard cap on the returned point count. Default AURORA_MAX_POINTS (600). */
   cap?: number;
+  /** OVATION hemispheric power for this run, from parseHemiPower(). */
+  hemiPower?: HemiPower;
+}
+
+/** One row of aurora-nowcast-hemi-power.txt. */
+export interface HemiPower {
+  observed: string;
+  forecast: string;
+  northGW: number;
+  southGW: number;
+}
+
+/**
+ * Pure: aurora-nowcast-hemi-power.txt → its newest row. Rows read
+ * "2026-10-16_19:30    2026-10-16_20:26      39      38" (observation, forecast,
+ * north GW, south GW); comment lines start with "#". Undefined when no row parses.
+ */
+export function parseHemiPower(text: string): HemiPower | undefined {
+  let last: HemiPower | undefined;
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^(\d{4}-\d{2}-\d{2})_(\d{2}:\d{2})\s+(\d{4}-\d{2}-\d{2})_(\d{2}:\d{2})\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*$/);
+    if (!m) continue;
+    const northGW = Number(m[5]);
+    const southGW = Number(m[6]);
+    if (!Number.isFinite(northGW) || !Number.isFinite(southGW) || northGW < 0 || southGW < 0) continue;
+    last = { observed: `${m[1]}T${m[2]}:00Z`, forecast: `${m[3]}T${m[4]}:00Z`, northGW, southGW };
+  }
+  return last;
 }
 
 /**
@@ -74,7 +137,8 @@ export function wrapLon(lon: number): number {
 /**
  * Pure: thin an OVATION grid down to one representative cell per
  * `lonStep`×`latStep` bucket — the bucket's HIGHEST probability, so the crest of
- * the oval survives. Cells under `minProbability` and malformed rows are dropped.
+ * the oval survives. Cells under `minProbability`, cells inside the equator band
+ * (|lat| < EQUATOR_BAND_DEG) and malformed rows are dropped.
  * Output order is deterministic: probability descending, then latitude descending,
  * then longitude ascending. Coordinates are the real cell's, never a bucket centre.
  */
@@ -92,6 +156,7 @@ export function downsampleAurora(
     const pct = Number(cell[2]);
     if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(pct)) continue;
     if (lat < -90 || lat > 90) continue;
+    if (Math.abs(lat) < EQUATOR_BAND_DEG) continue; // the equator seam, see above
     if (pct < minProbability) continue;
     const key = `${Math.floor(lon / lonStep)}:${Math.floor((lat + 90) / latStep)}`;
     const held = best.get(key);
@@ -112,6 +177,13 @@ export function normalizeAurora(json: OvationGrid, opts: AuroraOptions = {}): Si
 
   const forecast = json["Forecast Time"];
   const observed = json["Observation Time"];
+  // The power row must belong to (about) the same run as the grid.
+  const power =
+    opts.hemiPower &&
+    forecast &&
+    Math.abs(Date.parse(opts.hemiPower.forecast) - Date.parse(forecast)) <= HEMI_POWER_MAX_SKEW_MS
+      ? opts.hemiPower
+      : undefined;
   // The cap is a storm backstop and normally does NOT bite (376 points on the
   // 2026-08-10 run), but when it does the payload has to say so rather than
   // quietly clipping the crest of the oval.
@@ -141,6 +213,9 @@ export function normalizeAurora(json: OvationGrid, opts: AuroraOptions = {}): Si
         probabilityPct: pct,
         forecastFor: forecast ?? "—",
         ...(observed ? { observed } : {}),
+        // The whole hemisphere's auroral power (GW) for this run: one figure per
+        // hemisphere, the same on every cell of it.
+        ...(power ? { hemispherePowerGW: lat >= 0 ? power.northGW : power.southGW } : {}),
       },
     });
   }
@@ -176,15 +251,18 @@ export const AURORA_SOURCE: SignalSource = {
   },
   async fetch() {
     try {
-      const res = await fetch(ENDPOINT, {
-        headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
-        signal: AbortSignal.timeout(15_000),
-      });
+      const headers = { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" };
+      const [res, powerText] = await Promise.all([
+        fetch(ENDPOINT, { headers, signal: AbortSignal.timeout(15_000) }),
+        fetch(HEMI_POWER_URL, { headers, signal: AbortSignal.timeout(15_000) })
+          .then((r) => (r.ok ? r.text() : ""))
+          .catch(() => ""),
+      ]);
       if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as OvationGrid;
       // A quiet night is a real reading: every cell can sit under 5% while SWPC is
       // perfectly healthy, so an empty grid here is observed, not degraded.
-      return observed(normalizeAurora(json));
+      return observed(normalizeAurora(json, { hemiPower: parseHemiPower(powerText) }));
     } catch {
       return degraded("fetch failed"); // dormant-safe
     }

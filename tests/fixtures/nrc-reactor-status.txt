@@ -1,0 +1,7 @@
+ReportDt|Unit|Power
+10/16/2026 12:00:00 AM|Arkansas Nuclear 1|100
+10/16/2026 12:00:00 AM|Braidwood 1|100
+10/16/2026 12:00:00 AM|Braidwood 2|100
+10/16/2026 12:00:00 AM|Fermi 2|100
+10/16/2026 12:00:00 AM|Wolf Creek 1|100
+10/15/2026 12:00:00 AM|Braidwood 1|100

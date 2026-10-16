@@ -17,6 +17,21 @@ test("resolves the real camera-network attributions the app ingests", () => {
   );
 });
 
+// Each new US network's own attribution line, as its adapter writes it. These sit above
+// the generic "511" row; a reorder would send all of them to the FHWA page.
+test("resolves the 2026-10-16 US networks to their own operators, not the generic 511 page", () => {
+  expect(cameraProviderLink("Live traffic camera data © NYSDOT (511NY)")?.url).toBe("https://511ny.org/");
+  expect(cameraProviderLink("Live traffic camera data © MnDOT (511MN)")?.url).toBe("https://511mn.org/");
+  expect(cameraProviderLink("Live traffic camera data © Iowa DOT (511IA)")?.url).toBe("https://511ia.org/");
+  expect(cameraProviderLink("Live traffic camera data © INDOT (TrafficWise 511IN)")?.url).toBe("https://511in.org/");
+  expect(cameraProviderLink("Live traffic camera data © KDOT and KC Scout (KanDrive)")?.url).toBe("https://www.kandrive.gov/");
+  expect(cameraProviderLink("Live traffic camera data © Colorado DOT (COtrip)")?.url).toBe("https://www.cotrip.org/");
+  expect(cameraProviderLink("Live traffic camera data © Virginia DOT (511 Virginia)")?.url).toBe("https://511.vdot.virginia.gov/");
+  expect(cameraProviderLink("Live traffic camera data © Washington State DOT")?.label).toBe("WSDOT");
+  expect(cameraProviderLink("Live traffic camera data © Michigan DOT (Mi Drive)")?.label).toBe("Mi Drive (MDOT)");
+  expect(cameraProviderLink("Live traffic camera data © Texas DOT (TxDOT ITS)")?.url).toBe("https://its.txdot.gov/");
+});
+
 test("returns an https link with a non-empty label whenever it matches", () => {
   const l = cameraProviderLink("Live traffic data © SCDOT / 511sc.org");
   expect(l).not.toBeNull();

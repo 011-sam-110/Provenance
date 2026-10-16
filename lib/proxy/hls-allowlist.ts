@@ -34,6 +34,10 @@ const RULES: HlsRule[] = [
     prefix: "/",
     referer: "https://kamere.toll4all.com/",
   },
+  // North Macedonia, the state road enterprise's cameras, hosted by its ISP Neotel.
+  // Playlists and segments answer 200 with no Referer (measured 2026-10-16), and the
+  // segment URIs are relative, which rewritePlaylist already resolves onto this host.
+  { match: (h) => h === "streaming1.neotel.net.mk", prefix: "/stream/" },
 ];
 
 export function isHlsAllowed(url: URL): { ok: boolean; referer?: string } {

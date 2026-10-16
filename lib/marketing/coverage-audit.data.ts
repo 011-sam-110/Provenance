@@ -161,6 +161,66 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "2 at sea or in orbit."
   },
   {
+    "id": "cyclone-forecasts",
+    "label": "Cyclone forecasts (NHC)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Measured through its own fetch() against the live NHC feeds on 2026-10-16T20:05Z: 2 forecast cones (Trudy, Simon) and 1 East Pacific outlook area. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "tsunami-alerts",
+    "label": "Tsunami messages (NOAA)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feeds on 2026-10-16T20:18Z: 2 information statements (PTWC, NTWC) for the M7.0 off Kamchatka."
+  },
+  {
+    "id": "volcano-alerts",
+    "label": "Volcano alert levels (USGS, JMA)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feeds on 2026-10-16T20:18Z: 16 volcanoes above normal (4 USGS, 12 JMA)."
+  },
+  {
+    "id": "cems-activations",
+    "label": "Emergency mapping (Copernicus EMS)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feed on 2026-10-16T20:18Z: 2 activations (EMSR934 Panama earthquake, open; EMSR933 Crete flood)."
+  },
+  {
+    "id": "weather-warnings",
+    "label": "Weather warnings (NWS, ECCC)",
+    "group": "Weather",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Measured through its own fetch() against the live feeds on 2026-10-16T20:24Z: 185 alerts (32 NWS polygons, 94 NWS Severe or Extreme alerts placed at their counties, 59 ECCC polygons); 488 other NWS alerts were not drawn. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "fire-active",
     "label": "Active fires (FIRMS)",
     "group": "Natural hazards",
@@ -209,6 +269,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": ""
   },
   {
+    "id": "geomag-stations",
+    "label": "Magnetometer stations",
+    "group": "Space weather",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is NOT dormant: measured directly through its own fetch() against the live FMI and USGS feeds from provenance-1 on 2026-10-16T20:00Z, it served 24 station pins (11 FMI stations in Finland and Estonia, 13 of the 14 USGS observatories; Fredericksburg sent no samples that hour), 9 of them at the strong level. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "launches",
     "label": "Rocket launches",
     "group": "Space",
@@ -245,6 +317,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "17 at sea or in orbit."
   },
   {
+    "id": "cable-routes",
+    "label": "Charted cable routes",
+    "group": "Infrastructure",
+    "tier": "assets",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Measured directly through its own fetch() on 2026-10-16 from a UK box: 467 routes, 218 from NOAA and 249 from EMODnet. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "gpsJamming",
     "label": "GPS jamming",
     "group": "Infrastructure",
@@ -255,6 +339,30 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": true,
     "state": "live",
     "note": "Showing 400 of 518, the worst by interference ratio. 34 at sea or in orbit."
+  },
+  {
+    "id": "gpsJammingLive",
+    "label": "GPS jamming (last hour)",
+    "group": "Infrastructure",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It builds its hour in server memory from adsb.lol, so a single read shows little: one read on 2026-10-16 gave 3 cells. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "gnss-notams",
+    "label": "GNSS jamming warnings",
+    "group": "Infrastructure",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Measured directly through its own fetch() on 2026-10-16 from a UK box: 7 NOTAMs in force. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "nuclear",
@@ -413,6 +521,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "Showing 1,500 of 11,181, the first found in city order (London, Manchester, Birmingham, Leeds, Liverpool, Bristol) — not a ranking."
   },
   {
+    "id": "crime-us",
+    "label": "US city crime",
+    "group": "Civic safety",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "cyber-c2",
     "label": "Botnet C2 servers",
     "group": "Cyber threat",
@@ -423,6 +543,30 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": false,
     "state": "live",
     "note": ""
+  },
+  {
+    "id": "cyber-disclosures",
+    "label": "Cyber incidents disclosed (US)",
+    "group": "Cyber threat",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "cyber-attackers",
+    "label": "Top attacking networks",
+    "group": "Cyber threat",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "cyber-ransomware",
@@ -483,6 +627,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": false,
     "state": "live",
     "note": "13 at sea or in orbit."
+  },
+  {
+    "id": "gliders",
+    "label": "Gliders & FLARM",
+    "group": "Aviation",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: its own fetch() against the live Open Glider Network feed served 74 aircraft at 2026-10-16T20:15Z, run from a home network rather than from production (40 gliders, 17 paragliders, 7 helicopters, 6 tow planes, 3 hang gliders, 1 drone, at night in October). Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "ais",
@@ -3340,10 +3496,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 36,
+  "layers": 49,
   "live": 29,
   "partial": 1,
-  "down": 4,
+  "down": 17,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

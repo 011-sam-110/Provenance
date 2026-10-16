@@ -1,0 +1,92 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "properties": {
+    "preroll_url": "https://media-sfs7.vdotcameras.com/preroll/0i6a7bfbs60yq2lbgivq0b8xk3scij3c/playlist.m3u8",
+    "https_url": "https://media-sfs7.vdotcameras.com/rtplive/0i6a7bfbs60yq2lbgivq0b8xk3scij3c/playlist.m3u8",
+    "name": "0i6a7bfbs60yq2lbgivq0b8xk3scij3c",
+    "route": "",
+    "rtsp_url": "rtsp://media-sfs7.vdotcameras.com:554/rtplive/0i6a7bfbs60yq2lbgivq0b8xk3scij3c",
+    "direction": "",
+    "deviceid": 0,
+    "id": "3958",
+    "rtmp_url": "rtmp://media-sfs7.vdotcameras.com:1935/rtplive/0i6a7bfbs60yq2lbgivq0b8xk3scij3c",
+    "mrm": 0,
+    "problem_stream": false,
+    "guid": "9abf486c0af547aab109c34c",
+    "ios_url": "https://media-sfs7.vdotcameras.com/rtplive/0i6a7bfbs60yq2lbgivq0b8xk3scij3c/playlist_sfm4s.m3u8",
+    "image_url": "https://snapshot.vdotcameras.com/thumbs/0i6a7bfbs60yq2lbgivq0b8xk3scij3c.flv.png",
+    "jurisdiction": "City of Fairfax",
+    "active": true,
+    "description": "University Drive and Sager Avenue",
+    "distance": null,
+    "clsps_url": "clsps://media-sfs7.vdotcameras.com/0i6a7bfbs60yq2lbgivq0b8xk3scij3c"
+   },
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -77.3055,
+     38.84519
+    ]
+   }
+  },
+  {
+   "properties": {
+    "clsps_url": "clsps://media-sfs1.vdotcameras.com/0wyvj6n16r826rz758qn5mf48ogpj1fp",
+    "active": true,
+    "distance": null,
+    "description": "RT 50 AT PATRICK HENRY DR.",
+    "guid": "c81b9f1a82b6484db1e9a356",
+    "problem_stream": false,
+    "jurisdiction": "Arlington County",
+    "image_url": "https://snapshot.vdotcameras.com/thumbs/0wyvj6n16r826rz758qn5mf48ogpj1fp.flv.png",
+    "ios_url": "https://media-sfs1.vdotcameras.com/rtplive/0wyvj6n16r826rz758qn5mf48ogpj1fp/playlist_sfm4s.m3u8",
+    "rtmp_url": "rtmp://media-sfs1.vdotcameras.com:1935/rtplive/0wyvj6n16r826rz758qn5mf48ogpj1fp",
+    "mrm": 0,
+    "preroll_url": "https://media-sfs1.vdotcameras.com/preroll/0wyvj6n16r826rz758qn5mf48ogpj1fp/playlist.m3u8",
+    "https_url": "https://media-sfs1.vdotcameras.com/rtplive/0wyvj6n16r826rz758qn5mf48ogpj1fp/playlist.m3u8",
+    "name": "0wyvj6n16r826rz758qn5mf48ogpj1fp",
+    "rtsp_url": "rtsp://media-sfs1.vdotcameras.com:554/rtplive/0wyvj6n16r826rz758qn5mf48ogpj1fp",
+    "route": "RT 50",
+    "direction": "",
+    "deviceid": 0,
+    "id": "3379"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -77.14676,
+     38.868556
+    ]
+   },
+   "type": "Feature"
+  },
+  {
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "route": "",
+    "rtsp_url": "rtsp://media-sfs5.vdotcameras.com:554/rtplive/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR",
+    "preroll_url": "https://media-sfs5.vdotcameras.com/preroll/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR/playlist.m3u8",
+    "https_url": "https://media-sfs5.vdotcameras.com/rtplive/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR/playlist.m3u8",
+    "name": "0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR",
+    "deviceid": 0,
+    "direction": "",
+    "id": "3637",
+    "mrm": 0,
+    "rtmp_url": "rtmp://media-sfs5.vdotcameras.com:1935/rtplive/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR",
+    "image_url": "https://snapshot.vdotcameras.com/thumbs/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR.flv.png",
+    "ios_url": "https://media-sfs5.vdotcameras.com/rtplive/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR/playlist_sfm4s.m3u8",
+    "jurisdiction": "Fairfax",
+    "problem_stream": false,
+    "guid": "779cc6c29322408fa65e2611",
+    "active": true,
+    "distance": null,
+    "description": "University Driver and Fire Station 3",
+    "clsps_url": "clsps://media-sfs5.vdotcameras.com/0xeNZWRQ41OTW1NFGPzNz4o5W7aW9McR"
+   }
+  }
+ ]
+}

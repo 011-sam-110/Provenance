@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { markCoverage, withCoverage } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
+import { isVagueSchedule, netLabel } from "@/lib/signals/schedulePrecision";
 
 // The Space Devs — Launch Library 2 "upcoming launches". Keyless JSON; the
 // canonical open feed of scheduled orbital + suborbital launches. Each launch is
@@ -10,15 +11,29 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 // IMPORTANT — rate limits: LL2's production host (ll.thespacedevs.com) throttles
 // aggressively (a few requests/hour for anonymous clients). So we (a) use the
 // lighter `mode=normal` (the `mode=list` shape OMITS pad coordinates, confirmed
-// live 2026-06-27), (b) cache HARD via a long refreshMs + a module-level
-// stale-on-error cache, and (c) fall back to the documented DEV mirror
-// (lldev.thespacedevs.com) when production rate-limits. Both responses share the
-// same schema. Shapes confirmed live 2026-06-27.
+// live 2026-06-27), and (b) cache HARD via a long refreshMs + a module-level
+// stale-on-error cache. Shapes confirmed live 2026-06-27.
+//
+// NO DEV-MIRROR FALLBACK (removed 2026-10-16). The adapter used to read
+// lldev.thespacedevs.com when production refused. That host is a SNAPSHOT, not a
+// mirror: on 2026-10-16 it said last_updated 2026-10-10 and listed 178 launches
+// against production's 476, with USSF-481 still upcoming 17 minutes off its real
+// time after it had flown. Its rows were then stamped `observed()` at "now", so a
+// six-day-old schedule read as a live one. The stale-on-error cache below is the
+// honest fallback: it keeps the last good rows and says when they were read.
+
+//
+// API 2.3.0 (moved 2026-10-16). 2.2.0 still answered, but The Space Devs' docs now
+// list only 2.3.0 endpoints, so 2.2.0 can go without notice. 2.3.0 keeps the same
+// fields this adapter reads (pad latitude/longitude now arrive as numbers) and adds
+// `window_start` / `window_end`. One call per hour asks for 100 rows: about the
+// next two to three months, inside the anonymous limit of 15 requests per hour
+// (`/2.3.0/api-throttle/` said 15 per 3600 s on 2026-10-16). 100 rows of
+// `mode=normal` measured 857 KB.
 
 /** Page size asked of LL2. The agenda is a PAGE of the schedule, not the schedule. */
-export const LAUNCHES_PAGE_LIMIT = 30;
-const PROD = `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
-const DEV = `https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
+export const LAUNCHES_PAGE_LIMIT = 100;
+const PROD = `https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — launches move on the scale of hours/days
 
 export const LAUNCHES_ATTRIBUTION = "Launch data © The Space Devs — Launch Library 2";
@@ -28,6 +43,10 @@ interface LL2Launch {
   url?: string;
   name?: string;
   net?: string | null;
+  /** Second / Minute / Hour / Day / Month / Quarter N / Year Half N / Year. */
+  net_precision?: { name?: string | null; abbrev?: string | null } | null;
+  window_start?: string | null;
+  window_end?: string | null;
   status?: { name?: string | null } | null;
   launch_service_provider?: { name?: string | null } | null;
   rocket?: { configuration?: { name?: string | null } | null } | null;
@@ -75,6 +94,11 @@ export function normalizeLaunches(
     const status = l.status?.name ?? undefined;
     const provider = l.launch_service_provider?.name ?? undefined;
     const rocket = l.rocket?.configuration?.name ?? undefined;
+    const netPrecision = l.net_precision?.name?.trim() || undefined;
+    // A Day-or-coarser `net` is LL2's placeholder for a date class (a Year launch
+    // sits on 31 Dec 00:00), so it must not be published as an exact launch time.
+    const vague = isVagueSchedule(netPrecision);
+    const net = l.net ?? undefined;
     out.push({
       id: `launch:${id}`,
       lat,
@@ -88,7 +112,12 @@ export function normalizeLaunches(
         ...(provider ? { provider } : {}),
         ...(rocket ? { rocket } : {}),
         ...(status ? { status } : {}),
-        ...(l.net ? { launchTime: l.net } : {}),
+        ...(net && !vague ? { launchTime: net } : {}),
+        ...(net && vague ? { launchDate: netLabel(net, netPrecision) } : {}),
+        ...(netPrecision ? { netPrecision } : {}),
+        ...(!vague && l.window_start && l.window_end && l.window_start !== l.window_end
+          ? { window: `${l.window_start} – ${l.window_end}` }
+          : {}),
         ...(pad?.name ? { pad: pad.name } : {}),
         ...(pad?.location?.name ? { site: pad.location.name } : {}),
       },
@@ -114,15 +143,20 @@ export function normalizeLaunches(
   });
 }
 
-// --- Hard-cached upstream fetch (prod → dev fallback) ----------------------
+// --- Hard-cached upstream fetch (production only) ---------------------------
 let cache: { features: SignalFeature[]; at: number } | null = null;
+
+/** Test hook: forget the module cache so a test starts from a cold adapter. */
+export function resetLaunchesCacheForTest(): void {
+  cache = null;
+}
 
 async function tryFetch(url: string): Promise<SignalFeature[] | null> {
   const res = await fetch(url, {
     headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
     signal: AbortSignal.timeout(15_000),
   });
-  if (!res.ok) return null; // 429 etc. → let the caller fall back
+  if (!res.ok) return null; // 429 etc. → the caller serves the last good rows
   const json = (await res.json()) as { results?: LL2Launch[]; count?: number };
   return normalizeLaunches(json);
 }
@@ -141,17 +175,17 @@ export const LAUNCHES_SOURCE: SignalSource = {
     // A cache hit is a real upstream read — stamped when it happened, not now.
     if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
-      const features = (await tryFetch(PROD)) ?? (await tryFetch(DEV));
+      const features = await tryFetch(PROD);
       if (features) {
         cache = { features, at: Date.now() };
         return observed(features, cache.at);
       }
-      // both throttled → last good, else empty. Keep the rows and declare the
+      // throttled → last good, else empty. Keep the rows and declare the
       // failure, stamped with when they were really read: `degraded()` would drop
       // the cache, `observed()` would claim a read that did not happen.
       return cache
-        ? degradedWith(cache.features, "http error (prod and dev)", cache.at)
-        : degraded("http error (prod and dev)");
+        ? degradedWith(cache.features, "http error", cache.at)
+        : degraded("http error");
     } catch {
       // Same last-good rule as the throttled path above.
       return cache

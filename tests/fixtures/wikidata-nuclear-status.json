@@ -1,0 +1,48 @@
+{
+  "head" : {
+    "vars" : [ "item", "statusLabel", "end" ]
+  },
+  "results" : {
+    "bindings" : [ {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q215419"
+      },
+      "statusLabel" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "decommissioned"
+      },
+      "end" : {
+        "datatype" : "http://www.w3.org/2001/XMLSchema#dateTime",
+        "type" : "literal",
+        "value" : "2000-12-15T00:00:00Z"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q572403"
+      },
+      "statusLabel" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "in use"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1519910"
+      }
+    }, {
+      "item" : {
+        "type" : "uri",
+        "value" : "http://www.wikidata.org/entity/Q1630042"
+      },
+      "statusLabel" : {
+        "xml:lang" : "en",
+        "type" : "literal",
+        "value" : "building or structure under construction"
+      }
+    } ]
+  }
+}

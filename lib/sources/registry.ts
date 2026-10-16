@@ -15,7 +15,39 @@ import { fetchRegistry as fetchSerbiaBorders } from "@/lib/sources/serbia-border
 import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
 import { fetchRegistry as fetchBihamk } from "@/lib/sources/bihamk";
 import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
+import { fetchRegistry as fetchVdot } from "@/lib/sources/vdot";
+import { fetchRegistry as fetchWsdot } from "@/lib/sources/wsdot";
+import { fetchRegistry as fetchMiDrive } from "@/lib/sources/midrive";
+import { fetchRegistry as fetchTxdot } from "@/lib/sources/txdot";
+import { carsCameraFeeds } from "@/lib/sources/cars";
+import { fetchRegistry as fetchTamar } from "@/lib/sources/tamar";
+import { fetchRegistry as fetchNeUtmc } from "@/lib/sources/ne-utmc";
+import { fetchRegistry as fetchToronto } from "@/lib/sources/toronto";
+import { fetchRegistry as fetchCalgary } from "@/lib/sources/calgary";
+import { fetchRegistry as fetchVancouver } from "@/lib/sources/vancouver";
+import { fetchRegistry as fetchOttawa } from "@/lib/sources/ottawa";
+import { fetchRegistry as fetchMy511Mb } from "@/lib/sources/my511-mb";
+import { fetchRegistry as fetchMy511Nl } from "@/lib/sources/my511-nl";
+import { fetchRegistry as fetchMy511Yt } from "@/lib/sources/my511-yt";
+import { fetchRegistry as fetchVegvesen } from "@/lib/sources/vegvesen";
+import { fetchRegistry as fetchDgt } from "@/lib/sources/dgt";
+import { fetchRegistry as fetchLyon } from "@/lib/sources/lyon";
+import { fetchRegistry as fetchEismoinfo } from "@/lib/sources/eismoinfo";
+import { fetchRegistry as fetchUtinform } from "@/lib/sources/utinform";
+import { fetchRegistry as fetchDarsSi } from "@/lib/sources/dars-si";
+import { fetchRegistry as fetchRoadsMk } from "@/lib/sources/roads-mk";
+import { fetchRegistry as fetchHktd } from "@/lib/sources/hktd";
+import { fetchRegistry as fetchQld } from "@/lib/sources/qldtraffic";
+import { fetchRegistry as fetchQldFlood } from "@/lib/sources/qldtraffic-flood";
+import { fetchRegistry as fetchNsw } from "@/lib/sources/livetraffic-nsw";
+import { fetchRegistry as fetchTdxThb } from "@/lib/sources/tdx-thb";
+import { fetchRegistry as fetchBellingen } from "@/lib/sources/bellingen";
+import { fetchRegistry as fetchUsgsNims } from "@/lib/sources/usgs-nims";
+import { fetchRegistry as fetchAlertCa } from "@/lib/sources/alertcalifornia";
+import { fetchRegistry as fetchAvo } from "@/lib/sources/avo";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
+import { missingEnvFor } from "@/lib/sources/keyRequirements";
+import { dropNearDuplicates } from "@/lib/sources/overlap";
 import { findById, nearest } from "@/lib/sources/select";
 
 /**
@@ -103,6 +135,27 @@ export interface CameraFeed {
    * point of the default is that it still bounds everything else.
    */
   budgetMs?: number;
+  /**
+   * The KEY_REQUIREMENTS id (lib/sources/keyRequirements.ts) of the credential this
+   * feed needs. While that credential is missing the feed is DORMANT: it is not
+   * asked, it holds no cameras, and its health says `dormant` rather than failed, so
+   * a key nobody has set yet does not read as an outage.
+   */
+  keyId?: string;
+  /**
+   * Feeds that already carry some of this feed's cameras. A camera of this feed
+   * within 150 m of one of theirs is dropped, so a junction a 511 system relays and
+   * the city also publishes shows once (lib/sources/overlap.ts).
+   */
+  yieldsTo?: readonly string[];
+}
+
+/** Whether a feed's credential is missing. Pure apart from the env it is handed. */
+export function isDormant(
+  feed: Pick<CameraFeed, "keyId">,
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return !!feed.keyId && missingEnvFor(feed.keyId, env).length > 0;
 }
 
 /** The budget one feed gets this round. Pure. */
@@ -150,6 +203,56 @@ const SOURCES: CameraFeed[] = [
   // measured well inside the 10s default (12 and 31 parallel HEADs), so neither
   // declares a budgetMs.
   { key: "act-pr", fetch: fetchActPr },
+  // The CARS platform states (NY, MN, IA, IN, KS, CO): one adapter, one key per state,
+  // for the same last-good reason as the discovered feeds below. New York's cameras
+  // came here from castlerock when 511ny.org moved platforms. See lib/sources/cars.ts.
+  ...carsCameraFeeds(),
+  // TxDOT ITS, all 25 districts. Its pictures are base64 inside JSON, decoded by
+  // /api/proxy. Its Houston network has no snapshots here and is TranStar's; it is left
+  // out. See lib/sources/txdot.ts.
+  { key: "txdot", fetch: fetchTxdot },
+  // Mi Drive (Michigan DOT). Its list is display HTML inside JSON; the adapter reads
+  // the link and the img tag with anchored patterns. See lib/sources/midrive.ts.
+  { key: "midrive", fetch: fetchMiDrive },
+  // Washington State DOT. Web Mercator geometry and a windows-1252 file, both handled
+  // in the adapter; TripCheck rows are dropped there. See lib/sources/wsdot.ts.
+  { key: "wsdot", fetch: fetchWsdot },
+  // 511 Virginia. The same Iteris camera layer as SCDOT, read through its normaliser;
+  // stills only. See lib/sources/vdot.ts.
+  { key: "vdot", fetch: fetchVdot },
+  // Added in the source audit of 2026-10-16, grouped as the audit grouped them: UK,
+  // Canada, northern Europe, south-east Europe, the rest of the world, and the
+  // operator still cameras the Windy audit found (USGS, ALERTCalifornia, AVO). Each
+  // adapter's header says what it reads, how it decides a camera is live and what
+  // licence the operator states. Keyed feeds name their credential in `keyId` and are
+  // dormant until it is set. City feeds that a 511 system already relays name it in
+  // `yieldsTo`. None declares a budgetMs: each one bounds its own waiting (frame
+  // probes stop at a few seconds and finish in the background).
+  { key: "tamar", fetch: fetchTamar },
+  { key: "ne-utmc", fetch: fetchNeUtmc, keyId: "cams-ne-utmc" },
+  { key: "toronto", fetch: fetchToronto, yieldsTo: ["castlerock"] },
+  { key: "calgary", fetch: fetchCalgary, yieldsTo: ["castlerock"] },
+  { key: "vancouver", fetch: fetchVancouver, yieldsTo: ["drivebc"] },
+  { key: "ottawa", fetch: fetchOttawa, keyId: "cams-ottawa", yieldsTo: ["castlerock"] },
+  { key: "my511-mb", fetch: fetchMy511Mb, keyId: "cams-my511-mb" },
+  { key: "my511-nl", fetch: fetchMy511Nl, keyId: "cams-my511-nl" },
+  { key: "my511-yt", fetch: fetchMy511Yt, keyId: "cams-my511-yt" },
+  { key: "vegvesen", fetch: fetchVegvesen },
+  { key: "dgt", fetch: fetchDgt },
+  { key: "lyon-criter", fetch: fetchLyon },
+  { key: "eismoinfo", fetch: fetchEismoinfo },
+  { key: "utinform-hu", fetch: fetchUtinform },
+  { key: "dars-si", fetch: fetchDarsSi, keyId: "cams-dars-si" },
+  { key: "roads-mk", fetch: fetchRoadsMk },
+  { key: "hktd", fetch: fetchHktd },
+  { key: "qldtraffic", fetch: fetchQld },
+  { key: "qldtraffic-flood", fetch: fetchQldFlood },
+  { key: "livetraffic-nsw", fetch: fetchNsw },
+  { key: "tdx-thb", fetch: fetchTdxThb },
+  { key: "bellingen", fetch: fetchBellingen },
+  { key: "usgs-nims", fetch: fetchUsgsNims },
+  { key: "alertcalifornia", fetch: fetchAlertCa },
+  { key: "avo", fetch: fetchAvo },
   // Networks found by discovery and admitted by a reviewer, one entry each rather
   // than one entry for all of them — last-good is kept PER FEED, so a shared key
   // would let one network's outage discard every other discovered network's
@@ -174,9 +277,17 @@ export interface FeedHealth {
   count: number;
   /** True when `count` is last-good data kept after this feed failed. */
   stale: boolean;
+  /** True when the feed was not asked because its credential is not set. */
+  dormant?: boolean;
 }
 
+/** source -> the sources it yields to, from the feed table. */
+const YIELDS: Record<string, readonly string[]> = Object.fromEntries(
+  SOURCES.filter((f) => f.yieldsTo?.length).map((f) => [f.key, f.yieldsTo!]),
+);
+
 let lastGood = new Map<string, Camera[]>();
+let collapses = new Map<string, number>();
 let health: FeedHealth[] = [];
 let cache: { cameras: Camera[]; at: number } | null = null;
 let inflight: Promise<Camera[]> | null = null;
@@ -192,19 +303,48 @@ let inflight: Promise<Camera[]> | null = null;
  *
  * Losing a feed for one cycle is normal. Losing 4,000 cameras and saying nothing
  * is not. The `stale` flag on each feed's health says which is which.
+ *
+ * A COLLAPSE IS A FAILURE TOO. A feed that answers with far fewer cameras than it
+ * gave last time has usually lost pages or districts, not cameras: a fan-out adapter
+ * resolves whatever part of its upstream answered, so a partial round arrives as a
+ * success. That is how prod served Georgia 0 of 4,331 and Caltrans 897 of 3,598 while
+ * every feed read `ok: true` (2026-10-16 audit). Below COLLAPSE_RATIO of the last-good
+ * count, the round is treated like a failure and last-good is served, marked stale.
+ * A network that really shrank must not be frozen at its old size forever, so after
+ * COLLAPSE_MAX_ROUNDS collapsed rounds in a row the smaller set is accepted.
  */
+export const COLLAPSE_RATIO = 0.8;
+export const COLLAPSE_MAX_ROUNDS = 3;
+
 export function mergeResults(
   results: PromiseSettledResult<Camera[]>[],
   previous: Map<string, Camera[]>,
   feeds: { key: string }[] = SOURCES,
-): { cameras: Camera[]; lastGood: Map<string, Camera[]>; health: FeedHealth[] } {
+  previousCollapses: Map<string, number> = new Map(),
+): {
+  cameras: Camera[];
+  lastGood: Map<string, Camera[]>;
+  health: FeedHealth[];
+  /** Consecutive collapsed rounds per feed, to pass back in next round. */
+  collapses: Map<string, number>;
+} {
   const nextGood = new Map(previous);
   const nextHealth: FeedHealth[] = [];
+  const nextCollapses = new Map<string, number>();
   const cameras: Camera[] = [];
 
   results.forEach((r, i) => {
     const key = feeds[i]?.key ?? `feed-${i}`;
     if (r.status === "fulfilled" && r.value.length > 0) {
+      const before = previous.get(key)?.length ?? 0;
+      const streak = (previousCollapses.get(key) ?? 0) + 1;
+      if (r.value.length < before * COLLAPSE_RATIO && streak < COLLAPSE_MAX_ROUNDS) {
+        const kept = previous.get(key)!;
+        nextCollapses.set(key, streak);
+        cameras.push(...kept);
+        nextHealth.push({ key, ok: false, count: kept.length, stale: true });
+        return;
+      }
       nextGood.set(key, r.value);
       cameras.push(...r.value);
       nextHealth.push({ key, ok: true, count: r.value.length, stale: false });
@@ -216,14 +356,19 @@ export function mergeResults(
     nextHealth.push({ key, ok: false, count: kept.length, stale: kept.length > 0 });
   });
 
-  return { cameras, lastGood: nextGood, health: nextHealth };
+  return { cameras, lastGood: nextGood, health: nextHealth, collapses: nextCollapses };
 }
 
 async function refresh(): Promise<Camera[]> {
+  const dormant = new Set(SOURCES.filter((f) => isDormant(f)).map((f) => f.key));
   const results = await Promise.allSettled(
-    SOURCES.map((f) => withTimeout(f.fetch(), feedBudgetMs(f), f.key)),
+    SOURCES.map((f) =>
+      dormant.has(f.key) ? Promise.resolve([] as Camera[]) : withTimeout(f.fetch(), feedBudgetMs(f), f.key),
+    ),
   );
-  const merged = mergeResults(results, lastGood);
+  const merged = mergeResults(results, lastGood, SOURCES, collapses);
+  merged.cameras = dropNearDuplicates(merged.cameras, YIELDS);
+  merged.health = merged.health.map((h) => (dormant.has(h.key) ? { ...h, dormant: true } : h));
   if (merged.cameras.length === 0) {
     // Cold start with every feed down — surface it rather than caching an empty
     // world as if it were the answer.
@@ -231,6 +376,7 @@ async function refresh(): Promise<Camera[]> {
     return cache.cameras;
   }
   lastGood = merged.lastGood;
+  collapses = merged.collapses;
   health = merged.health;
   cache = { cameras: merged.cameras, at: Date.now() };
   return merged.cameras;

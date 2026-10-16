@@ -264,7 +264,7 @@ function makeSignalBody(source: SignalSource) {
         {projected.capNote && <p className="tn-w-capnote">{projected.capNote}</p>}
         <ul className="tn-w-list">
         {projected.rows.map((r) => {
-          const rel = relativeTime(r.ts, now);
+          const rel = r.when ?? relativeTime(r.ts, now);
           return (
             <li key={r.id}>
               {r.metric ? (

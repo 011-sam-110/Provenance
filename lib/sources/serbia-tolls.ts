@@ -4,6 +4,7 @@ import {
   decodeHtmlEntities,
   isBareIpHost,
 } from "@/lib/sources/serbia.data";
+import { MAX_FRAME_AGE_MS } from "@/lib/sources/bihamk";
 
 // Serbia — JP Putevi Srbije motorway toll-plaza cameras. The viewer at
 // kamere.toll4all.com is the roads company's own: it is titled "Kamere | JP
@@ -147,7 +148,16 @@ export function parseTollViewer(html: string): TollViewerCamera[] {
  * what removes Leskovac, Ruma, Vrba and Vrčin, and it is also what will happen
  * to any plaza the operator adds before somebody geolocates it.
  */
-export function normalizeSerbiaTolls(tiles: TollViewerCamera[]): Camera[] {
+export function normalizeSerbiaTolls(
+  tiles: TollViewerCamera[],
+  /**
+   * This round's poster probe per camera slug: the poster's Last-Modified (epoch
+   * ms), or `false` when the host refused it. A slug with no entry was not probed
+   * and is taken as live, as every camera was before probing existed.
+   */
+  posters: ReadonlyMap<string, number | false> = new Map(),
+  now: number = Date.now(),
+): Camera[] {
   const plazas = new Map(SERBIA_TOLL_PLAZAS.map((p) => [p.station.toLowerCase(), p]));
   const cams: Camera[] = [];
   for (const t of tiles) {
@@ -168,10 +178,44 @@ export function normalizeSerbiaTolls(tiles: TollViewerCamera[]): Camera[] {
       refreshSeconds: SERBIA_TOLLS_SOURCE.refreshSeconds,
       license: SERBIA_TOLLS_SOURCE.license,
       attribution: SERBIA_TOLLS_SOURCE.attribution,
-      available: true,
+      available: posterLive(posters.get(t.slug), now),
+      ...(typeof posters.get(t.slug) === "number"
+        ? { lastSampledAt: new Date(posters.get(t.slug) as number).toISOString() }
+        : {}),
     });
   }
   return cams;
+}
+
+/**
+ * Whether one poster probe says the camera is live. Pure.
+ *
+ * The poster is regenerated every few seconds while a camera works (37 of 38 were
+ * under 5 s old on 2026-10-16). Preševo Izlaz's was about 48 days old and its
+ * stream answered 404, yet the adapter called it live, so the same 60-minute age
+ * rule as bihamk and cetsp now decides.
+ */
+export function posterLive(probe: number | false | undefined, now: number): boolean {
+  if (probe === undefined) return true; // not probed: no evidence either way
+  if (probe === false) return false;
+  return Math.max(0, now - probe) <= MAX_FRAME_AGE_MS;
+}
+
+/** HEAD one poster for its Last-Modified. Never throws; `undefined` when we could not ask. */
+async function probePoster(url: string): Promise<number | false | undefined> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
+      signal: AbortSignal.timeout(6_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return false;
+    const lm = Date.parse(res.headers.get("last-modified") ?? "");
+    return Number.isFinite(lm) ? lm : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function fetchRegistry(): Promise<Camera[]> {
@@ -186,7 +230,15 @@ export async function fetchRegistry(): Promise<Camera[]> {
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Putevi Srbije toll cameras: ${res.status}`);
-  const cams = normalizeSerbiaTolls(parseTollViewer(await res.text()));
+  const tiles = parseTollViewer(await res.text());
+  // 38 HEADs, in parallel: headers only, no image bytes.
+  const probes = await Promise.all(tiles.map((t) => probePoster(t.imageUrl)));
+  const posters = new Map<string, number | false>();
+  tiles.forEach((t, i) => {
+    const p = probes[i];
+    if (p !== undefined) posters.set(t.slug, p);
+  });
+  const cams = normalizeSerbiaTolls(tiles, posters, Date.now());
   // A 200 that parses to nothing means the viewer's markup moved. Throwing lets
   // registry.ts keep this feed's last-good cameras rather than silently emptying
   // the motorway layer.

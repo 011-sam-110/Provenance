@@ -55,7 +55,7 @@ const CORE_SOURCES: CatalogSource[] = [
   // until 2026-09-06, a worldwide pull by ICAO type after — and this descriptor
   // used to credit the wrong feed. Same string, same fix, in
   // components/shell/SourceCatalog.tsx's LAYER_META.
-  { id: "planes",     kind: "core", label: "Planes",     group: "Aviation", color: "#d97706", attribution: ADSB_ATTRIBUTION, refreshMs: 12_000 },
+  { id: "planes",     kind: "core", label: "Planes",     group: "Aviation", color: "#d97706", attribution: ADSB_ATTRIBUTION, refreshMs: 90_000 },
   { id: "satellites", kind: "core", label: "Satellites", group: "Space",    color: "#7c3aed", attribution: "CelesTrak TLE · SGP4 (local)", refreshMs: 1_000 },
 ];
 

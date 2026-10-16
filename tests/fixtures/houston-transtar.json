@@ -1,0 +1,158 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "GlobalID",
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 4326,
+  "latestWkid": 4326
+ },
+ "fields": [
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "roadway",
+   "type": "esriFieldTypeString",
+   "alias": "roadway",
+   "sqlType": "sqlTypeOther",
+   "length": 254,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "location",
+   "type": "esriFieldTypeString",
+   "alias": "location",
+   "sqlType": "sqlTypeOther",
+   "length": 254,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "latitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "latitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "longitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "longitude",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "URL",
+   "type": "esriFieldTypeString",
+   "alias": "URL",
+   "sqlType": "sqlTypeOther",
+   "length": 254,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "URL_HTML",
+   "type": "esriFieldTypeString",
+   "alias": "URL_HTML",
+   "sqlType": "sqlTypeOther",
+   "length": 254,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "cctv",
+   "type": "esriFieldTypeString",
+   "alias": "cctv",
+   "sqlType": "sqlTypeOther",
+   "length": 100,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Name",
+   "type": "esriFieldTypeString",
+   "alias": "Name",
+   "sqlType": "sqlTypeOther",
+   "length": 254,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "GlobalID",
+   "type": "esriFieldTypeGlobalID",
+   "alias": "GlobalID",
+   "sqlType": "sqlTypeOther",
+   "length": 38,
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 1,
+    "roadway": "IH-45 Gulf",
+    "location": "West Dallas",
+    "latitude": 29.757662,
+    "longitude": -95.374742,
+    "URL": "http://www.houstontranstar.org/snapshots/cctv/102.jpg",
+    "URL_HTML": "<A HREF=\"http://www.houstontranstar.org/snapshots/cctv/102.jpg\" target=\"_blank\">Link to Transtar</A>",
+    "cctv": "102",
+    "Name": "IH-45 Gulf @ West Dallas",
+    "GlobalID": "2c1f78de-840c-41bb-afda-d3dc7bbe5d8d"
+   },
+   "geometry": {
+    "x": -95.37474899070324,
+    "y": 29.75766720976181
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 2,
+    "roadway": "IH-45 Gulf",
+    "location": "San Jacinto",
+    "latitude": 29.748155,
+    "longitude": -95.369384,
+    "URL": "http://www.houstontranstar.org/snapshots/cctv/103.jpg",
+    "URL_HTML": "<A HREF=\"http://www.houstontranstar.org/snapshots/cctv/103.jpg\" target=\"_blank\">Link to Transtar</A>",
+    "cctv": "103",
+    "Name": "IH-45 Gulf @ San Jacinto",
+    "GlobalID": "75a1bf21-c5a9-48b3-bbb2-b6ba11142b47"
+   },
+   "geometry": {
+    "x": -95.36939099363211,
+    "y": 29.748160192260073
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 3,
+    "roadway": "IH-45 Gulf",
+    "location": "West Bastrop",
+    "latitude": 29.742955,
+    "longitude": -95.359781,
+    "URL": "http://www.houstontranstar.org/snapshots/cctv/105.jpg",
+    "URL_HTML": "<A HREF=\"http://www.houstontranstar.org/snapshots/cctv/105.jpg\" target=\"_blank\">Link to Transtar</A>",
+    "cctv": "105",
+    "Name": "IH-45 Gulf @ West Bastrop",
+    "GlobalID": "0d1adc9d-b6cd-404b-89f1-41c71e11e9f5"
+   },
+   "geometry": {
+    "x": -95.35978798246866,
+    "y": 29.74296020802768
+   }
+  }
+ ]
+}

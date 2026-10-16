@@ -29,7 +29,41 @@ export interface DigiStation {
   };
 }
 
-export function normalizeDigitraffic(geojson: { features?: DigiStation[] }): Camera[] {
+/**
+ * How old a station's newest frame may be and still count as live.
+ *
+ * The same 60 minutes cetsp, bihamk and act-pr use. Digitraffic presets publish
+ * every few minutes (median 6.8 min on 2026-10-16), so this only catches cameras
+ * that have really stopped: that evening 19 of 814 pins showed a frame older than
+ * an hour, from 7 hours up to about 283 days, and 17 of them were still GATHERING,
+ * so the old rule called them live.
+ */
+export const MAX_FRAME_AGE_MS = 60 * 60 * 1000;
+
+/** `/stations/data` → measured time (epoch ms) per preset id. Pure. */
+export function presetFrameTimes(body: {
+  stations?: { presets?: { id?: string; measuredTime?: string }[] }[];
+}): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const st of body.stations ?? []) {
+    for (const p of st.presets ?? []) {
+      const t = p.measuredTime ? Date.parse(p.measuredTime) : NaN;
+      if (p.id && Number.isFinite(t)) out.set(p.id, t);
+    }
+  }
+  return out;
+}
+
+/**
+ * @param frameTimes measured time per preset id, from `/stations/data`. Empty when
+ *   that read failed, and then the old rule (first preset in collection, live while
+ *   GATHERING) applies unchanged.
+ */
+export function normalizeDigitraffic(
+  geojson: { features?: DigiStation[] },
+  frameTimes: ReadonlyMap<string, number> = new Map(),
+  now: number = Date.now(),
+): Camera[] {
   const cams: Camera[] = [];
   for (const f of geojson.features ?? []) {
     const p = f.properties ?? {};
@@ -39,8 +73,16 @@ export function normalizeDigitraffic(geojson: { features?: DigiStation[] }): Cam
     const lat = Number(coords[1]);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
-    const preset = (p.presets ?? []).find((x) => x.inCollection && x.id) ?? (p.presets ?? [])[0];
+    const presets = p.presets ?? [];
+    // The freshest preset in collection when frame times are known (a station can
+    // have one dead view beside live ones); else the first one, as before.
+    const timed = presets
+      .filter((x) => x.inCollection && x.id && frameTimes.has(x.id))
+      .sort((a, b) => frameTimes.get(b.id!)! - frameTimes.get(a.id!)!);
+    const preset = timed[0] ?? presets.find((x) => x.inCollection && x.id) ?? presets[0];
     if (!preset?.id) continue;
+    const frameAt = frameTimes.get(preset.id);
+    const fresh = frameAt === undefined || now - frameAt <= MAX_FRAME_AGE_MS;
     const stationId = (f.id ?? p.id ?? "").toString().trim();
     if (!stationId) continue;
     cams.push({
@@ -56,13 +98,16 @@ export function normalizeDigitraffic(geojson: { features?: DigiStation[] }): Cam
       refreshSeconds: DIGITRAFFIC_SOURCE.refreshSeconds,
       license: DIGITRAFFIC_SOURCE.license,
       attribution: DIGITRAFFIC_SOURCE.attribution,
-      available: p.collectionStatus === "GATHERING",
+      available: p.collectionStatus === "GATHERING" && fresh,
+      ...(frameAt !== undefined ? { lastSampledAt: new Date(frameAt).toISOString() } : {}),
     });
   }
   return cams;
 }
 
 export async function fetchRegistry(): Promise<Camera[]> {
+  // Started first and read in parallel, so the frame times cost no extra wall time.
+  const frameTimes = safeFetchFrameTimes();
   const res = await fetch("https://tie.digitraffic.fi/api/weathercam/v1/stations", {
     headers: {
       // Mandatory — the API 406s without it (undici still auto-decompresses).
@@ -73,9 +118,29 @@ export async function fetchRegistry(): Promise<Camera[]> {
   });
   if (!res.ok) throw new Error(`Digitraffic stations: ${res.status}`);
   const json = (await res.json()) as { features?: DigiStation[] };
-  const cameras = normalizeDigitraffic(json);
+  const cameras = normalizeDigitraffic(json, await frameTimes);
   attachRoadWeather(cameras, await safeFetchRoadWeather());
   return CameraArray.parse(cameras);
+}
+
+/**
+ * Frame times per preset. A failure here must not cost Finland its cameras, so it
+ * resolves to an empty map and the station flag alone decides, as it did before.
+ */
+async function safeFetchFrameTimes(): Promise<Map<string, number>> {
+  try {
+    const res = await fetch("https://tie.digitraffic.fi/api/weathercam/v1/stations/data", {
+      headers: {
+        "Accept-Encoding": "gzip",
+        "Digitraffic-User": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)",
+      },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) return new Map();
+    return presetFrameTimes(await res.json());
+  } catch {
+    return new Map();
+  }
 }
 
 /**

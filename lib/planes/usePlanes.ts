@@ -20,11 +20,25 @@ export interface PlaneTrail {
 export interface PlanesLayer {
   objects: WorldObject[];
   trails: PlaneTrail[];
+  /**
+   * Epoch ms the server pulled these positions from upstream (`fetchedAt` in the
+   * /api/planes body), or null before the first snapshot. The poll runs every 12 s
+   * but the snapshot changes about every 90 s, so THIS is the age of what is drawn,
+   * not the time the poll returned.
+   */
+  fetchedAt: number | null;
 }
 
 interface PlanesResponse {
   count: number;
   planes: WorldObject[];
+  fetchedAt?: number;
+}
+
+/** Pure: the data instant a /api/planes body carries, or null when it carries none. */
+export function snapshotInstant(body: { fetchedAt?: unknown }): number | null {
+  const t = body.fetchedAt;
+  return typeof t === "number" && Number.isFinite(t) && t > 0 ? t : null;
 }
 
 /**
@@ -34,9 +48,9 @@ interface PlanesResponse {
  * pruned when a plane leaves coverage. Keeps the last good data on fetch error.
  */
 export function usePlanes(): PlanesLayer {
-  const [layer, setLayer] = useState<PlanesLayer>({ objects: [], trails: [] });
+  const [layer, setLayer] = useState<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });
   const historyRef = useRef<Map<string, TrailPoint[]>>(new Map());
-  const lastGoodRef = useRef<PlanesLayer>({ objects: [], trails: [] });
+  const lastGoodRef = useRef<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +86,7 @@ export function usePlanes(): PlanesLayer {
         }
 
         historyRef.current = next; // prunes planes no longer present
-        const result = { objects: data.planes, trails };
+        const result = { objects: data.planes, trails, fetchedAt: snapshotInstant(data) };
         lastGoodRef.current = result;
         setLayer(result);
       } catch {
@@ -98,6 +112,6 @@ export function usePlanes(): PlanesLayer {
     const objects = filterToScopes(filterToScope(layer.objects, scope, (o) => o), rings, (o) => o);
     if (objects === layer.objects) return layer; // unrestricted: same array, same identity
     const keep = new Set(objects.map((o) => o.id));
-    return { objects, trails: layer.trails.filter((t) => keep.has(t.id)) };
+    return { objects, trails: layer.trails.filter((t) => keep.has(t.id)), fetchedAt: layer.fetchedAt };
   }, [layer, scope, rings]);
 }

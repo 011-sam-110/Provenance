@@ -1,0 +1,125 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "CctvSimple_v2.464277243",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     10.770351,
+     59.775513
+    ]
+   },
+   "geometry_name": "GEOM",
+   "properties": {
+    "CAMERA_ID": "0229017_1",
+    "RECORD_ID": "0229017_1",
+    "DESCRIPTION": "Svartskog",
+    "ORIENTATION_DESCRIPTION": "Mot Vinterbro",
+    "STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_AVAILABILITY": "videoOrImagesAvailable",
+    "STILL_IMAGE_FORMAT": "jpeg",
+    "STILL_IMAGE_URL": "https://kamera.atlas.vegvesen.no/api/images/0229017_1",
+    "STILL_IMAGE_URL_DESCRIPTION": "https://www.yr.no/nb/værvarsel/daglig-tabell/59.7755138,10.7703516/",
+    "VIDEO_SERVICE_LEVEL": 0,
+    "VIDEO_ENCODING_STANDARD": null,
+    "ROAD_NUMBER": "E18",
+    "PUB_ID": 1792184150,
+    "PUBLICATION_TIME": "2026-10-16T22:56:06.877+02:00",
+    "LAST_UPDATE_TIME": "2026-10-16T22:56:06.877+02:00"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "CctvSimple_v2.464277244",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.071377,
+     67.50496
+    ]
+   },
+   "geometry_name": "GEOM",
+   "properties": {
+    "CAMERA_ID": "3000622_1",
+    "RECORD_ID": "3000622_1",
+    "DESCRIPTION": "Røst ferjekai",
+    "ORIENTATION_DESCRIPTION": "Røst",
+    "STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_AVAILABILITY": "videoOrImagesAvailable",
+    "STILL_IMAGE_FORMAT": "jpeg",
+    "STILL_IMAGE_URL": "https://kamera.atlas.vegvesen.no/api/images/3000622_1",
+    "STILL_IMAGE_URL_DESCRIPTION": "https://www.yr.no/nb/værvarsel/daglig-tabell/67.5049611,12.0713771/",
+    "VIDEO_SERVICE_LEVEL": 0,
+    "VIDEO_ENCODING_STANDARD": null,
+    "ROAD_NUMBER": "R80",
+    "PUB_ID": 1792184150,
+    "PUBLICATION_TIME": "2026-10-16T22:56:06.880+02:00",
+    "LAST_UPDATE_TIME": "2026-10-16T22:56:06.880+02:00"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "CctvSimple_v2.464277245",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     16.075552,
+     68.22468
+    ]
+   },
+   "geometry_name": "GEOM",
+   "properties": {
+    "CAMERA_ID": "1800234_1",
+    "RECORD_ID": "1800234_1",
+    "DESCRIPTION": "Bognes ferjekai",
+    "ORIENTATION_DESCRIPTION": "Storjord",
+    "STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_AVAILABILITY": "videoOrImagesAvailable",
+    "STILL_IMAGE_FORMAT": "jpeg",
+    "STILL_IMAGE_URL": "https://kamera.atlas.vegvesen.no/api/images/1800234_1",
+    "STILL_IMAGE_URL_DESCRIPTION": "https://www.yr.no/nb/værvarsel/daglig-tabell/68.2246751,16.0755518/",
+    "VIDEO_SERVICE_LEVEL": 0,
+    "VIDEO_ENCODING_STANDARD": null,
+    "ROAD_NUMBER": "E6",
+    "PUB_ID": 1792184150,
+    "PUBLICATION_TIME": "2026-10-16T22:56:06.883+02:00",
+    "LAST_UPDATE_TIME": "2026-10-16T22:56:06.883+02:00"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "CctvSimple_v2.464277258",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     7.688185,
+     58.942562
+    ]
+   },
+   "geometry_name": "GEOM",
+   "properties": {
+    "CAMERA_ID": "3000859_1",
+    "RECORD_ID": "3000859_1",
+    "DESCRIPTION": "Reiårsfossen",
+    "ORIENTATION_DESCRIPTION": "syd",
+    "STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_SERVICE_LEVEL": 1,
+    "STATUS_STILL_IMAGE_AVAILABILITY": "videoOrImagesUnavailableDueToCameraFault",
+    "STILL_IMAGE_FORMAT": "jpeg",
+    "STILL_IMAGE_URL": "https://kamera.atlas.vegvesen.no/api/images/3000859_1",
+    "STILL_IMAGE_URL_DESCRIPTION": "https://www.yr.no/nb/værvarsel/daglig-tabell/58.9425613,7.688185/",
+    "VIDEO_SERVICE_LEVEL": 0,
+    "VIDEO_ENCODING_STANDARD": null,
+    "ROAD_NUMBER": "R9",
+    "PUB_ID": 1792184150,
+    "PUBLICATION_TIME": "2026-10-16T22:56:06.916+02:00",
+    "LAST_UPDATE_TIME": "2026-10-16T22:56:06.916+02:00"
+   }
+  }
+ ]
+}

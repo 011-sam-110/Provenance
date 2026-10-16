@@ -1,0 +1,160 @@
+{
+ "now": 1792181768001,
+ "total": 14,
+ "ac": [
+  {
+   "hex": "e48808",
+   "flight": "TAM3194 ",
+   "t": "A321",
+   "alt_baro": 34975,
+   "lat": -7.382996,
+   "lon": -43.288228,
+   "nac_p": 0,
+   "nic": 0,
+   "seen_pos": 6.174
+  },
+  {
+   "hex": "45aa4b",
+   "flight": "SAS2812 ",
+   "t": "A320",
+   "alt_baro": 16025,
+   "lat": 39.894104,
+   "lon": 3.390954,
+   "nac_p": 0,
+   "nic": 0,
+   "seen_pos": 0.023
+  },
+  {
+   "hex": "48af02",
+   "flight": "LOT4WM  ",
+   "t": "B38M",
+   "alt_baro": 6475,
+   "lat": 55.375309,
+   "lon": 12.989414,
+   "nac_p": 0,
+   "nic": 0,
+   "seen_pos": 1.41
+  },
+  {
+   "hex": "3c65da",
+   "flight": "DLH884  ",
+   "t": "A20N",
+   "alt_baro": 39000,
+   "lat": 55.238793,
+   "lon": 15.775411,
+   "nac_p": 0,
+   "nic": 0,
+   "gpsOkBefore": 1792181244.7,
+   "seen_pos": 3.07
+  },
+  {
+   "hex": "48e9f1",
+   "flight": "RYR2QD  ",
+   "t": "B738",
+   "alt_baro": 37000,
+   "lat": 55.783527,
+   "lon": 15.851519,
+   "nac_p": 0,
+   "nic": 0,
+   "gpsOkBefore": 1792181338.3,
+   "seen_pos": 20.418
+  },
+  {
+   "hex": "4b1a66",
+   "flight": "EZS67UZ ",
+   "t": "A320",
+   "alt_baro": 36000,
+   "lat": 43.461777,
+   "lon": 16.122053,
+   "nac_p": 0,
+   "nic": 0,
+   "seen_pos": 0.0
+  },
+  {
+   "hex": "ac3053",
+   "flight": "SWA4400 ",
+   "t": "B38M",
+   "alt_baro": "ground",
+   "lat": 39.8619,
+   "lon": -104.670525,
+   "nac_p": 0,
+   "nic": 0,
+   "seen_pos": 29.297
+  },
+  {
+   "hex": "86d9d2",
+   "flight": "ANA203  ",
+   "t": "B789",
+   "alt_baro": 34975,
+   "lat": 66.489349,
+   "lon": -166.430213,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.129
+  },
+  {
+   "hex": "86e79a",
+   "flight": "ANA217  ",
+   "t": "B789",
+   "alt_baro": 37000,
+   "lat": 66.674443,
+   "lon": -166.218525,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.124
+  },
+  {
+   "hex": "86e82a",
+   "flight": "JAL790  ",
+   "t": "B789",
+   "alt_baro": 10650,
+   "lat": 21.612435,
+   "lon": -158.668671,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.226
+  },
+  {
+   "hex": "86e7c4",
+   "flight": "JAL72   ",
+   "t": "B789",
+   "alt_baro": 1900,
+   "lat": 21.251083,
+   "lon": -158.016108,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.171
+  },
+  {
+   "hex": "ac0b50",
+   "flight": "SWA1379 ",
+   "t": "B38M",
+   "alt_baro": -100,
+   "lat": 21.316269,
+   "lon": -157.923823,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.396
+  },
+  {
+   "hex": "86eb50",
+   "flight": "ANA186  ",
+   "t": "B789",
+   "alt_baro": "ground",
+   "lat": 21.326946,
+   "lon": -157.920876,
+   "nac_p": 9,
+   "nic": 8,
+   "seen_pos": 0.672
+  },
+  {
+   "hex": "a47fd9",
+   "t": "B789",
+   "alt_baro": 35025,
+   "lat": 59.978043,
+   "lon": -131.212169,
+   "nic": 8,
+   "seen_pos": 54.837
+  }
+ ]
+}

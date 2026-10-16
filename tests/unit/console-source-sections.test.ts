@@ -77,8 +77,8 @@ test("rows carry the resolved display label, not the raw catalog label", () => {
   const byId = new Map(rows.map((r) => [r.id, r]));
   // Uncontested: the parenthetical goes.
   expect(byId.get("reliefweb")?.label).toBe("Humanitarian emergencies");
-  // Contested with USGS earthquakes: this one keeps its qualifier.
-  expect(byId.get("emsc-quakes")?.label).toBe("Earthquakes · EMSC");
+  // The EMSC layer, the one label that was contested, is part of earthquakes now.
+  expect(byId.has("emsc-quakes")).toBe(false);
   expect(byId.get("earthquakes")?.label).toBe("Earthquakes");
 });
 

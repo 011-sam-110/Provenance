@@ -20,6 +20,7 @@ import {
   normalizeAdsbRows,
   pullToObjects,
   TYPE_BATCHES,
+  TYPE_REQUESTS,
   typeBatchUrl,
   type AdsbRow,
   type PullResult,
@@ -399,11 +400,15 @@ describe("TYPE_BATCHES", () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it("keeps each batch small enough for one URL: at most 75 types, under 400 characters", () => {
-    for (const b of TYPE_BATCHES) {
-      expect(b.length).toBeLessThanOrEqual(75);
-      expect(typeBatchUrl(b).length).toBeLessThanOrEqual(400);
-    }
+  // The batches used to be four requests, each capped at 75 codes / 400 characters.
+  // Four requests per snapshot is what lost batch D to the rate limit on prod, so
+  // since 2026-10-16 they go as ONE request (243 codes, 1,235 characters, answered
+  // 200 with 10,346 positioned aircraft that day).
+  it("sends every type in ONE request, mainline first, in a URL under 1,500 characters", () => {
+    expect(TYPE_REQUESTS).toHaveLength(1);
+    expect(TYPE_REQUESTS[0]).toEqual(all);
+    expect(TYPE_REQUESTS[0].slice(0, TYPE_BATCHES[0].length)).toEqual(TYPE_BATCHES[0]);
+    expect(typeBatchUrl(TYPE_REQUESTS[0]).length).toBeLessThan(1_500);
   });
 
   it("puts the mainline fleet first, so a truncated pull still holds the global backbone", () => {

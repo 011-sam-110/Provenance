@@ -1,0 +1,31 @@
+{
+ "cameras": [
+  {
+   "cameraOwner": "CITY",
+   "latitude": 45.416354,
+   "name": "Booth & Kichi Zībī Mīkan / Wellington",
+   "name_french": "Booth et Kichi Zībī Mīkan / Wellington",
+   "camera_number": 49,
+   "id": 33,
+   "longitude": -75.714726
+  },
+  {
+   "cameraOwner": "CITY",
+   "latitude": 45.4129695702,
+   "name": "Albert & Booth",
+   "name_french": "Albert et Booth",
+   "camera_number": 43,
+   "id": 34,
+   "longitude": -75.712636288
+  },
+  {
+   "cameraOwner": "MTO",
+   "latitude": 45.344907,
+   "name": "(MTO) South of Hwy 417 between Hwy 416 and Richmond Rd",
+   "name_french": "(MTO) Sud de l'autoroute 417 entre l'autoroute 416 et le chemin Richmond",
+   "camera_number": 2011,
+   "id": 157,
+   "longitude": -75.807794
+  }
+ ]
+}

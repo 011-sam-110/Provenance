@@ -1,7 +1,7 @@
 "use client";
-// Armed Conflict widget — ACLED events (type · country · fatalities) when creds
-// are set, else keyless GDELT conflict coverage. Honestly labels which source is
-// live. Dock-only (v1). Each row → fly + open the event dossier.
+// Armed Conflict widget — the deadliest UCDP verified events from the conflict layer
+// (ACLED first if that layer ever returns). Honestly labels which source is live.
+// Dock-only (v1). Each row → fly + open the event dossier.
 
 import { useSignalFeatures } from "@/lib/widgets/useSignalFeatures";
 import { conflictView } from "@/lib/widgets/conflict";
@@ -10,7 +10,7 @@ import { useNow, formatAge } from "@/lib/shell/useNow";
 
 export default function ConflictPanel({ docked = false }: { docked?: boolean } = {}) {
   const acled = useSignalFeatures("acled", docked);
-  const gdelt = useSignalFeatures("conflict", docked);
+  const gdelt = useSignalFeatures("conflict", docked); // the conflict layer (UCDP since 2026-10-16)
   const now = useNow(1000);
   if (!docked) return null;
 

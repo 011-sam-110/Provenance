@@ -190,8 +190,9 @@ obligations and are not satisfied by the licence.
   (`lib/shell/askPlace.ts`), and the chip's tooltip says which. The reader does not
   round: a time length with no window ("last 48h", "today") is shown as not understood.
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
-- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (17 feeds).
-  Sixteen are hand-written adapters; the seventeenth was admitted through discovery and shares
+- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (52 feeds).
+  Fifty-one come from forty-six hand-written adapter modules (`cars.ts` registers one feed per
+  CARS state, six in all); the fifty-second was admitted through discovery and shares
   `discovered.ts` rather than adding a module of its own.
 - `lib/discovery/*` + `/admin` — **camera auto-discovery and the human review gate.** Discovery
   asks open-data catalogues (CKAN, Socrata, ArcGIS Hub) and produces a queue in
@@ -202,9 +203,12 @@ obligations and are not satisfied by the licence.
   `/admin` and `/api/admin` returns 404 in production — that is the whole security model,
   pinned by `tests/unit/discovery-admin-gate.test.ts`. Full write-up in
   `docs/CAMERA_DISCOVERY.md`.
-- **`CAMERA_FEED_COUNT` is `16 + ADMITTED_FEEDS.length`.** It is **17** today: Houston
+- **`CAMERA_FEED_COUNT` is `26 + ADMITTED_FEEDS.length`.** It is **27** today (2026-10-16 added
+  the six CARS states, 511 Virginia, WSDOT, Mi Drive and TxDOT ITS). Houston
   TranStar was admitted on 2026-08-20, the first network to reach the map through discovery
-  rather than a hand-written adapter. When it moves, the two pinning tests go red until this
+  rather than a hand-written adapter, and the source audit of 2026-10-16 added 25 hand-written
+  feeds, six of which stay dormant (no cameras, `feeds.dormant` in `/api/coverage`) until
+  their free key is set. When it moves, the two pinning tests go red until this
   file and the README state the new figures. That is the guard working — and note that
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
@@ -216,7 +220,7 @@ obligations and are not satisfied by the licence.
   registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
   Tile rows are POSITIONAL and read by index — never add a column on one side only; see
   `TILE_VERSION` and the parity test.
-- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**35 registered, 34 of them map layers**).
+- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**48 registered, 47 of them map layers**, 2026-10-16).
   A source may set `dataOnly: true` (see `types.ts`) meaning registered + fetchable but NOT a
   map layer: no catalog entry, no rail row, no pin, unreachable from monitors/variants/`?sig=`.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
@@ -319,20 +323,33 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Claim | Value | How it was checked (2026-08-10) |
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
-| Camera feeds | 17 feeds (16 adapters + 1 discovered), 26 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. |
-| Signal layers | **36 registered (35 map layers + 1 data-only); 33 returning data, 2 empty, 1 unmeasured** (2026-09-19) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. `headline-places` was added on 2026-09-19 and IS measured, unlike the row it sits beside: it needs no key and no push, so its fetch() was run directly against the live feeds — 71 pins over 60 countries from 231 of 440 headlines. `lib/marketing/coverage-audit.data.ts` still carries a zero row for it, because that file is one production run and mixing a second measurement into its totals would break the reconciliation its own test enforces; the row's note carries the real figures. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. The unmeasured one is `news-coverage`, registered 2026-09-16: it publishes nothing until the NewsScraper host pushes its first batch, and it has never been run against production, so `lib/marketing/coverage-audit.data.ts` carries a zero row saying exactly that — re-run the breakdown after the next deploy to replace it. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
+| Camera feeds | 52 feeds (51 from adapters + 1 discovered), 60 agency networks, 21 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. On 2026-10-16 New York left `castlerock` (511ny.org moved to the CARS platform) and came back as one of six CARS feeds, and four single-state adapters joined: feeds 17 → 27, agencies 26 → 35. The same day the world camera audit added 25 more feeds (19 keyless, 6 dormant until a free key is set) and 10 countries: feeds 27 → 52, agencies 35 → 60, countries 11 → 21. |
+| Signal layers | **37 registered (36 map layers + 1 data-only); 33 returning data, 2 empty, 1 unmeasured** (2026-09-19), plus `gliders` (2026-10-16) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. `gliders` (Open Glider Network) was added on 2026-10-16 and measured only from provenance-1, not from production: 74 aircraft at 20:15Z. Like `headline-places`, it has a zero row in `lib/marketing/coverage-audit.data.ts` whose note carries that figure. `headline-places` was added on 2026-09-19 and IS measured, unlike the row it sits beside: it needs no key and no push, so its fetch() was run directly against the live feeds — 71 pins over 60 countries from 231 of 440 headlines. `lib/marketing/coverage-audit.data.ts` still carries a zero row for it, because that file is one production run and mixing a second measurement into its totals would break the reconciliation its own test enforces; the row's note carries the real figures. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. The unmeasured one is `news-coverage`, registered 2026-09-16: it publishes nothing until the NewsScraper host pushes its first batch, and it has never been run against production, so `lib/marketing/coverage-audit.data.ts` carries a zero row saying exactly that — re-run the breakdown after the next deploy to replace it. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
 | Console presets | 3 (2026-09-16) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "three presets"). Globe, News and Streets. The five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on 2026-09-15 on request, together with the Apple-style hover nav panel; News was added on 2026-09-16 to give the merged headline stream a surface. Globe is deliberately empty; Streets is the camera wall. |
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
-| Widget types | 66 registered (2026-09-16) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`, and 65 until `signal:news-coverage` registered with its layer on 2026-09-16 (every signal source mints a widget). NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
+| Widget types | 67 registered (2026-10-16, `signal:gliders`) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`, and 65 until `signal:news-coverage` registered with its layer on 2026-09-16 (every signal source mints a widget). NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
 | Unit tests | **4,264 cases / 403 files (2026-09-19)** | `npx vitest list` (collects without running — safe alongside other agents). Re-measured on feat/camera-tiers rebased onto origin/main at 15c0efe, which is the tree that ships. The camera-tier split added layer-key-migration; #258 added signal-detail-key-note. Those two landed on separate branches and BOTH moved `cases`, which is why rebasing one onto the other conflicted in exactly one place — see the header of lib/marketing/repo-facts.data.ts, which predicts this and says to re-measure on the merged tree rather than pick a side. Earlier on 2026-09-18, the news comparison board added four files (news-diversity, news-framing, news-source-badge-disclosure, rail-world-headlines). The figure moved three times on 2026-09-16 alone — 4,029 / 389, then 4,044 / 390, then this — as the news board, the inspector rail, the area-colour picker and the news-depth branch each landed their own test files. This row said **1,414 / 215** until 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
   (`lib/sources/opensky.ts` `fetchAircraftOnce` keeps the reasoning; the filename is a
   named follow-up). The live path is `lib/sources/adsb.ts` `fetchAdsbTypePull` behind
-  Next's Data Cache (`planes-aircraft-v5`, revalidate 240 s). adsb.lol also serves the
-  `military-air` signal layer, from the same per-IP rate-limit bucket.
+  Next's Data Cache (`planes-aircraft-v6`, revalidate 90 s since 2026-10-16, was 240 s;
+  the console's freshness chip reads the snapshot's own `fetchedAt`). adsb.lol also serves the
+  `military-air` signal layer, from the same per-IP rate-limit bucket. **That bucket is
+  small (re-measured 2026-10-16: about three requests, then 10-20 s per token)**, so the
+  pull is ONE request naming every type, and every adsb.lol request in the process waits
+  its turn in `lib/http/hostLane.ts`. Four batches plus a `/v2/mil` poll in between is
+  what dropped the GA batch from 3 of 5 prod snapshots. Do not add an adsb.lol call
+  outside that lane.
+- **GDELT left the live path on 2026-10-16.** An audit labelled a random sample: 86% of
+  its conflict rows and 58% of its protest rows were not that event at that place. The
+  `conflict` and `protests` layers now read UCDP's monthly verified events, U.S. Embassy
+  alert feeds and UK/Canadian travel-advice changes (`lib/signals/conflict.ts`);
+  `lib/signals/gdelt.ts` stays unregistered for its scripts and tests, and for the
+  instability index's capped GDELT attention term (weight 0.03). The two notes
+  below are its history.
 - **GDELT is FIXED and live again** (was 404ing on `/api/v2/geo/geo`). The layer now reads
   the GCS event export instead. Prod check 2026-08-11: `/api/signals/conflict` returns
   `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare
@@ -356,8 +373,9 @@ Re-measure before putting a number in a README, a CV or a PR description.
 - **`/api/planes` is worldwide (2026-09-06).** Until then the layer was a 40-cell
   point+radius sweep of adsb.lol, and from Vercel's shared egress IP the per-IP rate limit
   let 1 of 40 cells through: prod served 1,311 aircraft, all between 2° and 15° E, drawn
-  as one or two dense discs. `lib/sources/adsb.ts` now pulls `/v2/type/{list}` in four
-  paced batches (226 designators, ~9,100 positioned aircraft) and `lib/planes/sample.ts`
+  as one or two dense discs. `lib/sources/adsb.ts` now pulls `/v2/type/{list}` (four
+  paced batches of 226 designators then; ONE request of 243 since 2026-10-16, 10,346
+  positioned aircraft that day) and `lib/planes/sample.ts`
   caps to 3,000 as a proportional spatial sample. Measured through the code path on
   2026-09-06: 131 ten-degree cells, largest 7.1%, all seven continents. Re-measure with
   `node scripts/probe-planes.mjs` (under `vercel env run` against a preview). Two honest
@@ -413,9 +431,17 @@ Re-measure before putting a number in a README, a CV or a PR description.
   82/100** and conflict can be out-ranked as a driver by displacement. And on the live feed today
   it tops out near **32/100 with most countries on 1 of 4 factors** — the food and ACLED inputs
   are both gone, so nearly every score is a floor. Read the Brief's numbers with that in mind.
-- Key-gated layers dormant in prod: ReliefWeb, ENTSO-E grid. Live with keys: NASA FIRMS,
-  OpenAQ stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
-  vessels through the real adapter on 2026-09-05). Canonical env-var names live in `docs/API_KEYS.md` —
+  **Superseded 2026-10-16:** the index was rebuilt on seven factors (UCDP deaths, INFORM
+  Severity, FEWS NET, INFORM Risk + WGI, UNHCR as a share of population, GDELT capped,
+  IODA critical alerts plus ISOC Pulse verified shutdowns; see lib/signals/instability.ts). Its ceiling is now 99, and a
+  measured zero counts toward coverage, so the countries FEWS NET monitors read 7/7.
+- Key-gated layers dormant in prod: none since 2026-10-16. Grid load is keyless for GB, France, Denmark and
+  Australia since 2026-10-16; only its ENTSO-E and EIA parts wait for their keys. ReliefWeb is keyless
+  since 2026-10-16: it reads ReliefWeb's own weekly export on HDX plus IFRC GO appeals. Live with keys: OpenAQ
+  stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
+  vessels through the real adapter on 2026-09-05). NASA FIRMS went keyless on 2026-10-16:
+  prod's key drew HTTP 400 for five weeks, so Active fires reads the keyless global
+  24 h files. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
   `WINDY_WEBCAMS_API_KEY`).
 

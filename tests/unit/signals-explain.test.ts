@@ -63,20 +63,29 @@ describe("quality — an entry that says nothing is worse than none", () => {
 describe("the caveats we most need to be right about", () => {
   // Each of these is a real misreading we would otherwise invite. If someone
   // softens one of these entries, this test should stop them.
-  it("warns that the NHC cyclone layer is not global", () => {
+  // Until 2026-10-16 the layer read NHC alone and this pinned "not global". It now
+  // reads JTWC for every other basin, so the caveat that matters is whose number it is.
+  it("says which centre warns where, and that outside NHC's basins it is not the regional WMO centre", () => {
     const e = explainerFor("tropical-cyclones")!;
-    expect(e.coverage).toMatch(/Atlantic|Eastern Pacific/i);
-    expect(e.limitations.join(" ")).toMatch(/typhoon|Western Pacific/i);
+    expect(e.coverage).toMatch(/Atlantic/i);
+    expect(e.coverage).toMatch(/JTWC/);
+    expect(e.limitations.join(" ")).toMatch(/not the regional WMO centre/i);
+    expect(e.limitations.join(" ")).toMatch(/10 minutes/i);
+  });
+
+  it("warns that a forecast cone is the centre's track, not the storm's size", () => {
+    expect(explainerFor("cyclone-forecasts")!.limitations.join(" ")).toMatch(/CENTRE/);
   });
 
   it("warns that FIRMS detects heat rather than fire", () => {
     expect(explainerFor("fire-active")!.limitations.join(" ")).toMatch(/heat, not fire/i);
   });
 
-  it("warns that the GDELT layers measure coverage rather than events", () => {
+  it("warns that an alert is a warning, and that UCDP's verified events are weeks old", () => {
     for (const id of ["conflict", "protests"]) {
-      expect(explainerFor(id)!.limitations.join(" ")).toMatch(/media attention|attention, not events/i);
+      expect(explainerFor(id)!.limitations.join(" ")).toMatch(/WARNING|warnings/);
     }
+    expect(explainerFor("conflict")!.limitations.join(" ")).toMatch(/3 to 7 weeks old/);
   });
 
   it("warns that AIS is a sample and that the interesting ships switch it off", () => {
@@ -104,9 +113,9 @@ describe("the caveats we most need to be right about", () => {
   });
 
   it("states the instability ceiling the formula actually allows", () => {
-    // Every input at its maximum: the conflict ramp is hard-capped, so this is the top.
+    // Every input at its maximum: the press-coverage ramp is hard-capped, so this is the top.
     const [top] = computeInstability([
-      { iso3: "SYR", factors: { conflict: 1e9, food: 1, displacement: 1e9, outages: 1e9 } },
+      { iso3: "SYR", factors: { conflict: 1e9, severity: 10, food: 1, structural: 1, displacement: 1, attention: 1e9, outages: 1e9 } },
     ]);
     const ceiling = top!.props?.score as number;
     expect(explainerFor("instability")!.limitations.join(" ")).toContain(`${ceiling}`);

@@ -13,8 +13,6 @@ import { PRECISION_WORDING, precisionOfObject } from "@/lib/signals/precision";
 import { visibleDossierProps } from "@/lib/signals/dossierProps";
 import LayerExplainerCard from "@/components/LayerExplainerCard";
 import SpotElsewhere from "@/components/SpotElsewhere";
-import QuakeTwin from "@/components/QuakeTwin";
-import { quakeFacts, twinLayerOf } from "@/lib/signals/quakeTwin";
 import { spotKindOf } from "@/lib/map/elsewhere";
 
 /**
@@ -63,7 +61,9 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
   // adapter deep-links one, else the provider's dataset page. A composite layer
   // (the instability index) is DERIVED — it lists every contributing provider and
   // is flagged as an estimate, never passed off as one authoritative source.
-  const sources = resolveSignalSources({ signalId, link, sourceUrl });
+  // A layer that reads several publishers names the one this record came from:
+  // `catalogue` on a quake, `agency` on a cyclone (JTWC, JMA, CMA).
+  const sources = resolveSignalSources({ signalId, link, sourceUrl, recordLabel: props.catalogue ?? props.agency });
   const derived = isCompositeSignal(signalId);
 
   const assetKind = typeof props.assetKind === "string" ? (props.assetKind as string) : undefined;
@@ -153,14 +153,6 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
       {/* ── The same coordinates in outside tools. An area, a line or a country
              figure is labelled as a centre or an anchor, never as a spot. ── */}
       <SpotElsewhere lat={object.lat} lon={object.lon} kind={spotKindOf(meta, precision)} />
-
-      {/* ── Is the same event in the other earthquake layer? Only USGS and EMSC. ── */}
-      {signalId && twinLayerOf(signalId) && (
-        <QuakeTwin
-          signalId={signalId}
-          facts={quakeFacts({ id: object.id, lat: object.lat, lon: object.lon, ts: meta.ts as string | undefined, props })}
-        />
-      )}
 
       {/* ── Source (mandatory, always a real clickable upstream) ── */}
       {sources.length > 0 && (

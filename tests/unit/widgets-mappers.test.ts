@@ -54,6 +54,16 @@ describe("conflictView", () => {
   it("returns none when both are empty", () => {
     expect(conflictView([], []).mode).toBe("none");
   });
+  it("lists the deadliest UCDP events from the conflict layer, ignoring warnings", () => {
+    const v = conflictView([], [
+      sf({ id: "u1", props: { source: "UCDP", sides: "A - B", country: "X", date: "2026-08-01", deaths: 4 } }),
+      sf({ id: "u2", props: { source: "UCDP", sides: "C - D", country: "Y", date: "2026-08-02", deaths: 40 } }),
+      sf({ id: "w", props: { source: "U.S. Embassy alert" } }),
+    ]);
+    expect(v.mode).toBe("ucdp");
+    expect(v.rows.map((r) => r.id)).toEqual(["u2", "u1"]);
+    expect(v.rows[0]!.sub).toBe("Y · 2026-08-02");
+  });
 });
 
 describe("topEventsRows", () => {

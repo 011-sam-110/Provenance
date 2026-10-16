@@ -1,0 +1,65 @@
+{
+ "page": {
+  "name": "Snowflake",
+  "url": "https://status.snowflake.com",
+  "updated_at": "2026-10-16T15:14:26.721Z"
+ },
+ "status": {
+  "indicator": "minor",
+  "description": "Partially Degraded Service"
+ },
+ "components": [
+  {
+   "id": "03zr33bv0l8v",
+   "name": "GCP - US Central 1 (Iowa)",
+   "status": "degraded_performance",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "9kbsymy31620",
+   "name": "Virtual Warehouses",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "03zr33bv0l8v"
+  },
+  {
+   "id": "y7bf7vvk2s4w",
+   "name": "Snowpark Container Services",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "03zr33bv0l8v"
+  },
+  {
+   "id": "kzyxytvqxdv8",
+   "name": "Databases, Tables, and Views",
+   "status": "operational",
+   "group": false,
+   "group_id": "d8qkkq4nh7jp"
+  },
+  {
+   "id": "gftdll6pf43g",
+   "name": "Databases, Tables, and Views",
+   "status": "operational",
+   "group": false,
+   "group_id": "4pbr6y23kkht"
+  },
+  {
+   "id": "3tfpqbqbtfq8",
+   "name": "Databases, Tables, and Views",
+   "status": "operational",
+   "group": false,
+   "group_id": "p84jh86qs3dv"
+  }
+ ],
+ "incidents": [
+  {
+   "name": "INC20000150",
+   "status": "identified",
+   "impact": "minor",
+   "shortlink": "https://stspg.io/2tmfhlrz2yz5",
+   "created_at": "2026-08-28T00:07:42.677Z",
+   "updated_at": "2026-10-15T21:22:45.957Z"
+  }
+ ]
+}

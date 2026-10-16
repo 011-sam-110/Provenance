@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<image-list>
+	<image>
+		<key>H429F</key>
+		<region>Hong Kong Island</region>
+		<district>Southern</district>
+		<description>Aberdeen Praya Road near Fish Market [H429F]</description>
+		<easting>833549</easting>
+		<northing>812187</northing>
+		<latitude>22.24845</latitude>
+		<longitude>114.1505</longitude>
+		<url>https://tdcctv.data.one.gov.hk/H429F.JPG</url>
+	</image>
+	<image>
+		<key>H210F</key>
+		<region>Hong Kong Island</region>
+		<district>Wan Chai</district>
+		<description>Aberdeen Tunnel - Wan Chai Side [H210F]</description>
+		<easting>836525</easting>
+		<northing>815094</northing>
+		<latitude>22.2747</latitude>
+		<longitude>114.17936</longitude>
+		<url>https://tdcctv.data.one.gov.hk/H210F.JPG</url>
+	</image>
+	<image>
+		<key>H421F</key>
+		<region>Hong Kong Island</region>
+		<district>Southern</district>
+		<description>Aberdeen Tunnel - Aberdeen Side [H421F]</description>
+		<easting>836134</easting>
+		<northing>812344</northing>
+		<latitude>22.24986</latitude>
+		<longitude>114.17557</longitude>
+		<url>https://tdcctv.data.one.gov.hk/H421F.JPG</url>
+	</image>
+</image-list>

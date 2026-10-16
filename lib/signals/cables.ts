@@ -1,4 +1,5 @@
 import type { SignalFeature, SignalGeometry, SignalSource } from "@/lib/signals/types";
+import { applyLandingStations, fccCapacity } from "@/lib/signals/cable-stations";
 import { classifyLandingRegion } from "@/lib/signals/cable-regions";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
@@ -34,7 +35,9 @@ const ENRICH_CONCURRENCY = 40; // ~700 tiny JSONs finish in ~11s at this width
 const ENRICH_BUDGET_MS = 45_000; // hard soft-deadline; partial merge past it (dormant-safe)
 const FETCH_TIMEOUT_MS = 15_000;
 
-export const CABLES_ATTRIBUTION = "Submarine cable data © TeleGeography (submarinecablemap.com)";
+export const CABLES_ATTRIBUTION = "Submarine cable data © TeleGeography (submarinecablemap.com); capacity where public: US FCC";
+export const CABLE_LANDINGS_ATTRIBUTION =
+  "Submarine cable data © TeleGeography (submarinecablemap.com); station buildings © OpenStreetMap contributors (ODbL)";
 
 // Calm LIGHT identity: one teal for cable routes, a slightly deeper node for landings.
 export const CABLES_COLOR = "#0d9488";
@@ -261,7 +264,8 @@ export function buildCableFeature(base: CableBase, meta: CableMeta | undefined):
     props.rfs = meta.rfs;
     props.length = meta.lengthLabel;
     if (meta.lengthKm != null) props.lengthKm = meta.lengthKm;
-    props.capacity = "—"; // not published by this source — never fabricated
+    // TeleGeography does not publish capacity; the FCC does for a few US cables.
+    props.capacity = fccCapacity(base.id) ?? "—"; // never fabricated
     props.owners = meta.owners;
     props.suppliers = meta.suppliers;
     props.region = meta.region;
@@ -408,7 +412,8 @@ function assemble(s: State): CableDataset {
   }
   const cables: SignalFeature[] = [];
   for (const [id, base] of s.bases) cables.push(buildCableFeature(base, s.metaById.get(id)));
-  return { cables, landings: buildLandingFeatures(s.landingGeo, landingToCables) };
+  // Town-level landings move onto their OSM station building where the match is unambiguous.
+  return { cables, landings: applyLandingStations(buildLandingFeatures(s.landingGeo, landingToCables)) };
 }
 
 async function loadDataset(): Promise<CableDataset> {
@@ -533,7 +538,7 @@ export const CABLE_LANDINGS_SOURCE: SignalSource = {
   group: "Infrastructure",
   color: LANDING_COLOR,
   refreshMs: REFRESH_MS,
-  attribution: CABLES_ATTRIBUTION,
+  attribution: CABLE_LANDINGS_ATTRIBUTION,
   async fetch() {
     const { landings } = await getCableDataset();
     return declareOutcome(landings, landingFailure);

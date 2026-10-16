@@ -604,7 +604,7 @@ export default function Landing() {
               Powered by TfL Open Data. Webcams provided by Windy.com. Contains public sector
               information licensed under the Open Government Licence. Earthquake data from the
               U.S. Geological Survey (USGS). Wildfire and volcano data from NASA EONET. Aircraft
-              from adsb.lol. Airports from OurAirports. Nuclear plant data from OpenStreetMap
+              from adsb.lol contributors (ODbL). Airports from OurAirports. Nuclear plant data from OpenStreetMap
               contributors. Launch data from The Space Devs. Disaster alerts from GDACS. Submarine
               cable data from TeleGeography.
             </p>

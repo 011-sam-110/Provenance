@@ -32,11 +32,11 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
   });
 
   test("keeps the provider link when the record lives on a different host", () => {
-    // A GDELT news feature deep-links to the article's own outlet, not gdeltproject.org.
-    const link = "https://www.reuters.com/world/some-article";
-    const out = resolveSignalSources({ signalId: "conflict", link });
-    expect(out[0]).toEqual({ href: link, label: "GDELT", scope: "record" });
-    expect(out[1]).toEqual({ href: "https://www.gdeltproject.org/", label: "GDELT", scope: "provider" });
+    // An embassy alert deep-links to its own post's site, not the www.usembassy.gov index.
+    const link = "https://al.usembassy.gov/demonstration-alert-u-s-embassy-tirana-albania/";
+    const out = resolveSignalSources({ signalId: "protests", link });
+    expect(out[0]).toEqual({ href: link, label: "U.S. Embassy alerts", scope: "record" });
+    expect(out[1]).toEqual({ href: "https://www.usembassy.gov/", label: "U.S. Embassy alerts", scope: "provider" });
   });
 
   test("falls back to the provider dataset page for country-aggregated layers (no record link)", () => {
@@ -44,7 +44,16 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
       { href: "https://www.ransomware.live/", label: "Ransomware.live", scope: "provider" },
     ]);
     expect(resolveSignalSources({ signalId: "displacement" })).toEqual([
-      { href: "https://www.unhcr.org/refugee-statistics/", label: "UNHCR", scope: "provider" },
+      {
+        href: "https://www.unhcr.org/refugee-statistics/",
+        label: "UNHCR",
+        scope: "provider",
+        // UNHCR's dataset terms (clause 4) require a link to the terms.
+        licence: {
+          label: "CC BY 4.0 (UNHCR terms)",
+          url: "https://www.unhcr.org/what-we-do/data-and-publications/data-and-statistics/terms-use-datasets",
+        },
+      },
     ]);
   });
 
@@ -52,7 +61,7 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
     const out = resolveSignalSources({ signalId: "instability" });
     expect(isCompositeSignal("instability")).toBe(true);
     expect(out.length).toBeGreaterThanOrEqual(4);
-    expect(out.map((s) => s.label)).toEqual(["ACLED", "WFP HungerMap", "UNHCR", "IODA"]);
+    expect(out.map((s) => s.label)).toEqual(["UCDP", "INFORM (EC JRC)", "FEWS NET", "World Bank WGI", "UNHCR", "GDELT", "IODA"]);
     expect(out.every((s) => s.scope === "provider" && isHttpUrl(s.href))).toBe(true);
   });
 
@@ -123,5 +132,29 @@ describe("resolveSignalSources — licence obligations", () => {
     // an unnecessary legal notice on every layer is how a real one gets ignored.
     expect(resolveSignalSources({ signalId: "earthquakes" }).every((s) => !s.licence)).toBe(true);
     expect(resolveSignalSources({ signalId: "crime" }).every((s) => !s.licence)).toBe(true);
+  });
+});
+
+// A layer fed by several publishers (earthquakes: USGS, GeoNet, INGV…; cyclones:
+// NHC, JTWC, JMA) must name the publisher of THIS record, not the layer's first one.
+describe("recordLabel — a multi-publisher layer names the record's own publisher", () => {
+  test("a GeoNet quake's chip says GeoNet, and the USGS home chip is not added", () => {
+    const out = resolveSignalSources({
+      signalId: "earthquakes",
+      link: "https://www.geonet.org.nz/earthquake/2026p780530",
+      recordLabel: "GeoNet",
+    });
+    expect(out).toEqual([{ href: "https://www.geonet.org.nz/earthquake/2026p780530", label: "GeoNet", scope: "record" }]);
+  });
+
+  test("without a record link it falls back to the layer's provider", () => {
+    const out = resolveSignalSources({ signalId: "earthquakes", recordLabel: "GeoNet" });
+    expect(out.map((s) => s.label)).toEqual(["USGS"]);
+  });
+
+  test("a blank or non-string recordLabel changes nothing", () => {
+    const a = resolveSignalSources({ signalId: "earthquakes", link: "https://earthquake.usgs.gov/x" });
+    const b = resolveSignalSources({ signalId: "earthquakes", link: "https://earthquake.usgs.gov/x", recordLabel: 3 });
+    expect(b).toEqual(a);
   });
 });

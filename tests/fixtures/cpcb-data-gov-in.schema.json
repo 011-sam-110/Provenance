@@ -1,0 +1,15 @@
+{
+  "_note": "SCHEMA FIXTURE, not a live capture. api.data.gov.in refused connections from both the laptop and provenance-1 on 2026-10-16 21:20 UTC. Field names follow resource 3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69 as the source audit probed it at 18:58 UTC the same day (24 h avg/min/max, last_update in IST). Values are illustrative, not measurements. Replace with a capture once the key is set.",
+  "index_name": "3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69",
+  "title": "Real time Air Quality Index from various locations",
+  "total": 4,
+  "count": 4,
+  "limit": "1000",
+  "offset": "0",
+  "records": [
+    { "country": "India", "state": "Delhi", "city": "Delhi", "station": "Narela, Delhi - DPCC", "last_update": "16-10-2026 23:00:00", "latitude": "28.822836", "longitude": "77.101981", "pollutant_id": "PM2.5", "min_value": "41", "max_value": "198", "avg_value": "113" },
+    { "country": "India", "state": "Delhi", "city": "Delhi", "station": "Narela, Delhi - DPCC", "last_update": "16-10-2026 23:00:00", "latitude": "28.822836", "longitude": "77.101981", "pollutant_id": "PM10", "min_value": "80", "max_value": "310", "avg_value": "190" },
+    { "country": "India", "state": "Maharashtra", "city": "Mumbai", "station": "Colaba, Mumbai - MPCB", "last_update": "16-10-2026 23:00:00", "latitude": "18.910000", "longitude": "72.820000", "pollutant_id": "PM2.5", "min_value": "NA", "max_value": "NA", "avg_value": "NA" },
+    { "country": "India", "state": "Delhi", "city": "Delhi", "station": "Old Station, Delhi - DPCC", "last_update": "10-10-2026 09:00:00", "latitude": "28.6", "longitude": "77.2", "pollutant_id": "PM2.5", "min_value": "20", "max_value": "90", "avg_value": "55" }
+  ]
+}

@@ -253,15 +253,15 @@ type Resolved = Rec & { how: How };
  * reverse; re-measured 2026-09-12, when all 60 open events proved it.
  *
  * This script used to carry a PRIVATE correction for that, so the country breakdown
- * would be right while the shipped layer stayed wrong. `lib/signals/eonet.ts` now owns
- * the order (`coordOrder: "latlon"` on the floods category), so the correction is gone
- * and this is a CHECK instead.
+ * would be right while the shipped layer stayed wrong. Since 2026-10-16 the floods layer
+ * no longer reads EONET (lib/signals/floods.ts reads GDACS, NWS and Copernicus, all in
+ * GeoJSON order), so there is no order flag left to go stale, and this stays as a CHECK.
  *
  * It raises rather than repairing. A silent repair here is what let the shipped layer
  * stay broken for four days without anything going red: the audit looked correct, so
- * nothing pointed at the adapter. If EONET ever fixes the feed, the flag in eonet.ts
- * becomes wrong in the other direction and these pins land in the sea — this is what
- * says so, on the next run, in the one place that has the country polygons to prove it.
+ * nothing pointed at the adapter. If an input ever sends transposed pairs, these pins
+ * land in the sea — this is what says so, on the next run, in the one place that has
+ * the country polygons to prove it.
  */
 function assertFloodOrder(feats: SignalFeature[]): void {
   const floods = feats.filter((f) => f.signalId === "floods");
@@ -275,9 +275,9 @@ function assertFloodOrder(feats: SignalFeature[]): void {
   if (wrong.length > Math.max(2, floods.length * 0.1)) {
     const sample = wrong.slice(0, 3).map((f) => `${f.title} @ ${f.lon},${f.lat}`);
     throw new Error(
-      `EONET flood coordinate order looks wrong: ${wrong.length} of ${floods.length} ` +
-        `land nowhere but would land in a country if transposed. Re-measure the feed and ` +
-        `fix \`coordOrder\` on CATEGORIES.floods in lib/signals/eonet.ts. Sample: ${sample.join("; ")}`,
+      `Flood coordinate order looks wrong: ${wrong.length} of ${floods.length} ` +
+        `land nowhere but would land in a country if transposed. Re-measure the inputs in ` +
+        `lib/signals/floods.ts (GDACS, NWS, Copernicus). Sample: ${sample.join("; ")}`,
     );
   }
 }

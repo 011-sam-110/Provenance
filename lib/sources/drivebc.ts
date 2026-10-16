@@ -38,6 +38,25 @@ export interface DriveBcWebcam {
   marked_delayed?: boolean;
   is_on?: boolean;
   location?: { type?: string; coordinates?: [number, number] } | null;
+  /** HTML. Sometimes names who owns the pictures ("Images courtesy of TransLink"). */
+  credit?: string | null;
+  /** The operator's time of the last frame that actually changed, ISO with offset. */
+  last_update_modified?: string | null;
+}
+
+/**
+ * The image owner a camera's `credit` names, as plain text, or undefined.
+ *
+ * Measured 2026-10-16 over 1,067 cameras: 985 empty, 8 "Images courtesy of
+ * TransLink", 7 "Images provided by Parks Canada and Alberta Motor Association", and
+ * 28 notices about solar power or satellite delays. Only the first two kinds say
+ * who owns the picture, so only a credit that opens with "Images courtesy of" or
+ * "Images provided by" joins the attribution. The delay notices are not credits.
+ */
+export function imageCredit(credit: string | null | undefined): string | undefined {
+  if (!credit) return undefined;
+  const text = credit.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return /^images (courtesy of|provided by) /i.test(text) ? text.replace(/\.$/, "") : undefined;
 }
 
 export function normalizeDriveBc(webcams: DriveBcWebcam[]): Camera[] {
@@ -66,6 +85,8 @@ export function normalizeDriveBc(webcams: DriveBcWebcam[]): Camera[] {
       w.caption_override?.trim() ||
       w.caption?.trim() ||
       `DriveBC ${nativeId}`;
+    const credit = imageCredit(w.credit);
+    const modified = w.last_update_modified ? Date.parse(w.last_update_modified) : NaN;
     cams.push({
       id: `drivebc:${nativeId}`,
       source: "drivebc",
@@ -80,7 +101,10 @@ export function normalizeDriveBc(webcams: DriveBcWebcam[]): Camera[] {
       mediaType: "jpeg",
       refreshSeconds: DRIVEBC_SOURCE.refreshSeconds,
       license: DRIVEBC_SOURCE.license,
-      attribution: DRIVEBC_SOURCE.attribution,
+      // A camera whose pictures belong to someone else (8 are TransLink's) says so.
+      attribution: credit ? `${DRIVEBC_SOURCE.attribution}. ${credit}` : DRIVEBC_SOURCE.attribution,
+      // The operator's own "last real frame" time, for the provenance panel.
+      ...(Number.isFinite(modified) ? { lastSampledAt: new Date(modified).toISOString() } : {}),
       // Stale / delayed / switched-off cams are kept but flagged not-live.
       available: w.marked_stale !== true && w.marked_delayed !== true && w.is_on !== false,
     });

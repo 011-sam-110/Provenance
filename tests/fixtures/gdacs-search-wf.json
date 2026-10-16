@@ -1,0 +1,125 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "bbox": [
+    136.7039,
+    -16.1978,
+    136.7039,
+    -16.1978
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     136.7039,
+     -16.1978
+    ]
+   },
+   "properties": {
+    "eventtype": "WF",
+    "eventid": 1032620,
+    "episodeid": 13,
+    "eventname": "",
+    "glide": "",
+    "name": "Forest fires in Australia",
+    "description": "Forest fires in Australia",
+    "htmldescription": "Green Forest fires in Australia from: 04 Oct 2026 to: 16 Oct 2026.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/WF.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/WF.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=WF&eventid=1032620&episodeid=13",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1032620&episodeid=13&eventtype=WF",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=WF&eventid=1032620"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "true",
+    "country": "Australia",
+    "fromdate": "2026-10-04T00:00:00",
+    "todate": "2026-10-16T00:00:00",
+    "datemodified": "2026-10-16T19:13:59",
+    "iso3": "AUS",
+    "source": "GWIS",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "AU",
+      "iso3": "AUS",
+      "countryname": "Australia"
+     }
+    ],
+    "severitydata": {
+     "severity": 8988.0,
+     "severitytext": "Green impact for forestfire in 8988 ha",
+     "severityunit": "ha"
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "bbox": [
+    -54.6736,
+    -3.5409,
+    -54.6736,
+    -3.5409
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -54.6736,
+     -3.5409
+    ]
+   },
+   "properties": {
+    "eventtype": "WF",
+    "eventid": 1032622,
+    "episodeid": 30,
+    "eventname": "",
+    "glide": "",
+    "name": "Forest fires in Brazil",
+    "description": "Forest fires in Brazil",
+    "htmldescription": "Green Forest fires in Brazil from: 03 Oct 2026 to: 16 Oct 2026.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/WF.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/WF.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=WF&eventid=1032622&episodeid=30",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1032622&episodeid=30&eventtype=WF",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=WF&eventid=1032622"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "true",
+    "country": "Brazil",
+    "fromdate": "2026-10-03T00:00:00",
+    "todate": "2026-10-16T00:00:00",
+    "datemodified": "2026-10-16T19:16:06",
+    "iso3": "BRA",
+    "source": "GWIS",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "BR",
+      "iso3": "BRA",
+      "countryname": "Brazil"
+     }
+    ],
+    "severitydata": {
+     "severity": 14341.0,
+     "severitytext": "Green impact for forestfire in 14341 ha",
+     "severityunit": "ha"
+    }
+   }
+  }
+ ]
+}

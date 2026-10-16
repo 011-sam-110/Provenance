@@ -1,0 +1,44 @@
+[
+ {
+  "id": 72,
+  "name": "Vilnius A1 10,04",
+  "roadId": 1236,
+  "roadName": "Vilnius–Kaunas–Klaipėda",
+  "roadNr": "A1",
+  "date": 1792183841000,
+  "image": "https://eismoinfo.lt/eismoinfo-backend-v2/image-provider/camera/last?id=72",
+  "x": 576154,
+  "y": 6056867,
+  "km": 10.04,
+  "municipalityId": 52,
+  "favorite": false
+ },
+ {
+  "id": 8,
+  "name": "Didžiulio ež. A1 19,42",
+  "roadId": 1236,
+  "roadName": "Vilnius–Kaunas–Klaipėda",
+  "roadNr": "A1",
+  "date": 1792183841000,
+  "image": "https://eismoinfo.lt/eismoinfo-backend-v2/image-provider/camera/last?id=8",
+  "x": 568026,
+  "y": 6061414,
+  "km": 19.42,
+  "municipalityId": 36,
+  "favorite": false
+ },
+ {
+  "id": 344,
+  "name": "Sausiai A1 24,07",
+  "roadId": 1236,
+  "roadName": "Vilnius–Kaunas–Klaipėda",
+  "roadNr": "A1",
+  "date": 1792183241000,
+  "image": "https://eismoinfo.lt/eismoinfo-backend-v2/image-provider/camera/last?id=344",
+  "x": 564206,
+  "y": 6063979,
+  "km": 24.07,
+  "municipalityId": 36,
+  "favorite": false
+ }
+]

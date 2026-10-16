@@ -1,0 +1,19 @@
+#EventID|Time|Latitude|Longitude|Depth/km|Author|Catalog|Contributor|ContributorID|MagType|Magnitude|MagAuthor|EventLocationName|EventType
+gfz2026uhgx|2026-10-16T14:09:54.62|-49.912|163.6|10.0|||GFZ|gfz2026uhgx|mb|5.32||Auckland Islands, New Zealand Region|earthquake
+gfz2026uhdg|2026-10-16T12:18:31.62|6.185|125.901|49.0|||GFZ|gfz2026uhdg|mb|4.87||Mindanao, Philippines|earthquake
+gfz2026uhco|2026-10-16T11:57:20.87|12.354|144.14|10.0|||GFZ|gfz2026uhco|mb|5.0||South of Mariana Islands|earthquake
+gfz2026uhbz|2026-10-16T11:39:46.48|15.343|-92.617|114.3|||GFZ|gfz2026uhbz|mb|4.68||Mexico-Guatemala Border Region|earthquake
+gfz2026uhaf|2026-10-16T10:46:50.63|51.501|-115.316|10.0|||GFZ|gfz2026uhaf|ML|4.12||Alberta, Canada|earthquake
+gfz2026ugxd|2026-10-16T09:13:41.77|7.947|126.96|41.5|||GFZ|gfz2026ugxd|mb|5.13||Mindanao, Philippines|earthquake
+gfz2026ugww|2026-10-16T09:04:29.28|-55.078|-126.628|10.0|||GFZ|gfz2026ugww|mb|5.12||Southern East Pacific Rise|earthquake
+gfz2026ugwo|2026-10-16T08:55:34.27|27.726|57.094|10.0|||GFZ|gfz2026ugwo|mb|4.62||Southern Iran|earthquake
+gfz2026ugsk|2026-10-16T06:49:00.08|-49.903|163.504|10.0|||GFZ|gfz2026ugsk|mb|4.94||Auckland Islands, New Zealand Region|earthquake
+gfz2026ugpn|2026-10-16T05:22:28.97|7.712|-81.194|10.0|||GFZ|gfz2026ugpn|mb|4.65||Panama|earthquake
+gfz2026ugof|2026-10-16T04:42:41.74|14.004|-92.908|10.0|||GFZ|gfz2026ugof|mb|4.74||Near Coast of Chiapas, Mexico|earthquake
+gfz2026uglz|2026-10-16T03:35:31.42|52.06|157.209|127.4|||GFZ|gfz2026uglz|Mw|6.86||Kamchatka Peninsula, Russia|earthquake
+gfz2026ugin|2026-10-16T01:50:44.36|7.549|-80.917|10.0|||GFZ|gfz2026ugin|mb|4.48||Panama|earthquake
+gfz2026uggd|2026-10-16T00:37:48.43|35.442|99.505|10.0|||GFZ|gfz2026uggd|mb|4.13||Qinghai, China|earthquake
+gfz2026ufzx|2026-10-15T21:29:06.39|13.975|-92.013|24.3|||GFZ|gfz2026ufzx|mb|4.4||Off Coast of Chiapas, Mexico|earthquake
+gfz2026ufyg|2026-10-15T20:39:24.41|13.946|-91.772|37.8|||GFZ|gfz2026ufyg|mb|4.63||Near Coast of Guatemala|earthquake
+gfz2026ufyc|2026-10-15T20:34:44.39|42.493|-6.636|10.0|||GFZ|gfz2026ufyc|ML|4.3||Spain|earthquake
+gfz2026ufxu|2026-10-15T20:25:22.02|-20.08|-69.845|49.9|||GFZ|gfz2026ufxu|Mw|4.61||Northern Chile|earthquake

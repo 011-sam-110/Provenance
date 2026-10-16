@@ -41,7 +41,7 @@ import { BRAND } from "@/lib/brand";
  *
  * THERE ARE TWO CAMERA SETS AND THIS QUOTES ONE, WHICH IS WHY THE NOTE UNDER THE GRID
  * exists. 70,698 is the committed Windy catalogue in `public/webcams/manifest.json`. It
- * does NOT include the 17 operator networks in `lib/sources/`, which are fetched live and
+ * does NOT include the 52 operator networks in `lib/sources/`, which are fetched live and
  * ran to roughly 19,000 more — so the real total is nearer 90,000 and the tile understates
  * the product.
  *
@@ -54,9 +54,9 @@ import { BRAND } from "@/lib/brand";
  */
 const STATS: ReadonlyArray<{ figure: string; label: string }> = [
   { figure: "70,698", label: "webcams catalogued worldwide" },
-  { figure: "17", label: "camera networks in 11 countries" },
-  { figure: "35", label: "live map layers" },
-  { figure: "66", label: "console widgets" },
+  { figure: "52", label: "camera networks in 21 countries" },
+  { figure: "47", label: "live map layers" },
+  { figure: "79", label: "console widgets" },
   { figure: "13", label: "monitor profiles" },
 ];
 

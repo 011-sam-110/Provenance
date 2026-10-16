@@ -1,0 +1,1444 @@
+[
+ {
+  "id": "5130",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10526 - Toft Newton-Particulate matter less than 2.5 micro m (aerosol), Toft Newton-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788035,
+    "label": "Toft Newton-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.37413299999999,
+     -0.44978799998516666,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 3.679
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 2.547
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10526",
+    "label": "10526 - Toft Newton-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788035",
+    "label": "Toft Newton-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10526",
+    "label": "10526 - Toft Newton-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5023",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10535 - Weybourne-Particulate matter less than 2.5 micro m (aerosol), Weybourne-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788044,
+    "label": "Weybourne-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.95049,
+     1.1220169999630054,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 4.34
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 5.283
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10535",
+    "label": "10535 - Weybourne-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788044",
+    "label": "Weybourne-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10535",
+    "label": "10535 - Weybourne-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "1965",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10539 - Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol), Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 3916,
+    "label": "Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     51.074793,
+     -4.041923999867141,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 23.774
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.774
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10539",
+    "label": "10539 - Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "3916",
+    "label": "Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10539",
+    "label": "10539 - Barnstaple A39-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5179",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10545 - Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol), Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788052,
+    "label": "Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.959441000000005,
+     -1.138649999962457,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 10.943
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 5.094
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10545",
+    "label": "10545 - Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788052",
+    "label": "Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10545",
+    "label": "10545 - Nottingham Kenmore Gardens-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "2287",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10548 - Reading New Town-Particulate matter less than 2.5 micro m (aerosol), Reading New Town-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 1107,
+    "label": "Reading New Town-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     51.45309000000001,
+     -0.9440669999688703,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 20.943
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.113
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10548",
+    "label": "10548 - Reading New Town-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "1107",
+    "label": "Reading New Town-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10548",
+    "label": "10548 - Reading New Town-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "4812",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10621 - Brighton Preston Park-Particulate matter less than 2.5 micro m (aerosol), GB_SamplingFeature_missingFOI",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 9999999999,
+    "label": "GB_SamplingFeature_missingFOI"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 18.868
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.396
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10621",
+    "label": "10621 - Brighton Preston Park-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "9999999999",
+    "label": "GB_SamplingFeature_missingFOI"
+   },
+   "procedure": {
+    "id": "10621",
+    "label": "10621 - Brighton Preston Park-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5271",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10623 - Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol), Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788103,
+    "label": "Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     51.457968,
+     -2.583974999914896,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 13.491
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 8.396
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10623",
+    "label": "10623 - Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788103",
+    "label": "Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10623",
+    "label": "10623 - Bristol Temple Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5207",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10625 - Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol), Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788105,
+    "label": "Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.371722,
+     -2.2389169999262357,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 7.83
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 4.245
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10625",
+    "label": "10625 - Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788105",
+    "label": "Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10625",
+    "label": "10625 - Manchester Sharston-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5210",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10629 - Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol), Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788107,
+    "label": "Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     50.817285999999996,
+     -0.35327199998834935,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 21.132
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 4.34
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10629",
+    "label": "10629 - Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788107",
+    "label": "Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10629",
+    "label": "10629 - Worthing East Ten Acres-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5237",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10631 - Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol), Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788109,
+    "label": "Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.43624799999999,
+     -1.3238709999563545,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 13.962
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 9.528
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10631",
+    "label": "10631 - Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788109",
+    "label": "Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10631",
+    "label": "10631 - Rotherham East Dene-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5235",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10633 - Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol), Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788111,
+    "label": "Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.145302,
+     -1.2083009999601622,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 10.849
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.962
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10633",
+    "label": "10633 - Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788111",
+    "label": "Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10633",
+    "label": "10633 - Mansfield Ladybrook-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5252",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10635 - Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol), Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788113,
+    "label": "Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.594012,
+     -0.24894499999178984,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 33.208
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.208
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10635",
+    "label": "10635 - Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788113",
+    "label": "Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10635",
+    "label": "10635 - Peterborough Garton End-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5233",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10640 - Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol), Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788118,
+    "label": "Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.437553,
+     -1.8309559999396565,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 12.076
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 4.906
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10640",
+    "label": "10640 - Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788118",
+    "label": "Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10640",
+    "label": "10640 - Birmingham Hall Green-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5209",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10643 - Horley-Particulate matter less than 2.5 micro m (aerosol), Horley-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788121,
+    "label": "Horley-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     51.165865,
+     -0.1677339999944681,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 45.566
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.396
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10643",
+    "label": "10643 - Horley-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788121",
+    "label": "Horley-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10643",
+    "label": "10643 - Horley-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5159",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10647 - Tallington-Particulate matter less than 2.5 micro m (aerosol), Tallington-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788041,
+    "label": "Tallington-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.656308,
+     -0.380999999987435,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 4.34
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 2.83
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10647",
+    "label": "10647 - Tallington-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788041",
+    "label": "Tallington-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10647",
+    "label": "10647 - Tallington-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5396",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10691 - Kielder Water-Particulate matter less than 2.5 micro m (aerosol), Kielder Water-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788166,
+    "label": "Kielder Water-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     55.181580000000004,
+     -2.4531699999191936,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 2.642
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 1.132
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10691",
+    "label": "10691 - Kielder Water-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788166",
+    "label": "Kielder Water-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10691",
+    "label": "10691 - Kielder Water-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5370",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10692 - Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol), Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788167,
+    "label": "Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.38862399999999,
+     -3.0249419999004235,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 8.962
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.113
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10692",
+    "label": "10692 - Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788167",
+    "label": "Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10692",
+    "label": "10692 - Birkenhead Borough Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5295",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10693 - Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol), Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788168,
+    "label": "Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.810975,
+     -3.0332319999001514,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 10.283
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": -99.0
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10693",
+    "label": "10693 - Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788168",
+    "label": "Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10693",
+    "label": "10693 - Blackpool Whitegate Drive-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5425",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10695 - Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol), Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788170,
+    "label": "Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.795169,
+     -1.743741999942527,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 10.66
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.585
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10695",
+    "label": "10695 - Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788170",
+    "label": "Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10695",
+    "label": "10695 - Bradford Shipley Airedale Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5333",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10696 - Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol), Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788171,
+    "label": "Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.68729799999999,
+     -1.9808209999347248,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 5.755
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 3.491
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10696",
+    "label": "10696 - Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788171",
+    "label": "Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10696",
+    "label": "10696 - Cannock A5190 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5281",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10697 - Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol), Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788172,
+    "label": "Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.407708,
+     -1.490081999950879,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 14.245
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 4.434
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10697",
+    "label": "10697 - Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788172",
+    "label": "Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10697",
+    "label": "10697 - Coventry Binley Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5330",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10699 - Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol), Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788173,
+    "label": "Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.922983,
+     -1.469506999951557,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 18.019
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 4.623
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10699",
+    "label": "10699 - Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788173",
+    "label": "Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10699",
+    "label": "10699 - Derby St Alkmund's Way-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5360",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10700 - Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol), Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788174,
+    "label": "Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.51838300000001,
+     -1.1380599999624765,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 17.642
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 2.547
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10700",
+    "label": "10700 - Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788174",
+    "label": "Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10700",
+    "label": "10700 - Doncaster A630 Cleveland Street-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5352",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10701 - Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol), Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788175,
+    "label": "Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     53.759013,
+     -0.3056779999899189,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 13.302
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 7.17
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10701",
+    "label": "10701 - Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788175",
+    "label": "Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10701",
+    "label": "10701 - Hull Holderness Road-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ },
+ {
+  "id": "5371",
+  "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001 10703 - Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol), Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol)",
+  "extras": [
+   "license"
+  ],
+  "uom": "ug.m-3",
+  "station": {
+   "properties": {
+    "id": 788176,
+    "label": "Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "geometry": {
+    "coordinates": [
+     52.638742,
+     -1.124266999962931,
+     "NaN"
+    ],
+    "type": "Point"
+   },
+   "type": "Feature"
+  },
+  "referenceValues": [],
+  "firstValue": {
+   "timestamp": 1767225600000,
+   "value": 14.623
+  },
+  "lastValue": {
+   "timestamp": 1792177200000,
+   "value": 6.981
+  },
+  "parameters": {
+   "service": {
+    "id": "1",
+    "label": "My Timeseries Service."
+   },
+   "offering": {
+    "id": "10703",
+    "label": "10703 - Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "feature": {
+    "id": "788176",
+    "label": "Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "procedure": {
+    "id": "10703",
+    "label": "10703 - Leicester A594 Roadside-Particulate matter less than 2.5 micro m (aerosol)"
+   },
+   "phenomenon": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   },
+   "category": {
+    "id": "6001",
+    "label": "http://dd.eionet.europa.eu/vocabulary/aq/pollutant/6001"
+   }
+  }
+ }
+]

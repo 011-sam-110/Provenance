@@ -1,0 +1,75 @@
+{
+ "realm": "OC1",
+ "regionHealthReports": [
+  {
+   "regionId": "14e1491f-05fe-4f6d-8e72-b575c58d8fee",
+   "regionName": "Germany Central (Frankfurt)",
+   "regionCanonicalName": "eu-frankfurt-1",
+   "geographicAreaName": "EMEA",
+   "serviceHealthReports": [
+    {
+     "serviceId": "bcb5cf2a-f823-4252-b0c7-6ceb6e5530d9",
+     "serviceName": "Account Management and Billing",
+     "serviceCanonicalName": "account-management-and-billing",
+     "serviceCategoryId": "9c4f48de-a9d6-4d07-a79c-c7a9f567f4c3",
+     "serviceCategoryName": "Cloud Services",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    },
+    {
+     "serviceId": "0c378162-9ac2-4a34-b3cc-e31710297017",
+     "serviceName": "Console",
+     "serviceCanonicalName": "console",
+     "serviceCategoryId": "9c4f48de-a9d6-4d07-a79c-c7a9f567f4c3",
+     "serviceCategoryName": "Cloud Services",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    },
+    {
+     "serviceId": "af3ce7f8-f599-4e60-97e2-a0491a2bd44e",
+     "serviceName": "Developer Tools",
+     "serviceCanonicalName": "developer-tools",
+     "serviceCategoryId": "9c4f48de-a9d6-4d07-a79c-c7a9f567f4c3",
+     "serviceCategoryName": "Cloud Services",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    }
+   ]
+  },
+  {
+   "regionId": "63a197f3-d91b-4e1e-97d8-e945e278e2c6",
+   "regionName": "US East(Ashburn)",
+   "regionCanonicalName": "mc-us-ashburn-1",
+   "geographicAreaName": "Multicloud",
+   "serviceHealthReports": [
+    {
+     "serviceId": "3ca3a90e-4a08-4529-adc9-be003aff01d4",
+     "serviceName": "Oracle Autonomous AI Database Serverless@AWS",
+     "serviceCanonicalName": "aws-oracle-autonomous-aI-database-serverless",
+     "serviceCategoryId": "2a8cc0f6-1fd5-4b8c-9bd9-2c75da5e2934",
+     "serviceCategoryName": "Oracle AI Database@AWS",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    },
+    {
+     "serviceId": "25911c9b-6fed-497c-a547-50fabd3cad13",
+     "serviceName": "Oracle Autonomous AI Database on Dedicated Exadata Infrastructure@AWS",
+     "serviceCanonicalName": "aws-oracle-autonomous-aI-database-on-dedicated-exadata-infrastructure",
+     "serviceCategoryId": "2a8cc0f6-1fd5-4b8c-9bd9-2c75da5e2934",
+     "serviceCategoryName": "Oracle AI Database@AWS",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    },
+    {
+     "serviceId": "1f5dbd9f-bb30-4d05-b3c9-64edef378236",
+     "serviceName": "Oracle Database Autonomous Recovery Service@AWS",
+     "serviceCanonicalName": "aws-oracle-database-autonomous-recovery-service",
+     "serviceCategoryId": "2a8cc0f6-1fd5-4b8c-9bd9-2c75da5e2934",
+     "serviceCategoryName": "Oracle AI Database@AWS",
+     "serviceStatus": "NormalPerformance",
+     "incidents": []
+    }
+   ]
+  }
+ ]
+}

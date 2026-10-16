@@ -1,19 +1,26 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/aurora-ovation.json";
 import live from "@/tests/fixtures/aurora-ovation-live.json";
+import live1016 from "@/tests/fixtures/aurora-ovation-2026-10-16.json";
 import {
   normalizeAurora,
   downsampleAurora,
   auroraColor,
   wrapLon,
   AURORA_SOURCE,
+  EQUATOR_BAND_DEG,
+  AURORA_MAX_POINTS,
+  parseHemiPower,
   type OvationGrid,
 } from "@/lib/signals/aurora";
 import { rowMetric } from "@/lib/console/signals/signalCard";
+import { readCoverage } from "@/lib/signals/coverage";
 
 const grid = fixture as unknown as OvationGrid;
 /** A verbatim excerpt of the live 2026-08-10 NOAA OVATION run (peak 22%). */
 const liveGrid = live as unknown as OvationGrid;
+/** The live 2026-10-16 19:31Z run, reduced to its bucket peaks (485 buckets, 19 on the equator seam). */
+const grid1016 = live1016 as unknown as OvationGrid;
 
 test("keeps cells at/above the floor, brightest first", () => {
   const out = normalizeAurora(grid); // default floor 5%
@@ -110,7 +117,7 @@ test("REGRESSION: the live OVATION grid produces features (a 50% floor produced 
 
 test("REGRESSION: live output is bounded, in-range and spans both hemispheres", () => {
   const out = normalizeAurora(liveGrid);
-  expect(out.length).toBeLessThanOrEqual(400);
+  expect(out.length).toBeLessThanOrEqual(AURORA_MAX_POINTS);
   expect(out.every((f) => f.lon >= -180 && f.lon <= 180)).toBe(true);
   expect(out.every((f) => f.lat >= -90 && f.lat <= 90)).toBe(true);
   expect(out.every((f) => Number(f.props?.probabilityPct) >= 5)).toBe(true);
@@ -118,4 +125,60 @@ test("REGRESSION: live output is bounded, in-range and spans both hemispheres", 
   expect(out.some((f) => f.lat < -40)).toBe(true); // southern oval
   expect(new Set(out.map((f) => f.id)).size).toBe(out.length); // ids unique
   expect(out[0].ts).toBe("2026-08-10T11:10:00Z");
+});
+
+// --- regression: the equator seam (2026-10-16) ----------------------------------
+
+test("REGRESSION: the OVATION equator seam draws no aurora at the equator", () => {
+  // The live run has 5-7 % cells at latitude -2..0: a grid artefact, not aurora.
+  const seam = (grid1016.coordinates ?? []).filter(([, lat, pct]) => Math.abs(lat) < 20 && pct >= 5);
+  expect(seam.length).toBeGreaterThan(10);
+  const out = normalizeAurora(grid1016);
+  expect(out.some((f) => Math.abs(f.lat) < EQUATOR_BAND_DEG)).toBe(false);
+  expect(out.some((f) => f.lat > 40)).toBe(true);
+  expect(out.some((f) => f.lat < -40)).toBe(true);
+});
+
+test("the equator band is a fixed 20 degrees and drops a lone low-latitude cell", () => {
+  expect(EQUATOR_BAND_DEG).toBe(20);
+  expect(downsampleAurora([[100, 0, 6], [100, -1, 6], [100, 19, 30], [100, -19, 30], [100, 20, 6]], 5, 8, 4)).toEqual([[100, 20, 6]]);
+});
+
+test("REGRESSION: an ordinary active night is drawn whole, faint edge included", () => {
+  // At the old cap of 400 this run lost its 5-6 % edge. Now every real bucket shows.
+  const out = normalizeAurora(grid1016);
+  const real = (grid1016.coordinates ?? []).filter(([, lat, pct]) => Math.abs(lat) >= EQUATOR_BAND_DEG && pct >= 5);
+  expect(real.length).toBeGreaterThan(400);
+  expect(out).toHaveLength(real.length);
+  expect(readCoverage(out)).toMatchObject({ capped: false });
+  expect(Math.min(...out.map((f) => Number(f.props?.probabilityPct)))).toBe(5);
+  expect(AURORA_MAX_POINTS).toBe(600);
+});
+
+// --- OVATION hemispheric power (same run, one figure per hemisphere) -------------
+
+const HEMI_TXT = [
+  "#Aurora Hemispheric Power Tabular Values",
+  "# Observation        Forecast            North-Hemispheric-Power-Index    South-Hemispheric-Power-Index-GigaWatts",
+  "#------------------------------------------------------------------------------------------------",
+  "2026-10-16_19:20    2026-10-16_20:16      39      37",
+  "2026-10-16_19:25    2026-10-16_20:21      39      38",
+  "2026-10-16_19:30    2026-10-16_20:26      39      38",
+  "",
+].join("\n"); // header and the last three rows of aurora-nowcast-hemi-power.txt, verbatim, 2026-10-16 ~19:35Z
+
+test("parseHemiPower reads the newest row and skips comments", () => {
+  expect(parseHemiPower(HEMI_TXT)).toEqual({ observed: "2026-10-16T19:30:00Z", forecast: "2026-10-16T20:26:00Z", northGW: 39, southGW: 38 });
+  expect(parseHemiPower("# only comments\n")).toBeUndefined();
+  expect(parseHemiPower("")).toBeUndefined();
+});
+
+test("each cell carries its own hemisphere's power, only when the row matches the run", () => {
+  const out = normalizeAurora(grid1016, { hemiPower: parseHemiPower(HEMI_TXT) });
+  expect(out.filter((f) => f.lat > 0).every((f) => f.props?.hemispherePowerGW === 39)).toBe(true);
+  expect(out.filter((f) => f.lat < 0).every((f) => f.props?.hemispherePowerGW === 38)).toBe(true);
+  // The grid's forecast time is 20:36, the power row's 20:26: inside the 30-minute skew allowed.
+  // A row from another run (hours off the grid's forecast time) is not attached.
+  const stale = { observed: "2026-10-16T10:00:00Z", forecast: "2026-10-16T11:00:00Z", northGW: 9, southGW: 9 };
+  expect(normalizeAurora(grid1016, { hemiPower: stale }).some((f) => "hemispherePowerGW" in (f.props ?? {}))).toBe(false);
 });

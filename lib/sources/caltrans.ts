@@ -11,6 +11,18 @@ export const CALTRANS_SOURCE: Source = {
 
 const DISTRICTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
+/**
+ * The status file for one district. The FOLDER is unpadded (`d1`) and the FILE NAME is
+ * two digits (`cctvStatusD01.json`). Measured 2026-10-16: the unpadded file name
+ * answers HTTP 500 for D1-D9 and 200 only for D10-D12, so building both halves from one
+ * number served 897 of 3,598 cameras (three districts of twelve) with every round
+ * still reported as a success. Pure, so the shape is pinned by a test.
+ */
+export function districtStatusUrl(district: number): string {
+  const nn = String(district).padStart(2, "0");
+  return `https://cwwp2.dot.ca.gov/data/d${district}/cctv/cctvStatusD${nn}.json`;
+}
+
 export interface CaltransRecord {
   cctv: {
     index: string;
@@ -63,7 +75,7 @@ export function normalizeCaltrans(records: CaltransRecord[], district: number): 
 export async function fetchRegistry(): Promise<Camera[]> {
   const results = await Promise.allSettled(
     DISTRICTS.map(async (d) => {
-      const res = await fetch(`https://cwwp2.dot.ca.gov/data/d${d}/cctv/cctvStatusD${d}.json`, {
+      const res = await fetch(districtStatusUrl(d), {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });

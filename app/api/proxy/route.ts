@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
-import { isAllowed } from "@/lib/proxy/allowlist";
-import { extractScotlandImage } from "@/lib/sources/trafficscotland";
+import { isAllowed, upstreamRequest } from "@/lib/proxy/allowlist";
+import { extractScotlandImage, isScotlandCard } from "@/lib/sources/trafficscotland";
+import { notePlaceholder } from "@/lib/sources/placeholderMemo";
+import { extractTxdotSnapshot } from "@/lib/sources/txdot";
 import { needsH2, h2Fetch } from "@/lib/http/h2";
 import { frameCacheHeaders } from "@/lib/http/cache";
 
@@ -23,7 +25,13 @@ export async function GET(req: NextRequest) {
   // Traffic Scotland has no direct snapshot .jpg — its camera image is a base64
   // JPEG embedded in the /tsis/camerahtml page. Fetch the page and pull the bytes.
   if (target.hostname === "www.traffic.gov.scot") {
-    return proxyTrafficScotland(target, cam.refreshSeconds);
+    return proxyTrafficScotland(target, cam.refreshSeconds, cam.id);
+  }
+
+  // TxDOT ITS has no snapshot file either: its snapshot endpoint answers JSON whose
+  // `snippet` is a base64 JPEG. Fetch it and hand back the decoded bytes.
+  if (target.hostname === "its.txdot.gov") {
+    return proxyTxdot(target, cam.refreshSeconds);
   }
 
   // A handful of upstreams serve HTTP/1.1 that Node's parser rejects outright, so
@@ -34,10 +42,15 @@ export async function GET(req: NextRequest) {
     return proxyOverH2(target, cam.refreshSeconds);
   }
 
+  // A host may need a server-only credential or agent string (lib/proxy/allowlist.ts).
+  // A dormant credential means there is nothing honest to fetch.
+  const upstreamReq = upstreamRequest(target);
+  if (!upstreamReq) return new Response("camera feed is not configured", { status: 404 });
+
   let upstream: Response;
   try {
-    upstream = await fetch(target.toString(), {
-      headers: { "User-Agent": UA },
+    upstream = await fetch(upstreamReq.url, {
+      headers: { "User-Agent": UA, ...upstreamReq.headers },
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(10_000),
@@ -88,7 +101,7 @@ async function proxyOverH2(target: URL, refreshSeconds: number): Promise<Respons
 
 // Traffic Scotland helper: fetch the camerahtml page and decode the embedded
 // base64 JPEG into real image bytes. Host is already allowlist-checked by GET().
-async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promise<Response> {
+async function proxyTrafficScotland(target: URL, refreshSeconds: number, cameraId: string): Promise<Response> {
   let upstream: Response;
   try {
     upstream = await fetch(target.toString(), {
@@ -104,6 +117,47 @@ async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promis
 
   const img = extractScotlandImage(await upstream.text());
   if (!img) return new Response("no embedded image", { status: 502 });
+
+  const bytes = Buffer.from(img.base64, "base64");
+  // The operator's "Currently Unavailable" card is still served (it is the honest
+  // picture), but it is recorded, so the next registry refresh marks the camera
+  // unavailable instead of live. See lib/sources/placeholderMemo.ts.
+  const card = await isScotlandCard(bytes);
+  notePlaceholder(cameraId, card);
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      "Content-Type": img.contentType,
+      ...(card ? { "X-Camera-Placeholder": "operator-unavailable-card" } : {}),
+      ...frameCacheHeaders(refreshSeconds),
+    },
+  });
+}
+
+// TxDOT helper: fetch the snapshot JSON and decode its base64 JPEG. Host and path are
+// already allowlist-checked by GET().
+async function proxyTxdot(target: URL, refreshSeconds: number): Promise<Response> {
+  let upstream: Response;
+  try {
+    upstream = await fetch(target.toString(), {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return new Response("upstream fetch failed", { status: 502 });
+  }
+  if (!upstream.ok) return new Response("upstream error", { status: 502 });
+
+  let body: unknown;
+  try {
+    body = await upstream.json();
+  } catch {
+    return new Response("no snapshot", { status: 502 });
+  }
+  const img = extractTxdotSnapshot(body);
+  if (!img) return new Response("no snapshot", { status: 502 });
 
   return new Response(Buffer.from(img.base64, "base64"), {
     status: 200,

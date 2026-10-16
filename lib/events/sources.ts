@@ -26,7 +26,7 @@ export interface EventSource {
 
 // FIRMS active-fire is a dense detection layer (~1500 raw points), not discrete events; significant wildfires arrive via GDACS WF.
 export const EVENT_SOURCES: EventSource[] = [
-  { id: "earthquakes", type: "quake", label: "Earthquakes (USGS)", attribution: "USGS", precision: "EXACT", magnitudeUnit: "M" },
+  { id: "earthquakes", type: "quake", label: "Earthquakes", attribution: "USGS, EMSC and national seismic agencies", precision: "EXACT", magnitudeUnit: "M" },
   { id: "gdacs", type: "disaster", label: "Disasters (GDACS)", attribution: "GDACS", precision: "ADMIN" },
-  { id: "tropical-cyclones", type: "cyclone", label: "Cyclones (NOAA NHC)", attribution: "NOAA NHC", precision: "ADMIN" },
+  { id: "tropical-cyclones", type: "cyclone", label: "Cyclones (NHC, JTWC)", attribution: "NOAA NHC, JTWC", precision: "ADMIN" },
 ];

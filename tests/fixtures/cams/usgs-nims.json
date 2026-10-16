@@ -1,0 +1,80 @@
+[
+ {
+  "camId": "IL_Lick_Creek_near_Woodside",
+  "nwisId": "05576100",
+  "camName": "Lick Creek near Woodside",
+  "camDesc": "Lick Creek near Woodside, IL",
+  "lat": "39.71553889",
+  "lng": "-89.7024444",
+  "stateAbrv": "IL",
+  "tz": "US/Central",
+  "createdDate": "2023-04-24T00:46:41.885Z",
+  "modifiedDate": "2026-09-16T13:33:06.193Z",
+  "newestImageDT": "2026-10-16T20:45:02.000Z",
+  "TL_enabled": true,
+  "TL_lastGeneratedDT": "2026-10-16T16:55:49.102Z",
+  "TL_lastImageUsedDT": "2026-10-16T16:45:02.000Z",
+  "hideCam": false,
+  "overlayDir": "https://usgs-nims-images.s3.amazonaws.com/overlay/IL_Lick_Creek_near_Woodside/",
+  "thumbDir": "https://usgs-nims-images.s3.amazonaws.com/thumbnail/IL_Lick_Creek_near_Woodside/",
+  "smallDir": "https://usgs-nims-images.s3.amazonaws.com/720/IL_Lick_Creek_near_Woodside/",
+  "tlDir": "https://usgs-nims-images.s3.amazonaws.com/timelapse/IL_Lick_Creek_near_Woodside/",
+  "ingest": {
+   "period": "247",
+   "intr": 15,
+   "specificArr": []
+  },
+  "locus": "aws"
+ },
+ {
+  "camId": "CA_Connection_Slough_A_Swing_Br_nr_Orwood",
+  "nwisId": "380015121315101",
+  "camName": "Connection Slough A Swing Br nr Orwood",
+  "camDesc": "Connection Slough at Swing Bridge near Orwood, CA looking toward Swing Bridge.",
+  "lat": "38.004122",
+  "lng": "-121.530939",
+  "stateAbrv": "CA",
+  "tz": "America/Los_Angeles",
+  "createdDate": "2026-10-08T22:56:51.076Z",
+  "modifiedDate": "2026-10-08T22:56:51.076Z",
+  "newestImageDT": "2026-10-16T20:45:02.000Z",
+  "TL_enabled": true,
+  "TL_lastGeneratedDT": "2026-10-16T18:05:35.686Z",
+  "TL_lastImageUsedDT": "2026-10-16T18:00:02.000Z",
+  "overlayDir": "https://usgs-nims-images.s3.amazonaws.com/overlay/CA_Connection_Slough_A_Swing_Br_nr_Orwood/",
+  "thumbDir": "https://usgs-nims-images.s3.amazonaws.com/thumbnail/CA_Connection_Slough_A_Swing_Br_nr_Orwood/",
+  "smallDir": "https://usgs-nims-images.s3.amazonaws.com/720/CA_Connection_Slough_A_Swing_Br_nr_Orwood/",
+  "tlDir": "https://usgs-nims-images.s3.amazonaws.com/timelapse/CA_Connection_Slough_A_Swing_Br_nr_Orwood/",
+  "ingest": {
+   "period": "247",
+   "intr": 15,
+   "specificArr": []
+  },
+  "locus": "aws"
+ },
+ {
+  "camId": "ND_Bois_de_Sioux_at_470th_St_nr_Fairmount_ND",
+  "nwisId": "05050510",
+  "camName": "Bois de Sioux at 470th St nr Fairmount ND",
+  "camDesc": "Bois de Sioux River at 470th St near Fairmount, North Dakota. Looking downstream.",
+  "lat": "46.09458177345979",
+  "lng": "-96.55693346844335",
+  "stateAbrv": "ND",
+  "tz": "US/Central",
+  "createdDate": "2026-10-14T19:38:16.909Z",
+  "modifiedDate": "2026-10-14T19:39:53.800Z",
+  "TL_enabled": true,
+  "hideCam": true,
+  "overlayDir": "https://usgs-nims-images.s3.amazonaws.com/overlay/ND_Bois_de_Sioux_at_470th_St_nr_Fairmount_ND/",
+  "thumbDir": "https://usgs-nims-images.s3.amazonaws.com/thumbnail/ND_Bois_de_Sioux_at_470th_St_nr_Fairmount_ND/",
+  "smallDir": "https://usgs-nims-images.s3.amazonaws.com/720/ND_Bois_de_Sioux_at_470th_St_nr_Fairmount_ND/",
+  "tlDir": "https://usgs-nims-images.s3.amazonaws.com/timelapse/ND_Bois_de_Sioux_at_470th_St_nr_Fairmount_ND/",
+  "ingest": {
+   "period": "247",
+   "intr": 60,
+   "hourlyStart": true,
+   "specificArr": []
+  },
+  "locus": "aws"
+ }
+]

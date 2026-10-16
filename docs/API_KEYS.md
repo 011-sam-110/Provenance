@@ -21,7 +21,6 @@ Keys you've already given me are wired in `.env.local` and **live locally**:
 |-----|-----------------|-------|
 | `AISSTREAM_API_KEY` | **Ships (AIS chokepoints)** — real-time vessels at Hormuz/Suez/Malacca/… | ✅ live |
 | `OPENAQ_API_KEY` | **Air quality — stations** — real PM2.5 from ~25.8k OpenAQ monitors | ✅ live |
-| `FIRMS_MAP_KEY` | **Active fires** — NASA VIIRS thermal detections | ✅ live |
 | `ACLED_EMAIL` + `ACLED_PASSWORD` | **Conflict events** + the conflict factor of the Index | ⏳ dormant — login works but the account's **API read access isn't activated yet** (returns 403). Activate it on myACLED and it goes live with no code change. |
 
 **Keyless layers added this session — already live, no key needed:** Internet
@@ -38,12 +37,17 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | # | Source | Unlocks | Free tier | Env var(s) |
 |---|--------|---------|-----------|-----------|
 | 1 | **AISStream.io** | Real‑time global ship tracking (named vessels, Hormuz/Suez) | Free, no card, WebSocket | `AISSTREAM_API_KEY` |
-| 2 | **ENTSO‑E Transparency** | EU electricity‑grid load / generation mix / cross‑border flows / outages | Free w/ registration | `ENTSOE_API_TOKEN` |
+| 2 | **ENTSO‑E Transparency** | Grid load for about 20 continental European bidding zones (GB, France and Denmark are keyless from their own operators) | Free w/ registration | `ENTSOE_API_TOKEN` |
 | 3 | **OpenAQ** | Real air‑quality **station** measurements (upgrades the modelled CAMS layer) | Free | `OPENAQ_API_KEY` |
 | 4 | **UCDP** (Uppsala) | Geocoded conflict events + fatalities (structural conflict history) | Free token | `UCDP_API_TOKEN` |
 | 5 | **ACLED** | Real‑time armed‑conflict & protest events w/ actor attribution | Free — **must activate API access** | `ACLED_EMAIL` + `ACLED_PASSWORD` |
-| 6 | **NASA FIRMS** | VIIRS/MODIS thermal active‑fire detections | Free MAP_KEY | `FIRMS_MAP_KEY` |
-| 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
+| 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
+| 7 | ~~**ReliefWeb**~~ (OCHA) | **No key needed since 2026-10-16.** Its API refuses any appname it has not approved, so the layer reads ReliefWeb's own weekly export on HDX (CC BY 4.0) plus the keyless IFRC GO appeals API. `RELIEFWEB_APPNAME` is no longer read. | — | — |
+| 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
+| 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly), and megawatts offline per US nuclear plant, daily (the keyless NRC report already gives each unit's % power) | Free, instant, email only | `EIA_API_KEY` |
+| 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
+| — | **Ransomware.live PRO** | The supported endpoint for the Ransomware victims layer (the keyless legacy one is compatibility-only) | Free personal key | `RANSOMWARE_LIVE_API_KEY` |
+| — | **alerts.in.ua** | Ukraine air-raid alerts, down to raion and hromada level | Free token (form, 1 to 7 days) | `ALERTS_IN_UA_TOKEN` |
 
 ### Where to get each
 
@@ -63,8 +67,20 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
    select an access type). Auth is an OAuth2 password grant (your email + password,
    `scope=authenticated`). ⚠️ Until API access is activated the read returns
    `403 "Access denied"` even though login succeeds — the layer stays dormant.
-6. **NASA FIRMS** — request a free **MAP_KEY** at
-   <https://firms.modaps.eosdis.nasa.gov/api/area/> (instant, just an email).
+6. **NASA FIRMS** — nothing to get. Prod served zero fires for five weeks because
+   FIRMS answered `400 Invalid MAP_KEY.` to the key on the box, so the layer moved to
+   the keyless files at `firms.modaps.eosdis.nasa.gov/data/active_fire/` (same columns).
+8. **ISOC Pulse** — create a free account at <https://pulse.internetsociety.org>, then
+   generate an API token (sent as a Bearer token to `pulse-api.internetsociety.org`).
+   Pulse's terms allow **non-commercial use only**, forbid redistribution, and require
+   the credit "Provided by Internet Society", which every Pulse pin carries. If
+   Provenance ever charges, this feed needs written permission or must go.
+9. **EIA** — register at <https://www.eia.gov/opendata/register.php> (name and email;
+   the key arrives at once). EIA data is US public domain; credit "Source: U.S. Energy
+   Information Administration". `DEMO_KEY` works for a quick test only (tight rate limit).
+10. **BarentsWatch** — create a personal account at <https://www.barentswatch.no>, then
+   *My page* → create an API client. The layer uses the OAuth client-credentials grant
+   with scope `ais` against `id.barentswatch.no`. Data is under NLOD.
 
 ---
 
@@ -73,11 +89,17 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | Source | Adds | Why optional | Env var |
 |--------|------|--------------|---------|
 | **Electricity Maps** | Live carbon/grid mix outside the EU | ENTSO‑E already covers EU grid | `ELECTRICITYMAPS_API_KEY` |
-| **Cloudflare Radar** | A second internet‑outage vantage | We already corroborate via keyless **IODA + RIPEstat** | `CLOUDFLARE_API_TOKEN` |
+| **Cloudflare Radar** | A second internet‑outage vantage | Keyless **IODA** already gives several vantage points (BGP, probing, telescope). Nothing in the outage layer calls RIPEstat: it is used only by `/api/recon/bgp` | `CLOUDFLARE_API_TOKEN` |
+| **India CPCB** (data.gov.in) | PM2.5 at CPCB's Indian stations in the air-quality layers (24 h averages) | AirNow already carries the US Embassy monitors in New Delhi and Mumbai | `DATA_GOV_IN_KEY` |
 
 - **Electricity Maps** — free tier at <https://www.electricitymaps.com/free-tier-api>.
 - **Cloudflare Radar** — any free Cloudflare account → My Profile → API Tokens → token
   with **Radar Read**: <https://developers.cloudflare.com/radar/get-started/>.
+- **US EIA** — email-only form at <https://www.eia.gov/opendata/register.php> (free, no
+  card). EIA's public `DEMO_KEY` works for a test but is rate-limited; do not deploy it.
+- **India CPCB** — register at <https://data.gov.in>, then copy the API key from My
+  Account. The adapter reads resource `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69` (real-time
+  AQI) and makes no request without the key. Licence: Government Open Data License - India.
 
 ---
 
@@ -276,6 +298,29 @@ process memory; the sender refills it after a restart.
 Unset, every push answers 401 (never a 5xx) and the relayed feeds read as "no relay yet".
 The feed ids, schemas and size caps are in `lib/relay/feeds.ts`.
 
+## 8 - Camera networks (BUILT, dormant until set)
+
+Each of these is one camera feed in `lib/sources/registry.ts`, named by its `keyId`. While
+its credential is missing the registry does not ask it, it holds no cameras, and
+`/api/coverage` lists it under `feeds.dormant` instead of reporting an outage. The moment
+the value is set the feed goes live on the next refresh, with no code change. Every one is
+free. None of these values ever reaches a browser: the Basic credentials and the Ottawa
+certificate are added by `/api/proxy` on the server (`lib/proxy/allowlist.ts`).
+
+| Network | Env var(s) | How to get it |
+|---------|------------|---------------|
+| Tyne and Wear UTMC (North East England) | `NE_UTMC_USER` + `NE_UTMC_PASS` | Free, self-serve: an account at netraveldata.co.uk (username and email). The account's username and password are the HTTP Basic credentials for /api/v2/cctv/*. |
+| City of Ottawa | `OTTAWA_CAMERA_CERT` | Free: the Certificate Request Form on traffic.ottawa.ca/en/opendata; the City emails the certificate. It is added to image requests on the server only. |
+| Manitoba 511 | `MANITOBA_511_KEY` | Free: a My511 account on manitoba511.ca, then a developer key from /developers/doc. |
+| 511 Newfoundland and Labrador | `NL_511_KEY` | Free: a My511 account on 511nl.ca, then a developer key from /developers/doc. |
+| 511 Yukon | `YUKON_511_KEY` | Free: a My511 account on 511yukon.ca, then a developer key from /developers/doc. |
+| DARS and DRSI via NAP Slovenia | `NAP_SLOVENIA_USER` + `NAP_SLOVENIA_PASS` | Free: a B2B account at nap.si/en/registration (name, organisation, address, phone). The account's username and password are the HTTP Basic credentials. |
+
+Two credentials named in the same audit are NOT wired yet, on purpose:
+`TRAFFIC_SCOTLAND_FTP_USER` / `TRAFFIC_SCOTLAND_FTP_PASS` need an FTP mirror on the box
+before an adapter can read them, and `TRAFFIC_WALES_KEY` needs the DATEX feed URL that
+Traffic Wales sends with the approval, which is not published.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
@@ -294,10 +339,15 @@ OPENAQ_API_KEY=
 UCDP_API_TOKEN=
 ACLED_EMAIL=
 ACLED_PASSWORD=
-FIRMS_MAP_KEY=
-RELIEFWEB_APPNAME=
+ISOC_PULSE_API_KEY=
+EIA_API_KEY=
+BARENTSWATCH_CLIENT_ID=
+BARENTSWATCH_CLIENT_SECRET=
+ALERTS_IN_UA_TOKEN=
+RANSOMWARE_LIVE_API_KEY=
 
 # --- Optional enhancements ---
+DATA_GOV_IN_KEY=
 ELECTRICITYMAPS_API_KEY=
 CLOUDFLARE_API_TOKEN=
 
@@ -323,6 +373,16 @@ OPS_TELEGRAM_CHAT_ID=
 
 # --- Source relay (BUILT - shared HMAC secret with the provenance-1 sender) ---
 RELAY_SIGNING_SECRET=
+
+# --- Camera networks (BUILT, dormant until set; see section 8) ---
+NE_UTMC_USER=
+NE_UTMC_PASS=
+OTTAWA_CAMERA_CERT=
+MANITOBA_511_KEY=
+NL_511_KEY=
+YUKON_511_KEY=
+NAP_SLOVENIA_USER=
+NAP_SLOVENIA_PASS=
 
 # --- Accounts (in progress - do not set before launch) ---
 # NEXT_PUBLIC_SUPABASE_URL=

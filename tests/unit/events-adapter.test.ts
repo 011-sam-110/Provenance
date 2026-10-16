@@ -32,7 +32,7 @@ describe("toEvent", () => {
     expect(e.severity.tier).toBe("S2");      // 5.8 → S2
     expect(e.severity.raw).toBe(5.8);
     expect(e.magnitude).toEqual({ value: 5.8, unit: "M" });
-    expect(e.source.attribution).toBe("USGS");
+    expect(e.source.attribution).toBe("USGS, EMSC and national seismic agencies");
   });
 
   it("omits native magnitude for a source with no known unit (no MW mislabel)", () => {

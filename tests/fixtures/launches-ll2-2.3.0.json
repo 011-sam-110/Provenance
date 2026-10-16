@@ -1,0 +1,413 @@
+{
+ "_capture": "ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=100&mode=normal, 2026-10-16 20:3x UTC, rows trimmed to the fields the adapter reads; first 6 rows plus the first row of each net_precision",
+ "count": 476,
+ "results": [
+  {
+   "id": "df88cfbf-f504-4e11-8370-e33dd6280b5b",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/df88cfbf-f504-4e11-8370-e33dd6280b5b/",
+   "name": "Falcon 9 Block 5 | USSF-481",
+   "net": "2026-10-16T00:01:05Z",
+   "net_precision": {
+    "id": 0,
+    "name": "Second",
+    "abbrev": "SEC"
+   },
+   "window_start": "2026-10-15T23:44:00Z",
+   "window_end": "2026-10-16T03:44:00Z",
+   "status": {
+    "name": "Launch Successful",
+    "abbrev": "Success"
+   },
+   "launch_service_provider": {
+    "name": "SpaceX"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Falcon 9"
+    }
+   },
+   "mission": {
+    "name": "USSF-481",
+    "type": "Government/Top Secret"
+   },
+   "pad": {
+    "name": "Space Launch Complex 4E",
+    "latitude": 34.632,
+    "longitude": -120.611,
+    "location": {
+     "name": "Vandenberg SFB, CA, USA"
+    }
+   }
+  },
+  {
+   "id": "3b430f81-0ff1-4d85-8a1a-cef0de326198",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/3b430f81-0ff1-4d85-8a1a-cef0de326198/",
+   "name": "Falcon 9 Block 5 | Bandwagon 5 (Dedicated Mid-Inclination Rideshare)",
+   "net": "2026-10-19T10:30:00Z",
+   "net_precision": {
+    "id": 1,
+    "name": "Minute",
+    "abbrev": "MIN"
+   },
+   "window_start": "2026-10-19T10:30:00Z",
+   "window_end": "2026-10-19T11:30:00Z",
+   "status": {
+    "name": "Go for Launch",
+    "abbrev": "Go"
+   },
+   "launch_service_provider": {
+    "name": "SpaceX"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Falcon 9"
+    }
+   },
+   "mission": {
+    "name": "Bandwagon 5 (Dedicated Mid-Inclination Rideshare)",
+    "type": "Dedicated Rideshare"
+   },
+   "pad": {
+    "name": "Space Launch Complex 40",
+    "latitude": 28.56194122,
+    "longitude": -80.57735736,
+    "location": {
+     "name": "Cape Canaveral SFS, FL, USA"
+    }
+   }
+  },
+  {
+   "id": "69ebbcd2-b257-4070-9ef9-21e7d1f8a883",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/69ebbcd2-b257-4070-9ef9-21e7d1f8a883/",
+   "name": "H3-24 | Martian Moons eXploration (MMX)",
+   "net": "2026-10-19T19:41:03Z",
+   "net_precision": {
+    "id": 0,
+    "name": "Second",
+    "abbrev": "SEC"
+   },
+   "window_start": "2026-10-19T19:41:03Z",
+   "window_end": "2026-10-19T19:41:03Z",
+   "status": {
+    "name": "Go for Launch",
+    "abbrev": "Go"
+   },
+   "launch_service_provider": {
+    "name": "Mitsubishi Heavy Industries"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "H3-24"
+    }
+   },
+   "mission": {
+    "name": "Martian Moons eXploration (MMX)",
+    "type": "Planetary Science"
+   },
+   "pad": {
+    "name": "Yoshinobu Launch Complex LP-2",
+    "latitude": 30.400938,
+    "longitude": 130.97564,
+    "location": {
+     "name": "Tanegashima Space Center, Japan"
+    }
+   }
+  },
+  {
+   "id": "f6af629d-39b5-4f86-bc0c-f8776444a858",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/f6af629d-39b5-4f86-bc0c-f8776444a858/",
+   "name": "Falcon 9 Block 5 | Starlink Group 15-15",
+   "net": "2026-10-20T22:14:00Z",
+   "net_precision": {
+    "id": 1,
+    "name": "Minute",
+    "abbrev": "MIN"
+   },
+   "window_start": "2026-10-20T22:14:00Z",
+   "window_end": "2026-10-21T02:14:00Z",
+   "status": {
+    "name": "Go for Launch",
+    "abbrev": "Go"
+   },
+   "launch_service_provider": {
+    "name": "SpaceX"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Falcon 9"
+    }
+   },
+   "mission": {
+    "name": "Starlink Group 15-15",
+    "type": "Communications"
+   },
+   "pad": {
+    "name": "Space Launch Complex 4E",
+    "latitude": 34.632,
+    "longitude": -120.611,
+    "location": {
+     "name": "Vandenberg SFB, CA, USA"
+    }
+   }
+  },
+  {
+   "id": "c6f8b6b0-6bae-460a-99bb-c12a3d29effd",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/c6f8b6b0-6bae-460a-99bb-c12a3d29effd/",
+   "name": "Ceres-1S | Unknown Payload",
+   "net": "2026-10-21T03:35:00Z",
+   "net_precision": {
+    "id": 2,
+    "name": "Hour",
+    "abbrev": "HR"
+   },
+   "window_start": "2026-10-21T03:29:00Z",
+   "window_end": "2026-10-21T03:50:00Z",
+   "status": {
+    "name": "Go for Launch",
+    "abbrev": "Go"
+   },
+   "launch_service_provider": {
+    "name": "Galactic Energy"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Ceres-1S"
+    }
+   },
+   "mission": {
+    "name": "Unknown Payload",
+    "type": "Unknown"
+   },
+   "pad": {
+    "name": "Rizhao offshore launch location",
+    "latitude": 35.391667,
+    "longitude": 119.598667,
+    "location": {
+     "name": "Haiyang Oriental Spaceport"
+    }
+   }
+  },
+  {
+   "id": "7766f3bb-674c-4c71-b986-963bd633fcfe",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/7766f3bb-674c-4c71-b986-963bd633fcfe/",
+   "name": "Electron | We're Not Hawking Around (3x HawkEye 360)",
+   "net": "2026-10-21T05:00:00Z",
+   "net_precision": {
+    "id": 2,
+    "name": "Hour",
+    "abbrev": "HR"
+   },
+   "window_start": "2026-10-21T05:00:00Z",
+   "window_end": "2026-10-21T08:45:00Z",
+   "status": {
+    "name": "To Be Confirmed",
+    "abbrev": "TBC"
+   },
+   "launch_service_provider": {
+    "name": "Rocket Lab"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Electron"
+    }
+   },
+   "mission": {
+    "name": "We're Not Hawking Around (3x HawkEye 360)",
+    "type": "Earth Science"
+   },
+   "pad": {
+    "name": "Unknown Pad",
+    "latitude": -39.260881,
+    "longitude": 177.865826,
+    "location": {
+     "name": "Rocket Lab Launch Complex 1, Mahia Peninsula, New Zealand"
+    }
+   }
+  },
+  {
+   "id": "ef9850ad-1096-425b-9d27-f7bbd186e61a",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/ef9850ad-1096-425b-9d27-f7bbd186e61a/",
+   "name": "Vulcan VC6L | Amazon Leo (LV-01)",
+   "net": "2026-10-29T00:00:00Z",
+   "net_precision": {
+    "id": 5,
+    "name": "Day",
+    "abbrev": "DAY"
+   },
+   "window_start": "2026-10-29T00:00:00Z",
+   "window_end": "2026-10-29T00:00:00Z",
+   "status": {
+    "name": "To Be Determined",
+    "abbrev": "TBD"
+   },
+   "launch_service_provider": {
+    "name": "United Launch Alliance"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Vulcan VC6L"
+    }
+   },
+   "mission": {
+    "name": "Amazon Leo (LV-01)",
+    "type": "Communications"
+   },
+   "pad": {
+    "name": "Space Launch Complex 41",
+    "latitude": 28.58341025,
+    "longitude": -80.58303644,
+    "location": {
+     "name": "Cape Canaveral SFS, FL, USA"
+    }
+   }
+  },
+  {
+   "id": "20d5676e-111b-40e3-8923-b218c3665ca2",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/20d5676e-111b-40e3-8923-b218c3665ca2/",
+   "name": "GSLV Mk II | IRNSS-1L (NVS-03)",
+   "net": "2026-10-31T00:00:00Z",
+   "net_precision": {
+    "id": 7,
+    "name": "Month",
+    "abbrev": "M"
+   },
+   "window_start": "2026-10-31T00:00:00Z",
+   "window_end": "2026-10-31T00:00:00Z",
+   "status": {
+    "name": "To Be Determined",
+    "abbrev": "TBD"
+   },
+   "launch_service_provider": {
+    "name": "Indian Space Research Organization"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "GSLV Mk II"
+    }
+   },
+   "mission": {
+    "name": "IRNSS-1L (NVS-03)",
+    "type": "Navigation"
+   },
+   "pad": {
+    "name": "Satish Dhawan Space Centre Second Launch Pad",
+    "latitude": 13.7199,
+    "longitude": 80.2304,
+    "location": {
+     "name": "Satish Dhawan Space Centre, India"
+    }
+   }
+  },
+  {
+   "id": "11b218b1-5e40-4b9d-854e-50320299239d",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/11b218b1-5e40-4b9d-854e-50320299239d/",
+   "name": "Falcon 9 Block 5 | BlueBird 14-16 (Block 2 #9-11)",
+   "net": "2026-12-31T00:00:00Z",
+   "net_precision": {
+    "id": 11,
+    "name": "Quarter 4",
+    "abbrev": "Q4"
+   },
+   "window_start": "2026-12-31T00:00:00Z",
+   "window_end": "2026-12-31T00:00:00Z",
+   "status": {
+    "name": "To Be Determined",
+    "abbrev": "TBD"
+   },
+   "launch_service_provider": {
+    "name": "SpaceX"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Falcon 9"
+    }
+   },
+   "mission": {
+    "name": "BlueBird 14-16 (Block 2 #9-11)",
+    "type": "Communications"
+   },
+   "pad": {
+    "name": "Space Launch Complex 40",
+    "latitude": 28.56194122,
+    "longitude": -80.57735736,
+    "location": {
+     "name": "Cape Canaveral SFS, FL, USA"
+    }
+   }
+  },
+  {
+   "id": "e61d353c-db55-4a57-8184-0fab187231e6",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/e61d353c-db55-4a57-8184-0fab187231e6/",
+   "name": "Falcon 9 Block 5 | Globalstar 2-R Mission 2 (x 9)",
+   "net": "2026-12-31T00:00:00Z",
+   "net_precision": {
+    "id": 13,
+    "name": "Year Half 2",
+    "abbrev": "H2"
+   },
+   "window_start": "2026-12-31T00:00:00Z",
+   "window_end": "2026-12-31T00:00:00Z",
+   "status": {
+    "name": "To Be Determined",
+    "abbrev": "TBD"
+   },
+   "launch_service_provider": {
+    "name": "SpaceX"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Falcon 9"
+    }
+   },
+   "mission": {
+    "name": "Globalstar 2-R Mission 2 (x 9)",
+    "type": "Communications"
+   },
+   "pad": {
+    "name": "Space Launch Complex 40",
+    "latitude": 28.56194122,
+    "longitude": -80.57735736,
+    "location": {
+     "name": "Cape Canaveral SFS, FL, USA"
+    }
+   }
+  },
+  {
+   "id": "548df42c-ae26-4cc9-921a-f0042941911a",
+   "url": "https://ll.thespacedevs.com/2.3.0/launches/548df42c-ae26-4cc9-921a-f0042941911a/",
+   "name": "Electron | BlackSky Gen-3 6",
+   "net": "2026-12-31T00:00:00Z",
+   "net_precision": {
+    "id": 14,
+    "name": "Year",
+    "abbrev": "Y"
+   },
+   "window_start": "2026-12-31T00:00:00Z",
+   "window_end": "2026-12-31T00:00:00Z",
+   "status": {
+    "name": "To Be Determined",
+    "abbrev": "TBD"
+   },
+   "launch_service_provider": {
+    "name": "Rocket Lab"
+   },
+   "rocket": {
+    "configuration": {
+     "name": "Electron"
+    }
+   },
+   "mission": {
+    "name": "BlackSky Gen-3 6",
+    "type": "Earth Science"
+   },
+   "pad": {
+    "name": "Unknown Pad",
+    "latitude": -39.260881,
+    "longitude": 177.865826,
+    "location": {
+     "name": "Rocket Lab Launch Complex 1, Mahia Peninsula, New Zealand"
+    }
+   }
+  }
+ ]
+}
