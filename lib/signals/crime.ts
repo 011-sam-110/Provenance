@@ -195,8 +195,10 @@ export const UK_CRIME_SOURCE: SignalSource = {
             if (!res.ok) return null;
             const rows = (await res.json()) as CrimeRow[];
             return Array.isArray(rows) ? normalizeCrime(rows, c.name) : null;
-          } catch {
-            // a timeout or a dropped connection: try again
+          } catch (err) {
+            // A timeout is worth another try; any other failure is not, and retrying it
+            // would only make a dead upstream slower to report.
+            if ((err as Error)?.name !== "TimeoutError") return null;
           }
         }
         return null;
