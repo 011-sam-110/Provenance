@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, type CountryCentroid } from "@/lib/signals/country-centroids.data";
 import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
+import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { degraded, observed } from "@/lib/signals/outcome";
 
 // ============================================================================
@@ -326,19 +327,21 @@ async function displacementFactor(): Promise<Map<string, number>> {
   return out;
 }
 
-/** Internet-outage severity by ISO-3, from IODA's country summary. */
+/**
+ * Internet-outage severity by ISO-3, from the internet-outages layer itself.
+ *
+ * It used to read IODA's /outages/summary on its own, which counted outages that had
+ * ended many hours before and a prober burst that hit 52 countries at once (measured
+ * 2026-10-16). Reading the layer gives this factor the same cleaned set the map
+ * shows: current events only, bursts removed. The raw value is IODA's own score for
+ * the country (the largest current event), the same quantity the ramp was built for.
+ */
 async function outageFactor(): Promise<Map<string, number>> {
   const out = new Map<string, number>();
-  const until = Math.floor(Date.now() / 1000);
-  const from = until - 24 * 3600;
-  const json = await getJson<{ data?: { scores?: { overall?: number }; entity?: { code?: string; type?: string } }[] }>(
-    `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/summary?from=${from}&until=${until}&entityType=country&limit=200`,
-  );
-  for (const r of json?.data ?? []) {
-    if (r.entity?.type !== "country") continue;
-    const c = centroidByIso2((r.entity?.code ?? "").toUpperCase());
-    const score = r.scores?.overall;
-    if (c && typeof score === "number" && score > 0) out.set(c.iso3, (out.get(c.iso3) ?? 0) + score);
+  for (const f of await INTERNET_OUTAGES_SOURCE.fetch()) {
+    const iso3 = f.countryIso3;
+    const score = Number(f.props?.outageScore ?? 0);
+    if (iso3 && score > 0) out.set(iso3, Math.max(out.get(iso3) ?? 0, score));
   }
   return out;
 }

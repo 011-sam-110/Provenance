@@ -418,14 +418,16 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "internet-outages",
-    whatItShows: "A country or region where IODA has detected a drop in internet connectivity.",
-    method: "IODA (CAIDA / Georgia Tech) infers outages from three independent signals: BGP routing withdrawals, unsolicited background traffic, and active probing.",
+    whatItShows: "A country or region where IODA has detected a drop in internet connectivity that is still in progress, or ended within the last two hours (marked recovering).",
+    method: "IODA (CAIDA / Georgia Tech) infers outages from independent signals: BGP routing withdrawals, active probing of address blocks, the Merit network telescope and Google traffic. We show only events that are still running or ended in the last two hours, and we drop a probing burst that starts in ten or more places in the same ten minutes unless another signal agrees at that place: that pattern is IODA's prober restarting, not an outage. Severity rises with the number of signals that agree.",
     confidence: "measured",
     coverage: "Global at country level; sub-national resolution varies a lot.",
     limitations: [
       "Detects reachability from the outside. A national shutdown and a major cable fault look similar; the cause is not in the data.",
       "Small or short outages fall below the detection threshold.",
       "Throttling — the internet being slow rather than absent — is largely invisible to it.",
+      "Mobile-only and regional shutdowns are a known weak point: on 2026-10-16 IODA had nothing for cuts in Tigray and Khyber Pakhtunkhwa that other monitors reported.",
+      "The burst filter can hide a real outage that starts at the same moment as a prober fault, when only probing saw it.",
       "IODA's own severity score is unitless and unbounded, and its practical scale moves: on 2026-08-10 one country scored 5.8e10 while the next-worst scored 2.9e4. We rank and band it on a log scale and show a 0–10 magnitude rather than the raw number, because the raw number is not comparable between countries or between weeks.",
     ],
   },

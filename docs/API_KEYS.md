@@ -73,7 +73,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | Source | Adds | Why optional | Env var |
 |--------|------|--------------|---------|
 | **Electricity Maps** | Live carbon/grid mix outside the EU | ENTSO‑E already covers EU grid | `ELECTRICITYMAPS_API_KEY` |
-| **Cloudflare Radar** | A second internet‑outage vantage | We already corroborate via keyless **IODA + RIPEstat** | `CLOUDFLARE_API_TOKEN` |
+| **Cloudflare Radar** | A second internet‑outage vantage | Keyless **IODA** already gives several vantage points (BGP, probing, telescope). Nothing in the outage layer calls RIPEstat: it is used only by `/api/recon/bgp` | `CLOUDFLARE_API_TOKEN` |
 | **US EIA Open Data** | Megawatts offline per US nuclear plant, daily (Nuclear plants layer) | The keyless NRC report already gives each US unit's % power | `EIA_API_KEY` |
 
 - **Electricity Maps** — free tier at <https://www.electricitymaps.com/free-tier-api>.
