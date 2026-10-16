@@ -1,0 +1,130 @@
+{
+ "metadata": {
+  "datasets": [
+   "PN"
+  ]
+ },
+ "data": [
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 480,
+   "levelTo": 480,
+   "nationalGridBmUnit": "HEYM11",
+   "bmUnit": "T_HEYM11"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 395,
+   "levelTo": 395,
+   "nationalGridBmUnit": "HEYM12",
+   "bmUnit": "T_HEYM12"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": -36,
+   "levelTo": -36,
+   "nationalGridBmUnit": "HEYM2D-1",
+   "bmUnit": "T_HEYM2-D"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 550,
+   "levelTo": 550,
+   "nationalGridBmUnit": "HEYM27",
+   "bmUnit": "T_HEYM27"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 0,
+   "levelTo": 0,
+   "nationalGridBmUnit": "HEYM28",
+   "bmUnit": "T_HEYM28"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 580,
+   "levelTo": 580,
+   "nationalGridBmUnit": "HRTL-1",
+   "bmUnit": "T_HRTL-1"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 470,
+   "levelTo": 470,
+   "nationalGridBmUnit": "HRTL-2",
+   "bmUnit": "T_HRTL-2"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 599,
+   "levelTo": 599,
+   "nationalGridBmUnit": "SIZB-1",
+   "bmUnit": "T_SIZB-1"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 594,
+   "levelTo": 594,
+   "nationalGridBmUnit": "SIZB-2",
+   "bmUnit": "T_SIZB-2"
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:00:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 0,
+   "levelTo": 0,
+   "nationalGridBmUnit": "AG-PEPG01",
+   "bmUnit": null
+  },
+  {
+   "dataset": "PN",
+   "settlementDate": "2026-10-16",
+   "settlementPeriod": 43,
+   "timeFrom": "2026-10-16T20:29:00Z",
+   "timeTo": "2026-10-16T20:30:00Z",
+   "levelFrom": 3,
+   "levelTo": 0,
+   "nationalGridBmUnit": "BARNB-1",
+   "bmUnit": "E_BARNB-1"
+  }
+ ]
+}

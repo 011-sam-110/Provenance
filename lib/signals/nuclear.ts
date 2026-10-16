@@ -1,6 +1,18 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { NUCLEAR_SNAPSHOT, NUCLEAR_SNAPSHOT_DATE } from "@/lib/signals/nuclear.data";
 import { isDenylistedNuclear } from "@/lib/signals/nuclear-denylist";
+import {
+  applyNuclearLive,
+  parseEiaOutages,
+  parseIesoXml,
+  parseNrcStatus,
+  parsePnRows,
+  settlementPeriod,
+  type EiaRow,
+  type PnRow,
+  type SiteOutage,
+  type UnitReading,
+} from "@/lib/signals/nuclear.live";
 import { compiled, observed } from "@/lib/signals/outcome";
 
 // Nuclear power plants — OpenStreetMap `power=plant` + `plant:source=nuclear`, with
@@ -56,7 +68,9 @@ const LIVE_TIMEOUT_MS = 45_000;
 const PLAUSIBLE_MIN = 100;
 
 export const NUCLEAR_ATTRIBUTION =
-  "Nuclear plant data © OpenStreetMap contributors (ODbL, via QLever); status: Wikidata (CC0)";
+  "Nuclear plant data © OpenStreetMap contributors (ODbL, via QLever); status: Wikidata (CC0); " +
+  "reactor power: US NRC and US EIA (public domain); contains BMRS data © Elexon Limited copyright and " +
+  "database right 2026; © Independent Electricity System Operator, subject to the IESO Terms of Use (www.ieso.ca)";
 
 /** One OSM element (node / way / relation) as this layer consumes it. The committed
  *  snapshot uses the SAME shape, so one pure mapper serves both paths. `status` is the
@@ -332,12 +346,119 @@ function refresh(): Promise<SignalFeature[] | null> {
   return inflight;
 }
 
+// --- live reactor output (nuclear.live.ts) -------------------------------------
+//
+// Unlike the OSM list, these ARE awaited — for at most LIVE_BUDGET_MS. They are small
+// and fast (Elexon and IESO under a second, NRC 1.3 MB), and a response cached at the
+// edge for this layer's refresh interval without them would hide them for that long.
+// A slow feed keeps reading in the background and lands in its slot for the next call.
+
+const NRC_URL =
+  "https://www.nrc.gov/reading-rm/doc-collections/event-status/reactor-status/powerreactorstatusforlast365days.txt";
+const elexonUrl = (date: string, period: number) =>
+  `https://data.elexon.co.uk/bmrs/api/v1/balancing/physical/all?dataset=PN&settlementDate=${date}&settlementPeriod=${period}&format=json`;
+const IESO_URL = "https://reports-public.ieso.ca/public/GenOutputCapability/PUB_GenOutputCapability.xml";
+const eiaUrl = (key: string, start: string) =>
+  `https://api.eia.gov/v2/nuclear-outages/facility-nuclear-outages/data/?api_key=${encodeURIComponent(key)}` +
+  `&frequency=daily&data%5B%5D=capacity&data%5B%5D=outage&start=${start}&length=1000`;
+/** NRC's CDN refuses non-browser TLS clients with a bare 403; Node's fetch with a
+ *  browser User-Agent is served (measured 2026-10-16). */
+const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36";
+
+let LIVE_BUDGET_MS = 6_000;
+const LIVE_READ_TIMEOUT_MS = 20_000;
+/** A reading older than this is dropped rather than shown as current. */
+const LIVE_STALE_MS = 6 * 60 * 60 * 1000;
+const LIVE_TTL_MS = { nrc: 60 * 60_000, elexon: 15 * 60_000, ieso: 30 * 60_000, eia: 6 * 60 * 60_000 } as const;
+type LiveKey = keyof typeof LIVE_TTL_MS;
+
+const liveSlots: { [K in LiveKey]?: { value: unknown; at: number } } = {};
+const liveInflight: { [K in LiveKey]?: Promise<void> } = {};
+
+function refreshLive(key: LiveKey, read: () => Promise<unknown>): Promise<void> {
+  const s = liveSlots[key];
+  if (s && Date.now() - s.at < LIVE_TTL_MS[key]) return Promise.resolve();
+  if (!liveInflight[key]) {
+    liveInflight[key] = read()
+      .then((value) => {
+        liveSlots[key] = { value, at: Date.now() };
+      })
+      .catch(() => {
+        /* the slot keeps its last good value until it goes stale */
+      })
+      .finally(() => {
+        delete liveInflight[key];
+      });
+  }
+  return liveInflight[key]!;
+}
+
+function slotValue<T>(key: LiveKey): T | undefined {
+  const s = liveSlots[key];
+  return s && Date.now() - s.at < LIVE_STALE_MS ? (s.value as T) : undefined;
+}
+
+async function getText(url: string, ua = UA, timeoutMs = LIVE_READ_TIMEOUT_MS): Promise<string> {
+  const res = await fetch(url, { headers: { "User-Agent": ua }, signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`http ${res.status}`);
+  return res.text();
+}
+
+/** Read every live feed (each from its own slot), waiting at most LIVE_BUDGET_MS. */
+async function readNuclearLive(): Promise<{ readings: UnitReading[]; outages: SiteOutage[] }> {
+  const now = Date.now();
+  const sp = settlementPeriod(now);
+  const eiaKey = process.env.EIA_API_KEY?.trim();
+  const reads = [
+    refreshLive("nrc", async () => parseNrcStatus(await getText(NRC_URL, BROWSER_UA))),
+    refreshLive("elexon", async () => {
+      const json = JSON.parse(await getText(elexonUrl(sp.date, sp.period))) as { data?: PnRow[] };
+      return parsePnRows(json.data ?? [], now);
+    }),
+    refreshLive("ieso", async () => parseIesoXml(await getText(IESO_URL))),
+    // Dormant until the key exists: no key, no request.
+    ...(eiaKey
+      ? [
+          refreshLive("eia", async () => {
+            const start = new Date(now - 3 * 86_400_000).toISOString().slice(0, 10);
+            // EIA answered a 3-day window in 56 s with the public DEMO_KEY (2026-10-16).
+            const json = JSON.parse(await getText(eiaUrl(eiaKey, start), UA, 60_000)) as { response?: { data?: EiaRow[] } };
+            return parseEiaOutages(json.response?.data ?? []);
+          }),
+        ]
+      : []),
+  ];
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    Promise.all(reads),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, LIVE_BUDGET_MS);
+    }),
+  ]);
+  if (timer) clearTimeout(timer);
+  return {
+    readings: [
+      ...(slotValue<UnitReading[]>("nrc") ?? []),
+      ...(slotValue<UnitReading[]>("elexon") ?? []),
+      ...(slotValue<UnitReading[]>("ieso") ?? []),
+    ],
+    outages: eiaKey ? slotValue<SiteOutage[]>("eia") ?? [] : [],
+  };
+}
+
 /** Test-only: reset the module memo so unit tests are order-independent. */
 export function __resetNuclearCache(): void {
   cache = null;
   inflight = null;
   lastAttemptAt = 0;
   snapshotFeatures = null;
+  for (const k of Object.keys(liveSlots) as LiveKey[]) delete liveSlots[k];
+  for (const k of Object.keys(liveInflight) as LiveKey[]) delete liveInflight[k];
+}
+
+/** Test-only: how long fetch() may wait for the live reactor feeds. */
+export function __setNuclearLiveBudget(ms: number): void {
+  LIVE_BUDGET_MS = ms;
 }
 
 /** Test-only: settle the background refresh so a test can observe the upgrade
@@ -353,7 +474,9 @@ export const NUCLEAR_SOURCE: SignalSource = {
   label: "Nuclear plants",
   group: "Infrastructure",
   color: "#16a34a",
-  refreshMs: CACHE_TTL_MS,
+  // The OSM list is re-read twice a day (CACHE_TTL_MS); this cadence is for the live
+  // reactor output (Elexon half-hourly, IESO hourly, NRC daily).
+  refreshMs: 30 * 60_000,
   attribution: NUCLEAR_ATTRIBUTION,
   kind: "asset", // permanent infrastructure → asset-directory focus view, ranked by capacity
   // Real per-plant scalar: net electrical capacity in MW (OSM plant:output:electricity),
@@ -362,16 +485,22 @@ export const NUCLEAR_SOURCE: SignalSource = {
   // OSM carries no country, so the directory ranks by capacity and shows the operator.
   directory: { detailKey: "operator", detailLabel: "Operator" },
   async fetch() {
-    // A live answer is a real upstream read — stamped when it landed, not now.
-    if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
-    // Start (or join) the background refresh and DO NOT wait for it: a late or
-    // never-arriving answer must not delay the response. Its result lands in `cache`
-    // and is served from the next call onwards. `refresh()` swallows its own failures.
-    void refresh();
+    // A live OSM answer is a real upstream read — stamped when it landed, not now.
+    const fresh = cache && Date.now() - cache.at < CACHE_TTL_MS ? cache : null;
+    // Otherwise start (or join) the background refresh and DO NOT wait for it: a late
+    // or never-arriving answer must not delay the response. Its result lands in
+    // `cache` and is served from the next call onwards. `refresh()` swallows its own
+    // failures.
+    if (!fresh) void refresh();
+    const base = fresh ? fresh.features : nuclearSnapshotFeatures();
+    // Live reactor output, joined per plant. Each reading carries its own date.
+    const { readings, outages } = await readNuclearLive();
+    const features = applyNuclearLive(base, readings, outages);
+    if (fresh) return observed(features, fresh.at);
     // The snapshot is a COMPILED extract, not a failed read. Serverless instances
     // are cold constantly, so a `degraded` here would have shown "no answer" much of
     // the time while a complete world was on the map. Stamped when the extract was
     // harvested, so a consumer can say "compiled <date>".
-    return compiled(nuclearSnapshotFeatures(), SNAPSHOT_AT);
+    return compiled(features, SNAPSHOT_AT);
   },
 };

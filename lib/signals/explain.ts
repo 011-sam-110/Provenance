@@ -348,6 +348,7 @@ const EXPLAINERS: LayerExplainer[] = [
     limitations: [
       "The state of use is Wikidata's statement, and more than half the plants have none. 'Not stated' does not mean the plant is running.",
       "A shut-down or unbuilt plant keeps its pin in grey; only plants that can generate are ranked by capacity.",
+      "Live reactor output covers the US (NRC daily percent power), Great Britain (Elexon notified megawatts, a plan rather than a meter reading) and Ontario (IESO hourly megawatts). Everywhere else a plant has no live reading, which does not mean it is running.",
       "OSM tagging is inconsistent: some entries are whole sites, some individual reactors, so counts should not be treated as reactor counts.",
       "No safety status and no incident reporting.",
     ],

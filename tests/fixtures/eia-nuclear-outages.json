@@ -1,0 +1,96 @@
+{
+ "response": {
+  "total": "285",
+  "dateFormat": "YYYY-MM-DD",
+  "frequency": "daily",
+  "data": [
+   {
+    "period": "2026-10-16",
+    "facility": "46",
+    "facilityName": "Browns Ferry",
+    "capacity": "3755.8",
+    "outage": "0",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-16",
+    "facility": "204",
+    "facilityName": "Clinton Power Station",
+    "capacity": "1107.1",
+    "outage": "0",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-16",
+    "facility": "566",
+    "facilityName": "Millstone",
+    "capacity": "2120.8",
+    "outage": "1252.2",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-16",
+    "facility": "2410",
+    "facilityName": "PSEG Salem Generating Station",
+    "capacity": "2284.7",
+    "outage": "1601.36",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-16",
+    "facility": "6118",
+    "facilityName": "PSEG Hope Creek Generating Station",
+    "capacity": "1174.2",
+    "outage": "0",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-15",
+    "facility": "46",
+    "facilityName": "Browns Ferry",
+    "capacity": "3755.8",
+    "outage": "0",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-15",
+    "facility": "204",
+    "facilityName": "Clinton Power Station",
+    "capacity": "1107.1",
+    "outage": "0",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   },
+   {
+    "period": "2026-10-15",
+    "facility": "566",
+    "facilityName": "Millstone",
+    "capacity": "2120.8",
+    "outage": "1252.2",
+    "capacity-units": "megawatts",
+    "outage-units": "megawatts"
+   }
+  ],
+  "description": "Facility level nuclear outages with capacity, outages, and percent outage.  \n        Source:   Nuclear Regulatory Commission's Power Reactor Status Report.  \n        Interactive data report:  Daily Status of Nuclear Reactors."
+ },
+ "request": {
+  "command": "/v2/nuclear-outages/facility-nuclear-outages/data/",
+  "params": {
+   "frequency": "daily",
+   "data": [
+    "capacity",
+    "outage"
+   ],
+   "start": "2026-10-14",
+   "length": "1000"
+  }
+ },
+ "apiVersion": "2.1.14",
+ "ExcelAddInVersion": "2.1.0"
+}

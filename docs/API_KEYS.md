@@ -74,10 +74,13 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 |--------|------|--------------|---------|
 | **Electricity Maps** | Live carbon/grid mix outside the EU | ENTSO‑E already covers EU grid | `ELECTRICITYMAPS_API_KEY` |
 | **Cloudflare Radar** | A second internet‑outage vantage | We already corroborate via keyless **IODA + RIPEstat** | `CLOUDFLARE_API_TOKEN` |
+| **US EIA Open Data** | Megawatts offline per US nuclear plant, daily (Nuclear plants layer) | The keyless NRC report already gives each US unit's % power | `EIA_API_KEY` |
 
 - **Electricity Maps** — free tier at <https://www.electricitymaps.com/free-tier-api>.
 - **Cloudflare Radar** — any free Cloudflare account → My Profile → API Tokens → token
   with **Radar Read**: <https://developers.cloudflare.com/radar/get-started/>.
+- **US EIA** — email-only form at <https://www.eia.gov/opendata/register.php> (free, no
+  card). EIA's public `DEMO_KEY` works for a test but is rate-limited; do not deploy it.
 
 ---
 
@@ -297,6 +300,7 @@ ACLED_PASSWORD=
 RELIEFWEB_APPNAME=
 
 # --- Optional enhancements ---
+EIA_API_KEY=
 ELECTRICITYMAPS_API_KEY=
 CLOUDFLARE_API_TOKEN=
 

@@ -63,6 +63,14 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain: "Free — openaq.org.",
   },
   {
+    kind: "enhancement",
+    id: "nuclear",
+    label: "Nuclear plants: US megawatts offline (EIA)",
+    env: ["EIA_API_KEY"],
+    degrades: "US plants show NRC's percent power but not how many megawatts are offline; the plant list, Wikidata status and GB/Ontario output are unaffected.",
+    obtain: "Free — email-only form at www.eia.gov/opendata/register.php.",
+  },
+  {
     kind: "required",
     id: "grid-load",
     label: "European grid load",

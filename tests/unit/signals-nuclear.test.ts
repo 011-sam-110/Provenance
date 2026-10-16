@@ -9,6 +9,7 @@ import {
   wikidataToStatus,
   __resetNuclearCache,
   __nuclearRefreshSettled,
+  __setNuclearLiveBudget,
   NUCLEAR_SOURCE,
   LIVE_DATASET_LABEL,
   SNAPSHOT_DATASET_LABEL,
@@ -22,6 +23,7 @@ const realFetch = globalThis.fetch;
 afterEach(() => {
   globalThis.fetch = realFetch;
   __resetNuclearCache();
+  __setNuclearLiveBudget(6_000);
 });
 
 /** Replace global fetch for one test. Nothing here reaches the network. */
@@ -197,7 +199,10 @@ test("a plausible live answer upgrades the layer on the next call, stamped as li
 });
 
 test("REGRESSION: a hanging upstream cannot delay the response at all", async () => {
-  // QLever takes 14-21 s. Nothing waits on it, so a hanging read costs 0 ms.
+  // QLever takes 14-21 s. Nothing waits on it, so a hanging read costs 0 ms. (The
+  // live reactor feeds are awaited for a bounded budget; shrink it here so this test
+  // measures the OSM read alone. signals-nuclear-live.test.ts covers the budget.)
+  __setNuclearLiveBudget(0);
   stubFetch(() => new Promise<Response>(() => {})); // never settles
   const t0 = Date.now();
   const out = await NUCLEAR_SOURCE.fetch();
