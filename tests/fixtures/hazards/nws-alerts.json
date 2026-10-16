@@ -1,0 +1,1523 @@
+{
+ "@context": [
+  "https://geojson.org/geojson-ld/geojson-context.jsonld",
+  {
+   "@version": "1.1",
+   "wx": "https://api.weather.gov/ontology#",
+   "@vocab": "https://api.weather.gov/ontology#"
+  }
+ ],
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.ed25a1e0fb782ab6025c6b664b7651c06a911e0d.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -79.95,
+       38.41
+      ],
+      [
+       -80.26,
+       38.44
+      ],
+      [
+       -80.28,
+       38.57
+      ],
+      [
+       -80.04,
+       38.62
+      ],
+      [
+       -80.02,
+       38.6
+      ],
+      [
+       -79.99,
+       38.63
+      ],
+      [
+       -79.96,
+       38.64
+      ],
+      [
+       -79.93,
+       38.42
+      ],
+      [
+       -79.95,
+       38.41
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.ed25a1e0fb782ab6025c6b664b7651c06a911e0d.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.ed25a1e0fb782ab6025c6b664b7651c06a911e0d.001.1",
+    "areaDesc": "Southeast Webster; Northwest Pocahontas; Southeast Randolph",
+    "geocode": {
+     "SAME": [
+      "054101",
+      "054075",
+      "054083"
+     ],
+     "UGC": [
+      "WVZ522",
+      "WVZ523",
+      "WVZ526"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/WVZ522",
+     "https://api.weather.gov/zones/forecast/WVZ523",
+     "https://api.weather.gov/zones/forecast/WVZ526"
+    ],
+    "sent": "2026-10-16T16:10:00-04:00",
+    "effective": "2026-10-16T16:10:00-04:00",
+    "onset": "2026-10-16T16:10:00-04:00",
+    "expires": "2026-10-16T16:30:00-04:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Observed",
+    "urgency": "Expected",
+    "event": "Special Weather Statement",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Charleston WV",
+    "headline": "Special Weather Statement issued October 16 at 4:10PM EDT by NWS Charleston WV",
+    "response": "Execute",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SPS"
+     ],
+     "NationalWeatherService": [
+      "SPS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7f1811a175719c5e862a846c92112c14c80f5a8d.002.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -76.08,
+       41.11
+      ],
+      [
+       -75.9,
+       41.33
+      ],
+      [
+       -75.71,
+       41.54
+      ],
+      [
+       -75.46,
+       41.57
+      ],
+      [
+       -75.44,
+       41.26
+      ],
+      [
+       -75.52,
+       41.22
+      ],
+      [
+       -75.54,
+       41.22
+      ],
+      [
+       -75.63,
+       41.12
+      ],
+      [
+       -75.68,
+       41.13
+      ],
+      [
+       -75.77,
+       41.09
+      ],
+      [
+       -75.77,
+       41.05
+      ],
+      [
+       -75.73,
+       41.01
+      ],
+      [
+       -76,
+       41
+      ],
+      [
+       -76.08,
+       41.11
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7f1811a175719c5e862a846c92112c14c80f5a8d.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.7f1811a175719c5e862a846c92112c14c80f5a8d.002.1",
+    "areaDesc": "Lackawanna, PA; Luzerne, PA",
+    "geocode": {
+     "SAME": [
+      "042069",
+      "042079"
+     ],
+     "UGC": [
+      "PAC069",
+      "PAC079"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/PAC069",
+     "https://api.weather.gov/zones/county/PAC079"
+    ],
+    "sent": "2026-10-16T16:09:00-04:00",
+    "effective": "2026-10-16T16:09:00-04:00",
+    "onset": "2026-10-16T16:09:00-04:00",
+    "expires": "2026-10-16T16:30:00-04:00",
+    "ends": "2026-10-16T16:30:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Observed",
+    "urgency": "Immediate",
+    "event": "Severe Thunderstorm Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Binghamton NY",
+    "headline": "Severe Thunderstorm Warning issued October 16 at 4:09PM EDT until October 16 at 4:30PM EDT by NWS Binghamton NY",
+    "response": "Shelter",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVS"
+     ],
+     "NationalWeatherService": [
+      "SVW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -75.15,
+       41.15
+      ],
+      [
+       -75.09,
+       41.14
+      ],
+      [
+       -75.03,
+       41.08
+      ],
+      [
+       -75,
+       41.09
+      ],
+      [
+       -74.99,
+       41.08
+      ],
+      [
+       -75.02,
+       41.06
+      ],
+      [
+       -75.77,
+       41.05
+      ],
+      [
+       -75.77,
+       41.09
+      ],
+      [
+       -75.71,
+       41.11
+      ],
+      [
+       -75.69,
+       41.13
+      ],
+      [
+       -75.64,
+       41.12
+      ],
+      [
+       -75.54,
+       41.23
+      ],
+      [
+       -75.13,
+       41.25
+      ],
+      [
+       -75.15,
+       41.15
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+    "areaDesc": "Carbon, PA; Monroe, PA",
+    "geocode": {
+     "SAME": [
+      "042025",
+      "042089"
+     ],
+     "UGC": [
+      "PAC025",
+      "PAC089"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/PAC025",
+     "https://api.weather.gov/zones/county/PAC089"
+    ],
+    "sent": "2026-10-16T16:03:00-04:00",
+    "effective": "2026-10-16T16:03:00-04:00",
+    "onset": "2026-10-16T16:03:00-04:00",
+    "expires": "2026-10-16T17:00:00-04:00",
+    "ends": "2026-10-16T17:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Observed",
+    "urgency": "Immediate",
+    "event": "Severe Thunderstorm Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Mount Holly NJ",
+    "headline": "Severe Thunderstorm Warning issued October 16 at 4:03PM EDT until October 16 at 5:00PM EDT by NWS Mount Holly NJ",
+    "response": "Shelter",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVR"
+     ],
+     "NationalWeatherService": [
+      "SVW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.6dff178f1b8a48efd1a94ff86c788829045b669c.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -76.75,
+       40.17
+      ],
+      [
+       -77.37,
+       40.16
+      ],
+      [
+       -77.48,
+       40.19
+      ],
+      [
+       -77.17,
+       40.36
+      ],
+      [
+       -77.14,
+       40.47
+      ],
+      [
+       -76.98,
+       40.54
+      ],
+      [
+       -76.99,
+       40.57
+      ],
+      [
+       -76.96,
+       40.59
+      ],
+      [
+       -76.95,
+       40.63
+      ],
+      [
+       -76.92,
+       40.6
+      ],
+      [
+       -76.8,
+       40.65
+      ],
+      [
+       -76.71,
+       40.66
+      ],
+      [
+       -76.36,
+       40.44
+      ],
+      [
+       -76.6,
+       40.27
+      ],
+      [
+       -76.57,
+       40.2
+      ],
+      [
+       -76.66,
+       40.17
+      ],
+      [
+       -76.72,
+       40.12
+      ],
+      [
+       -76.75,
+       40.17
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.6dff178f1b8a48efd1a94ff86c788829045b669c.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.6dff178f1b8a48efd1a94ff86c788829045b669c.001.1",
+    "areaDesc": "Perry; Dauphin; Lebanon; Cumberland; York",
+    "geocode": {
+     "SAME": [
+      "042099",
+      "042043",
+      "042075",
+      "042041",
+      "042133"
+     ],
+     "UGC": [
+      "PAZ056",
+      "PAZ057",
+      "PAZ059",
+      "PAZ063",
+      "PAZ065"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/PAZ056",
+     "https://api.weather.gov/zones/forecast/PAZ057",
+     "https://api.weather.gov/zones/forecast/PAZ059",
+     "https://api.weather.gov/zones/forecast/PAZ063",
+     "https://api.weather.gov/zones/forecast/PAZ065"
+    ],
+    "sent": "2026-10-16T15:56:00-04:00",
+    "effective": "2026-10-16T15:56:00-04:00",
+    "onset": "2026-10-16T15:56:00-04:00",
+    "expires": "2026-10-16T17:00:00-04:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Observed",
+    "urgency": "Expected",
+    "event": "Special Weather Statement",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS State College PA",
+    "headline": "Special Weather Statement issued October 16 at 3:56PM EDT by NWS State College PA",
+    "response": "Execute",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SPS"
+     ],
+     "NationalWeatherService": [
+      "SPS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.8c34ba1aa88d05b8910a019e12f1a48a3c099d22.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -81.74,
+       26.32
+      ],
+      [
+       -81.66,
+       26.32
+      ],
+      [
+       -81.66,
+       26.39
+      ],
+      [
+       -81.62,
+       26.42
+      ],
+      [
+       -81.57,
+       26.42
+      ],
+      [
+       -81.55,
+       26.19
+      ],
+      [
+       -81.68,
+       26.08
+      ],
+      [
+       -81.8,
+       26.26
+      ],
+      [
+       -81.74,
+       26.32
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.8c34ba1aa88d05b8910a019e12f1a48a3c099d22.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.8c34ba1aa88d05b8910a019e12f1a48a3c099d22.001.1",
+    "areaDesc": "Coastal Collier County; Inland Collier County",
+    "geocode": {
+     "SAME": [
+      "012021"
+     ],
+     "UGC": [
+      "FLZ069",
+      "FLZ070"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/FLZ069",
+     "https://api.weather.gov/zones/forecast/FLZ070"
+    ],
+    "sent": "2026-10-16T15:56:00-04:00",
+    "effective": "2026-10-16T15:56:00-04:00",
+    "onset": "2026-10-16T15:56:00-04:00",
+    "expires": "2026-10-16T16:45:00-04:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Observed",
+    "urgency": "Expected",
+    "event": "Special Weather Statement",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Miami FL",
+    "headline": "Special Weather Statement issued October 16 at 3:56PM EDT by NWS Miami FL",
+    "response": "Execute",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SPS"
+     ],
+     "NationalWeatherService": [
+      "SPS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3930cce19d44fc081342529a3ca64d396118ad30.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -112.18,
+       33.14
+      ],
+      [
+       -112.16,
+       33.21
+      ],
+      [
+       -112.09,
+       33.21
+      ],
+      [
+       -112.08,
+       33.2
+      ],
+      [
+       -111.95,
+       33.2
+      ],
+      [
+       -111.97,
+       33.14
+      ],
+      [
+       -112.18,
+       33.14
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3930cce19d44fc081342529a3ca64d396118ad30.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.3930cce19d44fc081342529a3ca64d396118ad30.001.1",
+    "areaDesc": "Pinal, AZ",
+    "geocode": {
+     "SAME": [
+      "004021"
+     ],
+     "UGC": [
+      "AZC021"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/AZC021"
+    ],
+    "sent": "2026-10-16T12:49:00-07:00",
+    "effective": "2026-10-16T12:49:00-07:00",
+    "onset": "2026-10-16T12:49:00-07:00",
+    "expires": "2026-10-16T13:45:00-07:00",
+    "ends": "2026-10-16T13:45:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Dust Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Phoenix AZ",
+    "headline": "Dust Advisory issued October 16 at 12:49PM MST until October 16 at 1:45PM MST by NWS Phoenix AZ",
+    "response": "Execute",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "DSY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.003.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.003.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.003.1",
+    "areaDesc": "Chesapeake Bay north of Pooles Island MD; Chesapeake Bay from Pooles Island to Sandy Point MD; Chesapeake Bay from Sandy Point to North Beach MD; Chesapeake Bay from North Beach to Drum Point MD; Chesapeake Bay from Drum Point MD to Smith Point VA; Tidal Potomac from Key Bridge to Indian Head MD; Tidal Potomac from Indian Head to Cobb Island MD; Tidal Potomac from Cobb Island MD to Smith Point VA; Patapsco River including Baltimore Harbor; Chester River to Queenstown MD; Eastern Bay; Choptank River to Cambridge MD and the Little Choptank River; Patuxent River to Broomes Island MD; Tangier Sound and the inland waters surrounding Bloodsworth Island",
+    "geocode": {
+     "SAME": [
+      "073530",
+      "073531",
+      "073532",
+      "073533",
+      "073534",
+      "073535",
+      "073536",
+      "073537",
+      "073538",
+      "073539",
+      "073540",
+      "073541",
+      "073542",
+      "073543"
+     ],
+     "UGC": [
+      "ANZ530",
+      "ANZ531",
+      "ANZ532",
+      "ANZ533",
+      "ANZ534",
+      "ANZ535",
+      "ANZ536",
+      "ANZ537",
+      "ANZ538",
+      "ANZ539",
+      "ANZ540",
+      "ANZ541",
+      "ANZ542",
+      "ANZ543"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/ANZ530",
+     "https://api.weather.gov/zones/forecast/ANZ531",
+     "https://api.weather.gov/zones/forecast/ANZ532",
+     "https://api.weather.gov/zones/forecast/ANZ533",
+     "https://api.weather.gov/zones/forecast/ANZ534",
+     "https://api.weather.gov/zones/forecast/ANZ535",
+     "https://api.weather.gov/zones/forecast/ANZ536",
+     "https://api.weather.gov/zones/forecast/ANZ537",
+     "https://api.weather.gov/zones/forecast/ANZ538",
+     "https://api.weather.gov/zones/forecast/ANZ539",
+     "https://api.weather.gov/zones/forecast/ANZ540",
+     "https://api.weather.gov/zones/forecast/ANZ541",
+     "https://api.weather.gov/zones/forecast/ANZ542",
+     "https://api.weather.gov/zones/forecast/ANZ543"
+    ],
+    "sent": "2026-10-16T16:04:00-04:00",
+    "effective": "2026-10-16T16:04:00-04:00",
+    "onset": "2026-10-16T16:04:00-04:00",
+    "expires": "2026-10-16T20:00:00-04:00",
+    "ends": "2026-10-16T20:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Severe Thunderstorm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Baltimore MD/Washington DC",
+    "headline": "Severe Thunderstorm Watch issued October 16 at 4:04PM EDT until October 16 at 8:00PM EDT by NWS Baltimore MD/Washington DC",
+    "response": "Monitor",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVA"
+     ],
+     "NationalWeatherService": [
+      "SVA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.002.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.002.1",
+    "areaDesc": "Long Island Sound West of New Haven CT/Port Jefferson NY; New York Harbor; Sandy Hook NJ to Fire Island Inlet NY out 20 NM",
+    "geocode": {
+     "SAME": [
+      "073335",
+      "073338",
+      "073355"
+     ],
+     "UGC": [
+      "ANZ335",
+      "ANZ338",
+      "ANZ355"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/ANZ335",
+     "https://api.weather.gov/zones/forecast/ANZ338",
+     "https://api.weather.gov/zones/forecast/ANZ355"
+    ],
+    "sent": "2026-10-16T16:02:00-04:00",
+    "effective": "2026-10-16T16:02:00-04:00",
+    "onset": "2026-10-16T16:02:00-04:00",
+    "expires": "2026-10-16T22:00:00-04:00",
+    "ends": "2026-10-16T22:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Severe Thunderstorm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Upton NY",
+    "headline": "Severe Thunderstorm Watch issued October 16 at 4:02PM EDT until October 16 at 10:00PM EDT by NWS Upton NY",
+    "response": "Monitor",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVA"
+     ],
+     "NationalWeatherService": [
+      "SVA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.002.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.d0bab2e56103197eb32cb799f9f575bcdeea466b.002.1",
+    "areaDesc": "District of Columbia, DC; Anne Arundel, MD; Baltimore, MD; Calvert, MD; Carroll, MD; Cecil, MD; Charles, MD; Frederick, MD; Harford, MD; Howard, MD; Montgomery, MD; Prince Georges, MD; St. Marys, MD; Washington, MD; Baltimore City, MD; Arlington, VA; Clarke, VA; Culpeper, VA; Fairfax, VA; Fauquier, VA; Frederick, VA; Greene, VA; King George, VA; Loudoun, VA; Madison, VA; Orange, VA; Page, VA; Prince William, VA; Rappahannock, VA; Shenandoah, VA; Spotsylvania, VA; Stafford, VA; Warren, VA; City of Alexandria, VA; City of Fairfax, VA; City of Falls Church, VA; City of Fredericksburg, VA; City of Manassas, VA; City of Manassas Park, VA; City of Winchester, VA; Berkeley, WV; Grant, WV; Hampshire, WV; Hardy, WV; Jefferson, WV; Morgan, WV",
+    "geocode": {
+     "SAME": [
+      "011001",
+      "024003",
+      "024005",
+      "024009",
+      "024013",
+      "024015",
+      "024017",
+      "024021",
+      "024025",
+      "024027",
+      "024031",
+      "024033",
+      "024037",
+      "024043",
+      "024510",
+      "051013",
+      "051043",
+      "051047",
+      "051059",
+      "051061",
+      "051069",
+      "051079",
+      "051099",
+      "051107",
+      "051113",
+      "051137",
+      "051139",
+      "051153",
+      "051157",
+      "051171",
+      "051177",
+      "051179",
+      "051187",
+      "051510",
+      "051600",
+      "051610",
+      "051630",
+      "051683",
+      "051685",
+      "051840",
+      "054003",
+      "054023",
+      "054027",
+      "054031",
+      "054037",
+      "054065"
+     ],
+     "UGC": [
+      "DCC001",
+      "MDC003",
+      "MDC005",
+      "MDC009",
+      "MDC013",
+      "MDC015",
+      "MDC017",
+      "MDC021",
+      "MDC025",
+      "MDC027",
+      "MDC031",
+      "MDC033",
+      "MDC037",
+      "MDC043",
+      "MDC510",
+      "VAC013",
+      "VAC043",
+      "VAC047",
+      "VAC059",
+      "VAC061",
+      "VAC069",
+      "VAC079",
+      "VAC099",
+      "VAC107",
+      "VAC113",
+      "VAC137",
+      "VAC139",
+      "VAC153",
+      "VAC157",
+      "VAC171",
+      "VAC177",
+      "VAC179",
+      "VAC187",
+      "VAC510",
+      "VAC600",
+      "VAC610",
+      "VAC630",
+      "VAC683",
+      "VAC685",
+      "VAC840",
+      "WVC003",
+      "WVC023",
+      "WVC027",
+      "WVC031",
+      "WVC037",
+      "WVC065"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/DCC001",
+     "https://api.weather.gov/zones/county/MDC003",
+     "https://api.weather.gov/zones/county/MDC005",
+     "https://api.weather.gov/zones/county/MDC009",
+     "https://api.weather.gov/zones/county/MDC013",
+     "https://api.weather.gov/zones/county/MDC015",
+     "https://api.weather.gov/zones/county/MDC017",
+     "https://api.weather.gov/zones/county/MDC021",
+     "https://api.weather.gov/zones/county/MDC025",
+     "https://api.weather.gov/zones/county/MDC027",
+     "https://api.weather.gov/zones/county/MDC031",
+     "https://api.weather.gov/zones/county/MDC033",
+     "https://api.weather.gov/zones/county/MDC037",
+     "https://api.weather.gov/zones/county/MDC043",
+     "https://api.weather.gov/zones/county/MDC510",
+     "https://api.weather.gov/zones/county/VAC013",
+     "https://api.weather.gov/zones/county/VAC043",
+     "https://api.weather.gov/zones/county/VAC047",
+     "https://api.weather.gov/zones/county/VAC059",
+     "https://api.weather.gov/zones/county/VAC061",
+     "https://api.weather.gov/zones/county/VAC069",
+     "https://api.weather.gov/zones/county/VAC079",
+     "https://api.weather.gov/zones/county/VAC099",
+     "https://api.weather.gov/zones/county/VAC107",
+     "https://api.weather.gov/zones/county/VAC113",
+     "https://api.weather.gov/zones/county/VAC137",
+     "https://api.weather.gov/zones/county/VAC139",
+     "https://api.weather.gov/zones/county/VAC153",
+     "https://api.weather.gov/zones/county/VAC157",
+     "https://api.weather.gov/zones/county/VAC171",
+     "https://api.weather.gov/zones/county/VAC177",
+     "https://api.weather.gov/zones/county/VAC179",
+     "https://api.weather.gov/zones/county/VAC187",
+     "https://api.weather.gov/zones/county/VAC510",
+     "https://api.weather.gov/zones/county/VAC600",
+     "https://api.weather.gov/zones/county/VAC610",
+     "https://api.weather.gov/zones/county/VAC630",
+     "https://api.weather.gov/zones/county/VAC683",
+     "https://api.weather.gov/zones/county/VAC685",
+     "https://api.weather.gov/zones/county/VAC840",
+     "https://api.weather.gov/zones/county/WVC003",
+     "https://api.weather.gov/zones/county/WVC023",
+     "https://api.weather.gov/zones/county/WVC027",
+     "https://api.weather.gov/zones/county/WVC031",
+     "https://api.weather.gov/zones/county/WVC037",
+     "https://api.weather.gov/zones/county/WVC065"
+    ],
+    "sent": "2026-10-16T16:04:00-04:00",
+    "effective": "2026-10-16T16:04:00-04:00",
+    "onset": "2026-10-16T16:04:00-04:00",
+    "expires": "2026-10-16T20:00:00-04:00",
+    "ends": "2026-10-16T20:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Severe Thunderstorm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Baltimore MD/Washington DC",
+    "headline": "Severe Thunderstorm Watch issued October 16 at 4:04PM EDT until October 16 at 8:00PM EDT by NWS Baltimore MD/Washington DC",
+    "response": "Monitor",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVA"
+     ],
+     "NationalWeatherService": [
+      "SVA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.e769676467988006b8678da52a76d35932f86e0f.001.1",
+    "areaDesc": "Fairfield, CT; New Haven, CT; Bergen, NJ; Essex, NJ; Hudson, NJ; Passaic, NJ; Union, NJ; Bronx, NY; Kings, NY; Nassau, NY; New York, NY; Orange, NY; Putnam, NY; Queens, NY; Richmond, NY; Rockland, NY; Westchester, NY",
+    "geocode": {
+     "SAME": [
+      "009001",
+      "009009",
+      "034003",
+      "034013",
+      "034017",
+      "034031",
+      "034039",
+      "036005",
+      "036047",
+      "036059",
+      "036061",
+      "036071",
+      "036079",
+      "036081",
+      "036085",
+      "036087",
+      "036119"
+     ],
+     "UGC": [
+      "CTC001",
+      "CTC009",
+      "NJC003",
+      "NJC013",
+      "NJC017",
+      "NJC031",
+      "NJC039",
+      "NYC005",
+      "NYC047",
+      "NYC059",
+      "NYC061",
+      "NYC071",
+      "NYC079",
+      "NYC081",
+      "NYC085",
+      "NYC087",
+      "NYC119"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/CTC001",
+     "https://api.weather.gov/zones/county/CTC009",
+     "https://api.weather.gov/zones/county/NJC003",
+     "https://api.weather.gov/zones/county/NJC013",
+     "https://api.weather.gov/zones/county/NJC017",
+     "https://api.weather.gov/zones/county/NJC031",
+     "https://api.weather.gov/zones/county/NJC039",
+     "https://api.weather.gov/zones/county/NYC005",
+     "https://api.weather.gov/zones/county/NYC047",
+     "https://api.weather.gov/zones/county/NYC059",
+     "https://api.weather.gov/zones/county/NYC061",
+     "https://api.weather.gov/zones/county/NYC071",
+     "https://api.weather.gov/zones/county/NYC079",
+     "https://api.weather.gov/zones/county/NYC081",
+     "https://api.weather.gov/zones/county/NYC085",
+     "https://api.weather.gov/zones/county/NYC087",
+     "https://api.weather.gov/zones/county/NYC119"
+    ],
+    "sent": "2026-10-16T16:02:00-04:00",
+    "effective": "2026-10-16T16:02:00-04:00",
+    "onset": "2026-10-16T16:02:00-04:00",
+    "expires": "2026-10-16T22:00:00-04:00",
+    "ends": "2026-10-16T22:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Severe Thunderstorm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Upton NY",
+    "headline": "Severe Thunderstorm Watch issued October 16 at 4:02PM EDT until October 16 at 10:00PM EDT by NWS Upton NY",
+    "response": "Monitor",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVA"
+     ],
+     "NationalWeatherService": [
+      "SVA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.949a3fd2a47d5fa19131ae9e75ab409a4460849a.002.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.949a3fd2a47d5fa19131ae9e75ab409a4460849a.002.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.949a3fd2a47d5fa19131ae9e75ab409a4460849a.002.1",
+    "areaDesc": "Adams, PA; Cumberland, PA; Dauphin, PA; Franklin, PA; Lancaster, PA; Lebanon, PA; Perry, PA; Schuylkill, PA; York, PA",
+    "geocode": {
+     "SAME": [
+      "042001",
+      "042041",
+      "042043",
+      "042055",
+      "042071",
+      "042075",
+      "042099",
+      "042107",
+      "042133"
+     ],
+     "UGC": [
+      "PAC001",
+      "PAC041",
+      "PAC043",
+      "PAC055",
+      "PAC071",
+      "PAC075",
+      "PAC099",
+      "PAC107",
+      "PAC133"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/county/PAC001",
+     "https://api.weather.gov/zones/county/PAC041",
+     "https://api.weather.gov/zones/county/PAC043",
+     "https://api.weather.gov/zones/county/PAC055",
+     "https://api.weather.gov/zones/county/PAC071",
+     "https://api.weather.gov/zones/county/PAC075",
+     "https://api.weather.gov/zones/county/PAC099",
+     "https://api.weather.gov/zones/county/PAC107",
+     "https://api.weather.gov/zones/county/PAC133"
+    ],
+    "sent": "2026-10-16T15:57:00-04:00",
+    "effective": "2026-10-16T15:57:00-04:00",
+    "onset": "2026-10-16T15:57:00-04:00",
+    "expires": "2026-10-16T20:00:00-04:00",
+    "ends": "2026-10-16T20:00:00-04:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Possible",
+    "urgency": "Future",
+    "event": "Severe Thunderstorm Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS State College PA",
+    "headline": "Severe Thunderstorm Watch issued October 16 at 3:57PM EDT until October 16 at 8:00PM EDT by NWS State College PA",
+    "response": "Monitor",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "SVA"
+     ],
+     "NationalWeatherService": [
+      "SVA"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.004.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.004.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.004.1",
+    "areaDesc": "Riverside County Mountains",
+    "geocode": {
+     "SAME": [
+      "006065"
+     ],
+     "UGC": [
+      "CAZ056"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ056"
+    ],
+    "sent": "2026-10-16T12:54:00-07:00",
+    "effective": "2026-10-16T12:54:00-07:00",
+    "onset": "2026-10-16T12:54:00-07:00",
+    "expires": "2026-10-16T22:15:00-07:00",
+    "ends": "2026-10-18T00:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Wind Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS San Diego CA",
+    "headline": "High Wind Warning issued October 16 at 12:54PM PDT until October 18 at 12:00AM PDT by NWS San Diego CA",
+    "response": "Prepare",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWW"
+     ],
+     "NationalWeatherService": [
+      "HWW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.003.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.003.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.003.1",
+    "areaDesc": "San Bernardino County Mountains",
+    "geocode": {
+     "SAME": [
+      "006071"
+     ],
+     "UGC": [
+      "CAZ055"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ055"
+    ],
+    "sent": "2026-10-16T12:54:00-07:00",
+    "effective": "2026-10-16T12:54:00-07:00",
+    "onset": "2026-10-16T12:54:00-07:00",
+    "expires": "2026-10-16T20:00:00-07:00",
+    "ends": "2026-10-16T20:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Wind Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS San Diego CA",
+    "headline": "High Wind Warning issued October 16 at 12:54PM PDT until October 16 at 8:00PM PDT by NWS San Diego CA",
+    "response": "Prepare",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWW"
+     ],
+     "NationalWeatherService": [
+      "HWW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.3dc9ccd8816fe622ed015ec17fc7661c92aea043.001.1",
+    "areaDesc": "San Bernardino and Riverside County Valleys-The Inland Empire",
+    "geocode": {
+     "SAME": [
+      "006065",
+      "006071"
+     ],
+     "UGC": [
+      "CAZ048"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ048"
+    ],
+    "sent": "2026-10-16T12:54:00-07:00",
+    "effective": "2026-10-16T12:54:00-07:00",
+    "onset": "2026-10-16T12:54:00-07:00",
+    "expires": "2026-10-16T22:15:00-07:00",
+    "ends": "2026-10-17T20:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Severe",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "High Wind Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS San Diego CA",
+    "headline": "High Wind Warning issued October 16 at 12:54PM PDT until October 17 at 8:00PM PDT by NWS San Diego CA",
+    "response": "Prepare",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "HWW"
+     ],
+     "NationalWeatherService": [
+      "HWW"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.03769da8c360eb86557e3ffdffffde3aefe56a78.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.03769da8c360eb86557e3ffdffffde3aefe56a78.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.03769da8c360eb86557e3ffdffffde3aefe56a78.001.1",
+    "areaDesc": "Knox; Stark; Peoria; Marshall; Woodford; Fulton; Tazewell; Schuyler; Mason; Logan; Cass; Menard; Scott; Morgan; Sangamon; Christian",
+    "geocode": {
+     "SAME": [
+      "017095",
+      "017175",
+      "017143",
+      "017123",
+      "017203",
+      "017057",
+      "017179",
+      "017169",
+      "017125",
+      "017107",
+      "017017",
+      "017129",
+      "017171",
+      "017137",
+      "017167",
+      "017021"
+     ],
+     "UGC": [
+      "ILZ027",
+      "ILZ028",
+      "ILZ029",
+      "ILZ030",
+      "ILZ031",
+      "ILZ036",
+      "ILZ037",
+      "ILZ040",
+      "ILZ041",
+      "ILZ042",
+      "ILZ047",
+      "ILZ048",
+      "ILZ049",
+      "ILZ050",
+      "ILZ051",
+      "ILZ052"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/ILZ027",
+     "https://api.weather.gov/zones/forecast/ILZ028",
+     "https://api.weather.gov/zones/forecast/ILZ029",
+     "https://api.weather.gov/zones/forecast/ILZ030",
+     "https://api.weather.gov/zones/forecast/ILZ031",
+     "https://api.weather.gov/zones/forecast/ILZ036",
+     "https://api.weather.gov/zones/forecast/ILZ037",
+     "https://api.weather.gov/zones/forecast/ILZ040",
+     "https://api.weather.gov/zones/forecast/ILZ041",
+     "https://api.weather.gov/zones/forecast/ILZ042",
+     "https://api.weather.gov/zones/forecast/ILZ047",
+     "https://api.weather.gov/zones/forecast/ILZ048",
+     "https://api.weather.gov/zones/forecast/ILZ049",
+     "https://api.weather.gov/zones/forecast/ILZ050",
+     "https://api.weather.gov/zones/forecast/ILZ051",
+     "https://api.weather.gov/zones/forecast/ILZ052"
+    ],
+    "sent": "2026-10-16T14:54:00-05:00",
+    "effective": "2026-10-16T14:54:00-05:00",
+    "onset": "2026-10-17T01:00:00-05:00",
+    "expires": "2026-10-17T04:00:00-05:00",
+    "ends": "2026-10-17T09:00:00-05:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Frost Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Lincoln IL",
+    "headline": "Frost Advisory issued October 16 at 2:54PM CDT until October 17 at 9:00AM CDT by NWS Lincoln IL",
+    "response": "Prepare",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "FRY"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.02433403d67da49b5cc2423968056bfc67d0b03d.001.1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.02433403d67da49b5cc2423968056bfc67d0b03d.001.1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.02433403d67da49b5cc2423968056bfc67d0b03d.001.1",
+    "areaDesc": "Greene; Macoupin; Montgomery; Adams; Brown; Pike; Calhoun; Jersey; Knox; Lewis; Shelby; Marion; Monroe; Ralls; Pike; Audrain; Lincoln",
+    "geocode": {
+     "SAME": [
+      "017061",
+      "017117",
+      "017135",
+      "017001",
+      "017009",
+      "017149",
+      "017013",
+      "017083",
+      "029103",
+      "029111",
+      "029205",
+      "029127",
+      "029137",
+      "029173",
+      "029163",
+      "029007",
+      "029113"
+     ],
+     "UGC": [
+      "ILZ058",
+      "ILZ059",
+      "ILZ060",
+      "ILZ095",
+      "ILZ096",
+      "ILZ097",
+      "ILZ098",
+      "ILZ099",
+      "MOZ018",
+      "MOZ019",
+      "MOZ026",
+      "MOZ027",
+      "MOZ034",
+      "MOZ035",
+      "MOZ036",
+      "MOZ042",
+      "MOZ052"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/ILZ058",
+     "https://api.weather.gov/zones/forecast/ILZ059",
+     "https://api.weather.gov/zones/forecast/ILZ060",
+     "https://api.weather.gov/zones/forecast/ILZ095",
+     "https://api.weather.gov/zones/forecast/ILZ096",
+     "https://api.weather.gov/zones/forecast/ILZ097",
+     "https://api.weather.gov/zones/forecast/ILZ098",
+     "https://api.weather.gov/zones/forecast/ILZ099",
+     "https://api.weather.gov/zones/forecast/MOZ018",
+     "https://api.weather.gov/zones/forecast/MOZ019",
+     "https://api.weather.gov/zones/forecast/MOZ026",
+     "https://api.weather.gov/zones/forecast/MOZ027",
+     "https://api.weather.gov/zones/forecast/MOZ034",
+     "https://api.weather.gov/zones/forecast/MOZ035",
+     "https://api.weather.gov/zones/forecast/MOZ036",
+     "https://api.weather.gov/zones/forecast/MOZ042",
+     "https://api.weather.gov/zones/forecast/MOZ052"
+    ],
+    "sent": "2026-10-16T14:53:00-05:00",
+    "effective": "2026-10-16T14:53:00-05:00",
+    "onset": "2026-10-17T01:00:00-05:00",
+    "expires": "2026-10-17T06:00:00-05:00",
+    "ends": "2026-10-17T09:00:00-05:00",
+    "status": "Actual",
+    "messageType": "Update",
+    "category": "Met",
+    "severity": "Minor",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Frost Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS St Louis MO",
+    "headline": "Frost Advisory issued October 16 at 2:53PM CDT until October 17 at 9:00AM CDT by NWS St Louis MO",
+    "response": "Prepare",
+    "note": null,
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "FRY"
+     ]
+    }
+   }
+  }
+ ],
+ "title": "Current watches, warnings, and advisories",
+ "updated": "2026-10-16T20:10:26+00:00"
+}

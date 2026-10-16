@@ -28,6 +28,10 @@ export const GROUP_TRIGGERS: Record<string, TriggerKind[]> = {
   "Human cost": ["appears", "count", "quiet"],
   Environment: ["appears", "crosses", "count", "quiet"],
 
+  // Official warnings: each is issued, then expires or is cancelled, at a fixed area.
+  // No scalar to cross (the layer declares no metric).
+  Weather: ["appears", "disappears", "count", "quiet"],
+
   // Rows carry a stable id and a position that CHANGES between polls.
   Maritime: ["appears", "disappears", "enters", "leaves", "count", "quiet"],
   Military: ["appears", "count", "quiet"],

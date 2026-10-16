@@ -209,6 +209,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feed on 2026-10-16T20:18Z: 2 activations (EMSR934 Panama earthquake, open; EMSR933 Crete flood)."
   },
   {
+    "id": "weather-warnings",
+    "label": "Weather warnings (NWS, ECCC)",
+    "group": "Weather",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Measured through its own fetch() against the live feeds on 2026-10-16T20:24Z: 185 alerts (32 NWS polygons, 94 NWS Severe or Extreme alerts placed at their counties, 59 ECCC polygons); 488 other NWS alerts were not drawn. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "fire-active",
     "label": "Active fires (FIRMS)",
     "group": "Natural hazards",
@@ -3400,10 +3412,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 40,
+  "layers": 41,
   "live": 29,
   "partial": 1,
-  "down": 8,
+  "down": 9,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

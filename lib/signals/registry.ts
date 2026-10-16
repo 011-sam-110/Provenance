@@ -67,6 +67,7 @@ import { CYCLONE_FORECASTS_SOURCE } from "@/lib/signals/cyclone-forecasts";
 import { TSUNAMI_SOURCE } from "@/lib/signals/tsunami";
 import { VOLCANO_ALERTS_SOURCE } from "@/lib/signals/volcano-alerts";
 import { CEMS_ACTIVATIONS_SOURCE } from "@/lib/signals/cems-activations";
+import { WEATHER_WARNINGS_SOURCE } from "@/lib/signals/weather-warnings";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 import { NEWS_COVERAGE_SOURCE } from "@/lib/signals/news-coverage";
@@ -93,6 +94,7 @@ export const SIGNALS: SignalSource[] = [
   TSUNAMI_SOURCE, // NOAA PTWC + NTWC latest tsunami bulletins (keyless)
   VOLCANO_ALERTS_SOURCE, // official volcano alert levels: USGS HANS + JMA (keyless)
   CEMS_ACTIVATIONS_SOURCE, // Copernicus EMS rapid-mapping activations (keyless)
+  WEATHER_WARNINGS_SOURCE, // official NWS (US) + ECCC (Canada) weather alerts (keyless)
   FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (key-gated: FIRMS_MAP_KEY)
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)

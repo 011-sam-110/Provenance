@@ -206,6 +206,18 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "weather-warnings",
+    whatItShows: "An official weather alert in force from the US National Weather Service or Environment and Climate Change Canada: a warning, watch, advisory or statement for a stated area.",
+    method: "Read directly from the NWS active-alerts API and ECCC's weather-alerts service. The event, severity and area text are theirs. An NWS alert with its own polygon is drawn as that polygon; a Severe or Extreme NWS alert that names counties but has no polygon is placed at the centre of those counties.",
+    confidence: "official",
+    coverage: "The United States and Canada only. Europe (MeteoAlarm) and India (SACHET) are not read yet.",
+    limitations: [
+      "Most NWS alerts name forecast zones and carry no polygon. Those rated Minor or Moderate are not drawn, and Severe or Extreme ones are a disc at the centre of their counties, not their real outline.",
+      "Marine alerts name no county and are drawn only when NWS gives a polygon.",
+      "Severity is each service's own scale, and the two services do not use the same words: compare within a country, not across the border.",
+    ],
+  },
+  {
     id: "fire-active",
     whatItShows: "A thermal anomaly detected from orbit by NASA FIRMS (VIIRS), i.e. something on the ground was hot when a satellite passed over.",
     method: "Measured by satellite radiometer and flagged by NASA's detection algorithm.",
