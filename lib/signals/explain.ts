@@ -87,7 +87,7 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "wildfires",
-    whatItShows: "A named wildfire incident: from NIFC in the United States, from GDACS elsewhere, and Copernicus EMS mapping activations.",
+    whatItShows: "A named wildfire incident: from NIFC in the United States, from GDACS elsewhere, plus burnt areas EFFIS mapped in Europe this week and Copernicus EMS mapping activations.",
     method: "US incidents come from NIFC's WFIGS, the interagency system of record, wildfires only (no prescribed burns). Outside the US, GDACS fire events detected by the EU's Global Wildfire Information System.",
     confidence: "official",
     coverage: "Every current US wildfire incident; elsewhere, fires GDACS saw burning in the last 7 days.",

@@ -13,11 +13,14 @@
 //     measured 2026-10-16, 30 days held 932 events, most of them over for weeks; 7
 //     days held 279, every one updated in that week.
 //   • Copernicus EMS wildfire activations — impact-grade, mapped events.
+//   • EFFIS burnt areas mapped in the past week (EC JRC, CC BY 4.0) — the footprint of
+//     each European / North African fire, with its commune. A GDACS fire event within
+//     15 km of one is the same fire seen coarser, and is dropped for it.
 
-import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import type { SignalFeature, SignalGeometry, SignalSource } from "@/lib/signals/types";
 import { fetchGdacsSearch, gdacsToLayerFeatures } from "@/lib/signals/gdacs";
 import { attachCemsToGdacs, cemsToFeatures, fetchCemsActivations } from "@/lib/signals/copernicus-ems";
-import { getJson, readInput, withInputsOutcome } from "@/lib/signals/multiInput";
+import { distanceKm, getJson, readInput, ringCentroid, withInputsOutcome } from "@/lib/signals/multiInput";
 
 /** GDACS fire events updated in this many days. */
 export const GDACS_WILDFIRE_WINDOW_DAYS = 7;
@@ -38,7 +41,79 @@ export const WFIGS_URL =
 
 export const WILDFIRES_ATTRIBUTION =
   "Wildfire incidents: NIFC WFIGS (IRWIN); Global Disaster Alert and Coordination System, GDACS (JRC GWIS); " +
-  "© European Union, Copernicus Emergency Management Service";
+  "EFFIS burnt areas © European Union, CC BY 4.0; © European Union, Copernicus Emergency Management Service";
+
+export const EFFIS_URL =
+  "https://maps.effis.emergency.copernicus.eu/effis?service=WFS&version=1.1.0&request=GetFeature" +
+  "&typeName=modis.ba.poly.week&outputFormat=geojson";
+
+/** A GDACS fire event this close to an EFFIS burnt area is the same fire. */
+export const SAME_FIRE_KM = 15;
+
+interface EffisFeature {
+  id?: string;
+  geometry?: { type?: string; coordinates?: unknown } | null;
+  properties?: {
+    id?: string;
+    FIREDATE?: string;
+    LASTUPDATE?: string;
+    COUNTRY?: string;
+    PROVINCE?: string;
+    COMMUNE?: string;
+    AREA_HA?: string | number;
+  } | null;
+}
+
+/**
+ * Pure: EFFIS weekly burnt-area polygons → wildfire areas. The WFS answers in
+ * [lon, lat] (Casteltermini, Sicily, arrives as [13.55, 37.55]). FIREDATE is UTC.
+ */
+export function normalizeEffisBurntAreas(json: { features?: EffisFeature[] } | null): SignalFeature[] {
+  const out: SignalFeature[] = [];
+  for (const f of json?.features ?? []) {
+    const p = f.properties ?? {};
+    const g = f.geometry;
+    let geometry: SignalGeometry | undefined;
+    let anchor: { lat: number; lon: number } | null = null;
+    if (g?.type === "Polygon" && Array.isArray(g.coordinates)) {
+      geometry = { type: "Polygon", coordinates: g.coordinates as [number, number][][] };
+      anchor = ringCentroid((g.coordinates as unknown[])[0]);
+    } else if (g?.type === "MultiPolygon" && Array.isArray(g.coordinates)) {
+      geometry = { type: "MultiPolygon", coordinates: g.coordinates as [number, number][][][] };
+      anchor = ringCentroid(((g.coordinates as unknown[][])[0] ?? [])[0]);
+    }
+    if (!geometry || !anchor || Math.abs(anchor.lat) > 90 || Math.abs(anchor.lon) > 180) continue;
+    const id = String(p.id ?? f.id ?? "").trim();
+    if (!id) continue;
+    const ha = Number(p.AREA_HA);
+    const t = p.FIREDATE ? Date.parse(`${p.FIREDATE.replace(" ", "T")}Z`) : Number.NaN;
+    const place = [p.COMMUNE, p.PROVINCE].map((x) => (x ?? "").trim()).filter(Boolean).join(", ");
+    out.push({
+      id: `wildfires:effis:${id}`,
+      lat: anchor.lat,
+      lon: anchor.lon,
+      title: `Burnt area — ${place || "Europe"}${p.COUNTRY ? ` (${p.COUNTRY})` : ""}${Number.isFinite(ha) ? `, ${Math.round(ha)} ha` : ""}`,
+      signalId: "wildfires",
+      precision: "area",
+      geometry,
+      color: "#78350f",
+      ts: Number.isFinite(t) ? new Date(t).toISOString() : undefined,
+      props: {
+        source: "EFFIS burnt areas",
+        hectares: Number.isFinite(ha) ? ha : "—",
+        country: p.COUNTRY ?? "—",
+        mapped: p.LASTUPDATE?.slice(0, 16) ?? "—",
+      },
+    });
+  }
+  return out;
+}
+
+/** Pure: drop a GDACS fire event that an EFFIS burnt area already shows. */
+export function dropGdacsCoveredByEffis(gdacs: SignalFeature[], effis: SignalFeature[]): SignalFeature[] {
+  if (!effis.length) return gdacs;
+  return gdacs.filter((g) => !effis.some((e) => distanceKm(e, g) <= SAME_FIRE_KM));
+}
 
 interface WfigsFeature {
   geometry?: { type?: string; coordinates?: unknown } | null;
@@ -125,7 +200,7 @@ export const WILDFIRES_SOURCE: SignalSource = {
   attribution: WILDFIRES_ATTRIBUTION,
   async fetch() {
     const now = Date.now();
-    const [wfigs, gdacs, cems] = await Promise.all([
+    const [wfigs, gdacs, cems, effis] = await Promise.all([
       readInput("wildfires:wfigs", "NIFC WFIGS", async () => normalizeWfigs(await getJson(WFIGS_URL, 20_000)), now),
       readInput("wildfires:gdacs", "GDACS", async () =>
         gdacsToLayerFeatures(
@@ -142,8 +217,13 @@ export const WILDFIRES_SOURCE: SignalSource = {
           now,
         }),
       now),
+      readInput("wildfires:effis", "EFFIS", async () => normalizeEffisBurntAreas(await getJson(EFFIS_URL, 30_000)), now),
     ]);
-    const features = [...wfigs.features, ...attachCemsToGdacs(gdacs.features, cems.features)];
-    return withInputsOutcome([wfigs, gdacs, cems], features, now);
+    const features = [
+      ...wfigs.features,
+      ...attachCemsToGdacs(dropGdacsCoveredByEffis(gdacs.features, effis.features), cems.features),
+      ...effis.features,
+    ];
+    return withInputsOutcome([wfigs, gdacs, cems, effis], features, now);
   },
 };

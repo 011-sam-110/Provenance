@@ -4,7 +4,13 @@ import { fetchGdacsSearch, gdacsSearchUrl, gdacsToLayerFeatures, type GdacsFeatu
 import { attachCemsToGdacs, cemsToFeatures, parseWktPoint, type CemsActivation } from "@/lib/signals/copernicus-ems";
 import { nwsAlertsToFeatures, nwsGaugesToFeatures } from "@/lib/signals/nws";
 import { FLOODS_SOURCE } from "@/lib/signals/floods";
-import { normalizeWfigs, US_ISO3, WILDFIRES_SOURCE } from "@/lib/signals/wildfires";
+import {
+  dropGdacsCoveredByEffis,
+  normalizeEffisBurntAreas,
+  normalizeWfigs,
+  US_ISO3,
+  WILDFIRES_SOURCE,
+} from "@/lib/signals/wildfires";
 import {
   dedupeVolcanoes,
   eonetAsBackground,
@@ -103,6 +109,29 @@ describe("NIFC WFIGS", () => {
     expect(f.lat).toBeCloseTo(44.803, 3);
     expect(resolvePrecision(f, WILDFIRES_SOURCE)).toBe("exact");
     expect(f.ts).toBe(new Date(1790983597947).toISOString());
+  });
+});
+
+describe("EFFIS burnt areas on the wildfires layer", () => {
+  const effis = normalizeEffisBurntAreas(json("effis-burnt-areas.json"));
+
+  it("draws each burnt area as its polygon, named by commune", () => {
+    expect(effis.map((f) => f.title)).toEqual([
+      "Burnt area — Casteltermini, Agrigento (IT), 42 ha",
+      "Burnt area — Dima, Bizkaia (ES), 5 ha",
+    ]);
+    expect(effis[0].geometry?.type).toBe("Polygon");
+    expect(effis[0].lat).toBeCloseTo(37.55, 1); // Sicily: [lon, lat] read the right way round
+    expect(effis[0].lon).toBeCloseTo(13.55, 1);
+    expect(resolvePrecision(effis[0], WILDFIRES_SOURCE)).toBe("area");
+    expect(effis[0].ts).toBe("2026-10-09T12:12:00.000Z");
+  });
+
+  it("a GDACS fire event within 15 km of a burnt area is the same fire", () => {
+    const near: SignalFeature = { id: "g:near", lat: effis[0].lat + 0.05, lon: effis[0].lon, title: "x", signalId: "wildfires" };
+    const far: SignalFeature = { id: "g:far", lat: 45, lon: 7, title: "x", signalId: "wildfires" };
+    expect(dropGdacsCoveredByEffis([near, far], effis).map((f) => f.id)).toEqual(["g:far"]);
+    expect(dropGdacsCoveredByEffis([near], [])).toHaveLength(1);
   });
 });
 
@@ -293,6 +322,7 @@ describe("the layers end to end, against the captured fixtures", () => {
     if (u.includes("riv_gauges")) return body(fx("nws-river-gauges.json"));
     if (u.includes("public-activations-info")) return body(fx("cems-activations.json"));
     if (u.includes("WFIGS_Incident_Locations_Current")) return body(fx("wfigs-incidents.json"));
+    if (u.includes("maps.effis.emergency.copernicus.eu")) return body(fx("effis-burnt-areas.json"));
     if (u.includes("volcanoApi/elevated")) return body(fx("usgs-volcanoes-elevated.json"));
     if (u.endsWith("/feed/eqvol.xml")) return body(fx("jma-eqvol.xml"), "application/xml");
     if (u.includes("data.jma.go.jp/developer/xml/data/")) return body(fx("jma-vfvo53.xml"), "application/xml");
@@ -324,6 +354,7 @@ describe("the layers end to end, against the captured fixtures", () => {
       expect(readOutcome(out)?.ok).toBe(true);
       expect(out.filter((f) => f.props?.source === "NIFC WFIGS")).toHaveLength(2);
       expect(out.filter((f) => f.props?.source === "GDACS (JRC GWIS)")).toHaveLength(gdacsWf.features.length);
+      expect(out.filter((f) => f.props?.source === "EFFIS burnt areas")).toHaveLength(2);
     } finally {
       globalThis.fetch = real;
     }
