@@ -16,6 +16,7 @@ import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
 import { fetchRegistry as fetchBihamk } from "@/lib/sources/bihamk";
 import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
 import { fetchRegistry as fetchVdot } from "@/lib/sources/vdot";
+import { fetchRegistry as fetchWsdot } from "@/lib/sources/wsdot";
 import { carsCameraFeeds } from "@/lib/sources/cars";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
@@ -156,6 +157,9 @@ const SOURCES: CameraFeed[] = [
   // for the same last-good reason as the discovered feeds below. New York's cameras
   // came here from castlerock when 511ny.org moved platforms. See lib/sources/cars.ts.
   ...carsCameraFeeds(),
+  // Washington State DOT. Web Mercator geometry and a windows-1252 file, both handled
+  // in the adapter; TripCheck rows are dropped there. See lib/sources/wsdot.ts.
+  { key: "wsdot", fetch: fetchWsdot },
   // 511 Virginia. The same Iteris camera layer as SCDOT, read through its normaliser;
   // stills only. See lib/sources/vdot.ts.
   { key: "vdot", fetch: fetchVdot },

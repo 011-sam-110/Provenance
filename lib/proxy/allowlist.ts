@@ -68,6 +68,9 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // 511 Virginia (VDOT) stills, at the host root as /<id>.png once the /thumbs/ redirect
   // is resolved in the adapter, the same layout as the SCDOT host above.
   { host: "snapshot.vdotcameras.com", prefix: "/", suffix: ".png" },
+  // WSDOT stills. Region folders (nw, sw, orflow, airports...) and one .JPG, so the
+  // host is the pin: it serves camera images and nothing else we know of.
+  { host: "images.wsdot.wa.gov", prefix: "/" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

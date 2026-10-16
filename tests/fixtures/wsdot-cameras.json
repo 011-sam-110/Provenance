@@ -1,0 +1,102 @@
+{
+ "displayFieldName": "CameraOwnerName",
+ "fieldAliases": {
+  "CameraID": "CameraID",
+  "CompassDirection": "CompassDirection",
+  "CameraTitle": "CameraTitle",
+  "ImageURL": "ImageURL"
+ },
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 102100,
+  "latestWkid": 3857
+ },
+ "fields": [
+  {
+   "name": "CameraID",
+   "type": "esriFieldTypeOID",
+   "alias": "CameraID"
+  },
+  {
+   "name": "CompassDirection",
+   "type": "esriFieldTypeString",
+   "alias": "CompassDirection",
+   "length": 5
+  },
+  {
+   "name": "CameraTitle",
+   "type": "esriFieldTypeString",
+   "alias": "CameraTitle",
+   "length": 50
+  },
+  {
+   "name": "ImageURL",
+   "type": "esriFieldTypeString",
+   "alias": "ImageURL",
+   "length": 150
+  }
+ ],
+ "timestamp": "2026-10-16 13:40:38.813999",
+ "features": [
+  {
+   "attributes": {
+    "CameraID": 1001,
+    "CompassDirection": "S",
+    "CameraTitle": "I-5 at Interstate Bridge SB, north end",
+    "ImageURL": "https://www.tripcheck.com/RoadCams/cams/I-5%20Bridge%20SB%20North_pid4676.jpg"
+   },
+   "geometry": {
+    "x": -13656007.102254549,
+    "y": 5719738.545086239
+   }
+  },
+  {
+   "attributes": {
+    "CameraID": 1003,
+    "CompassDirection": "B",
+    "CameraTitle": "I-5 at MP 3.2: Main St",
+    "ImageURL": "https://images.wsdot.wa.gov/sw/005vc00320.jpg"
+   },
+   "geometry": {
+    "x": -13655105.30305963,
+    "y": 5725939.2820585705
+   }
+  },
+  {
+   "attributes": {
+    "CameraID": 1049,
+    "CompassDirection": "S",
+    "CameraTitle": "Olympia Regional Airport South",
+    "ImageURL": "https://images.wsdot.wa.gov/airports/olysoutht.jpg"
+   },
+   "geometry": {
+    "x": -13681410.321373066,
+    "y": 5937243.936662749
+   }
+  },
+  {
+   "attributes": {
+    "CameraID": 9840,
+    "CompassDirection": "E",
+    "CameraTitle": "Ed Carlson Memorial – S Lewis County Airport East",
+    "ImageURL": "https://images.wsdot.wa.gov/airports/toledoeast.jpg"
+   },
+   "geometry": {
+    "x": -13670744.68964067,
+    "y": 5857112.044412635
+   }
+  },
+  {
+   "attributes": {
+    "CameraID": 9377,
+    "CompassDirection": "N",
+    "CameraTitle": "WSF Fauntleroy Way and Cloverdale St.",
+    "ImageURL": "https://www.seattle.gov/trafficcams/images/Fauntleroy_SW_Cloverdale_NS.jpg"
+   },
+   "geometry": {
+    "x": -13624713.412280709,
+    "y": 6028475.663524964
+   }
+  }
+ ]
+}
