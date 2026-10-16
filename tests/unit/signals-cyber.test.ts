@@ -1,14 +1,17 @@
 import { expect, test } from "vitest";
 import feodo from "@/tests/fixtures/feodo-c2.json";
 import ransomware from "@/tests/fixtures/ransomware-victims.json";
-import { normalizeFeodoC2, c2Color, CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
+import { normalizeFeodoC2, c2Color, CYBER_C2_SOURCE, readFeodo, FEODO_ATTRIBUTION } from "@/lib/signals/cyber-c2";
 import { normalizeRansomware, ransomwareColor, CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
 import { countMagnitude, groupByCountry, toNum } from "@/lib/signals/aggregate";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
+// Read the fixture as if on the day after its US sighting, while those rows are current.
+const FEODO_NOW = Date.parse("2026-03-13T00:00:00Z");
+
 test("Feodo C2 aggregates by country, skipping rows with no/garbled country", () => {
-  const out = normalizeFeodoC2(feodo as never);
+  const out = normalizeFeodoC2(feodo as never, FEODO_NOW);
   expect(out).toHaveLength(3); // US, GB, JP — the null-country row is skipped
   const us = out.find((f) => f.id === "cyber-c2:US")!;
   expect(us.props?.c2Servers).toBe(2);
@@ -60,4 +63,30 @@ test("aggregate helpers: log-scaled magnitude, country grouping, numeric coercio
   expect(toNum("0")).toBe(0);
   expect(toNum(1234)).toBe(1234);
   expect(toNum("-")).toBe(0);
+});
+
+test("Feodo: a C2 not seen for months is history, and a stale 'online' is not believed", () => {
+  // The live file on 2026-10-16: five leftovers, newest sighting 2026-03-12, one still
+  // flagged "online" from the last check before the dataset froze.
+  const rows = [
+    { ip_address: "50.16.16.211", status: "online", country: "US", malware: "QakBot", last_online: "2026-03-12" },
+    { ip_address: "162.243.103.246", status: "offline", country: "US", malware: "Emotet", last_online: "2026-03-07" },
+  ];
+  const oct = Date.parse("2026-10-16T19:00:00Z");
+  expect(normalizeFeodoC2(rows as never, oct)).toEqual([]);
+  const read = readFeodo(rows as never, oct);
+  expect(read.features).toEqual([]);
+  expect(read.reason).toBe("no current C2s; newest sighting 2026-03-12");
+
+  // Ten days after the last sighting it is still tracked, but no longer "online".
+  const tenDays = Date.parse("2026-03-22T00:00:00Z");
+  const us = normalizeFeodoC2(rows as never, tenDays)[0]!;
+  expect(us.props?.c2Servers).toBe(2);
+  expect(us.props?.online).toBe(0);
+  expect(us.props?.lastSeen).toBe("2026-03-12");
+});
+
+test("Feodo: an empty list is a degraded read, never a quiet world", () => {
+  expect(readFeodo([]).reason).toBe("Feodo Tracker dataset is empty");
+  expect(FEODO_ATTRIBUTION).not.toMatch(/CC0/);
 });

@@ -614,8 +614,9 @@ const EXPLAINERS: LayerExplainer[] = [
     whatItShows: "A server observed acting as botnet command-and-control infrastructure, placed by IP geolocation.",
     method: "Reported by abuse.ch Feodo Tracker from malware analysis and sinkholing.",
     confidence: "reported",
-    coverage: "The malware families abuse.ch tracks — a slice of the threat landscape, not all of it.",
+    coverage: "The malware families abuse.ch tracks — a slice of the threat landscape, not all of it. Law-enforcement takedowns removed every live C2 of those families, and abuse.ch states that its Feodo Tracker datasets are currently empty, so this layer is usually empty.",
     limitations: [
+      "Only a server abuse.ch saw online in the last 30 days is counted, and \"online\" is shown only when that sighting is under two days old. A list holding nothing newer is reported as unavailable, not as a quiet world.",
       "The position comes from IP geolocation, which is routinely wrong at city level and can be wrong at country level. It is the hosting location, not the operator's location.",
       "Attribution is to infrastructure, not to a country or an actor.",
       "Servers are taken down and re-registered constantly, so the picture churns.",
