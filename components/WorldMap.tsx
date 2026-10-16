@@ -121,7 +121,8 @@ import { shellLayoutStore } from "@/lib/console/store";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore, signalFreshnessFromPayload } from "@/lib/signals/freshness";
-import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import type { SignalSource } from "@/lib/signals/types";
+import { readMapSignal, startMapSignalPoll } from "@/lib/signals/mapFeedPoll";
 import { resolvePrecision } from "@/lib/signals/precision";
 import {
   buildCountryOutlines,
@@ -2964,65 +2965,65 @@ function SignalFeed({
     publish(rawRef.current);
   }, [scope, rings, publish]);
 
+  // The read and its clock live in lib/signals/mapFeedPoll.ts. A failed read is asked
+  // again within minutes and keeps the rows already drawn; it used to wait the full
+  // cadence (six hours for cables) with the layer emptied. See the note there.
   useEffect(() => {
-    let alive = true;
-    const load = () => {
-      fetch(`/api/signals/${encodeURIComponent(id)}`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (!alive) return;
-          const features = (d.features as SignalFeature[]) ?? [];
-          const objs: WorldObject[] = features.map((f) => ({
-            kind: "signal",
-            id: f.id,
-            lat: f.lat,
-            lon: f.lon,
-            label: f.title,
-            color: f.color ?? source.color,
-            typeLabel: source.label,
-            meta: {
-              signalId: f.signalId,
-              // How precise the place is. The route writes the resolved level on
-              // every feature; the layer default covers a payload that predates it.
-              precision: resolvePrecision(f, source),
-              // The country a country-level feature stands for (ISO alpha-3), so the
-              // map can shade its outline. See lib/map/precisionMarks.ts.
-              ...(f.countryIso3 ? { countryIso3: f.countryIso3 } : {}),
-              props: f.props ?? {},
-              attribution: source.attribution,
-              sourceLabel: source.label,
-              link: f.link,
-              // Provider dataset/home URL for the dossier's mandatory clickable
-              // source (used when a feature carries no deep record link). Optional
-              // on the adapter; SignalDetail falls back to the keyed provider table.
-              sourceUrl: source.sourceUrl,
-              // ISO timestamp (when known) — the global time-window filter reads
-              // this; untimed features have no ts and are always shown.
-              ts: f.ts,
-              // Carries line/area geometry (cables, jamming) through to the
-              // line/fill builders in lib/map/features; absent for point signals.
-              ...(f.geometry ? { geometry: f.geometry } : {}),
-            },
-          }));
-          rawRef.current = objs;
-          loadedOnceRef.current = true;
-          publish(objs);
-          signalFreshnessStore.record(id, signalFreshnessFromPayload({ ok: d.ok, count: objs.length }));
-        })
-        .catch(() => {
-          if (!alive) return;
-          rawRef.current = [];
-          loadedOnceRef.current = true;
-          publish([]);
-          signalFreshnessStore.record(id, { ok: false, count: 0 });
-        });
-    };
-    load();
-    // Refresh on the source's cadence (floored so a misconfigured 0 can't spin).
-    const t = setInterval(load, Math.max(30_000, source.refreshMs));
+    const stop = startMapSignalPoll({
+      id,
+      refreshMs: source.refreshMs,
+      read: (sid) => readMapSignal(sid),
+      onRows: (features, declaredOk) => {
+        const objs: WorldObject[] = features.map((f) => ({
+          kind: "signal",
+          id: f.id,
+          lat: f.lat,
+          lon: f.lon,
+          label: f.title,
+          color: f.color ?? source.color,
+          typeLabel: source.label,
+          meta: {
+            signalId: f.signalId,
+            // How precise the place is. The route writes the resolved level on
+            // every feature; the layer default covers a payload that predates it.
+            precision: resolvePrecision(f, source),
+            // The country a country-level feature stands for (ISO alpha-3), so the
+            // map can shade its outline. See lib/map/precisionMarks.ts.
+            ...(f.countryIso3 ? { countryIso3: f.countryIso3 } : {}),
+            props: f.props ?? {},
+            attribution: source.attribution,
+            sourceLabel: source.label,
+            link: f.link,
+            // Provider dataset/home URL for the dossier's mandatory clickable
+            // source (used when a feature carries no deep record link). Optional
+            // on the adapter; SignalDetail falls back to the keyed provider table.
+            sourceUrl: source.sourceUrl,
+            // ISO timestamp (when known) — the global time-window filter reads
+            // this; untimed features have no ts and are always shown.
+            ts: f.ts,
+            // Carries line/area geometry (cables, jamming) through to the
+            // line/fill builders in lib/map/features; absent for point signals.
+            ...(f.geometry ? { geometry: f.geometry } : {}),
+          },
+        }));
+        rawRef.current = objs;
+        loadedOnceRef.current = true;
+        publish(objs);
+        signalFreshnessStore.record(id, signalFreshnessFromPayload({ ok: declaredOk, count: objs.length }));
+      },
+      onFailure: (reason, hadRows) => {
+        console.warn(`[signals:${id}] map read failed, retrying soon:`, reason);
+        signalFreshnessStore.record(id, { ok: false, count: hadRows ? rawRef.current.length : 0 });
+        // Last-good: rows already drawn stay drawn. Only a layer that never had any
+        // is published as empty, so its count reads 0 rather than "no count yet".
+        if (hadRows) return;
+        rawRef.current = [];
+        loadedOnceRef.current = true;
+        publish([]);
+      },
+    });
     return () => {
-      alive = false;
-      clearInterval(t);
+      stop();
       onData(id, []);
       signalCountsStore.set(id, null);
       signalFreshnessStore.clear(id);

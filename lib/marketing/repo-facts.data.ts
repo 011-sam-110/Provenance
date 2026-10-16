@@ -58,9 +58,12 @@
  * and `tests/unit/account-errors.test.ts`; Task 6 adds `tests/unit/account-import-guard.test.ts`;
  * the design pass adds `tests/unit/account-reopen-flag.test.ts`.
  * `npx vitest run`: 4,753 cases across 423 files.
+ *
+ * Re-measured 2026-10-16 on fix/cables-hidden-p1 (origin/main at 7ed4085, after #286): it adds
+ * `tests/unit/map-signal-poll.test.ts` (16 cases). `npx vitest run`: 4,780 cases across 424 files.
  */
 export const UNIT_TESTS = {
-  cases: 4753,
-  files: 423,
+  cases: 4780,
+  files: 424,
   measuredAt: "2026-10-16",
 } as const;
