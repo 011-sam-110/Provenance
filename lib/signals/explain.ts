@@ -192,12 +192,13 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "space-weather",
-    whatItShows: "Current geomagnetic conditions — the planetary Kp index and any active NOAA storm alerts.",
-    method: "Kp is derived from a global network of magnetometers; alerts are issued by NOAA SWPC.",
+    whatItShows: "Current space-weather conditions in one pin: the latest Kp (SWPC's 1-minute estimate, with the last official 3-hour block beside it), the NOAA G/R/S storm scales, the GOES X-ray flare class now and its 24-hour peak, the solar wind at L1, and the SWPC alerts and warnings issued in the last 24 hours or still valid.",
+    method: "Kp is derived from a global network of magnetometers: the 1-minute value is SWPC's estimate, the 3-hour block is the official one. Flare classes come from the GOES-18 X-ray sensor, the solar wind from the DSCOVR/ACE monitors at L1, and alerts are issued by NOAA SWPC.",
     confidence: "measured",
-    coverage: "Planetary — a single global index, not a per-location value.",
+    coverage: "Planetary — a single global index, not a per-location value. The pin sits at the north geomagnetic pole as an anchor, not as a place where anything was measured.",
     limitations: [
-      "Kp is a 3-hourly planetary average. It cannot tell you conditions at your location right now.",
+      "Kp is a planetary index. Even the 1-minute estimate cannot tell you conditions at your location right now.",
+      "A flare's radio blackout hits only the sunlit side of the Earth, and the 24-hour peak does not say whether it is still going on.",
       "The index is quantised in thirds and saturates at 9, so it compresses the most extreme events.",
       "It says nothing about which specific systems (HF radio, GNSS, power grids) are actually being affected.",
     ],
