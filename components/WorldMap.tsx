@@ -569,7 +569,7 @@ export default function WorldMap() {
   // bottom of this file. basemap + terrain are shared via the mapView store so
   // the top bar can drive them.
   const [satellites, setSatellites] = useState<WorldObject[]>([]);
-  const [planesLayer, setPlanesLayer] = useState<PlanesLayer>({ objects: [], trails: [] });
+  const [planesLayer, setPlanesLayer] = useState<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });
   const [webcams, setWebcams] = useState<WorldObject[]>([]);
   /**
    * Has the map crossed WEBCAM_MIN_ZOOM? Gates the Windy tier's FETCH, where the
@@ -680,7 +680,9 @@ export default function WorldMap() {
   }, [camerasOnline, liveCameras, pts.length]);
   useEffect(() => {
     metricsStore.set({ planes: planesLayer.objects.length });
-    freshnessStore.record("planes", { count: planesLayer.objects.length, ok: true });
+    // Stamped at the snapshot's own pull instant, so the chip shows how old the
+    // positions are rather than when the 12 s poll last returned (undefined → now).
+    freshnessStore.record("planes", { count: planesLayer.objects.length, ok: true }, planesLayer.fetchedAt ?? undefined);
   }, [planesLayer]);
   const satCountRef = useRef(-1);
   useEffect(() => {

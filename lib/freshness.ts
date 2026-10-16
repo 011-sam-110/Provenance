@@ -37,7 +37,10 @@ function seed(): Record<FreshSourceId, SourceRecord> {
     // the Live cams and the Static cams layers, so a chip called either of those would
     // be claiming a cadence for half a fetch.
     cameras: { id: "cameras", label: "Road cameras", count: 0, ok: true, lastUpdate: null, refreshMs: 300_000, local: false },
-    planes: { id: "planes", label: "Planes", count: 0, ok: true, lastUpdate: null, refreshMs: 12_000, local: false },
+    // 90 s is the server's snapshot window (REVALIDATE_S in lib/sources/opensky.ts), and
+    // lastUpdate is the snapshot's own pull instant. The 12 s client poll is not the
+    // cadence of the data: it re-reads the same snapshot about seven times.
+    planes: { id: "planes", label: "Planes", count: 0, ok: true, lastUpdate: null, refreshMs: 90_000, local: false },
     satellites: { id: "satellites", label: "Satellites", count: 0, ok: true, lastUpdate: null, refreshMs: 1_000, local: true },
     // Windy free-tier image tokens last ~10 min, so the layer re-pulls on that cadence.
     webcams: { id: "webcams", label: "Windy webcams", count: 0, ok: true, lastUpdate: null, refreshMs: 600_000, local: false },

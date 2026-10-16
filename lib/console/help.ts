@@ -135,7 +135,7 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
       "Gaps are receiver coverage, not empty sky. An aircraft with no receiver in range does not exist in this feed, and there is no way to tell that case from an aircraft that is not flying.",
       "Aircraft that do not want to be seen switch the transponder off or broadcast a false identity, so the flights most worth watching are the ones most likely to be missing.",
       "There is NO military flag on this panel. The alert rule supports one, but this feed carries no military classification and does not ask for military types, so that alert can never fire here — military traffic appears only on the separate Military aircraft signal layer.",
-      "adsb.lol rate-limits requests per IP, so one snapshot is cached and shared across the whole deployment and refreshed roughly every four minutes. Rows are minutes old by design, and on a bad day the panel serves the last good snapshot rather than nothing.",
+      "adsb.lol rate-limits requests per IP, so one snapshot is cached and shared across the whole deployment and refreshed roughly every 90 seconds. Rows can be up to two minutes old by design, and on a bad day the panel serves the last good snapshot rather than nothing.",
       "The list is capped at 200 rows out of everything airborne, sorted by altitude or callsign. It is a slice, never a census.",
       "No origin, destination, registration or operator is carried here; the aircraft dossier fetches those separately when you open one.",
     ],

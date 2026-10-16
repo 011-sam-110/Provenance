@@ -303,10 +303,15 @@ export function toAircraftSnapshot(planes: WorldObject[]): AircraftSnapshot {
 // Snapshot fetch — one adsb.lol sweep, cached deployment-wide, dormant-safe
 // ---------------------------------------------------------------------------
 
-// Deployment-wide revalidate, unchanged at 240 s. This used to be sized against
-// OpenSky's ~400-credits/day anonymous budget; adsb.lol publishes no such cap, so
-// the number now exists only to bound how often the four-request pull runs.
-const REVALIDATE_S = 240;
+// Deployment-wide revalidate: 90 s since 2026-10-16, 240 s before. 240 was sized
+// against OpenSky's ~400-credits/day anonymous budget and then kept for a four-request
+// pull. Upstream positions are under a second old, but at 240 s each aircraft jumped
+// once every 4-6 minutes on prod (stale-while-revalidate re-pulls only when a request
+// arrives after the window), up to 60 km at cruise. The pull is one request now, and
+// with military-air's /v2/mil every 20 s that is about 3.7 adsb.lol requests a minute,
+// inside the refill measured the same day (one token per 10-20 s). Lower it only after
+// re-measuring that bucket.
+const REVALIDATE_S = 90;
 
 /**
  * One aircraft snapshot, from the adsb.lol type pull (lib/sources/adsb.ts).
@@ -391,17 +396,20 @@ function rehydrate(snapshot: AircraftSnapshot): AircraftSnapshot {
 
 /**
  * Below this age a snapshot is ordinary cache latency, not evidence anything
- * failed: under healthy operation the Data Cache refreshes at least this often
- * (REVALIDATE_S), so no caveat is warranted.
+ * failed. Under healthy operation an entry is at most REVALIDATE_S old when a
+ * request triggers its refresh, that request is still answered from the old entry,
+ * and the refresh itself can take PULL_BUDGET_MS. The extra minute covers both, so
+ * a healthy cycle is never labelled stale (at 240 s with no margin, prod labelled
+ * healthy snapshots stale at 244-297 s on 2026-10-16).
  */
-export const FRESH_CEILING_MS = REVALIDATE_S * 1000; // 240_000 ms = 4 min
+export const FRESH_CEILING_MS = REVALIDATE_S * 1000 + 60_000; // 150_000 ms = 2.5 min
 
 /**
  * Above this age, refuse to serve at all — prefer an honest empty layer over
  * ghosts. A widebody cruises at up to ~900 km/h (~250 m/s); at 15 minutes that
  * is up to ~225 km of possible drift, which is not "this aircraft, a little
  * late" — it's a plotted point that can no longer be trusted as this aircraft's
- * position. 15 min is also ~3.75 REVALIDATE_S windows, chosen so a few
+ * position. 15 min is also 10 REVALIDATE_S windows, chosen so a few
  * consecutive failed polls (rate-limit, timeout) are ridden out with a
  * disclosed-stale serve before the layer gives up and goes empty — a
  * deliberate ceiling, not a leftover default.

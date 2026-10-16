@@ -99,7 +99,9 @@ test("the aviation trust card describes adsb.lol's real mechanism, not OpenSky's
   expect(e!.limitations.join(" ")).toMatch(/adsb\.lol rate-limits/i);
   // These structural facts are unchanged by the fix and must still hold.
   expect(e!.limitations.join(" ")).toMatch(/no military flag/i);
-  expect(e!.limitations.join(" ")).toMatch(/refreshed roughly every four minutes/i);
+  // Was "every four minutes" until 2026-10-16, when the pull became one request
+  // and the revalidate window dropped from 240 s to 90 s.
+  expect(e!.limitations.join(" ")).toMatch(/refreshed roughly every 90 seconds/i);
 });
 
 // --- 6. aviation trust card: TYPE is sometimes broadcast, not always guessed ---

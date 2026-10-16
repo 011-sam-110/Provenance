@@ -331,7 +331,8 @@ Re-measure before putting a number in a README, a CV or a PR description.
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
   (`lib/sources/opensky.ts` `fetchAircraftOnce` keeps the reasoning; the filename is a
   named follow-up). The live path is `lib/sources/adsb.ts` `fetchAdsbTypePull` behind
-  Next's Data Cache (`planes-aircraft-v6`, revalidate 240 s). adsb.lol also serves the
+  Next's Data Cache (`planes-aircraft-v6`, revalidate 90 s since 2026-10-16, was 240 s;
+  the console's freshness chip reads the snapshot's own `fetchedAt`). adsb.lol also serves the
   `military-air` signal layer, from the same per-IP rate-limit bucket. **That bucket is
   small (re-measured 2026-10-16: about three requests, then 10-20 s per token)**, so the
   pull is ONE request naming every type, and every adsb.lol request in the process waits
