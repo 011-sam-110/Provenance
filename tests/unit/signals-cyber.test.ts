@@ -7,10 +7,12 @@ import {
   ransomwareColor,
   CYBER_RANSOMWARE_SOURCE,
   ransomwareRequest,
+  retryOverIpv4,
   rowsFromBody,
   unplacedCount,
 } from "@/lib/signals/cyber-ransomware";
 import { countMagnitude, groupByCountry, toNum } from "@/lib/signals/aggregate";
+import { httpGetOptions } from "@/lib/signals/httpGet";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
@@ -98,22 +100,25 @@ test("Feodo: an empty list is a degraded read, never a quiet world", () => {
   expect(FEODO_ATTRIBUTION).not.toMatch(/CC0/);
 });
 
-test("Ransomware.live: every request is pinned to IPv4, and the key picks the PRO endpoint", () => {
+test("Ransomware.live: the key picks the PRO endpoint, and a 404 or a failed connect retries over IPv4", () => {
   // Prod 404'd for five weeks while every IPv4 vantage point got 200: the host has an
-  // AAAA record and the free API has no IPv6 support. The family pin is the fix.
+  // AAAA record and the free API has no IPv6 support. The IPv4 retry is the fix.
   const keyless = ransomwareRequest(undefined);
-  expect(keyless.options.family).toBe(4);
   expect(keyless.keyed).toBe(false);
   expect(keyless.url).toBe("https://api.ransomware.live/v2/recentvictims");
-  expect((keyless.options.headers as Record<string, string>)["X-API-KEY"]).toBeUndefined();
-
-  const blank = ransomwareRequest("   ");
-  expect(blank.keyed).toBe(false);
+  expect(keyless.headers["X-API-KEY"]).toBeUndefined();
+  expect(keyless.retryFamily).toBe(4);
+  expect(ransomwareRequest("   ").keyed).toBe(false);
 
   const keyed = ransomwareRequest("k-123");
-  expect(keyed.options.family).toBe(4);
   expect(keyed.url).toBe("https://api-pro.ransomware.live/victims/recent");
-  expect((keyed.options.headers as Record<string, string>)["X-API-KEY"]).toBe("k-123");
+  expect(keyed.headers["X-API-KEY"]).toBe("k-123");
+
+  expect(retryOverIpv4(404)).toBe(true);
+  expect(retryOverIpv4("connect-failed")).toBe(true);
+  expect(retryOverIpv4(200)).toBe(false);
+  expect(retryOverIpv4(401)).toBe(false);
+  expect(httpGetOptions({ family: 4 }).family).toBe(4);
 });
 
 test("Ransomware.live: bare array or a wrapped list, and claims with no country are counted", () => {

@@ -1,8 +1,8 @@
-import { request as httpsRequest, type RequestOptions } from "node:https";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { countMagnitude, groupByCountry } from "@/lib/signals/aggregate";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { fallbackWorth, httpGet } from "@/lib/signals/httpGet";
 
 // Recent ransomware victims — Ransomware.live. Aggregates the public leak-site claims
 // of the last days by victim COUNTRY (ISO-2), so the map shows where organisations are
@@ -13,8 +13,9 @@ import { degraded, observed } from "@/lib/signals/outcome";
 // the legacy `api.ransomware.live/v2/recentvictims` while the same URL answered 200 with
 // 100 victims from every IPv4 vantage point tried, provenance-1 included. The host has
 // an AAAA record and its own API page says the free API has "No IPv6 support"; the
-// failures began the day after prod moved to a host with IPv6. So every request here
-// goes out over IPv4 (`family: 4`), whichever endpoint it is.
+// failures began the day after prod moved to a host with IPv6. So a 404, or a failure
+// to connect, is retried once over IPv4 (`family: 4`, lib/signals/httpGet.ts). The
+// first try stays on fetch, so the adapter's failure path can be tested without a network.
 //
 // TWO ENDPOINTS. ransomware.live's terms say the legacy host is kept "for compatibility
 // purposes only", and the supported one is `api-pro.ransomware.live` with a free
@@ -114,35 +115,26 @@ export function rowsFromBody(body: unknown): RwRow[] | null {
   return null;
 }
 
-/** Pure: which endpoint to call, and how. Always IPv4 (see the header). */
-export function ransomwareRequest(key: string | undefined): { url: string; options: RequestOptions; keyed: boolean } {
+/** Pure: which endpoint to call, with which headers; the IPv4 retry uses the same. */
+export function ransomwareRequest(key: string | undefined): {
+  url: string;
+  headers: Record<string, string>;
+  keyed: boolean;
+  /** The address family of the retry (see the header). */
+  retryFamily: 4;
+} {
   const keyed = typeof key === "string" && key.trim().length > 0;
   const headers: Record<string, string> = { "User-Agent": UA, Accept: "application/json" };
   if (keyed) headers["X-API-KEY"] = key!.trim();
-  return {
-    url: keyed ? PRO_ENDPOINT : LEGACY_ENDPOINT,
-    options: { method: "GET", family: 4, headers, timeout: TIMEOUT_MS },
-    keyed,
-  };
+  return { url: keyed ? PRO_ENDPOINT : LEGACY_ENDPOINT, headers, keyed, retryFamily: 4 };
 }
 
-/** GET over node:https, so the address family can be pinned. Never throws. */
-function getIpv4(url: string, options: RequestOptions): Promise<{ status: number; body: string } | null> {
-  return new Promise((resolve) => {
-    try {
-      const req = httpsRequest(url, options, (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (c: Buffer) => chunks.push(c));
-        res.on("end", () => resolve({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));
-        res.on("error", () => resolve(null));
-      });
-      req.on("timeout", () => req.destroy(new Error("timeout")));
-      req.on("error", () => resolve(null));
-      req.end();
-    } catch {
-      resolve(null);
-    }
-  });
+/** Low-level connect failures worth one more try over IPv4. */
+const RETRY_V4_CODES = ["ENETUNREACH", "EHOSTUNREACH", "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "UND_ERR_CONNECT_TIMEOUT"];
+
+/** Pure: does this first answer call for the IPv4 retry? */
+export function retryOverIpv4(status: number | "connect-failed"): boolean {
+  return status === 404 || status === "connect-failed";
 }
 
 export const CYBER_RANSOMWARE_SOURCE: SignalSource = {
@@ -161,12 +153,26 @@ export const CYBER_RANSOMWARE_SOURCE: SignalSource = {
   metric: { field: "victims", domain: [1, 15] },
   async fetch() {
     try {
-      const { url, options, keyed } = ransomwareRequest(process.env.RANSOMWARE_LIVE_API_KEY);
-      const res = await getIpv4(url, options);
+      const { url, headers, keyed, retryFamily } = ransomwareRequest(process.env.RANSOMWARE_LIVE_API_KEY);
       const via = keyed ? "pro" : "legacy";
-      if (!res) return degraded(`${via}: fetch failed`);
-      if (res.status !== 200) return degraded(`${via}: http ${res.status}`);
-      const rows = rowsFromBody(JSON.parse(res.body));
+      let status: number | "connect-failed";
+      let body = "";
+      try {
+        const res = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
+        status = res.status;
+        if (status === 200) body = await res.text();
+      } catch (err) {
+        if (!fallbackWorth(err, RETRY_V4_CODES)) return degraded(`${via}: fetch failed`);
+        status = "connect-failed";
+      }
+      if (retryOverIpv4(status)) {
+        const v4 = await httpGet(url, { headers, family: retryFamily, timeoutMs: TIMEOUT_MS });
+        if (!v4) return degraded(`${via}: fetch failed`);
+        status = v4.status;
+        body = v4.body;
+      }
+      if (status !== 200) return degraded(`${via}: http ${status}`);
+      const rows = rowsFromBody(JSON.parse(body));
       if (!rows) return degraded(`${via}: bad json`);
       return observed(normalizeRansomware(rows));
     } catch {
