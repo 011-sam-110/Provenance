@@ -10,15 +10,20 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 // IMPORTANT — rate limits: LL2's production host (ll.thespacedevs.com) throttles
 // aggressively (a few requests/hour for anonymous clients). So we (a) use the
 // lighter `mode=normal` (the `mode=list` shape OMITS pad coordinates, confirmed
-// live 2026-06-27), (b) cache HARD via a long refreshMs + a module-level
-// stale-on-error cache, and (c) fall back to the documented DEV mirror
-// (lldev.thespacedevs.com) when production rate-limits. Both responses share the
-// same schema. Shapes confirmed live 2026-06-27.
+// live 2026-06-27), and (b) cache HARD via a long refreshMs + a module-level
+// stale-on-error cache. Shapes confirmed live 2026-06-27.
+//
+// NO DEV-MIRROR FALLBACK (removed 2026-10-16). The adapter used to read
+// lldev.thespacedevs.com when production refused. That host is a SNAPSHOT, not a
+// mirror: on 2026-10-16 it said last_updated 2026-10-10 and listed 178 launches
+// against production's 476, with USSF-481 still upcoming 17 minutes off its real
+// time after it had flown. Its rows were then stamped `observed()` at "now", so a
+// six-day-old schedule read as a live one. The stale-on-error cache below is the
+// honest fallback: it keeps the last good rows and says when they were read.
 
 /** Page size asked of LL2. The agenda is a PAGE of the schedule, not the schedule. */
 export const LAUNCHES_PAGE_LIMIT = 30;
 const PROD = `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
-const DEV = `https://lldev.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — launches move on the scale of hours/days
 
 export const LAUNCHES_ATTRIBUTION = "Launch data © The Space Devs — Launch Library 2";
@@ -114,15 +119,20 @@ export function normalizeLaunches(
   });
 }
 
-// --- Hard-cached upstream fetch (prod → dev fallback) ----------------------
+// --- Hard-cached upstream fetch (production only) ---------------------------
 let cache: { features: SignalFeature[]; at: number } | null = null;
+
+/** Test hook: forget the module cache so a test starts from a cold adapter. */
+export function resetLaunchesCacheForTest(): void {
+  cache = null;
+}
 
 async function tryFetch(url: string): Promise<SignalFeature[] | null> {
   const res = await fetch(url, {
     headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
     signal: AbortSignal.timeout(15_000),
   });
-  if (!res.ok) return null; // 429 etc. → let the caller fall back
+  if (!res.ok) return null; // 429 etc. → the caller serves the last good rows
   const json = (await res.json()) as { results?: LL2Launch[]; count?: number };
   return normalizeLaunches(json);
 }
@@ -141,17 +151,17 @@ export const LAUNCHES_SOURCE: SignalSource = {
     // A cache hit is a real upstream read — stamped when it happened, not now.
     if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
-      const features = (await tryFetch(PROD)) ?? (await tryFetch(DEV));
+      const features = await tryFetch(PROD);
       if (features) {
         cache = { features, at: Date.now() };
         return observed(features, cache.at);
       }
-      // both throttled → last good, else empty. Keep the rows and declare the
+      // throttled → last good, else empty. Keep the rows and declare the
       // failure, stamped with when they were really read: `degraded()` would drop
       // the cache, `observed()` would claim a read that did not happen.
       return cache
-        ? degradedWith(cache.features, "http error (prod and dev)", cache.at)
-        : degraded("http error (prod and dev)");
+        ? degradedWith(cache.features, "http error", cache.at)
+        : degraded("http error");
     } catch {
       // Same last-good rule as the throttled path above.
       return cache
