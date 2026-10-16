@@ -157,8 +157,9 @@ obligations and are not satisfied by the licence.
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, and the two
-  doors `middleware.ts` opens, `gate` and `private`.
+  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
+  (signed snapshots pushed from provenance-1, see `lib/relay`), and the two doors
+  `middleware.ts` opens, `gate` and `private`.
 - **`middleware.ts` runs before every route its `matcher` does not exempt, and does three
   things in a fixed order.** (1) 301s the legacy `.vercel.app` host to the `.com`
   (`lib/brand.legacy.ts`) — first, so it still fires while the curtain is down. (2) The

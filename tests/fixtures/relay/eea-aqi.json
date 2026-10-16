@@ -1,0 +1,1210 @@
+{
+ "version": 1,
+ "feed": "eea-aqi",
+ "fetchedAt": "2026-10-16T19:51:28Z",
+ "data": {
+  "hour": "2026-10-16T19:00:00Z",
+  "stations": [
+   {
+    "code": "AD0942A",
+    "name": "Escaldes-Engordany",
+    "lat": 42.50969,
+    "lon": 1.53914,
+    "municipality": "Escaldes-Engordany",
+    "aqi": 1.99
+   },
+   {
+    "code": "AD0944A",
+    "name": "Engolasters",
+    "lat": 42.51694,
+    "lon": 1.56525,
+    "municipality": "Engolasters",
+    "aqi": 1.85
+   },
+   {
+    "code": "AL0202A",
+    "name": "Tirana IPH",
+    "lat": 41.3456,
+    "lon": 19.85167,
+    "municipality": "Tirana",
+    "aqi": 2.36
+   },
+   {
+    "code": "AL0205A",
+    "name": "Durres",
+    "lat": 41.3199,
+    "lon": 19.4492,
+    "municipality": "Durres",
+    "aqi": 2.0
+   },
+   {
+    "code": "AL0207A",
+    "name": "Elbasan",
+    "lat": 41.11098,
+    "lon": 20.0817,
+    "municipality": "Elbasan",
+    "aqi": 2.36
+   },
+   {
+    "code": "AL0208A",
+    "name": "Fier",
+    "lat": 40.7258,
+    "lon": 19.5552,
+    "municipality": "Fier",
+    "aqi": 2.44
+   },
+   {
+    "code": "AT0ENK1",
+    "name": "Enzenkirchen im Sauwald",
+    "lat": 48.39164,
+    "lon": 13.67086,
+    "municipality": "4761 Enzenkirchen",
+    "aqi": 3.24
+   },
+   {
+    "code": "AT0ILL1",
+    "name": "Illmitz am Neusiedler See",
+    "lat": 47.77028,
+    "lon": 16.76639,
+    "municipality": "7142 Illmitz",
+    "aqi": 2.11
+   },
+   {
+    "code": "AT0KLH1",
+    "name": "Klöch bei Bad Radkersburg",
+    "lat": 46.7672,
+    "lon": 15.9563,
+    "municipality": "8493 Klöch",
+    "aqi": 2.89
+   },
+   {
+    "code": "AT0PIL1",
+    "name": "Pillersdorf bei Retz",
+    "lat": 48.7212,
+    "lon": 15.936,
+    "municipality": "2073 Pillersdorf, Gemeinde Zellerndorf",
+    "aqi": 2.99
+   },
+   {
+    "code": "AT0SON1",
+    "name": "Sonnblick",
+    "lat": 47.05417,
+    "lon": 12.9583,
+    "municipality": "5661 Rauris",
+    "aqi": 2.62
+   },
+   {
+    "code": "AT0VOR1",
+    "name": "Vorhegg bei Kötschach-Mauthen",
+    "lat": 46.67765,
+    "lon": 12.9746,
+    "municipality": "9640 Kötschach-Mauthen",
+    "aqi": 2.26
+   },
+   {
+    "code": "AT0ZOE2",
+    "name": "Zöbelboden im Reichraminger Hintergebirge - Wildwiese",
+    "lat": 47.83828,
+    "lon": 14.44091,
+    "municipality": "4462 Reichraming",
+    "aqi": 2.36
+   },
+   {
+    "code": "AT10001",
+    "name": "Eisenstadt Laschoberstraße",
+    "lat": 47.84011,
+    "lon": 16.52617,
+    "municipality": "7000 Eisenstadt",
+    "aqi": 3.0
+   },
+   {
+    "code": "AT10003",
+    "name": "Kittsee",
+    "lat": 48.10915,
+    "lon": 17.07032,
+    "municipality": "2421 Kittsee",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT10007",
+    "name": "Rohr im Burgenland",
+    "lat": 47.11789,
+    "lon": 16.16278,
+    "municipality": "7554 Rohr im Burgenland",
+    "aqi": 2.24
+   },
+   {
+    "code": "AT12002",
+    "name": "Oberwart B63a",
+    "lat": 47.27836,
+    "lon": 16.22068,
+    "municipality": "7400 Oberwart",
+    "aqi": 2.99
+   },
+   {
+    "code": "AT2F202",
+    "name": "Klein St. Paul - Pemberg",
+    "lat": 46.84283,
+    "lon": 14.52998,
+    "municipality": "9373 Klein St. Paul",
+    "aqi": 2.07
+   },
+   {
+    "code": "AT2KA21",
+    "name": "Klagenfurt Völkermarkter Straße",
+    "lat": 46.62556,
+    "lon": 14.31806,
+    "municipality": "9020 Klagenfurt",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT2KA41",
+    "name": "Klagenfurt Kreuzbergl",
+    "lat": 46.62936,
+    "lon": 14.28931,
+    "municipality": "9020 Klagenfurt",
+    "aqi": 1.61
+   },
+   {
+    "code": "AT2KA61",
+    "name": "Klagenfurt A2 Nordumfahrung ",
+    "lat": 46.6525,
+    "lon": 14.26611,
+    "municipality": "9020 Klagenfurt",
+    "aqi": 2.36
+   },
+   {
+    "code": "AT2KA71",
+    "name": "Klagenfurt Sterneckstraße",
+    "lat": 46.62662,
+    "lon": 14.29914,
+    "municipality": "9020 Klagenfurt",
+    "aqi": 3.29
+   },
+   {
+    "code": "AT2M121",
+    "name": "Arnoldstein Gailitz Waldsiedlungsstraße",
+    "lat": 46.5584,
+    "lon": 13.70345,
+    "municipality": "9601 Arnoldstein",
+    "aqi": 2.03
+   },
+   {
+    "code": "AT2M226",
+    "name": "Ebenthal Zell",
+    "lat": 46.61011,
+    "lon": 14.39826,
+    "municipality": "9170 Zell bei Ebenthal",
+    "aqi": 2.45
+   },
+   {
+    "code": "AT2M805",
+    "name": "Kraiger Berg bei St. Veit an der Glan",
+    "lat": 46.82518,
+    "lon": 14.33014,
+    "municipality": "9311 Frauenstein in Kärnten",
+    "aqi": 2.62
+   },
+   {
+    "code": "AT2SP10",
+    "name": "Obervellach Schulzentrum",
+    "lat": 46.935,
+    "lon": 13.19453,
+    "municipality": "8921 Obervellach",
+    "aqi": 2.28
+   },
+   {
+    "code": "AT2VI12",
+    "name": "Villach Tirolerbrücke",
+    "lat": 46.61231,
+    "lon": 13.84147,
+    "municipality": "9500 Villach",
+    "aqi": 2.5
+   },
+   {
+    "code": "AT2VL52",
+    "name": "Gerlitzen Steinturm",
+    "lat": 46.6954,
+    "lon": 13.91449,
+    "municipality": "9543 Arriach",
+    "aqi": 2.59
+   },
+   {
+    "code": "AT2WO15",
+    "name": "Wolfsberg Hauptschule",
+    "lat": 46.83498,
+    "lon": 14.84346,
+    "municipality": "9400 Wolfsberg",
+    "aqi": 3.0
+   },
+   {
+    "code": "AT2WO35",
+    "name": "St. Georgen im Lavanttal - Herzogberg",
+    "lat": 46.70833,
+    "lon": 14.89167,
+    "municipality": "9423 St. Georgen im Lavanttal",
+    "aqi": 2.28
+   },
+   {
+    "code": "AT30065",
+    "name": "Purkersdorf, Tullnerbachstraße",
+    "lat": 48.1955,
+    "lon": 16.1434,
+    "municipality": "3002 Purkersdorf",
+    "aqi": 2.21
+   },
+   {
+    "code": "AT30101",
+    "name": "Amstetten",
+    "lat": 48.1199,
+    "lon": 14.8788,
+    "municipality": "3300 Amstetten",
+    "aqi": 3.0
+   },
+   {
+    "code": "AT30103",
+    "name": "Kollmitzberg",
+    "lat": 48.17928,
+    "lon": 14.86505,
+    "municipality": "3323 Neustadtl",
+    "aqi": 2.28
+   },
+   {
+    "code": "AT30104",
+    "name": "St. Valentin A1, Buchenstraße",
+    "lat": 48.19234,
+    "lon": 14.51954,
+    "municipality": "4300 St. Valentin",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT30201",
+    "name": "Bad Vöslau, Gainfarn",
+    "lat": 47.9592,
+    "lon": 16.20573,
+    "municipality": "2540 Bad Vöslau",
+    "aqi": 2.43
+   },
+   {
+    "code": "AT30202",
+    "name": "Forsthof am Schöpfl",
+    "lat": 48.1051,
+    "lon": 15.9189,
+    "municipality": "2533 Klausen-Leopoldsdorf",
+    "aqi": 2.21
+   },
+   {
+    "code": "AT30301",
+    "name": "Hainburg Krankenhaus",
+    "lat": 48.1442,
+    "lon": 16.95787,
+    "municipality": "2410 Hainburg an der Donau",
+    "aqi": 3.06
+   },
+   {
+    "code": "AT30302",
+    "name": "Stixneusiedl",
+    "lat": 48.05004,
+    "lon": 16.67529,
+    "municipality": "2463 Trauttmannsdorf an der Leitha",
+    "aqi": 2.0
+   },
+   {
+    "code": "AT30401",
+    "name": "Gänserndorf Baumschulweg",
+    "lat": 48.33472,
+    "lon": 16.72944,
+    "municipality": "2230 Gänserndorf",
+    "aqi": 2.89
+   },
+   {
+    "code": "AT30403",
+    "name": "Wolkersdorf",
+    "lat": 48.3929,
+    "lon": 16.522,
+    "municipality": "2120 Wolkersdorf",
+    "aqi": 2.07
+   },
+   {
+    "code": "AT30407",
+    "name": "Groß-Enzersdorf - Glinzendorf",
+    "lat": 48.2307,
+    "lon": 16.6363,
+    "municipality": "2301 Groß-Enzersdorf",
+    "aqi": 2.56
+   },
+   {
+    "code": "AT30502",
+    "name": "Heidenreichstein Thaures",
+    "lat": 48.87861,
+    "lon": 15.04667,
+    "municipality": "3860 Heidenreichstein",
+    "aqi": 2.67
+   },
+   {
+    "code": "AT30599",
+    "name": "Klosterneuburg B14",
+    "lat": 48.30833,
+    "lon": 16.32803,
+    "municipality": "3400 Klosterneuburg",
+    "aqi": 3.32
+   },
+   {
+    "code": "AT30601",
+    "name": "Klosterneuburg Meynertgasse",
+    "lat": 48.30246,
+    "lon": 16.31395,
+    "municipality": "3400 Klosterneuburg",
+    "aqi": 3.26
+   },
+   {
+    "code": "AT30603",
+    "name": "Himberg, Alter Markt",
+    "lat": 48.08567,
+    "lon": 16.4311,
+    "municipality": "2325 Himberg",
+    "aqi": 1.56
+   },
+   {
+    "code": "AT30701",
+    "name": "Ziersdorf",
+    "lat": 48.52832,
+    "lon": 15.94185,
+    "municipality": "3710 Ziersdorf",
+    "aqi": 1.66
+   },
+   {
+    "code": "AT30902",
+    "name": "Stockerau, Rudolf Diesel-Straße",
+    "lat": 48.385,
+    "lon": 16.18211,
+    "municipality": "2000 Stockerau",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT31102",
+    "name": "Annaberg, Joachimsberg",
+    "lat": 47.86144,
+    "lon": 15.32085,
+    "municipality": "3222 Annaberg",
+    "aqi": 2.36
+   },
+   {
+    "code": "AT31204",
+    "name": "Pöchlarn",
+    "lat": 48.21275,
+    "lon": 15.205,
+    "municipality": "3380 Pöchlarn",
+    "aqi": 2.14
+   },
+   {
+    "code": "AT31301",
+    "name": "Mistelbach Steinhübel",
+    "lat": 48.57832,
+    "lon": 16.5788,
+    "municipality": "2130 Mistelbach",
+    "aqi": 2.21
+   },
+   {
+    "code": "AT31401",
+    "name": "Mödling Bachgasse",
+    "lat": 48.08556,
+    "lon": 16.30097,
+    "municipality": "2340 Mödling",
+    "aqi": 3.26
+   },
+   {
+    "code": "AT31402",
+    "name": "Vösendorf - Peter Jordan-Straße",
+    "lat": 48.12474,
+    "lon": 16.33145,
+    "municipality": "2331 Vösendorf",
+    "aqi": 3.32
+   },
+   {
+    "code": "AT31406",
+    "name": "Biedermannsdorf Mühlengasse",
+    "lat": 48.08333,
+    "lon": 16.33722,
+    "municipality": "2362 Biedermannsdorf",
+    "aqi": 2.99
+   },
+   {
+    "code": "AT31413",
+    "name": "Wiener Neudorf Hauptstraße",
+    "lat": 48.0843,
+    "lon": 16.329,
+    "municipality": "2351 Wiener Neudorf ",
+    "aqi": 3.32
+   },
+   {
+    "code": "AT31701",
+    "name": "Dunkelsteinerwald - Unterbergern",
+    "lat": 48.37035,
+    "lon": 15.54552,
+    "municipality": "3512 Bergern im Dunkelsteinerwald",
+    "aqi": 2.07
+   },
+   {
+    "code": "AT31901",
+    "name": "Tulln Leopoldgasse",
+    "lat": 48.32944,
+    "lon": 16.0625,
+    "municipality": "3430 Tulln",
+    "aqi": 3.06
+   },
+   {
+    "code": "AT31902",
+    "name": "Zwentendorf im Tullnerfeld",
+    "lat": 48.34509,
+    "lon": 15.90706,
+    "municipality": "3435 Zwentendorf",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT31903",
+    "name": "Trasdorf im Tullnerfeld",
+    "lat": 48.33097,
+    "lon": 15.8578,
+    "municipality": "3453 Atzenbrugg",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT31905",
+    "name": "Neusiedl im Tullnerfeld",
+    "lat": 48.32184,
+    "lon": 15.96462,
+    "municipality": "3442 Langenrohr",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT32101",
+    "name": "Wiesmath",
+    "lat": 47.6075,
+    "lon": 16.29314,
+    "municipality": "2811 Wiesmath",
+    "aqi": 1.9
+   },
+   {
+    "code": "AT32301",
+    "name": "St. Pölten Eybnerstraße",
+    "lat": 48.2116,
+    "lon": 15.6325,
+    "municipality": "3100 St. Pölten",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT32302",
+    "name": "St. Pölten Europaplatz",
+    "lat": 48.20137,
+    "lon": 15.61999,
+    "municipality": "3100 St. Pölten",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT32401",
+    "name": "Wiener Neustadt",
+    "lat": 47.81417,
+    "lon": 16.255,
+    "municipality": "2700 Wiener Neustadt",
+    "aqi": 3.18
+   },
+   {
+    "code": "AT32501",
+    "name": "Krems",
+    "lat": 48.40861,
+    "lon": 15.61917,
+    "municipality": "3500 Krems",
+    "aqi": 2.79
+   },
+   {
+    "code": "AT32604",
+    "name": "Kematen an der Ybbs",
+    "lat": 48.04511,
+    "lon": 14.77228,
+    "municipality": "3331 Kematen an der Ybbs",
+    "aqi": 3.03
+   },
+   {
+    "code": "AT32701",
+    "name": "Schwechat Sportplatz, Mühlgasse",
+    "lat": 48.14558,
+    "lon": 16.4759,
+    "municipality": "2320 Schwechat",
+    "aqi": 3.35
+   },
+   {
+    "code": "AT4S108",
+    "name": "Grünbach bei Freistadt",
+    "lat": 48.53111,
+    "lon": 14.57472,
+    "municipality": "4264 Grünbach",
+    "aqi": 2.67
+   },
+   {
+    "code": "AT4S125",
+    "name": "Bad Ischl, Rettenbachwaldstraße",
+    "lat": 47.71611,
+    "lon": 13.63222,
+    "municipality": "4820 Bad Ischl",
+    "aqi": 2.08
+   },
+   {
+    "code": "AT4S156",
+    "name": "Braunau Zentrum, Kolpingplatz",
+    "lat": 48.25747,
+    "lon": 13.03923,
+    "municipality": "5280 Braunau am Inn",
+    "aqi": 3.26
+   },
+   {
+    "code": "AT4S173",
+    "name": "Steyregg Au, Freizeitpark",
+    "lat": 48.27975,
+    "lon": 14.3665,
+    "municipality": "4221 Steyregg",
+    "aqi": 3.38
+   },
+   {
+    "code": "AT4S184",
+    "name": "Linz Stadtpark, Noßbergerstraße",
+    "lat": 48.30612,
+    "lon": 14.2975,
+    "municipality": "4020 Linz",
+    "aqi": 3.71
+   },
+   {
+    "code": "AT4S217",
+    "name": "Enns Kristein - A1 Westautobahn",
+    "lat": 48.20944,
+    "lon": 14.43694,
+    "municipality": "4470 Enns",
+    "aqi": 3.26
+   },
+   {
+    "code": "AT4S235",
+    "name": "Feuerkogel (Höllengebirge)",
+    "lat": 47.81585,
+    "lon": 13.72074,
+    "municipality": "4802 Ebensee",
+    "aqi": 2.33
+   },
+   {
+    "code": "AT4S404",
+    "name": "Traun Tischlerstraße",
+    "lat": 48.22535,
+    "lon": 14.23755,
+    "municipality": "4050 Traun",
+    "aqi": 3.74
+   },
+   {
+    "code": "AT4S406",
+    "name": "Wels Linzerstraße",
+    "lat": 48.1649,
+    "lon": 14.0366,
+    "municipality": "4600 Wels",
+    "aqi": 3.62
+   },
+   {
+    "code": "AT4S407",
+    "name": "Vöcklabruck, Untere Agergasse",
+    "lat": 48.0009,
+    "lon": 13.66761,
+    "municipality": "4840 Vöcklabruck",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT4S409",
+    "name": "Steyr Münichholz",
+    "lat": 48.04925,
+    "lon": 14.44236,
+    "municipality": "4400 Steyr",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT4S415",
+    "name": "Linz 24er Turm A7",
+    "lat": 48.32333,
+    "lon": 14.29778,
+    "municipality": "4020 Linz",
+    "aqi": 3.88
+   },
+   {
+    "code": "AT4S416",
+    "name": "Linz Neue Welt",
+    "lat": 48.27329,
+    "lon": 14.31479,
+    "municipality": "4020 Linz",
+    "aqi": 3.59
+   },
+   {
+    "code": "AT4S431",
+    "name": "Linz Römerberg B139",
+    "lat": 48.30299,
+    "lon": 14.28217,
+    "municipality": "4020 Linz",
+    "aqi": 3.91
+   },
+   {
+    "code": "AT4S432",
+    "name": "Lenzing Hauptstraße",
+    "lat": 47.97386,
+    "lon": 13.60892,
+    "municipality": "4860 Lenzing",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT51000",
+    "name": "Salzburg Rudolfsplatz",
+    "lat": 47.7974,
+    "lon": 13.05329,
+    "municipality": "5020 Salzburg",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT51201",
+    "name": "Salzburg Lehen Paumannpark",
+    "lat": 47.81575,
+    "lon": 13.02801,
+    "municipality": "5020 Salzburg",
+    "aqi": 3.21
+   },
+   {
+    "code": "AT51500",
+    "name": "Salzburg Stadtautobahn A1",
+    "lat": 47.81486,
+    "lon": 13.00044,
+    "municipality": "5071 Wals-Siezenheim",
+    "aqi": 3.18
+   },
+   {
+    "code": "AT51600",
+    "name": "Salzburg Airport Kendlerstraße",
+    "lat": 47.78549,
+    "lon": 13.01145,
+    "municipality": "5020 Salzburg",
+    "aqi": 3.03
+   },
+   {
+    "code": "AT52002",
+    "name": "Hallein Landesberufsschule",
+    "lat": 47.68939,
+    "lon": 13.09306,
+    "municipality": "5400 Hallein",
+    "aqi": 2.71
+   },
+   {
+    "code": "AT52055",
+    "name": "St. Koloman Kleinhorn",
+    "lat": 47.65028,
+    "lon": 13.23278,
+    "municipality": "5423 St. Koloman",
+    "aqi": 2.49
+   },
+   {
+    "code": "AT52100",
+    "name": "Hallein Winterstall",
+    "lat": 47.66675,
+    "lon": 13.10511,
+    "municipality": "5400 Hallein",
+    "aqi": 2.43
+   },
+   {
+    "code": "AT52300",
+    "name": "Hallein A10 Tauernautobahn",
+    "lat": 47.69135,
+    "lon": 13.10815,
+    "municipality": "5400 Hallein",
+    "aqi": 2.64
+   },
+   {
+    "code": "AT53055",
+    "name": "Haunsberg",
+    "lat": 47.93667,
+    "lon": 13.01583,
+    "municipality": "5151 Nussdorf am Haunsberg",
+    "aqi": 2.18
+   },
+   {
+    "code": "AT54057",
+    "name": "St. Johann im Pongau, Bezirkshauptmannschaft",
+    "lat": 47.35139,
+    "lon": 13.20556,
+    "municipality": "5600 St. Johann i. Pongau",
+    "aqi": 2.0
+   },
+   {
+    "code": "AT55019",
+    "name": "Zederhaus Lamm",
+    "lat": 47.13378,
+    "lon": 13.54318,
+    "municipality": "5584 Zederhaus",
+    "aqi": 2.26
+   },
+   {
+    "code": "AT55032",
+    "name": "Tamsweg Untere Postgasse",
+    "lat": 47.12566,
+    "lon": 13.80804,
+    "municipality": "5580 Tamsweg",
+    "aqi": 2.07
+   },
+   {
+    "code": "AT56072",
+    "name": "Zell am See Freizeitzentrum/Eishalle",
+    "lat": 47.32664,
+    "lon": 12.79512,
+    "municipality": "5700 Zell am See",
+    "aqi": 2.0
+   },
+   {
+    "code": "AT60018",
+    "name": "Graz Schloßberg",
+    "lat": 47.07583,
+    "lon": 15.4375,
+    "municipality": "8010 Graz, KG Innenstadt",
+    "aqi": 1.44
+   },
+   {
+    "code": "AT60036",
+    "name": "Graz Lustbühel",
+    "lat": 47.06701,
+    "lon": 15.49369,
+    "municipality": "8020 Graz",
+    "aqi": 1.69
+   },
+   {
+    "code": "AT60106",
+    "name": "Köflach",
+    "lat": 47.06333,
+    "lon": 15.08667,
+    "municipality": "8580 Köflach",
+    "aqi": 2.52
+   },
+   {
+    "code": "AT60107",
+    "name": "Voitsberg Mühlgasse",
+    "lat": 47.04472,
+    "lon": 15.15278,
+    "municipality": "8570 Voitsberg",
+    "aqi": 3.24
+   },
+   {
+    "code": "AT60114",
+    "name": "Zeltweg Hauptschule",
+    "lat": 47.1925,
+    "lon": 14.75333,
+    "municipality": "8740 Zeltweg, KG Farrach",
+    "aqi": 2.14
+   },
+   {
+    "code": "AT60118",
+    "name": "Judenburg, Sportplatz",
+    "lat": 47.17808,
+    "lon": 14.67667,
+    "municipality": "8750 Judenburg",
+    "aqi": 1.99
+   },
+   {
+    "code": "AT60130",
+    "name": "Knittelfeld Freiheitsallee",
+    "lat": 47.21164,
+    "lon": 14.81972,
+    "municipality": "8720 Knittelfeld",
+    "aqi": 2.1
+   },
+   {
+    "code": "AT60135",
+    "name": "Straßengel Kirche",
+    "lat": 47.11306,
+    "lon": 15.33917,
+    "municipality": "8111 Gratwein-Straßengel",
+    "aqi": 2.57
+   },
+   {
+    "code": "AT60136",
+    "name": "Judendorf Süd",
+    "lat": 47.12028,
+    "lon": 15.35111,
+    "municipality": "3111 Gratwein-Straßengel",
+    "aqi": 2.99
+   },
+   {
+    "code": "AT60138",
+    "name": "Graz Nord Gösting",
+    "lat": 47.09436,
+    "lon": 15.41511,
+    "municipality": "8051 Graz Gösting",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT60141",
+    "name": "Leoben Göss",
+    "lat": 47.3591,
+    "lon": 15.1037,
+    "municipality": "8700 Leoben, KG Göss",
+    "aqi": 2.57
+   },
+   {
+    "code": "AT60142",
+    "name": "Leoben Donawitz Kindergarten",
+    "lat": 47.37533,
+    "lon": 15.07405,
+    "municipality": "8700 Leoben KG Donawitz",
+    "aqi": 2.29
+   },
+   {
+    "code": "AT60143",
+    "name": "Leoben Zentrum",
+    "lat": 47.3823,
+    "lon": 15.0889,
+    "municipality": "8700 Leoben",
+    "aqi": 2.29
+   },
+   {
+    "code": "AT60145",
+    "name": "Kapfenberg St. Martin",
+    "lat": 47.44583,
+    "lon": 15.29032,
+    "municipality": "8605 Kapfenberg",
+    "aqi": 2.36
+   },
+   {
+    "code": "AT60150",
+    "name": "Rennfeld",
+    "lat": 47.40556,
+    "lon": 15.36083,
+    "municipality": "8132 Pernegg an der Mur",
+    "aqi": 2.18
+   },
+   {
+    "code": "AT60156",
+    "name": "Masenberg",
+    "lat": 47.34806,
+    "lon": 15.88222,
+    "municipality": "8225 Pöllauberg, Staudach 25",
+    "aqi": 2.38
+   },
+   {
+    "code": "AT60157",
+    "name": "Grundlsee Tressensattel",
+    "lat": 47.63056,
+    "lon": 13.79667,
+    "municipality": "8993 Grundlsee",
+    "aqi": 2.33
+   },
+   {
+    "code": "AT60164",
+    "name": "Graz Don Bosco",
+    "lat": 47.05561,
+    "lon": 15.4166,
+    "municipality": "8020 Graz",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT60170",
+    "name": "Graz Süd Tiergartenweg",
+    "lat": 47.04172,
+    "lon": 15.43308,
+    "municipality": "8020 Graz",
+    "aqi": 3.71
+   },
+   {
+    "code": "AT60171",
+    "name": "Graz Ost Petersgasse",
+    "lat": 47.05952,
+    "lon": 15.46665,
+    "municipality": "8010 Graz, KG Jakomini",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT60172",
+    "name": "Graz Mitte Gries",
+    "lat": 47.06924,
+    "lon": 15.43195,
+    "municipality": "8020 Graz",
+    "aqi": 2.86
+   },
+   {
+    "code": "AT60173",
+    "name": "Graz Triester Straße",
+    "lat": 47.05008,
+    "lon": 15.42861,
+    "municipality": "8020 Graz",
+    "aqi": 3.74
+   },
+   {
+    "code": "AT60176",
+    "name": "B116 Bruck an der Mur",
+    "lat": 47.42567,
+    "lon": 15.27053,
+    "municipality": "8600 Bruck an der Mur",
+    "aqi": 3.06
+   },
+   {
+    "code": "AT60177",
+    "name": "Liezen Pyhrnbach",
+    "lat": 47.56544,
+    "lon": 14.24468,
+    "municipality": "8940 Liezen",
+    "aqi": 2.79
+   },
+   {
+    "code": "AT60178",
+    "name": "Weiz Bahnhofstraße",
+    "lat": 47.2157,
+    "lon": 15.62839,
+    "municipality": "8160 Weiz",
+    "aqi": 3.12
+   },
+   {
+    "code": "AT60179",
+    "name": "Hartberg Zentrum",
+    "lat": 47.28286,
+    "lon": 15.97185,
+    "municipality": "8230 Hartberg",
+    "aqi": 2.31
+   },
+   {
+    "code": "AT60180",
+    "name": "Bruck an der Mur Flurgasse",
+    "lat": 47.40944,
+    "lon": 15.25333,
+    "municipality": "8600 Bruck an der Mur",
+    "aqi": 2.5
+   },
+   {
+    "code": "AT60185",
+    "name": "Klöch bei Bad Radkersburg",
+    "lat": 46.7672,
+    "lon": 15.9563,
+    "municipality": "8493 Klöch",
+    "aqi": 2.31
+   },
+   {
+    "code": "AT60190",
+    "name": "Arnfels - Remschnigg",
+    "lat": 46.65195,
+    "lon": 15.36778,
+    "municipality": "8455 Oberhaag",
+    "aqi": 1.92
+   },
+   {
+    "code": "AT60191",
+    "name": "Gratwein",
+    "lat": 47.1357,
+    "lon": 15.3232,
+    "municipality": "8112 Gratwein-Straßengel",
+    "aqi": 2.34
+   },
+   {
+    "code": "AT60194",
+    "name": "Mürzzuschlag Roseggerpark",
+    "lat": 47.60472,
+    "lon": 15.67306,
+    "municipality": "8680 Mürzzuschlag",
+    "aqi": 2.03
+   },
+   {
+    "code": "AT60195",
+    "name": "Deutschlandsberg Rathausgasse",
+    "lat": 46.81389,
+    "lon": 15.21278,
+    "municipality": "8530 Deutschlandsberg",
+    "aqi": 2.34
+   },
+   {
+    "code": "AT60196",
+    "name": "Grebenzen bei St. Lambrecht",
+    "lat": 47.04028,
+    "lon": 14.33072,
+    "municipality": "8813 St. Lambrecht ",
+    "aqi": 2.67
+   },
+   {
+    "code": "AT60197",
+    "name": "Leibnitz Lastenstraße",
+    "lat": 46.77833,
+    "lon": 15.54056,
+    "municipality": "8430 Leibnitz",
+    "aqi": 3.15
+   },
+   {
+    "code": "AT60198",
+    "name": "Fürstenfeld Ungartorweg",
+    "lat": 47.04735,
+    "lon": 16.07905,
+    "municipality": "8280 Fürstenfeld",
+    "aqi": 1.99
+   },
+   {
+    "code": "AT72106",
+    "name": "Innsbruck Andechsstraße",
+    "lat": 47.27129,
+    "lon": 11.41695,
+    "municipality": "6020 Innsbruck",
+    "aqi": 2.43
+   },
+   {
+    "code": "AT72110",
+    "name": "Innsbruck Fallmerayerstraße",
+    "lat": 47.26262,
+    "lon": 11.39236,
+    "municipality": "6020 Innsbruck",
+    "aqi": 2.79
+   },
+   {
+    "code": "AT72113",
+    "name": "Innsbruck Sadrach",
+    "lat": 47.2699,
+    "lon": 11.37466,
+    "municipality": "6020 Innsbruck",
+    "aqi": 2.14
+   },
+   {
+    "code": "AT72115",
+    "name": "Vill Zenzenhof A13",
+    "lat": 47.22558,
+    "lon": 11.39206,
+    "municipality": "6020 Innsbruck",
+    "aqi": 3.09
+   },
+   {
+    "code": "AT72123",
+    "name": "Innsbruck Nordkette (Seegrube)",
+    "lat": 47.30562,
+    "lon": 11.376,
+    "municipality": "6020 Innsbruck",
+    "aqi": 2.44
+   },
+   {
+    "code": "AT72227",
+    "name": "Hall in Tirol Sportplatz",
+    "lat": 47.27807,
+    "lon": 11.5125,
+    "municipality": "6060 Hall i.T.",
+    "aqi": 2.5
+   },
+   {
+    "code": "AT72315",
+    "name": "Imst Inntalautobahn A12",
+    "lat": 47.21695,
+    "lon": 10.73572,
+    "municipality": "6460 Imst",
+    "aqi": 2.36
+   },
+   {
+    "code": "AT72519",
+    "name": "Brixlegg Innweg",
+    "lat": 47.42855,
+    "lon": 11.8718,
+    "municipality": "6230 Brixlegg",
+    "aqi": 2.33
+   },
+   {
+    "code": "AT72530",
+    "name": "Wörgl Josef Stelzhamer-Straße",
+    "lat": 47.48856,
+    "lon": 12.06663,
+    "municipality": "6300 Wörgl",
+    "aqi": 2.64
+   },
+   {
+    "code": "AT72538",
+    "name": "Kramsach Angerberg",
+    "lat": 47.45872,
+    "lon": 11.90995,
+    "municipality": "6233 Kramsach",
+    "aqi": 2.21
+   },
+   {
+    "code": "AT72547",
+    "name": "Kufstein Festung",
+    "lat": 47.58053,
+    "lon": 12.16925,
+    "municipality": "6330 Kufstein",
+    "aqi": 1.81
+   },
+   {
+    "code": "AT72550",
+    "name": "Kundl A12 Inntal-Autobahn",
+    "lat": 47.46892,
+    "lon": 11.95804,
+    "municipality": "6250 Kundl",
+    "aqi": 1.89
+   },
+   {
+    "code": "AT72552",
+    "name": "Kufstein Praxmarerstraße",
+    "lat": 47.58181,
+    "lon": 12.17241,
+    "municipality": "6330 Kufstein",
+    "aqi": 2.64
+   },
+   {
+    "code": "AT72620",
+    "name": "St. Anton am Arlberg - Galzig",
+    "lat": 47.13368,
+    "lon": 10.22481,
+    "municipality": "6580 St. Anton am Arlberg",
+    "aqi": 2.44
+   },
+   {
+    "code": "AT72705",
+    "name": "Höfen Lärchbichl",
+    "lat": 47.46984,
+    "lon": 10.68228,
+    "municipality": "6600 Reutte",
+    "aqi": 1.83
+   },
+   {
+    "code": "AT72710",
+    "name": "Heiterwang Ort L355",
+    "lat": 47.4476,
+    "lon": 10.74412,
+    "municipality": "6611 Heiterwang",
+    "aqi": 2.44
+   },
+   {
+    "code": "AT72821",
+    "name": "Vomp A12 Inntalautobahn, Raststätte",
+    "lat": 47.34877,
+    "lon": 11.69203,
+    "municipality": "6134 Vomp bei Schwaz",
+    "aqi": 2.99
+   },
+   {
+    "code": "AT72910",
+    "name": "Lienz Amlacherkreuzung",
+    "lat": 46.82773,
+    "lon": 12.76562,
+    "municipality": "9900 Lienz",
+    "aqi": 1.99
+   },
+   {
+    "code": "AT72912",
+    "name": "Lienz Tiefbrunnen ",
+    "lat": 46.81911,
+    "lon": 12.76603,
+    "municipality": "9900 Lienz",
+    "aqi": 2.43
+   },
+   {
+    "code": "AT80503",
+    "name": "Sulzberg - Gmeind",
+    "lat": 47.5292,
+    "lon": 9.9267,
+    "municipality": "6934 Sulzberg",
+    "aqi": 2.56
+   },
+   {
+    "code": "AT80706",
+    "name": "Lustenau Wiesenrain",
+    "lat": 47.41016,
+    "lon": 9.65371,
+    "municipality": "6890 Lustenau",
+    "aqi": 3.09
+   }
+  ]
+ }
+}

@@ -1,0 +1,279 @@
+{
+ "version": 1,
+ "feed": "jma-volcam",
+ "fetchedAt": "2026-10-16T19:53:20Z",
+ "data": {
+  "cameras": [
+   {
+    "code": "10401",
+    "volcano": "アトサヌプリ",
+    "site": "北東山麓",
+    "lat": 43.638,
+    "lon": 144.465,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/104_82002710/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "10402",
+    "volcano": "アトサヌプリ",
+    "site": "硫黄山駐車場北",
+    "lat": 43.621,
+    "lon": 144.441,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/104_82002774/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "10403",
+    "volcano": "アトサヌプリ",
+    "site": "屈斜路湖南",
+    "lat": 43.557,
+    "lon": 144.313,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/104_82003070/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "10501",
+    "volcano": "雌阿寒岳",
+    "site": "上徹別",
+    "lat": 43.262,
+    "lon": 144.112,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/105_820027D8/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "10502",
+    "volcano": "雌阿寒岳",
+    "site": "阿寒富士北",
+    "lat": 43.38,
+    "lon": 144.008,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/105_820028A0/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "10701",
+    "volcano": "大雪山",
+    "site": "忠別湖東",
+    "lat": 43.625,
+    "lon": 142.671,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/107_82002904/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "10702",
+    "volcano": "大雪山",
+    "site": "旭岳姿見２",
+    "lat": 43.662,
+    "lon": 142.825,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/107_82002968/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "10801",
+    "volcano": "十勝岳",
+    "site": "白金模範牧場",
+    "lat": 43.496,
+    "lon": 142.642,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/108_820029CC/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "10802",
+    "volcano": "十勝岳",
+    "site": "避難小屋南東",
+    "lat": 43.433,
+    "lon": 142.668,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/108_82002AF8/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "10901",
+    "volcano": "樽前山",
+    "site": "別々川",
+    "lat": 42.59,
+    "lon": 141.416,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/109_82002B5C/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11101",
+    "volcano": "倶多楽",
+    "site": "４１４ｍ山",
+    "lat": 42.488,
+    "lon": 141.138,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/111_82002C88/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11102",
+    "volcano": "倶多楽",
+    "site": "地獄谷",
+    "lat": 42.497,
+    "lon": 141.146,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/111_82002CEC/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "11201",
+    "volcano": "有珠山",
+    "site": "東湖畔",
+    "lat": 42.566,
+    "lon": 140.894,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/112_82002D50/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11202",
+    "volcano": "有珠山",
+    "site": "月浦",
+    "lat": 42.609,
+    "lon": 140.792,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/112_82002DB4/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11301",
+    "volcano": "北海道駒ヶ岳",
+    "site": "鹿部公園南東",
+    "lat": 42.031,
+    "lon": 140.813,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/113_82002E18/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11302",
+    "volcano": "北海道駒ヶ岳",
+    "site": "赤井川２",
+    "lat": 42.014,
+    "lon": 140.643,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/113_82002E7C/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11303",
+    "volcano": "北海道駒ヶ岳",
+    "site": "剣ヶ峯",
+    "lat": 42.063,
+    "lon": 140.679,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/113_82002F44/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "11401",
+    "volcano": "恵山",
+    "site": "高岱",
+    "lat": 41.78,
+    "lon": 141.085,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/114_82002FA8/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "11402",
+    "volcano": "恵山",
+    "site": "火口原",
+    "lat": 41.809,
+    "lon": 141.156,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/114_8200300C/20261017044600.jpg",
+    "frameAt": "2026-10-16T19:46:00Z"
+   },
+   {
+    "code": "20201",
+    "volcano": "岩木山",
+    "site": "百沢東",
+    "lat": 40.626,
+    "lon": 140.332,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/202_82004E20/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "20301",
+    "volcano": "八甲田山",
+    "site": "大川原",
+    "lat": 40.644,
+    "lon": 140.806,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/203_82004E84/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "20302",
+    "volcano": "八甲田山",
+    "site": "地獄沼",
+    "lat": 40.647,
+    "lon": 140.853,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/203_82004EE8/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "20401",
+    "volcano": "十和田",
+    "site": "銀山",
+    "lat": 40.477,
+    "lon": 140.828,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/204_82004F4C/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "20501",
+    "volcano": "秋田焼山",
+    "site": "栂森",
+    "lat": 39.965,
+    "lon": 140.771,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/205_82005014/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "20701",
+    "volcano": "岩手山",
+    "site": "柏台",
+    "lat": 39.917,
+    "lon": 140.981,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/207_82005078/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "20702",
+    "volcano": "岩手山",
+    "site": "黒倉山",
+    "lat": 39.852,
+    "lon": 140.967,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/207_820050DC/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "20703",
+    "volcano": "岩手山",
+    "site": "長山篠川原",
+    "lat": 39.771,
+    "lon": 140.961,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/207_820058AC/20261017044601.jpg",
+    "frameAt": "2026-10-16T19:46:01Z"
+   },
+   {
+    "code": "20901",
+    "volcano": "鳥海山",
+    "site": "上郷２",
+    "lat": 39.185,
+    "lon": 139.945,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/209_820057E4/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "21001",
+    "volcano": "栗駒山",
+    "site": "大柳",
+    "lat": 38.815,
+    "lon": 140.989,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/210_820052D0/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   },
+   {
+    "code": "21002",
+    "volcano": "栗駒山",
+    "site": "展望岩頭",
+    "lat": 38.96,
+    "lon": 140.775,
+    "imageUrl": "https://www.data.jma.go.jp/vois/data/obs/camera/210_82005334/20261017044800.jpg",
+    "frameAt": "2026-10-16T19:48:00Z"
+   }
+  ]
+ }
+}

@@ -243,6 +243,21 @@ in the build. They are ALSO needed on the box at runtime, because `/api/status` 
 `process.env` on the server to report the capability. With either public value unset there
 is no sign-in and nothing about the console changes. Full setup: `docs/ACCOUNTS.md`.
 
+## 8 - Source relay (BUILT, dormant until set)
+
+Some upstreams refuse this server or need a scraper: CelesTrak firewalls the production IP,
+and a few operators publish only an HTML page or a session portal. provenance-1 reads them
+(the `sources` package in the NewsScraper repo) and pushes one signed snapshot per feed to
+`POST /api/relay/<feed>` (`lib/relay`). The app keeps each feed's last good snapshot in
+process memory; the sender refills it after a restart.
+
+| Var | What it is |
+|---|---|
+| `RELAY_SIGNING_SECRET` | Self-issued HMAC secret, 32+ characters, the SAME value as `RELAY_SIGNING_SECRET` in `~/.config/provenance-sources/sources.env` on provenance-1. Separate from `NEWS_INGEST_SECRET` on purpose. |
+
+Unset, every push answers 401 (never a 5xx) and the relayed feeds read as "no relay yet".
+The feed ids, schemas and size caps are in `lib/relay/feeds.ts`.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):
@@ -283,6 +298,9 @@ FRED_API_KEY=
 # --- Feedback prompt (BUILT - the deployment's OWN bot, not the visitor's) ---
 FEEDBACK_TELEGRAM_BOT_TOKEN=
 FEEDBACK_TELEGRAM_CHAT_ID=
+
+# --- Source relay (BUILT - shared HMAC secret with the provenance-1 sender) ---
+RELAY_SIGNING_SECRET=
 
 # --- Accounts (in progress - do not set before launch) ---
 # NEXT_PUBLIC_SUPABASE_URL=

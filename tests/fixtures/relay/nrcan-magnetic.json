@@ -1,0 +1,80 @@
+{
+ "version": 1,
+ "feed": "nrcan-magnetic",
+ "fetchedAt": "2026-10-16T19:51:25Z",
+ "data": {
+  "issuedAt": "2026-10-16T19:48:00Z",
+  "windows": {
+   "last24h": {
+    "subauroral": {
+     "level": "quiet",
+     "intervals": "active"
+    },
+    "auroral": {
+     "level": "unsettled",
+     "intervals": "active"
+    },
+    "polar": {
+     "level": "quiet",
+     "intervals": "active"
+    }
+   },
+   "last6h": {
+    "subauroral": {
+     "level": "quiet",
+     "intervals": "unsettled"
+    },
+    "auroral": {
+     "level": "unsettled",
+     "intervals": "active"
+    },
+    "polar": {
+     "level": "unsettled",
+     "intervals": "active"
+    }
+   },
+   "current": {
+    "subauroral": {
+     "level": "active",
+     "intervals": null
+    },
+    "auroral": {
+     "level": "active",
+     "intervals": null
+    },
+    "polar": {
+     "level": "active",
+     "intervals": null
+    }
+   },
+   "next6h": {
+    "subauroral": {
+     "level": "unsettled",
+     "intervals": null
+    },
+    "auroral": {
+     "level": "unsettled",
+     "intervals": null
+    },
+    "polar": {
+     "level": "unsettled",
+     "intervals": "active"
+    }
+   },
+   "next24h": {
+    "subauroral": {
+     "level": "quiet",
+     "intervals": "unsettled"
+    },
+    "auroral": {
+     "level": "unsettled",
+     "intervals": null
+    },
+    "polar": {
+     "level": "unsettled",
+     "intervals": "active"
+    }
+   }
+  }
+ }
+}
