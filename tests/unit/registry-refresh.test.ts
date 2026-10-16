@@ -40,6 +40,9 @@ vi.mock("@/lib/sources/bihamk", () => ({ fetchRegistry: () => feeds.run("bihamk"
 vi.mock("@/lib/sources/actpr", () => ({ fetchRegistry: () => feeds.run("act-pr") }));
 // Admitted feeds are committed data, and one of them would fetch for real.
 vi.mock("@/lib/sources/discovered", () => ({ discoveredCameraFeeds: () => [] }));
+// The per-state fan-outs register several keys from one module, and every one of them
+// would fetch for real. Their adapters have their own tests.
+vi.mock("@/lib/sources/cars", () => ({ carsCameraFeeds: () => [] }));
 
 const KEYS = [
   "tfl", "caltrans", "scdot", "digitraffic", "castlerock", "tripcheck", "drivebc", "nzta",

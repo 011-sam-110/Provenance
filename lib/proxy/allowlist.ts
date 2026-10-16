@@ -54,6 +54,17 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // 403 "forbidden host" from 2026-08-20 to 2026-10-16. The descriptor upgrades the
   // catalogue's http URLs, so the proxy only ever sees https.
   { host: "www.houstontranstar.org", prefix: "/snapshots/cctv/", suffix: ".jpg" },
+  // CARS platform states (lib/sources/cars.ts). The adapter keeps a view only when
+  // its still passes THIS list, so a rule here is what admits a picture host, and a
+  // host missing here costs the cameras, never a 403 pin. All measured 200 image/jpeg
+  // with no redirect on 2026-10-16. File names carry mixed extensions (.png that is a
+  // JPEG, .jpeg, .JPG, none), so no suffix pin; the path prefix is the tight part.
+  { host: "public.carsprogram.org", prefix: "/cameras/" }, // NYSDOT, MnDOT, INDOT previews
+  { host: "atmsqf.iowadot.gov", prefix: "/SNAPSHOTS/" }, // Iowa DOT, video previews
+  { host: "atmsqf.iowadot.gov", prefix: "/snapshots/" }, // Iowa DOT, rest-area stills
+  { host: "kscam.carsprogram.org", prefix: "/" }, // KDOT stills and video previews
+  { host: "www.kcscout.net", prefix: "/TransSuite.VCS.CameraSnapshots/" }, // KC Scout
+  { host: "cocam.carsprogram.org", prefix: "/" }, // CDOT, Douglas County
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

@@ -1,0 +1,371 @@
+{
+ "mn": [
+  {
+   "id": 512359,
+   "public": true,
+   "name": "T.H.47 SB N of I-694",
+   "lastUpdated": 1792183158254,
+   "location": {
+    "fips": 27,
+    "latitude": 45.069689076159264,
+    "longitude": -93.26323550984465,
+    "routeId": "MN 47",
+    "linearReference": 7.739122788390184,
+    "localRoad": false,
+    "cityReference": "in Fridley"
+   },
+   "cameraOwner": {
+    "name": "Iris"
+   },
+   "views": [
+    {
+     "name": "T.H.47 SB N of I-694",
+     "type": "WMP",
+     "url": "https://video.dot.state.mn.us/public/C4707.stream/playlist.m3u8",
+     "videoPreviewUrl": "https://public.carsprogram.org/cameras/MN/C4707",
+     "imageTimestamp": 1792182064000
+    }
+   ]
+  },
+  {
+   "id": 512366,
+   "public": true,
+   "name": "T.H.61 EB @ Tyler Rd",
+   "lastUpdated": 1792183181304,
+   "location": {
+    "fips": 27,
+    "latitude": 44.56759607695951,
+    "longitude": -92.583819108287,
+    "routeId": "US 61",
+    "linearReference": 93.68734985269262,
+    "localRoad": false,
+    "cityReference": "in Red Wing"
+   },
+   "cameraOwner": {
+    "name": "Iris"
+   },
+   "views": [
+    {
+     "name": "T.H.61 EB @ Tyler Rd",
+     "type": "STILL_IMAGE",
+     "url": "https://public.carsprogram.org/cameras/MN/C30803",
+     "imageTimestamp": 1792182033000
+    }
+   ]
+  }
+ ],
+ "ks": [
+  {
+   "id": 2356,
+   "public": true,
+   "name": "435 SB @ Farley/Hampton Rd",
+   "lastUpdated": 1792183232371,
+   "location": {
+    "fips": 20,
+    "latitude": 39.277691,
+    "longitude": -94.763783,
+    "routeId": "I-435",
+    "linearReference": 34.35037803375106,
+    "localRoad": false,
+    "cityReference": "near Kansas City"
+   },
+   "cameraOwner": {
+    "name": "KC Scout"
+   },
+   "views": [
+    {
+     "name": "435 SB @ Farley/Hampton Rd",
+     "type": "STILL_IMAGE",
+     "url": "https://www.kcscout.net/TransSuite.VCS.CameraSnapshots/PTCCTV0044-LQ.jpg",
+     "videoPreviewUrl": "",
+     "imageTimestamp": 1792183165000
+    }
+   ],
+   "active": true
+  },
+  {
+   "id": 2394,
+   "public": true,
+   "name": "K-15 & MARKET ST.",
+   "lastUpdated": 1792183234520,
+   "location": {
+    "fips": 20,
+    "latitude": 37.54424,
+    "longitude": -97.27031,
+    "routeId": "KS 15",
+    "linearReference": 67.43429039177136,
+    "localRoad": false,
+    "cityReference": "in Derby"
+   },
+   "cameraOwner": {
+    "name": "KDOT ITS"
+   },
+   "views": [
+    {
+     "name": "K-15 & MARKET ST.",
+     "type": "WMP",
+     "url": "https://kdot-sfs3.us-east-1.skyvdn.com/rtplive/5-015-0677-2/playlist.m3u8?token=REDACTED",
+     "videoPreviewUrl": "https://kscam.carsprogram.org/snapshots/GEN_5-015-0677-2-K-15atMarket.jpeg",
+     "imageTimestamp": 1792183160000
+    }
+   ],
+   "active": true
+  },
+  {
+   "id": 2583,
+   "public": true,
+   "name": "US-36 E. of US-75",
+   "lastUpdated": 1792182110087,
+   "location": {
+    "fips": 20,
+    "latitude": 39.848151,
+    "longitude": -95.630664,
+    "routeId": "US 36",
+    "linearReference": 346.86781536591224,
+    "localRoad": false,
+    "cityReference": "3 miles west of the Hiawatha area"
+   },
+   "cameraOwner": {
+    "name": "KDOT ITS"
+   },
+   "views": [
+    {
+     "name": "US-36 E. of US-75",
+     "type": "WMP",
+     "url": "",
+     "videoPreviewUrl": ""
+    }
+   ],
+   "active": true
+  },
+  {
+   "id": 1,
+   "public": true,
+   "name": "K-39 at Neosho River, Chanute MP 27",
+   "lastUpdated": 1792061276279,
+   "location": {
+    "fips": 20,
+    "latitude": 37.68799624,
+    "longitude": -95.4649175,
+    "routeId": "KS 39",
+    "linearReference": 27.091852027000648,
+    "localRoad": false,
+    "cityReference": "in Chanute"
+   },
+   "cameraOwner": {
+    "name": "KDOT RWIS"
+   },
+   "views": [
+    {
+     "name": "K-39 at Neosho River, Chanute MP 27",
+     "type": "STILL_IMAGE",
+     "url": "https://kscam.carsprogram.org/KDOT_573004_IMAGE001.JPG",
+     "imageTimestamp": 1792010534000
+    }
+   ],
+   "active": true
+  }
+ ],
+ "ia": [
+  {
+   "id": 59638780,
+   "public": true,
+   "name": "DM - I-35 @ MM 100.15 (NE 158TH Ave.)",
+   "lastUpdated": 1792183042817,
+   "location": {
+    "fips": 19,
+    "latitude": 41.849747,
+    "longitude": -93.570599,
+    "routeId": "Unknown",
+    "localRoad": true
+   },
+   "cameraOwner": {
+    "name": "IADOT",
+    "organizationId": "IADOT"
+   },
+   "views": [
+    {
+     "name": "DM - I-35 @ MM 100.15 (NE 158TH Ave.)",
+     "type": "WMP",
+     "url": "https://video4.iowadot.gov:8888/ames/dmtv064lb/playlist.m3u8",
+     "videoPreviewUrl": "https://atmsqf.iowadot.gov/SNAPSHOTS/PUBLIC/Metro/dmtv064hd.jpeg",
+     "imageTimestamp": 1792182882000
+    }
+   ]
+  },
+  {
+   "id": 59639567,
+   "public": true,
+   "name": "Rest Area: I-80 EB MM 237 near Tiffin",
+   "lastUpdated": 1792183061697,
+   "location": {
+    "fips": 19,
+    "latitude": 41.693782,
+    "longitude": -91.682807,
+    "routeId": "I-80",
+    "linearReference": 236.41059871121098,
+    "localRoad": false,
+    "cityReference": "near Tiffin"
+   },
+   "cameraOwner": {
+    "name": "IADOT",
+    "organizationId": "IADOT"
+   },
+   "views": [
+    {
+     "name": "RA80EB237 - Center",
+     "type": "STILL_IMAGE",
+     "url": "https://atmsqf.iowadot.gov/snapshots/Public/RestAreas/RA80EB237-01-CENTER.jpg",
+     "imageTimestamp": 1792182788000
+    },
+    {
+     "name": "RA80EB237 - Entry",
+     "type": "STILL_IMAGE",
+     "url": "https://atmsqf.iowadot.gov/snapshots/Public/RestAreas/RA80EB237-01-ENTRY.jpg",
+     "imageTimestamp": 1792182775000
+    },
+    {
+     "name": "RA80EB237 - Exit",
+     "type": "STILL_IMAGE",
+     "url": "https://atmsqf.iowadot.gov/snapshots/Public/RestAreas/RA80EB237-01-EXIT.jpg",
+     "imageTimestamp": 1792182801000
+    }
+   ]
+  }
+ ],
+ "co": [
+  {
+   "id": 16384,
+   "public": true,
+   "name": "I-25 MP 224.10 SB at 128th Ave",
+   "lastUpdated": 1792183142753,
+   "location": {
+    "fips": 8,
+    "latitude": 39.928894,
+    "longitude": -104.988052,
+    "routeId": "I-25",
+    "linearReference": 224.10100185803392,
+    "localRoad": false,
+    "cityReference": "in Thornton"
+   },
+   "cameraOwner": {
+    "name": "Colorado DOT"
+   },
+   "views": [
+    {
+     "name": "I-25 MP 224.10 SB at 128th Ave",
+     "type": "WMP",
+     "url": "https://publicstreamer1.cotrip.org:443/rtplive/025S22410CAM1RHS/playlist.m3u8",
+     "videoPreviewUrl": "https://cocam.carsprogram.org/Snapshots/025S22410CAM1RHS.flv.png",
+     "imageTimestamp": 1792183034000
+    }
+   ],
+   "active": true,
+   "coLocatedWeatherStationId": "OpenTMS-Weather514978"
+  },
+  {
+   "id": 906,
+   "public": true,
+   "name": "I-25 MP 155.95 NB at North Gate Blvd",
+   "lastUpdated": 1792183171916,
+   "location": {
+    "fips": 8,
+    "latitude": 39.02838,
+    "longitude": -104.83582,
+    "routeId": "I-25",
+    "linearReference": 156.1294790355098,
+    "localRoad": false,
+    "cityReference": "near Colorado Springs"
+   },
+   "cameraOwner": {
+    "name": "Colorado Springs"
+   },
+   "views": [
+    {
+     "name": "Looking North",
+     "type": "STILL_IMAGE",
+     "url": "https://websvc.coloradosprings.gov/live/TOC/00084_I-25%20%28mm156%29%20_%20Gleneagle.jpg"
+    }
+   ],
+   "active": true
+  }
+ ],
+ "ny": {
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -77.5483220271554,
+      43.19782329167395
+     ]
+    },
+    "properties": {
+     "type": "cameras",
+     "id": 34278,
+     "name": "NY-104 Eastbound Over NY-590",
+     "tooltip": "NY-104 Eastbound Over NY-590",
+     "public": true,
+     "route": "NY 104",
+     "lastUpdated": 1792182838417,
+     "location": {
+      "fips": 36,
+      "routeId": "NY 104",
+      "linearReference": 85.88489832804247,
+      "localRoad": false,
+      "cityReference": "near Rochester"
+     },
+     "icon": "icon-camera-fill-solid",
+     "iconColor": "#707070",
+     "cameraOwner": "NYSDOT",
+     "views": [
+      {
+       "name": "NY-104 Eastbound Over NY-590",
+       "type": "WMP",
+       "url": "https://s51.nysdot.skyvdn.com/rtplive/R4_001/playlist.m3u8",
+       "videoPreviewUrl": "https://public.carsprogram.org/cameras/NYSDOT/R4_001.flv.png",
+       "broken": false
+      }
+     ]
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -73.969353,
+      40.785302
+     ]
+    },
+    "properties": {
+     "type": "cameras",
+     "id": 20930,
+     "name": "Central Park West @ 86 St",
+     "tooltip": "Central Park West @ 86 St",
+     "public": true,
+     "route": "Central Park West @ 86 St",
+     "lastUpdated": 1792178214193,
+     "location": {
+      "fips": 36,
+      "routeId": "Central Park West @ 86 St",
+      "localRoad": true
+     },
+     "icon": "icon-camera-fill-solid",
+     "iconColor": "#707070",
+     "cameraOwner": "NYC DOT",
+     "views": [
+      {
+       "name": "Central Park West @ 86 St",
+       "type": "STILL_IMAGE",
+       "url": "https://nyctmc.org/api/cameras/8a6bc417-4877-4ebe-8052-88c1b261baf1/image",
+       "videoPreviewUrl": "https://nyctmc.org/api/cameras/8a6bc417-4877-4ebe-8052-88c1b261baf1/image",
+       "broken": false
+      }
+     ]
+    }
+   }
+  ]
+ }
+}
