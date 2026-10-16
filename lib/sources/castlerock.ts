@@ -1,8 +1,13 @@
 import { Camera, CameraArray, Source } from "@/lib/types";
 
-// Castle Rock Associates "511" platform — ONE adapter fans out to the ten
-// traveler-information systems that share its software (US: FL/GA/NY/ID/LA +
-// New England ME-NH-VT; Canada: ON/AB/NS/NB). All keyless. Each system serves
+// Castle Rock Associates "511" platform — ONE adapter fans out to the nine
+// traveler-information systems that share its software (US: FL/GA/ID/LA +
+// New England ME-NH-VT; Canada: ON/AB/NS/NB). All keyless.
+//
+// NEW YORK LEFT THIS TABLE ON 2026-10-16. 511ny.org moved to the CARS platform and
+// `POST /List/GetData/Cameras` there now answers 200 with the new app's HTML shell,
+// so the row produced 0 cameras on every round (two probes, and 0 `ny` ids in two
+// prod readings). Its cameras are served by lib/sources/cars.ts now. Each system serves
 // a DataTables endpoint at `POST https://{site}/List/GetData/Cameras` (a GET
 // returns an empty table — it MUST be POST). Per camera we surface the JPEG
 // snapshot `https://{site}/map/Cctv/{id}` (loads with no referer/cookie). We
@@ -35,7 +40,7 @@ export const CASTLEROCK_SOURCE: Source = {
   name: "Castle Rock 511 (US & Canada DOT cameras)",
   license: "511 DOT Traveler Information — Terms of Use",
   attribution:
-    "Live traffic camera data © state & provincial 511 systems (FL/GA/NY/ID/LA/New England · ON/AB/NS/NB)",
+    "Live traffic camera data © state & provincial 511 systems (FL/GA/ID/LA/New England · ON/AB/NS/NB)",
   refreshSeconds: 60, // live traffic snapshots refresh frequently
   needsKey: false,
 };
@@ -53,7 +58,6 @@ export interface CastleRockSystem {
 export const CASTLEROCK_SYSTEMS: CastleRockSystem[] = [
   { system: "fl", site: "fl511.com", country: "US", region: "Florida", agency: "Florida DOT (FL511)" },
   { system: "ga", site: "511ga.org", country: "US", region: "Georgia", agency: "Georgia DOT (511GA)" },
-  { system: "ny", site: "511ny.org", country: "US", region: "New York", agency: "NYSDOT (511NY)" },
   { system: "id", site: "511.idaho.gov", country: "US", region: "Idaho", agency: "Idaho Transportation Dept (511)" },
   { system: "newengland", site: "newengland511.org", country: "US", region: "New England", agency: "New England 511 (ME/NH/VT)" },
   // Louisiana, not Los Angeles. Its rows carry `state: null`, so `region` falls
@@ -143,12 +147,24 @@ export function normalizeCastleRock(records: CastleRockRecord[], system: CastleR
   return cams;
 }
 
-// PAGE is the server's hard row cap; PAGE_CONCURRENCY bounds how many page
-// requests are in flight across ALL systems at once (polite + bounded);
-// MAX_PAGES_PER_SYSTEM guards against a bogus recordsTotal looping us forever.
+// PAGE is the server's hard row cap; PER_HOST_CONCURRENCY bounds how many page
+// requests are in flight against ONE system at once; MAX_PAGES_PER_SYSTEM guards
+// against a bogus recordsTotal looping us forever.
+//
+// WHY PER HOST, AND WHY THREE. This used to be one pool of ten across all systems.
+// The round-robin spread it fairly while every system still had pages, but Florida
+// (~50 pages) and Georgia (~44) outlast the rest, so for most of a round the pool
+// pointed five requests at each of those two hosts. Prod then lost pages exactly
+// there: on 2026-10-16 one reading served FL 4,687 of 4,987 and GA 0 of 4,331, the
+// next FL 4,587 and GA 2,931, while every page answered when fetched directly. The
+// throttling is not proved (no log line yet), but the shape fits it and a lower,
+// per-host ceiling costs only time: ~50 pages at three in flight is well inside the
+// feed's 60 s budget.
 const PAGE = 100;
-const PAGE_CONCURRENCY = 10;
+const PER_HOST_CONCURRENCY = 3;
 const MAX_PAGES_PER_SYSTEM = 120; // 120×100 = 12k cams/system — above any real total
+/** One more try for a page that failed, after this pause. */
+const PAGE_RETRY_DELAY_MS = 750;
 
 const REQUEST_HEADERS = {
   "Content-Type": "application/x-www-form-urlencoded",
@@ -167,6 +183,16 @@ export function pageStarts(recordsTotal: number, pageSize = PAGE): number[] {
   const starts: number[] = [];
   for (let s = pageSize; s < recordsTotal; s += pageSize) starts.push(s);
   return starts.slice(0, MAX_PAGES_PER_SYSTEM - 1); // page 0 is the +1
+}
+
+/** A page that fails is tried once more before it counts as lost. */
+async function fetchPageWithRetry(site: string, start: number): Promise<PageResult> {
+  try {
+    return await fetchPage(site, start);
+  } catch {
+    await new Promise((r) => setTimeout(r, PAGE_RETRY_DELAY_MS));
+    return fetchPage(site, start);
+  }
 }
 
 /** Fetch one 100-row page; returns its records and the system's reported total. */
@@ -196,39 +222,69 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   return out;
 }
 
-export async function fetchRegistry(): Promise<Camera[]> {
-  // 1) One page-0 per system, concurrently → first 100 rows + the true total.
-  //    A system whose first page fails (e.g. NY's intermittent 500) drops here.
-  const heads = await Promise.allSettled(
-    CASTLEROCK_SYSTEMS.map(async (system) => ({ system, head: await fetchPage(system.site, 0) })),
-  );
-  const live = heads
-    .filter(
-      (r): r is PromiseFulfilledResult<{ system: CastleRockSystem; head: PageResult }> =>
-        r.status === "fulfilled",
-    )
-    .map((r) => r.value);
+/**
+ * Below this share of its own reported total, a system's round counts as incomplete.
+ * Every page answering gives exactly `recordsTotal` rows, so one lost 100-row page in
+ * Florida is ~98%; the margin is for rows the upstream drops between page reads.
+ */
+export const SYSTEM_COMPLETE_RATIO = 0.97;
 
-  // 2) Round-robin every remaining page across systems so the pool never points
-  //    all `PAGE_CONCURRENCY` slots at one host. A page that fails yields nothing.
-  const perSystem = live.map((entry) => pageStarts(entry.head.recordsTotal));
-  const maxLen = Math.max(0, ...perSystem.map((a) => a.length));
-  const jobs: { si: number; start: number }[] = [];
-  for (let k = 0; k < maxLen; k++) {
-    for (let si = 0; si < live.length; si++) {
-      const start = perSystem[si][k];
-      if (start !== undefined) jobs.push({ si, start });
-    }
+/**
+ * What one system contributes to this round. Pure.
+ *
+ * `fresh` is null when the system's first page failed (no total, no rows). A round
+ * that came back short of the system's own `recordsTotal` is a partial read, not a
+ * smaller network, so the system's last complete read is served instead when there is
+ * one. Without this, one throttled host emptied Georgia from the map while the feed as
+ * a whole still reported success, because the other eight systems answered.
+ *
+ * With no previous read, a partial read is still served: some cameras beat none, and
+ * the next complete round replaces it.
+ */
+export function settleSystem(
+  fresh: CastleRockRecord[] | null,
+  expected: number,
+  previous: CastleRockRecord[] | undefined,
+): { records: CastleRockRecord[]; complete: boolean; fromPrevious: boolean } {
+  if (fresh === null) {
+    return { records: previous ?? [], complete: false, fromPrevious: previous !== undefined };
   }
-  const pages = await mapPool(jobs, PAGE_CONCURRENCY, ({ si, start }) =>
-    fetchPage(live[si].system.site, start)
-      .then((p) => ({ si, records: p.records }))
-      .catch(() => ({ si, records: [] as CastleRockRecord[] })),
-  );
+  const complete = fresh.length >= Math.floor(expected * SYSTEM_COMPLETE_RATIO);
+  if (complete || !previous || previous.length <= fresh.length) {
+    return { records: fresh, complete, fromPrevious: false };
+  }
+  return { records: previous, complete: false, fromPrevious: true };
+}
 
-  // 3) Regroup pages under their system, normalize, and combine.
-  const recordsBySystem = live.map((entry) => [...entry.head.records]);
-  for (const { si, records } of pages) recordsBySystem[si].push(...records);
-  const cams = live.flatMap((entry, si) => normalizeCastleRock(recordsBySystem[si], entry.system));
+/** Last complete read per system, so a partial round serves the last whole one. */
+const lastCompleteBySystem = new Map<string, CastleRockRecord[]>();
+
+/** Read every page of one system. `null` when its first page fails. */
+async function readSystem(system: CastleRockSystem): Promise<{ records: CastleRockRecord[]; total: number } | null> {
+  let head: PageResult;
+  try {
+    head = await fetchPageWithRetry(system.site, 0);
+  } catch {
+    return null;
+  }
+  const pages = await mapPool(pageStarts(head.recordsTotal), PER_HOST_CONCURRENCY, (start) =>
+    fetchPageWithRetry(system.site, start)
+      .then((p) => p.records)
+      .catch(() => [] as CastleRockRecord[]),
+  );
+  return { records: [...head.records, ...pages.flat()], total: head.recordsTotal };
+}
+
+export async function fetchRegistry(): Promise<Camera[]> {
+  // Every system in parallel; inside each, at most PER_HOST_CONCURRENCY pages in
+  // flight. A system whose first page fails, or whose round comes back short of its
+  // own total, falls back to its last complete read (settleSystem).
+  const reads = await Promise.all(CASTLEROCK_SYSTEMS.map((system) => readSystem(system)));
+  const cams = CASTLEROCK_SYSTEMS.flatMap((system, i) => {
+    const read = reads[i];
+    const settled = settleSystem(read?.records ?? null, read?.total ?? 0, lastCompleteBySystem.get(system.system));
+    if (settled.complete) lastCompleteBySystem.set(system.system, settled.records);
+    return normalizeCastleRock(settled.records, system);
+  });
   return CameraArray.parse(cams);
 }

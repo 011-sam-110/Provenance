@@ -5,7 +5,9 @@ import {
   normalizeCastleRock,
   parseWktPoint,
   pageStarts,
+  settleSystem,
   CASTLEROCK_SYSTEMS,
+  type CastleRockRecord,
 } from "@/lib/sources/castlerock";
 import { CameraArray } from "@/lib/types";
 
@@ -120,4 +122,47 @@ test("Louisiana is Louisiana, not Los Angeles", () => {
 // 336 rows over a 100-row cap = page 0 plus three more.
 test("Louisiana's measured total pages correctly", () => {
   expect(pageStarts(336)).toEqual([100, 200, 300]);
+});
+
+// New York moved to the CARS platform; its old List endpoint answers with HTML and
+// produced 0 cameras a round. It is served by lib/sources/cars.ts now.
+test("no longer asks 511ny.org, which left the Castle Rock software", () => {
+  expect(CASTLEROCK_SYSTEMS.map((s) => s.site)).not.toContain("511ny.org");
+  expect(CASTLEROCK_SYSTEMS.map((s) => s.system)).not.toContain("ny");
+});
+
+const rows = (n: number): CastleRockRecord[] => Array.from({ length: n }, (_, i) => ({ id: i }));
+
+// Prod on 2026-10-16: GA 0 of 4,331 in one reading, FL 300-400 short in two, and the
+// feed still reported success because the other systems answered.
+test("a complete round is served and becomes the new last-complete read", () => {
+  const out = settleSystem(rows(400), 400, rows(380));
+  expect(out.records).toHaveLength(400);
+  expect(out.complete).toBe(true);
+  expect(out.fromPrevious).toBe(false);
+});
+
+test("a short round serves the last complete read instead of the partial one", () => {
+  const out = settleSystem(rows(300), 400, rows(398));
+  expect(out.records).toHaveLength(398);
+  expect(out.complete).toBe(false);
+  expect(out.fromPrevious).toBe(true);
+});
+
+test("a system whose first page failed serves its last complete read", () => {
+  const out = settleSystem(null, 0, rows(398));
+  expect(out.records).toHaveLength(398);
+  expect(out.fromPrevious).toBe(true);
+});
+
+test("with nothing to fall back on, a partial read is still better than none", () => {
+  expect(settleSystem(rows(300), 400, undefined).records).toHaveLength(300);
+  expect(settleSystem(null, 0, undefined).records).toEqual([]);
+});
+
+test("a network that really shrank is not held at its old size by a smaller old read", () => {
+  // Short of its own total, but the previous read was smaller still: serve the new one.
+  const out = settleSystem(rows(300), 400, rows(250));
+  expect(out.records).toHaveLength(300);
+  expect(out.fromPrevious).toBe(false);
 });

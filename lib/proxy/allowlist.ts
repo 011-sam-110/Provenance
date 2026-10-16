@@ -9,7 +9,6 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // Castle Rock "511" snapshots — one host per system, all serving /map/Cctv/{id}.
   { host: "fl511.com", prefix: "/map/Cctv/" },
   { host: "511ga.org", prefix: "/map/Cctv/" },
-  { host: "511ny.org", prefix: "/map/Cctv/" },
   { host: "511.idaho.gov", prefix: "/map/Cctv/" },
   { host: "newengland511.org", prefix: "/map/Cctv/" },
   // Louisiana DOTD. Its system joined castlerock on 2026-09-05 without this rule, so
