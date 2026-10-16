@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { WORLD_CITIES, cityCoordParams, type City } from "@/lib/signals/cities.data";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { fetchMeasuredReadings, measuredNear, pm25Band, type MeasuredReading } from "@/lib/signals/aq-measured";
 
 // Live air quality at major world cities — keyless Open-Meteo Air-Quality API.
 // Same one-request-covers-all-cities pattern as the weather layer (multi-coordinate
@@ -11,7 +12,7 @@ const ENDPOINT = "https://air-quality-api.open-meteo.com/v1/air-quality";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 export const OPEN_METEO_AQ_ATTRIBUTION =
-  "Air-quality data by Open-Meteo.com (CAMS / GEMS), CC BY 4.0";
+  "Air-quality data by Open-Meteo.com (CAMS / GEMS), CC BY 4.0 · measured PM2.5: US EPA AirNow and partner agencies (preliminary), DEFRA UK-AIR (OGL v3), NEA Singapore (Singapore Open Data Licence)";
 
 interface AqPoint {
   latitude?: number;
@@ -115,6 +116,33 @@ export function normalizeAirQuality(points: AqPoint[], cities: City[] = WORLD_CI
   return out;
 }
 
+/**
+ * Pure: put the MEASURED PM2.5 beside the model at each city that has reference
+ * monitors within 20 km (the median of them), and colour the city by the measurement.
+ *
+ * Why: the model is close in North America, the UK, Germany and Hong Kong, and off by 2x
+ * to 7x in Asian haze, dust and burning episodes, which is when people look. Measured on
+ * 2026-10-16: Singapore model 14.7 against NEA's 73 to 116; Delhi model 175 against the
+ * US Embassy's 67; Mumbai model 74 against 114. The model value stays as a second line.
+ */
+export function attachMeasured(feats: SignalFeature[], readings: MeasuredReading[]): SignalFeature[] {
+  for (const f of feats) {
+    const m = measuredNear(f.lat, f.lon, readings);
+    if (!m) continue;
+    const band = pm25Band(m.pm25);
+    f.color = band.color;
+    f.title = `${f.title} · measured PM2.5 ${m.pm25.toFixed(1)} (${band.label})`;
+    f.props = {
+      ...f.props,
+      measuredPm25: `${m.pm25.toFixed(1)} µg/m³ (1 h, median of ${m.stations} monitor${m.stations === 1 ? "" : "s"} within 20 km)`,
+      measuredAt: m.at,
+      measuredBy: m.by,
+      colourFrom: "measured PM2.5 (EPA 2024 bands)",
+    };
+  }
+  return feats;
+}
+
 export const AIR_QUALITY_SOURCE: SignalSource = {
   id: "airquality",
   // A city-scale model value from Open-Meteo, not a measurement at a point.
@@ -133,11 +161,21 @@ export const AIR_QUALITY_SOURCE: SignalSource = {
       const url =
         `${ENDPOINT}?latitude=${latitude}&longitude=${longitude}` +
         `&current=pm2_5,pm10,us_aqi,us_aqi_pm2_5,us_aqi_pm10,us_aqi_ozone,european_aqi,nitrogen_dioxide,ozone&timezone=GMT`;
-      const res = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) });
+      const [res, measured] = await Promise.all([
+        fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(15_000) }),
+        // The model answers in well under a second; the measured feeds (8 MB from
+        // Sensor.Community among them) can take longer on a cold read. Wait at most 8 s,
+        // then show the model alone; the shared read finishes in the background and the
+        // next refresh has it.
+        Promise.race([
+          fetchMeasuredReadings(),
+          new Promise<{ readings: MeasuredReading[] }>((r) => setTimeout(() => r({ readings: [] }), 8_000)),
+        ]),
+      ]);
       if (!res.ok) return degraded(`http ${res.status}`);
       const json = await res.json();
       const points = Array.isArray(json) ? (json as AqPoint[]) : [json as AqPoint];
-      return observed(normalizeAirQuality(points));
+      return observed(attachMeasured(normalizeAirQuality(points), measured.readings));
     } catch {
       return degraded("fetch failed");
     }

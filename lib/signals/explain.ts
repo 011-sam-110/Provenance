@@ -577,13 +577,15 @@ const EXPLAINERS: LayerExplainer[] = [
     limitations: [
       "Modelled, not measured. Values can differ substantially from a nearby monitor, especially near roads and industry.",
       "Model grid cells are tens of kilometres across, so street-level pollution is invisible.",
-      "For instrument readings use the OpenAQ stations layer.",
+      "Where reference monitors stand within 20 km of a city (AirNow, DEFRA, NEA), their median one-hour PM2.5 is shown beside the model and sets the colour. The model can be off by 2x to 7x in haze, dust and burning episodes.",
+      "The AQI is EPA's: a 24 h mean for PM and 8 h for ozone, capped at 500. The concentrations shown with it are the current hour.",
+      "For every instrument reading use the air-quality stations layer.",
     ],
   },
   {
     id: "air-quality-stations",
-    whatItShows: "A physical air-quality monitoring station and its latest reading.",
-    method: "Measured by the instrument and published via OpenAQ.",
+    whatItShows: "A physical air-quality monitoring station and its latest PM2.5 reading, or a cell of low-cost citizen sensors.",
+    method: "Measured by the instrument and published by its operator: US EPA AirNow and partner agencies (US, Canada, US embassies), DEFRA UK-AIR, Singapore's NEA (five regions), Sensor.Community (low-cost sensors, one mark per 0.5° cell with the median), and OpenAQ for the rest of the world. Where OpenAQ relays a station its operator also publishes, the operator's copy is shown.",
     confidence: "measured",
     coverage: "Wherever a government or community operator publishes to OpenAQ — dense in Europe and North America, sparse across much of the global south.",
     limitations: [
@@ -591,7 +593,8 @@ const EXPLAINERS: LayerExplainer[] = [
       "Instruments differ in type and calibration, from reference-grade analysers to low-cost sensors.",
       "Stations go offline; a missing pin usually means no data, not clean air.",
       "Only readings from the last 3 hours are shown. A station that has not reported since then has no pin, so the map never shows old air as current.",
-      "Requires an OpenAQ key. Without one this layer is empty, which looks identical to a region with no monitors.",
+      "Low-cost sensors are uncalibrated and read high in humid air; they are marked as such and never stand in for a reference monitor. AirNow readings are preliminary and not yet verified by the agencies.",
+      "Without an OpenAQ key the layer still shows AirNow, DEFRA, NEA and Sensor.Community, but not OpenAQ's stations elsewhere, so a region those four do not cover looks identical to a region with no monitors.",
     ],
   },
   {

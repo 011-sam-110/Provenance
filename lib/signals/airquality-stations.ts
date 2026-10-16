@@ -1,6 +1,7 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
-import { applyCap } from "@/lib/signals/coverage";
+import { applyCap, markCoverage, readCoverage } from "@/lib/signals/coverage";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { dropRelayed, fetchMeasuredReadings, measuredToFeature, pm25Band } from "@/lib/signals/aq-measured";
 
 // Air quality — real station measurements (OpenAQ v3). This is the measured
 // counterpart to the modelled CAMS/Open-Meteo air-quality layer: actual PM2.5
@@ -34,6 +35,8 @@ export const OPENAQ_MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const MAX_PLAUSIBLE_PM25 = 2000; // µg/m³ — above this is a sensor fault, not air
 
 export const OPENAQ_ATTRIBUTION = "Air-quality measurements © OpenAQ contributors";
+export const AQ_STATIONS_ATTRIBUTION =
+  "US EPA AirNow and its partner agencies (preliminary data) · DEFRA UK-AIR (OGL v3) · NEA Singapore (Singapore Open Data Licence) · Sensor.Community low-cost sensors (DbCL 1.0) · OpenAQ contributors";
 
 interface AqLatest {
   datetime?: { utc?: string };
@@ -43,20 +46,8 @@ interface AqLatest {
   locationsId?: number;
 }
 
-/**
- * US-EPA PM2.5 band → {label, colour}, on the breakpoints EPA set in its 2024 revision
- * of the PM2.5 AQI (Good 0 to 9.0, Unhealthy 55.5 to 125.4, Very Unhealthy 125.5 to
- * 225.4). The pre-2024 table (Good up to 12) called air "good" that EPA no longer does.
- * The modelled air-quality layer colours its measured readings with this same scale.
- */
-export function pm25Band(v: number): { label: string; color: string } {
-  if (v <= 9) return { label: "good", color: "#16a34a" };
-  if (v <= 35.4) return { label: "moderate", color: "#eab308" };
-  if (v <= 55.4) return { label: "unhealthy (sensitive)", color: "#f59e0b" };
-  if (v <= 125.4) return { label: "unhealthy", color: "#dc2626" };
-  if (v <= 225.4) return { label: "very unhealthy", color: "#7e22ce" };
-  return { label: "hazardous", color: "#7f1d1d" };
-}
+/** US-EPA PM2.5 band (2024 breakpoints). Lives in aq-measured.ts, shared by both layers. */
+export { pm25Band };
 
 /**
  * Pure: OpenAQ latest-PM2.5 rows → SignalFeature[], dropping invalid/error readings and
@@ -112,46 +103,69 @@ export function normalizeAirStations(
   });
 }
 
+/** OpenAQ's last-3-hours PM2.5, paged. Null when the key is missing or page 1 fails. */
+async function fetchOpenAq(key: string): Promise<{ feats: SignalFeature[]; reason?: string }> {
+  try {
+    const now = Date.now();
+    const since = new Date(now - OPENAQ_MAX_AGE_MS).toISOString();
+    const rows: AqLatest[] = [];
+    let pages = 0;
+    for (let page = 1; page <= OPENAQ_MAX_PAGES; page++) {
+      const url = `${PM25_LATEST_URL}?limit=${OPENAQ_PAGE}&page=${page}&datetime_min=${encodeURIComponent(since)}`;
+      const res = await fetch(url, {
+        headers: { "X-API-Key": key, Accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!res.ok) {
+        if (page === 1) return { feats: [], reason: `openaq http ${res.status}` };
+        break; // keep the pages already read
+      }
+      const json = (await res.json()) as { results?: AqLatest[] };
+      const got = json.results ?? [];
+      rows.push(...got);
+      pages = page;
+      if (got.length < OPENAQ_PAGE) break; // a short page is the last one
+    }
+    // Saturated only when every page read came back full.
+    const limit = rows.length >= pages * OPENAQ_PAGE ? pages * OPENAQ_PAGE : Number.MAX_SAFE_INTEGER;
+    return { feats: normalizeAirStations({ results: rows }, now, limit) };
+  } catch {
+    return { feats: [], reason: "openaq fetch failed" };
+  }
+}
+
 export const AIR_QUALITY_STATIONS_SOURCE: SignalSource = {
   id: "air-quality-stations",
-  // A named monitoring station.
+  // A named monitoring station. The NEA regions and the low-cost cells set "area".
   precision: "facility",
-  label: "Air quality — stations (OpenAQ)",
+  label: "Air quality — stations",
   group: "Environment",
   color: "#dc2626",
   refreshMs: 30 * 60 * 1000,
-  attribution: OPENAQ_ATTRIBUTION,
+  attribution: AQ_STATIONS_ATTRIBUTION,
   // Measured PM2.5 in µg/m³; 125 is the top of EPA's "unhealthy" band.
   metric: { field: "pm25Ugm3", domain: [0, 125], unit: " µg/m³" },
   async fetch() {
+    // Keyless operator feeds first (AirNow, DEFRA, NEA, Sensor.Community); OpenAQ adds
+    // the rest of the world when its key is set, minus its relayed copies of the
+    // operators' own stations.
     const key = (process.env.OPENAQ_API_KEY ?? "").trim();
-    if (!key) return degraded("no key"); // dormant until the free key is set
-    try {
-      const now = Date.now();
-      const since = new Date(now - OPENAQ_MAX_AGE_MS).toISOString();
-      const rows: AqLatest[] = [];
-      let pages = 0;
-      for (let page = 1; page <= OPENAQ_MAX_PAGES; page++) {
-        const url = `${PM25_LATEST_URL}?limit=${OPENAQ_PAGE}&page=${page}&datetime_min=${encodeURIComponent(since)}`;
-        const res = await fetch(url, {
-          headers: { "X-API-Key": key, Accept: "application/json" },
-          signal: AbortSignal.timeout(20_000),
-        });
-        if (!res.ok) {
-          if (page === 1) return degraded(`http ${res.status}`);
-          break; // keep the pages already read
-        }
-        const json = (await res.json()) as { results?: AqLatest[] };
-        const got = json.results ?? [];
-        rows.push(...got);
-        pages = page;
-        if (got.length < OPENAQ_PAGE) break; // a short page is the last one
-      }
-      // Saturated only when every page read came back full.
-      const limit = rows.length >= pages * OPENAQ_PAGE ? pages * OPENAQ_PAGE : Number.MAX_SAFE_INTEGER;
-      return observed(normalizeAirStations({ results: rows }, now, limit));
-    } catch {
-      return degraded("fetch failed");
-    }
+    const [measured, openaq] = await Promise.all([
+      fetchMeasuredReadings(),
+      key ? fetchOpenAq(key) : Promise.resolve({ feats: [] as SignalFeature[], reason: "no key" }),
+    ]);
+    const primaries = measured.readings.map(measuredToFeature);
+    const relayed = dropRelayed(openaq.feats, measured.readings);
+    const all = [...primaries, ...relayed];
+    if (all.length === 0) return degraded(measured.answered.length ? "no current readings" : (openaq.reason ?? "all upstreams failed"));
+    const c = readCoverage(openaq.feats);
+    const saturated = !!c && c.capped && !c.availableExact;
+    return observed(
+      markCoverage(all, {
+        noun: "stations",
+        rule: "readings from the last 3 h; OpenAQ is read in its own list order",
+        ...(saturated ? { upstream: { limit: all.length, count: all.length } } : {}),
+      }),
+    );
   },
 };

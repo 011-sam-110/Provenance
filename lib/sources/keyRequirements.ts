@@ -68,11 +68,14 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
       "Free, no card - a personal account at barentswatch.no, then My page > create an API client (OAuth client credentials, scope ais). Data is NLOD.",
   },
   {
-    kind: "required",
+    // An enhancement since 2026-10-16: the layer reads AirNow, DEFRA, NEA and
+    // Sensor.Community keylessly, and the key adds OpenAQ's stations on top.
+    kind: "enhancement",
     id: "air-quality-stations",
     label: "Air-quality monitoring stations",
     env: ["OPENAQ_API_KEY"],
-    degrades: "No station-level air quality; the modelled air-quality layer still works.",
+    degrades:
+      "The layer still shows AirNow (US, Canada, US embassies), DEFRA (UK), NEA (Singapore) and Sensor.Community readings. The key adds OpenAQ's stations in the rest of Europe, Africa, the Middle East, Latin America and much of Asia.",
     obtain: "Free — openaq.org.",
   },
   {
