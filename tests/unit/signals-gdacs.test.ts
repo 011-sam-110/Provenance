@@ -6,6 +6,7 @@ import {
   gdacsAlertColor,
   gdacsEndpointFor,
   mergeGdacsResults,
+  isGdacsEmptyAnswer,
   GDACS_SOURCE,
   GDACS_EVENT_TYPES,
   type GdacsTypeResult,
@@ -160,4 +161,32 @@ test("one type failing keeps the other five, flagged degraded rather than silent
   expect(outcome?.reason).toContain("WF");
   expect(outcome?.reason).toContain("http 500");
   expect(out).toHaveLength(5); // the five that succeeded are not thrown away
+});
+
+// ── A type with nothing current answers 404, and that is not a failure ───────
+//
+// Measured 2026-10-16: MAP?eventtype=VO answered 404 with an RFC 9110 problem body
+// while no volcano event was current, so every poll published
+// "partial: VO failed (http 404)" and the layer read as degraded all day.
+
+test("a 404 problem answer is an empty type, a plain 404 or a 5xx is not", () => {
+  expect(isGdacsEmptyAnswer(404, "application/problem+json; charset=utf-8")).toBe(true);
+  expect(isGdacsEmptyAnswer(404, "text/html")).toBe(false);
+  expect(isGdacsEmptyAnswer(404, null)).toBe(false);
+  expect(isGdacsEmptyAnswer(400, "application/problem+json")).toBe(false);
+  expect(isGdacsEmptyAnswer(503, "application/problem+json")).toBe(false);
+});
+
+test("five types with events and one empty type merge as observed, not partial", () => {
+  const results: GdacsTypeResult[] = [
+    okResult("EQ", 1),
+    okResult("TC", 2),
+    okResult("FL", 3),
+    { type: "VO", ok: true, features: [] },
+    okResult("DR", 5),
+    okResult("WF", 6),
+  ];
+  const out = mergeGdacsResults(results, 3000);
+  expect(readOutcome(out)).toMatchObject({ ok: true, at: 3000 });
+  expect(out).toHaveLength(5);
 });

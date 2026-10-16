@@ -151,6 +151,22 @@ export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFe
   return out;
 }
 
+/**
+ * Does this answer mean "no current events of this type" rather than a failure?
+ *
+ * GDACS answers a hazard type with nothing current as HTTP 404 with an RFC 9110
+ * problem body (`application/problem+json`, `"status":404`), not as an empty
+ * FeatureCollection. Measured 2026-10-16: `MAP?eventtype=VO` answered 404 from the
+ * laptop and from prod while the SEARCH endpoint showed every 2026 volcano event
+ * with `iscurrent=false`. Counting it as a failure put the whole layer in a
+ * permanent "partial: VO failed (http 404)" state. Every type we send is a valid
+ * code, so for us the 404 can only mean an empty list. Any other status (400, 5xx)
+ * is still a failure.
+ */
+export function isGdacsEmptyAnswer(status: number, contentType: string | null): boolean {
+  return status === 404 && /problem\+json/i.test(contentType ?? "");
+}
+
 /** One hazard type's fetch, resolved — never thrown, so `Promise.all` cannot short-circuit. */
 export interface GdacsTypeResult {
   type: string;
@@ -207,6 +223,9 @@ export const GDACS_SOURCE: SignalSource = {
             headers: { "User-Agent": UA, Accept: "application/json" },
             signal: AbortSignal.timeout(15_000),
           });
+          if (isGdacsEmptyAnswer(res.status, res.headers.get("content-type"))) {
+            return { type, ok: true, features: [] };
+          }
           if (!res.ok) return { type, ok: false, reason: `http ${res.status}` };
           const json = (await res.json()) as { features?: GdacsFeature[] };
           return { type, ok: true, features: json.features ?? [] };
