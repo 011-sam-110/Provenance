@@ -21,7 +21,7 @@ export interface GeocodeResult {
    * Surfaced separately from `name` because the label is LOCALISED - Photon writes
    * "Normandie", "Deutschland", "Espana" - so matching a country by searching the
    * label only works if the caller happens to hold the same spelling Photon chose.
-   * A code has one spelling. lib/news/places.ts checks a pinned place against this.
+   * A code has one spelling.
    */
   countryCode?: string;
   /** [west, south, east, north] — present only when the feature carries an extent. */

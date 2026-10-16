@@ -14,12 +14,11 @@
 // the geocoding was right and the CLAIM was wrong, and no filter could find the
 // difference. A claim a reader can audit at a glance cannot fail that way silently.
 //
-// HOW IT DIFFERS FROM news-coverage, WHICH LOOKS SIMILAR AND IS NOT. That layer reads
-// the place out of the article BODY with a language model and geocodes it through
-// Photon, which is a far more useful claim and a far more fragile one — it is switched
-// off pending a labelled accuracy review, and nothing here changes that. The two are
-// deliberately separate rows: one says where a model thinks the news happened, this one
-// says which places the headlines name. Turning this on does not turn that on.
+// HOW IT DIFFERED FROM news-coverage, WHICH LOOKED SIMILAR AND WAS NOT. That layer read
+// the place out of the article BODY with a language model and geocoded it through
+// Photon, which is a far more useful claim and a far more fragile one. It was held back
+// pending a labelled accuracy review and removed on 2026-10-17. This layer only says
+// which places the headlines name, and it does not stand in for that one.
 //
 // WHY PLACES AND NOT STORIES. Five outlets covering one summit is five headlines and one
 // place. Pinning each would draw a cluster that looks like five events, which is
@@ -132,8 +131,7 @@ export const HEADLINE_PLACES_SOURCE: SignalSource = {
   precision: "area",
   kind: "event",
   // NOT "World news" or "Headlines". The layer knows which places are NAMED; where the
-  // news happened is a different question and lib/signals/news-coverage.ts is the layer
-  // that tries to answer it.
+  // news happened is a different question, and no layer here answers it.
   label: "Headline places",
   group: "Intel",
   color: "#0e7490",

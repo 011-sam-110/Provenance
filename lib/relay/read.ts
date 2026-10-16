@@ -13,8 +13,9 @@
 //   nrcan-magnetic          aurora (lib/signals/aurora.ts): a forecaster's verdict per zone
 //   jma-volcam              the camera registry (lib/sources): operator-primary stills
 //   sjofartsverket-navwarn  GPS jamming context: the official-warnings sub-layer
-//   shadowserver-beacon     cyber-c2 (lib/signals/cyber-c2.ts): its approved replacement primary
-//   shadowserver-sinkhole   a sibling of cyber-c2 (infected hosts), never summed with it
+//   shadowserver-beacon     none: it was to replace Feodo Tracker in `cyber-c2`, a layer
+//                           removed on 2026-10-17 before this feed was wired into it
+//   shadowserver-sinkhole   none (infected hosts); never to be summed with the beacon count
 //   eea-aqi                 air-quality-stations: EEA wins over OpenAQ's copy within ~100 m
 //   hhs-ocr-breach          the breach disclosures sub-feed of the ransomware group
 //   texas-ag-breach         the same

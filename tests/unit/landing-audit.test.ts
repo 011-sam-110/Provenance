@@ -27,7 +27,8 @@ describe("the committed coverage audit still describes this repo", () => {
     // A layer RETIRED after the run (lib/layerAliases.ts) keeps its measured row until the
     // next run: its features are inside every total below, so dropping the row by hand
     // would break the reconciliation, and the run did measure it. emsc-quakes became part
-    // of earthquakes on 2026-10-16. A retired id that is still registered is an error.
+    // of earthquakes on 2026-10-16; cyber-c2 and news-coverage were removed on 2026-10-17.
+    // A retired id that is still registered is an error.
     const retired = new Set(Object.keys(RETIRED_SIGNAL_IDS));
     for (const id of retired) expect(registry, `${id} is retired but still registered`).not.toContain(id);
     const audited = AUDIT_LAYERS.map((l) => l.id).filter((id) => !retired.has(id)).sort();

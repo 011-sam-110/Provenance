@@ -18,22 +18,24 @@
  * update this file, do not edit the test.
  *
  * Measured 2026-09-12; feeds re-measured 2026-10-16 after the source audit's US and world
- * camera feeds (17 -> 52, see registry.ts).
+ * camera feeds (17 -> 52, see registry.ts), and again on 2026-10-17 when Hungary's
+ * Utinform feed was removed (52 -> 51, 21 -> 20 countries): its API refuses the
+ * production server's IP.
  */
 export const CAMERA_FACTS = {
   /**
-   * Operator feeds in `lib/sources/registry.ts` — 51 hand-written adapters (cars.ts
-   * registers six, one per CARS state) + 1 admitted by discovery. Six of the 51 are keyed
+   * Operator feeds in `lib/sources/registry.ts` — 50 hand-written adapters (cars.ts
+   * registers six, one per CARS state) + 1 admitted by discovery. Six of the 50 are keyed
    * and hold no cameras until their free key is set (`docs/API_KEYS.md` section 8), so the
    * drawn count is lower on a deployment without them.
    */
-  feeds: 52,
+  feeds: 51,
   /**
    * Distinct countries the adapters DECLARE, counted from literal `country: "XX"`
-   * assignments: AU, BA, BR, CA, EE, ES, FI, FR, GB, HK, HU, IS, LT, MK, NO, NZ, PR, RS, SI,
-   * TW, US. SI comes only from the keyed DARS/DRSI feed.
+   * assignments: AU, BA, BR, CA, EE, ES, FI, FR, GB, HK, IS, LT, MK, NO, NZ, PR, RS, SI, TW,
+   * US. SI comes only from the keyed DARS/DRSI feed.
    */
-  countries: 21,
+  countries: 20,
   /**
    * Webcams in the committed Windy catalogue (`public/webcams/manifest.json`, 196 static
    * tiles). These are NOT operator feeds and the page must never merge the two totals —

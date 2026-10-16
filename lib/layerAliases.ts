@@ -30,10 +30,32 @@ export const RETIRED_LAYER_KEYS: Readonly<Record<string, readonly string[]>> = {
  * `emsc-quakes` was the EMSC earthquake layer until 2026-10-16. EMSC is now one of
  * the catalogues of the `earthquakes` layer, so a saved toggle, an area, a variant
  * override or a `?sig=` link that held it opens that layer instead of nothing.
+ *
+ * AN EMPTY LIST MEANS REMOVED, WITH NOTHING IN ITS PLACE. The id is dropped from
+ * whatever named it, so the rest of the saved state loads as it was. Two layers were
+ * removed on 2026-10-17 because production had no working feed for them:
+ * `cyber-c2` (abuse.ch Feodo Tracker, empty since 2026-03) and `news-coverage` (the
+ * NewsScraper pins, held back pending an accuracy review). Neither is mapped to a
+ * neighbour: switching on a layer the user never chose is worse than switching on none.
  */
 export const RETIRED_SIGNAL_IDS: Readonly<Record<string, readonly string[]>> = {
   "emsc-quakes": ["earthquakes"],
+  "cyber-c2": [],
+  "news-coverage": [],
 };
+
+/**
+ * Pure: the widget type that replaces a retired `signal:<id>` card, or null when the
+ * card should be dropped. Any other type comes back unchanged. Every signal layer mints
+ * a `signal:<id>` card, so a saved board can name a retired layer too; an unregistered
+ * type renders as an empty hole in the grid (see lib/console/sanitize.ts).
+ */
+export function retiredSignalWidgetType(type: string): string | null {
+  if (!type.startsWith("signal:")) return type;
+  const next = RETIRED_SIGNAL_IDS[type.slice("signal:".length)];
+  if (!next) return type;
+  return next.length ? `signal:${next[0]}` : null;
+}
 
 /** Pure: an id list with retired signal ids replaced, de-duplicated, order kept. */
 export function expandRetiredSignalIds(ids: readonly string[]): string[] {

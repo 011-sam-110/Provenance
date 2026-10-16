@@ -154,8 +154,9 @@ export interface NewsEvent {
   placeKind: string | null;
   /**
    * The sentence the place was read from, VERBATIM. The evidence a reader can check,
-   * and the only article text this app publishes — capped and attributed where it is
-   * rendered (lib/signals/news-coverage.ts).
+   * and the only article text this app would publish. Nothing renders it since the
+   * `news-coverage` map layer was removed on 2026-10-17; a surface that does must cap
+   * and attribute it.
    *
    * The scraper's own checks make this stronger than it looks: where `isPhysical` is
    * true, its quote and date checks have already passed, so the sentence is verbatim

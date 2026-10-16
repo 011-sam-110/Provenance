@@ -218,7 +218,8 @@ function makeSignalBody(source: SignalSource) {
     // failure as one. Reading the error branch first therefore printed "<layer>
     // unavailable." over the one class of layer whose emptiness we can fully explain
     // — the exact vague wording capabilityBadge exists to replace, and the reason the
-    // News coverage card read as broken while it was working as designed.
+    // card of the old News coverage layer (removed 2026-10-17) read as broken while it
+    // was working as designed.
     //
     // Only locked/refused produce a badge, so this changes nothing for the layers that
     // are genuinely down: they have no explanation to offer and still say so.

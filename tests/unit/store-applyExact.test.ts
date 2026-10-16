@@ -11,8 +11,8 @@ describe("applyExact", () => {
   });
   it("signalsStore.applyExact replaces the whole on-set", () => {
     signalsStore.set("earthquakes", true);
-    signalsStore.applyExact({ "cyber-c2": true });
-    expect(signalsStore.isOn("cyber-c2")).toBe(true);
+    signalsStore.applyExact({ "cyber-ransomware": true });
+    expect(signalsStore.isOn("cyber-ransomware")).toBe(true);
     expect(signalsStore.isOn("earthquakes")).toBe(false);
   });
 });

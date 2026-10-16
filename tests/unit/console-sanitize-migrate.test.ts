@@ -49,3 +49,28 @@ test("a type nobody retired is passed through untouched", () => {
   });
   expect(out!.widgets.map((w) => w.type)).toEqual(["camslot", "events"]);
 });
+
+// A board can name a retired SIGNAL layer through its card, `signal:<id>`. Removed on
+// 2026-10-17 with no replacement: cyber-c2 and news-coverage. EMSC's card follows its
+// layer into `earthquakes`. Either way, no hole.
+test("a card of a removed signal layer leaves the board, and the rest of it loads", () => {
+  const out = sanitizeLayout({
+    stage: "map2d",
+    segments: {
+      left: { size: 300, collapsed: false },
+      right: { size: 300, collapsed: false },
+      bottom: { size: 220, collapsed: false },
+    },
+    widgets: [
+      { id: "w1", type: "headlines", segment: "right", order: 0, height: 240, collapsed: false, config: {} },
+      { id: "w2", type: "signal:news-coverage", segment: "right", order: 1, height: 240, collapsed: false, config: {} },
+      { id: "w3", type: "signal:cyber-c2", segment: "left", order: 0, height: 240, collapsed: false, config: {} },
+      { id: "w4", type: "signal:emsc-quakes", segment: "left", order: 1, height: 240, collapsed: false, config: {} },
+      { id: "w5", type: "signal:cyber-ransomware", segment: "left", order: 2, height: 240, collapsed: false, config: {} },
+    ],
+  });
+  expect(out).not.toBeNull();
+  expect(out!.widgets.map((w) => w.type).sort()).toEqual(
+    ["headlines", "signal:cyber-ransomware", "signal:earthquakes"].sort(),
+  );
+});

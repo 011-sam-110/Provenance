@@ -239,7 +239,7 @@ describe("spotKindOf: only what the types say today", () => {
   it("keeps no list of layer names of its own: with no level passed, the answer is a point", () => {
     // These layers DO put one marker per country on a centroid. The level is the
     // typed fact that says so, and the panel passes it in.
-    for (const signalId of ["displacement", "cyber-c2", "cyber-ransomware"]) {
+    for (const signalId of ["displacement", "cyber-ransomware"]) {
       expect(spotKindOf({ signalId })).toBe("point");
     }
   });

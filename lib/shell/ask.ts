@@ -184,8 +184,6 @@ export const LAYER_SYNONYMS: Readonly<Record<string, string>> = {
   smog: "airquality",
   crime: "crime",
   crimes: "crime",
-  botnet: "cyber-c2",
-  botnets: "cyber-c2",
   ransomware: "cyber-ransomware",
   displacement: "displacement",
   refugees: "displacement",

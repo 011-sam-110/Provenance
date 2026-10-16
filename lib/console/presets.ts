@@ -349,7 +349,7 @@ export const STREETS_DEFAULT_AREA: CircleSpec = { lat: 32.7641, lon: -117.1577, 
 // ── THE LINEUP ──────────────────────────────────────────────────────────────
 //
 // THREE presets: Globe (the landing board, deliberately empty), News (the merged
-// headline stream plus the coverage layer) and Streets (the camera wall). It was two
+// headline stream plus the places it names) and Streets (the camera wall). It was two
 // until 2026-09-16 — World, Nature, Skywatch, Infrastructure and Intel were retired on
 // 2026-09-15 on request, and News is not a reinstatement of Intel: Intel was four
 // GDELT-and-UN layers in a strip, this is the scraped-and-RSS headline stream that had
@@ -397,10 +397,12 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
   // board's second half is where the stories are. Intel, the retired board this one
   // replaces, made the same call for the same reason.
   //
-  // THE MAP LAYER IS COVERAGE, NOT EVENTS. `news-coverage` pins places that a language
-  // model read out of article text and this app geocoded by name. Every pin says so —
-  // see lib/signals/news-coverage.ts, which carries the reasoning and the GDELT
-  // precedent behind it.
+  // THE MAP LAYER IS `headline-places`: the places the headlines NAME, and nothing more
+  // (see lib/signals/headline-places.ts). Until 2026-10-17 this board seeded
+  // `news-coverage`, the places a language model read out of the NewsScraper articles.
+  // That layer was removed because production held its pins back pending an accuracy
+  // review, so the board opened on an empty layer and an empty card. A saved copy of
+  // this board loses that card on load (lib/console/sanitize.ts) and keeps the rest.
   //
   // NO `layers`. Both camera tiers, planes and satellites all stay off: this board is
   // about who is reporting what, and a layer of 19,000 camera pins under it is noise.
@@ -410,14 +412,14 @@ export const BUILTIN_PRESETS: ConsolePreset[] = [
     // centroids in conflict red, which at world zoom buries a layer whose pins are
     // actual places, and an audit of its rows found most were not events at all. It
     // is one tap away in the Sources rail for anyone who wants it.
-    signals: ["news-coverage"],
+    signals: ["headline-places"],
     build: (shell = DEFAULT_SHELL) => compose("map2d", shell, [
       { rail: "right", cards: [
         // The merged, clustered stream — the card this board exists for.
         { type: "headlines", weight: 3 },
         // The same stories as a place list, so a reader can go the other way round:
-        // from a pin they can see on the map to the outlets carrying it.
-        { type: "signal:news-coverage", weight: 2 },
+        // from a pin they can see on the map to the headlines that name it.
+        { type: "signal:headline-places", weight: 2 },
       ] },
     ]) },
 
