@@ -13,6 +13,7 @@ import {
   indicatorColor,
   indicatorMagnitude,
   normalizeCloudStatus,
+  pageMatchesVendor,
   parseIndicator,
   type StatuspageSummary,
 } from "@/lib/signals/cloud-status";
@@ -104,5 +105,33 @@ describe("the vendor list", () => {
       expect(Math.abs(v.lon), `${v.key} longitude`).toBeLessThanOrEqual(180);
       expect(v.lat === 0 && v.lon === 0, `${v.key} is at null island`).toBe(false);
     }
+  });
+});
+
+describe("a status host that redirects to another vendor", () => {
+  // status.sendgrid.com 302s to status.twilio.com (measured 2026-10-16), and fetch()
+  // follows it, so prod showed Twilio's incident a second time as "SendGrid".
+  const twilioPage = { page: { name: "Twilio", url: "https://status.twilio.com" }, status: { indicator: "minor" } };
+
+  it("is refused when the page names another host", () => {
+    const sendgrid = { key: "sendgrid", label: "SendGrid", host: "status.sendgrid.com", lat: 39.7, lon: -105 };
+    expect(pageMatchesVendor(sendgrid, twilioPage)).toBe(false);
+  });
+
+  it("is accepted when the page is the vendor's own", () => {
+    const twilio = CLOUD_VENDORS.find((v) => v.key === "twilio")!;
+    expect(pageMatchesVendor(twilio, twilioPage)).toBe(true);
+    expect(pageMatchesVendor(vendor, operational as StatuspageSummary)).toBe(true);
+  });
+
+  it("is no longer polled, and the hollow Atlassian page is replaced by its product pages", () => {
+    const hosts = CLOUD_VENDORS.map((v) => v.host);
+    expect(hosts).not.toContain("status.sendgrid.com");
+    expect(hosts).not.toContain("status.atlassian.com");
+    expect(hosts).toEqual(expect.arrayContaining([
+      "jira-software.status.atlassian.com",
+      "confluence.status.atlassian.com",
+      "bitbucket.status.atlassian.com",
+    ]));
   });
 });

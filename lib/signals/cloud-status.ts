@@ -36,7 +36,12 @@ export const CLOUD_VENDORS: CloudVendor[] = [
   { key: "cloudflare", label: "Cloudflare", host: "www.cloudflarestatus.com", lat: 37.7767, lon: -122.3942 },
   { key: "openai", label: "OpenAI", host: "status.openai.com", lat: 37.7623, lon: -122.4148 },
   { key: "datadog", label: "Datadog", host: "status.datadoghq.com", lat: 40.7419, lon: -74.0048 },
-  { key: "atlassian", label: "Atlassian", host: "status.atlassian.com", lat: -33.8696, lon: 151.2072 },
+  // status.atlassian.com became an empty shell (0 components, 0 incidents, 2026-10-16)
+  // when Atlassian split its status into one page per product, so the old row could
+  // never show an outage. These three are the product pages, each 12 to 16 components.
+  { key: "atlassian-jira", label: "Jira", host: "jira-software.status.atlassian.com", lat: -33.8696, lon: 151.2072 },
+  { key: "atlassian-confluence", label: "Confluence", host: "confluence.status.atlassian.com", lat: -33.8696, lon: 151.2072 },
+  { key: "atlassian-bitbucket", label: "Bitbucket", host: "bitbucket.status.atlassian.com", lat: -33.8696, lon: 151.2072 },
   { key: "npm", label: "npm registry", host: "status.npmjs.org", lat: 37.7823, lon: -122.4056 },
   { key: "digitalocean", label: "DigitalOcean", host: "status.digitalocean.com", lat: 40.7061, lon: -74.0087 },
   { key: "statuspage", label: "Atlassian Statuspage", host: "metastatuspage.com", lat: 44.9778, lon: -93.265 },
@@ -44,7 +49,6 @@ export const CLOUD_VENDORS: CloudVendor[] = [
   { key: "snowflake", label: "Snowflake", host: "status.snowflake.com", lat: 37.5407, lon: -122.2589 },
   { key: "mongodb", label: "MongoDB Atlas", host: "status.mongodb.com", lat: 40.7411, lon: -74.0022 },
   { key: "twilio", label: "Twilio", host: "status.twilio.com", lat: 37.7852, lon: -122.3966 },
-  { key: "sendgrid", label: "SendGrid", host: "status.sendgrid.com", lat: 39.7392, lon: -104.9903 },
   { key: "linode", label: "Akamai / Linode", host: "status.linode.com", lat: 40.7075, lon: -74.0113 },
 ];
 
@@ -130,6 +134,24 @@ export function normalizeCloudStatus(vendor: CloudVendor, summary: StatuspageSum
 }
 
 /**
+ * Pure: is this summary the vendor's own page? A status host that has been merged
+ * into another vendor's redirects to it, and fetch() follows the redirect, so the
+ * second vendor's incident would be published again under the first vendor's name.
+ * That happened: status.sendgrid.com 302s to status.twilio.com, and on 2026-10-16
+ * prod showed Twilio's Czech SMS incident twice, once as "SendGrid" in Denver.
+ * A page that names no URL is given the benefit of the doubt.
+ */
+export function pageMatchesVendor(vendor: CloudVendor, summary: StatuspageSummary): boolean {
+  const url = summary.page?.url;
+  if (!url) return true;
+  try {
+    return new URL(url).hostname.toLowerCase() === vendor.host.toLowerCase();
+  } catch {
+    return true;
+  }
+}
+
+/**
  * One vendor's read. `ok` is about the FETCH, `feature` is about the vendor: a
  * healthy vendor is `{ ok: true, feature: null }` and an unreachable status page is
  * `{ ok: false, feature: null }`. A bare `null` conflated those two, and the outer
@@ -148,7 +170,10 @@ async function fetchVendor(vendor: CloudVendor): Promise<VendorRead> {
       next: { revalidate: 120 },
     });
     if (!res.ok) return { ok: false, feature: null };
-    return { ok: true, feature: normalizeCloudStatus(vendor, (await res.json()) as StatuspageSummary) };
+    const summary = (await res.json()) as StatuspageSummary;
+    // Another vendor's page under this vendor's name is a failed read, not an outage.
+    if (!pageMatchesVendor(vendor, summary)) return { ok: false, feature: null };
+    return { ok: true, feature: normalizeCloudStatus(vendor, summary) };
   } catch {
     // Dormant-safe per vendor: one unreachable status page must not blank the layer.
     return { ok: false, feature: null };
@@ -174,12 +199,12 @@ export const CLOUD_STATUS_SOURCE: SignalSource = {
     // we could not read counts as degraded. A partial failure keeps the vendors that
     // did answer — losing a live outage marker because an unrelated page timed out
     // would be the worse error of the two.
-    // TOTAL failure is degraded; PARTIAL failure is not. This layer fans out to 14
+    // TOTAL failure is degraded; PARTIAL failure is not. This layer fans out to 15
     // independent vendor status pages, and those are flaky by nature — one of them
     // hiccupping is the normal weather here, not an outage of this layer.
     //
     // Marking the whole layer ok:false on a single unreachable vendor would render
-    // it "down" on the public ledger while 13 of 14 vendors were read perfectly
+    // it "down" on the public ledger while 14 of 15 vendors were read perfectly
     // well. That is its own false claim, and a worse one than it looks: a row that
     // shows red most days is a row people learn to skip, which costs us the days it
     // means something. Same reasoning as keeping licence notices off every layer.

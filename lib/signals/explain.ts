@@ -436,7 +436,7 @@ const EXPLAINERS: LayerExplainer[] = [
     whatItShows: "A cloud or developer platform that its OWN status page currently reports as degraded — GitHub, Cloudflare, OpenAI, Twilio and eleven others.",
     method: "Read straight from each vendor's Atlassian Statuspage summary endpoint. The severity is the vendor's own indicator, not our judgement.",
     confidence: "official",
-    coverage: "Fourteen vendors that publish an Atlassian Statuspage. AWS, Google Cloud and Azure run their own bespoke formats and are NOT covered.",
+    coverage: "Fifteen status pages on Atlassian Statuspage (Jira, Confluence and Bitbucket each have their own). AWS, Google Cloud and Azure run their own bespoke formats and are NOT covered.",
     limitations: [
       "The pin sits at the vendor's HEADQUARTERS. A cloud outage has no location — this is a placement of convenience so the layer can exist on a map, and it must not be read as where the outage is.",
       "It is the vendor's self-assessment. Status pages are routinely slow to go red, and some incidents are never posted at all.",
