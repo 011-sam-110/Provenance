@@ -24,7 +24,7 @@ test("the declared caps are what the adapters ship", () => {
   expect(CRIME_CAP).toBe(1500);
   expect(AIS_CAP).toBe(1200);
   expect(OPENAQ_CAP).toBe(1000);
-  expect(EMSC_REQUEST_LIMIT).toBe(500);
+  expect(EMSC_REQUEST_LIMIT).toBe(2000);
   expect(LAUNCHES_PAGE_LIMIT).toBe(100);
 });
 
@@ -233,7 +233,7 @@ describe("emsc-quakes (EMSC FDSN)", () => {
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
     expect(c.upstreamLimit).toBe(EMSC_REQUEST_LIMIT);
-    expect(coverageCountLabel(c)).toBe("500 of 500+");
+    expect(coverageCountLabel(c)).toBe("2,000 of 2,000+");
   });
 
   test("a short page is a real, complete measurement", () => {

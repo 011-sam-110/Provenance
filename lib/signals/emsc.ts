@@ -13,11 +13,30 @@ const ENDPOINT = "https://www.seismicportal.eu/fdsnws/event/1/query";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 /**
+ * The window the FDSN query asks for, in hours. It matches the USGS layer's 24 h.
+ *
+ * Until 2026-10-16 the query had no `starttime` and asked for the newest 500 events
+ * of the whole catalogue. Measured that day: those 500 reached back about 36 hours,
+ * while the last 24 hours held 328 events (`/count` agreed). So the layer showed a
+ * ragged window of no fixed length. Asking for a fixed window makes the answer
+ * complete.
+ */
+export const EMSC_WINDOW_HOURS = 24;
+
+/**
  * The `limit=` the FDSN query asks for. There is no local render cap here — the
  * truncation is entirely upstream, so a response holding exactly this many events
- * means the catalogue had at least this many and we cannot see past the page.
+ * means the window had at least this many and we cannot see past the page. A 24 h
+ * window held 328 events on 2026-10-16 and 48 h held 700, so 2000 is far above a
+ * normal day.
  */
-export const EMSC_REQUEST_LIMIT = 500;
+export const EMSC_REQUEST_LIMIT = 2000;
+
+/** Pure: the FDSN query for the window that ends at `now`. */
+export function emscEndpoint(now: number): string {
+  const start = new Date(now - EMSC_WINDOW_HOURS * 3_600_000).toISOString().slice(0, 19);
+  return `${ENDPOINT}?starttime=${start}&limit=${EMSC_REQUEST_LIMIT}&orderby=time&format=json`;
+}
 
 export const EMSC_ATTRIBUTION = "Earthquake data © EMSC-CSEM (seismicportal.eu)";
 
@@ -82,7 +101,7 @@ export function normalizeEmsc(
   }
   return markCoverage(out, {
     noun: "events",
-    rule: "the first page the EMSC FDSN service returned",
+    rule: `every EMSC event in the past ${EMSC_WINDOW_HOURS} hours`,
     upstream: { limit, count: raw.length },
   });
 }
@@ -99,10 +118,13 @@ export const EMSC_SOURCE: SignalSource = {
   metric: { field: "magnitude", domain: [2, 8] }, // Richter → magnitude bar
   async fetch() {
     try {
-      const res = await fetch(`${ENDPOINT}?limit=${EMSC_REQUEST_LIMIT}&format=json`, {
+      const res = await fetch(emscEndpoint(Date.now()), {
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(15_000),
       });
+      // FDSN answers a window with no events as 204 and no body. That is a quiet
+      // window, not a failure, and res.json() would throw on it.
+      if (res.status === 204) return observed(normalizeEmsc({ features: [] }));
       if (!res.ok) return degraded(`http ${res.status}`);
       const json = (await res.json()) as { features?: EmscFeature[] };
       return observed(normalizeEmsc(json));
