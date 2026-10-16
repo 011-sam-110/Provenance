@@ -164,8 +164,11 @@ describe("aurora (NOAA OVATION)", () => {
 });
 
 describe("ais (AISStream chokepoints)", () => {
-  test("a saturated collection window is a LOWER BOUND, never a vessel count", () => {
-    const vessels = Array.from({ length: AIS_CAP }, (_, i) => ({
+  // The stream used to close at AIS_CAP, so a full snapshot was a lower bound. Since
+  // 2026-10-16 the socket stays open and nothing stops at the cap: the total heard is
+  // known, and a busy snapshot is cut to the cap with that total as its denominator.
+  test("a busy snapshot is cut to the cap, with the real total beside it", () => {
+    const vessels = Array.from({ length: AIS_CAP + 200 }, (_, i) => ({
       MMSI: 100000 + i,
       ShipName: `Ship ${i}`,
       latitude: 25 + (i % 10) * 0.01,
@@ -174,9 +177,9 @@ describe("ais (AISStream chokepoints)", () => {
     }));
     const c = readCoverage(normalizeAis(vessels))!;
     expect(c.capped).toBe(true);
-    expect(c.availableExact).toBe(false);
-    expect(c.upstreamLimit).toBe(AIS_CAP);
-    expect(coverageCountLabel(c)).toBe("1,200 of 1,200+");
+    expect(c.availableExact).toBe(true);
+    expect(c.cap).toBe(AIS_CAP);
+    expect(coverageCountLabel(c)).toBe("1,200 of 1,400");
   });
 
   test("a quiet chokepoint snapshot is complete and says so", () => {

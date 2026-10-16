@@ -206,13 +206,12 @@ export function mergeVessels(...feeds: (AisVessel[] | null | undefined)[]): AisV
 }
 
 /**
- * Pure: keep at most `cap` features, shared fairly between chokepoints. Each
- * chokepoint takes one vessel in turn (its most recent first) until the cap is met,
- * so a busy strait cannot crowd a quiet one off the map. The old rule kept the
- * first vessels the socket happened to hear.
+ * Pure: order features so that any PREFIX is a fair share between chokepoints. Each
+ * chokepoint gives one vessel in turn (its most recent first), so cutting the list
+ * at the cap cannot let a busy strait crowd a quiet one off the map. The old rule
+ * kept the first vessels the socket happened to hear.
  */
-export function fairShareCap(features: SignalFeature[], cap: number): SignalFeature[] {
-  if (!(cap > 0) || features.length <= cap) return features.slice();
+export function fairShareOrder(features: SignalFeature[]): SignalFeature[] {
   const groups = new Map<string, SignalFeature[]>();
   for (const f of features) {
     const k = String(f.props?.chokepoint ?? "");
@@ -222,17 +221,15 @@ export function fairShareCap(features: SignalFeature[], cap: number): SignalFeat
   }
   const queues = [...groups.values()].map((g) => g.sort((a, b) => String(b.ts ?? "").localeCompare(String(a.ts ?? ""))));
   const out: SignalFeature[] = [];
-  for (let i = 0; out.length < cap; i++) {
-    let took = false;
-    for (const q of queues) {
-      if (i < q.length && out.length < cap) {
-        out.push(q[i]);
-        took = true;
-      }
-    }
-    if (!took) break;
+  for (let i = 0; out.length < features.length; i++) {
+    for (const q of queues) if (i < q.length) out.push(q[i]);
   }
   return out;
+}
+
+/** Pure: at most `cap` features, shared fairly between chokepoints. */
+export function fairShareCap(features: SignalFeature[], cap: number): SignalFeature[] {
+  return cap > 0 && features.length > cap ? fairShareOrder(features).slice(0, cap) : features.slice();
 }
 
 export const CAP_RULE = "an equal share per chokepoint, most recent first — not a ranking";
@@ -244,7 +241,9 @@ export function normalizeAis(vessels: AisVessel[], rule: string = CAP_RULE): Sig
     const f = vesselFeature(v);
     if (f) out.push(f);
   }
-  return applyCap(fairShareCap(out, AIS_CAP), Number.POSITIVE_INFINITY, {
+  // One truncation, and the denominator is real: the stream is not closed at the cap
+  // any more, so `available` is every vessel heard inside the TTL.
+  return applyCap(out.length > AIS_CAP ? fairShareOrder(out) : out, AIS_CAP, {
     noun: "vessels",
     rule,
   });
