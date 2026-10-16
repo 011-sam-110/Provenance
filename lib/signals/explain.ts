@@ -613,6 +613,23 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "crime-us",
+    whatItShows:
+      "A crime recorded by the police of one of seven US cities or counties in the last week, placed on its block or a nearby intersection.",
+    method:
+      "Read from each department's own open-data portal: San Francisco, Seattle, Washington DC, Montgomery County (Maryland), Chicago (all crimes, plus its homicide and shooting table), Boston and Kansas City (Missouri). Each record keeps the department's own offence name; the colour groups it as a crime against a person, property or society.",
+    confidence: "official",
+    coverage:
+      "Seven places in the United States, the newest 300 records from each, shared equally on the map. Nowhere else, and not the whole of any of them.",
+    limitations: [
+      "A recorded crime is a police report, and a report can be reclassified or withdrawn later. Under-reporting varies enormously by offence and by neighbourhood.",
+      "Places are generalised to the block or an intersection by the departments themselves, so a mark is never an address.",
+      "Chicago's crimes table runs about seven days behind; its homicide and shooting table is close to live. Kansas City publishes one row per person in a report, folded here to one per report.",
+      "City of Chicago data: the City makes no claims as to the content, accuracy, timeliness or completeness of the data, which is subject to change and used at one's own risk.",
+      "Each city counts differently. A high count in one city and a low one in another says as much about their reporting as about crime.",
+    ],
+  },
+  {
     id: "cyber-c2",
     whatItShows: "A server observed acting as botnet command-and-control infrastructure, placed by IP geolocation.",
     method: "Reported by abuse.ch Feodo Tracker from malware analysis and sinkholing.",
@@ -638,6 +655,38 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
 
+  {
+    id: "cyber-disclosures",
+    whatItShows:
+      "A cyber incident that the organisation itself disclosed in an official US filing: a listed company's SEC Form 8-K under Item 1.05 (a material cybersecurity incident), or a ransomware breach notice to the Washington State Attorney General.",
+    method:
+      "Read from EDGAR full-text search and from the Washington Attorney General's breach register on data.wa.gov, for the last 90 days. A filing is placed on the state of the company's head office or of the organisation, at the state capital.",
+    confidence: "official",
+    coverage:
+      "United States only: SEC-registered companies, and organisations that notified Washington because its residents were affected. Private companies, and incidents below the SEC's materiality bar, are mostly not here.",
+    limitations: [
+      "A disclosure comes days to months after the attack. This is a record of confirmations, not a live view.",
+      "An 8-K Item 1.05 says the incident was material, not that it was ransomware. Only the Washington notices name ransomware.",
+      "The mark is the state capital of the head-office or organisation state. It is not where the attack happened, and every filing from one state sits on the same point.",
+      "These confirm incidents; the Ransomware victims layer shows what gangs claim. The two overlap and are never added together.",
+    ],
+  },
+  {
+    id: "cyber-attackers",
+    whatItShows:
+      "A country where some of the 20 networks that DShield's sensors saw scanning or attacking them most over the last three days are registered.",
+    method:
+      "The SANS Internet Storm Center's DShield Recommended Block List, read as published: each /24 network, how many sensors reported it, its network name and its registered country. Grouped by that country.",
+    confidence: "measured",
+    coverage:
+      "Only the top 20 networks worldwide at any time, and only what reaches DShield's volunteer sensors.",
+    limitations: [
+      "A registered country is where the network's address block is registered, not where an attacker sits. Cloud and VPN ranges move attackers anywhere.",
+      "Many of the top networks are research scanners (Censys and the like) and cloud ranges. Scanning is not an attack on anyone in particular.",
+      "These are scanners and attackers, not botnet command servers; the Botnet C2 layer is the different thing.",
+      "Licensed CC BY-NC-SA 2.5: non-commercial use only.",
+    ],
+  },
   // --- Human cost -----------------------------------------------------------
   {
     id: "displacement",

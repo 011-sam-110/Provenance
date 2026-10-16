@@ -12,7 +12,6 @@ import {
   conflictArticlesByIso3,
   foodFromFewsNet,
   displacementShare,
-  conflictArticlesByIso3,
   FACTOR_WEIGHTS,
   DISPLACEMENT_FLOOR,
   type CountryInput,

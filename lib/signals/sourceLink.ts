@@ -110,6 +110,11 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   "cloud-status": { label: "Vendor status pages", url: "https://www.githubstatus.com/" },
   // Each alert and advice feature deep-links its own record; a UCDP event has no
   // per-event page, so the release's download page is the source.
+  // Each record links its own department's dataset; this is the fallback.
+  // Each filing or notice links its own record; these are the fallbacks.
+  "cyber-disclosures": { label: "SEC EDGAR", url: "https://efts.sec.gov/LATEST/search-index?q=%22Item%201.05%22&forms=8-K" },
+  "cyber-attackers": { label: "SANS ISC DShield", url: "https://isc.sans.edu/block.html" },
+  "crime-us": { label: "City police open data", url: "https://data.sfgov.org/d/wg3w-h783" },
   conflict: { label: "UCDP", url: "https://ucdp.uu.se/downloads/", licence: CC_BY_4_0 },
   protests: { label: "U.S. Embassy alerts", url: "https://www.usembassy.gov/" },
   acled: { label: "ACLED", url: "https://acleddata.com/" },

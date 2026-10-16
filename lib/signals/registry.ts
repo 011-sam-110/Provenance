@@ -55,9 +55,12 @@ import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
+import { US_CITY_CRIME_SOURCE } from "@/lib/signals/crime-us";
 import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
 import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
+import { CYBER_DISCLOSURES_SOURCE } from "@/lib/signals/cyber-disclosures";
+import { CYBER_ATTACKERS_SOURCE } from "@/lib/signals/cyber-attackers";
 import { DISPLACEMENT_SOURCE } from "@/lib/signals/displacement";
 import { MILITARY_AIR_SOURCE } from "@/lib/signals/military-air";
 import { GLIDERS_SOURCE } from "@/lib/signals/ogn";
@@ -133,9 +136,12 @@ export const SIGNALS: SignalSource[] = [
   AIR_QUALITY_SOURCE,
   AIR_QUALITY_STATIONS_SOURCE, // real OpenAQ station PM2.5 (key-gated: OPENAQ_API_KEY)
   UK_CRIME_SOURCE,
+  US_CITY_CRIME_SOURCE, // police departments' own portals, last 7 days, block-level (keyless)
   // Cyber threat (keyless abuse.ch + Ransomware.live, country-aggregated)
   CYBER_C2_SOURCE,
   CYBER_RANSOMWARE_SOURCE,
+  CYBER_DISCLOSURES_SOURCE, // incidents the victims confirmed: SEC 8-K Item 1.05 + Washington AG (keyless, US only)
+  CYBER_ATTACKERS_SOURCE, // SANS ISC DShield top 20 attacking /24s, by registered country (keyless)
   // Human cost (keyless UNHCR displacement, country-aggregated)
   DISPLACEMENT_SOURCE,
   RELIEFWEB_SOURCE, // humanitarian emergencies: ReliefWeb's HDX export + IFRC GO appeals (keyless)

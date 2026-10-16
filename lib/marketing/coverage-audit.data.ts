@@ -521,6 +521,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "Showing 1,500 of 11,181, the first found in city order (London, Manchester, Birmingham, Leeds, Liverpool, Bristol) — not a ranking."
   },
   {
+    "id": "crime-us",
+    "label": "US city crime",
+    "group": "Civic safety",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "cyber-c2",
     "label": "Botnet C2 servers",
     "group": "Cyber threat",
@@ -531,6 +543,30 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": false,
     "state": "live",
     "note": ""
+  },
+  {
+    "id": "cyber-disclosures",
+    "label": "Cyber incidents disclosed (US)",
+    "group": "Cyber threat",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "cyber-attackers",
+    "label": "Top attacking networks",
+    "group": "Cyber threat",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "cyber-ransomware",
@@ -3460,10 +3496,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 46,
+  "layers": 49,
   "live": 29,
   "partial": 1,
-  "down": 14,
+  "down": 17,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,
