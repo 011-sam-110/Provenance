@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
-import { parseRss, mergeNews, type NewsItem } from "@/lib/news";
+import {
+  parseRss,
+  mergeNews,
+  withinAge,
+  MAX_ITEM_AGE_MS,
+  MAX_FUTURE_SKEW_MS,
+  type NewsItem,
+} from "@/lib/news";
 
 const xml = readFileSync("tests/fixtures/rss-sample.xml", "utf8");
 
@@ -40,4 +47,25 @@ test("mergeNews sorts newest-first, dedupes by url and title, and caps", () => {
 
   const capped = mergeNews([a, b], 2);
   expect(capped).toHaveLength(2);
+});
+
+test("withinAge drops items older than the window and items dated in the future", () => {
+  const now = Date.parse("2026-10-16T18:49:00Z");
+  const at = (title: string, ts: number): NewsItem => ({ title, source: "X", url: `https://x.com/${title}`, ts });
+  const kept = withinAge(
+    [
+      at("fresh", now - 60_000),
+      at("edge-old", now - MAX_ITEM_AGE_MS),
+      // Measured on 2026-10-16: CBS still served an item from 2025-07-03.
+      at("cbs-2025", Date.parse("2025-07-03T12:00:00Z")),
+      at("guardian-week", now - 7 * 24 * 60 * 60 * 1000),
+      // The Jerusalem Post stamped items 13 minutes ahead that day.
+      at("jpost-future", now + 13 * 60 * 1000),
+      at("skew-ok", now + MAX_FUTURE_SKEW_MS),
+      // No parseable date: kept, it sorts last and there is no age to judge it by.
+      at("undated", 0),
+    ],
+    now,
+  ).map((i) => i.title);
+  expect(kept).toEqual(["fresh", "edge-old", "skew-ok", "undated"]);
 });

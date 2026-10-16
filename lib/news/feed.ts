@@ -18,7 +18,7 @@
 // behaviour and the last-good fallback are the route's, unchanged, with their reasoning
 // carried across intact.
 
-import { parseRss, mergeNews, type NewsItem, type NewsPayload } from "@/lib/news";
+import { parseRss, mergeNews, withinAge, type NewsItem, type NewsPayload } from "@/lib/news";
 import { parseTelegram } from "@/lib/news/telegram";
 import { toNewsItems } from "@/lib/news/ingest";
 import { scrapedItems } from "@/lib/news/scrapedStore";
@@ -206,7 +206,12 @@ export async function mergedNews(nowMs = Date.now()): Promise<NewsPayload> {
   // this process, the store is empty and this contributes [] — exactly what a dead feed
   // contributes. Nothing here can fail a request.
   lists.push(toNewsItems(scrapedItems(SCRAPED_POOL)));
-  const items = mergeNews(lists, LIMIT);
+  // The age window applies to every path alike, before the cap: a stale item must not
+  // take one of the LIMIT places from a fresh one. See MAX_ITEM_AGE_MS for what it cost.
+  const items = mergeNews(
+    lists.map((list) => withinAge(list, nowMs)),
+    LIMIT,
+  );
 
   // Keep the last good list if a transient outage emptied everything.
   if (items.length === 0 && held && held.items.length > 0) return held;

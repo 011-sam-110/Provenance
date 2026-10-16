@@ -133,6 +133,40 @@ export function mergeNews(lists: NewsItem[][], limit = 30): NewsItem[] {
   return out;
 }
 
+/**
+ * The oldest headline the stream will carry, by its own date.
+ *
+ * There was no limit before 2026-10-16, and the feeds do not impose one: that day CBS
+ * still carried an item from 2025-07-03, the Guardian's world feed held items a week
+ * old, and Buenos Aires Times serves 100 items back two weeks. Every one of them went
+ * into the World Headlines stream AND into headline-places, which counts every item it
+ * is given — so a fifteen-month-old story was drawing a pin on today's map. 72 hours
+ * keeps a weekend's news for the clusterer and drops what is no longer news.
+ */
+export const MAX_ITEM_AGE_MS = 72 * 60 * 60 * 1000;
+
+/**
+ * How far into the future an item's date may be before it is refused.
+ *
+ * A future-dated item sorts above everything real and stays at the top until the clock
+ * catches it up. The Jerusalem Post stamped items 13 minutes ahead on 2026-10-16. Ten
+ * minutes covers ordinary clock skew between hosts and refuses that; the item is not
+ * lost, it enters the stream once its stated time is within the window.
+ */
+export const MAX_FUTURE_SKEW_MS = 10 * 60 * 1000;
+
+/**
+ * Pure: drop items dated older than MAX_ITEM_AGE_MS or further ahead than
+ * MAX_FUTURE_SKEW_MS. An item with NO parseable date (ts 0) is kept: there is no age
+ * to judge it by, and dropping it would make a date-format change in one feed silently
+ * remove that whole feed. It already sorts last in mergeNews.
+ */
+export function withinAge(items: readonly NewsItem[], nowMs: number): NewsItem[] {
+  return items.filter(
+    (it) => it.ts === 0 || (it.ts >= nowMs - MAX_ITEM_AGE_MS && it.ts <= nowMs + MAX_FUTURE_SKEW_MS),
+  );
+}
+
 export interface NewsPayload {
   generatedAt: number;
   items: NewsItem[];
