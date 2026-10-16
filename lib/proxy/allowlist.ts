@@ -1,7 +1,35 @@
+import { neUtmcAuthHeader } from "@/lib/sources/ne-utmc";
+import { ottawaCertParams } from "@/lib/sources/ottawa";
+import { COMPATIBLE_UA } from "@/lib/sources/feedKit";
+
 // Each rule is host + required path prefix (+ optional suffix). Adding a source
 // = adding a rule. SCDOT snapshots live at the host root as `/<id>.png`, so that
 // rule pins the suffix instead of a deep prefix to stay tight.
-const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] = [
+interface Rule {
+  host: string;
+  prefix: string;
+  suffix?: string;
+  port?: string;
+  /**
+   * Request headers this host needs, added on the server only: a credential that
+   * must never reach a browser, or an agent string the host insists on. Read per
+   * request so a key added to the environment takes effect without a restart.
+   */
+  headers?: () => Record<string, string>;
+  /** Query parameters added on the server only (a certificate in the URL). */
+  query?: () => Record<string, string> | null;
+}
+
+// The crawler-form agent some hosts insist on; see lib/sources/feedKit.ts.
+export { COMPATIBLE_UA };
+
+const THB_HOSTS: Rule[] = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({
+  host: "cctv-ss0" + n + ".thb.gov.tw",
+  prefix: "/",
+  suffix: "/snapshot",
+}));
+
+const RULES: Rule[] = [
   { host: "s3-eu-west-1.amazonaws.com", prefix: "/jamcams.tfl.gov.uk/" },
   { host: "cwwp2.dot.ca.gov", prefix: "/data/" },
   { host: "scdotsnap.us-east-1.skyvdn.com", prefix: "/", suffix: ".png" },
@@ -82,7 +110,92 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).
   { host: "imgproxy.windy.com", prefix: "/_/" },
+  // --- Added in the source audit of 2026-10-16 -------------------------------
+  // Norway, Statens vegvesen: /api/images/{cameraId}, no file suffix.
+  { host: "kamera.atlas.vegvesen.no", prefix: "/api/images/" },
+  // Spain, DGT.
+  { host: "etraffic.dgt.es", prefix: "/camarasEtraffic/", suffix: ".jpg" },
+  // France, Metropole de Lyon (Criter). Upper-case .JPG, so no suffix pin.
+  { host: "download.data.grandlyon.com", prefix: "/files/rdata/pvo_patrimoine_voirie.pvocameracriter/" },
+  // Lithuania, Via Lietuva: the camera id is a query parameter.
+  { host: "eismoinfo.lt", prefix: "/eismoinfo-backend-v2/image-provider/camera/last" },
+  // Hungary, Magyar Kozut (Utinform).
+  { host: "cdnuiwebcams.utinform.hu", prefix: "/webcamimages/", suffix: ".jpg" },
+  // Hong Kong, Transport Department.
+  { host: "tdcctv.data.one.gov.hk", prefix: "/", suffix: ".JPG" },
+  // Queensland, TMR (traffic and flood cameras share the host).
+  { host: "cameras.qldtraffic.qld.gov.au", prefix: "/" },
+  // New South Wales, Transport for NSW. Refuses non-browser agents; see COMPATIBLE_UA.
+  {
+    host: "webcams.transport.nsw.gov.au",
+    prefix: "/livetraffic-webcams/cameras/",
+    headers: () => ({ "User-Agent": COMPATIBLE_UA, Accept: "image/avif,image/webp,image/*,*/*;q=0.8" }),
+  },
+  // Taiwan, Highway Bureau: eight snapshot hosts, each /{camera}/snapshot.
+  ...THB_HOSTS,
+  // Bellingen Shire Council flood cameras, hosted by its flood-warning supplier.
+  { host: "public.disasterwatch-iotp.com.au", prefix: "/prospectpublicimages/" },
+  // USGS streamgage cameras (NIMS).
+  { host: "usgs-nims-images.s3.amazonaws.com", prefix: "/overlay/", suffix: "_newest.jpg" },
+  // ALERTCalifornia.
+  { host: "cameras.alertcalifornia.org", prefix: "/public-camera-data/", suffix: "/latest-frame.jpg" },
+  // Alaska Volcano Observatory.
+  { host: "avo.alaska.edu", prefix: "/ashcam-api/images/", suffix: ".jpg" },
+  // City of Toronto RESCU.
+  { host: "opendata.toronto.ca", prefix: "/transportation/tmc/rescucameraimages/CameraImages/", suffix: ".jpg" },
+  // City of Calgary.
+  { host: "trafficcam.calgary.ca", prefix: "/", suffix: ".jpg" },
+  // City of Vancouver.
+  { host: "trafficcams.vancouver.ca", prefix: "/cameraimages/", suffix: ".jpg" },
+  // Tamar Crossings: one PHP endpoint, the camera is a query parameter.
+  { host: "www.tamarcrossings.org.uk", prefix: "/wp-content/themes/tamar/php/webcam-load.php" },
+  // Tyne and Wear UTMC: Basic auth from NE_UTMC_USER / NE_UTMC_PASS, added here.
+  {
+    host: "www.netraveldata.co.uk",
+    prefix: "/api/v2/cctv/",
+    headers: (): Record<string, string> => {
+      const auth = neUtmcAuthHeader();
+      return auth ? { Authorization: auth } : {};
+    },
+  },
+  // City of Ottawa: the certificate is added here, never stored in a camera's URL.
+  { host: "traffic.ottawa.ca", prefix: "/opendata/camera", query: () => ottawaCertParams() },
+  // Castle Rock My511 systems on the keyed API (Manitoba, Newfoundland and Labrador, Yukon).
+  { host: "www.manitoba511.ca", prefix: "/map/Cctv/" },
+  { host: "511nl.ca", prefix: "/map/Cctv/" },
+  { host: "511yukon.ca", prefix: "/map/Cctv/" },
+  // Slovenia, DARS and DRSI. The images themselves need no credential.
+  { host: "kamere.dars.si", prefix: "/" },
 ];
+
+function ruleFor(url: URL): Rule | undefined {
+  if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
+  return RULES.find(
+    (r) =>
+      url.hostname === r.host &&
+      url.port === (r.port ?? "") &&
+      url.pathname.startsWith(r.prefix) &&
+      (!r.suffix || url.pathname.endsWith(r.suffix)),
+  );
+}
+
+/**
+ * The request the proxy should actually send for an allowed URL: the URL with any
+ * server-only query parameters added, and the headers the host needs. Null for a URL
+ * no rule allows, and for a rule whose server-only parameter is missing (a dormant
+ * credential), so the proxy refuses rather than asking without it.
+ */
+export function upstreamRequest(url: URL): { url: string; headers: Record<string, string> } | null {
+  const rule = ruleFor(url);
+  if (!rule) return null;
+  const target = new URL(url.toString());
+  if (rule.query) {
+    const q = rule.query();
+    if (!q) return null;
+    for (const [k, v] of Object.entries(q)) target.searchParams.set(k, v);
+  }
+  return { url: target.toString(), headers: rule.headers?.() ?? {} };
+}
 
 /**
  * THE PORT IS PART OF THE ADDRESS, and matching only the hostname left it open.
@@ -100,12 +213,5 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
  * Vercel's IP rather than the caller's.
  */
 export function isAllowed(url: URL): boolean {
-  if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-  return RULES.some(
-    (r) =>
-      url.hostname === r.host &&
-      url.port === (r.port ?? "") &&
-      url.pathname.startsWith(r.prefix) &&
-      (!r.suffix || url.pathname.endsWith(r.suffix)),
-  );
+  return ruleFor(url) !== undefined;
 }

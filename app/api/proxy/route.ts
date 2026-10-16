@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
-import { isAllowed } from "@/lib/proxy/allowlist";
+import { isAllowed, upstreamRequest } from "@/lib/proxy/allowlist";
 import { extractScotlandImage, isScotlandCard } from "@/lib/sources/trafficscotland";
 import { notePlaceholder } from "@/lib/sources/placeholderMemo";
 import { extractTxdotSnapshot } from "@/lib/sources/txdot";
@@ -42,10 +42,15 @@ export async function GET(req: NextRequest) {
     return proxyOverH2(target, cam.refreshSeconds);
   }
 
+  // A host may need a server-only credential or agent string (lib/proxy/allowlist.ts).
+  // A dormant credential means there is nothing honest to fetch.
+  const upstreamReq = upstreamRequest(target);
+  if (!upstreamReq) return new Response("camera feed is not configured", { status: 404 });
+
   let upstream: Response;
   try {
-    upstream = await fetch(target.toString(), {
-      headers: { "User-Agent": UA },
+    upstream = await fetch(upstreamReq.url, {
+      headers: { "User-Agent": UA, ...upstreamReq.headers },
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(10_000),
