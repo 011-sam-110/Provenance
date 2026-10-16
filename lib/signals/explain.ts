@@ -406,12 +406,13 @@ const EXPLAINERS: LayerExplainer[] = [
   {
     id: "ports",
     whatItShows: "A major commercial seaport, from a curated list of large cargo and container ports.",
-    method: "Curated from Wikipedia's List of busiest container ports (2023). The list is not in throughput order and the layer shows no rank.",
+    method: "Curated from Wikipedia's List of busiest container ports (2023); the file order means nothing and no rank is shown. Each port carries official figures joined by its UN/LOCODE: UNCTAD's quarterly liner shipping connectivity index (the layer's measure), Eurostat's quarterly tonnage for EU ports and USACE's annual tonnage for US ports.",
     confidence: "reported",
     coverage: "The world's largest container and cargo ports — a top-N list, not every port.",
     limitations: [
       "A deliberately short curated list. Absence from this layer says nothing about a port's existence or importance: some top-70 ports (for example in Vietnam and Indonesia) are not on it.",
-      "Static reference data: no congestion, no throughput, no current vessel counts.",
+      "No congestion and no current vessel counts. The figures are quarterly or annual and up to a year old; each says its period.",
+      "The connectivity index measures how well a port is linked into container liner networks, not how much cargo it handles: a big bulk or oil port can score low.",
       "Coordinates mark the port area, not a berth.",
     ],
   },
