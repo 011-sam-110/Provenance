@@ -60,6 +60,7 @@ import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { actionFor, chordOf, keymapStore } from "@/lib/shell/keymap";
 import { isDrawing, startDraw } from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
+import { startAccount } from "@/lib/account/runtime";
 
 /**
  * `feeds` — how many camera feeds the registry holds, for the boot screen's one
@@ -167,6 +168,11 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // Mounted in its own effect because the hydrate effect above must have run first —
   // the runner reads the stores it fills.
   useEffect(() => startNotifyRunner(readNotifyFeed), []);
+
+  // THE ACCOUNT BOOT STEP, after the hydrate effect above on purpose: it reads stores that
+  // effect filled, and from M3 it may write newer account values and reload once. With
+  // Supabase unconfigured it sets "off" and returns without a network call.
+  useEffect(() => { void startAccount(); }, []);
 
 // THE SKIN⇄BASEMAP EFFECT IS GONE, with the skin it followed.
   //

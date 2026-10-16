@@ -9,7 +9,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { beaconConfig, beaconOptions, DEFAULT_BEACON_HOST, navigationPageview } from "@/lib/analytics/beacon";
+import { beaconConfig, beaconOptions, DEFAULT_BEACON_HOST, navigationPageview, beaconSkipsPath } from "@/lib/analytics/beacon";
 
 const ROOT = join(__dirname, "..", "..");
 
@@ -186,5 +186,26 @@ describe("the key reaches the browser build", () => {
   it("passes the project key to the production build", () => {
     const build = deploy.slice(deploy.indexOf("- name: Build"), deploy.indexOf("- name: Assemble the release"));
     expect(build).toMatch(/NEXT_PUBLIC_POSTHOG_KEY:\s*\$\{\{\s*vars\.NEXT_PUBLIC_POSTHOG_KEY\s*\}\}/);
+  });
+});
+
+describe("beacon on account pages", () => {
+  // Account email links carry a one-time token in the URL. No event from those pages may
+  // reach a third party.
+  it("skips /account and everything under it", () => {
+    expect(beaconSkipsPath("/account")).toBe(true);
+    expect(beaconSkipsPath("/account/confirm")).toBe(true);
+  });
+
+  it("does not skip other paths, including look-alikes", () => {
+    for (const path of ["/app", "/", "/privacy", "/accounts-x"]) {
+      expect(beaconSkipsPath(path), path).toBe(false);
+    }
+  });
+
+  it("is checked by both Beacon effects", () => {
+    const src = readFileSync(join(ROOT, "components", "analytics", "Beacon.tsx"), "utf8");
+    expect(src).toMatch(/beaconSkipsPath\(window\.location\.pathname\)/);
+    expect(src).toMatch(/beaconSkipsPath\(pathname\)/);
   });
 });

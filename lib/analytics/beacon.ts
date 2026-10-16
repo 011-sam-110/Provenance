@@ -84,6 +84,15 @@ export function navigationPageview(state: { first: boolean; loaded: boolean }): 
 }
 
 /**
+ * Pages where the beacon loads nothing and captures nothing: "/account" and anything under
+ * "/account/". These pages carry one-time credentials in the URL (the email-link token), and
+ * no event from them may reach a third party.
+ */
+export function beaconSkipsPath(pathname: string): boolean {
+  return pathname === "/account" || pathname.startsWith("/account/");
+}
+
+/**
  * Runtime options for posthog-js.
  *
  * `persistence: "sessionStorage"` IS THE LOAD-BEARING LINE, and it is a compromise

@@ -7,6 +7,9 @@ import { FIXED_KEYS, DEFAULT_KEYMAP, KEY_ACTIONS } from "@/lib/shell/keymap";
 // test can own is the arrow arithmetic and the claim the Fixed table makes.
 
 describe("SETTINGS_TABS", () => {
+  it("puts Account last, so Main stays the landing tab", () => {
+    expect(SETTINGS_TABS[SETTINGS_TABS.length - 1]).toMatchObject({ id: "account", label: "Account" });
+  });
   it("has unique ids, and a label and a blurb for every one", () => {
     const ids = SETTINGS_TABS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
