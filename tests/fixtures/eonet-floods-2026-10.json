@@ -1,0 +1,518 @@
+{
+ "title": "EONET floods, captured 2026-10-16 from categories/floods?status=all, rings trimmed to 6 vertices",
+ "events": [
+  {
+   "id": "EONET_25291",
+   "title": "Flood in Libya 1104231",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25291",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104231"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-12T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        13.1449995,
+        32.8823784
+       ],
+       [
+        13.1454057,
+        32.8825937
+       ],
+       [
+        13.1459786,
+        32.8826843
+       ],
+       [
+        13.146029,
+        32.8828619
+       ],
+       [
+        13.1456592,
+        32.8828972
+       ],
+       [
+        13.1449043,
+        32.8825949
+       ],
+       [
+        13.1449995,
+        32.8823784
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25241",
+   "title": "Flood in Nepal 1104225",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25241",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104225"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-10T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        84.6279988,
+        27.949908154954958
+       ],
+       [
+        84.66663522387388,
+        27.971795418730036
+       ],
+       [
+        84.66772498307876,
+        28.016187287244414
+       ],
+       [
+        84.63020905560033,
+        28.03994398631555
+       ],
+       [
+        84.59054521386025,
+        28.019978886172055
+       ],
+       [
+        84.58727856157101,
+        27.975693961557198
+       ],
+       [
+        84.6279988,
+        27.949908154954958
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25242",
+   "title": "Flood in Indonesia 1104224",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25242",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104224"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-09T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        100.6204863,
+        -3.8839573
+       ],
+       [
+        101.823254,
+        -1.047555
+       ],
+       [
+        100.8582422,
+        -0.3364477
+       ],
+       [
+        100.695038,
+        0.231424
+       ],
+       [
+        99.9106162,
+        0.8871459
+       ],
+       [
+        99.907282,
+        0.471538
+       ],
+       [
+        100.6204863,
+        -3.8839573
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25120",
+   "title": "Flood in Chile 1104217",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25120",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104217"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-05T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -69.9099316,
+        -34.2917449
+       ],
+       [
+        -69.7976339,
+        -33.4134157
+       ],
+       [
+        -70.4005837,
+        -33.0705641
+       ],
+       [
+        -71.219721,
+        -33.2603093
+       ],
+       [
+        -71.5733423,
+        -33.9990103
+       ],
+       [
+        -70.6747604,
+        -33.9298533
+       ],
+       [
+        -69.9099316,
+        -34.2917449
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_24511",
+   "title": "Flood in Thailand 1104169",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24511",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104169"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-04T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        17.7858722,
+        97.742169
+       ],
+       [
+        16.362864,
+        98.663158
+       ],
+       [
+        15.6128863,
+        98.6541097
+       ],
+       [
+        16.499042,
+        99.1453886
+       ],
+       [
+        17.1646103,
+        99.3190993
+       ],
+       [
+        17.4411828,
+        98.5461714
+       ],
+       [
+        17.7858722,
+        97.742169
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_24832",
+   "title": "Flood in Mexico 1104191",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24832",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104191"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-04T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        17.6732155,
+        -101.6593836
+       ],
+       [
+        17.6770844,
+        -101.6554484
+       ],
+       [
+        17.6770704,
+        -101.6539112
+       ],
+       [
+        17.6778582,
+        -101.6575432
+       ],
+       [
+        17.678525,
+        -101.6605839
+       ],
+       [
+        17.6766905,
+        -101.6611359
+       ],
+       [
+        17.6732155,
+        -101.6593836
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_25032",
+   "title": "Flood in Iceland 1104211",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25032",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104211"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-09-29T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -14.2084678,
+        64.98902205495496
+       ],
+       [
+        -14.169831376126114,
+        65.01090931873004
+       ],
+       [
+        -14.168741616921245,
+        65.05530118724441
+       ],
+       [
+        -14.206257544399666,
+        65.07905788631555
+       ],
+       [
+        -14.245921386139754,
+        65.05909278617206
+       ],
+       [
+        -14.249188038428983,
+        65.0148078615572
+       ],
+       [
+        -14.2084678,
+        64.98902205495496
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_24986",
+   "title": "Flood in Islamic Republic of Iran 1104206",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24986",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104206"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-09-26T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        55.9541996,
+        37.8933546
+       ],
+       [
+        55.9646924,
+        37.8980789
+       ],
+       [
+        55.9676106,
+        37.9070356
+       ],
+       [
+        55.9543536,
+        37.9108281
+       ],
+       [
+        55.9499724,
+        37.908644
+       ],
+       [
+        55.9412177,
+        37.8960131
+       ],
+       [
+        55.9541996,
+        37.8933546
+       ]
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_24812",
+   "title": "Flood in Chile 1104190",
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_24812",
+   "categories": [
+    {
+     "id": "floods",
+     "title": "Floods"
+    }
+   ],
+   "sources": [
+    {
+     "id": "GDACS",
+     "url": "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104190"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-09-23T20:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        -38.3194459,
+        -73.9608944
+       ],
+       [
+        -38.3453586,
+        -73.9520431
+       ],
+       [
+        -38.3725155,
+        -73.9497793
+       ],
+       [
+        -38.4119201,
+        -73.9299524
+       ],
+       [
+        -38.4155644,
+        -73.8841027
+       ],
+       [
+        -38.354227,
+        -73.8933992
+       ],
+       [
+        -38.3194459,
+        -73.9608944
+       ]
+      ]
+     ]
+    }
+   ]
+  }
+ ]
+}

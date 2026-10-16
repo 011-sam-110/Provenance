@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/eonet-floods.json";
-import { eonetToFeatures, CATEGORIES, type EonetEvent } from "@/lib/signals/eonet";
+import mixed from "@/tests/fixtures/eonet-floods-2026-10.json";
+import {
+  eonetToFeatures,
+  CATEGORIES,
+  FLOOD_LONLAT_FROM_GDACS_ID,
+  floodPairOrder,
+  type EonetEvent,
+} from "@/lib/signals/eonet";
 
 /**
  * EONET publishes the FLOODS category with its ring vertices in [lat, lon] order, which
@@ -67,4 +74,46 @@ test("every other category keeps GeoJSON [lon, lat] — points and polygons alik
   // impossible latitude, which is precisely why the fix must not be applied globally.
   expect(fires[0].lon).toBeCloseTo(123.7, 0);
   expect(fires[0].lat).toBeCloseTo(-20.5, 0);
+});
+
+/**
+ * EONET changed the order UNDER US at about 2026-09-26: flood events created since then
+ * arrive [lon, lat], older ones still arrive [lat, lon], and the two sit in one feed.
+ * Captured live from categories/floods?status=all on 2026-10-16 (rings trimmed). Prod was
+ * pinning "Flood in Nepal" at 84.6 N and "Flood in Chile" at 70.6 S off the old flag.
+ */
+const MIXED = (mixed as { events: EonetEvent[] }).events;
+const OCT = Date.parse("2026-10-16T19:00:00Z");
+
+const TRUTH_OCT: Record<string, { lon: number; lat: number }> = {
+  "eonet:EONET_25291": { lon: 13.1, lat: 32.9 }, // Libya 1104231 — new order
+  "eonet:EONET_25241": { lon: 84.6, lat: 28.0 }, // Nepal 1104225 — new order
+  "eonet:EONET_25032": { lon: -14.2, lat: 65.0 }, // Iceland 1104211 — new order
+  "eonet:EONET_25120": { lon: -69.9, lat: -34.3 }, // Chile 1104217 — new order
+  "eonet:EONET_24986": { lon: 56.0, lat: 37.9 }, // "Islamic Republic of Iran" 1104206 — no centroid name, id rule
+  "eonet:EONET_24511": { lon: 97.7, lat: 17.8 }, // Thailand 1104169 — re-geometried 10-04, OLD order
+  "eonet:EONET_24832": { lon: -101.7, lat: 17.7 }, // Mexico 1104191 — re-geometried 10-04, OLD order
+  "eonet:EONET_24812": { lon: -74.0, lat: -38.3 }, // Chile 1104190 — old order
+};
+
+test("a feed that mixes both orders: each flood lands where its title says", () => {
+  const floods = eonetToFeatures(MIXED, CATEGORIES.floods, OCT);
+  for (const [id, t] of Object.entries(TRUTH_OCT)) {
+    const f = floods.find((x) => x.id === id);
+    expect(f, `${id} missing`).toBeTruthy();
+    // A degree is far tighter than the thousands of km a transposition moves a pin.
+    expect(Math.abs(f!.lon - t.lon), `${f!.title} lon ${f!.lon}`).toBeLessThan(1.5);
+    expect(Math.abs(f!.lat - t.lat), `${f!.title} lat ${f!.lat}`).toBeLessThan(1.5);
+  }
+});
+
+test("the order rule: country centroid first, then the GDACS id threshold", () => {
+  const byId = (id: string) => MIXED.find((e) => e.id === id)!;
+  expect(floodPairOrder(byId("EONET_25241"))).toBe("lonlat"); // Nepal, by centroid
+  expect(floodPairOrder(byId("EONET_24812"))).toBe("latlon"); // Chile 1104190, by centroid
+  // No centroid for the name: falls to the id rule.
+  const iran = byId("EONET_24986");
+  expect(floodPairOrder({ ...iran, title: "Flood in Atlantis 1104206" })).toBe("lonlat");
+  expect(floodPairOrder({ ...iran, title: "Flood in Atlantis", sources: [{ id: "GDACS", url: "https://www.gdacs.org/report.aspx?eventtype=FL&eventid=1104150" }] })).toBe("latlon");
+  expect(FLOOD_LONLAT_FROM_GDACS_ID).toBe(1104199);
 });

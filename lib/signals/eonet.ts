@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalMetric, SignalPrecision, SignalSource } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
+import { centroidByName } from "@/lib/signals/country-centroids.data";
 
 // NASA EONET (Earth Observatory Natural Event Tracker) — open natural events of
 // the last 30 days. ONE upstream fetch feeds FOUR registry layers (wildfires /
@@ -100,8 +101,13 @@ export interface EonetCategoryMeta {
    * events that prove it keep working while this flag is stale. The events that do
    * NOT prove it would flip, so the audit script asserts the order against live data
    * on every run — see `assertFloodOrder` in scripts/country-event-breakdown.mts.
+   *
+   * "per-event" (floods since 2026-10-16): the order is decided for each event by
+   * `floodPairOrder()`. EONET began publishing NEW flood events as [lon, lat] at about
+   * 2026-09-26 while older events kept [lat, lon], so no single flag is right for the
+   * category any more. See `floodPairOrder` for the rule and the measurement.
    */
-  coordOrder?: "lonlat" | "latlon";
+  coordOrder?: "lonlat" | "latlon" | "per-event";
   /**
    * Read this category from its own `status=all` feed instead of the shared
    * `status=open` one.
@@ -147,10 +153,75 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     precision: "area",
     maxAgeDays: 60,
     allStatuses: true,
-    // See `coordOrder` above. Measured, not assumed.
-    coordOrder: "latlon",
+    // See `coordOrder` above. Measured, not assumed: the feed now mixes both orders.
+    coordOrder: "per-event",
   },
 };
+
+/**
+ * The first GDACS flood event id that EONET publishes as [lon, lat].
+ *
+ * Measured 2026-10-16 against `categories/floods?status=all&limit=200`: every event up
+ * to GDACS id 1104198 (India/Nepal, 2026-09-23) is [lat, lon], and every event from
+ * 1104199 (Spain, 2026-09-27) on is [lon, lat] — Libya 1104231 is [13.14, 32.88], Nepal
+ * 1104225 is [84.63, 27.95]. Thailand 1104169 and Mexico 1104191 got NEW geometries on
+ * 10-04 and kept [lat, lon], so the order follows the event's id, not the geometry date.
+ */
+export const FLOOD_LONLAT_FROM_GDACS_ID = 1104199;
+
+/** The GDACS event id EONET relays a flood from, read off its source link or title. */
+function gdacsFloodId(e: EonetEvent): number | null {
+  for (const s of e.sources ?? []) {
+    const m = /[?&]eventid=(\d+)/.exec(s.url ?? "");
+    if (m) return Number(m[1]);
+  }
+  const t = /\s(\d{6,})\s*$/.exec(e.title ?? "");
+  return t ? Number(t[1]) : null;
+}
+
+/** "Flood in Nepal 1104225" → the centroid of Nepal, when the name is one we know. */
+function floodCountryCentroid(e: EonetEvent): { lat: number; lon: number } | undefined {
+  const m = /^\s*floods?\s+in\s+(.+?)(?:\s+\d{6,})?\s*$/i.exec(e.title ?? "");
+  if (!m) return undefined;
+  const c = centroidByName(m[1]);
+  return c ? { lat: c.lat, lon: c.lon } : undefined;
+}
+
+/** Rough distance in degrees, with longitude shrunk by latitude. Ranking only. */
+function degDistance(a: [number, number], b: { lat: number; lon: number }): number {
+  const dLat = a[1] - b.lat;
+  let dLon = Math.abs(a[0] - b.lon);
+  if (dLon > 180) dLon = 360 - dLon;
+  return Math.hypot(dLat, dLon * Math.cos((b.lat * Math.PI) / 180));
+}
+
+/**
+ * Pure: the order ONE EONET flood event's pairs arrive in.
+ *
+ * 1. When the title names a country we hold a centroid for, the order whose point is
+ *    nearer that centroid wins. A transposed pair moves a pin thousands of kilometres,
+ *    so this is decisive wherever it applies, and it keeps working if EONET changes
+ *    the order again.
+ * 2. Otherwise the GDACS event id decides (`FLOOD_LONLAT_FROM_GDACS_ID`).
+ * 3. With neither, the GeoJSON order.
+ *
+ * `representativePoint` still range-checks each pair, so a pair that proves its own
+ * order (a value above 90) is read correctly whatever this returns.
+ */
+export function floodPairOrder(e: EonetEvent, geom?: EonetGeometry): "lonlat" | "latlon" {
+  const g = geom ?? e.geometry?.[e.geometry.length - 1];
+  const centroid = floodCountryCentroid(e);
+  if (centroid && g) {
+    const asLonLat = representativePoint(g, "lonlat");
+    const asLatLon = representativePoint(g, "latlon");
+    if (asLonLat && asLatLon) {
+      return degDistance(asLatLon, centroid) < degDistance(asLonLat, centroid) ? "latlon" : "lonlat";
+    }
+  }
+  const id = gdacsFloodId(e);
+  if (id != null) return id >= FLOOD_LONLAT_FROM_GDACS_ID ? "lonlat" : "latlon";
+  return "lonlat";
+}
 
 /**
  * Read one coordinate pair in the order the category actually publishes.
@@ -229,7 +300,9 @@ export function eonetToFeatures(
       const t = Date.parse(last.date);
       if (Number.isFinite(t) && now - t > meta.maxAgeDays * 86_400_000) continue;
     }
-    const pt = representativePoint(last, meta.coordOrder ?? "lonlat");
+    const order =
+      meta.coordOrder === "per-event" ? floodPairOrder(e, last) : (meta.coordOrder ?? "lonlat");
+    const pt = representativePoint(last, order);
     if (!pt) continue;
     // A polygon was averaged into this point, so the place is an area whatever the
     // category's default says.
