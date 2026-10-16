@@ -1,0 +1,3 @@
+﻿Code,Name,ICAO,IATA,PositioningFlightPattern,CharterFlightPattern
+ACR,"Aerocenter, Escuela de Formación de Pilotos Privados de Avión",ACR,,,
+BAW,British Airways,BAW,BA,9\d\d\d,^(45|85|86)\d\d$

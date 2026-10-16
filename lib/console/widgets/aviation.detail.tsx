@@ -350,7 +350,7 @@ export default function AviationDetail({ instanceId, config }: WidgetDetailProps
       )}
 
       <footer className="tn-av-foot">
-        <span className="tn-av-attr">Aircraft: adsb.lol · enrichment: adsbdb · pulled by type, worldwide (cached snapshot)</span>
+        <span className="tn-av-attr">Aircraft: adsb.lol, adsb.fi in thin regions · routes: VRS standing data · airframes: adsbdb · pulled by type, worldwide (cached snapshot)</span>
         <span className="tn-av-actions">
           <button
             disabled={exportRows.length === 0}
@@ -360,7 +360,7 @@ export default function AviationDetail({ instanceId, config }: WidgetDetailProps
             disabled={exportGeo.length === 0}
             onClick={() => downloadText(`${exportFilename("aviation", Date.now())}.geojson`, "application/geo+json", toGeoJson(exportGeo))}
           >⬇ GeoJSON</button>
-          <ExportExtras name="aviation" kind="aviation" rows={exportRows} geo={exportGeo} source="Aircraft: adsb.lol. Enrichment: adsbdb." />
+          <ExportExtras name="aviation" kind="aviation" rows={exportRows} geo={exportGeo} source="Aircraft: adsb.lol (ODbL), adsb.fi in thin regions. Routes: Virtual Radar Server standing data (CC0). Airframes: adsbdb." />
         </span>
       </footer>
     </div>

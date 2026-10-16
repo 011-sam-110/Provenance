@@ -137,7 +137,7 @@ export default function PlaneDetail({ object }: Props) {
   // own). adsb.fi's terms require a citation and a link, so the Source block follows it.
   const net = planeNetwork(meta.network);
 
-  // Enrich with adsbdb (origin/destination + airframe) server-side. Optional —
+  // Enrich server-side: route from VRS standing data, airframe from adsbdb. Optional —
   // the dossier shows the live telemetry immediately and grafts this in if/when
   // it resolves; a miss or failure leaves the panel exactly as it was.
   const [flight, setFlight] = useState<FlightEnrichment | null>(null);
@@ -323,7 +323,7 @@ export default function PlaneDetail({ object }: Props) {
         />
       </div>
 
-      {/* ── Route (adsbdb) ── */}
+      {/* ── Route (VRS standing data) ── */}
       {route && (route.origin || route.destination) && (
         <div
           style={{
@@ -397,14 +397,21 @@ export default function PlaneDetail({ object }: Props) {
               adsb.fi ↗
             </a>
           )}
-          {(route || aircraft) && (
+          {route && (
+            <a href="https://github.com/vradarserver/standing-data" target="_blank" rel="noreferrer noopener" style={sourceLinkStyle}>
+              VRS standing data ↗
+            </a>
+          )}
+          {aircraft && (
             <a href="https://www.adsbdb.com/" target="_blank" rel="noreferrer noopener" style={sourceLinkStyle}>
               adsbdb ↗
             </a>
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--tn-text-faint)", lineHeight: 1.5 }}>
-          Live ADS-B position © {net.credit}{route || aircraft ? " · route / airframe © adsbdb.com" : ""}
+          Live ADS-B position © {net.credit}
+          {route ? " · route © Virtual Radar Server standing data (CC0)" : ""}
+          {aircraft ? " · airframe © adsbdb.com" : ""}
         </div>
       </div>
     </div>
