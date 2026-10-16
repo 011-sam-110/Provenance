@@ -220,7 +220,11 @@ export const UK_CRIME_SOURCE: SignalSource = {
       const capped = capCrime(merged);
       // A city that failed is a GAP, not a city with no crime. Prod lost Bristol this way
       // without a word, because one surviving city counted as a full read.
-      if (failed.length > 0) return degradedWith(capped, `${failed.length} of ${CRIME_CITIES.length} cities failed: ${failed.join(", ")}`);
+      if (failed.length > 0) {
+        // A published reason stays short (the outcome test holds 80 characters).
+        const named = `${failed.length} of ${CRIME_CITIES.length} cities failed: ${failed.join(", ")}`;
+        return degradedWith(capped, named.length <= 80 ? named : `${failed.length} of ${CRIME_CITIES.length} cities failed`);
+      }
       return observed(capped);
     } catch {
       return degraded("read failed");
