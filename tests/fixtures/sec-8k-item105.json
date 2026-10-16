@@ -1,0 +1,317 @@
+{
+ "capturedAt": "2026-10-16T21:30:00Z",
+ "hits": {
+  "hits": [
+   {
+    "_id": "0000318154-26-000119:amgn-20260729.htm",
+    "_source": {
+     "adsh": "0000318154-26-000119",
+     "ciks": [
+      "0000318154"
+     ],
+     "display_names": [
+      "AMGEN INC  (AMGN)  (CIK 0000318154)"
+     ],
+     "file_date": "2026-07-31",
+     "form": "8-K",
+     "items": [
+      "1.05"
+     ],
+     "biz_locations": [
+      "Thousand Oaks, CA"
+     ],
+     "biz_states": [
+      "CA"
+     ]
+    }
+   },
+   {
+    "_id": "0001104659-26-109813:asth-20260922x8k.htm",
+    "_source": {
+     "adsh": "0001104659-26-109813",
+     "ciks": [
+      "0001083446"
+     ],
+     "display_names": [
+      "Astrana Health, Inc.  (ASTH)  (CIK 0001083446)"
+     ],
+     "file_date": "2026-09-23",
+     "form": "8-K",
+     "items": [
+      "1.05"
+     ],
+     "biz_locations": [
+      "Alhambra, CA"
+     ],
+     "biz_states": [
+      "CA"
+     ]
+    }
+   },
+   {
+    "_id": "0001193125-26-325324:ck0001641601-20260619.htm",
+    "_source": {
+     "adsh": "0001193125-26-325324",
+     "ciks": [
+      "0001641601"
+     ],
+     "display_names": [
+      "River Financial Corp  (RVRF)  (CIK 0001641601)"
+     ],
+     "file_date": "2026-07-30",
+     "form": "8-K/A",
+     "items": [
+      "1.05",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Prattville, AL"
+     ],
+     "biz_states": [
+      "AL"
+     ]
+    }
+   },
+   {
+    "_id": "0001104659-26-104300:park-20260828x8k.htm",
+    "_source": {
+     "adsh": "0001104659-26-104300",
+     "ciks": [
+      "0002069604"
+     ],
+     "display_names": [
+      "Park Dental Partners, Inc.  (PARK)  (CIK 0002069604)"
+     ],
+     "file_date": "2026-09-01",
+     "form": "8-K",
+     "items": [
+      "1.05",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Roseville, MN"
+     ],
+     "biz_states": [
+      "MN"
+     ]
+    }
+   },
+   {
+    "_id": "0001193125-26-310605:upbd-20260721.htm",
+    "_source": {
+     "adsh": "0001193125-26-310605",
+     "ciks": [
+      "0000933036"
+     ],
+     "display_names": [
+      "UPBOUND GROUP, INC.  (UPBD)  (CIK 0000933036)"
+     ],
+     "file_date": "2026-07-22",
+     "form": "8-K",
+     "items": [
+      "8.01"
+     ],
+     "biz_locations": [
+      "Plano, TX"
+     ],
+     "biz_states": [
+      "TX"
+     ]
+    }
+   },
+   {
+    "_id": "0001104659-26-115541:park-20261007x8k.htm",
+    "_source": {
+     "adsh": "0001104659-26-115541",
+     "ciks": [
+      "0002069604"
+     ],
+     "display_names": [
+      "Park Dental Partners, Inc.  (PARK)  (CIK 0002069604)"
+     ],
+     "file_date": "2026-10-13",
+     "form": "8-K",
+     "items": [
+      "1.05"
+     ],
+     "biz_locations": [
+      "Roseville, MN"
+     ],
+     "biz_states": [
+      "MN"
+     ]
+    }
+   },
+   {
+    "_id": "0001628280-26-061432:materiality_assessmentxupd.htm",
+    "_source": {
+     "adsh": "0001628280-26-061432",
+     "ciks": [
+      "0001479681"
+     ],
+     "display_names": [
+      "Nutex Health Inc.  (NUTX)  (CIK 0001479681)"
+     ],
+     "file_date": "2026-09-11",
+     "form": "8-K",
+     "items": [
+      "8.01",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Houston, TX"
+     ],
+     "biz_states": [
+      "TX"
+     ]
+    }
+   },
+   {
+    "_id": "0001645113-26-000065:nvcr-20260901.htm",
+    "_source": {
+     "adsh": "0001645113-26-000065",
+     "ciks": [
+      "0001645113"
+     ],
+     "display_names": [
+      "NovoCure Ltd  (NVCR)  (CIK 0001645113)"
+     ],
+     "file_date": "2026-09-01",
+     "form": "8-K",
+     "items": [
+      "8.01",
+      "9.01"
+     ],
+     "biz_locations": [
+      "St. Helier"
+     ],
+     "biz_states": []
+    }
+   },
+   {
+    "_id": "0001628280-26-059602:nutx-20260831.htm",
+    "_source": {
+     "adsh": "0001628280-26-059602",
+     "ciks": [
+      "0001479681"
+     ],
+     "display_names": [
+      "Nutex Health Inc.  (NUTX)  (CIK 0001479681)"
+     ],
+     "file_date": "2026-08-31",
+     "form": "8-K",
+     "items": [
+      "1.05"
+     ],
+     "biz_locations": [
+      "Houston, TX"
+     ],
+     "biz_states": [
+      "TX"
+     ]
+    }
+   },
+   {
+    "_id": "0000885725-26-000059:bsx-20260907.htm",
+    "_source": {
+     "adsh": "0000885725-26-000059",
+     "ciks": [
+      "0000885725"
+     ],
+     "display_names": [
+      "BOSTON SCIENTIFIC CORP  (BSX)  (CIK 0000885725)"
+     ],
+     "file_date": "2026-09-08",
+     "form": "8-K",
+     "items": [
+      "1.05"
+     ],
+     "biz_locations": [
+      "Marlborough, MA"
+     ],
+     "biz_states": [
+      "MA"
+     ]
+    }
+   },
+   {
+    "_id": "0001493152-26-035867:ex10-2.htm",
+    "_source": {
+     "adsh": "0001493152-26-035867",
+     "ciks": [
+      "0001716166"
+     ],
+     "display_names": [
+      "Vivos Therapeutics, Inc.  (VVOS)  (CIK 0001716166)"
+     ],
+     "file_date": "2026-08-03",
+     "form": "8-K",
+     "items": [
+      "1.01",
+      "5.02",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Littleton, CO"
+     ],
+     "biz_states": [
+      "CO"
+     ]
+    }
+   },
+   {
+    "_id": "0001213900-26-086750:ea030067001ex10-1.htm",
+    "_source": {
+     "adsh": "0001213900-26-086750",
+     "ciks": [
+      "0000778164"
+     ],
+     "display_names": [
+      "Alto Ingredients, Inc.  (ALTO)  (CIK 0000778164)"
+     ],
+     "file_date": "2026-08-07",
+     "form": "8-K",
+     "items": [
+      "1.01",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Sacramento, CA"
+     ],
+     "biz_states": [
+      "CA"
+     ]
+    }
+   },
+   {
+    "_id": "0001213900-26-080208:ea029882601ex10-1.htm",
+    "_source": {
+     "adsh": "0001213900-26-080208",
+     "ciks": [
+      "0002033770"
+     ],
+     "display_names": [
+      "CID Holdco, Inc.  (DAIC, DAICW)  (CIK 0002033770)"
+     ],
+     "file_date": "2026-07-22",
+     "form": "8-K",
+     "items": [
+      "1.01",
+      "3.02",
+      "3.03",
+      "5.02",
+      "5.03",
+      "7.01",
+      "9.01"
+     ],
+     "biz_locations": [
+      "Bethesda, MD"
+     ],
+     "biz_states": [
+      "MD"
+     ]
+    }
+   }
+  ]
+ }
+}
