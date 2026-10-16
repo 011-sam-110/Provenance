@@ -43,8 +43,18 @@ const LAT_STEP = 4;
  * leaves standing; a one-row band at 0 is a grid artefact.
  */
 export const EQUATOR_BAND_DEG = 20;
-/** Backstop cap on the point count once bucketed (storms widen the oval). */
-const MAX_POINTS = 400;
+/**
+ * Backstop cap on the point count once bucketed (storms widen the oval).
+ *
+ * Was 400 until 2026-10-16, when it BIT on an ordinary active night: the 18:24Z run
+ * had 501 buckets at 5 % or more and prod served 400, hiding 101. The cap keeps the
+ * highest probabilities, so what it hid was the whole 5-6 % equatorward edge of the
+ * oval: the part a viewer in the UK, the northern US or southern Australia asks
+ * about ("how far south does it reach?"). Without the equator seam the same night
+ * is 466 to 481 buckets, so 600 draws all of it and still bounds a storm.
+ */
+export const AURORA_MAX_POINTS = 600;
+const MAX_POINTS = AURORA_MAX_POINTS;
 
 export const AURORA_ATTRIBUTION = "Aurora forecast © NOAA Space Weather Prediction Center";
 
@@ -61,7 +71,7 @@ export interface AuroraOptions {
   lonStep?: number;
   /** Downsample bucket height in degrees of latitude. Default 4. */
   latStep?: number;
-  /** Hard cap on the returned point count. Default 400. */
+  /** Hard cap on the returned point count. Default AURORA_MAX_POINTS (600). */
   cap?: number;
 }
 

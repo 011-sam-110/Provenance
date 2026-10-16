@@ -9,9 +9,11 @@ import {
   wrapLon,
   AURORA_SOURCE,
   EQUATOR_BAND_DEG,
+  AURORA_MAX_POINTS,
   type OvationGrid,
 } from "@/lib/signals/aurora";
 import { rowMetric } from "@/lib/console/signals/signalCard";
+import { readCoverage } from "@/lib/signals/coverage";
 
 const grid = fixture as unknown as OvationGrid;
 /** A verbatim excerpt of the live 2026-08-10 NOAA OVATION run (peak 22%). */
@@ -114,7 +116,7 @@ test("REGRESSION: the live OVATION grid produces features (a 50% floor produced 
 
 test("REGRESSION: live output is bounded, in-range and spans both hemispheres", () => {
   const out = normalizeAurora(liveGrid);
-  expect(out.length).toBeLessThanOrEqual(400);
+  expect(out.length).toBeLessThanOrEqual(AURORA_MAX_POINTS);
   expect(out.every((f) => f.lon >= -180 && f.lon <= 180)).toBe(true);
   expect(out.every((f) => f.lat >= -90 && f.lat <= 90)).toBe(true);
   expect(out.every((f) => Number(f.props?.probabilityPct) >= 5)).toBe(true);
@@ -139,4 +141,15 @@ test("REGRESSION: the OVATION equator seam draws no aurora at the equator", () =
 test("the equator band is a fixed 20 degrees and drops a lone low-latitude cell", () => {
   expect(EQUATOR_BAND_DEG).toBe(20);
   expect(downsampleAurora([[100, 0, 6], [100, -1, 6], [100, 19, 30], [100, -19, 30], [100, 20, 6]], 5, 8, 4)).toEqual([[100, 20, 6]]);
+});
+
+test("REGRESSION: an ordinary active night is drawn whole, faint edge included", () => {
+  // At the old cap of 400 this run lost its 5-6 % edge. Now every real bucket shows.
+  const out = normalizeAurora(grid1016);
+  const real = (grid1016.coordinates ?? []).filter(([, lat, pct]) => Math.abs(lat) >= EQUATOR_BAND_DEG && pct >= 5);
+  expect(real.length).toBeGreaterThan(400);
+  expect(out).toHaveLength(real.length);
+  expect(readCoverage(out)).toMatchObject({ capped: false });
+  expect(Math.min(...out.map((f) => Number(f.props?.probabilityPct)))).toBe(5);
+  expect(AURORA_MAX_POINTS).toBe(600);
 });
