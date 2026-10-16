@@ -2,15 +2,21 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 
-// gpsjam.org — daily GPS/GNSS interference, aggregated from ADS-B Exchange flight
-// telemetry into H3 hexagons. Keyless. NOTE: the site migrated from GeoJSON to a
+// gpsjam.org — daily GPS/GNSS interference, aggregated from airplanes.live and
+// ADS-B Exchange flight telemetry (deduplicated per aircraft; the manifest says
+// `merged` since 2026-08-27) into H3 hexagons. Keyless. NOTE: the site migrated from GeoJSON to a
 // gzipped CSV of H3 cells — confirmed live 2026-06-27 the JSON endpoint
 // (…-h3-7.json) now 404s and the live data is `data/<YYYY-MM-DD>-h3_4.csv` with
 // columns `hex,count_good_aircraft,count_bad_aircraft` (resolution 7 no longer
 // published; resolution 4 is the global grid). We compute YESTERDAY server-side
 // and walk back a few days until a file exists (today's is usually missing).
 //
-// Each row's interference ratio = bad / (good + bad). The global grid is ~46k
+// Each row's interference ratio is GPSJAM's OWN published rule (FAQ):
+// percent_bad = 100 * (bad - 1) / (good + bad). The "- 1" stops one faulty
+// transponder from turning a cell red. Until 2026-10-16 this adapter used
+// bad / (good + bad): on the 2026-10-15 file that showed 50 of 400 cells that
+// GPSJAM itself does not colour, and every percentage read higher than
+// gpsjam.org's for the same hex. The global grid is ~46k
 // cells, almost all clean, so we keep only well-sampled HIGH-interference hexes
 // and HARD-CAP the count, then convert those H3 indices to hexagon Polygons with
 // h3-js (dynamically imported, server-only — kept out of the client bundle since
@@ -23,13 +29,23 @@ const MIN_RATIO = 0.1; // ≥10% of aircraft reporting bad GNSS
 const MAX_CELLS = 400; // hard cap — keep the layer light on the globe
 const LOOKBACK_DAYS = 4; // today is usually unpublished; walk back this far
 
-export const GPSJAM_ATTRIBUTION = "GPS interference data © gpsjam.org (from ADS-B Exchange)";
+export const GPSJAM_ATTRIBUTION = "GPS interference data: GPSJAM (gpsjam.org), from airplanes.live and ADS-B Exchange";
 
 export interface GpsjamCell {
   hex: string;
   good: number;
   bad: number;
-  ratio: number; // bad / (good + bad)
+  ratio: number; // GPSJAM's rule: max(0, bad - 1) / (good + bad)
+}
+
+/**
+ * GPSJAM's own interference ratio (gpsjam.org FAQ): (bad - 1) / (good + bad),
+ * clamped at 0. One aircraft with a bad receiver does not make a cell red.
+ */
+export function gpsjamRatio(good: number, bad: number): number {
+  const total = good + bad;
+  if (!(total > 0)) return 0;
+  return Math.max(0, bad - 1) / total;
 }
 
 /** Red ramp by interference ratio (heavier jamming = deeper red). */
@@ -59,7 +75,7 @@ export function parseGpsjamCsv(
     if (!Number.isFinite(good) || !Number.isFinite(bad)) continue;
     const total = good + bad;
     if (total < minSample) continue;
-    const ratio = bad / total;
+    const ratio = gpsjamRatio(good, bad);
     if (ratio < minRatio) continue;
     out.push({ hex, good, bad, ratio });
   }
@@ -142,7 +158,7 @@ export const GPS_JAMMING_SOURCE: SignalSource = {
   attribution: GPSJAM_ATTRIBUTION,
   sourceUrl: "https://gpsjam.org/", // interference map (dossier source)
 
-  // Real per-cell scalar: % of sampled aircraft reporting bad GNSS (bad / total).
+  // Real per-cell scalar: GPSJAM's % of sampled aircraft reporting bad GNSS ((bad - 1) / total).
   metric: { field: "interferencePct", domain: [0, 100], unit: "%" },
   async fetch() {
     // A cache hit is a real upstream read — stamped when it happened, not now.
