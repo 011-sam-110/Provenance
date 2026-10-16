@@ -361,8 +361,9 @@ Re-measure before putting a number in a README, a CV or a PR description.
 - **`/api/planes` is worldwide (2026-09-06).** Until then the layer was a 40-cell
   point+radius sweep of adsb.lol, and from Vercel's shared egress IP the per-IP rate limit
   let 1 of 40 cells through: prod served 1,311 aircraft, all between 2° and 15° E, drawn
-  as one or two dense discs. `lib/sources/adsb.ts` now pulls `/v2/type/{list}` in four
-  paced batches (226 designators, ~9,100 positioned aircraft) and `lib/planes/sample.ts`
+  as one or two dense discs. `lib/sources/adsb.ts` now pulls `/v2/type/{list}` (four
+  paced batches of 226 designators then; ONE request of 243 since 2026-10-16, 10,346
+  positioned aircraft that day) and `lib/planes/sample.ts`
   caps to 3,000 as a proportional spatial sample. Measured through the code path on
   2026-09-06: 131 ten-degree cells, largest 7.1%, all seven continents. Re-measure with
   `node scripts/probe-planes.mjs` (under `vercel env run` against a preview). Two honest

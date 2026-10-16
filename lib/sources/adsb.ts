@@ -129,6 +129,12 @@ export const TYPE_BATCHES: readonly (readonly string[])[] = [
     "EC35", "AS50", "EC45", "A139", "B06", "R44", "B407", "S76", "A109", "EC30",
     "EC20", "B412", "S92", "EC55", "EC75", "EC25", "A169", "A189", "R66", "R22",
     "B429", "B505", "H500", "EXPL", "A119", "AS65", "MD52", "B212",
+    // Added 2026-10-16: the civil types a whole-network snapshot carried most often
+    // that this list did not ask for (source audit, 9.5% of aircraft were never
+    // requested). Measured in one pull that day: 261 positioned aircraft between
+    // them, S22T alone 74.
+    "S22T", "C72R", "BE30", "P46T", "C82S", "C150", "BE35", "CRJX", "P32R", "RV12",
+    "T206", "PA30", "BE95", "T210", "PA23", "C82T", "P208",
   ],
 ];
 
