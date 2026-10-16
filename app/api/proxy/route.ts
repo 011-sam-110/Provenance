@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
 import { isAllowed } from "@/lib/proxy/allowlist";
-import { extractScotlandImage } from "@/lib/sources/trafficscotland";
+import { extractScotlandImage, isScotlandCard } from "@/lib/sources/trafficscotland";
+import { notePlaceholder } from "@/lib/sources/placeholderMemo";
 import { extractTxdotSnapshot } from "@/lib/sources/txdot";
 import { needsH2, h2Fetch } from "@/lib/http/h2";
 import { frameCacheHeaders } from "@/lib/http/cache";
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   // Traffic Scotland has no direct snapshot .jpg — its camera image is a base64
   // JPEG embedded in the /tsis/camerahtml page. Fetch the page and pull the bytes.
   if (target.hostname === "www.traffic.gov.scot") {
-    return proxyTrafficScotland(target, cam.refreshSeconds);
+    return proxyTrafficScotland(target, cam.refreshSeconds, cam.id);
   }
 
   // TxDOT ITS has no snapshot file either: its snapshot endpoint answers JSON whose
@@ -95,7 +96,7 @@ async function proxyOverH2(target: URL, refreshSeconds: number): Promise<Respons
 
 // Traffic Scotland helper: fetch the camerahtml page and decode the embedded
 // base64 JPEG into real image bytes. Host is already allowlist-checked by GET().
-async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promise<Response> {
+async function proxyTrafficScotland(target: URL, refreshSeconds: number, cameraId: string): Promise<Response> {
   let upstream: Response;
   try {
     upstream = await fetch(target.toString(), {
@@ -112,10 +113,17 @@ async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promis
   const img = extractScotlandImage(await upstream.text());
   if (!img) return new Response("no embedded image", { status: 502 });
 
-  return new Response(Buffer.from(img.base64, "base64"), {
+  const bytes = Buffer.from(img.base64, "base64");
+  // The operator's "Currently Unavailable" card is still served (it is the honest
+  // picture), but it is recorded, so the next registry refresh marks the camera
+  // unavailable instead of live. See lib/sources/placeholderMemo.ts.
+  const card = isScotlandCard(bytes);
+  notePlaceholder(cameraId, card);
+  return new Response(bytes, {
     status: 200,
     headers: {
       "Content-Type": img.contentType,
+      ...(card ? { "X-Camera-Placeholder": "operator-unavailable-card" } : {}),
       ...frameCacheHeaders(refreshSeconds),
     },
   });

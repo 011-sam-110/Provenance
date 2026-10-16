@@ -49,3 +49,31 @@ test("extractScotlandImage pulls the base64 JPEG out of the camera HTML", () => 
 test("extractScotlandImage returns null when no embedded image is present", () => {
   expect(extractScotlandImage("<html><body>no image here</body></html>")).toBeNull();
 });
+
+// Audit 2026-10-16: 20% of sampled cameras served one byte-identical "Currently
+// Unavailable" card while the adapter marked every camera available.
+test("a camera last seen serving the operator's card is not available", async () => {
+  const { isScotlandCard, SCOTLAND_CARD_MD5 } = await import("@/lib/sources/trafficscotland");
+  expect(SCOTLAND_CARD_MD5).toMatch(/^[0-9a-f]{32}$/);
+  expect(isScotlandCard(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]))).toBe(false);
+  const cams = normalizeTrafficScotland(fixture as never, (id) => id === "trafficscotland:1");
+  expect(cams.find((c) => c.id === "trafficscotland:1")!.available).toBe(false);
+  expect(cams.filter((c) => c.id !== "trafficscotland:1").every((c) => c.available)).toBe(true);
+});
+
+test("the licence string no longer claims the Open Government Licence", () => {
+  const [c] = normalizeTrafficScotland(fixture as never);
+  expect(c.license).not.toMatch(/Open Government/i);
+  expect(c.license).toMatch(/Crown copyright/);
+});
+
+test("the placeholder memo expires, so a camera that comes back is not held down", async () => {
+  const m = await import("@/lib/sources/placeholderMemo");
+  m.resetPlaceholderMemo();
+  m.notePlaceholder("trafficscotland:9", true, 1_000);
+  expect(m.showsPlaceholder("trafficscotland:9", 1_000 + 60_000)).toBe(true);
+  expect(m.showsPlaceholder("trafficscotland:9", 1_000 + m.PLACEHOLDER_MEMORY_MS + 1)).toBe(false);
+  m.notePlaceholder("trafficscotland:9", false, 2_000);
+  expect(m.showsPlaceholder("trafficscotland:9", 3_000)).toBe(false);
+  m.resetPlaceholderMemo();
+});

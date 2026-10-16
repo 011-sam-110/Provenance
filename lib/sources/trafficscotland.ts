@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import { Camera, CameraArray, Source } from "@/lib/types";
+import { showsPlaceholder } from "@/lib/sources/placeholderMemo";
 
 // Scotland — Traffic Scotland (Transport Scotland trunk-road & motorway cameras,
 // ~414 nationwide). Keyless. The list endpoint `GET /tsis/cameras` returns
@@ -15,7 +17,13 @@ const ORIGIN = "https://www.traffic.gov.scot";
 export const TRAFFICSCOTLAND_SOURCE: Source = {
   id: "trafficscotland",
   name: "Traffic Scotland (Transport Scotland)",
-  license: "Traffic Scotland (Transport Scotland) — Open Government Licence",
+  // NOT the Open Government Licence, which this string claimed until 2026-10-16. The
+  // operator's copyright page says the Scottish Government "retains the full
+  // copyright of all live traffic camera images" and forbids hyperlinking straight
+  // to them; its licensed route for re-use is the registration-only Live Traffic
+  // Camera FTP Service (Crown copyright credit, no fee). Moving onto that service is
+  // a follow-up that needs a box-side FTP mirror.
+  license: "Crown copyright, Scottish Government (Traffic Scotland). Not an open licence",
   attribution: "Live traffic-camera data © Traffic Scotland / Transport Scotland",
   refreshSeconds: 120, // trunk-road snapshots refresh every couple of minutes
   needsKey: false,
@@ -30,7 +38,27 @@ export interface ScotlandCamera {
   region?: string;
 }
 
-export function normalizeTrafficScotland(payload: { results?: ScotlandCamera[] }): Camera[] {
+/**
+ * md5 of the operator's "Currently Unavailable" card, as the proxy decodes it out of
+ * the camera page. One byte-identical JPEG (8,860 bytes) for every dead camera: 10 of
+ * 50 sampled on 2026-10-16, and 5 of the first 60 cameras that evening.
+ */
+export const SCOTLAND_CARD_MD5 = "8c781abbaca28889b9d99d78c24df5f2";
+
+/** Whether decoded image bytes are the operator's "Currently Unavailable" card. */
+export function isScotlandCard(bytes: Uint8Array): boolean {
+  return createHash("md5").update(bytes).digest("hex") === SCOTLAND_CARD_MD5;
+}
+
+/**
+ * @param showsCard whether a camera was last seen serving the operator's card (see
+ *   lib/sources/placeholderMemo.ts). The list itself carries no status, so without
+ *   a sighting a camera is taken as available.
+ */
+export function normalizeTrafficScotland(
+  payload: { results?: ScotlandCamera[] },
+  showsCard: (id: string) => boolean = () => false,
+): Camera[] {
   const cams: Camera[] = [];
   for (const r of payload.results ?? []) {
     // Coords arrive as strings; an empty string would coerce to 0 (NOT NaN), so
@@ -62,7 +90,7 @@ export function normalizeTrafficScotland(payload: { results?: ScotlandCamera[] }
       refreshSeconds: TRAFFICSCOTLAND_SOURCE.refreshSeconds,
       license: TRAFFICSCOTLAND_SOURCE.license,
       attribution: TRAFFICSCOTLAND_SOURCE.attribution,
-      available: true,
+      available: !showsCard(`trafficscotland:${nativeId}`),
     });
   }
   return cams;
@@ -94,5 +122,5 @@ export async function fetchRegistry(): Promise<Camera[]> {
   });
   if (!res.ok) throw new Error(`Traffic Scotland cameras: ${res.status}`);
   const json = (await res.json()) as { results?: ScotlandCamera[] };
-  return CameraArray.parse(normalizeTrafficScotland(json));
+  return CameraArray.parse(normalizeTrafficScotland(json, (id) => showsPlaceholder(id)));
 }
