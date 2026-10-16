@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { AIS_SOURCE, isAisCredentialError } from "@/lib/signals/ais";
+import { AIS_SOURCE, isAisCredentialError, resetAisCollector } from "@/lib/signals/ais";
 import { readEvidence, resetEvidence } from "@/lib/sources/upstreamEvidence";
 
 // --- the pure decision function --------------------------------------------
@@ -57,6 +57,8 @@ describe("AIS_SOURCE.fetch credential-refusal wiring", () => {
   const sockets: FakeWebSocket[] = [];
 
   beforeEach(() => {
+    // The stream is a process-wide singleton now; each case starts with none.
+    resetAisCollector();
     resetEvidence();
     sockets.length = 0;
     process.env.AISSTREAM_API_KEY = "test-key";
@@ -72,6 +74,7 @@ describe("AIS_SOURCE.fetch credential-refusal wiring", () => {
   });
 
   afterEach(() => {
+    resetAisCollector();
     vi.unstubAllGlobals();
     delete process.env.AISSTREAM_API_KEY;
   });
@@ -113,5 +116,80 @@ describe("AIS_SOURCE.fetch credential-refusal wiring", () => {
     const out = await fetchPromise;
     expect(out).toEqual([]);
     expect(readEvidence("ais")).toBeUndefined();
+  });
+});
+
+// --- the long-lived stream ----------------------------------------------------
+// The socket used to open and close inside every fetch, listening for 4.5 s, so
+// prod served 15 to 26 vessels over nine chokepoints. It now stays open and every
+// fetch reads what it has heard. These cases drive the real collector with a fake
+// socket.
+
+describe("AIS_SOURCE.fetch keeps one socket open across fetches", () => {
+  const sockets: FakeWebSocket[] = [];
+  const report = (mmsi: number, lat: number, lon: number) =>
+    JSON.stringify({
+      MessageType: "PositionReport",
+      MetaData: { MMSI: mmsi, ShipName: `SHIP ${mmsi}`, latitude: lat, longitude: lon, time_utc: "2026-10-16 19:00:00.000 +0000 UTC" },
+      Message: { PositionReport: { Sog: 10, Cog: 90, TrueHeading: 90, NavigationalStatus: 0 } },
+    });
+
+  beforeEach(() => {
+    resetAisCollector();
+    sockets.length = 0;
+    process.env.AISSTREAM_API_KEY = "test-key";
+    vi.stubGlobal(
+      "WebSocket",
+      class extends FakeWebSocket {
+        constructor(url: string) {
+          super(url);
+          sockets.push(this);
+        }
+      },
+    );
+  });
+
+  afterEach(() => {
+    resetAisCollector();
+    vi.unstubAllGlobals();
+    delete process.env.AISSTREAM_API_KEY;
+  });
+
+  test("the second fetch opens no socket and returns everything heard so far", async () => {
+    vi.useFakeTimers();
+    try {
+      const first = AIS_SOURCE.fetch();
+      const ws = sockets[0]!;
+      ws.onopen?.();
+      expect(JSON.parse(ws.sent[0]!).APIKey).toBe("test-key");
+      ws.onmessage?.({ data: report(1, 50, 0) }); // English Channel
+      await vi.advanceTimersByTimeAsync(5000); // the cold-start window
+      expect((await first).map((f) => f.id)).toEqual(["ais:1"]);
+
+      ws.onmessage?.({ data: report(2, 25, 56) }); // Hormuz
+      const second = await AIS_SOURCE.fetch();
+      expect(sockets).toHaveLength(1);
+      expect(ws.closed).toBe(false);
+      expect(second.map((f) => f.id).sort()).toEqual(["ais:1", "ais:2"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("a vessel not heard for longer than the TTL drops out", async () => {
+    vi.useFakeTimers();
+    try {
+      const first = AIS_SOURCE.fetch();
+      const ws = sockets[0]!;
+      ws.onopen?.();
+      ws.onmessage?.({ data: report(1, 50, 0) });
+      await vi.advanceTimersByTimeAsync(5000);
+      await first;
+      await vi.advanceTimersByTimeAsync(21 * 60_000);
+      ws.onmessage?.({ data: report(2, 50, 1) });
+      expect((await AIS_SOURCE.fetch()).map((f) => f.id)).toEqual(["ais:2"]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
