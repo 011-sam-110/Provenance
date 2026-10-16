@@ -295,19 +295,20 @@ const EXPLAINERS: LayerExplainer[] = [
     confidence: "reported",
     coverage: "Global commercial cable systems.",
     limitations: [
-      "Routes are SCHEMATIC. The drawn line is indicative, not a surveyed position — real cables meander, and exact routes are commercially and militarily sensitive.",
+      "Routes are SCHEMATIC. The drawn line is indicative, not a surveyed position — real cables meander, and exact routes are commercially and militarily sensitive. For US and European waters the Charted cable routes layer shows the surveyed route.",
       "This is infrastructure, not status: the layer cannot tell you whether a cable is currently cut or carrying traffic.",
+      "Capacity is shown only for the 9 US-international cables whose operators let the US FCC publish it (2024 data); every other cable says '—'.",
       "Military and some private cables are absent by design.",
     ],
   },
   {
     id: "cable-landings",
     whatItShows: "A landing station where submarine cables come ashore.",
-    method: "Curated by TeleGeography from operator disclosures.",
+    method: "Curated by TeleGeography from operator disclosures. Where OpenStreetMap maps exactly one landing-station building for that landing (within 30 km, matched by name or as the only one), the pin is moved onto the building and the town point is kept in the details.",
     confidence: "reported",
     coverage: "Global commercial cable systems.",
     limitations: [
-      "The position marks a landing point, often generalised to a town rather than the building.",
+      "Most positions still mark a landing point generalised to a town rather than the building: OpenStreetMap maps only 58 landing stations worldwide, and a town with several (Bude, Porthcurno) keeps its town pin and lists them.",
       "Static infrastructure — no operational status, no capacity, no current traffic.",
     ],
   },
@@ -325,6 +326,18 @@ const EXPLAINERS: LayerExplainer[] = [
       "The dot marks the oblast's administrative centre, which is an anchor and not a location. Reading it as the place under threat is wrong by up to a few hundred kilometres.",
       "Occupied oblasts can sit in a permanently-alerted state — Luhansk has not cleared since October 2023 — so those are labelled as standing conditions rather than fresh warnings.",
       "This is a public mirror of the alert state, not the government's own API, which requires an issued key. It can lag or drop out, and a stale read would look like an all-clear; the layer serves its last-good reading rather than an empty map for that reason.",
+    ],
+  },
+  {
+    id: "cable-routes",
+    whatItShows: "A submarine cable on the route a hydrographic or marine authority has charted: US waters from NOAA, and European waters from EMODnet's national sources.",
+    method: "Read from NOAA's Submarine Cables layer (from NOAA charts and NASCA records) and EMODnet Human Activities' telecom cable routes (BSH, SHOM, Rijkswaterstaat, Spanish, UK and Maltese sources).",
+    confidence: "official",
+    coverage: "US waters and the European seas the EMODnet sources cover; nowhere else.",
+    limitations: [
+      "Regional only: outside US and European waters there is no charted route, and the Submarine cables layer's schematic route is all there is.",
+      "Status is each publisher's own word and many rows have none; NOAA names only about a third of its charted cables, so most draw as 'Unnamed charted cables'.",
+      "Revisions are slow: NOAA's layer was last edited in February 2025 and EMODnet's in June 2023, so a cable laid since then is missing here.",
     ],
   },
   {

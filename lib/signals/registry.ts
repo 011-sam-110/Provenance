@@ -42,6 +42,7 @@ import { FLOODS_SOURCE } from "@/lib/signals/floods";
 import { AURORA_SOURCE } from "@/lib/signals/aurora";
 import { LAUNCHES_SOURCE } from "@/lib/signals/launches";
 import { CABLES_SOURCE, CABLE_LANDINGS_SOURCE } from "@/lib/signals/cables";
+import { CABLE_ROUTES_SOURCE } from "@/lib/signals/cable-routes";
 import { GPS_JAMMING_SOURCE } from "@/lib/signals/gpsjam";
 import { GPS_JAMMING_LIVE_SOURCE } from "@/lib/signals/gpsjam-live";
 import { GNSS_NOTAMS_SOURCE } from "@/lib/signals/gnss-notams";
@@ -108,6 +109,7 @@ export const SIGNALS: SignalSource[] = [
   // Infrastructure (cables = line layer + landing-station nodes, gpsJamming = fill layer)
   CABLES_SOURCE,
   CABLE_LANDINGS_SOURCE,
+  CABLE_ROUTES_SOURCE, // surveyed routes: NOAA (US) + EMODnet (Europe), keyless
   GPS_JAMMING_SOURCE,
   GPS_JAMMING_LIVE_SOURCE, // the last hour, computed from live adsb.lol NACp (keyless)
   GNSS_NOTAMS_SOURCE, // official GNSS jamming NOTAMs via EUROCONTROL AUGUR (keyless)
