@@ -17,7 +17,10 @@ const IMAGE_ORIGIN = "https://tarktee.transpordiamet.ee/images";
 export const ESTONIA_SOURCE: Source = {
   id: "estonia",
   name: "Tark Tee (Estonian Transport Administration)",
-  license: "Transpordiamet (Tark Tee) — Open Data Terms of Use",
+  // Said "Open Data Terms of Use" until 2026-10-16, a document nobody could find:
+  // the ArcGIS service's copyrightText is empty and neither transpordiamet.ee nor
+  // the Estonian open-data portal states a licence for these cameras.
+  license: "Transpordiamet (Tark Tee) — no stated licence",
   attribution:
     "Live road-camera data © Transpordiamet (Estonian Transport Administration) / Tark Tee",
   refreshSeconds: 300, // road-weather cams update slowly
@@ -86,7 +89,17 @@ export function normalizeEstoniaSurface(
   return reading;
 }
 
-export function normalizeEstonia(featureset: { features?: EstoniaFeature[] }): Camera[] {
+/**
+ * How old a frame may be and still count as live: the same 60 minutes as cetsp and
+ * bihamk. Tark Tee captures every 5 to 10 minutes; on 2026-10-16 one camera
+ * (Tabasalu) had been 13.7 hours stale and was still shown live.
+ */
+export const MAX_FRAME_AGE_MS = 60 * 60 * 1000;
+
+export function normalizeEstonia(
+  featureset: { features?: EstoniaFeature[] },
+  now: number = Date.now(),
+): Camera[] {
   const cams: Camera[] = [];
   for (const f of featureset.features ?? []) {
     const a = f.attributes ?? {};
@@ -115,7 +128,8 @@ export function normalizeEstonia(featureset: { features?: EstoniaFeature[] }): C
       refreshSeconds: ESTONIA_SOURCE.refreshSeconds,
       license: ESTONIA_SOURCE.license,
       attribution: ESTONIA_SOURCE.attribution,
-      available: true,
+      // A frame with no time cannot be dated, so it keeps the old benefit of the doubt.
+      available: !Number.isFinite(a.image_time as number) || now - (a.image_time as number) <= MAX_FRAME_AGE_MS,
       // image_time is the operator's own stamp on THIS frame, so Estonian cameras can
       // say "shot 3m ago" rather than "we pulled it 3m ago" — a different claim.
       ...(Number.isFinite(a.image_time as number)
