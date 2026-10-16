@@ -77,6 +77,7 @@ export function normalizeTxdot(body: TxdotDistrictBody, district: string): Camer
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
       if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
       if (lat === 0 && lon === 0) continue;
+      if (lon >= 0) continue; // Texas is west of Greenwich: a sign slip, dropped not flipped
       const id = `txdot:${district}:${icd}`;
       // A camera can sit under two roadways' lists (one BRY camera did on 2026-10-16).
       if (seen.has(id)) continue;

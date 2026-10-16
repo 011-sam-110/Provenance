@@ -196,6 +196,10 @@ function toCamera(
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
   if (lat === 0 && lon === 0) return null;
+  // Every CARS state is west of Greenwich. A positive longitude is an upstream sign
+  // slip (one NY portable camera and one INDOT camera on 2026-10-16, both pinned in
+  // Asia), so the row is dropped; flipping the sign would be a guess about the place.
+  if (lon >= 0) return null;
   const nativeId = (c.id ?? "").toString().trim();
   if (!nativeId) return null;
   const picked = pickView(c.views);

@@ -57,6 +57,10 @@ export function normalizeScdot(geojson: { features?: ScFeature[] }, profile: ScP
     const lat = Number(coords[1]);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+    // Both networks of this shape are US states, west of Greenwich. A positive longitude
+    // is an upstream sign slip (one 511 Virginia camera on 2026-10-16, pinned in Asia);
+    // the row is dropped rather than flipped, because flipping is a guess.
+    if (lon >= 0) continue;
     // The advertised thumb URL (/thumbs/<id>.flv.png) 301-redirects to the real
     // snapshot at the host root (/<id>.png); pre-resolve it so our proxy (which
     // refuses redirects for SSRF safety) fetches the image directly.

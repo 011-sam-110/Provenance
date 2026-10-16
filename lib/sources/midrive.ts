@@ -83,6 +83,7 @@ export function normalizeMiDrive(rows: MiDriveRow[]): Camera[] {
     const { lat, lon } = link;
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
     if (lat === 0 && lon === 0) continue;
+    if (lon >= 0) continue; // Michigan is west of Greenwich: a sign slip, dropped not flipped
     const imageUrl = stillUrl(r.image ?? "");
     if (!imageUrl) continue;
     const road = r.route?.trim() || undefined;

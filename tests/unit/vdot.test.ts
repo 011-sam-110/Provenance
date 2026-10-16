@@ -24,6 +24,12 @@ test("uses the numeric id, the description as name, and lon/lat order", () => {
   expect(a.attribution).toContain("Virginia DOT");
 });
 
+test("drops a camera whose longitude lost its minus sign", () => {
+  const f = (fixture as { features: { geometry: { coordinates: number[] } | null }[] }).features[0];
+  const slipped = { features: [{ ...f, geometry: { type: "Point", coordinates: [77.2667, 38.88] } }] };
+  expect(normalizeVdot(slipped as never)).toEqual([]);
+});
+
 test("stills only: the HLS stream is not taken", () => {
   for (const c of normalizeVdot(fixture as never)) {
     expect(c.streamUrl).toBeUndefined();

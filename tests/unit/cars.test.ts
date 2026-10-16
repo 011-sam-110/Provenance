@@ -77,6 +77,12 @@ describe("CARS array shape (MN, IA, IN, KS, CO)", () => {
     const zero = { ...base, location: { ...base.location, latitude: 0, longitude: 0 } };
     expect(normalizeCarsArray([zero], sys("mn"), NOW)).toEqual([]);
   });
+
+  test("drops a camera whose longitude lost its minus sign, rather than pinning it in Asia", () => {
+    const base = arr("mn")[0];
+    const slipped = { ...base, location: { ...base.location, longitude: 93.26 } };
+    expect(normalizeCarsArray([slipped], sys("mn"), NOW)).toEqual([]);
+  });
 });
 
 describe("CARS GeoJSON shape (NY)", () => {
