@@ -1,3 +1,4 @@
+import { laneFetch } from "@/lib/http/hostLane";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
@@ -25,7 +26,8 @@ import { gpsjamColor, gpsjamRatio, type H3Index, type H3Lib } from "@/lib/signal
 //   • The window builds up in this server's memory, one snapshot per refresh, up to
 //     an hour. A cold server has one snapshot.
 //   • adsb.lol rate-limits per IP and the planes layer shares the bucket. One request
-//     per 10 minutes; a refusal keeps the window it has.
+//     per 10 minutes, and it waits its turn in the shared adsb.lol lane (lib/http/hostLane.ts)
+//     like planes and military-air do; a refusal keeps the window it has.
 
 export const GPSJAM_LIVE_ATTRIBUTION = "GPS interference computed by Provenance from adsb.lol live aircraft (ODbL 1.0)";
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
@@ -179,7 +181,7 @@ export const GPS_JAMMING_LIVE_SOURCE: SignalSource = {
     let failed = false;
     if (now - lastReadAt >= REFRESH_MS && now - lastFailAt >= REFRESH_MS) {
       try {
-        const res = await fetch(URL, {
+        const res = await laneFetch(URL, {
           headers: { Accept: "application/json", "User-Agent": UA },
           signal: AbortSignal.timeout(15_000),
         });
