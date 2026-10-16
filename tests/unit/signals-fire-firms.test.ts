@@ -66,15 +66,22 @@ test("the source reads the keyless file and needs no key", async () => {
   const urls: string[] = [];
   const realFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
-    urls.push(String(input));
+    const u = String(input);
+    urls.push(u);
+    // Only FIRMS answers here. The geostationary operators are refused, which must
+    // leave the FIRMS rows standing and say what failed.
+    if (!u.startsWith("https://firms.modaps.eosdis.nasa.gov/")) return new Response("", { status: 503 });
     return new Response(viirs24h, { status: 200, headers: { "last-modified": "Fri, 16 Oct 2026 18:49:12 GMT" } });
   }) as typeof fetch;
   try {
     const out = await FIRE_FIRMS_SOURCE.fetch();
-    expect(urls.length).toBe(FIRMS_FILES.length);
-    expect(urls.every((u) => u.startsWith("https://firms.modaps.eosdis.nasa.gov/data/active_fire/"))).toBe(true);
+    const firms = urls.filter((u) => u.startsWith("https://firms.modaps.eosdis.nasa.gov/"));
+    expect(firms.length).toBe(FIRMS_FILES.length);
+    expect(firms.every((u) => u.startsWith("https://firms.modaps.eosdis.nasa.gov/data/active_fire/"))).toBe(true);
     expect(urls.some((u) => u.includes("/api/area/"))).toBe(false);
-    expect(readOutcome(out)?.ok).toBe(true);
+    const o = readOutcome(out)!;
+    expect(o.ok).toBe(false);
+    expect(o.reason).toMatch(/^partial: .*DEA.*HMS.*INPE.* failed \(http 503\)$/);
   } finally {
     globalThis.fetch = realFetch;
     if (prev != null) process.env.FIRMS_MAP_KEY = prev;

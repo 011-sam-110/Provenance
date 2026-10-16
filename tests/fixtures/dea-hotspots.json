@@ -1,0 +1,71 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "hotspots.fid--47dac52_1a1464017b0_-2df5",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     131.5186,
+     -18.0996
+    ]
+   },
+   "geometry_name": "location",
+   "properties": {
+    "satellite": "HIMAWARI-9",
+    "sensor": "AHI",
+    "product": "BRIGHT AHI",
+    "temp_kelvin": 305.6,
+    "power": 17.9,
+    "confidence": 50,
+    "datetime": "2026-10-16T19:17:19Z",
+    "accuracy": "\u00b1 2km"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "hotspots.fid--47dac52_1a1464017b0_-2df4",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     132.9258,
+     -16.7217
+    ]
+   },
+   "geometry_name": "location",
+   "properties": {
+    "satellite": "HIMAWARI-9",
+    "sensor": "AHI",
+    "product": "BRIGHT AHI",
+    "temp_kelvin": 309.8,
+    "power": 26,
+    "confidence": 50,
+    "datetime": "2026-10-16T19:17:11Z",
+    "accuracy": "\u00b1 2km"
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "hotspots.fid--47dac52_1a1464017b0_-2df3",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     142.7246,
+     -12.5762
+    ]
+   },
+   "geometry_name": "location",
+   "properties": {
+    "satellite": "HIMAWARI-9",
+    "sensor": "AHI",
+    "product": "BRIGHT AHI",
+    "temp_kelvin": 299.6,
+    "power": 8.6,
+    "confidence": 50,
+    "datetime": "2026-10-16T19:26:44Z",
+    "accuracy": "\u00b1 2km"
+   }
+  }
+ ]
+}

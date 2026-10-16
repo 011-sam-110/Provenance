@@ -222,11 +222,12 @@ const EXPLAINERS: LayerExplainer[] = [
     whatItShows: "A thermal anomaly detected from orbit by NASA FIRMS (VIIRS on three satellites, and MODIS), i.e. something on the ground was hot when a satellite passed over in the last 24 hours.",
     method: "Measured by satellite radiometer and flagged by NASA's detection algorithm.",
     confidence: "measured",
-    coverage: "Global, the last 24 hours, but sampled only on satellite overpasses — several times per day per point across the four satellites.",
+    coverage: "Global for the last 24 hours from four polar-orbiting satellites, which pass several times a day. Over Australasia and East Asia (Himawari-9), North America (GOES, each point checked by a NOAA analyst) and South America (GOES-19, via INPE) it also shows geostationary detections from the last 3 hours, scanned every 10 minutes.",
     limitations: [
       "It detects HEAT, not fire. Gas flares, industrial furnaces, volcanic vents and agricultural burning all appear as detections.",
       "Cloud cover hides fires completely. A gap in detections can be weather rather than an absence of fire.",
-      "Between overpasses there is no observation at all, so timing is coarse.",
+      "Between polar overpasses there is no observation at all, so outside the three geostationary regions timing is coarse.",
+      "A geostationary pixel is about 2 km across, much coarser than VIIRS (375 m); INPE publishes no fire radiative power for its points.",
     ],
   },
 
