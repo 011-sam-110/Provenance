@@ -234,6 +234,7 @@ export default function AreasPanel() {
                 id={AREA_COLOR_POP_ID}
                 area={a}
                 onPick={(hex) => inspectorStore.setColor(a.id, hex)}
+                onOpacity={(o) => inspectorStore.setOpacity(a.id, o)}
                 onClose={() => setColouring(null)}
               />
             ) : null}

@@ -9,6 +9,7 @@ import {
   removeArea,
   renameArea,
   replaceActive,
+  setAreaOpacity,
   sourceRegions,
   unionSet,
   writeActive,
@@ -29,6 +30,7 @@ function area(id: string, createdAt = 1): InspectorArea {
     id,
     label: id,
     color: DEFAULT_AREA_COLOR,
+    opacity: 0,
     polygon: RING,
     bbox: [36, 49.8, 36.5, 50.2],
     createdAt,
@@ -239,4 +241,32 @@ test("coerceState recomputes the bbox rather than trusting the payload", () => {
     editing: null,
   });
   expect(s.areas[0].bbox).toEqual([36, 49.8, 36.5, 50.2]);
+});
+
+test("a new area starts at opacity 0, the look areas already had", () => {
+  const a = newArea(RING, "x", 1);
+  expect(a?.opacity).toBe(0);
+});
+
+test("setAreaOpacity changes one area and coerces what it is given", () => {
+  const areas = [area("a"), area("b")];
+  const next = setAreaOpacity(areas, "b", 0.33);
+  expect(next.map((x) => x.opacity)).toEqual([0, 0.35]);
+  expect(setAreaOpacity(areas, "a", Number.NaN)[0].opacity).toBe(0);
+  expect(setAreaOpacity(areas, "a", 4)[0].opacity).toBe(1);
+  // Pure: the input is untouched.
+  expect(areas.map((x) => x.opacity)).toEqual([0, 0]);
+});
+
+test("coerceState keeps a saved opacity and gives old areas the default", () => {
+  const saved = {
+    world: {},
+    editing: null,
+    areas: [
+      { id: "area:1", label: "old", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 1, sources: {} },
+      { id: "area:2", label: "set", opacity: 0.6, polygon: RING, bbox: [0, 0, 0, 0], createdAt: 2, sources: {} },
+      { id: "area:3", label: "junk", opacity: "lots", polygon: RING, bbox: [0, 0, 0, 0], createdAt: 3, sources: {} },
+    ],
+  };
+  expect(coerceState(saved).areas.map((a) => a.opacity)).toEqual([0, 0.6, 0]);
 });

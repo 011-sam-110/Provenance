@@ -25,6 +25,7 @@ function area(id: string, ring: [number, number][], sources: Record<string, bool
     id,
     label: id,
     color: DEFAULT_AREA_COLOR,
+    opacity: 0,
     polygon: ring,
     bbox: [0, 0, 0, 0],
     createdAt: 1,

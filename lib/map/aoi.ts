@@ -20,7 +20,7 @@ import { useSyncExternalStore } from "react";
 import { haversineKm } from "@/lib/geo/haversine";
 import { aoiScope, scopeStore, WORLD_SCOPE, type Scope, type ScopeParts } from "@/lib/shell/scope";
 import { inspectorStore, type InspectorArea } from "@/lib/shell/inspector";
-import { DEFAULT_AREA_COLOR } from "@/lib/shell/areaColors";
+import { DEFAULT_AREA_COLOR, areaPaint } from "@/lib/shell/areaColors";
 
 const AOI_SRC = "aoi-scope";
 const AOI_FILL = "aoi-scope-fill";
@@ -368,7 +368,11 @@ export function areasCollection(
       .filter((a) => a.polygon.length >= MIN_VERTICES)
       .map((a) => {
         const f = ringToFeature(a.polygon);
-        return { ...f, properties: { id: a.id, editing: a.id === editingId, color: a.color } };
+        const editing = a.id === editingId;
+        // The paint strengths travel with the feature, like the colour: the layers read
+        // them with ["get", ...], so one area's slider moves that one ring only.
+        const { fill, line } = areaPaint(a.opacity, editing);
+        return { ...f, properties: { id: a.id, editing, color: a.color, fill, line } };
       }),
   };
 }
@@ -449,13 +453,15 @@ function ensureLayers(map: MapLibreMap): boolean {
       id: AREAS_FILL,
       type: "fill",
       source: AREAS_SRC,
-      // Only the edited one is filled. With every area live at once, filling them all
-      // stacks washes over the basemap and says "these are more important than the
-      // map" — they are a reference, not the subject.
-      filter: ["==", ["get", "editing"], true],
+      // BY DEFAULT only the edited one is filled. With every area live at once,
+      // filling them all washes over the basemap and says "these are more important
+      // than the map" — they are a reference, not the subject. An area whose own
+      // opacity the user has raised is the exception they asked for: Sam could not see
+      // a marked area once he had drawn it. The strengths come from areaPaint().
+      filter: [">", ["coalesce", ["get", "fill"], 0], 0],
       paint: {
         "fill-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
-        "fill-opacity": 0.06,
+        "fill-opacity": ["coalesce", ["get", "fill"], 0],
       },
     });
   }
@@ -468,7 +474,7 @@ function ensureLayers(map: MapLibreMap): boolean {
       paint: {
         "line-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
         "line-width": 1.25,
-        "line-opacity": 0.5,
+        "line-opacity": ["coalesce", ["get", "line"], 0.5],
         "line-dasharray": [3, 2],
       },
     });
@@ -482,7 +488,7 @@ function ensureLayers(map: MapLibreMap): boolean {
       paint: {
         "line-color": ["coalesce", ["get", "color"], DEFAULT_AREA_COLOR],
         "line-width": 2,
-        "line-opacity": 0.95,
+        "line-opacity": ["coalesce", ["get", "line"], 0.95],
       },
     });
   }
