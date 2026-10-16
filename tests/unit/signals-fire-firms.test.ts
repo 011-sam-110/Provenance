@@ -48,7 +48,7 @@ const AT = Date.parse("2026-10-16T19:40:00Z");
 test("the keyless 24 h file parses with the same columns as the old API", () => {
   const dets = parseFirmsCsv(viirs24h);
   expect(dets).toHaveLength(8);
-  expect(dets[0]).toMatchObject({ satellite: "N", daynight: "night", confidence: "nominal" });
+  expect(dets[0]).toMatchObject({ satellite: "Suomi NPP (VIIRS)", daynight: "night", confidence: "nominal" });
   expect(dets[0].at).toBe(Date.parse("2026-10-15T01:07:00Z"));
 });
 
@@ -93,4 +93,20 @@ test("one file failing keeps the others and says which failed", () => {
   const none = mergeFirmsResults([{ ...bad, key: "VIIRS S-NPP", reason: "http 400" }], AT);
   expect(none).toHaveLength(0);
   expect(readOutcome(none)).toMatchObject({ ok: false, reason: "http 400" });
+});
+
+test("MODIS rows parse through the same reader (brightness column, numeric confidence)", () => {
+  const modis = [
+    "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,confidence,version,bright_t31,frp,daynight",
+    "37.39068,138.58585,308.31,2,1.38,2026-10-15,0016,T,51,6.1NRT,290.3,20.46,D",
+    "42.64405,-123.02656,307.7,1,1,2026-10-16,1720,A,85,6.1NRT,293.77,7.78,D",
+  ].join("\n");
+  const dets = parseFirmsCsv(modis);
+  expect(dets.map((d) => d.satellite)).toEqual(["Terra (MODIS)", "Aqua (MODIS)"]);
+  expect(dets.map((d) => d.confidence)).toEqual(["nominal", "high"]);
+  expect(dets[0].brightness).toBe("308 K");
+});
+
+test("all four keyless files are read: three VIIRS satellites and MODIS", () => {
+  expect(FIRMS_FILES.map((f) => f.key)).toEqual(["VIIRS S-NPP", "VIIRS NOAA-20", "VIIRS NOAA-21", "MODIS"]);
 });

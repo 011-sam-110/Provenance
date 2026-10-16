@@ -29,9 +29,25 @@ export interface FirmsFile {
 
 const FIRMS_DATA = "https://firms.modaps.eosdis.nasa.gov/data/active_fire";
 
-/** The keyless files read each refresh. Same CSV columns, so one parser. */
+/**
+ * The keyless files read each refresh. One parser reads them all: the three VIIRS files
+ * share their columns, and MODIS differs only in naming its brightness `brightness`
+ * and giving confidence as 0–100.
+ *
+ * NOAA-20 and NOAA-21 carry the same VIIRS sensor as S-NPP about 50 min apart, so S-NPP
+ * alone missed about two thirds of the VIIRS overpasses. MODIS (Terra/Aqua, 1 km) is
+ * older and coarser but passes at different times again. Measured 2026-10-16: S-NPP
+ * 94,182 rows, NOAA-20 102,207, NOAA-21 105,870, MODIS 15,076 (each ~42 h).
+ *
+ * Landsat (30 m, US only) is published the same way and was left out on purpose: its
+ * file has no FRP column, so it could never rank into a layer capped by FRP, and it
+ * flags every row "D" even on night passes.
+ */
 export const FIRMS_FILES: readonly FirmsFile[] = [
   { key: "VIIRS S-NPP", url: `${FIRMS_DATA}/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_Global_24h.csv` },
+  { key: "VIIRS NOAA-20", url: `${FIRMS_DATA}/noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_24h.csv` },
+  { key: "VIIRS NOAA-21", url: `${FIRMS_DATA}/noaa-21-viirs-c2/csv/J2_VIIRS_C2_Global_24h.csv` },
+  { key: "MODIS", url: `${FIRMS_DATA}/modis-c6.1/csv/MODIS_C6_1_Global_24h.csv` },
 ];
 
 const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
@@ -42,7 +58,8 @@ export const FIRMS_CAP = 1500;
 /** Detections older than this are dropped: the layer means "the last 24 hours". */
 export const FIRMS_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export const FIRMS_ATTRIBUTION = "Active fire data: NASA FIRMS (VIIRS S-NPP NRT)";
+export const FIRMS_ATTRIBUTION =
+  "Active fire data: NASA FIRMS (VIIRS S-NPP / NOAA-20 / NOAA-21 and MODIS NRT)";
 
 /** VIIRS confidence flag → label. MODIS confidence is numeric (0–100). */
 function confidenceLabel(c: string): string {
@@ -53,6 +70,18 @@ function confidenceLabel(c: string): string {
   const n = Number(v);
   if (v !== "" && Number.isFinite(n)) return n >= 80 ? "high" : n >= 30 ? "nominal" : "low";
   return "—";
+}
+
+/** FIRMS satellite code → the name a reader knows. Unknown codes pass through. */
+const SATELLITE_NAMES: Record<string, string> = {
+  N: "Suomi NPP (VIIRS)",
+  N20: "NOAA-20 (VIIRS)",
+  N21: "NOAA-21 (VIIRS)",
+  T: "Terra (MODIS)",
+  A: "Aqua (MODIS)",
+};
+function satelliteName(code: string): string {
+  return code ? SATELLITE_NAMES[code] ?? code : "—";
 }
 
 /** Red ramp by fire radiative power (MW). */
@@ -125,7 +154,7 @@ export function parseFirmsCsv(csv: string): FireDetection[] {
       at: acqMs(date, time),
       when: `${date}${time}`,
       brightness: Number.isFinite(bright) ? `${bright.toFixed(0)} K` : "—",
-      satellite: iSat >= 0 ? (p[iSat] ?? "").trim() || "—" : "—",
+      satellite: satelliteName(iSat >= 0 ? (p[iSat] ?? "").trim() : ""),
       daynight: dn === "D" ? "day" : dn === "N" ? "night" : "—",
     });
   }
@@ -228,7 +257,9 @@ async function readFirmsFile(f: FirmsFile, now: number): Promise<FirmsFileResult
     if (!res.ok) {
       return { key: f.key, ok: false, dets: hit?.dets ?? [], at: hit?.at ?? null, reason: `http ${res.status}` };
     }
-    const dets = parseFirmsCsv(await res.text());
+    // Only rows inside the window are kept: the files span ~42 h and four of them
+    // parse to ~300k rows, so holding the expired half would double the memory.
+    const dets = parseFirmsCsv(await res.text()).filter((d) => withinWindow(d, now));
     fileCache.set(f.url, { dets, at: now, lastModified: res.headers.get("last-modified") ?? undefined });
     return { key: f.key, ok: true, dets, at: now };
   } catch (e) {

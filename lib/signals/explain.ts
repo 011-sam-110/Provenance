@@ -219,10 +219,10 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "fire-active",
-    whatItShows: "A thermal anomaly detected from orbit by NASA FIRMS (VIIRS), i.e. something on the ground was hot when a satellite passed over in the last 24 hours.",
+    whatItShows: "A thermal anomaly detected from orbit by NASA FIRMS (VIIRS on three satellites, and MODIS), i.e. something on the ground was hot when a satellite passed over in the last 24 hours.",
     method: "Measured by satellite radiometer and flagged by NASA's detection algorithm.",
     confidence: "measured",
-    coverage: "Global, but sampled only on satellite overpasses — typically a few times per day per point.",
+    coverage: "Global, the last 24 hours, but sampled only on satellite overpasses — several times per day per point across the four satellites.",
     limitations: [
       "It detects HEAT, not fire. Gas flares, industrial furnaces, volcanic vents and agricultural burning all appear as detections.",
       "Cloud cover hides fires completely. A gap in detections can be weather rather than an absence of fire.",
