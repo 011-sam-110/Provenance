@@ -21,9 +21,18 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 // six-day-old schedule read as a live one. The stale-on-error cache below is the
 // honest fallback: it keeps the last good rows and says when they were read.
 
+//
+// API 2.3.0 (moved 2026-10-16). 2.2.0 still answered, but The Space Devs' docs now
+// list only 2.3.0 endpoints, so 2.2.0 can go without notice. 2.3.0 keeps the same
+// fields this adapter reads (pad latitude/longitude now arrive as numbers) and adds
+// `window_start` / `window_end`. One call per hour asks for 100 rows: about the
+// next two to three months, inside the anonymous limit of 15 requests per hour
+// (`/2.3.0/api-throttle/` said 15 per 3600 s on 2026-10-16). 100 rows of
+// `mode=normal` measured 857 KB.
+
 /** Page size asked of LL2. The agenda is a PAGE of the schedule, not the schedule. */
-export const LAUNCHES_PAGE_LIMIT = 30;
-const PROD = `https://ll.thespacedevs.com/2.2.0/launch/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
+export const LAUNCHES_PAGE_LIMIT = 100;
+const PROD = `https://ll.thespacedevs.com/2.3.0/launches/upcoming/?limit=${LAUNCHES_PAGE_LIMIT}&mode=normal`;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — launches move on the scale of hours/days
 
 export const LAUNCHES_ATTRIBUTION = "Launch data © The Space Devs — Launch Library 2";

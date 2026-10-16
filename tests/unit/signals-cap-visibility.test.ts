@@ -25,7 +25,7 @@ test("the declared caps are what the adapters ship", () => {
   expect(AIS_CAP).toBe(1200);
   expect(OPENAQ_CAP).toBe(1000);
   expect(EMSC_REQUEST_LIMIT).toBe(500);
-  expect(LAUNCHES_PAGE_LIMIT).toBe(30);
+  expect(LAUNCHES_PAGE_LIMIT).toBe(100);
 });
 
 describe("fire-active (NASA FIRMS)", () => {
@@ -260,9 +260,9 @@ describe("launches (Launch Library 2)", () => {
   });
 
   test("without a total, a full page falls back to a lower bound", () => {
-    const c = readCoverage(normalizeLaunches({ results: Array.from({ length: 30 }, (_, i) => launch(i)) }))!;
+    const c = readCoverage(normalizeLaunches({ results: Array.from({ length: LAUNCHES_PAGE_LIMIT }, (_, i) => launch(i)) }))!;
     expect(c.availableExact).toBe(false);
-    expect(coverageCountLabel(c)).toBe("30 of 30+");
+    expect(coverageCountLabel(c)).toBe("100 of 100+");
   });
 });
 

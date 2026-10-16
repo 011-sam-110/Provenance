@@ -1,7 +1,9 @@
 import { afterEach, expect, test, vi } from "vitest";
 import fixture from "@/tests/fixtures/launches.json";
+import ll23 from "@/tests/fixtures/launches-ll2-2.3.0.json";
 import { normalizeLaunches, launchStatusColor, LAUNCHES_SOURCE, resetLaunchesCacheForTest } from "@/lib/signals/launches";
 import { readOutcome } from "@/lib/signals/outcome";
+import { readCoverage } from "@/lib/signals/coverage";
 import { countdown } from "@/lib/console/signals/schedule";
 
 test("normalizes LL2 launches to pad points, skipping pad-less ones", () => {
@@ -113,4 +115,16 @@ test("a production 429 after a good read keeps the last good rows, stamped when 
   expect(readOutcome(second)?.ok).toBe(false);
   expect(readOutcome(second)?.at).toBe(readAt);
   expect(calls.some((u) => u.includes("lldev"))).toBe(false);
+});
+
+// --- LL2 2.3.0 (captured 2026-10-16) --------------------------------------------
+
+test("reads the 2.3.0 shape: numeric pad coordinates, LL2 total as an exact N of M", () => {
+  const out = normalizeLaunches(ll23 as never);
+  expect(out).toHaveLength(ll23.results.length);
+  const mmx = out.find((f) => f.title.includes("MMX"));
+  expect(mmx?.props?.provider).toBeTruthy();
+  expect(mmx?.ts).toBe("2026-10-19T19:41:03Z");
+  expect(out.every((f) => Number.isFinite(f.lat) && Number.isFinite(f.lon))).toBe(true);
+  expect(readCoverage(out)).toMatchObject({ available: 476, availableExact: true, capped: true, cap: 100 });
 });
