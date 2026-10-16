@@ -44,6 +44,7 @@
 // hostname, an HTTP status, timestamps and counts.
 
 import type { CredentialVerdict } from "./keyRequirements";
+import { readOutcome } from "@/lib/signals/outcome";
 
 /** HTTP statuses we treat as "the upstream refused the credential we sent". */
 export const REFUSAL_STATUSES = new Set([401, 402, 403]);
@@ -85,7 +86,11 @@ export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
 export interface UpstreamEvidence {
   /** Epoch ms the layer's adapter last finished a server-side fetch (ok or not). */
   lastFetchAt: number | null;
-  /** Did that adapter fetch resolve rather than throw? null before the first one. */
+  /**
+   * Did that adapter fetch succeed? False when it threw, and false when it resolved
+   * but declared its own failure (`degraded` / `degradedWith`, lib/signals/outcome.ts).
+   * null before the first one.
+   */
   lastFetchOk: boolean | null;
   /** Rows that fetch produced. 0 is a real answer; null means never observed. */
   lastRows: number | null;
@@ -342,7 +347,16 @@ export function instrumentSignalRegistry<T>(sources: InstrumentableSource<T>[]):
       try {
         const rows = await original();
         try {
-          recordFetchOutcome(source.id, { ok: true, rows: Array.isArray(rows) ? rows.length : 0 });
+          // A resolved fetch is not a healthy one: adapters declare a failure on the
+          // array they return. Measured 2026-10-16: /api/signals/gdacs published
+          // ok:false "partial: VO failed (http 404)" while this ledger said ok:true,
+          // so the status board hid the partial state. An undeclared outcome keeps
+          // the old reading (resolved = ok); the registry test stops that shipping.
+          const declared = readOutcome(rows);
+          recordFetchOutcome(source.id, {
+            ok: declared ? declared.ok : true,
+            rows: Array.isArray(rows) ? rows.length : 0,
+          });
         } catch {
           // never let bookkeeping break a layer
         }

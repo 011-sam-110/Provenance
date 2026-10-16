@@ -1,3 +1,4 @@
+import { degradedWith, observed } from "@/lib/signals/outcome";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   KEY_REQUIREMENTS,
@@ -699,6 +700,23 @@ describe("instrumentSignalRegistry", () => {
     expect(rec.lastFetchOk).toBe(true);
     expect(rec.fetches).toBe(1);
     expect(rec.lastFetchAt).not.toBeNull();
+  });
+
+  it("records a fetch that resolved but declared its own failure as not ok", async () => {
+    // /api/signals/gdacs said ok:false "partial: VO failed (http 404)" while this
+    // ledger said ok:true, because it only asked whether fetch() resolved.
+    const partial = degradedWith([{ id: "a" }], "partial: VO failed (http 404)");
+    const source = { id: "demo", fetch: async () => partial };
+    instrumentSignalRegistry([source]);
+    expect(await source.fetch()).toBe(partial);
+    const rec = readEvidence("demo")!;
+    expect(rec.lastFetchOk).toBe(false);
+    expect(rec.lastRows).toBe(1);
+
+    const quiet = { id: "demo2", fetch: async () => observed([]) };
+    instrumentSignalRegistry([quiet]);
+    await quiet.fetch();
+    expect(readEvidence("demo2")!.lastFetchOk).toBe(true);
   });
 
   it("is idempotent, so a second /api/status hit does not double-wrap", async () => {
