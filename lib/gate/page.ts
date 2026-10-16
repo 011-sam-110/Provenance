@@ -55,8 +55,8 @@ import { BRAND } from "@/lib/brand";
 const STATS: ReadonlyArray<{ figure: string; label: string }> = [
   { figure: "70,698", label: "webcams catalogued worldwide" },
   { figure: "17", label: "camera networks in 11 countries" },
-  { figure: "40", label: "live map layers" },
-  { figure: "72", label: "console widgets" },
+  { figure: "41", label: "live map layers" },
+  { figure: "73", label: "console widgets" },
   { figure: "13", label: "monitor profiles" },
 ];
 
