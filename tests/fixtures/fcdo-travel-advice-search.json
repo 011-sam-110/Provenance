@@ -1,0 +1,125 @@
+{
+ "results": [
+  {
+   "title": "Ethiopia travel advice",
+   "link": "/foreign-travel-advice/ethiopia",
+   "public_timestamp": "2026-10-16T16:03:39Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/ethiopia",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Mexico travel advice",
+   "link": "/foreign-travel-advice/mexico",
+   "public_timestamp": "2026-10-16T15:29:42Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/mexico",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Nigeria travel advice",
+   "link": "/foreign-travel-advice/nigeria",
+   "public_timestamp": "2026-10-16T14:52:35Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/nigeria",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Mauritius travel advice",
+   "link": "/foreign-travel-advice/mauritius",
+   "public_timestamp": "2026-10-16T12:27:02Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/mauritius",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Kenya travel advice",
+   "link": "/foreign-travel-advice/kenya",
+   "public_timestamp": "2026-10-16T12:02:22Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/kenya",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Saudi Arabia travel advice",
+   "link": "/foreign-travel-advice/saudi-arabia",
+   "public_timestamp": "2026-10-15T18:01:21Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/saudi-arabia",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Albania travel advice",
+   "link": "/foreign-travel-advice/albania",
+   "public_timestamp": "2026-10-15T15:44:54Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/albania",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Colombia travel advice",
+   "link": "/foreign-travel-advice/colombia",
+   "public_timestamp": "2026-10-15T10:21:54Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/colombia",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Turkey travel advice",
+   "link": "/foreign-travel-advice/turkey",
+   "public_timestamp": "2026-10-15T09:34:15Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/turkey",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Senegal travel advice",
+   "link": "/foreign-travel-advice/senegal",
+   "public_timestamp": "2026-10-15T09:00:14Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/senegal",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Venezuela travel advice",
+   "link": "/foreign-travel-advice/venezuela",
+   "public_timestamp": "2026-10-14T09:31:54Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/venezuela",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  },
+  {
+   "title": "Belgium travel advice",
+   "link": "/foreign-travel-advice/belgium",
+   "public_timestamp": "2026-10-13T14:33:30Z",
+   "index": "govuk",
+   "es_score": null,
+   "_id": "/foreign-travel-advice/belgium",
+   "elasticsearch_type": "edition",
+   "document_type": "edition"
+  }
+ ],
+ "total": 226
+}

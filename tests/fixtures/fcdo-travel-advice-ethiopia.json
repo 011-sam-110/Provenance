@@ -1,0 +1,13 @@
+{
+ "base_path": "/foreign-travel-advice/ethiopia",
+ "public_updated_at": "2026-10-16T17:03:39+01:00",
+ "details": {
+  "change_description": "New information about fighting in the Tigray region and updated information about travel from the airport and around Addis Ababa (‘Warnings and insurance’, ‘Safety and security’ and ‘Regional risks’ pages).",
+  "updated_at": "2026-10-16T16:03:39Z",
+  "country": {
+   "name": "Ethiopia",
+   "slug": "ethiopia",
+   "synonyms": []
+  }
+ }
+}

@@ -1,0 +1,310 @@
+{
+ "metadata": {
+  "generated": {
+   "timestamp": 1792184417,
+   "date": "2026-10-16 17:00:17"
+  }
+ },
+ "data": {
+  "AL": {
+   "country-id": 4000,
+   "country-iso": "AL",
+   "country-eng": "Albania",
+   "country-fra": "Albanie",
+   "advisory-state": 0,
+   "date-published": {
+    "timestamp": 1792093624,
+    "date": "2026-10-15 15:47:04",
+    "asp": "2026-10-15T15:47:04.0370803-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 0,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Albania",
+    "url-slug": "albania",
+    "friendly-date": "October 15, 2026 15:47 EDT",
+    "advisory-text": "Exercise normal security precautions",
+    "recent-updates": "Safety and security – added information on demonstrations in Tirana"
+   },
+   "fra": {
+    "name": "Albanie",
+    "url-slug": "albanie",
+    "friendly-date": "15 octobre 2026 15:47 HAE",
+    "advisory-text": "Prendre des mesures de sécurité normales",
+    "recent-updates": "Sécurité – ajout d’information sur des manifestations à Tirana"
+   }
+  },
+  "ET": {
+   "country-id": 85000,
+   "country-iso": "ET",
+   "country-eng": "Ethiopia",
+   "country-fra": "Éthiopie",
+   "advisory-state": 2,
+   "date-published": {
+    "timestamp": 1792007591,
+    "date": "2026-10-14 15:53:11",
+    "asp": "2026-10-14T15:53:11.6590784-04:00"
+   },
+   "has-advisory-warning": 1,
+   "has-regional-advisory": 1,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Ethiopia",
+    "url-slug": "ethiopia",
+    "friendly-date": "October 14, 2026 15:53 EDT",
+    "advisory-text": "Avoid non-essential travel (with regional advisories)",
+    "recent-updates": "Natural disasters and climate section – added information on El Niño"
+   },
+   "fra": {
+    "name": "Éthiopie",
+    "url-slug": "ethiopie",
+    "friendly-date": "14 octobre 2026 15:53 HAE",
+    "advisory-text": "Éviter tout voyage non-essentiel (avec avertissements régionaux)",
+    "recent-updates": "Section Catastrophes naturelles et climat – ajout d’information sur El Niño"
+   }
+  },
+  "JO": {
+   "country-id": 144000,
+   "country-iso": "JO",
+   "country-eng": "Jordan",
+   "country-fra": "Jordanie",
+   "advisory-state": 1,
+   "date-published": {
+    "timestamp": 1792183302,
+    "date": "2026-10-16 16:41:42",
+    "asp": "2026-10-16T16:41:42.0863943-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 1,
+   "has-content": 1,
+   "recent-updates-type": "Editorial change",
+   "eng": {
+    "name": "Jordan",
+    "url-slug": "jordan",
+    "friendly-date": "October 16, 2026 16:41 EDT",
+    "advisory-text": "Exercise a high degree of caution (with regional advisories)",
+    "recent-updates": "Editorial change"
+   },
+   "fra": {
+    "name": "Jordanie",
+    "url-slug": "jordanie",
+    "friendly-date": "16 octobre 2026 16:41 HAE",
+    "advisory-text": "Faire preuve d’une grande prudence (avec avertissements régionaux)",
+    "recent-updates": "Changement mineur"
+   }
+  },
+  "MU": {
+   "country-id": 181000,
+   "country-iso": "MU",
+   "country-eng": "Mauritius",
+   "country-fra": "Maurice",
+   "advisory-state": 0,
+   "date-published": {
+    "timestamp": 1792177369,
+    "date": "2026-10-16 15:02:49",
+    "asp": "2026-10-16T15:02:49.8973959-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 0,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Mauritius",
+    "url-slug": "mauritius",
+    "friendly-date": "October 16, 2026 15:02 EDT",
+    "advisory-text": "Exercise normal security precautions",
+    "recent-updates": "Safety and security section – updated information on the curfew"
+   },
+   "fra": {
+    "name": "Maurice",
+    "url-slug": "maurice",
+    "friendly-date": "16 octobre 2026 15:02 HAE",
+    "advisory-text": "Prendre des mesures de sécurité normales",
+    "recent-updates": "Section sécurité – mise à jour de l'information sur le couvre-feu"
+   }
+  },
+  "MX": {
+   "country-id": 184000,
+   "country-iso": "MX",
+   "country-eng": "Mexico",
+   "country-fra": "Mexique",
+   "advisory-state": 1,
+   "date-published": {
+    "timestamp": 1792164606,
+    "date": "2026-10-16 11:30:06",
+    "asp": "2026-10-16T11:30:06.8001488-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 1,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Mexico",
+    "url-slug": "mexico",
+    "friendly-date": "October 16, 2026 11:30 EDT",
+    "advisory-text": "Exercise a high degree of caution (with regional advisories)",
+    "recent-updates": "Risk levels section – Avoid non-essential travel from Punta San Telmo to Cabo Corrientes due to Hurricane Trudy; Natural disasters and climate section – added information on Hurricane Trudy"
+   },
+   "fra": {
+    "name": "Mexique",
+    "url-slug": "mexique",
+    "friendly-date": "16 octobre 2026 11:30 HAE",
+    "advisory-text": "Faire preuve d’une grande prudence (avec avertissements régionaux)",
+    "recent-updates": "Section Niveaux de risque – Évitez tout voyage non essentiel du nord de Punta San Telmo à Cabo Corrientes en raison de l’ouragan Trudy; Section Catastrophes naturelles et climat – ajout d’information sur l’ouragan Trudy"
+   }
+  },
+  "PA": {
+   "country-id": 233000,
+   "country-iso": "PA",
+   "country-eng": "Panama",
+   "country-fra": "Panama",
+   "advisory-state": 0,
+   "date-published": {
+    "timestamp": 1792168061,
+    "date": "2026-10-16 12:27:41",
+    "asp": "2026-10-16T12:27:41.6448471-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 1,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Panama",
+    "url-slug": "panama",
+    "friendly-date": "October 16, 2026 12:27 EDT",
+    "advisory-text": "Exercise normal security precautions (with regional advisories)",
+    "recent-updates": "Natural disasters and climate section – updated information on the October 9 earthquake"
+   },
+   "fra": {
+    "name": "Panama",
+    "url-slug": "panama",
+    "friendly-date": "16 octobre 2026 12:27 HAE",
+    "advisory-text": "Prendre des mesures de sécurité normales (avec avertissements régionaux)",
+    "recent-updates": "Section Catastrophes naturelles et climat – mise à jour de l’information sur le tremblement de terre du 9 octobre"
+   }
+  },
+  "SO": {
+   "country-id": 269000,
+   "country-iso": "SO",
+   "country-eng": "Somalia",
+   "country-fra": "Somalie",
+   "advisory-state": 3,
+   "date-published": {
+    "timestamp": 1792068149,
+    "date": "2026-10-15 08:42:29",
+    "asp": "2026-10-15T08:42:29.5111915-04:00"
+   },
+   "has-advisory-warning": 1,
+   "has-regional-advisory": 0,
+   "has-content": 1,
+   "recent-updates-type": "Regular text update",
+   "eng": {
+    "name": "Somalia",
+    "url-slug": "somalia",
+    "friendly-date": "October 15, 2026 08:42 EDT",
+    "advisory-text": "Avoid all travel",
+    "recent-updates": "Natural disasters and climate section – added information on El Niño"
+   },
+   "fra": {
+    "name": "Somalie",
+    "url-slug": "somalie",
+    "friendly-date": "15 octobre 2026 08:42 HAE",
+    "advisory-text": "Éviter tout voyage",
+    "recent-updates": "Section Catastrophes naturelles et climat – ajout d’information sur El Niño"
+   }
+  },
+  "LC": {
+   "country-id": 253000,
+   "country-iso": "LC",
+   "country-eng": "Saint Lucia",
+   "country-fra": "Sainte-Lucie",
+   "advisory-state": 0,
+   "date-published": {
+    "timestamp": 1792089497,
+    "date": "2026-10-15 14:38:17",
+    "asp": "2026-10-15T14:38:17.1743155-04:00"
+   },
+   "has-advisory-warning": 0,
+   "has-regional-advisory": 0,
+   "has-content": 1,
+   "recent-updates-type": "Editorial change",
+   "eng": {
+    "name": "Saint Lucia",
+    "url-slug": "saint-lucia",
+    "friendly-date": "October 15, 2026 14:38 EDT",
+    "advisory-text": "Exercise normal security precautions",
+    "recent-updates": "Editorial change"
+   },
+   "fra": {
+    "name": "Sainte-Lucie",
+    "url-slug": "sainte-lucie",
+    "friendly-date": "15 octobre 2026 14:38 HAE",
+    "advisory-text": "Prendre des mesures de sécurité normales",
+    "recent-updates": "Changement mineur"
+   }
+  },
+  "UA": {
+   "country-id": 305000,
+   "country-iso": "UA",
+   "country-eng": "Ukraine",
+   "country-fra": "Ukraine",
+   "advisory-state": 3,
+   "date-published": {
+    "timestamp": 1791983155,
+    "date": "2026-10-14 09:05:55",
+    "asp": "2026-10-14T09:05:55.130000-04:00"
+   },
+   "has-advisory-warning": 1,
+   "has-regional-advisory": 0,
+   "has-content": 1,
+   "recent-updates-type": "Editorial change",
+   "eng": {
+    "name": "Ukraine",
+    "url-slug": "ukraine",
+    "friendly-date": "October 14, 2026 09:05 EDT",
+    "advisory-text": "Avoid all travel",
+    "recent-updates": "The Health section was updated - travel health information (Public Health Agency of Canada)"
+   },
+   "fra": {
+    "name": "Ukraine",
+    "url-slug": "ukraine",
+    "friendly-date": "14 octobre 2026 09:05 HAE",
+    "advisory-text": "Éviter tout voyage",
+    "recent-updates": "La section Santé a été mise à jour - renseignements de santé aux voyageurs (Agence de la santé publique du Canada)"
+   }
+  },
+  "IL": {
+   "country-id": 135000,
+   "country-iso": "IL",
+   "country-eng": "Israel and Palestine",
+   "country-fra": "Israël et la Palestine",
+   "advisory-state": 2,
+   "date-published": {
+    "timestamp": 1790254414,
+    "date": "2026-09-24 08:53:34",
+    "asp": "2026-09-24T08:53:34.319929-04:00"
+   },
+   "has-advisory-warning": 1,
+   "has-regional-advisory": 1,
+   "has-content": 1,
+   "recent-updates-type": "Editorial change",
+   "eng": {
+    "name": "Israel and Palestine",
+    "url-slug": "israel-and-palestine",
+    "friendly-date": "September 24, 2026 08:53 EDT",
+    "advisory-text": "Avoid non-essential travel (with regional advisories)",
+    "recent-updates": "The Health section was updated - travel health information (Public Health Agency of Canada)"
+   },
+   "fra": {
+    "name": "Israël et la Palestine",
+    "url-slug": "israel-et-palestine",
+    "friendly-date": "24 septembre 2026 08:53 HAE",
+    "advisory-text": "Éviter tout voyage non-essentiel (avec avertissements régionaux)",
+    "recent-updates": "La section Santé a été mise à jour - renseignements de santé aux voyageurs (Agence de la santé publique du Canada)"
+   }
+  }
+ }
+}

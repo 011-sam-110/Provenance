@@ -1,0 +1,13 @@
+{
+ "base_path": "/foreign-travel-advice/belgium",
+ "public_updated_at": "2026-10-13T15:33:30+01:00",
+ "details": {
+  "change_description": "Updated information about national strike action (‘Warnings and insurance’ page).",
+  "updated_at": "2026-10-13T14:33:30Z",
+  "country": {
+   "name": "Belgium",
+   "slug": "belgium",
+   "synonyms": []
+  }
+ }
+}
