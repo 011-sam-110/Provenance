@@ -317,6 +317,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "17 at sea or in orbit."
   },
   {
+    "id": "cable-routes",
+    "label": "Charted cable routes",
+    "group": "Infrastructure",
+    "tier": "assets",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Measured directly through its own fetch() on 2026-10-16 from a UK box: 467 routes, 218 from NOAA and 249 from EMODnet. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "gpsJamming",
     "label": "GPS jamming",
     "group": "Infrastructure",
@@ -327,6 +339,30 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": true,
     "state": "live",
     "note": "Showing 400 of 518, the worst by interference ratio. 34 at sea or in orbit."
+  },
+  {
+    "id": "gpsJammingLive",
+    "label": "GPS jamming (last hour)",
+    "group": "Infrastructure",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It builds its hour in server memory from adsb.lol, so a single read shows little: one read on 2026-10-16 gave 3 cells. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "gnss-notams",
+    "label": "GNSS jamming warnings",
+    "group": "Infrastructure",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. Measured directly through its own fetch() on 2026-10-16 from a UK box: 7 NOTAMs in force. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "nuclear",
@@ -3424,10 +3460,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 43,
+  "layers": 46,
   "live": 29,
   "partial": 1,
-  "down": 11,
+  "down": 14,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,
