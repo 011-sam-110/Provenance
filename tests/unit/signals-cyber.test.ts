@@ -2,7 +2,14 @@ import { expect, test } from "vitest";
 import feodo from "@/tests/fixtures/feodo-c2.json";
 import ransomware from "@/tests/fixtures/ransomware-victims.json";
 import { normalizeFeodoC2, c2Color, CYBER_C2_SOURCE, readFeodo, FEODO_ATTRIBUTION } from "@/lib/signals/cyber-c2";
-import { normalizeRansomware, ransomwareColor, CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
+import {
+  normalizeRansomware,
+  ransomwareColor,
+  CYBER_RANSOMWARE_SOURCE,
+  ransomwareRequest,
+  rowsFromBody,
+  unplacedCount,
+} from "@/lib/signals/cyber-ransomware";
 import { countMagnitude, groupByCountry, toNum } from "@/lib/signals/aggregate";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { rowMetric } from "@/lib/console/signals/signalCard";
@@ -89,4 +96,33 @@ test("Feodo: a C2 not seen for months is history, and a stale 'online' is not be
 test("Feodo: an empty list is a degraded read, never a quiet world", () => {
   expect(readFeodo([]).reason).toBe("Feodo Tracker dataset is empty");
   expect(FEODO_ATTRIBUTION).not.toMatch(/CC0/);
+});
+
+test("Ransomware.live: every request is pinned to IPv4, and the key picks the PRO endpoint", () => {
+  // Prod 404'd for five weeks while every IPv4 vantage point got 200: the host has an
+  // AAAA record and the free API has no IPv6 support. The family pin is the fix.
+  const keyless = ransomwareRequest(undefined);
+  expect(keyless.options.family).toBe(4);
+  expect(keyless.keyed).toBe(false);
+  expect(keyless.url).toBe("https://api.ransomware.live/v2/recentvictims");
+  expect((keyless.options.headers as Record<string, string>)["X-API-KEY"]).toBeUndefined();
+
+  const blank = ransomwareRequest("   ");
+  expect(blank.keyed).toBe(false);
+
+  const keyed = ransomwareRequest("k-123");
+  expect(keyed.options.family).toBe(4);
+  expect(keyed.url).toBe("https://api-pro.ransomware.live/victims/recent");
+  expect((keyed.options.headers as Record<string, string>)["X-API-KEY"]).toBe("k-123");
+});
+
+test("Ransomware.live: bare array or a wrapped list, and claims with no country are counted", () => {
+  const rows = [{ victim: "a", country: "US" }, { victim: "b", country: "" }, { victim: "c" }];
+  expect(rowsFromBody(rows)).toHaveLength(3);
+  expect(rowsFromBody({ victims: rows })).toHaveLength(3);
+  expect(rowsFromBody({ nope: 1 })).toBeNull();
+  expect(unplacedCount(rows as never)).toBe(2);
+  const out = normalizeRansomware(rows as never);
+  expect(out).toHaveLength(1);
+  expect(out[0]!.props?.windowNote).toBe("Of the 3 newest claims, 2 name no country and are not on the map.");
 });

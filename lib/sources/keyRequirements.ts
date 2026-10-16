@@ -122,6 +122,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "Free - a Pulse account at pulse.internetsociety.org, then generate an API token. Pulse terms: non-commercial use only, and the credit 'Provided by Internet Society' must be shown.",
   },
+  {
+    kind: "enhancement",
+    id: "cyber-ransomware",
+    label: "Ransomware victims (Ransomware.live PRO)",
+    env: ["RANSOMWARE_LIVE_API_KEY"],
+    degrades:
+      "The layer still renders from the legacy keyless endpoint, which Ransomware.live keeps for compatibility only and describes as personal use. The key moves it to the supported PRO endpoint.",
+    obtain:
+      "Free personal key, no card: a magic-link email sign-up at my.ransomware.live. Sent as the X-API-KEY header.",
+  },
   // --- capabilities that are not signal layers ------------------------------
   {
     kind: "required",
