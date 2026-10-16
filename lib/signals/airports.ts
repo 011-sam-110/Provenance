@@ -6,6 +6,13 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 // confirmed live 2026-06-27) server-side and cache HARD (24h). We surface the
 // airport name, IATA code and country. Columns confirmed live 2026-06-27:
 // id,ident,type,name,latitude_deg,longitude_deg,…,iso_country,…,iata_code,…
+//
+// A row must ALSO have `scheduled_service=yes`. OurAirports' `large_airport` is a
+// size class, not a statement that airliners fly there: on 2026-10-16 it held 22
+// rows without scheduled service, which this layer labelled "Major airport" —
+// Kadena Air Base, King Abdulaziz Air Base, Paris-Le Bourget, Istanbul Atatürk
+// (closed to passengers), Long Thanh "(Under Construction)", Western Sydney (not
+// open yet), and Boryspil, Lviv, Odesa and Simferopol (no civil flights since 2022).
 
 const ENDPOINT = "https://davidmegginson.github.io/ourairports-data/airports.csv";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -79,11 +86,16 @@ export function parseAirportsCsv(text: string): SignalFeature[] {
   const iMuni = col("municipality");
   const iIdent = col("ident");
   const iCont = col("continent");
+  const iSched = col("scheduled_service");
+  const iIcao = col("icao_code");
+  const iGps = col("gps_code");
   if (iType < 0 || iLat < 0 || iLon < 0) return [];
   const out: SignalFeature[] = [];
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     if (row[iType] !== "large_airport") continue;
+    // An air base, a closed airport or one not yet open is not a "major airport".
+    if (iSched >= 0 && (row[iSched] ?? "").trim() !== "yes") continue;
     const lat = Number(row[iLat]);
     const lon = Number(row[iLon]);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -94,6 +106,8 @@ export function parseAirportsCsv(text: string): SignalFeature[] {
     const country = (row[iIso] ?? "").trim();
     const city = (row[iMuni] ?? "").trim();
     const region = iCont >= 0 ? continentName(row[iCont]) : "";
+    // The ICAO code is the join key for the live weather and status feeds.
+    const icao = ((iIcao >= 0 ? row[iIcao] : "") || (iGps >= 0 ? row[iGps] : "") || "").trim().toUpperCase();
     out.push({
       id: `airport:${ident}`,
       lat,
@@ -104,6 +118,7 @@ export function parseAirportsCsv(text: string): SignalFeature[] {
       props: {
         type: "Major airport",
         ...(iata ? { iata } : {}),
+        ...(icao ? { icao } : {}),
         ...(country ? { country } : {}),
         ...(region ? { region } : {}),
         ...(city ? { city } : {}),

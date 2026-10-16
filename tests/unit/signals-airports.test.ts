@@ -12,10 +12,22 @@ test("CSV parser handles quoted fields containing commas", () => {
 
 test("keeps only large_airport rows (drops small_airport + heliport)", () => {
   const out = parseAirportsCsv(csv);
-  // KSFO, EGLL, NOIA are large_airport; the small_airport + heliport are dropped.
+  // KSFO, EGLL, NOIA are scheduled large_airport rows; the small_airport, the
+  // heliport and the air base without scheduled service are dropped.
   expect(out).toHaveLength(3);
   expect(out.every((f) => f.signalId === "airports")).toBe(true);
   expect(out.some((f) => f.title.includes("Tiny Strip"))).toBe(false);
+});
+
+test("drops a large_airport without scheduled service (air base, closed, not yet open)", () => {
+  const out = parseAirportsCsv(csv);
+  expect(out.some((f) => f.id === "airport:RODN")).toBe(false);
+});
+
+test("carries the ICAO code (icao_code, else gps_code) as the live-feed join key", () => {
+  const out = parseAirportsCsv(csv);
+  expect(out.find((f) => f.id === "airport:KSFO")?.props?.icao).toBe("KSFO");
+  expect(out.find((f) => f.id === "airport:NOIA")?.props?.icao).toBe("AGGH");
 });
 
 test("maps ident, iata, country and city; tolerates a missing IATA", () => {
