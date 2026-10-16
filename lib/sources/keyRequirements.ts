@@ -79,6 +79,17 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain: "Free — openaq.org.",
   },
   {
+    // A source inside the air-quality layers, not a layer of its own, so its id is
+    // synthetic (see NON_SIGNAL_IDS).
+    kind: "enhancement",
+    id: "air-quality-cpcb",
+    label: "India CPCB air-quality stations",
+    env: ["DATA_GOV_IN_KEY"],
+    degrades:
+      "No CPCB stations in India. The air-quality layers still show the US Embassy monitors in New Delhi and Mumbai (AirNow) and the modelled values.",
+    obtain: "Free — register at data.gov.in and copy the API key from My Account. Read through api.data.gov.in.",
+  },
+  {
     kind: "enhancement",
     id: "nuclear",
     label: "Nuclear plants: US megawatts offline (EIA)",
@@ -267,6 +278,8 @@ export const NON_SIGNAL_IDS = new Set([
   "news-ingest",
   // The same kind of inbound door, for relayed upstream snapshots (lib/relay).
   "source-relay",
+  // A keyed source inside the two air-quality layers, not a layer of its own.
+  "air-quality-cpcb",
   // Accounts are a console capability, not a map layer.
   "accounts",
   "accounts-delete",

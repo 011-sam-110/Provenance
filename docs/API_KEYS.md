@@ -88,12 +88,16 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 |--------|------|--------------|---------|
 | **Electricity Maps** | Live carbon/grid mix outside the EU | ENTSO‑E already covers EU grid | `ELECTRICITYMAPS_API_KEY` |
 | **Cloudflare Radar** | A second internet‑outage vantage | Keyless **IODA** already gives several vantage points (BGP, probing, telescope). Nothing in the outage layer calls RIPEstat: it is used only by `/api/recon/bgp` | `CLOUDFLARE_API_TOKEN` |
+| **India CPCB** (data.gov.in) | PM2.5 at CPCB's Indian stations in the air-quality layers (24 h averages) | AirNow already carries the US Embassy monitors in New Delhi and Mumbai | `DATA_GOV_IN_KEY` |
 
 - **Electricity Maps** — free tier at <https://www.electricitymaps.com/free-tier-api>.
 - **Cloudflare Radar** — any free Cloudflare account → My Profile → API Tokens → token
   with **Radar Read**: <https://developers.cloudflare.com/radar/get-started/>.
 - **US EIA** — email-only form at <https://www.eia.gov/opendata/register.php> (free, no
   card). EIA's public `DEMO_KEY` works for a test but is rate-limited; do not deploy it.
+- **India CPCB** — register at <https://data.gov.in>, then copy the API key from My
+  Account. The adapter reads resource `3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69` (real-time
+  AQI) and makes no request without the key. Licence: Government Open Data License - India.
 
 ---
 
@@ -316,6 +320,7 @@ BARENTSWATCH_CLIENT_ID=
 BARENTSWATCH_CLIENT_SECRET=
 
 # --- Optional enhancements ---
+DATA_GOV_IN_KEY=
 ELECTRICITYMAPS_API_KEY=
 CLOUDFLARE_API_TOKEN=
 

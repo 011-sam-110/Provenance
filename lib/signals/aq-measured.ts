@@ -13,6 +13,10 @@
 //              Its station coordinates come back as [lat, lon], not GeoJSON order.
 //   NEA        Singapore's five regional PM2.5 readings (data.gov.sg, Singapore Open
 //              Data Licence). Regions, not stations: placed as areas.
+//   CPCB       India's Central Pollution Control Board through data.gov.in (Government
+//              Open Data License - India). Needs a free key: DATA_GOV_IN_KEY, dormant
+//              without it. Its values are 24-hour averages, so they are labelled that way
+//              and never stand in for the 1-hour value beside a modelled city.
 //   Sensor.Community  citizen low-cost sensors (Open Data Commons DbCL 1.0). Dense in
 //              Europe, uncalibrated, humidity-biased, locations rounded by the network.
 //              Shown as a separate low-cost tier: one mark per 0.5° cell carrying the
@@ -42,14 +46,16 @@ export function pm25Band(v: number): { label: string; color: string } {
 export const MEASURED_MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const MAX_PLAUSIBLE_PM25 = 1000; // µg/m³; above this is a fault, not air
 
-export type MeasuredProvider = "AirNow" | "DEFRA" | "NEA" | "Sensor.Community";
+export type MeasuredProvider = "AirNow" | "DEFRA" | "NEA" | "CPCB" | "Sensor.Community";
 
 export interface MeasuredReading {
   id: string;
   lat: number;
   lon: number;
-  /** PM2.5 in µg/m³, one-hour value. */
+  /** PM2.5 in µg/m³: a one-hour value unless `window` says otherwise. */
   pm25: number;
+  /** Set when the value is not a one-hour value (CPCB publishes 24 h averages). */
+  window?: "24 h";
   /** ISO time of the reading. */
   ts: string;
   /** Station, region or cell name. */
@@ -196,6 +202,59 @@ export function parseNeaPm25(json: unknown, now = Date.now()): MeasuredReading[]
   return out;
 }
 
+// --- India CPCB (data.gov.in, keyed) ---------------------------------------------
+
+export const CPCB_RESOURCE = "https://api.data.gov.in/resource/3b01bcb8-0b14-4abf-b6f2-c1bfd384ba69";
+
+interface CpcbRecord {
+  country?: string;
+  state?: string;
+  city?: string;
+  station?: string;
+  last_update?: string; // "16-10-2026 23:00:00", Indian Standard Time
+  latitude?: string | number;
+  longitude?: string | number;
+  pollutant_id?: string;
+  avg_value?: string | number;
+}
+
+/** "16-10-2026 23:00:00" IST → epoch ms. */
+export function cpcbTime(s: string): number {
+  const m = /^(\d{2})-(\d{2})-(\d{4}) (\d{2}):(\d{2})(?::(\d{2}))?$/.exec((s ?? "").trim());
+  if (!m) return NaN;
+  return Date.parse(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6] ?? "00"}+05:30`);
+}
+
+/** Pure: data.gov.in CPCB records → PM2.5 24-hour averages per station. */
+export function parseCpcb(json: unknown, now = Date.now()): MeasuredReading[] {
+  const recs = (json as { records?: CpcbRecord[] })?.records;
+  if (!Array.isArray(recs)) return [];
+  const out: MeasuredReading[] = [];
+  for (const r of recs) {
+    if (String(r.pollutant_id ?? "").replace(/\s/g, "").toUpperCase() !== "PM2.5") continue;
+    const v = Number(r.avg_value);
+    const lat = Number(r.latitude);
+    const lon = Number(r.longitude);
+    const t = cpcbTime(String(r.last_update ?? ""));
+    const station = String(r.station ?? "").trim();
+    if (!station || !plausible(v) || !inWorld(lat, lon) || !fresh(t, now)) continue;
+    out.push({
+      id: `cpcb:${station.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`,
+      lat,
+      lon,
+      pm25: v,
+      window: "24 h",
+      ts: new Date(t).toISOString(),
+      station: [station, r.city].filter(Boolean).join(", "),
+      operator: "Central Pollution Control Board (India)",
+      provider: "CPCB",
+      tier: "reference",
+      precision: "facility",
+    });
+  }
+  return out;
+}
+
 // --- Sensor.Community ----------------------------------------------------------
 
 export const SENSOR_COMMUNITY_URL = "https://data.sensor.community/static/v2/data.1h.json";
@@ -306,16 +365,24 @@ export async function fetchMeasuredReadings(): Promise<MeasuredSet> {
   if (inflight) return inflight;
   inflight = (async () => {
     const now = Date.now();
-    const [airnow, defra, nea, sc] = await Promise.all([
+    const cpcbKey = (process.env.DATA_GOV_IN_KEY ?? "").trim();
+    const [airnow, defra, nea, sc, cpcb] = await Promise.all([
       fetchAirNow(now).catch(() => null),
       json(DEFRA_PM25_URL, 30_000).then((j) => (j ? parseDefraTimeseries(j, now) : null)).catch(() => null),
       json(NEA_PM25_URL, 20_000).then((j) => (j ? parseNeaPm25(j, now) : null)).catch(() => null),
       json(SENSOR_COMMUNITY_URL, 45_000).then((j) => (j ? parseSensorCommunity(j, now) : null)).catch(() => null),
+      // Dormant without the key: no request is made.
+      cpcbKey
+        ? json(`${CPCB_RESOURCE}?api-key=${encodeURIComponent(cpcbKey)}&format=json&limit=1000&filters%5Bpollutant_id%5D=PM2.5`, 30_000)
+            .then((j) => (j ? parseCpcb(j, now) : null))
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
     const parts: [MeasuredProvider, MeasuredReading[] | null][] = [
       ["AirNow", airnow],
       ["DEFRA", defra],
       ["NEA", nea],
+      ["CPCB", cpcb],
       ["Sensor.Community", sc],
     ];
     const set: MeasuredSet = {
@@ -339,6 +406,7 @@ const PROVIDER_PAGE: Record<MeasuredProvider, string> = {
   AirNow: "https://www.airnow.gov/",
   DEFRA: "https://uk-air.defra.gov.uk/",
   NEA: "https://www.haze.gov.sg/",
+  CPCB: "https://airquality.cpcb.gov.in/",
   "Sensor.Community": "https://sensor.community/",
 };
 
@@ -352,14 +420,14 @@ export function measuredToFeature(r: MeasuredReading): SignalFeature {
     lon: r.lon,
     title: lowCost
       ? `Low-cost sensors: PM2.5 ${r.pm25.toFixed(1)} µg/m³ — ${band.label} (median of ${r.sensors ?? 1})`
-      : `PM2.5 ${r.pm25.toFixed(1)} µg/m³ — ${band.label}`,
+      : `PM2.5 ${r.pm25.toFixed(1)} µg/m³${r.window ? ` (${r.window} avg)` : ""} — ${band.label}`,
     signalId: "air-quality-stations",
     ...(r.precision !== "facility" ? { precision: r.precision } : {}),
     color: band.color,
     ts: r.ts,
     link: PROVIDER_PAGE[r.provider],
     props: {
-      pm25: `${r.pm25.toFixed(1)} µg/m³`,
+      pm25: `${r.pm25.toFixed(1)} µg/m³${r.window ? ` (${r.window} average)` : ""}`,
       pm25Ugm3: Math.round(r.pm25 * 10) / 10,
       airQuality: band.label,
       station: r.station,
@@ -419,7 +487,8 @@ export interface CityMeasurement {
  * Low-cost sensors never stand in for a reference value.
  */
 export function measuredNear(lat: number, lon: number, readings: MeasuredReading[], radiusKm = 20): CityMeasurement | null {
-  const near = readings.filter((r) => r.tier === "reference" && km(lat, lon, r.lat, r.lon) <= radiusKm);
+  // One-hour values only: the caller labels the result "1 h".
+  const near = readings.filter((r) => r.tier === "reference" && !r.window && km(lat, lon, r.lat, r.lon) <= radiusKm);
   if (near.length === 0) return null;
   const by = [...new Set(near.map((r) => r.operator))].join("; ");
   const times = near.map((r) => r.ts).sort();

@@ -299,6 +299,7 @@ describe("buildStatusReport", () => {
         "accounts-delete",
         "ai-brief",
         "ais-barentswatch",
+        "air-quality-cpcb",
         "feedback-prompt",
         "geolocate-vision",
         "markets-equities",

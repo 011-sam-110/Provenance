@@ -7,6 +7,9 @@ import {
   parseDefraTimeseries,
   parseNeaPm25,
   parseSensorCommunity,
+  parseCpcb,
+  cpcbTime,
+  fetchMeasuredReadings,
   measuredToFeature,
   measuredNear,
   dropRelayed,
@@ -140,4 +143,44 @@ test("model layer: no monitor within 20 km leaves the model value alone", () => 
   attachMeasured([lagos], parseNeaPm25(JSON.parse(text("nea-sg-pm25.json")), AT));
   expect(lagos).toEqual(before);
   expect(measuredNear(0, 0, [])).toBeNull();
+});
+
+// CPCB: a SCHEMA fixture (see its _note). api.data.gov.in refused connections when this
+// was built, so the shape follows the audit's probe of the same day and the values are
+// illustrative. These tests pin the parsing rules, not any measurement.
+test("CPCB: PM2.5 rows only, labelled 24 h, IST times, stale and 'NA' rows dropped", () => {
+  const json = JSON.parse(text("cpcb-data-gov-in.schema.json"));
+  expect(cpcbTime("16-10-2026 23:00:00")).toBe(Date.parse("2026-10-16T17:30:00Z"));
+  expect(Number.isNaN(cpcbTime("yesterday"))).toBe(true);
+  // The audit read last_update 17:30 UTC at 18:58 UTC; the 3 h freshness rule applies.
+  const READ = Date.parse("2026-10-16T19:00:00Z");
+  expect(parseCpcb(json, AT)).toEqual([]); // 3 h 50 min later: stale
+  const out = parseCpcb(json, READ);
+  expect(out.map((r) => r.id)).toEqual(["cpcb:narela-delhi-dpcc"]);
+  expect(out[0]).toMatchObject({ pm25: 113, window: "24 h", provider: "CPCB", ts: "2026-10-16T17:30:00.000Z" });
+  const f = measuredToFeature(out[0]);
+  expect(f.props?.pm25).toBe("113.0 µg/m³ (24 h average)");
+  expect(f.title).toContain("(24 h avg)");
+  // A 24 h average never stands in for the 1 h value beside a modelled city.
+  expect(measuredNear(28.7041, 77.1025, out)).toBeNull();
+  expect(parseCpcb({ message: "Invalid key" }, AT)).toEqual([]);
+});
+
+test("CPCB stays dormant without DATA_GOV_IN_KEY: no request goes to data.gov.in", async () => {
+  const seen: string[] = [];
+  const realFetch = globalThis.fetch;
+  const before = process.env.DATA_GOV_IN_KEY;
+  delete process.env.DATA_GOV_IN_KEY;
+  globalThis.fetch = (async (u: string | URL | Request) => {
+    seen.push(String(u));
+    return new Response("{}", { status: 503 });
+  }) as typeof fetch;
+  try {
+    await fetchMeasuredReadings();
+  } finally {
+    globalThis.fetch = realFetch;
+    if (before !== undefined) process.env.DATA_GOV_IN_KEY = before;
+  }
+  expect(seen.length).toBeGreaterThan(0);
+  expect(seen.some((u) => u.includes("data.gov.in"))).toBe(false);
 });
