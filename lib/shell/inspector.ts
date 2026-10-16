@@ -60,7 +60,13 @@
 import { useSyncExternalStore } from "react";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { bboxOfRing, sanitiseRing } from "@/lib/shell/scope";
-import { DEFAULT_AREA_COLOR, coerceAreaColor, nextAreaColor } from "@/lib/shell/areaColors";
+import {
+  DEFAULT_AREA_COLOR,
+  DEFAULT_AREA_OPACITY,
+  coerceAreaColor,
+  coerceAreaOpacity,
+  nextAreaColor,
+} from "@/lib/shell/areaColors";
 // A LEAF module, deliberately — see its header for why this is not lib/layers.ts.
 import { RETIRED_LAYER_KEYS } from "@/lib/layerAliases";
 
@@ -80,6 +86,12 @@ export interface InspectorArea {
    * painted in, so an old area does not change colour on upgrade.
    */
   color: string;
+  /**
+   * 0..1, how strongly the ring and its fill are painted. ADDED 2026-10-16, so an area
+   * saved before it has no such field and coerceState gives it DEFAULT_AREA_OPACITY,
+   * which is the look every area already had. See areaPaint in lib/shell/areaColors.ts.
+   */
+  opacity: number;
   /** OPEN ring of [lon, lat] — exactly what lib/shell/scope.ts speaks. */
   polygon: [number, number][];
   bbox: [number, number, number, number];
@@ -169,6 +181,7 @@ export function newArea(
     id: `area:${now}`,
     label,
     color: coerceAreaColor(color),
+    opacity: DEFAULT_AREA_OPACITY,
     polygon: clean,
     bbox: bboxOfRing(clean),
     createdAt: now,
@@ -213,6 +226,16 @@ export function recolourArea(
 ): InspectorArea[] {
   const next = coerceAreaColor(color);
   return areas.map((a) => (a.id === id ? { ...a, color: next } : a));
+}
+
+/** Pure: set how strongly one area is painted. Coerced like the colour, for the same reason. */
+export function setAreaOpacity(
+  areas: readonly InspectorArea[],
+  id: string,
+  opacity: number,
+): InspectorArea[] {
+  const next = coerceAreaOpacity(opacity);
+  return areas.map((a) => (a.id === id ? { ...a, opacity: next } : a));
 }
 
 /** Pure: the area being edited, or null for World (including a dangling id). */
@@ -366,6 +389,8 @@ export function coerceState(saved: unknown): InspectorState {
         // Missing on everything saved before the colour feature existed, and the
         // fallback is the colour those areas were already being painted in.
         color: coerceAreaColor(a.color),
+        // Missing on everything saved before 2026-10-16; the default is the old look.
+        opacity: coerceAreaOpacity(a.opacity),
         polygon: ring,
         bbox: bboxOfRing(ring),
         createdAt: typeof a.createdAt === "number" && Number.isFinite(a.createdAt) ? a.createdAt : 0,
@@ -509,6 +534,14 @@ export const inspectorStore = {
     // array, so the guard has to be on the value, not on the array's identity.
     const before = state.areas.find((a) => a.id === id);
     if (!before || before.color === next.find((a) => a.id === id)?.color) return;
+    commit({ ...state, areas: next });
+  },
+
+  /** Set how strongly an area is painted, 0..1. Unknown ids and no-op writes are ignored. */
+  setOpacity(id: string, opacity: number) {
+    const next = setAreaOpacity(state.areas, id, opacity);
+    const before = state.areas.find((a) => a.id === id);
+    if (!before || before.opacity === next.find((a) => a.id === id)?.opacity) return;
     commit({ ...state, areas: next });
   },
 

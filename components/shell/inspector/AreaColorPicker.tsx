@@ -25,13 +25,14 @@
 // Without it, Escape with the picker open would close the whole panel behind it.
 
 import { useEffect, useRef } from "react";
-import { AREA_COLORS, areaColorName } from "@/lib/shell/areaColors";
+import { AREA_COLORS, AREA_OPACITY_STEP, areaColorName, coerceAreaOpacity } from "@/lib/shell/areaColors";
 import type { InspectorArea } from "@/lib/shell/inspector";
 
 export default function AreaColorPicker({
   area,
   id,
   onPick,
+  onOpacity,
   onClose,
 }: {
   area: InspectorArea;
@@ -39,6 +40,8 @@ export default function AreaColorPicker({
       because the button that opens this is the thing that has to name it. */
   id: string;
   onPick: (hex: string) => void;
+  /** 0..1. The map follows through the store, like the colour. */
+  onOpacity: (opacity: number) => void;
   onClose: () => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -79,6 +82,9 @@ export default function AreaColorPicker({
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "ArrowDown" && e.key !== "ArrowUp") {
       return;
     }
+    // The opacity slider owns its own arrows. Without this the palette's walk would
+    // take them, focus a colour, and the slider could not be moved by keyboard.
+    if ((e.target as HTMLElement).closest(".tn-insp-opacity")) return;
     const dots = Array.from(
       rootRef.current?.querySelectorAll<HTMLButtonElement>(".tn-insp-color-dot") ?? [],
     );
@@ -88,6 +94,8 @@ export default function AreaColorPicker({
     const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1;
     dots[(at + step + dots.length) % dots.length]?.focus();
   };
+
+  const percent = Math.round(coerceAreaOpacity(area.opacity) * 100);
 
   return (
     <div
@@ -130,6 +138,26 @@ export default function AreaColorPicker({
         />
         <span className="tn-insp-color-custom-text">
           Custom{areaColorName(area.color) === area.color ? ` — ${area.color}` : ""}
+        </span>
+      </label>
+
+      {/* HOW STRONGLY THIS AREA SHOWS. In the same popover as the colour because it is
+          the same question — what this ring looks like on the map — and 0% is the look
+          every area had before, so nobody's saved areas change until they move it. */}
+      <label className="tn-insp-opacity">
+        <span className="tn-insp-color-head">Opacity</span>
+        <span className="tn-insp-opacity-row">
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={AREA_OPACITY_STEP * 100}
+            value={percent}
+            aria-label={`Opacity for ${area.label}`}
+            aria-valuetext={`${percent}%`}
+            onChange={(e) => onOpacity(Number(e.target.value) / 100)}
+          />
+          <output className="tn-insp-opacity-value">{percent}%</output>
         </span>
       </label>
     </div>

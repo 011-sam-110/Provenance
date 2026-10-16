@@ -99,3 +99,62 @@ export function areaColorName(hex: string): string {
   const found = AREA_COLORS.find((c) => c.hex === coerceAreaColor(hex));
   return found?.name ?? hex;
 }
+
+// --- opacity ----------------------------------------------------------------
+//
+// HOW STRONGLY AN AREA SHOWS, one number per area, 0 to 1. Sam's report: "once you
+// have marked it its impossible to see". An area that is not being edited is a 50%
+// dashed outline with no fill, which is right for a reference ring over a busy map
+// and wrong for an area someone is actually watching. So the strength is the user's
+// call, per area, beside its colour.
+//
+// 0 IS TODAY'S LOOK, and that is the default. Every area saved before this existed
+// has no opacity field, and it must not change on upgrade any more than its colour
+// did. The top of the scale is a solid outline and a 60% fill rather than 100%: an
+// area is drawn OVER the cameras and signals it scopes, and a fully opaque fill would
+// hide the very things it was drawn around.
+
+export const DEFAULT_AREA_OPACITY = 0;
+/** The slider's step. Fine enough to tune, coarse enough that the stored value is tidy. */
+export const AREA_OPACITY_STEP = 0.05;
+/** The fill at opacity 1. */
+export const AREA_FILL_MAX = 0.6;
+/** The outline at opacity 0 — the dashed ring every area has always had. */
+export const AREA_LINE_MIN = 0.5;
+/** The fill the area being EDITED always gets, however low its own opacity is. */
+export const AREA_EDITING_FILL = 0.06;
+/** The outline of the area being edited, the same floor as before this feature. */
+export const AREA_EDITING_LINE = 0.95;
+
+/**
+ * Pure: an opacity that is safe to paint and persist, from whatever was stored.
+ *
+ * Clamped to 0..1 and snapped to the slider's step. Anything that is not a finite
+ * number — a missing field on an old area, a hand-edited envelope — is the default.
+ * The value ends up in a MapLibre paint property, and a NaN there is the same
+ * silent-layer-drop failure an unparseable colour is.
+ */
+export function coerceAreaOpacity(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return DEFAULT_AREA_OPACITY;
+  const clamped = Math.min(1, Math.max(0, value));
+  // toFixed after the snap: 7 * 0.05 is 0.35000000000000003 in floating point, and
+  // that is what would otherwise be persisted and shown as a percentage.
+  return Number((Math.round(clamped / AREA_OPACITY_STEP) * AREA_OPACITY_STEP).toFixed(2));
+}
+
+/**
+ * Pure: the fill and outline strength an area is painted with.
+ *
+ * ONE KNOB, TWO PAINTS, because the user is asking one question ("how visible is
+ * this area") and two sliders would make them answer it twice. The fill runs from
+ * none to AREA_FILL_MAX; the outline from its old 50% to solid. The area being edited
+ * keeps the floor it always had, so turning an area's opacity down never makes the
+ * one you are working on harder to find.
+ */
+export function areaPaint(opacity: unknown, editing: boolean): { fill: number; line: number } {
+  const o = coerceAreaOpacity(opacity);
+  const fill = Number((o * AREA_FILL_MAX).toFixed(3));
+  const line = Number((AREA_LINE_MIN + o * (1 - AREA_LINE_MIN)).toFixed(3));
+  if (!editing) return { fill, line };
+  return { fill: Math.max(AREA_EDITING_FILL, fill), line: Math.max(AREA_EDITING_LINE, line) };
+}

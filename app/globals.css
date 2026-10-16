@@ -7794,6 +7794,23 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   background: none; cursor: pointer;
 }
 .tn-insp-color-custom:hover { color: var(--tn-text); }
+.tn-insp-opacity {
+  display: grid; gap: 6px;
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--tn-border);
+}
+/* A grid, not a flex row: Chrome gives a range input an intrinsic width of ~130px
+   that flex: 1 does not shrink below, which pushed the % readout out of the popover. */
+.tn-insp-opacity-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.tn-insp-opacity input[type="range"] {
+  width: 100%; min-width: 0; margin: 0;
+  accent-color: var(--tn-accent); cursor: pointer;
+}
+.tn-insp-opacity input[type="range"]:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-insp-opacity-value {
+  min-width: 3.2em; text-align: right;
+  font-size: var(--tnx-fs-sm); color: var(--tn-text);
+  font-variant-numeric: tabular-nums;
+}
 /* The pencil. ALWAYS VISIBLE, never a hover reveal — the same rule the ＋ on a source
    row and the rail's own buttons follow, and on a touch screen a hover reveal is a
    control that does not exist. */

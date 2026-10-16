@@ -196,6 +196,7 @@ function area(id: string, ring: [number, number][] = RING) {
     // The colour travels as a FEATURE PROPERTY — that is what lets one area be
     // recoloured without rebuilding a layer per colour. See areasCollection.
     color: "#0ea5e9",
+    opacity: 0,
     polygon: ring,
     bbox: [0, 0, 0, 0] as [number, number, number, number],
     createdAt: 0,
@@ -217,6 +218,23 @@ test("every area is painted, not only the one being edited", () => {
 test("the edited flag is false for every area when the rail is on World", () => {
   const c = areasCollection([area("a"), area("b")], null);
   expect(c.features.every((f) => f.properties!.editing === false)).toBe(true);
+});
+
+test("each area carries its own paint strengths, from its opacity", () => {
+  // The layers read fill and line with ["get", ...], so one area's slider must move
+  // that area's feature and no other.
+  const strong = { ...area("a"), opacity: 1 };
+  const c = areasCollection([strong, area("b")], null);
+  expect(c.features.map((f) => [f.properties!.fill, f.properties!.line])).toEqual([
+    [0.6, 1],
+    [0, 0.5],
+  ]);
+});
+
+test("an untouched area that is not being edited gets no fill: the old look", () => {
+  // The fill layer's filter is fill > 0, so this is what keeps unedited areas unfilled.
+  const c = areasCollection([area("a")], null);
+  expect(c.features[0].properties!.fill).toBe(0);
 });
 
 test("a ring that is not an area is not painted", () => {

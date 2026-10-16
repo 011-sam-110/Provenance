@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   AREA_COLORS,
+  AREA_EDITING_FILL,
+  AREA_EDITING_LINE,
+  AREA_FILL_MAX,
   DEFAULT_AREA_COLOR,
+  DEFAULT_AREA_OPACITY,
   areaColorName,
+  areaPaint,
+  coerceAreaOpacity,
   coerceAreaColor,
   isAreaColor,
   nextAreaColor,
@@ -108,5 +114,53 @@ describe("areaColorName", () => {
     // A custom colour from the platform picker has no name, and inventing one would be
     // worse than saying the value.
     expect(areaColorName("#123456")).toBe("#123456");
+  });
+});
+
+// Opacity: how strongly an area shows. Sam could not see an area once he had marked
+// it, so the strength became a per-area setting. The rule that matters most is the
+// first one: an area saved before this existed must look exactly as it did.
+describe("area opacity", () => {
+  it("defaults to 0, which paints the look areas already had", () => {
+    expect(DEFAULT_AREA_OPACITY).toBe(0);
+    expect(coerceAreaOpacity(undefined)).toBe(0);
+    // Not edited: no fill, the 50% dashed outline. Exactly the paint before 2026-10-16.
+    expect(areaPaint(undefined, false)).toEqual({ fill: 0, line: 0.5 });
+    // Edited: the 6% fill and 95% outline the edited ring always had.
+    expect(areaPaint(undefined, true)).toEqual({ fill: AREA_EDITING_FILL, line: AREA_EDITING_LINE });
+  });
+
+  it("refuses anything that is not a finite number, so no NaN reaches a paint property", () => {
+    for (const junk of [null, "0.5", NaN, Infinity, -Infinity, {}, [0.5]]) {
+      expect(coerceAreaOpacity(junk)).toBe(DEFAULT_AREA_OPACITY);
+    }
+  });
+
+  it("clamps to 0..1 and snaps to the slider's step without float noise", () => {
+    expect(coerceAreaOpacity(-1)).toBe(0);
+    expect(coerceAreaOpacity(7)).toBe(1);
+    expect(coerceAreaOpacity(0.35)).toBe(0.35);
+    expect(coerceAreaOpacity(0.33)).toBe(0.35);
+    expect(coerceAreaOpacity(0.32)).toBe(0.3);
+    expect(coerceAreaOpacity(0.7 * 0.5)).toBe(0.35);
+  });
+
+  it("at full strength the outline is solid and the fill stops short of hiding the map", () => {
+    expect(areaPaint(1, false)).toEqual({ fill: AREA_FILL_MAX, line: 1 });
+    expect(AREA_FILL_MAX).toBeLessThan(1);
+  });
+
+  it("raises fill and outline together as one knob", () => {
+    const low = areaPaint(0.2, false);
+    const high = areaPaint(0.8, false);
+    expect(high.fill).toBeGreaterThan(low.fill);
+    expect(high.line).toBeGreaterThan(low.line);
+  });
+
+  it("never paints the edited area fainter than it was before, whatever its own setting", () => {
+    expect(areaPaint(0, true).fill).toBe(AREA_EDITING_FILL);
+    expect(areaPaint(0.05, true).fill).toBe(AREA_EDITING_FILL);
+    expect(areaPaint(0.5, true).fill).toBe(0.3);
+    expect(areaPaint(1, true).line).toBe(1);
   });
 });

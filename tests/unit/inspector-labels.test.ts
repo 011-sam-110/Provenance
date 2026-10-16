@@ -15,6 +15,7 @@ const AREA: InspectorArea = {
   // Required on the type; all that matters here is that it is a colour the map can
   // paint, since these assertions are about the summary line and the ring's area.
   color: DEFAULT_AREA_COLOR,
+  opacity: 0,
   polygon: RING,
   bbox: [36, 49.8, 36.5, 50.2],
   createdAt: 1,
