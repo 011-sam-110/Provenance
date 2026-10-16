@@ -35,6 +35,19 @@ const CAMERA_PROVIDERS: CameraProvider[] = [
   { match: "Transport Scotland", label: "Traffic Scotland", url: "https://trafficscotland.org/" },
   { match: "TripCheck", label: "ODOT TripCheck", url: "https://tripcheck.com/" },
   { match: "Oregon DOT", label: "ODOT TripCheck", url: "https://tripcheck.com/" },
+  // The CARS states and the single-state US adapters added 2026-10-16. Above the bare
+  // "511" row on purpose: first match wins, and "511NY" or "511 Virginia" would
+  // otherwise resolve to the generic FHWA page instead of the operator's own.
+  { match: "511NY", label: "511NY", url: "https://511ny.org/" },
+  { match: "511MN", label: "511MN", url: "https://511mn.org/" },
+  { match: "511IA", label: "511IA", url: "https://511ia.org/" },
+  { match: "511IN", label: "INDOT TrafficWise 511IN", url: "https://511in.org/" },
+  { match: "KanDrive", label: "KanDrive", url: "https://www.kandrive.gov/" },
+  { match: "COtrip", label: "COtrip", url: "https://www.cotrip.org/" },
+  { match: "511 Virginia", label: "511 Virginia", url: "https://511.vdot.virginia.gov/" },
+  { match: "Washington State DOT", label: "WSDOT", url: "https://wsdot.wa.gov/" },
+  { match: "Mi Drive", label: "Mi Drive (MDOT)", url: "https://mdotjboss.state.mi.us/MiDrive/map" },
+  { match: "TxDOT", label: "TxDOT ITS", url: "https://its.txdot.gov/" },
   { match: "511", label: "511 traveler information", url: "https://www.fhwa.dot.gov/trafficinfo/511.htm" },
   { match: "Windy", label: "Windy.com", url: "https://www.windy.com/webcams" },
 ];
