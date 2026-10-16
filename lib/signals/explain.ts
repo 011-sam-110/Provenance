@@ -365,12 +365,12 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "ports",
-    whatItShows: "A major commercial seaport, from a curated list of the world's highest-throughput cargo and container ports.",
-    method: "Curated from public busiest-port listings.",
+    whatItShows: "A major commercial seaport, from a curated list of large cargo and container ports.",
+    method: "Curated from Wikipedia's List of busiest container ports (2023). The list is not in throughput order and the layer shows no rank.",
     confidence: "reported",
     coverage: "The world's largest container and cargo ports — a top-N list, not every port.",
     limitations: [
-      "A deliberately short curated list. Absence from this layer says nothing about a port's existence or importance.",
+      "A deliberately short curated list. Absence from this layer says nothing about a port's existence or importance: some top-70 ports (for example in Vietnam and Indonesia) are not on it.",
       "Static reference data: no congestion, no throughput, no current vessel counts.",
       "Coordinates mark the port area, not a berth.",
     ],

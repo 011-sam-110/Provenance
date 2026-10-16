@@ -9,6 +9,10 @@
 // endpoint (OSM tags every small cargo harbour, ~3,000+, with no size signal).
 //
 // Each entry: { name, country (ISO-3166-1 alpha-2), lat, lon }.
+//
+// THE ORDER OF THIS FILE IS NOT A RANKING. The first ~30 rows follow the 2023
+// ranking; after that the rows are grouped by region. Do not derive a rank from the
+// array index (it was, until 2026-10-16, and prod showed Gothenburg as "#71").
 
 export interface PortRecord {
   name: string;

@@ -13,16 +13,13 @@ test("normalizes the curated major-ports list to namespaced point features", () 
   expect(shanghai?.id).toBe("port:shanghai");
   expect(shanghai?.props?.country).toBe("CN");
   expect(shanghai?.lat).toBeCloseTo(31.23, 2);
-  // #1 by 2023 throughput → rank 1 (file order is the published rank) + derived region.
-  expect(shanghai?.props?.rank).toBe(1);
   expect(shanghai?.props?.region).toBe("East Asia");
 });
 
-test("rank follows the published (file) order and every port has a known region", () => {
+test("claims no rank (the file order is not a throughput order) and every port has a known region", () => {
   const out = normalizePorts(MAJOR_PORTS);
-  const ranks = out.map((f) => f.props?.rank);
-  expect(ranks[0]).toBe(1);
-  expect(ranks[ranks.length - 1]).toBe(MAJOR_PORTS.length); // monotonic, no gaps
+  // The file is regional after ~#30, so a rank from the array index would be false.
+  expect(out.every((f) => f.props?.rank === undefined)).toBe(true);
   // No port falls through the region map into "Other".
   expect(out.every((f) => f.props?.region && f.props.region !== "Other")).toBe(true);
 });

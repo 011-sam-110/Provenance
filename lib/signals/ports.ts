@@ -7,7 +7,8 @@ import { compiled } from "@/lib/signals/outcome";
 // no reliable keyless "major ports" feed (OSM tags ~3,000+ harbours with no size
 // signal). See ports.data.ts for the source + date. Points only.
 
-export const PORTS_ATTRIBUTION = "Major ports: curated from public busiest-port rankings (2023)";
+export const PORTS_ATTRIBUTION =
+  "Major ports: curated from Wikipedia's List of busiest container ports (2023, CC BY-SA 4.0)";
 
 /** When the curated list in ports.data.ts was compiled (see its header). The outcome
  *  stamps the age of the DATA, so these rows never read as a read that just happened. */
@@ -38,13 +39,17 @@ export function portRegion(country: string | undefined): string {
   return R[(country ?? "").toUpperCase()] ?? "Other";
 }
 
-/** Pure: curated port records → SignalFeature[]. The list is ordered by 2023 container
- *  throughput, so the array position IS the published rank — carried as `rank` (1-based)
- *  for the leaderboard, alongside the derived trade `region`. No throughput number is
- *  invented (the source publishes it, but it is not in this file). */
+/** Pure: curated port records → SignalFeature[], with the derived trade `region`.
+ *
+ *  NO `rank`. Until 2026-10-16 each row carried `rank = array index + 1` on the claim
+ *  that the file order was the published throughput order. It is not: after about
+ *  #30 the file is grouped by region (31-34 = Tokyo, Yokohama, Nagoya, Kobe; 71 =
+ *  Gothenburg), and the list misses about 15 ports that belong in a top 70. Prod
+ *  served "#71" as a fact the source does not support. The order of this file means
+ *  nothing; the directory now sorts by name. No throughput number is invented. */
 export function normalizePorts(records: PortRecord[]): SignalFeature[] {
   const out: SignalFeature[] = [];
-  records.forEach((p, i) => {
+  records.forEach((p) => {
     if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return;
     if (p.lat < -90 || p.lat > 90 || p.lon < -180 || p.lon > 180) return;
     out.push({
@@ -56,7 +61,6 @@ export function normalizePorts(records: PortRecord[]): SignalFeature[] {
       color: "#0891b2",
       props: {
         type: "Major seaport",
-        rank: i + 1,
         ...(p.country ? { country: p.country, region: portRegion(p.country) } : {}),
       },
     });
