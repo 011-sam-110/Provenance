@@ -10,6 +10,7 @@ import {
   AURORA_SOURCE,
   EQUATOR_BAND_DEG,
   AURORA_MAX_POINTS,
+  parseHemiPower,
   type OvationGrid,
 } from "@/lib/signals/aurora";
 import { rowMetric } from "@/lib/console/signals/signalCard";
@@ -152,4 +153,32 @@ test("REGRESSION: an ordinary active night is drawn whole, faint edge included",
   expect(readCoverage(out)).toMatchObject({ capped: false });
   expect(Math.min(...out.map((f) => Number(f.props?.probabilityPct)))).toBe(5);
   expect(AURORA_MAX_POINTS).toBe(600);
+});
+
+// --- OVATION hemispheric power (same run, one figure per hemisphere) -------------
+
+const HEMI_TXT = [
+  "#Aurora Hemispheric Power Tabular Values",
+  "# Observation        Forecast            North-Hemispheric-Power-Index    South-Hemispheric-Power-Index-GigaWatts",
+  "#------------------------------------------------------------------------------------------------",
+  "2026-10-16_19:20    2026-10-16_20:16      39      37",
+  "2026-10-16_19:25    2026-10-16_20:21      39      38",
+  "2026-10-16_19:30    2026-10-16_20:26      39      38",
+  "",
+].join("\n"); // header and the last three rows of aurora-nowcast-hemi-power.txt, verbatim, 2026-10-16 ~19:35Z
+
+test("parseHemiPower reads the newest row and skips comments", () => {
+  expect(parseHemiPower(HEMI_TXT)).toEqual({ observed: "2026-10-16T19:30:00Z", forecast: "2026-10-16T20:26:00Z", northGW: 39, southGW: 38 });
+  expect(parseHemiPower("# only comments\n")).toBeUndefined();
+  expect(parseHemiPower("")).toBeUndefined();
+});
+
+test("each cell carries its own hemisphere's power, only when the row matches the run", () => {
+  const out = normalizeAurora(grid1016, { hemiPower: parseHemiPower(HEMI_TXT) });
+  expect(out.filter((f) => f.lat > 0).every((f) => f.props?.hemispherePowerGW === 39)).toBe(true);
+  expect(out.filter((f) => f.lat < 0).every((f) => f.props?.hemispherePowerGW === 38)).toBe(true);
+  // The grid's forecast time is 20:36, the power row's 20:26: inside the 30-minute skew allowed.
+  // A row from another run (hours off the grid's forecast time) is not attached.
+  const stale = { observed: "2026-10-16T10:00:00Z", forecast: "2026-10-16T11:00:00Z", northGW: 9, southGW: 9 };
+  expect(normalizeAurora(grid1016, { hemiPower: stale }).some((f) => "hemispherePowerGW" in (f.props ?? {}))).toBe(false);
 });
