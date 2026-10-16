@@ -33,8 +33,8 @@ interface Feed {
 // AP has no public feed of its own any more, and the mirrors that carry it are third
 // parties republishing someone else's wire. A site whose whole argument is that you can
 // check where a claim came from cannot source its news from an unattributable
-// middleman. CBC was dropped for a duller reason — it timed out on two of three
-// attempts, and a feed that usually is not there is not a source, it is latency.
+// middleman. CBC was once dropped here as "timing out on two of three attempts"; that
+// was a User-Agent block, not a flaky feed — see FEED_USER_AGENT.
 //
 // WHY THERE ARE FOURTEEN OF THEM. The focus view clusters these headlines into
 // cross-source stories, and with the original six that view had almost nothing to show:
@@ -137,10 +137,24 @@ export const SCRAPED_POOL = 700;
 const CACHE = Symbol.for("provenance.news.feedCache");
 const globalCache = globalThis as unknown as { [CACHE]?: NewsPayload | null };
 
+/**
+ * The User-Agent every feed and channel fetch sends.
+ *
+ * WAS "TrafficNerd/2.0 (+github.com/...)" FOR THE RSS FEEDS, AND THAT COST US CBC.
+ * Measured 2026-10-16: cbc.ca answered a browser UA in 0.13 to 0.37 s three times out
+ * of three, and let the TrafficNerd UA time out two times out of two. The earlier note
+ * here called CBC "flaky"; it was a User-Agent block that looked like flakiness, because
+ * a block that answers with silence instead of a 403 reads as a slow server. None of
+ * the other feeds probed that day (23 of them) treated the two UAs differently, so the
+ * browser string costs the other feeds nothing. The Telegram preview already needed it.
+ */
+export const FEED_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+
 async function fetchFeed(feed: Feed): Promise<NewsItem[]> {
   try {
     const res = await fetch(feed.url, {
-      headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
+      headers: { "User-Agent": FEED_USER_AGENT },
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return [];
@@ -154,11 +168,7 @@ async function fetchTelegram(ch: TgChannel): Promise<NewsItem[]> {
   try {
     // t.me/s serves its HTML only to browser-like clients, so use a browser UA.
     const res = await fetch(ch.url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-        Accept: "text/html",
-      },
+      headers: { "User-Agent": FEED_USER_AGENT, Accept: "text/html" },
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return [];
