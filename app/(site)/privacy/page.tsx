@@ -1128,7 +1128,15 @@ export default function PrivacyPage() {
           <div>
             <h4>Attribution</h4>
             <p>
-              Powered by TfL Open Data. Webcams provided by Windy.com. Basemap &copy; OpenFreeMap,
+              Powered by TfL Open Data. Webcams provided by{" "}
+              <a href="https://www.windy.com/" target="_blank" rel="noreferrer noopener">
+                windy.com
+              </a>{" "}
+              -{" "}
+              <a href="https://www.windy.com/webcams/add" target="_blank" rel="noreferrer noopener">
+                add new webcam
+              </a>
+              . Basemap &copy; OpenFreeMap,
               &copy; OpenMapTiles, data from &copy; OpenStreetMap contributors. Contains public
               sector information licensed under the Open Government Licence. Star catalogue:{" "}
               <a href="https://codeberg.org/astronexus/hyg" target="_blank" rel="noreferrer noopener">
