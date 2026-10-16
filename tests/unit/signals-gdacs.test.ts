@@ -7,6 +7,7 @@ import {
   gdacsEndpointFor,
   mergeGdacsResults,
   isGdacsEmptyAnswer,
+  isClosedGdacsEvent,
   GDACS_SOURCE,
   GDACS_EVENT_TYPES,
   type GdacsTypeResult,
@@ -16,7 +17,7 @@ import { rowMetric } from "@/lib/console/signals/signalCard";
 
 test("normalizes the GDACS multi-hazard FeatureCollection", () => {
   const out = normalizeGdacs(fixture as never);
-  expect(out).toHaveLength(5); // FL, EQ, TC, WF, DR — all have coords + an event id
+  expect(out).toHaveLength(4); // FL, EQ, TC, WF — the DR row is closed (iscurrent=false)
   expect(new Set(out.map((f) => f.signalId))).toEqual(new Set(["gdacs"]));
 
   const eq = out.find((f) => f.props?.hazard === "Earthquake");
@@ -189,4 +190,17 @@ test("five types with events and one empty type merge as observed, not partial",
   const out = mergeGdacsResults(results, 3000);
   expect(readOutcome(out)).toMatchObject({ ok: true, at: 3000 });
   expect(out).toHaveLength(5);
+});
+
+// ── Closed events are not current alerts ─────────────────────────────────────
+
+test("a closed event (iscurrent=false) is dropped, an open or unflagged one is kept", () => {
+  const row = (eventid: number, iscurrent?: string) => ({
+    geometry: { coordinates: [10, 20] },
+    properties: { eventid, episodeid: 1, eventtype: "DR", alertlevel: "Orange", ...(iscurrent ? { iscurrent } : {}) },
+  });
+  const out = normalizeGdacs({ features: [row(1, "false"), row(2, "true"), row(3)] } as never);
+  expect(out.map((f) => f.id)).toEqual(["gdacs:2:1", "gdacs:3:1"]);
+  expect(isClosedGdacsEvent("False")).toBe(true);
+  expect(isClosedGdacsEvent(undefined)).toBe(false);
 });

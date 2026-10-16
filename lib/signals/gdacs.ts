@@ -103,6 +103,11 @@ const GDACS_EXACT_TYPES: ReadonlySet<string> = new Set(["EQ", "VO", "TC"]);
 /** Maps GDACS alert level to a 0–10 normalized magnitude for the severity ramp. */
 const GDACS_MAG: Record<string, number> = { Green: 3, Orange: 6, Red: 8 };
 
+/** GDACS marks a closed event `iscurrent: "false"`; a missing flag is read as current. */
+export function isClosedGdacsEvent(iscurrent: string | undefined): boolean {
+  return (iscurrent ?? "").trim().toLowerCase() === "false";
+}
+
 /** Pure: GDACS FeatureCollection → SignalFeature[]. Skips features without coords/id. */
 export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFeature[] {
   const out: SignalFeature[] = [];
@@ -117,6 +122,10 @@ export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFe
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
     const eventId = (p.eventid ?? "").toString().trim();
     if (!eventId) continue;
+    // GDACS keeps closed events in the list with iscurrent=false. Measured 2026-10-16:
+    // 10 of the 12 drought rows were closed, one of them opened on 2022-09-21, and they
+    // drew as live markers. A closed event is not a current alert, so it is not shown.
+    if (isClosedGdacsEvent(p.iscurrent)) continue;
     const episodeId = (p.episodeid ?? "").toString().trim();
     const id = `gdacs:${eventId}:${episodeId}`;
     if (seen.has(id)) continue;
@@ -144,7 +153,6 @@ export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFe
         country: p.country?.trim() || "—",
         from: p.fromdate?.slice(0, 10) ?? "—",
         to: p.todate?.slice(0, 10) ?? "—",
-        ongoing: (p.iscurrent ?? "").toLowerCase() === "true" ? "yes" : "no",
       },
     });
   }

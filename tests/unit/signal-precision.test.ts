@@ -65,13 +65,14 @@ describe("one real layer for each level", () => {
 });
 
 describe("a layer that mixes levels sets the level on the feature", () => {
-  test("GDACS: a quake and a cyclone are exact, a flood and a drought are areas", () => {
+  test("GDACS: a quake and a cyclone are exact, a flood and a wildfire are areas", () => {
     const out = normalizeGdacs(gdacsFixture as never);
     const byHazard = new Map(out.map((f) => [String(f.props?.hazard), resolvePrecision(f, GDACS_SOURCE)]));
     expect(byHazard.get("Earthquake")).toBe("exact");
     expect(byHazard.get("Tropical cyclone")).toBe("exact");
     expect(byHazard.get("Flood")).toBe("area");
-    expect(byHazard.get("Drought")).toBe("area");
+    // The fixture drought is closed (iscurrent=false), so the layer drops it.
+    expect(byHazard.get("Wildfire")).toBe("area");
   });
 
   test("EONET: a wildfire reported as a polygon is an area, one reported as a point is exact", () => {
