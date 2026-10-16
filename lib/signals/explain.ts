@@ -57,13 +57,14 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Synthesis ------------------------------------------------------------
   {
     id: "instability",
-    whatItShows: "A 0–100 country instability score, composited from conflict (GDELT article volume), food insecurity, displacement and internet outages. Not a map layer — it feeds the Brief, the Country Instability widget and the country dossier.",
-    method: "A weighted mean of the available factors, rescaled to 0–100, with the number of contributing factors published alongside the score.",
+    whatItShows: "A 0–100 country instability score, composited from armed-conflict deaths (UCDP), crisis severity (INFORM Severity), food insecurity (FEWS NET), structural risk (INFORM Risk and World Bank WGI), displacement from the country (UNHCR, as a share of population), press coverage of conflict (GDELT) and internet outages (IODA). Not a map layer — it feeds the Brief, the Country Instability widget and the country dossier.",
+    method: "A weighted sum of seven factors, rescaled to 0–100: conflict deaths 0.30, crisis severity 0.25, food 0.15, structural risk 0.15, displacement 0.10, press coverage 0.03, outages 0.02. The number of factors that measured the country is published beside the score.",
     confidence: "derived",
     coverage: "Every country for which at least one input factor has data.",
     limitations: [
       "This is OUR composite, not an established index. It is not INFORM, not Fragile States, and has not been validated against them.",
-      "The score is a floor, not a measurement: a factor with no data counts as 0 and nothing is renormalised, so a country scored on one factor of four cannot score high. Even with every input present, the conflict factor (GDELT article volume) is hard-capped, so no score can exceed 82. The factor count shown beside the score tells you how much of the formula actually ran.",
+      "Where a factor has no data for a country the score is a floor, not a measurement: that factor counts as 0 and nothing is renormalised. FEWS NET covers about 38 countries, so most countries are scored on 6 of 7 factors. Press coverage is hard-capped, so no score can exceed 99. The factor count shown beside the score tells you how much of the formula actually ran.",
+      "The inputs move at different speeds: UCDP deaths cover the last two monthly releases (about 60 days, a month behind), INFORM Severity and FEWS NET are monthly, INFORM Risk twice a year, WGI and UNHCR yearly. Only press coverage and outages are live.",
       "A low score means we found little signal, which is not the same as a country being stable.",
       "Weights are a judgement call, not a fitted model.",
     ],

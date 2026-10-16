@@ -178,9 +178,12 @@ export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
     { label: "Country centroids (eesur/country-codes-lat-long)", url: "https://github.com/eesur/country-codes-lat-long" },
   ],
   instability: [
-    { label: "GDELT", url: "https://www.gdeltproject.org/" },
+    { label: "UCDP", url: "https://ucdp.uu.se/downloads/" },
+    { label: "INFORM (EC JRC)", url: "https://drmkc.jrc.ec.europa.eu/inform-index" },
     { label: "FEWS NET", url: "https://fews.net/" },
+    { label: "World Bank WGI", url: "https://www.worldbank.org/en/publication/worldwide-governance-indicators" },
     { label: "UNHCR", url: "https://www.unhcr.org/refugee-statistics/" },
+    { label: "GDELT", url: "https://www.gdeltproject.org/" },
     { label: "IODA", url: "https://ioda.inetintel.cc.gatech.edu/" },
   ],
 };

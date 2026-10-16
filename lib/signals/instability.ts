@@ -4,6 +4,15 @@ import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { isVerifiedShutdown } from "@/lib/signals/pulse-shutdowns";
 import { degraded, observed } from "@/lib/signals/outcome";
+import {
+  fetchInformRisk,
+  fetchInformSeverity,
+  fetchIodaCriticalAlerts,
+  fetchPopulation,
+  fetchUcdpFatalities,
+  fetchWgiPoliticalStability,
+  structuralBaseline,
+} from "@/lib/signals/instability-inputs";
 
 // ============================================================================
 // Country Instability Index (CII) — the synthesis layer, the "real product".
@@ -17,101 +26,94 @@ import { degraded, observed } from "@/lib/signals/outcome";
 //     FROM a place), NOT country of asylum — hosting refugees (Germany, Türkiye)
 //     is not instability. Ransomware victim counts are deliberately EXCLUDED:
 //     they track digital-economy size (US/UK top the list), not instability.
-//   • CONSERVATIVE. A missing factor contributes 0 (denominator is the full
+//   • CONSERVATIVE. A factor with no data contributes 0 (denominator is the full
 //     weight set), so sparse data UNDER-states rather than crying wolf. We show
-//     factor coverage ("3/4 factors") so the user sees the basis — AND, when
+//     factor coverage ("5/7 factors") so the user sees the basis — AND, when
 //     coverage is partial, the score is presented as an explicit FLOOR (title
-//     gets a "≥", `props.scoreBasis` is "floor" not "measured") rather than a
-//     plain number that could pass for a full-coverage measurement. A missing
-//     factor still counts as 0 (nothing is renormalised away), so this stays a
-//     lower bound: the true pressure can only be equal or higher.
+//     gets a "≥", `props.scoreBasis` is "floor" not "measured").
+//     COVERAGE counts the factors whose upstream MEASURED the country, and a measured
+//     zero counts: UCDP recording no deaths in a country is a measurement, not a gap.
+//     The global upstreams (UCDP, INFORM Severity, UNHCR, GDELT, IODA) measure every
+//     country when they answer; FEWS NET (~38 countries) and the structural sources
+//     cover only the countries they list.
 //   • SHOWS ITS WORK. Every country lists each factor's contribution and the top
 //     drivers. No black box — you can see exactly why a score is what it is.
 //
-// Factors (each normalised to 0..1, then weighted):
-//   conflict (GDELT article volume)   0.40   — the heaviest weight, and the
-//                                                 weakest evidence, which is why it
-//                                                 is capped. Sums GDELT's own
-//                                                 conflict layer (CAMEO 18/19/20,
-//                                                 QuadClass 4) per country. This is
-//                                                 MEDIA COVERAGE VOLUME, not
-//                                                 casualties, and it is confounded
-//                                                 by media-market size — measured
-//                                                 2026-08-11 its raw top country was
-//                                                 the United States, on domestic-
-//                                                 enforcement coverage, not a war
-//                                                 zone. So it runs on a dampened,
-//                                                 HARD-CAPPED ramp (max 0.55) that
-//                                                 can never alone claim "extreme".
-//                                                 ACLED used to supply this factor
-//                                                 as a fatality count and was
-//                                                 removed on 2026-09-05: the account
-//                                                 issues a valid OAuth token and
-//                                                 then answers 403 to every read, so
-//                                                 it had already been falling
-//                                                 through to GDELT on every cycle.
-//                                                 Deleting it changed no score.
-//   food insecurity (FEWS NET IPC 3+)  0.25   — share of the population in IPC phase 3
-//                                                 or worse (acute hunger). WFP HungerMap
-//                                                 supplied this until its keyless URL
-//                                                 began answering 401.
-//   displacement-from (UNHCR origin)   0.25   — people displaced FROM the country
-//   internet outages (IODA severity)   0.10   — shutdowns track unrest/crackdowns
+// Factors (each normalised to 0..1, then weighted). Rebuilt on 2026-10-16, when the
+// index ranked Barbados above Russia and Israel because two of its four factors fed
+// nothing (WFP answered 401; the GDELT read had a parse bug) and the two left had ramps
+// that gave almost every country a score:
+//   conflict     0.30  UCDP Candidate GED: fatalities ("best") in the newest two monthly
+//                      releases (~60 days). 10 deaths → 0, 100 → 0.33, 10,000 → 1.
+//   severity     0.25  INFORM Severity Index (1-10), the worst crisis in the country.
+//   food         0.15  FEWS NET: share of the population in IPC phase 3 or worse; 50% = 1.
+//   structural   0.15  INFORM Risk (0-10) and World Bank WGI Political Stability, averaged.
+//   displacement 0.10  UNHCR people displaced FROM the country, as a share of its
+//                      population (10% = 1), and only from 10,000 people up. The old ramp
+//                      (log of the head count) gave 100 asylum seekers 28%.
+//   attention    0.03  GDELT conflict-coded article volume, HARD-CAPPED at 0.55: press
+//                      coverage, not casualties (the US tops it on domestic stories).
+//   outages      0.02  IODA CRITICAL country alerts in the last 24 h; 4 alerts = 1, and a
+//                      shutdown ISOC Pulse has verified is 1 on its own. The
+//                      old summary score gave ~55 countries a flat ~57% for routine blips.
 // ============================================================================
 
-export type FactorKey = "conflict" | "food" | "displacement" | "outages";
-/** Which upstream produced the `conflict` raw value. GDELT is the only one left
- *  (ACLED removed 2026-09-05, see the header) — the type is kept as a named
- *  one-member union so the breakdown keeps labelling the proxy explicitly, and so
- *  adding a real fatality source back is a widening rather than a re-plumbing. */
-export type ConflictSource = "gdelt";
+export type FactorKey = "conflict" | "severity" | "food" | "structural" | "displacement" | "attention" | "outages";
 
 export const FACTOR_WEIGHTS: Record<FactorKey, number> = {
-  conflict: 0.4,
-  food: 0.25,
-  displacement: 0.25,
-  outages: 0.1,
+  conflict: 0.3,
+  severity: 0.25,
+  food: 0.15,
+  structural: 0.15,
+  displacement: 0.1,
+  attention: 0.03,
+  outages: 0.02,
 };
 
 const FACTOR_LABEL: Record<FactorKey, string> = {
-  conflict: "armed conflict",
+  conflict: "armed conflict (UCDP fatalities)",
+  severity: "crisis severity (INFORM)",
   food: "food insecurity",
+  structural: "structural risk (INFORM Risk, WGI)",
   displacement: "displacement",
+  attention: "conflict coverage (GDELT article volume)",
   outages: "internet outages",
 };
 
-/** Human label for a factor. The conflict factor is named explicitly as an
- *  article-volume proxy so a reader never mistakes press coverage for a
- *  casualty count. */
-export function factorLabel(key: FactorKey, conflictSource: ConflictSource = "gdelt"): string {
-  if (key === "conflict" && conflictSource === "gdelt") return "armed conflict (GDELT article-volume proxy)";
+/** Human label for a factor, as it appears in `drivers` and the breakdown. The GDELT
+ *  term is named as article volume so press coverage never reads as a casualty count. */
+export function factorLabel(key: FactorKey): string {
   return FACTOR_LABEL[key];
 }
 
 const TOTAL_WEIGHT = Object.values(FACTOR_WEIGHTS).reduce((a, b) => a + b, 0);
 /** Suppress the noise floor — countries below this score aren't plotted. */
 export const CII_MIN_SCORE = 8;
+/** Fewer people displaced FROM a country than this is not a displacement signal. */
+export const DISPLACEMENT_FLOOR = 10_000;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 
 /** Raw factor value → 0..1 sub-score. Each ramp is documented and deliberately conservative. */
-export function normalizeFactor(key: FactorKey, raw: number, conflictSource: ConflictSource = "gdelt"): number {
+export function normalizeFactor(key: FactorKey, raw: number): number {
   if (!(raw > 0)) return 0;
   switch (key) {
+    case "conflict":
+      return clamp01((Math.log10(1 + raw) - 1) / 3); // fatalities, ~60 days
+    case "severity":
+      return clamp01(raw / 10); // INFORM Severity Index 1..10
     case "food":
       return clamp01(raw / 0.5); // share of the population in IPC 3+; 50%+ = max
+    case "structural":
+      return clamp01(raw); // already 0..1 (structuralBaseline)
     case "displacement":
-      return clamp01(Math.log10(1 + raw) / 7); // people displaced-from; ~10M = max
-    case "outages":
-      return clamp01(Math.log10(1 + raw) / 6); // IODA severity score; ~1e6 = max
-    case "conflict":
-      // Article-volume proxy, summed per country from GDELT's own conflict layer
-      // (see gdeltConflictFactor()). Looser ramp (needs more evidence to move) AND
-      // hard-capped — "well covered by the press" is not "many people died", so this
-      // can never alone push a country into "extreme" territory. The cap is why the
-      // index tops out well below 100 on today's inputs; that is the ramp being
-      // honest, not a bug to tune away.
+      return clamp01(raw / 0.1); // displaced-from as a share of population; 10%+ = max
+    case "attention":
+      // Article volume. Hard-capped: "well covered by the press" is not "many people
+      // died", so it can never alone push a country into "extreme" territory.
       return Math.min(0.55, clamp01(Math.log10(1 + raw) / 4.5));
+    case "outages":
+      return clamp01(raw / 4); // critical IODA alerts in 24 h
   }
 }
 
@@ -125,33 +127,24 @@ export function instabilityColor(score: number): string {
   return "#84cc16";
 }
 
-const FACTOR_COUNT = Object.keys(FACTOR_WEIGHTS).length; // 4 — the coverage denominator
+const FACTOR_COUNT = Object.keys(FACTOR_WEIGHTS).length; // 7 — the coverage denominator
 
 export interface CountryInput {
   iso3: string;
-  /** Raw factor values (prevalence 0..1 for food; counts otherwise). Absent = no data. */
+  /** Raw factor values. A number (0 included) = the upstream measured this country.
+   *  Absent = no data for it. */
   factors: Partial<Record<FactorKey, number>>;
-  /** Which upstream produced `factors.conflict`, when present. Defaults to
-   *  "gdelt" when omitted (e.g. synthetic fixtures), matching the only
-   *  single-source behaviour. Ignored when there is no conflict factor. */
-  conflictSource?: ConflictSource;
 }
 
 /**
- * Pure: per-country raw factors → scored SignalFeature[] (one marker per country ≥ threshold).
+ * Pure: per-country raw factors → scored SignalFeature[] (one per country ≥ threshold).
  *
- * COVERAGE HONESTY: the score is always the conservative sum (missing factors
- * count as 0, never renormalised away — see the design-principles note at the
- * top of the file). When coverage is FULL (4/4 factors), that sum is a real
- * composite measurement and is presented as a plain number. When coverage is
- * PARTIAL, the identical arithmetic instead yields a FLOOR — a lower bound on
- * a number we could not fully measure — and every surface this function
- * controls says so explicitly: the title gets a "≥" and a "(floor, N/4
- * factors)" suffix, `props.coverage` spells out "floor, not a full
- * measurement", and `props.scoreBasis` carries a machine-readable
- * "measured" | "floor" tag. A reader (or a downstream consumer that only
- * prints `props.score`) still sees the same digit either way, but nothing
- * this module emits calls a floor a measurement.
+ * The score is always the conservative sum (factors without data count as 0, never
+ * renormalised away). With every factor measured it is a composite measurement, shown
+ * as a plain number. With any factor missing the same arithmetic is a FLOOR, and every
+ * surface this function controls says so: a "≥" and "(floor, N/7 factors)" in the
+ * title, "floor, not a full measurement" in `props.coverage`, and
+ * `props.scoreBasis: "floor"`.
  */
 export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
   const out: SignalFeature[] = [];
@@ -159,26 +152,25 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
     const ctr = centroidByIso3((row.iso3 ?? "").toUpperCase());
     if (!ctr) continue;
 
-    const conflictSource = row.conflictSource ?? "gdelt";
+    let measured = 0;
     const contributions: { key: FactorKey; norm: number; weighted: number; label: string }[] = [];
     for (const key of Object.keys(FACTOR_WEIGHTS) as FactorKey[]) {
       const raw = row.factors[key];
-      if (typeof raw !== "number" || !(raw > 0)) continue;
-      const norm = key === "conflict" ? normalizeFactor(key, raw, conflictSource) : normalizeFactor(key, raw);
+      if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
+      measured++;
+      const norm = normalizeFactor(key, raw);
       if (norm <= 0) continue;
-      contributions.push({ key, norm, weighted: norm * FACTOR_WEIGHTS[key], label: factorLabel(key, conflictSource) });
+      contributions.push({ key, norm, weighted: norm * FACTOR_WEIGHTS[key], label: factorLabel(key) });
     }
-    if (contributions.length === 0) continue; // zero coverage: no defensible score, no feature
+    if (contributions.length === 0) continue; // nothing above zero: no defensible score, no feature
 
-    // Conservative: divide by the FULL weight set, so missing factors pull the
-    // score down rather than being silently renormalised away.
     const score = Math.round((contributions.reduce((a, c) => a + c.weighted, 0) / TOTAL_WEIGHT) * 100);
     if (score < CII_MIN_SCORE) continue;
 
-    const fullCoverage = contributions.length === FACTOR_COUNT;
+    const fullCoverage = measured === FACTOR_COUNT;
     const coverage = fullCoverage
-      ? `${contributions.length}/${FACTOR_COUNT} factors`
-      : `${contributions.length}/${FACTOR_COUNT} factors — floor, not a full measurement (missing factors count as 0)`;
+      ? `${measured}/${FACTOR_COUNT} factors`
+      : `${measured}/${FACTOR_COUNT} factors — floor, not a full measurement (missing factors count as 0)`;
 
     const drivers = [...contributions].sort((a, b) => b.weighted - a.weighted).map((c) => c.label);
 
@@ -187,7 +179,7 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
 
     const title = fullCoverage
       ? `${ctr.name} — instability ${score}/100`
-      : `${ctr.name} — instability ≥${score}/100 (floor, ${contributions.length}/${FACTOR_COUNT} factors)`;
+      : `${ctr.name} — instability ≥${score}/100 (floor, ${measured}/${FACTOR_COUNT} factors)`;
 
     out.push({
       id: `cii:${ctr.iso3}`,
@@ -203,7 +195,7 @@ export function computeInstability(inputs: CountryInput[]): SignalFeature[] {
         // Machine-readable companion to the prose above — "floor" means this
         // score is a lower bound (partial coverage), not a measurement.
         scoreBasis: fullCoverage ? "measured" : "floor",
-        coverageFactors: contributions.length,
+        coverageFactors: measured,
         drivers: drivers.join(" › "),
         ...breakdown,
         coverage,
@@ -343,7 +335,7 @@ const FEWS_WINDOW_DAYS = 150;
  * same window, so this reads the country figure FEWS NET itself publishes.
  * Replaced WFP HungerMap on 2026-10-16: its keyless URL answers 401.
  */
-async function foodFactor(): Promise<Map<string, number>> {
+async function foodFactor(): Promise<Map<string, number> | null> {
   const end = new Date();
   const start = new Date(end.getTime() - FEWS_WINDOW_DAYS * 86_400_000);
   const day = (d: Date) => d.toISOString().slice(0, 10);
@@ -351,66 +343,43 @@ async function foodFactor(): Promise<Map<string, number>> {
     `https://fdw.fews.net/api/ipcpopulationsize/?format=json&fields=simple&start_date=${day(start)}&end_date=${day(end)}`,
     30_000,
   );
-  return foodFromFewsNet(Array.isArray(json) ? json : []);
-}
-
-/** People displaced FROM each country (refugees+asylum-seekers+IDPs), by ISO-3, from UNHCR origin stats. */
-async function displacementFactor(): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  const year = new Date().getUTCFullYear() - 1;
-  const fetchYear = async (y: number) =>
-    getJson<{ items?: { coo_iso?: string; refugees?: number | string; asylum_seekers?: number | string; idps?: number | string }[] }>(
-      `https://api.unhcr.org/population/v1/population/?limit=1000&yearFrom=${y}&yearTo=${y}&coo_all=true`,
-    );
-  let json = await fetchYear(year);
-  if (!json?.items?.length) json = await fetchYear(year - 1); // latest year may be unpublished
-  const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0);
-  for (const r of json?.items ?? []) {
-    const iso3 = (r.coo_iso ?? "").toUpperCase();
-    if (!centroidByIso3(iso3)) continue; // drop aggregate rows ("-", "UNK", …)
-    const total = num(r.refugees) + num(r.asylum_seekers) + num(r.idps);
-    if (total > 0) out.set(iso3, (out.get(iso3) ?? 0) + total);
-  }
-  return out;
+  return Array.isArray(json) ? foodFromFewsNet(json) : null;
 }
 
 /**
- * Internet-outage severity by ISO-3, from the internet-outages layer itself.
- *
- * It used to read IODA's /outages/summary on its own, which counted outages that had
- * ended many hours before and a prober burst that hit 52 countries at once (measured
- * 2026-10-16). Reading the layer gives this factor the same cleaned set the map
- * shows: current events only, bursts removed. The raw value is IODA's own score for
- * the country (the largest current event), the same quantity the ramp was built for,
- * or VERIFIED_SHUTDOWN_RAW (the top of the ramp) for a verified Pulse shutdown.
+ * The outage factor's raw value for a verified shutdown: the top of the outages ramp
+ * (raw / 4, so 4 = 1).
  */
-export const VERIFIED_SHUTDOWN_RAW = 1e6;
+export const VERIFIED_SHUTDOWN_RAW = 4;
 
-async function outageFactor(): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
-  for (const f of await INTERNET_OUTAGES_SOURCE.fetch()) {
-    // A shutdown Pulse has confirmed or the government has acknowledged is the thing
-    // this factor exists to track (crackdowns, not cable cuts), so it takes the top
-    // of the ramp. Unconfirmed Pulse rows do not move the index.
-    if (isVerifiedShutdown(f)) {
-      const iso3 = centroidByIso2(String(f.props?.countryCode ?? ""))?.iso3;
-      if (iso3) out.set(iso3, Math.max(out.get(iso3) ?? 0, VERIFIED_SHUTDOWN_RAW));
-      continue;
-    }
-    if (f.props?.source != null) continue; // another tier's row, not an IODA score
-    const iso3 = f.countryIso3;
-    const score = Number(f.props?.outageScore ?? 0);
-    if (iso3 && score > 0) out.set(iso3, Math.max(out.get(iso3) ?? 0, score));
+/**
+ * Internet outages by ISO-3: IODA CRITICAL country alerts in the last 24 h, plus a
+ * shutdown the Internet Society's Pulse has verified (or the government has
+ * acknowledged). The verified shutdown is the thing this factor exists to track
+ * (crackdowns, not cable cuts), so it takes the top of the ramp. Unconfirmed Pulse
+ * rows do not move the index. Pulse is read through the internet-outages layer, which
+ * holds its read for 6 h and stays empty while ISOC_PULSE_API_KEY is unset.
+ */
+async function outageFactor(): Promise<Map<string, number> | null> {
+  const [alerts, layer] = await Promise.all([
+    fetchIodaCriticalAlerts(),
+    INTERNET_OUTAGES_SOURCE.fetch().catch((): SignalFeature[] => []),
+  ]);
+  const shutdowns = layer.filter(isVerifiedShutdown);
+  if (!alerts && shutdowns.length === 0) return null;
+  const out = new Map(alerts ?? []);
+  for (const f of shutdowns) {
+    const iso3 = centroidByIso2(String(f.props?.countryCode ?? ""))?.iso3;
+    if (iso3) out.set(iso3, Math.max(out.get(iso3) ?? 0, VERIFIED_SHUTDOWN_RAW));
   }
   return out;
 }
 
 /**
- * Conflict factor: sums GDELT's already-normalised conflict layer (CAMEO
- * 18/19/20, QuadClass 4) per country, by article volume. Reuses
- * `CONFLICT_SOURCE.fetch()` — the same fetch, window cache and normaliser the
- * standalone `conflict` map layer uses — rather than a second GDELT fetcher.
- * Keyless, and since ACLED's removal this is the sole provider of the 0.40 weight.
+ * Attention factor: sums GDELT's already-normalised conflict layer (CAMEO 18/19/20,
+ * QuadClass 4) per country, by article volume. Reuses `CONFLICT_SOURCE.fetch()` — the
+ * same fetch, window cache and normaliser the `conflict` map layer uses. Until
+ * 2026-10-16 this was the whole 0.40 conflict factor; UCDP fatalities are now.
  */
 export function conflictArticlesByIso3(feats: SignalFeature[]): Map<string, number> {
   const out = new Map<string, number>();
@@ -430,21 +399,49 @@ export function conflictArticlesByIso3(feats: SignalFeature[]): Map<string, numb
   return out;
 }
 
-async function gdeltConflictFactor(): Promise<Map<string, number>> {
-  return conflictArticlesByIso3(await CONFLICT_SOURCE.fetch());
+/** People displaced FROM each country (refugees + asylum-seekers + IDPs + oip), by
+ *  ISO-3, from UNHCR origin stats. Null when UNHCR could not be read. */
+async function displacedFromFactor(): Promise<Map<string, number> | null> {
+  const out = new Map<string, number>();
+  const year = new Date().getUTCFullYear() - 1;
+  type Row = { coo_iso?: string; refugees?: number | string; asylum_seekers?: number | string; idps?: number | string; oip?: number | string };
+  const fetchYear = async (y: number) =>
+    getJson<{ items?: Row[] }>(`https://api.unhcr.org/population/v1/population/?limit=1000&yearFrom=${y}&yearTo=${y}&coo_all=true`);
+  let json = await fetchYear(year);
+  if (!json?.items?.length) json = await fetchYear(year - 1); // latest year may be unpublished
+  if (!json?.items?.length) return null;
+  const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0);
+  for (const r of json.items) {
+    const iso3 = (r.coo_iso ?? "").toUpperCase();
+    if (!centroidByIso3(iso3)) continue; // drop aggregate rows ("-", "UNK", …)
+    const total = num(r.refugees) + num(r.asylum_seekers) + num(r.idps) + num(r.oip);
+    if (total > 0) out.set(iso3, (out.get(iso3) ?? 0) + total);
+  }
+  return out;
 }
 
-/** Conflict raw values by ISO-3, plus the upstream that produced them (always GDELT
- *  since ACLED's removal — the shape is kept so the breakdown still names its source). */
-async function conflictFactor(): Promise<{ values: Map<string, number>; source: ConflictSource }> {
-  return { values: await gdeltConflictFactor(), source: "gdelt" };
+/**
+ * Pure: people displaced FROM each country + population → displaced share (0..1+).
+ * UNHCR reports every country of origin, so a country with a population and no row,
+ * or fewer than DISPLACEMENT_FLOOR people, is a measured 0. A country with no
+ * population figure gets no value (it cannot be made a share).
+ */
+export function displacementShare(displaced: Map<string, number>, population: Map<string, number>): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const [iso3, pop] of population) {
+    if (!(pop > 0)) continue;
+    const n = displaced.get(iso3) ?? 0;
+    out.set(iso3, n >= DISPLACEMENT_FLOOR ? n / pop : 0);
+  }
+  return out;
 }
 
-/** Merge the per-factor maps into one CountryInput list keyed by ISO-3. */
-export function mergeFactors(
-  maps: { key: FactorKey; values: Map<string, number> }[],
-  conflictSource: ConflictSource = "gdelt",
-): CountryInput[] {
+/**
+ * Merge the per-factor maps into one CountryInput list keyed by ISO-3. A `global`
+ * factor's upstream measures every country, so a country it does not list gets a
+ * measured 0 for it (UCDP with no deaths there, INFORM Severity with no crisis there).
+ */
+export function mergeFactors(maps: { key: FactorKey; values: Map<string, number>; global?: boolean }[]): CountryInput[] {
   const byIso = new Map<string, CountryInput>();
   for (const { key, values } of maps) {
     for (const [iso3, raw] of values) {
@@ -454,10 +451,41 @@ export function mergeFactors(
         byIso.set(iso3, row);
       }
       row.factors[key] = raw;
-      if (key === "conflict") row.conflictSource = conflictSource;
     }
   }
+  for (const { key, global } of maps) {
+    if (!global) continue;
+    for (const row of byIso.values()) if (row.factors[key] === undefined) row.factors[key] = 0;
+  }
   return [...byIso.values()];
+}
+
+// --- slow inputs: cached, last-good on failure --------------------------------
+
+const HOUR = 60 * 60 * 1000;
+const memo = new Map<string, { at: number; value: Map<string, number> }>();
+
+/** Serve a slow input from memory for `ttl`, refresh after, keep the last good copy
+ *  when a refresh fails. Monthly and annual files do not need an hourly download. */
+async function cached(key: string, ttl: number, load: () => Promise<Map<string, number> | null>): Promise<Map<string, number> | null> {
+  const hit = memo.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value;
+  let value: Map<string, number> | null = null;
+  try {
+    value = await load();
+  } catch {
+    value = null;
+  }
+  if (value && value.size > 0) {
+    memo.set(key, { at: Date.now(), value });
+    return value;
+  }
+  return hit?.value ?? null;
+}
+
+async function attentionFactor(): Promise<Map<string, number> | null> {
+  const m = conflictArticlesByIso3(await CONFLICT_SOURCE.fetch());
+  return m.size ? m : null;
 }
 
 export const INSTABILITY_SOURCE: SignalSource = {
@@ -470,29 +498,38 @@ export const INSTABILITY_SOURCE: SignalSource = {
   label: "Country Instability Index",
   group: "Synthesis",
   color: "#dc2626",
-  refreshMs: 60 * 60 * 1000, // composite of slow-moving inputs; hourly is ample
-  attribution: "Composite — GDELT article volume · FEWS NET (IPC population in phase 3+) · UNHCR · IODA",
+  refreshMs: 60 * 60 * 1000, // GDELT and IODA move hourly; the slow inputs are cached
+  attribution:
+    "Composite — UCDP Candidate GED (CC BY 4.0) · INFORM Severity and INFORM Risk (EC JRC, CC BY 4.0) · FEWS NET (IPC population in phase 3+) · World Bank WGI and population (CC BY 4.0) · UNHCR (CC BY 4.0) · GDELT article volume · IODA",
   metric: { field: "score", domain: [0, 100] }, // 0-100 composite → ranked score bar (green→dark-red)
   async fetch() {
     try {
-      const [food, displacement, outages, conflict] = await Promise.all([
-        foodFactor(),
-        displacementFactor(),
+      const [conflict, severity, food, inform, wgi, displacedFrom, population, attention, outages] = await Promise.all([
+        cached("ucdp", 24 * HOUR, fetchUcdpFatalities),
+        cached("inform-severity", 24 * HOUR, fetchInformSeverity),
+        cached("fews", 12 * HOUR, foodFactor),
+        cached("inform-risk", 24 * HOUR, fetchInformRisk),
+        cached("wgi", 24 * HOUR, fetchWgiPoliticalStability),
+        cached("unhcr-origin", 24 * HOUR, displacedFromFactor),
+        cached("population", 24 * HOUR, fetchPopulation),
+        attentionFactor(),
         outageFactor(),
-        conflictFactor(),
       ]);
+      const structural = inform || wgi ? structuralBaseline(inform, wgi) : null;
+      const displacement = displacedFrom && population ? displacementShare(displacedFrom, population) : null;
+      const maps: { key: FactorKey; values: Map<string, number> | null; global?: boolean }[] = [
+        { key: "conflict", values: conflict, global: true },
+        { key: "severity", values: severity, global: true },
+        { key: "food", values: food },
+        { key: "structural", values: structural },
+        { key: "displacement", values: displacement },
+        { key: "attention", values: attention, global: true },
+        { key: "outages", values: outages, global: true },
+      ];
       const inputs = mergeFactors(
-        [
-          { key: "food", values: food },
-          { key: "displacement", values: displacement },
-          { key: "outages", values: outages },
-          { key: "conflict", values: conflict.values },
-        ],
-        conflict.source,
+        maps.filter((m): m is { key: FactorKey; values: Map<string, number>; global?: boolean } => !!m.values),
       );
-      // Not one country row from ANY of the four factor upstreams. A partial read
-      // is normal here and stays a floor (see the coverage note above), but zero
-      // rows across all four is a dead composite, not a calm world.
+      // Not one country row from ANY upstream: a dead composite, not a calm world.
       if (inputs.length === 0) return degraded("no upstream data");
       return observed(computeInstability(inputs));
     } catch {

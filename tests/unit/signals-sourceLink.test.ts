@@ -61,7 +61,7 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
     const out = resolveSignalSources({ signalId: "instability" });
     expect(isCompositeSignal("instability")).toBe(true);
     expect(out.length).toBeGreaterThanOrEqual(4);
-    expect(out.map((s) => s.label)).toEqual(["GDELT", "FEWS NET", "UNHCR", "IODA"]);
+    expect(out.map((s) => s.label)).toEqual(["UCDP", "INFORM (EC JRC)", "FEWS NET", "World Bank WGI", "UNHCR", "GDELT", "IODA"]);
     expect(out.every((s) => s.scope === "provider" && isHttpUrl(s.href))).toBe(true);
   });
 

@@ -112,9 +112,9 @@ describe("the caveats we most need to be right about", () => {
   });
 
   it("states the instability ceiling the formula actually allows", () => {
-    // Every input at its maximum: the conflict ramp is hard-capped, so this is the top.
+    // Every input at its maximum: the press-coverage ramp is hard-capped, so this is the top.
     const [top] = computeInstability([
-      { iso3: "SYR", factors: { conflict: 1e9, food: 1, displacement: 1e9, outages: 1e9 } },
+      { iso3: "SYR", factors: { conflict: 1e9, severity: 10, food: 1, structural: 1, displacement: 1, attention: 1e9, outages: 1e9 } },
     ]);
     const ceiling = top!.props?.score as number;
     expect(explainerFor("instability")!.limitations.join(" ")).toContain(`${ceiling}`);
