@@ -1,0 +1,173 @@
+{
+ "data": [
+  {
+   "country": "IN",
+   "start_date": "2026-10-09T14:00:00+00:00",
+   "end_date": "2026-10-10T14:00:00+00:00",
+   "type": "regional",
+   "verification_level": "unconfirmed",
+   "cause": "protests",
+   "affected_regions": "National Capital Territory of Delhi",
+   "affected_services": [
+    "Mobile Internet"
+   ]
+  },
+  {
+   "country": "IN",
+   "start_date": "2026-10-02T01:00:00+00:00",
+   "end_date": "2026-10-02T13:00:00+00:00",
+   "type": "regional",
+   "verification_level": "unconfirmed",
+   "cause": "protests",
+   "affected_regions": "National Capital Territory of Delhi",
+   "affected_services": [
+    "Mobile Internet"
+   ]
+  },
+  {
+   "country": "GA",
+   "start_date": "2026-02-18T00:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "unconfirmed",
+   "cause": "protests",
+   "affected_regions": "",
+   "affected_services": [
+    "YouTube",
+    "Telegram",
+    "Facebook Messenger",
+    "TikTok",
+    "Instagram",
+    "Facebook"
+   ]
+  },
+  {
+   "country": "UG",
+   "start_date": "2026-01-17T20:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "unconfirmed",
+   "cause": "government_action",
+   "affected_regions": "",
+   "affected_services": [
+    "Facebook",
+    "Facebook Messenger",
+    "WhatsApp"
+   ]
+  },
+  {
+   "country": "PK",
+   "start_date": "2025-08-05T16:00:00+00:00",
+   "end_date": null,
+   "type": "regional",
+   "verification_level": "unconfirmed",
+   "cause": "government_action",
+   "affected_regions": "Balochistan",
+   "affected_services": [
+    "Mobile Internet Services"
+   ]
+  },
+  {
+   "country": "TG",
+   "start_date": "2025-06-26T07:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "unconfirmed",
+   "cause": "protests",
+   "affected_regions": "",
+   "affected_services": [
+    "Facebook",
+    "Telegram",
+    "Signal"
+   ]
+  },
+  {
+   "country": "IQ",
+   "start_date": "2025-02-18T11:00:00+00:00",
+   "end_date": null,
+   "type": "regional",
+   "verification_level": "acknowledged",
+   "cause": "government_action",
+   "affected_regions": "Kurdistan",
+   "affected_services": []
+  },
+  {
+   "country": "PK",
+   "start_date": "2024-11-15T00:00:00+00:00",
+   "end_date": null,
+   "type": "regional",
+   "verification_level": "unconfirmed",
+   "cause": "government_action",
+   "affected_regions": "Baluchistan",
+   "affected_services": [
+    "Mobile Internet Services"
+   ]
+  },
+  {
+   "country": "GQ",
+   "start_date": "2024-07-20T00:00:00+00:00",
+   "end_date": null,
+   "type": "regional",
+   "verification_level": "unconfirmed",
+   "cause": "protests",
+   "affected_regions": "Annobón",
+   "affected_services": [
+    "Internet Services",
+    "Mobile Internet Services"
+   ]
+  },
+  {
+   "country": "RU",
+   "start_date": "2022-02-26T00:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "acknowledged",
+   "cause": "government_action",
+   "affected_regions": "",
+   "affected_services": [
+    "X (Twitter)",
+    "Instagram",
+    "News Media",
+    "Facebook"
+   ]
+  },
+  {
+   "country": "MM",
+   "start_date": "2021-02-02T00:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "confirmed",
+   "cause": "government_action",
+   "affected_regions": "",
+   "affected_services": [
+    "Instagram",
+    "Facebook",
+    "X (Twitter)"
+   ]
+  },
+  {
+   "country": "CN",
+   "start_date": "2019-01-01T00:00:00+00:00",
+   "end_date": null,
+   "type": "content_blocking",
+   "verification_level": "confirmed",
+   "cause": "government_action",
+   "affected_regions": "",
+   "affected_services": [
+    "WhatsApp",
+    "LinkedIn",
+    "YouTube",
+    "Reddit",
+    "Google",
+    "Facebook",
+    "Yahoo",
+    "TikTok",
+    "Vimeo",
+    "Instagram",
+    "Facebook Messenger",
+    "Telegram",
+    "X (Twitter)"
+   ]
+  }
+ ]
+}

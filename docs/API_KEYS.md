@@ -43,6 +43,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 5 | **ACLED** | Real‑time armed‑conflict & protest events w/ actor attribution | Free — **must activate API access** | `ACLED_EMAIL` + `ACLED_PASSWORD` |
 | 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
 | 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
+| 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
 
 ### Where to get each
 
@@ -65,6 +66,11 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 6. **NASA FIRMS** — nothing to get. Prod served zero fires for five weeks because
    FIRMS answered `400 Invalid MAP_KEY.` to the key on the box, so the layer moved to
    the keyless files at `firms.modaps.eosdis.nasa.gov/data/active_fire/` (same columns).
+8. **ISOC Pulse** — create a free account at <https://pulse.internetsociety.org>, then
+   generate an API token (sent as a Bearer token to `pulse-api.internetsociety.org`).
+   Pulse's terms allow **non-commercial use only**, forbid redistribution, and require
+   the credit "Provided by Internet Society", which every Pulse pin carries. If
+   Provenance ever charges, this feed needs written permission or must go.
 
 ---
 
@@ -298,6 +304,7 @@ UCDP_API_TOKEN=
 ACLED_EMAIL=
 ACLED_PASSWORD=
 RELIEFWEB_APPNAME=
+ISOC_PULSE_API_KEY=
 
 # --- Optional enhancements ---
 EIA_API_KEY=

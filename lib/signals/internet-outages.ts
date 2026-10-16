@@ -1,7 +1,8 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
 import { iodaRegion } from "@/lib/signals/ioda-regions.data";
-import { degraded, observed } from "@/lib/signals/outcome";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
+import { fetchPulse, normalizePulse, PULSE_CREDIT } from "@/lib/signals/pulse-shutdowns";
 
 // Internet outages — IODA (Internet Outage Detection & Analysis, Georgia Tech /
 // CAIDA). Detects connectivity drops from independent vantage points (BGP routing,
@@ -306,7 +307,8 @@ export const INTERNET_OUTAGES_SOURCE: SignalSource = {
   group: "Infrastructure",
   color: "#b91c1c",
   refreshMs: 15 * 60 * 1000,
-  attribution: IODA_ATTRIBUTION,
+  // Pulse's terms require its credit wherever its data is shown, so the layer names it.
+  attribution: `${IODA_ATTRIBUTION} · Shutdowns: ${PULSE_CREDIT} (Pulse)`,
   sourceUrl: "https://ioda.inetintel.cc.gatech.edu/", // IODA dashboard (dossier source)
 
   // The metric drives the monitor bar AND the value the anomaly widget prints, so
@@ -316,14 +318,22 @@ export const INTERNET_OUTAGES_SOURCE: SignalSource = {
   // log-scaled 0–10 magnitude is the same ordering, legibly.
   metric: { field: "magnitude", domain: [0, 10] },
   async fetch() {
-    const [countries, regions] = await Promise.all([fetchEvents("country"), fetchEvents("region")]);
-    if (!countries && !regions) return degraded("fetch failed");
+    const [countries, regions, pulse] = await Promise.all([
+      fetchEvents("country"),
+      fetchEvents("region"),
+      fetchPulse(), // null without ISOC_PULSE_API_KEY: the IODA part does not need it
+    ]);
+    const shutdowns = pulse ? normalizePulse({ data: pulse }) : [];
+    // IODA is the measured backbone. With both of its views down the layer is
+    // degraded, even if Pulse's verified shutdowns can still be shown.
+    if (!countries && !regions) return shutdowns.length ? degradedWith(shutdowns, "fetch failed") : degraded("fetch failed");
     // An empty result here is a real reading: IODA answered, nothing is out now. One
     // of the two views failing keeps the other: a country marker is not lost because
     // the (larger, slower) region request timed out.
     return observed([
       ...(countries ? normalizeOutages(countries) : []),
       ...(regions ? normalizeRegionOutages(regions) : []),
+      ...shutdowns,
     ]);
   },
 };

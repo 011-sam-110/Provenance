@@ -79,6 +79,18 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain: "Free — register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days).",
   },
   {
+    // An enhancement: the layer is IODA's measured outages, keyless. The token adds the
+    // verified, intentional shutdowns Pulse logs (cause, type, affected region).
+    kind: "enhancement",
+    id: "internet-outages",
+    label: "Internet shutdowns (ISOC Pulse)",
+    env: ["ISOC_PULSE_API_KEY"],
+    degrades:
+      "IODA's measured outages still show. Without the token the layer has no verified intentional shutdowns (elections, exams, protests), which are the regional and mobile-only cuts IODA most often misses, and the instability index cannot count them.",
+    obtain:
+      "Free - a Pulse account at pulse.internetsociety.org, then generate an API token. Pulse terms: non-commercial use only, and the credit 'Provided by Internet Society' must be shown.",
+  },
+  {
     kind: "required",
     id: "reliefweb",
     label: "ReliefWeb situation reports",

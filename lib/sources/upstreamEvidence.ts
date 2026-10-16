@@ -77,6 +77,7 @@ export const REFUSAL_TTL_MS = 24 * 60 * 60 * 1000;
 export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
   "air-quality-stations": ["api.openaq.org"],
   "grid-load": ["web-api.tp.entsoe.eu"],
+  "internet-outages": ["pulse-api.internetsociety.org"],
   reliefweb: ["api.reliefweb.int"],
   webcams: ["api.windy.com"],
   "markets-equities": ["finnhub.io"],

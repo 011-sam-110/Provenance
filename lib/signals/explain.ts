@@ -428,6 +428,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "Throttling — the internet being slow rather than absent — is largely invisible to it.",
       "Mobile-only and regional shutdowns are a known weak point: on 2026-10-16 IODA had nothing for cuts in Tigray and Khyber Pakhtunkhwa that other monitors reported.",
       "The burst filter can hide a real outage that starts at the same moment as a prober fault, when only probing saw it.",
+      "With ISOC_PULSE_API_KEY set, the layer adds Internet Society Pulse's logged shutdowns: reported and checked by people, not measured, and refreshed daily at best. Pulse allows non-commercial use only.",
       "IODA's own severity score is unitless and unbounded, and its practical scale moves: on 2026-08-10 one country scored 5.8e10 while the next-worst scored 2.9e4. We rank and band it on a log scale and show a 0–10 magnitude rather than the raw number, because the raw number is not comparable between countries or between weeks.",
     ],
   },

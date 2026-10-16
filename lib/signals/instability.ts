@@ -2,6 +2,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, type CountryCentroid } from "@/lib/signals/country-centroids.data";
 import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
+import { isVerifiedShutdown } from "@/lib/signals/pulse-shutdowns";
 import { degraded, observed } from "@/lib/signals/outcome";
 
 // ============================================================================
@@ -334,11 +335,23 @@ async function displacementFactor(): Promise<Map<string, number>> {
  * ended many hours before and a prober burst that hit 52 countries at once (measured
  * 2026-10-16). Reading the layer gives this factor the same cleaned set the map
  * shows: current events only, bursts removed. The raw value is IODA's own score for
- * the country (the largest current event), the same quantity the ramp was built for.
+ * the country (the largest current event), the same quantity the ramp was built for,
+ * or VERIFIED_SHUTDOWN_RAW (the top of the ramp) for a verified Pulse shutdown.
  */
+export const VERIFIED_SHUTDOWN_RAW = 1e6;
+
 async function outageFactor(): Promise<Map<string, number>> {
   const out = new Map<string, number>();
   for (const f of await INTERNET_OUTAGES_SOURCE.fetch()) {
+    // A shutdown Pulse has confirmed or the government has acknowledged is the thing
+    // this factor exists to track (crackdowns, not cable cuts), so it takes the top
+    // of the ramp. Unconfirmed Pulse rows do not move the index.
+    if (isVerifiedShutdown(f)) {
+      const iso3 = centroidByIso2(String(f.props?.countryCode ?? ""))?.iso3;
+      if (iso3) out.set(iso3, Math.max(out.get(iso3) ?? 0, VERIFIED_SHUTDOWN_RAW));
+      continue;
+    }
+    if (f.props?.source != null) continue; // another tier's row, not an IODA score
     const iso3 = f.countryIso3;
     const score = Number(f.props?.outageScore ?? 0);
     if (iso3 && score > 0) out.set(iso3, Math.max(out.get(iso3) ?? 0, score));
