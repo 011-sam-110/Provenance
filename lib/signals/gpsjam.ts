@@ -1,6 +1,13 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
-import { applyCap, carryCoverage } from "@/lib/signals/coverage";
-import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
+import { applyCap, carryCoverage, readCoverage, withCoverage } from "@/lib/signals/coverage";
+import { degraded, degradedWith, markOutcome, observed, readOutcome } from "@/lib/signals/outcome";
+import {
+  AUGUR_ATTRIBUTION,
+  parseAugurInterference,
+  readAugur,
+  type AugurInterference,
+  type InterferenceLevel,
+} from "@/lib/signals/augur";
 
 // gpsjam.org — daily GPS/GNSS interference, aggregated from airplanes.live and
 // ADS-B Exchange flight telemetry (deduplicated per aircraft; the manifest says
@@ -22,6 +29,11 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 // h3-js (dynamically imported, server-only — kept out of the client bundle since
 // the registry is also imported client-side). This is the framework's first
 // POLYGON layer.
+//
+// SECOND SOURCE (2026-10-16): EUROCONTROL AUGUR's daily "GNSS INTERFERENCE" map for
+// Europe, an independent measurement. Its High and Medium parts are placed on the
+// same H3 resolution-4 grid; a cell GPSJAM already shows is not drawn twice. See
+// lib/signals/augur.ts.
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // daily data; re-probe a few times a day
 const MIN_SAMPLE = 10; // ignore hexes seen by too few aircraft (noise)
@@ -30,6 +42,7 @@ const MAX_CELLS = 400; // hard cap — keep the layer light on the globe
 const LOOKBACK_DAYS = 4; // today is usually unpublished; walk back this far
 
 export const GPSJAM_ATTRIBUTION = "GPS interference data: GPSJAM (gpsjam.org), from airplanes.live and ADS-B Exchange";
+export const GPS_JAMMING_ATTRIBUTION = `${GPSJAM_ATTRIBUTION}; Europe also ${AUGUR_ATTRIBUTION}`;
 
 export interface GpsjamCell {
   hex: string;
@@ -139,6 +152,72 @@ export function gpsjamCellsToFeatures(cells: GpsjamCell[], h3: H3Lib, day?: stri
   return carryCoverage(cells, out);
 }
 
+/** The slice of h3-js that places a point on the grid. */
+export interface H3Index {
+  latLngToCell(lat: number, lng: number, res: number): string;
+}
+
+const AUGUR_COLOR: Record<InterferenceLevel, string> = { High: "#dc2626", Medium: "#ea580c", Low: "#f59e0b" };
+const LEVEL_RANK: Record<InterferenceLevel, number> = { High: 3, Medium: 2, Low: 1 };
+
+/**
+ * Pure (given h3): AUGUR interference parts → one hexagon per H3 resolution-4 cell,
+ * at the cell's worst level. Cells in `skip` (the ones GPSJAM already shows) are left
+ * out, so one place is never drawn twice. AUGUR states a level, not a percentage, so
+ * these features carry `interferenceLevel` and no `interferencePct`.
+ */
+export function augurCellsToFeatures(
+  augur: AugurInterference,
+  h3: H3Lib & H3Index,
+  skip: ReadonlySet<string> = new Set(),
+): SignalFeature[] {
+  const cells = new Map<string, { level: InterferenceLevel; parts: number }>();
+  for (const p of augur.parts) {
+    let hex: string;
+    try {
+      hex = h3.latLngToCell(p.lat, p.lon, 4);
+    } catch {
+      continue;
+    }
+    if (skip.has(hex)) continue;
+    const c = cells.get(hex);
+    if (!c) cells.set(hex, { level: p.level, parts: 1 });
+    else {
+      c.parts++;
+      if (LEVEL_RANK[p.level] > LEVEL_RANK[c.level]) c.level = p.level;
+    }
+  }
+  const out: SignalFeature[] = [];
+  for (const [hex, c] of cells) {
+    let ring: number[][];
+    let center: number[];
+    try {
+      ring = h3.cellToBoundary(hex, true);
+      center = h3.cellToLatLng(hex);
+    } catch {
+      continue;
+    }
+    const [lat, lon] = center as [number, number];
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Array.isArray(ring) || ring.length < 4) continue;
+    out.push({
+      id: `augur:${hex}`,
+      lat,
+      lon,
+      title: `GNSS interference: ${c.level.toLowerCase()} (EUROCONTROL)`,
+      signalId: "gpsJamming",
+      color: AUGUR_COLOR[c.level],
+      geometry: { type: "Polygon", coordinates: [ring as [number, number][]] },
+      link: "https://augur.eurocontrol.int/",
+      props: {
+        interferenceLevel: c.level,
+        measuredBy: "EUROCONTROL AUGUR",
+        ...(augur.day ? { day: augur.day } : {}),
+      },
+    });
+  }
+  return out;
+}
+
 /** UTC YYYY-MM-DD `offset` days before `from` (server-side; not a workflow script). */
 function utcDay(from: Date, offset: number): string {
   const d = new Date(from.getTime() - offset * 86_400_000);
@@ -155,12 +234,44 @@ export const GPS_JAMMING_SOURCE: SignalSource = {
   group: "Infrastructure",
   color: "#dc2626",
   refreshMs: CACHE_TTL_MS,
-  attribution: GPSJAM_ATTRIBUTION,
+  attribution: GPS_JAMMING_ATTRIBUTION,
   sourceUrl: "https://gpsjam.org/", // interference map (dossier source)
 
   // Real per-cell scalar: GPSJAM's % of sampled aircraft reporting bad GNSS ((bad - 1) / total).
   metric: { field: "interferencePct", domain: [0, 100], unit: "%" },
   async fetch() {
+    const [gpsjam, augur] = await Promise.all([readGpsjam(), readAugur()]);
+    // GPSJAM is the layer's primary: its state decides the outcome. AUGUR adds cells
+    // when it answered (or has a last good copy), and never empties the layer.
+    let extra: SignalFeature[] = [];
+    const parsed = augur ? parseAugurInterference(augur.value) : null;
+    if (parsed?.parts.length) {
+      try {
+        const h3 = (await import("h3-js")) as unknown as H3Lib & H3Index;
+        const shown = new Set(gpsjam.map((f) => f.id.replace(/^gpsjam:/, "")));
+        extra = augurCellsToFeatures(parsed, h3, shown);
+      } catch {
+        extra = [];
+      }
+    }
+    if (!extra.length) return gpsjam;
+    const merged = [...gpsjam, ...extra];
+    const cov = readCoverage(gpsjam);
+    if (cov) {
+      withCoverage(merged, {
+        ...cov,
+        available: cov.available + extra.length,
+        rule: `${cov.rule ?? "the worst by interference ratio"} from GPSJAM, plus every EUROCONTROL high or medium cell GPSJAM does not show`,
+      });
+    }
+    // Keep GPSJAM's outcome (ok, read time) on the merged array.
+    return copyOutcome(gpsjam, merged);
+  },
+};
+
+/** GPSJAM's daily grid, with its own cache and outcome. */
+async function readGpsjam(): Promise<SignalFeature[]> {
+  {
     // A cache hit is a real upstream read — stamped when it happened, not now.
     if (cache && Date.now() - cache.at < CACHE_TTL_MS) return observed(cache.features, cache.at);
     try {
@@ -203,5 +314,11 @@ export const GPS_JAMMING_SOURCE: SignalSource = {
         ? degradedWith(cache.features, "fetch failed", cache.at)
         : degraded("fetch failed"); // dormant-safe
     }
-  },
-};
+  }
+}
+
+/** Put one array's declared outcome on another (the merge builds a new array). */
+function copyOutcome(from: SignalFeature[], to: SignalFeature[]): SignalFeature[] {
+  const o = readOutcome(from);
+  return o ? markOutcome(to, o) : to;
+}

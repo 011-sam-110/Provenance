@@ -43,6 +43,8 @@ import { AURORA_SOURCE } from "@/lib/signals/aurora";
 import { LAUNCHES_SOURCE } from "@/lib/signals/launches";
 import { CABLES_SOURCE, CABLE_LANDINGS_SOURCE } from "@/lib/signals/cables";
 import { GPS_JAMMING_SOURCE } from "@/lib/signals/gpsjam";
+import { GPS_JAMMING_LIVE_SOURCE } from "@/lib/signals/gpsjam-live";
+import { GNSS_NOTAMS_SOURCE } from "@/lib/signals/gnss-notams";
 import { NUCLEAR_SOURCE } from "@/lib/signals/nuclear";
 import { AIRPORTS_SOURCE } from "@/lib/signals/airports";
 import { PORTS_SOURCE } from "@/lib/signals/ports";
@@ -107,6 +109,8 @@ export const SIGNALS: SignalSource[] = [
   CABLES_SOURCE,
   CABLE_LANDINGS_SOURCE,
   GPS_JAMMING_SOURCE,
+  GPS_JAMMING_LIVE_SOURCE, // the last hour, computed from live adsb.lol NACp (keyless)
+  GNSS_NOTAMS_SOURCE, // official GNSS jamming NOTAMs via EUROCONTROL AUGUR (keyless)
   NUCLEAR_SOURCE,
   AIRPORTS_SOURCE,
   PORTS_SOURCE,

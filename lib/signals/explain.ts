@@ -337,6 +337,30 @@ const EXPLAINERS: LayerExplainer[] = [
       "This infers interference from aircraft behaviour; it does not detect a transmitter. Equipment faults and receiver coverage gaps produce the same signature.",
       "No aircraft overhead means no data, which is not the same as no jamming.",
       "It cannot distinguish jamming from spoofing, and it cannot locate the source.",
+      "Two daily sources share this layer: GPSJAM worldwide (a percentage per cell) and, for Europe, EUROCONTROL's own interference map (a high or medium level, no percentage). A cell both show is drawn once, from GPSJAM.",
+    ],
+  },
+  {
+    id: "gpsJammingLive",
+    whatItShows: "A grid cell where, over the last hour, a share of passing airliners reported degraded GPS accuracy: probable jamming or spoofing now, not yesterday.",
+    method: "Computed by Provenance from live adsb.lol aircraft: each airborne aircraft's reported navigation accuracy (NACp below 7 counts as bad), counted per H3 resolution-3 cell (about 12,000 km², coarser than the daily layer's grid) with GPSJAM's (bad - 1) / total rule.",
+    confidence: "derived",
+    coverage: "Wherever mainline airliners fly within range of adsb.lol's volunteer receivers.",
+    limitations: [
+      "Only the mainline airliner types are asked for, so each cell holds far fewer aircraft than GPSJAM's daily grid and a single bad receiver moves the percentage more.",
+      "The hour builds up in one server's memory, one snapshot every ten minutes; right after a restart the window is a single snapshot.",
+      "No aircraft overhead means no data, which is not the same as no jamming. Equipment faults produce the same signature.",
+    ],
+  },
+  {
+    id: "gnss-notams",
+    whatItShows: "An official warning (a NOTAM) that GPS/GNSS signals may be jammed, degraded or spoofed in an area, issued by a national air navigation service provider.",
+    method: "The jamming, interference and spoofing NOTAMs in force, as collected by EUROCONTROL AUGUR. Each is drawn as the circle its own Q-line states: a centre and a radius in nautical miles.",
+    confidence: "official",
+    coverage: "Europe and its neighbours, as far as AUGUR collects NOTAMs; not worldwide.",
+    limitations: [
+      "A warning is not a measurement: it says interference may occur (a military exercise, a border area), not that it is happening now. Compare it with the GPS jamming layers.",
+      "The circle is the NOTAM's coarse area of influence, often a whole flight information region, not the position of a jammer.",
     ],
   },
   {

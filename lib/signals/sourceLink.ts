@@ -98,6 +98,8 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   "cable-landings": { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
   ukraineAlerts: { label: "alerts.com.ua", url: "https://alerts.com.ua/" },
   gpsJamming: { label: "gpsjam.org", url: "https://gpsjam.org/" },
+  gpsJammingLive: { label: "adsb.lol", url: "https://adsb.lol/" },
+  "gnss-notams": { label: "EUROCONTROL AUGUR", url: "https://augur.eurocontrol.int/" },
   nuclear: { label: "OpenStreetMap", url: "https://www.openstreetmap.org/" },
   airports: { label: "OurAirports", url: "https://ourairports.com/" },
   ports: { label: "Wikipedia", url: "https://en.wikipedia.org/wiki/List_of_busiest_ports_by_cargo_tonnage" },
