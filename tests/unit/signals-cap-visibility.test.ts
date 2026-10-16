@@ -23,7 +23,7 @@ test("the declared caps are what the adapters ship", () => {
   expect(FIRMS_CAP).toBe(1500);
   expect(CRIME_CAP).toBe(1500);
   expect(AIS_CAP).toBe(1200);
-  expect(OPENAQ_CAP).toBe(1000);
+  expect(OPENAQ_CAP).toBe(4000); // 4 pages of 1,000 since the 3 h window (2026-10-16)
   expect(EMSC_REQUEST_LIMIT).toBe(2000);
   expect(LAUNCHES_PAGE_LIMIT).toBe(100);
 });
@@ -189,7 +189,8 @@ describe("ais (AISStream chokepoints)", () => {
 });
 
 describe("air-quality-stations (OpenAQ)", () => {
-  test("a full page means '1,000 of 1,000+', not '1,000 stations worldwide'", () => {
+  const AQ_NOW = Date.parse("2026-08-10T10:00:00Z"); // the rows are 1 h old
+  test("full pages mean '4,000 of 4,000+', not '4,000 stations worldwide'", () => {
     const results = Array.from({ length: OPENAQ_CAP }, (_, i) => ({
       locationsId: i + 1,
       sensorsId: i + 1,
@@ -197,14 +198,14 @@ describe("air-quality-stations (OpenAQ)", () => {
       coordinates: { latitude: 10 + (i % 80) * 0.5, longitude: 20 + (i % 100) * 0.5 },
       datetime: { utc: "2026-08-10T09:00:00Z" },
     }));
-    const c = readCoverage(normalizeAirStations({ results }))!;
+    const c = readCoverage(normalizeAirStations({ results }, AQ_NOW))!;
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
-    expect(coverageCountLabel(c)).toBe("1,000 of 1,000+");
+    expect(coverageCountLabel(c)).toBe("4,000 of 4,000+");
   });
 
   test("hygiene-dropped rows do not hide the fact the PAGE was full", () => {
-    // 1,000 rows back, but 200 are error sentinels — the page was still saturated.
+    // 4,000 rows back, but 200 are error sentinels — the pages were still saturated.
     const results = Array.from({ length: OPENAQ_CAP }, (_, i) => ({
       locationsId: i + 1,
       sensorsId: i + 1,
@@ -212,13 +213,13 @@ describe("air-quality-stations (OpenAQ)", () => {
       coordinates: { latitude: 10 + (i % 80) * 0.5, longitude: 20 + (i % 100) * 0.5 },
       datetime: { utc: "2026-08-10T09:00:00Z" },
     }));
-    const c = readCoverage(normalizeAirStations({ results }))!;
-    expect(c.returned).toBe(800);
+    const c = readCoverage(normalizeAirStations({ results }, AQ_NOW))!;
+    expect(c.returned).toBe(3800);
     expect(c.capped).toBe(true);
     expect(c.availableExact).toBe(false);
-    // The provable floor is the saturated PAGE (1,000), not the 800 that survived
+    // The provable floor is the saturated PAGES (4,000), not the 3,800 that survived
     // hygiene — so the label must not understate what exists upstream.
-    expect(coverageCountLabel(c)).toBe("800 of 1,000+");
+    expect(coverageCountLabel(c)).toBe("3,800 of 4,000+");
   });
 });
 

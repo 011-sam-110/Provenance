@@ -589,6 +589,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "A station measures its own location. Readings do not extrapolate well even a few streets away.",
       "Instruments differ in type and calibration, from reference-grade analysers to low-cost sensors.",
       "Stations go offline; a missing pin usually means no data, not clean air.",
+      "Only readings from the last 3 hours are shown. A station that has not reported since then has no pin, so the map never shows old air as current.",
       "Requires an OpenAQ key. Without one this layer is empty, which looks identical to a region with no monitors.",
     ],
   },
