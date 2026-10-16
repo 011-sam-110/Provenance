@@ -12,6 +12,7 @@ import {
   conflictArticlesByIso3,
   foodFromFewsNet,
   displacementShare,
+  conflictArticlesByIso3,
   FACTOR_WEIGHTS,
   DISPLACEMENT_FLOOR,
   type CountryInput,
@@ -246,4 +247,20 @@ test("foodFromFewsNet skips projections, missing bands and unknown codes, and ke
   ]);
   expect(Object.fromEntries(food)).toEqual({ SDN: 0.45 });
   expect(foodFromFewsNet(null as unknown as [])).toEqual(new Map());
+});
+
+test("conflict factor reads the country features the layer actually serves (countryIso3, then the name)", () => {
+  const feat = (id: string, extra: Record<string, unknown>) =>
+    ({ id, lat: 0, lon: 0, title: id, signalId: "conflict", ...extra }) as never;
+  const m = conflictArticlesByIso3([
+    feat("a", { countryIso3: "UKR", props: { country: "Ukraine", articles: 40 } }),
+    // No ISO code on the feature: the country name is the fallback.
+    feat("b", { props: { country: "Syria", articles: 7 } }),
+    // The labelled placeholder is not an event and never scores.
+    feat("c", { props: { status: "unavailable", articles: 99 } }),
+    feat("d", { countryIso3: "UKR", props: { country: "Ukraine", articles: 2 } }),
+  ]);
+  expect(m.get("UKR")).toBe(42);
+  expect(m.get("SYR")).toBe(7);
+  expect(m.size).toBe(2);
 });
