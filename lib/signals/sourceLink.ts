@@ -78,6 +78,10 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   // JTWC, JMA and CMA storms name their own agency on the record chip (`recordLabel`).
   "tropical-cyclones": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/" },
   "cyclone-forecasts": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/gtwo.php" },
+  "tsunami-alerts": { label: "NOAA Tsunami Warning Centers", url: "https://www.tsunami.gov/" },
+  // USGS and JMA alerts name their own agency on the record chip (`recordLabel`).
+  "volcano-alerts": { label: "USGS Volcano Hazards Program", url: "https://www.usgs.gov/programs/VHP" },
+  "cems-activations": { label: "Copernicus EMS", url: "https://mapping.emergency.copernicus.eu/activations/" },
   "fire-active": { label: "NASA FIRMS", url: "https://firms.modaps.eosdis.nasa.gov/" },
   aurora: { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" },
   "space-weather": { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/" },

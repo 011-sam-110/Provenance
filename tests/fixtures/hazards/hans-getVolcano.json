@@ -1,0 +1,30 @@
+{
+ "311120": {
+  "volcano_name": "Great Sitkin",
+  "vnum": "311120",
+  "latitude": 52.0765,
+  "longitude": -176.1109,
+  "obs_abbr": "avo"
+ },
+ "311360": {
+  "volcano_name": "Shishaldin",
+  "vnum": "311360",
+  "latitude": 54.7554,
+  "longitude": -163.9711,
+  "obs_abbr": "avo"
+ },
+ "332010": {
+  "volcano_name": "Kilauea",
+  "vnum": "332010",
+  "latitude": 19.421,
+  "longitude": -155.287,
+  "obs_abbr": "hvo"
+ },
+ "284141": {
+  "volcano_name": "Ahyi Seamount",
+  "vnum": "284141",
+  "latitude": 20.437,
+  "longitude": 145.03,
+  "obs_abbr": "nmi"
+ }
+}

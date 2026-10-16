@@ -173,6 +173,42 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Measured through its own fetch() against the live NHC feeds on 2026-10-16T20:05Z: 2 forecast cones (Trudy, Simon) and 1 East Pacific outlook area. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
+    "id": "tsunami-alerts",
+    "label": "Tsunami messages (NOAA)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feeds on 2026-10-16T20:18Z: 2 information statements (PTWC, NTWC) for the M7.0 off Kamchatka."
+  },
+  {
+    "id": "volcano-alerts",
+    "label": "Volcano alert levels (USGS, JMA)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feeds on 2026-10-16T20:18Z: 16 volcanoes above normal (4 USGS, 12 JMA)."
+  },
+  {
+    "id": "cems-activations",
+    "label": "Emergency mapping (Copernicus EMS)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Re-run the breakdown after the next deploy and this row is replaced with a real one. Measured through its own fetch() against the live feed on 2026-10-16T20:18Z: 2 activations (EMSR934 Panama earthquake, open; EMSR933 Crete flood)."
+  },
+  {
     "id": "fire-active",
     "label": "Active fires (FIRMS)",
     "group": "Natural hazards",
@@ -3364,10 +3400,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 37,
+  "layers": 40,
   "live": 29,
   "partial": 1,
-  "down": 5,
+  "down": 8,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

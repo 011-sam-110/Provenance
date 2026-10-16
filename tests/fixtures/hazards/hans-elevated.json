@@ -1,0 +1,58 @@
+[
+    {
+        "obs_fullname": "Alaska Volcano Observatory",
+        "obs_abbr": "avo",
+        "volcano_name": "Great Sitkin",
+        "vnum": "311120",
+        "notice_type_cd": "WU",
+        "notice_identifier": "DOI-USGS-AVO-2026-10-16T19:06:04+00:00",
+        "sent_utc": "2026-10-16 19:14:32",
+        "sent_unixtime": 1792178072,
+        "color_code": "ORANGE",
+        "alert_level": "WATCH",
+        "notice_url": "https:\/\/volcanoes.usgs.gov\/hans-public\/notice\/DOI-USGS-AVO-2026-10-16T19:06:04+00:00",
+        "notice_data": "https:\/\/volcanoes.usgs.gov\/hans-public\/api\/notice\/getNotice\/DOI-USGS-AVO-2026-10-16T19:06:04+00:00"
+    },
+    {
+        "obs_fullname": "Alaska Volcano Observatory",
+        "obs_abbr": "avo",
+        "volcano_name": "Shishaldin",
+        "vnum": "311360",
+        "notice_type_cd": "WU",
+        "notice_identifier": "DOI-USGS-AVO-2026-10-16T19:06:04+00:00",
+        "sent_utc": "2026-10-16 19:14:32",
+        "sent_unixtime": 1792178072,
+        "color_code": "YELLOW",
+        "alert_level": "ADVISORY",
+        "notice_url": "https:\/\/volcanoes.usgs.gov\/hans-public\/notice\/DOI-USGS-AVO-2026-10-16T19:06:04+00:00",
+        "notice_data": "https:\/\/volcanoes.usgs.gov\/hans-public\/api\/notice\/getNotice\/DOI-USGS-AVO-2026-10-16T19:06:04+00:00"
+    },
+    {
+        "obs_fullname": "Hawaiian Volcano Observatory",
+        "obs_abbr": "hvo",
+        "volcano_name": "Kilauea",
+        "vnum": "332010",
+        "notice_type_cd": "DU",
+        "notice_identifier": "DOI-USGS-HVO-2026-10-16T18:37:16+00:00",
+        "sent_utc": "2026-10-16 19:54:02",
+        "sent_unixtime": 1792180442,
+        "color_code": "ORANGE",
+        "alert_level": "WATCH",
+        "notice_url": "https:\/\/volcanoes.usgs.gov\/hans-public\/notice\/DOI-USGS-HVO-2026-10-16T18:37:16+00:00",
+        "notice_data": "https:\/\/volcanoes.usgs.gov\/hans-public\/api\/notice\/getNotice\/DOI-USGS-HVO-2026-10-16T18:37:16+00:00"
+    },
+    {
+        "obs_fullname": "Northern Mariana Islands",
+        "obs_abbr": "nmi",
+        "volcano_name": "Ahyi Seamount",
+        "vnum": "284141",
+        "notice_type_cd": "WU",
+        "notice_identifier": "DOI-USGS-NMI-2026-10-15T23:21:29+00:00",
+        "sent_utc": "2026-10-15 23:34:00",
+        "sent_unixtime": 1792107240,
+        "color_code": "YELLOW",
+        "alert_level": "ADVISORY",
+        "notice_url": "https:\/\/volcanoes.usgs.gov\/hans-public\/notice\/DOI-USGS-NMI-2026-10-15T23:21:29+00:00",
+        "notice_data": "https:\/\/volcanoes.usgs.gov\/hans-public\/api\/notice\/getNotice\/DOI-USGS-NMI-2026-10-15T23:21:29+00:00"
+    }
+]

@@ -1,0 +1,869 @@
+[
+  {
+    "code": "101",
+    "latlon": [ "44.133", "145.161" ],
+    "pointShift":   [ 0, -15],
+    "pointShift18": [ 0, -20],
+    "name_jp": "知床硫黄山",
+    "name_en": "Shiretoko-Iozan"
+  },
+  {
+    "code": "102",
+    "latlon": [ "44.076",  "145.122" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "羅臼岳",
+    "name_en": "Rausudake"
+  },
+  {
+    "code": "103",
+    "latlon": [ "43.572", "144.561" ],
+    "name_jp": "摩周",
+    "name_en": "Mashu"
+  },
+  {
+    "code": "104",
+    "latlon": [ "43.61", "144.439" ],
+    "pointShift":   [ 0, -15],
+    "pointShift18": [ 0, -20],
+    "name_jp": "アトサヌプリ",
+    "name_en": "Atosanupuri",
+    "levelOperation": true
+  },
+  {
+    "code": "105",
+    "latlon": [ "43.386", "144.009" ],
+    "pointShift":   [-35,  0],
+    "pointShift18": [-55, -3],
+    "name_jp": "雌阿寒岳",
+    "name_en": "Meakandake",
+    "levelOperation": true
+  },
+  {
+    "code": "106",
+    "latlon": [ "43.418", "143.031" ],
+    "pointShift":   [ 20, -12],
+    "name_jp": "丸山",
+    "name_en": "Maruyama"
+  },
+  {
+    "code": "107",
+    "latlon": [ "43.664", "142.854" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "大雪山",
+    "name_en": "Taisetsuzan",
+    "levelOperation": true
+  },
+  {
+    "code": "108",
+    "latlon": [ "43.418", "142.686" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "十勝岳",
+    "name_en": "Tokachidake",
+    "levelOperation": true
+  },
+  {
+    "code": "109",
+    "latlon": [ "42.691", "141.377" ],
+    "name_jp": "樽前山",
+    "name_en": "Tarumaesan",
+    "levelOperation": true
+  },
+  {
+    "code": "110",
+    "latlon": [ "42.793", "141.285" ],
+    "name_jp": "恵庭岳",
+    "name_en": "Eniwadake"
+  },
+  {
+    "code": "111",
+    "latlon": [ "42.505", "141.144" ],
+    "name_jp": "倶多楽",
+    "name_en": "Kuttara",
+    "levelOperation": true
+  },
+  {
+    "code": "112",
+    "latlon": [ "42.544", "140.839" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "有珠山",
+    "name_en": "Usuzan",
+    "levelOperation": true
+  },
+  {
+    "code": "113",
+    "latlon": [ "42.063", "140.677" ],
+    "name_jp": "北海道駒ヶ岳",
+    "name_en": "Hokkaido-Komagatake",
+    "levelOperation": true
+  },
+  {
+    "code": "114",
+    "latlon": [ "41.805", "141.166" ],
+    "name_jp": "恵山",
+    "name_en": "Esan",
+    "levelOperation": true
+  },
+  {
+    "code": "115",
+    "latlon": [ "41.51", "139.367" ],
+    "name_jp": "渡島大島",
+    "name_en": "Oshima-Oshima"
+  },
+  {
+    "code": "116",
+    "latlon": [ "45.179", "141.242" ],
+    "name_jp": "利尻山",
+    "name_en": "Rishirizan"
+  },
+  {
+    "code": "117",
+    "latlon": [ "42.827", "140.811" ],
+    "pointShift":   [ 32, -10],
+    "name_jp": "羊蹄山",
+    "name_en": "Yoteisan"
+  },
+  {
+    "code": "118",
+    "latlon": [ "42.885", "140.641" ],
+    "pointShift": [-20, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "ニセコ",
+    "name_en": "Niseko"
+  },
+  {
+    "code": "119",
+    "latlon": [ "44.044", "145.086" ],
+    "pointShift":   [10, 17],
+    "pointShift18": [ 0, 16],
+    "name_jp": "天頂山",
+    "name_en": "Tenchozan"
+  },
+  {
+    "code": "120",
+    "latlon": [ "43.454", "144.165" ],
+    "pointShift":   [42, 10],
+    "name_jp": "雄阿寒岳",
+    "name_en": "Oakandake"
+  },
+  {
+    "code": "151",
+    "latlon": [ "45.389", "148.838" ],
+    "name_jp": "茂世路岳",
+    "name_en": "Moyorodake"
+  },
+  {
+    "code": "152",
+    "latlon": [ "45.338", "147.92" ],
+    "name_jp": "散布山",
+    "name_en": "Chirippusan"
+  },
+  {
+    "code": "153",
+    "latlon": [ "45.1", "148.019" ],
+    "pointShift":   [ 32, -10],
+    "name_jp": "指臼岳",
+    "name_en": "Sashiusudake"
+  },
+  {
+    "code": "154",
+    "latlon": [ "45.028", "147.918" ],
+    "pointShift":   [ 38, 8],
+    "name_jp": "小田萌山",
+    "name_en": "Odamoisan"
+  },
+  {
+    "code": "155",
+    "latlon": [ "45.012", "147.871" ],
+    "pointShift":   [-35, 0],
+    "pointShift18": [-55, 0],
+    "name_jp": "択捉焼山",
+    "name_en": "Etorofu-Yakeyama"
+  },
+  {
+    "code": "156",
+    "latlon": [ "44.808", "147.131" ],
+    "name_jp": "択捉阿登佐岳",
+    "name_en": "Etorofu-Atosanupuri"
+  },
+  {
+    "code": "157",
+    "latlon": [ "44.462", "146.932" ],
+    "name_jp": "ベルタルベ山",
+    "name_en": "Berutarubesan"
+  },
+  {
+    "code": "158",
+    "latlon": [ "44.353", "146.252" ],
+    "pointShift":   [ 35, 5],
+    "name_jp": "爺爺岳",
+    "name_en": "Chachadake"
+  },
+  {
+    "code": "159",
+    "latlon": [ "43.979", "145.733" ],
+    "name_jp": "羅臼山",
+    "name_en": "Raususan"
+  },
+  {
+    "code": "160",
+    "latlon": [ "43.844", "145.504" ],
+    "name_jp": "泊山",
+    "name_en": "Tomariyama"
+  },
+  {
+    "code": "161",
+    "latlon": [ "44.454", "146.139" ],
+    "pointShift":   [-35, 0],
+    "pointShift18": [-55, 0],
+    "name_jp": "ルルイ岳",
+    "name_en": "Ruruidake"
+  },
+  {
+    "code": "201",
+    "latlon": [ "41.279", "141.12" ],
+    "name_jp": "恐山",
+    "name_en": "Osorezan"
+  },
+  {
+    "code": "202",
+    "latlon": [ "40.656", "140.303" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "岩木山",
+    "name_en": "Iwakisan",
+    "levelOperation": true
+  },
+  {
+    "code": "203",
+    "latlon": [ "40.659", "140.877" ],
+    "name_jp": "八甲田山",
+    "name_en": "Hakkodasan",
+    "levelOperation": true
+  },
+  {
+    "code": "204",
+    "latlon": [ "40.459", "140.91" ],
+    "name_jp": "十和田",
+    "name_en": "Towada",
+    "levelOperation": true
+  },
+  {
+    "code": "205",
+    "latlon": [ "39.964", "140.757" ],
+    "pointShift":   [-35, 0],
+    "pointShift18": [-55, 0],
+    "name_jp": "秋田焼山",
+    "name_en": "Akita-Yakeyama",
+    "levelOperation": true
+  },
+  {
+    "code": "206",
+    "latlon": [ "39.958", "140.854" ],
+    "pointShift":   [ 32, -10],
+    "pointShift18": [ 32, -10],
+    "name_jp": "八幡平",
+    "name_en": "Hachimantai"
+  },
+  {
+    "code": "207",
+    "latlon": [ "39.853", "141.001" ],
+    "name_jp": "岩手山",
+    "name_en": "Iwatesan",
+    "levelOperation": true
+  },
+  {
+    "code": "208",
+    "latlon": [ "39.761", "140.799" ],
+    "pointShift":   [-50, 0],
+    "pointShift18": [-75, 0],
+    "name_jp": "秋田駒ヶ岳",
+    "name_en": "Akita-Komagatake",
+    "levelOperation": true
+  },
+  {
+    "code": "209",
+    "latlon": [ "39.099", "140.049" ],
+    "name_jp": "鳥海山",
+    "name_en": "Chokaisan",
+    "levelOperation": true
+  },
+  {
+    "code": "210",
+    "latlon": [ "38.961", "140.788" ],
+    "name_jp": "栗駒山",
+    "name_en": "Kurikomayama",
+    "levelOperation": true
+  },
+  {
+    "code": "211",
+    "latlon": [ "38.729", "140.734" ],
+    "name_jp": "鳴子",
+    "name_en": "Naruko"
+  },
+  {
+    "code": "212",
+    "latlon": [ "38.144", "140.44" ],
+    "name_jp": "蔵王山",
+    "name_en": "Zaozan",
+    "levelOperation": true
+  },
+  {
+    "code": "213",
+    "latlon": [ "37.735", "140.244" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "吾妻山",
+    "name_en": "Azumayama",
+    "levelOperation": true
+  },
+  {
+    "code": "214",
+    "latlon": [ "37.633", "140.283" ],
+    "name_jp": "安達太良山",
+    "name_en": "Adatarayama",
+    "levelOperation": true
+  },
+  {
+    "code": "215",
+    "latlon": [ "37.601", "140.072" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "磐梯山",
+    "name_en": "Bandaisan",
+    "levelOperation": true
+  },
+  {
+    "code": "216",
+    "latlon": [ "36.955", "139.285" ],
+    "pointShift":   [ 0, -15],
+    "pointShift18": [ 0, -20],
+    "name_jp": "燧ヶ岳",
+    "name_en": "Hiuchigatake"
+  },
+  {
+    "code": "217",
+    "latlon": [ "38.599", "140.162" ],
+    "name_jp": "肘折",
+    "name_en": "Hijiori"
+  },
+  {
+    "code": "218",
+    "latlon": [ "37.444", "139.566" ],
+    "name_jp": "沼沢",
+    "name_en": "Numazawa"
+  },
+  {
+    "code": "301",
+    "latlon": [ "37.125", "139.963" ],
+    "name_jp": "那須岳",
+    "name_en": "Nasudake",
+    "levelOperation": true
+  },
+  {
+    "code": "302",
+    "latlon": [ "36.799", "139.376" ],
+    "pointShift":   [-48, 0],
+    "pointShift18": [-75, 0],
+    "name_jp": "日光白根山",
+    "name_en": "Nikko-Shiranesan",
+    "levelOperation": true
+  },
+  {
+    "code": "303",
+    "latlon": [ "36.56", "139.193" ],
+    "pointShift":   [ 35, 5],
+    "name_jp": "赤城山",
+    "name_en": "Akagisan"
+  },
+  {
+    "code": "304",
+    "latlon": [ "36.477", "138.851" ],
+    "pointShift":   [10, 17],
+    "pointShift18": [ 0, 16],
+    "name_jp": "榛名山",
+    "name_en": "Harunasan"
+  },
+  {
+    "code": "305",
+    "latlon": [ "36.644", "138.528" ],
+    "pointShift":   [-45, -7],
+    "pointShift18": [-70, -7],
+    "name_jp": "草津白根山",
+    "name_en": "Kusatsu-Shiranesan"
+  },
+  {
+    "code": "306",
+    "latlon": [ "36.406", "138.523" ],
+    "pointShift":   [-20, 5],
+    "pointShift18": [-35, 5],
+    "name_jp": "浅間山",
+    "name_en": "Asamayama",
+    "levelOperation": true
+  },
+  {
+    "code": "307",
+    "latlon": [ "36.921", "138.036" ],
+    "pointShift":   [-35, 0],
+    "pointShift18": [-55, 0],
+    "name_jp": "新潟焼山",
+    "name_en": "Niigata-Yakeyama",
+    "levelOperation": true
+  },
+  {
+    "code": "308",
+    "latlon": [ "36.891", "138.114" ],
+    "pointShift":   [ 32, -10],
+    "name_jp": "妙高山",
+    "name_en": "Myokosan"
+  },
+  {
+    "code": "309",
+    "latlon": [ "36.571", "137.59" ],
+    "pointShift":   [-35, 15],
+    "pointShift18": [-55, -3],
+    "name_jp": "弥陀ヶ原",
+    "name_en": "Midagahara",
+    "levelOperation": true
+  },
+  {
+    "code": "310",
+    "latlon": [ "36.227", "137.587" ],
+    "pointShift":   [ -7, 0],
+    "pointShift18": [-20, 0],
+    "name_jp": "焼岳",
+    "name_en": "Yakedake",
+    "levelOperation": true
+  },
+  {
+    "code": "311",
+    "latlon": [ "36.106", "137.554" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "乗鞍岳",
+    "name_en": "Norikuradake",
+    "levelOperation": true
+  },
+  {
+    "code": "312",
+    "latlon": [ "35.893", "137.48" ],
+    "name_jp": "御嶽山",
+    "name_en": "Ontakesan",
+    "levelOperation": true
+  },
+  {
+    "code": "313",
+    "latlon": [ "36.155", "136.771" ],
+    "pointShift":   [ -7, 0],
+    "pointShift18": [-20, 0],
+    "name_jp": "白山",
+    "name_en": "Hakusan",
+    "levelOperation": true
+  },
+  {
+    "code": "314",
+    "latlon": [ "35.361", "138.728" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "富士山",
+    "name_en": "Fujisan",
+    "levelOperation": true
+  },
+  {
+    "code": "315",
+    "latlon": [ "35.233", "139.021" ],
+    "name_jp": "箱根山",
+    "name_en": "Hakoneyama",
+    "levelOperation": true
+  },
+  {
+    "code": "316",
+    "latlon": [ "34.903", "139.095" ],
+    "name_jp": "伊豆東部火山群",
+    "name_en": "Izu-Tobu Volcanoes",
+    "levelOperation": true
+  },
+  {
+    "code": "317",
+    "latlon": [ "34.724", "139.394" ],
+    "name_jp": "伊豆大島",
+    "name_en": "Izu-Oshima",
+    "levelOperation": true
+  },
+  {
+    "code": "318",
+    "latlon": [ "34.397", "139.27" ],
+    "name_jp": "新島",
+    "name_en": "Niijima",
+    "levelOperation": true
+  },
+  {
+    "code": "319",
+    "latlon": [ "34.219", "139.153" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "神津島",
+    "name_en": "Kozushima",
+    "levelOperation": true
+  },
+  {
+    "code": "320",
+    "latlon": [ "34.094", "139.526" ],
+    "name_jp": "三宅島",
+    "name_en": "Miyakejima",
+    "levelOperation": true
+  },
+  {
+    "code": "321",
+    "latlon": [ "33.137", "139.766" ],
+    "name_jp": "八丈島",
+    "name_en": "Hachijojima",
+    "levelOperation": true
+  },
+  {
+    "code": "322",
+    "latlon": [ "32.458", "139.759" ],
+    "name_jp": "青ヶ島",
+    "name_en": "Aogashima",
+    "levelOperation": true
+  },
+  {
+    "code": "323",
+    "latlon": [ "31.888", "139.918" ],
+    "name_jp": "ベヨネース列岩",
+    "name_en": "Beyonesu Rocks"
+  },
+  {
+    "code": "324",
+    "latlon": [ "31.44", "140.051" ],
+    "name_jp": "須美寿島",
+    "name_en": "Sumisujima"
+  },
+  {
+    "code": "325",
+    "latlon": [ "30.484", "140.303" ],
+    "name_jp": "伊豆鳥島",
+    "name_en": "Izu-Torishima"
+  },
+  {
+    "code": "326",
+    "latlon": [ "27.247", "140.874" ],
+    "name_jp": "西之島",
+    "name_en": "Nishinoshima"
+  },
+  {
+    "code": "327",
+    "latlon": [ "26.127", "141.102" ],
+    "name_jp": "海徳海山",
+    "name_en": "Kaitoku Seamount"
+  },
+  {
+    "code": "328",
+    "latlon": [ "25.455", "141.238" ],
+    "name_jp": "噴火浅根",
+    "name_en": "Funka Asane"
+  },
+  {
+    "code": "329",
+    "latlon": [ "24.751", "141.289" ],
+    "name_jp": "硫黄島",
+    "name_en": "Ioto"
+  },
+  {
+    "code": "330",
+    "latlon": [ "24.417", "141.417" ],
+    "pointShift":   [-35, 0],
+    "pointShift18": [-55, 0],
+    "name_jp": "北福徳堆",
+    "name_en": "Kita-Fukutokutai"
+  },
+  {
+    "code": "331",
+    "latlon": [ "24.285", "141.481" ],
+    "name_jp": "福徳岡ノ場",
+    "name_en": "Fukutoku-Oka-no-Ba"
+  },
+  {
+    "code": "333",
+    "latlon": [ "36.9", "139.777" ],
+    "name_jp": "高原山",
+    "name_en": "Takaharayama"
+  },
+  {
+    "code": "334",
+    "latlon": [ "36.087", "138.32" ],
+    "pointShift":   [ 10,  17],
+    "pointShift18": [  0,  16],
+    "name_jp": "横岳",
+    "name_en": "Yokodake"
+  },
+  {
+    "code": "335",
+    "latlon": [ "36.2", "137.573" ],
+    "name_jp": "アカンダナ山",
+    "name_en": "Akandanayama"
+  },
+  {
+    "code": "336",
+    "latlon": [ "34.52", "139.279" ],
+    "name_jp": "利島",
+    "name_en": "Toshima"
+  },
+  {
+    "code": "337",
+    "latlon": [ "33.874", "139.602" ],
+    "pointShift":   [ 10, 17],
+    "pointShift18": [ 0, 20],
+    "name_jp": "御蔵島",
+    "name_en": "Mikurajima"
+  },
+  {
+    "code": "338",
+    "latlon": [ "29.794", "140.342" ],
+    "name_jp": "孀婦岩",
+    "name_en": "Sofugan"
+  },
+  {
+    "code": "339",
+    "latlon": [ "26.667", "140.929" ],
+    "name_jp": "海形海山",
+    "name_en": "Kaikata Seamount"
+  },
+  {
+    "code": "340",
+    "latlon": [ "23.5", "141.935" ],
+    "name_jp": "南日吉海山",
+    "name_en": "Minami-Hiyoshi Seamount"
+  },
+  {
+    "code": "341",
+    "latlon": [ "23.078", "142.326" ],
+    "name_jp": "日光海山",
+    "name_en": "Nikko Seamount"
+  },
+  {
+    "code": "342",
+    "latlon": [ "36.765", "139.491" ],
+    "name_jp": "男体山",
+    "name_en": "Nantaisan"
+  },
+  {
+    "code": "350",
+    "latlon": [ "36.643", "138.536" ],
+    "pointShift":   [ 35,  0],
+    "pointShift18": [ 45, -5],
+    "name_jp": "草津白根山（白根山（湯釜付近））",
+    "name_en": "Kusatsu-Shiranesan (Yugama Area)",
+    "levelOperation": true
+  },
+  {
+    "code": "351",
+    "latlon": [ "36.618", "138.527" ],
+    "pointShift":   [ -125,  5],
+    "pointShift18": [-100, 17],
+    "name_jp": "草津白根山（本白根山）",
+    "name_en": "Kusatsu-Shiranesan (Motoshirane)",
+    "levelOperation": true
+  },
+  {
+    "code": "401",
+    "latlon": [ "35.141", "132.622" ],
+    "name_jp": "三瓶山",
+    "name_en": "Sanbesan"
+  },
+  {
+    "code": "502",
+    "latlon": [ "33.086", "131.249" ],
+    "name_jp": "九重山",
+    "name_en": "Kujusan",
+    "levelOperation": true
+  },
+  {
+    "code": "503",
+    "latlon": [ "32.884", "131.104" ],
+    "name_jp": "阿蘇山",
+    "name_en": "Asosan",
+    "levelOperation": true
+  },
+  {
+    "code": "504",
+    "latlon": [ "32.761", "130.299" ],
+    "name_jp": "雲仙岳",
+    "name_en": "Unzendake",
+    "levelOperation": true
+  },
+  {
+    "code": "505",
+    "latlon": [ "31.934", "130.862" ],
+    "pointShift":   [ -50, -7],
+    "pointShift18": [ -40,  5],
+    "name_jp": "霧島山",
+    "name_en": "Kirishimayama"
+  },
+  {
+    "code": "506",
+    "latlon": [ "31.593", "130.657" ],
+    "pointShift":   [ -7, 0],
+    "pointShift18": [-20, 0],
+    "name_jp": "桜島",
+    "name_en": "Sakurajima",
+    "levelOperation": true
+  },
+  {
+    "code": "507",
+    "latlon": [ "31.18", "130.528" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "開聞岳",
+    "name_en": "Kaimondake"
+  },
+  {
+    "code": "508",
+    "latlon": [ "30.793", "130.305" ],
+    "name_jp": "薩摩硫黄島",
+    "name_en": "Satsuma-Iojima",
+    "levelOperation": true
+  },
+  {
+    "code": "509",
+    "latlon": [ "30.443", "130.217" ],
+    "name_jp": "口永良部島",
+    "name_en": "Kuchinoerabujima",
+    "levelOperation": true
+  },
+  {
+    "code": "510",
+    "latlon": [ "29.859", "129.857" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "中之島",
+    "name_en": "Nakanoshima"
+  },
+  {
+    "code": "511",
+    "latlon": [ "29.638", "129.714" ],
+    "name_jp": "諏訪之瀬島",
+    "name_en": "Suwanosejima",
+    "levelOperation": true
+  },
+  {
+    "code": "512",
+    "latlon": [ "34.449", "131.402" ],
+    "name_jp": "阿武火山群",
+    "name_en": "Abu Volcanoes"
+  },
+  {
+    "code": "513",
+    "latlon": [ "33.287", "131.43" ],
+    "name_jp": "鶴見岳・伽藍岳",
+    "name_en": "Tsurumidake and Garandake",
+    "levelOperation": true
+  },
+  {
+    "code": "514",
+    "latlon": [ "33.282", "131.39" ],
+    "pointShift":   [-22, 0],
+    "pointShift18": [-37, 0],
+    "name_jp": "由布岳",
+    "name_en": "Yufudake"
+  },
+  {
+    "code": "515",
+    "latlon": [ "32.657", "128.849" ],
+    "pointShift":   [-50, 0],
+    "pointShift18": [-75, 0],
+    "name_jp": "福江火山群",
+    "name_en": "Fukue Volcanoes"
+  },
+  {
+    "code": "516",
+    "latlon": [ "31.771", "130.592" ],
+    "pointShift":   [-63, 2],
+    "pointShift18": [-90, 2],
+    "name_jp": "米丸・住吉池",
+    "name_en": "Yonemaru and Sumiyoshiike"
+  },
+  {
+    "code": "517",
+    "latlon": [ "31.663", "130.798" ],
+    "name_jp": "若尊",
+    "name_en": "Wakamiko"
+  },
+  {
+    "code": "518",
+    "latlon": [ "31.213", "130.567" ],
+    "name_jp": "池田・山川",
+    "name_en": "Ikeda and Yamagawa"
+  },
+  {
+    "code": "519",
+    "latlon": [ "29.968", "129.926" ],
+    "name_jp": "口之島",
+    "name_en": "Kuchinoshima"
+  },
+  {
+    "code": "550",
+    "latlon": [ "31.886", "130.91" ],
+    "name_jp": "霧島山（御鉢）",
+    "name_en": "Kirishimayama (Ohachi)",
+    "levelOperation": true
+  },
+  {
+    "code": "551",
+    "latlon": [ "31.909", "130.886" ],
+    "pointShift":   [ -85, -2],
+    "pointShift18": [-115, 10],
+    "name_jp": "霧島山（新燃岳）",
+    "name_en": "Kirishimayama (Shinmoedake)",
+    "levelOperation": true
+  },
+  {
+    "code": "552",
+    "latlon": [ "31.947", "130.854" ],
+    "pointShift":   [-95, -20],
+    "pointShift18": [-95, -20],
+    "name_jp": "霧島山（えびの高原（硫黄山）周辺）",
+    "name_en": "Kirishimayama (Ebino Highland)",
+    "levelOperation": true
+  },
+  {
+    "code": "553",
+    "latlon": [ "31.926", "130.897" ],
+    "pointShift":   [45, -8],
+    "pointShift18": [45, 0],
+    "name_jp": "霧島山（大幡池）",
+    "name_en": "Kirishimayama (Ohataike)",
+    "levelOperation": true
+  },
+  {
+    "code": "601",
+    "latlon": [ "27.881", "128.223" ],
+    "name_jp": "硫黄鳥島",
+    "name_en": "Io-Torishima"
+  },
+  {
+    "code": "602",
+    "latlon": [ "24.567", "123.933" ],
+    "pointShift":   [ 0, -15],
+    "pointShift18": [ 0, -20],
+    "name_jp": "西表島北北東海底火山",
+    "name_en": "Submarine Volcano NNE of Iriomotejima"
+  },
+  {
+    "code": "900",
+    "name_jp": "全国の活火山"
+  },
+  {
+    "code": "901",
+    "name_jp": "その他の活火山",
+    "name_en": "Other active volcano"
+  },
+  {
+    "code": "902",
+    "name_jp": "新たな活火山",
+    "name_en": "New active volcano"
+  }
+]

@@ -170,6 +170,42 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "tsunami-alerts",
+    whatItShows: "The latest bulletin of each NOAA Tsunami Warning Center (Pacific in Honolulu, National in Palmer), pinned at the earthquake it is about: a warning, advisory, watch, threat message or information statement.",
+    method: "Read directly from each centre's Atom feed. The category and the note are the centre's own words. A bulletin stays on the map for 24 hours after it was issued.",
+    confidence: "official",
+    coverage: "The areas the two NOAA centres warn for: the US and Canadian coasts, Hawaii, the US Pacific territories and the Caribbean, and the Pacific basin for international information.",
+    limitations: [
+      "The pin is the earthquake, not the coast at risk: a warning covers coasts that can be thousands of kilometres away. Read the bulletin for which.",
+      "An information statement usually means NO tsunami threat. It is shown because it says a large quake was assessed, not because a wave is coming.",
+      "Other countries' warning centres (Japan, Indonesia, Chile, Australia and others) are not read here; for their own coasts, theirs are the official messages.",
+    ],
+  },
+  {
+    id: "volcano-alerts",
+    whatItShows: "A volcano whose observatory has raised its alert above normal: the US volcanoes (USGS) with their ground-hazard level and aviation colour, and Japan's (JMA) with their Volcanic Alert Level or warning.",
+    method: "Read directly from USGS HANS (the elevated-volcano list) and JMA's eruption warnings in force. The level is the observatory's own; JMA's Japanese wording is translated by a fixed table and kept beside the translation.",
+    confidence: "official",
+    coverage: "Volcanoes monitored by the US observatories (Alaska, Cascades, Hawaii, California, Yellowstone, the Northern Mariana Islands) and by JMA. Not global: Indonesia, the Philippines, Italy, Iceland and Latin America are not read.",
+    limitations: [
+      "USGS and JMA use different scales, and neither is comparable with the other: WATCH is not Level 3.",
+      "A raised level is a statement about unrest or eruption risk, not that an eruption is happening.",
+      "Most of the world's active volcanoes are outside the two networks read here, so a quiet map elsewhere means nothing.",
+    ],
+  },
+  {
+    id: "cems-activations",
+    whatItShows: "A Copernicus Emergency Management Service rapid-mapping activation: a request by a national authority or an EU or UN body for satellite maps of one disaster, pinned at the centre of its mapped areas.",
+    method: "Read directly from the Copernicus EMS Rapid Mapping public list. Open activations are all shown; closed ones for 30 days after they were activated.",
+    confidence: "official",
+    coverage: "Global, wherever an authorised user activated the service. Most activations are in Europe.",
+    limitations: [
+      "An activation means maps were requested, not how severe the disaster is: many large disasters are never activated, and some small ones are.",
+      "The pin is the centre of the mapped areas, which can be far apart; open the activation for its maps.",
+      "Maps arrive hours to days after the activation; 'open' means the work is under way.",
+    ],
+  },
+  {
     id: "fire-active",
     whatItShows: "A thermal anomaly detected from orbit by NASA FIRMS (VIIRS), i.e. something on the ground was hot when a satellite passed over.",
     method: "Measured by satellite radiometer and flagged by NASA's detection algorithm.",
