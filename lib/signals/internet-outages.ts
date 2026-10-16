@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { centroidByIso2 } from "@/lib/signals/country-centroids.data";
+import { iodaRegion } from "@/lib/signals/ioda-regions.data";
 import { degraded, observed } from "@/lib/signals/outcome";
 
 // Internet outages — IODA (Internet Outage Detection & Analysis, Georgia Tech /
@@ -246,6 +247,39 @@ export function normalizeOutages(json: IodaEventsPayload, until: number = payloa
   return out;
 }
 
+/**
+ * Pure: IODA REGION events → one SignalFeature per region with a current outage.
+ *
+ * Sub-national, which the country view cannot be: on 2026-10-16 IODA had current
+ * regional events in Baluchistan, Kotayk and Offaly that no country marker showed.
+ * IODA names a region only by id ("region/3082"), so the place comes from the
+ * committed admin-1 table (scripts/gen-ioda-regions.mjs). The mark is an area: the
+ * anchor is inside the region, not the place of a fault. A region the table lacks
+ * is skipped rather than placed on its country's centroid.
+ */
+export function normalizeRegionOutages(json: IodaEventsPayload, until: number = payloadUntil(json)): SignalFeature[] {
+  const out: SignalFeature[] = [];
+  for (const g of groupOutages(json.data ?? [], until)) {
+    const row = iodaRegion(g.location);
+    if (!row) continue;
+    const [name, iso2, lat, lon] = row;
+    const country = centroidByIso2(iso2)?.name ?? iso2;
+    const id = g.location.slice("region/".length);
+    out.push({
+      id: `ioda-region:${id}`,
+      lat,
+      lon,
+      precision: "area",
+      title: `${g.state === "recovering" ? "Internet outage (recovering)" : "Internet outage"} — ${name}, ${country}`,
+      signalId: "internet-outages",
+      color: "#b91c1c",
+      ts: new Date(g.startedAt * 1000).toISOString(),
+      props: groupProps(g, { region: name, country }),
+    });
+  }
+  return out;
+}
+
 async function fetchEvents(entityType: "country" | "region"): Promise<IodaEventsPayload | null> {
   // 24h back is enough: IODA extends the window server-side (14 days) to return any
   // event still in progress, which is exactly the set the rules above keep.
@@ -265,7 +299,8 @@ async function fetchEvents(entityType: "country" | "region"): Promise<IodaEvents
 
 export const INTERNET_OUTAGES_SOURCE: SignalSource = {
   id: "internet-outages",
-  // One IODA figure for each country, placed on a centroid.
+  // One IODA figure for each country, placed on a centroid. Region events set their
+  // own "area" precision.
   precision: "country",
   label: "Internet outages (IODA)",
   group: "Infrastructure",
@@ -281,9 +316,14 @@ export const INTERNET_OUTAGES_SOURCE: SignalSource = {
   // log-scaled 0–10 magnitude is the same ordering, legibly.
   metric: { field: "magnitude", domain: [0, 10] },
   async fetch() {
-    const json = await fetchEvents("country");
-    if (!json) return degraded("fetch failed");
-    // An empty result here is a real reading: IODA answered, nothing is out now.
-    return observed(normalizeOutages(json));
+    const [countries, regions] = await Promise.all([fetchEvents("country"), fetchEvents("region")]);
+    if (!countries && !regions) return degraded("fetch failed");
+    // An empty result here is a real reading: IODA answered, nothing is out now. One
+    // of the two views failing keeps the other: a country marker is not lost because
+    // the (larger, slower) region request timed out.
+    return observed([
+      ...(countries ? normalizeOutages(countries) : []),
+      ...(regions ? normalizeRegionOutages(regions) : []),
+    ]);
   },
 };

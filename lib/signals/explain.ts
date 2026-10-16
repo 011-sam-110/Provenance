@@ -421,7 +421,7 @@ const EXPLAINERS: LayerExplainer[] = [
     whatItShows: "A country or region where IODA has detected a drop in internet connectivity that is still in progress, or ended within the last two hours (marked recovering).",
     method: "IODA (CAIDA / Georgia Tech) infers outages from independent signals: BGP routing withdrawals, active probing of address blocks, the Merit network telescope and Google traffic. We show only events that are still running or ended in the last two hours, and we drop a probing burst that starts in ten or more places in the same ten minutes unless another signal agrees at that place: that pattern is IODA's prober restarting, not an outage. Severity rises with the number of signals that agree.",
     confidence: "measured",
-    coverage: "Global at country level; sub-national resolution varies a lot.",
+    coverage: "Global at country level, plus IODA's sub-national regions (Natural Earth admin-1, about 4,600 of them). A region mark is placed inside the region, not at the fault.",
     limitations: [
       "Detects reachability from the outside. A national shutdown and a major cable fault look similar; the cause is not in the data.",
       "Small or short outages fall below the detection threshold.",

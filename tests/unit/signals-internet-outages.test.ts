@@ -173,3 +173,45 @@ describe("what the widget prints", () => {
     expect(outageBand(1_000)).toBe("localised");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regions. `ioda-events-region.json` is a REAL capture of the same endpoint with
+// entityType=region (2026-10-16 19:36 UTC), TRIMMED from 813 events to 90: every
+// event that was current or ended within two hours (50), plus the first 40 of the
+// 602 ping-slash24 events in the 2026-10-15 22:20 burst bin.
+// ---------------------------------------------------------------------------
+import regionFixture from "@/tests/fixtures/ioda-events-region.json";
+import { normalizeRegionOutages } from "@/lib/signals/internet-outages";
+import { iodaRegion } from "@/lib/signals/ioda-regions.data";
+
+describe("region outages", () => {
+  const regions = normalizeRegionOutages(regionFixture as IodaEventsPayload);
+
+  it("places each current regional event in its region, as an area", () => {
+    expect(regions).toHaveLength(46);
+    expect(regions.every((f) => f.id.startsWith("ioda-region:") && f.precision === "area")).toBe(true);
+    const balu = regions.find((f) => f.id === "ioda-region:3082")!;
+    expect(balu.title).toBe("Internet outage — Baluchistan, Pakistan");
+    expect(balu.props?.region).toBe("Baluchistan");
+    expect(balu.props?.country).toBe("Pakistan");
+    // Inside Balochistan, not on Pakistan's country centroid (30, 70).
+    expect(balu.lat).toBeCloseTo(28.32, 1);
+    expect(balu.lon).toBeCloseTo(65.87, 1);
+  });
+
+  it("drops the 22:20 burst bin here too", () => {
+    const burstStart = 1792102800;
+    const fromBurst = regions.filter((f) => f.props?.startedAt === new Date(burstStart * 1000).toISOString());
+    expect(fromBurst).toEqual([]);
+  });
+
+  it("never gives a region the country outline to shade", () => {
+    expect(regions.every((f) => f.countryIso3 === undefined)).toBe(true);
+  });
+
+  it("skips a region id the table does not hold", () => {
+    const until = 1_800_000_000;
+    expect(iodaRegion("region/999999")).toBeUndefined();
+    expect(normalizeRegionOutages({ data: [ev("region/999999", "bgp", until - 60, 60)] }, until)).toEqual([]);
+  });
+});
