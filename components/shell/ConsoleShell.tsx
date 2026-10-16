@@ -53,8 +53,7 @@ import { startNotifyRunner } from "@/lib/notify/runner";
 import { readNotifyFeed } from "@/lib/notify/sources";
 import { trackStore } from "@/lib/planes/track";
 import { pinsStore } from "@/lib/map/pins";
-import { applyPreset, presetById, DEFAULT_PRESET_ID } from "@/lib/console/presets";
-import { decodeLayout } from "@/lib/console/share";
+import { isFirstRun, seedBoard } from "@/lib/console/bootSeed";
 import "@/lib/console/widgets";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { actionFor, chordOf, keymapStore } from "@/lib/shell/keymap";
@@ -96,13 +95,18 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // reload from overwriting the edited area with the variant's layers: bootstrap
     // applies a variant through layersStore/signalsStore, and those wrote whichever
     // source context the rail was pointed at. Ordering alone was never enough —
-    // `applyPreset(DEFAULT_PRESET_ID)` below runs AFTER hydrate and fires on every
-    // boot while the landing board carries no widgets, so the area absorbed the
-    // board's set instead. Both paths now go through layersStore.applyWorld /
-    // signalsStore.applyWorld, which write World by construction. The order is kept
-    // because a variant should be on the map before the areas layer over it, not
-    // because it is holding a bug shut.
-    variantStore.bootstrap(new URLSearchParams(window.location.search));
+    // the board seed at the end of this effect runs AFTER hydrate, and until
+    // 2026-10-16 it fired on every boot while the landing board carried no widgets,
+    // so the area absorbed the board's set instead. Both paths now go through
+    // layersStore.applyWorld / signalsStore.applyWorld, which write World by
+    // construction. The order is kept because a variant should be on the map before
+    // the areas layer over it, not because it is holding a bug shut.
+    //
+    // bootstrap is also the step that restores World's saved toggles and a link's
+    // `?sig=`, and it reports whether this browser had saved state at all. The board
+    // seed at the end of this effect needs that answer: see lib/console/bootSeed.ts.
+    const params = new URLSearchParams(window.location.search);
+    const restoredVariant = variantStore.bootstrap(params);
     inspectorStore.hydrate();
     watchlistStore.hydrate();
     timeWindowStore.hydrate();
@@ -131,20 +135,14 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     );
     trackStore.hydrate();
     pinsStore.hydrate();
-    const params = new URLSearchParams(window.location.search);
-    const c = params.get("c");
-    // `?preset=<id>` opens the console on a named board. `?c=` outranks it: a saved
-    // layout is a complete workspace someone chose to share, a preset is only a
-    // starting point, so a link carrying both means the layout.
-    //
-    // VALIDATED AGAINST THE REGISTRY, never applied as given — this arrives from a URL
-    // like every other parameter here, and applyPreset on an unknown id would be a
-    // silent no-op that leaves the console on whatever the previous visit left behind.
-    // An unrecognised id falls through to the first-run seed instead.
-    const presetParam = params.get("preset");
-    if (c) { const l = decodeLayout(c); if (l) shellLayoutStore.replace(l); }
-    else if (presetParam && presetById(presetParam)) applyPreset(presetParam, { track: false });
-    else if (shellLayoutStore.get().widgets.length === 0) applyPreset(DEFAULT_PRESET_ID, { track: false }); // first-run seed
+    // THE BOARD STEP: `?c=`, then `?preset=`, then the first-run seed. It lives in
+    // lib/console/bootSeed.ts so it can be tested without React. The seed fires only
+    // on a TRUE first run (nothing saved by the variant spine, no board ever opened).
+    // It used to fire whenever the board had no widgets, which the Globe board never
+    // has, so every reload on Globe laid the board's map over the saved toggles and
+    // over a `?sig=` link's layers. activePresetStore has hydrated above, so its value
+    // here is the saved board, not a default.
+    seedBoard(params, isFirstRun({ restoredVariant, activeBoard: activePresetStore.get() }));
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
     // THE GUIDED TOUR IS GONE, and with it this effect's only cleanup.

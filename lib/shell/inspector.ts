@@ -352,9 +352,11 @@ export function replaceActive(state: InspectorState, next: SourceSet): Inspector
  *
  * Seen in the browser rather than reasoned about: draw an area, reload, and an area
  * created with `sources: {}` comes back holding a copy of World's whole set. The
- * path is ConsoleShell's first-run seed, `applyPreset(DEFAULT_PRESET_ID)`, which
- * fires on EVERY boot while the landing board carries no widgets, and which runs
- * AFTER inspectorStore.hydrate() has restored which area was being edited.
+ * path was ConsoleShell's first-run seed, `applyPreset(DEFAULT_PRESET_ID)`, which
+ * fired on EVERY boot while the landing board carried no widgets, and which runs
+ * AFTER inspectorStore.hydrate() has restored which area was being edited. (The same
+ * seed also wiped World's saved toggles on every reload; since 2026-10-16 it runs
+ * only on a true first run. See lib/console/bootSeed.ts.)
  *
  * Only whole-set writes move. A per-key write (writeActive, and so every toggle,
  * and applyMonitor, which drives layersStore.set key by key) still lands on the
