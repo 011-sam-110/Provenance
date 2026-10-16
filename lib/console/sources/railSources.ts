@@ -56,7 +56,7 @@ export const EXTRA_MAP_LAYER_IDS: readonly string[] = EXTRA_MAP_LAYERS.map((l) =
  * to find out WHAT this app can show them, so a widget missing from it is a
  * widget most people never discover.
  *
- * Group "Intel" puts it beside News coverage, the GDELT layer, under "Conflict &
+ * Group "Intel" puts it beside Headline places, under "Conflict &
  * security" — an existing group, so the rail gains a row and not a heading, and
  * the section guard in tests/unit/console-source-sections.test.ts stays quiet.
  */

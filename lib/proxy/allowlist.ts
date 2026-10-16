@@ -119,8 +119,6 @@ const RULES: Rule[] = [
   { host: "download.data.grandlyon.com", prefix: "/files/rdata/pvo_patrimoine_voirie.pvocameracriter/" },
   // Lithuania, Via Lietuva: the camera id is a query parameter.
   { host: "eismoinfo.lt", prefix: "/eismoinfo-backend-v2/image-provider/camera/last" },
-  // Hungary, Magyar Kozut (Utinform).
-  { host: "cdnuiwebcams.utinform.hu", prefix: "/webcamimages/", suffix: ".jpg" },
   // Hong Kong, Transport Department.
   { host: "tdcctv.data.one.gov.hk", prefix: "/", suffix: ".JPG" },
   // Queensland, TMR (traffic and flood cameras share the host).

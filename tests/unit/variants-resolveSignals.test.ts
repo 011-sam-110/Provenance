@@ -16,14 +16,14 @@ describe("resolveSignals", () => {
   });
   it("selects a group by name", () => {
     const r = resolveSignals({ groups: ["Cyber threat"] });
-    expect(r["cyber-c2"]).toBe(true);
+    expect(r["cyber-attackers"]).toBe(true);
     expect(r["cyber-ransomware"]).toBe(true);
     expect(r["earthquakes"]).toBeUndefined();
   });
   it("unions ids with groups then applies exclude", () => {
-    const r = resolveSignals({ groups: ["Cyber threat"], ids: ["internet-outages"], exclude: ["cyber-c2"] });
+    const r = resolveSignals({ groups: ["Cyber threat"], ids: ["internet-outages"], exclude: ["cyber-attackers"] });
     expect(r["internet-outages"]).toBe(true);
     expect(r["cyber-ransomware"]).toBe(true);
-    expect(r["cyber-c2"]).toBeUndefined();
+    expect(r["cyber-attackers"]).toBeUndefined();
   });
 });

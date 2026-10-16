@@ -6,6 +6,7 @@ import { clampRailSize, railsFromRects } from "@/lib/terminal/rails";
 import { clampRect } from "@/lib/terminal/layoutGrid";
 import { seedWallRects } from "@/lib/console/reducers";
 import { sanitizeCamslotConfig } from "@/lib/console/widgets/camslot.model";
+import { retiredSignalWidgetType } from "@/lib/layerAliases";
 
 const SEGMENTS: SegmentId[] = ["left", "right", "bottom"];
 const STAGES: StageId[] = ["map3d", "map2d", "clock"];
@@ -122,7 +123,11 @@ export function sanitizeLayout(raw: unknown): ShellLayout | null {
     // `type` and not `o.type` is passed to readConfig below, and that is the
     // load-bearing half: it routes the old `{}` through sanitizeCamslotConfig, so a
     // migrated tile IS a freshly-added one rather than merely resembling one.
-    const type = RETIRED_TYPES[o.type] ?? o.type;
+    // A card of a retired SIGNAL layer goes the same way: to its replacement's card,
+    // or, when the layer was removed with nothing in its place, out of the board. A
+    // hole is the one outcome that is never right (lib/layerAliases.ts).
+    const type = retiredSignalWidgetType(RETIRED_TYPES[o.type] ?? o.type);
+    if (type === null) continue;
     parsed.push({
       id: o.id,
       type,

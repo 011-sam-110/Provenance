@@ -8,10 +8,10 @@
 // module reports exactly that and no more.
 //
 // The weakness is deliberate, and it is the whole reason this layer can ship. Its
-// neighbour lib/signals/news-coverage.ts makes the STRONG claim — a language model read
-// this place out of the article body as the place the thing happened — and is switched
-// off pending a labelled accuracy review, because that claim can be wrong in ways no
-// reader can see. This one cannot be wrong in a way a reader cannot see: the pin
+// former neighbour `news-coverage` made the STRONG claim — a language model read this
+// place out of the article body as the place the thing happened — and was held back
+// pending a labelled accuracy review, because that claim can be wrong in ways no reader
+// can see. It was removed on 2026-10-17. This one cannot be wrong in a way a reader cannot see: the pin
 // publishes the headline, and the headline either contains the name or it does not. A
 // bad match is visible on the card, by anyone, with no access to the article.
 //

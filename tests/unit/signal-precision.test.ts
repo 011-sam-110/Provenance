@@ -125,11 +125,11 @@ describe("every registered layer", () => {
     // A layer that leaves this list must leave it on purpose.
     // conflict and protests left on purpose on 2026-10-16: they stopped being GDELT
     // country totals and now carry events and alerts, each feature at its own level
-    // (tests/unit/signals-conflict.test.ts holds that).
+    // (tests/unit/signals-conflict.test.ts holds that). cyber-c2 left on 2026-10-17,
+    // when the layer was removed (lib/layerAliases.ts).
     const perCountry = [
       "displacement",
       "internet-outages",
-      "cyber-c2",
       "cyber-ransomware",
       "reliefweb",
       "instability",

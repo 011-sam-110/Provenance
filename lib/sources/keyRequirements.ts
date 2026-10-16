@@ -182,22 +182,6 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
       "Self-issued: a random string of 32 characters or more, set identically here and in ~/.config/provenance-sources/sources.env on the relay host. A shared HMAC secret, separate from NEWS_INGEST_SECRET on purpose, so either can be rotated alone.",
   },
   {
-    // "required", because the definition here is "dead without it" and that is
-    // literally true: with no NEWS_COVERAGE_PINS the adapter returns before it reads
-    // anything. Typed as an "enhancement" first, which resolved to `upgradable`, which
-    // earns no badge — so the board showed a red DOWN chip over the words "News
-    // coverage unavailable." for a layer that is deliberately held and working exactly
-    // as designed. The state feeds the dormant flag on the freshness chip too.
-    kind: "required",
-    id: "news-coverage",
-    label: "News coverage pins",
-    env: ["NEWS_COVERAGE_PINS"],
-    degrades:
-      "The layer is registered and documented but publishes no pins. Stories pushed by the scraper host still reach the news rail and still cluster; they are simply not placed on the map. Nothing else changes.",
-    obtain:
-      "NOT A CREDENTIAL - a review gate, and the only entry here that nobody issues because there is nothing to issue. Pins are held until a labelled sample of extracted places passes the agreed accuracy bar (at most 3 wrong in 153). The two known failure modes are label faults rather than geocoding faults - a line saying where someone spoke to a reporter read as the event place, and a scheduled hearing read as one that had happened - so a correct coordinate does not clear them and only labelling does. Set it to any value once that sample has been read.",
-  },
-  {
     kind: "enhancement",
     id: "markets-equities",
     label: "Real-time equities",

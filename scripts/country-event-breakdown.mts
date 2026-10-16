@@ -328,7 +328,7 @@ function resolveCountry(f: SignalFeature): Resolved | undefined {
     const v = s(k).toUpperCase();
     if (v.length === 3 && byIso3.has(v)) return { ...byIso3.get(v)!, how: "iso" };
   }
-  // an id like "cyber-c2:RU" / "displacement:SYR"
+  // an id like "cyber-ransomware:RU" / "displacement:SYR"
   const idTail = f.id.split(":").pop() ?? "";
   if (/^[A-Z]{2}$/.test(idTail) && byIso2.has(idTail)) return { ...byIso2.get(idTail)!, how: "iso" };
   if (/^[A-Z]{3}$/.test(idTail) && byIso3.has(idTail)) return { ...byIso3.get(idTail)!, how: "iso" };

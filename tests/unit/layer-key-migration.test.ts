@@ -6,6 +6,7 @@ import {
   RETIRED_SIGNAL_IDS,
   expandRetiredSignalIds,
   expandRetiredSignalSet,
+  retiredSignalWidgetType,
 } from "@/lib/layerAliases";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { decodeViewState } from "@/lib/share/url";
@@ -117,4 +118,30 @@ test("a ?sig= link holding emsc-quakes opens earthquakes, once", () => {
   expect(decodeViewState(new URLSearchParams("sig=emsc-quakes,gdacs")).sig).toEqual(["earthquakes", "gdacs"]);
   expect(decodeViewState(new URLSearchParams("sig=emsc-quakes,earthquakes")).sig).toEqual(["earthquakes"]);
   expect(expandRetiredSignalIds(["a", "emsc-quakes", "earthquakes"])).toEqual(["a", "earthquakes"]);
+});
+
+// ── Signal ids removed with no replacement ───────────────────────────────────
+//
+// `cyber-c2` and `news-coverage` were removed on 2026-10-17: production had no working
+// feed for either. An empty replacement list drops the id and keeps everything else.
+
+test("a removed signal id is dropped from a saved context, and the rest survives", () => {
+  const s = coerceState({ world: { "cyber-c2": true, "news-coverage": true, gdacs: true }, areas: [], editing: null });
+  expect(s.world).toEqual({ gdacs: true });
+  expect(expandRetiredSignalSet({ "cyber-c2": true, "news-coverage": false, gdacs: false })).toEqual({ gdacs: false });
+});
+
+test("a ?sig= link naming a removed layer opens the layers it still names", () => {
+  expect(decodeViewState(new URLSearchParams("sig=cyber-c2,gdacs,news-coverage")).sig).toEqual(["gdacs"]);
+  expect(expandRetiredSignalIds(["news-coverage", "cyber-c2"])).toEqual([]);
+});
+
+test("the removed ids are in the table with no replacement", () => {
+  expect(RETIRED_SIGNAL_IDS["cyber-c2"]).toEqual([]);
+  expect(RETIRED_SIGNAL_IDS["news-coverage"]).toEqual([]);
+  expect(retiredSignalWidgetType("signal:cyber-c2")).toBeNull();
+  expect(retiredSignalWidgetType("signal:news-coverage")).toBeNull();
+  expect(retiredSignalWidgetType("signal:emsc-quakes")).toBe("signal:earthquakes");
+  expect(retiredSignalWidgetType("signal:gdacs")).toBe("signal:gdacs");
+  expect(retiredSignalWidgetType("headlines")).toBe("headlines");
 });

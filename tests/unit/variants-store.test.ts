@@ -22,8 +22,8 @@ describe("variantStore", () => {
     expect(variantStore.get().activeId).toBe("explore");
   });
   it("still seeds signal divergence from the URL", () => {
-    variantStore.bootstrap(new URLSearchParams("sig=cyber-c2"));
-    expect(signalsStore.isOn("cyber-c2")).toBe(true);
+    variantStore.bootstrap(new URLSearchParams("sig=cyber-ransomware"));
+    expect(signalsStore.isOn("cyber-ransomware")).toBe(true);
   });
   // The fallback used to be reachable through `?v=does-not-exist`. With the board out
   // of the URL, PERSISTED state is the only way to hold an id that no longer resolves

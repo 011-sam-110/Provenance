@@ -10,7 +10,6 @@ import { normalizeVegvesen } from "@/lib/sources/vegvesen";
 import { normalizeDgt, parseDgt } from "@/lib/sources/dgt";
 import { normalizeLyon } from "@/lib/sources/lyon";
 import { normalizeEismoinfo } from "@/lib/sources/eismoinfo";
-import { normalizeUtinform } from "@/lib/sources/utinform";
 import { normalizeRoadsMk, parseMkMarkers, parseMkPopup } from "@/lib/sources/roads-mk";
 import { normalizeHktd, parseHktd } from "@/lib/sources/hktd";
 import { normalizeQld, QLDTRAFFIC_SOURCE } from "@/lib/sources/qldtraffic";
@@ -122,24 +121,6 @@ describe("Lithuania, eismoinfo.lt", () => {
   });
   it("drops a camera the layer cannot place", () => {
     expect(normalizeEismoinfo(json("eismoinfo-table.json"), [])).toEqual([]);
-  });
-});
-
-describe("Hungary, Útinform", () => {
-  it("flattens places to one camera per view and skips unpublished places", () => {
-    const body = json<{ features: { properties: { webcams: { lastImage: number }[] } }[] }>("utinform.json");
-    const now = Math.max(...body.features.flatMap((f) => f.properties.webcams.map((w) => w.lastImage))) + 60_000;
-    const cams = normalizeUtinform(body as never, now);
-    common(cams, "utinform-hu", "HU");
-    // mcs217 has four views and mcs182 two; mcs296 is unpublished.
-    expect(cams).toHaveLength(6);
-    expect(cams.some((c) => c.id.startsWith("utinform-hu:mcs296"))).toBe(false);
-    const c = cams.find((x) => x.id === "utinform-hu:mcs217_3")!;
-    expect(c.name).toBe("Püspökladány");
-    expect(c.direction).toBe("towards Budapest");
-    expect(c.imageUrl).toBe("https://cdnuiwebcams.utinform.hu/webcamimages/mcs217_3.jpg");
-    expect(cams.every((x) => x.available)).toBe(true);
-    expect(normalizeUtinform(body as never, now + 2 * 3_600_000).some((x) => x.available)).toBe(false);
   });
 });
 

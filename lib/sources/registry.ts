@@ -33,7 +33,6 @@ import { fetchRegistry as fetchVegvesen } from "@/lib/sources/vegvesen";
 import { fetchRegistry as fetchDgt } from "@/lib/sources/dgt";
 import { fetchRegistry as fetchLyon } from "@/lib/sources/lyon";
 import { fetchRegistry as fetchEismoinfo } from "@/lib/sources/eismoinfo";
-import { fetchRegistry as fetchUtinform } from "@/lib/sources/utinform";
 import { fetchRegistry as fetchDarsSi } from "@/lib/sources/dars-si";
 import { fetchRegistry as fetchRoadsMk } from "@/lib/sources/roads-mk";
 import { fetchRegistry as fetchHktd } from "@/lib/sources/hktd";
@@ -241,7 +240,6 @@ const SOURCES: CameraFeed[] = [
   { key: "dgt", fetch: fetchDgt },
   { key: "lyon-criter", fetch: fetchLyon },
   { key: "eismoinfo", fetch: fetchEismoinfo },
-  { key: "utinform-hu", fetch: fetchUtinform },
   { key: "dars-si", fetch: fetchDarsSi, keyId: "cams-dars-si" },
   { key: "roads-mk", fetch: fetchRoadsMk },
   { key: "hktd", fetch: fetchHktd },

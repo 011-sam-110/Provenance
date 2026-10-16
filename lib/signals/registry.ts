@@ -56,7 +56,6 @@ import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
 import { US_CITY_CRIME_SOURCE } from "@/lib/signals/crime-us";
-import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
 import { CLOUD_STATUS_SOURCE } from "@/lib/signals/cloud-status";
 import { CYBER_RANSOMWARE_SOURCE } from "@/lib/signals/cyber-ransomware";
 import { CYBER_DISCLOSURES_SOURCE } from "@/lib/signals/cyber-disclosures";
@@ -78,7 +77,6 @@ import { CEMS_ACTIVATIONS_SOURCE } from "@/lib/signals/cems-activations";
 import { WEATHER_WARNINGS_SOURCE } from "@/lib/signals/weather-warnings";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
-import { NEWS_COVERAGE_SOURCE } from "@/lib/signals/news-coverage";
 import { HEADLINE_PLACES_SOURCE } from "@/lib/signals/headline-places";
 
 /** Every registered signal layer, in rail display order. */
@@ -123,12 +121,11 @@ export const SIGNALS: SignalSource[] = [
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
   // Intel (UCDP verified events, U.S. Embassy alerts, UK and Canadian travel advice)
   CONFLICT_SOURCE,
-  // Stories pushed by the NewsScraper host, placed by name through Photon. Dormant
-  // until the first push and after every restart — see lib/signals/news-coverage.ts.
-  NEWS_COVERAGE_SOURCE,
   // The World Headlines stream, pinned at the places its headlines NAME. Reads the same
-  // cached feed /api/news serves, so it costs the publishers nothing. A far weaker claim
-  // than the line above and deliberately so — see lib/signals/headline-places.ts.
+  // cached feed /api/news serves, so it costs the publishers nothing. It makes a weak
+  // claim on purpose — see lib/signals/headline-places.ts. `news-coverage`, the stronger
+  // claim built from the NewsScraper pushes, was removed on 2026-10-17 (its pins were
+  // held back pending an accuracy review); lib/layerAliases.ts drops its id.
   HEADLINE_PLACES_SOURCE,
   UKRAINE_ALERTS_SOURCE,
   PROTESTS_SOURCE,
@@ -137,8 +134,9 @@ export const SIGNALS: SignalSource[] = [
   AIR_QUALITY_STATIONS_SOURCE, // real OpenAQ station PM2.5 (key-gated: OPENAQ_API_KEY)
   UK_CRIME_SOURCE,
   US_CITY_CRIME_SOURCE, // police departments' own portals, last 7 days, block-level (keyless)
-  // Cyber threat (keyless abuse.ch + Ransomware.live, country-aggregated)
-  CYBER_C2_SOURCE,
+  // Cyber threat (keyless Ransomware.live, country-aggregated). abuse.ch Feodo Tracker's
+  // botnet C2 layer (`cyber-c2`) was removed on 2026-10-17: the dataset has listed no
+  // current C2 since 2026-03. lib/layerAliases.ts drops its id.
   CYBER_RANSOMWARE_SOURCE,
   CYBER_DISCLOSURES_SOURCE, // incidents the victims confirmed: SEC 8-K Item 1.05 + Washington AG (keyless, US only)
   CYBER_ATTACKERS_SOURCE, // SANS ISC DShield top 20 attacking /24s, by registered country (keyless)

@@ -3,9 +3,9 @@ import { encodeViewState, decodeViewState, type ViewState } from "@/lib/share/ur
 
 describe("url signal params", () => {
   it("round-trips sig", () => {
-    const qs = encodeViewState({ sig: ["earthquakes", "cyber-c2"] });
+    const qs = encodeViewState({ sig: ["earthquakes", "cyber-ransomware"] });
     const back = decodeViewState(new URLSearchParams(qs));
-    expect(back.sig).toEqual(["earthquakes", "cyber-c2"]);
+    expect(back.sig).toEqual(["earthquakes", "cyber-ransomware"]);
   });
   it("drops unknown signal ids", () => {
     const back = decodeViewState(new URLSearchParams("sig=earthquakes,not-a-signal"));

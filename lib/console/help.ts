@@ -73,7 +73,7 @@ const WIDGET_EXPLAINERS: WidgetExplainer[] = [
     limitations: [
       "\"Abnormal\" here means high on its own layer's scale, which is not the same as important. A strong earthquake in open ocean outranks a moderate one under a city, because nothing in this ranking knows about people.",
       "It ranks across layers that share no unit. A Kp index, an earthquake magnitude and a 0–100 country score are all squashed onto 0–1 and compared with each other; 0.8 from two different layers is not the same thing.",
-      "It scans eight layers out of the 37 on this map. Conflict, protests, ransomware, cyber command-and-control, displacement and everything else are never considered, so a quiet panel is not a quiet map.",
+      "It scans eight layers out of the 37 on this map. Conflict, protests, ransomware, displacement and everything else are never considered, so a quiet panel is not a quiet map.",
       "A layer whose upstream is dark simply contributes nothing to the ranking. The freshness chip reports how many of the eight answered; the list itself gives no sign that one is missing.",
       "Items carrying neither a metric nor a magnitude score zero and can never surface, however serious they are.",
     ],
@@ -439,7 +439,7 @@ const GROUP_BLURB: Record<string, string> = {
   Conflict: "Armed-conflict and security incidents, plotted as they're reported.",
   Environment: "Environmental conditions and stress — air quality, wildfires and climate signals.",
   "Civic safety": "Reported civic-safety and policing incidents (coverage is region-specific).",
-  "Cyber threat": "Cyber-threat activity — command-and-control, ransomware and network abuse in the open record.",
+  "Cyber threat": "Cyber-threat activity — ransomware claims, disclosed incidents and attacking networks in the open record.",
   "Human cost": "The human cost of crises — displacement and humanitarian need.",
   Military: "Military movements and activity visible in open, keyless feeds.",
   Maritime: "Maritime traffic and where the world's shipping chokepoints are congesting.",

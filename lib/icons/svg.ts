@@ -318,7 +318,6 @@ export const SIGNAL_ICON: Record<string, IconKey> = {
   conflict: "sig-conflict",
   acled: "sig-conflict",
   protests: "sig-protest",
-  "cyber-c2": "sig-cyber",
   "cyber-ransomware": "sig-cyber",
   "cyber-disclosures": "sig-cyber",
   "cyber-attackers": "sig-cyber",

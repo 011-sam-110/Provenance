@@ -125,7 +125,6 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   },
   "air-quality-stations": { label: "OpenAQ", url: "https://openaq.org/" },
   crime: { label: "data.police.uk", url: "https://data.police.uk/" },
-  "cyber-c2": { label: "abuse.ch", url: "https://feodotracker.abuse.ch/" },
   "cyber-ransomware": { label: "Ransomware.live", url: "https://www.ransomware.live/" },
   // UNHCR's dataset terms (clause 4) ask for a link to the terms themselves.
   displacement: {
@@ -168,16 +167,6 @@ export const RECORD_HOST_PROVIDERS: Record<string, Provider> = {
  * providers. Shown as multiple provider links + a "derived estimate" flag.
  */
 export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
-  // News coverage is composite because a pin is two upstreams stacked: a publisher
-  // wrote the story and OpenStreetMap supplied the coordinate for the name a model
-  // read out of it. There is no single page that stands behind a pin, and the
-  // "derived estimate" flag a composite carries is exactly the right claim about a
-  // LOCATION arrived at that way. Individual features carry a `link` to the article,
-  // which is preferred over this fallback wherever one exists.
-  "news-coverage": [
-    { label: "Photon (Komoot)", url: "https://photon.komoot.io/" },
-    { label: "OpenStreetMap", url: "https://www.openstreetmap.org/copyright" },
-  ],
   // No geocoder and no upstream of its own: the coordinates are committed tables in this
   // repo and the headlines are the publishers'. The dataset the centroids were generated
   // from is credited because "a table in our repo" is not a source a reader can check.

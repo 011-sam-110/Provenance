@@ -56,7 +56,6 @@ vi.mock("@/lib/sources/vegvesen", () => ({ fetchRegistry: () => feeds.run("vegve
 vi.mock("@/lib/sources/dgt", () => ({ fetchRegistry: () => feeds.run("dgt") }));
 vi.mock("@/lib/sources/lyon", () => ({ fetchRegistry: () => feeds.run("lyon-criter") }));
 vi.mock("@/lib/sources/eismoinfo", () => ({ fetchRegistry: () => feeds.run("eismoinfo") }));
-vi.mock("@/lib/sources/utinform", () => ({ fetchRegistry: () => feeds.run("utinform-hu") }));
 vi.mock("@/lib/sources/dars-si", () => ({ fetchRegistry: () => feeds.run("dars-si") }));
 vi.mock("@/lib/sources/roads-mk", () => ({ fetchRegistry: () => feeds.run("roads-mk") }));
 vi.mock("@/lib/sources/hktd", () => ({ fetchRegistry: () => feeds.run("hktd") }));
@@ -82,7 +81,7 @@ const KEYS = [
   "wsdot",
   "vdot",
   "tamar", "toronto", "calgary", "vancouver", "vegvesen", "dgt", "lyon-criter",
-  "eismoinfo", "utinform-hu", "roads-mk", "hktd", "qldtraffic", "qldtraffic-flood",
+  "eismoinfo", "roads-mk", "hktd", "qldtraffic", "qldtraffic-flood",
   "livetraffic-nsw", "tdx-thb", "bellingen", "usgs-nims", "alertcalifornia", "avo",
 ];
 

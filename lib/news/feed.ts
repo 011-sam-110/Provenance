@@ -12,7 +12,7 @@
 // publisher and the Telegram channel would have been fetched TWICE per cycle, the two
 // surfaces would have disagreed about what the news was, and nothing would have looked
 // broken. The cache therefore hangs off globalThis under a Symbol.for key — the same
-// pattern, for the same reason, as lib/news/scrapedStore.ts and lib/news/places.ts.
+// pattern, for the same reason, as lib/news/scrapedStore.ts.
 //
 // This is a MOVE, not a rewrite. The feed list, the timeouts, the dormant-safe
 // behaviour and the last-good fallback are the route's, unchanged, with their reasoning
