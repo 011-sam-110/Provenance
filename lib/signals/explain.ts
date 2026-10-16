@@ -316,17 +316,17 @@ const EXPLAINERS: LayerExplainer[] = [
   {
     id: "ukraineAlerts",
     whatItShows:
-      "Which Ukrainian oblasts currently have an air-raid alert active. A warning to take shelter — not a report that anything was struck.",
+      "Which Ukrainian oblasts have an air-raid alert active now, for the whole oblast or for named raions and hromadas inside it. A warning to take shelter — not a report that anything was struck.",
     method:
-      "Read directly from the oblast alert state alerts.com.ua publishes; the marker is placed on the oblast's main city because the feed carries no geometry.",
-    confidence: "official",
+      "Read from the alerts.in.ua API, which compiles the official alert announcements and runs its own monitoring. One marker per oblast on its main city, because the marker needs an anchor; the dossier names the areas under alert.",
+    confidence: "reported",
     coverage:
-      "All 25 regions Ukraine's alert system covers (24 oblasts plus Kyiv city). Nothing outside Ukraine, and no sub-oblast detail — an alert covers an area up to about 300 km across.",
+      "The 27 regions of Ukraine's alert system: 24 oblasts, Crimea, Sevastopol and Kyiv city, down to raion and hromada level in the dossier. Nothing outside Ukraine. Needs a free alerts.in.ua token; without one the layer is unavailable.",
     limitations: [
-      "An alert is a warning, not an incident. Most alerts end with nothing happening at any given point inside the oblast, and the layer can never say where something landed.",
-      "The dot marks the oblast's administrative centre, which is an anchor and not a location. Reading it as the place under threat is wrong by up to a few hundred kilometres.",
-      "Occupied oblasts can sit in a permanently-alerted state — Luhansk has not cleared since October 2023 — so those are labelled as standing conditions rather than fresh warnings.",
-      "This is a public mirror of the alert state, not the government's own API, which requires an issued key. It can lag or drop out, and a stale read would look like an all-clear; the layer serves its last-good reading rather than an empty map for that reason.",
+      "An alert is a warning, not an incident. Most alerts end with nothing happening at any given point inside the area, and the layer can never say where something landed.",
+      "The dot marks the oblast's main city, which is an anchor and not a location. A partial alert names its raions and hromadas in the dossier; the map does not draw them separately yet.",
+      "Occupied regions can sit in a permanently-alerted state — Luhansk since 2022, Crimea — so those are labelled as standing conditions rather than fresh warnings.",
+      "alerts.in.ua is a volunteer civil-defence monitor, not the government's own system (api.ukrainealarm.com needs an issued key). It can lag or drop out; the layer then serves its last good reading, labelled, rather than an empty map that would read as all-clear.",
     ],
   },
   {

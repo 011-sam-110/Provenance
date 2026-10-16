@@ -47,6 +47,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly), and megawatts offline per US nuclear plant, daily (the keyless NRC report already gives each unit's % power) | Free, instant, email only | `EIA_API_KEY` |
 | 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
 | — | **Ransomware.live PRO** | The supported endpoint for the Ransomware victims layer (the keyless legacy one is compatibility-only) | Free personal key | `RANSOMWARE_LIVE_API_KEY` |
+| — | **alerts.in.ua** | Ukraine air-raid alerts, down to raion and hromada level | Free token (form, 1 to 7 days) | `ALERTS_IN_UA_TOKEN` |
 
 ### Where to get each
 
@@ -319,6 +320,7 @@ ISOC_PULSE_API_KEY=
 EIA_API_KEY=
 BARENTSWATCH_CLIENT_ID=
 BARENTSWATCH_CLIENT_SECRET=
+ALERTS_IN_UA_TOKEN=
 RANSOMWARE_LIVE_API_KEY=
 
 # --- Optional enhancements ---

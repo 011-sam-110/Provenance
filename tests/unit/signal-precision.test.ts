@@ -54,9 +54,9 @@ describe("one real layer for each level", () => {
 
   test("area: a Ukrainian oblast under an alert", () => {
     const payload = JSON.parse(
-      readFileSync(join(process.cwd(), "tests", "fixtures", "ukraine-alerts.states.json"), "utf8"),
+      readFileSync(join(process.cwd(), "tests", "fixtures", "ukraine-alerts.alerts-in-ua.json"), "utf8"),
     ) as unknown;
-    const { features } = normalizeUkraineAlerts(payload, Date.parse("2026-09-08T12:00:00Z"));
+    const { features } = normalizeUkraineAlerts(payload, Date.parse("2026-10-16T18:50:00Z"));
     expect(features.length).toBeGreaterThan(0);
     expect(new Set(levels(features, UKRAINE_ALERTS_SOURCE))).toEqual(new Set(["area"]));
   });

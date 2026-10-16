@@ -132,6 +132,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "Free personal key, no card: a magic-link email sign-up at my.ransomware.live. Sent as the X-API-KEY header.",
   },
+  {
+    kind: "required",
+    id: "ukraineAlerts",
+    label: "Ukraine air-raid alerts",
+    env: ["ALERTS_IN_UA_TOKEN"],
+    degrades:
+      "No air-raid alert state for Ukraine. The layer says it is unavailable rather than showing an empty map, which would read as all-clear.",
+    obtain:
+      "Free token from alerts.in.ua (name, email and a written purpose): alerts.in.ua/api-request.html. Replies take 1 to 7 days. Keep it on the server; their terms require a visible link to alerts.in.ua.",
+  },
   // --- capabilities that are not signal layers ------------------------------
   {
     kind: "required",
