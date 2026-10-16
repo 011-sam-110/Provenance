@@ -193,7 +193,7 @@ const EXPLAINERS: LayerExplainer[] = [
   {
     id: "space-weather",
     whatItShows: "Current space-weather conditions in one pin: the latest Kp (SWPC's 1-minute estimate, with the last official 3-hour block beside it), the NOAA G/R/S storm scales, the GOES X-ray flare class now and its 24-hour peak, the solar wind at L1, and the SWPC alerts and warnings issued in the last 24 hours or still valid.",
-    method: "Kp is derived from a global network of magnetometers: the 1-minute value is SWPC's estimate, the 3-hour block is the official one. Flare classes come from the GOES-18 X-ray sensor, the solar wind from the DSCOVR/ACE monitors at L1, and alerts are issued by NOAA SWPC.",
+    method: "Kp is derived from a global network of magnetometers: the 1-minute value is SWPC's estimate, the 3-hour block is the official one. Flare classes come from the GOES-18 X-ray sensor, the solar wind from the DSCOVR/ACE monitors at L1, and alerts are issued by NOAA SWPC. GFZ Potsdam's Kp and its half-hourly Hp30 ride beside NOAA's numbers as an independent second reading.",
     confidence: "measured",
     coverage: "Planetary — a single global index, not a per-location value. The pin sits at the north geomagnetic pole as an anchor, not as a place where anything was measured.",
     limitations: [

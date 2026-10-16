@@ -42,10 +42,24 @@ export const ALERT_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** GOES flux or solar-wind readings older than this (ms) are not shown as "now". */
 export const READING_MAX_AGE_MS = 60 * 60 * 1000;
 
+// SECOND, INDEPENDENT PRODUCER (2026-10-16). GFZ Potsdam computes the official Kp
+// for IAGA, and its nowcast runs ahead of NOAA's: at 19:47Z on 2026-10-16 GFZ had
+// the 18:00 block (4.333) while NOAA's newest was 15:00. Hp30 is GFZ's half-hourly
+// Kp-like index, so it moves between Kp blocks. Both are CC BY 4.0, which requires
+// the credit in SWPC_ATTRIBUTION below. Optional, like the SWPC extras.
+const GFZ_BASE = "https://kp.gfz.de/app/json/";
+/** GFZ's JSON API asks for an explicit window; 24 h back from now is plenty. */
+export function gfzUrl(index: "Kp" | "Hp30", now: number): string {
+  const iso = (t: number) => new Date(t).toISOString().slice(0, 19) + "Z";
+  return `${GFZ_BASE}?start=${iso(now - 24 * 3_600_000)}&end=${iso(now)}&index=${index}`;
+}
+
 // North geomagnetic pole (≈2025) — the natural anchor for a geomagnetic-status pin.
 const GEOMAG_NORTH: [number, number] = [80.7, -72.7];
 
-export const SWPC_ATTRIBUTION = "Space-weather data © NOAA SWPC";
+// NOAA SWPC products are US Government works (no copyright), so no "©". GFZ's
+// CC BY 4.0 licence requires its credit wherever its numbers are shown.
+export const SWPC_ATTRIBUTION = "Space-weather data: NOAA SWPC · Kp/Hp30 cross-check: GFZ Potsdam, CC BY 4.0";
 
 interface KpRow {
   time_tag?: string;
@@ -79,6 +93,13 @@ interface MagRow {
   bz_gsm?: number | null;
   time_tag?: string;
 }
+/** GFZ JSON: parallel arrays of interval starts and values, keyed by the index name. */
+export interface GfzSeries {
+  datetime?: string[];
+  Kp?: (number | null)[];
+  Hp30?: (number | null)[];
+  status?: string[];
+}
 interface Kp1mRow {
   time_tag?: string;
   kp_index?: number;
@@ -99,6 +120,10 @@ export interface SpaceWeatherInput {
   wind?: WindRow[];
   /** SWPC interplanetary magnetic field summary (one row). */
   mag?: MagRow[];
+  /** GFZ Potsdam Kp series (3-hour blocks). */
+  gfzKp?: GfzSeries;
+  /** GFZ Potsdam Hp30 series (30-minute intervals). */
+  gfzHp30?: GfzSeries;
   /** Clock for the staleness checks (default: no check). Tests pin it. */
   now?: number;
 }
@@ -209,6 +234,21 @@ export function activeAlerts(rows: AlertRow[], now: number): SwpcAlert[] {
   return out.sort((a, b) => Date.parse(b.issued) - Date.parse(a.issued));
 }
 
+/** Pure: the newest finite value of a GFZ series and the start of its interval. */
+export function latestGfz(series: GfzSeries | undefined, index: "Kp" | "Hp30"): { value: number; start: string; status?: string } | undefined {
+  const times = series?.datetime ?? [];
+  const values = series?.[index] ?? [];
+  for (let i = Math.min(times.length, values.length) - 1; i >= 0; i -= 1) {
+    const v = values[i];
+    const start = swpcIso(times[i]);
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0 && start) {
+      const status = series?.status?.[i];
+      return { value: Number(v.toFixed(2)), start, ...(status ? { status } : {}) };
+    }
+  }
+  return undefined;
+}
+
 export interface SolarWindSummary {
   solarWindKms?: number;
   bzNt?: number;
@@ -289,6 +329,8 @@ export function normalizeSpaceWeather(input: SpaceWeatherInput): SignalFeature[]
   const alerts = input.alerts ? activeAlerts(input.alerts, input.now ?? Date.now()) : [];
   const wind = summarizeSolarWind(input.wind, input.mag, input.now);
   const r24 = xr.peakFlux != null ? radioBlackoutScale(xr.peakFlux) : null;
+  const gfzKp = latestGfz(input.gfzKp, "Kp");
+  const gfzHp30 = latestGfz(input.gfzHp30, "Hp30");
   const g = scaleNum(sc?.G?.Scale);
   const r = scaleNum(sc?.R?.Scale);
   const s = scaleNum(sc?.S?.Scale);
@@ -326,6 +368,10 @@ export function normalizeSpaceWeather(input: SpaceWeatherInput): SignalFeature[]
         ...(wind.bzNt != null ? { bzNt: wind.bzNt } : {}),
         ...(wind.btNt != null ? { btNt: wind.btNt } : {}),
         ...(wind.solarWindAt ? { solarWindAt: wind.solarWindAt } : {}),
+        // GFZ Potsdam (CC BY 4.0): an independent Kp and the half-hourly Hp30.
+        ...(gfzKp ? { gfzKp: gfzKp.value, gfzKpBlockStart: gfzKp.start } : {}),
+        ...(gfzKp?.status ? { gfzKpStatus: gfzKp.status } : {}),
+        ...(gfzHp30 ? { gfzHp30: gfzHp30.value, gfzHp30Start: gfzHp30.start } : {}),
         // The time of the Kp shown above, not the scales file's time.
         updated: utcLine(kpTime),
         scalesUpdated: sc?.DateStamp && sc?.TimeStamp ? `${sc.DateStamp} ${sc.TimeStamp} UTC` : "—",
@@ -374,7 +420,8 @@ export const SPACE_WEATHER_SOURCE: SignalSource = {
   },
   async fetch() {
     try {
-      const [kpRes, scRes, kp1m, alerts, xray, wind, mag] = await Promise.all([
+      const now = Date.now();
+      const [kpRes, scRes, kp1m, alerts, xray, wind, mag, gfzKp, gfzHp30] = await Promise.all([
         fetch(KP_URL, { signal: AbortSignal.timeout(15_000) }),
         fetch(SCALES_URL, { signal: AbortSignal.timeout(15_000) }),
         // An extra feed falls back to "not there" on any failure: the 3-hour block
@@ -384,6 +431,8 @@ export const SPACE_WEATHER_SOURCE: SignalSource = {
         optionalJson<XrayRow[]>(XRAY_URL),
         optionalJson<WindRow[]>(WIND_URL),
         optionalJson<MagRow[]>(MAG_URL),
+        optionalJson<GfzSeries>(gfzUrl("Kp", now)),
+        optionalJson<GfzSeries>(gfzUrl("Hp30", now)),
       ]);
       if (!kpRes.ok) return degraded(`http ${kpRes.status}`);
       const kp = (await kpRes.json()) as KpRow[];
@@ -397,7 +446,9 @@ export const SPACE_WEATHER_SOURCE: SignalSource = {
           xray: Array.isArray(xray) ? xray : undefined,
           wind: Array.isArray(wind) ? wind : undefined,
           mag: Array.isArray(mag) ? mag : undefined,
-          now: Date.now(),
+          gfzKp: gfzKp && typeof gfzKp === "object" ? gfzKp : undefined,
+          gfzHp30: gfzHp30 && typeof gfzHp30 === "object" ? gfzHp30 : undefined,
+          now,
         }),
       );
     } catch {

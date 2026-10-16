@@ -14,6 +14,10 @@ import {
   summarizeXray,
   activeAlerts,
   summarizeSolarWind,
+  latestGfz,
+  gfzUrl,
+  SWPC_ATTRIBUTION,
+  type GfzSeries,
 } from "@/lib/signals/space-weather";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
@@ -79,6 +83,8 @@ const liveInput = () => ({
   xray: live.xray,
   wind: live.wind,
   mag: live.mag,
+  gfzKp: live.gfzKp as GfzSeries,
+  gfzHp30: live.gfzHp30 as GfzSeries,
   now: NOW,
 });
 
@@ -186,4 +192,32 @@ test("every extra feed is optional: without them the pin is the Kp pin it was", 
   for (const k of ["flareNow", "flareMax24h", "radioBlackout24h", "alerts", "alertCount", "solarWindKms", "bzNt"]) {
     expect(f.props?.[k]).toBeUndefined();
   }
+});
+
+// --- GFZ Potsdam: the independent Kp producer (CC BY 4.0) -------------------------
+
+test("GFZ cross-check: newest Kp block and Hp30 interval ride beside NOAA's numbers", () => {
+  const kp = latestGfz(live.gfzKp as GfzSeries, "Kp")!;
+  expect(kp).toEqual({ value: 4.33, start: "2026-10-16T18:00:00Z", status: "pre" });
+  const hp = latestGfz(live.gfzHp30 as GfzSeries, "Hp30")!;
+  const times = (live.gfzHp30 as GfzSeries).datetime!;
+  expect(hp.start).toBe(swpcIso(times[times.length - 1]));
+  const f = normalizeSpaceWeather(liveInput())[0];
+  expect(f.props?.gfzKp).toBe(4.33);
+  expect(f.props?.gfzKpBlockStart).toBe("2026-10-16T18:00:00Z");
+  expect(f.props?.gfzHp30).toBe(hp.value);
+  // GFZ's nowcast was ahead of NOAA's newest 3-hour block (15:00) at capture time.
+  expect(f.props?.kpBlockStart).toBe("2026-10-16T15:00:00Z");
+});
+
+test("GFZ series skips null tails and the licence credit is in the attribution", () => {
+  expect(latestGfz({ datetime: ["2026-10-16T18:00:00Z", "2026-10-16T18:30:00Z"], Hp30: [3.667, null] }, "Hp30")).toEqual({
+    value: 3.67,
+    start: "2026-10-16T18:00:00Z",
+  });
+  expect(latestGfz(undefined, "Kp")).toBeUndefined();
+  expect(SWPC_ATTRIBUTION).toMatch(/GFZ Potsdam, CC BY 4\.0/);
+  expect(gfzUrl("Hp30", Date.parse("2026-10-16T19:47:20.123Z"))).toBe(
+    "https://kp.gfz.de/app/json/?start=2026-10-15T19:47:20Z&end=2026-10-16T19:47:20Z&index=Hp30",
+  );
 });
