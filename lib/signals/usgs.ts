@@ -1,8 +1,9 @@
-import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import type { SignalFeature } from "@/lib/signals/types";
 import { markCoverage } from "@/lib/signals/coverage";
-import { degraded, observed } from "@/lib/signals/outcome";
 
-// USGS earthquakes — past 24h, all magnitudes. Keyless GeoJSON FeatureCollection,
+// USGS earthquakes — past 24h, all magnitudes. One of the catalogues the earthquakes
+// layer reads (lib/signals/earthquakes.ts fetches it and merges it with the others).
+// Keyless GeoJSON FeatureCollection,
 // the canonical real-time seismic feed. Each feature's geometry is a Point whose
 // THIRD coordinate is depth in km (coordinates = [lon, lat, depthKm]). We surface
 // magnitude, depth, place and time, colour + size the marker by magnitude.
@@ -11,10 +12,6 @@ import { degraded, observed } from "@/lib/signals/outcome";
 // No local render cap — USGS already limits to events in the past 24h, a naturally
 // bounded window. Measured 2026-10-16: 175 events, 154 of them from US networks.
 
-const ENDPOINT =
-  "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
-
-export const USGS_ATTRIBUTION = "Earthquake data © U.S. Geological Survey (USGS)";
 
 interface UsgsFeature {
   id?: string;
@@ -112,28 +109,3 @@ export function normalizeUsgs(
     rule: USGS_COVERAGE_RULE,
   });
 }
-
-export const EARTHQUAKES_SOURCE: SignalSource = {
-  id: "earthquakes",
-  // An instrument-located epicentre.
-  precision: "exact",
-  label: "Earthquakes",
-  group: "Natural hazards",
-  color: "#f97316",
-  refreshMs: 60_000, // USGS regenerates the summary feed ~minutely
-  attribution: USGS_ATTRIBUTION,
-  metric: { field: "magnitude", domain: [2, 8] }, // Richter → magnitude bar (lime→red ramp)
-  async fetch() {
-    try {
-      const res = await fetch(ENDPOINT, {
-        headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (!res.ok) return degraded(`http ${res.status}`);
-      const json = (await res.json()) as { features?: UsgsFeature[] };
-      return observed(normalizeUsgs(json));
-    } catch {
-      return degraded("fetch failed"); // dormant-safe: never throw, just yield nothing
-    }
-  },
-};

@@ -6,6 +6,7 @@ import type { OverrideDelta, PanelPlacement, Variant } from "@/lib/variants/type
 import { resolveSignals } from "@/lib/variants/resolveSignals";
 import { diffFromVariant, isEmptyDelta } from "@/lib/variants/diff";
 import { layersStore, DEFAULT_STATE, expandLegacyLayers, type LayerState } from "@/lib/layers";
+import { expandRetiredSignalIds, expandRetiredSignalSet } from "@/lib/layerAliases";
 import { inspectorStore } from "@/lib/shell/inspector";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
 import { uiStore } from "@/lib/shell/ui";
@@ -69,11 +70,26 @@ function applyVariant(v: Variant, override?: OverrideDelta, sigFromUrl?: string[
 function migrateLayerKeys(saved: VariantStoreState): Partial<VariantStoreState> {
   const overrides: Record<string, OverrideDelta> = {};
   for (const [id, delta] of Object.entries(saved.overrides ?? {})) {
-    overrides[id] = delta?.layers ? { ...delta, layers: expandLegacyLayers(delta.layers) } : delta;
+    let d = delta?.layers ? { ...delta, layers: expandLegacyLayers(delta.layers) } : delta;
+    // Retired signal ids too: an override saying `{"emsc-quakes": true}` would
+    // otherwise turn on a layer that no longer exists, which draws nothing.
+    if (d?.signals) d = { ...d, signals: expandRetiredSignalSet(d.signals) };
+    overrides[id] = d;
   }
-  const userVariants = (saved.userVariants ?? []).map((v) =>
-    v?.layers ? { ...v, layers: expandLegacyLayers(v.layers) } : v,
-  );
+  const userVariants = (saved.userVariants ?? []).map((v) => {
+    let u = v?.layers ? { ...v, layers: expandLegacyLayers(v.layers) } : v;
+    if (u?.signals) {
+      u = {
+        ...u,
+        signals: {
+          ...u.signals,
+          ...(u.signals.ids ? { ids: expandRetiredSignalIds(u.signals.ids) } : {}),
+          ...(u.signals.exclude ? { exclude: expandRetiredSignalIds(u.signals.exclude) } : {}),
+        },
+      };
+    }
+    return u;
+  });
   return { overrides, userVariants };
 }
 

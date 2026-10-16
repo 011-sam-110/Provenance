@@ -29,6 +29,7 @@
 import { ACTIVE_LAYERS, LEGACY_LAYER_ALIASES, type LayerKey } from "@/lib/layers";
 import { BASEMAPS, type BasemapKey } from "@/lib/basemaps";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
+import { expandRetiredSignalIds } from "@/lib/layerAliases";
 
 export interface ViewState {
   lat?: number;
@@ -135,8 +136,9 @@ export function decodeViewState(params: URLSearchParams): ViewState {
   // `v` is read by nothing and re-emitted by nothing: a legacy board link decodes to
   // the same view as one without it.
   if (params.has("sig")) {
-    out.sig = (params.get("sig") ?? "")
-      .split(",").map((s) => s.trim())
+    // A retired signal id is mapped like a retired layer key: `?sig=emsc-quakes`
+    // links opened the EMSC layer, which is now part of `earthquakes`.
+    out.sig = expandRetiredSignalIds((params.get("sig") ?? "").split(",").map((s) => s.trim()))
       .filter((s) => VALID_SIGNALS.has(s)).slice(0, SIG_MAX);
   }
 

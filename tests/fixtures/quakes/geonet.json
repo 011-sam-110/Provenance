@@ -1,0 +1,575 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     175.885757446,
+     -40.447952271
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780530",
+    "time": "2026-10-16T19:06:50.885Z",
+    "depth": 42.46943664550781,
+    "magnitude": 1.7183477856773426,
+    "mmi": -1,
+    "locality": "20 km east of Palmerston North",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.949310303,
+     -39.942703247
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780370",
+    "time": "2026-10-16T17:41:42.800Z",
+    "depth": 20.315078735351562,
+    "magnitude": 1.4745643460800422,
+    "mmi": -1,
+    "locality": "30 km south of Hastings",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     177.109542847,
+     -39.239395142
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780349",
+    "time": "2026-10-16T17:30:08.479Z",
+    "depth": 26.40030860900879,
+    "magnitude": 2.328405588234154,
+    "mmi": -1,
+    "locality": "30 km south-west of Wairoa",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     175.35067749,
+     -40.500995636
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780343",
+    "time": "2026-10-16T17:26:51.231Z",
+    "depth": 22.97274589538574,
+    "magnitude": 1.8756915214539913,
+    "mmi": -1,
+    "locality": "10 km north-east of Levin",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.643920898,
+     -38.384635925
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780289",
+    "time": "2026-10-16T16:58:20.950Z",
+    "depth": 38.41286087036133,
+    "magnitude": 1.2003599677468262,
+    "mmi": -1,
+    "locality": "5 km north-west of Murupara",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     172.589324951,
+     -41.188583374
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780240",
+    "time": "2026-10-16T16:32:13.892Z",
+    "depth": 109.84961700439453,
+    "magnitude": 1.6100853923376353,
+    "mmi": -1,
+    "locality": "35 km west of Motueka",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.473052979,
+     -39.511226654
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780225",
+    "time": "2026-10-16T16:24:03.123Z",
+    "depth": 125.91219329833984,
+    "magnitude": 1.6320492443171328,
+    "mmi": -1,
+    "locality": "15 km north-east of Hawera",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     178.360473633,
+     -38.382774353
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780148",
+    "time": "2026-10-16T15:43:09.020Z",
+    "depth": 20.13760757446289,
+    "magnitude": 2.0640225127705096,
+    "mmi": -1,
+    "locality": "5 km east of Tolaga Bay",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.017929077,
+     -38.071620941
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780143",
+    "time": "2026-10-16T15:40:32.100Z",
+    "depth": 5,
+    "magnitude": 1.2232965995532057,
+    "mmi": -1,
+    "locality": "15 km west of Rotorua",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     175.9765625,
+     -38.081504822
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780110",
+    "time": "2026-10-16T15:22:50.344Z",
+    "depth": 5,
+    "magnitude": 2.196536568559481,
+    "mmi": 1,
+    "locality": "15 km north-east of Tokoroa",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     173.596862793,
+     -39.91626358
+    ]
+   },
+   "properties": {
+    "publicID": "2026p780087",
+    "time": "2026-10-16T15:10:48.610Z",
+    "depth": 334.6515808105469,
+    "magnitude": 4.2139472374112685,
+    "mmi": -1,
+    "locality": "55 km south-west of Opunake",
+    "quality": "deleted"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     163.66305542,
+     -49.687992096
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779975",
+    "time": "2026-10-16T14:09:56.954Z",
+    "depth": 33,
+    "magnitude": 4.883847722124424,
+    "mmi": 2,
+    "locality": "280 km south-west of Snares Islands",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.03692627,
+     -38.591716766
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779971",
+    "time": "2026-10-16T14:08:45.738Z",
+    "depth": 5,
+    "magnitude": 1.8464021095314394,
+    "mmi": 2,
+    "locality": "10 km north of Taupo",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     177.250701904,
+     -38.054927826
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779917",
+    "time": "2026-10-16T13:40:06.312Z",
+    "depth": 40.31656265258789,
+    "magnitude": 1.839935373631974,
+    "mmi": -1,
+    "locality": "Within 5 km of Opotiki",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.644943237,
+     -39.858078003
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779835",
+    "time": "2026-10-16T12:56:18.562Z",
+    "depth": 29.9890022277832,
+    "magnitude": 2.2919307252699186,
+    "mmi": -1,
+    "locality": "15 km north-east of Waipukurau",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     178.328536987,
+     -37.526481628
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779831",
+    "time": "2026-10-16T12:54:04.752Z",
+    "depth": 10,
+    "magnitude": 3.8137203831784574,
+    "mmi": 4,
+    "locality": "10 km north of Te Araroa",
+    "quality": "deleted"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -179.348770142,
+     -31.764497757
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779828",
+    "time": "2026-10-16T12:51:13.294Z",
+    "depth": 440.271728515625,
+    "magnitude": 3.8118601472318336,
+    "mmi": -1,
+    "locality": "730 km north-east of Whangarei",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.453338623,
+     -38.724147797
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779807",
+    "time": "2026-10-16T12:41:19.370Z",
+    "depth": 70.43701934814453,
+    "magnitude": 2.744839209356067,
+    "mmi": -1,
+    "locality": "30 km east of Taupo",
+    "quality": "deleted"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     177.102661133,
+     -37.122180939
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779806",
+    "time": "2026-10-16T12:40:59.535Z",
+    "depth": 121.13439178466797,
+    "magnitude": 2.47995444147999,
+    "mmi": -1,
+    "locality": "85 km north-west of Te Kaha",
+    "quality": "preliminary"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.242874146,
+     -39.6431427
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779801",
+    "time": "2026-10-16T12:38:28.449Z",
+    "depth": 22.86591911315918,
+    "magnitude": 2.175106992848182,
+    "mmi": -1,
+    "locality": "35 km east of Taihape",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.31086731,
+     -40.348468781
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779664",
+    "time": "2026-10-16T11:25:02.244Z",
+    "depth": 46.32641220092773,
+    "magnitude": 2.8952442615845047,
+    "mmi": -1,
+    "locality": "65 km south-west of Waverley",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     177.946395874,
+     -37.438518524
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779610",
+    "time": "2026-10-16T10:56:30.835Z",
+    "depth": 37.12833786010742,
+    "magnitude": 2.9972390411276213,
+    "mmi": 2,
+    "locality": "40 km north-east of Te Kaha",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     168.115631104,
+     -44.370281219
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779600",
+    "time": "2026-10-16T10:51:07.018Z",
+    "depth": 5,
+    "magnitude": 2.767221876557489,
+    "mmi": 1,
+    "locality": "35 km north-east of Milford Sound",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.499633789,
+     -39.688335419
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779539",
+    "time": "2026-10-16T10:18:51.977Z",
+    "depth": 106.5474853515625,
+    "magnitude": 2.356562170314249,
+    "mmi": -1,
+    "locality": "10 km north-west of Waverley",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     178.092254639,
+     -38.458293915
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779533",
+    "time": "2026-10-16T10:15:18.812Z",
+    "depth": 26.35862350463867,
+    "magnitude": 2.1857855037393916,
+    "mmi": -1,
+    "locality": "20 km south-west of Tolaga Bay",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.015151978,
+     -40.357284546
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779505",
+    "time": "2026-10-16T10:00:32.844Z",
+    "depth": 17.518404006958008,
+    "magnitude": 0.9995937653371589,
+    "mmi": -1,
+    "locality": "15 km south of Dannevirke",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     176.20652771,
+     -38.463615417
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779450",
+    "time": "2026-10-16T09:31:36.089Z",
+    "depth": 6.273980140686035,
+    "magnitude": 1.714605112843761,
+    "mmi": 1,
+    "locality": "25 km north-east of Taupo",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.856323242,
+     -38.924003601
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779427",
+    "time": "2026-10-16T09:18:56.024Z",
+    "depth": 509.0609436035156,
+    "magnitude": 2.2335821174682398,
+    "mmi": -1,
+    "locality": "30 km south-east of Mokau",
+    "quality": "deleted"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.759628296,
+     -41.092937469
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779364",
+    "time": "2026-10-16T08:45:30.979Z",
+    "depth": 27.142845153808594,
+    "magnitude": 2.852006875395955,
+    "mmi": 3,
+    "locality": "5 km north-west of Porirua",
+    "quality": "best"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     174.743942261,
+     -41.518650055
+    ]
+   },
+   "properties": {
+    "publicID": "2026p779241",
+    "time": "2026-10-16T07:39:56.344Z",
+    "depth": 22.3763484954834,
+    "magnitude": 2.4377332544249617,
+    "mmi": 2,
+    "locality": "25 km south of Wellington",
+    "quality": "best"
+   }
+  }
+ ]
+}

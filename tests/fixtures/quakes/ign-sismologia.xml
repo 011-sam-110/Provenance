@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:gml="http://www.opengis.net/gml" xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#" xmlns:georss="http://www.georss.org/georss" xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/" version="2.0">
+  <channel>
+    <title>GeoRSS Sismología IGN</title>
+    <link>http://www.ign.es/ign/rss</link>
+    <description>Este canal te permite consultar los terremotos ocurridos en España durante los últimos diez días. Esta información está sujeta a modificaciones como consecuencia de la continua revisión del análisis sísmico.</description>
+    <language>es</language>
+    <dc:language>es</dc:language>
+    <item>
+      <title>-Info.terremoto: 16/10/2026 15:03:49</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026uhlqp</link>
+      <description>Se ha producido un terremoto de magnitud 2.7 en E ST JEAN PIED DE PORT.FRA en la fecha 16/10/2026 15:03:49 en la siguiente localización: 43.1855,-1.1012</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026uhlqp</guid>
+      <geo:lat>43.1855</geo:lat>
+      <geo:long>-1.1012</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 16/10/2026 0:57:05</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ugjsf</link>
+      <description>Se ha producido un terremoto de magnitud 3.1 en AZORES-CABO DE SAN VICENTE en la fecha 16/10/2026 0:57:05 en la siguiente localización: 37.01,-12.2195</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ugjsf</guid>
+      <geo:lat>37.01</geo:lat>
+      <geo:long>-12.2195</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 15/10/2026 20:34:45</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ugbbe</link>
+      <description>Se ha producido un terremoto de magnitud 4.2 en NW CASTRILLO DE CABRERA.LE en la fecha 15/10/2026 20:34:45 en la siguiente localización: 42.3933,-6.5896</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ugbbe</guid>
+      <geo:lat>42.3933</geo:lat>
+      <geo:long>-6.5896</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 14/10/2026 16:51:20</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026udyea</link>
+      <description>Se ha producido un terremoto de magnitud 2.8 en NW CHLEF.ARG en la fecha 14/10/2026 16:51:20 en la siguiente localización: 36.4657,0.926</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026udyea</guid>
+      <geo:lat>36.4657</geo:lat>
+      <geo:long>0.926</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 14/10/2026 14:17:43</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026udtck</link>
+      <description>Se ha producido un terremoto de magnitud 2.6 en S OLORON STE MARIE.FRA en la fecha 14/10/2026 14:17:43 en la siguiente localización: 43.0574,-0.6181</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026udtck</guid>
+      <geo:lat>43.0574</geo:lat>
+      <geo:long>-0.6181</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 13/10/2026 19:26:33</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026uchty</link>
+      <description>Se ha producido un terremoto de magnitud 2.7 en SW CABO DE SAN VICENTE en la fecha 13/10/2026 19:26:33 en la siguiente localización: 36.8518,-10.6319</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026uchty</guid>
+      <geo:lat>36.8518</geo:lat>
+      <geo:long>-10.6319</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 12/10/2026 2:04:38</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tzdwu</link>
+      <description>Se ha producido un terremoto de magnitud 3.5 en AZORES-CABO DE SAN VICENTE en la fecha 12/10/2026 2:04:38 en la siguiente localización: 36.5461,-14.6113</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tzdwu</guid>
+      <geo:lat>36.5461</geo:lat>
+      <geo:long>-14.6113</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 11/10/2026 2:42:39</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026txjpl</link>
+      <description>Se ha producido un terremoto de magnitud 2.6 en SW CABO DE SAN VICENTE en la fecha 11/10/2026 2:42:39 en la siguiente localización: 36.8972,-10.9699</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026txjpl</guid>
+      <geo:lat>36.8972</geo:lat>
+      <geo:long>-10.9699</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 09/10/2026 12:21:15</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tulrt</link>
+      <description>Se ha producido un terremoto de magnitud 3.7 en ATLÁNTICO-MARRUECOS en la fecha 09/10/2026 12:21:15 en la siguiente localización: 33.6109,-13.2224</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tulrt</guid>
+      <geo:lat>33.6109</geo:lat>
+      <geo:long>-13.2224</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 09/10/2026 8:49:54</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tuesk</link>
+      <description>Se ha producido un terremoto de magnitud 3.5 en SW ARANGUREN.NA en la fecha 09/10/2026 8:49:54 en la siguiente localización: 42.7883,-1.5373</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tuesk</guid>
+      <geo:lat>42.7883</geo:lat>
+      <geo:long>-1.5373</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 09/10/2026 8:42:18</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tuelx</link>
+      <description>Se ha producido un terremoto de magnitud 2.7 en S VALLE DE EGÜÉS/EGUESIBAR.NA en la fecha 09/10/2026 8:42:18 en la siguiente localización: 42.8108,-1.5496</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tuelx</guid>
+      <geo:lat>42.8108</geo:lat>
+      <geo:long>-1.5496</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 09/10/2026 3:03:19</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ttthc</link>
+      <description>Se ha producido un terremoto de magnitud 3.3 en SW CABO DE SAN VICENTE en la fecha 09/10/2026 3:03:19 en la siguiente localización: 36.4796,-11.1768</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026ttthc</guid>
+      <geo:lat>36.4796</geo:lat>
+      <geo:long>-11.1768</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 08/10/2026 6:03:43</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tsdsn</link>
+      <description>Se ha producido un terremoto de magnitud 2.8 en SW CABO DE SAN VICENTE en la fecha 08/10/2026 6:03:43 en la siguiente localización: 35.9962,-10.0377</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tsdsn</guid>
+      <geo:lat>35.9962</geo:lat>
+      <geo:long>-10.0377</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 08/10/2026 5:43:39</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tsdbh</link>
+      <description>Se ha producido un terremoto de magnitud 2.8 en ALBORÁN OESTE en la fecha 08/10/2026 5:43:39 en la siguiente localización: 35.2813,-4.5253</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026tsdbh</guid>
+      <geo:lat>35.2813</geo:lat>
+      <geo:long>-4.5253</geo:long>
+    </item>
+    <item>
+      <title>-Info.terremoto: 08/10/2026 0:50:44</title>
+      <link>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026trtka</link>
+      <description>Se ha producido un terremoto de magnitud 3.6 en AZORES-CABO DE SAN VICENTE en la fecha 08/10/2026 0:50:44 en la siguiente localización: 37.0771,-13.7927</description>
+      <guid>http://www.ign.es/web/ign/portal/sis-catalogo-terremotos/-/catalogo-terremotos/detailTerremoto?evid=es2026trtka</guid>
+      <geo:lat>37.0771</geo:lat>
+      <geo:long>-13.7927</geo:long>
+    </item>
+  </channel>
+</rss>
+

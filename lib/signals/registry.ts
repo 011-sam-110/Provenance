@@ -31,7 +31,7 @@
 // ===========================================================================
 
 import type { SignalSource } from "@/lib/signals/types";
-import { EARTHQUAKES_SOURCE } from "@/lib/signals/usgs";
+import { EARTHQUAKES_SOURCE } from "@/lib/signals/earthquakes";
 import {
   WILDFIRES_SOURCE,
   VOLCANOES_SOURCE,
@@ -49,7 +49,6 @@ import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/gdelt";
 import { UKRAINE_ALERTS_SOURCE } from "@/lib/signals/ukraine-alerts";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
-import { EMSC_SOURCE } from "@/lib/signals/emsc";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
 import { UK_CRIME_SOURCE } from "@/lib/signals/crime";
 import { CYBER_C2_SOURCE } from "@/lib/signals/cyber-c2";
@@ -77,6 +76,8 @@ export const SIGNALS: SignalSource[] = [
   // Brief, the Country Instability widget, the Strategic Risk panel and the country
   // dossier all still read it through /api/signals/instability.
   INSTABILITY_SOURCE,
+  // USGS, EMSC and eight national catalogues, each quake shown once. EMSC was its own
+  // layer (`emsc-quakes`) until 2026-10-16; lib/layerAliases.ts maps the old id here.
   EARTHQUAKES_SOURCE,
   WILDFIRES_SOURCE,
   VOLCANOES_SOURCE,
@@ -85,7 +86,6 @@ export const SIGNALS: SignalSource[] = [
   GDACS_SOURCE, // multi-hazard GDACS alerts (EQ/TC/FL/VO/DR/WF), alert-coloured
   TROPICAL_CYCLONES_SOURCE, // NOAA NHC active named storms (keyless; empty in quiet season)
   FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (key-gated: FIRMS_MAP_KEY)
-  EMSC_SOURCE, // EMSC quakes — a 2nd, faster Euro-Med catalogue alongside USGS
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)
   GEOMAG_STATIONS_SOURCE, // FMI + USGS magnetometers: MEASURED disturbance at named stations (keyless)

@@ -7,7 +7,7 @@ import { magnitudeColor } from "@/lib/signals/usgs";
 test("normalizes EMSC quakes, skipping null-geometry events", () => {
   const out = normalizeEmsc(fixture as never);
   expect(out).toHaveLength(3); // 3 located events; the null-geometry "BADGEO" is skipped
-  expect(new Set(out.map((f) => f.signalId))).toEqual(new Set(["emsc-quakes"]));
+  expect(new Set(out.map((f) => f.signalId))).toEqual(new Set(["earthquakes"])); // one of its catalogues
 
   const [top] = out;
   expect(top.id).toBe("emsc:20260627_0000100");
@@ -15,7 +15,7 @@ test("normalizes EMSC quakes, skipping null-geometry events", () => {
   expect(top.lon).toBeCloseTo(111.1499, 4);
   expect(top.props?.magnitude).toBe(5.2);
   expect(top.props?.depth).toBe("65.6 km");
-  expect(top.props?.region).toBe("JAVA, INDONESIA");
+  expect(top.props?.place).toBe("JAVA, INDONESIA");
   expect(top.color).toBe(magnitudeColor(5.2));
   expect(top.ts).toBe("2026-06-27T07:47:23.012Z");
   expect(top.link).toContain("20260627_0000100");

@@ -21,3 +21,41 @@ export const RETIRED_LAYER_KEYS: Readonly<Record<string, readonly string[]>> = {
   cameras: ["livecams", "staticcams"],
   webcams: ["staticcams"],
 };
+
+/**
+ * Retired SIGNAL ids → the ids that replaced them. A separate table from the layer
+ * keys above because the two vocabularies are checked against different live lists
+ * (DEFAULT_STATE for layers, the signal registry for these).
+ *
+ * `emsc-quakes` was the EMSC earthquake layer until 2026-10-16. EMSC is now one of
+ * the catalogues of the `earthquakes` layer, so a saved toggle, an area, a variant
+ * override or a `?sig=` link that held it opens that layer instead of nothing.
+ */
+export const RETIRED_SIGNAL_IDS: Readonly<Record<string, readonly string[]>> = {
+  "emsc-quakes": ["earthquakes"],
+};
+
+/** Pure: an id list with retired signal ids replaced, de-duplicated, order kept. */
+export function expandRetiredSignalIds(ids: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const id of ids) {
+    for (const next of RETIRED_SIGNAL_IDS[id] ?? [id]) if (!out.includes(next)) out.push(next);
+  }
+  return out;
+}
+
+/**
+ * Pure: an on/off map with retired signal ids replaced. `true` wins when an old id and
+ * its replacement disagree only if the replacement was not saved explicitly: a key
+ * written under the new vocabulary always wins, the same rule as the layer keys.
+ */
+export function expandRetiredSignalSet(set: Readonly<Record<string, boolean>>): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  const expanded: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(set)) {
+    const next = RETIRED_SIGNAL_IDS[k];
+    if (next) for (const id of next) expanded[id] = (expanded[id] ?? false) || v;
+    else out[k] = v;
+  }
+  return { ...expanded, ...out };
+}

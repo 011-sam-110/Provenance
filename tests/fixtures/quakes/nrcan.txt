@@ -1,0 +1,9 @@
+#EventID|Time|Latitude|Longitude|Depth/km|MagType|Magnitude|EventLocationName
+ca2026ungx|2026-10-16T17:17:36.000Z|48.3738|-71.2545|0|MwN|1.55|Blast, 5 km S of Chicoutimi - Jonquière, QC, felt/Dynamitage, 5 km S de Chicoutimi - Jonquière, QC, ressenti
+ca2026umyp|2026-10-16T13:08:20.000Z|54.6048|-118.5739|5|MLy|2.32|Suspected industry-related event, 65 km SSE of Grande Prairie, AB/Événement lié à l'industrie soupconné, 65 km SSE de Grande Prairie, AB
+ca2026umtw|2026-10-16T10:46:51.000Z|51.3946|-115.3165|10|ML|4.11|35 km N of Canmore, AB, felt/35 km N de Canmore, AB, ressenti
+ca2026umoz|2026-10-16T08:20:17.000Z|54.5245|-118.4643|5|MLy|2.29|Suspected industry-related event, 75 km SSE of Grande Prairie, AB/Événement lié à l'industrie soupconné, 75 km SSE de Grande Prairie, AB
+ca2026umfm|2026-10-16T03:36:01.000Z|66.1299|-135.1355|5|ML|3.46|146 km S of Fort McPherson, NT/146 km S de Fort McPherson, NT
+ca2026ulxu|2026-10-15T23:45:30.000Z|54.5132|-118.4615|1.76|MLy|2.86|Suspected industry-related event, 76 km SSE of Grande Prairie, AB/Événement lié à l'industrie soupconné, 76 km SSE de Grande Prairie, AB
+ca2026ulvb|2026-10-15T22:22:25.000Z|53.4533|-131.7694|18|ML|2.96|25 km NE of Skidegate 1, BC, felt/25 km NE de Skidegate 1, BC, ressenti
+ca2026ulqo|2026-10-15T20:07:55.000Z|45.8549|-77.3504|0|MwN|1.27|Blast, 4 km SW of Petawawa, ON/Dynamitage, 4 km SO de Petawawa, ON

@@ -67,6 +67,8 @@ interface Provider {
  * stable. The label is the short provider name shown on the dossier's Source row.
  */
 export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
+  // Several catalogues feed this layer; a quake's record chip names the one shown
+  // (`recordLabel`, from props.catalogue), so this entry is the fallback only.
   earthquakes: { label: "USGS", url: "https://earthquake.usgs.gov/" },
   wildfires: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
   volcanoes: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
@@ -75,7 +77,6 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   gdacs: { label: "GDACS", url: "https://www.gdacs.org/" },
   "tropical-cyclones": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/" },
   "fire-active": { label: "NASA FIRMS", url: "https://firms.modaps.eosdis.nasa.gov/" },
-  "emsc-quakes": { label: "EMSC", url: "https://www.seismicportal.eu/" },
   aurora: { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" },
   "space-weather": { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/" },
   "geomag-stations": { label: "FMI R-index", url: "https://space.fmi.fi/MIRACLE/RWC/r-index/en/" },
@@ -179,6 +180,12 @@ export function resolveSignalSources(input: {
   link?: unknown;
   /** Optional provider URL threaded from the adapter's SignalSource.sourceUrl. */
   sourceUrl?: unknown;
+  /**
+   * Who published THIS record, when a layer reads several publishers (the earthquakes
+   * layer: USGS, EMSC, GeoNet, INGV…). Names the record chip, and replaces the layer's
+   * one provider chip, which would name a publisher this record did not come from.
+   */
+  recordLabel?: unknown;
 }): ResolvedSource[] {
   const id = (input.signalId ?? "").trim();
   const out: ResolvedSource[] = [];
@@ -202,9 +209,10 @@ export function resolveSignalSources(input: {
   // a record link can be the ONLY chip shown (step 2 suppresses a provider chip on
   // the same host), so hanging the licence off the provider entry alone would drop
   // it exactly when the deep link works.
+  const recordLabel = typeof input.recordLabel === "string" && input.recordLabel.trim() ? input.recordLabel.trim() : null;
   if (isHttpUrl(input.link)) {
-    const label = provider?.label ?? hostLabel(input.link);
-    push({ href: input.link, label, scope: "record", licence: provider?.licence });
+    if (recordLabel) push({ href: input.link, label: recordLabel, scope: "record" });
+    else push({ href: input.link, label: provider?.label ?? hostLabel(input.link), scope: "record", licence: provider?.licence });
   }
 
   // 2. Provider dataset / home page(s). A composite shows all contributors; a plain
@@ -214,7 +222,7 @@ export function resolveSignalSources(input: {
   if (composite) {
     for (const p of composite)
       push({ href: p.url, label: p.label, scope: "provider", licence: p.licence });
-  } else if (provider && !recordHosts.has(hostOf(provider.url))) {
+  } else if (provider && !recordHosts.has(hostOf(provider.url)) && !(recordLabel && out.length > 0)) {
     push({ href: provider.url, label: provider.label, scope: "provider", licence: provider.licence });
   }
 

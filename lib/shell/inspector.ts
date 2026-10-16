@@ -68,7 +68,7 @@ import {
   nextAreaColor,
 } from "@/lib/shell/areaColors";
 // A LEAF module, deliberately — see its header for why this is not lib/layers.ts.
-import { RETIRED_LAYER_KEYS } from "@/lib/layerAliases";
+import { RETIRED_LAYER_KEYS, RETIRED_SIGNAL_IDS } from "@/lib/layerAliases";
 
 /** id → on, for ONE context. Covers LayerKeys and signal ids in a single map. */
 export type SourceSet = Record<string, boolean>;
@@ -158,7 +158,7 @@ function cleanSet(value: unknown): SourceSet {
   const expanded: SourceSet = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
     if (typeof v !== "boolean") continue;
-    const aliases = RETIRED_LAYER_KEYS[k];
+    const aliases = RETIRED_LAYER_KEYS[k] ?? RETIRED_SIGNAL_IDS[k];
     if (aliases) {
       for (const key of aliases) expanded[key] = (expanded[key] ?? false) || v;
     } else {

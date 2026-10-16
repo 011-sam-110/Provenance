@@ -15,7 +15,8 @@ import {
   resolvePrecision,
   withResolvedPrecision,
 } from "@/lib/signals/precision";
-import { EARTHQUAKES_SOURCE, normalizeUsgs } from "@/lib/signals/usgs";
+import { normalizeUsgs } from "@/lib/signals/usgs";
+import { EARTHQUAKES_SOURCE } from "@/lib/signals/earthquakes";
 import { PORTS_SOURCE, normalizePorts } from "@/lib/signals/ports";
 import { MAJOR_PORTS } from "@/lib/signals/ports.data";
 import { UKRAINE_ALERTS_SOURCE, normalizeUkraineAlerts } from "@/lib/signals/ukraine-alerts";

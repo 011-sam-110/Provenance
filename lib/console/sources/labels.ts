@@ -11,8 +11,9 @@
 // distinguishes nothing is just a longer label.
 //
 // So a source gets its qualifier back ONLY when another source would otherwise
-// share its name. Today that is exactly one pair — USGS "Earthquakes" and EMSC
-// "Earthquakes (EMSC)" — and the second keeps "· EMSC" for that reason alone.
+// share its name. The one pair this was written for, USGS "Earthquakes" and EMSC
+// "Earthquakes (EMSC)", became one layer on 2026-10-16, so no label in today's
+// catalog collides; the rule stays for the next pair.
 // The provider is never lost either way: the row's popover shows the full
 // attribution, which is where a reader looks for provenance.
 //

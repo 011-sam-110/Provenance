@@ -1,16 +1,20 @@
-import type { SignalFeature, SignalSource } from "@/lib/signals/types";
+import type { SignalFeature } from "@/lib/signals/types";
 import { magnitudeColor } from "@/lib/signals/usgs";
 import { markCoverage } from "@/lib/signals/coverage";
-import { degraded, observed } from "@/lib/signals/outcome";
 
 // Earthquakes — EMSC (European-Mediterranean Seismological Centre) real-time feed.
 // A keyless FDSN GeoJSON service that aggregates many national networks, often
-// reporting Euro-Med events faster than USGS's 5-minute summary. Runs ALONGSIDE the
-// USGS layer (distinct catalogues / ids), giving independent corroboration. Each
-// event carries magnitude, depth and a Flynn region name. Confirmed keyless 2026-06-27.
+// reporting Euro-Med events faster than USGS's 5-minute summary. Each event carries
+// magnitude, depth, a Flynn region name and the agency EMSC credits. Confirmed keyless
+// 2026-06-27. Licence: CC BY 4.0 (seismicportal.eu/fdsn-wsevent.html).
+//
+// It was its own layer, "emsc-quakes", until 2026-10-16. It is now one of the
+// catalogues of the earthquakes layer (lib/signals/earthquakes.ts), which shows each
+// quake once. Measured that day, 91% of EMSC's rows are relayed national solutions,
+// so where a national agency is read directly its row is preferred and EMSC's row is
+// the fast, broad backstop (Latin America, Indonesia, the Euro-Med M2.5+ band).
 
 const ENDPOINT = "https://www.seismicportal.eu/fdsnws/event/1/query";
-const UA = "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)";
 
 /**
  * The window the FDSN query asks for, in hours. It matches the USGS layer's 24 h.
@@ -37,8 +41,6 @@ export function emscEndpoint(now: number): string {
   const start = new Date(now - EMSC_WINDOW_HOURS * 3_600_000).toISOString().slice(0, 19);
   return `${ENDPOINT}?starttime=${start}&limit=${EMSC_REQUEST_LIMIT}&orderby=time&format=json`;
 }
-
-export const EMSC_ATTRIBUTION = "Earthquake data © EMSC-CSEM (seismicportal.eu)";
 
 interface EmscFeature {
   id?: string;
@@ -86,14 +88,14 @@ export function normalizeEmsc(
       lat,
       lon,
       title: `M ${mag.toFixed(1)} — ${region}`,
-      signalId: "emsc-quakes",
+      signalId: "earthquakes",
       color: magnitudeColor(mag),
       link: `https://www.seismicportal.eu/eventdetails.html?unid=${unid}`,
       ts: p.time ?? undefined,
       props: {
         magnitude: Number(mag.toFixed(1)), // radius driver
         depth: depth != null ? `${depth.toFixed(1)} km` : "—",
-        region,
+        place: region,
         magType: p.magtype ?? "—",
         agency: p.auth ?? "—",
       },
@@ -105,31 +107,3 @@ export function normalizeEmsc(
     upstream: { limit, count: raw.length },
   });
 }
-
-export const EMSC_SOURCE: SignalSource = {
-  id: "emsc-quakes",
-  // An instrument-located epicentre.
-  precision: "exact",
-  label: "Earthquakes (EMSC)",
-  group: "Natural hazards",
-  color: "#f59e0b",
-  refreshMs: 60_000,
-  attribution: EMSC_ATTRIBUTION,
-  metric: { field: "magnitude", domain: [2, 8] }, // Richter → magnitude bar
-  async fetch() {
-    try {
-      const res = await fetch(emscEndpoint(Date.now()), {
-        headers: { "User-Agent": UA, Accept: "application/json" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      // FDSN answers a window with no events as 204 and no body. That is a quiet
-      // window, not a failure, and res.json() would throw on it.
-      if (res.status === 204) return observed(normalizeEmsc({ features: [] }));
-      if (!res.ok) return degraded(`http ${res.status}`);
-      const json = (await res.json()) as { features?: EmscFeature[] };
-      return observed(normalizeEmsc(json));
-    } catch {
-      return degraded("fetch failed");
-    }
-  },
-};

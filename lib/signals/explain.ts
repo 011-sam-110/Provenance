@@ -72,25 +72,17 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Natural hazards ------------------------------------------------------
   {
     id: "earthquakes",
-    whatItShows: "An earthquake located by the USGS seismic network, sized by magnitude.",
-    method: "Reported directly by USGS; magnitude and depth are theirs, unmodified.",
+    whatItShows: "An earthquake located by a seismic agency, sized by magnitude. One dot per quake, however many catalogues list it; the panel says which reported it.",
+    method: "Read from ten catalogues: USGS, EMSC, GFZ GEOFON and the national agencies of New Zealand (GeoNet), Italy (INGV), Japan (JMA), Australia (Geoscience Australia), Canada (NRCan), Indonesia (BMKG) and Spain (IGN). Rows within 2 minutes, 60 km and 0.8 magnitude of each other are one event. The shown row is the national agency's inside its own country, then USGS, then GEOFON, then EMSC. Magnitude and depth are that agency's, unmodified.",
     confidence: "measured",
-    coverage: "Global, but detection thresholds are far lower in densely instrumented regions (US, Japan, Europe) than in the open ocean.",
+    coverage: "Global for about M4.5 and up. Below that it depends on where a catalogue is read: about M2.5 in the US, and smaller local events in New Zealand, Italy, Japan, Australia, Canada, Indonesia and Iberia. Elsewhere small quakes come only through EMSC, which misses many.",
     limitations: [
       "Early magnitudes are automatic and get revised, sometimes by several tenths, in the hours after an event.",
+      "Catalogues disagree on magnitude, depth and epicentre for the same quake. The panel lists each catalogue's magnitude; the dot shows one of them.",
+      "Reported by several catalogues is not independent confirmation: EMSC and USGS often carry the same national network's solution.",
+      "Two quakes seconds apart in a swarm can be joined into one dot, or one quake left as two when catalogues disagree by more than the rule allows.",
       "A large magnitude in an unpopulated area matters less than a moderate one under a city — this layer shows the physics, not the impact.",
       "Small quakes in poorly instrumented regions are simply never recorded.",
-    ],
-  },
-  {
-    id: "emsc-quakes",
-    whatItShows: "An earthquake located by EMSC-CSEM, the European-Mediterranean seismic network.",
-    method: "Reported directly by EMSC; shown alongside USGS deliberately, because the two disagree.",
-    confidence: "measured",
-    coverage: "Global, with much denser coverage across Europe and the Mediterranean.",
-    limitations: [
-      "This layer overlaps USGS. The same earthquake appears twice, usually with slightly different magnitude, depth and epicentre — that disagreement is real and normal, not a bug.",
-      "Early solutions are automatic and get revised.",
     ],
   },
   {

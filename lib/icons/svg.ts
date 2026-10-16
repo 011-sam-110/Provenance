@@ -295,7 +295,6 @@ export function cameraRegionColor(source: string): string {
 export const SIGNAL_ICON: Record<string, IconKey> = {
   instability: "sig-instability",
   earthquakes: "sig-quake",
-  "emsc-quakes": "sig-quake",
   wildfires: "sig-fire",
   "fire-active": "sig-fire",
   volcanoes: "sig-volcano",
