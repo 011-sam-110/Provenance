@@ -422,9 +422,9 @@ Re-measure before putting a number in a README, a CV or a PR description.
   are both gone, so nearly every score is a floor. Read the Brief's numbers with that in mind.
   **Superseded 2026-10-16:** the index was rebuilt on seven factors (UCDP deaths, INFORM
   Severity, FEWS NET, INFORM Risk + WGI, UNHCR as a share of population, GDELT capped,
-  IODA critical alerts; see lib/signals/instability.ts). Its ceiling is now 99, and a
+  IODA critical alerts plus ISOC Pulse verified shutdowns; see lib/signals/instability.ts). Its ceiling is now 99, and a
   measured zero counts toward coverage, so the countries FEWS NET monitors read 7/7.
-- Key-gated layers dormant in prod: none of the old ones. Grid load is keyless for GB, France, Denmark and
+- Key-gated layers dormant in prod: none since 2026-10-16. Grid load is keyless for GB, France, Denmark and
   Australia since 2026-10-16; only its ENTSO-E and EIA parts wait for their keys. ReliefWeb is keyless
   since 2026-10-16: it reads ReliefWeb's own weekly export on HDX plus IFRC GO appeals. Live with keys: OpenAQ
   stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
