@@ -49,7 +49,7 @@ import { GNSS_NOTAMS_SOURCE } from "@/lib/signals/gnss-notams";
 import { NUCLEAR_SOURCE } from "@/lib/signals/nuclear";
 import { AIRPORTS_SOURCE } from "@/lib/signals/airports";
 import { PORTS_SOURCE } from "@/lib/signals/ports";
-import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/gdelt";
+import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/conflict";
 import { UKRAINE_ALERTS_SOURCE } from "@/lib/signals/ukraine-alerts";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
@@ -118,7 +118,7 @@ export const SIGNALS: SignalSource[] = [
   PORTS_SOURCE,
   INTERNET_OUTAGES_SOURCE, // IODA national internet-shutdown detection (keyless, country-aggregated)
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
-  // Intel (GDELT geolocated news coverage)
+  // Intel (UCDP verified events, U.S. Embassy alerts, UK and Canadian travel advice)
   CONFLICT_SOURCE,
   // Stories pushed by the NewsScraper host, placed by name through Photon. Dormant
   // until the first push and after every restart — see lib/signals/news-coverage.ts.

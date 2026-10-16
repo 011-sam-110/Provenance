@@ -1,6 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, centroidByName, type CountryCentroid } from "@/lib/signals/country-centroids.data";
-import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
+import { GDELT_CONFLICT_SOURCE } from "@/lib/signals/gdelt";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { isVerifiedShutdown } from "@/lib/signals/pulse-shutdowns";
 import { degraded, observed } from "@/lib/signals/outcome";
@@ -377,9 +377,11 @@ async function outageFactor(): Promise<Map<string, number> | null> {
 
 /**
  * Attention factor: sums GDELT's already-normalised conflict layer (CAMEO 18/19/20,
- * QuadClass 4) per country, by article volume. Reuses `CONFLICT_SOURCE.fetch()` — the
- * same fetch, window cache and normaliser the `conflict` map layer uses. Until
- * 2026-10-16 this was the whole 0.40 conflict factor; UCDP fatalities are now.
+ * QuadClass 4) per country, by article volume. Reads `GDELT_CONFLICT_SOURCE.fetch()` —
+ * the fetch, window cache and normaliser the `conflict` map layer used until
+ * 2026-10-16, when that layer moved to UCDP, embassy alerts and travel advice and
+ * GDELT left the map. Until then this was also the whole 0.40 conflict factor; UCDP
+ * fatalities are now.
  */
 export function conflictArticlesByIso3(feats: SignalFeature[]): Map<string, number> {
   const out = new Map<string, number>();
@@ -484,7 +486,7 @@ async function cached(key: string, ttl: number, load: () => Promise<Map<string, 
 }
 
 async function attentionFactor(): Promise<Map<string, number> | null> {
-  const m = conflictArticlesByIso3(await CONFLICT_SOURCE.fetch());
+  const m = conflictArticlesByIso3(await GDELT_CONFLICT_SOURCE.fetch());
   return m.size ? m : null;
 }
 

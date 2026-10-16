@@ -502,33 +502,35 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "conflict",
-    whatItShows: "How much conflict-coded news reporting mentions each COUNTRY — GDELT's machine coder tagged articles as assault, armed clash or mass violence and filed them in the last four hours. It is a map of reporting volume, not of confirmed incidents, and the marker sits on a national centroid.",
-    method: "GDELT codes global news into CAMEO event records, each with an action location. We keep roots 18/19/20 at QuadClass 4 (material conflict), require at least two source documents AND at least one TYPED actor, collapse GDELT's repeated actor-pair rows, then total the remaining articles PER COUNTRY. The dot is sized by that total.",
-    confidence: "modelled",
-    coverage: "Global, but strongly shaped by which languages and outlets GDELT ingests.",
+    whatItShows:
+      "Three kinds of mark, each saying which it is: a lethal event of organised violence that UCDP verified (who fought whom, where, when and how many died); a U.S. Embassy security alert that names fighting, attacks or gunfire; and a country whose UK or Canadian travel advice changed this week to name the same.",
+    method:
+      "UCDP's monthly candidate release of its Georeferenced Event Dataset, read as published, with UCDP's own precision for each place. Embassy alerts are read from each U.S. embassy's alert feed and kept when their own words name violence; travel-advice changes are kept when the change's own description does. An alert is placed on a city only when it names one.",
+    confidence: "reported",
+    coverage:
+      "UCDP is global, but it codes only events it can verify from reporting, so places with little press coverage are under-counted. The alerts cover the countries with a U.S. embassy, and the advice covers what the UK and Canada publish.",
     limitations: [
-      "This layer counts REPORTING, not incidents, and it is aggregated to the country on purpose. GDELT's machine coding is accurate enough in bulk and unreliable per record: audited against their source articles, most individual city-level codings turned out to be court reporting about past events, metaphor, or unrelated news. Aggregating to the country is the scale at which the signal is real.",
-      "Individual CAMEO labels are shown only as the best-covered coding in that country, attributed to GDELT, never as a finding. A country total says nothing about where inside it anything happened.",
-      "Ranking is MEDIA ATTENTION, not severity. A heavily-covered country outweighs an unreported massacre, and a viral non-event contributes just as much as a real battle.",
-      "The United States dominates this layer by roughly an order of magnitude — on a typical window it carries more conflict-coded articles than every other country combined. That is GDELT's English-language and US-outlet skew, not a finding about the world. Read the ranking BELOW the top entry.",
-      "The four-hour window is when GDELT FILED the records, not when anything happened. Each marker shows the best-covered event's own date, which carries day resolution at best and is sometimes years older.",
-      "The marker sits on a national centroid, which is usually empty land. It is a country statistic drawn as a dot, not a location.",
-      "Coverage follows press freedom and internet access, so the quietest countries on this layer are often the least covered.",
-      "For adjudicated, located incident records you need a curated dataset such as ACLED, which this app no longer carries. This layer cannot substitute for one.",
+      "UCDP events are 3 to 7 weeks old by design: a monthly release comes out around the 20th of the next month. This is verified recent history, not a live view, and the time filter treats it by each event's own date.",
+      "Rows UCDP has not finished checking are shown and labelled provisional. Death counts are UCDP's best estimate, with its low and high where they differ.",
+      "An embassy alert or an advice change is a WARNING, often about a risk rather than an event, and it can be issued in advance. It never adds to a death count.",
+      "An alert that names no city we can place, and every advice change, is shaded at country level. It says nothing about where in the country.",
+      "Until 2026-10-16 this layer was GDELT's machine-coded news; an audit that day found 86% of those rows were not a real conflict event at the coded place, so it was replaced. The fast 'what is the news saying now' view went with it.",
     ],
   },
   {
     id: "protests",
-    whatItShows: "How much protest-coded reporting mentions each COUNTRY — GDELT tagged articles as a demonstration, strike, blockade or riot and filed them in the last four hours.",
-    method: "As with the conflict layer, but keeping CAMEO root 14 (protest). Most of that branch is coded QuadClass 3, so no material-conflict filter is applied to it. The typed-actor requirement and the per-country aggregation both apply here too.",
-    confidence: "modelled",
-    coverage: "Global, shaped by GDELT's source and language mix.",
+    whatItShows:
+      "A U.S. Embassy demonstration alert (a protest, strike or march, usually with the city, the streets and the time), or a country whose UK or Canadian travel advice changed this week to name protests or strikes.",
+    method:
+      "Read from each U.S. embassy's alert feed; a demonstration alert counts, and so does a security alert whose own words name protests. Travel-advice changes count when the change's own description names them. Alerts about one place in one week share one marker that counts them.",
+    confidence: "official",
+    coverage:
+      "Countries with a U.S. embassy that posts alerts, plus what the UK and Canada publish. A protest no embassy warned about is not here, so absence is not calm.",
     limitations: [
-      "Media attention, not turnout. There is no crowd size and no verification here.",
-      "Machine coding misfires at least as often as on the conflict layer — an emergency-restrictions notice has been coded as a blockade, and a quarterly earnings release as a rally. That is exactly why this is a country total rather than a pin.",
-      "Article volume drives the ranking, so one heavily-covered protest outranks several larger but ignored ones.",
-      "The four-hour window is GDELT's filing time, not the protest's. The marker also carries the best-covered event's own date.",
-      "The marker sits on a national centroid. It says nothing about where in the country anything happened.",
+      "These are warnings to U.S. citizens, often posted before a protest. They say a protest was expected or under way, not how large it was or what happened.",
+      "Embassies warn about what affects their citizens. Protests near embassies and in capitals are over-represented; rural and small protests are rarely covered.",
+      "An alert that names no city we can place, and every advice change, is shaded at country level.",
+      "Until 2026-10-16 this layer was GDELT's machine-coded news, of which an audit found 58% were not a protest at the coded place.",
     ],
   },
   {

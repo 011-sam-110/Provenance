@@ -339,6 +339,13 @@ Re-measure before putting a number in a README, a CV or a PR description.
   its turn in `lib/http/hostLane.ts`. Four batches plus a `/v2/mil` poll in between is
   what dropped the GA batch from 3 of 5 prod snapshots. Do not add an adsb.lol call
   outside that lane.
+- **GDELT left the live path on 2026-10-16.** An audit labelled a random sample: 86% of
+  its conflict rows and 58% of its protest rows were not that event at that place. The
+  `conflict` and `protests` layers now read UCDP's monthly verified events, U.S. Embassy
+  alert feeds and UK/Canadian travel-advice changes (`lib/signals/conflict.ts`);
+  `lib/signals/gdelt.ts` stays unregistered for its scripts and tests, and for the
+  instability index's capped GDELT attention term (weight 0.03). The two notes
+  below are its history.
 - **GDELT is FIXED and live again** (was 404ing on `/api/v2/geo/geo`). The layer now reads
   the GCS event export instead. Prod check 2026-08-11: `/api/signals/conflict` returns
   `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare

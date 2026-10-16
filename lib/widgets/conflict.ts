@@ -5,7 +5,7 @@
 
 import type { SignalFeature } from "@/lib/signals/types";
 
-export type ConflictMode = "acled" | "gdelt" | "none";
+export type ConflictMode = "acled" | "ucdp" | "gdelt" | "none";
 
 export interface ConflictRow {
   id: string;
@@ -46,7 +46,27 @@ export function conflictView(
       }));
     return { mode: "acled", sourceLabel: "ACLED", rows };
   }
-  if (gdelt.length > 0) {
+  // Since 2026-10-16 the conflict layer is UCDP's verified events plus warnings. The
+  // widget lists the deadliest UCDP events; alerts and advice have no death count to rank.
+  const ucdp = gdelt.filter((f) => f.props?.source === "UCDP");
+  if (ucdp.length > 0) {
+    const rows = ucdp
+      .slice()
+      .sort((a, b) => Number(b.props?.deaths ?? 0) - Number(a.props?.deaths ?? 0))
+      .slice(0, cap)
+      .map((f) => ({
+        id: f.id,
+        title: String(f.props?.sides ?? f.title),
+        sub: [f.props?.country, f.props?.date].filter(Boolean).join(" · "),
+        metricLabel: "fatalities",
+        metric: Number(f.props?.deaths ?? 0),
+        lat: f.lat,
+        lon: f.lon,
+        feature: f,
+      }));
+    return { mode: "ucdp", sourceLabel: "UCDP · verified events", rows };
+  }
+  if (gdelt.some((f) => f.props?.articles != null)) {
     // `sub` shows what GDELT coded, ATTRIBUTED. It used to show props.window —
     // a flat "last 4h" that described our ingest, not the event, and defaulted to
     // an even wronger "last 24h" when absent.

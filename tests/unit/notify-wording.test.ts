@@ -36,10 +36,12 @@ describe("wordEvent — G4, every message names its area", () => {
 });
 
 describe("wordEvent — G5, a source's honesty rules travel with the message", () => {
-  it("words a GDELT event as REPORTED and never asserts an incident, because those rows are coded news coverage", () => {
-    const text = wordEvent(ev({ sourceId: "conflict" }), { ...ctx, sourceLabel: "Conflict coverage" });
+  it("words a conflict event as REPORTED and says it is past or a warning, never a live incident", () => {
+    const text = wordEvent(ev({ sourceId: "conflict" }), { ...ctx, sourceLabel: "Armed conflict" });
     expect(text).toMatch(/report/i);
-    expect(text).toContain("not a verified incident");
+    expect(text).toContain("not a live report");
+    const protest = wordEvent(ev({ sourceId: "protests" }), { ...ctx, sourceLabel: "Protests" });
+    expect(protest).toContain("not a report that it happened");
   });
 
   it("words an AIS disappearance as STOPPED BEING HEARD, because leaving coverage and switching off a transponder look identical", () => {

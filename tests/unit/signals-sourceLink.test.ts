@@ -32,11 +32,11 @@ describe("resolveSignalSources — the clickable-source guarantee", () => {
   });
 
   test("keeps the provider link when the record lives on a different host", () => {
-    // A GDELT news feature deep-links to the article's own outlet, not gdeltproject.org.
-    const link = "https://www.reuters.com/world/some-article";
-    const out = resolveSignalSources({ signalId: "conflict", link });
-    expect(out[0]).toEqual({ href: link, label: "GDELT", scope: "record" });
-    expect(out[1]).toEqual({ href: "https://www.gdeltproject.org/", label: "GDELT", scope: "provider" });
+    // An embassy alert deep-links to its own post's site, not the www.usembassy.gov index.
+    const link = "https://al.usembassy.gov/demonstration-alert-u-s-embassy-tirana-albania/";
+    const out = resolveSignalSources({ signalId: "protests", link });
+    expect(out[0]).toEqual({ href: link, label: "U.S. Embassy alerts", scope: "record" });
+    expect(out[1]).toEqual({ href: "https://www.usembassy.gov/", label: "U.S. Embassy alerts", scope: "provider" });
   });
 
   test("falls back to the provider dataset page for country-aggregated layers (no record link)", () => {

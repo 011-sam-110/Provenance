@@ -123,9 +123,10 @@ describe("every registered layer", () => {
   test("a per-country figure is declared a country, on every layer that publishes one", () => {
     // The layers the rule exists for. Each draws ONE feature per country on a centroid.
     // A layer that leaves this list must leave it on purpose.
+    // conflict and protests left on purpose on 2026-10-16: they stopped being GDELT
+    // country totals and now carry events and alerts, each feature at its own level
+    // (tests/unit/signals-conflict.test.ts holds that).
     const perCountry = [
-      "conflict",
-      "protests",
       "displacement",
       "internet-outages",
       "cyber-c2",

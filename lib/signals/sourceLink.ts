@@ -108,8 +108,10 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   // Each feature deep-links to the vendor's own incident via `link`; this is the
   // fallback when a vendor reports a degraded indicator with no open incident post.
   "cloud-status": { label: "Vendor status pages", url: "https://www.githubstatus.com/" },
-  conflict: { label: "GDELT", url: "https://www.gdeltproject.org/" },
-  protests: { label: "GDELT", url: "https://www.gdeltproject.org/" },
+  // Each alert and advice feature deep-links its own record; a UCDP event has no
+  // per-event page, so the release's download page is the source.
+  conflict: { label: "UCDP", url: "https://ucdp.uu.se/downloads/", licence: CC_BY_4_0 },
+  protests: { label: "U.S. Embassy alerts", url: "https://www.usembassy.gov/" },
   acled: { label: "ACLED", url: "https://acleddata.com/" },
   airquality: {
     label: "Open-Meteo",

@@ -14,8 +14,8 @@ import {
   countryFromPlace,
   meanLon,
   GDELT_LAYERS,
-  CONFLICT_SOURCE,
-  PROTESTS_SOURCE,
+  GDELT_CONFLICT_SOURCE,
+  GDELT_PROTESTS_SOURCE,
 } from "@/lib/signals/gdelt";
 import { rowMetric } from "@/lib/console/signals/signalCard";
 
@@ -156,8 +156,8 @@ test("the cap bounds the output regardless of event count", () => {
 });
 
 test("declares article volume as the real metric and resolves it per feature", () => {
-  expect(CONFLICT_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
-  expect(PROTESTS_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
+  expect(GDELT_CONFLICT_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
+  expect(GDELT_PROTESTS_SOURCE.metric).toEqual({ field: "articles", domain: [1, 400], unit: " articles" });
 
   const [top] = normalizeGdeltEvents(EVENTS, GDELT_LAYERS.conflict);
   expect(typeof top.props?.articles).toBe("number");
@@ -165,7 +165,7 @@ test("declares article volume as the real metric and resolves it per feature", (
   // Article volume must never ride on `magnitude` — it would distort the radius.
   expect(top.props?.magnitude).toBeUndefined();
 
-  expect(rowMetric(top, CONFLICT_SOURCE.metric)).toEqual({
+  expect(rowMetric(top, GDELT_CONFLICT_SOURCE.metric)).toEqual({
     value: 10,
     domain: [1, 400],
     label: "10 articles",

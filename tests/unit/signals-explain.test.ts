@@ -81,10 +81,11 @@ describe("the caveats we most need to be right about", () => {
     expect(explainerFor("fire-active")!.limitations.join(" ")).toMatch(/heat, not fire/i);
   });
 
-  it("warns that the GDELT layers measure coverage rather than events", () => {
+  it("warns that an alert is a warning, and that UCDP's verified events are weeks old", () => {
     for (const id of ["conflict", "protests"]) {
-      expect(explainerFor(id)!.limitations.join(" ")).toMatch(/media attention|attention, not events/i);
+      expect(explainerFor(id)!.limitations.join(" ")).toMatch(/WARNING|warnings/);
     }
+    expect(explainerFor("conflict")!.limitations.join(" ")).toMatch(/3 to 7 weeks old/);
   });
 
   it("warns that AIS is a sample and that the interesting ships switch it off", () => {

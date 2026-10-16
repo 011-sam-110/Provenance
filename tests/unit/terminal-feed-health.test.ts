@@ -330,19 +330,21 @@ describe("buildFeedCells — status shapes and the null case", () => {
 });
 
 describe("buildFeedCells — the three layers that publish a placeholder when broken", () => {
-  it("names exactly conflict and protests", () => {
+  it("names none since conflict and protests left GDELT", () => {
     // food-security was the third until 2026-09-05. It was removed as a layer because
     // WFP withdrew the keyless feed, so its placeholder was the only thing it could ever
-    // publish -- a permanent notice, not an occasional one.
-    expect([...PLACEHOLDER_NOTICE_LAYERS].sort()).toEqual(["conflict", "protests"]);
+    // publish -- a permanent notice, not an occasional one. conflict and protests were
+    // the last two until 2026-10-16, when they moved to sources that report a failure
+    // through the outcome instead of a placeholder row.
+    expect([...PLACEHOLDER_NOTICE_LAYERS]).toEqual([]);
   });
 
-  it("caveats a live cell for those layers — count > 0 is not proof of health", () => {
+  it("no longer caveats a live conflict cell — its count is real rows now", () => {
     const cell = buildFeedCells(
       input({ signals: [SIG("conflict", "Conflict")], on: new Set(["conflict"]), fresh: { conflict: "live" } }),
     )[0];
-    expect(cell.kind).toBe("live"); // we do not downgrade on suspicion alone
-    expect(cell.tip).toContain("labelled placeholder feature");
+    expect(cell.kind).toBe("live");
+    expect(cell.tip).not.toContain("labelled placeholder feature");
   });
 
   it("adds no such caveat to a normal layer", () => {

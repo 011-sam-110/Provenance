@@ -103,10 +103,11 @@ describe("the classes actually discriminate", () => {
     expect(used.size).toBeGreaterThanOrEqual(4);
   });
 
-  it("does not grade a machine-coded news layer as an observation", () => {
-    // GDELT is the layer users report miscategorisation on. It must never read as
-    // measured or official — it is a model over news text.
-    for (const id of ["conflict", "protests"]) {
+  it("does not grade a layer built on reporting as an observation", () => {
+    // conflict was GDELT until 2026-10-16 and is now UCDP events coded from news and NGO
+    // reporting, plus warnings. It must never read as measured or official. protests left
+    // this list then: it is now official warnings only (embassy alerts, travel advice).
+    for (const id of ["conflict"]) {
       const c = explainerFor(id)?.confidence;
       expect(c).toBeDefined();
       expect(["modelled", "derived", "reported"]).toContain(c);
