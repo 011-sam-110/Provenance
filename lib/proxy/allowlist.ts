@@ -12,6 +12,10 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   { host: "511ny.org", prefix: "/map/Cctv/" },
   { host: "511.idaho.gov", prefix: "/map/Cctv/" },
   { host: "newengland511.org", prefix: "/map/Cctv/" },
+  // Louisiana DOTD. Its system joined castlerock on 2026-09-05 without this rule, so
+  // its 336 pins drew on the map and every one of them answered 403 "forbidden host"
+  // (measured on prod 2026-10-16). `allowlist.test.ts` now checks every system.
+  { host: "511la.org", prefix: "/map/Cctv/" },
   { host: "511on.ca", prefix: "/map/Cctv/" },
   { host: "511.alberta.ca", prefix: "/map/Cctv/" },
   { host: "511.novascotia.ca", prefix: "/map/Cctv/" },
@@ -46,6 +50,11 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   { host: "video-nadzor.bihamk.ba", prefix: "/videosurveillence/", suffix: ".jpg" },
   // ACT Puerto Rico — ITS stills at /images/cameras/{name}.jpg.
   { host: "its.act.pr.gov", prefix: "/images/cameras/", suffix: ".jpg" },
+  // Houston TranStar, the network admitted through discovery (discovered.data.ts).
+  // Promote wrote the feed row and nothing wrote this rule, so its 451 pins answered
+  // 403 "forbidden host" from 2026-08-20 to 2026-10-16. The descriptor upgrades the
+  // catalogue's http URLs, so the proxy only ever sees https.
+  { host: "www.houstontranstar.org", prefix: "/snapshots/cctv/", suffix: ".jpg" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).
