@@ -70,9 +70,12 @@
  * adds `tests/unit/news-feed.test.ts` and `tests/unit/news-feeds.test.ts`. `npx vitest run`:
  * 4,905 cases across 434 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l`
  * agrees).
+ *
+ * Re-measured 2026-10-17 on feat/sources-all (origin/main at 4ce2da5, after #290/#291/#292): the
+ * ten remaining source groups land together. `npx vitest run`: 5,437 cases across 464 files.
  */
 export const UNIT_TESTS = {
-  cases: 4905,
-  files: 434,
-  measuredAt: "2026-10-16",
+  cases: 5437,
+  files: 464,
+  measuredAt: "2026-10-17",
 } as const;
