@@ -1,7 +1,11 @@
 /**
- * CET São Paulo — the 11 cameras the city publishes to the public web viewer.
+ * CET São Paulo — the 15 cameras the city publishes to the public web viewer.
  *
- * Hand-verified 2026-08-14. The list itself is the `gCams` array inlined in
+ * Hand-verified 2026-08-14; refreshed 2026-10-16. On the refresh CET's own list had
+ * 16 cameras: pasta 22 had left it (its JPEG unchanged since 25 Feb 2026), so its row
+ * is gone; five live ones were new (15, 31, 57, 164, 234) and are added below; and
+ * pasta 16 (Shopping Paulista) is listed but its JPEG has not changed since 29 Nov
+ * 2024, so it is left out. The list itself is the `gCams` array inlined in
  * https://cameras.cetsp.com.br/View/Cam.aspx (fields: pasta, titulo, subTitulo,
  * detalhe). CET publishes NO coordinates there, so `lat`/`lon` were resolved
  * offline against the `sqlProducao:CamerasCentral` layer (615 rows, EPSG:4326)
@@ -38,11 +42,6 @@ export interface CetspCamera {
 }
 
 export const CETSP_CAMERAS: CetspCamera[] = [
-  // pasta 22 has been serving the same JPEG since 25 Feb 2026 (169 days old at
-  // verification). It is kept because CET still registers it: the freshness check
-  // in cetsp.ts marks it unavailable rather than this file deleting it, so the
-  // coverage denominator stays honest instead of quietly shrinking.
-  { pasta: 22, lat: -23.55804, lon: -46.66004, name: "Paulista x Metrô Consolação (R Augusta)", local: "PAULISTA, AV x AUGUSTA, R" },
   { pasta: 23, lat: -23.56767, lon: -46.64921, name: "Paulista x Av Brigadeiro Luiz Antônio", local: "PAULISTA, AV x LUIS ANTONIO, AV BRIG x MANUEL DA NOBREGA" },
   { pasta: 180, lat: -23.54767, lon: -46.64894, name: "Consolação x R Caio Prado", local: "CONSOLACAO, R DA x CAIO PRADO, R" },
   { pasta: 184, lat: -23.57919, lon: -46.66156, name: "Brasil x Av Brig Luis Antônio (Pr Armando S Oliveira)", local: "LUIS ANTONIO, AV BRIG x BRASIL, AV" },
@@ -52,5 +51,13 @@ export const CETSP_CAMERAS: CetspCamera[] = [
   { pasta: 220, lat: -23.58028, lon: -46.6833, name: "Cidade Jardim x Av Nove de Julho (Túnel Máx Feffer)", local: "NOVE DE JULHO, AV x CIDADE JARDIM, AV" },
   { pasta: 222, lat: -23.59738, lon: -46.66788, name: "Hélio Pellegrino x R Diogo Jácome", local: "HÉLIO PELLEGRINO, AV x DIOGO JACOME, R" },
   { pasta: 224, lat: -23.59365, lon: -46.65257, name: "Ibirapuera x R Ipê", local: "IBIRAPUERA, AV x IPÊ, R" },
+  // Added 2026-10-16. Four coordinates are CamerasCentral rows, as above. 164 has
+  // no CamerasCentral row at its junction, so it is the OSM traffic-signal node
+  // 1953466354 where Av Paulista meets R Peixoto Gomide, beside MASP.
+  { pasta: 15, lat: -23.55587, lon: -46.6629, name: "Paulista x Metrô Paulista (R da Consolação, Pr do Ciclista)", local: "PAULISTA, AV. x CONSOLAÇÃO, R. DA" },
+  { pasta: 31, lat: -23.5904, lon: -46.68142, name: "Juscelino Kubitschek x Av Brig Faria Lima", local: "FARIA LIMA, AV x JUSCELINO KUBITSCHEK, AV PRES" },
+  { pasta: 57, lat: -23.57391, lon: -46.63938, name: "Paraíso x R Apeninos", local: "PARAISO, R DO x APENINOS, R" },
+  { pasta: 164, lat: -23.56095, lon: -46.65715, name: "MASP x Av Paulista (R Peixoto Gomide)", local: "OSM node 1953466354 (Avenida Paulista x Rua Peixoto Gomide)" },
+  { pasta: 234, lat: -23.57208, lon: -46.64537, name: "Cubatão x Al Santos (R Rafael de Barros)", local: "SANTOS, AL x CUBATAO, R x RAFAEL DE BARROS, R DR" },
   { pasta: 225, lat: -23.59765, lon: -46.65113, name: "Ascendino Reis x R Pedro de Toledo", local: "ASCENDINO REIS, AV PROF x PEDRO DE TOLEDO, R" },
 ];

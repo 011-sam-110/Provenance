@@ -39,11 +39,13 @@ test("maps id, country, coords and image url", () => {
 });
 
 // The reason this adapter exists. ~195 folders on that host serve HTTP 200 JPEGs
-// that were last written between 2017 and 2025; pasta 22 has been static since
-// 25 Feb 2026. Availability must come from the snapshot's age, not its status.
+// that were last written between 2017 and 2025; pasta 22 sat static from 25 Feb
+// 2026 until CET dropped it from its list. Availability must come from the
+// snapshot's age, not its status. (Pasta 22 left the table on 2026-10-16, so the
+// stale case is played on a live camera's row with a 169-day-old probe.)
 test("a stale snapshot is unavailable, however happily it serves HTTP 200", () => {
-  const staleByADay = [{ pasta: 22, lastModifiedMs: NOW - 169 * 24 * 60 * 60_000 }];
-  const [cam] = normalizeCetsp(staleByADay, NOW, [CETSP_CAMERAS.find((c) => c.pasta === 22)!]);
+  const staleByADay = [{ pasta: 23, lastModifiedMs: NOW - 169 * 24 * 60 * 60_000 }];
+  const [cam] = normalizeCetsp(staleByADay, NOW, [CETSP_CAMERAS.find((c) => c.pasta === 23)!]);
   expect(cam.available).toBe(false);
   expect(cam.lastSampledAt).toBe(new Date(NOW - 169 * 24 * 60 * 60_000).toISOString());
 });
@@ -105,4 +107,19 @@ test("snapshot urls pass the media proxy allowlist", () => {
   }
   // And the rule stays tight — not the whole host.
   expect(isAllowed(new URL("https://cameras.cetsp.com.br/View/Cam.aspx"))).toBe(false);
+});
+
+// Refresh of 2026-10-16 against CET's own gCams list: 22 gone, five live ones added.
+test("the table follows CET's current list", () => {
+  const pastas = CETSP_CAMERAS.map((c) => c.pasta);
+  expect(pastas).not.toContain(22);
+  for (const p of [15, 31, 57, 164, 234]) expect(pastas).toContain(p);
+  expect(new Set(pastas).size).toBe(pastas.length);
+  // Every row sits in central São Paulo, where these corridors are.
+  for (const c of CETSP_CAMERAS) {
+    expect(c.lat).toBeGreaterThan(-23.65);
+    expect(c.lat).toBeLessThan(-23.5);
+    expect(c.lon).toBeGreaterThan(-46.75);
+    expect(c.lon).toBeLessThan(-46.6);
+  }
 });

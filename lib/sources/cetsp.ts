@@ -24,9 +24,10 @@ const IMAGE_ORIGIN = "https://cameras.cetsp.com.br/cams";
 /**
  * How old a snapshot may be and still count as a live camera.
  *
- * The live cameras were all under a minute old across repeated checks, and the
- * dead ones are months to years stale, so anything in this range separates them
- * cleanly. 60 minutes is deliberately loose: it tolerates a CET-side pause or a
+ * When this was written the live cameras were all under a minute old; by
+ * 2026-10-16 CET was posting a new frame every 10 to 20 minutes (one was 30
+ * minutes old at a check). The dead ones are months to years stale, so this still
+ * separates them cleanly. 60 minutes is deliberately loose: it tolerates a CET-side pause or a
  * slow overnight cycle without flapping the whole layer to unavailable, while
  * still being four orders of magnitude below the staleness it exists to catch.
  */
@@ -57,8 +58,8 @@ export function snapshotUrl(pasta: number): string {
  *
  * Pure, so the availability rule — the whole point of this adapter — is testable
  * without the network. A camera with no usable probe is reported UNAVAILABLE
- * rather than dropped: the registry's coverage denominator should say "11 known,
- * 10 online", not silently shrink to 10 and present that as the whole truth.
+ * rather than dropped: the registry's coverage denominator should say "15 known,
+ * 14 online", not silently shrink to 14 and present that as the whole truth.
  */
 export function normalizeCetsp(
   probes: readonly SnapshotProbe[],
