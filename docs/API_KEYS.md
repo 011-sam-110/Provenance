@@ -166,6 +166,24 @@ Fear & Greed, World Bank, Eurostat, OECD SDMX remain keyless options if we expan
 
 ---
 
+## 4b - Fault alerts to the owner (BUILT, dormant until set)
+
+Some faults stop a source until a person looks at it. Today there is one: CelesTrak's
+usage policy says software must stop at its first non-200 answer and report it to a
+person, so `lib/sources/celestrak.ts` stops all its calls until the server restarts.
+`lib/ops/notify.ts` sends that report as one Telegram message.
+
+| Var | What it is |
+|---|---|
+| `OPS_TELEGRAM_BOT_TOKEN` | A bot token from `@BotFather`. Free. It may be the feedback prompt's bot. |
+| `OPS_TELEGRAM_CHAT_ID` | The owner's chat. Free. |
+
+Unset, the fault goes to the server log only (`journalctl -u provenance`), and the
+source still stops. They are separate from `FEEDBACK_TELEGRAM_*` because setting those
+mounts the feedback prompt for every visitor.
+
+---
+
 ## 5 - Feedback prompt (BUILT, dormant until set)
 
 The in-console feedback prompt asks a sampled third of people who have actually used
@@ -298,6 +316,10 @@ FRED_API_KEY=
 # --- Feedback prompt (BUILT - the deployment's OWN bot, not the visitor's) ---
 FEEDBACK_TELEGRAM_BOT_TOKEN=
 FEEDBACK_TELEGRAM_CHAT_ID=
+
+# --- Fault alerts to the owner (BUILT - e.g. CelesTrak stopped at a non-200) ---
+OPS_TELEGRAM_BOT_TOKEN=
+OPS_TELEGRAM_CHAT_ID=
 
 # --- Source relay (BUILT - shared HMAC secret with the provenance-1 sender) ---
 RELAY_SIGNING_SECRET=

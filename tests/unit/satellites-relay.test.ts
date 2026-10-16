@@ -5,7 +5,7 @@ import { putRelay, resetRelayStore } from "@/lib/relay/store";
 
 // CelesTrak firewalls the production IP (2026-10-16), so lib/sources/celestrak.ts falls
 // back to the TLEs provenance-1 relays, and serves whichever copy CelesTrak issued later.
-// These pin the fallback and that the 2 h TTL and the failure hold still apply to both.
+// These pin the fallback and that the 2 h TTL and the stop rule still apply to both.
 
 const ISS = [
   "ISS (ZARYA)",
@@ -87,12 +87,12 @@ test("a group missing from the push falls through to the normal failure", async 
   expect((await celestrak.fetchTLEs("visual")).length).toBe(1);
 });
 
-test("a push that lands during the failure hold is served at once", async () => {
+test("a push that lands after the halt is served at once", async () => {
   stubFetch(async () => {
     throw new TypeError("fetch failed");
   });
   await expect(celestrak.fetchTLEs("visual")).rejects.toThrow();
   relay(Date.now() - 3 * H);
   expect((await celestrak.fetchTLEs("visual")).length).toBe(1);
-  expect(calls).toBe(1); // still inside the hold: CelesTrak was not asked again
+  expect(calls).toBe(1); // halted: CelesTrak was not asked again
 });

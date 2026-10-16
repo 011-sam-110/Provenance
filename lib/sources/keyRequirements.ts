@@ -192,6 +192,16 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
   },
   {
     kind: "required",
+    id: "ops-alerts",
+    label: "Fault alerts to the owner",
+    env: ["OPS_TELEGRAM_BOT_TOKEN", "OPS_TELEGRAM_CHAT_ID"],
+    degrades:
+      "A fault that stops a source until a person looks at it (today: CelesTrak, which stops at its first non-200 answer) goes to the server log only, so nobody is told. The source still stops.",
+    obtain:
+      "Free - @BotFather on Telegram issues the token; the chat id is the owner's chat. It may be the same bot as the feedback prompt. The variables are separate so that alerts do not mount that prompt.",
+  },
+  {
+    kind: "required",
     id: "accounts",
     label: "Accounts and settings sync",
     env: ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"],
@@ -223,6 +233,8 @@ export const NON_SIGNAL_IDS = new Set([
   "geolocate-vision",
   // A product-feedback channel, not a data capability.
   "feedback-prompt",
+  // An alert channel to the owner (lib/ops/notify.ts), not a data capability.
+  "ops-alerts",
   // An inbound door rather than an upstream: this one is the only entry in the table
   // that we do not fetch FROM. The scraper host pushes through it.
   "news-ingest",
