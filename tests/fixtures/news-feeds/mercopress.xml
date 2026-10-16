@@ -1,0 +1,48 @@
+
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+
+<channel>
+  <title>MercoPress</title>
+  <link>https://en.mercopress.com/</link>
+  <atom:link  rel="self" type="application/rss+xml" href="https://en.mercopress.com/rss/" />
+  <description>South Atlantic News Agency</description>
+  <language>en</language>
+    <copyright>Copyright 2026, MercoPress.</copyright>
+  <image>
+    <url>https://en.mercopress.com/web/img/en/mercopress-logo.gif</url>
+    <title>MercoPress</title>
+    <link>http://en.mercopress.com/</link>
+  </image>  
+    <item>
+      <title><![CDATA[Royal Navy urged to replace defective Ice Patrol HMS Protector]]></title>
+      <link><![CDATA[https://en.mercopress.com/2026/10/16/royal-navy-urged-to-replace-defective-ice-patrol-hms-protector?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></link>
+      <guid><![CDATA[https://en.mercopress.com/2026/10/16/royal-navy-urged-to-replace-defective-ice-patrol-hms-protector?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></guid>
+      <description><![CDATA[<p>
+	   	      <img src="https://en.mercopress.com/data/cache/noticias/111788/100x80/hms-protector.jpg" alt=" HMS Protector role helped to maintain a sovereign, reassuring, and versatile presence in the South Atlantic and the British Antarctic Territory" width="100" height="80" style="float:left;margin:0 12px 6px 0;border:1px solid #333" />
+	         The Royal Navy's only ice patrol vessel has been towed into Devonport, reportedly with a double engine failure, raising fresh concerns over how the news will be interpreted by Argentina. HMS Protector fulfils an icebreaking role to monitor the demilitarized Antarctic and support safe navigation for scientific research in challenging conditions.</p>]]></description>
+      <enclosure url="https://en.mercopress.com/data/cache/noticias/111788/100x80/hms-protector.jpg" length="0" type="image/jpg" />      <category><![CDATA[Health & Science, Politics, Antarctica, Falkland Islands]]></category>
+      <pubDate>Fri, 16 Oct 2026 13:59:00 GMT</pubDate>
+    </item>
+<item>
+      <title><![CDATA[The Falklands dispute threatens Argentina’s bid to join the trans-Pacific trade pact]]></title>
+      <link><![CDATA[https://en.mercopress.com/2026/10/16/the-falklands-dispute-threatens-argentina-s-bid-to-join-the-trans-pacific-trade-pact?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></link>
+      <guid><![CDATA[https://en.mercopress.com/2026/10/16/the-falklands-dispute-threatens-argentina-s-bid-to-join-the-trans-pacific-trade-pact?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></guid>
+      <description><![CDATA[<p>
+	   	      <img src="https://en.mercopress.com/data/cache/noticias/111786/100x80/uk.jpg" alt="The possibility was raised in the House of Commons by Conservative MP Wendy Morton, who urged the government to prepare to oppose Argentina&rsquo;s application if threats over the islands continue" width="100" height="80" style="float:left;margin:0 12px 6px 0;border:1px solid #333" />
+	         The escalating dispute between Argentina and the United Kingdom over the Sea Lion oil project north of the Falklands has spilled into trade: London, a member of the Comprehensive and Progressive Agreement for Trans-Pacific Partnership, has not ruled out using its position to stall Argentina’s bid to join the pact, which requires the consensus of all its members. The British government says Buenos Aires’s conduct raises “very serious questions about its reliability as a partner”.</p>]]></description>
+      <enclosure url="https://en.mercopress.com/data/cache/noticias/111786/100x80/uk.jpg" length="0" type="image/jpg" />      <category><![CDATA[Economy, Politics, Argentina, Falkland Islands, International]]></category>
+      <pubDate>Fri, 16 Oct 2026 10:07:00 GMT</pubDate>
+    </item>
+<item>
+      <title><![CDATA[Inter-American Court hears case over the April 11, 2002 killings in Caracas]]></title>
+      <link><![CDATA[https://en.mercopress.com/2026/10/16/inter-american-court-hears-case-over-the-april-11-2002-killings-in-caracas?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></link>
+      <guid><![CDATA[https://en.mercopress.com/2026/10/16/inter-american-court-hears-case-over-the-april-11-2002-killings-in-caracas?utm_source=feed&utm_medium=rss&utm_content=main&utm_campaign=rss]]></guid>
+      <description><![CDATA[<p>
+	   	      <img src="https://en.mercopress.com/data/cache/noticias/111784/100x80/images.jpg" alt="The only people convicted over the events were Metropolitan Police officers, released this year, and police commissioner Iv&aacute;n Simonovis, who escaped house arrest in 2019 and lives in exile" width="100" height="80" style="float:left;margin:0 12px 6px 0;border:1px solid #333" />
+	         The Inter-American Court of Human Rights held this week in San José, Costa Rica, the first public hearing in the case over the killings of April 11, 2002 in Caracas, when an opposition march came under gunfire near the Miraflores Palace. Nineteen people died and dozens were wounded that day, in the run-up to the coup that removed then-president Hugo Chávez from power for two days.</p>]]></description>
+      <enclosure url="https://en.mercopress.com/data/cache/noticias/111784/100x80/images.jpg" length="0" type="image/jpg" />      <category><![CDATA[Politics, International, Venezuela]]></category>
+      <pubDate>Fri, 16 Oct 2026 09:59:00 GMT</pubDate>
+    </item>    
+
+  </channel>
+</rss>

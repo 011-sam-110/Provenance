@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:npr="https://www.npr.org/rss/" xmlns:nprml="https://api.npr.org/nprml" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/" version="2.0">
+  <channel>
+    <title>NPR Topics: World</title>
+    <link>https://www.npr.org/templates/story/story.php?storyId=1004</link>
+    <description>NPR world news, international art and culture, world business and financial markets, world economy, and global trends in health, science and technology. Subscribe to the World Story of the Day podcast and RSS feed.</description>
+    <language>en</language>
+    <copyright>Copyright 2024 NPR - For Personal Use Only</copyright>
+    <generator>Story API Shim 1.2.24</generator>
+    <lastBuildDate>Fri, 16 Oct 2026 16:40:42 -0400</lastBuildDate>
+    <image>
+      <url>https://media.npr.org/images/podcasts/primary/npr_generic_image_300.jpg?s=200</url>
+      <title>NPR Topics: World</title>
+      <link>https://www.npr.org/sections/world/</link>
+    </image>
+    <item>
+      <title>Israeli settlers beat Palestinians and a U.S. photojournalist in West Bank attacks</title>
+      <description>Masked Israeli settlers attacked Palestinians as they were harvesting olives in the occupied West Bank on Friday, injuring several people including a photojournalist working for &lt;em&gt;The Washington Post&lt;/em&gt;.</description>
+      <pubDate>Fri, 16 Oct 2026 11:57:27 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/16/nx-s1-6004904/israeli-settlers-beat-us-photojournalist-washington-post-west-bank</link>
+      <guid>https://www.npr.org/2026/10/16/nx-s1-6004904/israeli-settlers-beat-us-photojournalist-washington-post-west-bank</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/8192x5464+0+0/resize/8192x5464!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F64%2F6b%2F6f80e95a4323b7a2bf0a3456ca30%2Fgettyimages-2299901273.jpg' alt='Photojournalist Heidi Levine leaves a hospital emergency room in a wheelchair in the Israeli-occupied city of Ramallah, West Bank. She's being treated after an attack by Israeli settlers as she was photographing Palestinian farmers harvesting their olives, in the Palestinian village of Abu Falah on Friday.'/><p>Masked Israeli settlers attacked Palestinians as they were harvesting olives in the occupied West Bank on Friday, injuring several people including a photojournalist working for <em>The Washington Post</em>.</p><p>(Image credit: Ahmad Gharabli)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-6004904' />]]></content:encoded>
+      <dc:creator>Hadeel Al-Shalchi</dc:creator>
+    </item>
+<item>
+      <title>Crowds throng New Delhi and wave Indian flags amid escalating protests</title>
+      <description>Protests have intensified over a review of voter lists that critics say is politically motivated and threatens to disenfranchise voters. The Election Commission and Modi&apos;s administration deny these allegations.</description>
+      <pubDate>Fri, 16 Oct 2026 09:26:43 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/16/g-s1-148383/crowds-throng-new-delhi-and-wave-indian-flags-amid-escalating-protests</link>
+      <guid>https://www.npr.org/2026/10/16/g-s1-148383/crowds-throng-new-delhi-and-wave-indian-flags-amid-escalating-protests</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/3707x2471+0+0/resize/3707x2471!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Ff3%2F22%2F24a18ad34ab9afaeee9c49b78d39%2Fap26289462666677.jpg' alt='Prominent student leader Neha Bora, center, shouts slogans as she is detained by the police during a youth demonstration demanding the resignation of the country's election chief Gyanesh Kumar, in New Delhi, India, Friday, Oct. 16, 2026.'/><p>Protests have intensified over a review of voter lists that critics say is politically motivated and threatens to disenfranchise voters. The Election Commission and Modi's administration deny these allegations.</p><p>(Image credit: Vipin)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=g-s1-148383' />]]></content:encoded>
+      <dc:creator>The Associated Press</dc:creator>
+    </item>
+<item>
+      <title>Sally Rooney&apos;s books will no longer be sold in U.K. after Palestinian Action support</title>
+      <description>The Irish author said her books can no longer be sold in the UK after she pledged the royalties to a banned pro-Palestinian group.</description>
+      <pubDate>Fri, 16 Oct 2026 07:30:31 -0400</pubDate>
+      <link>https://www.npr.org/2026/10/16/nx-s1-6004838/sally-rooney-books-uk-palestinian-action-support</link>
+      <guid>https://www.npr.org/2026/10/16/nx-s1-6004838/sally-rooney-books-uk-palestinian-action-support</guid>
+      <content:encoded><![CDATA[<img src='https://npr.brightspotcdn.com/dims3/default/strip/false/crop/7603x5068+0+0/resize/7603x5068!/?url=http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2Fe7%2Fd1%2F2a294d7b449d824a76e4ab2dec8c%2Fap26288402306967.jpg' alt='Sally Rooney's books are displayed for sale at a bookshop in London, Thursday, Oct. 15, 2026.'/><p>The Irish author said her books can no longer be sold in the UK after she pledged the royalties to a banned pro-Palestinian group.</p><p>(Image credit: Kin Cheung)</p><img src='https://media.npr.org/include/images/tracking/npr-rss-pixel.png?story=nx-s1-6004838' />]]></content:encoded>
+      <dc:creator>Kate Bartlett</dc:creator>
+    </item>
+  </channel>
+</rss>

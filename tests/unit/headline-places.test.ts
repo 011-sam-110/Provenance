@@ -88,6 +88,22 @@ test("dropping a bare form does not drop the longer names containing it", () => 
   expect(names("Men deported to Equatorial Guinea, lawyers say")).toEqual(["Equatorial Guinea"]);
 });
 
+test("a club named after a city does not pin the city", () => {
+  // Measured on prod 2026-10-16: this headline pinned Madrid.
+  expect(names("Real Madrid demand resignation of referee chief")).toEqual([]);
+  expect(names("Atlético Madrid sign striker")).toEqual([]);
+  expect(names("Paris Saint-Germain win in Munich")).toEqual([]);
+  // The club claims only its own words: the city named on its own still pins.
+  expect(names("Real Madrid fans march in Madrid")).toEqual(["Madrid"]);
+});
+
+test("Northern Ireland does not pin the Republic of Ireland", () => {
+  // Measured on prod 2026-10-16: this headline pinned Ireland.
+  expect(names("Ex-leader of N. Ireland's largest unionist party dies")).toEqual([]);
+  expect(names("Northern Ireland assembly sits again")).toEqual([]);
+  expect(names("Ireland and Northern Ireland agree rail link")).toEqual(["Ireland"]);
+});
+
 /* ── cities, and the country-drop rule ───────────────────────────────────────── */
 
 test("a city and its own country draw one pin, the more precise one", () => {

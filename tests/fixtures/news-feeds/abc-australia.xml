@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
+  <!-- This is a rebuild of News RSS. If you notice any issues please contact DG-NewsWeb@abc.net.au -->
+  <channel>
+    <title>Just In</title>
+    <category>Australian Broadcasting Corporation: All content</category>
+    <link>https://www.abc.net.au/news/justin/</link>
+    <atom:link href="https://www.abc.net.au/news/justin/" rel="self" type="application/rss+xml" />
+    <description>
+    </description>
+    <language>en-AU</language>
+    <copyright>Copyright 2026, Australian Broadcasting Corporation. All Rights Reserved.</copyright>
+    <pubDate>Fri, 16 Oct 2026 20:31:25 +0000</pubDate>
+    <lastBuildDate>Fri, 16 Oct 2026 20:31:25 +0000</lastBuildDate>
+    <docs>http://blogs.law.harvard.edu/tech/rss</docs>
+    <managingEditor>Newson1ine@abc.net.au (ABC News)</managingEditor>
+    <image>
+      <title>Just In</title>
+      <url>https://live-production.wcms.abc-cdn.net.au/6f61ef606af0bbbcbdaa7c6173a677e2?impolicy=wcms_crop_resize&amp;cropH=144&amp;cropW=144&amp;xPos=0&amp;yPos=0&amp;width=862&amp;height=862</url>
+      <link>https://www.abc.net.au/news/justin/</link>
+    </image>
+    <item>
+      <title>Widespread flying fox deaths a 'disaster' for forest ecosystems</title>
+      <link>https://www.abc.net.au/news/2026-10-17/sat-nsw-regs-flying-fox-deaths-impact-on-forests/107269636</link>
+      <description>
+        <![CDATA[Along the east coast of Australia, grey-headed flying foxes are being found dead and malnourished. Without their nightly pollination, experts say it could spell disaster for forests and other animals.]]>
+      </description>
+      <dc:creator>Piper Duffy</dc:creator>
+      <pubDate>Fri, 16 Oct 2026 20:31:25 +0000</pubDate>
+      <guid isPermaLink="true">https://www.abc.net.au/news/2026-10-17/sat-nsw-regs-flying-fox-deaths-impact-on-forests/107269636</guid>
+      <category>Conservation</category>
+      <category>Animals</category>
+      <category>Environmental Impacts</category>
+      <category>Environment</category>
+      <category>Birds</category>
+      <media:group>
+        <media:description>Grey-headed flying foxes can be hosts to Lyssavirus, which is fatal to humans.</media:description>
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=1666&amp;cropW=2961&amp;xPos=0&amp;yPos=277&amp;width=862&amp;height=485"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="485"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=2220&amp;cropW=2220&amp;xPos=371&amp;yPos=0&amp;width=862&amp;height=862"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="862"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=1974&amp;cropW=2961&amp;xPos=0&amp;yPos=123&amp;width=862&amp;height=575"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="575"
+            isDefault="true"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=2220&amp;cropW=1665&amp;xPos=648&amp;yPos=0&amp;width=862&amp;height=1149"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1149"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=2220&amp;cropW=2960&amp;xPos=1&amp;yPos=0&amp;width=862&amp;height=647"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="647"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=2220&amp;cropW=1249&amp;xPos=856&amp;yPos=0&amp;width=862&amp;height=1533"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1533"
+          />
+        <media:thumbnail
+            url="https://live-production.wcms.abc-cdn.net.au/741d1c3d5f21a68de80757ac5e502d3c?impolicy=wcms_crop_resize&amp;cropH=2220&amp;cropW=1665&amp;xPos=648&amp;yPos=0&amp;width=862&amp;height=1149"
+            width="862"
+            height="1149"
+          />
+      </media:group>
+    </item>
+<item>
+      <title>The hearts hoping to create lasting impact at Sculpture by the Sea </title>
+      <link>https://www.abc.net.au/news/2026-10-17/sydneys-sculpture-by-the-sea-celebrates-30-years/107277040</link>
+      <description>
+        <![CDATA[More than 60 hearts, representing women killed in domestic violence incidents, are among the artworks at what is considered the world's biggest outdoor sculpture competition.]]>
+      </description>
+      <dc:creator>Tamsyn Buckle</dc:creator>
+      <pubDate>Fri, 16 Oct 2026 20:25:50 +0000</pubDate>
+      <guid isPermaLink="true">https://www.abc.net.au/news/2026-10-17/sydneys-sculpture-by-the-sea-celebrates-30-years/107277040</guid>
+      <category>Arts Festivals</category>
+      <category>Sculpture</category>
+      <category>Installation Art</category>
+      <media:group>
+        <media:description>Philippa Lysaght (left) and Omi McCurdie's Sweethearts installation represents the women who have been killed by their former or current partner this year.</media:description>
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=2592&amp;cropW=4608&amp;xPos=0&amp;yPos=393&amp;width=862&amp;height=485"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="485"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=3072&amp;cropW=3072&amp;xPos=513&amp;yPos=0&amp;width=862&amp;height=862"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="862"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=2860&amp;cropW=4290&amp;xPos=0&amp;yPos=121&amp;width=862&amp;height=575"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="575"
+            isDefault="true"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=3072&amp;cropW=2304&amp;xPos=870&amp;yPos=0&amp;width=862&amp;height=1149"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1149"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=3072&amp;cropW=4096&amp;xPos=0&amp;yPos=0&amp;width=862&amp;height=647"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="647"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=3072&amp;cropW=1728&amp;xPos=1082&amp;yPos=0&amp;width=862&amp;height=1533"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1533"
+          />
+        <media:thumbnail
+            url="https://live-production.wcms.abc-cdn.net.au/e1003ba8d93e131addaa1acbb77b00fa?impolicy=wcms_crop_resize&amp;cropH=3072&amp;cropW=2304&amp;xPos=870&amp;yPos=0&amp;width=862&amp;height=1149"
+            width="862"
+            height="1149"
+          />
+      </media:group>
+    </item>
+<item>
+      <title>Grandfather's HQ Kingswood keeps family memories alive</title>
+      <link>https://www.abc.net.au/news/2026-10-17/hq-kingswood-keeps-family-memories-alive/107232676</link>
+      <description>
+        <![CDATA[Almost 500,000 of the HQ Kingswoods were made across Holden's Australian factories from 1971 to 1974. A South Australian family's heirloom is now being dusted off for the Bay to Birdwood historical rally.]]>
+      </description>
+      <dc:creator>Caroline Horn</dc:creator>
+      <pubDate>Fri, 16 Oct 2026 20:23:44 +0000</pubDate>
+      <guid isPermaLink="true">https://www.abc.net.au/news/2026-10-17/hq-kingswood-keeps-family-memories-alive/107232676</guid>
+      <category>Car Enthusiasm</category>
+      <media:group>
+        <media:description>The 1973 HQ Kingswood was purchased by Trent Truran's grandfather in 1975.</media:description>
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=3940&amp;xPos=0&amp;yPos=0&amp;width=862&amp;height=485"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="485"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=2216&amp;xPos=1636&amp;yPos=0&amp;width=862&amp;height=862"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="862"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=3324&amp;xPos=616&amp;yPos=0&amp;width=862&amp;height=575"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="575"
+            isDefault="true"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=1662&amp;xPos=1913&amp;yPos=0&amp;width=862&amp;height=1149"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1149"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=2955&amp;xPos=985&amp;yPos=0&amp;width=862&amp;height=647"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="647"
+          />
+        <media:content
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=1247&amp;xPos=2120&amp;yPos=0&amp;width=862&amp;height=1533"
+            medium="image"
+            type="image/jpeg"
+            width="862"
+            height="1533"
+          />
+        <media:thumbnail
+            url="https://live-production.wcms.abc-cdn.net.au/4d443e02bab3803bf8ef3bcf7d3edb63?impolicy=wcms_crop_resize&amp;cropH=2216&amp;cropW=1662&amp;xPos=1913&amp;yPos=0&amp;width=862&amp;height=1149"
+            width="862"
+            height="1149"
+          />
+      </media:group>
+    </item>
+  </channel>
+</rss>

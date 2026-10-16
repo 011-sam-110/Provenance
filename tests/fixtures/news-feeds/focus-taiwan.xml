@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title> Latest | FOCUS TAIWAN - CNA ENGLISH NEWS</title>
+    <link>https://focustaiwan.tw/news</link>
+    <description>As Taiwan's national news agency, Focus Taiwan (focustaiwan.tw) to provide real-time news related to Taiwan to the English-reading public at home and abroad.</description>
+    <language>en</language>
+    <copyright>The Central News Agency</copyright>
+    <lastBuildDate>Sat, 17 Oct 2026 02:55:20 GMT</lastBuildDate>
+    <ttl>15</ttl>
+    <image>
+      <title>Latest | FOCUS TAIWAN - CNA ENGLISH NEWS</title>
+      <width>400</width>
+      <height>300</height>
+      <link>https://focustaiwan.tw/news</link>
+      <url>https://focustaiwan.tw/img/default.png</url>
+    </image>
+    <item>
+      <guid isPermaLink="false">CNA/20261016/202610160019</guid>
+      <title><![CDATA[Chinese exchange student deported over video showing him 'pinching Lai']]></title>
+      <link>https://focustaiwan.tw/politics/202610160019</link>
+      <pubDate>Fri, 16 Oct 2026 20:45:36 +0800</pubDate>
+      <description><![CDATA[Taipei, Oct. 16 (CNA) A Chinese exchange student was deported on Friday after posting a video that appeared to show him pinching President Lai Ching-te (賴清德) between his fingers, with comments including "Got the little Lai Ching-te."]]></description>
+    </item>
+<item>
+      <guid isPermaLink="false">CNA/20261016/202610160018</guid>
+      <title><![CDATA[Chiang proposes easing urban renewal threshold; Shen questions bottlenecks]]></title>
+      <link>https://focustaiwan.tw/politics/202610160018</link>
+      <pubDate>Fri, 16 Oct 2026 20:22:34 +0800</pubDate>
+      <description><![CDATA[Taipei, Oct. 16 (CNA) Taipei Mayor Chiang Wan-an (蔣萬安) proposed easing requirements for city assistance with urban renewal Friday, while Democratic Progressive Party (DPP) Legislator Puma Shen (沈伯洋), his election challenger, said the changes would not resolve bottlenecks preventing projects from reaching construction.]]></description>
+    </item>
+<item>
+      <guid isPermaLink="false">CNA/20261016/202610160017</guid>
+      <title><![CDATA[Champi expected to become typhoon within 24 hours; path remains uncertain]]></title>
+      <link>https://focustaiwan.tw/society/202610160017</link>
+      <pubDate>Fri, 16 Oct 2026 19:40:31 +0800</pubDate>
+      <description><![CDATA[Taipei, Oct. 16 (CNA) Tropical Storm Champi is expected to strengthen into a typhoon within 24 hours, but its future path remains uncertain, the Central Weather Administration (CWA) said Friday.]]></description>
+    </item>
+  </channel>
+</rss>

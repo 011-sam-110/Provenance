@@ -8,8 +8,8 @@
 //
 // NEXT BUNDLES EACH ROUTE HANDLER SEPARATELY, SO MODULE STATE IS NOT SHARED. A
 // `let cache` at the top of a route file is one cache per bundle. /api/news and
-// /api/signals/headline-places would each have held their own, so the fourteen
-// publishers and the Telegram channel would have been fetched TWICE per cycle, the two
+// /api/signals/headline-places would each have held their own, so every
+// publisher and the Telegram channel would have been fetched TWICE per cycle, the two
 // surfaces would have disagreed about what the news was, and nothing would have looked
 // broken. The cache therefore hangs off globalThis under a Symbol.for key — the same
 // pattern, for the same reason, as lib/news/scrapedStore.ts and lib/news/places.ts.
@@ -18,7 +18,7 @@
 // behaviour and the last-good fallback are the route's, unchanged, with their reasoning
 // carried across intact.
 
-import { parseRss, mergeNews, type NewsItem, type NewsPayload } from "@/lib/news";
+import { parseRss, mergeNews, withinAge, type NewsItem, type NewsPayload } from "@/lib/news";
 import { parseTelegram } from "@/lib/news/telegram";
 import { toNewsItems } from "@/lib/news/ingest";
 import { scrapedItems } from "@/lib/news/scrapedStore";
@@ -33,8 +33,8 @@ interface Feed {
 // AP has no public feed of its own any more, and the mirrors that carry it are third
 // parties republishing someone else's wire. A site whose whole argument is that you can
 // check where a claim came from cannot source its news from an unattributable
-// middleman. CBC was dropped for a duller reason — it timed out on two of three
-// attempts, and a feed that usually is not there is not a source, it is latency.
+// middleman. CBC was once dropped here as "timing out on two of three attempts"; that
+// was a User-Agent block, not a flaky feed — see FEED_USER_AGENT.
 //
 // WHY THERE ARE FOURTEEN OF THEM. The focus view clusters these headlines into
 // cross-source stories, and with the original six that view had almost nothing to show:
@@ -50,10 +50,22 @@ interface Feed {
 // ignored it, and that report is worthless if the only outlets present are British and
 // American — it would find a blindspot in every story on earth. SCMP, Times of India
 // and the Jerusalem Post are there to give that measurement something real to measure.
+//
+// WHY THERE ARE TWENTY-NINE (2026-10-16). The fourteen still left three continents with
+// no outlet at all: of 451 headlines on prod that day, 35% came from British outlets,
+// 15 named an African place, 14 a Latin American one and ONE an Oceanian one, and no
+// newsroom from Africa, Latin America, Oceania, Canada or Korea was in the set. The
+// fifteen below the line fill that, each probed live before it went in (status, item
+// count, items under 24 h, and every item parsed with a date through parseRss). All
+// are the publisher's own feed and keyless. Africanews, RNZ Pacific, MercoPress and
+// Buenos Aires Times are the regional fills; CBC and Yonhap add Canada and a Korean
+// national wire; PBS NewsHour covers PBS while the NewsScraper push is absent; SABC
+// News headlines rarely name a country, so it widens the widget more than the map.
 export const FEEDS: readonly Feed[] = [
   { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC" },
   { url: "https://www.aljazeera.com/xml/rss/all.xml", source: "Al Jazeera" },
-  { url: "https://feeds.npr.org/1001/rss.xml", source: "NPR" },
+  // 1004 is NPR World. 1001 (used until 2026-10-16) is NPR "News", a US domestic mix.
+  { url: "https://feeds.npr.org/1004/rss.xml", source: "NPR" },
   { url: "https://www.theguardian.com/world/rss", source: "The Guardian" },
   { url: "https://rss.dw.com/rdf/rss-en-world", source: "DW" },
   { url: "https://www.france24.com/en/rss", source: "France 24" },
@@ -65,6 +77,26 @@ export const FEEDS: readonly Feed[] = [
   { url: "https://www.scmp.com/rss/91/feed/", source: "SCMP" },
   { url: "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms", source: "Times of India" },
   { url: "https://www.jpost.com/rss/rssfeedsinternational", source: "The Jerusalem Post" },
+  // ── added 2026-10-16 ────────────────────────────────────────────────────────
+  { url: "https://www.africanews.com/feed/rss", source: "Africanews" },
+  // RNZ's robots.txt asks for a Crawl-delay of 7 s; the 5-minute cache is far wider.
+  { url: "https://www.rnz.co.nz/rss/pacific.xml", source: "RNZ" },
+  { url: "https://en.mercopress.com/rss", source: "MercoPress" },
+  // Serves 100 items back two weeks; the age window (MAX_ITEM_AGE_MS) keeps the recent ones.
+  { url: "https://www.batimes.com.ar/feed", source: "Buenos Aires Times" },
+  { url: "https://www.cbc.ca/webfeed/rss/rss-world", source: "CBC" },
+  { url: "https://en.yna.co.kr/RSS/news.xml", source: "Yonhap" },
+  { url: "https://kyivindependent.com/news-archive/rss/", source: "Kyiv Independent" },
+  { url: "https://www.pbs.org/newshour/feeds/rss/world", source: "PBS NewsHour" },
+  { url: "https://www.abc.net.au/news/feed/51120/rss.xml", source: "ABC Australia" },
+  // Item dates are date-only (stamped 12:00), so UN stories sort by day, not by hour.
+  { url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml", source: "UN News" },
+  { url: "https://www.rfi.fr/en/rss", source: "RFI" },
+  { url: "https://www.ansa.it/english/news/english_nr_rss.xml", source: "ANSA" },
+  // The feed URL focustaiwan.tw itself links to; it is CNA's own feed on feedburner.
+  { url: "https://feeds.feedburner.com/rsscna/engnews/", source: "Focus Taiwan" },
+  { url: "https://www.premiumtimesng.com/feed", source: "Premium Times" },
+  { url: "https://www.sabcnews.com/sabcnews/feed/", source: "SABC News" },
 ];
 
 // Keyless Telegram channels, scraped from their public t.me/s web preview (no API, no
@@ -114,6 +146,19 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
  * The yield curve flattens after 500 and the cost curve does not, which is where the
  * number came from. It is a straight trade of 60 ms per poll for twice the corroborated
  * stories, and the whole point of this board is the corroborated ones.
+ *
+ * KEPT AT 500 WHEN THE FEEDS WENT FROM 14 TO 29 (2026-10-16), on a measurement and not
+ * by default. After the 72-hour age window the 29 feeds held 855 distinct headlines;
+ * the newest 500 reach back 16.5 hours. Clustering them on provenance-1:
+ *
+ *     n=500   ~71 ms     41 corroborated stories
+ *     n=700   ~146 ms    61
+ *     n=800   ~191 ms    74
+ *     n=855   ~215 ms    74
+ *
+ * clusterNews runs in the reader's browser on every poll, so 700 doubles the cost on
+ * their device for half again as many corroborated stories. That is a product trade
+ * for the owner to make, not a side effect of adding feeds; the numbers are here for it.
  */
 export const LIMIT = 500;
 
@@ -137,10 +182,24 @@ export const SCRAPED_POOL = 700;
 const CACHE = Symbol.for("provenance.news.feedCache");
 const globalCache = globalThis as unknown as { [CACHE]?: NewsPayload | null };
 
+/**
+ * The User-Agent every feed and channel fetch sends.
+ *
+ * WAS "TrafficNerd/2.0 (+github.com/...)" FOR THE RSS FEEDS, AND THAT COST US CBC.
+ * Measured 2026-10-16: cbc.ca answered a browser UA in 0.13 to 0.37 s three times out
+ * of three, and let the TrafficNerd UA time out two times out of two. The earlier note
+ * here called CBC "flaky"; it was a User-Agent block that looked like flakiness, because
+ * a block that answers with silence instead of a 403 reads as a slow server. None of
+ * the other feeds probed that day (23 of them) treated the two UAs differently, so the
+ * browser string costs the other feeds nothing. The Telegram preview already needed it.
+ */
+export const FEED_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+
 async function fetchFeed(feed: Feed): Promise<NewsItem[]> {
   try {
     const res = await fetch(feed.url, {
-      headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
+      headers: { "User-Agent": FEED_USER_AGENT },
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return [];
@@ -154,11 +213,7 @@ async function fetchTelegram(ch: TgChannel): Promise<NewsItem[]> {
   try {
     // t.me/s serves its HTML only to browser-like clients, so use a browser UA.
     const res = await fetch(ch.url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-        Accept: "text/html",
-      },
+      headers: { "User-Agent": FEED_USER_AGENT, Accept: "text/html" },
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return [];
@@ -196,7 +251,12 @@ export async function mergedNews(nowMs = Date.now()): Promise<NewsPayload> {
   // this process, the store is empty and this contributes [] — exactly what a dead feed
   // contributes. Nothing here can fail a request.
   lists.push(toNewsItems(scrapedItems(SCRAPED_POOL)));
-  const items = mergeNews(lists, LIMIT);
+  // The age window applies to every path alike, before the cap: a stale item must not
+  // take one of the LIMIT places from a fresh one. See MAX_ITEM_AGE_MS for what it cost.
+  const items = mergeNews(
+    lists.map((list) => withinAge(list, nowMs)),
+    LIMIT,
+  );
 
   // Keep the last good list if a transient outage emptied everything.
   if (items.length === 0 && held && held.items.length > 0) return held;

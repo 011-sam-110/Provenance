@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"  xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/">
+	<channel>
+		<title><![CDATA[Yonhap News Agency | All News]]></title>
+		<link>https://en.yna.co.kr/news</link>
+		<atom:link href="https://en.yna.co.kr/RSS/news.xml" rel="self" type="application/rss+xml"/>
+		<description><![CDATA[Yonhap News Agency | All News]]></description>
+		<language>en</language>
+		<copyright><![CDATA[Yonhap News Agency]]></copyright>
+		<sy:updatePeriod>hourly</sy:updatePeriod>
+		<sy:updateFrequency>1</sy:updateFrequency>
+		<lastBuildDate>Sat, 17 Oct 2026 04:53:15 +0900</lastBuildDate>
+		<pubDate>Sat, 17 Oct 2026 04:53:15 +0900</pubDate>
+		<item>
+			<title><![CDATA[U.S. senator hails Hanwha's role in revitalizing American shipbuilding industry]]></title>
+			<link>https://en.yna.co.kr/view/AEN20261017000500315</link>
+			<guid isPermaLink="true">https://en.yna.co.kr/view/AEN20261017000500315</guid>
+			<pubDate>Sat, 17 Oct 2026 04:53:15 +0900</pubDate>
+			<dc:creator>Chang Dong-woo</dc:creator>
+			<description><![CDATA[WASHINGTON, Oct. 16 (Yonhap) -- A U.S. senator highlighted on Friday South Korea...]]></description>
+			<media:content url="https://img.yna.co.kr/etc/inner/EN/2026/10/17/AEN20261017000500315_01_i_P2.jpg" type="image/jpeg"/>
+		</item>
+<item>
+			<title><![CDATA[U.S. envoy highlights role of S. Korean investment in creating American jobs]]></title>
+			<link>https://en.yna.co.kr/view/AEN20261017000400315</link>
+			<guid isPermaLink="true">https://en.yna.co.kr/view/AEN20261017000400315</guid>
+			<pubDate>Sat, 17 Oct 2026 03:47:00 +0900</pubDate>
+			<dc:creator>Chang Dong-woo</dc:creator>
+			<description><![CDATA[WASHINGTON, Oct. 16 (Yonhap) -- U.S. Ambassador to South Korea Michelle Steel ha...]]></description>
+			<media:content url="https://img.yna.co.kr/photo/yna/YH/2026/10/15/PYH2026101504420031500_P2.jpg" type="image/jpeg"/>
+		</item>
+<item>
+			<title><![CDATA[Hyundai Motor to recall over 94,000 vehicles in U.S. over fire risk]]></title>
+			<link>https://en.yna.co.kr/view/AEN20261017000300315</link>
+			<guid isPermaLink="true">https://en.yna.co.kr/view/AEN20261017000300315</guid>
+			<pubDate>Sat, 17 Oct 2026 02:55:32 +0900</pubDate>
+			<dc:creator>Chang Dong-woo</dc:creator>
+			<description><![CDATA[WASHINGTON, Oct. 16 (Yonhap) -- Hyundai Motor America will recall more than 94,0...]]></description>
+			<media:content url="https://img.yna.co.kr/photo/yna/YH/2026/01/29/PYH2026012911910001300_P2.jpg" type="image/jpeg"/>
+		</item>
+	</channel>
+</rss>
