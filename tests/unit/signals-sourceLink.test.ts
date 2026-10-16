@@ -125,3 +125,27 @@ describe("resolveSignalSources — licence obligations", () => {
     expect(resolveSignalSources({ signalId: "crime" }).every((s) => !s.licence)).toBe(true);
   });
 });
+
+// A layer fed by several publishers (earthquakes: USGS, GeoNet, INGV…; cyclones:
+// NHC, JTWC, JMA) must name the publisher of THIS record, not the layer's first one.
+describe("recordLabel — a multi-publisher layer names the record's own publisher", () => {
+  test("a GeoNet quake's chip says GeoNet, and the USGS home chip is not added", () => {
+    const out = resolveSignalSources({
+      signalId: "earthquakes",
+      link: "https://www.geonet.org.nz/earthquake/2026p780530",
+      recordLabel: "GeoNet",
+    });
+    expect(out).toEqual([{ href: "https://www.geonet.org.nz/earthquake/2026p780530", label: "GeoNet", scope: "record" }]);
+  });
+
+  test("without a record link it falls back to the layer's provider", () => {
+    const out = resolveSignalSources({ signalId: "earthquakes", recordLabel: "GeoNet" });
+    expect(out.map((s) => s.label)).toEqual(["USGS"]);
+  });
+
+  test("a blank or non-string recordLabel changes nothing", () => {
+    const a = resolveSignalSources({ signalId: "earthquakes", link: "https://earthquake.usgs.gov/x" });
+    const b = resolveSignalSources({ signalId: "earthquakes", link: "https://earthquake.usgs.gov/x", recordLabel: 3 });
+    expect(b).toEqual(a);
+  });
+});
