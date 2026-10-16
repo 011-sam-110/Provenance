@@ -75,7 +75,9 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   severeStorms: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
   floods: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
   gdacs: { label: "GDACS", url: "https://www.gdacs.org/" },
+  // JTWC, JMA and CMA storms name their own agency on the record chip (`recordLabel`).
   "tropical-cyclones": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/" },
+  "cyclone-forecasts": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/gtwo.php" },
   "fire-active": { label: "NASA FIRMS", url: "https://firms.modaps.eosdis.nasa.gov/" },
   aurora: { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" },
   "space-weather": { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/" },

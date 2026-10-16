@@ -63,10 +63,18 @@ describe("quality — an entry that says nothing is worse than none", () => {
 describe("the caveats we most need to be right about", () => {
   // Each of these is a real misreading we would otherwise invite. If someone
   // softens one of these entries, this test should stop them.
-  it("warns that the NHC cyclone layer is not global", () => {
+  // Until 2026-10-16 the layer read NHC alone and this pinned "not global". It now
+  // reads JTWC for every other basin, so the caveat that matters is whose number it is.
+  it("says which centre warns where, and that outside NHC's basins it is not the regional WMO centre", () => {
     const e = explainerFor("tropical-cyclones")!;
-    expect(e.coverage).toMatch(/Atlantic|Eastern Pacific/i);
-    expect(e.limitations.join(" ")).toMatch(/typhoon|Western Pacific/i);
+    expect(e.coverage).toMatch(/Atlantic/i);
+    expect(e.coverage).toMatch(/JTWC/);
+    expect(e.limitations.join(" ")).toMatch(/not the regional WMO centre/i);
+    expect(e.limitations.join(" ")).toMatch(/10 minutes/i);
+  });
+
+  it("warns that a forecast cone is the centre's track, not the storm's size", () => {
+    expect(explainerFor("cyclone-forecasts")!.limitations.join(" ")).toMatch(/CENTRE/);
   });
 
   it("warns that FIRMS detects heat rather than fire", () => {

@@ -28,5 +28,5 @@ export interface EventSource {
 export const EVENT_SOURCES: EventSource[] = [
   { id: "earthquakes", type: "quake", label: "Earthquakes", attribution: "USGS, EMSC and national seismic agencies", precision: "EXACT", magnitudeUnit: "M" },
   { id: "gdacs", type: "disaster", label: "Disasters (GDACS)", attribution: "GDACS", precision: "ADMIN" },
-  { id: "tropical-cyclones", type: "cyclone", label: "Cyclones (NOAA NHC)", attribution: "NOAA NHC", precision: "ADMIN" },
+  { id: "tropical-cyclones", type: "cyclone", label: "Cyclones (NHC, JTWC)", attribution: "NOAA NHC, JTWC", precision: "ADMIN" },
 ];

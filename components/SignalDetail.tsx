@@ -61,7 +61,9 @@ export default function SignalDetail({ object }: { object: WorldObject }) {
   // adapter deep-links one, else the provider's dataset page. A composite layer
   // (the instability index) is DERIVED — it lists every contributing provider and
   // is flagged as an estimate, never passed off as one authoritative source.
-  const sources = resolveSignalSources({ signalId, link, sourceUrl, recordLabel: props.catalogue });
+  // A layer that reads several publishers names the one this record came from:
+  // `catalogue` on a quake, `agency` on a cyclone (JTWC, JMA, CMA).
+  const sources = resolveSignalSources({ signalId, link, sourceUrl, recordLabel: props.catalogue ?? props.agency });
   const derived = isCompositeSignal(signalId);
 
   const assetKind = typeof props.assetKind === "string" ? (props.assetKind as string) : undefined;

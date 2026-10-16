@@ -161,6 +161,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": "2 at sea or in orbit."
   },
   {
+    "id": "cyclone-forecasts",
+    "label": "Cyclone forecasts (NHC)",
+    "group": "Natural hazards",
+    "tier": "incidents",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading. Measured through its own fetch() against the live NHC feeds on 2026-10-16T20:05Z: 2 forecast cones (Trudy, Simon) and 1 East Pacific outlook area. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "fire-active",
     "label": "Active fires (FIRMS)",
     "group": "Natural hazards",

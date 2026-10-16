@@ -63,6 +63,7 @@ import { GEOMAG_STATIONS_SOURCE } from "@/lib/signals/geomag-stations";
 import { INSTABILITY_SOURCE } from "@/lib/signals/instability";
 import { AIR_QUALITY_STATIONS_SOURCE } from "@/lib/signals/airquality-stations";
 import { TROPICAL_CYCLONES_SOURCE } from "@/lib/signals/tropical-cyclones";
+import { CYCLONE_FORECASTS_SOURCE } from "@/lib/signals/cyclone-forecasts";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 import { NEWS_COVERAGE_SOURCE } from "@/lib/signals/news-coverage";
@@ -84,7 +85,8 @@ export const SIGNALS: SignalSource[] = [
   SEVERE_STORMS_SOURCE,
   FLOODS_SOURCE,
   GDACS_SOURCE, // multi-hazard GDACS alerts (EQ/TC/FL/VO/DR/WF), alert-coloured
-  TROPICAL_CYCLONES_SOURCE, // NOAA NHC active named storms (keyless; empty in quiet season)
+  TROPICAL_CYCLONES_SOURCE, // every warned storm: NOAA NHC + JTWC, with JMA/CMA readings (keyless)
+  CYCLONE_FORECASTS_SOURCE, // NHC forecast cones + tropical weather outlook areas (keyless)
   FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (key-gated: FIRMS_MAP_KEY)
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)

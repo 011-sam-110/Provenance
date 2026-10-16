@@ -145,14 +145,27 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "tropical-cyclones",
-    whatItShows: "An active tropical cyclone as reported by the NOAA National Hurricane Center.",
-    method: "Reported directly by NHC advisories.",
+    whatItShows: "An active tropical cyclone at its current centre, from NOAA's National Hurricane Center (Atlantic, East and Central Pacific) or the Joint Typhoon Warning Center (every other basin). NHC's storms also carry their 5-day forecast cone, and NHC's outlook areas show where a storm may form.",
+    method: "Reported directly by NHC advisories and JTWC warnings, both on 1-minute sustained winds, which is what the Saffir-Simpson colours assume. In the West Pacific, JMA's (10-minute) and CMA's (2-minute) readings of the same storm are added as labelled fields, never used for the colour.",
     confidence: "official",
-    coverage: "The Atlantic and Eastern Pacific basins — the NHC's area of responsibility. NOT global.",
+    coverage: "Every basin: NHC for the Atlantic and the East and Central Pacific, JTWC for the West Pacific, the North Indian Ocean and the Southern Hemisphere. Cones and outlook areas exist for NHC's basins only.",
     limitations: [
-      "This is the single most misread layer on the map: an empty Western Pacific does NOT mean there are no typhoons. Those basins are the JTWC's and JMA's, and are not in this feed.",
-      "A pin is the current centre position, not the forecast cone.",
-      "Outside the northern-hemisphere season this layer is legitimately empty for months.",
+      "Outside NHC's basins the warning centre is JTWC, a US military centre, not the regional WMO centre (JMA, IMD, Météo-France, Fiji, BoM). Their intensities can differ from JTWC's, partly because most of them average wind over 10 minutes.",
+      "A JTWC warning is issued every 6 hours, so a West Pacific position can be up to 6 hours old.",
+      "The cone is where the CENTRE is likely to track (two-thirds of past forecast errors), not the size of the storm: damage often reaches well outside it.",
+      "Outside the seasons this layer is legitimately empty for weeks.",
+    ],
+  },
+  {
+    id: "cyclone-forecasts",
+    whatItShows: "Two NHC forecasts: the 5-day forecast cone of each active Atlantic or Pacific storm, and the outlook areas where NHC expects a storm may form, with its 2-day and 7-day chances.",
+    method: "Read directly from NHC's KMZ products for the current advisory and the current Tropical Weather Outlook. Nothing is recomputed.",
+    confidence: "modelled",
+    coverage: "NHC's basins only: the Atlantic and the East and Central Pacific. No cone or outlook is drawn for West Pacific, Indian Ocean or Southern Hemisphere storms.",
+    limitations: [
+      "The cone is where the storm's CENTRE is likely to go: it is sized so that two-thirds of NHC's past forecast errors fall inside it. Rain, surge and wind often reach far outside it.",
+      "An outlook area is a chance that a storm forms, not a storm. Most low-chance areas never become one.",
+      "The cone follows the last full advisory; an intermediate advisory can move the storm before the cone is redrawn.",
     ],
   },
   {
