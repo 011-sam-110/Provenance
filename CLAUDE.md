@@ -413,9 +413,11 @@ Re-measure before putting a number in a README, a CV or a PR description.
   82/100** and conflict can be out-ranked as a driver by displacement. And on the live feed today
   it tops out near **32/100 with most countries on 1 of 4 factors** — the food and ACLED inputs
   are both gone, so nearly every score is a floor. Read the Brief's numbers with that in mind.
-- Key-gated layers dormant in prod: ReliefWeb, ENTSO-E grid. Live with keys: NASA FIRMS,
-  OpenAQ stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
-  vessels through the real adapter on 2026-09-05). Canonical env-var names live in `docs/API_KEYS.md` —
+- Key-gated layers dormant in prod: ReliefWeb, ENTSO-E grid. Live with keys: OpenAQ
+  stations, AIS (AIS was listed as dormant here and is not — measured 26 then 53
+  vessels through the real adapter on 2026-09-05). NASA FIRMS went keyless on 2026-10-16:
+  prod's key drew HTTP 400 for five weeks, so Active fires reads the keyless global
+  24 h files. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
   `WINDY_WEBCAMS_API_KEY`).
 

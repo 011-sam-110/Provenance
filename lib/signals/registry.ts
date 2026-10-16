@@ -95,7 +95,7 @@ export const SIGNALS: SignalSource[] = [
   VOLCANO_ALERTS_SOURCE, // official volcano alert levels: USGS HANS + JMA (keyless)
   CEMS_ACTIVATIONS_SOURCE, // Copernicus EMS rapid-mapping activations (keyless)
   WEATHER_WARNINGS_SOURCE, // official NWS (US) + ECCC (Canada) weather alerts (keyless)
-  FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (key-gated: FIRMS_MAP_KEY)
+  FIRE_FIRMS_SOURCE, // NASA FIRMS active-fire detections (keyless global 24 h files)
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)
   GEOMAG_STATIONS_SOURCE, // FMI + USGS magnetometers: MEASURED disturbance at named stations (keyless)

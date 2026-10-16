@@ -21,7 +21,6 @@ Keys you've already given me are wired in `.env.local` and **live locally**:
 |-----|-----------------|-------|
 | `AISSTREAM_API_KEY` | **Ships (AIS chokepoints)** — real-time vessels at Hormuz/Suez/Malacca/… | ✅ live |
 | `OPENAQ_API_KEY` | **Air quality — stations** — real PM2.5 from ~25.8k OpenAQ monitors | ✅ live |
-| `FIRMS_MAP_KEY` | **Active fires** — NASA VIIRS thermal detections | ✅ live |
 | `ACLED_EMAIL` + `ACLED_PASSWORD` | **Conflict events** + the conflict factor of the Index | ⏳ dormant — login works but the account's **API read access isn't activated yet** (returns 403). Activate it on myACLED and it goes live with no code change. |
 
 **Keyless layers added this session — already live, no key needed:** Internet
@@ -42,7 +41,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 3 | **OpenAQ** | Real air‑quality **station** measurements (upgrades the modelled CAMS layer) | Free | `OPENAQ_API_KEY` |
 | 4 | **UCDP** (Uppsala) | Geocoded conflict events + fatalities (structural conflict history) | Free token | `UCDP_API_TOKEN` |
 | 5 | **ACLED** | Real‑time armed‑conflict & protest events w/ actor attribution | Free — **must activate API access** | `ACLED_EMAIL` + `ACLED_PASSWORD` |
-| 6 | **NASA FIRMS** | VIIRS/MODIS thermal active‑fire detections | Free MAP_KEY | `FIRMS_MAP_KEY` |
+| 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
 | 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
 
 ### Where to get each
@@ -63,8 +62,9 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
    select an access type). Auth is an OAuth2 password grant (your email + password,
    `scope=authenticated`). ⚠️ Until API access is activated the read returns
    `403 "Access denied"` even though login succeeds — the layer stays dormant.
-6. **NASA FIRMS** — request a free **MAP_KEY** at
-   <https://firms.modaps.eosdis.nasa.gov/api/area/> (instant, just an email).
+6. **NASA FIRMS** — nothing to get. Prod served zero fires for five weeks because
+   FIRMS answered `400 Invalid MAP_KEY.` to the key on the box, so the layer moved to
+   the keyless files at `firms.modaps.eosdis.nasa.gov/data/active_fire/` (same columns).
 
 ---
 
@@ -294,7 +294,6 @@ OPENAQ_API_KEY=
 UCDP_API_TOKEN=
 ACLED_EMAIL=
 ACLED_PASSWORD=
-FIRMS_MAP_KEY=
 RELIEFWEB_APPNAME=
 
 # --- Optional enhancements ---

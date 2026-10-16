@@ -120,7 +120,7 @@ npm test                    # 4,264 tests across 403 files (Vitest), counted on 
 npx vitest list             # enumerate the suite without running it
 ```
 
-No API keys are needed for the core map. Optional keys unlock the dormant extras, and the canonical names live in [`docs/API_KEYS.md`](docs/API_KEYS.md) (`WINDY_WEBCAMS_API_KEY`, `FIRMS_MAP_KEY`, `OPENAQ_API_KEY`, `RELIEFWEB_APPNAME`, `ENTSOE_API_TOKEN`, `AISSTREAM_API_KEY`, `FINNHUB_API_KEY`, `FRED_API_KEY`). A local GeoCLIP sidecar improves `/locate` accuracy.
+No API keys are needed for the core map. Optional keys unlock the dormant extras, and the canonical names live in [`docs/API_KEYS.md`](docs/API_KEYS.md) (`WINDY_WEBCAMS_API_KEY`, `OPENAQ_API_KEY`, `RELIEFWEB_APPNAME`, `ENTSOE_API_TOKEN`, `AISSTREAM_API_KEY`, `FINNHUB_API_KEY`, `FRED_API_KEY`). A local GeoCLIP sidecar improves `/locate` accuracy.
 
 ## 🧠 How it works
 

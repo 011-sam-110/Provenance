@@ -64,14 +64,6 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
   },
   {
     kind: "required",
-    id: "fire-active",
-    label: "NASA FIRMS active fires",
-    env: ["FIRMS_MAP_KEY"],
-    degrades: "No satellite thermal-anomaly detections; the EONET wildfire layer still works.",
-    obtain: "Free — firms.modaps.eosdis.nasa.gov/api/map_key.",
-  },
-  {
-    kind: "required",
     id: "grid-load",
     label: "European grid load",
     env: ["ENTSOE_API_TOKEN"],

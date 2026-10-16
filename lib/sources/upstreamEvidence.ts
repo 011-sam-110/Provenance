@@ -71,10 +71,11 @@ export const REFUSAL_TTL_MS = 24 * 60 * 60 * 1000;
  *                        the map, not from the reasoning.
  *   ai-brief           — FREELLMAPI_BASE_URL, configured per deployment. No fixed host.
  *   geolocate-vision   — same gateway, same reason.
+ *   fire-active        — keyless since 2026-10-16 (the global 24 h files). The key it
+ *                        used to send was the one FIRMS refused with HTTP 400.
  */
 export const CREDENTIALED_HOSTS: Readonly<Record<string, readonly string[]>> = {
   "air-quality-stations": ["api.openaq.org"],
-  "fire-active": ["firms.modaps.eosdis.nasa.gov"],
   "grid-load": ["web-api.tp.entsoe.eu"],
   reliefweb: ["api.reliefweb.int"],
   webcams: ["api.windy.com"],
