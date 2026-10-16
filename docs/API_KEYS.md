@@ -42,7 +42,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 4 | **UCDP** (Uppsala) | Geocoded conflict events + fatalities (structural conflict history) | Free token | `UCDP_API_TOKEN` |
 | 5 | **ACLED** | Real‑time armed‑conflict & protest events w/ actor attribution | Free — **must activate API access** | `ACLED_EMAIL` + `ACLED_PASSWORD` |
 | 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
-| 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
+| 7 | ~~**ReliefWeb**~~ (OCHA) | **No key needed since 2026-10-16.** Its API refuses any appname it has not approved, so the layer reads ReliefWeb's own weekly export on HDX (CC BY 4.0) plus the keyless IFRC GO appeals API. `RELIEFWEB_APPNAME` is no longer read. | — | — |
 | 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
 | 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly), and megawatts offline per US nuclear plant, daily (the keyless NRC report already gives each unit's % power) | Free, instant, email only | `EIA_API_KEY` |
 | 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
@@ -310,7 +310,6 @@ OPENAQ_API_KEY=
 UCDP_API_TOKEN=
 ACLED_EMAIL=
 ACLED_PASSWORD=
-RELIEFWEB_APPNAME=
 ISOC_PULSE_API_KEY=
 EIA_API_KEY=
 BARENTSWATCH_CLIENT_ID=

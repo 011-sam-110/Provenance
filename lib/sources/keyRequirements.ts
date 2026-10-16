@@ -108,14 +108,6 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain:
       "Free - a Pulse account at pulse.internetsociety.org, then generate an API token. Pulse terms: non-commercial use only, and the credit 'Provided by Internet Society' must be shown.",
   },
-  {
-    kind: "required",
-    id: "reliefweb",
-    label: "ReliefWeb situation reports",
-    env: ["RELIEFWEB_APPNAME"],
-    degrades: "No UN OCHA humanitarian situation reports.",
-    obtain: "Free, no signup — ReliefWeb only wants an identifying app-name string.",
-  },
   // --- capabilities that are not signal layers ------------------------------
   {
     kind: "required",

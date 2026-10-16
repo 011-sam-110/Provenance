@@ -138,7 +138,7 @@ export const SIGNALS: SignalSource[] = [
   CYBER_RANSOMWARE_SOURCE,
   // Human cost (keyless UNHCR displacement, country-aggregated)
   DISPLACEMENT_SOURCE,
-  RELIEFWEB_SOURCE, // UN OCHA humanitarian emergencies (key-gated: RELIEFWEB_APPNAME)
+  RELIEFWEB_SOURCE, // humanitarian emergencies: ReliefWeb's HDX export + IFRC GO appeals (keyless)
   // Energy / grid (key-gated: ENTSOE_API_TOKEN)
   GRID_LOAD_SOURCE,
   // Military (keyless unfiltered military ADS-B)

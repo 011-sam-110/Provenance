@@ -644,12 +644,13 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "reliefweb",
-    whatItShows: "A humanitarian situation report or emergency published by UN OCHA's ReliefWeb.",
-    method: "Editorially curated by ReliefWeb from agency and NGO reporting.",
+    whatItShows: "An active humanitarian emergency on ReliefWeb's (UN OCHA) disaster register, or an IFRC emergency appeal, placed on its country.",
+    method: "ReliefWeb's own weekly export of its curated disaster list (ongoing and alert entries), plus IFRC GO appeals that have not ended. An appeal for the same country, type and month as a ReliefWeb entry is dropped as a duplicate; early-action appeals set aside before a hazard are left out.",
     confidence: "official",
     coverage: "Global, focused on situations with an active humanitarian response.",
     limitations: [
-      "A document, not an event. A pin marks that something was PUBLISHED about a place, not that something happened there today.",
+      "The ReliefWeb export is refreshed weekly, so a new disaster can be up to about seven days late there. IFRC appeals arrive the same day and cover part of that gap.",
+      "A register entry, not an event at a point: the mark is the country, and an entry stays ongoing for as long as the response runs.",
       "Publication follows the humanitarian system's attention, which lags onset and fades before a crisis ends.",
       "Country-level geocoding; sub-national precision is inconsistent.",
     ],
