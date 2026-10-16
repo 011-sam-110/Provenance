@@ -7985,3 +7985,29 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+/* ── Account tab (components/shell/settings/AccountTab.tsx) + its header door ── */
+/* Field groups sit 12px apart; a hint belongs to the field above it, so it sits 4px
+   under its input, the same distance as a label above one. */
+.tn-account-form { display: flex; flex-direction: column; gap: 12px; }
+.tn-account-field { display: flex; flex-direction: column; gap: 4px; }
+.tn-account-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+/* Same shape as the Telegram test button and the share button beside it in this drawer. */
+.tn-account-btn { font: inherit; font-size: var(--tnx-fs-sm, 12px); font-weight: 600; color: var(--tn-text); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 9px; padding: 8px 12px; cursor: pointer; align-self: flex-start; }
+.tn-account-btn:hover:not(:disabled) { border-color: var(--tn-border-strong); }
+.tn-account-btn:active:not(:disabled) { transform: translateY(1px); }
+.tn-account-btn:focus-visible, .tn-account-link:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-account-btn:disabled { opacity: .5; cursor: not-allowed; }
+.tn-account-btn.is-primary { color: #fff; background: var(--tn-accent); border-color: var(--tn-accent); }
+.tn-account-btn.is-primary:hover:not(:disabled) { background: var(--tn-accent-strong); border-color: var(--tn-accent-strong); }
+/* Text buttons. align-self keeps a lone one (Back to sign in) on the left edge. */
+.tn-account-link { font: inherit; font-size: var(--tnx-fs-sm, 12px); font-weight: 600; color: var(--tn-accent); background: none; border: 0; padding: 0; cursor: pointer; align-self: flex-start; text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.tn-account-link:hover { color: var(--tn-text); }
+.tn-account-switch { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.tn-account-email { font-size: var(--tnx-fs, 13px); color: var(--tn-text); margin: 0; overflow-wrap: anywhere; }
+.tn-account-lead { font-size: var(--tnx-fs, 13px); line-height: 1.5; color: var(--tn-text); margin: 0; max-width: 60ch; overflow-wrap: anywhere; }
+.tn-account-lead strong { font-weight: 600; }
+.tn-account-sync { font-size: var(--tnx-fs-sm, 12px); color: var(--tn-text-muted); margin: 0; }
+/* The header door: a long username ends in an ellipsis instead of pushing the cluster. */
+.tn-account-trigger .tnx-hdr-btn-label { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-account-trigger svg { flex: none; }

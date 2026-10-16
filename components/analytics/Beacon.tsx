@@ -20,7 +20,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { PostHog } from "posthog-js";
-import { beaconConfig, beaconOptions, navigationPageview, type BeaconConfig } from "@/lib/analytics/beacon";
+import { beaconConfig, beaconOptions, beaconSkipsPath, navigationPageview, type BeaconConfig } from "@/lib/analytics/beacon";
 import { currentTimeZone, isOptedOut, privacySignal, shouldCount } from "@/lib/analytics/optOut";
 import { beginVisit, VISIT_EVENT } from "@/lib/analytics/returnFlag";
 import { bindBeacon } from "@/lib/analytics/track";
@@ -71,6 +71,8 @@ export function Beacon(): null {
   // Init once. The empty dependency list is deliberate: posthog-js installs its own
   // listeners and re-initialising on navigation would double-count.
   useEffect(() => {
+    // Account pages carry one-time credentials in the URL: load nothing there.
+    if (beaconSkipsPath(window.location.pathname)) return;
     const config = armedConfig();
     if (!config) return;
 
@@ -117,6 +119,8 @@ export function Beacon(): null {
   // bounce rate wrong, arriving by a different route.
   useEffect(() => {
     if (!pathname) return;
+    // Account pages carry one-time credentials in the URL: capture nothing there.
+    if (beaconSkipsPath(pathname)) return;
     // Read before the import resolves: by then a second route change may have run.
     const first = firstRoute.current;
     firstRoute.current = false;

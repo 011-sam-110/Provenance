@@ -53,9 +53,14 @@
  * Re-measured 2026-10-15 on feat/accounts-m1: it adds `tests/unit/account-config.test.ts`
  * and `tests/unit/account-sync-keys.test.ts`.
  * `npx vitest list`: 4,731 cases across 419 files.
+ *
+ * Re-measured 2026-10-16 on feat/accounts-m2: it adds `tests/unit/account-username.test.ts`
+ * and `tests/unit/account-errors.test.ts`; Task 6 adds `tests/unit/account-import-guard.test.ts`;
+ * the design pass adds `tests/unit/account-reopen-flag.test.ts`.
+ * `npx vitest run`: 4,753 cases across 423 files.
  */
 export const UNIT_TESTS = {
-  cases: 4731,
-  files: 419,
-  measuredAt: "2026-10-15",
+  cases: 4753,
+  files: 423,
+  measuredAt: "2026-10-16",
 } as const;

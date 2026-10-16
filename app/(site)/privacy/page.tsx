@@ -15,6 +15,15 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-16:
+ *   - The PostHog counter no longer loads on pages under /account/. In a build with
+ *     accounts those pages carry one-time sign-in codes in the address, and no event from
+ *     them may reach a third party (components/analytics/Beacon.tsx, beaconSkipsPath). The
+ *     PostHog card says only that the counter does not load there: without accounts the
+ *     only page under /account/ is a 404, so the reason would describe nothing.
+ *   - The Supabase client is now reached by lib/account/client.ts, behind the build gate
+ *     (see "persistence" below). No public sentence changes for that.
+ *
  * WHAT CHANGED ON 2026-10-15:
  *   - package.json gained a new dependency, @supabase/supabase-js, for optional
  *     accounts. So far only the database schema, a config module and the sync allowlist
@@ -192,8 +201,12 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     every visitor's full IP address before we do. What reaches our log is masked; what
  *     reaches Cloudflare is not, and no wording on our side changes that.
  *   • persistence — package.json ships twelve runtime deps. One, @supabase/supabase-js, is
- *     a database client. No file under app/, lib/ or components/ imports it. Only the
- *     dev-only scripts/check-account-rls.mjs does (2026-10-15). The guard in
+ *     a database client. Since M2 (2026-10-16) ONE file reaches it: lib/account/client.ts,
+ *     through a dynamic import() that runs only when both NEXT_PUBLIC_SUPABASE_* variables
+ *     were set at build (plus a type-only import). Production builds without them, so "No
+ *     page loads it" below stays true, and tests/unit/account-import-guard.test.ts fails on
+ *     any other import. That sentence becomes false at launch (M5). The dev-only
+ *     scripts/check-account-rls.mjs also imports it (2026-10-15). The guard in
  *     tests/unit/discovery-admin-gate.test.ts is now TWO checks and the difference
  *     matters to the copy below.
  *
@@ -267,7 +280,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-15">15 October 2026</time>
+                Last updated <time dateTime="2026-10-16">16 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -804,8 +817,8 @@ export default function PrivacyPage() {
               <p>
                 <span className="pv-num">us.i.posthog.com</span> receives the page-view counter
                 described below, and <span className="pv-num">us-assets.i.posthog.com</span> serves
-                its library files, so PostHog sees your IP address on every page you open here. The
-                project is set to discard client IP data: PostHog may use the address to work out a
+                its library files, so PostHog sees your IP address on each page that you open here, except
+                the pages under /account/, where the counter does not load. The project is set to discard client IP data: PostHog may use the address to work out a
                 rough location, such as a country, and then does not store it with the event. None of
                 this loads if you turned counting off, or if your browser sends Do Not Track or Global
                 Privacy Control.
@@ -1065,14 +1078,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-15">15 October 2026</time>
+                <time dateTime="2026-10-16">16 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 15 October 2026. When the behaviour changes this
+              This describes the code as deployed on 16 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

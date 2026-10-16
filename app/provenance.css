@@ -1523,6 +1523,88 @@
 }
 
 /* ===========================================================================
+   /account/confirm (components/account/ConfirmView.tsx), where every account
+   email link lands: one heading, one sentence, one action. Its new-password
+   field is the only text field in this route group, so the field rules are here
+   and nowhere else. The input border is --pv-fg-mute, not a rule colour: an
+   input's edge needs 3:1 against the page, and --pv-rule-hi is near 2:1.
+   =========================================================================== */
+
+.pv-account {
+  max-width: 36rem;
+  padding-bottom: clamp(3rem, 10vh, 6rem);
+}
+
+.pv-account .pv-cta-row {
+  margin: 1.8rem 0 0;
+}
+
+/* The heading takes the focus when a phase changes (for screen readers). It is not a
+   control, so it shows no focus ring. */
+.pv-account h1:focus {
+  outline: none;
+}
+
+.pv-account .pv-prose + .pv-prose {
+  margin-top: 0.8rem;
+}
+
+.pv-account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 24rem;
+}
+
+.pv-account-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--pv-fg);
+}
+
+.pv-account-input {
+  font: inherit;
+  font-size: 1.05rem;
+  color: var(--pv-fg-bright);
+  background: var(--pv-surface-2);
+  border: 1px solid var(--pv-fg-mute);
+  border-radius: 0;
+  padding: 0.8rem 0.9rem;
+  width: 100%;
+  caret-color: var(--pv-accent);
+}
+
+.pv-account-input:hover {
+  border-color: var(--pv-fg-dim);
+}
+
+.pv-account-input:focus-visible {
+  outline: 2px solid var(--pv-accent);
+  outline-offset: 2px;
+  border-color: var(--pv-fg-dim);
+}
+
+.pv-account-hint {
+  font-size: 0.9rem;
+  color: var(--pv-fg-dim);
+}
+
+.pv-account-error {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+  color: var(--pv-alarm);
+}
+
+.pv-account button.pv-cta {
+  cursor: pointer;
+}
+
+.pv-account button.pv-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===========================================================================
    REDUCED MOTION
    The globe still turns to the place a section is about — that is navigation,
    and suppressing it would leave the label pointing somewhere the copy is not

@@ -1,5 +1,5 @@
 "use client";
-// The Settings slide-over (opened from the top-right gear), in three tabs down a left rail.
+// The Settings slide-over (opened from the top-right gear), in four tabs down a left rail (Account only when accounts are configured).
 //
 // THE RAIL IS A COLUMN OF THE DRAWER, NOT A STRIP INSIDE IT. Main / Display / Shortcuts
 // shipped as a segmented pill across the top, which is the right shape for two or three
@@ -41,6 +41,8 @@ import { SETTINGS_TABS, nextTabId, type SettingsTabId } from "@/lib/shell/settin
 import MainTab from "./settings/MainTab";
 import DisplayTab from "./settings/DisplayTab";
 import ShortcutsTab from "./settings/ShortcutsTab";
+import AccountTab from "./settings/AccountTab";
+import { accountsConfigured } from "@/lib/account/config";
 
 /**
  * Which way the rail is actually running, read back off the rail itself.
@@ -72,24 +74,27 @@ function useRailAxis(ref: React.RefObject<HTMLElement | null>, open: boolean) {
   return axis;
 }
 
-export default function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = useState<SettingsTabId>(SETTINGS_TABS[0].id);
+export default function SettingsPanel({ open, onClose, initialTab }: { open: boolean; onClose: () => void; initialTab?: SettingsTabId }) {
+  const tabs = SETTINGS_TABS.filter((t) => t.id !== "account" || accountsConfigured());
+  const [tab, setTab] = useState<SettingsTabId>(tabs[0].id);
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   const axis = useRailAxis(railRef, open);
-  const active = SETTINGS_TABS.find((t) => t.id === tab) ?? SETTINGS_TABS[0];
+  const active = tabs.find((t) => t.id === tab) ?? tabs[0];
 
-  // ALWAYS OPENS ON THE FIRST TAB, AND THIS EFFECT IS WHY IT HAS TO BE EXPLICIT.
+  // OPENS ON THE FIRST TAB UNLESS `initialTab` CHOOSES ANOTHER, AND THIS EFFECT IS WHY IT HAS TO BE EXPLICIT.
   // TerminalHeader mounts this component unconditionally and only passes `open` — the
   // component never unmounts, so a bare useState would be sticky for the session and then
   // reset on reload, which is the worst of both: the user cannot predict it and cannot
-  // rely on it. Landing on Main every time is also what lets the e2e suite and
+  // rely on it. Landing on Main by default (or on `initialTab`, for example Account from the header button) every time is also what lets the e2e suite and
   // scripts/shoot-surfaces.mjs assert what they see first instead of racing whatever the
   // previous test left behind.
   useEffect(() => {
-    if (open) setTab(SETTINGS_TABS[0].id);
-  }, [open]);
+    if (open) setTab(initialTab && tabs.some((t) => t.id === initialTab) ? initialTab : tabs[0].id);
+    // `tabs` comes from a build-time constant, so it cannot change while mounted and is
+    // left out of the dependency list on purpose.
+  }, [open, initialTab]);
 
   // Focus in, and focus back out again. The drawer had no focus management at all: it
   // opened and left focus on the gear behind it. Same shape as PlacementPicker, which the
@@ -98,13 +103,19 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
   useEffect(() => {
     if (!open) return;
     restoreRef.current = document.activeElement as HTMLElement | null;
+    // Focus the tab the drawer opens ON, by id. The selected tab is not safe to query: the
+    // effect above switches to `initialTab` in a later render, and this timeout can run
+    // first, so the header's Account button used to put the focus ring on Main.
+    const first = initialTab && tabs.some((x) => x.id === initialTab) ? initialTab : tabs[0].id;
     const t = window.setTimeout(() => {
-      railRef.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus();
+      railRef.current?.querySelector<HTMLButtonElement>(`#tn-settings-tab-${first}`)?.focus();
     }, 0);
     return () => {
       window.clearTimeout(t);
       restoreRef.current?.focus?.();
     };
+    // `initialTab` is read at open time only: it is set in the same update as `open`, and a
+    // re-run while open would restore focus behind the drawer and take it back again.
   }, [open]);
 
   useEffect(() => {
@@ -138,14 +149,14 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
   // instant and local, so the alternative — arrow to move, Enter to commit — would just be
   // an extra keystroke for nothing.
   const onTabKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    const next = nextTabId(SETTINGS_TABS, tab, e.key);
+    const next = nextTabId(tabs, tab, e.key);
     if (!next) return; // not ours: let Tab and Escape through untouched
     // Captured synchronously — React nulls currentTarget once the handler returns, and the
     // focus() below runs after setTab.
     const rail = e.currentTarget;
     e.preventDefault();
     select(next);
-    const i = SETTINGS_TABS.findIndex((t) => t.id === next);
+    const i = tabs.findIndex((t) => t.id === next);
     rail.querySelectorAll<HTMLButtonElement>('[role="tab"]')[i]?.focus();
   };
 
@@ -176,7 +187,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
             above, so the aria-orientation below is whatever the stylesheet actually did. */}
         <div className="tn-settings-rail" role="tablist" aria-label="Settings sections"
           aria-orientation={axis} ref={railRef} onKeyDown={onTabKey}>
-          {SETTINGS_TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -186,7 +197,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
               aria-selected={t.id === tab}
               aria-controls="tn-settings-panel"
               // Roving tabindex: the rail is ONE tab stop, so Tab moves into the panel
-              // rather than walking three buttons first.
+              // rather than walking every tab button first.
               tabIndex={t.id === tab ? 0 : -1}
               onClick={() => select(t.id)}
             >
@@ -195,9 +206,9 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
           ))}
         </div>
 
-        {/* Cell 4 — ONE PANEL ID, SHARED BY ALL THREE TABS. The inactive panels are
-            unmounted, so per-tab ids would leave two of the three aria-controls dangling at
-            all times. All three tabs do genuinely control this one region; aria-labelledby
+        {/* Cell 4 — ONE PANEL ID, SHARED BY ALL THE TABS. The inactive panels are
+            unmounted, so per-tab ids would leave all but one of the aria-controls dangling at
+            all times. All the tabs do genuinely control this one region; aria-labelledby
             is the half that swings to name whichever tab is selected, and aria-describedby
             hands a screen reader the same one-line orientation the header shows.
             tabIndex={0} because this is the scroll container, and a keyboard user has to
@@ -214,6 +225,7 @@ export default function SettingsPanel({ open, onClose }: { open: boolean; onClos
           {tab === "main" && <MainTab />}
           {tab === "display" && <DisplayTab />}
           {tab === "shortcuts" && <ShortcutsTab />}
+          {tab === "account" && <AccountTab />}
         </div>
       </aside>
     </div>

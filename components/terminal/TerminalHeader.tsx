@@ -3,7 +3,7 @@
 // components/shell/StatusBar.tsx.
 //
 // Left → right: brand block (logo · h1) │ board tabs │ ——— │
-// presence · DISCORD · ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS.
+// presence · DISCORD · ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS · ACCOUNT.
 //
 // The board tabs are the console's whole navigation: exactly TWO — Globe and
 // Streets. The other five boards (World, Nature, Skywatch, Infrastructure,
@@ -39,6 +39,8 @@ import { appStatusLine } from "@/components/shell/a11y";
 import Mark from "@/components/brand/Mark";
 import DiscordMark from "@/components/brand/DiscordMark";
 import SettingsPanel from "@/components/shell/SettingsPanel";
+import AccountButton from "@/components/account/AccountButton";
+import type { SettingsTabId } from "@/lib/shell/settingsTabs";
 import LivePresence from "@/components/shell/LivePresence";
 import { BRAND } from "@/lib/brand";
 
@@ -207,6 +209,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const layers = useLayers();
   const activePresetId = useActivePreset();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTabId | undefined>(undefined);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
   // never disagree about which board is loaded. listPresets() (not BUILTIN_PRESETS)
@@ -399,17 +402,20 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           <button
             type="button"
             className="tnx-hdr-btn tn-settings-trigger"
-            onClick={() => setSettingsOpen(true)}
+            onClick={() => { setSettingsTab(undefined); setSettingsOpen(true); }}
             aria-label="Settings"
             title="Settings"
           >
             <span aria-hidden>⚙</span>
             <span className="tnx-hdr-btn-label">SETTINGS</span>
           </button>
+          {/* THE ACCOUNT DOOR. Last in the cluster: it is the newest control and the only one
+              about the person rather than the console. Nothing renders when accounts are off. */}
+          <AccountButton onOpen={() => { setSettingsTab("account"); setSettingsOpen(true); }} />
         </div>
       </header>
 
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel open={settingsOpen} initialTab={settingsTab} onClose={() => setSettingsOpen(false)} />
     </>
   );
 }

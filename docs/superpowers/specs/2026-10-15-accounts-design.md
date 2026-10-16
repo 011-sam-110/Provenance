@@ -384,6 +384,10 @@ library.
 - Email enumeration: Supabase returns the same answer for a new and an existing email at sign-up when
   confirmation is on (`mailer_autoconfirm` and `sms_autoconfirm` both false). Our copy keeps that:
   "Check your email" in both cases. The profile trigger never raises, so it cannot break the match.
+  One limit is Supabase's own and stays: it rate-limits emails per address, so two sign-up or reset
+  requests for the same address inside a minute fail through the API only when that address has an
+  account. Our UI shows the same sentence either way (M2), but a direct API caller can see it.
+  Public copy must therefore never say that nobody can find out whether an address has an account.
 - Passwords never touch our server. Supabase hashes them with bcrypt.
 - Cloudflare: account calls go to `*.supabase.co`, not through our origin, so no cache rule can
   replay one person's answer to another.

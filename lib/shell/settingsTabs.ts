@@ -1,4 +1,4 @@
-// THE SETTINGS DRAWER'S THREE TABS, AND THE ARROW ARITHMETIC BEHIND THE STRIP.
+// THE SETTINGS DRAWER'S FOUR TABS (ACCOUNT ONLY WHEN ACCOUNTS ARE CONFIGURED), AND THE ARROW ARITHMETIC BEHIND THE STRIP.
 //
 // Pure, and nothing touches window/document at module scope — the same rule
 // lib/shell/keymap.ts states for itself, so importing this on the server or under the
@@ -8,7 +8,7 @@
 // that renders the buttons, and tests/e2e/shortcuts.spec.ts, which clicks a tab by its
 // accessible name. A label typed in both places is a label that gets renamed in one.
 
-export type SettingsTabId = "main" | "display" | "shortcuts";
+export type SettingsTabId = "main" | "display" | "shortcuts" | "account";
 
 /**
  * The tabs, in rail order.
@@ -29,6 +29,9 @@ export const SETTINGS_TABS: { id: SettingsTabId; label: string; blurb: string }[
   { id: "main", label: "Main", blurb: "Where alerts go" },
   { id: "display", label: "Display", blurb: "What the console shows you" },
   { id: "shortcuts", label: "Shortcuts", blurb: "The keys that are yours" },
+  // LAST, and only rendered when accounts are configured (SettingsPanel filters it). The
+  // header's account button opens the drawer straight on it.
+  { id: "account", label: "Account", blurb: "Your sign-in and sync" },
 ];
 
 /**
@@ -43,7 +46,7 @@ export const SETTINGS_TABS: { id: SettingsTabId; label: string; blurb: string }[
  * is no caret in here for ← to hijack.
  *
  * WRAPS AT BOTH ENDS, which is the WAI-ARIA tab pattern, and is also the only behaviour
- * that reads as finished on a three-item list — stopping dead on the last tab feels like
+ * that reads as finished on a short list — stopping dead on the last tab feels like
  * a key that failed rather than a boundary that was reached.
  *
  * NULL RATHER THAN `current` FOR AN UNHANDLED KEY, and that is the load-bearing part: the

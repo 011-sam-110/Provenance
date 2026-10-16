@@ -127,8 +127,9 @@ obligations and are not satisfied by the licence.
   since 2026-10-05, and `landing-globe-ground` and `hero-basemap` are the tests that
   still pin them and leave with them (`Starfield.tsx` is NOT a leftover: the new page
   mounts it, held still, behind the hero and the close). `app/provenance.css` is not dead
-  either: `(site)/layout.tsx` still imports it and wraps `/` and `/privacy` in
-  `.pv-root`, `/privacy` is built from its `.pv-doc` / `.pv-block` / `.pv-ledger` rules,
+  either: `(site)/layout.tsx` still imports it and wraps `/`, `/privacy` and
+  `/account/confirm` in `.pv-root`, `/privacy` is built from its `.pv-doc` / `.pv-block` /
+  `.pv-ledger` rules, the email-link page from `.pv-doc` and its own `.pv-account*` rules,
   and the Discord note on `/` is styled by its `.pv-root .tn-note` block, which
   `community-mounts.test.ts` pins. Delete the landing-only rules, never the file.
 - **Never type a count into the landing page.** `lib/marketing/wall.ts` and the source
