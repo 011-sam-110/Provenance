@@ -30,6 +30,19 @@ const MIN_PROBABILITY = 5;
 /** Downsampling bucket size in degrees — one point per bucket, the bucket's peak. */
 const LON_STEP = 8;
 const LAT_STEP = 4;
+/**
+ * Cells nearer the equator than this (degrees of latitude) are not drawn.
+ *
+ * WHY: OVATION's grid carries a SEAM at the equator. On 2026-10-16 two runs in a row
+ * had up to 6 % in the latitude 0 row (144 and 155 of its 360 cells at 5 % or more)
+ * and 1 to 3 % at latitude -1, while latitude +1 was all zero; a third run at 19:31Z
+ * had it at -2..0, up to 7 %. Aurora at the equator at Kp 2 to 4 is physically
+ * impossible, and at the 5 % floor the seam made 19 to 21 buckets that read
+ * "Aurora 5% likely" on the equator. Even the great storms that pushed the aurora to
+ * low latitudes did so as a continuous oval from the pole, which a 20 degree cut
+ * leaves standing; a one-row band at 0 is a grid artefact.
+ */
+export const EQUATOR_BAND_DEG = 20;
 /** Backstop cap on the point count once bucketed (storms widen the oval). */
 const MAX_POINTS = 400;
 
@@ -74,7 +87,8 @@ export function wrapLon(lon: number): number {
 /**
  * Pure: thin an OVATION grid down to one representative cell per
  * `lonStep`×`latStep` bucket — the bucket's HIGHEST probability, so the crest of
- * the oval survives. Cells under `minProbability` and malformed rows are dropped.
+ * the oval survives. Cells under `minProbability`, cells inside the equator band
+ * (|lat| < EQUATOR_BAND_DEG) and malformed rows are dropped.
  * Output order is deterministic: probability descending, then latitude descending,
  * then longitude ascending. Coordinates are the real cell's, never a bucket centre.
  */
@@ -92,6 +106,7 @@ export function downsampleAurora(
     const pct = Number(cell[2]);
     if (!Number.isFinite(lon) || !Number.isFinite(lat) || !Number.isFinite(pct)) continue;
     if (lat < -90 || lat > 90) continue;
+    if (Math.abs(lat) < EQUATOR_BAND_DEG) continue; // the equator seam, see above
     if (pct < minProbability) continue;
     const key = `${Math.floor(lon / lonStep)}:${Math.floor((lat + 90) / latStep)}`;
     const held = best.get(key);

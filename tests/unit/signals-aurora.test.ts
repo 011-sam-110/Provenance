@@ -1,12 +1,14 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/aurora-ovation.json";
 import live from "@/tests/fixtures/aurora-ovation-live.json";
+import live1016 from "@/tests/fixtures/aurora-ovation-2026-10-16.json";
 import {
   normalizeAurora,
   downsampleAurora,
   auroraColor,
   wrapLon,
   AURORA_SOURCE,
+  EQUATOR_BAND_DEG,
   type OvationGrid,
 } from "@/lib/signals/aurora";
 import { rowMetric } from "@/lib/console/signals/signalCard";
@@ -14,6 +16,8 @@ import { rowMetric } from "@/lib/console/signals/signalCard";
 const grid = fixture as unknown as OvationGrid;
 /** A verbatim excerpt of the live 2026-08-10 NOAA OVATION run (peak 22%). */
 const liveGrid = live as unknown as OvationGrid;
+/** The live 2026-10-16 19:31Z run, reduced to its bucket peaks (485 buckets, 19 on the equator seam). */
+const grid1016 = live1016 as unknown as OvationGrid;
 
 test("keeps cells at/above the floor, brightest first", () => {
   const out = normalizeAurora(grid); // default floor 5%
@@ -118,4 +122,21 @@ test("REGRESSION: live output is bounded, in-range and spans both hemispheres", 
   expect(out.some((f) => f.lat < -40)).toBe(true); // southern oval
   expect(new Set(out.map((f) => f.id)).size).toBe(out.length); // ids unique
   expect(out[0].ts).toBe("2026-08-10T11:10:00Z");
+});
+
+// --- regression: the equator seam (2026-10-16) ----------------------------------
+
+test("REGRESSION: the OVATION equator seam draws no aurora at the equator", () => {
+  // The live run has 5-7 % cells at latitude -2..0: a grid artefact, not aurora.
+  const seam = (grid1016.coordinates ?? []).filter(([, lat, pct]) => Math.abs(lat) < 20 && pct >= 5);
+  expect(seam.length).toBeGreaterThan(10);
+  const out = normalizeAurora(grid1016);
+  expect(out.some((f) => Math.abs(f.lat) < EQUATOR_BAND_DEG)).toBe(false);
+  expect(out.some((f) => f.lat > 40)).toBe(true);
+  expect(out.some((f) => f.lat < -40)).toBe(true);
+});
+
+test("the equator band is a fixed 20 degrees and drops a lone low-latitude cell", () => {
+  expect(EQUATOR_BAND_DEG).toBe(20);
+  expect(downsampleAurora([[100, 0, 6], [100, -1, 6], [100, 19, 30], [100, -19, 30], [100, 20, 6]], 5, 8, 4)).toEqual([[100, 20, 6]]);
 });
