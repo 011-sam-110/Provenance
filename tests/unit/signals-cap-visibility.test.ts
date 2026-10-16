@@ -9,7 +9,7 @@ import { normalizeAis, AIS_CAP } from "@/lib/signals/ais";
 import { normalizeAirStations, OPENAQ_CAP } from "@/lib/signals/airquality-stations";
 import { normalizeEmsc, EMSC_REQUEST_LIMIT } from "@/lib/signals/emsc";
 import { normalizeLaunches, LAUNCHES_PAGE_LIMIT } from "@/lib/signals/launches";
-import { normalizeUsgs } from "@/lib/signals/usgs";
+import { normalizeUsgs, USGS_COVERAGE_RULE } from "@/lib/signals/usgs";
 import { projectSignal } from "@/lib/console/signals/signalCard";
 import { WORLD_SCOPE } from "@/lib/shell/scope";
 
@@ -289,7 +289,7 @@ describe("uncapped layers stay uncapped", () => {
       available: 1,
       availableExact: true,
       capped: false,
-      rule: "all earthquakes in the past 24 hours",
+      rule: USGS_COVERAGE_RULE,
     });
     // Uncapped stays uncapped: no invented denominator, no truncation note.
     expect(coverageCountLabel(c)).toBe("1");
