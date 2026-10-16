@@ -82,7 +82,8 @@ export interface PlaceMatch {
 
 interface Form {
   text: string;
-  entry: GazetteerEntry;
+  /** Null for a NOT_A_PLACE_FORMS entry: it claims its span and pins nothing. */
+  entry: GazetteerEntry | null;
   /** True when only an exact-case match counts. Rule 3. */
   exactCase: boolean;
 }
@@ -137,6 +138,33 @@ const ACRONYM_FORMS: Readonly<Record<string, string>> = {
  * 2 already keeps them out of "Nigeria" and "Somalia", and neither is an English word.
  */
 const AMBIGUOUS_FORMS: ReadonlySet<string> = new Set(["georgia", "jordan", "chad", "guinea"]);
+
+/**
+ * Longer names that CONTAIN a place name but are not that place. Each one claims its
+ * span (rule 2) so no shorter form can take the place out of it, and draws no pin.
+ *
+ * Both halves were measured on prod's 73 pins on 2026-10-16, not imagined:
+ *   • "Real Madrid demand resignation…" pinned the city of Madrid. A football club is
+ *     not its city, and these feeds carry sport. The other clubs here are the same
+ *     shape with a city the gazetteer holds (Madrid, Paris); "Inter Milan" and "AC
+ *     Milan" are absent because Milan is not in the city table, so they pin nothing.
+ *   • "Ex-leader of N. Ireland's largest unionist party…" pinned IRELAND, the Republic,
+ *     which is a different country from the one the headline names. Northern Ireland is
+ *     not in the country table (it is part of the UK), so the honest outcome is no pin
+ *     rather than a UK centroid in Leicestershire.
+ *
+ * Case-insensitive, like the full names they shadow.
+ */
+const NOT_A_PLACE_FORMS: readonly string[] = [
+  "Real Madrid",
+  "Atletico Madrid",
+  "Atlético Madrid",
+  "Paris Saint-Germain",
+  "Paris St-Germain",
+  "Northern Ireland",
+  "N. Ireland",
+  "N Ireland",
+];
 
 /**
  * What the pin is CALLED, which is not always what the dataset calls it.
@@ -264,6 +292,8 @@ function buildForms(): Form[] {
     );
   }
 
+  for (const text of NOT_A_PLACE_FORMS) forms.push({ text, entry: null, exactCase: false });
+
   forms.sort((a, b) => b.text.length - a.text.length || a.text.localeCompare(b.text));
   return forms;
 }
@@ -272,7 +302,9 @@ function buildForms(): Form[] {
 export function gazetteerSize(): { forms: number; countries: number; cities: number } {
   const countries = new Set<string>();
   const cities = new Set<string>();
-  for (const f of FORMS) (f.entry.kind === "country" ? countries : cities).add(f.entry.id);
+  for (const f of FORMS) {
+    if (f.entry) (f.entry.kind === "country" ? countries : cities).add(f.entry.id);
+  }
   return { forms: FORMS.length, countries: countries.size, cities: cities.size };
 }
 
@@ -346,6 +378,7 @@ export function matchPlaces(headline: string): PlaceMatch[] {
       // Rule 5. The span is still claimed, so no shorter form may take "Niger" out of
       // "Niger state" either — the words are spoken for, they are simply not a pin.
       claimed.push([at, end]);
+      if (!form.entry) continue; // a club or region that contains a place name: no pin
       if (form.entry.kind === "country" && NAMES_A_SUBDIVISION.test(text.slice(end))) continue;
       // First sighting keeps its position; a country named twice is still one pin.
       if (!found.has(form.entry.id)) {
