@@ -396,7 +396,7 @@ export default function PlaneDetail({ object }: Props) {
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--tn-text-faint)", lineHeight: 1.5 }}>
-          Live ADS-B position © adsb.lol{route || aircraft ? " · route / airframe © adsbdb.com" : ""}
+          Live ADS-B position © adsb.lol contributors (ODbL){route || aircraft ? " · route / airframe © adsbdb.com" : ""}
         </div>
       </div>
     </div>

@@ -72,7 +72,12 @@ import { PLANE_META } from "@/lib/icons/svg";
 import { withCoverage } from "@/lib/signals/coverage";
 import { laneFetch } from "@/lib/http/hostLane";
 
-export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol (community ADS-B receivers)";
+/**
+ * adsb.lol publishes its API and all its data under the ODbL 1.0 (`info.license` in
+ * https://api.adsb.lol/api/openapi.json, read 2026-10-16), which allows display with
+ * attribution, so the credit names the licence.
+ */
+export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol contributors (ODbL)";
 
 // ---------------------------------------------------------------------------
 // The type lists

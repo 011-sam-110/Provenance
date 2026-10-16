@@ -340,11 +340,14 @@ const REVALIDATE_S = 90;
  * call, adsb.lol sees only where volunteers run receivers and only the types we
  * list — and the coverage record says so on every response.
  *
- * adsb.lol carries no equivalent restriction: its feeders waive rights under CC0 and
- * no term on its site restricts API use, commercial use or redistribution. Verified
- * against content/en/privacy-license/index.md in the adsblol/website repo, 2026-08-14.
- * That is "no restriction exists", which is a slightly weaker claim than "a licence
- * expressly grants this" — worth knowing before anyone builds a paid product on it.
+ * adsb.lol's terms are the ODbL 1.0, not "no restriction" as this paragraph said
+ * until 2026-10-16. Its OpenAPI document states: "The license for the API as well as
+ * all data ADSB.lol makes public is ODbL" (`info.license`,
+ * https://api.adsb.lol/api/openapi.json). The ODbL allows display and reuse with
+ * attribution and share-alike on a derived database, so the layer is fine; the credit
+ * (ADSB_ATTRIBUTION) names the licence. The same document says a future API key will
+ * go to feeders only, and asks production users to get in touch. Both are open items
+ * for the owner, not for this code.
  *
  * THROWS, deliberately, on a pull that returns nothing OR that lost its mainline
  * batch. `unstable_cache` commits whatever this returns, so returning a poor
