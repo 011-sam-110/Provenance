@@ -8,8 +8,8 @@
 //
 // NEXT BUNDLES EACH ROUTE HANDLER SEPARATELY, SO MODULE STATE IS NOT SHARED. A
 // `let cache` at the top of a route file is one cache per bundle. /api/news and
-// /api/signals/headline-places would each have held their own, so the fourteen
-// publishers and the Telegram channel would have been fetched TWICE per cycle, the two
+// /api/signals/headline-places would each have held their own, so every
+// publisher and the Telegram channel would have been fetched TWICE per cycle, the two
 // surfaces would have disagreed about what the news was, and nothing would have looked
 // broken. The cache therefore hangs off globalThis under a Symbol.for key — the same
 // pattern, for the same reason, as lib/news/scrapedStore.ts and lib/news/places.ts.
@@ -50,6 +50,17 @@ interface Feed {
 // ignored it, and that report is worthless if the only outlets present are British and
 // American — it would find a blindspot in every story on earth. SCMP, Times of India
 // and the Jerusalem Post are there to give that measurement something real to measure.
+//
+// WHY THERE ARE TWENTY-NINE (2026-10-16). The fourteen still left three continents with
+// no outlet at all: of 451 headlines on prod that day, 35% came from British outlets,
+// 15 named an African place, 14 a Latin American one and ONE an Oceanian one, and no
+// newsroom from Africa, Latin America, Oceania, Canada or Korea was in the set. The
+// fifteen below the line fill that, each probed live before it went in (status, item
+// count, items under 24 h, and every item parsed with a date through parseRss). All
+// are the publisher's own feed and keyless. Africanews, RNZ Pacific, MercoPress and
+// Buenos Aires Times are the regional fills; CBC and Yonhap add Canada and a Korean
+// national wire; PBS NewsHour covers PBS while the NewsScraper push is absent; SABC
+// News headlines rarely name a country, so it widens the widget more than the map.
 export const FEEDS: readonly Feed[] = [
   { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC" },
   { url: "https://www.aljazeera.com/xml/rss/all.xml", source: "Al Jazeera" },
@@ -66,6 +77,26 @@ export const FEEDS: readonly Feed[] = [
   { url: "https://www.scmp.com/rss/91/feed/", source: "SCMP" },
   { url: "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms", source: "Times of India" },
   { url: "https://www.jpost.com/rss/rssfeedsinternational", source: "The Jerusalem Post" },
+  // ── added 2026-10-16 ────────────────────────────────────────────────────────
+  { url: "https://www.africanews.com/feed/rss", source: "Africanews" },
+  // RNZ's robots.txt asks for a Crawl-delay of 7 s; the 5-minute cache is far wider.
+  { url: "https://www.rnz.co.nz/rss/pacific.xml", source: "RNZ" },
+  { url: "https://en.mercopress.com/rss", source: "MercoPress" },
+  // Serves 100 items back two weeks; the age window (MAX_ITEM_AGE_MS) keeps the recent ones.
+  { url: "https://www.batimes.com.ar/feed", source: "Buenos Aires Times" },
+  { url: "https://www.cbc.ca/webfeed/rss/rss-world", source: "CBC" },
+  { url: "https://en.yna.co.kr/RSS/news.xml", source: "Yonhap" },
+  { url: "https://kyivindependent.com/news-archive/rss/", source: "Kyiv Independent" },
+  { url: "https://www.pbs.org/newshour/feeds/rss/world", source: "PBS NewsHour" },
+  { url: "https://www.abc.net.au/news/feed/51120/rss.xml", source: "ABC Australia" },
+  // Item dates are date-only (stamped 12:00), so UN stories sort by day, not by hour.
+  { url: "https://news.un.org/feed/subscribe/en/news/all/rss.xml", source: "UN News" },
+  { url: "https://www.rfi.fr/en/rss", source: "RFI" },
+  { url: "https://www.ansa.it/english/news/english_nr_rss.xml", source: "ANSA" },
+  // The feed URL focustaiwan.tw itself links to; it is CNA's own feed on feedburner.
+  { url: "https://feeds.feedburner.com/rsscna/engnews/", source: "Focus Taiwan" },
+  { url: "https://www.premiumtimesng.com/feed", source: "Premium Times" },
+  { url: "https://www.sabcnews.com/sabcnews/feed/", source: "SABC News" },
 ];
 
 // Keyless Telegram channels, scraped from their public t.me/s web preview (no API, no
@@ -115,6 +146,19 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
  * The yield curve flattens after 500 and the cost curve does not, which is where the
  * number came from. It is a straight trade of 60 ms per poll for twice the corroborated
  * stories, and the whole point of this board is the corroborated ones.
+ *
+ * KEPT AT 500 WHEN THE FEEDS WENT FROM 14 TO 29 (2026-10-16), on a measurement and not
+ * by default. After the 72-hour age window the 29 feeds held 855 distinct headlines;
+ * the newest 500 reach back 16.5 hours. Clustering them on provenance-1:
+ *
+ *     n=500   ~71 ms     41 corroborated stories
+ *     n=700   ~146 ms    61
+ *     n=800   ~191 ms    74
+ *     n=855   ~215 ms    74
+ *
+ * clusterNews runs in the reader's browser on every poll, so 700 doubles the cost on
+ * their device for half again as many corroborated stories. That is a product trade
+ * for the owner to make, not a side effect of adding feeds; the numbers are here for it.
  */
 export const LIMIT = 500;
 

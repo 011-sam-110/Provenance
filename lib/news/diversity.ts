@@ -22,8 +22,8 @@
 //
 // The comparison is also only as wide as the feed list. With six Anglo-American
 // feeds, "no Asian outlet carried this" was true of nearly every story and
-// therefore told a reader nothing. app/api/news/route.ts now carries fourteen
-// feeds across six regions for this reason; `universeFrom` reports the spread it
+// therefore told a reader nothing. lib/news/feed.ts now carries 29
+// feeds across every inhabited continent for this reason; `universeFrom` reports the spread it
 // actually has so the UI can decline to draw a conclusion the feed set cannot
 // support.
 

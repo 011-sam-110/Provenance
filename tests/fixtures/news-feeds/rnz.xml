@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+<title>RNZ Pacific Headlines</title>
+<description>The Latest Pacific headlines from RNZ News</description>
+<link>https://www.rnz.co.nz/news/pacific</link>
+<copyright>Radio New Zealand</copyright>
+<ttl>60</ttl>
+<atom:link rel="self" type="application/rss+xml" href="https://www.rnz.co.nz/rss/pacific.xml"/>
+<item>
+  <title>Cook Islanders urged to be prepared for potential cyclone</title>
+  <description>
+    <![CDATA[Cook Islanders are being urged to get ready as a tropical depression brews in the country's waters.]]>
+  </description>
+  <pubDate>Fri, 16 Oct 2026 20:08:27 +1300</pubDate>
+  <link>https://www.rnz.co.nz/news/pacific/1958250/cook-islanders-urged-to-be-prepared-for-potential-cyclone</link>
+  <guid isPermaLink="false">56743381c23f64c28cb1b38f1f1c7d85186931f2</guid>
+</item>
+<item>
+  <title>Toa Samoa give France a thrashing in World Cup opener</title>
+  <description>
+    <![CDATA[Samoa made a statement in their opening game of the Rugby League World Cup.]]>
+  </description>
+  <pubDate>Fri, 16 Oct 2026 23:14:17 +1300</pubDate>
+  <link>https://www.rnz.co.nz/news/pacific/1959226/toa-samoa-give-france-a-thrashing-in-world-cup-opener</link>
+  <guid isPermaLink="false">3cc0960fe8be01442a5e1a9a545ec9e51edab54b</guid>
+</item>
+<item>
+  <title>Fetu Samoa win praise despite loss</title>
+  <description>
+    <![CDATA[Fetu Samoa win praise from Australia despite 40-0 loss]]>
+  </description>
+  <pubDate>Sat, 17 Oct 2026 07:25:18 +1300</pubDate>
+  <link>https://www.rnz.co.nz/news/pacific/1964574/fetu-samoa-win-praise-despite-loss</link>
+  <guid isPermaLink="false">635c1e31dc80a13021a14124c2ea8857ee2a806b</guid>
+</item>
+  </channel>
+</rss>

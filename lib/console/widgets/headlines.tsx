@@ -1,6 +1,6 @@
 "use client";
 // World Headlines widget — the RSS news data piece as a monitor card. Reads the
-// keyless /api/news payload (fourteen world RSS feeds — see app/api/news/route.ts) and
+// keyless /api/news payload (29 world RSS feeds — see FEEDS in lib/news/feed.ts) and
 // lists the latest headlines with source + relative time, each linking out.
 
 import { useEffect, useMemo } from "react";

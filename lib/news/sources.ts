@@ -109,13 +109,44 @@ const TABLE: Record<string, Row> = {
   "south china morning post": { domain: "scmp.com", region: "Asia", type: "Newspaper", owner: "South China Morning Post, owned by Alibaba Group", funding: "Commercial", stateFunded: false },
   "times of india": { domain: "timesofindia.indiatimes.com", region: "Asia", type: "Newspaper", owner: "Bennett, Coleman & Co. (The Times Group)", funding: "Commercial", stateFunded: false },
 
+  yonhap: { domain: "en.yna.co.kr", region: "Asia", type: "Newswire", owner: "Yonhap News Agency, Korea's national wire; its largest shareholder is the News Agency Promotion Commission, and it is subsidised under the News Agency Promotion Act", funding: "State budget", stateFunded: true },
+  "yonhap news agency": { domain: "en.yna.co.kr", region: "Asia", type: "Newswire", owner: "Yonhap News Agency, Korea's national wire; its largest shareholder is the News Agency Promotion Commission, and it is subsidised under the News Agency Promotion Act", funding: "State budget", stateFunded: true },
+  "focus taiwan": { domain: "focustaiwan.tw", region: "Asia", type: "Newswire", owner: "Central News Agency, Taiwan's national news agency, funded by the government under its own statute", funding: "State budget", stateFunded: true },
+
+  // ── Europe (added 2026-10-16) ──────────────────────────────────────────────
+  "kyiv independent": { domain: "kyivindependent.com", region: "Europe", type: "Online newspaper", owner: "The Kyiv Independent, founded and co-owned by its journalists; funded mostly by reader memberships", funding: "Public donations", stateFunded: false },
+  "the kyiv independent": { domain: "kyivindependent.com", region: "Europe", type: "Online newspaper", owner: "The Kyiv Independent, founded and co-owned by its journalists; funded mostly by reader memberships", funding: "Public donations", stateFunded: false },
+  rfi: { domain: "rfi.fr", region: "Europe", type: "Public broadcaster", owner: "France Médias Monde, owned by the French state", funding: "State budget", stateFunded: true },
+  "rfi english": { domain: "rfi.fr", region: "Europe", type: "Public broadcaster", owner: "France Médias Monde, owned by the French state", funding: "State budget", stateFunded: true },
+  ansa: { domain: "ansa.it", region: "Europe", type: "Newswire", owner: "ANSA, a cooperative owned by Italian newspaper publishers", funding: "Cooperative", stateFunded: false },
+
   // ── North America (non-US) ─────────────────────────────────────────────────
   cbc: { domain: "cbc.ca", region: "North America", type: "Public broadcaster", owner: "Canadian Broadcasting Corporation, a federal Crown corporation", funding: "State budget", stateFunded: true },
+
+  // ── Africa (added 2026-10-16: until then no outlet in the set was African) ──
+  africanews: { domain: "africanews.com", region: "Africa", type: "Broadcaster", owner: "Part of the Euronews group, majority-owned by Alpac Capital", funding: "Commercial", stateFunded: false },
+  "premium times": { domain: "premiumtimesng.com", region: "Africa", type: "Online newspaper", owner: "Premium Times Services Ltd, an independent Nigerian publisher", funding: "Commercial", stateFunded: false },
+  "sabc news": { domain: "sabcnews.com", region: "Africa", type: "Public broadcaster", owner: "South African Broadcasting Corporation, owned by the South African state; funded by TV licence fees and advertising", funding: "Licence fee", stateFunded: true },
+  sabc: { domain: "sabcnews.com", region: "Africa", type: "Public broadcaster", owner: "South African Broadcasting Corporation, owned by the South African state; funded by TV licence fees and advertising", funding: "Licence fee", stateFunded: true },
+
+  // ── Latin America (added 2026-10-16) ───────────────────────────────────────
+  mercopress: { domain: "en.mercopress.com", region: "Latin America", type: "News agency", owner: "MercoPress, an independent news agency based in Montevideo, Uruguay", funding: "Commercial", stateFunded: false },
+  "buenos aires times": { domain: "batimes.com.ar", region: "Latin America", type: "Newspaper", owner: "Editorial Perfil, the Argentine Perfil media group", funding: "Commercial", stateFunded: false },
+
+  // ── Oceania (added 2026-10-16) ─────────────────────────────────────────────
+  rnz: { domain: "rnz.co.nz", region: "Oceania", type: "Public broadcaster", owner: "Radio New Zealand, a New Zealand Crown entity", funding: "State budget", stateFunded: true },
+  "rnz pacific": { domain: "rnz.co.nz", region: "Oceania", type: "Public broadcaster", owner: "Radio New Zealand, a New Zealand Crown entity", funding: "State budget", stateFunded: true },
+  "radio new zealand": { domain: "rnz.co.nz", region: "Oceania", type: "Public broadcaster", owner: "Radio New Zealand, a New Zealand Crown entity", funding: "State budget", stateFunded: true },
+  "abc australia": { domain: "abc.net.au", region: "Oceania", type: "Public broadcaster", owner: "Australian Broadcasting Corporation, a federal statutory corporation", funding: "State budget", stateFunded: true },
 
   // ── Wires ──────────────────────────────────────────────────────────────────
   reuters: { domain: "reuters.com", region: "International", type: "Newswire", owner: "Thomson Reuters; the Thomson family holds a controlling stake through Woodbridge", funding: "Commercial", stateFunded: false },
   "associated press": { domain: "apnews.com", region: "International", type: "Newswire", owner: "The Associated Press, a non-profit cooperative owned by its member newsrooms", funding: "Cooperative", stateFunded: false },
   ap: { domain: "apnews.com", region: "International", type: "Newswire", owner: "The Associated Press, a non-profit cooperative owned by its member newsrooms", funding: "Cooperative", stateFunded: false },
+
+  // The UN's own news service: the voice of an intergovernmental body, paid for from
+  // the UN regular budget, which member states fund. Typed as such, not as a newsroom.
+  "un news": { domain: "news.un.org", region: "International", type: "Intergovernmental", owner: "United Nations Department of Global Communications, funded from the UN regular budget", funding: "State budget", stateFunded: true },
 
   // Open-source conflict monitor scraped from its keyless Telegram channel. Typed
   // "OSINT monitor" — NOT a vetted newswire — so the badge is honest about the
@@ -181,7 +212,8 @@ export function sourceInitial(name: string): string {
  * set of outlets from the widget it places is the kind of small lie this app
  * cannot afford. One constant, two readers, no drift.
  *
- * It must keep naming exactly the feeds in FEEDS in app/api/news/route.ts.
+ * It must keep naming exactly the feeds in FEEDS in lib/news/feed.ts, and
+ * tests/unit/news-sources.test.ts fails when the count or a name drifts.
  */
 export const NEWS_ATTRIBUTION =
-  "14 world RSS feeds (BBC, Al Jazeera, NPR, Guardian, DW, France 24, Sky News, CBS, ABC, The Independent, Euronews, SCMP, Times of India, The Jerusalem Post) + the Liveuamap Telegram channel — all keyless";
+  "29 world RSS feeds (BBC, Al Jazeera, NPR, Guardian, DW, France 24, Sky News, CBS, ABC, The Independent, Euronews, SCMP, Times of India, The Jerusalem Post, Africanews, RNZ, MercoPress, Buenos Aires Times, CBC, Yonhap, Kyiv Independent, PBS NewsHour, ABC Australia, UN News, RFI, ANSA, Focus Taiwan, Premium Times, SABC News) + the Liveuamap Telegram channel — all keyless";

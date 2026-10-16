@@ -93,7 +93,7 @@ interface Form {
  *
  * Every one is CASE-SENSITIVE (rule 3), and every one is here because a world feed
  * writes it, not because it is a plausible abbreviation. "US" and "U.S." are both
- * present because the fourteen feeds do not agree with each other: the BBC and the
+ * present because the feeds do not agree with each other: the BBC and the
  * Guardian write "US", NPR writes "U.S.". Keeping only one would silently lose a large
  * share of the most-named country in the stream.
  *

@@ -47,7 +47,7 @@ export const EXTRA_MAP_LAYER_IDS: readonly string[] = EXTRA_MAP_LAYERS.map((l) =
  * Rail rows that are a CONSOLE WIDGET and nothing else.
  *
  * The mirror image of EXTRA_MAP_LAYERS above: those are layers with no widget,
- * these are widgets with no layer. World Headlines reads 14 publisher RSS feeds
+ * these are widgets with no layer. World Headlines reads 29 publisher RSS feeds
  * and groups them by story — there is no geometry in any of it, so it draws
  * nothing on the map and carries no toggle.
  *

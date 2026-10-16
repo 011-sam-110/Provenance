@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+   <channel>
+      <title><![CDATA[CBC | World News]]></title>
+      <description><![CDATA[FOR PERSONAL USE ONLY]]></description>
+      <link>https://www.cbc.ca/news/world/?cmp=rss</link>
+      <copyright><![CDATA[Copyright: (C) Canadian Broadcasting Corporation, http://www.cbc.ca/aboutcbc/discover/termsofuse.html#Rss]]></copyright>
+      <docs><![CDATA[https://www.cbc.ca/rss]]></docs>
+      <lastBuildDate>Fri, 16 Oct 2026 16:37:19 EDT</lastBuildDate>
+      <atom:link href="https://www.cbc.ca/webfeed/rss/rss-world" rel="self" type="application/rss+xml"/>
+      <image>
+         <title><![CDATA[CBC | World News]]></title>
+         <url>https://www.cbc.ca/rss/image/cbc_144.gif</url>
+         <link>https://www.cbc.ca/news/world/?cmp=rss</link>
+      </image>
+      <item>
+         <title><![CDATA[White House press secretary Katie Zacharia leaving her role a week after starting it: official]]></title>
+         <link>https://www.cbc.ca/news/world/trump-zacharia-press-secretary-future-9.7383948?cmp=rss</link>
+         <description><![CDATA[<img src='https://i.cbc.ca/ais/f0e396a4-9e65-4a09-9d03-990846dfc5fc,1792182633490/full/max/0/default.jpg?im=Crop%2Crect%3D%280%2C260%2C4988%2C2805%29%3B' alt='Image of a woman in sunglass and with longhair walking on an airplane hangar' width='620' height='349' title='White House press secretary Katie Zacharia arrives with President Donald Trump at Glacier Park International Airport, Wednesday, Oct. 14, 2026, in Kalispell, Mont. (AP Photo/Alex Brandon)'/><p>U.S. President Donald Trump's press secretary Katie Zacharia is leaving her role a mere week after he put her in it, a White House official confirmed to CBC News.</p>]]></description>
+         <pubDate>Fri, 16 Oct 2026 14:10:14 EDT</pubDate>
+         <category>News/World</category>
+         <guid isPermaLink="false">9.7383948</guid>
+         <dc:type>story</dc:type>
+         <dc:rights>Syndication Allowed</dc:rights>
+      </item>
+<item>
+         <title><![CDATA[Israeli settlers attack Palestinians, American journalist during West Bank olive harvest]]></title>
+         <link>https://www.cbc.ca/news/world/israeli-settlers-attack-olive-harvest-9.7383174?cmp=rss</link>
+         <description><![CDATA[<img src='https://i.cbc.ca/ais/7e160bda-0b47-4448-b2ff-01c492ccdf48,1792157595741/full/max/0/default.jpg?im=Crop%2Crect%3D%280%2C311%2C4432%2C2493%29%3B' alt='Masked Israeli settlers stand next to a fire burning in an olive grove.' width='620' height='349' title='Israeli settlers next to a fire amid clashes with Palestinians during olive harvest in Abu Falah near Ramallah in the Israeli-occupied West Bank, October 16, 2026. REUTERS/Ammar Awad'/><p>Dozens of masked Israeli settlers attacked Palestinians and injured an American journalist during olive harvesting in the occupied West Bank, according to witnesses and video footage. The Israeli army says the incident "will be examined."</p>]]></description>
+         <pubDate>Fri, 16 Oct 2026 10:34:39 EDT</pubDate>
+         <category>News/World</category>
+         <guid isPermaLink="false">9.7383174</guid>
+         <dc:creator>Jillian Kestler-D'Amours</dc:creator>
+         <dc:type>story</dc:type>
+         <dc:rights>Syndication Allowed</dc:rights>
+      </item>
+<item>
+         <title><![CDATA[Man who stopped Oregon elementary school shooter is father of 2 students, his mom says]]></title>
+         <link>https://www.cbc.ca/news/world/oregon-school-shooting-bystander-9.7384075?cmp=rss</link>
+         <description><![CDATA[<img src='https://i.cbc.ca/ais/07aa3582-0288-466a-b0c1-65d4e7de246c,1792177450476/full/max/0/default.jpg?im=Crop%2Crect%3D%280%2C266%2C4200%2C2362%29%3B' alt='Two people embrace while looking at a memorial.' width='620' height='349' title='Kyle Ketchum, right, embraces Christina Edwards at a makeshift memorial outside Silver Rail Elementary in Bend, Ore., on Friday, a day after the deadly shooting. (AP Photo/Joe Kline)'/><p>The man who stopped a deadly elementary school attack in Oregon by shooting the teenage gunman inside the building is the father of two girls at the school, his mother said Friday.</p>]]></description>
+         <pubDate>Fri, 16 Oct 2026 16:15:00 EDT</pubDate>
+         <category>News/World</category>
+         <guid isPermaLink="false">9.7384075</guid>
+         <dc:type>story</dc:type>
+         <dc:rights>Syndication Allowed</dc:rights>
+      </item>
+   </channel>
+</rss>
