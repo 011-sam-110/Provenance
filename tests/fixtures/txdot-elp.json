@@ -1,0 +1,135 @@
+{
+ "cctvStatusRoadways": [
+  {
+   "name": "Airport",
+   "direction": 5,
+   "directionDescription": "South",
+   "ctts": []
+  },
+  {
+   "name": "Airway Blvd",
+   "direction": 5,
+   "directionDescription": "South",
+   "ctts": []
+  },
+  {
+   "name": "Artcraft",
+   "direction": 7,
+   "directionDescription": "West",
+   "ctts": []
+  }
+ ],
+ "roadwayCctvStatuses": {
+  "Airport": [
+   {
+    "dirDescription": "South",
+    "displayOrder": 0,
+    "distance": 0.0,
+    "equipLoc": {
+     "direction": "South",
+     "locationDescription": null,
+     "roadway": "Airport",
+     "roadwayWithoutHyphensOrSpaces": "Airport"
+    },
+    "hasSnapshot": true,
+    "icd_Id": "Airport @ Founders",
+    "latitude": 31.817401,
+    "latString": "31.817401",
+    "longitude": -106.404614,
+    "lonString": "-106.404614",
+    "name": "Airport @ Founders",
+    "netId": "ELP",
+    "roadwayOrder": 1,
+    "statusDescription": "Device Online"
+   },
+   {
+    "dirDescription": "South",
+    "displayOrder": 1,
+    "distance": 0.0,
+    "equipLoc": {
+     "direction": "South",
+     "locationDescription": null,
+     "roadway": "Airport",
+     "roadwayWithoutHyphensOrSpaces": "Airport"
+    },
+    "hasSnapshot": true,
+    "icd_Id": "Airport @ Leigh Fisher",
+    "latitude": 31.806977999999997,
+    "latString": "31.806977999999997",
+    "longitude": -106.404443,
+    "lonString": "-106.404443",
+    "name": "Airport @ Leigh Fisher",
+    "netId": "ELP",
+    "roadwayOrder": 2,
+    "statusDescription": "Device Offline"
+   }
+  ],
+  "Airway Blvd": [
+   {
+    "dirDescription": "South",
+    "displayOrder": 0,
+    "distance": 0.0,
+    "equipLoc": {
+     "direction": "South",
+     "locationDescription": null,
+     "roadway": "Airway Blvd",
+     "roadwayWithoutHyphensOrSpaces": "AirwayBlvd"
+    },
+    "hasSnapshot": true,
+    "icd_Id": "Airway Blvd @ Airport",
+    "latitude": 31.795833,
+    "latString": "31.795833",
+    "longitude": -106.404055,
+    "lonString": "-106.404055",
+    "name": "Airway Blvd @ Airport",
+    "netId": "ELP",
+    "roadwayOrder": 1,
+    "statusDescription": "Device Online"
+   },
+   {
+    "dirDescription": "South",
+    "displayOrder": 1,
+    "distance": 0.0,
+    "equipLoc": {
+     "direction": "South",
+     "locationDescription": null,
+     "roadway": "Airway Blvd",
+     "roadwayWithoutHyphensOrSpaces": "AirwayBlvd"
+    },
+    "hasSnapshot": true,
+    "icd_Id": "Airway @ Edgemere",
+    "latitude": 31.784145,
+    "latString": "31.784145",
+    "longitude": -106.39527,
+    "lonString": "-106.39527",
+    "name": "Airway @ Edgemere",
+    "netId": "ELP",
+    "roadwayOrder": 2,
+    "statusDescription": "Device Offline"
+   }
+  ],
+  "Artcraft": [
+   {
+    "dirDescription": "West",
+    "displayOrder": 0,
+    "distance": 0.0,
+    "equipLoc": {
+     "direction": "West",
+     "locationDescription": null,
+     "roadway": "Artcraft",
+     "roadwayWithoutHyphensOrSpaces": "Artcraft"
+    },
+    "hasSnapshot": true,
+    "icd_Id": "SH-178/Artcraft @ Upper valley",
+    "latitude": 31.879509,
+    "latString": "31.879509",
+    "longitude": -106.611086,
+    "lonString": "-106.611086",
+    "name": "SH-178/Artcraft @ Upper valley",
+    "netId": "ELP",
+    "roadwayOrder": 1,
+    "statusDescription": "Device Online"
+   }
+  ]
+ }
+}

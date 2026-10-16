@@ -75,6 +75,9 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // is resolved in the adapter, and weather-station stills on MDOT's own server.
   { host: "micamerasimages.net", prefix: "/", suffix: ".jpg" },
   { host: "mdotjboss.state.mi.us", prefix: "/docs/drive/camfiles/", suffix: ".jpg" },
+  // TxDOT ITS. Not an image path: the snapshot endpoint answers JSON with a base64
+  // JPEG, which /api/proxy decodes (see proxyTxdot in app/api/proxy/route.ts).
+  { host: "its.txdot.gov", prefix: "/its/DistrictIts/GetCctvSnapshotByIcdId" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

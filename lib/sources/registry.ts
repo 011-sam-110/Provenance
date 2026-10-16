@@ -18,6 +18,7 @@ import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
 import { fetchRegistry as fetchVdot } from "@/lib/sources/vdot";
 import { fetchRegistry as fetchWsdot } from "@/lib/sources/wsdot";
 import { fetchRegistry as fetchMiDrive } from "@/lib/sources/midrive";
+import { fetchRegistry as fetchTxdot } from "@/lib/sources/txdot";
 import { carsCameraFeeds } from "@/lib/sources/cars";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
@@ -158,6 +159,10 @@ const SOURCES: CameraFeed[] = [
   // for the same last-good reason as the discovered feeds below. New York's cameras
   // came here from castlerock when 511ny.org moved platforms. See lib/sources/cars.ts.
   ...carsCameraFeeds(),
+  // TxDOT ITS, all 25 districts. Its pictures are base64 inside JSON, decoded by
+  // /api/proxy. Its Houston network has no snapshots here and is TranStar's; it is left
+  // out. See lib/sources/txdot.ts.
+  { key: "txdot", fetch: fetchTxdot },
   // Mi Drive (Michigan DOT). Its list is display HTML inside JSON; the adapter reads
   // the link and the img tag with anchored patterns. See lib/sources/midrive.ts.
   { key: "midrive", fetch: fetchMiDrive },

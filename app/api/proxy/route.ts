@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
 import { isAllowed } from "@/lib/proxy/allowlist";
 import { extractScotlandImage } from "@/lib/sources/trafficscotland";
+import { extractTxdotSnapshot } from "@/lib/sources/txdot";
 import { needsH2, h2Fetch } from "@/lib/http/h2";
 import { frameCacheHeaders } from "@/lib/http/cache";
 
@@ -24,6 +25,12 @@ export async function GET(req: NextRequest) {
   // JPEG embedded in the /tsis/camerahtml page. Fetch the page and pull the bytes.
   if (target.hostname === "www.traffic.gov.scot") {
     return proxyTrafficScotland(target, cam.refreshSeconds);
+  }
+
+  // TxDOT ITS has no snapshot file either: its snapshot endpoint answers JSON whose
+  // `snippet` is a base64 JPEG. Fetch it and hand back the decoded bytes.
+  if (target.hostname === "its.txdot.gov") {
+    return proxyTxdot(target, cam.refreshSeconds);
   }
 
   // A handful of upstreams serve HTTP/1.1 that Node's parser rejects outright, so
@@ -104,6 +111,40 @@ async function proxyTrafficScotland(target: URL, refreshSeconds: number): Promis
 
   const img = extractScotlandImage(await upstream.text());
   if (!img) return new Response("no embedded image", { status: 502 });
+
+  return new Response(Buffer.from(img.base64, "base64"), {
+    status: 200,
+    headers: {
+      "Content-Type": img.contentType,
+      ...frameCacheHeaders(refreshSeconds),
+    },
+  });
+}
+
+// TxDOT helper: fetch the snapshot JSON and decode its base64 JPEG. Host and path are
+// already allowlist-checked by GET().
+async function proxyTxdot(target: URL, refreshSeconds: number): Promise<Response> {
+  let upstream: Response;
+  try {
+    upstream = await fetch(target.toString(), {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return new Response("upstream fetch failed", { status: 502 });
+  }
+  if (!upstream.ok) return new Response("upstream error", { status: 502 });
+
+  let body: unknown;
+  try {
+    body = await upstream.json();
+  } catch {
+    return new Response("no snapshot", { status: 502 });
+  }
+  const img = extractTxdotSnapshot(body);
+  if (!img) return new Response("no snapshot", { status: 502 });
 
   return new Response(Buffer.from(img.base64, "base64"), {
     status: 200,
