@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import fixture from "@/tests/fixtures/open-meteo-air.json";
-import { normalizeAirQuality, usAqiBand } from "@/lib/signals/airquality";
+import pollutants from "@/tests/fixtures/open-meteo-air-pollutants.json";
+import { normalizeAirQuality, usAqiBand, US_AQI_MAX } from "@/lib/signals/airquality";
 import type { City } from "@/lib/signals/cities.data";
 
 const CITIES: City[] = [
@@ -35,4 +36,35 @@ test("US AQI bands map to the EPA six-tier scale", () => {
   expect(usAqiBand(180).category).toBe("Unhealthy");
   expect(usAqiBand(250).category).toBe("Very unhealthy");
   expect(usAqiBand(400).category).toBe("Hazardous");
+});
+
+// Captured 2026-10-16 20:00 UTC: London, Riyadh (dust: us_aqi 949), Singapore, Mumbai.
+const FOUR: City[] = [
+  { name: "London", country: "United Kingdom", lat: 51.5074, lon: -0.1278 },
+  { name: "Riyadh", country: "Saudi Arabia", lat: 24.7136, lon: 46.6753 },
+  { name: "Singapore", country: "Singapore", lat: 1.3521, lon: 103.8198 },
+  { name: "Mumbai", country: "India", lat: 19.076, lon: 72.8777 },
+];
+
+test("an AQI past the top of the US scale is capped at 500 and labelled beyond the index", () => {
+  const out = normalizeAirQuality(pollutants as never, FOUR);
+  const riyadh = out.find((f) => f.id === "airquality:Riyadh")!;
+  expect(riyadh.props?.usAqi).toBe(US_AQI_MAX);
+  expect(riyadh.title).toBe("Riyadh — AQI 500+ (24 h, Hazardous)");
+  expect(String(riyadh.props?.aqiBeyondIndex)).toContain("949");
+  expect(riyadh.props?.dominantPollutant).toBe("PM10");
+  // A value inside the scale is not touched and carries no beyond-index note.
+  const london = out.find((f) => f.id === "airquality:London")!;
+  expect(london.props?.usAqi).toBe(28);
+  expect(london.props?.aqiBeyondIndex).toBeUndefined();
+});
+
+test("the AQI is labelled as a 24 h value, and the pollutant that sets it is named", () => {
+  const out = normalizeAirQuality(pollutants as never, FOUR);
+  for (const f of out) {
+    expect(f.title).toContain("(24 h, ");
+    expect(String(f.props?.aqiWindow)).toContain("24 h");
+  }
+  // Mumbai's AQI 173 is set by ozone, not by PM.
+  expect(out.find((f) => f.id === "airquality:Mumbai")!.props?.dominantPollutant).toBe("O₃");
 });
