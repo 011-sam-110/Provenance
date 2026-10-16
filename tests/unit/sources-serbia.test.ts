@@ -7,6 +7,7 @@ import {
 import {
   parseTollViewer,
   normalizeSerbiaTolls,
+  posterLive,
   SERBIA_TOLLS_SOURCE,
 } from "@/lib/sources/serbia-tolls";
 import {
@@ -298,5 +299,38 @@ describe("decodeHtmlEntities", () => {
 
   it("leaves an entity it does not know alone rather than mangling it", () => {
     expect(decodeHtmlEntities("A &frobnicate; B")).toBe("A &frobnicate; B");
+  });
+});
+
+// Audit 2026-10-16: 16 of MUP's 32 playlists answered 404 at the source and through
+// prod's own /api/hls, yet /api/coverage said 32/32 online. Preševo Izlaz on the toll
+// viewer had a 48-day-old poster and was shown live. Both now probe each round.
+describe("liveness comes from this round's probe, not from being listed", () => {
+  it("a border stream whose playlist was refused is not live; an unprobed one keeps the old default", () => {
+    const streams = parseMupPortal(MUP_FIXTURE);
+    const horgos1 = streams.find((s) => s.key === "Horgos" && s.index === 1)!;
+    const probes = new Map<string, boolean>([[horgos1.streamUrl, false]]);
+    const others = streams.filter((s) => s !== horgos1);
+    probes.set(others[0].streamUrl, true);
+    const cams = normalizeSerbiaBorders(streams, probes, Date.parse("2026-10-16T19:01:27Z"));
+    expect(cams.find((c) => c.id === "mup-rs:horgos-1")!.available).toBe(false);
+    const ok = cams.find((c) => c.streamUrl === others[0].streamUrl)!;
+    expect(ok.available).toBe(true);
+    expect(ok.lastSampledAt).toBe("2026-10-16T19:01:27.000Z");
+    // Not probed (a network failure): no evidence, so the camera stays as it was.
+    expect(cams.find((c) => c.streamUrl === others[1].streamUrl)!.available).toBe(true);
+  });
+
+  it("a toll poster older than an hour, or refused, is not live", () => {
+    const now = Date.parse("2026-10-16T18:27:00Z");
+    expect(posterLive(now - 3_000, now)).toBe(true);
+    expect(posterLive(now - 4_140_177_000, now)).toBe(false); // Preševo Izlaz, ~48 days
+    expect(posterLive(false, now)).toBe(false);
+    expect(posterLive(undefined, now)).toBe(true);
+    const tiles = parseTollViewer(TOLL_FIXTURE);
+    const cams = normalizeSerbiaTolls(tiles, new Map([["front_pan_cam1", now - 4_140_177_000]]), now);
+    const cam = cams.find((c) => c.id === "putevi-rs:front_pan_cam1")!;
+    expect(cam.available).toBe(false);
+    expect(cam.lastSampledAt).toBe(new Date(now - 4_140_177_000).toISOString());
   });
 });
