@@ -179,13 +179,14 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- Space weather / space -----------------------------------------------
   {
     id: "aurora",
-    whatItShows: "The modelled probability of visible aurora at a location over the next ~30 minutes.",
+    whatItShows: "The modelled probability of visible aurora at a location, at the forecast time the grid states: typically 30 to 90 minutes ahead (61 to 65 minutes on 2026-10-16).",
     method: "NOAA SWPC's OVATION model, driven by live solar-wind measurements, sampled onto a grid.",
     confidence: "modelled",
     coverage: "Global grid, meaningful mainly at high latitudes.",
     limitations: [
       "A probability of visibility, not an observation. High probability under thick cloud means you will see nothing.",
-      "The model is a short-range nowcast; beyond about half an hour it is not a forecast.",
+      "The model is a short-range nowcast. Its lead time is the solar wind's travel time from the L1 monitor to Earth, so it changes with the wind speed; beyond the stated forecast time it is not a forecast.",
+      "OVATION's grid carries a weak artefact at the equator; cells within 20 degrees of the equator are not drawn.",
       "Daylight is not accounted for in the probability itself.",
     ],
   },
@@ -209,7 +210,7 @@ const EXPLAINERS: LayerExplainer[] = [
     coverage: "Global orbital launches. Suborbital and most classified launches are not covered.",
     limitations: [
       "Launch dates slip constantly — weather, range conflicts, technical holds. A time here is an intention, not a commitment.",
-      "Some entries carry only a date or a window, so a precise-looking countdown can be a placeholder.",
+      "Many entries carry only a day, a month, a quarter or a year. Those show as \"NET Oct 2026\" with no countdown and stay out of \"Next 24h\"; the time stamp in an export is Launch Library's placeholder for that date class.",
       "The pin is the launch site, not the trajectory or the payload's destination.",
     ],
   },

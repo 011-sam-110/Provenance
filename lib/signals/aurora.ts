@@ -3,7 +3,10 @@ import { applyCap, carryCoverage } from "@/lib/signals/coverage";
 import { degraded, observed } from "@/lib/signals/outcome";
 
 // NOAA SWPC OVATION aurora forecast — the modelled probability (%) of visible
-// aurora on a 1°×1° global grid for the next ~30 min. Keyless JSON:
+// aurora on a 1°×1° global grid, valid at the grid's own "Forecast Time". That lead
+// is the solar wind's travel time from the L1 monitor, NOT a fixed half hour: it was
+// 61 to 65 minutes on 2026-10-16, and SWPC's product is still named "30 minute
+// forecast". Keyless JSON:
 //   { "Observation Time", "Forecast Time", "Data Format", "coordinates", "type" }
 // `coordinates` is a flat array of [lon, lat, aurora%] triples, lon 0–359 (wrapped
 // to −180..180 here), lat −90..90 → 360 × 181 = 65,160 cells every run.
@@ -56,7 +59,9 @@ export const EQUATOR_BAND_DEG = 20;
 export const AURORA_MAX_POINTS = 600;
 const MAX_POINTS = AURORA_MAX_POINTS;
 
-export const AURORA_ATTRIBUTION = "Aurora forecast © NOAA Space Weather Prediction Center";
+// A US Government work carries no copyright, so the credit names the source
+// without a "©" (the 2026-10-16 source audit).
+export const AURORA_ATTRIBUTION = "Aurora forecast: NOAA Space Weather Prediction Center (OVATION)";
 
 export interface OvationGrid {
   "Observation Time"?: string;
