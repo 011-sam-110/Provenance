@@ -5,7 +5,7 @@ import {
   type BriefPayload,
   type BriefSnapshot,
 } from "@/lib/brief";
-import { INSTABILITY_SOURCE, FACTOR_WEIGHTS, type FactorKey } from "@/lib/signals/instability";
+import { INSTABILITY_SOURCE, FACTOR_WEIGHTS, factorLabel, type FactorKey } from "@/lib/signals/instability";
 
 export const dynamic = "force-dynamic";
 
@@ -26,16 +26,11 @@ const EMPTY_TTL_MS = 5 * 60 * 1000; // retry a dormant/failed brief sooner
 
 let cache: { payload: BriefPayload; at: number } | null = null;
 
-// Mirrors FACTOR_LABEL in lib/signals/instability.ts (not exported there). Typed
-// as Record<FactorKey, string>, so adding a factor breaks the build here rather
-// than silently dropping it out of the coverage note.
-const FACTOR_LABELS: Record<FactorKey, string> = {
-  conflict: "armed conflict",
-  food: "food insecurity",
-  displacement: "displacement",
-  outages: "internet outages",
-};
-const ALL_FACTOR_LABELS = (Object.keys(FACTOR_WEIGHTS) as FactorKey[]).map((k) => FACTOR_LABELS[k]);
+// The labels come from instability.ts itself (factorLabel), the same function that
+// writes `drivers`. A hand-kept mirror here said "armed conflict" while the index wrote
+// "armed conflict (GDELT article-volume proxy)", so the brief listed the conflict factor
+// as missing even on a run where every country carried it.
+const ALL_FACTOR_LABELS = (Object.keys(FACTOR_WEIGHTS) as FactorKey[]).map((k) => factorLabel(k));
 
 /** How many ranked countries the brief reasons over. */
 const RANKED_WINDOW = 10;

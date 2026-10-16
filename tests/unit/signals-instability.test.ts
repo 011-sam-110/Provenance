@@ -1,4 +1,7 @@
 import { expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { aggregateGdeltByCountry, parseGdeltExport, GDELT_LAYERS } from "@/lib/signals/gdelt";
 import {
   computeInstability,
   normalizeFactor,
@@ -6,6 +9,7 @@ import {
   mergeFactors,
   factorLabel,
   iso3FromGdeltPlace,
+  conflictArticlesByIso3,
   FACTOR_WEIGHTS,
   type CountryInput,
 } from "@/lib/signals/instability";
@@ -189,4 +193,33 @@ test("iso3FromGdeltPlace handles official long-forms with an embedded comma via 
   expect(iso3FromGdeltPlace("Ho Chi Minh City, H? Ch?inh, Vietnam, Republic Of")).toBe("VNM");
   // The centroid dataset's own name for South Korea already has a comma in it.
   expect(iso3FromGdeltPlace("Seoul, Seoul, Korea, Republic of")).toBe("KOR");
+});
+
+// --- conflict factor reads the REAL conflict-layer shape ---------------------
+
+test("the conflict factor reads countryIso3 from the conflict layer's real per-country output", () => {
+  // Regression: since the conflict layer went per-country (PR #96) its features carry
+  // `countryIso3` + `props.country` and no `props.place`. The factor read `place` only, so
+  // it resolved nothing and fed 0 of 172 rows on prod (2026-10-16). Feed it the output of
+  // the real aggregator, not a synthetic `place` string, so the shape cannot drift again.
+  const tsv = readFileSync(join(process.cwd(), "tests/fixtures/gdelt-events.export.tsv"), "utf8");
+  const feats = aggregateGdeltByCountry(parseGdeltExport(tsv), GDELT_LAYERS.conflict);
+  expect(feats.length).toBeGreaterThan(0);
+  expect(feats.every((f) => f.props?.place === undefined)).toBe(true);
+  const byIso = conflictArticlesByIso3(feats);
+  const withIso = feats.filter((f) => typeof f.countryIso3 === "string");
+  expect(withIso.length).toBeGreaterThan(0);
+  expect(byIso.size).toBeGreaterThanOrEqual(withIso.length);
+  for (const f of withIso) expect(byIso.get(f.countryIso3!)).toBeGreaterThan(0);
+});
+
+test("conflictArticlesByIso3 skips the dormant notice and falls back to the country name, then place", () => {
+  const base = { lat: 0, lon: 0, title: "t", signalId: "conflict" };
+  const byIso = conflictArticlesByIso3([
+    { ...base, id: "a", countryIso3: "UKR", props: { articles: 10 } },
+    { ...base, id: "b", props: { country: "Syria", articles: 5 } },
+    { ...base, id: "c", props: { place: "Tripoli, Tarabulus, Libya", articles: 3 } },
+    { ...base, id: "d", props: { status: "unavailable", articles: 99 } },
+  ]);
+  expect(Object.fromEntries(byIso)).toEqual({ UKR: 10, SYR: 5, LBY: 3 });
 });

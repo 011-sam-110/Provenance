@@ -1,5 +1,5 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
-import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, type CountryCentroid } from "@/lib/signals/country-centroids.data";
+import { COUNTRY_CENTROIDS, centroidByIso2, centroidByIso3, centroidByName, type CountryCentroid } from "@/lib/signals/country-centroids.data";
 import { CONFLICT_SOURCE } from "@/lib/signals/gdelt";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { isVerifiedShutdown } from "@/lib/signals/pulse-shutdowns";
@@ -366,16 +366,26 @@ async function outageFactor(): Promise<Map<string, number>> {
  * standalone `conflict` map layer uses — rather than a second GDELT fetcher.
  * Keyless, and since ACLED's removal this is the sole provider of the 0.40 weight.
  */
-async function gdeltConflictFactor(): Promise<Map<string, number>> {
+export function conflictArticlesByIso3(feats: SignalFeature[]): Map<string, number> {
   const out = new Map<string, number>();
-  const feats = await CONFLICT_SOURCE.fetch();
   for (const f of feats) {
     if (f.props?.status === "unavailable") continue; // the dormant-notice placeholder, not an event
-    const iso3 = iso3FromGdeltPlace(String(f.props?.place ?? ""));
+    // Since PR #96 (2026-08-14) the conflict layer emits ONE feature per country, with
+    // `countryIso3` and `props.country` and no `props.place`. Reading `place` alone made
+    // every feature resolve to no country, so this factor fed nothing on prod (0 of 172
+    // rows, measured 2026-10-16). `place` stays as the last fallback for a per-place shape.
+    const iso3 =
+      (typeof f.countryIso3 === "string" ? centroidByIso3(f.countryIso3.toUpperCase())?.iso3 : undefined) ??
+      (typeof f.props?.country === "string" ? centroidByName(f.props.country)?.iso3 : undefined) ??
+      iso3FromGdeltPlace(String(f.props?.place ?? ""));
     const articles = Number(f.props?.articles ?? 0);
     if (iso3 && articles > 0) out.set(iso3, (out.get(iso3) ?? 0) + articles);
   }
   return out;
+}
+
+async function gdeltConflictFactor(): Promise<Map<string, number>> {
+  return conflictArticlesByIso3(await CONFLICT_SOURCE.fetch());
 }
 
 /** Conflict raw values by ISO-3, plus the upstream that produced them (always GDELT
