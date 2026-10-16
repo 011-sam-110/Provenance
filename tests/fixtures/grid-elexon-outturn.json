@@ -1,0 +1,62 @@
+[
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:00:00Z",
+  "demand": 34187
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:05:00Z",
+  "demand": 34043
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:10:00Z",
+  "demand": 33950
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:15:00Z",
+  "demand": 34071
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:20:00Z",
+  "demand": 33879
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:25:00Z",
+  "demand": 33713
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:30:00Z",
+  "demand": 33393
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:35:00Z",
+  "demand": 33111
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:40:00Z",
+  "demand": 32966
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:45:00Z",
+  "demand": 32772
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:50:00Z",
+  "demand": 32714
+ },
+ {
+  "recordType": "VD",
+  "startTime": "2026-10-16T19:55:00Z",
+  "demand": 32480
+ }
+]

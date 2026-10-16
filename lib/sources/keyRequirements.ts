@@ -71,12 +71,17 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     obtain: "Free — email-only form at www.eia.gov/opendata/register.php.",
   },
   {
-    kind: "required",
+    // An enhancement since 2026-10-16: Elexon (GB), RTE (France), Energinet (Denmark)
+    // and AEMO (Australia) are keyless, so the layer shows data with neither key. Each
+    // key adds its own areas; "enhanced" needs both.
+    kind: "enhancement",
     id: "grid-load",
-    label: "European grid load",
-    env: ["ENTSOE_API_TOKEN"],
-    degrades: "No electricity demand or generation for the European grid.",
-    obtain: "Free — register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days).",
+    label: "Grid load: continental Europe and the US",
+    env: ["ENTSOE_API_TOKEN", "EIA_API_KEY"],
+    degrades:
+      "GB, France, Denmark and Australia still show from their own operators. ENTSOE_API_TOKEN adds about 20 more European bidding zones; EIA_API_KEY adds about 50 US balancing authorities.",
+    obtain:
+      "Both free. ENTSO-E: register at transparency.entsoe.eu, then email transparency@entsoe.eu for REST access (~3 working days). EIA: eia.gov/opendata/register.php (name and email, instant).",
   },
   {
     // An enhancement: the layer is IODA's measured outages, keyless. The token adds the

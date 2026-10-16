@@ -123,7 +123,7 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   displacement: { label: "UNHCR", url: "https://www.unhcr.org/refugee-statistics/" },
   "food-security": { label: "WFP HungerMap", url: "https://hungermap.wfp.org/" },
   reliefweb: { label: "ReliefWeb", url: "https://reliefweb.int/" },
-  "grid-load": { label: "ENTSO-E", url: "https://transparency.entsoe.eu/" },
+  "grid-load": { label: "ENTSO-E and grid operators", url: "https://transparency.entsoe.eu/" },
   "military-air": { label: "adsb.lol", url: "https://adsb.lol/" },
   // OGN data are ODbL, which asks that the licence be named alongside the data.
   gliders: {

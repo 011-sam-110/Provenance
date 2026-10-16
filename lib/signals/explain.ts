@@ -448,14 +448,16 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "grid-load",
-    whatItShows: "Electricity demand and generation for a European bidding zone.",
-    method: "Published by ENTSO-E's Transparency Platform from transmission-system-operator submissions.",
+    whatItShows: "The latest electricity demand (MW) in one grid area: a bidding zone, a US balancing authority or an Australian market region.",
+    method: "Published by the operators themselves: Elexon (GB), RTE (France), Energinet (Denmark), AEMO (Australia), EIA-930 (US, with EIA_API_KEY) and ENTSO-E's Transparency Platform (continental Europe, with ENTSOE_API_TOKEN). Where an operator publishes its own area, that reading replaces ENTSO-E's copy. Denmark's figure is derived: production plus net imports.",
     confidence: "official",
-    coverage: "European ENTSO-E member zones only. Not global.",
+    coverage: "Great Britain, France, Denmark and Australia with no key; continental Europe and about 50 US balancing authorities when their free keys are set. Not global.",
     limitations: [
-      "Europe only. There is no equivalent open feed for most of the world, so an empty map outside Europe is coverage, not calm.",
-      "TSO submissions are revised after the fact; recent values are provisional.",
-      "Bidding zones are market areas, not countries, and do not line up with borders.",
+      "No open live feed was found for most of Asia, Africa and South America, so an empty map there is coverage, not calm.",
+      "Readings are from the operator's last interval: five minutes for GB, Denmark and Australia, fifteen for France, about an hour for EIA and ENTSO-E. A reading older than six hours is not shown.",
+      "TSO and EIA submissions are revised after the fact; recent values are provisional.",
+      "Load only. GB's pin also carries NESO's generation mix, but no other area shows generation.",
+      "Grid areas are market or utility areas, not countries, and do not line up with borders.",
     ],
   },
 

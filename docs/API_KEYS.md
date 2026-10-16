@@ -37,13 +37,14 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | # | Source | Unlocks | Free tier | Env var(s) |
 |---|--------|---------|-----------|-----------|
 | 1 | **AISStream.io** | Real‑time global ship tracking (named vessels, Hormuz/Suez) | Free, no card, WebSocket | `AISSTREAM_API_KEY` |
-| 2 | **ENTSO‑E Transparency** | EU electricity‑grid load / generation mix / cross‑border flows / outages | Free w/ registration | `ENTSOE_API_TOKEN` |
+| 2 | **ENTSO‑E Transparency** | Grid load for about 20 continental European bidding zones (GB, France and Denmark are keyless from their own operators) | Free w/ registration | `ENTSOE_API_TOKEN` |
 | 3 | **OpenAQ** | Real air‑quality **station** measurements (upgrades the modelled CAMS layer) | Free | `OPENAQ_API_KEY` |
 | 4 | **UCDP** (Uppsala) | Geocoded conflict events + fatalities (structural conflict history) | Free token | `UCDP_API_TOKEN` |
 | 5 | **ACLED** | Real‑time armed‑conflict & protest events w/ actor attribution | Free — **must activate API access** | `ACLED_EMAIL` + `ACLED_PASSWORD` |
 | 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
 | 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
 | 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
+| 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly) | Free, instant, email only | `EIA_API_KEY` |
 
 ### Where to get each
 
@@ -71,6 +72,9 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
    Pulse's terms allow **non-commercial use only**, forbid redistribution, and require
    the credit "Provided by Internet Society", which every Pulse pin carries. If
    Provenance ever charges, this feed needs written permission or must go.
+9. **EIA** — register at <https://www.eia.gov/opendata/register.php> (name and email;
+   the key arrives at once). EIA data is US public domain; credit "Source: U.S. Energy
+   Information Administration". `DEMO_KEY` works for a quick test only (tight rate limit).
 
 ---
 
@@ -305,6 +309,7 @@ ACLED_EMAIL=
 ACLED_PASSWORD=
 RELIEFWEB_APPNAME=
 ISOC_PULSE_API_KEY=
+EIA_API_KEY=
 
 # --- Optional enhancements ---
 EIA_API_KEY=
