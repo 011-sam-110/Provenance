@@ -331,8 +331,13 @@ Re-measure before putting a number in a README, a CV or a PR description.
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds
   (`lib/sources/opensky.ts` `fetchAircraftOnce` keeps the reasoning; the filename is a
   named follow-up). The live path is `lib/sources/adsb.ts` `fetchAdsbTypePull` behind
-  Next's Data Cache (`planes-aircraft-v5`, revalidate 240 s). adsb.lol also serves the
-  `military-air` signal layer, from the same per-IP rate-limit bucket.
+  Next's Data Cache (`planes-aircraft-v6`, revalidate 240 s). adsb.lol also serves the
+  `military-air` signal layer, from the same per-IP rate-limit bucket. **That bucket is
+  small (re-measured 2026-10-16: about three requests, then 10-20 s per token)**, so the
+  pull is ONE request naming every type, and every adsb.lol request in the process waits
+  its turn in `lib/http/hostLane.ts`. Four batches plus a `/v2/mil` poll in between is
+  what dropped the GA batch from 3 of 5 prod snapshots. Do not add an adsb.lol call
+  outside that lane.
 - **GDELT is FIXED and live again** (was 404ing on `/api/v2/geo/geo`). The layer now reads
   the GCS event export instead. Prod check 2026-08-11: `/api/signals/conflict` returns
   `count: 300` with `coverage.available: 470` — i.e. an honest "300 of 470", not a bare

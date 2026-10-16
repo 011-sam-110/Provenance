@@ -36,8 +36,8 @@ export const maxDuration = 60;
  * route never throws and users never trigger their own upstream pull.
  *
  * WORLDWIDE, WITH TWO STATED LIMITS. adsb.lol's `/v2/type/{list}` answers for the
- * whole receiver network in one request, so four paced requests cover the world
- * (~9,700 positioned aircraft on 2026-09-06). Coverage is still a lower bound and
+ * whole receiver network in one request, so one request naming every listed type
+ * covers the world (10,346 positioned aircraft on 2026-10-16). Coverage is still a lower bound and
  * the coverage record says why: receivers are wherever volunteers run them, and
  * only listed types are asked for, so an aircraft broadcasting no type code does
  * not appear. Until 2026-09-06 this was a 40-cell point+radius sweep that Vercel's

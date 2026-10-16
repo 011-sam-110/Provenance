@@ -1,5 +1,6 @@
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { degraded, observed } from "@/lib/signals/outcome";
+import { laneFetch } from "@/lib/http/hostLane";
 
 // Military aircraft worldwide — keyless adsb.lol / adsb.fi `/mil` feed. Most ADS-B
 // aggregators (and OpenSky's anonymous tier) FILTER OUT military traffic, which is
@@ -98,7 +99,9 @@ export const MILITARY_AIR_SOURCE: SignalSource = {
     let reason = "both feeds unreachable"; // nothing answered; overwritten by an http status
     for (const url of ENDPOINTS) {
       try {
-        const res = await fetch(url, {
+        // laneFetch, not fetch: adsb.lol's per-IP allowance is shared with the planes
+        // pull, and the lane keeps the two from landing on top of each other.
+        const res = await laneFetch(url, {
           headers: { "User-Agent": UA, Accept: "application/json" },
           signal: AbortSignal.timeout(12_000),
         });

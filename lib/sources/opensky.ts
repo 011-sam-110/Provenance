@@ -1,7 +1,7 @@
 /**
  * The aircraft layer. The sole source is an adsb.lol pull by ICAO type designator
- * (lib/sources/adsb.ts): four paced requests that together cover the whole receiver
- * network, capped as a proportional spatial sample. See `fetchAircraftOnce` for why
+ * (lib/sources/adsb.ts): one request naming every listed type, which covers the whole
+ * receiver network, capped as a proportional spatial sample. See `fetchAircraftOnce` for why
  * OpenSky was removed — the reason is its licence, not its reliability.
  *
  * FILENAME. This module is still called `opensky.ts` even though it no longer
@@ -13,8 +13,8 @@
  * was a sweep of 40 point+radius cells, and on Vercel the shared egress IP tripped
  * adsb.lol's per-IP rate limit so hard that prod served 1 of 40 cells. The type
  * pull replaced it: `/v2/type/{list}` answers worldwide in one request, so the
- * layer needs four requests per snapshot instead of forty, and the cap became a
- * spatial sample instead of a prefix (which is what had drawn two dense discs on
+ * layer needed four requests per snapshot instead of forty (one since 2026-10-16),
+ * and the cap became a spatial sample instead of a prefix (which is what had drawn two dense discs on
  * the globe). Coverage is still a lower bound — receivers are where volunteers put
  * them, and only listed types are asked for — and the coverage record says so.
  *
@@ -462,9 +462,9 @@ export function gateSnapshot(snapshot: AircraftSnapshot, now: number = Date.now(
  * — cache hit or fallback — passes through `gateSnapshot` before it leaves this
  * function, so nothing older than STALE_CEILING_MS is ever returned.
  *
- * CACHE KEY: `planes-aircraft-v5`, bumped from v4 when the sweep became the type
- * pull so the first deploy starts clean rather than serving a sweep-era entry until
- * it revalidated. (`unstable_cache` also folds the callback's source text into the
+ * CACHE KEY: `planes-aircraft-v6`. v5 was the four-request type pull, v4 the sweep;
+ * each bump makes the first deploy start clean rather than serve the older shape
+ * until it revalidated. (`unstable_cache` also folds the callback's source text into the
  * key, so in practice every deploy that touches `fetchAircraftOnce` starts cold.)
  *
  * ONE ATTEMPT PER REQUEST. A cold cache (first request after a deploy) runs the pull
@@ -486,7 +486,7 @@ export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
   try {
     snapshot = cache
       ? rehydrate(
-          await cache.unstable_cache(fetchAircraftOnce, ["planes-aircraft-v5"], {
+          await cache.unstable_cache(fetchAircraftOnce, ["planes-aircraft-v6"], {
             revalidate: REVALIDATE_S,
           })(),
         )

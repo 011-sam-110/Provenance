@@ -19,6 +19,7 @@ import {
   PULL_BUDGET_MS,
   RETRY_BACKOFF_MS,
   TYPE_BATCHES,
+  TYPE_REQUESTS,
   typeBatchUrl,
   type AdsbRow,
 } from "@/lib/sources/adsb";
@@ -98,6 +99,16 @@ describe("fetchAdsbTypePull — every batch, in order, paced", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it("sends ONE request by default, so no tail batch can be dropped by the rate limit", async () => {
+    // Prod lost batch D (GA + helicopters) in 3 of 5 snapshots on 2026-10-16 when four
+    // requests and a /v2/mil poll shared adsb.lol's per-IP allowance.
+    const h = harness({});
+    const r = await fetchAdsbTypePull(undefined, h.deps);
+    expect(h.calls).toEqual([typeBatchUrl(TYPE_REQUESTS[0])]);
+    expect(h.sleeps).toEqual([]);
+    expect(r).toMatchObject({ batchesPlanned: 1, typesPlanned: TYPE_BATCHES.flat().length });
+  });
+
   it("waits PACE_MS between batches and not after the last one", async () => {
     const h = harness({});
     await fetchAdsbTypePull(TYPE_BATCHES, h.deps);
@@ -125,12 +136,14 @@ describe("fetchAdsbTypePull — every batch, in order, paced", () => {
 
 describe("fetchAdsbTypePull — failures are counted, retried only on 429, and logged", () => {
   it("retries a 429 with the backoff schedule and then counts the batch as answered", async () => {
+    // Two batches, not four: the 4 s + 8 s backoff (sized to the 2026-10-16 refill)
+    // leaves no budget for a third and fourth after it. Production sends one request.
     const h = harness({ [B]: (n) => (n < 3 ? status(429)() : ok([row("b00001")])()) });
-    const r = await fetchAdsbTypePull(TYPE_BATCHES, h.deps);
+    const r = await fetchAdsbTypePull(TYPE_BATCHES.slice(0, 2), h.deps);
     expect(h.calls.filter((u) => u === B)).toHaveLength(3);
     expect(h.sleeps).toContain(RETRY_BACKOFF_MS[0]);
     expect(h.sleeps).toContain(RETRY_BACKOFF_MS[1]);
-    expect(r).toMatchObject({ batchesAttempted: 4, batchesSucceeded: 4 });
+    expect(r).toMatchObject({ batchesAttempted: 2, batchesSucceeded: 2 });
     expect(r.objects.some((o) => o.id === "plane:b00001")).toBe(true);
   });
 
@@ -143,9 +156,10 @@ describe("fetchAdsbTypePull — failures are counted, retried only on 429, and l
 
   it("gives up on a batch that keeps answering 429 and moves on", async () => {
     const h = harness({ [B]: status(429) });
-    const r = await fetchAdsbTypePull(TYPE_BATCHES, h.deps);
+    const r = await fetchAdsbTypePull(TYPE_BATCHES.slice(0, 3), h.deps);
     expect(h.calls.filter((u) => u === B)).toHaveLength(RETRY_BACKOFF_MS.length + 1);
-    expect(r).toMatchObject({ batchesAttempted: 4, batchesSucceeded: 3, mainlineSucceeded: true });
+    expect(h.calls.at(-1)).toBe(C); // moved on to the next batch after giving up
+    expect(r).toMatchObject({ batchesAttempted: 3, batchesSucceeded: 2, mainlineSucceeded: true });
     expect(warn).toHaveBeenCalledTimes(1);
     expect(String(warn.mock.calls[0][0])).toMatch(/429/);
   });
