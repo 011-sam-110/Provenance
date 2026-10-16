@@ -35,6 +35,9 @@ export const GROUP_TRIGGERS: Record<string, TriggerKind[]> = {
   // Rows carry a stable id and a position that CHANGES between polls.
   Maritime: ["appears", "disappears", "enters", "leaves", "count", "quiet"],
   Military: ["appears", "count", "quiet"],
+  // Gliders and FLARM trackers (lib/signals/ogn.ts): the same shape as Military, a
+  // moving aircraft per row, so the same triggers.
+  Aviation: ["appears", "count", "quiet"],
 
   // A per-entity status that changes.
   "Cyber threat": ["appears", "disappears", "crosses", "count", "quiet"],
