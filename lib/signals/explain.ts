@@ -341,14 +341,15 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "nuclear",
-    whatItShows: "A nuclear power station, as mapped by OpenStreetMap contributors.",
-    method: "Crowd-mapped in OSM and extracted by tag.",
+    whatItShows: "A nuclear power station, as mapped by OpenStreetMap contributors, with its state of use from Wikidata (operating, shut down, under construction).",
+    method: "Crowd-mapped in OSM and extracted by tag through QLever's OSM-planet index. Research reactors, military and fuel-cycle sites, duplicates and one vandalised row are removed by a reviewed list. The state of use is Wikidata's, joined by the plant's OSM wikidata tag.",
     confidence: "reported",
     coverage: "Global, with quality varying by how actively a region is mapped.",
     limitations: [
-      "Static locations only. Nothing here indicates whether a plant is operating, shut down, decommissioned or under construction.",
+      "The state of use is Wikidata's statement, and more than half the plants have none. 'Not stated' does not mean the plant is running.",
+      "A shut-down or unbuilt plant keeps its pin in grey; only plants that can generate are ranked by capacity.",
       "OSM tagging is inconsistent: some entries are whole sites, some individual reactors, so counts should not be treated as reactor counts.",
-      "No output, no safety status, no incident reporting.",
+      "No safety status and no incident reporting.",
     ],
   },
   {
