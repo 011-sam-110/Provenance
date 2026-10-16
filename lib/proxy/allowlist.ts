@@ -71,6 +71,10 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   // WSDOT stills. Region folders (nw, sw, orflow, airports...) and one .JPG, so the
   // host is the pin: it serves camera images and nothing else we know of.
   { host: "images.wsdot.wa.gov", prefix: "/" },
+  // Mi Drive (Michigan DOT). Road stills at the host root once the /thumbs/ redirect
+  // is resolved in the adapter, and weather-station stills on MDOT's own server.
+  { host: "micamerasimages.net", prefix: "/", suffix: ".jpg" },
+  { host: "mdotjboss.state.mi.us", prefix: "/docs/drive/camfiles/", suffix: ".jpg" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

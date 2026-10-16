@@ -17,6 +17,7 @@ import { fetchRegistry as fetchBihamk } from "@/lib/sources/bihamk";
 import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
 import { fetchRegistry as fetchVdot } from "@/lib/sources/vdot";
 import { fetchRegistry as fetchWsdot } from "@/lib/sources/wsdot";
+import { fetchRegistry as fetchMiDrive } from "@/lib/sources/midrive";
 import { carsCameraFeeds } from "@/lib/sources/cars";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
@@ -157,6 +158,9 @@ const SOURCES: CameraFeed[] = [
   // for the same last-good reason as the discovered feeds below. New York's cameras
   // came here from castlerock when 511ny.org moved platforms. See lib/sources/cars.ts.
   ...carsCameraFeeds(),
+  // Mi Drive (Michigan DOT). Its list is display HTML inside JSON; the adapter reads
+  // the link and the img tag with anchored patterns. See lib/sources/midrive.ts.
+  { key: "midrive", fetch: fetchMiDrive },
   // Washington State DOT. Web Mercator geometry and a windows-1252 file, both handled
   // in the adapter; TripCheck rows are dropped there. See lib/sources/wsdot.ts.
   { key: "wsdot", fetch: fetchWsdot },

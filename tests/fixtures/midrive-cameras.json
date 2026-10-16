@@ -1,0 +1,30 @@
+[
+ {
+  "route": "11 Mile",
+  "county": "Wayne County <a href=\"/MiDrive/map?cameras=true&lat=42.491304&lon=-83.04479&zoom=15&id=1129\"target=\"_blank\">Go to</a>",
+  "location": " @ Mound NB",
+  "direction": "Traffic closest to camera is traveling north.",
+  "image": "<img alt=\"Traffic closest to camera is traveling north.\" class=\"cameraImageForActivePane\" id=\"1129Img\" src=\"https://micamerasimages.net/thumbs/semtoc_cam_253.flv.jpg?item=1\" height=\"170\" width=\"250\" onerror=\"cameraImageBroken(this)\"><div id=\"1129Div\"><a href=\"\" onclick=\"event.preventDefault(); reportCamera(1129)\">Report a problem with this camera</a></div><div id=\"1129StatusMessage\" style=\"padding-left: 15%;\"></div>"
+ },
+ {
+  "route": "44th Street",
+  "county": "Kent County <a href=\"/MiDrive/map?cameras=true&lat=42.8841&lon=-85.6646&zoom=15&id=2113\"target=\"_blank\">Go to</a>",
+  "location": " @ Division Ave",
+  "direction": "",
+  "image": "<img alt=\"\" class=\"cameraImageForActivePane\" id=\"2113Img\" src=\"https://micamerasimages.net/thumbs/grand_cam_036.flv.jpg?item=1\" height=\"170\" width=\"250\" onerror=\"cameraImageBroken(this)\"><div id=\"2113Div\"><a href=\"\" onclick=\"event.preventDefault(); reportCamera(2113)\">Report a problem with this camera</a></div><div id=\"2113StatusMessage\" style=\"padding-left: 15%;\"></div>"
+ },
+ {
+  "route": "Ashmun St.",
+  "county": "Chippewa County <a href=\"/MiDrive/map?cameras=true&lat=46.48075&lon=-84.353594444&zoom=15&id=756\"target=\"_blank\">Go to</a>",
+  "location": " @ 12th Ave",
+  "direction": "Traffic closest to camera is traveling north.",
+  "image": "<img alt=\"Traffic closest to camera is traveling north.\" class=\"cameraImageForActivePane\" id=\"756Img\" src=\"https://mdotjboss.state.mi.us/docs/drive/camfiles/rwis/756.jpg\" height=\"170\" width=\"250\" onerror=\"cameraImageBroken(this)\"><div id=\"756Div\"><a href=\"\" onclick=\"event.preventDefault(); reportCamera(756)\">Report a problem with this camera</a></div><div id=\"756StatusMessage\" style=\"padding-left: 15%;\"></div>"
+ },
+ {
+  "route": "I-69",
+  "county": "Branch County <a href=\"/MiDrive/map?cameras=true&lat=41.87769&lon=-84.99039&zoom=15&id=2335\"target=\"_blank\">Go to</a>",
+  "location": " @ Coldwater Weigh Station",
+  "direction": "Traffic closest to camera is traveling north.",
+  "image": "<img alt=\"Traffic closest to camera is traveling north.\" class=\"cameraImageForActivePane\" id=\"2335Img\" src=\"https://micamerasimages.net/image-000705102-00-04.jpg?bucket=ftp\" height=\"170\" width=\"250\" onerror=\"cameraImageBroken(this)\"><div id=\"2335Div\"><a href=\"\" onclick=\"event.preventDefault(); reportCamera(2335)\">Report a problem with this camera</a></div><div id=\"2335StatusMessage\" style=\"padding-left: 15%;\"></div>"
+ }
+]
