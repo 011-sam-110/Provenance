@@ -216,7 +216,7 @@ obligations and are not satisfied by the licence.
   registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
   Tile rows are POSITIONAL and read by index — never add a column on one side only; see
   `TILE_VERSION` and the parity test.
-- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**45 registered, 44 of them map layers**, 2026-10-16).
+- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**48 registered, 47 of them map layers**, 2026-10-16).
   A source may set `dataOnly: true` (see `types.ts`) meaning registered + fetchable but NOT a
   map layer: no catalog entry, no rail row, no pin, unreachable from monitors/variants/`?sig=`.
   Layer-facing code reads **`MAP_SIGNALS`**; the route, `/api/status` and the explainers read
