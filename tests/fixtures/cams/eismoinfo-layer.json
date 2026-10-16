@@ -1,0 +1,56 @@
+[
+ {
+  "layer": "VKR",
+  "name": "Vaizdo kameros",
+  "features": [
+   {
+    "id": "8",
+    "name": "Didžiulio ež. A1 19,42",
+    "details": true,
+    "icon": "15",
+    "points": [
+     {
+      "min": 0,
+      "max": 99,
+      "point": [
+       54.68456034011379,
+       25.054975978161156
+      ]
+     }
+    ]
+   },
+   {
+    "id": "72",
+    "name": "Vilnius A1 10,04",
+    "details": true,
+    "icon": "15",
+    "points": [
+     {
+      "min": 0,
+      "max": 99,
+      "point": [
+       54.642550940833566,
+       25.17981587877114
+      ]
+     }
+    ]
+   },
+   {
+    "id": "344",
+    "name": "Sausiai A1 24,07",
+    "details": true,
+    "icon": "15",
+    "points": [
+     {
+      "min": 0,
+      "max": 99,
+      "point": [
+       54.70810475968987,
+       24.996308515479527
+      ]
+     }
+    ]
+   }
+  ]
+ }
+]

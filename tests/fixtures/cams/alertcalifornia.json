@@ -1,0 +1,125 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -118.09,
+     36.57,
+     1383
+    ]
+   },
+   "properties": {
+    "id": "Axis-AlabamaHills1",
+    "name": "Alabama Hills 1",
+    "last_frame_ts": 1792184097,
+    "fov_lft": [
+     -118.2433884248363,
+     36.30840141710974
+    ],
+    "fov_rt": [
+     -118.4500333110697,
+     36.57032064063326
+    ],
+    "fov_center": [
+     -118.3941209699071,
+     36.41523424768078
+    ],
+    "fov": 65.1,
+    "ProdNbr": "Q6075-E",
+    "az_current": 237.63999938964844,
+    "tilt_current": -0.8999999761581421,
+    "zoom_current": 1.0,
+    "is_patrol_mode": 0,
+    "is_currently_patrolling": 0,
+    "state": "CA",
+    "county": "inyo",
+    "isp": "lonepinecommunications",
+    "sponsor": "calfire",
+    "region": "BDU"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -118.09,
+     36.57,
+     1383
+    ]
+   },
+   "properties": {
+    "id": "Axis-AlabamaHills2",
+    "name": "Alabama Hills 2",
+    "last_frame_ts": 1792184118,
+    "fov_lft": [
+     -118.29130976796085,
+     36.33027084551434
+    ],
+    "fov_rt": [
+     -118.44575340212633,
+     36.61445350230296
+    ],
+    "fov_center": [
+     -118.41997159983399,
+     36.454330139166686
+    ],
+    "fov": 65.1,
+    "ProdNbr": "Q6075-E",
+    "az_current": 246.4199981689453,
+    "tilt_current": -1.1200000047683716,
+    "zoom_current": 1.0,
+    "is_patrol_mode": 0,
+    "is_currently_patrolling": 0,
+    "state": "CA",
+    "county": "inyo",
+    "isp": "lonepinecommunications",
+    "sponsor": "calfire",
+    "region": "BDU"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     null,
+     null,
+     null
+    ]
+   },
+   "properties": {
+    "id": "AXIS-BCPOSLongmont",
+    "name": "",
+    "last_frame_ts": 1792184099,
+    "fov_lft": [
+     null,
+     null
+    ],
+    "fov_rt": [
+     null,
+     null
+    ],
+    "fov_center": [
+     null,
+     null
+    ],
+    "fov": "",
+    "ProdNbr": null,
+    "az_current": 270.4700012207031,
+    "tilt_current": -0.6800000071525574,
+    "zoom_current": 1.0,
+    "is_patrol_mode": 0,
+    "is_currently_patrolling": 0,
+    "state": "",
+    "county": "",
+    "isp": "",
+    "sponsor": "",
+    "region": ""
+   }
+  }
+ ]
+}

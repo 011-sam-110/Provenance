@@ -1,0 +1,172 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "mcs217",
+    "placeName": "Püspökladány",
+    "roadNumber": "42",
+    "sectionKm": 3,
+    "sectionM": 970,
+    "trackCode": 0,
+    "coordX": null,
+    "coordY": null,
+    "address": "42.sz főút 3+970km",
+    "countyCode": 9,
+    "county": "Hajdú-Bihar",
+    "trackCodeTxt": "",
+    "status": 0,
+    "published": true,
+    "active": true,
+    "webcams": [
+     {
+      "id": 517,
+      "cameraPlaceId": "mcs217",
+      "cameraNum": 3,
+      "cameraView": "Budapest",
+      "published": true,
+      "lastImage": 1792183925180,
+      "shortDescription": "Püspökladány",
+      "longDescription": "42-es számú főút, 4-es km-nél, Petőfi S. u. - Kossuth u. - Bocskai u. - Hősök tere kereszteződés (Budapest felé)"
+     },
+     {
+      "id": 515,
+      "cameraPlaceId": "mcs217",
+      "cameraNum": 1,
+      "cameraView": "Berettyóújfalu",
+      "published": true,
+      "lastImage": 1792183983385,
+      "shortDescription": "Püspökladány",
+      "longDescription": "42-es számú főút, 4-es km-nél, Petőfi S. u. - Kossuth u. - Bocskai u. - Hősök tere kereszteződés (Berettyóújfalu felé)"
+     },
+     {
+      "id": 516,
+      "cameraPlaceId": "mcs217",
+      "cameraNum": 2,
+      "cameraView": "Debrecen",
+      "published": true,
+      "lastImage": 1792183930806,
+      "shortDescription": "Püspökladány",
+      "longDescription": "42-es számú főút, 4-es km-nél, Petőfi S. u. - Kossuth u. - Bocskai u. - Hősök tere kereszteződés (Debrecen felé)"
+     },
+     {
+      "id": 518,
+      "cameraPlaceId": "mcs217",
+      "cameraNum": 4,
+      "cameraView": "Szerep",
+      "published": true,
+      "lastImage": 1792183948361,
+      "shortDescription": "Püspökladány",
+      "longDescription": "42-es számú főút, 4-es km-nél, Petőfi S. u. - Kossuth u. - Bocskai u. - Hősök tere kereszteződés (Szerep felé)"
+     }
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     21.1167,
+     47.3178
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "mcs182",
+    "placeName": "Farkasgyepű",
+    "roadNumber": "83",
+    "sectionKm": 7,
+    "sectionM": 435,
+    "trackCode": 0,
+    "coordX": null,
+    "coordY": null,
+    "address": "83.sz főút 7+435km",
+    "countyCode": 19,
+    "county": "Veszprém",
+    "trackCodeTxt": "",
+    "status": 0,
+    "published": true,
+    "active": true,
+    "webcams": [
+     {
+      "id": 493,
+      "cameraPlaceId": "mcs182",
+      "cameraNum": 1,
+      "cameraView": "Pápa",
+      "published": true,
+      "lastImage": 1792183950814,
+      "shortDescription": "Farkasgyepű",
+      "longDescription": "83-as számú főút, 7-es és 8-as km között (Pápa felé)"
+     },
+     {
+      "id": 1008,
+      "cameraPlaceId": "mcs182",
+      "cameraNum": 2,
+      "cameraView": "Városlőd",
+      "published": true,
+      "lastImage": 1792183982947,
+      "shortDescription": "Farkasgyepű",
+      "longDescription": "83-as számú főút, 7-es és 8-as km között (Városlőd elé)"
+     }
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     17.6227,
+     47.21
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "id": "mcs296",
+    "placeName": "Győrújbarát",
+    "roadNumber": "82",
+    "sectionKm": 68,
+    "sectionM": 110,
+    "trackCode": 0,
+    "coordX": null,
+    "coordY": null,
+    "address": "82.sz főút 68+110km",
+    "countyCode": 8,
+    "county": "Győr-Moson-Sopron",
+    "trackCodeTxt": "",
+    "status": 0,
+    "published": false,
+    "active": true,
+    "webcams": [
+     {
+      "id": 1069,
+      "cameraPlaceId": "mcs296",
+      "cameraNum": 1,
+      "cameraView": "Veszprém",
+      "published": true,
+      "lastImage": 1792183953548,
+      "shortDescription": "Győrújbarát",
+      "longDescription": "82-es számú főút, 68-as és 69-es km között (Veszprém felé)"
+     },
+     {
+      "id": 1070,
+      "cameraPlaceId": "mcs296",
+      "cameraNum": 2,
+      "cameraView": "Győr",
+      "published": true,
+      "lastImage": 1792183986291,
+      "shortDescription": "Győrújbarát",
+      "longDescription": "82-as számú főút, 68-as és 69-es km között (Győr felé)"
+     }
+    ]
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     17.6776,
+     47.6214
+    ]
+   }
+  }
+ ]
+}

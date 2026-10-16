@@ -1,0 +1,61 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "_id": 1,
+    "REC_ID": 8001,
+    "IMAGEURL": "https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc8001.jpg",
+    "REFURL1": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8001n.jpg",
+    "DIRECTION1": "North",
+    "REFURL2": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8001e.jpg",
+    "DIRECTION2": "East",
+    "MAINROAD": "YORK ST",
+    "CROSSROAD": "BREMNER BLVD / RAPTORS WAY",
+    "OBJECTID": "1",
+    "REFURL3": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8001s.jpg",
+    "DIRECTION3": "South",
+    "REFURL4": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8001w.jpg",
+    "DIRECTION4": "West"
+   },
+   "geometry": {
+    "type": "MultiPoint",
+    "coordinates": [
+     [
+      -79.3813860009273,
+      43.6431200069527
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "_id": 2,
+    "REC_ID": 8002,
+    "IMAGEURL": "https://opendata.toronto.ca/transportation/tmc/rescucameraimages/CameraImages/loc8002.jpg",
+    "REFURL1": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8002n.jpg",
+    "DIRECTION1": "North",
+    "REFURL2": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8002e.jpg",
+    "DIRECTION2": "East",
+    "MAINROAD": "LOWER SIMCOE ST",
+    "CROSSROAD": "BREMNER BLVD",
+    "OBJECTID": "2",
+    "REFURL3": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8002s.jpg",
+    "DIRECTION3": "South",
+    "REFURL4": "http://opendata.toronto.ca/transportation/tmc/rescucameraimages/ComparisonImages/loc8002w.jpg",
+    "DIRECTION4": "West"
+   },
+   "geometry": {
+    "type": "MultiPoint",
+    "coordinates": [
+     [
+      -79.3840680012892,
+      43.6422200016549
+     ]
+    ]
+   }
+  }
+ ]
+}

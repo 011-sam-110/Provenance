@@ -1,0 +1,261 @@
+{
+ "objectIdFieldName": "OBJECTID",
+ "uniqueIdField": {
+  "name": "OBJECTID",
+  "isSystemMaintained": true
+ },
+ "globalIdFieldName": "",
+ "geometryType": "esriGeometryPoint",
+ "spatialReference": {
+  "wkid": 4326,
+  "latestWkid": 4326
+ },
+ "fields": [
+  {
+   "name": "OBJECTID",
+   "type": "esriFieldTypeOID",
+   "alias": "OBJECTID",
+   "sqlType": "sqlTypeOther",
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Site",
+   "type": "esriFieldTypeString",
+   "alias": "Site",
+   "sqlType": "sqlTypeOther",
+   "length": 50,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Road_Name",
+   "type": "esriFieldTypeString",
+   "alias": "Road_Name",
+   "sqlType": "sqlTypeOther",
+   "length": 50,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Locaility",
+   "type": "esriFieldTypeString",
+   "alias": "Locaility",
+   "sqlType": "sqlTypeOther",
+   "length": 30,
+   "domain": {
+    "type": "codedValue",
+    "name": "D_Locality_Name",
+    "mergePolicy": "esriMPTDefaultValue",
+    "splitPolicy": "esriSPTDefaultValue",
+    "description": "The name of the Locality",
+    "codedValues": [
+     {
+      "name": "Bellingen",
+      "code": "BELLINGEN"
+     },
+     {
+      "name": "Bielsdown Hills",
+      "code": "BIELSDOWN HILLS"
+     },
+     {
+      "name": "Bostobrick",
+      "code": "BOSTOBRICK"
+     },
+     {
+      "name": "Brierfield",
+      "code": "BRIERFIELD"
+     },
+     {
+      "name": "Brinerville",
+      "code": "BRINERVILLE"
+     },
+     {
+      "name": "Cascade",
+      "code": "CASCADE"
+     },
+     {
+      "name": "Darkwood",
+      "code": "DARKWOOD"
+     },
+     {
+      "name": "Deer Vale",
+      "code": "DEER VALE"
+     },
+     {
+      "name": "Dorrigo",
+      "code": "DORRIGO"
+     },
+     {
+      "name": "Dorrigo Mountain",
+      "code": "DORRIGO MOUNTAIN"
+     },
+     {
+      "name": "Fernbrook",
+      "code": "FERNBROOK"
+     },
+     {
+      "name": "Fernmount",
+      "code": "FERNMOUNT"
+     },
+     {
+      "name": "Gleniffer",
+      "code": "GLENIFFER"
+     },
+     {
+      "name": "Kalang",
+      "code": "KALANG"
+     },
+     {
+      "name": "Kennaicle Creek",
+      "code": "KENNAICLE CREEK"
+     },
+     {
+      "name": "Megan",
+      "code": "MEGAN"
+     },
+     {
+      "name": "Mylestom",
+      "code": "MYLESTOM"
+     },
+     {
+      "name": "Never Never",
+      "code": "NEVER NEVER"
+     },
+     {
+      "name": "North Dorrigo",
+      "code": "NORTH DORRIGO"
+     },
+     {
+      "name": "Raleigh",
+      "code": "RALEIGH"
+     },
+     {
+      "name": "Repton",
+      "code": "REPTON"
+     },
+     {
+      "name": "Spicketts Creek",
+      "code": "SPICKETTS CREEK"
+     },
+     {
+      "name": "Tallowwood Ridge",
+      "code": "TALLOWWOOD RIDGE"
+     },
+     {
+      "name": "Thora",
+      "code": "THORA"
+     },
+     {
+      "name": "Urunga",
+      "code": "URUNGA"
+     },
+     {
+      "name": "Valery",
+      "code": "VALERY"
+     },
+     {
+      "name": "Valla",
+      "code": "VALLA"
+     },
+     {
+      "name": "Hydes Creek",
+      "code": "HYDES CREEK"
+     }
+    ]
+   },
+   "defaultValue": null
+  },
+  {
+   "name": "Hyperlink",
+   "type": "esriFieldTypeString",
+   "alias": "Hyperlink",
+   "sqlType": "sqlTypeOther",
+   "length": 150,
+   "domain": null,
+   "defaultValue": null
+  },
+  {
+   "name": "Verified_By",
+   "type": "esriFieldTypeString",
+   "alias": "Verified_By",
+   "sqlType": "sqlTypeOther",
+   "length": 10,
+   "domain": {
+    "type": "codedValue",
+    "name": "D_Verified_By",
+    "mergePolicy": "esriMPTDefaultValue",
+    "splitPolicy": "esriSPTDefaultValue",
+    "description": "The Name of the person/authority that validated the data",
+    "codedValues": [
+     {
+      "name": "LPI(NSW)",
+      "code": "LPI"
+     },
+     {
+      "name": "Barryf",
+      "code": "BARRYF"
+     },
+     {
+      "name": "Liamm",
+      "code": "LIAMM"
+     },
+     {
+      "name": "Office of Environment and Heritage",
+      "code": "OEH"
+     },
+     {
+      "name": "Forests NSW",
+      "code": "FOREST"
+     },
+     {
+      "name": "Lend Lease",
+      "code": "LENDLEASE"
+     }
+    ]
+   },
+   "defaultValue": null
+  },
+  {
+   "name": "Verified_Date",
+   "type": "esriFieldTypeDate",
+   "alias": "Verified_Date",
+   "sqlType": "sqlTypeOther",
+   "length": 8,
+   "domain": null,
+   "defaultValue": null
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "OBJECTID": 1,
+    "Site": "Lavenders Bridge",
+    "Road_Name": "Bridge Street",
+    "Locaility": "BELLINGEN",
+    "Hyperlink": "https://public.disasterwatch-iotp.com.au/prospectpublicimages/997/Lavenders%20Bridge%20-%20Overview.jpeg",
+    "Verified_By": "LIAMM",
+    "Verified_Date": 1768435200000
+   },
+   "geometry": {
+    "x": 152.89825146681204,
+    "y": -30.451056265279835
+   }
+  },
+  {
+   "attributes": {
+    "OBJECTID": 2,
+    "Site": "Leans Bridge",
+    "Road_Name": "Darkwood Road",
+    "Locaility": "THORA",
+    "Hyperlink": "https://public.disasterwatch-iotp.com.au/prospectpublicimages/998/Leans%20Bridge%20-%20Overview.jpeg",
+    "Verified_By": "LIAMM",
+    "Verified_Date": 1768435200000
+   },
+   "geometry": {
+    "x": 152.77087232940835,
+    "y": -30.42904104784235
+   }
+  }
+ ]
+}

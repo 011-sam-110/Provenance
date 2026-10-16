@@ -1,0 +1,58 @@
+{
+ "UpdateTime": "2026-10-17T03:54:32+08:00",
+ "UpdateInterval": 21600,
+ "SrcUpdateTime": "2026-10-17T02:10:14+08:00",
+ "SrcUpdateInterval": 86400,
+ "AuthorityCode": "THB",
+ "LinkVersion": "25.12.1",
+ "CCTVs": [
+  {
+   "CCTVID": "CCTV-14-0620-009-002",
+   "SubAuthorityCode": "THB-1R",
+   "LinkID": "1006200100900C",
+   "VideoStreamURL": "https://cctv-ss02.thb.gov.tw:443/T62-9K+020",
+   "VideoImageURL": "https://cctv-ss02.thb.gov.tw:443/T62-9K+020/snapshot",
+   "LocationType": 6,
+   "PositionLon": 121.7321,
+   "PositionLat": 25.10529,
+   "SurveillanceDescription": "快速公路62號(暖暖交流道到大華系統交流道)(W)",
+   "RoadID": "100620",
+   "RoadName": "台62線",
+   "RoadClass": 1,
+   "RoadDirection": "W",
+   "LocationMile": "9K+020"
+  },
+  {
+   "CCTVID": "CCTV-14-0620-012-012",
+   "SubAuthorityCode": "THB-1R",
+   "LinkID": "1006200101200F",
+   "VideoStreamURL": "https://cctv-ss02.thb.gov.tw:443/T62-12K+460",
+   "VideoImageURL": "https://cctv-ss02.thb.gov.tw:443/T62-12K+460/snapshot",
+   "LocationType": 6,
+   "PositionLon": 121.7624,
+   "PositionLat": 25.10815,
+   "SurveillanceDescription": "快速公路62號(瑞芳交流道到暖暖交流道)(W)",
+   "RoadID": "100620",
+   "RoadName": "台62線",
+   "RoadClass": 1,
+   "RoadDirection": "W",
+   "LocationMile": "12K+460"
+  },
+  {
+   "CCTVID": "CCTV-14-0620-012-007",
+   "SubAuthorityCode": "THB-1R",
+   "LinkID": "1006200101260F",
+   "VideoStreamURL": "https://cctv-ss02.thb.gov.tw:443/T62-12K+805",
+   "VideoImageURL": "https://cctv-ss02.thb.gov.tw:443/T62-12K+805/snapshot",
+   "LocationType": 6,
+   "PositionLon": 121.7657,
+   "PositionLat": 25.10918,
+   "SurveillanceDescription": "快速公路62號(瑞芳交流道到暖暖交流道)(W)",
+   "RoadID": "100620",
+   "RoadName": "台62線",
+   "RoadClass": 1,
+   "RoadDirection": "W",
+   "LocationMile": "12K+805"
+  }
+ ]
+}

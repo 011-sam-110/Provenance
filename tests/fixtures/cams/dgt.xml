@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<d2:payload xsi:type="ns2:DevicePublication" lang="es" modelBaseVersion="3" profileName="ProfileDGT" profileVersion="1.0" xsi:schemaLocation="http://levelC/schema/3/d2Payload https://nap.dgt.es/datex2/v3/dgt/DevicePublication/xsd/3.7_1.0/LevelC_3_D2Payload.xsd" xmlns:com="http://levelC/schema/3/common" xmlns:loc="http://levelC/schema/3/locationReferencing" xmlns:cse="http://levelC/schema/3/commonSpanishExtension" xmlns:fse="http://levelC/schema/3/faultAndStatusSpanishExtension" xmlns:ns2="http://levelC/schema/3/faultAndStatus" xmlns:d2="http://levelC/schema/3/d2Payload" xmlns:ns3="http://levelC/schema/3/locationExtension" xmlns:lse="http://levelC/schema/3/locationReferencingSpanishExtension" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <com:feedDescription>
+        <com:values>
+            <com:value>Publicación del estado y funcionamiento de los dispositivos ITS conforme a DATEX II.</com:value>
+        </com:values>
+    </com:feedDescription>
+    <com:publicationTime>2026-10-16T22:00:01.841+02:00</com:publicationTime>
+    <com:publicationCreator>
+        <com:country>es</com:country>
+        <com:nationalIdentifier>DGT</com:nationalIdentifier>
+    </com:publicationCreator>
+    <ns2:headerInformation>
+        <com:informationStatus>real</com:informationStatus>
+    </ns2:headerInformation>
+    <ns2:device xsi:type="fse:ExtendedDevice" id="176130" version="2">
+        <ns2:typeOfDevice>camera</ns2:typeOfDevice>
+        <ns2:lastUpdateOfDeviceInformation>2025-10-28T14:19:42.000+01:00</ns2:lastUpdateOfDeviceInformation>
+        <ns2:pointLocation>
+            <loc:supplementaryPositionalDescription>
+                <loc:roadInformation>
+                    <loc:roadDestination>BURGOS</loc:roadDestination>
+                    <loc:roadName>A-62</loc:roadName>
+                </loc:roadInformation>
+            </loc:supplementaryPositionalDescription>
+            <loc:tpegPointLocation xsi:type="loc:TpegSimplePoint">
+                <loc:tpegDirection>unknown</loc:tpegDirection>
+                <loc:tpegSimplePointLocationType>nonLinkedPoint</loc:tpegSimplePointLocationType>
+                <loc:point xsi:type="loc:TpegNonJunctionPoint">
+                    <loc:pointCoordinates>
+                        <loc:latitude>42.2624</loc:latitude>
+                        <loc:longitude>-3.9403</loc:longitude>
+                    </loc:pointCoordinates>
+                    <loc:_tpegNonJunctionPointExtension>
+                        <loc:extendedTpegNonJunctionPoint>
+                            <lse:kilometerPoint>25.3</lse:kilometerPoint>
+                            <lse:province>BURGOS</lse:province>
+                        </loc:extendedTpegNonJunctionPoint>
+                    </loc:_tpegNonJunctionPointExtension>
+                </loc:point>
+                <loc:_tpegSimplePointExtension>
+                    <loc:extendedTpegSimplePoint>
+                        <lse:tpegDirectionRoad>negative</lse:tpegDirectionRoad>
+                    </loc:extendedTpegSimplePoint>
+                </loc:_tpegSimplePointExtension>
+            </loc:tpegPointLocation>
+        </ns2:pointLocation>
+        <fse:deviceUrl>https://etraffic.dgt.es/camarasEtraffic/176130.jpg</fse:deviceUrl>
+    </ns2:device>
+    <ns2:device xsi:type="fse:ExtendedDevice" id="176131" version="2">
+        <ns2:typeOfDevice>camera</ns2:typeOfDevice>
+        <ns2:lastUpdateOfDeviceInformation>2025-10-28T14:20:52.000+01:00</ns2:lastUpdateOfDeviceInformation>
+        <ns2:pointLocation>
+            <loc:supplementaryPositionalDescription>
+                <loc:roadInformation>
+                    <loc:roadDestination>PORTUGAL</loc:roadDestination>
+                    <loc:roadName>A-62</loc:roadName>
+                </loc:roadInformation>
+            </loc:supplementaryPositionalDescription>
+            <loc:tpegPointLocation xsi:type="loc:TpegSimplePoint">
+                <loc:tpegDirection>unknown</loc:tpegDirection>
+                <loc:tpegSimplePointLocationType>nonLinkedPoint</loc:tpegSimplePointLocationType>
+                <loc:point xsi:type="loc:TpegNonJunctionPoint">
+                    <loc:pointCoordinates>
+                        <loc:latitude>42.2272</loc:latitude>
+                        <loc:longitude>-3.9953</loc:longitude>
+                    </loc:pointCoordinates>
+                    <loc:_tpegNonJunctionPointExtension>
+                        <loc:extendedTpegNonJunctionPoint>
+                            <lse:kilometerPoint>31.2</lse:kilometerPoint>
+                            <lse:province>BURGOS</lse:province>
+                        </loc:extendedTpegNonJunctionPoint>
+                    </loc:_tpegNonJunctionPointExtension>
+                </loc:point>
+                <loc:_tpegSimplePointExtension>
+                    <loc:extendedTpegSimplePoint>
+                        <lse:tpegDirectionRoad>positive</lse:tpegDirectionRoad>
+                    </loc:extendedTpegSimplePoint>
+                </loc:_tpegSimplePointExtension>
+            </loc:tpegPointLocation>
+        </ns2:pointLocation>
+        <fse:deviceUrl>https://etraffic.dgt.es/camarasEtraffic/176131.jpg</fse:deviceUrl>
+    </ns2:device>
+    <ns2:device xsi:type="fse:ExtendedDevice" id="2" version="28">
+        <ns2:typeOfDevice>camera</ns2:typeOfDevice>
+        <ns2:lastUpdateOfDeviceInformation>2025-10-28T14:23:56.000+01:00</ns2:lastUpdateOfDeviceInformation>
+        <ns2:pointLocation>
+            <loc:supplementaryPositionalDescription>
+                <loc:roadInformation>
+                    <loc:roadDestination>BURGOS</loc:roadDestination>
+                    <loc:roadName>A-62</loc:roadName>
+                </loc:roadInformation>
+            </loc:supplementaryPositionalDescription>
+            <loc:tpegPointLocation xsi:type="loc:TpegSimplePoint">
+                <loc:tpegDirection>unknown</loc:tpegDirection>
+                <loc:tpegSimplePointLocationType>nonLinkedPoint</loc:tpegSimplePointLocationType>
+                <loc:point xsi:type="loc:TpegNonJunctionPoint">
+                    <loc:pointCoordinates>
+                        <loc:latitude>42.0676</loc:latitude>
+                        <loc:longitude>-4.2227</loc:longitude>
+                    </loc:pointCoordinates>
+                    <loc:_tpegNonJunctionPointExtension>
+                        <loc:extendedTpegNonJunctionPoint>
+                            <lse:kilometerPoint>57.9</lse:kilometerPoint>
+                            <lse:province>PALENCIA</lse:province>
+                        </loc:extendedTpegNonJunctionPoint>
+                    </loc:_tpegNonJunctionPointExtension>
+                </loc:point>
+                <loc:_tpegSimplePointExtension>
+                    <loc:extendedTpegSimplePoint>
+                        <lse:tpegDirectionRoad>negative</lse:tpegDirectionRoad>
+                    </loc:extendedTpegSimplePoint>
+                </loc:_tpegSimplePointExtension>
+            </loc:tpegPointLocation>
+        </ns2:pointLocation>
+        <fse:deviceUrl>https://etraffic.dgt.es/camarasEtraffic/2.jpg</fse:deviceUrl>
+    </ns2:device>
+</d2:payload>

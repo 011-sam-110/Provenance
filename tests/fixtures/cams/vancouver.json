@@ -1,0 +1,44 @@
+[
+ {
+  "geom": {
+   "type": "Feature",
+   "geometry": {
+    "coordinates": [
+     -123.033764228688,
+     49.2581519344414
+    ],
+    "type": "Point"
+   },
+   "properties": {}
+  },
+  "mapid": "TCM004",
+  "name": "Rupert St and Grandview Hwy",
+  "url": "https://trafficcams.vancouver.ca/grandview4.htm",
+  "geo_local_area": "Renfrew-Collingwood",
+  "geo_point_2d": {
+   "lon": -123.033764228688,
+   "lat": 49.2581519344414
+  }
+ },
+ {
+  "geom": {
+   "type": "Feature",
+   "geometry": {
+    "coordinates": [
+     -123.114909,
+     49.270967
+    ],
+    "type": "Point"
+   },
+   "properties": {}
+  },
+  "mapid": "TCM005",
+  "name": "Cambie Bridge",
+  "url": "https://trafficcams.vancouver.ca/cambiebridge.htm",
+  "geo_local_area": "Fairview",
+  "geo_point_2d": {
+   "lon": -123.114909,
+   "lat": 49.270967
+  }
+ }
+]

@@ -1,0 +1,121 @@
+{
+ "webcams": [
+  {
+   "webcamCode": "akutan_aksd",
+   "webcamName": "Akutan [AKS, 720 ft]",
+   "latitude": 54.11047,
+   "longitude": -165.6969,
+   "elevationM": 67,
+   "bearingDeg": 290,
+   "externalUrl": null,
+   "faaInd": "N",
+   "vnum": "311320",
+   "vName": "Akutan",
+   "hasImages": "Y",
+   "imageTotal": 17514,
+   "firstImageDate": "Wed, 22 Mar 2000 00:12:00 +0000",
+   "firstImageTimestamp": 953683920,
+   "lastImageDate": "Fri, 16 Oct 2026 20:00:00 +0000",
+   "lastImageTimestamp": 1792180800,
+   "clearImageUrl": "https://avo.alaska.edu/ashcam-api/images/clear/akutan_aksd/akutan_aksd-20251210T020000Z.jpg",
+   "currentImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_aksd/current.jpg",
+   "currentMediumImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_aksd/current-medium.jpg",
+   "currentThumbImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_aksd/current-thumb.jpg",
+   "newestImage": {
+    "newestForWebcam": "Y",
+    "imageId": 35417278,
+    "md5": "54ffd2237347a1681c3ddc09a44da295",
+    "imageTimestamp": 1792180800,
+    "imageDate": "Fri, 16 Oct 2026 20:00:00 +0000",
+    "isNighttimeInd": "N",
+    "imageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_aksd/2026/288/akutan_aksd-20261016T200000Z.jpg",
+    "interestingCode": "U"
+   },
+   "timezone": "UTC",
+   "organization": "AVO",
+   "isPublic": "Y",
+   "hasArchiveImages": "Y",
+   "volcanoes": [
+    "ak6"
+   ]
+  },
+  {
+   "webcamCode": "akutan_av06",
+   "webcamName": "Akutan [AV06, 1519 ft]",
+   "latitude": 54.14718,
+   "longitude": -165.7657,
+   "elevationM": 141,
+   "bearingDeg": 275,
+   "externalUrl": null,
+   "faaInd": "N",
+   "vnum": "311320",
+   "vName": "Akutan",
+   "hasImages": "Y",
+   "imageTotal": 36000,
+   "firstImageDate": "Thu, 31 Dec 2020 11:33:00 +0000",
+   "firstImageTimestamp": 1609414380,
+   "lastImageDate": "Fri, 16 Oct 2026 20:05:00 +0000",
+   "lastImageTimestamp": 1792181100,
+   "clearImageUrl": "https://avo.alaska.edu/ashcam-api/images/clear/akutan_av06/akutan_av06-20210610T003300Z.jpg",
+   "currentImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_av06/current.jpg",
+   "currentMediumImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_av06/current-medium.jpg",
+   "currentThumbImageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_av06/current-thumb.jpg",
+   "newestImage": {
+    "newestForWebcam": "Y",
+    "imageId": 35417405,
+    "md5": "8c1902076f0e05470ce54132423b79ab",
+    "imageTimestamp": 1792181100,
+    "imageDate": "Fri, 16 Oct 2026 20:05:00 +0000",
+    "isNighttimeInd": "N",
+    "imageUrl": "https://avo.alaska.edu/ashcam-api/images/akutan_av06/2026/288/akutan_av06-20261016T200500Z.jpg",
+    "interestingCode": "U"
+   },
+   "timezone": "UTC",
+   "organization": "AVO",
+   "isPublic": "Y",
+   "hasArchiveImages": "N",
+   "volcanoes": [
+    "ak6"
+   ]
+  },
+  {
+   "webcamCode": "akunIsland-N",
+   "webcamName": "Akun Island - N",
+   "latitude": 54.146948,
+   "longitude": -165.60517,
+   "elevationM": 20.1168,
+   "bearingDeg": 350,
+   "externalUrl": "http://avcams.faa.gov/viewsite.php?bookmark=74IBZOLY",
+   "faaInd": "Y",
+   "vnum": "311320",
+   "vName": "Akutan",
+   "hasImages": "Y",
+   "imageTotal": 130810,
+   "firstImageDate": "Thu, 13 Apr 2023 21:03:37 +0000",
+   "firstImageTimestamp": 1681419817,
+   "lastImageDate": "Fri, 19 Jun 2026 03:58:54 +0000",
+   "lastImageTimestamp": 1781841534,
+   "clearImageUrl": "https://avo.alaska.edu/ashcam-api/images/clear/akunIsland-N/akunIsland-N-20230311T194022Z.jpg",
+   "currentImageUrl": "https://avo.alaska.edu/ashcam-api/images/akunIsland-N/current.jpg",
+   "currentMediumImageUrl": "https://avo.alaska.edu/ashcam-api/images/akunIsland-N/current-medium.jpg",
+   "currentThumbImageUrl": "https://avo.alaska.edu/ashcam-api/images/akunIsland-N/current-thumb.jpg",
+   "newestImage": {
+    "newestForWebcam": "Y",
+    "imageId": 32870268,
+    "md5": "8b626592ab7290dae72c09996e452fd4",
+    "imageTimestamp": 1781841533,
+    "imageDate": "Fri, 19 Jun 2026 03:58:53 +0000",
+    "isNighttimeInd": "Y",
+    "imageUrl": "https://avo.alaska.edu/ashcam-api/images/akunIsland-N/2026/169/akunIsland-N-20260619T035853Z.jpg",
+    "interestingCode": "U"
+   },
+   "timezone": "UTC",
+   "organization": "FAA",
+   "isPublic": "Y",
+   "hasArchiveImages": "N",
+   "volcanoes": [
+    "ak6"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,98 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "pvo_patrimoine_voirie.pvocameracriter.37",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     4.92010936,
+     45.72302422
+    ]
+   },
+   "geometry_name": "the_geom",
+   "properties": {
+    "nom": "Porte des Alpes",
+    "libellelong": "Boulevard de l'Université / Rue A.Bouloche",
+    "identifiant": 255,
+    "numeromaintenance": "CWBR043",
+    "typecamera": "Web",
+    "fournisseur": "CRITER",
+    "observation": "Direction : Porte des Alpes",
+    "url": "https://download.data.grandlyon.com/files/rdata/pvo_patrimoine_voirie.pvocameracriter/CWBR043.JPG",
+    "gid": 37,
+    "last_update_fme": "2026-10-16T22:55:32.814+02:00",
+    "last_update": "2026-10-16T22:55:16+02:00"
+   },
+   "bbox": [
+    4.92010936,
+    45.72302422,
+    4.92010936,
+    45.72302422
+   ]
+  },
+  {
+   "type": "Feature",
+   "id": "pvo_patrimoine_voirie.pvocameracriter.32",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     4.81570358,
+     45.72886114
+    ]
+   },
+   "geometry_name": "the_geom",
+   "properties": {
+    "nom": "M7 - Marseille",
+    "libellelong": "Pont de la Mulatière",
+    "identifiant": 258,
+    "numeromaintenance": "CWML005",
+    "typecamera": "Web",
+    "fournisseur": "CRITER",
+    "observation": "Direction : M7 - Marseille",
+    "url": "https://download.data.grandlyon.com/files/rdata/pvo_patrimoine_voirie.pvocameracriter/CWML005.JPG",
+    "gid": 32,
+    "last_update_fme": "2026-10-16T22:55:32.811+02:00",
+    "last_update": "2026-10-16T22:54:58+02:00"
+   },
+   "bbox": [
+    4.81570358,
+    45.72886114,
+    4.81570358,
+    45.72886114
+   ]
+  },
+  {
+   "type": "Feature",
+   "id": "pvo_patrimoine_voirie.pvocameracriter.41",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     4.80278803,
+     45.76352375
+    ]
+   },
+   "geometry_name": "the_geom",
+   "properties": {
+    "nom": "A7 - Paris",
+    "libellelong": "Tunnel sous Fourvière",
+    "identifiant": 261,
+    "numeromaintenance": "CWL9801",
+    "typecamera": "Web",
+    "fournisseur": "CRITER",
+    "observation": "Direction : M6 - Paris",
+    "url": "https://download.data.grandlyon.com/files/rdata/pvo_patrimoine_voirie.pvocameracriter/CWL9801.JPG",
+    "gid": 41,
+    "last_update_fme": "2026-10-16T22:55:32.815+02:00",
+    "last_update": "2026-10-16T22:55:27+02:00"
+   },
+   "bbox": [
+    4.80278803,
+    45.76352375,
+    4.80278803,
+    45.76352375
+   ]
+  }
+ ]
+}

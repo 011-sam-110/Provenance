@@ -1,0 +1,40 @@
+[
+ {
+  "camera_url": {
+   "url": "http://trafficcam.calgary.ca/loc86.jpg",
+   "description": "Camera 87"
+  },
+  "quadrant": "SE",
+  "camera_location": "Stoney Trail / Deerfoot Trail SE",
+  "point": {
+   "type": "Point",
+   "coordinates": [
+    -113.9766063,
+    50.9007257
+   ]
+  },
+  ":@computed_region_4a3i_ccfj": "3",
+  ":@computed_region_kxmf_bzkv": "296",
+  ":@computed_region_p8tp_5dkv": "13",
+  ":@computed_region_4b54_tmc4": "4"
+ },
+ {
+  "camera_url": {
+   "url": "http://trafficcam.calgary.ca/loc142.jpg",
+   "description": "Camera 143"
+  },
+  "quadrant": "SW",
+  "camera_location": "Bow Trail / 37 Street SW",
+  "point": {
+   "type": "Point",
+   "coordinates": [
+    -114.1413616,
+    51.0453097
+   ]
+  },
+  ":@computed_region_4a3i_ccfj": "1",
+  ":@computed_region_kxmf_bzkv": "118",
+  ":@computed_region_p8tp_5dkv": "2",
+  ":@computed_region_4b54_tmc4": "14"
+ }
+]
