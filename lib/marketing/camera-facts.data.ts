@@ -17,11 +17,14 @@
  * moved. A red there means the page is about to state a number the repo no longer ships;
  * update this file, do not edit the test.
  *
- * Measured 2026-09-12.
+ * Measured 2026-09-12; feeds re-measured 2026-10-16 (17 -> 27, see registry.ts).
  */
 export const CAMERA_FACTS = {
-  /** Operator feeds in `lib/sources/registry.ts` — 16 hand-written adapters + 1 admitted by discovery. */
-  feeds: 17,
+  /**
+   * Operator feeds in `lib/sources/registry.ts` — 26 from hand-written adapters (cars.ts
+   * registers six, one per CARS state) + 1 admitted by discovery.
+   */
+  feeds: 27,
   /**
    * Distinct countries the adapters DECLARE, counted from literal `country: "XX"`
    * assignments: BA, BR, CA, EE, FI, GB, IS, NZ, PR, RS, US.
