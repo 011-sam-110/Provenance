@@ -60,3 +60,35 @@ test("prefers name_override over the raw name", () => {
   const c = cams.find((x) => x.id === "drivebc:301")!;
   expect(c.name).toBe("Pine Pass Summit");
 });
+
+// Audit 2026-10-16: the per-camera `credit` was ignored, so the 8 TransLink cameras
+// carried MoTI-only attribution, and the operator's last-frame time was dropped.
+// The credit strings below are verbatim from /api/webcams/ that day.
+test("an image-owner credit joins the attribution; a delay notice does not", async () => {
+  const { imageCredit } = await import("@/lib/sources/drivebc");
+  expect(imageCredit('Images courtesy of <a href="https://www.translink.ca/" target="_blank">TransLink</a>')).toBe(
+    "Images courtesy of TransLink",
+  );
+  expect(imageCredit("Images provided by Parks Canada and Alberta Motor Association.")).toBe(
+    "Images provided by Parks Canada and Alberta Motor Association",
+  );
+  expect(
+    imageCredit(
+      "This camera is located in a remote area and relies on solar power. As a result, transmission delays may occur. Thank you for your understanding.",
+    ),
+  ).toBeUndefined();
+  expect(imageCredit("")).toBeUndefined();
+  expect(imageCredit(null)).toBeUndefined();
+
+  const base = (fixture as Array<Record<string, unknown>>).find((w) => w.id === 717)!;
+  const [cam] = normalizeDriveBc([
+    {
+      ...base,
+      credit: 'Images courtesy of <a href="https://www.translink.ca/">TransLink</a>',
+      last_update_modified: "2026-10-16T13:40:55-07:00",
+    },
+  ] as never);
+  expect(cam.attribution).toMatch(/DriveBC/);
+  expect(cam.attribution).toMatch(/Images courtesy of TransLink$/);
+  expect(cam.lastSampledAt).toBe("2026-10-16T20:40:55.000Z");
+});
