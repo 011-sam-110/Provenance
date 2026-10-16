@@ -302,6 +302,7 @@ describe("buildStatusReport", () => {
         "markets-equities",
         "markets-macro",
         "news-ingest",
+        "ops-alerts",
         "source-relay",
         "webcams",
         "youtube-live",
