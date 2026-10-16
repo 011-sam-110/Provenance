@@ -53,9 +53,11 @@ test("extractScotlandImage returns null when no embedded image is present", () =
 // Audit 2026-10-16: 20% of sampled cameras served one byte-identical "Currently
 // Unavailable" card while the adapter marked every camera available.
 test("a camera last seen serving the operator's card is not available", async () => {
-  const { isScotlandCard, SCOTLAND_CARD_MD5 } = await import("@/lib/sources/trafficscotland");
-  expect(SCOTLAND_CARD_MD5).toMatch(/^[0-9a-f]{32}$/);
-  expect(isScotlandCard(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]))).toBe(false);
+  const { isScotlandCard, SCOTLAND_CARD_SHA256, SCOTLAND_CARD_BYTES } = await import("@/lib/sources/trafficscotland");
+  expect(SCOTLAND_CARD_SHA256).toMatch(/^[0-9a-f]{64}$/);
+  expect(await isScotlandCard(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]))).toBe(false);
+  // Same length as the card, different bytes: still a picture.
+  expect(await isScotlandCard(new Uint8Array(SCOTLAND_CARD_BYTES))).toBe(false);
   const cams = normalizeTrafficScotland(fixture as never, (id) => id === "trafficscotland:1");
   expect(cams.find((c) => c.id === "trafficscotland:1")!.available).toBe(false);
   expect(cams.filter((c) => c.id !== "trafficscotland:1").every((c) => c.available)).toBe(true);

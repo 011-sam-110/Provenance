@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { Camera, CameraArray, Source } from "@/lib/types";
 import { showsPlaceholder } from "@/lib/sources/placeholderMemo";
 
@@ -39,15 +38,24 @@ export interface ScotlandCamera {
 }
 
 /**
- * md5 of the operator's "Currently Unavailable" card, as the proxy decodes it out of
- * the camera page. One byte-identical JPEG (8,860 bytes) for every dead camera: 10 of
- * 50 sampled on 2026-10-16, and 5 of the first 60 cameras that evening.
+ * The operator's "Currently Unavailable" card, as the proxy decodes it out of the
+ * camera page. One byte-identical JPEG for every dead camera: 10 of 50 sampled on
+ * 2026-10-16 (md5 8c781abbaca28889b9d99d78c24df5f2, the audit's figure), and 5 of the
+ * first 60 cameras that evening.
+ *
+ * Matched by length and SHA-256 through Web Crypto rather than node:crypto: this file
+ * is reachable from the registry, and a `node:` import there is what once broke the
+ * client build (tests/unit/client-bundle-node-builtins.test.ts).
  */
-export const SCOTLAND_CARD_MD5 = "8c781abbaca28889b9d99d78c24df5f2";
+export const SCOTLAND_CARD_BYTES = 8_860;
+export const SCOTLAND_CARD_SHA256 = "5c740fd7104708e454bff72a4571629840657378a6f6c80fee6c330bd10878c0";
 
 /** Whether decoded image bytes are the operator's "Currently Unavailable" card. */
-export function isScotlandCard(bytes: Uint8Array): boolean {
-  return createHash("md5").update(bytes).digest("hex") === SCOTLAND_CARD_MD5;
+export async function isScotlandCard(bytes: Uint8Array): Promise<boolean> {
+  if (bytes.byteLength !== SCOTLAND_CARD_BYTES) return false;
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", bytes));
+  const hex = Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
+  return hex === SCOTLAND_CARD_SHA256;
 }
 
 /**

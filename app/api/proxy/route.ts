@@ -117,7 +117,7 @@ async function proxyTrafficScotland(target: URL, refreshSeconds: number, cameraI
   // The operator's "Currently Unavailable" card is still served (it is the honest
   // picture), but it is recorded, so the next registry refresh marks the camera
   // unavailable instead of live. See lib/sources/placeholderMemo.ts.
-  const card = isScotlandCard(bytes);
+  const card = await isScotlandCard(bytes);
   notePlaceholder(cameraId, card);
   return new Response(bytes, {
     status: 200,
