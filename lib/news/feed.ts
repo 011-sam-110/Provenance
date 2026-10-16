@@ -53,7 +53,8 @@ interface Feed {
 export const FEEDS: readonly Feed[] = [
   { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC" },
   { url: "https://www.aljazeera.com/xml/rss/all.xml", source: "Al Jazeera" },
-  { url: "https://feeds.npr.org/1001/rss.xml", source: "NPR" },
+  // 1004 is NPR World. 1001 (used until 2026-10-16) is NPR "News", a US domestic mix.
+  { url: "https://feeds.npr.org/1004/rss.xml", source: "NPR" },
   { url: "https://www.theguardian.com/world/rss", source: "The Guardian" },
   { url: "https://rss.dw.com/rdf/rss-en-world", source: "DW" },
   { url: "https://www.france24.com/en/rss", source: "France 24" },

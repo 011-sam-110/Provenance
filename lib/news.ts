@@ -6,7 +6,7 @@
 // Feeds confirmed live 2026-06-27 (all RSS 2.0 with <item><title><link><pubDate>):
 //   BBC World      http://feeds.bbci.co.uk/news/world/rss.xml
 //   Al Jazeera     https://www.aljazeera.com/xml/rss/all.xml
-//   NPR News       https://feeds.npr.org/1001/rss.xml
+//   NPR World      https://feeds.npr.org/1004/rss.xml (was 1001, NPR "News", until 2026-10-16)
 //   The Guardian   https://www.theguardian.com/world/rss
 // Atom (<entry>/<link href>/<updated>) is handled defensively too.
 
