@@ -8,6 +8,8 @@
 import type { Map as MlMap } from "maplibre-gl";
 import { encodeViewState, decodeViewState, type ViewState } from "@/lib/share/url";
 import { layersStore, ACTIVE_LAYERS } from "@/lib/layers";
+import { inspectorStore } from "@/lib/shell/inspector";
+import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { mapViewStore } from "@/lib/mapView";
 import { overlay } from "@/lib/overlay";
 import { track } from "@/lib/analytics/track";
@@ -21,10 +23,21 @@ const WRITE_DEBOUNCE_MS = 400;
  * for a per-board social card is what made `/app` dynamic for every request. The
  * board is now per-browser state, so it is not something a link can carry — see the
  * note at the top of lib/share/url.ts.
+ *
+ * `sig` IS INCLUDED, AND LEAVING IT OUT WAS A BUG. This function is what the URL
+ * writer runs on every store change, so a field it omits is a field the address bar
+ * loses a moment after load: a `?sig=` link turned its layers on and then rewrote its
+ * own URL without them, and a reload of that URL could not bring them back. The value
+ * is World's on-set, the shape variantStore.bootstrap applies (it treats `sig` as the
+ * authoritative on-set, not a delta). It is World's own set and NOT the union: an
+ * area's sources are per-browser, and writing them here would put a ring-scoped layer
+ * across the whole globe on the next boot.
  */
 export function composeViewState(map: MlMap): ViewState {
   const c = map.getCenter();
   const layerState = layersStore.get();
+  const world = inspectorStore.get().world;
+  const sig = MAP_SIGNALS.filter((s) => world[s.id] === true).map((s) => s.id);
   return {
     lat: c.lat,
     lon: c.lng,
@@ -32,6 +45,7 @@ export function composeViewState(map: MlMap): ViewState {
     layers: ACTIVE_LAYERS.filter((k) => layerState[k]),
     basemap: mapViewStore.get().basemap,
     obj: overlay.get().object?.id,
+    ...(sig.length ? { sig } : {}),
   };
 }
 

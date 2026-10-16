@@ -58,9 +58,13 @@
  * and `tests/unit/account-errors.test.ts`; Task 6 adds `tests/unit/account-import-guard.test.ts`;
  * the design pass adds `tests/unit/account-reopen-flag.test.ts`.
  * `npx vitest run`: 4,753 cases across 423 files.
+ *
+ * Re-measured 2026-10-16 on fix/reload-keeps-signals: it adds `tests/unit/boot-seed-plan.test.ts`,
+ * `tests/unit/boot-reload-keeps-signals.test.ts`, `tests/unit/boot-sig-link.test.ts` and
+ * `tests/unit/boot-first-run.test.ts`. `npx vitest list`: 4,786 cases across 427 files.
  */
 export const UNIT_TESTS = {
-  cases: 4753,
-  files: 423,
+  cases: 4786,
+  files: 427,
   measuredAt: "2026-10-16",
 } as const;

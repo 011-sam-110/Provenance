@@ -64,10 +64,14 @@ describe("board_switched", () => {
     expect(named(capture, "board_switched")).toEqual([]);
   });
 
-  it("passes track: false on both of ConsoleShell's boot calls", () => {
-    const src = readFileSync("components/shell/ConsoleShell.tsx", "utf8").replace(/\/\/.*$/gm, "");
-    const calls = [...src.matchAll(/applyPreset\(([^)]*)\)/g)].map((m) => m[1]);
-    expect(calls).toHaveLength(2);
+  it("passes track: false on the console's boot call", () => {
+    // The boot's board step moved out of ConsoleShell into lib/console/bootSeed.ts, and
+    // its two applyPreset calls (`?preset=` and the first-run seed) became one call on
+    // a planned id. ConsoleShell must not grow a boot applyPreset of its own again.
+    const strip = (f: string) => readFileSync(f, "utf8").replace(/\/\/.*$/gm, "");
+    expect([...strip("components/shell/ConsoleShell.tsx").matchAll(/applyPreset\(/g)]).toHaveLength(0);
+    const calls = [...strip("lib/console/bootSeed.ts").matchAll(/applyPreset\(([^)]*)\)/g)].map((m) => m[1]);
+    expect(calls).toHaveLength(1);
     for (const args of calls) expect(args, args).toContain("track: false");
   });
 });

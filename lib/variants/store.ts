@@ -115,8 +115,13 @@ export const variantStore = {
    * the server had to read it to mint a per-board social card, which made the whole
    * `/app` route dynamic. The board now comes from persisted state or the default,
    * so a legacy `/app?v=aviation` link opens the default board.
+   *
+   * RETURNS whether saved state was found, i.e. whether this browser has booted the
+   * console before (this method persists on every boot, so the key exists from the
+   * second boot on). The boot seed reads it to tell a true first run from a returning
+   * user: see lib/console/bootSeed.ts.
    */
-  bootstrap(params: URLSearchParams) {
+  bootstrap(params: URLSearchParams): boolean {
     const saved = loadPersisted<VariantStoreState>(PERSIST_KEY, PERSIST_VERSION);
     if (saved) state = { ...state, ...saved, ...migrateLayerKeys(saved) };
     const url = decodeViewState(params);
@@ -136,6 +141,7 @@ export const variantStore = {
     }
     persist();
     emit();
+    return saved !== null;
   },
   setActive(id: string) {
     const v = resolveVariant(id);
