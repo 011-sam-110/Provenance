@@ -304,6 +304,7 @@ export const SIGNAL_ICON: Record<string, IconKey> = {
   "tropical-cyclones": "sig-cyclone",
   aurora: "sig-aurora",
   "space-weather": "sig-spaceweather",
+  "geomag-stations": "sig-spaceweather",
   launches: "sig-launch",
   nuclear: "sig-nuclear",
   airports: "sig-airport",

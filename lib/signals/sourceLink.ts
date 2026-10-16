@@ -78,6 +78,7 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   "emsc-quakes": { label: "EMSC", url: "https://www.seismicportal.eu/" },
   aurora: { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/products/aurora-30-minute-forecast" },
   "space-weather": { label: "NOAA SWPC", url: "https://www.swpc.noaa.gov/" },
+  "geomag-stations": { label: "FMI R-index", url: "https://space.fmi.fi/MIRACLE/RWC/r-index/en/" },
   launches: { label: "The Space Devs", url: "https://thespacedevs.com/" },
   cables: { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
   "cable-landings": { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },

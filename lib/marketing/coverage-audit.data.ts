@@ -209,6 +209,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "note": ""
   },
   {
+    "id": "geomag-stations",
+    "label": "Magnetometer stations",
+    "group": "Space weather",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-16, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is NOT dormant: measured directly through its own fetch() against the live FMI and USGS feeds from provenance-1 on 2026-10-16T20:00Z, it served 24 station pins (11 FMI stations in Finland and Estonia, 13 of the 14 USGS observatories; Fredericksburg sent no samples that hour), 9 of them at the strong level. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
     "id": "launches",
     "label": "Rocket launches",
     "group": "Space",
@@ -3340,10 +3352,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 36,
+  "layers": 37,
   "live": 29,
   "partial": 1,
-  "down": 4,
+  "down": 5,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,

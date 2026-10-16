@@ -60,6 +60,7 @@ import { MILITARY_AIR_SOURCE } from "@/lib/signals/military-air";
 import { AIS_SOURCE } from "@/lib/signals/ais";
 import { INTERNET_OUTAGES_SOURCE } from "@/lib/signals/internet-outages";
 import { SPACE_WEATHER_SOURCE } from "@/lib/signals/space-weather";
+import { GEOMAG_STATIONS_SOURCE } from "@/lib/signals/geomag-stations";
 import { INSTABILITY_SOURCE } from "@/lib/signals/instability";
 import { AIR_QUALITY_STATIONS_SOURCE } from "@/lib/signals/airquality-stations";
 import { TROPICAL_CYCLONES_SOURCE } from "@/lib/signals/tropical-cyclones";
@@ -87,6 +88,7 @@ export const SIGNALS: SignalSource[] = [
   EMSC_SOURCE, // EMSC quakes — a 2nd, faster Euro-Med catalogue alongside USGS
   AURORA_SOURCE,
   SPACE_WEATHER_SOURCE, // NOAA SWPC Kp/storm-scale status pin (keyless)
+  GEOMAG_STATIONS_SOURCE, // FMI + USGS magnetometers: MEASURED disturbance at named stations (keyless)
   // Space
   LAUNCHES_SOURCE,
   // Infrastructure (cables = line layer + landing-station nodes, gpsJamming = fill layer)

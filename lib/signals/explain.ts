@@ -204,6 +204,19 @@ const EXPLAINERS: LayerExplainer[] = [
     ],
   },
   {
+    id: "geomag-stations",
+    whatItShows: "A magnetometer station and what it measured just now: Finnish Meteorological Institute stations show FMI's auroral-activity R-index with FMI's own verdict; USGS observatories show how far the horizontal magnetic field moved in the last hour.",
+    method: "Measured by ground magnetometers. FMI's level compares the R-index with each station's own lower and higher limits. USGS publishes raw field values only, so Provenance takes the range of the horizontal field H over the last hour and calls it active at 100 nT and strong at 300 nT at the three Alaskan auroral-zone observatories, and at 40 and 120 nT elsewhere; the number is always shown beside the word.",
+    confidence: "measured",
+    coverage: "11 FMI stations in Finland and Estonia and 14 USGS observatories in Alaska, the contiguous US, Hawaii, Guam and Puerto Rico. Nothing in the southern hemisphere, Canada, the rest of Europe or Asia.",
+    limitations: [
+      "A disturbance at a station is not a sighting. Cloud, daylight and light pollution decide whether anyone there sees an aurora.",
+      "The USGS levels are this project's rule, not the USGS's; a 40 nT hour means more at Tucson than at College.",
+      "FMI's R-index and the USGS hourly range are different measures, so the two networks' numbers cannot be compared with each other.",
+      "A station that stops reporting disappears from the map; its absence is not a quiet reading.",
+    ],
+  },
+  {
     id: "launches",
     whatItShows: "A scheduled orbital rocket launch, at its launch site, with a countdown.",
     method: "Reported by The Space Devs' Launch Library, which aggregates operator and range announcements.",
