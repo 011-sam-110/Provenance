@@ -1,0 +1,278 @@
+[
+ {
+  "date": "2026-10-16",
+  "arrival": false,
+  "cargo": false,
+  "list": [
+   {
+    "time": "15:15",
+    "flight": [
+     {
+      "no": "JL 026",
+      "airline": "JAL"
+     },
+     {
+      "no": "AS 7332",
+      "airline": "ASA"
+     },
+     {
+      "no": "CX 6320",
+      "airline": "CPA"
+     }
+    ],
+    "status": "Dep 00:27 (17/10/2026)",
+    "statusCode": null,
+    "destination": [
+     "HND"
+    ],
+    "terminal": "T1",
+    "aisle": "G",
+    "gate": "44"
+   },
+   {
+    "time": "22:30",
+    "flight": [
+     {
+      "no": "UA 878D",
+      "airline": "UAL"
+     }
+    ],
+    "status": "Est at 11:45 (17/10/2026)",
+    "statusCode": null,
+    "destination": [
+     "SFO"
+    ],
+    "terminal": "T1",
+    "aisle": "G",
+    "gate": ""
+   },
+   {
+    "time": "23:55",
+    "flight": [
+     {
+      "no": "CX 289",
+      "airline": "CPA"
+     },
+     {
+      "no": "LH 7015",
+      "airline": "DLH"
+     }
+    ],
+    "status": "Dep 00:24 (17/10/2026)",
+    "statusCode": null,
+    "destination": [
+     "FRA"
+    ],
+    "terminal": "T1",
+    "aisle": "C",
+    "gate": "66"
+   }
+  ],
+  "lastUpdatedTime": "2026-10-17T02:05:14+08:00"
+ },
+ {
+  "date": "2026-10-17",
+  "arrival": false,
+  "cargo": false,
+  "list": [
+   {
+    "time": "11:45",
+    "flight": [
+     {
+      "no": "UA 862",
+      "airline": "UAL"
+     }
+    ],
+    "status": "Cancelled",
+    "statusCode": null,
+    "destination": [
+     "SFO"
+    ],
+    "terminal": "T1",
+    "aisle": "G",
+    "gate": ""
+   },
+   {
+    "time": "00:05",
+    "flight": [
+     {
+      "no": "ZE 862",
+      "airline": "ESR"
+     }
+    ],
+    "status": "Dep 00:04",
+    "statusCode": null,
+    "destination": [
+     "ICN"
+    ],
+    "terminal": "T1",
+    "aisle": "J",
+    "gate": "19"
+   },
+   {
+    "time": "00:05",
+    "flight": [
+     {
+      "no": "CX 261",
+      "airline": "CPA"
+     }
+    ],
+    "status": "Dep 00:07",
+    "statusCode": null,
+    "destination": [
+     "CDG"
+    ],
+    "terminal": "T1",
+    "aisle": "C",
+    "gate": "2"
+   },
+   {
+    "time": "00:05",
+    "flight": [
+     {
+      "no": "CX 880",
+      "airline": "CPA"
+     },
+     {
+      "no": "MH 9190",
+      "airline": "MAS"
+     },
+     {
+      "no": "OM 5880",
+      "airline": "MGL"
+     },
+     {
+      "no": "AA 8933",
+      "airline": "AAL"
+     }
+    ],
+    "status": "Dep 00:12",
+    "statusCode": null,
+    "destination": [
+     "LAX"
+    ],
+    "terminal": "T1",
+    "aisle": "A",
+    "gate": "41"
+   },
+   {
+    "time": "00:15",
+    "flight": [
+     {
+      "no": "CX 165",
+      "airline": "CPA"
+     },
+     {
+      "no": "JL 7923",
+      "airline": "JAL"
+     },
+     {
+      "no": "AY 5099",
+      "airline": "FIN"
+     },
+     {
+      "no": "OM 5671",
+      "airline": "MGL"
+     },
+     {
+      "no": "LH 7003",
+      "airline": "DLH"
+     },
+     {
+      "no": "BA 4143",
+      "airline": "BAW"
+     }
+    ],
+    "status": "Dep 00:10",
+    "statusCode": null,
+    "destination": [
+     "BNE"
+    ],
+    "terminal": "T1",
+    "aisle": "C",
+    "gate": "26"
+   },
+   {
+    "time": "00:20",
+    "flight": [
+     {
+      "no": "CX 105",
+      "airline": "CPA"
+     },
+     {
+      "no": "AY 5095",
+      "airline": "FIN"
+     },
+     {
+      "no": "OM 5605",
+      "airline": "MGL"
+     },
+     {
+      "no": "BA 4567",
+      "airline": "BAW"
+     }
+    ],
+    "status": "Est at 02:45",
+    "statusCode": null,
+    "destination": [
+     "MEL"
+    ],
+    "terminal": "T1",
+    "aisle": "C",
+    "gate": "3"
+   },
+   {
+    "time": "00:25",
+    "flight": [
+     {
+      "no": "ET 645",
+      "airline": "ETH"
+     }
+    ],
+    "status": "Dep 00:42",
+    "statusCode": null,
+    "destination": [
+     "ADD"
+    ],
+    "terminal": "T1",
+    "aisle": "D",
+    "gate": "36"
+   },
+   {
+    "time": "03:00",
+    "flight": [
+     {
+      "no": "MM 060",
+      "airline": "APJ"
+     }
+    ],
+    "status": "",
+    "statusCode": null,
+    "destination": [
+     "KIX"
+    ],
+    "terminal": "T1",
+    "aisle": "K",
+    "gate": "12"
+   },
+   {
+    "time": "03:10",
+    "flight": [
+     {
+      "no": "B3 789",
+      "airline": "BTN"
+     }
+    ],
+    "status": "",
+    "statusCode": null,
+    "destination": [
+     "PBH"
+    ],
+    "terminal": "T1",
+    "aisle": "D",
+    "gate": "10"
+   }
+  ],
+  "lastUpdatedTime": "2026-10-17T02:05:14+08:00"
+ }
+]

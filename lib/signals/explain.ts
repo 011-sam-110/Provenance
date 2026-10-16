@@ -354,14 +354,15 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "airports",
-    whatItShows: "A major airport, from the OurAirports public-domain database.",
-    method: "Community-maintained reference data, filtered to larger airports.",
+    whatItShows: "A major airport with scheduled airline service, from the OurAirports public-domain database, with its live weather category and, where a feed covers it, its ground stops, delay programmes and flight delays.",
+    method: "OurAirports large airports with scheduled service. Live state is joined by airport code: NOAA's METAR and TAF caches (flight category and forecast), the FAA's national airspace status (US), Avinor's flight boards (Norway) and Hong Kong airport's flight information.",
     confidence: "reported",
-    coverage: "Global.",
+    coverage: "Global for the directory and weather (about 80% of pins have a METAR); delay and stop status only for the US, Norway and Hong Kong.",
     limitations: [
-      "Reference data, not operations: no delays, no closures, no ground stops, no runway status.",
+      "A pin with no status badge means no feed covers that airport, not normal operations. Outside the US, Norway and Hong Kong there is no delay data at all.",
+      "The flight category describes the weather at the airport (visibility and cloud base), not whether flights are operating.",
+      "Avinor's delayed flag and Hong Kong's 15-minute rule are different definitions of 'delayed', so their counts do not compare.",
       "The 'major' cut-off is a size classification, so some busy regional fields are excluded.",
-      "Entries can lag real-world closures and openings.",
     ],
   },
   {
