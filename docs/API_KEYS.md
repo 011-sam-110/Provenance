@@ -44,7 +44,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 6 | ~~**NASA FIRMS**~~ | **No key needed since 2026-10-16.** The Active fires layer reads the keyless FIRMS global 24 h files. `FIRMS_MAP_KEY` is no longer read. | — | — |
 | 7 | **ReliefWeb** (OCHA) | Humanitarian situation reports + disaster declarations | Free *approved appname* (not a secret) | `RELIEFWEB_APPNAME` |
 | 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
-| 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly) | Free, instant, email only | `EIA_API_KEY` |
+| 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly), and megawatts offline per US nuclear plant, daily (the keyless NRC report already gives each unit's % power) | Free, instant, email only | `EIA_API_KEY` |
 | 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
 
 ### Where to get each
@@ -88,7 +88,6 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 |--------|------|--------------|---------|
 | **Electricity Maps** | Live carbon/grid mix outside the EU | ENTSO‑E already covers EU grid | `ELECTRICITYMAPS_API_KEY` |
 | **Cloudflare Radar** | A second internet‑outage vantage | Keyless **IODA** already gives several vantage points (BGP, probing, telescope). Nothing in the outage layer calls RIPEstat: it is used only by `/api/recon/bgp` | `CLOUDFLARE_API_TOKEN` |
-| **US EIA Open Data** | Megawatts offline per US nuclear plant, daily (Nuclear plants layer) | The keyless NRC report already gives each US unit's % power | `EIA_API_KEY` |
 
 - **Electricity Maps** — free tier at <https://www.electricitymaps.com/free-tier-api>.
 - **Cloudflare Radar** — any free Cloudflare account → My Profile → API Tokens → token
@@ -318,7 +317,6 @@ BARENTSWATCH_CLIENT_ID=
 BARENTSWATCH_CLIENT_SECRET=
 
 # --- Optional enhancements ---
-EIA_API_KEY=
 ELECTRICITYMAPS_API_KEY=
 CLOUDFLARE_API_TOKEN=
 
