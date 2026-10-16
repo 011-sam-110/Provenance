@@ -38,6 +38,7 @@ vi.mock("@/lib/sources/serbia-borders", () => ({ fetchRegistry: () => feeds.run(
 vi.mock("@/lib/sources/serbia-tolls", () => ({ fetchRegistry: () => feeds.run("putevi-rs") }));
 vi.mock("@/lib/sources/bihamk", () => ({ fetchRegistry: () => feeds.run("bihamk") }));
 vi.mock("@/lib/sources/actpr", () => ({ fetchRegistry: () => feeds.run("act-pr") }));
+vi.mock("@/lib/sources/vdot", () => ({ fetchRegistry: () => feeds.run("vdot") }));
 // Admitted feeds are committed data, and one of them would fetch for real.
 vi.mock("@/lib/sources/discovered", () => ({ discoveredCameraFeeds: () => [] }));
 // The per-state fan-outs register several keys from one module, and every one of them
@@ -47,6 +48,7 @@ vi.mock("@/lib/sources/cars", () => ({ carsCameraFeeds: () => [] }));
 const KEYS = [
   "tfl", "caltrans", "scdot", "digitraffic", "castlerock", "tripcheck", "drivebc", "nzta",
   "iceland", "estonia", "trafficscotland", "cetsp", "mup-rs", "putevi-rs", "bihamk", "act-pr",
+  "vdot",
 ];
 
 const cam = (id: string): Camera => ({

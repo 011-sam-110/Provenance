@@ -15,6 +15,7 @@ import { fetchRegistry as fetchSerbiaBorders } from "@/lib/sources/serbia-border
 import { fetchRegistry as fetchSerbiaTolls } from "@/lib/sources/serbia-tolls";
 import { fetchRegistry as fetchBihamk } from "@/lib/sources/bihamk";
 import { fetchRegistry as fetchActPr } from "@/lib/sources/actpr";
+import { fetchRegistry as fetchVdot } from "@/lib/sources/vdot";
 import { carsCameraFeeds } from "@/lib/sources/cars";
 import { discoveredCameraFeeds } from "@/lib/sources/discovered";
 import { findById, nearest } from "@/lib/sources/select";
@@ -155,6 +156,9 @@ const SOURCES: CameraFeed[] = [
   // for the same last-good reason as the discovered feeds below. New York's cameras
   // came here from castlerock when 511ny.org moved platforms. See lib/sources/cars.ts.
   ...carsCameraFeeds(),
+  // 511 Virginia. The same Iteris camera layer as SCDOT, read through its normaliser;
+  // stills only. See lib/sources/vdot.ts.
+  { key: "vdot", fetch: fetchVdot },
   // Networks found by discovery and admitted by a reviewer, one entry each rather
   // than one entry for all of them — last-good is kept PER FEED, so a shared key
   // would let one network's outage discard every other discovered network's

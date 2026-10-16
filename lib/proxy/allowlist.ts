@@ -65,6 +65,9 @@ const RULES: { host: string; prefix: string; suffix?: string; port?: string }[] 
   { host: "kscam.carsprogram.org", prefix: "/" }, // KDOT stills and video previews
   { host: "www.kcscout.net", prefix: "/TransSuite.VCS.CameraSnapshots/" }, // KC Scout
   { host: "cocam.carsprogram.org", prefix: "/" }, // CDOT, Douglas County
+  // 511 Virginia (VDOT) stills, at the host root as /<id>.png once the /thumbs/ redirect
+  // is resolved in the adapter, the same layout as the SCDOT host above.
+  { host: "snapshot.vdotcameras.com", prefix: "/", suffix: ".png" },
   // Windy.com webcams — image CDN. URLs look like
   // /_/<size>/plain/<current|daylight>/<webcamId>/original.jpg (the Webcams layer,
   // a DISTINCT layer from road CCTV; resolved fresh by /api/webcam-image).

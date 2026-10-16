@@ -12,13 +12,42 @@ export const SCDOT_SOURCE: Source = {
 export interface ScFeature {
   geometry?: { coordinates?: [number, number] } | null;
   properties?: {
-    id?: string; name?: string; description?: string; route?: string; direction?: string;
+    id?: string | number; name?: string; description?: string; route?: string; direction?: string;
     https_url?: string; ios_url?: string; image_url?: string;
     active?: boolean; problem_stream?: boolean;
   };
 }
 
-export function normalizeScdot(geojson: { features?: ScFeature[] }): Camera[] {
+/**
+ * Who published a feed of this shape. SCDOT's 511 and VDOT's 511 Virginia run the same
+ * Iteris camera-layer software, so one normaliser serves both and the profile carries
+ * what differs: the names, the id field, and whether the stream URL is taken.
+ */
+export interface ScProfile {
+  source: string;
+  region: string;
+  label: string;
+  license: string;
+  attribution: string;
+  refreshSeconds: number;
+  /** Which property holds the stable camera id. */
+  idField: "name" | "id";
+  /** Take `https_url`/`ios_url` as the stream. False = stills only. */
+  withStream: boolean;
+}
+
+export const SCDOT_PROFILE: ScProfile = {
+  source: "scdot",
+  region: "South Carolina",
+  label: "SCDOT",
+  license: SCDOT_SOURCE.license,
+  attribution: SCDOT_SOURCE.attribution,
+  refreshSeconds: SCDOT_SOURCE.refreshSeconds,
+  idField: "name",
+  withStream: true,
+};
+
+export function normalizeScdot(geojson: { features?: ScFeature[] }, profile: ScProfile = SCDOT_PROFILE): Camera[] {
   const cams: Camera[] = [];
   for (const f of geojson.features ?? []) {
     const p = f.properties ?? {};
@@ -33,25 +62,26 @@ export function normalizeScdot(geojson: { features?: ScFeature[] }): Camera[] {
     // refuses redirects for SSRF safety) fetches the image directly.
     const rawImage = p.image_url?.trim() || undefined;
     const imageUrl = rawImage?.replace("/thumbs/", "/").replace(/\.flv\.png$/, ".png");
-    const streamUrl = p.https_url?.trim() || p.ios_url?.trim() || undefined;
+    const streamUrl = profile.withStream ? p.https_url?.trim() || p.ios_url?.trim() || undefined : undefined;
     if (!imageUrl && !streamUrl) continue;
-    const nativeId = (p.name ?? p.id ?? "").toString().trim();
+    const nativeId = (profile.idField === "id" ? p.id ?? p.name : p.name ?? p.id ?? "")?.toString().trim();
     if (!nativeId) continue;
     cams.push({
-      id: `scdot:${nativeId}`,
-      source: "scdot",
+      id: `${profile.source}:${nativeId}`,
+      source: profile.source,
       country: "US",
-      region: "South Carolina",
-      name: p.description?.trim() || p.name?.trim() || `SCDOT ${nativeId}`,
+      region: profile.region,
+      // VDOT's `name` is a stream hash, not a place, so it is never shown as one.
+      name: p.description?.trim() || (profile.idField === "name" ? p.name?.trim() : "") || `${profile.label} ${nativeId}`,
       lat, lon,
       road: p.route?.trim() || undefined,
       direction: p.direction?.trim() || undefined,
       imageUrl,
       streamUrl,
       mediaType: streamUrl ? "both" : "jpeg",
-      refreshSeconds: SCDOT_SOURCE.refreshSeconds,
-      license: SCDOT_SOURCE.license,
-      attribution: SCDOT_SOURCE.attribution,
+      refreshSeconds: profile.refreshSeconds,
+      license: profile.license,
+      attribution: profile.attribution,
       available: p.active === true && p.problem_stream !== true,
     });
   }
