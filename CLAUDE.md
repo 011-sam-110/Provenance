@@ -190,9 +190,9 @@ obligations and are not satisfied by the licence.
   (`lib/shell/askPlace.ts`), and the chip's tooltip says which. The reader does not
   round: a time length with no window ("last 48h", "today") is shown as not understood.
 - `components/console/*` — the widget workspace (segments + centre stage + resizable widget frames).
-- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (27 feeds).
-  Twenty-six come from twenty-one hand-written adapter modules (`cars.ts` registers one feed per
-  CARS state, six in all); the twenty-seventh was admitted through discovery and shares
+- `lib/sources/*` — one adapter per camera feed → `Camera` (zod), merged in `registry.ts` (52 feeds).
+  Fifty-one come from forty-six hand-written adapter modules (`cars.ts` registers one feed per
+  CARS state, six in all); the fifty-second was admitted through discovery and shares
   `discovered.ts` rather than adding a module of its own.
 - `lib/discovery/*` + `/admin` — **camera auto-discovery and the human review gate.** Discovery
   asks open-data catalogues (CKAN, Socrata, ArcGIS Hub) and produces a queue in
@@ -206,7 +206,9 @@ obligations and are not satisfied by the licence.
 - **`CAMERA_FEED_COUNT` is `26 + ADMITTED_FEEDS.length`.** It is **27** today (2026-10-16 added
   the six CARS states, 511 Virginia, WSDOT, Mi Drive and TxDOT ITS). Houston
   TranStar was admitted on 2026-08-20, the first network to reach the map through discovery
-  rather than a hand-written adapter. When it moves, the two pinning tests go red until this
+  rather than a hand-written adapter, and the source audit of 2026-10-16 added 25 hand-written
+  feeds, six of which stay dormant (no cameras, `feeds.dormant` in `/api/coverage`) until
+  their free key is set. When it moves, the two pinning tests go red until this
   file and the README state the new figures. That is the guard working — and note that
   `readme-counts` also had to learn that a discovered feed has no adapter module of its own,
   because that assumption stayed invisible until the count moved.
@@ -321,7 +323,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Claim | Value | How it was checked (2026-08-10) |
 |---|---|---|
 | Cameras | 19,328 total / 19,112 online | `GET /api/coverage` on prod |
-| Camera feeds | 27 feeds (26 from adapters + 1 discovered), 35 agency networks, 11 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. On 2026-10-16 New York left `castlerock` (511ny.org moved to the CARS platform) and came back as one of six CARS feeds, and four single-state adapters joined: feeds 17 → 27, agencies 26 → 35. |
+| Camera feeds | 27 feeds (26 from adapters + 1 discovered), 35 agency networks, 21 countries | `CAMERA_FEED_COUNT` in `lib/sources/registry.ts`; countries = distinct `country: "XX"` literals across `lib/sources/*.ts`. **Pinned** by `tests/unit/claude-md-counts.test.ts`, so unlike the rows below it this one cannot silently rot — it was wrong twice before that test existed (11/7 stated against a tree holding 12/8, then 14/9). Agencies went 25 → 26 on 2026-09-05 with Louisiana DOTD, which is a tenth **system inside the existing `castlerock` feed**, not a feed of its own — which is exactly why feeds did not move. On 2026-10-16 New York left `castlerock` (511ny.org moved to the CARS platform) and came back as one of six CARS feeds, and four single-state adapters joined: feeds 17 → 27, agencies 26 → 35. |
 | Signal layers | **37 registered (36 map layers + 1 data-only); 33 returning data, 2 empty, 1 unmeasured** (2026-09-19), plus `gliders` (2026-10-16) | Every `SIGNALS[i].fetch()` run against the live upstreams with prod's key set. `gliders` (Open Glider Network) was added on 2026-10-16 and measured only from provenance-1, not from production: 74 aircraft at 20:15Z. Like `headline-places`, it has a zero row in `lib/marketing/coverage-audit.data.ts` whose note carries that figure. `headline-places` was added on 2026-09-19 and IS measured, unlike the row it sits beside: it needs no key and no push, so its fetch() was run directly against the live feeds — 71 pins over 60 countries from 231 of 440 headlines. `lib/marketing/coverage-audit.data.ts` still carries a zero row for it, because that file is one production run and mixing a second measurement into its totals would break the reconciliation its own test enforces; the row's note carries the real figures. The 2 empties are ReliefWeb and ENTSO-E grid load — not broken adapters. The unmeasured one is `news-coverage`, registered 2026-09-16: it publishes nothing until the NewsScraper host pushes its first batch, and it has never been run against production, so `lib/marketing/coverage-audit.data.ts` carries a zero row saying exactly that — re-run the breakdown after the next deploy to replace it. NOTE (2026-09-08): ReliefWeb is NOT key-gated. `api.reliefweb.int/v1` answers `410 Gone` ("decommissioned, use v2") and v2 answers `403 AccessDeniedHttpException: You are not using an approved appname`. An appname is a FREE registration at apidoc.reliefweb.int/parameters#appname, so this one is unblockable by asking, not by paying. |
 | Console presets | 3 (2026-09-16) | `BUILTIN_PRESETS` in `lib/console/presets.ts`, pinned by `console-presets.test.ts` (id list, and by `readme-counts.test.ts` against the README's "three presets"). Globe, News and Streets. The five rail boards (World, Nature, Skywatch, Infrastructure, Intel) were retired on 2026-09-15 on request, together with the Apple-style hover nav panel; News was added on 2026-09-16 to give the merged headline stream a surface. Globe is deliberately empty; Streets is the camera wall. |
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |

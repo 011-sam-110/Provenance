@@ -17,19 +17,23 @@
  * moved. A red there means the page is about to state a number the repo no longer ships;
  * update this file, do not edit the test.
  *
- * Measured 2026-09-12; feeds re-measured 2026-10-16 (17 -> 27, see registry.ts).
+ * Measured 2026-09-12; feeds re-measured 2026-10-16 after the source audit's US and world
+ * camera feeds (17 -> 52, see registry.ts).
  */
 export const CAMERA_FACTS = {
   /**
-   * Operator feeds in `lib/sources/registry.ts` — 26 from hand-written adapters (cars.ts
-   * registers six, one per CARS state) + 1 admitted by discovery.
+   * Operator feeds in `lib/sources/registry.ts` — 51 hand-written adapters (cars.ts
+   * registers six, one per CARS state) + 1 admitted by discovery. Six of the 51 are keyed
+   * and hold no cameras until their free key is set (`docs/API_KEYS.md` section 8), so the
+   * drawn count is lower on a deployment without them.
    */
-  feeds: 27,
+  feeds: 52,
   /**
    * Distinct countries the adapters DECLARE, counted from literal `country: "XX"`
-   * assignments: BA, BR, CA, EE, FI, GB, IS, NZ, PR, RS, US.
+   * assignments: AU, BA, BR, CA, EE, ES, FI, FR, GB, HK, HU, IS, LT, MK, NO, NZ, PR, RS, SI,
+   * TW, US. SI comes only from the keyed DARS/DRSI feed.
    */
-  countries: 11,
+  countries: 21,
   /**
    * Webcams in the committed Windy catalogue (`public/webcams/manifest.json`, 196 static
    * tiles). These are NOT operator feeds and the page must never merge the two totals —
