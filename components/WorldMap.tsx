@@ -37,16 +37,21 @@ import { cameraFeed } from "@/lib/cameras/classify";
 import { CAMERA_FEED_META, cameraRegionColor, WEBCAM_COLOR } from "@/lib/icons/svg";
 import { BASEMAPS, MAP_LABEL_FONT, usesOwnLabels, type BasemapKey } from "@/lib/basemaps";
 import {
+  BUILDINGS_LIGHT,
   BUILDINGS_MIN_ZOOM,
   BUILDING_LAYER,
   BUILDING_SRC,
   BUILDING_TILEJSON,
   STYLE_OWN_BUILDING_3D,
+  buildingLabelOps,
+  buildingLabelPlan,
   buildingsBeforeId,
   buildingsFilter,
   buildingsPaint,
   buildingsSourceId,
   needsOwnBuildingSource,
+  type BuildingLabelPlan,
+  type LabelLayerLike,
 } from "@/lib/map/buildings";
 import {
   STYLE_LOAD_TIMEOUT_MS,
@@ -517,6 +522,10 @@ export default function WorldMap() {
   // fetching DEM on the first style of every visit.
   const terrainRef = useRef(mapViewStore.get().terrain);
   const buildingsRef = useRef(mapViewStore.get().buildings);
+  // What the buildings change in the CURRENT style's own labels (lib/map/buildings).
+  // Rebuilt on every style.load from that style's layer list, because a basemap swap
+  // brings a fresh copy of every layer and filter the plan has to put back.
+  const labelPlanRef = useRef<BuildingLabelPlan>({ sink: [], filter: [] });
   // Plane-tracking (see lib/planes/track). trackingRef mirrors the store for the
   // spin loop + input handlers (no re-render); trackedObjectRef holds the tracked
   // plane's latest WorldObject so addAppLayers can re-seed the ring after a restyle;
@@ -808,6 +817,24 @@ export default function WorldMap() {
     [syncTerrain],
   );
 
+  // The basemap's own labels while the buildings are up: flat street names under the
+  // extrusions, Liberty's pins cut to stations and airports. lib/map/buildings.ts
+  // has the measurements behind each half. A no-op on the raster basemaps, whose
+  // styles carry no label layers of their own.
+  const applyBuildingLabels = useCallback((map: maplibregl.Map, on: boolean) => {
+    for (const op of buildingLabelOps(labelPlanRef.current, on)) {
+      // Guarded like trimBasemapForGlobe: the style can be swapped out from under a
+      // queued call, and the next style.load re-applies from a fresh plan anyway.
+      if (!map.getLayer(op.id)) continue;
+      try {
+        if (op.kind === "filter") map.setFilter(op.id, op.filter as never);
+        else if (op.before === undefined || map.getLayer(op.before)) map.moveLayer(op.id, op.before);
+      } catch {
+        /* style torn down mid-swap */
+      }
+    }
+  }, []);
+
   const applyVisibility = useCallback((map: maplibregl.Map, l: LayerState) => {
     const set = (id: string, on: boolean) => {
       if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", vis(on));
@@ -976,6 +1003,19 @@ export default function WorldMap() {
       if (map.getLayer(STYLE_OWN_BUILDING_3D)) {
         map.setLayoutProperty(STYLE_OWN_BUILDING_3D, "visibility", "none");
       }
+      // The light only extrusions read. Set on every style.load, because a swap
+      // replaces the whole style document and the light goes with it.
+      try {
+        map.setLight(BUILDINGS_LIGHT);
+      } catch {
+        /* style torn down mid-swap — the next style.load sets it again */
+      }
+      // Planned from THIS style's layers before any app layer is added, so only the
+      // basemap's own labels are in it. Applied only when the buildings are on: a
+      // fresh style is already in the "off" state, and re-setting its filters would
+      // re-parse every tile in view for nothing.
+      labelPlanRef.current = buildingLabelPlan(map.getStyle()?.layers as LabelLayerLike[] | undefined);
+      if (buildingsRef.current) applyBuildingLabels(map, true);
 
       // Symbol icons are wiped by setStyle — re-rasterise/register them. Awaited on
       // a swap, deferred to the map's first idle on the very first style: see
@@ -1670,7 +1710,7 @@ export default function WorldMap() {
       applyVisibility(map, layersRef.current);
       readyRef.current = true;
     },
-    [applyTerrain, applyVisibility, ensureGeoJSON, ensureIcons],
+    [applyTerrain, applyBuildingLabels, applyVisibility, ensureGeoJSON, ensureIcons],
   );
 
   // Click + cursor handlers, wired ONCE. Layer-scoped handlers survive basemap
@@ -2141,6 +2181,8 @@ export default function WorldMap() {
       maxZoom: 19, // headroom for street-level buildings (OFM tiles stop at z14 and overzoom)
       renderWorldCopies: false,
       attributionControl: false,
+      // NO `canvasContextAttributes: { antialias: true }`, and that is measured, not
+      // forgotten: see the note above BUILDINGS_LIGHT in lib/map/buildings.ts.
     });
     mapRef.current = map;
     // Published so the export control can READ this map (centre, zoom, canvas)
@@ -2423,9 +2465,10 @@ export default function WorldMap() {
     applyTerrain(map, terrainOn);
   }, [terrainOn, applyTerrain]);
 
-  // 3D buildings toggle. Visibility only, deliberately: MapLibre does not fetch
-  // tiles for a hidden layer, so hiding is enough to stop the ~569 KB z14 tiles
-  // being pulled, and the layer does not have to be torn down and rebuilt.
+  // 3D buildings toggle. The layer itself is visibility only, deliberately: MapLibre
+  // does not fetch tiles for a hidden layer, so hiding is enough to stop the ~569 KB
+  // z14 tiles being pulled, and the layer does not have to be torn down and rebuilt.
+  // The basemap's labels follow it both ways (applyBuildingLabels).
   useEffect(() => {
     buildingsRef.current = buildingsOn;
     const map = mapRef.current;
@@ -2433,7 +2476,8 @@ export default function WorldMap() {
     if (map.getLayer(BUILDING_LAYER)) {
       map.setLayoutProperty(BUILDING_LAYER, "visibility", vis(buildingsOn));
     }
-  }, [buildingsOn]);
+    applyBuildingLabels(map, buildingsOn);
+  }, [buildingsOn, applyBuildingLabels]);
 
   // Layer visibility toggles.
   useEffect(() => {
