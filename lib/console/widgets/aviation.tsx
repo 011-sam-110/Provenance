@@ -111,7 +111,7 @@ export const AVIATION_WIDGET = {
   // note now says where military traffic actually lives.
   help: {
     what: "Aircraft airborne right now, from open ADS-B, listed by altitude. An emergency squawk (7500/7600/7700) raises a critical alert; military traffic is its own signal layer, not this one.",
-    source: "adsb.lol community ADS-B receivers, pulled worldwide by aircraft type (keyless)",
+    source: "adsb.lol community ADS-B receivers, pulled worldwide by aircraft type, plus adsb.fi over thinly covered cities (keyless)",
   },
   capabilities: { filter: true, sort: true },
 };
