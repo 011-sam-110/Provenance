@@ -136,9 +136,10 @@ const EXPLAINERS: LayerExplainer[] = [
     whatItShows: "A disaster alert issued by GDACS, the UN OCHA / European Commission global alert system, with its own green/orange/red severity.",
     method: "GDACS models expected humanitarian impact from hazard magnitude plus exposed population and vulnerability. The colour is theirs.",
     confidence: "modelled",
-    coverage: "Global, for the hazard types GDACS covers (quake, cyclone, flood, volcano, drought).",
+    coverage: "Global, for the hazard types GDACS covers (quake, cyclone, flood, volcano, drought, wildfire). Only events GDACS still marks as current are shown.",
     limitations: [
       "The alert level is a MODELLED estimate of likely impact issued within minutes — it is designed to trigger a response, not to describe what happened. Early alerts are frequently revised.",
+      "Most rows on a normal day are Green wildfire notifications, which are numerous and small; the Orange and Red alerts are the ones GDACS expects to need a response.",
       "Green does not mean nobody was harmed. It means the modelled impact fell below a threshold.",
       "Conflict, displacement and slow-onset crises are out of scope.",
     ],

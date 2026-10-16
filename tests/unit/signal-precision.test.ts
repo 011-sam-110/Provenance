@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import usgsFixture from "@/tests/fixtures/usgs-quakes.json";
 import unhcrFixture from "@/tests/fixtures/unhcr-displacement.json";
-import gdacsFixture from "@/tests/fixtures/gdacs-events.json";
 import eonetFixture from "@/tests/fixtures/eonet-events.json";
 import { SIGNALS } from "@/lib/signals/registry";
 import type { SignalFeature, SignalPrecision, SignalSource } from "@/lib/signals/types";
@@ -21,7 +20,7 @@ import { PORTS_SOURCE, normalizePorts } from "@/lib/signals/ports";
 import { MAJOR_PORTS } from "@/lib/signals/ports.data";
 import { UKRAINE_ALERTS_SOURCE, normalizeUkraineAlerts } from "@/lib/signals/ukraine-alerts";
 import { DISPLACEMENT_SOURCE, normalizeDisplacement } from "@/lib/signals/displacement";
-import { GDACS_SOURCE, normalizeGdacs } from "@/lib/signals/gdacs";
+import { GDACS_SOURCE, normalizeGdacsRss } from "@/lib/signals/gdacs";
 import { CATEGORIES, WILDFIRES_SOURCE, eonetToFeatures, type EonetEvent } from "@/lib/signals/eonet";
 import { HEADLINE_PLACES_SOURCE, buildHeadlinePlaceFeatures } from "@/lib/signals/headline-places";
 import type { NewsItem } from "@/lib/news";
@@ -66,14 +65,14 @@ describe("one real layer for each level", () => {
 });
 
 describe("a layer that mixes levels sets the level on the feature", () => {
-  test("GDACS: a quake and a cyclone are exact, a flood and a wildfire are areas", () => {
-    const out = normalizeGdacs(gdacsFixture as never);
+  test("GDACS: a quake and a cyclone are exact, a flood, a wildfire and a drought are areas", () => {
+    const out = normalizeGdacsRss(readFileSync(join(__dirname, "../fixtures/gdacs-rss.xml"), "utf8"));
     const byHazard = new Map(out.map((f) => [String(f.props?.hazard), resolvePrecision(f, GDACS_SOURCE)]));
     expect(byHazard.get("Earthquake")).toBe("exact");
     expect(byHazard.get("Tropical cyclone")).toBe("exact");
     expect(byHazard.get("Flood")).toBe("area");
-    // The fixture drought is closed (iscurrent=false), so the layer drops it.
     expect(byHazard.get("Wildfire")).toBe("area");
+    expect(byHazard.get("Drought")).toBe("area");
   });
 
   test("EONET: a wildfire reported as a polygon is an area, one reported as a point is exact", () => {
