@@ -329,6 +329,21 @@ export interface InstrumentableSource<T> {
 const INSTRUMENTED = new WeakSet<object>();
 
 /**
+ * Pure: did a resolved adapter fetch succeed?
+ *
+ * Every adapter swallows its own failure and resolves, and declares the failure on the
+ * array (lib/signals/outcome.ts). Counting "it resolved" as success is the bug this
+ * fixes: /api/status published `ok: true, rows: 0` for fire-active for five weeks while
+ * every read of FIRMS answered HTTP 400. A declared outcome is now believed. An array
+ * with NO outcome counts as success here, as before: this ledger records whether the
+ * fetch failed, and the registry test is what refuses an undeclared adapter.
+ */
+export function fetchSucceeded(rows: unknown): boolean {
+  const outcome = readOutcome(rows);
+  return outcome ? outcome.ok : true;
+}
+
+/**
  * Wrap each registry source's fetch() so the row count and completion time of the
  * real server-side fetch land in the ledger. Idempotent per source object.
  *
@@ -352,11 +367,7 @@ export function instrumentSignalRegistry<T>(sources: InstrumentableSource<T>[]):
           // ok:false "partial: VO failed (http 404)" while this ledger said ok:true,
           // so the status board hid the partial state. An undeclared outcome keeps
           // the old reading (resolved = ok); the registry test stops that shipping.
-          const declared = readOutcome(rows);
-          recordFetchOutcome(source.id, {
-            ok: declared ? declared.ok : true,
-            rows: Array.isArray(rows) ? rows.length : 0,
-          });
+          recordFetchOutcome(source.id, { ok: fetchSucceeded(rows), rows: Array.isArray(rows) ? rows.length : 0 });
         } catch {
           // never let bookkeeping break a layer
         }

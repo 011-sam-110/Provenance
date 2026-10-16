@@ -28,6 +28,7 @@ import {
   type UpstreamEvidence,
 } from "@/lib/sources/upstreamEvidence";
 import { SIGNALS } from "@/lib/signals/registry";
+import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -736,6 +737,28 @@ describe("instrumentSignalRegistry", () => {
     expect(rec.lastFetchOk).toBe(false);
     expect(rec.lastRows).toBeNull();
     expect(rec.fetches).toBe(1);
+  });
+
+  it("records a fetch that resolved with a declared failure as NOT ok", async () => {
+    // fire-active on prod, 2026-10-16: FIRMS answered 400, the adapter returned
+    // degraded("http 400"), and /api/status published ok:true, rows:0 for five weeks.
+    const source = { id: "demo", fetch: async () => degraded<{ id: string }>("http 400") };
+    instrumentSignalRegistry([source]);
+    await source.fetch();
+    const rec = readEvidence("demo")!;
+    expect(rec.lastFetchOk).toBe(false);
+    expect(rec.lastRows).toBe(0);
+  });
+
+  it("records a last-good serve (degradedWith) as NOT ok, and an observed one as ok", async () => {
+    const stale = { id: "stale", fetch: async () => degradedWith([{ id: "a" }], "timeout", NOW) };
+    const fresh = { id: "fresh", fetch: async () => observed([{ id: "a" }], NOW) };
+    instrumentSignalRegistry([stale, fresh]);
+    await stale.fetch();
+    await fresh.fetch();
+    expect(readEvidence("stale")!.lastFetchOk).toBe(false);
+    expect(readEvidence("stale")!.lastRows).toBe(1);
+    expect(readEvidence("fresh")!.lastFetchOk).toBe(true);
   });
 
   it("keeps a failed fetch from erasing the last known row count", async () => {
