@@ -1,0 +1,65 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -120.199180937817,
+     44.8033386684882
+    ]
+   },
+   "properties": {
+    "IncidentName": "0445 CROSSWHITE",
+    "IncidentSize": 342923,
+    "PercentContained": 100,
+    "FireDiscoveryDateTime": 1784163114000,
+    "ModifiedOnDateTime_dt": 1790983597947,
+    "POOState": "US-OR",
+    "UniqueFireIdentifier": "2026-ORPRD-000445",
+    "IncidentTypeCategory": "WF"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -120.846631747952,
+     48.0162228019826
+    ]
+   },
+   "properties": {
+    "IncidentName": "LITTLE GIANT",
+    "IncidentSize": 172912,
+    "PercentContained": 95,
+    "FireDiscoveryDateTime": 1784164674000,
+    "ModifiedOnDateTime_dt": 1792030633793,
+    "POOState": "US-WA",
+    "UniqueFireIdentifier": "2026-WAOWF-260406",
+    "IncidentTypeCategory": "WF"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -109.55396326627,
+     40.8857352327315
+    ]
+   },
+   "properties": {
+    "IncidentName": "D1 Pondo RX",
+    "IncidentSize": 532,
+    "PercentContained": null,
+    "FireDiscoveryDateTime": 1767644640000,
+    "ModifiedOnDateTime_dt": 1791582216973,
+    "POOState": "US-UT",
+    "UniqueFireIdentifier": "2026-UTASF-100002",
+    "IncidentTypeCategory": "RX"
+   }
+  }
+ ]
+}

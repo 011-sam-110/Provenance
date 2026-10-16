@@ -1,0 +1,159 @@
+{
+ "displayFieldName": "gaugelid",
+ "fieldAliases": {
+  "gaugelid": "Gauge ID",
+  "status": "Flood Status",
+  "location": "Guage Location",
+  "waterbody": "Water Body",
+  "state": "State",
+  "obstime": "Observation Time",
+  "url": "Hydrograph",
+  "units": "Units",
+  "flood": "Flood Hazard Value",
+  "moderate": "Moderate Flood Danger Value",
+  "major": "Major Flood Danger Value",
+  "observed": "Observed",
+  "latitude": "Latitude",
+  "longitude": "Longitude"
+ },
+ "fields": [
+  {
+   "name": "gaugelid",
+   "type": "esriFieldTypeString",
+   "alias": "Gauge ID",
+   "length": 5
+  },
+  {
+   "name": "status",
+   "type": "esriFieldTypeString",
+   "alias": "Flood Status",
+   "length": 15
+  },
+  {
+   "name": "location",
+   "type": "esriFieldTypeString",
+   "alias": "Guage Location",
+   "length": 90
+  },
+  {
+   "name": "waterbody",
+   "type": "esriFieldTypeString",
+   "alias": "Water Body",
+   "length": 255
+  },
+  {
+   "name": "state",
+   "type": "esriFieldTypeString",
+   "alias": "State",
+   "length": 2
+  },
+  {
+   "name": "obstime",
+   "type": "esriFieldTypeString",
+   "alias": "Observation Time",
+   "length": 26
+  },
+  {
+   "name": "url",
+   "type": "esriFieldTypeString",
+   "alias": "Hydrograph",
+   "length": 231
+  },
+  {
+   "name": "units",
+   "type": "esriFieldTypeString",
+   "alias": "Units",
+   "length": 5
+  },
+  {
+   "name": "flood",
+   "type": "esriFieldTypeString",
+   "alias": "Flood Hazard Value",
+   "length": 24
+  },
+  {
+   "name": "moderate",
+   "type": "esriFieldTypeString",
+   "alias": "Moderate Flood Danger Value",
+   "length": 24
+  },
+  {
+   "name": "major",
+   "type": "esriFieldTypeString",
+   "alias": "Major Flood Danger Value",
+   "length": 24
+  },
+  {
+   "name": "observed",
+   "type": "esriFieldTypeString",
+   "alias": "Observed",
+   "length": 24
+  },
+  {
+   "name": "latitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "Latitude"
+  },
+  {
+   "name": "longitude",
+   "type": "esriFieldTypeDouble",
+   "alias": "Longitude"
+  }
+ ],
+ "features": [
+  {
+   "attributes": {
+    "gaugelid": "ABAG1",
+    "status": "minor",
+    "location": "GA Highway 203 near Blackshear",
+    "waterbody": "Alabaha River",
+    "state": "GA",
+    "obstime": "2026-10-16 18:30:00",
+    "url": "https://water.noaa.gov/gauges/abag1",
+    "units": "ft",
+    "flood": "9",
+    "moderate": "12",
+    "major": "14",
+    "observed": "9.08",
+    "latitude": 31.375278,
+    "longitude": -82.288889
+   }
+  },
+  {
+   "attributes": {
+    "gaugelid": "ASTF1",
+    "status": "minor",
+    "location": "Astor",
+    "waterbody": "St. Johns River",
+    "state": "FL",
+    "obstime": "2026-10-16 18:30:00",
+    "url": "https://water.noaa.gov/gauges/astf1",
+    "units": "ft",
+    "flood": "2.3",
+    "moderate": "3",
+    "major": "4",
+    "observed": "2.59",
+    "latitude": 29.166667,
+    "longitude": -81.522222
+   }
+  },
+  {
+   "attributes": {
+    "gaugelid": "ATKG1",
+    "status": "minor",
+    "location": "Atkinson",
+    "waterbody": "Satilla River",
+    "state": "GA",
+    "obstime": "2026-10-16 18:45:00",
+    "url": "https://water.noaa.gov/gauges/atkg1",
+    "units": "ft",
+    "flood": "13",
+    "moderate": "19",
+    "major": "22",
+    "observed": "13.58",
+    "latitude": 31.220556,
+    "longitude": -81.8675
+   }
+  }
+ ]
+}

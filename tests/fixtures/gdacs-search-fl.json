@@ -1,0 +1,185 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "bbox": [
+    -73.3711,
+    41.119,
+    -73.3711,
+    41.119
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -73.3711,
+     41.119
+    ]
+   },
+   "properties": {
+    "eventtype": "FL",
+    "eventid": 1103888,
+    "episodeid": 91,
+    "eventname": "",
+    "glide": "",
+    "name": "Flood in United States",
+    "description": "Flood in United States",
+    "htmldescription": "Green Flood in United States from: 19 May 2026 01 to: 16 Oct 2026 01.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1103888&episodeid=91",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1103888&episodeid=91&eventtype=FL",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=FL&eventid=1103888"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "true",
+    "country": "United States",
+    "fromdate": "2026-05-19T01:00:00",
+    "todate": "2026-10-16T01:00:00",
+    "datemodified": "2026-10-16T12:04:19",
+    "iso3": "USA",
+    "source": "GLOFAS",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "US",
+      "iso3": "USA",
+      "countryname": "United States"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "Magnitude 0 ",
+     "severityunit": ""
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "bbox": [
+    13.1778,
+    32.8967,
+    13.1778,
+    32.8967
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     13.1778,
+     32.8967
+    ]
+   },
+   "properties": {
+    "eventtype": "FL",
+    "eventid": 1104231,
+    "episodeid": 1,
+    "eventname": "",
+    "glide": "",
+    "name": "Flood in Libya",
+    "description": "Flood in Libya",
+    "htmldescription": "Green Flood in Libya from: 13 Oct 2026 01 to: 15 Oct 2026 01.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1104231&episodeid=1",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1104231&episodeid=1&eventtype=FL",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=FL&eventid=1104231"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "true",
+    "country": "Libya",
+    "fromdate": "2026-10-13T01:00:00",
+    "todate": "2026-10-15T01:00:00",
+    "datemodified": "2026-10-14T11:00:23",
+    "iso3": "LBY",
+    "source": "GLOFAS",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "LY",
+      "iso3": "LBY",
+      "countryname": "Libya"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "Magnitude 0 ",
+     "severityunit": ""
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "bbox": [
+    84.628,
+    27.995,
+    84.628,
+    27.995
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     84.628,
+     27.995
+    ]
+   },
+   "properties": {
+    "eventtype": "FL",
+    "eventid": 1104225,
+    "episodeid": 1,
+    "eventname": "",
+    "glide": "",
+    "name": "Flood in Nepal",
+    "description": "Flood in Nepal",
+    "htmldescription": "Green Flood in Nepal from: 11 Oct 2026 01 to: 13 Oct 2026 01.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/FL.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=FL&eventid=1104225&episodeid=1",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1104225&episodeid=1&eventtype=FL",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=FL&eventid=1104225"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "true",
+    "country": "Nepal",
+    "fromdate": "2026-10-11T01:00:00",
+    "todate": "2026-10-13T01:00:00",
+    "datemodified": "2026-10-12T05:56:06",
+    "iso3": "NPL",
+    "source": "GLOFAS",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "NP",
+      "iso3": "NPL",
+      "countryname": "Nepal"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "Magnitude 0 ",
+     "severityunit": ""
+    }
+   }
+  }
+ ]
+}

@@ -1,44 +1,38 @@
-import type { SignalFeature, SignalMetric, SignalPrecision, SignalSource } from "@/lib/signals/types";
+import type { SignalFeature, SignalMetric, SignalPrecision } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
-import { centroidByName } from "@/lib/signals/country-centroids.data";
 
-// NASA EONET (Earth Observatory Natural Event Tracker) — open natural events of
-// the last 30 days. ONE upstream fetch feeds FOUR registry layers (wildfires /
-// volcanoes / severe storms / floods); a shared module-level cache means four ON
-// layers do not quadruple the upstream call. Keyless JSON.
+// NASA EONET (Earth Observatory Natural Event Tracker) — open natural events. ONE
+// upstream fetch feeds two layers' EONET inputs (severe storms, and the "continuing
+// eruptions" background of volcanoes); a shared module-level cache means both ON
+// layers do not double the upstream call. Keyless JSON.
+//
+// WHAT EONET NO LONGER FEEDS (2026-10-16, sources-audit/eonet.md). EONET is a relay,
+// and three of its four layers had broken under it:
+//   • floods     — new events arrive [lon, lat], old ones [lat, lon], in one feed; prod
+//                  pinned "Flood in Nepal" at 84.6 N. Every EONET flood is a GDACS event,
+//                  so lib/signals/floods.ts reads GDACS directly.
+//   • wildfires  — its GDACS relay stopped on 2025-04-27, leaving a thin US relay, most
+//                  of it prescribed burns. lib/signals/wildfires.ts reads NIFC + GDACS.
+//   • volcanoes  — curation stopped on 2026-06-15. lib/signals/volcanoes.ts reads
+//                  USGS, JMA and GDACS, and keeps EONET's list only as a background.
+// Severe storms (JTWC/NHC tropical cyclones) stayed fresh and still come from here.
 //
 // Event shape (confirmed live 2026-06-27): events[].{id,title,link,categories[],
 // sources[],geometry[]} where each geometry is {type:"Point"|"Polygon",
 // coordinates, date, magnitudeValue?, magnitudeUnit?}. The geometry array is
 // chronological, so the LAST element is the most recent position — we map that to
-// a single point per event. Category ids: wildfires, volcanoes, severeStorms,
-// floods (verified against /api/v3/categories).
+// a single point per event.
 
 // NO `days` WINDOW HERE, deliberately. `days=N` filters on the newest GEOMETRY
 // date, and an open volcanic event is often observed months apart — so
 // `status=open&days=30` returned 32 open volcano events upstream and ZERO to us,
 // for as long as the layer has existed. The staleness rule belongs per category
 // (see maxAgeDays), because "last seen eight weeks ago" means something different
-// for a volcano than for a wildfire.
+// for a volcano than for a storm.
 const ENDPOINT = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-/**
- * Some categories cannot be read off the shared `status=open` feed at all, because
- * for them "open" does not mean "still happening" — see `allStatuses` on
- * EonetCategoryMeta. Those get their own category-scoped feed.
- *
- * `limit`, not `days`. Measured 2026-08-13: `status=all&days=60` costs 15.9 s,
- * while `status=all&limit=200` costs 2.4 s for the same 2.7 MB of the newest
- * events, which comfortably spans the 60-day window `maxAgeDays` then applies
- * client-side. EONET returns newest-first, so the limit trims the far tail, which
- * is the part `maxAgeDays` was going to drop anyway.
- */
-const CATEGORY_FEED_LIMIT = 200;
-export const categoryFeedUrl = (category: string): string =>
-  `https://eonet.gsfc.nasa.gov/api/v3/categories/${category}?status=all&limit=${CATEGORY_FEED_LIMIT}`;
-
-export const EONET_ATTRIBUTION = "Natural-event data © NASA EONET";
+export const EONET_ATTRIBUTION = "Natural-event data: NASA EONET";
 
 export interface EonetGeometry {
   type?: string;
@@ -62,13 +56,13 @@ export interface EonetCategoryMeta {
   label: string;
   color: string;
   /**
-   * How precise the category's places are (see SignalPrecision). A fire, a volcano
-   * and a storm centre arrive as one reported coordinate. A flood arrives as a
-   * polygon that this adapter reduces to one representative point, so it is an area.
+   * How precise the category's places are (see SignalPrecision). A volcano and a
+   * storm centre arrive as one reported coordinate; a polygon is reduced to one
+   * representative point and marked an area per feature.
    */
   precision: SignalPrecision;
   /** Real per-feature scalar for the monitor bar. Only severe storms carry one
-   *  (wind in kts); wildfires/volcanoes/floods have no numeric scalar → dot only. */
+   *  (wind in kts); volcanoes have no numeric scalar → dot only. */
   metric?: SignalMetric;
   /**
    * Drop an open event whose newest observation is older than this, in days.
@@ -76,60 +70,13 @@ export interface EonetCategoryMeta {
    *
    * EONET closes an event when the source says it is over, so "open" already
    * means "not declared finished". The window here is only about whether a
-   * long-unobserved event is still worth a pin: a wildfire last seen two months
-   * ago is almost certainly out, whereas a volcano is still a volcano.
+   * long-unobserved event is still worth a pin: a storm last seen two months
+   * ago is over, whereas a volcano is still a volcano.
    */
   maxAgeDays?: number;
-  /**
-   * The order the category's coordinate pairs actually arrive in.
-   *
-   * GeoJSON says [lon, lat] and EONET honours that for every category but FLOODS,
-   * whose rings arrive [lat, lon]. Measured 2026-09-12 against
-   * `categories/floods?status=all`: all 60 open events are GDACS-relayed Polygons and
-   * all 60 are transposed — Indonesia at [-1.03, 98.24], Peru at [-13.39, -75.81],
-   * Iran at [36.50, 54.17]. The ones whose second value falls outside +-90 PROVE it;
-   * none prove the reverse.
-   *
-   * It is NOT the relay and it is NOT the geometry type, so do not widen this by
-   * guessing at either: GDACS-sourced WILDFIRE points in the same feed are correct
-   * [lon, lat], and ReliefWeb drought POLYGONS are correct too. The property belongs
-   * to this one category, which is why it is declared per category rather than
-   * sniffed per feature.
-   *
-   * `readPair` still range-checks whatever this asks for and falls back to the other
-   * order when the declared one is impossible, so if EONET ever fixes the feed the
-   * events that prove it keep working while this flag is stale. The events that do
-   * NOT prove it would flip, so the audit script asserts the order against live data
-   * on every run — see `assertFloodOrder` in scripts/country-event-breakdown.mts.
-   *
-   * "per-event" (floods since 2026-10-16): the order is decided for each event by
-   * `floodPairOrder()`. EONET began publishing NEW flood events as [lon, lat] at about
-   * 2026-09-26 while older events kept [lat, lon], so no single flag is right for the
-   * category any more. See `floodPairOrder` for the rule and the measurement.
-   */
-  coordOrder?: "lonlat" | "latlon" | "per-event";
-  /**
-   * Read this category from its own `status=all` feed instead of the shared
-   * `status=open` one.
-   *
-   * The comment on `maxAgeDays` above assumes "open ⇒ not declared finished", and
-   * for wildfires, volcanoes and storms that holds. For FLOODS it does not, and
-   * the layer was empty in production because of it: EONET closes a flood within
-   * days of the water going down, so `status=open` matched NOTHING. Measured
-   * 2026-08-13 — the open feed carried 7,058 events (6,985 wildfires, 33
-   * seaLakeIce, 32 volcanoes, 8 severeStorms) and exactly ZERO floods, while the
-   * category feed held 9 floods that month and 62 the month before, every one of
-   * them already closed. One had closed three days earlier.
-   *
-   * This is the same shape of bug the ENDPOINT comment records for volcanoes: an
-   * upstream filter that reads as a sensible default while silently emptying a
-   * layer. `maxAgeDays` is what bounds recency here, which is what it was for.
-   */
-  allStatuses?: boolean;
 }
 
 export const CATEGORIES: Record<string, EonetCategoryMeta> = {
-  wildfires: { signalId: "wildfires", category: "wildfires", label: "Wildfires", color: "#f97316", precision: "exact", maxAgeDays: 30 },
   // No window: an open volcanic event is routinely observed months apart.
   volcanoes: { signalId: "volcanoes", category: "volcanoes", label: "Volcanoes", color: "#dc2626", precision: "exact" },
   severeStorms: {
@@ -143,118 +90,15 @@ export const CATEGORIES: Record<string, EonetCategoryMeta> = {
     metric: { field: "windKt", domain: [35, 140], unit: " kts" },
     maxAgeDays: 14, // a storm nobody has observed in a fortnight is over
   },
-  // allStatuses: a flood is closed almost as soon as it recedes, so the shared
-  // open feed never contains one. maxAgeDays is what keeps this recent.
-  floods: {
-    signalId: "floods",
-    category: "floods",
-    label: "Floods",
-    color: "#0ea5e9",
-    precision: "area",
-    maxAgeDays: 60,
-    allStatuses: true,
-    // See `coordOrder` above. Measured, not assumed: the feed now mixes both orders.
-    coordOrder: "per-event",
-  },
 };
 
-/**
- * The first GDACS flood event id that EONET publishes as [lon, lat].
- *
- * Measured 2026-10-16 against `categories/floods?status=all&limit=200`: every event up
- * to GDACS id 1104198 (India/Nepal, 2026-09-23) is [lat, lon], and every event from
- * 1104199 (Spain, 2026-09-27) on is [lon, lat] — Libya 1104231 is [13.14, 32.88], Nepal
- * 1104225 is [84.63, 27.95]. Thailand 1104169 and Mexico 1104191 got NEW geometries on
- * 10-04 and kept [lat, lon], so the order follows the event's id, not the geometry date.
- */
-export const FLOOD_LONLAT_FROM_GDACS_ID = 1104199;
-
-/** The GDACS event id EONET relays a flood from, read off its source link or title. */
-function gdacsFloodId(e: EonetEvent): number | null {
-  for (const s of e.sources ?? []) {
-    const m = /[?&]eventid=(\d+)/.exec(s.url ?? "");
-    if (m) return Number(m[1]);
-  }
-  const t = /\s(\d{6,})\s*$/.exec(e.title ?? "");
-  return t ? Number(t[1]) : null;
-}
-
-/** "Flood in Nepal 1104225" → the centroid of Nepal, when the name is one we know. */
-function floodCountryCentroid(e: EonetEvent): { lat: number; lon: number } | undefined {
-  const m = /^\s*floods?\s+in\s+(.+?)(?:\s+\d{6,})?\s*$/i.exec(e.title ?? "");
-  if (!m) return undefined;
-  const c = centroidByName(m[1]);
-  return c ? { lat: c.lat, lon: c.lon } : undefined;
-}
-
-/** Rough distance in degrees, with longitude shrunk by latitude. Ranking only. */
-function degDistance(a: [number, number], b: { lat: number; lon: number }): number {
-  const dLat = a[1] - b.lat;
-  let dLon = Math.abs(a[0] - b.lon);
-  if (dLon > 180) dLon = 360 - dLon;
-  return Math.hypot(dLat, dLon * Math.cos((b.lat * Math.PI) / 180));
-}
-
-/**
- * Pure: the order ONE EONET flood event's pairs arrive in.
- *
- * 1. When the title names a country we hold a centroid for, the order whose point is
- *    nearer that centroid wins. A transposed pair moves a pin thousands of kilometres,
- *    so this is decisive wherever it applies, and it keeps working if EONET changes
- *    the order again.
- * 2. Otherwise the GDACS event id decides (`FLOOD_LONLAT_FROM_GDACS_ID`).
- * 3. With neither, the GeoJSON order.
- *
- * `representativePoint` still range-checks each pair, so a pair that proves its own
- * order (a value above 90) is read correctly whatever this returns.
- */
-export function floodPairOrder(e: EonetEvent, geom?: EonetGeometry): "lonlat" | "latlon" {
-  const g = geom ?? e.geometry?.[e.geometry.length - 1];
-  const centroid = floodCountryCentroid(e);
-  if (centroid && g) {
-    const asLonLat = representativePoint(g, "lonlat");
-    const asLatLon = representativePoint(g, "latlon");
-    if (asLonLat && asLatLon) {
-      return degDistance(asLatLon, centroid) < degDistance(asLonLat, centroid) ? "latlon" : "lonlat";
-    }
-  }
-  const id = gdacsFloodId(e);
-  if (id != null) return id >= FLOOD_LONLAT_FROM_GDACS_ID ? "lonlat" : "latlon";
-  return "lonlat";
-}
-
-/**
- * Read one coordinate pair in the order the category actually publishes.
- *
- * Returns [lon, lat] whatever went in. When the declared order yields a latitude that
- * cannot exist, the other order is used instead: a pair proves its own ordering when one
- * of its values is outside +-90, and a proof on the wire beats a flag in this file.
- */
-function readPair(a: number, b: number, order: "lonlat" | "latlon"): [number, number] {
-  const [lon, lat] = order === "latlon" ? [b, a] : [a, b];
-  if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) return [lat, lon];
-  return [lon, lat];
-}
-
-/**
- * Extract a representative [lon, lat] from a Point or (defensively) a Polygon.
- *
- * `order` is the order the SOURCE uses; the return value is always [lon, lat]. It
- * defaults to the GeoJSON order, so every caller that does not pass one is unaffected.
- */
-export function representativePoint(
-  geom: EonetGeometry | undefined,
-  order: "lonlat" | "latlon" = "lonlat",
-): [number, number] | null {
+/** Extract a representative [lon, lat] from a Point or (defensively) a Polygon. */
+export function representativePoint(geom: EonetGeometry | undefined): [number, number] | null {
   const c = geom?.coordinates;
   if (!Array.isArray(c)) return null;
   // Point
-  if (typeof c[0] === "number" && typeof c[1] === "number") {
-    return readPair(c[0], c[1], order);
-  }
-  // Polygon: [[[…], …]] — average the outer ring so an areal event still pins. The ring
-  // is normalised vertex by vertex BEFORE averaging, so a ring that straddles the guard
-  // cannot average into a different answer than its own vertices give.
+  if (typeof c[0] === "number" && typeof c[1] === "number") return [c[0], c[1]];
+  // Polygon: [[[lon, lat], …]] — average the outer ring so an areal event still pins.
   const ring = (c as unknown[])[0];
   if (Array.isArray(ring) && ring.length) {
     let sx = 0;
@@ -262,9 +106,8 @@ export function representativePoint(
     let n = 0;
     for (const pt of ring as unknown[]) {
       if (Array.isArray(pt) && typeof pt[0] === "number" && typeof pt[1] === "number") {
-        const [lon, lat] = readPair(pt[0] as number, pt[1] as number, order);
-        sx += lon;
-        sy += lat;
+        sx += pt[0] as number;
+        sy += pt[1] as number;
         n++;
       }
     }
@@ -300,9 +143,7 @@ export function eonetToFeatures(
       const t = Date.parse(last.date);
       if (Number.isFinite(t) && now - t > meta.maxAgeDays * 86_400_000) continue;
     }
-    const order =
-      meta.coordOrder === "per-event" ? floodPairOrder(e, last) : (meta.coordOrder ?? "lonlat");
-    const pt = representativePoint(last, order);
+    const pt = representativePoint(last);
     if (!pt) continue;
     // A polygon was averaged into this point, so the place is an area whatever the
     // category's default says.
@@ -354,16 +195,14 @@ export function eonetToFeatures(
 let cache: { events: EonetEvent[]; at: number } | null = null;
 let inflight: Promise<EonetEvent[]> | null = null;
 
-// Why the last COMPLETED read of each feed failed, or undefined when it succeeded.
-// Recorded here, DECLARED by the registered fetch below: one read feeds four layers,
-// and an outcome attached to this shared event array would be lost the moment each
-// layer re-maps it into its own features.
+// Why the last COMPLETED read failed, or undefined when it succeeded. Recorded here,
+// DECLARED by readEonetLayer below: one read feeds several layers, and an outcome
+// attached to this shared event array would be lost the moment each layer re-maps it.
 let sharedFailure: string | undefined;
-const categoryFailure = new Map<string, string>();
 
 /**
  * Short, operator-facing reason for a refresh that threw. Only the status our own
- * refreshers put in the message is passed through (`EONET: 503` → "http 503");
+ * refresher puts in the message is passed through (`EONET: 503` → "http 503");
  * anything else — network, timeout, an unreadable body — is reported generically, so
  * no upstream text can reach the API envelope.
  */
@@ -376,14 +215,8 @@ function failureReason(err: unknown): string {
  * 30 s, not 15 s. The shared open feed measured 4.9 MB on 2026-08-13 and its
  * fetch time is genuinely variable: 7.7 s on one call and 18.3 s on another,
  * minutes apart. Against a 15 s timeout that is a coin flip, and losing it takes
- * ALL FOUR EONET layers to zero at once — with no error surfaced, because the
- * catch below falls back to last-good, which on a cold instance is empty. That
- * was observed live: volcanoes and wildfires read 0 on a dev server while the
- * same code read 32 and 171 when the fetch happened to win.
- *
- * The route allows 60 s (app/api/signals/[id] sets maxDuration = 60), and the
- * result is cached for CACHE_TTL_MS, so a slow fetch is paid once per ten
- * minutes rather than per request.
+ * every EONET input to zero at once. The route allows 60 s (app/api/signals/[id]
+ * sets maxDuration = 60), and the result is cached for CACHE_TTL_MS.
  */
 const FETCH_TIMEOUT_MS = 30_000;
 
@@ -399,7 +232,7 @@ async function refresh(): Promise<EonetEvent[]> {
   return cache.events;
 }
 
-/** Fresh-or-stale-while-revalidate, shared by all four EONET layers. Never throws. */
+/** Fresh-or-stale-while-revalidate, shared by every EONET input. Never throws. */
 export async function fetchEonet(): Promise<EonetEvent[]> {
   if (cache && Date.now() - cache.at < CACHE_TTL_MS) return cache.events;
   if (!inflight) {
@@ -415,83 +248,17 @@ export async function fetchEonet(): Promise<EonetEvent[]> {
   return cache ? cache.events : inflight;
 }
 
-// --- Per-category cached fetch, for `allStatuses` categories ----------------
-// Same fresh-or-stale-while-revalidate contract as fetchEonet, keyed by category
-// so two such layers never share each other's events.
-const catCache = new Map<string, { events: EonetEvent[]; at: number }>();
-const catInflight = new Map<string, Promise<EonetEvent[]>>();
-
-async function refreshCategory(category: string): Promise<EonetEvent[]> {
-  const res = await fetch(categoryFeedUrl(category), {
-    headers: { "User-Agent": "TrafficNerd/2.0 (+github.com/011-sam-110/TrafficNerd-V2)" },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`EONET ${category}: ${res.status}`);
-  const json = (await res.json()) as { events?: EonetEvent[] };
-  const events = json.events ?? [];
-  catCache.set(category, { events, at: Date.now() });
-  categoryFailure.delete(category);
-  return events;
-}
-
-/** One category's full-status feed. Never throws — falls back to last-good. */
-export async function fetchEonetCategory(category: string): Promise<EonetEvent[]> {
-  const hit = catCache.get(category);
-  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.events;
-  if (!catInflight.has(category)) {
-    catInflight.set(
-      category,
-      refreshCategory(category)
-        .catch((err) => {
-          categoryFailure.set(category, failureReason(err));
-          return catCache.get(category)?.events ?? [];
-        })
-        .finally(() => {
-          catInflight.delete(category);
-        }),
-    );
-  }
-  return hit ? hit.events : (catInflight.get(category) as Promise<EonetEvent[]>);
-}
-
 /**
- * What the read behind this layer's events left behind: when they were ACTUALLY read
- * (the cache instant, not now — a stale serve must report the age of the DATA) and
- * the reason if that read refused.
+ * One category's features from the shared read, outcome-tagged. When the feed refuses
+ * we keep the rows we still hold and stamp the age of THAT read — `degraded()` would
+ * empty every EONET input over one blip, and `observed()` would claim a read that did
+ * not happen.
  */
-function lastRead(meta: EonetCategoryMeta): { at: number | null; failure: string | undefined } {
-  return meta.allStatuses
-    ? { at: catCache.get(meta.category)?.at ?? null, failure: categoryFailure.get(meta.category) }
-    : { at: cache?.at ?? null, failure: sharedFailure };
+export async function readEonetLayer(meta: EonetCategoryMeta): Promise<SignalFeature[]> {
+  const events = await fetchEonet();
+  const features = eonetToFeatures(events, meta);
+  const at = cache?.at ?? null;
+  const failure = sharedFailure;
+  if (failure) return at != null ? degradedWith(features, failure, at) : degraded(failure);
+  return observed(features, at ?? Date.now());
 }
-
-function makeSource(meta: EonetCategoryMeta): SignalSource {
-  return {
-    id: meta.signalId,
-    precision: meta.precision,
-    label: meta.label,
-    group: "Natural hazards",
-    color: meta.color,
-    refreshMs: 10 * 60 * 1000, // EONET events move slowly; matches the shared cache
-    attribution: EONET_ATTRIBUTION,
-    ...(meta.metric ? { metric: meta.metric } : {}),
-    async fetch() {
-      const events = meta.allStatuses
-        ? await fetchEonetCategory(meta.category)
-        : await fetchEonet();
-      const features = eonetToFeatures(events, meta);
-      const { at, failure } = lastRead(meta);
-      // Both fetchers fall back to last-good rather than throwing, so when the feed
-      // refuses we keep the rows we still hold and stamp the age of THAT read —
-      // `degraded()` would empty all four layers over one blip, and `observed()`
-      // would claim a read that did not happen.
-      if (failure) return at != null ? degradedWith(features, failure, at) : degraded(failure);
-      return observed(features, at ?? Date.now());
-    },
-  };
-}
-
-export const WILDFIRES_SOURCE = makeSource(CATEGORIES.wildfires);
-export const VOLCANOES_SOURCE = makeSource(CATEGORIES.volcanoes);
-export const SEVERE_STORMS_SOURCE = makeSource(CATEGORIES.severeStorms);
-export const FLOODS_SOURCE = makeSource(CATEGORIES.floods);

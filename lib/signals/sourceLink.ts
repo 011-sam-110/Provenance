@@ -70,10 +70,15 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   // Several catalogues feed this layer; a quake's record chip names the one shown
   // (`recordLabel`, from props.catalogue), so this entry is the fallback only.
   earthquakes: { label: "USGS", url: "https://earthquake.usgs.gov/" },
-  wildfires: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
-  volcanoes: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
-  severeStorms: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
-  floods: { label: "NASA EONET", url: "https://eonet.gsfc.nasa.gov/" },
+  // The four hazard layers merge several primaries since 2026-10-16. Most features carry
+  // their own record `link`; these are the fallbacks, named for the main input.
+  wildfires: {
+    label: "NIFC WFIGS",
+    url: "https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-incident-locations-current",
+  },
+  volcanoes: { label: "USGS Volcano Hazards Program", url: "https://www.usgs.gov/programs/VHP" },
+  severeStorms: { label: "NOAA SPC storm reports", url: "https://www.spc.noaa.gov/climo/reports/today.html" },
+  floods: { label: "GDACS", url: "https://www.gdacs.org/" },
   gdacs: { label: "GDACS", url: "https://www.gdacs.org/" },
   // JTWC, JMA and CMA storms name their own agency on the record chip (`recordLabel`).
   "tropical-cyclones": { label: "NOAA NHC", url: "https://www.nhc.noaa.gov/" },

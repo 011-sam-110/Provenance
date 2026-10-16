@@ -57,6 +57,34 @@ export function gdacsAlertColor(level: string): string {
   }
 }
 
+export interface GdacsFeature {
+  geometry?: { coordinates?: (number | null)[] } | null;
+  properties?: {
+    iso3?: string;
+    source?: string;
+    eventtype?: string;
+    eventid?: number | string;
+    episodeid?: number | string;
+    name?: string;
+    country?: string;
+    alertlevel?: string;
+    alertscore?: number;
+    fromdate?: string;
+    todate?: string;
+    iscurrent?: string;
+    url?: { report?: string; details?: string } | null;
+    severitydata?: { severitytext?: string } | null;
+  } | null;
+}
+
+/** Treat GDACS's naive UTC timestamps (no zone suffix) as UTC. */
+function gdacsTimeToIso(s: string | undefined): string | undefined {
+  if (!s) return undefined;
+  const norm = /[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : `${s}Z`;
+  const t = Date.parse(norm);
+  return Number.isFinite(t) ? new Date(t).toISOString() : undefined;
+}
+
 /**
  * GDACS hazard codes whose point is the place of the thing itself: an epicentre, a
  * volcano, a storm centre. Every other code (flood, drought, wildfire) is one
@@ -156,6 +184,147 @@ export function normalizeGdacsRss(xml: string): SignalFeature[] {
         from: from?.slice(0, 10) ?? "—",
         to: to?.slice(0, 10) ?? "—",
       },
+    });
+  }
+  return out;
+}
+
+/**
+ * Pure: GDACS SEARCH FeatureCollection -> SignalFeature[]. Skips features without coords/id.
+ * The gdacs layer itself reads the RSS (normalizeGdacsRss); this is for the per-hazard layers.
+ */
+export function normalizeGdacs(geojson: { features?: GdacsFeature[] }): SignalFeature[] {
+  const out: SignalFeature[] = [];
+  const seen = new Set<string>(); // GDACS repeats the same event+episode across entries — dedupe by id
+  for (const f of geojson.features ?? []) {
+    const p = f.properties ?? {};
+    const c = f.geometry?.coordinates;
+    if (!c) continue;
+    const lon = c[0] == null ? Number.NaN : Number(c[0]);
+    const lat = c[1] == null ? Number.NaN : Number(c[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+    const eventId = (p.eventid ?? "").toString().trim();
+    if (!eventId) continue;
+    const episodeId = (p.episodeid ?? "").toString().trim();
+    const id = `gdacs:${eventId}:${episodeId}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const typeLabel = gdacsEventLabel(p.eventtype ?? "");
+    const level = p.alertlevel ?? "Unknown";
+    out.push({
+      id,
+      lat,
+      lon,
+      title: p.name?.trim() || `${typeLabel}${p.country ? ` in ${p.country}` : ""}`,
+      signalId: "gdacs",
+      ...(GDACS_EXACT_TYPES.has((p.eventtype ?? "").trim().toUpperCase()) ? { precision: "exact" as const } : {}),
+      color: gdacsAlertColor(level),
+      link: p.url?.report ?? undefined,
+      ts: gdacsTimeToIso(p.fromdate),
+      props: {
+        hazard: typeLabel,
+        alertLevel: level,
+        magnitude: GDACS_MAG[level] ?? 5,
+        // GDACS's own continuous alert score (0–3: green <1, orange 1–2, red 2–3).
+        // The REAL per-event severity scalar (metric bar), distinct from the 0–10 ramp.
+        alertScore: typeof p.alertscore === "number" && Number.isFinite(p.alertscore) ? p.alertscore : undefined,
+        severity: p.severitydata?.severitytext?.trim() || "—",
+        country: p.country?.trim() || "—",
+        from: p.fromdate?.slice(0, 10) ?? "—",
+        to: p.todate?.slice(0, 10) ?? "—",
+        ongoing: (p.iscurrent ?? "").toLowerCase() === "true" ? "yes" : "no",
+      },
+    });
+  }
+  return out;
+}
+
+// --- SEARCH: one hazard type over a date range, for the per-hazard layers ----------
+//
+// The MAP endpoint above answers "what is current" (8 floods on 2026-10-16). The
+// floods, wildfires and volcanoes layers want "what happened in the last N days",
+// which is SEARCH: 81 floods in 30 days, 200+ wildfires, 9 volcano alerts in 90 days
+// (audited 2026-10-16). SEARCH pages by 100 and answers 204 past the last page.
+
+/** One page of GDACS SEARCH for one hazard type, `days` back from `now`. */
+export function gdacsSearchUrl(eventType: string, days: number, now: number, page = 1): string {
+  const day = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const params = new URLSearchParams({
+    eventlist: eventType,
+    fromDate: day(now - days * 86_400_000),
+    toDate: day(now),
+    alertlevel: "green;orange;red",
+    pagenumber: String(page),
+  });
+  return `https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?${params.toString()}`;
+}
+
+/** Pages read at most per hazard type: 10 × 100 events, far past any measured month. */
+export const GDACS_SEARCH_MAX_PAGES = 10;
+
+/**
+ * Every GDACS SEARCH feature for one hazard type in the window. Throws on the first
+ * failed page (the caller keeps its last good copy), so a half-read list is never
+ * published as the whole one.
+ */
+export async function fetchGdacsSearch(
+  eventType: string,
+  days: number,
+  now: number,
+  getJsonFn: (url: string) => Promise<{ features?: GdacsFeature[] } | null>,
+): Promise<GdacsFeature[]> {
+  const all: GdacsFeature[] = [];
+  for (let page = 1; page <= GDACS_SEARCH_MAX_PAGES; page++) {
+    const json = await getJsonFn(gdacsSearchUrl(eventType, days, now, page));
+    const features = json?.features ?? [];
+    all.push(...features);
+    if (features.length < 100) break;
+  }
+  return all;
+}
+
+/** Where GDACS events go on a per-hazard layer, and how they are named there. */
+export interface GdacsLayerOptions {
+  signalId: string;
+  /** Prefix for the feature id, e.g. "floods:gdacs", so it cannot collide with the gdacs layer. */
+  idPrefix: string;
+  /** Drop events whose ISO3 is in this set (a better primary covers them). */
+  excludeIso3?: ReadonlySet<string>;
+  /** Credit line for the `source` prop, e.g. "GDACS (GloFAS)". */
+  sourceLabel: string;
+}
+
+/**
+ * Pure: GDACS SEARCH features → features for ONE per-hazard layer.
+ *
+ * SEARCH lists an event once per episode it matched; the latest episode stands for
+ * the event. Precision follows the hazard: a volcano point is the volcano, a flood or
+ * fire point is the centroid of an affected area.
+ */
+export function gdacsToLayerFeatures(
+  features: GdacsFeature[],
+  opts: GdacsLayerOptions,
+): SignalFeature[] {
+  const latest = new Map<string, GdacsFeature>();
+  for (const f of features) {
+    const id = (f.properties?.eventid ?? "").toString().trim();
+    if (!id) continue;
+    const prev = latest.get(id);
+    if (!prev || Number(f.properties?.episodeid ?? 0) > Number(prev.properties?.episodeid ?? 0)) latest.set(id, f);
+  }
+  const kept = [...latest.values()].filter(
+    (f) => !opts.excludeIso3?.has((f.properties?.iso3 ?? "").trim().toUpperCase()),
+  );
+  const out: SignalFeature[] = [];
+  for (const f of normalizeGdacs({ features: kept })) {
+    const [, eventId] = f.id.split(":");
+    out.push({
+      ...f,
+      id: `${opts.idPrefix}:${eventId}`,
+      signalId: opts.signalId,
+      precision: f.precision ?? "area",
+      props: { ...f.props, source: opts.sourceLabel, gdacsEventId: eventId },
     });
   }
   return out;

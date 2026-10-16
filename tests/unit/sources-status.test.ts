@@ -1,4 +1,3 @@
-import { degradedWith, observed } from "@/lib/signals/outcome";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   KEY_REQUIREMENTS,

@@ -1,0 +1,137 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.85a73b3d76a5e27480f3037f31da9d7b69c79b92.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -97.49,
+       35.05
+      ],
+      [
+       -97.34,
+       35.16
+      ],
+      [
+       -97.2,
+       35.01
+      ],
+      [
+       -96.93,
+       35.02
+      ],
+      [
+       -96.93,
+       34.88
+      ],
+      [
+       -97.27,
+       34.88
+      ],
+      [
+       -97.49,
+       35.05
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.85a73b3d76a5e27480f3037f31da9d7b69c79b92.001.1",
+    "id": "urn:oid:2.49.0.1.840.0.85a73b3d76a5e27480f3037f31da9d7b69c79b92.001.1",
+    "areaDesc": "Cleveland, OK; McClain, OK; Pottawatomie, OK",
+    "sent": "2026-10-16T14:36:00-05:00",
+    "onset": "2026-10-18T19:00:00-05:00",
+    "expires": "2026-10-17T02:45:00-05:00",
+    "ends": "2026-10-19T07:00:00-05:00",
+    "severity": "Severe",
+    "event": "Flood Warning",
+    "senderName": "NWS Norman OK",
+    "headline": "Flood Warning issued October 16 at 2:36PM CDT until October 19 at 7:00AM CDT by NWS Norman OK"
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+   "type": "Feature",
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -75.15,
+       41.15
+      ],
+      [
+       -75.09,
+       41.14
+      ],
+      [
+       -75.03,
+       41.08
+      ],
+      [
+       -75,
+       41.09
+      ],
+      [
+       -74.99,
+       41.08
+      ],
+      [
+       -75.02,
+       41.06
+      ],
+      [
+       -75.77,
+       41.05
+      ],
+      [
+       -75.77,
+       41.09
+      ],
+      [
+       -75.71,
+       41.11
+      ],
+      [
+       -75.69,
+       41.13
+      ],
+      [
+       -75.64,
+       41.12
+      ],
+      [
+       -75.54,
+       41.23
+      ],
+      [
+       -75.13,
+       41.25
+      ],
+      [
+       -75.15,
+       41.15
+      ]
+     ]
+    ]
+   },
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+    "id": "urn:oid:2.49.0.1.840.0.7ce0efea9799c0f3dc1a96e5fb83944024fc9b15.001.1",
+    "areaDesc": "Carbon, PA; Monroe, PA",
+    "sent": "2026-10-16T16:03:00-04:00",
+    "onset": "2026-10-16T16:03:00-04:00",
+    "expires": "2026-10-16T17:00:00-04:00",
+    "ends": "2026-10-16T17:00:00-04:00",
+    "severity": "Severe",
+    "event": "Severe Thunderstorm Warning",
+    "senderName": "NWS Mount Holly NJ",
+    "headline": "Severe Thunderstorm Warning issued October 16 at 4:03PM EDT until October 16 at 5:00PM EDT by NWS Mount Holly NJ"
+   }
+  }
+ ]
+}

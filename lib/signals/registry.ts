@@ -32,12 +32,13 @@
 
 import type { SignalSource } from "@/lib/signals/types";
 import { EARTHQUAKES_SOURCE } from "@/lib/signals/earthquakes";
-import {
-  WILDFIRES_SOURCE,
-  VOLCANOES_SOURCE,
-  SEVERE_STORMS_SOURCE,
-  FLOODS_SOURCE,
-} from "@/lib/signals/eonet";
+// The four natural-hazard event layers were NASA EONET until 2026-10-16. Each now
+// merges its primary sources (EONET stays inside severe storms and, as a background,
+// volcanoes) — see the header of each module.
+import { WILDFIRES_SOURCE } from "@/lib/signals/wildfires";
+import { VOLCANOES_SOURCE } from "@/lib/signals/volcanoes";
+import { SEVERE_STORMS_SOURCE } from "@/lib/signals/severe-storms";
+import { FLOODS_SOURCE } from "@/lib/signals/floods";
 import { AURORA_SOURCE } from "@/lib/signals/aurora";
 import { LAUNCHES_SOURCE } from "@/lib/signals/launches";
 import { CABLES_SOURCE, CABLE_LANDINGS_SOURCE } from "@/lib/signals/cables";

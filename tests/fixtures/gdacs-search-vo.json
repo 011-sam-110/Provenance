@@ -1,0 +1,185 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "bbox": [
+    123.132,
+    10.412,
+    123.132,
+    10.412
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     123.132,
+     10.412
+    ]
+   },
+   "properties": {
+    "eventtype": "VO",
+    "eventid": 1000152,
+    "episodeid": 1,
+    "eventname": "Kanlaon",
+    "glide": "VO-2026-000190-PHL",
+    "name": "Eruption  Kanlaon",
+    "description": "Eruption  Kanlaon",
+    "htmldescription": "Orange Eruption Kanlaon in Philippines at: 10 Oct 2026 05:58.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Orange/VO.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Orange/VO.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=VO&eventid=1000152&episodeid=1",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1000152&episodeid=1&eventtype=VO",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=VO&eventid=1000152"
+    },
+    "alertlevel": "Orange",
+    "alertscore": 2,
+    "episodealertlevel": "Orange",
+    "episodealertscore": 1.5,
+    "istemporary": "false",
+    "iscurrent": "false",
+    "country": "Philippines",
+    "fromdate": "2026-10-10T05:58:00",
+    "todate": "2026-10-10T05:58:00",
+    "datemodified": "2026-10-12T06:02:40",
+    "iso3": "PHL",
+    "source": "TOKYO",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "PH",
+      "iso3": "PHL",
+      "countryname": "Philippines"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "",
+     "severityunit": ""
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "bbox": [
+    120.9975,
+    14.0106,
+    120.9975,
+    14.0106
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     120.9975,
+     14.0106
+    ]
+   },
+   "properties": {
+    "eventtype": "VO",
+    "eventid": 1000151,
+    "episodeid": 1,
+    "eventname": "Taal",
+    "glide": "VO-2026-000187-PHL",
+    "name": "Eruption  Taal",
+    "description": "Eruption  Taal",
+    "htmldescription": "Orange Eruption Taal in Philippines at: 08 Oct 2026 10:29.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Orange/VO.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Orange/VO.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=VO&eventid=1000151&episodeid=1",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1000151&episodeid=1&eventtype=VO",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=VO&eventid=1000151"
+    },
+    "alertlevel": "Orange",
+    "alertscore": 2,
+    "episodealertlevel": "Orange",
+    "episodealertscore": 1.5,
+    "istemporary": "false",
+    "iscurrent": "false",
+    "country": "Philippines",
+    "fromdate": "2026-10-08T10:29:00",
+    "todate": "2026-10-08T10:29:00",
+    "datemodified": "2026-10-08T13:02:20",
+    "iso3": "PHL",
+    "source": "DARWIN",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "PH",
+      "iso3": "PHL",
+      "countryname": "Philippines"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "",
+     "severityunit": ""
+    }
+   }
+  },
+  {
+   "type": "Feature",
+   "bbox": [
+    14.999,
+    37.748,
+    14.999,
+    37.748
+   ],
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     14.999,
+     37.748
+    ]
+   },
+   "properties": {
+    "eventtype": "VO",
+    "eventid": 1000150,
+    "episodeid": 1,
+    "eventname": "Etna",
+    "glide": "",
+    "name": "Eruption  Etna",
+    "description": "Eruption  Etna",
+    "htmldescription": "Green Eruption Etna in Italy at: 27 Sep 2026 22:00.",
+    "icon": "https://www.gdacs.org/images/gdacs_icons/maps/Green/VO.png",
+    "iconoverall": "https://www.gdacs.org/images/gdacs_icons/maps/Green/VO.png",
+    "url": {
+     "geometry": "https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=VO&eventid=1000150&episodeid=1",
+     "report": "https://www.gdacs.org/report.aspx?eventid=1000150&episodeid=1&eventtype=VO",
+     "details": "https://www.gdacs.org/gdacsapi/api/events/geteventdata?eventtype=VO&eventid=1000150"
+    },
+    "alertlevel": "Green",
+    "alertscore": 1,
+    "episodealertlevel": "Green",
+    "episodealertscore": 0.5,
+    "istemporary": "false",
+    "iscurrent": "false",
+    "country": "Italy",
+    "fromdate": "2026-09-27T22:00:00",
+    "todate": "2026-09-27T22:00:00",
+    "datemodified": "2026-09-28T06:12:10",
+    "iso3": "ITA",
+    "source": "TOULOUSE",
+    "sourceid": "",
+    "polygonlabel": "Centroid",
+    "Class": "Point_Centroid",
+    "affectedcountries": [
+     {
+      "iso2": "IT",
+      "iso3": "ITA",
+      "countryname": "Italy"
+     }
+    ],
+    "severitydata": {
+     "severity": 0.0,
+     "severitytext": "",
+     "severityunit": ""
+    }
+   }
+  }
+ ]
+}
