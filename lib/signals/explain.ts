@@ -434,15 +434,16 @@ const EXPLAINERS: LayerExplainer[] = [
   },
   {
     id: "cloud-status",
-    whatItShows: "A cloud or developer platform that its OWN status page currently reports as degraded — GitHub, Cloudflare, OpenAI, Twilio and eleven others.",
-    method: "Read straight from each vendor's Atlassian Statuspage summary endpoint. The severity is the vendor's own indicator, not our judgement.",
+    whatItShows: "A cloud or platform incident that the vendor's OWN status page reports right now — AWS, Google Cloud, Azure, Oracle Cloud, Fastly, Cloudflare, GitHub, Akamai and others — pinned at the region or point of presence the vendor names.",
+    method: "Read straight from each vendor's own status feed: Atlassian Statuspage summaries for sixteen pages, AWS's public current-events feed, Google Cloud's and Google Workspace's incident lists, Azure's status RSS, Oracle's region health and Fastly's status RSS. The severity is the vendor's own, not our judgement. The place is the one the vendor names: a PoP by its airport code, a cloud region by its id or name.",
     confidence: "official",
-    coverage: "Fifteen status pages on Atlassian Statuspage (Jira, Confluence and Bitbucket each have their own). AWS, Google Cloud and Azure run their own bespoke formats and are NOT covered.",
+    coverage: "Twenty-two status feeds from cloud, CDN and developer platforms. Region placement covers AWS, Google Cloud, Azure and Oracle regions, and PoP placement covers Cloudflare and Fastly by airport code or city.",
     limitations: [
-      "The pin sits at the vendor's HEADQUARTERS. A cloud outage has no location — this is a placement of convenience so the layer can exist on a map, and it must not be read as where the outage is.",
+      "An incident that names no place is pinned at the vendor's HEADQUARTERS, and that pin says so: it is not where the outage is.",
+      "A PoP or region pin marks the metro area the vendor names, not a data centre.",
       "It is the vendor's self-assessment. Status pages are routinely slow to go red, and some incidents are never posted at all.",
-      "An empty layer is the normal, healthy state: only non-operational vendors appear. Absence here is not proof that everything works.",
-      "AWS, Google Cloud and Azure are the three biggest sources of internet-wide outages and none of them are in this feed.",
+      "Some incidents stay open for months (two AWS Middle East regions since March 2026, a Cloudflare WARP issue since August 2026). They are shown with the date they opened, so read 'open since' before reading them as news.",
+      "An empty layer is the normal, healthy state: only non-operational services appear. Absence here is not proof that everything works.",
     ],
   },
   {

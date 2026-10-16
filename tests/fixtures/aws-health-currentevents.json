@@ -1,0 +1,90 @@
+[
+ {
+  "date": "1772369485",
+  "arn": "arn:aws:health:me-central-1::event/MULTIPLE_SERVICES/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE_5E6B8_EF2498889B5",
+  "region_name": "UAE",
+  "status": "3",
+  "service": "multipleservices-me-central-1",
+  "service_name": "Multiple services",
+  "summary": "Region Availability",
+  "event_log": [
+   {
+    "summary": "Increased Error Rates",
+    "message": "We are providing an update on the disruption affecting the Middle East (UAE) (me-central-1) Region. After a thorough assessment, we have determined that we are unable to restore access to the resources and data hosted exclusively in the mec1-az2 Availability Zone. We continue to work on recovering r",
+    "status": 3,
+    "timestamp": 1789468030
+   }
+  ],
+  "impacted_services": {
+   "cloudwatchsynthetics-me-central-1": {
+    "service_name": "Amazon CloudWatch Synthetics",
+    "current": "3",
+    "max": "3"
+   },
+   "s3rtc-me-central-1": {
+    "service_name": "Amazon S3 Replication Time Control",
+    "current": "3",
+    "max": "3"
+   },
+   "vpclattice-me-central-1": {
+    "service_name": "Amazon VPC Lattice",
+    "current": "3",
+    "max": "3"
+   },
+   "iamidentitycenter-me-central-1": {
+    "service_name": "AWS IAM Identity Center",
+    "current": "3",
+    "max": "3"
+   },
+   "rds-me-central-1": {
+    "service_name": "Amazon Relational Database Service",
+    "current": "3",
+    "max": "3"
+   }
+  }
+ },
+ {
+  "date": "1772430987",
+  "arn": "arn:aws:health:me-south-1::event/MULTIPLE_SERVICES/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE/AWS_MULTIPLE_SERVICES_OPERATIONAL_ISSUE_E6426_01AD72B4E1E",
+  "region_name": "Bahrain",
+  "status": "3",
+  "service": "multipleservices-me-south-1",
+  "service_name": "Multiple services",
+  "summary": "Region Availability",
+  "event_log": [
+   {
+    "summary": "Increased Error Rates",
+    "message": "We are providing an update on the disruption affecting the Middle East (Bahrain) (me-south-1) Region. The damage to our infrastructure spanned multiple Availability Zones and exceeded what our regional and multi-AZ services are designed to withstand. After a thorough assessment, we have determined t",
+    "status": 3,
+    "timestamp": 1789467748
+   }
+  ],
+  "impacted_services": {
+   "resourcegroups-me-south-1": {
+    "service_name": "AWS Resource Groups",
+    "current": "3",
+    "max": "3"
+   },
+   "s3-me-south-1": {
+    "service_name": "Amazon Simple Storage Service",
+    "current": "3",
+    "max": "3"
+   },
+   "codecommit-me-south-1": {
+    "service_name": "AWS CodeCommit",
+    "current": "3",
+    "max": "3"
+   },
+   "awswaf-me-south-1": {
+    "service_name": "AWS WAF",
+    "current": "3",
+    "max": "3"
+   },
+   "ecr-me-south-1": {
+    "service_name": "Amazon Elastic Container Registry",
+    "current": "3",
+    "max": "3"
+   }
+  }
+ }
+]

@@ -1,0 +1,520 @@
+{
+ "page": {
+  "name": "Cloudflare Status",
+  "url": "https://www.cloudflarestatus.com",
+  "updated_at": "2026-08-27T00:00:00.000Z"
+ },
+ "status": {
+  "indicator": "major",
+  "description": "Partial System Outage"
+ },
+ "components": [
+  {
+   "id": "1km35smx8p41",
+   "name": "Cloudflare Sites and Services",
+   "status": "degraded_performance",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "00gpj4s37mz4",
+   "name": "Africa",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "77867vxkttgw",
+   "name": "Asia",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "zqxhg7y54vy8",
+   "name": "Europe",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "91blz4ztt7dm",
+   "name": "Latin America & the Caribbean",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "m3639x4txd08",
+   "name": "Middle East",
+   "status": "degraded_performance",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "4l01sk5cdn5c",
+   "name": "North America",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "q6qm6fvkst4h",
+   "name": "Oceania",
+   "status": "major_outage",
+   "group": true,
+   "group_id": null
+  },
+  {
+   "id": "2htqrtyxmmtr",
+   "name": "Arica, Chile - (ARI)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "p2w5bf74rw6p",
+   "name": "Annaba, Algeria - (AAE)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "76swzd6htswh",
+   "name": "Baku, Azerbaijan - (GYD)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "m3639x4txd08"
+  },
+  {
+   "id": "vhpdc0y3qty9",
+   "name": "Bangalore, India - (BLR)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "hrvrnvqmb4px",
+   "name": "Canberra, ACT, Australia - (CBR)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "q6qm6fvkst4h"
+  },
+  {
+   "id": "qvf223pw6cfx",
+   "name": "Cape Town, South Africa - (CPT)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "6vll3w5p50f9",
+   "name": "Belo Horizonte, Brazil - (CNF)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "xpjxwz2x742k",
+   "name": "Beirut, Lebanon - (BEY)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "m3639x4txd08"
+  },
+  {
+   "id": "9kqfzzbvww99",
+   "name": "Bandar Seri Begawan, Brunei - (BWN)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "5r6d2zthcqm4",
+   "name": "Hagatna, Guam - (GUM)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "q6qm6fvkst4h"
+  },
+  {
+   "id": "171wlzvlxttk",
+   "name": "Bogotá, Colombia - (BOG)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "cscgtg7yfz1b",
+   "name": "Dar Es Salaam, Tanzania - (DAR)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "1zdfwmzjqqtf",
+   "name": "Erbil, Iraq - (EBL)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "m3639x4txd08"
+  },
+  {
+   "id": "fvqfrchfl8yc",
+   "name": "Sydney, NSW, Australia - (SYD)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "q6qm6fvkst4h"
+  },
+  {
+   "id": "47440brmvtq2",
+   "name": "Gaborone, Botswana - (GBE)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "2661q193p08w",
+   "name": "Johannesburg, South Africa - (JNB)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "n5017xzrnrsc",
+   "name": "Curitiba, Brazil - (CWB)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "fs644clrg00l",
+   "name": "Luanda, Angola - (LAD)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "3mfmstzmyp8r",
+   "name": "Maputo, Mozambique - (MPM)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "ljllh1921z0m",
+   "name": "Nairobi, Kenya - (NBO)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "mbmzgpc3s1xh",
+   "name": "Fuzhou, China - (FOC)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "1njzngd1wdrj",
+   "name": "Istanbul, Turkey - (IST)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "d9k4n6zjlqmt",
+   "name": "Kyiv, Ukraine - (KBP)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "mdhxb295kjtr",
+   "name": "Hengshui, China - (SJW)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "bnjvsmmllkb9",
+   "name": "Lima, Peru - (LIM)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "qrvlk1ck1dv2",
+   "name": "Kinshasa, DR Congo - (FIH)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "n3v9x7fj809n",
+   "name": "Manaus, Brazil - (MAO)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "gdywyg76bgy3",
+   "name": "Jakarta, Indonesia - (CGK)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "pd8tz1050d4g",
+   "name": "Panama City, Panama - (PTY)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "y3r9ft7k1mmw",
+   "name": "Mexico City, Mexico - (MEX)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "lqkq4v678h03",
+   "name": "Jinan, China - (TNA)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "qymxbydgwhcn",
+   "name": "Johor Bahru, Malaysia - (JHB)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "byh0gc9t4g6m",
+   "name": "Kaohsiung City - (KHH)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "yd8dc8tlrzxr",
+   "name": "Norfolk, VA, United States - (ORF)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "q68nlq1486z7",
+   "name": "Palermo, Italy - (PMO)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "mslkxsqftrnn",
+   "name": "Kolkata, India - (CCU)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "wg0b1zzm2f2w",
+   "name": "Santiago, Chile - (SCL)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "hr78s04g1r5b",
+   "name": "Kuala Lumpur, Malaysia - (KUL)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "0n209sgnr1dp",
+   "name": "Queretaro, MX, Mexico - (QRO)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "f72vw9sb48bb",
+   "name": "Lilongwe, Malawi - (LLW)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "00gpj4s37mz4"
+  },
+  {
+   "id": "ss09y7v3wzwd",
+   "name": "Manila, Philippines - (MNL)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "t3d07wlg67nl",
+   "name": "Mumbai, India - (BOM)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "msyl69slj4cy",
+   "name": "Tirana, Albania - (TIA)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "mgy83jclb7m0",
+   "name": "Campos dos Goytacazes, Brazil - (CAW)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "wkc7ly9m8s5s",
+   "name": "Sioux Falls, SD, United States - (FSD)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "4l01sk5cdn5c"
+  },
+  {
+   "id": "05rpd663qrcp",
+   "name": "St. George's, Grenada - (GND)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "8xc65dbhbrd5",
+   "name": "Phnom Penh, Cambodia - (PNH)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "fdl9z4gyspjc",
+   "name": "Santiago de los Caballeros, Dominican Republic - (STI)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "7jlmzfxn5508",
+   "name": "La Paz, Bolivia - (LPB)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "m50pw1dxjp51",
+   "name": "Palmas, Brazil - (PMW)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "hl4j81pmzwby",
+   "name": "Salvador, Brazil - (SSA)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "91blz4ztt7dm"
+  },
+  {
+   "id": "5ynnmbhcqkv2",
+   "name": "Vientiane, Laos - (VTE)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "56zs2vmr81l0",
+   "name": "Yerevan, Armenia - (EVN)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "bjvy4v384csg",
+   "name": "WARP",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "1km35smx8p41"
+  },
+  {
+   "id": "nbvb8842jnn0",
+   "name": "Shenzhen, China - (SZX)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "ynf4hx3bjd3k",
+   "name": "Chongqing, China - (CKG)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "0p60jr5nb630",
+   "name": "Xiangyang, China - (XFN)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "kzh9tkg9kcxd",
+   "name": "Baoji, China - (XIY)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "b4gyh6pxzb69",
+   "name": "Chengdu, China - (CTU)",
+   "status": "degraded_performance",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "bjgm8mgjn0sm",
+   "name": "Anshun, China - (AVA)",
+   "status": "major_outage",
+   "group": false,
+   "group_id": "77867vxkttgw"
+  },
+  {
+   "id": "57ctn3f2qsyj",
+   "name": "Amsterdam, Netherlands - (AMS)",
+   "status": "operational",
+   "group": false,
+   "group_id": "zqxhg7y54vy8"
+  },
+  {
+   "id": "y12kn5nkvb44",
+   "name": "Amman, Jordan - (AMM)",
+   "status": "operational",
+   "group": false,
+   "group_id": "m3639x4txd08"
+  },
+  {
+   "id": "42m5vcmj0yh5",
+   "name": "Adelaide, SA, Australia - (ADL)",
+   "status": "operational",
+   "group": false,
+   "group_id": "q6qm6fvkst4h"
+  }
+ ],
+ "incidents": [
+  {
+   "name": "Incorrect geo location for some Cloudflare WARP users",
+   "status": "identified",
+   "impact": "minor",
+   "shortlink": "https://www.cloudflarestatus.com/incidents/9g65dxfbcjln",
+   "created_at": "2026-08-27T18:46:19.000Z",
+   "updated_at": "2026-09-01T08:29:56.000Z"
+  }
+ ]
+}
