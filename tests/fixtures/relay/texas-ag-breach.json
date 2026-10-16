@@ -1,0 +1,1070 @@
+{
+ "version": 1,
+ "feed": "texas-ag-breach",
+ "fetchedAt": "2026-10-16T19:51:37Z",
+ "data": {
+  "rows": [
+   {
+    "id": "BR-0005419",
+    "entity": "JM Bullion, Inc.",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Dallas",
+    "state": "Texas",
+    "zip": "75230",
+    "texans": 6640,
+    "total": 78451,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005429",
+    "entity": "The Krum Public Library",
+    "entityType": "Governmental Entity",
+    "city": "Krum",
+    "state": "Texas",
+    "zip": "76249",
+    "texans": 34042,
+    "total": 36360,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   },
+   {
+    "id": "BR-0005430",
+    "entity": "Stitch Connect Inc",
+    "entityType": "Business – Retail or Merchant",
+    "city": "San Francisco",
+    "state": "California",
+    "zip": "94104-5401",
+    "texans": 4062,
+    "total": 113727,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Medical Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005428",
+    "entity": "MLD Mortgage Inc. dba The Money Store",
+    "entityType": "Financial Services",
+    "city": "Florham Park",
+    "state": "New Jersey",
+    "zip": "07932",
+    "texans": 1367,
+    "total": 45561,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005427",
+    "entity": "Delek US Energy, Inc.",
+    "entityType": "Other",
+    "city": "Brentwood",
+    "state": "Tennessee",
+    "zip": "37027",
+    "texans": 1666,
+    "total": 2566,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005426",
+    "entity": "Encore Enterprises",
+    "entityType": "Other",
+    "city": "Dallas",
+    "state": "Texas",
+    "zip": "75248",
+    "texans": 1746,
+    "total": 4488,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005425",
+    "entity": "Iroquois Memorial Hospital",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Watseka",
+    "state": "Illinois",
+    "zip": "60970",
+    "texans": 1279,
+    "total": 217703,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005424",
+    "entity": "AssuranceAmerica Managing General Agency, LLC",
+    "entityType": "Insurance Services",
+    "city": "Atlanta",
+    "state": "Georgia",
+    "zip": "30339",
+    "texans": 88640,
+    "total": 489825,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Driver’s License number",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005431",
+    "entity": "Klein Independent School District",
+    "entityType": "Educational Institution",
+    "city": "Klein",
+    "state": "Texas",
+    "zip": "77379",
+    "texans": 37966,
+    "total": 37966,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005423",
+    "entity": "Mountrail County Medical Center",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Stanley",
+    "state": "North Dakota",
+    "zip": "58784",
+    "texans": 456,
+    "total": 24447,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Medical Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005422",
+    "entity": "American Board of Preventive Medicine",
+    "entityType": "Other",
+    "city": "Chicago",
+    "state": "Illinois",
+    "zip": "60604",
+    "texans": 955,
+    "total": 23692,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005421",
+    "entity": "Porter and Company",
+    "entityType": "Financial Services",
+    "city": "Baltimore",
+    "state": "Maryland",
+    "zip": "21201",
+    "texans": 1620,
+    "total": 18728,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   },
+   {
+    "id": "BR-0005420",
+    "entity": "Magna Hospitality Group",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Warwick",
+    "state": "Rhode Island",
+    "zip": "02886",
+    "texans": 1298,
+    "total": 25623,
+    "publishedOn": "2026-10-16",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005411",
+    "entity": "zizzl, llc.",
+    "entityType": "Insurance Services",
+    "city": "Milwaukee",
+    "state": "Wisconsin",
+    "zip": "53202",
+    "texans": 496,
+    "total": 6447,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005417",
+    "entity": "Mercadien PC Certified Public Accountants",
+    "entityType": "Financial Services",
+    "city": "Hamilton Township",
+    "state": "New Jersey",
+    "zip": "08619",
+    "texans": 5219,
+    "total": 0,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information"
+    ]
+   },
+   {
+    "id": "BR-0005416",
+    "entity": "Arkansas Hospice Inc. dba LifeTouch Health",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "North Little Rock",
+    "state": "Arkansas",
+    "zip": "72116",
+    "texans": 564,
+    "total": 38629,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005415",
+    "entity": "EnTrans Holding, Inc.",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Athens",
+    "state": "Tennessee",
+    "zip": "37303",
+    "texans": 839,
+    "total": 3311,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005414",
+    "entity": "Blueberry Pediatrics",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Mountain View",
+    "state": "California",
+    "zip": "94043",
+    "texans": 7249,
+    "total": 47381,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Medical Information",
+     "Health Insurance Information",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005413",
+    "entity": "Blueberry Pediatrics",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Mountain View",
+    "state": "California",
+    "zip": "94043",
+    "texans": 60581,
+    "total": 340915,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005412",
+    "entity": "CenterPoint Energy, Inc.",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77002",
+    "texans": 1062060,
+    "total": 1611625,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005409",
+    "entity": "Eckert Seamans Cherin & Mellott, LLC",
+    "entityType": "Other",
+    "city": "Pittsburgh",
+    "state": "Pennsylvania",
+    "zip": "15219",
+    "texans": 388,
+    "total": 388,
+    "publishedOn": "2026-10-13",
+    "infoTypes": [
+     "Social Security Number Information",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005406",
+    "entity": "Terrell Independent School District",
+    "entityType": "Educational Institution",
+    "city": "Terrell",
+    "state": "Texas",
+    "zip": "75160",
+    "texans": 1672,
+    "total": 1672,
+    "publishedOn": "2026-10-12",
+    "infoTypes": [
+     "Address",
+     "Social Security Number Information",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005408",
+    "entity": "Squire Patton Boggs (US) LLP",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Cleveland",
+    "state": "Ohio",
+    "zip": "44114",
+    "texans": 335,
+    "total": 3824,
+    "publishedOn": "2026-10-12",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005407",
+    "entity": "Austin Independent School District",
+    "entityType": "Educational Institution",
+    "city": "Austin",
+    "state": "Texas",
+    "zip": "78704",
+    "texans": 44652,
+    "total": 44652,
+    "publishedOn": "2026-10-12",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information"
+    ]
+   },
+   {
+    "id": "BR-0005405",
+    "entity": "JM Bozeman Enterprises",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Malvern",
+    "state": "Arkansas",
+    "zip": "72104",
+    "texans": 602,
+    "total": 3211,
+    "publishedOn": "2026-10-12",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005396",
+    "entity": "Fragomen, Del Rey, Bernsen & Loewy, LLP",
+    "entityType": "Other",
+    "city": "Matawan",
+    "state": "New Jersey",
+    "zip": "07747",
+    "texans": 379,
+    "total": 1753,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Medical Information"
+    ]
+   },
+   {
+    "id": "BR-0005404",
+    "entity": "Cleburne Independent School District",
+    "entityType": "Educational Institution",
+    "city": "Cleburne",
+    "state": "Texas",
+    "zip": "76033",
+    "texans": 3187,
+    "total": 3187,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Social Security Number Information"
+    ]
+   },
+   {
+    "id": "BR-0005403",
+    "entity": "Harman Fitness",
+    "entityType": "Other",
+    "city": "Baltimore",
+    "state": "Maryland",
+    "zip": "21231",
+    "texans": 1057,
+    "total": 4714,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005401",
+    "entity": "iRhythm Technologies Inc.",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "San Francisco",
+    "state": "California",
+    "zip": "94103",
+    "texans": 298647,
+    "total": 8179772,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Medical Information",
+     "Health Insurance Information",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005400",
+    "entity": "Capitol Pain Institute",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Austin",
+    "state": "Texas",
+    "zip": "78757",
+    "texans": 666,
+    "total": 666,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005399",
+    "entity": "Edgewood ISD",
+    "entityType": "Educational Institution",
+    "city": "San Antonio",
+    "state": "Texas",
+    "zip": "78237",
+    "texans": 3000,
+    "total": 3000,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005398",
+    "entity": "Flowco Holdings Inc.",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77056",
+    "texans": 1771,
+    "total": 2477,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005397",
+    "entity": "Sheppard, Mullin, Richter & Hampton LLP",
+    "entityType": "Other",
+    "city": "Los Angeles",
+    "state": "California",
+    "zip": "90071",
+    "texans": 2326,
+    "total": 204001,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005395",
+    "entity": "Healthcare Highways, LLC",
+    "entityType": "Other",
+    "city": "Frisco",
+    "state": "Texas",
+    "zip": "70534",
+    "texans": 0,
+    "total": 0,
+    "publishedOn": "2026-10-06",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005385",
+    "entity": "World Acceptance Corporation",
+    "entityType": "Financial Services",
+    "city": "Greenville",
+    "state": "South Carolina",
+    "zip": "29601",
+    "texans": 51073,
+    "total": 232401,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005394",
+    "entity": "Innovative Alternatives, Inc",
+    "entityType": "Nonprofit Organization",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77058",
+    "texans": 1500,
+    "total": 1500,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Health Insurance Information",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005393",
+    "entity": "Lincoln Property Company Commercial LLC",
+    "entityType": "Other",
+    "city": "Dallas",
+    "state": "Texas",
+    "zip": "75225",
+    "texans": 6585,
+    "total": 19300,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005392",
+    "entity": "Greenberg Traurig, LLP (“GT”)",
+    "entityType": "Other",
+    "city": "New York",
+    "state": "New York",
+    "zip": "10017",
+    "texans": 1839,
+    "total": 150000,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005391",
+    "entity": "Walnut Creek Special Utility District",
+    "entityType": "Governmental Entity",
+    "city": "Springtown",
+    "state": "Texas",
+    "zip": "76082",
+    "texans": 900,
+    "total": 900,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005389",
+    "entity": "DriveWealth",
+    "entityType": "Financial Services",
+    "city": "New York",
+    "state": "New York",
+    "zip": "10005",
+    "texans": 2556688,
+    "total": 30000000,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   },
+   {
+    "id": "BR-0005388",
+    "entity": "Midvale Indemnity Company",
+    "entityType": "Insurance Services",
+    "city": "Madison",
+    "state": "Wisconsin",
+    "zip": "53783",
+    "texans": 3416,
+    "total": 38381,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005387",
+    "entity": "7 to 7 Dental & Orthodontics",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "San Antonio",
+    "state": "Texas",
+    "zip": "78213",
+    "texans": 3526,
+    "total": 3526,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005386",
+    "entity": "Pro Holdings, LLC d/b/a ProCamps",
+    "entityType": "Educational Institution",
+    "city": "Cincinatti",
+    "state": "Ohio",
+    "zip": "45242",
+    "texans": 3840,
+    "total": 10608,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005384",
+    "entity": "The Woodlands Arts Council",
+    "entityType": "Nonprofit Organization",
+    "city": "The Woodlands",
+    "state": "Texas",
+    "zip": "77380",
+    "texans": 2250,
+    "total": 2923,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   },
+   {
+    "id": "BR-0005383",
+    "entity": "Goldston Oil Corporation",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77257",
+    "texans": 412,
+    "total": 412,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005382",
+    "entity": "Cerner Corporation",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Kansas City",
+    "state": "Missouri",
+    "zip": "64117",
+    "texans": 2992244,
+    "total": 19929149,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Address",
+     "Social Security Number Information",
+     "Medical Information"
+    ]
+   },
+   {
+    "id": "BR-0005381",
+    "entity": "Upbound Group, Inc.",
+    "entityType": "Other",
+    "city": "Plano",
+    "state": "Texas",
+    "zip": "75024",
+    "texans": 6280,
+    "total": 76327,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005380",
+    "entity": "Poppins Payroll Company",
+    "entityType": "Other",
+    "city": "Boulder",
+    "state": "Colorado",
+    "zip": "80306",
+    "texans": 23796,
+    "total": 246937,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005379",
+    "entity": "City of McMinnville",
+    "entityType": "Governmental Entity",
+    "city": "McMinnville",
+    "state": "Oregon",
+    "zip": "97128",
+    "texans": 263,
+    "total": 122864,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Driver’s License number"
+    ]
+   },
+   {
+    "id": "BR-0005378",
+    "entity": "Little River Memorial Hospital",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Ashdown",
+    "state": "Arkansas",
+    "zip": "71822",
+    "texans": 3242,
+    "total": 47467,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Social Security Number Information",
+     "Medical Information",
+     "Other",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005377",
+    "entity": "PSI Premier Specialties Inc. d/b/a Medical Express PSI",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Austin",
+    "state": "Texas",
+    "zip": "78757",
+    "texans": 2128,
+    "total": 4100,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005374",
+    "entity": "i.e.Smart Systems, LLC",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Spring",
+    "state": "Texas",
+    "zip": "77373",
+    "texans": 897,
+    "total": 914,
+    "publishedOn": "2026-10-02",
+    "infoTypes": [
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005372",
+    "entity": "CAZ Investments LP",
+    "entityType": "Financial Services",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77056",
+    "texans": 3824,
+    "total": 13817,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005371",
+    "entity": "MedImpact Healthcare Systems, Inc.",
+    "entityType": "Insurance Services",
+    "city": "San Diego",
+    "state": "California",
+    "zip": "92131",
+    "texans": 8199,
+    "total": 327082,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005370",
+    "entity": "Saber Healthcare Inc",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Beachwood",
+    "state": "Ohio",
+    "zip": "44122",
+    "texans": 269,
+    "total": 427084,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Government-issued ID number (e.g. passport, state ID card)",
+     "Financial Information (e.g. account number, credit or debit card number)",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005368",
+    "entity": "Ozark Interests, Inc.",
+    "entityType": "Business – Retail or Merchant",
+    "city": "Houston",
+    "state": "Texas",
+    "zip": "77024",
+    "texans": 564,
+    "total": 994,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   },
+   {
+    "id": "BR-0005375",
+    "entity": "PDCM Insurance",
+    "entityType": "Insurance Services",
+    "city": "Waterloo",
+    "state": "Iowa",
+    "zip": "50703",
+    "texans": 1046,
+    "total": 39759,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Medical Information",
+     "Health Insurance Information"
+    ]
+   },
+   {
+    "id": "BR-0005373",
+    "entity": "Texas Mutual Insurance Company",
+    "entityType": "Insurance Services",
+    "city": "Austin",
+    "state": "Texas",
+    "zip": "78723",
+    "texans": 265,
+    "total": 267,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Medical Information",
+     "Health Insurance Information",
+     "Date of Birth"
+    ]
+   },
+   {
+    "id": "BR-0005333",
+    "entity": "Integrated Sleep and Weight Specialists",
+    "entityType": "Healthcare – Medical Provider",
+    "city": "Allen",
+    "state": "Texas",
+    "zip": "75013",
+    "texans": 404,
+    "total": 404,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Other"
+    ]
+   },
+   {
+    "id": "BR-0005376",
+    "entity": "Borger Independent School District",
+    "entityType": "Educational Institution",
+    "city": "Borger",
+    "state": "Texas",
+    "zip": "79007",
+    "texans": 4232,
+    "total": 4261,
+    "publishedOn": "2026-09-29",
+    "infoTypes": [
+     "Name of individual",
+     "Address",
+     "Social Security Number Information",
+     "Driver’s License number",
+     "Financial Information (e.g. account number, credit or debit card number)"
+    ]
+   }
+  ]
+ }
+}

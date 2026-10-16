@@ -1,0 +1,78 @@
+{
+ "version": 1,
+ "feed": "sjofartsverket-navwarn",
+ "fetchedAt": "2026-10-16T19:51:25Z",
+ "data": {
+  "warnings": [
+   {
+    "id": "SWEDISH NAV WARN 174/26",
+    "issuedAt": "2026-10-15T20:04:00Z",
+    "areas": [
+     "Northern Baltic"
+    ],
+    "text": "NORTHERN BALTIC. PORT OF STOCKHOLM\nLIGHT 'LIBERTUS' IS UNLIT.\nPSN 59-19.9N 018-10.6E."
+   },
+   {
+    "id": "SWEDISH NAV WARN 172/26",
+    "issuedAt": "2026-10-12T09:30:00Z",
+    "areas": [
+     "Sea of Bothnia"
+    ],
+    "text": "BAY OF BOTHNIA.GÄVLE.NORRSUNDET...\nTIMBER ADRIFT IN NORRSUNDET....\nTIME FOR OBSERVATION 0916 UTC ON THE 12TH OF OCTOBER.\nCAUTION ADVICED..."
+   },
+   {
+    "id": "BALTIC SEA NAV WARN 030/26",
+    "issuedAt": "2026-10-12T09:12:00Z",
+    "areas": [
+     "Western Baltic",
+     "Southern Baltic",
+     "South-eastern Baltic",
+     "Central Baltic",
+     "Northern Baltic",
+     "Sea of Åland and Archipelago Sea"
+    ],
+    "text": "SOUTHERN, SOUTHEASTERN, CENTRAL AND NORTHERN BALTIC, GULF OF FINLAND, GULF OF RIGA AND SEA OF AALAND.\nGNSS, AIS, RADAR AND DGPS INTERFERENCE OBSERVED IN AREA.\nMARINERS ADVISED TO EXERCISE CAUTION\nAND BE PREPARED FOR NAVIGATION IMPACTS."
+   },
+   {
+    "id": "SWEDISH NAV WARN 166/26",
+    "issuedAt": "2026-10-07T08:00:00Z",
+    "areas": [
+     "Kattegat"
+    ],
+    "text": "KATTEGAT. FALKENBERG HARBOUR ENTRANCE.\nDREDGING IN OPERATION. SPAR BUOYS MIGHT HAVE BEEN MOVED.\nPSN 56-53.0N 012-28.0E\nGREATE CAUTION ADVISED"
+   },
+   {
+    "id": "SWEDISH NAV WARN 165/26",
+    "issuedAt": "2026-10-07T05:21:00Z",
+    "areas": [
+     "Bay of Bothnia"
+    ],
+    "text": "BAY OF BOTHNIA. LULEÅ. LARSGRUNDET. SÖRBRÄNDÖFJÄRDEN.\nANCHOR AND 280 MERTERS CHAIN LOST.\nPSN 65-27.1N 022-30.0E"
+   },
+   {
+    "id": "SWEDISH NAV WARN 159/26",
+    "issuedAt": "2026-10-01T09:29:00Z",
+    "areas": [
+     "Lake Vänern and Trollhätte Canal"
+    ],
+    "text": "LAKE VÄNERN\nTHE LEADING LIGHTS ON DALBOLANDET ARE EXTINGUISHED FOR MAINTENANCE.\nAPPROX. PSN 58-23.6N 012-18.3E."
+   },
+   {
+    "id": "SWEDISH NAV WARN 156/26",
+    "issuedAt": "2026-09-30T00:51:00Z",
+    "areas": [
+     "Kattegat"
+    ],
+    "text": "KATTEGAT. STYRSÖ. DONSÖ\nLIGHT 'DONSÖ SVARTSKÄR' IS UNLIT.\nPSN 57-35.15N 011-43.33E."
+   },
+   {
+    "id": "SWEDISH NAV WARN 151/26",
+    "issuedAt": "2026-09-14T19:08:00Z",
+    "areas": [
+     "Central Baltic"
+    ],
+    "text": "CENTRAL BALTIC. GOTLAND.\nLIGHT 'STORA KARLSÖ' UNLIT.\nPSN 57-17.4N 017-57.5E."
+   }
+  ]
+ }
+}

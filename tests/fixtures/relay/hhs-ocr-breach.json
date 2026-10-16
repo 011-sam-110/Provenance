@@ -1,0 +1,729 @@
+{
+ "version": 1,
+ "feed": "hhs-ocr-breach",
+ "fetchedAt": "2026-10-16T19:51:36Z",
+ "data": {
+  "rows": [
+   {
+    "entity": "Universal Dermatology & Vein Care",
+    "state": "FL",
+    "entityType": "Healthcare Provider",
+    "individuals": 35295,
+    "submittedOn": "2026-09-30",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Indiana University Health, Affiliated Covered Entity",
+    "state": "IN",
+    "entityType": "Healthcare Provider",
+    "individuals": 2080,
+    "submittedOn": "2026-09-29",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Source Care Management, LLC d/b/a NextStep Care",
+    "state": "GA",
+    "entityType": "Healthcare Provider",
+    "individuals": 685,
+    "submittedOn": "2026-09-25",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Paper/Films"
+   },
+   {
+    "entity": "Kostelic and Associates 3PLLC",
+    "state": "NC",
+    "entityType": "Healthcare Provider",
+    "individuals": 535,
+    "submittedOn": "2026-09-25",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Center for bone and Joint Surgery of the Palm Beaches",
+    "state": "FL",
+    "entityType": "Healthcare Provider",
+    "individuals": 5461,
+    "submittedOn": "2026-09-25",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server, Other"
+   },
+   {
+    "entity": "Vascular Associates of South Alabama",
+    "state": "AL",
+    "entityType": "Healthcare Provider",
+    "individuals": 623,
+    "submittedOn": "2026-09-25",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Email"
+   },
+   {
+    "entity": "Woodlawn Hospital",
+    "state": "IN",
+    "entityType": "Healthcare Provider",
+    "individuals": 742,
+    "submittedOn": "2026-09-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "OU Medicine, Inc.",
+    "state": "OK",
+    "entityType": "Healthcare Provider",
+    "individuals": 854,
+    "submittedOn": "2026-09-18",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Electronic Medical Record, Network Server"
+   },
+   {
+    "entity": "Three Oaks Hospice, Incorporated",
+    "state": "TX",
+    "entityType": "Business Associate",
+    "individuals": 36622,
+    "submittedOn": "2026-09-17",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Advanced Radiology Services, P.C.",
+    "state": "MI",
+    "entityType": "Healthcare Provider",
+    "individuals": 826,
+    "submittedOn": "2026-09-16",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server, Other"
+   },
+   {
+    "entity": "AngMar Management Services",
+    "state": "TX",
+    "entityType": "Business Associate",
+    "individuals": 126196,
+    "submittedOn": "2026-09-16",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "WindRose Health Network",
+    "state": "IN",
+    "entityType": "Healthcare Provider",
+    "individuals": 33158,
+    "submittedOn": "2026-09-16",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Bacon County Health Services, Inc.",
+    "state": "GA",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-09-15",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Camden-on-Gauley Medical Center",
+    "state": "WV",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-09-15",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Clover Health",
+    "state": "MN",
+    "entityType": "Health Plan",
+    "individuals": 138677,
+    "submittedOn": "2026-09-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server, Other"
+   },
+   {
+    "entity": "Lakes Region Visiting Nursing Association",
+    "state": "NH",
+    "entityType": "Healthcare Provider",
+    "individuals": 1274,
+    "submittedOn": "2026-09-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Alma Family Services",
+    "state": "CA",
+    "entityType": "Healthcare Provider",
+    "individuals": 2753,
+    "submittedOn": "2026-09-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Vernon & Waldrep OB-Gyn Associates",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 17435,
+    "submittedOn": "2026-09-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Interim HealthCare Inc.",
+    "state": "FL",
+    "entityType": "Healthcare Provider",
+    "individuals": 1283,
+    "submittedOn": "2026-09-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Comprehensive Orthopedics & Musculoskeletal Care, LLC",
+    "state": "CT",
+    "entityType": "Healthcare Provider",
+    "individuals": 21897,
+    "submittedOn": "2026-09-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Persona Dental",
+    "state": "MN",
+    "entityType": "Healthcare Provider",
+    "individuals": 3386,
+    "submittedOn": "2026-09-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Azle Cube Smiles PLLC",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 3280,
+    "submittedOn": "2026-09-09",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Next Level Medical, LLC",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-09-09",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Novocure Inc.",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 1464,
+    "submittedOn": "2026-09-09",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Hamaspik (Choice and Inc.)",
+    "state": "NY",
+    "entityType": "Health Plan",
+    "individuals": 8181,
+    "submittedOn": "2026-09-06",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Life Unlimited, Inc.",
+    "state": "MO",
+    "entityType": "Healthcare Provider",
+    "individuals": 1530,
+    "submittedOn": "2026-09-04",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Provident Behavioral Health",
+    "state": "IL",
+    "entityType": "Healthcare Provider",
+    "individuals": 25086,
+    "submittedOn": "2026-09-04",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "LHC Group, Inc.",
+    "state": "LA",
+    "entityType": "Healthcare Provider",
+    "individuals": 500,
+    "submittedOn": "2026-09-04",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Beaver County Behavioral Health",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-09-04",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "COMHAR, Inc.",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-09-04",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Capital Family Physicians",
+    "state": "NC",
+    "entityType": "Healthcare Provider",
+    "individuals": 2545,
+    "submittedOn": "2026-09-03",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Oculus Pathology",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 20040,
+    "submittedOn": "2026-09-02",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Craneware, Inc.",
+    "state": "FL",
+    "entityType": "Business Associate",
+    "individuals": 501,
+    "submittedOn": "2026-09-02",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "The Foot and Ankle Wellness Center of Western Pennsylvania",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 653,
+    "submittedOn": "2026-08-31",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Electronic Medical Record, Network Server"
+   },
+   {
+    "entity": "Vista Del Mar Child and Family Services",
+    "state": "CA",
+    "entityType": "Healthcare Provider",
+    "individuals": 500,
+    "submittedOn": "2026-08-29",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "White River Junction VA Medical Center",
+    "state": "VT",
+    "entityType": "Healthcare Provider",
+    "individuals": 1408,
+    "submittedOn": "2026-08-28",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Email"
+   },
+   {
+    "entity": "Kim Knobbe",
+    "state": "MO",
+    "entityType": "Business Associate",
+    "individuals": 11927,
+    "submittedOn": "2026-08-27",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Network Server, Other"
+   },
+   {
+    "entity": "Psychiatry of Texas PLLC",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 5902,
+    "submittedOn": "2026-08-27",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "AnMed Health",
+    "state": "SC",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-08-27",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "McDermott Will & Schulte LLP",
+    "state": "IL",
+    "entityType": "Business Associate",
+    "individuals": 5427,
+    "submittedOn": "2026-08-26",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Network Server"
+   },
+   {
+    "entity": "WellDyneRX, LLC",
+    "state": "FL",
+    "entityType": "Healthcare Provider",
+    "individuals": 500,
+    "submittedOn": "2026-08-25",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Shoshone Medical Center",
+    "state": "ID",
+    "entityType": "Healthcare Provider",
+    "individuals": 553,
+    "submittedOn": "2026-08-25",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Advantage Home Health Care",
+    "state": "IN",
+    "entityType": "Healthcare Provider",
+    "individuals": 19851,
+    "submittedOn": "2026-08-25",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Grafton City Hospital, Inc.",
+    "state": "WV",
+    "entityType": "Healthcare Provider",
+    "individuals": 1215,
+    "submittedOn": "2026-08-22",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Hawaii Dental Group, Inc DBA Hawaii Family Dental",
+    "state": "HI",
+    "entityType": "Healthcare Provider",
+    "individuals": 45853,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Baraga County Memorial Hospital",
+    "state": "MI",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Kern Psychiatric Health and Wellness Center, Inc",
+    "state": "CA",
+    "entityType": "Healthcare Provider",
+    "individuals": 51352,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Allergic Disease Associates, P.C. dba The Asthma Center",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 5321,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "North Dakota Department of Health and Human Services, Developmental Disabilities Section",
+    "state": "ND",
+    "entityType": "Healthcare Provider",
+    "individuals": 1750,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Premier Medical Group of the Hudson Valley P.C.",
+    "state": "NY",
+    "entityType": "Healthcare Provider",
+    "individuals": 282075,
+    "submittedOn": "2026-08-21",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Life Bridges, Inc.",
+    "state": "TN",
+    "entityType": "Healthcare Provider",
+    "individuals": 5194,
+    "submittedOn": "2026-08-20",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "United Language Group, LLC",
+    "state": "KS",
+    "entityType": "Business Associate",
+    "individuals": 4649,
+    "submittedOn": "2026-08-19",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Hillcrest Medical Research LLC.",
+    "state": "FL",
+    "entityType": "Healthcare Provider",
+    "individuals": 5785,
+    "submittedOn": "2026-08-17",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "PSI Premier Specialties, Inc. d/b/a Medical Express PSI",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 4100,
+    "submittedOn": "2026-08-16",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Well Child, Inc.",
+    "state": "TN",
+    "entityType": "Healthcare Provider",
+    "individuals": 500,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Integrative Emergency Services, LLC",
+    "state": "TX",
+    "entityType": "Business Associate",
+    "individuals": 2009,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Mountain Rheumatology Professional, LLC",
+    "state": "CO",
+    "entityType": "Healthcare Provider",
+    "individuals": 5378,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Baylor Genetics",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 2810878,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "AdaptHealth, LLC",
+    "state": "PA",
+    "entityType": "Healthcare Provider",
+    "individuals": 4115802,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Gardiner Family Chiropractic, PC",
+    "state": "ME",
+    "entityType": "Healthcare Provider",
+    "individuals": 5000,
+    "submittedOn": "2026-08-14",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "BestCare Treatment Services, Inc.",
+    "state": "IL",
+    "entityType": "Healthcare Provider",
+    "individuals": 4216,
+    "submittedOn": "2026-08-13",
+    "breachType": "Unauthorized Access/Disclosure",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Oakdale Ear Nose & Throat PA d/b/a Minnesota ENT",
+    "state": "MN",
+    "entityType": "Healthcare Provider",
+    "individuals": 99714,
+    "submittedOn": "2026-08-12",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Longview ER Operations, LLC",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-08-11",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Community Health Care, Inc.",
+    "state": "OH",
+    "entityType": "Healthcare Provider",
+    "individuals": 808,
+    "submittedOn": "2026-08-11",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Boston Healthcare for the Homeless Program",
+    "state": "MA",
+    "entityType": "Healthcare Provider",
+    "individuals": 201260,
+    "submittedOn": "2026-08-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Westchester Institute for Human Development, Inc.",
+    "state": "NY",
+    "entityType": "Healthcare Provider",
+    "individuals": 938,
+    "submittedOn": "2026-08-10",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "American Addiction Centers",
+    "state": "TN",
+    "entityType": "Business Associate",
+    "individuals": 327754,
+    "submittedOn": "2026-08-07",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Central Arkansas Pediatrics, P.A.",
+    "state": "AR",
+    "entityType": "Healthcare Provider",
+    "individuals": 1500,
+    "submittedOn": "2026-08-07",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Deseye, PLLC d/b/a Princeton Family Eye Care",
+    "state": "TX",
+    "entityType": "Healthcare Provider",
+    "individuals": 1050,
+    "submittedOn": "2026-08-07",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Indico Data Solutions, Inc.",
+    "state": "MA",
+    "entityType": "Business Associate",
+    "individuals": 4840,
+    "submittedOn": "2026-08-07",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Horizon Eye Care Laser & Eye Surgery Center",
+    "state": "NJ",
+    "entityType": "Healthcare Provider",
+    "individuals": 501,
+    "submittedOn": "2026-08-07",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "NFI North, Inc.",
+    "state": "NH",
+    "entityType": "Healthcare Provider",
+    "individuals": 49540,
+    "submittedOn": "2026-08-05",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "PAMCAH-UA Local 675 Health and Welfare Fund",
+    "state": "HI",
+    "entityType": "Health Plan",
+    "individuals": 8319,
+    "submittedOn": "2026-08-03",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Interim HealthCare of Oklahoma City, Inc.",
+    "state": "OK",
+    "entityType": "Healthcare Provider",
+    "individuals": 500,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email, Network Server"
+   },
+   {
+    "entity": "A-O-M-S, P.L.L.C. d/b/a Arkansas Oral & Maxillofacial Surgeons",
+    "state": "AR",
+    "entityType": "Healthcare Provider",
+    "individuals": 64831,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Manning Regional Healthcare Center",
+    "state": "IA",
+    "entityType": "Healthcare Provider",
+    "individuals": 746,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Aesto, LLC",
+    "state": "AL",
+    "entityType": "Business Associate",
+    "individuals": 9540683,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Network Server"
+   },
+   {
+    "entity": "Monongalia County General Hospital Company",
+    "state": "WV",
+    "entityType": "Healthcare Provider",
+    "individuals": 2173,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Email"
+   },
+   {
+    "entity": "Asheville US Seventy NC Opco LLC d/b/a Swannanoa Valley Health and Rehabilitation",
+    "state": "NC",
+    "entityType": "Healthcare Provider",
+    "individuals": 1045,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Desktop Computer, Network Server"
+   },
+   {
+    "entity": "Asheville Victoria NC Opco LLC d/b/a Elevate Health & Rehabilitation",
+    "state": "NC",
+    "entityType": "Healthcare Provider",
+    "individuals": 1551,
+    "submittedOn": "2026-07-31",
+    "breachType": "Hacking/IT Incident",
+    "location": "Desktop Computer, Network Server"
+   }
+  ]
+ }
+}
