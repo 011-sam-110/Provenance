@@ -73,9 +73,15 @@
  *
  * Re-measured 2026-10-17 on feat/sources-all (origin/main at 4ce2da5, after #290/#291/#292): the
  * ten remaining source groups land together. `npx vitest run`: 5,437 cases across 464 files.
+ *
+ * Re-measured 2026-10-17 on fix/remove-feedless-sources (origin/main at 54a92b6, after #293):
+ * removing cyber-c2, news-coverage and utinform-hu deletes
+ * `tests/unit/signals-news-coverage.test.ts` and the Feodo and Utinform cases, and adds the
+ * retired-id cases. `npx vitest run`: 5,399 cases across 463 files (`find tests/unit -name
+ * *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5437,
-  files: 464,
+  cases: 5399,
+  files: 463,
   measuredAt: "2026-10-17",
 } as const;
