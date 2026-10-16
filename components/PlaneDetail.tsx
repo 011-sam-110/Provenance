@@ -133,6 +133,9 @@ export default function PlaneDetail({ object }: Props) {
   const callsign = (meta.callsign as string | undefined) ?? object.label;
   const country = (meta.country as string | undefined) ?? "—";
   const hex = object.id.startsWith("plane:") ? object.id.slice("plane:".length) : "";
+  // Which receiver network this position came from (lib/sources/adsbfi.ts marks its
+  // own). adsb.fi's terms require a citation and a link, so the Source block follows it.
+  const net = planeNetwork(meta.network);
 
   // Enrich with adsbdb (origin/destination + airframe) server-side. Optional —
   // the dossier shows the live telemetry immediately and grafts this in if/when
@@ -382,13 +385,18 @@ export default function PlaneDetail({ object }: Props) {
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <a
-            href={hex && hex !== "unknown" ? `https://globe.adsb.lol/?icao=${encodeURIComponent(hex)}` : "https://adsb.lol/"}
+            href={hex && hex !== "unknown" ? `${net.globe}${encodeURIComponent(hex)}` : net.home}
             target="_blank"
             rel="noreferrer noopener"
             style={sourceLinkStyle}
           >
-            {hex && hex !== "unknown" ? "Track on adsb.lol" : "adsb.lol"} ↗
+            {hex && hex !== "unknown" ? `Track on ${net.name}` : net.name} ↗
           </a>
+          {net.name === "adsb.fi" && hex && hex !== "unknown" && (
+            <a href={net.home} target="_blank" rel="noreferrer noopener" style={sourceLinkStyle}>
+              adsb.fi ↗
+            </a>
+          )}
           {(route || aircraft) && (
             <a href="https://www.adsbdb.com/" target="_blank" rel="noreferrer noopener" style={sourceLinkStyle}>
               adsbdb ↗
@@ -396,11 +404,18 @@ export default function PlaneDetail({ object }: Props) {
           )}
         </div>
         <div style={{ marginTop: 8, fontSize: 11, color: "var(--tn-text-faint)", lineHeight: 1.5 }}>
-          Live ADS-B position © adsb.lol contributors (ODbL){route || aircraft ? " · route / airframe © adsbdb.com" : ""}
+          Live ADS-B position © {net.credit}{route || aircraft ? " · route / airframe © adsbdb.com" : ""}
         </div>
       </div>
     </div>
   );
+}
+
+/** The receiver network a plane's position came from: adsb.lol unless the row says adsb.fi. */
+function planeNetwork(v: unknown): { name: string; globe: string; home: string; credit: string } {
+  return v === "adsb.fi"
+    ? { name: "adsb.fi", globe: "https://globe.adsb.fi/?icao=", home: "https://adsb.fi/", credit: "adsb.fi (non-commercial use)" }
+    : { name: "adsb.lol", globe: "https://globe.adsb.lol/?icao=", home: "https://adsb.lol/", credit: "adsb.lol contributors (ODbL)" };
 }
 
 const sourceLinkStyle: React.CSSProperties = {

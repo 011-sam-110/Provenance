@@ -77,7 +77,7 @@ import { laneFetch } from "@/lib/http/hostLane";
  * https://api.adsb.lol/api/openapi.json, read 2026-10-16), which allows display with
  * attribution, so the credit names the licence.
  */
-export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol contributors (ODbL)";
+export const ADSB_ATTRIBUTION = "Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use)";
 
 // ---------------------------------------------------------------------------
 // The type lists
@@ -192,6 +192,8 @@ export interface AdsbRow {
   category?: string; // ADS-B emitter category, e.g. "A3"
   lat?: number;
   lon?: number;
+  seen_pos?: number; // seconds since the network last had a position
+  dbFlags?: number; // readsb database flags; bit 1 = military
 }
 
 // Unit conversions, named so the parser reads as physics rather than magic numbers.
@@ -496,7 +498,12 @@ export async function fetchAdsbTypePull(
  * (lib/planes/sample.ts), never a prefix — a prefix is how the globe came to show
  * two dense discs and nothing else.
  */
-export function pullToObjects(result: PullResult, cap: number): WorldObject[] {
+export function pullToObjects(
+  result: PullResult,
+  cap: number,
+  /** Aircraft adsb.fi added in its gap-fill cells (lib/sources/adsbfi.ts), already in `result.objects`. */
+  gapFill?: { added: number; cellsSucceeded: number; cellsPlanned: number },
+): WorldObject[] {
   const hasCap = Number.isFinite(cap) && cap > 0;
   const localCapped = hasCap && result.objects.length > cap;
   const out = localCapped ? sampleSpatially(result.objects, cap) : result.objects.slice();
@@ -527,6 +534,10 @@ export function pullToObjects(result: PullResult, cap: number): WorldObject[] {
       `seen by community ADS-B receivers, from ${result.batchesSucceeded} of ` +
       `${result.batchesPlanned} type requests` +
       (caveats.length ? ` (${caveats.join("; ")})` : "") +
-      " - aircraft without a type code are not requested, so a lower bound, not a global count",
+      " - aircraft without a type code are not requested, so a lower bound, not a global count" +
+      (gapFill && gapFill.added > 0
+        ? `; plus ${gapFill.added} aircraft of any type that only adsb.fi's receivers heard, within ` +
+          `250 nm of ${gapFill.cellsSucceeded} of ${gapFill.cellsPlanned} thinly covered cities`
+        : ""),
   });
 }

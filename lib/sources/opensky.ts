@@ -48,7 +48,16 @@ import {
   withCoverage,
   type SignalCoverage,
 } from "@/lib/signals/coverage";
-import { fetchAdsbTypePull, pullToObjects } from "@/lib/sources/adsb";
+import { fetchAdsbTypePull, pullToObjects, PULL_BUDGET_MS } from "@/lib/sources/adsb";
+import {
+  FAILOVER_CELLS,
+  GAP_CELLS,
+  MIN_FAILOVER_AIRCRAFT,
+  fetchAdsbFiCells,
+  mergeGapFill,
+  shouldFailOver,
+  sweepToObjects,
+} from "@/lib/sources/adsbfi";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -290,7 +299,7 @@ export interface AircraftSnapshot {
    * count without reading this cannot describe it correctly. Undefined only for a
    * snapshot that predates this field or carries no aircraft.
    */
-  source?: "opensky" | "adsb.lol";
+  source?: "opensky" | "adsb.lol" | "adsb.fi";
 }
 
 /** Pure: lift the coverage a capped array carries into a JSON-serializable snapshot. */
@@ -355,25 +364,91 @@ const REVALIDATE_S = 90;
  * revalidate window while reading as "fresh": a general-aviation-only sky of a few
  * hundred aircraft standing in for 3,000. Throwing leaves the previous Data Cache
  * entry in place for the staleness gate to judge — see `decideStaleness`.
+ *
+ * THE ONE EXCEPTION (2026-10-16): when adsb.lol has given this process nothing for
+ * FAILOVER_AFTER_MS, the last good snapshot is close to the staleness gate's ceiling
+ * and the layer is about to go empty. Then an adsb.fi sweep of the busiest hubs is
+ * served instead, with `source: "adsb.fi"` and a coverage rule that says it is
+ * regional (lib/sources/adsbfi.ts). It still throws when that sweep is small.
+ *
+ * Every cycle, adsb.fi's gap-fill cells add the aircraft adsb.lol did not hear over
+ * thinly covered cities; adsb.lol's row wins for any aircraft both heard.
  */
 async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
-  const pull = await fetchAdsbTypePull();
-  if (!pull.mainlineSucceeded) {
-    throw new Error(
-      `adsb.lol mainline batch did not answer (${pull.batchesSucceeded} of ${pull.batchesPlanned} batches); ` +
-        "refusing to cache a snapshot without the airline fleet",
+  const started = Date.now();
+  // adsb.fi's gap-fill cells run beside the adsb.lol request: another host, so they
+  // spend none of adsb.lol's allowance, and they finish inside the same budget.
+  const [pull, gap] = await Promise.all([
+    fetchAdsbTypePull(),
+    fetchAdsbFiCells(GAP_CELLS, { deadline: started + PULL_BUDGET_MS }),
+  ]);
+
+  if (pull.mainlineSucceeded && pull.objects.length) {
+    noteAdsbLolOk(Date.now());
+    const merged = mergeGapFill(pull.objects, gap.objects);
+    const objects = pullToObjects({ ...pull, objects: merged.objects }, MAX_PLANES, {
+      added: merged.added,
+      cellsSucceeded: gap.cellsSucceeded,
+      cellsPlanned: gap.cellsPlanned,
+    });
+    const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+    // One line per revalidation so runtime logs show the pool, the served set and the
+    // cached entry's size against the Data Cache's 2 MB limit.
+    console.info(
+      `adsb.lol snapshot: serving ${objects.length} of ${merged.objects.length} aircraft ` +
+        `from ${pull.batchesSucceeded}/${pull.batchesPlanned} requests, +${merged.added} from adsb.fi ` +
+        `(${gap.cellsSucceeded}/${gap.cellsPlanned} cells), ${JSON.stringify(snapshot).length} bytes`,
     );
+    return snapshot;
   }
-  if (!pull.objects.length) throw new Error("adsb.lol type pull returned zero positioned aircraft");
-  const objects = pullToObjects(pull, MAX_PLANES);
-  const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
-  // One line per revalidation so runtime logs show the pool, the served set and the
-  // cached entry's size against the Data Cache's 2 MB limit.
-  console.info(
-    `adsb.lol snapshot: serving ${objects.length} of ${pull.objects.length} aircraft ` +
-      `from ${pull.batchesSucceeded}/${pull.batchesPlanned} batches, ${JSON.stringify(snapshot).length} bytes`,
+
+  const why = pull.mainlineSucceeded
+    ? "adsb.lol type pull returned zero positioned aircraft"
+    : `adsb.lol did not answer (${pull.batchesSucceeded} of ${pull.batchesPlanned} requests)`;
+  // A blip: keep the last good adsb.lol snapshot, which the staleness gate serves
+  // with its age. Refusing to cache is what keeps it in place.
+  if (!shouldFailOver(adsbLolOkAt(), Date.now())) throw new Error(`${why}; keeping the last good snapshot`);
+
+  // An outage: adsb.lol has not answered for FAILOVER_AFTER_MS. Widen adsb.fi's sweep
+  // to the hubs and serve that, labelled regional.
+  const more = await fetchAdsbFiCells(FAILOVER_CELLS, { deadline: started + FAILOVER_BUDGET_MS });
+  const pool = mergeGapFill(gap.objects, more.objects).objects;
+  const sweep = {
+    objects: pool,
+    cellsPlanned: gap.cellsPlanned + more.cellsPlanned,
+    cellsAttempted: gap.cellsAttempted + more.cellsAttempted,
+    cellsSucceeded: gap.cellsSucceeded + more.cellsSucceeded,
+    answered: [...gap.answered, ...more.answered],
+  };
+  if (pool.length < MIN_FAILOVER_AIRCRAFT) {
+    throw new Error(`${why}, and adsb.fi failover heard only ${pool.length} aircraft`);
+  }
+  const objects = sweepToObjects(sweep, MAX_PLANES);
+  console.warn(
+    `${why}; serving adsb.fi failover: ${objects.length} of ${pool.length} aircraft from ` +
+      `${sweep.cellsSucceeded}/${sweep.cellsPlanned} cells`,
   );
-  return snapshot;
+  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.fi" };
+}
+
+/**
+ * The failover sweep's whole wall clock, gap cells included. Inside the route's
+ * maxDuration of 60 s, with room for the response.
+ */
+const FAILOVER_BUDGET_MS = 45_000;
+
+// When adsb.lol last gave this process a good pull. On globalThis because the planes
+// route is its own bundle; one process serves prod (the box), so this is the
+// deployment's memory. A restart forgets it, so the first failed cycle after one
+// fails over at once even if the Data Cache still holds an adsb.lol snapshot. That
+// costs one cycle of a labelled regional snapshot, not a wrong one.
+const OK_KEY = Symbol.for("provenance.planes.adsbLolOkAt.v1");
+function adsbLolOkAt(): number | null {
+  const v = (globalThis as unknown as Record<symbol, unknown>)[OK_KEY];
+  return typeof v === "number" ? v : null;
+}
+function noteAdsbLolOk(at: number): void {
+  (globalThis as unknown as Record<symbol, unknown>)[OK_KEY] = at;
 }
 
 /** Re-attach the coverage field to the array after a Data Cache (JSON) round trip. */
