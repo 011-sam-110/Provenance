@@ -79,9 +79,13 @@
  * `tests/unit/signals-news-coverage.test.ts` and the Feodo and Utinform cases, and adds the
  * retired-id cases. `npx vitest run`: 5,399 cases across 463 files (`find tests/unit -name
  * *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-18 on fix/instability-acled-attribution (origin/main at 877c243, after
+ * #294): adds `tests/unit/instability-attribution.test.ts` (2 cases). `npx vitest list`: 5,401
+ * cases across 464 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5399,
-  files: 463,
-  measuredAt: "2026-10-17",
+  cases: 5401,
+  files: 464,
+  measuredAt: "2026-10-18",
 } as const;

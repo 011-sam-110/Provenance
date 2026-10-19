@@ -7,6 +7,12 @@ import { useSignalFeatures } from "@/lib/widgets/useSignalFeatures";
 import { instabilityRows } from "@/lib/widgets/instability";
 import { openSignalFeature } from "@/lib/widgets/openSignal";
 import { useNow, formatAge } from "@/lib/shell/useNow";
+import { SIGNAL_COMPOSITE_SOURCES } from "@/lib/signals/sourceLink";
+
+// Read from the same table the dossier's "contributing sources" list uses (lib/signals/sourceLink.ts),
+// instead of a second hand-typed list — a hand-typed copy is what kept saying "ACLED" here after it
+// was removed from the index on 2026-09-05 and the index was rebuilt around UCDP/INFORM/FEWS NET/WGI.
+const INSTABILITY_SOURCE_LABELS = SIGNAL_COMPOSITE_SOURCES.instability.map((s) => s.label).join(" · ");
 
 export default function InstabilityPanel({ docked = false }: { docked?: boolean } = {}) {
   const { features, status, updatedAt } = useSignalFeatures("instability", docked);
@@ -37,7 +43,7 @@ export default function InstabilityPanel({ docked = false }: { docked?: boolean 
         ))}
       </ol>
       {updatedAt != null && (
-        <p className="tn-widget-foot">Updated {formatAge(now - updatedAt)} ago · ACLED · WFP · UNHCR · IODA</p>
+        <p className="tn-widget-foot">Updated {formatAge(now - updatedAt)} ago · {INSTABILITY_SOURCE_LABELS}</p>
       )}
     </aside>
   );
