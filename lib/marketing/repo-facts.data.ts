@@ -83,9 +83,14 @@
  * Re-measured 2026-10-18 on fix/instability-acled-attribution (origin/main at 877c243, after
  * #294): adds `tests/unit/instability-attribution.test.ts` (2 cases). `npx vitest list`: 5,401
  * cases across 464 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-24 on fix/wall-dead-tiles (origin/main at df08595, after #295): adds
+ * `tests/unit/camslot-picture.test.ts` (23 cases) and `tests/unit/camslot-refill.test.ts` (14),
+ * and 16 cases to `camslot-health.test.ts`. `npx vitest run`: 5,454 cases across 466 files
+ * (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5401,
-  files: 464,
-  measuredAt: "2026-10-18",
+  cases: 5454,
+  files: 466,
+  measuredAt: "2026-10-24",
 } as const;

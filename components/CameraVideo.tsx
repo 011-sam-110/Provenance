@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { CameraImage } from "@/components/CameraImage";
 import { clearVideoFatal, markVideoFatal, videoRecentlyFatal } from "@/lib/cameras/videoFatal";
+import { VIDEO_RECHECK_MS, pictureOutcome, readPicture } from "@/lib/console/widgets/camslot.picture";
+import type { StreamOutcome } from "@/lib/console/widgets/camslot.health";
 
 export function CameraVideo(props: {
   id: string; alt: string; attribution: string; license: string; refreshSeconds: number;
@@ -10,8 +12,11 @@ export function CameraVideo(props: {
    *  benched. Passed THROUGH to the still below on the fallback path: that is the
    *  bug this closes — the video path used to report nothing at all, so a dead
    *  stream was re-fetched on every rotation and never benched. The still is what
-   *  says whether the CAMERA is dead, as opposed to just its video. */
-  onOutcome?: (ok: boolean) => void;
+   *  says whether the CAMERA is dead, as opposed to just its video.
+   *
+   *  A playing stream is reported by what its PICTURE shows, not by the fact that it
+   *  plays: see `judgeFrame` below. */
+  onOutcome?: (outcome: StreamOutcome) => void;
   /** True while this view is the hidden prefetch. See the play() effect below. */
   hidden?: boolean;
 }) {
@@ -99,7 +104,48 @@ export function CameraVideo(props: {
   // A stream that reaches `playing` is answering, whatever it did before, so the
   // memo is cleared here rather than left to time out. Frames arriving is the
   // admission fact — `canplay` only says the browser thinks it could start.
-  const onPlaying = () => { clearVideoFatal(id); onOutcome?.(true); };
+  //
+  // WHAT IS REPORTED IS THE PICTURE. A stream that plays its operator's
+  // "unavailable" card, or nothing but black, plays perfectly well, so `playing`
+  // alone used to report it healthy on every visit and the bench never took it out.
+  // The frame on screen is judged instead (camslot.picture.ts): once as playback
+  // starts, then once per VIDEO_RECHECK_MS while it plays, so a camera that drops to
+  // its card mid-dwell is caught too. A frame that cannot be read reports what
+  // `playing` always reported. Nothing here fetches: it reads the <video> already on
+  // screen, whose bytes came through /api/hls.
+  const lastJudgedAt = useRef(0);
+  const judgeFrame = (video: HTMLVideoElement) => {
+    lastJudgedAt.current = Date.now();
+    onOutcome?.(pictureOutcome(readPicture(video)));
+  };
+  const onPlaying = (e: SyntheticEvent<HTMLVideoElement>) => {
+    clearVideoFatal(id);
+    if (onOutcome && !hidden) judgeFrame(e.currentTarget);
+  };
+  const onTimeUpdate = (e: SyntheticEvent<HTMLVideoElement>) => {
+    if (!onOutcome || hidden || Date.now() - lastJudgedAt.current < VIDEO_RECHECK_MS) return;
+    judgeFrame(e.currentTarget);
+  };
+
+  // A NATIVE HLS FAILURE ARRIVES AS AN `error` ON THE ELEMENT, AND NOTHING LISTENED.
+  // hls.js reports a dead stream through its own ERROR event (above); the browser's own
+  // player only through the media element. Chrome now plays HLS itself, as Safari does
+  // (measured 2026-10-24, Chrome 155: canPlayType("application/vnd.apple.mpegurl") is
+  // "maybe"), so on desktop Chrome every tile takes the native branch. That morning 7
+  // of the 14 streams on the downtown Los Angeles wall failed there — six answered 404
+  // ("MEDIA_ELEMENT_ERROR: Format error"), one would not demux — and each one sat on
+  // its poster for good. The poster is the camera's still, and the still of a camera
+  // that is down is its operator's "unavailable" card: that is the card with play and
+  // mute buttons under it. Nothing fell back, nothing was judged, nothing was benched.
+  // A media error on the native branch now counts as a fatal hls.js error does. On the
+  // hls.js branch (a blob: source) the element's errors are hls.js's to handle — it
+  // recovers from some — so they are left to it.
+  const onError = (e: SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (!video.error || video.currentSrc.startsWith("blob:")) return;
+    markVideoFatal(id, Date.now());
+    setFailed(true);
+  };
 
   if (failed) {
     return (
@@ -124,6 +170,8 @@ export function CameraVideo(props: {
         playsInline
         aria-label={alt}
         onPlaying={onPlaying}
+        onTimeUpdate={onTimeUpdate}
+        onError={onError}
         style={{ width: "100%" }}
       />
       <figcaption><AttributionBadge attribution={attribution} license={license} /></figcaption>
