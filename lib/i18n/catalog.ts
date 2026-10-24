@@ -42,6 +42,7 @@ const en = {
   btnMarkets: "Markets — live crypto prices",
   palettePlaceholder: "Search layers, presets, basemaps, regions…",
   emptyWatchlist: "No saved places yet. Compose a view and save it.",
+  langScopeNote: "Translates the interface chrome only — widgets, layers and dossiers stay in English.",
 } as const;
 
 export type StringKey = keyof typeof en;
@@ -67,6 +68,7 @@ const es: Record<StringKey, string> = {
   btnMarkets: "Mercados — precios cripto en vivo",
   palettePlaceholder: "Buscar capas, ajustes, mapas base, regiones…",
   emptyWatchlist: "Aún no hay lugares guardados. Compón una vista y guárdala.",
+  langScopeNote: "Traduce solo el chrome de la interfaz — widgets, capas y dossiers quedan en inglés.",
 };
 
 const fr: Record<StringKey, string> = {
@@ -90,6 +92,7 @@ const fr: Record<StringKey, string> = {
   btnMarkets: "Marchés — prix crypto en direct",
   palettePlaceholder: "Rechercher couches, préréglages, fonds de carte, régions…",
   emptyWatchlist: "Aucun lieu enregistré. Composez une vue et enregistrez-la.",
+  langScopeNote: "Traduit uniquement l'interface — widgets, couches et dossiers restent en anglais.",
 };
 
 /** The full catalog, keyed by language. */

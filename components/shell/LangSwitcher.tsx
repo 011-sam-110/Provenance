@@ -5,12 +5,13 @@
 // so any not-yet-translated key falls back to English (never a raw key in practice).
 
 import { LANGS } from "@/lib/i18n/catalog";
-import { useLang, langStore } from "@/lib/i18n/store";
+import { useLang, useT, langStore } from "@/lib/i18n/store";
 
 export default function LangSwitcher() {
   const lang = useLang();
+  const t = useT();
   return (
-    <div className="tn-lang" role="group" aria-label="Interface language">
+    <div className="tn-lang" role="group" aria-label="Interface language" title={t("langScopeNote")}>
       {LANGS.map((l) => (
         <button
           key={l.code}

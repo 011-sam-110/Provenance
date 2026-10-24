@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LANGS } from "@/lib/i18n/catalog";
-import { useLang, langStore } from "@/lib/i18n/store";
+import { useLang, useT, langStore } from "@/lib/i18n/store";
 import { buildShareUrl } from "@/lib/share/deepLink";
 import { encodeLayout } from "@/lib/console/share";
 import { shellLayoutStore } from "@/lib/console/store";
@@ -62,6 +62,7 @@ function BoardCard({ id, icon, title, blurb, active }: {
 
 export default function DisplayTab() {
   const lang = useLang();
+  const t = useT();
   const activeId = useActivePreset();
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,6 +99,7 @@ export default function DisplayTab() {
     <>
       <section className="tn-settings-sec">
         <h3 className="tn-settings-sec-title">Language</h3>
+        <p className="tn-settings-hint">{t("langScopeNote")}</p>
         <div className="tn-settings-row">
           <span className="tn-settings-label">Interface</span>
           <div className="tn-settings-seg" role="group" aria-label="Interface language">

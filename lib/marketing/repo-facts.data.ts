@@ -88,9 +88,13 @@
  * `tests/unit/camslot-picture.test.ts` (23 cases) and `tests/unit/camslot-refill.test.ts` (14),
  * and 16 cases to `camslot-health.test.ts`. `npx vitest run`: 5,454 cases across 466 files
  * (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-24 on fix/lang-selector-honesty (origin/main at 0c16d36, after #296): adds
+ * `tests/unit/lang-selector-honesty.test.ts` (2 cases). `npx vitest list`: 5,456 cases across
+ * 467 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5454,
-  files: 466,
+  cases: 5456,
+  files: 467,
   measuredAt: "2026-10-24",
 } as const;
