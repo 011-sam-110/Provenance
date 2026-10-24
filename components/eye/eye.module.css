@@ -1,0 +1,349 @@
+/* The God's eye view. Its own dark register, scoped to this page: the console's light
+ * skin does not change. One typeface, Inter through --tn-sans, with tabular figures and
+ * a slashed zero for the readouts.
+ *
+ * CONTRAST. Every label sits on a plate (--eye-plate), never on the bare photograph,
+ * and the inks are measured against that plate over the brightest imagery: --eye-ink
+ * 10.1:1, --eye-ink-2 about 6.8:1, --eye-ink-3 about 4.8:1 (it was 52% in the design
+ * pass and measured 4.0:1, under the 4.5:1 line, so it is 60% here). */
+
+.root,
+.hud,
+.cam,
+.tag {
+  --eye-ink: #eef3f1;
+  --eye-ink-2: rgba(238, 243, 241, 0.76);
+  --eye-ink-3: rgba(238, 243, 241, 0.6);
+  --eye-plate: rgba(6, 10, 12, 0.8);
+  --eye-hair: rgba(238, 243, 241, 0.24);
+  --eye-cam: #e8f1f8;
+  --eye-ship: #2dd4bf;
+  --eye-plane: #fbbf24;
+  --eye-road: #fb7185;
+  --eye-none: #8b97a6;
+  font-family: var(--tn-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #05080a;
+  color: var(--eye-ink);
+  /* The console lifts MapLibre's corner controls over its bottom ticker. There is no
+     ticker here. */
+  --tn-ticker-h: 0px;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--eye-ink-3);
+  font-size: 13px;
+}
+
+/* ── The frame over the scene ──────────────────────────────────────────── */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  color: var(--eye-ink);
+}
+
+.corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid rgba(238, 243, 241, 0.6);
+}
+.corner[data-c="tl"] { top: 10px; left: 10px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.corner[data-c="tr"] { top: 10px; right: 10px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.corner[data-c="bl"] { bottom: 10px; left: 10px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.corner[data-c="br"] { bottom: 10px; right: 10px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+/* ── Top band: the place, the clock, the controls ───────────────────────── */
+
+.top {
+  position: absolute;
+  top: 22px;
+  left: 26px;
+  right: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.placeBlock {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.place {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+}
+
+.sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--eye-ink-2);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.sep {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin: 0 9px;
+  background: var(--eye-hair);
+  vertical-align: middle;
+}
+
+.topRight {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  flex: none;
+}
+
+.clockBlock {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.clock {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.utc {
+  font-size: 11px;
+  color: var(--eye-ink-3);
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--eye-hair);
+  border-radius: 4px;
+  background: var(--eye-plate);
+  color: var(--eye-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover {
+  border-color: rgba(238, 243, 241, 0.5);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+.btn[aria-pressed="true"] {
+  background: var(--eye-ink);
+  color: #0b1114;
+}
+
+/* ── Ledger: what the view shows, and who measured it ──────────────────── */
+
+.ledger {
+  position: absolute;
+  left: 26px;
+  bottom: 44px;
+  display: grid;
+  gap: 5px;
+  font-size: 12.5px;
+  max-width: min(620px, calc(100% - 52px));
+}
+
+.ledger p {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.ledger p > i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateY(-1px);
+}
+.ledger p[data-k="cam"] > i { background: var(--eye-cam); }
+.ledger p[data-k="ship"] > i { background: var(--eye-ship); }
+.ledger p[data-k="plane"] > i { background: var(--eye-plane); }
+.ledger p[data-k="road"] > i { background: var(--eye-road); }
+.ledger p[data-k="speed"] > i { background: transparent; border: 1.5px solid var(--eye-none); }
+.ledger p[data-note] { color: var(--eye-ink-2); }
+
+.ledger b {
+  font-weight: 600;
+}
+
+.ledger small {
+  font-size: inherit;
+  color: var(--eye-ink-3);
+  margin-left: 8px;
+}
+
+.short {
+  display: none;
+}
+
+.fresh {
+  color: var(--eye-ink-3);
+  font-size: 11.5px;
+  padding-top: 3px;
+}
+
+/* ── Bottom band ───────────────────────────────────────────────────────── */
+
+.bottom {
+  position: absolute;
+  left: 26px;
+  right: 56px;
+  bottom: 18px;
+  display: flex;
+  font-size: 11.5px;
+  color: var(--eye-ink-2);
+}
+
+.coords {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.credits {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  color: var(--eye-ink-3);
+}
+
+.credits a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+.credits a:hover,
+.credits a:focus-visible {
+  color: var(--eye-ink);
+  text-decoration: underline;
+}
+
+/* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
+
+@media (max-aspect-ratio: 4/5) {
+  .top {
+    top: 16px;
+    left: 18px;
+    right: 18px;
+  }
+  .place {
+    font-size: 22px;
+  }
+  .sub {
+    font-size: 11px;
+  }
+  .clock {
+    font-size: 17px;
+  }
+  .btn {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+  .long {
+    display: none !important;
+  }
+  .short {
+    display: block;
+  }
+  .ledger {
+    top: 80px;
+    bottom: auto;
+    left: 18px;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    column-gap: 22px;
+    row-gap: 0;
+  }
+  .ledger p {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: "dot count" "label label";
+    justify-content: start;
+    column-gap: 6px;
+  }
+  .ledger p > i {
+    grid-area: dot;
+    align-self: center;
+    transform: none;
+  }
+  .ledger p > b {
+    grid-area: count;
+    font-size: 16px;
+    line-height: 1.1;
+  }
+  .ledger p > .short {
+    grid-area: label;
+    font-size: 10.5px;
+    color: var(--eye-ink-2);
+  }
+  /* A zero and a stated absence are shown on wide screens only: the phone has room
+     for what is there. The absence still has its line in the bottom band. */
+  .ledger p[data-zero],
+  .ledger p[data-note] {
+    display: none;
+  }
+  .bottom {
+    left: 18px;
+    right: 48px;
+    bottom: 14px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10.5px;
+  }
+  .bottom > .short {
+    color: var(--eye-ink-3);
+  }
+  .credits {
+    gap: 9px;
+  }
+}

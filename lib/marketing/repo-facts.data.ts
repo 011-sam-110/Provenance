@@ -92,9 +92,13 @@
  * Re-measured 2026-10-24 on fix/lang-selector-honesty (origin/main at 0c16d36, after #296): adds
  * `tests/unit/lang-selector-honesty.test.ts` (2 cases). `npx vitest list`: 5,456 cases across
  * 467 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-25 on feat/gods-eye (origin/main at bdd0f50, after #297), M1: the God's
+ * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
+ * 5,489 cases across 471 files.
  */
 export const UNIT_TESTS = {
-  cases: 5456,
-  files: 467,
-  measuredAt: "2026-10-24",
+  cases: 5489,
+  files: 471,
+  measuredAt: "2026-10-25",
 } as const;
