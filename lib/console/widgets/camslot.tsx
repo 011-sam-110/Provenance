@@ -26,7 +26,16 @@ import { camslotPrefs } from "@/lib/console/widgets/camslot.prefs";
 import CamslotPicker from "@/lib/console/widgets/camslot.picker";
 import CamslotDetail from "@/lib/console/widgets/camslot.detail";
 import { useHistoryRecorder } from "@/lib/cameras/history";
-import { streamHealth, useStreamHealth, liveStreams, benchedNote } from "@/lib/console/widgets/camslot.health";
+import {
+  streamHealth,
+  useStreamHealth,
+  useBenchClock,
+  isBenched,
+  benchedNote,
+  type StreamOutcome,
+} from "@/lib/console/widgets/camslot.health";
+import { pictureOutcome, readPicture } from "@/lib/console/widgets/camslot.picture";
+import { refillWall, refillNote, type TileView, type WallTile } from "@/lib/console/widgets/camslot.refill";
 import { pickStore } from "@/lib/console/widgets/camslot.pick";
 import { armPicking } from "@/lib/console/widgets/camslot.layers";
 import { shellLayoutStore } from "@/lib/console/store";
@@ -73,22 +82,11 @@ const WEBCAM_REFRESH_SECONDS = 600;
  *  for a frame faster than any operator actually publishes one. */
 const FALLBACK_REFRESH_SECONDS = 300;
 
-/** A clock that ticks once a minute. The bench has a five-minute retry window, so
- *  re-evaluating it every second would re-render every slot on the board sixty times
- *  more often than the answer can change. */
-function useNowCoarse(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-  return now;
-}
-
 /** The conditions overlay's clock ticks every 30s — fine-grained enough that "14:32"
  *  never sits stale for a whole minute, coarse enough that it costs nothing next to
- *  the once-a-minute bench clock above. One interval in the parent, not one per
- *  mounted overlay — see camslot.overlay.tsx's header note on why `now` is a prop. */
+ *  the once-a-minute bench clock (camslot.health.ts). One interval in the parent, not
+ *  one per mounted overlay — see camslot.overlay.tsx's header note on why `now` is a
+ *  prop. */
 function useNow30s(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -106,9 +104,55 @@ function useCamslotPaused(): boolean {
   );
 }
 
+/** Two tile lists hold the same streams in the same order. */
+function sameTiles(a: readonly WallTile[] | null, b: readonly WallTile[] | null): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  return a.every(
+    (t, i) =>
+      t.id === b[i].id &&
+      t.streams.length === b[i].streams.length &&
+      t.streams.every((s, j) => streamKey(s) === streamKey(b[i].streams[j])),
+  );
+}
+
+let wallCache: { widgets: unknown; watch: unknown; tiles: readonly WallTile[] | null } = {
+  widgets: undefined,
+  watch: undefined,
+  tiles: null,
+};
+
+/**
+ * Every camera tile on the open board with its own streams, or null when the open
+ * board is not a wall built from a drawn area — the only board camslot.refill.ts
+ * lends between (its header says why).
+ *
+ * CACHED, because `useSyncExternalStore` re-renders forever on a snapshot that is a
+ * fresh object every call, and because a drag commits on every cell crossing: those
+ * commits move rects, not streams, so the tiles keep the same identity through them
+ * and no tile re-plans its rotation mid-drag.
+ */
+function wallTilesSnapshot(): readonly WallTile[] | null {
+  const l = shellLayoutStore.get();
+  if (l.widgets === wallCache.widgets && l.watch === wallCache.watch) return wallCache.tiles;
+  const tiles =
+    l.mode === "wall" && l.watch
+      ? l.widgets
+          .filter((w) => w.type === "camslot")
+          .map((w) => ({ id: w.id, streams: sanitizeCamslotConfig(w.config).streams }))
+      : null;
+  wallCache = { widgets: l.widgets, watch: l.watch, tiles: sameTiles(tiles, wallCache.tiles) ? wallCache.tiles : tiles };
+  return wallCache.tiles;
+}
+
+function useWallTiles(): readonly WallTile[] | null {
+  return useSyncExternalStore(shellLayoutStore.subscribe, wallTilesSnapshot, () => null);
+}
+
 /** The webcam analogue of CameraImage. /api/webcam-image re-resolves Windy's
- *  short-lived token server-side, so the client only ever holds an id. */
-function WebcamImage({ id, alt, onOutcome }: { id: string; alt: string; onOutcome: (ok: boolean) => void }) {
+ *  short-lived token server-side, so the client only ever holds an id. Its picture
+ *  is judged on load exactly as CameraImage's is (camslot.picture.ts). */
+function WebcamImage({ id, alt, onOutcome }: { id: string; alt: string; onOutcome: (outcome: StreamOutcome) => void }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [id]);
   if (failed) return <div className="tn-cs-dead">This webcam is not answering.</div>;
@@ -117,7 +161,7 @@ function WebcamImage({ id, alt, onOutcome }: { id: string; alt: string; onOutcom
     <img
       src={`/api/webcam-image?id=${encodeURIComponent(id)}`}
       alt={alt}
-      onLoad={() => onOutcome(true)}
+      onLoad={(e) => onOutcome(pictureOutcome(readPicture(e.currentTarget)))}
       onError={() => {
         setFailed(true);
         onOutcome(false);
@@ -173,7 +217,7 @@ function StreamView({
         <WebcamImage
           id={stream.id}
           alt={label}
-          onOutcome={(ok) => streamHealth.report(stream, ok)}
+          onOutcome={(outcome) => streamHealth.report(stream, outcome)}
         />
       ) : isLive ? (
         <CameraVideo
@@ -183,7 +227,7 @@ function StreamView({
           license=""
           refreshSeconds={refreshSeconds}
           hidden={hidden}
-          onOutcome={(ok) => streamHealth.report(stream, ok)}
+          onOutcome={(outcome) => streamHealth.report(stream, outcome)}
         />
       ) : (
         <CameraImage
@@ -192,7 +236,7 @@ function StreamView({
           attribution=""
           license=""
           refreshSeconds={refreshSeconds}
-          onOutcome={(ok) => streamHealth.report(stream, ok)}
+          onOutcome={(outcome) => streamHealth.report(stream, outcome)}
         />
       )}
     </div>
@@ -210,11 +254,26 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
   // fetched again for five minutes. Without this a dead id is re-requested on every
   // rotation pass — QA measured ~19 hits on one 404 in under two minutes, against
   // free public feeds we have no contract with. `health` is an observation about
-  // now, deliberately not persisted and not in config.
+  // now, deliberately not persisted and not in config. A picture that is only its
+  // operator's "unavailable" card, or only black, counts as a failure too
+  // (camslot.picture.ts).
   const health = useStreamHealth();
-  const benchTick = useNowCoarse();
-  const streams = useMemo(() => liveStreams(all, health, benchTick), [all, health, benchTick]);
-  const unavailable = useMemo(() => benchedNote(all, health, benchTick), [all, health, benchTick]);
+  const benchTick = useBenchClock();
+  // On a wall built from a drawn area, a tile whose own cameras are all benched
+  // borrows one from the tile with the most working (camslot.refill.ts). Derived on
+  // every render and written nowhere, so the board is never edited by it and a
+  // camera coming off the bench goes straight back to its own tile.
+  const wallTiles = useWallTiles();
+  const view: TileView = useMemo(() => {
+    const works = (s: StreamRef) => !isBenched(health[streamKey(s)], benchTick);
+    const planned = wallTiles ? refillWall(wallTiles, works).get(instanceId) : undefined;
+    return planned ?? { streams: all.filter(works), borrowed: null, lent: 0 };
+  }, [wallTiles, health, benchTick, instanceId, all]);
+  const streams = view.streams;
+  const unavailable = useMemo(() => {
+    const parts = [benchedNote(all, health, benchTick, { showingOther: view.borrowed !== null }), refillNote(view)];
+    return parts.filter((p): p is string => p !== null).join(" ") || null;
+  }, [all, health, benchTick, view]);
 
   const [i, setI] = useState(0);
   const [hovering, setHovering] = useState(false);
@@ -521,10 +580,19 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         {/* Mounted directly on the stage, never inside .tn-cs-view — that class
             carries `style={{display:"none"}}` on the hidden prefetch view, and an
             overlay nested inside it would vanish with it. Keyed by streamKey so a
-            rotation never shows the previous camera's numbers for a frame. */}
+            rotation never shows the previous camera's numbers for a frame.
+
+            PREFIXED, BECAUSE IT IS A SIBLING OF THE STREAM VIEWS. Keyed by the bare
+            streamKey it carried the SAME key as the current StreamView above, and
+            React's answer to two siblings with one key is undefined. Measured on the
+            dev server, 2026-10-24: "Encountered two children with the same key" for
+            every tile, and nine tiles holding 23 <video> elements where the design
+            allows 18 — views React had lost track of, left in the stage, several of
+            them visible and stacked over the current one. A tile could show a camera
+            it had rotated away from, card and all, under another camera's name. */}
         {conditionsOn(cfg) && claim && (
           <CamslotConditions
-            key={streamKey(current)}
+            key={`conditions:${streamKey(current)}`}
             claim={claim}
             weather={weatherChipForCurrent}
             place={{ clock: clockForCurrent, offset: offsetForCurrent }}
@@ -615,10 +683,14 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
         </>
       )}
 
+      {/* The picker edits the tile's OWN list, so it is handed the config, not what is
+          on screen. Handed `streams` it would write back the borrowed camera as this
+          tile's own, and drop every benched one from the config the moment anything
+          was added — a five-minute verdict made permanent by an unrelated click. */}
       {picking && (
         <CamslotPicker
           instanceId={instanceId}
-          streams={streams}
+          streams={all}
           onClose={() => setPicking(false)}
         />
       )}

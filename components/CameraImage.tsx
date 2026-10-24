@@ -2,13 +2,20 @@
 import { useEffect, useState } from "react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { frameBucket } from "@/lib/cameras/freshness";
+import { pictureOutcome, readPicture } from "@/lib/console/widgets/camslot.picture";
+import type { StreamOutcome } from "@/lib/console/widgets/camslot.health";
 
 export function CameraImage(props: {
   id: string; alt: string; attribution: string; license: string; refreshSeconds: number;
-  /** Optional: told whether each frame loaded, so a caller that rotates through many
+  /** Optional: told how each frame went, so a caller that rotates through many
    *  cameras can stop re-fetching one that has stopped answering. Optional because
-   *  /camera/[id] and the existing camera wall neither need nor want the bookkeeping. */
-  onOutcome?: (ok: boolean) => void;
+   *  /camera/[id] and the existing camera wall neither need nor want the bookkeeping.
+   *
+   *  A frame that LOADED is also looked at (camslot.picture.ts): an operator's
+   *  "unavailable" card or a black frame is reported as what it is rather than as a
+   *  success, because it is a 200 the fetch alone cannot tell from a picture. Only a
+   *  caller that asked for outcomes pays for the look. */
+  onOutcome?: (outcome: StreamOutcome) => void;
 }) {
   const { id, alt, attribution, license, refreshSeconds, onOutcome } = props;
   // The buster is derived from the CLOCK, not from how long this component has been
@@ -46,7 +53,7 @@ export function CameraImage(props: {
       <img
         src={`/api/proxy?id=${encodeURIComponent(id)}&_=${bucket}`}
         alt={alt}
-        onLoad={() => onOutcome?.(true)}
+        onLoad={(e) => onOutcome?.(pictureOutcome(readPicture(e.currentTarget)))}
         onError={() => {
           setFailed(true);
           onOutcome?.(false);
