@@ -13,6 +13,10 @@
 // inspectorStore saves only after its hydrate), and neither runs on this page. Every
 // way in is a full page load (a plain <a>, never a client-side route), so this page
 // always starts from a fresh module state, and leaves the same way.
+//
+// LINK FLAGS, read with the link:
+//   overlay=0   the scene alone: no cards, tags or frame. The clean plate for a reel,
+//               and the bare arm of the frame-time measurement.
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +27,7 @@ import { consoleHref, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
 import { EYE_LIGHT, eyePaintOps } from "@/lib/eye/look";
 import { fmtLat, fmtLon } from "@/lib/eye/wording";
 import EyeHud from "./EyeHud";
+import EyeOverlay, { type OverlayReport } from "./EyeOverlay";
 import styles from "./eye.module.css";
 
 const WorldMap = dynamic(() => import("@/components/WorldMap"), {
@@ -45,15 +50,23 @@ function applyLook(map: maplibregl.Map): void {
   map.setLight(EYE_LIGHT);
 }
 
-function titleFor(target: EyeTarget): { title: string; area?: string } {
+function titleFor(target: EyeTarget, cameraName?: string): { title: string; area?: string } {
   if (target.kind === "place") return { title: target.place.name, area: target.place.area };
-  if (target.kind === "camera") return { title: "Road camera" };
+  if (target.kind === "camera") return { title: cameraName ?? "Road camera", area: cameraName ? "Road camera" : undefined };
   return { title: `${fmtLat(target.view.lat)}, ${fmtLon(target.view.lon)}` };
+}
+
+interface Flags {
+  overlay: boolean;
 }
 
 export default function EyeApp() {
   const [target, setTarget] = useState<EyeTarget | null>(null);
+  const [portrait, setPortrait] = useState(false);
+  const [flags, setFlags] = useState<Flags>({ overlay: true });
   const [map, setMap] = useState<maplibregl.Map | null>(null);
+  const [styleEpoch, setStyleEpoch] = useState(0);
+  const [report, setReport] = useState<OverlayReport>({ rows: [], ready: false });
   const mapRef = useRef<maplibregl.Map | null>(null);
 
   useEffect(() => {
@@ -62,8 +75,11 @@ export default function EyeApp() {
     mapViewStore.setTerrain(false);
     mapViewStore.setBuildings(true);
     for (const k of CONSOLE_LAYERS) layersStore.set(k, false);
-    const portrait = window.matchMedia(PORTRAIT_QUERY).matches;
-    setTarget(parseEyeLink(new URLSearchParams(window.location.search), portrait));
+    const params = new URLSearchParams(window.location.search);
+    const tall = window.matchMedia(PORTRAIT_QUERY).matches;
+    setPortrait(tall);
+    setFlags({ overlay: params.get("overlay") !== "0" });
+    setTarget(parseEyeLink(params, tall));
   }, []);
 
   // The console's right-click "Add pin here" menu belongs to the console. Caught on
@@ -84,6 +100,7 @@ export default function EyeApp() {
     applyLook(m);
     mapRef.current = m;
     setMap(m);
+    setStyleEpoch((n) => n + 1);
   }, []);
 
   const openAt = useMemo(
@@ -105,18 +122,23 @@ export default function EyeApp() {
     return consoleHref({ lat: c.lat, lon: c.lng, zoom: m.getZoom() });
   }, [target]);
 
-  const words = target ? titleFor(target) : null;
+  const words = target ? titleFor(target, report.cameraName) : null;
+  // For scripts and tests: the scene is drawn and, with the overlay on, placed.
+  const state = map && (!flags.overlay || report.ready) ? "ready" : "loading";
 
   return (
-    <main ref={rootRef} className={styles.root}>
+    <main ref={rootRef} className={styles.root} data-eye-state={state}>
       <div className={styles.map}>{openAt && <WorldMap openAt={openAt} onStyleReady={onStyleReady} />}</div>
-      {target && words && (
+      {target && map && flags.overlay && (
+        <EyeOverlay map={map} styleEpoch={styleEpoch} target={target} portrait={portrait} onReport={setReport} />
+      )}
+      {target && words && flags.overlay && (
         <EyeHud
           map={map}
           start={target.view}
           title={words.title}
           area={words.area}
-          rows={[]}
+          rows={report.rows}
           getBackHref={getBackHref}
           record={false}
         />

@@ -268,6 +268,120 @@
   text-decoration: underline;
 }
 
+/* ── Camera card, standing on its camera's real spot ───────────────────── */
+
+/* Markers move every frame while the view turns. Their own compositor layer means a
+   move is a transform, not a repaint of the card, its picture and its shadow. */
+.cam,
+.tag {
+  will-change: transform;
+}
+
+.cam {
+  --w: 172px;
+  --stalk: 52px;
+  width: var(--w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.cam:focus-visible .camPlate {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+
+.camPlate {
+  width: 100%;
+  background: var(--eye-plate);
+  border: 1px solid rgba(232, 241, 248, 0.42);
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+}
+.cam:hover .camPlate {
+  border-color: rgba(232, 241, 248, 0.8);
+}
+
+/* The operator's own picture shape: TfL's stills and clips are 352 x 288. */
+.camImg {
+  position: relative;
+  aspect-ratio: 352 / 288;
+  background: #0b1114;
+}
+
+.camImg img,
+.camImg video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A stream that has not played yet waits, invisible, behind the still. */
+.camImg .pending {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+/* Older than three of its own cycles: the picture dims, and its age says why. */
+.cam[data-stale] .camImg > :not(.pending) {
+  opacity: 0.55;
+}
+
+.camText {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px 7px;
+  min-width: 0;
+}
+
+.camText b {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eye-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camText span {
+  font-size: 10.5px;
+  color: var(--eye-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camText em {
+  font-style: normal;
+}
+
+.kind {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 9.5px;
+  color: #0b1114;
+  background: var(--eye-cam);
+  border-radius: 3px;
+  padding: 0 4px 1px;
+  margin-right: 5px;
+}
+.kind:empty {
+  display: none;
+}
+.cam[data-media="stream"] .kind {
+  background: #4ade80;
+}
+
+.stalk {
+  width: 1px;
+  height: var(--stalk);
+  background: linear-gradient(to bottom, rgba(232, 241, 248, 0.9), rgba(232, 241, 248, 0.35));
+}
+
 /* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
 
 @media (max-aspect-ratio: 4/5) {
@@ -288,6 +402,13 @@
   .btn {
     min-height: 44px;
     padding: 0 14px;
+  }
+  /* The buttons leave the header on a phone: it is full with the place and the clock.
+     They sit above the bottom band instead, at thumb height. */
+  .controls {
+    position: fixed;
+    right: 18px;
+    bottom: 58px;
   }
   .long {
     display: none !important;
@@ -343,7 +464,28 @@
   .bottom > .short {
     color: var(--eye-ink-3);
   }
+  .coords {
+    flex-wrap: wrap;
+    row-gap: 3px;
+    white-space: nowrap;
+  }
   .credits {
-    gap: 9px;
+    gap: 12px;
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  .camText b {
+    font-size: 10.5px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.2;
+  }
+  .camText span {
+    font-size: 9.5px;
+  }
+  .kind {
+    font-size: 8.5px;
   }
 }
