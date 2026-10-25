@@ -14,7 +14,7 @@ import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
 import { DIGITRAFFIC_CREDIT } from "@/lib/signals/aisDigitraffic";
 import { BARENTSWATCH_CREDIT } from "@/lib/signals/aisBarentswatch";
 import { ADSB_ATTRIBUTION } from "@/lib/sources/adsb";
-import type { LedgerRow } from "@/lib/eye/wording";
+import { ofNearby, type LedgerRow } from "@/lib/eye/wording";
 
 /** One /api/signals/ais feature, as the view reads it. */
 export interface AisFeatureLike {
@@ -167,14 +167,17 @@ export function vesselCredits(vessels: readonly Pick<Vessel, "source">[]): strin
   return out;
 }
 
-export function vesselLedgerRow(vessels: readonly Vessel[]): LedgerRow {
-  const moving = vessels.filter((v) => v.moving).length;
+/** The vessel row: vessels tagged on screen, of how many nearby, and how many of those move. */
+export function vesselLedgerRow(inView: readonly Vessel[], nearby: number): LedgerRow {
+  const moving = inView.filter((v) => v.moving).length;
+  const n = inView.length;
+  const parts = [...ofNearby(n, nearby), ...(n > 0 ? [`${moving} moving`] : []), "AIS heard in the last 20 min"];
   return {
     kind: "ship",
-    count: vessels.length,
-    label: vessels.length === 1 ? "vessel" : "vessels",
-    detail: `${moving} moving · AIS heard in the last 20 min`,
-    short: vessels.length === 1 ? "vessel" : "vessels",
+    count: n,
+    label: n === 1 ? "vessel" : "vessels",
+    detail: parts.join(" · "),
+    short: n === 1 ? "vessel" : "vessels",
   };
 }
 
@@ -186,8 +189,8 @@ export const AIRCRAFT_CREDIT = ADSB_ATTRIBUTION;
  * keeps 3,000 of what adsb.lol hears, spread by area), so "0 aircraft" here can mean
  * "none in the sample", never "the sky is empty". And how old the positions are.
  */
-export function aircraftLedgerRow(n: number, opts: { sampled: boolean; ageMs: number | null }): LedgerRow {
-  const detail = ["adsb.lol (ODbL)"];
+export function aircraftLedgerRow(n: number, nearby: number, opts: { sampled: boolean; ageMs: number | null }): LedgerRow {
+  const detail = [...ofNearby(n, nearby), "adsb.lol (ODbL)"];
   if (opts.sampled) detail.push("from a worldwide sample, not every aircraft");
   if (opts.ageMs != null && opts.ageMs >= 120_000) detail.push(`positions ${Math.round(opts.ageMs / 60_000)} min old`);
   return {

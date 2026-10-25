@@ -44,9 +44,12 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-10-16"`);
-    expect(copy).toContain("16 October 2026");
-    // The date before this one. Never a bare "5 October 2026": it is inside "15 October 2026".
+    expect(copy).toContain(`dateTime="2026-10-25"`);
+    expect(copy).toContain("25 October 2026");
+    // The date before this one, in both shapes it was printed in.
+    expect(copy).not.toContain(`dateTime="2026-10-16"`);
+    expect(copy).not.toContain("deployed on 16 October 2026");
+    // Never a bare "5 October 2026": it is inside "15 October 2026" and "25 October 2026".
     expect(copy).not.toContain(`dateTime="2026-10-15"`);
     expect(copy).not.toContain("deployed on 15 October 2026");
     expect(copy).not.toContain(`dateTime="2026-10-05"`);

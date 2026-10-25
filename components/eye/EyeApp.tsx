@@ -140,6 +140,7 @@ export default function EyeApp() {
           area={words.area}
           rows={report.rows}
           refreshedAt={report.refreshedAt}
+          phoneNote={report.phoneNote}
           getBackHref={getBackHref}
           record={false}
         />

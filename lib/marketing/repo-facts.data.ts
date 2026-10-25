@@ -97,10 +97,11 @@
  * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
  * 5,489 cases across 471 files. M2 adds `eye-cameras`, `eye-declutter` and `proxy-clip`: 5,514
  * cases across 474 files. M3 adds `eye-traffic` and `signals-ais-static`: 5,538 cases across
- * 476 files.
+ * 476 files. M4 adds `eye-streets` (11 cases) and one route, which `route-export-contract`
+ * checks as one more case: 5,550 cases across 477 files.
  */
 export const UNIT_TESTS = {
-  cases: 5538,
-  files: 476,
+  cases: 5550,
+  files: 477,
   measuredAt: "2026-10-25",
 } as const;

@@ -109,6 +109,8 @@ describe("the ledger row", () => {
       short: "road cameras",
     });
     expect(cameraLedgerRow(1, near).label).toBe("road camera");
+    // Every camera nearby has its card up: no "of 3 nearby".
+    expect(cameraLedgerRow(3, near).detail).toBe("Powered by TfL Open Data · Other operator");
     expect(cameraCredits([cam(), cam(), cam({ attribution: undefined })])).toEqual(["Powered by TfL Open Data"]);
   });
 });

@@ -37,6 +37,15 @@ export function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
+/**
+ * "of 24 nearby", or nothing when every one nearby is already counted. A ledger count
+ * is what carries words on screen (a card, a tag), so a reader can check it by eye;
+ * this says how many more the view fetched around it.
+ */
+export function ofNearby(count: number, nearby: number): string[] {
+  return nearby > count ? [`of ${nearby} nearby`] : [];
+}
+
 /** What one ledger row counts. Each kind has its own colour in the view. */
 export type LedgerKind = "cam" | "ship" | "plane" | "road" | "speed";
 

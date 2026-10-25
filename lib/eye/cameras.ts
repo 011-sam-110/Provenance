@@ -3,7 +3,7 @@
 // the DOM. Pinned by tests/unit/eye-cameras.test.ts, which is where "a still is never
 // labelled live" is held.
 
-import type { LedgerRow } from "@/lib/eye/wording";
+import { ofNearby, type LedgerRow } from "@/lib/eye/wording";
 
 /** One row of /api/near, as the view reads it. */
 export interface NearCamera {
@@ -109,7 +109,7 @@ export function cameraLedgerRow(shown: number, near: readonly NearCamera[]): Led
     kind: "cam",
     count: shown,
     label: noun,
-    detail: [`of ${available.length} nearby`, ...credits].join(" · "),
+    detail: [...ofNearby(shown, available.length), ...credits].join(" · "),
     short: noun,
   };
 }

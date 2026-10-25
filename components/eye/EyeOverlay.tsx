@@ -48,6 +48,18 @@ import {
   type PlaneLike,
   type Vessel,
 } from "@/lib/eye/traffic";
+import {
+  STREETS_EVERY_MS,
+  TFL_CREDIT,
+  inLondon,
+  severityWeight,
+  speedLedgerRow,
+  speedPhoneNote,
+  streetTag,
+  streetsDownRow,
+  streetsLedgerRow,
+  type StreetDisruption,
+} from "@/lib/eye/streets";
 import type { LedgerRow } from "@/lib/eye/wording";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { Tag, tagSize } from "./tag";
@@ -60,22 +72,32 @@ export interface OverlayReport {
   cameraName?: string;
   /** When the vessels or the aircraft last arrived, for the HUD's "refreshed" line. */
   refreshedAt?: number;
+  /** The phone's one line about what is not here (no measured road speed). */
+  phoneNote?: string;
 }
 
-const SRC = { cams: "eye-cams", ships: "eye-ships", ahead: "eye-ship-ahead", planes: "eye-planes" } as const;
+const SRC = {
+  cams: "eye-cams",
+  ships: "eye-ships",
+  ahead: "eye-ship-ahead",
+  planes: "eye-planes",
+  streets: "eye-streets",
+} as const;
 const LYR = {
   ring: "eye-cam-ring",
   dot: "eye-cam-dot",
   ahead: "eye-ship-ahead",
   ship: "eye-ship",
   plane: "eye-plane",
+  streetLine: "eye-street-line",
+  streetDot: "eye-street-dot",
 } as const;
 const IMG = { ship: "eye-chevron-ship", plane: "eye-chevron-plane" } as const;
-const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24" } as const;
+const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24", road: "#fb7185" } as const;
 
 const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 40, stalk: 52, max: 5 };
 const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 46, stalk: 34, max: 3 };
-const MAX_TAGS = { wide: { ship: 8, plane: 3 }, phone: { ship: 4, plane: 2 } } as const;
+const MAX_TAGS = { wide: { ship: 8, plane: 3, road: 2 }, phone: { ship: 4, plane: 2, road: 1 } } as const;
 
 /** How often each feed is asked again. The server's own cadence for each. */
 const AIS_EVERY_MS = 60_000;
@@ -133,6 +155,10 @@ interface State {
   cams: NearCamera[] | null;
   ships: Vessel[] | null;
   planes: Aircraft[] | null;
+  /** TfL's disruptions around the view; stays null outside London, where none are asked for. */
+  streets: StreetDisruption[] | null;
+  /** The streets route answered without TfL's data (a cold start with TfL down). */
+  streetsDown: boolean;
   planesSampled: boolean;
   planesFetchedAt: number | null;
   refreshedAt?: number;
@@ -145,6 +171,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
     cams: null,
     ships: null,
     planes: null,
+    streets: null,
+    streetsDown: false,
     planesSampled: false,
     planesFetchedAt: null,
     cards: new Map(),
@@ -201,6 +229,59 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
         type: "FeatureCollection",
         features: (s.cams ?? []).filter((c) => c.available).map((c) => point(c.id, c.lon, c.lat)),
       });
+    }
+
+    // TfL's disruptions lie ON the street, under the buildings like the camera rings,
+    // so a tower in front hides them. Dashed: a notice, never a measured speed.
+    if (s.streets && !map.getSource(SRC.streets)) {
+      map.addSource(SRC.streets, { type: "geojson", data: EMPTY, attribution: TFL_CREDIT });
+    }
+    if (map.getSource(SRC.streets)) {
+      if (!map.getLayer(LYR.streetLine)) {
+        map.addLayer(
+          {
+            id: LYR.streetLine,
+            type: "line",
+            source: SRC.streets,
+            filter: ["==", ["geometry-type"], "LineString"],
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": COLOUR.road,
+              "line-width": ["interpolate", ["linear"], ["zoom"], 14, ["*", 1.2, ["get", "w"]], 17, ["*", 2.6, ["get", "w"]]],
+              "line-opacity": 0.9,
+              "line-dasharray": [1.2, 1],
+            },
+          },
+          under,
+        );
+      }
+      if (!map.getLayer(LYR.streetDot)) {
+        map.addLayer(
+          {
+            id: LYR.streetDot,
+            type: "circle",
+            source: SRC.streets,
+            filter: ["==", ["geometry-type"], "Point"],
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 3, 17, 7],
+              "circle-color": "rgba(251,113,133,0.25)",
+              "circle-stroke-color": COLOUR.road,
+              "circle-stroke-width": 1.5,
+              "circle-pitch-alignment": "map",
+            },
+          },
+          under,
+        );
+      }
+      const features: GeoJSON.Feature[] = [];
+      for (const d of s.streets ?? []) {
+        const w = severityWeight(d.severity);
+        if (d.lines.length === 0) features.push(point(d.id, d.lon, d.lat, { w }));
+        for (const line of d.lines) {
+          features.push({ type: "Feature", properties: { id: d.id, w }, geometry: { type: "LineString", coordinates: line } });
+        }
+      }
+      (map.getSource(SRC.streets) as maplibregl.GeoJSONSource).setData({ type: "FeatureCollection", features });
     }
 
     if (!map.hasImage(IMG.ship)) map.addImage(IMG.ship, chevron(COLOUR.ship), { pixelRatio: 2 });
@@ -289,22 +370,28 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
     const size = portrait ? CARD_PHONE : CARD_WIDE;
     const maxTags = portrait ? MAX_TAGS.phone : MAX_TAGS.wide;
     let ready = false;
-    let shown = { cams: 0 };
     let lastRowsKey = "";
+    // What the ledger counts: the marks that carry words on screen now (a card, a tag),
+    // so every count can be read off the view. "of N nearby" is what was fetched around it.
+    let labelled = { cams: 0, ships: [] as Vessel[], planes: 0, roads: 0 };
+    const london = inLondon(target.view.lat, target.view.lon);
 
     const report = () => {
       const rows: LedgerRow[] = [];
-      if (s.cams) rows.push(cameraLedgerRow(shown.cams, s.cams));
-      if (s.ships) rows.push(vesselLedgerRow(s.ships));
+      if (s.cams) rows.push(cameraLedgerRow(labelled.cams, s.cams));
+      if (s.ships) rows.push(vesselLedgerRow(labelled.ships, s.ships.length));
       if (s.planes) {
         const ageMs = s.planesFetchedAt != null ? Date.now() - s.planesFetchedAt : null;
-        rows.push(aircraftLedgerRow(s.planes.length, { sampled: s.planesSampled, ageMs }));
+        rows.push(aircraftLedgerRow(labelled.planes, s.planes.length, { sampled: s.planesSampled, ageMs }));
       }
+      if (s.streets) rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, s.streets.length));
+      rows.push(speedLedgerRow(london));
       const cameraName = pinned ? s.cams?.find((c) => c.id === pinned)?.name : undefined;
+      const phoneNote = speedPhoneNote(london);
       const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt]);
       if (key === lastRowsKey) return;
       lastRowsKey = key;
-      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt });
+      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote });
     };
 
     const place = () => {
@@ -312,6 +399,10 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       const box = map.getContainer();
       const width = box.clientWidth;
       const height = box.clientHeight;
+      // No depth test before projecting: map.project() mirrors a point behind the
+      // camera, but the mirror lands above the horizon, which stays above the top of the
+      // screen at any tilt up to 60 degrees (MapLibre's default ceiling, kept here).
+      // Checked against MapLibre's own depth over the whole fetched area, 25 Oct 2026.
       const frame = safeFrame(width, height, portrait);
       const centre = { x: width / 2, y: height / 2 };
       const taken: Box[] = [];
@@ -345,10 +436,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
         const marker = new maplibregl.Marker({ element: card.el, anchor: "bottom" }).setLngLat([cam.lon, cam.lat]).addTo(map);
         s.cards.set(p.id, { card, marker });
       }
-      shown = { cams: placed.length };
 
-      // Then tags: moving vessels before stopped ones, then aircraft.
-      type Item = TagCandidate & { kind: "ship" | "plane"; lngLat: [number, number]; title: string; meta: string };
+      // Then tags: moving vessels before stopped ones, then aircraft, then streets.
+      type Item = TagCandidate & { kind: "ship" | "plane" | "road"; lngLat: [number, number]; title: string; meta: string };
       const tagItems = (list: { id: string; lat: number; lon: number; words: { title: string; meta: string } }[], kind: Item["kind"]) =>
         list.map((o): Item => {
           const p = map.project([o.lon, o.lat]);
@@ -361,12 +451,26 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       const stopped = tagItems(ships.filter((v) => !v.moving).map((v) => ({ ...v, words: vesselTag(v) })), "ship");
       const shipOrder = [...placementOrder(moving, centre, shownTags), ...placementOrder(stopped, centre, shownTags)];
       const planeItems = tagItems((s.planes ?? []).map((a) => ({ ...a, words: aircraftTag(a) })), "plane");
+      const roadItems = tagItems((s.streets ?? []).map((d) => ({ ...d, words: streetTag(d) })), "road");
+      // TfL's most severe first; among equals, the usual order.
+      const weight = new Map((s.streets ?? []).map((d) => [d.id, severityWeight(d.severity)]));
+      const roadOrder = placementOrder(roadItems, centre, shownTags).sort(
+        (a, b) => (weight.get(b.id) ?? 0) - (weight.get(a.id) ?? 0),
+      );
       const tagPlaced = [
         ...placeTags(shipOrder, frame, maxTags.ship, taken),
         ...placeTags(placementOrder(planeItems, centre, shownTags), frame, maxTags.plane, taken),
+        ...placeTags(roadOrder, frame, maxTags.road, taken),
       ];
-      const byId = new Map<string, Item>([...shipOrder, ...planeItems].map((i) => [i.id, i]));
+      const byId = new Map<string, Item>([...shipOrder, ...planeItems, ...roadItems].map((i) => [i.id, i]));
       const keepTags = new Set(tagPlaced.map((t) => t.id));
+      const tagged = (kind: Item["kind"]) => tagPlaced.filter((t) => byId.get(t.id)?.kind === kind);
+      labelled = {
+        cams: placed.length,
+        ships: ships.filter((v) => keepTags.has(v.id)),
+        planes: tagged("plane").length,
+        roads: tagged("road").length,
+      };
       for (const [id, tag] of s.tags) {
         if (keepTags.has(id)) continue;
         tag.remove();
@@ -383,7 +487,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
         tag.show(map, item.lngLat, t.flip);
       }
 
-      ready = s.cams != null && s.ships != null && s.planes != null;
+      ready = s.cams != null && s.ships != null && s.planes != null && (!london || s.streets != null);
       report();
     };
 
@@ -458,10 +562,28 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
           landed();
         },
       );
+    // TfL covers London only; elsewhere nothing is asked for, and the ledger says the
+    // road speed is not measured in this view.
+    const loadStreets = () =>
+      void getJson("/api/eye/streets").then((d: { ok?: boolean; features?: StreetDisruption[] } | null) => {
+        if (disposed) return;
+        if (d?.ok) {
+          s.streets = (d.features ?? []).filter((f) => inBounds(f.lat, f.lon, region, 0));
+          s.streetsDown = false;
+        } else if (s.streets == null) {
+          // Nothing from TfL yet: the ledger says so rather than "0". A failed refresh
+          // after a good one keeps what is drawn.
+          s.streets = [];
+          s.streetsDown = true;
+        }
+        landed();
+      });
     loadShips();
     loadPlanes();
+    if (london) loadStreets();
     const shipTimer = setInterval(loadShips, AIS_EVERY_MS);
     const planeTimer = setInterval(loadPlanes, PLANES_EVERY_MS);
+    const streetTimer = london ? setInterval(loadStreets, STREETS_EVERY_MS) : null;
 
     // The age on every card, re-worded twice a minute.
     const ticker = setInterval(() => {
@@ -477,6 +599,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       clearInterval(ticker);
       clearInterval(shipTimer);
       clearInterval(planeTimer);
+      if (streetTimer) clearInterval(streetTimer);
       for (const { card, marker } of s.cards.values()) {
         marker.remove();
         card.destroy();

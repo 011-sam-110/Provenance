@@ -127,20 +127,25 @@ describe("the ledger rows", () => {
       toVessel(feature({ speedKt: 4.4, course: "028°" }))!,
       toVessel(feature({ speedKt: 0 }, { id: "ais:2" }))!,
     ];
-    expect(vesselLedgerRow(vs)).toEqual({
+    expect(vesselLedgerRow(vs, 2)).toEqual({
       kind: "ship",
       count: 2,
       label: "vessels",
       detail: "1 moving · AIS heard in the last 20 min",
       short: "vessels",
     });
+    // On screen 2, of 5 the view fetched: the count stays what a reader can see.
+    expect(vesselLedgerRow(vs, 5).detail).toBe("of 5 nearby · 1 moving · AIS heard in the last 20 min");
+    // None on screen: no "0 moving".
+    expect(vesselLedgerRow([], 2).detail).toBe("of 2 nearby · AIS heard in the last 20 min");
   });
 
   it("says aircraft are a sample, never the whole sky, and how old the positions are", () => {
-    expect(aircraftLedgerRow(0, { sampled: true, ageMs: 30_000 }).detail).toBe(
+    expect(aircraftLedgerRow(0, 0, { sampled: true, ageMs: 30_000 }).detail).toBe(
       "adsb.lol (ODbL) · from a worldwide sample, not every aircraft",
     );
-    expect(aircraftLedgerRow(2, { sampled: false, ageMs: 7 * 60_000 }).detail).toBe("adsb.lol (ODbL) · positions 7 min old");
+    expect(aircraftLedgerRow(2, 2, { sampled: false, ageMs: 7 * 60_000 }).detail).toBe("adsb.lol (ODbL) · positions 7 min old");
+    expect(aircraftLedgerRow(1, 3, { sampled: false, ageMs: null }).detail).toBe("of 3 nearby · adsb.lol (ODbL)");
   });
 
   it("credits each vessel feed once, and the aircraft feed by its own credit", () => {
