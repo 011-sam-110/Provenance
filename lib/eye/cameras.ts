@@ -21,6 +21,18 @@ export interface NearCamera {
   km: number;
 }
 
+/**
+ * How far "nearby" reaches. /api/near answers the nearest cameras at ANY distance: with
+ * TfL's feed missing for a moment, the 25 nearest to Piccadilly were in Plymouth and
+ * Scotland (seen 25 Oct 2026). The view keeps the ones a frame at its zoom can hold.
+ */
+export const NEAR_KM = 4;
+
+/** The cameras the view may show and count as nearby: within NEAR_KM of where it opened. */
+export function nearCameras<T extends Pick<NearCamera, "km">>(cams: readonly T[]): T[] {
+  return cams.filter((c) => Number.isFinite(c.km) && c.km <= NEAR_KM);
+}
+
 /** What a card asks for first. A stream before a clip before a still. */
 export type CardMedia = "stream" | "clip" | "still";
 

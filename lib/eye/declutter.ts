@@ -21,6 +21,8 @@ export interface Frame {
   top: number;
   bottom: number;
   side: number;
+  /** The right edge's band, where it differs from the left's (a 9:16 recording). */
+  right?: number;
 }
 
 export function overlaps(a: Box, b: Box): boolean {
@@ -28,7 +30,7 @@ export function overlaps(a: Box, b: Box): boolean {
 }
 
 export function insideFrame(b: Box, f: Frame): boolean {
-  return b.x0 >= f.side && b.x1 <= f.width - f.side && b.y0 >= f.top && b.y1 <= f.height - f.bottom;
+  return b.x0 >= f.side && b.x1 <= f.width - (f.right ?? f.side) && b.y0 >= f.top && b.y1 <= f.height - f.bottom;
 }
 
 /** A card stands on a stalk above its anchor, centred over it. */

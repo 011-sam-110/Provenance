@@ -19,9 +19,32 @@ export function fmtHeading(deg: number): string {
   return String(d).padStart(3, "0");
 }
 
-/** "22:42:52", in UTC: the HUD clock names its zone beside it. */
-export function fmtClockUtc(ms: number): string {
-  return new Date(ms).toISOString().slice(11, 19);
+/**
+ * "22:42:52", in UTC: the HUD clock names its zone beside it. A recording shows the
+ * minute only ("22:42"): it is filmed frame by frame, slower than it plays, so a
+ * seconds hand would race.
+ */
+export function fmtClockUtc(ms: number, seconds = true): string {
+  return new Date(ms).toISOString().slice(11, seconds ? 19 : 16);
+}
+
+/**
+ * The credits line, from the text of MapLibre's own attribution control (which keeps
+ * it to the sources in use): one entry per source, each once, the ground first (the
+ * imagery, then the map data the buildings come from), then the feeds in the
+ * control's order.
+ */
+export function creditsFromAttribution(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of text.split("|")) {
+    const c = raw.replace(/\s+/g, " ").trim();
+    if (!c || seen.has(c)) continue;
+    seen.add(c);
+    out.push(c);
+  }
+  const rank = (c: string) => (/imagery/i.test(c) ? 0 : /openstreetmap|openmaptiles|openfreemap/i.test(c) ? 1 : 2);
+  return out.map((c, i) => ({ c, i })).sort((a, b) => rank(a.c) - rank(b.c) || a.i - b.i).map((x) => x.c);
 }
 
 /** The line under the ledger: "Vessels and aircraft refreshed 12 s ago". */

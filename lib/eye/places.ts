@@ -38,13 +38,13 @@ export interface EyePlace {
    * shows a strip of water and no cameras.
    */
   tall: EyeView;
-  /** Where a fly-along ends: the centre glides here from the framed view. */
-  flyTo: { lat: number; lon: number };
 }
 
 /**
- * The reel presets, in the order they are offered. Each view was framed by hand on
- * production data (cameras, river traffic, towers in shot) at both shapes.
+ * The reel presets, in the order they are offered. Each view was framed on live data
+ * on 25 Oct 2026 (TfL cameras, river traffic, towers in shot), at 1440 x 900 and at a
+ * 9:16 recording's 540 x 960, for the most camera cards that stand clear of the frame's
+ * words with the landmark in shot.
  */
 export const EYE_PLACES: readonly EyePlace[] = [
   {
@@ -53,23 +53,23 @@ export const EYE_PLACES: readonly EyePlace[] = [
     area: "London",
     wide: { lat: 51.5013, lon: -0.1218, zoom: 15.9, tilt: 58, heading: 32 },
     tall: { lat: 51.5014, lon: -0.1196, zoom: 15.75, tilt: 52, heading: 292 },
-    flyTo: { lat: 51.5031, lon: -0.1205 },
   },
   {
     id: "tower-bridge",
     name: "Tower Bridge",
     area: "London",
     wide: { lat: 51.5062, lon: -0.0772, zoom: 15.7, tilt: 58, heading: 292 },
-    tall: { lat: 51.5068, lon: -0.0768, zoom: 15.6, tilt: 54, heading: 318 },
-    flyTo: { lat: 51.5081, lon: -0.0803 },
+    // Looking south down the bridge, its north end's camera in shot.
+    tall: { lat: 51.5068, lon: -0.0754, zoom: 15.5, tilt: 58, heading: 170 },
   },
   {
     id: "piccadilly",
     name: "Piccadilly Circus",
     area: "London",
-    wide: { lat: 51.5098, lon: -0.1345, zoom: 16.3, tilt: 56, heading: 28 },
-    tall: { lat: 51.5096, lon: -0.1343, zoom: 16.15, tilt: 52, heading: 352 },
-    flyTo: { lat: 51.5108, lon: -0.1356 },
+    // Looking south over St James's: five TfL cameras round the Circus stand at once.
+    wide: { lat: 51.50995, lon: -0.13424, zoom: 15.6, tilt: 56, heading: 180 },
+    // Looking east along Shaftesbury Avenue.
+    tall: { lat: 51.50995, lon: -0.13424, zoom: 15.6, tilt: 58, heading: 70 },
   },
 ];
 

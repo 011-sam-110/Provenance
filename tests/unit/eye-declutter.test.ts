@@ -31,6 +31,13 @@ describe("boxes", () => {
     expect(b.y0).toBeLessThan(600 - CARD.stalk - CARD.height);
     expect(b.y1).toBeGreaterThan(600);
   });
+
+  it("keeps a wider right band when the frame names one", () => {
+    const box: Box = { x0: 1300, y0: 300, x1: 1400, y1: 360 };
+    expect(insideFrame(box, FRAME)).toBe(true);
+    expect(insideFrame(box, { ...FRAME, right: 60 })).toBe(false);
+    expect(insideFrame({ ...box, x0: 1200, x1: 1370 }, { ...FRAME, right: 60 })).toBe(true);
+  });
 });
 
 describe("placeCards", () => {

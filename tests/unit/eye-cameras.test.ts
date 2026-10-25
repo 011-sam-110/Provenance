@@ -3,11 +3,13 @@ import {
   ageText,
   cadenceText,
   cameraCredits,
+  NEAR_KM,
   cameraLedgerRow,
   cardMeta,
   fallbackMedia,
   isStale,
   mediaLabel,
+  nearCameras,
   preferredMedia,
   type CardMedia,
   type NearCamera,
@@ -112,5 +114,16 @@ describe("the ledger row", () => {
     // Every camera nearby has its card up: no "of 3 nearby".
     expect(cameraLedgerRow(3, near).detail).toBe("Powered by TfL Open Data · Other operator");
     expect(cameraCredits([cam(), cam(), cam({ attribution: undefined })])).toEqual(["Powered by TfL Open Data"]);
+  });
+});
+
+describe("nearCameras", () => {
+  it("keeps what a frame can hold and drops the far ones /api/near also answers", () => {
+    const at = (km: number) => ({ id: `c${km}`, km });
+    expect(nearCameras([at(0.3), at(1.4), at(NEAR_KM), at(NEAR_KM + 0.01), at(287), at(Number.NaN)]).map((c) => c.km)).toEqual([
+      0.3,
+      1.4,
+      NEAR_KM,
+    ]);
   });
 });

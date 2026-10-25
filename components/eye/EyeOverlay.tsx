@@ -23,8 +23,9 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import { BUILDING_LAYER } from "@/lib/map/buildings";
 import type { EyeTarget } from "@/lib/eye/places";
-import { cameraCredits, cameraLedgerRow, type NearCamera } from "@/lib/eye/cameras";
+import { cameraCredits, cameraLedgerRow, nearCameras, type NearCamera } from "@/lib/eye/cameras";
 import {
+  GAP,
   placeCards,
   placeTags,
   placementOrder,
@@ -60,6 +61,7 @@ import {
   streetsLedgerRow,
   type StreetDisruption,
 } from "@/lib/eye/streets";
+import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
 import type { LedgerRow } from "@/lib/eye/wording";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { Tag, tagSize } from "./tag";
@@ -105,11 +107,39 @@ const PLANES_EVERY_MS = 90_000;
 /** Vessels and aircraft this far outside the opening view are not kept at all. */
 const KEEP_PAD_DEG = 0.06;
 
-/** The bands the HUD keeps: no card or tag is placed under the header or the ledger. */
-export function safeFrame(width: number, height: number, portrait: boolean): Frame {
-  return portrait
-    ? { width, height, top: 132, bottom: 112, side: 8 }
-    : { width, height, top: 104, bottom: 150, side: 12 };
+/**
+ * The edges no card or tag is placed in. The frame's own words are kept clear by
+ * measuring them (keptBoxes). A 9:16 recording keeps more: Instagram lays its caption
+ * over the bottom quarter and its buttons down the right edge, so the frame's words
+ * move up above the caption (eye.module.css, [data-record]) and nothing is placed
+ * under either.
+ */
+export function safeFrame(width: number, height: number, portrait: boolean, record = false): Frame {
+  if (portrait && record) {
+    return { width, height, top: Math.round(height * 0.12), bottom: Math.round(height * 0.27), side: 10, right: Math.round(width * 0.13) };
+  }
+  return portrait ? { width, height, top: 10, bottom: 10, side: 8 } : { width, height, top: 12, bottom: 12, side: 12 };
+}
+
+/**
+ * The boxes of the frame's words (EyeHud marks them data-eye-keep), in the map's
+ * own pixels and padded by GAP: the header, the buttons, the ledger and the credits,
+ * wherever the layout of the moment puts them.
+ */
+function keptBoxes(container: HTMLElement): Box[] {
+  const origin = container.getBoundingClientRect();
+  const out: Box[] = [];
+  for (const el of document.querySelectorAll<HTMLElement>("[data-eye-keep]")) {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) continue;
+    out.push({
+      x0: r.left - origin.left - GAP,
+      y0: r.top - origin.top - GAP,
+      x1: r.right - origin.left + GAP,
+      y1: r.bottom - origin.top + GAP,
+    });
+  }
+  return out;
 }
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -148,7 +178,11 @@ interface Props {
   styleEpoch: number;
   target: EyeTarget;
   portrait: boolean;
+  /** A recording (record=1): the 9:16 frame keeps clear of Instagram's own bands. */
+  record: boolean;
   onReport: (r: OverlayReport) => void;
+  /** Filled with "place the cards and tags now", for the record script's frame-by-frame clock. */
+  placeRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 interface State {
@@ -166,7 +200,7 @@ interface State {
   tags: Map<string, Tag>;
 }
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, onReport, placeRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -287,9 +321,20 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
     if (!map.hasImage(IMG.ship)) map.addImage(IMG.ship, chevron(COLOUR.ship), { pixelRatio: 2 });
     if (!map.hasImage(IMG.plane)) map.addImage(IMG.plane, chevron(COLOUR.plane), { pixelRatio: 2 });
 
-    if (s.ships && !map.getSource(SRC.ships)) {
-      map.addSource(SRC.ships, { type: "geojson", data: EMPTY, attribution: vesselCredits(s.ships).join(" · ") });
-      map.addSource(SRC.ahead, { type: "geojson", data: EMPTY });
+    // The vessels' credit names the feeds of the vessels around the view (AISStream on
+    // the Thames). A source's credit is fixed when it is added, so a change of feeds
+    // (none at first, then some) puts the source back with the new one.
+    if (s.ships) {
+      const credit = vesselCredits(s.ships).join(" · ") || AISSTREAM_ATTRIBUTION;
+      const had = map.getSource(SRC.ships) as { attribution?: string } | undefined;
+      if (had && had.attribution !== credit) {
+        for (const id of [LYR.ship, LYR.ahead]) if (map.getLayer(id)) map.removeLayer(id);
+        for (const id of [SRC.ships, SRC.ahead]) if (map.getSource(id)) map.removeSource(id);
+      }
+      if (!map.getSource(SRC.ships)) {
+        map.addSource(SRC.ships, { type: "geojson", data: EMPTY, attribution: credit });
+        map.addSource(SRC.ahead, { type: "geojson", data: EMPTY });
+      }
     }
     if (map.getSource(SRC.ships)) {
       if (!map.getLayer(LYR.ahead)) {
@@ -403,9 +448,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       // camera, but the mirror lands above the horizon, which stays above the top of the
       // screen at any tilt up to 60 degrees (MapLibre's default ceiling, kept here).
       // Checked against MapLibre's own depth over the whole fetched area, 25 Oct 2026.
-      const frame = safeFrame(width, height, portrait);
+      const frame = safeFrame(width, height, portrait, record);
       const centre = { x: width / 2, y: height / 2 };
-      const taken: Box[] = [];
+      const taken: Box[] = keptBoxes(box);
 
       // Cards first: they are the largest and the reason for the view.
       const cams = (s.cams ?? []).filter((c) => c.available);
@@ -498,6 +543,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       lastPlace = performance.now();
       place();
     };
+    if (placeRef) placeRef.current = placeNow;
     const onMoveEnd = () => {
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => {
@@ -534,7 +580,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
 
     void getJson(`/api/near?lat=${lat}&lon=${lon}&n=25`).then((d: { cameras?: NearCamera[] } | null) => {
       if (disposed) return;
-      s.cams = d?.cameras ?? [];
+      s.cams = nearCameras(d?.cameras ?? []);
       landed();
     });
 
@@ -593,6 +639,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
 
     return () => {
       disposed = true;
+      if (placeRef?.current === placeNow) placeRef.current = null;
       map.off("moveend", onMoveEnd);
       map.off("move", onMove);
       if (settle) clearTimeout(settle);
@@ -609,7 +656,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, onReport
       s.tags.clear();
       releaseCardMedia();
     };
-  }, [map, target, portrait, pinned]);
+  }, [map, target, portrait, record, pinned, placeRef]);
 
   return null;
 }

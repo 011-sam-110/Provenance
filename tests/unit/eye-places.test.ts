@@ -43,11 +43,9 @@ describe("the presets", () => {
     }
   });
 
-  it("frame the wide and the tall view on the same place, and fly a short way", () => {
+  it("frame the wide and the tall view on the same place", () => {
     for (const p of EYE_PLACES) {
       expect(metres(p.wide, p.tall)).toBeLessThan(400);
-      expect(metres(p.wide, p.flyTo)).toBeGreaterThan(80);
-      expect(metres(p.wide, p.flyTo)).toBeLessThan(600);
     }
   });
 });

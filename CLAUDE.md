@@ -81,7 +81,10 @@ obligations and are not satisfied by the licence.
   style preferences. A still is never called live: `mediaLabel` says "Live" only while a
   stream plays, and a still or a clip says its operator's own age. And there is no road
   speed in it, because no open feed for London publishes one: the ledger says so, and
-  nothing draws an invented flow (`lib/eye/streets.ts`).
+  nothing draws an invented flow (`lib/eye/streets.ts`). Its link flags are listed at the
+  top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
+  `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
+  frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's

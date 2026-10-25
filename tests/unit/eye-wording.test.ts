@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, plural, refreshedText } from "@/lib/eye/wording";
+import { creditsFromAttribution, fmtClockUtc, fmtHeading, fmtLat, fmtLon, plural, refreshedText } from "@/lib/eye/wording";
 
 describe("the HUD readouts", () => {
   it("print positions to four decimals with their hemisphere", () => {
@@ -18,6 +18,7 @@ describe("the HUD readouts", () => {
 
   it("print the clock in UTC", () => {
     expect(fmtClockUtc(Date.UTC(2026, 9, 24, 22, 42, 52))).toBe("22:42:52");
+    expect(fmtClockUtc(Date.UTC(2026, 9, 24, 22, 42, 52), false)).toBe("22:42");
   });
 
   it("say how long ago the vessels and aircraft arrived", () => {
@@ -31,5 +32,24 @@ describe("the HUD readouts", () => {
     expect(plural(1, "vessel", "vessels")).toBe("1 vessel");
     expect(plural(0, "vessel", "vessels")).toBe("0 vessels");
     expect(plural(12, "vessel", "vessels")).toBe("12 vessels");
+  });
+});
+
+describe("creditsFromAttribution", () => {
+  it("puts the ground first, keeps each credit once and the feeds in order", () => {
+    // MapLibre's control text on /eye at Westminster, 25 Oct 2026.
+    const text =
+      "Powered by TfL Open Data | Imagery © Esri, Maxar, Earthstar Geographics | Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use) | OpenFreeMap © OpenMapTiles Data from OpenStreetMap | Powered by TfL Open Data";
+    expect(creditsFromAttribution(text)).toEqual([
+      "Imagery © Esri, Maxar, Earthstar Geographics",
+      "OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
+      "Powered by TfL Open Data",
+      "Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use)",
+    ]);
+  });
+
+  it("is empty for an empty control", () => {
+    expect(creditsFromAttribution("")).toEqual([]);
+    expect(creditsFromAttribution("  |  ")).toEqual([]);
   });
 });

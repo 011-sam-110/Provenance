@@ -1,7 +1,9 @@
 "use client";
 // The God's eye view's frame: the place, the UTC clock, heading and tilt, the ledger
-// of what is on screen and who measured it, and the way back to the console. Every
-// word comes from lib/eye/wording.ts.
+// of what is on screen and who measured it, the credits, and the way back to the
+// console. Every word comes from lib/eye/wording.ts. The look (corner brackets, scan
+// lines, a vignette with scrims under the words, one sweep when a feed refreshes) is
+// eye.module.css; the sweep is off with reduced motion and in a recording.
 //
 // RE-RENDERS ONLY WHEN THE TEXT CHANGES. The camera moves every frame while the view
 // turns, and a setState per frame would re-render this whole frame per frame. The
@@ -71,6 +73,8 @@ export interface EyeHudProps {
   refreshedAt?: number;
   /** Shown on a phone instead of the long rows that state an absence. */
   phoneNote?: string;
+  /** Every source drawn, from MapLibre's own attribution (creditsFromAttribution). */
+  credits: string[];
   /** The console at the spot on screen NOW, read when the link is used. */
   getBackHref: () => string;
   /** Recording: no buttons over the picture. */
@@ -78,10 +82,24 @@ export interface EyeHudProps {
   children?: React.ReactNode;
 }
 
-export default function EyeHud({ map, start, title, area, rows, refreshedAt, phoneNote, getBackHref, record, children }: EyeHudProps) {
+export default function EyeHud({
+  map,
+  start,
+  title,
+  area,
+  rows,
+  refreshedAt,
+  phoneNote,
+  credits,
+  getBackHref,
+  record,
+  children,
+}: EyeHudProps) {
   const readout = useReadout(map, start);
   const now = useClock();
-  const fresh = refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;
+  // A recording is filmed slower than it plays, so a count of seconds since the last
+  // refresh would race; it is left out there, like the clock's seconds.
+  const fresh = !record && refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;
   // The href is set as the link is used, so it is the spot on screen then, without a
   // re-render on every pan. Pointer-down covers a middle click, focus a keyboard.
   const refreshBack = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
@@ -90,12 +108,16 @@ export default function EyeHud({ map, start, title, area, rows, refreshedAt, pho
 
   return (
     <div className={styles.hud}>
+      <i className={styles.scan} aria-hidden />
+      {/* Keyed on the refresh, so each new report runs the sweep once. */}
+      {!record && refreshedAt != null && <i key={refreshedAt} className={styles.sweep} aria-hidden />}
       <i className={styles.corner} data-c="tl" aria-hidden />
       <i className={styles.corner} data-c="tr" aria-hidden />
       <i className={styles.corner} data-c="bl" aria-hidden />
       <i className={styles.corner} data-c="br" aria-hidden />
 
-      <header className={styles.top}>
+      {/* data-eye-keep: EyeOverlay places no card or tag over these. */}
+      <header className={styles.top} data-eye-keep>
         <div className={styles.placeBlock}>
           <h1 className={styles.place}>{title}</h1>
           <p className={styles.sub}>
@@ -111,30 +133,14 @@ export default function EyeHud({ map, start, title, area, rows, refreshedAt, pho
         </div>
         <div className={styles.topRight}>
           <p className={styles.clockBlock} aria-label="Time now, UTC">
-            <span className={styles.clock}>{now != null ? fmtClockUtc(now) : "--:--:--"}</span>
+            <span className={styles.clock}>{now != null ? fmtClockUtc(now, !record) : record ? "--:--" : "--:--:--"}</span>
             <span className={styles.utc}>UTC</span>
           </p>
-          {!record && (
-            <nav className={styles.controls} aria-label="View controls">
-              {children}
-              {/* A full page load, not a client-side route: the console boots its own
-                  stores from scratch, and nothing this page set in memory reaches it. */}
-              <a
-                className={styles.btn}
-                href="/app"
-                onPointerDown={refreshBack}
-                onFocus={refreshBack}
-                onClick={refreshBack}
-              >
-                Back to the console
-              </a>
-            </nav>
-          )}
         </div>
       </header>
 
       {rows.length > 0 && (
-        <section className={styles.ledger} aria-label="What this view shows">
+        <section className={styles.ledger} aria-label="What this view shows" data-eye-keep>
           {rows.map((row) => (
             <p key={row.kind} data-k={row.kind} data-zero={row.count === 0 || undefined} data-note={row.count == null || undefined}>
               <i aria-hidden />
@@ -150,21 +156,47 @@ export default function EyeHud({ map, start, title, area, rows, refreshedAt, pho
         </section>
       )}
 
-      <footer className={styles.bottom}>
+      <footer className={styles.bottom} data-eye-keep>
+      {!record && (
+        <nav className={styles.controls} aria-label="View controls" data-eye-keep>
+          {children}
+          {/* A full page load, not a client-side route: the console boots its own
+              stores from scratch, and nothing this page set in memory reaches it. */}
+          <a
+            className={styles.btn}
+            href="/app"
+            onPointerDown={refreshBack}
+            onFocus={refreshBack}
+            onClick={refreshBack}
+          >
+            Back to the console
+          </a>
+        </nav>
+      )}
         {phoneNote && <span className={styles.short}>{phoneNote}</span>}
         <span className={styles.coords}>
           {fmtLat(readout.lat)}
           <span className={styles.sep} />
           {fmtLon(readout.lon)}
-          {/* AGPL-3.0 section 13: a network user is offered the source. */}
+          {/* Every source drawn, in full (the map's own control is hidden while this
+              shows them), then AGPL-3.0 section 13: a network user is offered the source. */}
           <span className={styles.credits}>
-            {BRAND.domain}
-            <a href={BRAND.repoUrl} target="_blank" rel="noreferrer noopener">
-              Source
-            </a>
-            <a href={BRAND.license.url} target="_blank" rel="noreferrer noopener">
-              {BRAND.license.short}
-            </a>
+            {credits.length > 0 && (
+              <span className={styles.sources}>
+                {credits.map((c) => (
+                  <span key={c}>{c}</span>
+                ))}
+              </span>
+            )}
+            <span className={styles.site}>
+              {BRAND.domain}
+              <a href={BRAND.repoUrl} target="_blank" rel="noreferrer noopener">
+                Source
+              </a>
+              <a href={BRAND.license.url} target="_blank" rel="noreferrer noopener">
+                {BRAND.license.short}
+              </a>
+            </span>
           </span>
         </span>
       </footer>

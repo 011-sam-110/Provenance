@@ -61,6 +61,73 @@
   color: var(--eye-ink);
 }
 
+/* The vignette, and the scrims under the words: the header's band at the top, the
+   ledger's and the credits' at the bottom. They darken the photograph, never the
+   words, so the faint ink keeps its measured contrast over bright roofs. */
+.hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(3, 6, 8, 0.66) 0, rgba(3, 6, 8, 0.28) 96px, rgba(3, 6, 8, 0) 168px),
+    linear-gradient(to top, rgba(3, 6, 8, 0.74) 0, rgba(3, 6, 8, 0.4) 150px, rgba(3, 6, 8, 0) 260px),
+    radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.34) 100%);
+}
+
+/* Scan lines: one dark line every 3 px, faint. Static, so the compositor draws them
+   once and the turning map only moves beneath them. */
+.scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.13) 0 1px, rgba(0, 0, 0, 0) 1px 3px);
+}
+
+/* One sweep down the frame when vessels or aircraft arrive. A transform on its own
+   layer: no repaint of the scene. Off with reduced motion (below) and in a recording. */
+.sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(to right, rgba(238, 243, 241, 0), rgba(238, 243, 241, 0.55) 22%, rgba(238, 243, 241, 0.8) 50%, rgba(238, 243, 241, 0.55) 78%, rgba(238, 243, 241, 0));
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.5);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: eye-sweep 1.8s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+
+@keyframes eye-sweep {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    display: none;
+  }
+}
+
+/* MapLibre's own attribution control, collapsed behind its info button in the
+   console (lib/map/attribution.ts), is hidden here only while the frame shows the
+   same credits in full along its bottom edge (EyeHud). EyeApp sets data-credits only
+   when it has read them from that control, so the credit is never hidden twice. */
+.root[data-credits] :global(.maplibregl-ctrl-attrib) {
+  display: none;
+}
+
 .corner {
   position: absolute;
   width: 14px;
@@ -145,7 +212,12 @@
   font-weight: 600;
 }
 
+/* The buttons live in the footer's markup, so a phone can stack them over the
+   credits; a wide screen lifts them to the top right, under the clock. */
 .controls {
+  position: fixed;
+  top: 60px;
+  right: 26px;
   display: flex;
   gap: 8px;
   pointer-events: auto;
@@ -183,7 +255,8 @@
 .ledger {
   position: absolute;
   left: 26px;
-  bottom: 44px;
+  /* Above the bottom band, which grows to three lines with the credits. */
+  bottom: 76px;
   display: grid;
   gap: 5px;
   font-size: 12.5px;
@@ -237,7 +310,7 @@
 .bottom {
   position: absolute;
   left: 26px;
-  right: 56px;
+  right: 26px;
   bottom: 18px;
   display: flex;
   font-size: 11.5px;
@@ -246,15 +319,36 @@
 
 .coords {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   width: 100%;
+  white-space: nowrap;
 }
 
 .credits {
   margin-left: auto;
+  padding-left: 24px;
+  display: grid;
+  justify-items: end;
+  row-gap: 4px;
+  max-width: min(760px, 62%);
+  white-space: normal;
+  color: var(--eye-ink-3);
+}
+
+/* Every source drawn, each once: the imagery, the map data, then the feeds. Run as
+   one line of text, so it wraps where the line is full, not per source. */
+.sources {
+  font-size: 10.5px;
+  line-height: 1.45;
+  text-align: right;
+}
+.sources > span:not(:last-child)::after {
+  content: "\00a0· ";
+}
+
+.site {
   display: flex;
   gap: 12px;
-  color: var(--eye-ink-3);
 }
 
 .credits a {
@@ -461,12 +555,11 @@
     min-height: 44px;
     padding: 0 14px;
   }
-  /* The buttons leave the header on a phone: it is full with the place and the clock.
-     They sit above the bottom band instead, at thumb height. */
+  /* On a phone the buttons stay in the footer's flow, over the credits, at thumb
+     height: the header is full with the place and the clock. */
   .controls {
-    position: fixed;
-    right: 18px;
-    bottom: 58px;
+    position: static;
+    margin-bottom: 8px;
   }
   .long {
     display: none !important;
@@ -482,6 +575,10 @@
     justify-content: start;
     column-gap: 22px;
     row-gap: 0;
+    /* The box EyeOverlay keeps clear is measured before the counts arrive, when every
+       row may still be a hidden zero: hold one row's room from the start. */
+    min-height: 44px;
+    min-width: 160px;
   }
   .ledger p {
     display: grid;
@@ -528,9 +625,23 @@
     white-space: nowrap;
   }
   .credits {
-    gap: 12px;
     margin-left: 0;
+    padding-left: 0;
     flex-basis: 100%;
+    max-width: none;
+    justify-items: start;
+    row-gap: 3px;
+  }
+  .sources {
+    font-size: 9.5px;
+    text-align: left;
+  }
+  /* The phone keeps its words at the top and the bottom: deeper scrims there. */
+  .hud::before {
+    background:
+      linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.32) 150px, rgba(3, 6, 8, 0) 230px),
+      linear-gradient(to top, rgba(3, 6, 8, 0.78) 0, rgba(3, 6, 8, 0.4) 120px, rgba(3, 6, 8, 0) 210px),
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.3) 100%);
   }
   .camText b {
     font-size: 10.5px;
@@ -551,5 +662,32 @@
   }
   .tagPlate span {
     font-size: 9.5px;
+  }
+}
+
+/* ── A 9:16 recording: Instagram's bands stay clear ─────────────────────── */
+/* Instagram lays its own name and caption over the bottom quarter of a reel and its
+   buttons down the right edge, and its header over the top. The frame's words move
+   inside those bands, and EyeOverlay's safeFrame keeps cards and tags inside them too. */
+@media (max-aspect-ratio: 4/5) {
+  .root[data-record] .top {
+    top: 6.5%;
+    left: 7%;
+    right: 7%;
+  }
+  .root[data-record] .ledger {
+    top: calc(6.5% + 70px);
+    left: 7%;
+  }
+  .root[data-record] .bottom {
+    left: 7%;
+    right: 14%;
+    bottom: 25%;
+  }
+  .root[data-record] .hud::before {
+    background:
+      linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.34) 18%, rgba(3, 6, 8, 0) 26%),
+      linear-gradient(to top, rgba(3, 6, 8, 0.72) 0, rgba(3, 6, 8, 0.5) 30%, rgba(3, 6, 8, 0) 42%),
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.3) 100%);
   }
 }
