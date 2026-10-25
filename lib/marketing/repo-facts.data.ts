@@ -92,9 +92,15 @@
  * Re-measured 2026-10-24 on fix/lang-selector-honesty (origin/main at 0c16d36, after #296): adds
  * `tests/unit/lang-selector-honesty.test.ts` (2 cases). `npx vitest list`: 5,456 cases across
  * 467 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-24 on fix/retire-console-redesign-panels (origin/main at bdd0f50, after
+ * #297): adds `tests/unit/console-redesign-retired-panels.test.ts` (3 cases), a regression test
+ * for deleting InstabilityPanel.tsx/ConflictPanel.tsx/TopEventsPanel.tsx/RiskPanel.tsx (retired
+ * by docs/superpowers/specs/2026-06-28-ground-truth-console-redesign-design.md:112-115, never
+ * actually deleted). `npx vitest list`: 5,459 cases across 468 files.
  */
 export const UNIT_TESTS = {
-  cases: 5456,
-  files: 467,
+  cases: 5459,
+  files: 468,
   measuredAt: "2026-10-24",
 } as const;

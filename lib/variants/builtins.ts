@@ -15,14 +15,12 @@ const dock = (panel: PanelKey, y: number, h = 5): { panel: PanelKey; grid: { x: 
 export const BUILTIN_VARIANTS: Variant[] = [
   { id: "explore", builtin: true, title: "Explore", accent: "#2563eb", theme: "light",
     layers: { livecams: true, staticcams: true, planes: true, satellites: false },
-    panels: [slot("layerRail"), dock("instability", 0, 6), dock("topEvents", 6, 6), dock("coverage", 12, 6), dock("markets", 18, 6)], tone: "calm" },
+    panels: [slot("layerRail"), dock("coverage", 12, 6), dock("markets", 18, 6)], tone: "calm" },
 
   { id: "intel", builtin: true, title: "Intel", accent: "#0f172a", theme: "light",
     layers: { livecams: true, staticcams: true, planes: true, satellites: true },
     signals: { groups: ["*"] },
-    panels: [slot("layerRail"), slot("freshness"),
-      dock("instability", 0, 6), dock("conflict", 6, 6), dock("topEvents", 12, 6),
-      dock("risk", 18, 3), dock("markets", 21, 5), slot("news")] },
+    panels: [slot("layerRail"), slot("freshness"), dock("markets", 21, 5), slot("news")] },
 
   { id: "cameras", builtin: true, title: "Cameras", accent: "#7c3aed", theme: "light",
     // BOTH TIERS, AND NO SUB-FILTER. This used to be `cameras + webcams` with a
