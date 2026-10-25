@@ -99,10 +99,12 @@
  * cases across 474 files. M3 adds `eye-traffic` and `signals-ais-static`: 5,538 cases across
  * 476 files. M4 adds `eye-streets` (11 cases) and one route, which `route-export-contract`
  * checks as one more case: 5,550 cases across 477 files. M5 adds `eye-motion` and cases to
- * `eye-wording`, `eye-declutter` and `eye-cameras`: 5,564 cases across 478 files.
+ * `eye-wording`, `eye-declutter` and `eye-cameras`: 5,564 cases across 478 files. M6 adds
+ * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
+ * across 479 files.
  */
 export const UNIT_TESTS = {
-  cases: 5564,
-  files: 478,
+  cases: 5576,
+  files: 479,
   measuredAt: "2026-10-25",
 } as const;

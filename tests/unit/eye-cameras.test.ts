@@ -6,6 +6,7 @@ import {
   NEAR_KM,
   cameraLedgerRow,
   cardMeta,
+  clipsToPlay,
   fallbackMedia,
   isStale,
   mediaLabel,
@@ -38,10 +39,47 @@ describe("what a card shows", () => {
     expect(preferredMedia(cam({ clip: false }))).toBe("still");
   });
 
+  it("never asks for a stream in a film, which is drawn far slower than real time", () => {
+    expect(preferredMedia(cam({ live: true }), true)).toBe("clip");
+    expect(preferredMedia(cam({ live: true, clip: false }), true)).toBe("still");
+    expect(preferredMedia(cam(), true)).toBe("clip");
+  });
+
   it("falls back from a stream or a clip to the still, and from the still to nothing", () => {
     expect(fallbackMedia("stream")).toBe("still");
     expect(fallbackMedia("clip")).toBe("still");
     expect(fallbackMedia("still")).toBeNull();
+  });
+});
+
+describe("which clips play", () => {
+  const centre = { x: 500, y: 400 };
+  const card = (id: string, media: CardMedia, x: number, y: number) => ({ id, media, x, y });
+  const cards = [card("a", "clip", 100, 100), card("b", "clip", 520, 420), card("c", "still", 500, 400), card("d", "clip", 900, 700)];
+
+  it("plays every clip while the view rests", () => {
+    expect([...clipsToPlay(cards, centre, false)].sort()).toEqual(["a", "b", "d"]);
+  });
+
+  it("plays one clip while the view moves: the one nearest the middle of the frame", () => {
+    expect([...clipsToPlay(cards, centre, true)]).toEqual(["b"]);
+  });
+
+  it("plays the clip of the camera the link opened on first", () => {
+    expect([...clipsToPlay(cards, centre, true, "d")]).toEqual(["d"]);
+    // A pinned camera showing a still does not take the place of a clip.
+    expect([...clipsToPlay(cards, centre, true, "c")]).toEqual(["b"]);
+  });
+
+  it("holds every clip while a stream plays, because a stream is never held", () => {
+    const withStream = [...cards, card("e", "stream", 50, 50)];
+    expect(clipsToPlay(withStream, centre, true).size).toBe(0);
+    expect([...clipsToPlay(withStream, centre, false)].sort()).toEqual(["a", "b", "d"]);
+  });
+
+  it("plays nothing when no card shows a clip", () => {
+    expect(clipsToPlay([card("c", "still", 0, 0)], centre, true).size).toBe(0);
+    expect(clipsToPlay([], centre, false).size).toBe(0);
   });
 });
 

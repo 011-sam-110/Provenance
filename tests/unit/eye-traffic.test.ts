@@ -150,7 +150,10 @@ describe("the ledger rows", () => {
 
   it("credits each vessel feed once, and the aircraft feed by its own credit", () => {
     expect(vesselCredits([{ source: "AISStream" }, { source: "AISStream" }])).toEqual([AISSTREAM_ATTRIBUTION]);
-    expect(AIRCRAFT_CREDIT).toBe(ADSB_ATTRIBUTION);
+    expect(AIRCRAFT_CREDIT).toBe(ADSB_ATTRIBUTION.replace("Live aircraft", "Aircraft"));
+    expect(AIRCRAFT_CREDIT).toContain("adsb.lol contributors (ODbL)");
+    expect(AIRCRAFT_CREDIT).toContain("adsb.fi (non-commercial use)");
+    expect(AIRCRAFT_CREDIT.toLowerCase()).not.toContain("live");
   });
 });
 

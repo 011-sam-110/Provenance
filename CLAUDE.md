@@ -85,6 +85,11 @@ obligations and are not satisfied by the licence.
   top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
   frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
+  Two more rules hold the film and the frame rate. A film runs on its own clock
+  (`filmClock` in `lib/eye/motion.ts`): its time, its ages and its clips move only with
+  its steps and no feed is fetched during it, because a film is drawn minutes slower
+  than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
+  three at once halved the frame rate, measured 2026-10-25.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's

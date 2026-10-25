@@ -21,24 +21,29 @@ export const IMAGERY_LAYER = "esri-imagery";
  * Night-operations grade for the photograph: less colour, a lower white point, a
  * little more contrast. The cards and tags sit on dark plates over it, and the
  * plates read cleaner over a cool, dark ground than over a bright afternoon roof.
+ * Critique round 1 (25 Oct 2026, against the reference reel): the first grade
+ * (-0.42, 0.74, 0.16) sank the streets and parks into the dark, so the ground came up
+ * a step and kept its cool cast.
  */
 export const IMAGERY_GRADE = {
-  "raster-saturation": -0.42,
-  "raster-brightness-max": 0.74,
-  "raster-contrast": 0.16,
+  "raster-saturation": -0.32,
+  "raster-brightness-max": 0.86,
+  "raster-contrast": 0.24,
 } as const;
 
 /**
  * Building colour by OSM `render_height`, in metres. Low blocks stay dark so the
  * street grid and the river read first; towers lift out lighter. The stops are the
- * data's heights, not decoration: two buildings of one height always match.
+ * data's heights, not decoration: two buildings of one height always match. Critique
+ * round 1 spread the ramp (the towers lighter) and raised the sun, so a block's lit and
+ * shaded walls show its shape: untextured blocks read as flat slabs without it.
  */
 export const HEIGHT_RAMP: readonly (readonly [number, string])[] = [
-  [0, "#141c22"],
-  [20, "#1f2d36"],
-  [45, "#2f4452"],
-  [90, "#4a6677"],
-  [160, "#7896a8"],
+  [0, "#162029"],
+  [20, "#22313c"],
+  [45, "#355062"],
+  [90, "#56778b"],
+  [160, "#8eabbd"],
 ];
 
 /** The `fill-extrusion-color` expression for HEIGHT_RAMP. */
@@ -64,7 +69,7 @@ export const EYE_LIGHT: LightSpecification = {
   anchor: "map",
   position: [1.4, 215, 35],
   color: "#ffffff",
-  intensity: 0.62,
+  intensity: 0.74,
 };
 
 /** One MapLibre paint write. */

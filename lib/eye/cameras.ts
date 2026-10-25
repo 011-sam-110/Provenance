@@ -36,10 +36,56 @@ export function nearCameras<T extends Pick<NearCamera, "km">>(cams: readonly T[]
 /** What a card asks for first. A stream before a clip before a still. */
 export type CardMedia = "stream" | "clip" | "still";
 
-export function preferredMedia(cam: Pick<NearCamera, "live" | "clip">): CardMedia {
-  if (cam.live) return "stream";
+/**
+ * A stream before a clip before a still, except in a film (clock=manual). A film is
+ * drawn one frame at a time, far slower than real time, so a stream filmed that way
+ * runs many times too fast: traffic at a speed nobody drove. A film shows the clip,
+ * moved on by the film's own clock (cameraCard.ts), or else the still.
+ */
+export function preferredMedia(cam: Pick<NearCamera, "live" | "clip">, film = false): CardMedia {
+  if (cam.live && !film) return "stream";
   if (cam.clip) return "clip";
   return "still";
+}
+
+/** A card on screen, for clipsToPlay: what it shows and where its camera is. */
+export interface PlayingCandidate {
+  id: string;
+  media: CardMedia;
+  x: number;
+  y: number;
+}
+
+/**
+ * The cards whose clips play now. Measured on the production build on 25 Oct 2026, a
+ * 6 s orbit at 60 Hz: with three clips playing the view drew 182 to 185 frames against
+ * the bare scene's 361 and 362, and with one it drew 362. So while the view moves, ONE
+ * video plays. A stream takes that place, because a stream is never held: a held stream
+ * is not live. Else the clip of the camera the link opened on, else the clip nearest
+ * the middle of the frame. The other clips hold their frame until the view rests, and
+ * then every clip plays.
+ */
+export function clipsToPlay(
+  cards: readonly PlayingCandidate[],
+  centre: { x: number; y: number },
+  moving: boolean,
+  pinned?: string | null,
+): Set<string> {
+  const clips = cards.filter((c) => c.media === "clip");
+  if (!moving) return new Set(clips.map((c) => c.id));
+  if (clips.length === 0 || cards.some((c) => c.media === "stream")) return new Set();
+  const pin = clips.find((c) => c.id === pinned);
+  if (pin) return new Set([pin.id]);
+  let best = clips[0];
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const c of clips) {
+    const d = Math.hypot(c.x - centre.x, c.y - centre.y);
+    if (d < bestDist) {
+      best = c;
+      bestDist = d;
+    }
+  }
+  return new Set([best.id]);
 }
 
 /** What a card falls back to when its media fails: a stream or a clip to the still. */

@@ -82,3 +82,51 @@ export function flyAheadOf(view: EyePose): { lat: number; lon: number } {
 export function flyArrived(pose: EyePose, to: { lat: number; lon: number } | null): boolean {
   return to != null && pose.lat === to.lat && pose.lon === to.lon;
 }
+
+/**
+ * The view's clock. Live, it is the wall clock. In a film (clock=manual) it is the
+ * film's own: it stands still while a frame is drawn and moves on only by the film's
+ * steps. So every time a film shows (the HUD's clock, a card's age, the aircraft's age)
+ * is the time in the film, however slowly the film is drawn. On 25 Oct 2026 a 4 s film
+ * took about five minutes to draw, and on the wall clock its HUD minute changed three
+ * times.
+ */
+export interface EyeClock {
+  readonly film: boolean;
+  /** Milliseconds since 1970, as Date.now(). */
+  now(): number;
+  /** Called after each step of a film's clock. The wall clock never calls it. */
+  subscribe(fn: () => void): () => void;
+}
+
+export const wallClock: EyeClock = {
+  film: false,
+  now: () => Date.now(),
+  subscribe: () => () => undefined,
+};
+
+export interface FilmClock extends EyeClock {
+  /** Move the film's time on by `ms`: one frame of the film, or more. */
+  step(ms: number): void;
+}
+
+/** A film's clock, standing at `start` until the film steps it. */
+export function filmClock(start: number): FilmClock {
+  let t = start;
+  const subs = new Set<() => void>();
+  return {
+    film: true,
+    now: () => t,
+    step(ms: number) {
+      if (!(ms > 0) || !Number.isFinite(ms)) return;
+      t += ms;
+      for (const fn of subs) fn();
+    },
+    subscribe(fn: () => void) {
+      subs.add(fn);
+      return () => {
+        subs.delete(fn);
+      };
+    },
+  };
+}

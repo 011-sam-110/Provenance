@@ -18,12 +18,15 @@
 // MARKS JUMP AT EACH REPORT. A vessel or an aircraft is drawn where its last report
 // put it and moves when the next one lands (60 s for AIS, 90 s for aircraft). Nothing
 // glides between reports: an in-between position is a place nobody reported.
+//
+// ONE CLIP PLAYS WHILE THE VIEW MOVES. Three clips playing at once halved the moving
+// view's frames, one cost none (lib/eye/cameras.ts, clipsToPlay). At rest every clip plays.
 
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import { BUILDING_LAYER } from "@/lib/map/buildings";
 import type { EyeTarget } from "@/lib/eye/places";
-import { cameraCredits, cameraLedgerRow, nearCameras, type NearCamera } from "@/lib/eye/cameras";
+import { cameraCredits, cameraLedgerRow, clipsToPlay, nearCameras, type NearCamera, type PlayingCandidate } from "@/lib/eye/cameras";
 import {
   GAP,
   placeCards,
@@ -63,6 +66,7 @@ import {
 } from "@/lib/eye/streets";
 import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
 import type { LedgerRow } from "@/lib/eye/wording";
+import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { Tag, tagSize } from "./tag";
 
@@ -180,6 +184,11 @@ interface Props {
   portrait: boolean;
   /** A recording (record=1): the 9:16 frame keeps clear of Instagram's own bands. */
   record: boolean;
+  /**
+   * The wall clock, or a film's own under clock=manual (lib/eye/motion.ts). In a film
+   * every age reads it, no feed is fetched again, and the cards' clips step with it.
+   */
+  clock: EyeClock;
   onReport: (r: OverlayReport) => void;
   /** Filled with "place the cards and tags now", for the record script's frame-by-frame clock. */
   placeRef?: React.MutableRefObject<(() => void) | null>;
@@ -200,7 +209,7 @@ interface State {
   tags: Map<string, Tag>;
 }
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, record, onReport, placeRef }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, onReport, placeRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -241,7 +250,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
               "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 6, 17, 16],
               "circle-color": "rgba(232,241,248,0.10)",
               "circle-stroke-color": "rgba(232,241,248,0.9)",
-              "circle-stroke-width": 1.5,
+              "circle-stroke-width": 2,
               "circle-pitch-alignment": "map",
             },
           },
@@ -343,7 +352,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           type: "line",
           source: SRC.ahead,
           layout: { "line-cap": "round" },
-          paint: { "line-color": COLOUR.ship, "line-width": 1.6, "line-opacity": 0.85, "line-dasharray": [2, 2] },
+          paint: { "line-color": COLOUR.ship, "line-width": 2.2, "line-opacity": 0.95, "line-dasharray": [2, 2] },
         });
       }
       if (!map.getLayer(LYR.ship)) {
@@ -353,7 +362,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           source: SRC.ships,
           layout: {
             "icon-image": IMG.ship,
-            "icon-size": ["case", ["get", "moving"], 0.62, 0.46],
+            // Critique round 2: at 0.62 and 0.46 a vessel was a speck beside the
+            // reference reel's marks. A moving one is the larger.
+            "icon-size": ["case", ["get", "moving"], 0.9, 0.66],
             "icon-rotate": ["get", "rot"],
             "icon-rotation-alignment": "map",
             "icon-pitch-alignment": "map",
@@ -390,7 +401,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           source: SRC.planes,
           layout: {
             "icon-image": IMG.plane,
-            "icon-size": 0.5,
+            "icon-size": 0.72,
             "icon-rotate": ["get", "rot"],
             "icon-rotation-alignment": "map",
             "icon-allow-overlap": true,
@@ -426,7 +437,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (s.cams) rows.push(cameraLedgerRow(labelled.cams, s.cams));
       if (s.ships) rows.push(vesselLedgerRow(labelled.ships, s.ships.length));
       if (s.planes) {
-        const ageMs = s.planesFetchedAt != null ? Date.now() - s.planesFetchedAt : null;
+        const ageMs = s.planesFetchedAt != null ? clock.now() - s.planesFetchedAt : null;
         rows.push(aircraftLedgerRow(labelled.planes, s.planes.length, { sampled: s.planesSampled, ageMs }));
       }
       if (s.streets) rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, s.streets.length));
@@ -475,7 +486,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       for (const p of placed) {
         if (s.cards.has(p.id)) continue;
         const cam = cams.find((c) => c.id === p.id)!;
-        const card = new CameraCard(cam, portrait);
+        const card = new CameraCard(cam, { phone: portrait, clock, onMedia: clipsChanged });
         card.el.style.setProperty("--w", `${size.width}px`);
         card.el.style.setProperty("--stalk", `${size.stalk}px`);
         const marker = new maplibregl.Marker({ element: card.el, anchor: "bottom" }).setLngLat([cam.lon, cam.lat]).addTo(map);
@@ -534,6 +545,34 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
 
       ready = s.cams != null && s.ships != null && s.planes != null && (!london || s.streets != null);
       report();
+      playClips();
+    };
+
+    // --- which clips play (clipsToPlay) ------------------------------------------
+    // Every clip while the view rests; one while it moves, so the move keeps its frames.
+    let moving = false;
+    const playClips = () => {
+      if (disposed) return;
+      const box = map.getContainer();
+      const showing: PlayingCandidate[] = [];
+      for (const [id, { card, marker }] of s.cards) {
+        const media = card.media;
+        if (media !== "clip" && media !== "stream") continue;
+        const p = map.project(marker.getLngLat());
+        showing.push({ id, media, x: p.x, y: p.y });
+      }
+      const play = clipsToPlay(showing, { x: box.clientWidth / 2, y: box.clientHeight / 2 }, moving, pinned);
+      for (const [id, { card }] of s.cards) card.setPlay(play.has(id));
+    };
+    // A card's picture arrived or changed: decide again, once for a burst of them.
+    let clipsQueued = false;
+    const clipsChanged = () => {
+      if (clipsQueued) return;
+      clipsQueued = true;
+      queueMicrotask(() => {
+        clipsQueued = false;
+        playClips();
+      });
     };
 
     // --- when to place --------------------------------------------------------
@@ -548,11 +587,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => {
         settle = null;
+        moving = false;
         placeNow();
       }, 300);
     };
     const onMove = () => {
+      const started = !moving;
+      moving = true;
       if (performance.now() - lastPlace > 1000) placeNow();
+      else if (started) playClips();
     };
     map.on("moveend", onMoveEnd);
     map.on("move", onMove);
@@ -591,7 +634,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           .filter((f) => inBounds(f.lat, f.lon, region, 0))
           .map(toVessel)
           .filter((v): v is Vessel => v != null);
-        s.refreshedAt = Date.now();
+        s.refreshedAt = clock.now();
         landed();
       });
     const loadPlanes = () =>
@@ -604,7 +647,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
             .filter((a): a is Aircraft => a != null);
           s.planesSampled = Boolean(d?.coverage?.capped);
           s.planesFetchedAt = typeof d?.fetchedAt === "number" ? d.fetchedAt : null;
-          s.refreshedAt = Date.now();
+          s.refreshedAt = clock.now();
           landed();
         },
       );
@@ -627,15 +670,23 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     loadShips();
     loadPlanes();
     if (london) loadStreets();
-    const shipTimer = setInterval(loadShips, AIS_EVERY_MS);
-    const planeTimer = setInterval(loadPlanes, PLANES_EVERY_MS);
-    const streetTimer = london ? setInterval(loadStreets, STREETS_EVERY_MS) : null;
+    // A film keeps the reports it opened with: it is drawn far slower than it plays, so
+    // a report fetched during it would be minutes newer than the film's own clock.
+    const timers = clock.film
+      ? []
+      : [
+          setInterval(loadShips, AIS_EVERY_MS),
+          setInterval(loadPlanes, PLANES_EVERY_MS),
+          ...(london ? [setInterval(loadStreets, STREETS_EVERY_MS)] : []),
+        ];
 
-    // The age on every card, re-worded twice a minute.
-    const ticker = setInterval(() => {
-      const now = Date.now();
+    // The age on every card: re-worded twice a minute, or at each step of a film.
+    const tickCards = () => {
+      const now = clock.now();
       for (const { card } of s.cards.values()) card.tick(now);
-    }, 30_000);
+    };
+    const ticker = clock.film ? null : setInterval(tickCards, 30_000);
+    const leaveFilm = clock.film ? clock.subscribe(tickCards) : null;
 
     return () => {
       disposed = true;
@@ -643,10 +694,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       map.off("moveend", onMoveEnd);
       map.off("move", onMove);
       if (settle) clearTimeout(settle);
-      clearInterval(ticker);
-      clearInterval(shipTimer);
-      clearInterval(planeTimer);
-      if (streetTimer) clearInterval(streetTimer);
+      if (ticker) clearInterval(ticker);
+      leaveFilm?.();
+      for (const t of timers) clearInterval(t);
       for (const { card, marker } of s.cards.values()) {
         marker.remove();
         card.destroy();
@@ -656,7 +706,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       s.tags.clear();
       releaseCardMedia();
     };
-  }, [map, target, portrait, record, pinned, placeRef]);
+  }, [map, target, portrait, record, clock, pinned, placeRef]);
 
   return null;
 }

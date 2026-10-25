@@ -39,12 +39,12 @@ describe("creditsFromAttribution", () => {
   it("puts the ground first, keeps each credit once and the feeds in order", () => {
     // MapLibre's control text on /eye at Westminster, 25 Oct 2026.
     const text =
-      "Powered by TfL Open Data | Imagery © Esri, Maxar, Earthstar Geographics | Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use) | OpenFreeMap © OpenMapTiles Data from OpenStreetMap | Powered by TfL Open Data";
+      "Powered by TfL Open Data | Imagery © Esri, Maxar, Earthstar Geographics | Aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use) | OpenFreeMap © OpenMapTiles Data from OpenStreetMap | Powered by TfL Open Data";
     expect(creditsFromAttribution(text)).toEqual([
       "Imagery © Esri, Maxar, Earthstar Geographics",
       "OpenFreeMap © OpenMapTiles Data from OpenStreetMap",
       "Powered by TfL Open Data",
-      "Live aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use)",
+      "Aircraft © adsb.lol contributors (ODbL) · gap fill © adsb.fi (non-commercial use)",
     ]);
   });
 

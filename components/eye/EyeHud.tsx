@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import { BRAND } from "@/lib/brand";
+import type { EyeClock } from "@/lib/eye/motion";
 import type { EyeView } from "@/lib/eye/places";
 import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, refreshedText, type LedgerRow } from "@/lib/eye/wording";
 import styles from "./eye.module.css";
@@ -52,13 +53,15 @@ function useReadout(map: maplibregl.Map | null, start: EyeView): Readout {
   return readout;
 }
 
-function useClock(): number | null {
+/** The time shown: the wall clock each second, or a film's clock at each of its steps. */
+function useClock(clock: EyeClock): number | null {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    setNow(Date.now());
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    setNow(clock.now());
+    if (clock.film) return clock.subscribe(() => setNow(clock.now()));
+    const t = setInterval(() => setNow(clock.now()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [clock]);
   return now;
 }
 
@@ -79,6 +82,8 @@ export interface EyeHudProps {
   getBackHref: () => string;
   /** Recording: no buttons over the picture. */
   record: boolean;
+  /** The wall clock, or a film's own under clock=manual (lib/eye/motion.ts). */
+  clock: EyeClock;
   children?: React.ReactNode;
 }
 
@@ -93,10 +98,11 @@ export default function EyeHud({
   credits,
   getBackHref,
   record,
+  clock,
   children,
 }: EyeHudProps) {
   const readout = useReadout(map, start);
-  const now = useClock();
+  const now = useClock(clock);
   // A recording is filmed slower than it plays, so a count of seconds since the last
   // refresh would race; it is left out there, like the clock's seconds.
   const fresh = !record && refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;

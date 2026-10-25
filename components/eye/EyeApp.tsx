@@ -18,11 +18,15 @@
 //   overlay=0       the scene alone: no cards, tags or frame. The clean plate for a
 //                   reel, and the bare arm of the frame-time measurement.
 //   motion=orbit    start turning about the middle of the view (lib/eye/motion.ts).
-//   motion=fly      start gliding toward the place's end point.
+//   motion=fly      start gliding straight ahead along the heading, 220 m, then stop.
 //   record=1        for a recording: no buttons, the clock to the minute, and on a
 //                   9:16 screen every word kept out of the bands Instagram covers.
 //   clock=manual    the move waits for window.__eye.step(ms) instead of the screen's
-//                   frames, so scripts/eye-record.mjs films it frame by frame.
+//                   frames, so scripts/eye-record.mjs films it frame by frame. The
+//                   view then runs on the film's clock (lib/eye/motion.ts, filmClock):
+//                   the HUD's time and every age move only with the film's steps, no
+//                   feed is fetched again during the film, the cards' clips step with
+//                   it, and no card plays a stream.
 // With reduced motion asked for, no move runs and "Turn" is not offered.
 
 import dynamic from "next/dynamic";
@@ -32,8 +36,19 @@ import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
 import { consoleHref, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
 import { EYE_LIGHT, eyePaintOps } from "@/lib/eye/look";
-import { flyAheadOf, flyArrived, parseMotion, stepFly, stepOrbit, type EyeMotion, type EyePose } from "@/lib/eye/motion";
+import {
+  filmClock,
+  flyAheadOf,
+  flyArrived,
+  parseMotion,
+  stepFly,
+  stepOrbit,
+  wallClock,
+  type EyeMotion,
+  type EyePose,
+} from "@/lib/eye/motion";
 import { creditsFromAttribution, fmtLat, fmtLon } from "@/lib/eye/wording";
+import { clipsSettled, stepClips } from "./cameraCard";
 import EyeHud from "./EyeHud";
 import EyeOverlay, { type OverlayReport } from "./EyeOverlay";
 import styles from "./eye.module.css";
@@ -81,6 +96,11 @@ interface EyeDriver {
   idle(): Promise<void>;
 }
 
+/** window.__eye under clock=manual: the driver, and the film's time for checks. */
+interface EyeHandle extends EyeDriver {
+  now(): number;
+}
+
 export default function EyeApp() {
   const [target, setTarget] = useState<EyeTarget | null>(null);
   const [portrait, setPortrait] = useState(false);
@@ -92,6 +112,9 @@ export default function EyeApp() {
   const [credits, setCredits] = useState<string[]>([]);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const placeRef = useRef<(() => void) | null>(null);
+  // The film's clock under clock=manual, made when the link is read; else the wall clock.
+  const film = useMemo(() => (flags.manualClock ? filmClock(Date.now()) : null), [flags.manualClock]);
+  const clock = film ?? wallClock;
 
   useEffect(() => {
     // Before the map exists: WorldMap reads these when it is built.
@@ -208,16 +231,24 @@ export default function EyeApp() {
   // The record script's handle, whether or not a move is running: it waits on idle()
   // before the first frame too.
   useEffect(() => {
-    if (!map || !flags.manualClock) return;
-    const w = window as unknown as { __eye?: EyeDriver };
+    if (!map || !film) return;
+    const w = window as unknown as { __eye?: EyeHandle };
+    // The film's time moves first, so the placement and the ages read the new time. The
+    // clips step with the film whether or not the move still runs (a fly arrives before
+    // the film ends), and each frame waits for their new pictures too.
     w.__eye = {
-      step: (ms) => driverRef.current?.step(ms),
-      idle: () => idleOf(map),
+      step: (ms) => {
+        film.step(ms);
+        driverRef.current?.step(ms);
+        stepClips(ms);
+      },
+      idle: () => Promise.all([idleOf(map), clipsSettled()]).then(() => undefined),
+      now: () => film.now(),
     };
     return () => {
       delete w.__eye;
     };
-  }, [map, flags.manualClock]);
+  }, [map, film]);
 
   // The first touch ends the move: a press, a wheel or a key on the map.
   useEffect(() => {
@@ -277,6 +308,7 @@ export default function EyeApp() {
           target={target}
           portrait={portrait}
           record={flags.record}
+          clock={clock}
           onReport={setReport}
           placeRef={placeRef}
         />
@@ -293,6 +325,7 @@ export default function EyeApp() {
           credits={credits}
           getBackHref={getBackHref}
           record={flags.record}
+          clock={clock}
         >
           {flags.canMove && (
             <button

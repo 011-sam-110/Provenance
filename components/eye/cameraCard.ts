@@ -11,6 +11,15 @@
 // THE AGE IS THE OPERATOR'S. A still or a clip is fetched as a blob so the response's
 // Last-Modified can be read: /api/proxy passes the operator's own time through
 // (lib/proxy/clip.ts). With no such header the card states only the cadence.
+//
+// A CLIP PLAYS WHEN THE OVERLAY SAYS SO (setPlay, decided by clipsToPlay): several
+// clips playing at once cost the moving view half its frames. In a film
+// (clock=manual) no clip plays by itself: each step of the film moves every clip on
+// by the same time (stepClips), so a clip runs at its own speed in the film. A film
+// also keeps each card's first picture (no refresh while it is drawn), and the age
+// reads the film's clock. A card that first appears during a film fetches its picture
+// then, so that picture can be newer than the film's clock; its age then reads
+// "just now".
 
 import {
   cardMeta,
@@ -20,7 +29,55 @@ import {
   type CardMedia,
   type NearCamera,
 } from "@/lib/eye/cameras";
+import type { EyeClock } from "@/lib/eye/motion";
 import styles from "./eye.module.css";
+
+/** The clips on screen in a film, moved on by stepClips. */
+const filmed = new Set<HTMLVideoElement>();
+let filmSettled: Promise<unknown> = Promise.resolve();
+
+/** Resolves when the video shows the frame at its time (or seek), fails, or after 3 s. */
+function frameReady(v: HTMLVideoElement, seek?: number): Promise<void> {
+  return new Promise((resolve) => {
+    const event = seek === undefined ? "loadeddata" : "seeked";
+    const done = () => {
+      clearTimeout(timer);
+      v.removeEventListener(event, done);
+      v.removeEventListener("error", done);
+      resolve();
+    };
+    const timer = setTimeout(done, 3000);
+    v.addEventListener(event, done);
+    v.addEventListener("error", done);
+    if (seek !== undefined) v.currentTime = seek;
+  });
+}
+
+/**
+ * One step of a film: every clip on screen moves on by `ms`, looping. clipsSettled()
+ * resolves once each one shows its new frame, so the film's picture waits for it.
+ */
+export function stepClips(ms: number): void {
+  const waits: Promise<void>[] = [];
+  for (const v of filmed) {
+    if (!v.isConnected || v.error) {
+      filmed.delete(v);
+      continue;
+    }
+    // Not loaded yet: it starts at its first frame, once that has arrived.
+    if (v.readyState < HTMLMediaElement.HAVE_CURRENT_DATA || !(v.duration > 0) || !Number.isFinite(v.duration)) {
+      waits.push(frameReady(v));
+      continue;
+    }
+    waits.push(frameReady(v, (v.currentTime + ms / 1000) % v.duration));
+  }
+  filmSettled = Promise.all(waits);
+}
+
+/** The film's clips show the frames of the last step. */
+export function clipsSettled(): Promise<void> {
+  return filmSettled.then(() => undefined);
+}
 
 interface Loaded {
   media: "clip" | "still";
@@ -40,6 +97,7 @@ const loaded = new Map<string, Loaded>();
 export function releaseCardMedia(): void {
   for (const l of loaded.values()) URL.revokeObjectURL(l.url);
   loaded.clear();
+  filmed.clear();
 }
 
 /** No camera refreshes faster than this here, whatever its feed says. */
@@ -51,9 +109,10 @@ function cadenceMs(cam: NearCamera): number {
   return Math.max(MIN_REFRESH_MS, (cam.refreshSeconds ?? 300) * 1000);
 }
 
-async function fetchPicture(cam: NearCamera, media: "clip" | "still", signal: AbortSignal): Promise<Loaded | null> {
+async function fetchPicture(cam: NearCamera, media: "clip" | "still", signal: AbortSignal, film: boolean): Promise<Loaded | null> {
   const cached = loaded.get(cam.id);
-  if (cached && cached.media === media && Date.now() - cached.fetchedAt < cadenceMs(cam)) return cached;
+  // A film keeps the picture it has: a newer one would be newer than the film's clock.
+  if (cached && cached.media === media && (film || Date.now() - cached.fetchedAt < cadenceMs(cam))) return cached;
   try {
     const res = await fetch(`/api/proxy?id=${encodeURIComponent(cam.id)}${media === "clip" ? "&clip=1" : ""}`, { signal });
     if (!res.ok) return null;
@@ -84,11 +143,22 @@ export class CameraCard {
   private readonly abort = new AbortController();
   private refresh: ReturnType<typeof setTimeout> | null = null;
   private dead = false;
+  private readonly phone: boolean;
+  /** The wall clock, or a film's own (lib/eye/motion.ts): what the age is counted from. */
+  private readonly clock: EyeClock;
+  /** A film (clock=manual): no stream, no refresh, and the clip follows the film's clock. */
+  private readonly film: boolean;
+  /** Told when the picture on screen changes, so the overlay can decide what plays. */
+  private readonly onMedia: () => void;
 
   constructor(
     private readonly cam: NearCamera,
-    private readonly phone: boolean,
+    opts: { phone: boolean; clock: EyeClock; onMedia: () => void },
   ) {
+    this.phone = opts.phone;
+    this.clock = opts.clock;
+    this.film = opts.clock.film;
+    this.onMedia = opts.onMedia;
     // The card is a link to the camera's own page, in a new tab so the view stays.
     const el = document.createElement("a");
     el.className = styles.cam;
@@ -117,7 +187,24 @@ export class CameraCard {
     stalk.className = styles.stalk;
     el.append(plate, stalk);
 
-    void this.load(preferredMedia(cam));
+    void this.load(preferredMedia(cam, this.film));
+  }
+
+  /** What the card shows now, or null while it loads. */
+  get media(): CardMedia | null {
+    return this.showing;
+  }
+
+  /**
+   * Play or hold this card's clip, as clipsToPlay decided. A held clip keeps its frame
+   * and its words: it is still the operator's clip, of the age it states. A stream is
+   * never held, and in a film the clip follows the film's clock instead.
+   */
+  setPlay(on: boolean): void {
+    const v = this.shown;
+    if (this.film || this.showing !== "clip" || !(v instanceof HTMLVideoElement)) return;
+    if (on && v.paused) void v.play().catch(() => undefined);
+    else if (!on && !v.paused) v.pause();
   }
 
   private async load(want: CardMedia): Promise<void> {
@@ -128,7 +215,7 @@ export class CameraCard {
       if (!this.dead) this.tryStream();
       return;
     }
-    const pic = await fetchPicture(this.cam, want, this.abort.signal);
+    const pic = await fetchPicture(this.cam, want, this.abort.signal, this.film);
     if (this.dead) return;
     if (!pic) {
       if (want === "clip") return this.load("still");
@@ -144,13 +231,15 @@ export class CameraCard {
   private mount(pic: Loaded): void {
     let node: HTMLElement;
     if (pic.media === "clip") {
+      // Not autoplay: it starts when setPlay says so, or steps with a film.
       const v = document.createElement("video");
       v.muted = true;
       v.loop = true;
-      v.autoplay = true;
       v.playsInline = true;
+      v.preload = "auto";
       v.setAttribute("aria-hidden", "true");
       v.src = pic.url;
+      if (this.film) filmed.add(v);
       node = v;
     } else {
       const img = document.createElement("img");
@@ -163,14 +252,18 @@ export class CameraCard {
 
   private swapIn(node: HTMLElement, showing: CardMedia, takenAt: number | null): void {
     node.classList.remove(styles.pending);
-    if (this.shown && this.shown !== node) this.shown.remove();
+    if (this.shown && this.shown !== node) {
+      if (this.shown instanceof HTMLVideoElement) filmed.delete(this.shown);
+      this.shown.remove();
+    }
     if (node.parentElement !== this.frame) this.frame.append(node);
     this.shown = node;
     this.showing = showing;
     this.takenAt = takenAt;
     this.el.dataset.media = showing;
     this.chip.textContent = mediaLabel(showing);
-    this.tick(Date.now());
+    this.tick(this.clock.now());
+    this.onMedia();
   }
 
   private tryStream(): void {
@@ -222,7 +315,7 @@ export class CameraCard {
 
   /** Fetch the same kind of picture again after one of the operator's cycles. */
   private schedule(media: CardMedia): void {
-    if (this.dead || media === "stream") return;
+    if (this.dead || media === "stream" || this.film) return;
     if (this.refresh) clearTimeout(this.refresh);
     this.refresh = setTimeout(() => {
       // A stream that took over from the still needs no refresh: it is moving.
@@ -254,6 +347,7 @@ export class CameraCard {
     this.hls?.destroy();
     this.hls = null;
     if (this.shown instanceof HTMLVideoElement) {
+      filmed.delete(this.shown);
       this.shown.pause();
       this.shown.removeAttribute("src");
       this.shown.load();

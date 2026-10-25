@@ -5,11 +5,13 @@ import {
   FLY_AHEAD_KM,
   FLY_METRES_PER_SEC,
   ORBIT_DEG_PER_SEC,
+  filmClock,
   flyAheadOf,
   flyArrived,
   parseMotion,
   stepFly,
   stepOrbit,
+  wallClock,
   type EyePose,
 } from "@/lib/eye/motion";
 
@@ -99,5 +101,37 @@ describe("stepFly", () => {
     expect(stepFly(from, to, 0)).toEqual(from);
     expect(stepFly(from, to, -1)).toEqual(from);
     expect(stepFly(from, to, Number.NaN)).toEqual(from);
+  });
+});
+
+describe("the view's clock", () => {
+  it("in a film, stands still until the film steps it, and moves by the step only", () => {
+    const c = filmClock(1_000);
+    expect(c.film).toBe(true);
+    expect(c.now()).toBe(1_000);
+    c.step(1000 / 30);
+    c.step(1000 / 30);
+    expect(c.now()).toBeCloseTo(1_000 + 2000 / 30, 9);
+    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) c.step(bad);
+    expect(c.now()).toBeCloseTo(1_000 + 2000 / 30, 9);
+  });
+
+  it("tells its listeners after each step, and no longer once they leave", () => {
+    const c = filmClock(0);
+    const seen: number[] = [];
+    const leave = c.subscribe(() => seen.push(c.now()));
+    c.step(500);
+    c.step(500);
+    leave();
+    c.step(500);
+    expect(seen).toEqual([500, 1000]);
+  });
+
+  it("live, is the wall clock and never calls a listener", () => {
+    expect(wallClock.film).toBe(false);
+    expect(Math.abs(wallClock.now() - Date.now())).toBeLessThan(1000);
+    let calls = 0;
+    wallClock.subscribe(() => calls++)();
+    expect(calls).toBe(0);
   });
 });

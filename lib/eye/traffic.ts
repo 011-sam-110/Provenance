@@ -181,8 +181,12 @@ export function vesselLedgerRow(inView: readonly Vessel[], nearby: number): Ledg
   };
 }
 
-/** The aircraft credit, for the map's attribution control. */
-export const AIRCRAFT_CREDIT = ADSB_ATTRIBUTION;
+/**
+ * The aircraft credit, for the map's attribution control: the console's own, with
+ * both names and both licences, less its first word. A reel filmed from this view is
+ * a recording, and here the one "Live" is the chip of a stream that is playing.
+ */
+export const AIRCRAFT_CREDIT = ADSB_ATTRIBUTION.replace(/^Live aircraft/, "Aircraft");
 
 /**
  * The aircraft row says what the count is: a share of a worldwide SAMPLE (the route

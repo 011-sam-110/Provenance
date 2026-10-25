@@ -71,7 +71,7 @@
   background:
     linear-gradient(to bottom, rgba(3, 6, 8, 0.66) 0, rgba(3, 6, 8, 0.28) 96px, rgba(3, 6, 8, 0) 168px),
     linear-gradient(to top, rgba(3, 6, 8, 0.74) 0, rgba(3, 6, 8, 0.4) 150px, rgba(3, 6, 8, 0) 260px),
-    radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.34) 100%);
+    radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.5) 100%);
 }
 
 /* Scan lines: one dark line every 3 px, faint. Static, so the compositor draws them
@@ -389,7 +389,7 @@
 .camPlate {
   width: 100%;
   background: var(--eye-plate);
-  border: 1px solid rgba(232, 241, 248, 0.42);
+  border: 1px solid rgba(232, 241, 248, 0.62);
   border-radius: 5px;
   overflow: hidden;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
@@ -641,7 +641,7 @@
     background:
       linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.32) 150px, rgba(3, 6, 8, 0) 230px),
       linear-gradient(to top, rgba(3, 6, 8, 0.78) 0, rgba(3, 6, 8, 0.4) 120px, rgba(3, 6, 8, 0) 210px),
-      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.3) 100%);
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 54%, rgba(0, 0, 0, 0.46) 100%);
   }
   .camText b {
     font-size: 10.5px;
@@ -688,6 +688,6 @@
     background:
       linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.34) 18%, rgba(3, 6, 8, 0) 26%),
       linear-gradient(to top, rgba(3, 6, 8, 0.72) 0, rgba(3, 6, 8, 0.5) 30%, rgba(3, 6, 8, 0) 42%),
-      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.3) 100%);
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 54%, rgba(0, 0, 0, 0.46) 100%);
   }
 }

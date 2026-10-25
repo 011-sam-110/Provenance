@@ -14,7 +14,11 @@
 //
 // WHAT IS ON SCREEN IS WHAT THE VIEW SHOWS. The cards are the operators' own pictures
 // with their own times, the vessels and aircraft are where they were last reported, and
-// the credits line names every source. Do not crop the credits out of a reel.
+// the credits line names every source. Do not crop the credits out of a reel. The view
+// runs on the film's own clock (filmClock in lib/eye/motion.ts): the HUD's time, every
+// age and every card's clip move on only with the steps, so they keep the film's time
+// however slowly it is drawn, and no feed is fetched again during the film. No card
+// plays a stream: a stream filmed this way would run too fast.
 //
 // NOT IN THE GATE: it needs a browser, a graphics card and the network. It writes
 // nothing into the repo unless --out points there.
