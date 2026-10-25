@@ -24,6 +24,14 @@ export function fmtClockUtc(ms: number): string {
   return new Date(ms).toISOString().slice(11, 19);
 }
 
+/** The line under the ledger: "Vessels and aircraft refreshed 12 s ago". */
+export function refreshedText(at: number, now: number): string {
+  const s = Math.max(0, Math.round((now - at) / 1000));
+  if (s < 5) return "Vessels and aircraft refreshed just now";
+  if (s < 120) return `Vessels and aircraft refreshed ${s} s ago`;
+  return `Vessels and aircraft refreshed ${Math.round(s / 60)} min ago`;
+}
+
 /** "1 vessel", "2 vessels". */
 export function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;

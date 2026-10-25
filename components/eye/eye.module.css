@@ -382,6 +382,64 @@
   background: linear-gradient(to bottom, rgba(232, 241, 248, 0.9), rgba(232, 241, 248, 0.35));
 }
 
+/* ── Vessel, aircraft and street tags ──────────────────────────────────── */
+
+.tag {
+  --c: var(--eye-ship);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.tag[data-kind="plane"] { --c: var(--eye-plane); }
+.tag[data-kind="road"] { --c: var(--eye-road); }
+.tag[data-flip] { flex-direction: row-reverse; }
+.tag[data-flip] .leader {
+  background: linear-gradient(to top left, transparent calc(50% - 0.6px), var(--c) calc(50% - 0.6px), var(--c) calc(50% + 0.6px), transparent calc(50% + 0.6px));
+}
+.tag[data-flip] .tagPlate {
+  border-left: 0;
+  border-right: 2px solid var(--c);
+  border-radius: 4px 0 0 4px;
+  text-align: right;
+}
+
+.leader {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(to top right, transparent calc(50% - 0.6px), var(--c) calc(50% - 0.6px), var(--c) calc(50% + 0.6px), transparent calc(50% + 0.6px));
+}
+
+.tagPlate {
+  margin-bottom: 14px;
+  display: grid;
+  gap: 1px;
+  padding: 4px 8px 5px 7px;
+  background: var(--eye-plate);
+  border-left: 2px solid var(--c);
+  border-radius: 0 4px 4px 0;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagPlate b {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--eye-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagPlate span {
+  font-size: 10.5px;
+  color: var(--eye-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
 
 @media (max-aspect-ratio: 4/5) {
@@ -487,5 +545,11 @@
   }
   .kind {
     font-size: 8.5px;
+  }
+  .tagPlate b {
+    font-size: 10.5px;
+  }
+  .tagPlate span {
+    font-size: 9.5px;
   }
 }

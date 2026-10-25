@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import { BRAND } from "@/lib/brand";
 import type { EyeView } from "@/lib/eye/places";
-import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, type LedgerRow } from "@/lib/eye/wording";
+import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, refreshedText, type LedgerRow } from "@/lib/eye/wording";
 import styles from "./eye.module.css";
 
 interface Readout {
@@ -67,8 +67,8 @@ export interface EyeHudProps {
   title: string;
   area?: string;
   rows: LedgerRow[];
-  /** A line under the ledger, e.g. when a feed last refreshed. */
-  fresh?: string;
+  /** When the vessels or the aircraft last arrived; the line under the ledger says how long ago. */
+  refreshedAt?: number;
   /** Shown on a phone instead of the long rows that state an absence. */
   phoneNote?: string;
   /** The console at the spot on screen NOW, read when the link is used. */
@@ -78,9 +78,10 @@ export interface EyeHudProps {
   children?: React.ReactNode;
 }
 
-export default function EyeHud({ map, start, title, area, rows, fresh, phoneNote, getBackHref, record, children }: EyeHudProps) {
+export default function EyeHud({ map, start, title, area, rows, refreshedAt, phoneNote, getBackHref, record, children }: EyeHudProps) {
   const readout = useReadout(map, start);
   const now = useClock();
+  const fresh = refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;
   // The href is set as the link is used, so it is the spot on screen then, without a
   // re-render on every pan. Pointer-down covers a middle click, focus a keyboard.
   const refreshBack = (e: React.SyntheticEvent<HTMLAnchorElement>) => {

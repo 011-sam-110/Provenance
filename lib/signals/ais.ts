@@ -2,7 +2,7 @@ import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { applyCap } from "@/lib/signals/coverage";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { recordCredentialRefusal } from "@/lib/sources/upstreamEvidence";
-import { DIGITRAFFIC_CREDIT, fetchDigitraffic } from "@/lib/signals/aisDigitraffic";
+import { DIGITRAFFIC_CREDIT, fetchDigitraffic, shipTypeLabel } from "@/lib/signals/aisDigitraffic";
 import { BARENTSWATCH_CREDIT, fetchBarentswatch } from "@/lib/signals/aisBarentswatch";
 
 // Real-time ship tracking at strategic chokepoints, from three feeds:
@@ -265,6 +265,62 @@ export function pruneHeard(heard: Map<number, { vessel: AisVessel; heardAt: numb
   for (const [mmsi, h] of heard) if (now - h.heardAt > ttlMs) heard.delete(mmsi);
 }
 
+// --- static data: what kind of ship -----------------------------------------
+//
+// A position report carries no ship type. Measured on production 2026-10-24: 993 of
+// the 1,200 vessels served had none, because only Digitraffic and BarentsWatch send
+// one. AIS message 5 (ShipStaticData) carries it, on the same socket and the same key:
+// a Class A ship sends it every 6 minutes. It is kept per MMSI, apart from the
+// positions, and joined to a vessel's newest position when the snapshot is taken.
+
+/** What the stream is asked for. Both on every (re)connect. */
+export const AIS_MESSAGE_TYPES = ["PositionReport", "ShipStaticData"] as const;
+
+/** Pure: the subscription frame AISStream expects within 3 s of the socket opening. */
+export function subscriptionMessage(key: string): string {
+  return JSON.stringify({ APIKey: key, BoundingBoxes: chokepointBoxes(), FilterMessageTypes: AIS_MESSAGE_TYPES });
+}
+
+/** A ship's type does not change between reports; six hours spans a long passage. */
+export const STATIC_TTL_MS = 6 * 3_600_000;
+
+export interface AisStatic {
+  shipType?: string;
+  destination?: string;
+  heardAt: number;
+}
+
+/**
+ * Pure: the useful part of a ShipStaticData message, or null when it has none. The
+ * destination is typed in by the crew and padded with `@` by the protocol; empty
+ * after trimming means none.
+ */
+export function staticFromMessage(
+  msg: { Type?: number | null; Destination?: string | null } | undefined,
+  heardAt: number,
+): AisStatic | null {
+  if (!msg) return null;
+  const shipType = shipTypeLabel(typeof msg.Type === "number" ? msg.Type : undefined);
+  const destination = (msg.Destination ?? "").replace(/@+/g, " ").trim() || undefined;
+  if (!shipType && !destination) return null;
+  return { ...(shipType ? { shipType } : {}), ...(destination ? { destination } : {}), heardAt };
+}
+
+/** Pure: a vessel with its static data joined in. A feed's own value is never replaced. */
+export function withStatic(v: AisVessel, s: AisStatic | undefined): AisVessel {
+  if (!s) return v;
+  return {
+    ...v,
+    ...(v.shipType || !s.shipType ? {} : { shipType: s.shipType }),
+    ...(v.destination || !s.destination ? {} : { destination: s.destination }),
+  };
+}
+
+/** Pure: forget static data not heard for `ttlMs`. */
+export function pruneStatics(statics: Map<number, AisStatic>, now: number, ttlMs = STATIC_TTL_MS): void {
+  for (const [mmsi, s] of statics) if (now - s.heardAt > ttlMs) statics.delete(mmsi);
+}
+
 /** Pure: reconnect delay after `attempt` failures: 2 s doubling to 5 min, with jitter. */
 export function reconnectDelay(attempt: number, rand: number = Math.random()): number {
   const base = Math.min(5 * 60_000, 2000 * 2 ** Math.max(0, attempt));
@@ -277,6 +333,8 @@ interface Collector {
   key: string;
   ws: WebSocket | null;
   heard: Map<number, { vessel: AisVessel; heardAt: number }>;
+  /** Ship type and destination per MMSI, from ShipStaticData. */
+  statics: Map<number, AisStatic>;
   /** When the current socket opened. Null while not connected. */
   openedAt: number | null;
   /** When this collector first connected; the snapshot is warm after WARM_MS. */
@@ -320,7 +378,7 @@ function connect(c: Collector) {
     c.failure = undefined;
     // AISStream drops a socket that has not subscribed within 3 s of opening, so the
     // full subscription goes on every (re)connect.
-    ws.send(JSON.stringify({ APIKey: c.key, BoundingBoxes: chokepointBoxes(), FilterMessageTypes: ["PositionReport"] }));
+    ws.send(subscriptionMessage(c.key));
   };
   ws.onmessage = (e: MessageEvent) => {
     const txt = typeof e.data === "string" ? e.data : decoder.decode(e.data as ArrayBuffer);
@@ -329,7 +387,10 @@ function connect(c: Collector) {
         error?: string;
         MessageType?: string;
         MetaData?: { MMSI?: number; ShipName?: string; latitude?: number; longitude?: number; time_utc?: string };
-        Message?: { PositionReport?: { Sog?: number; Cog?: number; TrueHeading?: number; NavigationalStatus?: number } };
+        Message?: {
+          PositionReport?: { Sog?: number; Cog?: number; TrueHeading?: number; NavigationalStatus?: number };
+          ShipStaticData?: { Type?: number; Destination?: string };
+        };
       };
       // upstreamEvidence.ts wraps fetch() to catch 401/402/403s, which structurally
       // cannot see this — AIS speaks WebSocket. This is the one AISStream frame that
@@ -351,6 +412,11 @@ function connect(c: Collector) {
         return;
       }
       const mmsi = m.MetaData?.MMSI;
+      if (m.MessageType === "ShipStaticData" && mmsi) {
+        const s = staticFromMessage(m.Message?.ShipStaticData, Date.now());
+        if (s) c.statics.set(mmsi, s);
+        return;
+      }
       if (m.MessageType !== "PositionReport" || !mmsi) return;
       const md = m.MetaData!, pr = m.Message?.PositionReport ?? {};
       const now = Date.now();
@@ -412,6 +478,7 @@ function collectorFor(key: string): { c: Collector; fresh: boolean } {
     key,
     ws: null,
     heard: new Map(),
+    statics: new Map(),
     openedAt: null,
     firstOpenAt: null,
     lastMessageAt: null,
@@ -491,7 +558,8 @@ export const AIS_SOURCE: SignalSource = {
         const { c } = held;
         const t = Date.now();
         pruneHeard(c.heard, t);
-        stream = liveVessels(c.heard, t);
+        pruneStatics(c.statics, t);
+        stream = liveVessels(c.heard, t).map((v) => withStatic(v, v.MMSI ? c.statics.get(v.MMSI) : undefined));
         streamFailure = c.failure;
         streamDown = !c.ws && Boolean(c.failure);
         firstOpenAt = c.firstOpenAt;

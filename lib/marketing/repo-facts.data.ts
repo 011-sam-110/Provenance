@@ -96,10 +96,11 @@
  * Re-measured 2026-10-25 on feat/gods-eye (origin/main at bdd0f50, after #297), M1: the God's
  * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
  * 5,489 cases across 471 files. M2 adds `eye-cameras`, `eye-declutter` and `proxy-clip`: 5,514
- * cases across 474 files.
+ * cases across 474 files. M3 adds `eye-traffic` and `signals-ais-static`: 5,538 cases across
+ * 476 files.
  */
 export const UNIT_TESTS = {
-  cases: 5514,
-  files: 474,
+  cases: 5538,
+  files: 476,
   measuredAt: "2026-10-25",
 } as const;

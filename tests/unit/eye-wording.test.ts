@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, plural } from "@/lib/eye/wording";
+import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, plural, refreshedText } from "@/lib/eye/wording";
 
 describe("the HUD readouts", () => {
   it("print positions to four decimals with their hemisphere", () => {
@@ -18,6 +18,13 @@ describe("the HUD readouts", () => {
 
   it("print the clock in UTC", () => {
     expect(fmtClockUtc(Date.UTC(2026, 9, 24, 22, 42, 52))).toBe("22:42:52");
+  });
+
+  it("say how long ago the vessels and aircraft arrived", () => {
+    const now = 1_000_000;
+    expect(refreshedText(now - 2_000, now)).toBe("Vessels and aircraft refreshed just now");
+    expect(refreshedText(now - 47_000, now)).toBe("Vessels and aircraft refreshed 47 s ago");
+    expect(refreshedText(now - 300_000, now)).toBe("Vessels and aircraft refreshed 5 min ago");
   });
 
   it("count in the singular and the plural", () => {
