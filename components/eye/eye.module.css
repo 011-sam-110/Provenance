@@ -1,0 +1,693 @@
+/* The God's eye view. Its own dark register, scoped to this page: the console's light
+ * skin does not change. One typeface, Inter through --tn-sans, with tabular figures and
+ * a slashed zero for the readouts.
+ *
+ * CONTRAST. Every label sits on a plate (--eye-plate), never on the bare photograph,
+ * and the inks are measured against that plate over the brightest imagery: --eye-ink
+ * 10.1:1, --eye-ink-2 about 6.8:1, --eye-ink-3 about 4.8:1 (it was 52% in the design
+ * pass and measured 4.0:1, under the 4.5:1 line, so it is 60% here). */
+
+.root,
+.hud,
+.cam,
+.tag {
+  --eye-ink: #eef3f1;
+  --eye-ink-2: rgba(238, 243, 241, 0.76);
+  --eye-ink-3: rgba(238, 243, 241, 0.6);
+  --eye-plate: rgba(6, 10, 12, 0.8);
+  --eye-hair: rgba(238, 243, 241, 0.24);
+  --eye-cam: #e8f1f8;
+  --eye-ship: #2dd4bf;
+  --eye-plane: #fbbf24;
+  --eye-road: #fb7185;
+  --eye-none: #8b97a6;
+  font-family: var(--tn-sans);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #05080a;
+  color: var(--eye-ink);
+  /* The console lifts MapLibre's corner controls over its bottom ticker. There is no
+     ticker here. */
+  --tn-ticker-h: 0px;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--eye-ink-3);
+  font-size: 13px;
+}
+
+/* ── The frame over the scene ──────────────────────────────────────────── */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  color: var(--eye-ink);
+}
+
+/* The vignette, and the scrims under the words: the header's band at the top, the
+   ledger's and the credits' at the bottom. They darken the photograph, never the
+   words, so the faint ink keeps its measured contrast over bright roofs. */
+.hud::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(3, 6, 8, 0.66) 0, rgba(3, 6, 8, 0.28) 96px, rgba(3, 6, 8, 0) 168px),
+    linear-gradient(to top, rgba(3, 6, 8, 0.74) 0, rgba(3, 6, 8, 0.4) 150px, rgba(3, 6, 8, 0) 260px),
+    radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+/* Scan lines: one dark line every 3 px, faint. Static, so the compositor draws them
+   once and the turning map only moves beneath them. */
+.scan {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.13) 0 1px, rgba(0, 0, 0, 0) 1px 3px);
+}
+
+/* One sweep down the frame when vessels or aircraft arrive. A transform on its own
+   layer: no repaint of the scene. Off with reduced motion (below) and in a recording. */
+.sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(to right, rgba(238, 243, 241, 0), rgba(238, 243, 241, 0.55) 22%, rgba(238, 243, 241, 0.8) 50%, rgba(238, 243, 241, 0.55) 78%, rgba(238, 243, 241, 0));
+  box-shadow: 0 0 14px rgba(45, 212, 191, 0.5);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: eye-sweep 1.8s cubic-bezier(0.45, 0, 0.25, 1) both;
+}
+
+@keyframes eye-sweep {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    display: none;
+  }
+}
+
+/* MapLibre's own attribution control, collapsed behind its info button in the
+   console (lib/map/attribution.ts), is hidden here only while the frame shows the
+   same credits in full along its bottom edge (EyeHud). EyeApp sets data-credits only
+   when it has read them from that control, so the credit is never hidden twice. */
+.root[data-credits] :global(.maplibregl-ctrl-attrib) {
+  display: none;
+}
+
+.corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid rgba(238, 243, 241, 0.6);
+}
+.corner[data-c="tl"] { top: 10px; left: 10px; border-top-width: 1.5px; border-left-width: 1.5px; }
+.corner[data-c="tr"] { top: 10px; right: 10px; border-top-width: 1.5px; border-right-width: 1.5px; }
+.corner[data-c="bl"] { bottom: 10px; left: 10px; border-bottom-width: 1.5px; border-left-width: 1.5px; }
+.corner[data-c="br"] { bottom: 10px; right: 10px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
+
+/* ── Top band: the place, the clock, the controls ───────────────────────── */
+
+.top {
+  position: absolute;
+  top: 22px;
+  left: 26px;
+  right: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.placeBlock {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.place {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+}
+
+.sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--eye-ink-2);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.sep {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  margin: 0 9px;
+  background: var(--eye-hair);
+  vertical-align: middle;
+}
+
+.topRight {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  flex: none;
+}
+
+.clockBlock {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.clock {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.utc {
+  font-size: 11px;
+  color: var(--eye-ink-3);
+  font-weight: 600;
+}
+
+/* The buttons live in the footer's markup, so a phone can stack them over the
+   credits; a wide screen lifts them to the top right, under the clock. */
+.controls {
+  position: fixed;
+  top: 60px;
+  right: 26px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--eye-hair);
+  border-radius: 4px;
+  background: var(--eye-plate);
+  color: var(--eye-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:hover {
+  border-color: rgba(238, 243, 241, 0.5);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+.btn[aria-pressed="true"] {
+  background: var(--eye-ink);
+  color: #0b1114;
+}
+
+/* ── Ledger: what the view shows, and who measured it ──────────────────── */
+
+.ledger {
+  position: absolute;
+  left: 26px;
+  /* Above the bottom band, which grows to three lines with the credits. */
+  bottom: 76px;
+  display: grid;
+  gap: 5px;
+  font-size: 12.5px;
+  max-width: min(620px, calc(100% - 52px));
+}
+
+.ledger p {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.ledger p > i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateY(-1px);
+}
+.ledger p[data-k="cam"] > i { background: var(--eye-cam); }
+.ledger p[data-k="ship"] > i { background: var(--eye-ship); }
+.ledger p[data-k="plane"] > i { background: var(--eye-plane); }
+.ledger p[data-k="road"] > i { background: var(--eye-road); }
+.ledger p[data-k="speed"] > i { background: transparent; border: 1.5px solid var(--eye-none); }
+.ledger p[data-note] { color: var(--eye-ink-2); }
+
+.ledger b {
+  font-weight: 600;
+}
+
+.ledger small {
+  font-size: inherit;
+  color: var(--eye-ink-3);
+  margin-left: 8px;
+}
+
+.short {
+  display: none;
+}
+
+.fresh {
+  color: var(--eye-ink-3);
+  font-size: 11.5px;
+  padding-top: 3px;
+}
+
+/* ── Bottom band ───────────────────────────────────────────────────────── */
+
+.bottom {
+  position: absolute;
+  left: 26px;
+  right: 26px;
+  bottom: 18px;
+  display: flex;
+  font-size: 11.5px;
+  color: var(--eye-ink-2);
+}
+
+.coords {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.credits {
+  margin-left: auto;
+  padding-left: 24px;
+  display: grid;
+  justify-items: end;
+  row-gap: 4px;
+  max-width: min(760px, 62%);
+  white-space: normal;
+  color: var(--eye-ink-3);
+}
+
+/* Every source drawn, each once: the imagery, the map data, then the feeds. Run as
+   one line of text, so it wraps where the line is full, not per source. */
+.sources {
+  font-size: 10.5px;
+  line-height: 1.45;
+  text-align: right;
+}
+.sources > span:not(:last-child)::after {
+  content: "\00a0· ";
+}
+
+.site {
+  display: flex;
+  gap: 12px;
+}
+
+.credits a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+.credits a:hover,
+.credits a:focus-visible {
+  color: var(--eye-ink);
+  text-decoration: underline;
+}
+
+/* ── Camera card, standing on its camera's real spot ───────────────────── */
+
+/* Markers move every frame while the view turns. Their own compositor layer means a
+   move is a transform, not a repaint of the card, its picture and its shadow. */
+.cam,
+.tag {
+  will-change: transform;
+}
+
+.cam {
+  --w: 172px;
+  --stalk: 52px;
+  width: var(--w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.cam:focus-visible .camPlate {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+
+.camPlate {
+  width: 100%;
+  background: var(--eye-plate);
+  border: 1px solid rgba(232, 241, 248, 0.62);
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+}
+.cam:hover .camPlate {
+  border-color: rgba(232, 241, 248, 0.8);
+}
+
+/* The operator's own picture shape: TfL's stills and clips are 352 x 288. */
+.camImg {
+  position: relative;
+  aspect-ratio: 352 / 288;
+  background: #0b1114;
+}
+
+.camImg img,
+.camImg video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A stream that has not played yet waits, invisible, behind the still. */
+.camImg .pending {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+/* Older than three of its own cycles: the picture dims, and its age says why. */
+.cam[data-stale] .camImg > :not(.pending) {
+  opacity: 0.55;
+}
+
+.camText {
+  display: grid;
+  gap: 2px;
+  padding: 6px 8px 7px;
+  min-width: 0;
+}
+
+.camText b {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eye-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camText span {
+  font-size: 10.5px;
+  color: var(--eye-ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.camText em {
+  font-style: normal;
+}
+
+.kind {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 9.5px;
+  color: #0b1114;
+  background: var(--eye-cam);
+  border-radius: 3px;
+  padding: 0 4px 1px;
+  margin-right: 5px;
+}
+.kind:empty {
+  display: none;
+}
+.cam[data-media="stream"] .kind {
+  background: #4ade80;
+}
+
+.stalk {
+  width: 1px;
+  height: var(--stalk);
+  background: linear-gradient(to bottom, rgba(232, 241, 248, 0.9), rgba(232, 241, 248, 0.35));
+}
+
+/* ── Vessel, aircraft and street tags ──────────────────────────────────── */
+
+.tag {
+  --c: var(--eye-ship);
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.tag[data-kind="plane"] { --c: var(--eye-plane); }
+.tag[data-kind="road"] { --c: var(--eye-road); }
+.tag[data-flip] { flex-direction: row-reverse; }
+.tag[data-flip] .leader {
+  background: linear-gradient(to top left, transparent calc(50% - 0.6px), var(--c) calc(50% - 0.6px), var(--c) calc(50% + 0.6px), transparent calc(50% + 0.6px));
+}
+.tag[data-flip] .tagPlate {
+  border-left: 0;
+  border-right: 2px solid var(--c);
+  border-radius: 4px 0 0 4px;
+  text-align: right;
+}
+
+.leader {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(to top right, transparent calc(50% - 0.6px), var(--c) calc(50% - 0.6px), var(--c) calc(50% + 0.6px), transparent calc(50% + 0.6px));
+}
+
+.tagPlate {
+  margin-bottom: 14px;
+  display: grid;
+  gap: 1px;
+  padding: 4px 8px 5px 7px;
+  background: var(--eye-plate);
+  border-left: 2px solid var(--c);
+  border-radius: 0 4px 4px 0;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagPlate b {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--eye-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagPlate span {
+  font-size: 10.5px;
+  color: var(--eye-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
+
+@media (max-aspect-ratio: 4/5) {
+  .top {
+    top: 16px;
+    left: 18px;
+    right: 18px;
+  }
+  .place {
+    font-size: 22px;
+  }
+  .sub {
+    font-size: 11px;
+  }
+  .clock {
+    font-size: 17px;
+  }
+  .btn {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+  /* On a phone the buttons stay in the footer's flow, over the credits, at thumb
+     height: the header is full with the place and the clock. */
+  .controls {
+    position: static;
+    margin-bottom: 8px;
+  }
+  .long {
+    display: none !important;
+  }
+  .short {
+    display: block;
+  }
+  .ledger {
+    top: 80px;
+    bottom: auto;
+    left: 18px;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    column-gap: 22px;
+    row-gap: 0;
+    /* The box EyeOverlay keeps clear is measured before the counts arrive, when every
+       row may still be a hidden zero: hold one row's room from the start. */
+    min-height: 44px;
+    min-width: 160px;
+  }
+  .ledger p {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: "dot count" "label label";
+    justify-content: start;
+    column-gap: 6px;
+  }
+  .ledger p > i {
+    grid-area: dot;
+    align-self: center;
+    transform: none;
+  }
+  .ledger p > b {
+    grid-area: count;
+    font-size: 16px;
+    line-height: 1.1;
+  }
+  .ledger p > .short {
+    grid-area: label;
+    font-size: 10.5px;
+    color: var(--eye-ink-2);
+  }
+  /* A zero and a stated absence are shown on wide screens only: the phone has room
+     for what is there. The absence still has its line in the bottom band. */
+  .ledger p[data-zero],
+  .ledger p[data-note] {
+    display: none;
+  }
+  .bottom {
+    left: 18px;
+    right: 48px;
+    bottom: 14px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10.5px;
+  }
+  .bottom > .short {
+    color: var(--eye-ink-3);
+  }
+  .coords {
+    flex-wrap: wrap;
+    row-gap: 3px;
+    white-space: nowrap;
+  }
+  .credits {
+    margin-left: 0;
+    padding-left: 0;
+    flex-basis: 100%;
+    max-width: none;
+    justify-items: start;
+    row-gap: 3px;
+  }
+  .sources {
+    font-size: 9.5px;
+    text-align: left;
+  }
+  /* The phone keeps its words at the top and the bottom: deeper scrims there. */
+  .hud::before {
+    background:
+      linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.32) 150px, rgba(3, 6, 8, 0) 230px),
+      linear-gradient(to top, rgba(3, 6, 8, 0.78) 0, rgba(3, 6, 8, 0.4) 120px, rgba(3, 6, 8, 0) 210px),
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 54%, rgba(0, 0, 0, 0.46) 100%);
+  }
+  .camText b {
+    font-size: 10.5px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.2;
+  }
+  .camText span {
+    font-size: 9.5px;
+  }
+  .kind {
+    font-size: 8.5px;
+  }
+  .tagPlate b {
+    font-size: 10.5px;
+  }
+  .tagPlate span {
+    font-size: 9.5px;
+  }
+}
+
+/* ── A 9:16 recording: Instagram's bands stay clear ─────────────────────── */
+/* Instagram lays its own name and caption over the bottom quarter of a reel and its
+   buttons down the right edge, and its header over the top. The frame's words move
+   inside those bands, and EyeOverlay's safeFrame keeps cards and tags inside them too. */
+@media (max-aspect-ratio: 4/5) {
+  .root[data-record] .top {
+    top: 6.5%;
+    left: 7%;
+    right: 7%;
+  }
+  .root[data-record] .ledger {
+    top: calc(6.5% + 70px);
+    left: 7%;
+  }
+  .root[data-record] .bottom {
+    left: 7%;
+    right: 14%;
+    bottom: 25%;
+  }
+  .root[data-record] .hud::before {
+    background:
+      linear-gradient(to bottom, rgba(3, 6, 8, 0.7) 0, rgba(3, 6, 8, 0.34) 18%, rgba(3, 6, 8, 0) 26%),
+      linear-gradient(to top, rgba(3, 6, 8, 0.72) 0, rgba(3, 6, 8, 0.5) 30%, rgba(3, 6, 8, 0) 42%),
+      radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 54%, rgba(0, 0, 0, 0.46) 100%);
+  }
+}

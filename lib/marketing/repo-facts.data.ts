@@ -98,9 +98,25 @@
  * for deleting InstabilityPanel.tsx/ConflictPanel.tsx/TopEventsPanel.tsx/RiskPanel.tsx (retired
  * by docs/superpowers/specs/2026-06-28-ground-truth-console-redesign-design.md:112-115, never
  * actually deleted). `npx vitest list`: 5,459 cases across 468 files.
+ *
+ * Re-measured 2026-10-25 on feat/gods-eye (origin/main at bdd0f50, after #297), M1: the God's
+ * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
+ * 5,489 cases across 471 files. M2 adds `eye-cameras`, `eye-declutter` and `proxy-clip`: 5,514
+ * cases across 474 files. M3 adds `eye-traffic` and `signals-ais-static`: 5,538 cases across
+ * 476 files. M4 adds `eye-streets` (11 cases) and one route, which `route-export-contract`
+ * checks as one more case: 5,550 cases across 477 files. M5 adds `eye-motion` and cases to
+ * `eye-wording`, `eye-declutter` and `eye-cameras`: 5,564 cases across 478 files. M6 adds
+ * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
+ * across 479 files.
+ *
+ * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
+ * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
+ * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
+ * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * just add.
  */
 export const UNIT_TESTS = {
-  cases: 5459,
-  files: 468,
-  measuredAt: "2026-10-24",
+  cases: 5579,
+  files: 480,
+  measuredAt: "2026-10-25",
 } as const;

@@ -1,0 +1,202 @@
+[
+ {
+  "$type": "Tfl.Api.Presentation.Entities.RoadDisruption, Tfl.Api.Presentation.Entities",
+  "id": "TIMS-236204",
+  "url": "/Road/All/Disruption/TIMS-236204",
+  "point": "[-0.194259,51.45711]",
+  "severity": "Serious",
+  "ordinal": 1,
+  "category": "Works",
+  "subCategory": "Utility works",
+  "comments": "[A3] Wandsworth High Street (Both directions) at the junction of [A218] Buckhold Road - The temporary traffic signals in operation. Additionally Buckhold Road is closed southbound, due to Thames Water works. ",
+  "currentUpdate": "Traffic is flowing well.  ",
+  "currentUpdateDateTime": "2026-10-24T22:03:15Z",
+  "corridorIds": [
+   "a205"
+  ],
+  "startDateTime": "2026-10-22T15:53:00Z",
+  "endDateTime": "2026-10-24T22:59:00Z",
+  "lastModifiedTime": "2026-10-24T22:03:15Z",
+  "levelOfInterest": "High",
+  "location": "[A3] WANDSWORTH HIGH STREET (SW18 ) (Wandsworth)",
+  "geography": {
+   "type": "Point",
+   "coordinates": [
+    -0.194259,
+    51.45711
+   ],
+   "crs": {
+    "type": "name",
+    "properties": {
+     "name": "EPSG:4326"
+    }
+   }
+  },
+  "streets": [
+   {
+    "$type": "Tfl.Api.Presentation.Entities.Street, Tfl.Api.Presentation.Entities",
+    "name": "[A218] BUCKHOLD ROAD (SW18)",
+    "closure": "Closed",
+    "directions": "Southbound",
+    "segments": [
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257386",
+      "lineString": "[[-0.194804,51.456532],[-0.194946,51.456376]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "4000000030405898",
+      "lineString": "[[-0.194404,51.45697],[-0.19444,51.457169]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257383",
+      "lineString": "[[-0.195039,51.456267],[-0.195305,51.45604]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "4000000030405878",
+      "lineString": "[[-0.197571,51.452577],[-0.197449,51.452764]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308207342",
+      "lineString": "[[-0.197449,51.452764],[-0.197184,51.453655]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308211776",
+      "lineString": "[[-0.196276,51.455641],[-0.195984,51.455795]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257375",
+      "lineString": "[[-0.19542,51.455993],[-0.19564,51.455928]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257381",
+      "lineString": "[[-0.194946,51.456376],[-0.195039,51.456267]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308202341",
+      "lineString": "[[-0.194404,51.45697],[-0.194574,51.456785]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257388",
+      "lineString": "[[-0.194574,51.456785],[-0.194804,51.456532]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "4000000030133820",
+      "lineString": "[[-0.197184,51.453655],[-0.19736,51.454651]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308257378",
+      "lineString": "[[-0.195305,51.45604],[-0.19542,51.455993]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308213318",
+      "lineString": "[[-0.19736,51.454651],[-0.196988,51.455121]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005154253119",
+      "lineString": "[[-0.195984,51.455795],[-0.19564,51.455928]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "4000000030133821",
+      "lineString": "[[-0.196988,51.455121],[-0.196359,51.455598]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     },
+     {
+      "$type": "Tfl.Api.Presentation.Entities.StreetSegment, Tfl.Api.Presentation.Entities",
+      "toid": "5000005308200723",
+      "lineString": "[[-0.196359,51.455598],[-0.196276,51.455641]]",
+      "sourceSystemId": 236204,
+      "sourceSystemKey": "TIMS"
+     }
+    ]
+   }
+  ],
+  "isProvisional": false,
+  "hasClosures": false,
+  "roadDisruptionLines": [],
+  "roadDisruptionImpactAreas": [],
+  "recurringSchedules": []
+ },
+ {
+  "$type": "Tfl.Api.Presentation.Entities.RoadDisruption, Tfl.Api.Presentation.Entities",
+  "id": "TIMS-236081",
+  "url": "/Road/All/Disruption/TIMS-236081",
+  "point": "[0.023201,51.573838]",
+  "severity": "Moderate",
+  "ordinal": 2,
+  "category": "Works",
+  "subCategory": "Borough works",
+  "comments": "[A1008] Cambridge Park (Both directions) at the junction of [A1008] Blake Hall Road - Lane restrictions and temporary signals are in place for to resurfacing works.",
+  "currentUpdate": "Delays are possible.",
+  "currentUpdateDateTime": "2026-10-24T03:45:04Z",
+  "corridorIds": [
+   "a12"
+  ],
+  "startDateTime": "2026-10-13T07:00:00Z",
+  "endDateTime": "2026-11-06T23:59:00Z",
+  "lastModifiedTime": "2026-10-24T03:45:04Z",
+  "levelOfInterest": "High",
+  "location": "[A1008] CAMBRIDGE PARK (E11 ) (Redbridge)",
+  "geography": {
+   "type": "Point",
+   "coordinates": [
+    0.023201,
+    51.573838
+   ],
+   "crs": {
+    "type": "name",
+    "properties": {
+     "name": "EPSG:4326"
+    }
+   }
+  },
+  "isProvisional": false,
+  "hasClosures": false,
+  "roadDisruptionLines": [],
+  "roadDisruptionImpactAreas": [],
+  "recurringSchedules": []
+ }
+]

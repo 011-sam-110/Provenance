@@ -6,16 +6,31 @@ import { notePlaceholder } from "@/lib/sources/placeholderMemo";
 import { extractTxdotSnapshot } from "@/lib/sources/txdot";
 import { needsH2, h2Fetch } from "@/lib/http/h2";
 import { frameCacheHeaders } from "@/lib/http/cache";
+import { CLIP_MAX_BYTES, clipUrl, pictureTimeHeader } from "@/lib/proxy/clip";
+import type { Camera } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 const UA = "TrafficNerd/2.0 (+https://github.com/011-sam-110/TrafficNerd-V2)";
+
+/**
+ * The operator's own Last-Modified, passed on. It is when the operator published this
+ * picture, which is the only honest age a viewer can print; without it, a cache in
+ * front of this route stamps its own fetch time instead (production did: the God's
+ * eye view's recon found every frame "modified" at the moment the proxy fetched it).
+ */
+function takenHeader(lastModified: string | null | undefined): Record<string, string> {
+  const value = pictureTimeHeader(lastModified, Date.now());
+  return value ? { "Last-Modified": value } : {};
+}
 
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return new Response("missing id", { status: 400 });
 
   const cam = await getCameraById(id);
+  // `clip=1`: the camera's short recording instead of its still. See lib/proxy/clip.ts.
+  if (req.nextUrl.searchParams.get("clip") === "1") return proxyClip(cam);
   if (!cam?.imageUrl) return new Response("camera or image not found", { status: 404 });
 
   let target: URL;
@@ -67,7 +82,44 @@ export async function GET(req: NextRequest) {
     status: 200,
     headers: {
       "Content-Type": contentType,
+      ...takenHeader(upstream.headers.get("last-modified")),
       // Never serve a camera faster than the source refresh (TfL = 300s).
+      ...frameCacheHeaders(cam.refreshSeconds),
+    },
+  });
+}
+
+// The camera's own short recording (lib/proxy/clip.ts): an .mp4 on an allowlisted
+// host, found from the camera id and never from the request. Same contract as the
+// still: same agent, no redirects, the operator's Last-Modified, the source's cadence.
+async function proxyClip(cam: Camera | null): Promise<Response> {
+  const target = clipUrl(cam?.streamUrl);
+  if (!cam || !target) return new Response("camera has no clip", { status: 404 });
+  const upstreamReq = upstreamRequest(target);
+  if (!upstreamReq) return new Response("camera feed is not configured", { status: 404 });
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamReq.url, {
+      headers: { "User-Agent": UA, ...upstreamReq.headers },
+      cache: "no-store",
+      redirect: "error",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return new Response("upstream fetch failed", { status: 502 });
+  }
+  if (!upstream.ok) return new Response("upstream error", { status: 502 });
+  const declared = Number(upstream.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > CLIP_MAX_BYTES) return new Response("clip too large", { status: 502 });
+  const body = await upstream.arrayBuffer();
+  if (body.byteLength > CLIP_MAX_BYTES) return new Response("clip too large", { status: 502 });
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "video/mp4",
+      ...takenHeader(upstream.headers.get("last-modified")),
       ...frameCacheHeaders(cam.refreshSeconds),
     },
   });
@@ -90,10 +142,12 @@ async function proxyOverH2(target: URL, refreshSeconds: number): Promise<Respons
     return new Response("upstream error", { status: 502 });
   }
   const ct = upstream.headers["content-type"];
+  const lm = upstream.headers["last-modified"];
   return new Response(new Uint8Array(upstream.body), {
     status: 200,
     headers: {
       "Content-Type": ct && ct.startsWith("image/") ? ct : "image/jpeg",
+      ...takenHeader(Array.isArray(lm) ? lm[0] : lm),
       ...frameCacheHeaders(refreshSeconds),
     },
   });

@@ -1,5 +1,6 @@
 import { nearestTo } from "@/lib/sources/registry";
 import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
+import { clipUrl } from "@/lib/proxy/clip";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,11 @@ export async function GET(req: Request) {
       available: camera.available,
       source: camera.source,
       live: isLiveStreamUrl(camera.streamUrl),
+      // The God's eye view's cards: whether /api/proxy?clip=1 has a recording for this
+      // camera, how often the operator publishes a picture, and whose picture it is.
+      clip: clipUrl(camera.streamUrl) != null,
+      refreshSeconds: camera.refreshSeconds,
+      attribution: camera.attribution,
       km: Number(km.toFixed(2)),
     }));
     return Response.json({ origin: { lat, lon }, count: cameras.length, cameras });

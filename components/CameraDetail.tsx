@@ -11,6 +11,7 @@ import { CameraImage } from "@/components/CameraImage";
 import { CameraVideo } from "@/components/CameraVideo";
 import { useNow, formatAge } from "@/lib/shell/useNow";
 import { msUntilRefresh, refreshProgress, formatCountdown, sampledAgeMs } from "@/lib/cameras/freshness";
+import { eyeCameraHref } from "@/lib/eye/places";
 
 type CamInfo = {
   id: string;
@@ -141,6 +142,12 @@ export function CameraDetail({ object }: { object: WorldObject }) {
       <Link className="cam-open" href={href}>
         Open full page ↗
       </Link>
+      {/* The God's eye view, centred on this camera. A plain link and a full page
+          load: that page sets its own layers in memory, and they must not reach the
+          console's saved ones through a client-side route. */}
+      <a className="cam-open" style={{ marginLeft: 16 }} href={eyeCameraHref(object.id, object.lat, object.lon)}>
+        See this camera from above
+      </a>
     </div>
   );
 }
