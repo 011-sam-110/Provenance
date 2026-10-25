@@ -73,6 +73,23 @@ obligations and are not satisfied by the licence.
   page; `app/(console)/app/` holds the shell. `/` forwards any request carrying `?v=`
   or `?c=` to `/app` with the query intact — shared links and OG cards were minted
   against `/`, so removing that shim breaks every link anyone has already sent.
+- **`/eye` is the God's eye view**: the console's own map engine, opened tilted over the
+  satellite imagery with the 3D buildings up, and the cameras, vessels, aircraft and TfL's
+  road notices of that place drawn in the scene (`app/(console)/eye`, `components/eye/*`,
+  and the pure, tested `lib/eye/*`). It reads its link after mount, so the page stays
+  static, and its store writes stay in the tab (`EyeApp.tsx` says why). Two rules are not
+  style preferences. A still is never called live: `mediaLabel` says "Live" only while a
+  stream plays, and a still or a clip says its operator's own age. And there is no road
+  speed in it, because no open feed for London publishes one: the ledger says so, and
+  nothing draws an invented flow (`lib/eye/streets.ts`). Its link flags are listed at the
+  top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
+  `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
+  frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
+  Two more rules hold the film and the frame rate. A film runs on its own clock
+  (`filmClock` in `lib/eye/motion.ts`): its time, its ages and its clips move only with
+  its steps and no feed is fetched during it, because a film is drawn minutes slower
+  than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
+  three at once halved the frame rate, measured 2026-10-25.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's
@@ -158,7 +175,8 @@ obligations and are not satisfied by the licence.
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
   `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
-  (signed snapshots pushed from provenance-1, see `lib/relay`), and the two doors
+  (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
+  disruptions for `/eye`), and the two doors
   `middleware.ts` opens, `gate` and `private`.
 - **`middleware.ts` runs before every route its `matcher` does not exempt, and does three
   things in a fixed order.** (1) 301s the legacy `.vercel.app` host to the `.com`

@@ -504,7 +504,39 @@ function pickBoxSelection(bounds: ReturnType<typeof normalizeBounds>, webcams: W
   });
 }
 
-export default function WorldMap() {
+/** Where a page that owns its own address opens the map. MapLibre's own terms. */
+export interface MapOpenAt {
+  lat: number;
+  lon: number;
+  zoom: number;
+  pitch?: number;
+  bearing?: number;
+}
+
+export interface WorldMapProps {
+  /**
+   * Open here, and leave the address bar to the page.
+   *
+   * Unset (the console), the map reads its first view from the URL
+   * (`?lat&lon&z&layers&base`) and writes every move back into it. A page with a link
+   * format of its own, the God's eye view (app/(console)/eye), cannot share that: the
+   * writer would replace its address on the first move and a reload would lose the
+   * heading and the tilt. With this set, the map opens at this camera, reads no view
+   * from the URL and writes none back. Read once, at mount.
+   */
+  openAt?: MapOpenAt;
+  /**
+   * Called each time this map's own layers are in place on a style: the first style,
+   * and every one after a basemap swap or a load recovery. A page that restyles the
+   * map does it here, after WorldMap's own paint, so neither one undoes the other.
+   */
+  onStyleReady?: (map: maplibregl.Map) => void;
+}
+
+export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
+  const openAtRef = useRef(openAt);
+  const onStyleReadyRef = useRef(onStyleReady);
+  onStyleReadyRef.current = onStyleReady;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const thumbMgrRef = useRef<{ update(): void; destroy(): void } | null>(null);
@@ -2162,15 +2194,21 @@ export default function WorldMap() {
     // the map is built so we open at the saved camera/basemap with no fly/flash.
     // This runs after ConsoleShell's localStorage hydrate (WorldMap is lazy /
     // ssr:false → it mounts later), so URL state wins over persisted toggles.
-    const initial = readInitialViewState();
+    // A page that owns its address (`openAt`) gets none of this: no view from the URL,
+    // so no store is written from a query that was never in the console's format.
+    const openAt = openAtRef.current;
+    const initial = openAt ? {} : readInitialViewState();
     if (initial.basemap) mapViewStore.setBasemap(initial.basemap);
     if (initial.layers) {
       for (const k of ACTIVE_LAYERS) layersStore.set(k, initial.layers.includes(k));
     }
     pendingObjRef.current = initial.obj ?? null;
-    const center: [number, number] =
-      initial.lat != null && initial.lon != null ? [initial.lon, initial.lat] : HOME.center;
-    const zoom = initial.zoom ?? HOME.zoom;
+    const center: [number, number] = openAt
+      ? [openAt.lon, openAt.lat]
+      : initial.lat != null && initial.lon != null
+        ? [initial.lon, initial.lat]
+        : HOME.center;
+    const zoom = openAt ? openAt.zoom : (initial.zoom ?? HOME.zoom);
     // A deep-linked camera/zoom used to need protecting here, because the idle spin
     // would drag it away on first paint. Nothing moves the camera on its own now, so
     // the view a link asks for is simply the view it gets.
@@ -2180,6 +2218,7 @@ export default function WorldMap() {
       style: BASEMAPS[mapViewStore.get().basemap].style,
       center,
       zoom,
+      ...(openAt ? { pitch: openAt.pitch ?? 0, bearing: openAt.bearing ?? 0 } : {}),
       maxZoom: 19, // headroom for street-level buildings (OFM tiles stop at z14 and overzoom)
       renderWorldCopies: false,
       attributionControl: false,
@@ -2286,7 +2325,16 @@ export default function WorldMap() {
     // still looks right, and nothing fails.
     map.on("style.load", () => trimBasemapForGlobe(map));
     map.on("style.load", () => {
-      void addAppLayers(map).then(onStyleSettled, onStyleSettled);
+      void addAppLayers(map).then(() => {
+        onStyleSettled();
+        // After the settle, so a page's restyle sees every app layer in place. Its
+        // failure is the page's, and must not take the map down with it.
+        try {
+          onStyleReadyRef.current?.(map);
+        } catch (err) {
+          console.error("[map] onStyleReady failed:", err);
+        }
+      }, onStyleSettled);
     });
 
     // Tell the boot overlay the map is usable, so it can stop covering a finished
@@ -2383,15 +2431,17 @@ export default function WorldMap() {
     // URL on its own for as long as the tab was open. Every `moveend` now comes from
     // a deliberate move — a user pan/zoom, a region fly-to, a dive — so all of them
     // are worth persisting and the predicate has no second reader left.
+    // A page that owns its address (`openAt`) is never written to.
+    const urlWrite = openAt ? () => {} : () => scheduleUrlWrite(map);
     const onMoveEnd = () => {
       // Our own follow easeTo shouldn't churn the shareable URL every poll.
       if (followMoveRef.current) { followMoveRef.current = false; return; }
-      scheduleUrlWrite(map);
+      urlWrite();
     };
     map.on("moveend", onMoveEnd);
-    const unsubLayers = layersStore.subscribe(() => scheduleUrlWrite(map));
-    const unsubView = mapViewStore.subscribe(() => scheduleUrlWrite(map));
-    const unsubOverlay = overlay.subscribe(() => scheduleUrlWrite(map));
+    const unsubLayers = layersStore.subscribe(urlWrite);
+    const unsubView = mapViewStore.subscribe(urlWrite);
+    const unsubOverlay = overlay.subscribe(urlWrite);
 
     // THE IDLE ROTATION IS GONE. There is deliberately no animation loop here.
     //

@@ -15,6 +15,23 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-25:
+ *   - The God's eye view (/eye, components/eye/EyeApp.tsx) always raises the 3D
+ *     buildings over the Satellite map, so every visit reaches Esri (the imagery) and
+ *     OpenFreeMap (the building shapes). The OpenFreeMap card now names it, and names
+ *     the console's own 3D-buildings switch, which its list had left out: the shapes
+ *     come from OpenFreeMap whatever the basemap is, and the switch is off by default
+ *     (lib/mapView.ts). Everything else on /eye comes through this site: camera images
+ *     through /api/proxy and /api/hls, vessels, aircraft and TfL's road notices through
+ *     /api/signals/ais, /api/planes and /api/eye/streets.
+ *   - Like every page under app/(console), /eye inherits the layout's warm-up
+ *     (basemapWarmup), which asks the browser to open a connection to the imagery host
+ *     and to CARTO's font host. /eye draws no labels, so it loads no CARTO font, but the
+ *     connection is still offered; the CARTO card's "almost every visit to the console"
+ *     covers it, and no sentence there claims otherwise.
+ *   - Recorded clips: /api/proxy?clip=1 fetches an operator's short .mp4 on our server
+ *     (lib/proxy/clip.ts), the same way as a still, so the camera paragraph names them.
+ *
  * WHAT CHANGED ON 2026-10-16:
  *   - The PostHog counter no longer loads on pages under /account/. In a build with
  *     accounts those pages carry one-time sign-in codes in the address, and no event from
@@ -280,7 +297,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-16">16 October 2026</time>
+                Last updated <time dateTime="2026-10-25">25 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -768,9 +785,10 @@ export default function PrivacyPage() {
                 small inset maps on a pin&rsquo;s detail card, the map on the Locate page, and the
                 building shapes the 3D buildings are drawn from. It was the console&rsquo;s default
                 map until 7 September 2026; the default is now Satellite, so inside the console
-                OpenFreeMap only sees you if you open a detail card, the Locate page, or the Streets
-                map itself. From 8 September to 5 October 2026 it also served the globe on the
-                front page. That globe is now drawn in your browser from a file this site serves,
+                OpenFreeMap only sees you if you open a detail card, the Locate page or the Streets
+                map itself, or turn on 3D buildings. The God&rsquo;s eye view at /eye always raises
+                the buildings, so it reaches OpenFreeMap on every visit. From 8 September to 5
+                October 2026 it also served the globe on the front page. That globe is now drawn in your browser from a file this site serves,
                 so the front page loads no map tiles and OpenFreeMap no longer sees you there.
               </p>
             </div>
@@ -799,7 +817,8 @@ export default function PrivacyPage() {
                 <span className="pv-num">server.arcgisonline.com</span> serves the Satellite map and
                 one aerial image on a satellite&rsquo;s detail card. Satellite became the
                 console&rsquo;s default map on 7 September 2026, so Esri now sees you on almost
-                every visit to the console rather than only when you pick it.{" "}
+                every visit to the console rather than only when you pick it. The God&rsquo;s eye
+                view at /eye is always drawn over it.{" "}
                 <span className="pv-num">tile.opentopomap.org</span> serves the topographic basemap,
                 which loads only if you pick it.
               </p>
@@ -828,8 +847,9 @@ export default function PrivacyPage() {
           <div className="pv-prose">
             <p>
               <strong>Most camera imagery does not work this way.</strong> Road-camera stills, their
-              HLS video and the Windy webcams are all fetched by our server and passed on to you, so
-              the road authority or camera operator sees this deployment and not you. That was a
+              HLS video, the short recorded clips some road operators publish and the Windy webcams
+              are all fetched by our server and passed on to you, so the road authority or camera
+              operator sees this deployment and not you. That was a
               deliberate choice.
             </p>
             <p>
@@ -1078,14 +1098,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-16">16 October 2026</time>
+                <time dateTime="2026-10-25">25 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 16 October 2026. When the behaviour changes this
+              This describes the code as deployed on 25 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.
