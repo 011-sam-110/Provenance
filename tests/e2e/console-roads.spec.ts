@@ -4,6 +4,8 @@ import { expect, test, type Page } from "@playwright/test";
 import type maplibregl from "maplibre-gl";
 import { normalizeTflNotices } from "@/lib/roads/tfl";
 import { roadLayerFeatures, type RoadLayer } from "@/lib/signals/roads";
+import { parseHkSpeeds } from "@/lib/roads/hk-speed";
+import { roadSpeedFeatures } from "@/lib/signals/road-speed";
 
 /**
  * The console's three London road layers (/app), held to the road layer's rules:
@@ -143,4 +145,43 @@ test("a click on a closed street opens that notice", async ({ page }) => {
   await expect(inspector).toHaveAttribute("aria-label", "Utility works, [A12] EASTERN AVENUE EAST");
   await expect(inspector).toContainText("Road closures");
   await expect(inspector).toContainText("Closed, westbound");
+});
+
+test("a measured speed is a solid road line in its band's colour, and the legend says what no colour means", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const xml = readFileSync(resolve(__dirname, "../fixtures/hk-irn-speeds.xml"), "utf8");
+  const lines = JSON.parse(readFileSync(resolve(__dirname, "../../lib/roads/hk-irn-segments.data.json"), "utf8")).segments;
+  const features = roadSpeedFeatures(parseHkSpeeds(xml)!, lines);
+  await page.route("**/api/signals/road-speed", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, observedAt: Date.now(), count: features.length, features }),
+    }),
+  );
+  // Yau Ma Tei, by the West Kowloon Highway: four of the five recorded segments.
+  await page.goto("/app?lat=22.3105&lon=114.1640&z=15&sig=road-speed&layers=&base=light");
+  await page.waitForFunction(
+    () => {
+      const map = (window as unknown as { __map?: maplibregl.Map }).__map;
+      if (!map?.getSource("signal-lines")) return false;
+      return map.querySourceFeatures("signal-lines").some((f) => f.properties?.line === "speed");
+    },
+    undefined,
+    { timeout: 90_000, polling: 500 },
+  );
+  const layer = await page.evaluate(() => {
+    const map = (window as unknown as { __map: maplibregl.Map }).__map;
+    return {
+      present: map.getLayer("signal-line-speed") != null,
+      width: JSON.stringify(map.getPaintProperty("signal-line-speed", "line-width")),
+      color: JSON.stringify(map.getPaintProperty("signal-line-speed", "line-color")),
+      dash: map.getPaintProperty("signal-line-speed", "line-dasharray") ?? null,
+    };
+  });
+  expect(layer.present).toBe(true);
+  expect(layer.width).not.toContain('"get"');
+  expect(layer.color).toBe(JSON.stringify(["get", "color"]));
+  expect(layer.dash).toBeNull();
+  const legend = page.getByTestId("mark-legend");
+  await expect(legend.locator('[data-mark="speed"]')).toContainText("No colour: not measured");
 });
