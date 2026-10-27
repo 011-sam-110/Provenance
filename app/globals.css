@@ -3312,6 +3312,12 @@ a { color: var(--tn-accent); }
 .tn-markkey-row svg { display: block; }
 .tn-markkey-row b { display: block; font-weight: 650; }
 .tn-markkey-meaning { display: block; color: var(--tn-text-muted); }
+/* Under the road marks: a notice is not a speed. Kept on a narrow stage too, because
+   it is the one line that stops a reader taking an empty street as a clear one. */
+.tn-markkey-note {
+  margin: 6px 0 0; padding-top: 5px; border-top: 1px solid var(--tn-border);
+  font-size: 10.5px; color: var(--tn-text-muted);
+}
 /* A narrow stage keeps the marks and their names and drops the sentence. */
 @media (max-width: 900px) {
   .tn-markkey { max-width: 150px; padding: 6px 8px; }

@@ -4,14 +4,16 @@
 // The map draws a signal by how precise its place is (lib/map/precisionMarks.ts): a
 // pin for an exact point or a named site, a shaded shape or a soft disc for an area,
 // a shaded country for a country figure, and a dashed ring for a country figure
-// where the map has no outline to shade. A reader cannot know that from the marks
-// alone, so this key says it, on the map.
+// where the map has no outline to shade. A road notice is a patterned line: dashes
+// for works, dots for an incident, bars for a closed street, with one note that a
+// notice is not a speed and no line is not a clear road. A reader cannot know that
+// from the marks alone, so this key says it, on the map.
 //
 // It lists ONLY the marks on the map now, and renders nothing while no signal layer
 // draws one, so the empty Globe board stays empty. WorldMap mounts it and hands it
 // the marks: there is one map, and the legend is about what that map shows.
 
-import { MARK_LEGEND, type SignalMark } from "@/lib/map/precisionMarks";
+import { MARK_LEGEND, ROAD_MARKS, ROAD_MARK_NOTE, type SignalMark } from "@/lib/map/precisionMarks";
 
 /** A neutral swatch colour: the key explains the SHAPE, and every layer has its own hue. */
 const INK = "#b45309";
@@ -57,6 +59,26 @@ function Swatch({ mark }: { mark: SignalMark }) {
           <circle cx="11" cy="11" r="7.5" fill={INK} fillOpacity="0.22" stroke="#0f172a" strokeWidth="1.7" strokeDasharray="3.6 2.6" />
         </svg>
       );
+    // The road marks keep the map's own patterns (WorldMap's roadLine layers).
+    case "dash":
+      return (
+        <svg {...common}>
+          <path d="M2 11h18" stroke={INK} strokeWidth="3" strokeDasharray="4.2 3" />
+        </svg>
+      );
+    case "dot":
+      return (
+        <svg {...common}>
+          <path d="M3 11h16" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeDasharray="0 6.4" />
+        </svg>
+      );
+    case "bar":
+      return (
+        <svg {...common}>
+          <path d="M2 11h18" stroke="#ffffff" strokeWidth="5" />
+          <path d="M2 11h18" stroke={INK} strokeWidth="4" strokeDasharray="3 3" />
+        </svg>
+      );
   }
 }
 
@@ -76,6 +98,7 @@ export default function MarkLegend({ marks }: { marks: readonly SignalMark[] }) 
           </li>
         ))}
       </ul>
+      {marks.some((m) => ROAD_MARKS.includes(m)) ? <p className="tn-markkey-note">{ROAD_MARK_NOTE}</p> : null}
     </aside>
   );
 }

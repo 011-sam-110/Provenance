@@ -54,8 +54,9 @@ export interface SourceSectionModel {
 export const SECTIONS: readonly SectionDef[] = [
   // "Reference" is not a catalog group — it is the borders-and-names map layer,
   // joined in by lib/console/sources/railSources.ts. It sits here because it is
-  // the other thing you see looking down at the ground.
-  { id: "ground", title: "Ground", groups: ["Cameras", "Reference"] },
+  // the other thing you see looking down at the ground. "Roads" is what the street
+  // operators say about the streets the cameras look at (works, incidents, closures).
+  { id: "ground", title: "Ground", groups: ["Cameras", "Roads", "Reference"] },
   { id: "air-space", title: "Air & space", groups: ["Aviation", "Space", "Space weather", "Military"] },
   { id: "hazards", title: "Natural hazards & weather", groups: ["Natural hazards", "Weather"] },
   { id: "infrastructure", title: "Infrastructure & networks", groups: ["Infrastructure", "Maritime"] },

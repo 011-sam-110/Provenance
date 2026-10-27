@@ -68,6 +68,7 @@ import { toCameraFC, toPlaneFC, toTrailFC, toSatelliteFC, toWebcamFC, toSignalFC
 import {
   COUNTRY_HIT_LAYER,
   PIN_HIT_LAYERS,
+  SIGNAL_DRAWN_LINE_LAYERS,
   isCountryScopedSignal,
   resolveLineHit,
   resolveMapClickTarget,
@@ -233,6 +234,15 @@ const SIGNAL_ICON_LAYER = "signal-icons"; // white hazard pictogram drawn over t
 const SIGNAL_LABEL = "signal-labels";
 const SIGNAL_LINE_SRC = "signal-lines";
 const SIGNAL_LINE_LAYER = "signal-line-paths";
+// A road notice's patterned line (SignalFeature.line), never solid: a closed street's
+// white base and its bars, works dashes, incident dots. Same source as the solid line;
+// SIGNAL_LINE_HIT below is unfiltered, so a click on any of them opens its dossier.
+const SIGNAL_LINE_BAR_BASE = "signal-line-bar-base";
+const SIGNAL_LINE_BAR = "signal-line-bar";
+const SIGNAL_LINE_DASH = "signal-line-dash";
+const SIGNAL_LINE_DOT = "signal-line-dot";
+/** The drawn lines, solid and patterned (lib/map/hitTest.ts lists the same ids). */
+const DRAWN_LINE_SET = new Set(SIGNAL_DRAWN_LINE_LAYERS);
 // The cable you are pointing at, redrawn thick and opaque. With ~700 routes
 // crossing each other, knowing a cable is under the cursor is not the same as
 // knowing WHICH one — this answers that before the click, not after it.
@@ -1406,6 +1416,8 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
           id: SIGNAL_LINE_LAYER,
           type: "line",
           source: SIGNAL_LINE_SRC,
+          // Solid lines only: a patterned line is drawn by the road layers below.
+          filter: ["==", ["get", "line"], "solid"],
           layout: { "line-cap": "round", "line-join": "round" },
           paint: {
             "line-color": ["get", "color"],
@@ -1417,6 +1429,39 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
           },
         });
       }
+      // Road notices: patterned, never solid. Each width reads the zoom only, never a
+      // feature property: MapLibre draws a dashed line solid when its width does.
+      const roadWidth: maplibregl.ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 8, 1.4, 12, 2.6, 15, 4, 17, 6];
+      const roadLine = (id: string, line: string, paint: maplibregl.LineLayerSpecification["paint"], cap: "butt" | "round") => {
+        if (map.getLayer(id)) return;
+        map.addLayer({
+          id,
+          type: "line",
+          source: SIGNAL_LINE_SRC,
+          filter: ["==", ["get", "line"], line],
+          layout: { "line-cap": cap, "line-join": "round" },
+          paint,
+        });
+      };
+      roadLine(SIGNAL_LINE_BAR_BASE, "bar", { "line-color": "#ffffff", "line-width": roadWidth, "line-opacity": 0.95 }, "butt");
+      roadLine(
+        SIGNAL_LINE_BAR,
+        "bar",
+        { "line-color": ["get", "color"], "line-width": roadWidth, "line-opacity": 0.95, "line-dasharray": [1, 1] },
+        "butt",
+      );
+      roadLine(
+        SIGNAL_LINE_DASH,
+        "dash",
+        { "line-color": ["get", "color"], "line-width": roadWidth, "line-opacity": 0.9, "line-dasharray": [1.6, 1.1] },
+        "butt",
+      );
+      roadLine(
+        SIGNAL_LINE_DOT,
+        "dot",
+        { "line-color": ["get", "color"], "line-width": roadWidth, "line-opacity": 0.95, "line-dasharray": [0, 2] },
+        "round",
+      );
       // The hovered route, over the top: same geometry, thick and opaque. Filtered
       // to nothing until a pointer resolves to a cable (setFilter in wireInteractions).
       if (!map.getLayer(SIGNAL_LINE_HOVER)) {
@@ -1874,7 +1919,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
     };
     map.on("click", SIGNAL_LAYER, signalClick);
     map.on("click", SIGNAL_ICON_LAYER, signalClick);
-    map.on("click", SIGNAL_LINE_LAYER, signalClick);
+    for (const id of SIGNAL_DRAWN_LINE_LAYERS) map.on("click", id, signalClick);
     map.on("click", SIGNAL_FILL_LAYER, signalClick);
     // The marks that are not pins open the same dossier: a soft disc, a dashed ring,
     // and the figure on a shaded country (through its transparent target).
@@ -1905,8 +1950,8 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       const hits = hitsAt(map, point);
       return resolveLineHit({
         lineHits,
-        onDrawnLine: hits.some((h) => h.layer === SIGNAL_LINE_LAYER),
-        otherPin: hits.some((h) => h.layer !== SIGNAL_LINE_LAYER && h.layer !== COUNTRY_FILL_LAYER),
+        onDrawnLine: hits.some((h) => DRAWN_LINE_SET.has(h.layer)),
+        otherPin: hits.some((h) => !DRAWN_LINE_SET.has(h.layer) && h.layer !== COUNTRY_FILL_LAYER),
         overCountry: hits.some((h) => h.layer === COUNTRY_FILL_LAYER),
       });
     };
@@ -1915,7 +1960,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       // The drawn-line handler above already owns a click that landed on the
       // geometry; this one exists for the near-misses it cannot see.
       const hits = hitsAt(map, e.point);
-      if (hits.some((h) => h.layer === SIGNAL_LINE_LAYER)) return;
+      if (hits.some((h) => DRAWN_LINE_SET.has(h.layer))) return;
       const f = lineFeatureAt(e.point);
       const id = (f?.properties as { id?: string } | undefined)?.id;
       const sig = id ? signalsRef.current.find((s) => s.id === id) : undefined;
@@ -3100,6 +3145,8 @@ function SignalFeed({
             // Carries line/area geometry (cables, jamming) through to the
             // line/fill builders in lib/map/features; absent for point signals.
             ...(f.geometry ? { geometry: f.geometry } : {}),
+            // A road notice's line pattern (dash, dot, bar); absent is solid.
+            ...(f.line ? { line: f.line } : {}),
           },
         }));
         rawRef.current = objs;

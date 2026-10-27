@@ -698,6 +698,46 @@ const EXPLAINERS: LayerExplainer[] = [
       "Requires an AISStream key for nine of the eleven boxes. Without one only the Gulf of Finland shows, which looks the same as quiet water everywhere else.",
     ],
   },
+
+  // --- Roads ----------------------------------------------------------------
+  // Three layers from one TfL read (lib/signals/roads-london.ts). Each is a NOTICE on a
+  // street, in TfL's words, never a speed: none of them is drawn as a solid line.
+  {
+    id: "road-works",
+    whatItShows: "Planned works that TfL lists on a London street, drawn as dashes along the streets TfL names, or at TfL's own point when it names none.",
+    method: "Read directly from TfL's road disruptions (Unified API, keyless). The category, severity and words are TfL's. A stretch TfL marks Closed is drawn by the road closures layer instead, so each street is drawn once.",
+    confidence: "official",
+    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    limitations: [
+      "A notice is what TfL lists, not a measurement of the road. It says nothing about speed or queues, and no open feed for London publishes a measured speed.",
+      "No line does not mean a clear road: a street with no notice may still be slow or blocked.",
+      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+    ],
+  },
+  {
+    id: "road-incidents",
+    whatItShows: "Something TfL lists as happening on a London street that is not planned works: a collision, a hazard such as a burst water main, police activity or a signal fault. Drawn as dots.",
+    method: "Read directly from TfL's road disruptions (Unified API, keyless). Every TfL category except Works is an incident here; the category and the words stay TfL's. A stretch TfL marks Closed is drawn by the road closures layer instead.",
+    confidence: "official",
+    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    limitations: [
+      "A notice is what TfL lists, not a measurement of the road. It says nothing about speed or queues, and no open feed for London publishes a measured speed.",
+      "No line does not mean a clear road: a street with no notice may still be slow or blocked.",
+      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+    ],
+  },
+  {
+    id: "road-closures",
+    whatItShows: "A London street that TfL marks Closed, in the direction TfL states, drawn as bars.",
+    method: "Read from each street TfL names in a notice, by that street's own closure word. TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
+    confidence: "official",
+    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    limitations: [
+      "Closed is per street: one notice can close one stretch and leave the next open. The open stretch is drawn by the works or incidents layer.",
+      "No line does not mean an open road: TfL lists the closures it knows about.",
+      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+    ],
+  },
 ];
 
 const BY_ID = new Map(EXPLAINERS.map((e) => [e.id, e]));

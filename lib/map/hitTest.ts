@@ -42,11 +42,22 @@ export const COUNTRY_HIT_LAYER = "country-fill";
  * layers WorldMap wires a click handler to, or a pin click would open the country
  * behind it (or vice versa).
  */
+/**
+ * Every DRAWN signal line: the solid one (a cable, a route) and a road notice's three
+ * patterns. Being on any of them beats the country underneath and the widened target.
+ */
+export const SIGNAL_DRAWN_LINE_LAYERS: readonly string[] = [
+  "signal-line-paths",
+  "signal-line-bar",
+  "signal-line-dash",
+  "signal-line-dot",
+];
+
 export const PIN_HIT_LAYERS: readonly string[] = [
   "camera-markers", "camera-dots",
   "webcam-markers", "webcam-dots",
   "plane-markers", "satellite-core",
-  "signal-dots", "signal-icons", "signal-line-paths", "signal-fill-areas",
+  "signal-dots", "signal-icons", ...SIGNAL_DRAWN_LINE_LAYERS, "signal-fill-areas",
   // The marks that are not pins (lib/map/precisionMarks.ts): a soft disc, a dashed
   // ring, and the transparent target on a country figure. The shaded country fill is
   // NOT here on purpose: a click on it must still open the country dossier.

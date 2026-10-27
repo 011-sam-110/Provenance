@@ -13,20 +13,32 @@
 //   country, no outline    a dashed ring with the figure. That file has 177 outlines,
 //                          so Bahrain, Malta, Singapore and others have none.
 //
+// A ROAD NOTICE'S LINE is its own mark (SignalFeature.line): dashes for works, dots for
+// an incident, bars for a street the operator marks closed. None is solid, because a
+// notice is never a speed, and the legend says that no line is not a clear road.
+//
 // No branch below gives an area or a country a pin. tests/unit/precision-marks.test.ts
 // holds that for every mark and for every registered layer.
 //
 // Pure: no MapLibre, no DOM. WorldMap owns the sources, the layers and the paint.
 
 import type { WorldObject } from "@/lib/world";
-import type { SignalGeometry, SignalMetric } from "@/lib/signals/types";
+import type { SignalGeometry, SignalLineStyle, SignalMetric } from "@/lib/signals/types";
 import { isSignalPrecision } from "@/lib/signals/precision";
 
-/** The five marks. "pin" also stands for a feature's own line (a cable route). */
-export type SignalMark = "pin" | "shape" | "disc" | "country" | "ring";
+/**
+ * The marks. "pin" also stands for a feature's own solid line (a cable route); a road
+ * notice's patterned line is its own mark, named by its pattern.
+ */
+export type SignalMark = "pin" | "shape" | "disc" | "country" | "ring" | SignalLineStyle;
 
 /** Every mark, in the order the legend lists them. */
-export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "shape", "disc", "country", "ring"];
+export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "shape", "disc", "country", "ring", "dash", "dot", "bar"];
+
+const LINE_STYLES: ReadonlySet<string> = new Set<SignalLineStyle>(["dash", "dot", "bar"]);
+
+/** The road marks: when one is on the map, the legend adds ROAD_MARK_NOTE. */
+export const ROAD_MARKS: readonly SignalMark[] = ["dash", "dot", "bar"];
 
 /** What the builders need to know that a signal object does not carry. */
 export interface MarkContext {
@@ -94,7 +106,11 @@ function iso3Of(s: WorldObject, ctx: MarkContext): string | undefined {
 export function markOf(s: WorldObject, ctx: MarkContext): SignalMark {
   const g = geometryOf(s);
   if (g && (g.type === "Polygon" || g.type === "MultiPolygon")) return "shape";
-  if (g) return "pin"; // a line: drawn as the line it is
+  if (g) {
+    // A line: drawn as the line it is. A road notice's line carries its pattern.
+    const line = s.meta?.line;
+    return typeof line === "string" && LINE_STYLES.has(line) ? (line as SignalLineStyle) : "pin";
+  }
   const precision = isSignalPrecision(s.meta?.precision) ? s.meta!.precision : undefined;
   if (precision === "country") {
     const iso3 = iso3Of(s, ctx);
@@ -279,4 +295,10 @@ export const MARK_LEGEND: Readonly<Record<SignalMark, { name: string; meaning: s
   disc: { name: "Soft disc", meaning: "An area or a city, not an exact point" },
   country: { name: "Shaded country", meaning: "A figure for the whole country" },
   ring: { name: "Dashed ring", meaning: "A country figure. This map has no outline for that country" },
+  dash: { name: "Dashed line", meaning: "Road works the operator lists on this street" },
+  dot: { name: "Dotted line", meaning: "A road incident the operator lists: a collision, a hazard, police" },
+  bar: { name: "Barred line", meaning: "A street the operator marks closed" },
 };
+
+/** Said once under the road marks: a notice is not a measurement of the road. */
+export const ROAD_MARK_NOTE = "Notices, not speeds. No line does not mean a clear road.";
