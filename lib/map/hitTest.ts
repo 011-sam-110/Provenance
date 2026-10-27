@@ -51,6 +51,7 @@ export const SIGNAL_DRAWN_LINE_LAYERS: readonly string[] = [
   "signal-line-bar",
   "signal-line-dash",
   "signal-line-dot",
+  "signal-line-speed",
 ];
 
 export const PIN_HIT_LAYERS: readonly string[] = [

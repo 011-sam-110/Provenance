@@ -33,9 +33,9 @@ import { isSignalPrecision } from "@/lib/signals/precision";
 export type SignalMark = "pin" | "shape" | "disc" | "country" | "ring" | SignalLineStyle;
 
 /** Every mark, in the order the legend lists them. */
-export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "shape", "disc", "country", "ring", "dash", "dot", "bar"];
+export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "shape", "disc", "country", "ring", "speed", "dash", "dot", "bar"];
 
-const LINE_STYLES: ReadonlySet<string> = new Set<SignalLineStyle>(["dash", "dot", "bar"]);
+const LINE_STYLES: ReadonlySet<string> = new Set<SignalLineStyle>(["dash", "dot", "bar", "speed"]);
 
 /** The road marks: when one is on the map, the legend adds ROAD_MARK_NOTE. */
 export const ROAD_MARKS: readonly SignalMark[] = ["dash", "dot", "bar"];
@@ -298,6 +298,10 @@ export const MARK_LEGEND: Readonly<Record<SignalMark, { name: string; meaning: s
   dash: { name: "Dashed line", meaning: "Road works the operator lists on this street" },
   dot: { name: "Dotted line", meaning: "A road incident the operator lists: a collision, a hazard, police" },
   bar: { name: "Barred line", meaning: "A street the operator marks closed" },
+  speed: {
+    name: "Solid road line",
+    meaning: "A measured speed: green 70 km/h and over, yellow 40 to 70, orange under 40. No colour: not measured",
+  },
 };
 
 /** Said once under the road marks: a notice is not a measurement of the road. */

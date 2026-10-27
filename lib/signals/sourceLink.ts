@@ -152,6 +152,7 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   "road-works": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },
   "road-incidents": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },
   "road-closures": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },
+  "road-speed": { label: "DATA.GOV.HK (Transport Department)", url: "https://data.gov.hk/en/" },
 };
 
 /**

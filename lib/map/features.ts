@@ -108,7 +108,7 @@ function signalProps(s: WorldObject) {
     label: s.label,
     color: s.color ?? "#64748b",
     // The line's pattern (SignalFeature.line); "solid" when the feature names none.
-    line: line === "dash" || line === "dot" || line === "bar" ? line : "solid",
+    line: line === "dash" || line === "dot" || line === "bar" || line === "speed" ? line : "solid",
   };
 }
 

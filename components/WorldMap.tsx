@@ -249,6 +249,9 @@ const SIGNAL_LINE_BAR_BASE = "signal-line-bar-base";
 const SIGNAL_LINE_BAR = "signal-line-bar";
 const SIGNAL_LINE_DASH = "signal-line-dash";
 const SIGNAL_LINE_DOT = "signal-line-dot";
+// A measured road speed: solid, road width, its band's colour. Under the notices, so a
+// closure drawn on a measured road stays on top.
+const SIGNAL_LINE_SPEED = "signal-line-speed";
 /** The drawn lines, solid and patterned (lib/map/hitTest.ts lists the same ids). */
 const DRAWN_LINE_SET = new Set(SIGNAL_DRAWN_LINE_LAYERS);
 // The cable you are pointing at, redrawn thick and opaque. With ~700 routes
@@ -1457,6 +1460,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
           paint,
         });
       };
+      roadLine(SIGNAL_LINE_SPEED, "speed", { "line-color": ["get", "color"], "line-width": roadWidth, "line-opacity": 0.9 }, "round");
       roadLine(SIGNAL_LINE_BAR_BASE, "bar", { "line-color": "#ffffff", "line-width": roadWidth, "line-opacity": 0.95 }, "butt");
       roadLine(
         SIGNAL_LINE_BAR,

@@ -72,6 +72,15 @@ function Swatch({ mark }: { mark: SignalMark }) {
           <path d="M3 11h16" stroke={INK} strokeWidth="3.4" strokeLinecap="round" strokeDasharray="0 6.4" />
         </svg>
       );
+    case "speed":
+      // The three speed bands of lib/roads/hk-speed.ts, side by side. Never red.
+      return (
+        <svg {...common}>
+          <path d="M2 11h6" stroke="#4ade80" strokeWidth="4" strokeLinecap="round" />
+          <path d="M9 11h5" stroke="#facc15" strokeWidth="4" strokeLinecap="round" />
+          <path d="M15 11h5" stroke="#f97316" strokeWidth="4" strokeLinecap="round" />
+        </svg>
+      );
     case "bar":
       return (
         <svg {...common}>

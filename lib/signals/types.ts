@@ -43,8 +43,8 @@ export type SignalGeometry =
  */
 export type SignalPrecision = "exact" | "facility" | "area" | "country";
 
-/** The patterns a signal line can take besides solid. See `SignalFeature.line`. */
-export type SignalLineStyle = "dash" | "dot" | "bar";
+/** How a road line is drawn. See `SignalFeature.line`. */
+export type SignalLineStyle = "dash" | "dot" | "bar" | "speed";
 
 /** One renderable signal: a point, or (with `geometry`) a line / area. */
 export interface SignalFeature {
@@ -81,7 +81,8 @@ export interface SignalFeature {
    * How a LINE geometry is drawn. Absent is a solid line (a cable, a route). A road
    * notice is never solid, because a solid road line is how a measured speed will be
    * drawn: "dash" is works, "dot" an incident, "bar" a street its operator marks
-   * closed (lib/signals/roads.ts). Ignored on a point or an area.
+   * closed (lib/signals/roads.ts). "speed" is that measured speed: a solid road-width
+   * line in its band's colour (lib/signals/road-speed.ts). Ignored on a point or an area.
    */
   line?: SignalLineStyle;
   /** Per-feature marker colour (CSS hex). Falls back to the source colour. */
