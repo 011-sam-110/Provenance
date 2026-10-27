@@ -9,9 +9,10 @@ name: Gate
 # that caused it, it blocks DEPLOYMENT of everything already merged behind it. On
 # 2026-09-16 that put production five merges behind: #253 and #254 each added a test
 # file, the pinned count in lib/marketing/repo-facts.data.ts went stale, and the deploy
-# went red while six PRs were merged on top of it.
+# went red while six PRs were merged on top of it. (That file was deleted on 2026-10-27:
+# nothing read it, and the same drift had failed the deploys of #302 and #303.)
 #
-# The pinned-count guards (repo-facts, readme-counts, claude-md-counts, console-presets)
+# The pinned-count guards (readme-counts, claude-md-counts, console-presets, privacy-page)
 # are the tests most likely to catch a branch this way, and they are exactly the ones
 # that are cheap to fix on the branch and expensive to fix after the merge. So they need
 # to run where the person who moved the number is still looking.

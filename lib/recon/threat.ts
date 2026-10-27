@@ -29,7 +29,20 @@ export interface ThreatProvider {
   label: string;
   envKey: string;
   supports: TargetKind[];
+  /**
+   * True only when app/api/recon/threat reads this provider. None does yet. A slot
+   * whose key is set but whose provider is not read must NOT show a tick: it would say
+   * "configured" over a card that shows none of that provider's data.
+   */
+  wired: boolean;
 }
+
+/**
+ * locked  = no key set
+ * unwired = a key is set, but nothing reads this provider yet
+ * on      = a key is set and the route reads the provider
+ */
+export type SlotState = "locked" | "unwired" | "on";
 
 /** A provider rendered in the widget — `locked` when its key is absent. */
 export interface ProviderSlot {
@@ -37,6 +50,7 @@ export interface ProviderSlot {
   label: string;
   envKey: string;
   locked: boolean;
+  state: SlotState;
 }
 
 /** Top-level result assembled by the route (baseline may be null when dormant). */
@@ -49,13 +63,13 @@ export interface ThreatResult {
 
 /** The keyed providers we document. Each becomes a 🔒 slot until its key is set. */
 export const THREAT_PROVIDERS: ThreatProvider[] = [
-  { id: "virustotal", label: "VirusTotal", envKey: "VIRUSTOTAL_API_KEY", supports: ["domain", "ip"] },
-  { id: "abuseipdb", label: "AbuseIPDB", envKey: "ABUSEIPDB_API_KEY", supports: ["ip"] },
-  { id: "greynoise", label: "GreyNoise", envKey: "GREYNOISE_API_KEY", supports: ["ip"] },
-  { id: "otx", label: "AlienVault OTX", envKey: "OTX_API_KEY", supports: ["domain", "ip"] },
-  { id: "pulsedive", label: "Pulsedive", envKey: "PULSEDIVE_API_KEY", supports: ["domain", "ip"] },
-  { id: "ipqualityscore", label: "IPQualityScore", envKey: "IPQUALITYSCORE_API_KEY", supports: ["ip"] },
-  { id: "abusech", label: "abuse.ch", envKey: "ABUSECH_API_KEY", supports: ["domain", "ip"] },
+  { id: "virustotal", label: "VirusTotal", envKey: "VIRUSTOTAL_API_KEY", supports: ["domain", "ip"], wired: false },
+  { id: "abuseipdb", label: "AbuseIPDB", envKey: "ABUSEIPDB_API_KEY", supports: ["ip"], wired: false },
+  { id: "greynoise", label: "GreyNoise", envKey: "GREYNOISE_API_KEY", supports: ["ip"], wired: false },
+  { id: "otx", label: "AlienVault OTX", envKey: "OTX_API_KEY", supports: ["domain", "ip"], wired: false },
+  { id: "pulsedive", label: "Pulsedive", envKey: "PULSEDIVE_API_KEY", supports: ["domain", "ip"], wired: false },
+  { id: "ipqualityscore", label: "IPQualityScore", envKey: "IPQUALITYSCORE_API_KEY", supports: ["ip"], wired: false },
+  { id: "abusech", label: "abuse.ch", envKey: "ABUSECH_API_KEY", supports: ["domain", "ip"], wired: false },
 ];
 
 /** Pure: keep only non-empty strings, trimmed, from an unknown array. */
@@ -79,10 +93,9 @@ export function parseThreatBaseline(json: InternetDbResponse | null | undefined,
 
 /** Pure: the provider slots for a target kind — `locked` unless its key is in `env`. */
 export function providerSlots(kind: TargetKind, env: Record<string, string | undefined>): ProviderSlot[] {
-  return THREAT_PROVIDERS.filter((p) => p.supports.includes(kind)).map((p) => ({
-    id: p.id,
-    label: p.label,
-    envKey: p.envKey,
-    locked: !env[p.envKey],
-  }));
+  return THREAT_PROVIDERS.filter((p) => p.supports.includes(kind)).map((p) => {
+    const locked = !env[p.envKey];
+    const state: SlotState = locked ? "locked" : p.wired ? "on" : "unwired";
+    return { id: p.id, label: p.label, envKey: p.envKey, locked, state };
+  });
 }

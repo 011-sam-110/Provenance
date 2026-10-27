@@ -142,6 +142,8 @@ import MarkLegend from "@/components/console/MarkLegend";
 import AskChips from "@/components/console/AskChips";
 import { centroidByName } from "@/lib/signals/country-centroids.data";
 import { useTimeWindow, windowMsFor, withinWindow } from "@/lib/shell/timeWindow";
+import { useIpLocate } from "@/lib/recon/ipLocate";
+import { areasToFeatures } from "@/lib/recon/geoArea";
 import { passesPrecision, usePrecisionFilter } from "@/lib/shell/precisionFilter";
 import { viewModeStore } from "@/lib/shell/viewMode";
 import { useNow } from "@/lib/shell/useNow";
@@ -194,6 +196,12 @@ const WATCH_RING_LAYER = "tn-watch-ring";
 const PIN_SRC = "user-pins";
 const PIN_DOT_LAYER = "user-pin-dots";
 const PIN_LABEL_LAYER = "user-pin-labels";
+// IP location (lib/recon/ipLocate.ts): the AREA a looked-up network is placed in, the
+// country or a circle with a published radius. Polygons only, never a point, and kept
+// out of the pin source on purpose: pins are saved and synced, a typed IP is not.
+const IP_AREA_SRC = "recon-ip-area";
+const IP_AREA_FILL_LAYER = "recon-ip-area-fill";
+const IP_AREA_LINE_LAYER = "recon-ip-area-line";
 const SAT_SRC = "satellites";
 const SAT_GLOW_LAYER = "satellite-glow";
 const SAT_LAYER = "satellite-core";
@@ -579,6 +587,8 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   const pinsRef = useRef<{ pins: MapPin[]; activeId: string | null }>({ pins: [], activeId: null });
   // Same job for the Terminal's selection ring.
   const selectionRef = useRef<TerminalSelection | null>(null);
+  // And for the IP location area, so a restyle re-seeds it.
+  const ipAreaRef = useRef<GeoJSON.FeatureCollection>(EMPTY_FC);
 
   // Latest watching marks and monitored ring, so addAppLayers can re-seed both after
   // a restyle. Held as the finished FeatureCollection rather than as the inputs,
@@ -644,6 +654,9 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
   const pins = useMapPins();
   pinsRef.current = pins;
+  const ipLocate = useIpLocate();
+  const ipAreaFC = useMemo(() => areasToFeatures(ipLocate.areas), [ipLocate.areas]);
+  ipAreaRef.current = ipAreaFC;
   // Subscribing the map to the selection is cheap in the way the cursor readout is
   // not: a selection changes when the user clicks a widget row, so this re-renders
   // on a human action, never on a pointer move or a poll tick.
@@ -1076,6 +1089,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       ensureGeoJSON(map, TRACK_SRC, toTrackFC(trackedObjectRef.current));
       ensureGeoJSON(map, SELECT_SRC, toSelectionFC(selectionRef.current));
       ensureGeoJSON(map, PIN_SRC, toPinFC(pinsRef.current.pins, pinsRef.current.activeId));
+      ensureGeoJSON(map, IP_AREA_SRC, ipAreaRef.current);
       ensureGeoJSON(map, SIGNAL_FILL_SRC, toSignalFillFC(signalsRef.current));
       ensureGeoJSON(map, SIGNAL_LINE_SRC, toSignalLineFC(signalsRef.current));
       ensureGeoJSON(map, SIGNAL_SRC, toSignalFC(pinSignals(signalsRef.current, markCtxRef.current)));
@@ -1744,6 +1758,30 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
             "circle-stroke-color": "#ffb020",
             "circle-stroke-width": ["case", ["==", ["get", "onair"], 1], 2.5, 2],
             "circle-stroke-opacity": ["case", ["==", ["get", "onair"], 1], 1, 0.55],
+          },
+        });
+      }
+
+      // IP location area: a faint wash and a dashed edge, under the user pins. No
+      // symbol and no circle layer: the dossier names the place, the map shows the area.
+      if (!map.getLayer(IP_AREA_FILL_LAYER)) {
+        map.addLayer({
+          id: IP_AREA_FILL_LAYER,
+          type: "fill",
+          source: IP_AREA_SRC,
+          paint: { "fill-color": "#0b4a7d", "fill-opacity": 0.14 },
+        });
+      }
+      if (!map.getLayer(IP_AREA_LINE_LAYER)) {
+        map.addLayer({
+          id: IP_AREA_LINE_LAYER,
+          type: "line",
+          source: IP_AREA_SRC,
+          layout: { "line-join": "round" },
+          paint: {
+            "line-color": "#0b4a7d",
+            "line-width": ["interpolate", ["linear"], ["zoom"], 0, 1.2, 6, 2],
+            "line-dasharray": [2, 1.5],
           },
         });
       }
@@ -2638,6 +2676,13 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       map.easeTo({ center: [found.lon, found.lat], zoom, duration: 900, essential: true });
     }
   }, [track, planesLayer]);
+
+  // IP location area → source update. Empty when the look-up is cleared.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    (map.getSource(IP_AREA_SRC) as GeoJSONSource | undefined)?.setData(ipAreaFC);
+  }, [ipAreaFC]);
 
   // User pins → source update (search bar / right-click / navigator all flow here).
   useEffect(() => {

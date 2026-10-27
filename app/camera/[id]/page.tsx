@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCameraPage, getCountryFacets } from "@/lib/seo/registrySnapshot";
-import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
+import { isLiveCamera } from "@/lib/liveness/playcheck";
 import { CameraImage } from "@/components/CameraImage";
 import { CameraVideo } from "@/components/CameraVideo";
 import { CameraConditions } from "@/components/directory/CameraConditions";
@@ -109,7 +109,11 @@ export default async function CameraPage({ params }: { params: Promise<{ id: str
   if (!hit) notFound();
 
   const { camera: cam, nearby, regionCount } = hit;
-  const live = isLiveStreamUrl(cam.streamUrl);
+  // Video only when the stream played at its last check (lib/liveness/playcheck.ts);
+  // otherwise the operator's still, like any other camera. This page only READS the
+  // check's shared state: starting the loop needs the live registry, which this page
+  // must not import (tests/unit/seo-page-caching.test.ts). The API routes start it.
+  const live = isLiveCamera(cam);
   const country = countryName(cam.country);
 
   // Every cross-link below is resolved against what the directory can ACTUALLY serve.

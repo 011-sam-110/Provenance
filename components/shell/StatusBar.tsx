@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { useMetrics } from "@/lib/metrics";
+import { statLine } from "@/lib/shell/statLine";
 import { useLayers } from "@/lib/layers";
 import { useActivePreset } from "@/lib/console/activePreset";
 import { listPresets } from "@/lib/console/presets";
@@ -46,12 +47,10 @@ export default function StatusBar({ onOpenPalette }: { onOpenPalette: () => void
               tier that holds most of them is switched on. With Live cams alone up
               that read "19,520 cameras" for about 1,500 pins, which is the same
               audit trap the note above describes, pointing the other way. */}
-          {layers.livecams ? `${m.liveCameras.toLocaleString()} live cams` : "live cams off"} ·{" "}
-          {layers.staticcams
-            ? `${(m.stillCameras + m.webcams).toLocaleString()} static cams`
-            : "static cams off"} ·{" "}
-          {layers.planes ? `${m.planes.toLocaleString()} planes` : "planes off"} ·{" "}
-          {layers.satellites ? `${m.satellites.toLocaleString()} satellites` : "satellites off"}
+          {/* VIDEO AND STILLS APART. "video cams" counts the streams the play check
+              shows as video (lib/liveness/playcheck.ts); refreshing pictures are "still cams".
+              lib/shell/statLine.ts holds the words, and its test holds them. */}
+          {statLine(m, layers)}
         </span>
 
         {/* The SPOKEN status line, and deliberately a different string from the one
