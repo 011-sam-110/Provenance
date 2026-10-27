@@ -47,8 +47,9 @@ export interface RoadNotice {
   lon: number;
   /**
    * The segments of the streets the notice names that the operator does NOT mark
-   * "Closed", as [lon, lat] lines. With `closedLines`, every segment once. Often both
-   * are empty, and the notice is drawn at its point.
+   * "Closed", as [lon, lat] lines: each street's segments joined end to end (joinLines in
+   * lib/roads/tfl.ts). With `closedLines`, every segment once. Often both are empty, and
+   * the notice is drawn at its point.
    */
   openLines: [number, number][][];
   /** The segments of the streets the operator marks "Closed". */

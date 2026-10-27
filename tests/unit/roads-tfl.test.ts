@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { FETCH_AGE_SHOWN_MS, changeText, fetchedText, newestChange, utcStamp } from "@/lib/roads/notice";
-import { normalizeTflNotices, tflKind } from "@/lib/roads/tfl";
+import { joinLines, normalizeTflNotices, tflKind } from "@/lib/roads/tfl";
 import { streetFeatures } from "@/lib/eye/streets";
 
 // Three verbatim rows of TfL's /Road/all/Disruption answer, recorded 27 Oct 2026 at
@@ -22,24 +22,29 @@ describe("normalizeTflNotices: closed is per street", () => {
 
   it("splits a notice's segments by its own streets' closure words", () => {
     // TfL names two A12 stretches: one Closed westbound (7 segments), one Open (13).
+    // Each street's segments join into one line.
     expect(MIXED[0].streets.map((s: { closure: string }) => s.closure)).toEqual(["Closed", "Open"]);
-    expect(a12.closedLines).toHaveLength(7);
-    expect(a12.openLines).toHaveLength(13);
+    expect(a12.closedLines).toHaveLength(1);
+    expect(a12.openLines).toHaveLength(1);
     expect(a12.closure).toBe("Closed, westbound");
     // TfL's own notice-level flag says nothing is closed. The streets decide.
     expect(MIXED[0].hasClosures).toBe(false);
   });
 
-  it("sends each segment once", () => {
-    const counted = MIXED[0].streets.reduce((n: number, s: { segments: unknown[] }) => n + s.segments.length, 0);
-    expect(a12.openLines.length + a12.closedLines.length).toBe(counted);
+  it("keeps every point TfL sent, each on the line of its own street", () => {
+    const pointsOf = (street: { segments: { lineString: string }[] }) =>
+      street.segments.flatMap((s) => JSON.parse(s.lineString) as [number, number][]);
+    const on = (line: [number, number][], [x, y]: [number, number]) =>
+      line.some(([lx, ly]) => Math.abs(lx - x) < 1e-9 && Math.abs(ly - y) < 1e-9);
+    for (const p of pointsOf(MIXED[0].streets[0])) expect(on(a12.closedLines[0], p)).toBe(true);
+    for (const p of pointsOf(MIXED[0].streets[1])) expect(on(a12.openLines[0], p)).toBe(true);
   });
 
   it("paints only the Closed stretch as closed; the open stretch keeps the notice's kind", () => {
     const feats = streetFeatures([a12]);
     const byPaint = (p: string) => feats.filter((f) => f.properties?.paint === p).length;
-    expect(byPaint("closed")).toBe(7);
-    expect(byPaint("works")).toBe(13);
+    expect(byPaint("closed")).toBe(1);
+    expect(byPaint("works")).toBe(1);
     expect(byPaint("incident")).toBe(0);
   });
 
@@ -48,6 +53,45 @@ describe("normalizeTflNotices: closed is per street", () => {
     expect(tflKind("Works")).toBe("works");
     expect(tflKind("Collisions")).toBe("incident");
     expect(tflKind("Asset issues")).toBe("incident");
+  });
+});
+
+describe("joinLines: a dash stays a dash", () => {
+  // MapLibre starts a dash pattern again at the start of every line, so a street sent as
+  // short pieces draws solid. TfL sends its pieces out of order and in either direction.
+  const A: [number, number] = [0, 0];
+  const B: [number, number] = [1, 0];
+  const C: [number, number] = [2, 0];
+  const D: [number, number] = [3, 0];
+
+  it("joins pieces end to end, in any order and either direction", () => {
+    expect(joinLines([[C, D], [A, B], [C, B]])).toEqual([[D, C, B, A]]);
+  });
+
+  it("takes two points within about a metre as one", () => {
+    expect(joinLines([[A, B], [[1.000004, 0.000003], C]])).toEqual([[A, B, C]]);
+  });
+
+  it("never bridges a gap", () => {
+    expect(joinLines([[A, B], [C, D]])).toEqual([[A, B], [C, D]]);
+  });
+
+  it("drops a piece that repeats another, forwards or backwards", () => {
+    expect(joinLines([[A, B], [B, A], [A, B]])).toEqual([[A, B]]);
+  });
+
+  it("at a fork joins two pieces and keeps the third apart", () => {
+    const E: [number, number] = [1, 1];
+    expect(joinLines([[A, B], [B, C], [B, E]])).toHaveLength(2);
+  });
+
+  it("joins every street in the recorded rows into one line", () => {
+    for (const d of MIXED) {
+      for (const street of d.streets) {
+        const pieces = street.segments.map((s: { lineString: string }) => JSON.parse(s.lineString));
+        expect(joinLines(pieces), `${d.id} ${street.name}`).toHaveLength(1);
+      }
+    }
   });
 });
 

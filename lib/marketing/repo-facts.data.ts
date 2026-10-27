@@ -116,17 +116,17 @@
  * just add.
  *
  * Re-measured 2026-10-27 on feat/live-roads-m1 (origin/main at 7f1101e). Road notices M1 adds
- * `roads-tfl` (9 cases) and three cases to `eye-streets`. `npx vitest list`: 5,594 cases across
+ * `roads-tfl` (15 cases) and three cases to `eye-streets`. `npx vitest list`: 5,600 cases across
  * 481 files. If another branch moved this constant off the same base, re-measure the merged
  * tree rather than pick a side.
  *
- * Re-measured 2026-10-27 on feat/live-roads-m2 (stacked on M1). The console's road layers
- * add `signals-roads-london` (11 cases), and one case each to `map-hover` and
- * `precision-marks`, plus the explainer and source-link rows every new layer gets:
- * `npx vitest list`: 5,610 cases across 482 files.
+ * Re-measured 2026-10-27 on feat/live-roads-m2 (stacked on M1, with M1's joined street lines
+ * merged in). The console's road layers add `signals-roads-london` (11 cases), and one case
+ * each to `map-hover` and `precision-marks`, plus the explainer and source-link rows every new
+ * layer gets: `npx vitest list`: 5,616 cases across 482 files.
  */
 export const UNIT_TESTS = {
-  cases: 5610,
+  cases: 5616,
   files: 482,
   measuredAt: "2026-10-27",
 } as const;

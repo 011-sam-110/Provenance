@@ -47,13 +47,14 @@ describe("roadLayerFeatures: one TfL read, three layers", () => {
   it("draws the open stretch of a works notice as dashes", () => {
     expect(works.map((f) => f.id)).toEqual(["tfl:TIMS-237054"]);
     expect(works[0].line).toBe("dash");
-    expect(linesOf(works[0])).toBe(13);
+    // TfL's 13 open segments, joined end to end into one line (lib/roads/tfl.ts).
+    expect(linesOf(works[0])).toBe(1);
     expect(works[0].signalId).toBe("road-works");
   });
 
   it("draws every street TfL marks Closed as bars, whatever the notice's kind", () => {
     expect(closures.map((f) => f.id)).toEqual(["tfl:TIMS-237054:closed", "tfl:TIMS-236919:closed", "tfl:TIMS-237055:closed"]);
-    expect(closures.map(linesOf)).toEqual([7, 12, 7]);
+    expect(closures.map(linesOf)).toEqual([1, 1, 1]);
     for (const f of closures) expect(f.line).toBe("bar");
   });
 
@@ -62,14 +63,15 @@ describe("roadLayerFeatures: one TfL read, three layers", () => {
     expect(incidents).toEqual([]);
   });
 
-  it("draws each TfL segment once across the three layers", () => {
-    const sent = MIXED.flatMap((d: { streets: { segments: unknown[] }[] }) => d.streets).reduce(
-      (n: number, s: { segments: unknown[] }) => n + s.segments.length,
-      0,
-    );
+  it("draws each TfL street once across the three layers", () => {
+    // Four streets with segments: the A12's closed and open stretches, Hook Road and
+    // Blackstock Road. Each one's segments join into one line.
+    const streets = MIXED.flatMap((d: { streets: { segments: unknown[] }[] }) => d.streets).filter(
+      (s: { segments: unknown[] }) => s.segments.length > 0,
+    ).length;
     const drawn = [...works, ...incidents, ...closures].reduce((n, f) => n + linesOf(f), 0);
-    expect(drawn).toBe(sent);
-    expect(sent).toBe(39);
+    expect(streets).toBe(4);
+    expect(drawn).toBe(streets);
   });
 
   it("is never a solid line", () => {
