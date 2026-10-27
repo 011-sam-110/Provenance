@@ -321,6 +321,28 @@ Two credentials named in the same audit are NOT wired yet, on purpose:
 before an adapter can read them, and `TRAFFIC_WALES_KEY` needs the DATEX feed URL that
 Traffic Wales sends with the approval, which is not published.
 
+## 9 - IP location radius (NOT BUILT, waits on the key)
+
+The IP location tool ("Locate network" in the search box, `app/api/recon/geo`) reads
+MaxMind's GeoLite2 data through RIPEstat, with no key. RIPEstat publishes no accuracy
+radius, so the map draws the country. A circle needs the GeoLite2 City file, and that
+file needs a free MaxMind account. No code reads these two values yet: the step that
+downloads the file and draws the circle reads them when it ships.
+
+| Var | What it is |
+|---|---|
+| `MAXMIND_ACCOUNT_ID` | The account ID of a free GeoLite account on maxmind.com. The sign-up asks you to accept the GeoLite EULA. |
+| `MAXMIND_LICENSE_KEY` | A licence key made under that account (Manage License Keys). |
+
+Set both on the box with `deploy/set-maxmind-key.sh`, from your own terminal:
+`scp deploy/set-maxmind-key.sh provenance:/tmp/` then
+`ssh -t provenance sudo bash /tmp/set-maxmind-key.sh`. It reads the key from a hidden
+prompt, checks the pair with MaxMind before it writes, and changes only these two lines
+of `/srv/provenance/shared/.env`. Two rules come with the data and are not optional:
+show the credit "This product includes GeoLite Data created by MaxMind, available from
+https://www.maxmind.com" wherever its answers are shown (the network dossier does), and
+delete a downloaded file within 30 days of a newer release.
+
 ## `.env.local` template
 
 Copy this into `.env.local`, fill what you have, leave the rest blank (blank = dormant):

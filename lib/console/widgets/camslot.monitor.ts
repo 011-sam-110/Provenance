@@ -18,7 +18,7 @@ export interface CameraRow extends LatLon {
   name?: string;
   refreshSeconds?: number;
   source?: string;
-  /** Set by lib/cameras/body.ts from isLiveStreamUrl — a stream /api/hls can play. */
+  /** Set by lib/cameras/body.ts: the stream played at its last check (lib/liveness/playcheck.ts). */
   live?: boolean;
 }
 

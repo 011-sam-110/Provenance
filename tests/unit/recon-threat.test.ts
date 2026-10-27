@@ -50,3 +50,12 @@ test("dormant-safe: null / malformed input yields an honest empty baseline", () 
   expect(parseThreatBaseline({ tags: "nope", vulns: 3 } as unknown as InternetDbResponse, "1.1.1.1").flagged).toBe(false);
   expect(providerSlots("empty", {})).toEqual([]);
 });
+
+test("a slot with a key set but no reader says so, and never shows as on", () => {
+  // No provider is read by app/api/recon/threat yet, so a set key is "unwired", not a tick.
+  expect(THREAT_PROVIDERS.every((p) => p.wired === false)).toBe(true);
+  const slots = providerSlots("ip", { ABUSEIPDB_API_KEY: "x" });
+  expect(slots.find((s) => s.id === "abuseipdb")?.state).toBe("unwired");
+  expect(slots.find((s) => s.id === "greynoise")?.state).toBe("locked");
+  expect(slots.some((s) => s.state === "on")).toBe(false);
+});

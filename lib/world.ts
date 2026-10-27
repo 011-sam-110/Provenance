@@ -8,7 +8,7 @@
 
 import type { IconKey } from "@/lib/icons/svg";
 
-export type WorldObjectKind = "camera" | "satellite" | "plane" | "webcam" | "signal" | "country" | "area";
+export type WorldObjectKind = "camera" | "satellite" | "plane" | "webcam" | "signal" | "country" | "area" | "network";
 
 export interface WorldObject {
   kind: WorldObjectKind;

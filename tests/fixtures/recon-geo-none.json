@@ -1,0 +1,30 @@
+{
+  "messages": [],
+  "see_also": [],
+  "version": "1.0",
+  "data_call_name": "maxmind-geo-lite",
+  "data_call_status": "supported",
+  "cached": true,
+  "query_id": "20261027032609-4823d881-27ff-44ab-82bd-e8a3e3251e0d",
+  "process_time": 21,
+  "server_id": "app171",
+  "build_version": "v0.12.2-2026.10.23",
+  "pipeline": "1478200",
+  "status": "ok",
+  "status_code": 200,
+  "time": "2026-10-27T03:26:09.267510",
+  "data": {
+    "located_resources": [],
+    "unknown_percentage": {
+      "4": 100
+    },
+    "result_time": "2026-10-23T16:46:41",
+    "latest_time": "2026-10-23T16:46:41",
+    "earliest_time": "2026-10-23T16:46:41",
+    "parameters": {
+      "resource": "192.0.2.1/32",
+      "resolution": null,
+      "cache": null
+    }
+  }
+}
