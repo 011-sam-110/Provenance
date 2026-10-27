@@ -5,11 +5,14 @@ import type { RoadNotice } from "@/lib/roads/notice";
 import { normalizeTflNotices, TFL_DISRUPTIONS_URL } from "@/lib/roads/tfl";
 import { DRIVEBC_EVENTS_URL, normalizeOpen511 } from "@/lib/roads/open511";
 import { NSW_FEEDS, nswFeedUrl } from "@/lib/roads/nsw";
+import { digitrafficUrl } from "@/lib/roads/digitraffic";
 import { readOutcome } from "@/lib/signals/outcome";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import {
+  CASTLEROCK_OPERATORS,
   DRIVEBC_OPERATOR,
   ROADS_GROUP,
+  notAnswered,
   ROAD_CLOSURES_SOURCE,
   ROAD_INCIDENTS_SOURCE,
   ROAD_WORKS_SOURCE,
@@ -31,6 +34,10 @@ const BC = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/drivebc-open5
 // a closed roadwork and a closed road with lines, an ended incident, a flood with a line.
 const NSW = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/nsw-live-traffic-hazards.json"), "utf8"));
 const EMPTY = { type: "FeatureCollection", features: [] };
+// Five verbatim Digitraffic messages, 27 Oct 2026 08:24 UTC (see roads-digitraffic.test.ts):
+// a closed road work, a point road work, a lane-closure road work, a closed-road accident
+// report, and a general announcement with a line.
+const FI = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/digitraffic-traffic-messages.json"), "utf8"));
 
 const linesOf = (f: SignalFeature): number =>
   f.geometry?.type === "MultiLineString" ? f.geometry.coordinates.length : f.geometry?.type === "LineString" ? 1 : 0;
@@ -129,6 +136,7 @@ describe("the three sources", () => {
     expect(SOURCES.map((s) => s.id)).toEqual(["road-works", "road-incidents", "road-closures"]);
     expect(SOURCES.map((s) => s.label)).toEqual(["Roadworks", "Road incidents", "Road closures"]);
     expect(SOURCES[0].attribution).toContain("Contains data from Transport for NSW (Live Traffic NSW), Creative Commons Attribution");
+    expect(SOURCES[0].attribution).toContain("Contains data from Fintraffic / Digitraffic, licensed under CC BY 4.0");
     for (const s of SOURCES) {
       expect(MAP_SIGNALS).toContain(s);
       expect(s.group).toBe(ROADS_GROUP);
@@ -136,6 +144,13 @@ describe("the three sources", () => {
       expect(s.attribution).toContain("Powered by TfL Open Data");
       expect(s.attribution).toContain("Contains information licensed under the Open Government Licence - British Columbia");
     }
+  });
+
+  it("keeps a failure reason short", () => {
+    expect(notAnswered(["TfL", "DriveBC"])).toBe("TfL and DriveBC did not answer");
+    const many = ["Transport for NSW (roadwork, incident, flood)", "Florida DOT (FL511)", "Georgia DOT (511GA)"];
+    expect(notAnswered(many)).toBe("Transport for NSW (roadwork, incident, flood) and 2 more did not answer");
+    expect(notAnswered(["x".repeat(70), "y"])).toBe("2 road operators did not answer");
   });
 
   it("names and links each DriveBC row as DriveBC's", () => {
@@ -150,8 +165,9 @@ describe("the three sources", () => {
     let clock = Date.now();
     beforeEach(() => {
       calls = 0;
-      // Past the shared read's 60 s, so each test asks TfL again.
-      clock += 10 * 60_000;
+      // Past every file's shared read (Digitraffic's road works: 10 min), so each test
+      // asks every operator again.
+      clock += 20 * 60_000;
       vi.setSystemTime(clock);
     });
     afterEach(() => {
@@ -161,7 +177,8 @@ describe("the three sources", () => {
 
     /**
      * Answers every operator from the fixtures; `down` names what does not answer: "tfl",
-     * "bc", "nsw" (all six NSW files) or "nsw-<file>" (one of them).
+     * "bc", "fi", "cr" (every Castle Rock system), "nsw" (all six NSW files) or
+     * "nsw-<file>" (one of them). Castle Rock answers with empty lists.
      */
     const answer = (down: string[] = []) =>
       vi.stubGlobal("fetch", async (url: string) => {
@@ -169,6 +186,11 @@ describe("the three sources", () => {
         const ok = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
         if (url === TFL_DISRUPTIONS_URL && !down.includes("tfl")) return ok(MIXED);
         if (url === DRIVEBC_EVENTS_URL && !down.includes("bc")) return ok(BC);
+        if (/\/List\/GetData\/|\/map\/mapIcons\//.test(url) && !down.includes("cr")) {
+          return ok(url.includes("/List/GetData/") ? { data: [], recordsTotal: 0 } : { item2: [] });
+        }
+        if (url === digitrafficUrl("ROAD_WORK") && !down.includes("fi")) return ok(FI.roadWork);
+        if (url === digitrafficUrl("TRAFFIC_ANNOUNCEMENT") && !down.includes("fi")) return ok(FI.announcement);
         for (const feed of NSW_FEEDS) {
           if (url === nswFeedUrl(feed) && !down.includes("nsw") && !down.includes(`nsw-${feed}`)) return ok(NSW[feed] ?? EMPTY);
         }
@@ -178,36 +200,41 @@ describe("the three sources", () => {
     it("asks each operator's files once for the three layers, and dates the data by the newest change", async () => {
       answer();
       const [w, i, c] = await Promise.all(SOURCES.map((s) => s.fetch()));
-      // TfL 1, DriveBC 1, Live Traffic NSW 6.
-      expect(calls).toBe(8);
-      // Works: the A12's open stretch, and DriveBC's night work on Highway 99. Incidents:
-      // DriveBC's washout and the NSW flood. Closures: TfL's three, DriveBC's two closed
-      // events, and NSW's closed roadwork and closed road.
-      expect([w.length, i.length, c.length]).toEqual([2, 2, 7]);
+      // TfL 1, DriveBC 1, Live Traffic NSW 6, Digitraffic 2, and per Castle Rock list one
+      // page and one map-points request.
+      const castleRockLists = CASTLEROCK_OPERATORS.reduce((n, op) => n + op.feeds.length, 0);
+      expect(castleRockLists).toBe(24);
+      expect(calls).toBe(10 + 2 * castleRockLists);
+      // Works: the A12's open stretch, DriveBC's night work on Highway 99, and two Finnish
+      // road works. Incidents: DriveBC's washout, the NSW flood, and Fintraffic's general
+      // announcement. Closures: TfL's three, DriveBC's two, NSW's two, Fintraffic's two.
+      expect([w.length, i.length, c.length]).toEqual([4, 3, 9]);
       const out = readOutcome(c);
       expect(out?.ok).toBe(true);
-      expect(out?.sourceAt).toBe(Date.parse("2026-10-27T05:56:23Z"));
+      // The newest change of all: Fintraffic's accident report.
+      expect(out?.sourceAt).toBe(Date.parse("2026-10-27T07:49:57.166Z"));
     });
 
     it("keeps the other operators' notices when one does not answer, and says which", async () => {
       answer(["bc"]);
       const c = await ROAD_CLOSURES_SOURCE.fetch();
-      expect(c.map((f) => f.id.split(":")[0])).toEqual(["tfl", "tfl", "tfl", "nsw", "nsw"]);
+      expect(c.map((f) => f.id.split(":")[0])).toEqual(["tfl", "tfl", "tfl", "nsw", "nsw", "fi", "fi"]);
       expect(readOutcome(c)).toMatchObject({ ok: false, reason: "DriveBC did not answer" });
     });
 
     it("names the one file of an operator that did not answer", async () => {
       answer(["nsw-flood"]);
       const i = await ROAD_INCIDENTS_SOURCE.fetch();
-      expect(i.map((f) => f.id.split(":")[0])).toEqual(["bc"]);
+      expect(i.map((f) => f.id.split(":")[0])).toEqual(["bc", "fi"]);
       expect(readOutcome(i)).toMatchObject({ ok: false, reason: "Transport for NSW (flood) did not answer" });
     });
 
     it("says no operator answered, and draws nothing invented", async () => {
-      answer(["tfl", "bc", "nsw"]);
+      answer(["tfl", "bc", "nsw", "fi", "cr"]);
       const c = await ROAD_CLOSURES_SOURCE.fetch();
       expect(c).toEqual([]);
-      expect(readOutcome(c)).toMatchObject({ ok: false, reason: "TfL, DriveBC and Transport for NSW did not answer" });
+      // Thirteen operators do not fit in a short reason, so it names the first.
+      expect(readOutcome(c)).toMatchObject({ ok: false, reason: "TfL and 12 more did not answer" });
     });
   });
 });

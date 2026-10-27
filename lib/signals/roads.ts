@@ -1,9 +1,24 @@
 import type { SignalFeature, SignalGeometry, SignalSource } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { newestChange, type RoadNotice } from "@/lib/roads/notice";
+import { simplifyLine } from "@/lib/roads/lines";
 import { TFL_CREDIT, TFL_DISRUPTIONS_URL, TFL_NAME, normalizeTflNotices } from "@/lib/roads/tfl";
 import { DRIVEBC_CREDIT, DRIVEBC_EVENTS_URL, DRIVEBC_HOME, DRIVEBC_NAME, normalizeOpen511 } from "@/lib/roads/open511";
 import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeedUrl } from "@/lib/roads/nsw";
+import {
+  DIGITRAFFIC_CREDIT,
+  DIGITRAFFIC_HOME,
+  DIGITRAFFIC_NAME,
+  DIGITRAFFIC_USER,
+  digitrafficUrl,
+  normalizeDigitraffic,
+} from "@/lib/roads/digitraffic";
+import {
+  CASTLEROCK_ROADS_CREDIT,
+  CASTLEROCK_SYSTEMS,
+  LAYERS_SERVED,
+  loadCastleRockLayer,
+} from "@/lib/roads/castlerock";
 
 // ── Road notices: three console layers from the road operators' own feeds ──────
 //
@@ -18,6 +33,11 @@ import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeed
 //   TfL      London's roads (lib/roads/tfl.ts), "Powered by TfL Open Data"
 //   DriveBC  British Columbia's highways, Open511 (lib/roads/open511.ts), OGL-BC
 //   TfNSW    New South Wales, Live Traffic NSW's six hazard files (lib/roads/nsw.ts), CC BY
+//   Fintraffic  Finland, Digitraffic road works and traffic announcements
+//               (lib/roads/digitraffic.ts), CC BY 4.0
+//   511      the nine Castle Rock systems (Florida, Georgia, Idaho, Louisiana, New
+//            England, Ontario, Alberta, Nova Scotia, New Brunswick), each its own
+//            operator, read every 10 minutes (lib/roads/castlerock.ts)
 //
 // A NOTICE IS NEVER A SPEED, so none of the three is ever a solid line: the console's
 // solid signal line is a cable or a route, and a solid road line will be a measured
@@ -37,7 +57,7 @@ import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeed
 
 export const ROADS_GROUP = "Roads";
 const REFRESH_MS = 120_000;
-/** One read of each operator serves all three layers for this long. */
+/** One read of a file serves all three layers for this long, unless the file says longer. */
 const SHARED_READ_MS = 60_000;
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -54,6 +74,15 @@ export interface RoadFeed {
   name: string;
   url: string;
   normalize(raw: unknown): RoadNotice[];
+  /** Read it again after this long; a big file is read less often. Default 60 s. */
+  everyMs?: number;
+  /** Headers the operator asks for, e.g. Digitraffic's Digitraffic-User. */
+  headers?: Record<string, string>;
+  /**
+   * Reads the file itself, for an operator that needs more than one request per file
+   * (Castle Rock: list pages, then the map points). `url` then only names it for the cache.
+   */
+  load?: () => Promise<RoadNotice[] | null>;
 }
 
 /** One road operator: its files, and how its notices are named and credited. */
@@ -93,7 +122,44 @@ export const NSW_OPERATOR: RoadOperator = {
   feeds: NSW_FEEDS.map((feed) => ({ name: feed, url: nswFeedUrl(feed), normalize: (raw: unknown) => normalizeNswHazards(raw, feed) })),
 };
 
-export const ROAD_OPERATORS: readonly RoadOperator[] = [TFL_OPERATOR, DRIVEBC_OPERATOR, NSW_OPERATOR];
+export const DIGITRAFFIC_OPERATOR: RoadOperator = {
+  key: "fi",
+  name: DIGITRAFFIC_NAME,
+  credit: DIGITRAFFIC_CREDIT,
+  home: DIGITRAFFIC_HOME,
+  feeds: [
+    // 5.9 MB on 27 Oct 2026: read every 10 minutes, not every minute.
+    { name: "road works", url: digitrafficUrl("ROAD_WORK"), normalize: normalizeDigitraffic, everyMs: 600_000, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
+    { name: "announcements", url: digitrafficUrl("TRAFFIC_ANNOUNCEMENT"), normalize: normalizeDigitraffic, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
+  ],
+};
+
+/** Each Castle Rock system is its own operator: its own agency names and links its rows. */
+export const CASTLEROCK_OPERATORS: readonly RoadOperator[] = CASTLEROCK_SYSTEMS.map((sys) => ({
+  key: `cr-${sys.system}`,
+  name: sys.agency,
+  credit: CASTLEROCK_ROADS_CREDIT,
+  home: `https://${sys.site}/`,
+  feeds: (LAYERS_SERVED[sys.system] ?? []).map((layer) => ({
+    name: layer.toLowerCase(),
+    url: `https://${sys.site}/List/GetData/${layer}`,
+    normalize: () => [],
+    // Pages plus map points per read, on hosts the camera adapter also reads.
+    everyMs: 600_000,
+    load: () => loadCastleRockLayer(sys, layer),
+  })),
+}));
+
+export const ROAD_OPERATORS: readonly RoadOperator[] = [
+  TFL_OPERATOR,
+  DRIVEBC_OPERATOR,
+  NSW_OPERATOR,
+  DIGITRAFFIC_OPERATOR,
+  ...CASTLEROCK_OPERATORS,
+];
+
+/** Every operator's credit once, in operator order: the layers' attribution. */
+export const ROADS_ATTRIBUTION = [...new Set(ROAD_OPERATORS.map((op) => op.credit))].join(". ") + ".";
 
 const multi = (lines: [number, number][][]): SignalGeometry | undefined =>
   lines.length === 0 ? undefined : lines.length === 1 ? { type: "LineString", coordinates: lines[0] } : { type: "MultiLineString", coordinates: lines };
@@ -149,7 +215,8 @@ export function roadLayerFeatures(
       if (!hasLines && n.closure) continue;
       lines = n.openLines;
     }
-    const geometry = multi(lines);
+    // No finer than the map can show (lib/roads/lines.ts).
+    const geometry = multi(lines.map((l) => simplifyLine(l)));
     out.push({
       id: `${op.key}:${n.id}${layer === "closures" ? ":closed" : ""}`,
       lat: n.lat,
@@ -171,32 +238,33 @@ interface OperatorRead {
   missing: string[];
 }
 
-const shared = new Map<string, { at: number; read: Promise<OperatorRead | null> }>();
+const shared = new Map<string, { at: number; notices: Promise<RoadNotice[] | null> }>();
 
-/** One file; null when it did not answer. Never throws. */
+/** One file, shared by the three layers for its `everyMs`; null when it did not answer. Never throws. */
 function readFeed(feed: RoadFeed): Promise<RoadNotice[] | null> {
-  return fetch(feed.url, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((raw) => (raw == null ? null : feed.normalize(raw)))
-    .catch(() => null);
+  const now = Date.now();
+  const hit = shared.get(feed.url);
+  if (hit && now - hit.at < (feed.everyMs ?? SHARED_READ_MS)) return hit.notices;
+  const notices = feed.load
+    ? feed.load().catch(() => null)
+    : fetch(feed.url, {
+        headers: { Accept: "application/json", ...feed.headers },
+        cache: "no-store",
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((raw) => (raw == null ? null : feed.normalize(raw)))
+        .catch(() => null);
+  shared.set(feed.url, { at: now, notices });
+  return notices;
 }
 
-/** One read of one operator for the three layers; null when none of its files answered. */
-function readOperator(op: RoadOperator): Promise<OperatorRead | null> {
-  const now = Date.now();
-  const hit = shared.get(op.key);
-  if (hit && now - hit.at < SHARED_READ_MS) return hit.read;
-  const read = Promise.all(op.feeds.map(readFeed)).then((lists) => {
-    const missing = op.feeds.filter((_, i) => lists[i] == null).map((f) => f.name);
-    if (missing.length === op.feeds.length) return null;
-    return { notices: lists.flatMap((l) => l ?? []), missing };
-  });
-  shared.set(op.key, { at: now, read });
-  return read;
+/** One operator for the three layers; null when none of its files answered. */
+async function readOperator(op: RoadOperator): Promise<OperatorRead | null> {
+  const lists = await Promise.all(op.feeds.map(readFeed));
+  const missing = op.feeds.filter((_, i) => lists[i] == null).map((f) => f.name);
+  if (missing.length === op.feeds.length) return null;
+  return { notices: lists.flatMap((l) => l ?? []), missing };
 }
 
 /** "TfL", or "Transport for NSW (flood)" when only some of its files did not answer. */
@@ -204,10 +272,19 @@ function missingName(op: RoadOperator, missing: string[]): string {
   return missing.length === op.feeds.length ? op.name : `${op.name} (${missing.join(", ")})`;
 }
 
-/** "TfL did not answer", "TfL and DriveBC did not answer", "A, B and C did not answer". */
+/** A failure reason is kept short (tests/unit/signals-outcome.test.ts caps it at 80). */
+const REASON_MAX = 80;
+
+/**
+ * "TfL did not answer", "TfL and DriveBC did not answer", "A, B and C did not answer";
+ * past 80 characters, "TfL and 12 more did not answer".
+ */
 export function notAnswered(names: string[]): string {
   const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
-  return `${list} did not answer`;
+  const full = `${list} did not answer`;
+  if (full.length <= REASON_MAX) return full;
+  const short = `${names[0]} and ${names.length - 1} more did not answer`;
+  return short.length <= REASON_MAX ? short : `${names.length} road operators did not answer`;
 }
 
 function roadSource(layer: RoadLayer, label: string, color: string): SignalSource {
@@ -220,7 +297,7 @@ function roadSource(layer: RoadLayer, label: string, color: string): SignalSourc
     group: ROADS_GROUP,
     color,
     refreshMs: REFRESH_MS,
-    attribution: `${TFL_CREDIT} (TfL road disruptions, London). ${DRIVEBC_CREDIT} (DriveBC road events, British Columbia). ${NSW_CREDIT} (hazards, New South Wales).`,
+    attribution: ROADS_ATTRIBUTION,
     async fetch() {
       const reads = await Promise.all(ROAD_OPERATORS.map(async (op) => ({ op, read: await readOperator(op) })));
       const missing: string[] = [];

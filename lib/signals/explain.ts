@@ -701,42 +701,47 @@ const EXPLAINERS: LayerExplainer[] = [
 
   // --- Roads ----------------------------------------------------------------
   // Three layers from the road operators' own feeds (lib/signals/roads.ts): TfL in
-  // London, DriveBC in British Columbia, Transport for NSW in New South Wales. Each is a
-  // NOTICE on a road, in the operator's words, never a speed: none of them is a solid line.
+  // London, DriveBC in British Columbia, Transport for NSW in New South Wales, Fintraffic
+  // in Finland, and the nine Castle Rock 511 systems. Each is a NOTICE on a road, in the
+  // operator's words, never a speed: none of them is a solid line.
   {
     id: "road-works",
     whatItShows: "Planned works that a road operator lists on a road, drawn as dashes along the road it names, or at the operator's own point when it names no line.",
-    method: "Read directly from TfL's road disruptions (Unified API), DriveBC's Open511 road events and Live Traffic NSW's hazard files, all keyless. Category, severity and words are the operator's. A stretch the operator marks closed is drawn by the road closures layer instead, so each road is drawn once.",
+    method: "Read directly from TfL's road disruptions (Unified API), DriveBC's Open511 road events, Live Traffic NSW's hazard files and Fintraffic's Digitraffic road works, all keyless. Category, severity and words are the operator's; Fintraffic's words come from its English codes, and its location stays Finnish. A stretch the operator marks closed is drawn by the road closures layer instead, so each road is drawn once.",
     confidence: "official",
-    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC), New South Wales (Transport for NSW), Finland's roads (Fintraffic), and the 511 systems of Florida, Georgia, Idaho, Louisiana, New England (Maine, New Hampshire, Vermont), Ontario, Alberta, Nova Scotia and New Brunswick. No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
       "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
       "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
       "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
       "Transport for NSW gives no severity, only whether a hazard is major, so an NSW row reads Major or Not major and nothing finer. Most NSW rows are a point: few carry the road's line.",
+      "Fintraffic's road works are read every 10 minutes, not every 2, because the answer is about 6 MB; their lines are simplified to about 10 m.",
+      "The 511 systems give a point, not a line, and are read every 10 minutes. A row the system gives no map point is left out (most of Ontario's closures on 27 Oct 2026). Their times are read in each system's own zone, so a row from a second zone (Florida's panhandle, north Idaho) can be an hour out, and some rows are years old (New Brunswick lists notices last changed in 2022).",
     ],
   },
   {
     id: "road-incidents",
     whatItShows: "Something a road operator lists as happening on a road that is not planned works: a collision, a hazard such as a burst water main or a washout, police activity or a signal fault. Drawn as dots.",
-    method: "Read directly from TfL's road disruptions, DriveBC's Open511 road events and Live Traffic NSW's hazard files, all keyless. Every category except planned works (TfL's Works, Open511's CONSTRUCTION, NSW's roadwork file) is an incident here; the category and the words stay the operator's. A stretch the operator marks closed is drawn by the road closures layer instead.",
+    method: "Read directly from TfL's road disruptions, DriveBC's Open511 road events, Live Traffic NSW's hazard files and Fintraffic's Digitraffic traffic announcements, all keyless. Every category except planned works (TfL's Works, Open511's CONSTRUCTION, NSW's roadwork file, Fintraffic's road works) is an incident here; the category and the words stay the operator's. A stretch the operator marks closed is drawn by the road closures layer instead.",
     confidence: "official",
-    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC), New South Wales (Transport for NSW), Finland's roads (Fintraffic), and the 511 systems of Florida, Georgia, Idaho, Louisiana, New England (Maine, New Hampshire, Vermont), Ontario, Alberta, Nova Scotia and New Brunswick. No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
       "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
       "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
       "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
       "Transport for NSW gives no severity, only whether a hazard is major, so an NSW row reads Major or Not major and nothing finer. Most NSW rows are a point: few carry the road's line.",
+      "Fintraffic's road works are read every 10 minutes, not every 2, because the answer is about 6 MB; their lines are simplified to about 10 m.",
+      "The 511 systems give a point, not a line, and are read every 10 minutes. A row the system gives no map point is left out (most of Ontario's closures on 27 Oct 2026). Their times are read in each system's own zone, so a row from a second zone (Florida's panhandle, north Idaho) can be an hour out, and some rows are years old (New Brunswick lists notices last changed in 2022).",
     ],
   },
   {
     id: "road-closures",
     whatItShows: "A road that its operator marks closed, in the direction the operator states, drawn as bars.",
-    method: "Read from each road the operator names in a notice, by that road's own closure state: TfL's per-street closure word, Open511's per-road CLOSED state, and an NSW period whose road extent is Closed (not only Affected). TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
+    method: "Read from each road the operator names in a notice, by that road's own closure state: TfL's per-street closure word, Open511's per-road CLOSED state, an NSW period whose road extent is Closed (not only Affected), and a Fintraffic road work restricted ROAD_CLOSED or an announcement that says the road is closed to traffic. TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
     confidence: "official",
-    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC), New South Wales (Transport for NSW), Finland's roads (Fintraffic), and the 511 systems of Florida, Georgia, Idaho, Louisiana, New England (Maine, New Hampshire, Vermont), Ontario, Alberta, Nova Scotia and New Brunswick. No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "Closed is per road: one TfL notice can close one stretch and leave the next open, and the open stretch is drawn by the works or incidents layer. DriveBC gives one line per event, so a closed DriveBC event's whole line is drawn closed.",
       "No line does not mean an open road: each operator lists the closures it knows about.",
