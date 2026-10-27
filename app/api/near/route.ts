@@ -1,5 +1,5 @@
 import { getRegistry, nearestTo } from "@/lib/sources/registry";
-import { isLiveCamera, liveCameraIds } from "@/lib/liveness/playcheck";
+import { isLiveCamera, liveGate } from "@/lib/liveness/playcheck";
 import { ensurePlayCheck } from "@/lib/liveness/playcheck.server";
 import { clipUrl } from "@/lib/proxy/clip";
 
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   try {
     const near = await nearestTo(lat, lon, n);
     ensurePlayCheck(getRegistry);
-    const live = liveCameraIds();
+    const live = liveGate();
     const cameras = near.map(({ camera, km }) => ({
       id: camera.id,
       name: camera.name,

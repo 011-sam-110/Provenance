@@ -16,7 +16,7 @@ vi.mock("@/lib/proxy/hls-allowlist", () => ({
 }));
 
 const { camerasBody, __resetCamerasBody } = await import("@/lib/cameras/body");
-const { __resetPlayCheck, liveCameraIds, recordPlayResult } = await import("@/lib/liveness/playcheck");
+const { __resetPlayCheck, liveGate, markFirstPassDone, recordPlayResult } = await import("@/lib/liveness/playcheck");
 
 const rolling = { checkedAt: Date.now(), verdict: "rolling" as const, reason: "advanced", source: "tfl" };
 
@@ -104,7 +104,9 @@ describe("camerasBody", () => {
   });
 
   it("calls a camera live only when its stream played at the last check", () => {
-    // Since 2026-10-27 an allowlisted URL is not enough (lib/liveness/playcheck.ts).
+    // Since 2026-10-27 an allowlisted URL is not enough (lib/liveness/playcheck.ts),
+    // once this process's first pass has ended.
+    markFirstPassDone();
     recordPlayResult("played", rolling);
     recordPlayResult("stalled", { ...rolling, verdict: "stalled" });
     const url = "https://wzmedia.dot.ca.gov/x.m3u8";
@@ -118,7 +120,18 @@ describe("camerasBody", () => {
     ]);
   });
 
+  it("keeps an unchecked stream as video during the warm-up, but not a failed one", () => {
+    recordPlayResult("failed", { ...rolling, verdict: "error" });
+    const url = "https://wzmedia.dot.ca.gov/x.m3u8";
+    const body = JSON.parse(camerasBody([cam("unchecked", { streamUrl: url }), cam("failed", { streamUrl: url })]));
+    expect(body.cameras.map((c: { id: string; live: boolean }) => [c.id, c.live])).toEqual([
+      ["unchecked", true],
+      ["failed", false],
+    ]);
+  });
+
   it("rebuilds when the set of cameras that played changes, and not before", () => {
+    markFirstPassDone();
     const cams = [cam("a", { streamUrl: "https://wzmedia.dot.ca.gov/x.m3u8" })];
     const first = camerasBody(cams);
     expect(JSON.parse(first).cameras[0].live).toBe(false);
@@ -129,7 +142,7 @@ describe("camerasBody", () => {
     expect(isLiveStreamUrl).toHaveBeenCalledTimes(0);
     recordPlayResult("a", rolling);
     isLiveStreamUrl.mockClear();
-    const second = camerasBody(cams, liveCameraIds());
+    const second = camerasBody(cams, liveGate());
     expect(JSON.parse(second).cameras[0].live).toBe(true);
     expect(isLiveStreamUrl).toHaveBeenCalledTimes(1);
   });

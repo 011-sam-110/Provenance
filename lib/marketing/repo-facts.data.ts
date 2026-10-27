@@ -107,9 +107,11 @@
  * build: adds `liveness-playcheck`, `hls-upstream` and `stat-line`, and cases to
  * `cameras-body-memo`, `hud-model` and `camslot-arm`. `npm test` on provenance-1: 5,614 cases
  * across 482 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ * The warm-up commit after it adds five cases to `liveness-playcheck` and `cameras-body-memo`:
+ * 5,619 cases across 482 files.
  */
 export const UNIT_TESTS = {
-  cases: 5614,
+  cases: 5619,
   files: 482,
   measuredAt: "2026-10-27",
 } as const;

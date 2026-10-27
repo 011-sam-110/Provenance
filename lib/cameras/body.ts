@@ -1,5 +1,5 @@
 import type { Camera } from "@/lib/types";
-import { isLiveCamera, liveCameraIds } from "@/lib/liveness/playcheck";
+import { isLiveCamera, liveGate, type LiveGate } from "@/lib/liveness/playcheck";
 import { REGISTRY_TTL_MS } from "@/lib/sources/registry";
 import { edgeCacheHeaders } from "@/lib/http/cache";
 
@@ -54,22 +54,23 @@ const CAMERAS_TTL_MS = REGISTRY_TTL_MS;
  * than raising it — one retained 6.44 MB string in place of 6.44 MB of garbage per
  * request.
  */
-let serialised: { from: Camera[]; live: ReadonlySet<string>; body: string } | null = null;
+let serialised: { from: Camera[]; live: LiveGate; body: string } | null = null;
 
 /**
  * The response body for a camera set. Exported for the test, which is the only way
  * to observe the memo: the string it returns is identical either way, so the
  * property worth asserting is that the WORK is not repeated.
  */
-export function camerasBody(cams: Camera[], live: ReadonlySet<string> = liveCameraIds()): string {
-  // TWO KEYS NOW, BOTH BY IDENTITY. The live set comes from the play check
-  // (lib/liveness/playcheck.ts), which hands back the SAME Set while its members are
-  // unchanged, so a cycle of repeat verdicts does not rebuild this body per request.
+export function camerasBody(cams: Camera[], live: LiveGate = liveGate()): string {
+  // TWO KEYS NOW, BOTH BY IDENTITY. The gate comes from the play check
+  // (lib/liveness/playcheck.ts), which hands back the SAME object while no camera's flag
+  // would change, so a pass of repeat verdicts does not rebuild this body per request.
   if (serialised && serialised.from === cams && serialised.live === live) return serialised.body;
   // source + live let the client pick the right camera icon (shape = feed,
   // colour = region). `live` = the stream passes the /api/hls allowlist AND it played
-  // at its last check (at most two cycles ago). A stream that 404s, stalls or was never
-  // checked is not live, and the camera shows as a still.
+  // at its last check (at most two cycles ago). A stream that 404s or stalls is not live,
+  // and the camera shows as a still. A stream not yet checked is live only during the
+  // warm-up, until this process's first pass ends (`playsNow` says why).
   const cameras = cams.map((c) => ({
     id: c.id, name: c.name, lat: c.lat, lon: c.lon, available: c.available,
     source: c.source, country: c.country, live: isLiveCamera(c, live),

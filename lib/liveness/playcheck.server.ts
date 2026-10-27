@@ -10,7 +10,8 @@
  * It also means the deploy's health probe (which asks only /api/status) starts no checks.
  *
  * WHY THE RESULTS ARE NOT SAVED TO DISK. A restart or a deploy starts with no results,
- * so the map's video layer fills again over the first pass. Saving them would need a
+ * and the warm-up (`playsNow` in playcheck.ts) keeps unchecked streams as video until
+ * the first pass ends, so the map does not lose its video. Saving them would need a
  * file write from the served tree, and /privacy states "nothing this site serves writes
  * a file", held by tests/unit/discovery-admin-gate.test.ts. That sentence is a public
  * promise; changing it is the owner's decision, not a side effect of this feature. The

@@ -9,8 +9,10 @@
  * pins opened a player that never showed a frame.
  *
  * THE RULE NOW. `live` = the stream passes the allowlist AND its last check, at most two
- * cycles old, was `rolling`. Anything else (stalled, error, never checked, too old) is
- * not live, and the camera shows as a still where it has one.
+ * cycles old, was `rolling`. Stalled or error is not live, and the camera shows as a still
+ * where it has one. Never checked (or too old) is not live either, except during the
+ * warm-up: until this process's first pass ends, an unchecked stream keeps the old rule,
+ * so a deploy does not take the video off the map for two hours (see `playsNow`).
  *
  * WHAT ONE CHECK IS. It reads the playlist as /api/hls would (same fetch, same headers:
  * lib/proxy/hls-upstream.ts), follows a master playlist to its first variant, waits one
@@ -97,9 +99,25 @@ export function isFreshResult(
   return r !== undefined && now - r.checkedAt < freshMs;
 }
 
-/** The rule for one camera, given its last result. Pure. */
-export function playsNow(streamUrl: string | undefined, r: PlayResult | undefined, now: number): boolean {
-  return isLiveStreamUrl(streamUrl) && isFreshResult(r, now) && r.verdict === "rolling";
+/**
+ * The rule for one camera, given its last result. Pure.
+ *
+ * WARM-UP. Results live in memory, so a deploy starts with none, and a cold pass over
+ * ~3,200 streams takes about two hours. Until this process has finished its first pass
+ * (`warm`), a camera with NO fresh verdict keeps the old rule (an allowlisted stream is
+ * video), so the map does not lose its video after every deploy. A verdict always wins:
+ * a stream that failed its check is not live, warm or not. After the first pass,
+ * unknown is not live.
+ */
+export function playsNow(
+  streamUrl: string | undefined,
+  r: PlayResult | undefined,
+  now: number,
+  warm = false,
+): boolean {
+  if (!isLiveStreamUrl(streamUrl)) return false;
+  if (isFreshResult(r, now)) return r.verdict === "rolling";
+  return warm;
 }
 
 /** The cameras the checker reads: those whose stream passes the allowlist. */
@@ -117,11 +135,28 @@ export function videoCameras(cams: readonly Pick<Camera, "id" | "source" | "stre
 
 interface PlayCheckState {
   results: Map<string, PlayResult>;
-  /** Bumped on every write, so the live-id memo knows when to look again. */
+  /** Bumped on every write, so the id memos know when to look again. */
   version: number;
-  live: { version: number; validUntil: number; ids: ReadonlySet<string> } | null;
+  rolling: IdMemo;
+  failed: IdMemo;
+  gate: LiveGate | null;
+  /** True once this process has finished its first pass. Until then: warm-up. */
+  firstPassDone: boolean;
   /** The background loop, once started. One per process. */
   loop: { stop: () => void } | null;
+}
+
+type IdMemo = { version: number; validUntil: number; ids: ReadonlySet<string> } | null;
+
+/**
+ * What the live flag is computed from, as one object whose identity changes only when
+ * some camera's flag would. Warm: `ids` are the cameras with a fresh FAILED verdict (all
+ * other allowlisted streams are live). After the first pass: `ids` are the cameras with
+ * a fresh ROLLING verdict (only they are live).
+ */
+export interface LiveGate {
+  warm: boolean;
+  ids: ReadonlySet<string>;
 }
 
 const KEY = Symbol.for("provenance.liveness.playcheck.v1");
@@ -130,7 +165,7 @@ function state(): PlayCheckState {
   const g = globalThis as unknown as Record<symbol, PlayCheckState | undefined>;
   let s = g[KEY];
   if (!s) {
-    s = { results: new Map(), version: 0, live: null, loop: null };
+    s = { results: new Map(), version: 0, rolling: null, failed: null, gate: null, firstPassDone: false, loop: null };
     g[KEY] = s;
   }
   return s;
@@ -167,42 +202,74 @@ export function prunePlayResults(now: number): void {
 }
 
 /**
- * The ids whose last fresh result is `rolling`.
- *
- * THE SET KEEPS ITS IDENTITY WHILE ITS CONTENTS DO NOT CHANGE, and that is the point.
- * lib/cameras/body.ts memoises the 6 MB camera body on the registry array AND this set,
- * by identity. A cycle writes a result every second or so, and most of them repeat the
- * last verdict; a new Set per write would rebuild the body on every request for an hour.
- * So a recompute that finds the same members hands back the old Set.
- *
- * It recomputes on a write, and when the oldest member reaches two cycles of age
- * (`validUntil`), so a camera nobody re-checked drops out on time and not on the next write.
+ * The fresh ids that pass `keep`, as a Set that KEEPS ITS IDENTITY while its members do
+ * not change. lib/cameras/body.ts memoises the 6 MB camera body on this by identity. A
+ * pass writes a result every few seconds and most repeat the last verdict; a new Set per
+ * write would rebuild the body on every request for the length of a pass. It recomputes
+ * on a write, and when its oldest member ages out (`validUntil`), so a verdict nobody
+ * renewed stops counting on time and not on the next write.
  */
-export function liveCameraIds(now: number = Date.now()): ReadonlySet<string> {
-  const s = state();
-  if (s.live && s.live.version === s.version && now < s.live.validUntil) return s.live.ids;
+function memoIds(
+  prev: IdMemo,
+  version: number,
+  now: number,
+  keep: (r: PlayResult) => boolean,
+): NonNullable<IdMemo> {
+  if (prev && prev.version === version && now < prev.validUntil) return prev;
   const ids = new Set<string>();
   let validUntil = Number.POSITIVE_INFINITY;
-  for (const [id, r] of s.results) {
-    if (r.verdict !== "rolling" || !isFreshResult(r, now)) continue;
+  for (const [id, r] of state().results) {
+    if (!keep(r) || !isFreshResult(r, now)) continue;
     ids.add(id);
     validUntil = Math.min(validUntil, r.checkedAt + PLAYCHECK_FRESH_MS);
   }
-  const prev = s.live?.ids;
-  const same = prev !== undefined && prev.size === ids.size && [...ids].every((id) => prev.has(id));
-  s.live = { version: s.version, validUntil, ids: same ? prev : ids };
-  return s.live.ids;
+  const old = prev?.ids;
+  const same = old !== undefined && old.size === ids.size && [...ids].every((id) => old.has(id));
+  return { version, validUntil, ids: same ? old : ids };
+}
+
+/** The ids whose last fresh result is `rolling`: the cameras that PLAYED. */
+export function liveCameraIds(now: number = Date.now()): ReadonlySet<string> {
+  const s = state();
+  s.rolling = memoIds(s.rolling, s.version, now, (r) => r.verdict === "rolling");
+  return s.rolling.ids;
+}
+
+/** The ids whose last fresh result is stalled or error. */
+function failedCameraIds(now: number): ReadonlySet<string> {
+  const s = state();
+  s.failed = memoIds(s.failed, s.version, now, (r) => r.verdict !== "rolling");
+  return s.failed.ids;
+}
+
+/** Whether this process has finished its first pass (the warm-up is over). */
+export function firstPassDone(): boolean {
+  return state().firstPassDone;
+}
+
+/** Called by the loop when its first pass ends. */
+export function markFirstPassDone(): void {
+  state().firstPassDone = true;
+}
+
+/** The gate the live flag is computed from right now. See `LiveGate` and `playsNow`. */
+export function liveGate(now: number = Date.now()): LiveGate {
+  const s = state();
+  const warm = !s.firstPassDone;
+  const ids = warm ? failedCameraIds(now) : liveCameraIds(now);
+  if (!s.gate || s.gate.warm !== warm || s.gate.ids !== ids) s.gate = { warm, ids };
+  return s.gate;
 }
 
 /**
  * Whether the map shows this camera as video. THE one place the rule is applied: the
- * camera list, the camera detail, "near me" and the camera page all call this.
+ * camera list, the camera detail, "near me" and the camera page all call this. It is
+ * `playsNow` over the gate: warm, every allowlisted stream without a failed verdict;
+ * after the first pass, only the ones that played.
  */
-export function isLiveCamera(
-  cam: Pick<Camera, "id" | "streamUrl">,
-  ids: ReadonlySet<string> = liveCameraIds(),
-): boolean {
-  return isLiveStreamUrl(cam.streamUrl) && ids.has(cam.id);
+export function isLiveCamera(cam: Pick<Camera, "id" | "streamUrl">, gate: LiveGate = liveGate()): boolean {
+  if (!isLiveStreamUrl(cam.streamUrl)) return false;
+  return gate.warm ? !gate.ids.has(cam.id) : gate.ids.has(cam.id);
 }
 
 /** Test seam: forget every result and stop the loop. */
@@ -211,7 +278,10 @@ export function __resetPlayCheck(): void {
   s.loop?.stop();
   s.results = new Map();
   s.version = 0;
-  s.live = null;
+  s.rolling = null;
+  s.failed = null;
+  s.gate = null;
+  s.firstPassDone = false;
   s.loop = null;
 }
 
@@ -238,6 +308,12 @@ export interface PlayCheckSummary extends PlayCounts {
   ttffP90Ms: number | null;
   /** How often each camera is checked, so a reader can say "every 3 h". */
   cycleMs: number;
+  /**
+   * True while this process's first pass is still running. The counts above are real
+   * verdicts only, never the warm-up's unchecked streams, so a reader should say
+   * "first check running" rather than present them as the whole network.
+   */
+  warm: boolean;
   /** The same counts per feed key (`Camera.source`). */
   byOperator: Record<string, PlayCounts>;
 }
@@ -265,6 +341,7 @@ export function summarisePlayCheck(
   results: ReadonlyMap<string, PlayResult>,
   now: number,
   cycleMs: number = PLAYCHECK_CYCLE_MS,
+  warm = false,
 ): PlayCheckSummary {
   const total = zeroCounts();
   const byOperator: Record<string, PlayCounts> = {};
@@ -294,6 +371,7 @@ export function summarisePlayCheck(
     ttffMedianMs: median(ttff),
     ttffP90Ms: percentile(ttff, 90),
     cycleMs,
+    warm,
     byOperator,
   };
 }
@@ -303,7 +381,7 @@ export function getPlayCheckSummary(
   cams: readonly Pick<Camera, "id" | "source" | "streamUrl">[],
   now: number = Date.now(),
 ): PlayCheckSummary {
-  return summarisePlayCheck(videoCameras(cams), playResults(), now);
+  return summarisePlayCheck(videoCameras(cams), playResults(), now, PLAYCHECK_CYCLE_MS, !firstPassDone());
 }
 
 // ---------------------------------------------------------------------------
@@ -603,6 +681,7 @@ export function startPlayCheckLoop(deps: LoopDeps): void {
     prunePlayResults(startedAt);
     const results = playResults();
     const due = cams.filter((c) => isDue(results.get(c.id), startedAt, cycleMs));
+    const firstPass = !firstPassDone();
     if (due.length > 0) {
       let lastSave = startedAt;
       await runPlayCheck(orderForCycle(due, results, startedAt), {
@@ -619,6 +698,10 @@ export function startPlayCheckLoop(deps: LoopDeps): void {
       });
       if (stopped) return;
       save();
+    }
+    // The warm-up ends here, whether or not the first pass found anything due.
+    if (firstPass) markFirstPassDone();
+    if (due.length > 0) {
       const sum = summarisePlayCheck(cams, playResults(), deps.now(), cycleMs);
       const mins = Math.round((deps.now() - startedAt) / 60_000);
       log(

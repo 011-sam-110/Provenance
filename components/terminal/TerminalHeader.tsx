@@ -234,8 +234,8 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               tier that holds most of them is switched on. With Live cams alone up
               that read "19,520 cameras" for about 1,500 pins, which is the same
               audit trap the note above describes, pointing the other way. */}
-          {/* VIDEO THAT PLAYED, AND STILLS APART. "video cams" counts the streams that
-              played at their last check; refreshing pictures are "still cams".
+          {/* VIDEO AND STILLS APART. "video cams" counts the streams the play check
+              shows as video (lib/liveness/playcheck.ts); refreshing pictures are "still cams".
               lib/shell/statLine.ts holds the words, and its test holds them. */}
           {statLine(m, layers)}
         </span>

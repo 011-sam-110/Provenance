@@ -4,10 +4,10 @@ import { expect, test, type Page } from "@playwright/test";
 //
 // Until 2026-10-27 a camera was `live` when its stream URL passed the /api/hls allowlist,
 // and the HUD's "Live" block counted `camerasOnline`: every camera whose feed answered,
-// about 19,000 refreshing stills among them. Now `live` means the stream PLAYED at its
-// last check (lib/liveness/playcheck.ts). This spec drives /app and reads the three
-// places the console labels cameras: a camera's own panel, the HUD's Live block and the
-// top bar's stat line.
+// about 19,000 refreshing stills among them. Now `live` means the stream played at its
+// last check, with a warm-up after a start (lib/liveness/playcheck.ts). This spec drives
+// /app and reads the three places the console labels cameras: a camera's own panel, the
+// HUD's Live block and the top bar's stat line.
 //
 // Run it with PLAYCHECK=off on the server (`PLAYCHECK=off npm run e2e -- live-label`) so
 // no check can turn the chosen camera live between the two reads. With the check on it
@@ -47,9 +47,9 @@ test("a still camera's panel, the HUD and the stat line call no still live", asy
   const warm = await request.get("/api/cameras", { timeout: 200_000 });
   expect(warm.ok()).toBeTruthy();
   const before = (await warm.json()).cameras as Row[];
-  // The case M1 exists for: an allowlisted Caltrans stream that has not played at a
-  // check. Before M1 this camera was "Live" with "● Streaming". Any still will do if
-  // Caltrans is missing from this run.
+  // The case M1 exists for: an allowlisted Caltrans stream that failed its check. Before
+  // M1 this camera was "Live" with "● Streaming". There is none while the warm-up runs
+  // (and none with PLAYCHECK=off), so then any still will do.
   const still =
     before.find((c) => c.source === "caltrans" && !c.live && c.available) ??
     before.find((c) => !c.live && c.available);

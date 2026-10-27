@@ -8,10 +8,13 @@ import {
   checkStream,
   decodePlayResults,
   encodePlayResults,
+  firstPassDone,
   getPlayCheckSummary,
   isDue,
   isLiveCamera,
   liveCameraIds,
+  liveGate,
+  markFirstPassDone,
   median,
   orderForCycle,
   percentile,
@@ -106,9 +109,10 @@ describe("the live gate", () => {
   });
 
   it("applies the same rule through the shared state the routes read", () => {
+    markFirstPassDone();
     recordPlayResult("caltrans:a", rolling(T0));
     recordPlayResult("caltrans:b", failed(T0, "error"));
-    const ids = liveCameraIds(T0 + 1000);
+    const ids = liveGate(T0 + 1000);
     expect(isLiveCamera({ id: "caltrans:a", streamUrl: CALTRANS }, ids)).toBe(true);
     expect(isLiveCamera({ id: "caltrans:b", streamUrl: CALTRANS }, ids)).toBe(false);
     expect(isLiveCamera({ id: "caltrans:c", streamUrl: CALTRANS }, ids)).toBe(false);
@@ -143,6 +147,58 @@ describe("the live gate", () => {
       { id: "tfl:c", source: "tfl" },
     ]);
     expect(cams.map((c) => c.id)).toEqual(["caltrans:a"]);
+  });
+});
+
+describe("the warm-up, until the first pass ends", () => {
+  // Results live in memory, so every deploy starts with none, and a cold pass takes
+  // about two hours. Until the first pass ends, an unchecked allowlisted stream keeps
+  // the old rule; a verdict always wins; afterwards unknown is not live.
+  it("keeps an unchecked allowlisted stream live during the warm-up, and not after", () => {
+    expect(playsNow(CALTRANS, undefined, T0, true)).toBe(true);
+    expect(playsNow(CALTRANS, undefined, T0, false)).toBe(false);
+    expect(playsNow(NOT_ALLOWED, undefined, T0, true)).toBe(false);
+    const cam = { id: "caltrans:unchecked", streamUrl: CALTRANS };
+    expect(firstPassDone()).toBe(false);
+    expect(liveGate(T0).warm).toBe(true);
+    expect(isLiveCamera(cam, liveGate(T0))).toBe(true);
+    markFirstPassDone();
+    expect(isLiveCamera(cam, liveGate(T0))).toBe(false);
+  });
+
+  it("does not show a stream that failed its check, even during the warm-up", () => {
+    expect(playsNow(CALTRANS, failed(T0, "error"), T0 + 1, true)).toBe(false);
+    expect(playsNow(CALTRANS, failed(T0, "stalled"), T0 + 1, true)).toBe(false);
+    recordPlayResult("caltrans:dead", failed(T0, "error"));
+    recordPlayResult("caltrans:ok", rolling(T0));
+    const gate = liveGate(T0 + 1);
+    expect(gate.warm).toBe(true);
+    expect(isLiveCamera({ id: "caltrans:dead", streamUrl: CALTRANS }, gate)).toBe(false);
+    expect(isLiveCamera({ id: "caltrans:ok", streamUrl: CALTRANS }, gate)).toBe(true);
+    // An old failure ages out like any verdict, and the stream is unknown again.
+    expect(isLiveCamera({ id: "caltrans:dead", streamUrl: CALTRANS }, liveGate(T0 + PLAYCHECK_FRESH_MS))).toBe(true);
+  });
+
+  it("keeps the gate's identity when a warm-up verdict changes no flag", () => {
+    recordPlayResult("caltrans:a", failed(T0, "error"));
+    const first = liveGate(T0 + 1);
+    recordPlayResult("caltrans:b", rolling(T0 + 2)); // unchecked -> rolling: live either way
+    expect(liveGate(T0 + 3)).toBe(first);
+    recordPlayResult("caltrans:c", failed(T0 + 4, "stalled")); // live -> not live
+    expect(liveGate(T0 + 5)).not.toBe(first);
+  });
+
+  it("never counts a warm-up camera as rolling in the summary, and says it is warm", () => {
+    const cams = [
+      { id: "caltrans:a", source: "caltrans", streamUrl: CALTRANS },
+      { id: "caltrans:b", source: "caltrans", streamUrl: CALTRANS },
+      { id: "caltrans:c", source: "caltrans", streamUrl: CALTRANS },
+    ];
+    recordPlayResult("caltrans:a", rolling(T0));
+    const warm = getPlayCheckSummary(cams, T0 + 1);
+    expect(warm).toMatchObject({ warm: true, listed: 3, checked: 1, rolling: 1, stalled: 0, error: 0 });
+    markFirstPassDone();
+    expect(getPlayCheckSummary(cams, T0 + 1)).toMatchObject({ warm: false, rolling: 1, checked: 1 });
   });
 });
 
@@ -424,8 +480,10 @@ describe("the background loop", () => {
     // Loaded synchronously, so the response that started the loop already carries it.
     expect(liveCameraIds(T0).has("caltrans:b")).toBe(true);
     expect(playResults().has("caltrans:old")).toBe(false);
+    expect(firstPassDone()).toBe(false);
 
     await vi.advanceTimersByTimeAsync(60_000);
+    expect(firstPassDone()).toBe(true);
     // a was never checked, so it is checked now. b was checked a second before the
     // restart, so it is not due, and it stays live on its saved result.
     expect(playResults().get("caltrans:a")?.verdict).toBe("rolling");
@@ -461,9 +519,13 @@ describe("the background loop", () => {
     });
     await vi.advanceTimersByTimeAsync(60_000);
     expect(playResults().has("caltrans:b")).toBe(false);
+    // The first pass is over, so a camera with no verdict is no longer shown as video.
+    expect(firstPassDone()).toBe(true);
+    expect(isLiveCamera(cams[1], liveGate(Date.now()))).toBe(false);
     list = cams; // a cold adapter (North Macedonia's) answers one refresh late
     await vi.advanceTimersByTimeAsync(600_000);
     expect(playResults().get("caltrans:b")?.verdict).toBe("rolling");
+    expect(isLiveCamera(cams[1], liveGate(Date.now()))).toBe(true);
   });
 
   it("starts once per process however many routes ask", async () => {

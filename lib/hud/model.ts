@@ -148,8 +148,9 @@ export interface HudCountCell {
 /**
  * The counts block, in reading order. Pure, so the test can pin what sits under "Live".
  *
- * The camera cell is VIDEO THAT PLAYED (`liveCameras`: the stream played at its last
- * check, lib/liveness/playcheck.ts). It was `camerasOnline` until 2026-10-27, which counts
+ * The camera cell is VIDEO (`liveCameras`: streams that played at their last check, plus,
+ * during the warm-up after a start, allowlisted streams not yet checked; see `playsNow`
+ * in lib/liveness/playcheck.ts). It was `camerasOnline` until 2026-10-27, which counts
  * every camera whose feed answered, so about 19,000 refreshing stills were shown as
  * "Live · CAM". A still is not live, so stills have no cell in this block.
  */

@@ -6,7 +6,8 @@
 //   1. "off" is not "0". An audit read "0 planes · 0 satellites" as two dead feeds while
 //      the layers were simply switched off. A layer that is off says so.
 //   2. A still is never called live. The video count is `liveCameras`: cameras whose
-//      stream PLAYED at its last check (lib/liveness/playcheck.ts). Refreshing pictures
+//      stream played at its last check, plus, during the warm-up after a start, streams
+//      not yet checked (`playsNow` in lib/liveness/playcheck.ts). Refreshing pictures
 //      (registry stills plus Windy webcams) are counted separately and called stills.
 //      The "off" words name the layer toggles as the rail labels them.
 
