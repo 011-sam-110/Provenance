@@ -1,9 +1,10 @@
 "use client";
 // HUD — the calm-light heads-up overlay. A thin, read-only DOM layer over the map:
-// camera readout (lat / lon / zoom / heading), a UTC clock, the live metric counts
-// from lib/metrics.ts, and chips for the active core layers. Corner brackets, quiet
-// --tn-* styling, no glow. 'H' toggles it — but ONLY the /demo-hud page binds that
-// key (see app/demo-hud/page.tsx), so the console's own keymap is untouched.
+// camera readout (lat / lon / zoom / heading), a UTC clock, the live counts (video that
+// played, planes, satellites; hudCountCells in lib/hud/model.ts), and chips for the
+// active core layers. Corner brackets, quiet --tn-* styling, no glow. 'H' toggles it —
+// but ONLY the /demo-hud page binds that key (see app/demo-hud/page.tsx), so the
+// console's own keymap is untouched.
 //
 // Variants (Full / Compact / Minimal) are a pure table in lib/hud/model.ts; this
 // component is one render pass over the chosen row, so a new variant is a data row
@@ -22,6 +23,7 @@ import { useNow } from "@/lib/shell/useNow";
 import { hudStore, useHudPrefs } from "@/lib/hud/store";
 import {
   HUD_CHIP_LABEL,
+  HUD_COUNTS_TITLE,
   VARIANT_SPEC,
   formatCount,
   formatHeading,
@@ -29,6 +31,7 @@ import {
   formatLon,
   formatUtcClock,
   formatZoom,
+  hudCountCells,
   type HudChipKey,
 } from "@/lib/hud/model";
 import SplitFlap from "./SplitFlap";
@@ -167,11 +170,12 @@ export default function Hud() {
 
         {spec.counts && (
           <div className={styles.block} data-tn-hud-block="counts">
-            <span className={styles.blockTitle}>Live</span>
+            <span className={styles.blockTitle}>{HUD_COUNTS_TITLE}</span>
+            {/* Video that played, planes, satellites: see hudCountCells. No stills. */}
             <div className={styles.row}>
-              <SplitFlap value={formatCount(metrics.camerasOnline)} label="CAM" size="sm" animate={prefs.animate} />
-              <SplitFlap value={formatCount(metrics.planes)} label="PLN" size="sm" animate={prefs.animate} />
-              <SplitFlap value={formatCount(metrics.satellites)} label="SAT" size="sm" animate={prefs.animate} />
+              {hudCountCells(metrics).map((c) => (
+                <SplitFlap key={c.label} value={formatCount(c.value)} label={c.label} size="sm" animate={prefs.animate} />
+              ))}
             </div>
           </div>
         )}

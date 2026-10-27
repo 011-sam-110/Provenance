@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HUD_PREFS,
   HUD_CHIP_LABEL,
+  HUD_COUNTS_TITLE,
   HUD_HOTKEY,
   HUD_OPACITY_MAX,
   HUD_OPACITY_MIN,
@@ -16,6 +19,7 @@ import {
   formatLon,
   formatUtcClock,
   formatZoom,
+  hudCountCells,
   isHudVariant,
   sanitizeHudPrefs,
 } from "@/lib/hud/model";
@@ -196,5 +200,31 @@ describe("readout formatters", () => {
     expect(formatCount(1234567)).toBe("1,234,567");
     expect(formatCount(12.9)).toBe("12");
     expect(formatCount(-3)).toBe("0");
+  });
+});
+
+describe("the counts block calls nothing live that is not", () => {
+  // Until 2026-10-27 the block read "Live · CAM" over `camerasOnline`: every camera whose
+  // feed answered, about 19,000 refreshing stills among them. A still is not live.
+  const metrics = { camerasOnline: 19_112, camerasTotal: 19_400, liveCameras: 2_378, stillCameras: 17_022, planes: 3_000, satellites: 412, webcams: 70_698 };
+
+  it("shows video that played, planes and satellites under the Live title, and no stills", () => {
+    expect(HUD_COUNTS_TITLE).toBe("Live");
+    const cells = hudCountCells(metrics);
+    expect(cells).toEqual([
+      { label: "VID", value: 2_378 },
+      { label: "PLN", value: 3_000 },
+      { label: "SAT", value: 412 },
+    ]);
+    const values = cells.map((c) => c.value);
+    for (const stillCount of [metrics.camerasOnline, metrics.camerasTotal, metrics.stillCameras, metrics.webcams]) {
+      expect(values).not.toContain(stillCount);
+    }
+  });
+
+  it("is what the HUD renders: the component reads hudCountCells, never camerasOnline", () => {
+    const src = readFileSync(resolve(process.cwd(), "components/hud/Hud.tsx"), "utf8");
+    expect(src).toContain("hudCountCells(metrics)");
+    expect(src).not.toMatch(/camerasOnline/);
   });
 });
