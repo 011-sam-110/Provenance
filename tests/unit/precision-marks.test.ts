@@ -127,6 +127,19 @@ describe("markOf", () => {
     expect(markOf(sig({ precision: "facility", geometry: line }), ctx)).toBe("pin");
   });
 
+  test("a road notice's line is its own pattern, and only a line gets one", () => {
+    const line = { type: "LineString", coordinates: [[0, 0], [1, 1]] };
+    for (const style of ["dash", "dot", "bar"] as const) {
+      const s = sig({ precision: "exact", geometry: line });
+      expect(markOf({ ...s, meta: { ...s.meta, line: style } }, ctx)).toBe(style);
+      // A notice TfL gave no line for is TfL's own point.
+      const p = sig({ precision: "exact" });
+      expect(markOf({ ...p, meta: { ...p.meta, line: style } }, ctx)).toBe("pin");
+    }
+    const s = sig({ precision: "exact", geometry: line });
+    expect(markOf({ ...s, meta: { ...s.meta, line: "zigzag" } }, ctx)).toBe("pin");
+  });
+
   test("an object with no level is a pin: guessing 'area' would hide a real point", () => {
     expect(markOf(sig({}), ctx)).toBe("pin");
   });

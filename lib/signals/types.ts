@@ -43,6 +43,9 @@ export type SignalGeometry =
  */
 export type SignalPrecision = "exact" | "facility" | "area" | "country";
 
+/** The patterns a signal line can take besides solid. See `SignalFeature.line`. */
+export type SignalLineStyle = "dash" | "dot" | "bar";
+
 /** One renderable signal: a point, or (with `geometry`) a line / area. */
 export interface SignalFeature {
   /** Globally-unique, namespaced id, e.g. "usgs:nc75385096", "eonet:EONET_20558". */
@@ -74,6 +77,13 @@ export interface SignalFeature {
    * or `fill` (Polygon/MultiPolygon) layer, anchored at lat/lon for interaction.
    */
   geometry?: SignalGeometry;
+  /**
+   * How a LINE geometry is drawn. Absent is a solid line (a cable, a route). A road
+   * notice is never solid, because a solid road line is how a measured speed will be
+   * drawn: "dash" is works, "dot" an incident, "bar" a street its operator marks
+   * closed (lib/signals/roads-london.ts). Ignored on a point or an area.
+   */
+  line?: SignalLineStyle;
   /** Per-feature marker colour (CSS hex). Falls back to the source colour. */
   color?: string;
   /**

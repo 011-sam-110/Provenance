@@ -131,9 +131,14 @@
  * Re-measured 2026-10-27 merging origin/main at 4364bc5 (#305) into feat/live-roads-m1 (#304):
  * road notices M1 adds `roads-tfl` (15 cases) and three cases to `eye-streets`. `npx vitest
  * list` on the merged tree: 5,742 cases across 493 files, exactly 492+1 files and 5,724+18 cases.
+ *
+ * Re-measured 2026-10-27 merging origin/main at c826fea (#304) into feat/live-roads-m2 (#306):
+ * the console's road layers add `signals-roads-london` (11 cases), one case each to `map-hover`
+ * and `precision-marks`, and the explainer and source-link rows every new layer gets. `npx
+ * vitest list` on the merged tree: 5,758 cases across 494 files, exactly 493+1 and 5,742+16.
  */
 export const UNIT_TESTS = {
-  cases: 5742,
-  files: 493,
+  cases: 5758,
+  files: 494,
   measuredAt: "2026-10-27",
 } as const;

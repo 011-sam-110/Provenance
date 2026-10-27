@@ -101,11 +101,14 @@ const isArea = (g: SignalGeometry) => g.type === "Polygon" || g.type === "MultiP
 
 /** Shared props every signal geometry carries for click resolution + styling. */
 function signalProps(s: WorldObject) {
+  const line = s.meta?.line;
   return {
     id: s.id,
     signalId: (s.meta?.signalId as string) ?? "",
     label: s.label,
     color: s.color ?? "#64748b",
+    // The line's pattern (SignalFeature.line); "solid" when the feature names none.
+    line: line === "dash" || line === "dot" || line === "bar" ? line : "solid",
   };
 }
 

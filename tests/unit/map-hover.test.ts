@@ -88,6 +88,15 @@ describe("resolveHover", () => {
     expect(s.cursor).toBe("pointer");
   });
 
+  it("treats a road notice's patterned line as a drawn line too", () => {
+    // Works dashes, incident dots and closure bars are drawn by their own layers
+    // (SignalFeature.line), so being ON one of them must beat the country as well.
+    for (const layer of ["signal-line-dash", "signal-line-dot", "signal-line-bar"]) {
+      const s = resolveHover([cable("tfl:TIMS-1", "Works"), { layer }, { layer: COUNTRY_HIT_LAYER, featureId: 826 }]);
+      expect(s.line).toEqual({ id: "tfl:TIMS-1", label: "Works" });
+    }
+  });
+
   it("still washes the country while a cable is highlighted over it", () => {
     const s = resolveHover([
       cable("c"),

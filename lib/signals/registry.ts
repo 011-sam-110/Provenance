@@ -78,6 +78,7 @@ import { WEATHER_WARNINGS_SOURCE } from "@/lib/signals/weather-warnings";
 import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 import { HEADLINE_PLACES_SOURCE } from "@/lib/signals/headline-places";
+import { ROAD_CLOSURES_SOURCE, ROAD_INCIDENTS_SOURCE, ROAD_WORKS_SOURCE } from "@/lib/signals/roads-london";
 
 /** Every registered signal layer, in rail display order. */
 export const SIGNALS: SignalSource[] = [
@@ -151,6 +152,11 @@ export const SIGNALS: SignalSource[] = [
   GLIDERS_SOURCE,
   // Maritime (real-time AIS vessel positions at strategic chokepoints; key-gated: AISSTREAM_API_KEY)
   AIS_SOURCE,
+  // Roads (keyless TfL road disruptions, London only): notices, never a speed. One
+  // TfL read feeds all three; see lib/signals/roads-london.ts.
+  ROAD_WORKS_SOURCE,
+  ROAD_INCIDENTS_SOURCE,
+  ROAD_CLOSURES_SOURCE,
 ];
 
 /**

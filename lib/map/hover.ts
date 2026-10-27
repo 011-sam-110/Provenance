@@ -27,12 +27,14 @@
 //
 // Pure and unit-tested; WorldMap owns the MapLibre side effects.
 
-import { COUNTRY_HIT_LAYER, PIN_HIT_LAYERS, resolveLineHit } from "./hitTest";
+import { COUNTRY_HIT_LAYER, PIN_HIT_LAYERS, SIGNAL_DRAWN_LINE_LAYERS, resolveLineHit } from "./hitTest";
 
 /** The transparent, widened hit target for submarine cables. */
 export const SIGNAL_LINE_HIT_LAYER = "signal-line-hit";
 /** The visible cable geometry. Being ON it beats the country underneath. */
 export const SIGNAL_LINE_DRAWN_LAYER = "signal-line-paths";
+/** Every drawn signal line, the solid one and a road notice's patterns. */
+const DRAWN_LINE_SET = new Set(SIGNAL_DRAWN_LINE_LAYERS);
 
 /**
  * Every layer the one shared pointer query has to cover. Superset of the click
@@ -98,7 +100,7 @@ export function resolveHover(features: readonly HoverFeature[]): HoverState {
     }
     if (!PIN_LAYER_SET.has(f.layer)) continue; // decoration — never interactive
     anyPin = true;
-    if (f.layer === SIGNAL_LINE_DRAWN_LAYER) onDrawnLine = true;
+    if (DRAWN_LINE_SET.has(f.layer)) onDrawnLine = true;
     else otherPin = true;
   }
 
