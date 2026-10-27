@@ -114,9 +114,14 @@
  * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
  * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
  * just add.
+ *
+ * Re-measured 2026-10-27 on feat/ip-location (origin/main at 7f1101e, after #300 and #298): the
+ * IP location tool adds `recon-geo`, `recon-geo-area` and `recon-geo-guards`, one case to
+ * `recon-threat`, and one route, which `route-export-contract` checks as one more case.
+ * `npx vitest run`: 5,606 cases across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5579,
-  files: 480,
-  measuredAt: "2026-10-25",
+  cases: 5606,
+  files: 483,
+  measuredAt: "2026-10-27",
 } as const;
