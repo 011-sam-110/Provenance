@@ -1,0 +1,1447 @@
+{
+ "roadWork": {
+  "type": "FeatureCollection",
+  "dataUpdatedTime": "2026-10-27T07:56:51Z",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "MultiLineString",
+     "coordinates": [
+      [
+       [
+        24.796644,
+        60.589988
+       ],
+       [
+        24.796734,
+        60.589993
+       ],
+       [
+        24.796763,
+        60.589994
+       ],
+       [
+        24.796982,
+        60.59
+       ],
+       [
+        24.797014,
+        60.590001
+       ],
+       [
+        24.797669,
+        60.590024
+       ],
+       [
+        24.797695,
+        60.590025
+       ],
+       [
+        24.79835,
+        60.590046
+       ],
+       [
+        24.798365,
+        60.590047
+       ],
+       [
+        24.79851,
+        60.590051
+       ],
+       [
+        24.798547,
+        60.590052
+       ],
+       [
+        24.798583,
+        60.590052
+       ],
+       [
+        24.79862,
+        60.590051
+       ],
+       [
+        24.798656,
+        60.59005
+       ],
+       [
+        24.798679,
+        60.590048
+       ],
+       [
+        24.798811,
+        60.590038
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "situationId": "GUID50469553",
+     "situationType": "ROAD_WORK",
+     "trafficAnnouncementType": null,
+     "version": 8,
+     "releaseTime": "2026-08-25T06:34:39.448Z",
+     "versionTime": "2026-08-25T06:40:20.738Z",
+     "announcements": [
+      {
+       "language": "FI",
+       "title": "Tie 11443, eli Nopontie, Hyvinkää. Tietyö. ",
+       "location": {
+        "countryCode": 6,
+        "locationTableNumber": 17,
+        "locationTableVersion": "1.11.45",
+        "description": "Tie 11443, eli Nopontie, Hyvinkää.\nTarkempi paikka: Paikasta Nopontien tasoristeys 2,7 km, vaikutusalue 100 m, suuntaan Tervamäki."
+       },
+       "locationDetails": {
+        "roadAddressLocation": {
+         "primaryPoint": {
+          "municipality": "Hyvinkää",
+          "province": "Uusimaa",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 11443,
+           "roadSection": 1,
+           "distance": 3504
+          },
+          "roadName": "Nopontie",
+          "alertCLocation": {
+           "locationCode": 42714,
+           "name": "Nopontien tasoristeys",
+           "distance": 2709
+          }
+         },
+         "secondaryPoint": {
+          "municipality": "Hyvinkää",
+          "province": "Uusimaa",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 11443,
+           "roadSection": 1,
+           "distance": 3623
+          },
+          "roadName": "Nopontie",
+          "alertCLocation": {
+           "locationCode": 42146,
+           "name": "Tervamäki",
+           "distance": 12
+          }
+         },
+         "direction": "BOTH"
+        }
+       },
+       "features": [
+        {
+         "name": "Tie on suljettu liikenteeltä"
+        },
+        {
+         "name": "Tapahtumapaikalla on käytössä kiertotie"
+        }
+       ],
+       "roadWorkPhases": [
+        {
+         "id": "GUID50472350",
+         "location": {
+          "countryCode": 6,
+          "locationTableNumber": 17,
+          "locationTableVersion": "1.11.45",
+          "description": "Tie 11443, eli Nopontie, Hyvinkää.\nTarkempi paikka: Paikasta Nopontien tasoristeys 2,7 km, vaikutusalue 100 m, suuntaan Tervamäki."
+         },
+         "locationDetails": {
+          "roadAddressLocation": {
+           "primaryPoint": {
+            "municipality": "Hyvinkää",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 11443,
+             "roadSection": 1,
+             "distance": 3504
+            },
+            "roadName": "Nopontie",
+            "alertCLocation": {
+             "locationCode": 42714,
+             "name": "Nopontien tasoristeys",
+             "distance": 2709
+            }
+           },
+           "secondaryPoint": {
+            "municipality": "Hyvinkää",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 11443,
+             "roadSection": 1,
+             "distance": 3623
+            },
+            "roadName": "Nopontie",
+            "alertCLocation": {
+             "locationCode": 42146,
+             "name": "Tervamäki",
+             "distance": 12
+            }
+           },
+           "direction": "BOTH"
+          }
+         },
+         "locationOpenLr": {
+          "binary": "IzXSnwGa5Q=="
+         },
+         "workingHours": [
+          {
+           "weekday": "WEDNESDAY",
+           "startTime": "07:00:00",
+           "endTime": "20:00:00"
+          },
+          {
+           "weekday": "THURSDAY",
+           "startTime": "07:00:00",
+           "endTime": "20:00:00"
+          },
+          {
+           "weekday": "FRIDAY",
+           "startTime": "07:00:00",
+           "endTime": "20:00:00"
+          },
+          {
+           "weekday": "MONDAY",
+           "startTime": "07:00:00",
+           "endTime": "20:00:00"
+          },
+          {
+           "weekday": "TUESDAY",
+           "startTime": "07:00:00",
+           "endTime": "20:00:00"
+          }
+         ],
+         "timeAndDuration": {
+          "startTime": "2026-09-05T21:00:00Z",
+          "endTime": "2027-06-30T20:59:59.999Z"
+         },
+         "workTypes": [
+          {
+           "type": "BRIDGE",
+           "description": "Siltatyö"
+          },
+          {
+           "type": "OTHER",
+           "description": ""
+          }
+         ],
+         "restrictions": [],
+         "restrictionsLiftable": false,
+         "severity": "HIGHEST",
+         "slowTrafficTimes": [],
+         "queuingTrafficTimes": []
+        },
+        {
+         "id": "GUID50472351",
+         "location": {
+          "countryCode": 6,
+          "locationTableNumber": 17,
+          "locationTableVersion": "1.11.45",
+          "description": "Tie 11443, eli Nopontie, Hyvinkää.\nTarkempi paikka: Paikasta Nopontien tasoristeys 2,7 km, vaikutusalue 100 m, suuntaan Tervamäki."
+         },
+         "locationDetails": {
+          "roadAddressLocation": {
+           "primaryPoint": {
+            "municipality": "Hyvinkää",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 11443,
+             "roadSection": 1,
+             "distance": 3504
+            },
+            "roadName": "Nopontie",
+            "alertCLocation": {
+             "locationCode": 42714,
+             "name": "Nopontien tasoristeys",
+             "distance": 2709
+            }
+           },
+           "secondaryPoint": {
+            "municipality": "Hyvinkää",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 11443,
+             "roadSection": 1,
+             "distance": 3623
+            },
+            "roadName": "Nopontie",
+            "alertCLocation": {
+             "locationCode": 42146,
+             "name": "Tervamäki",
+             "distance": 12
+            }
+           },
+           "direction": "BOTH"
+          }
+         },
+         "locationOpenLr": {
+          "binary": "IzXSnwGa5Q=="
+         },
+         "workingHours": [],
+         "comment": "Silta käytössä kevyelle liikenteelle. ",
+         "timeAndDuration": {
+          "startTime": "2026-09-05T21:00:00Z",
+          "endTime": "2026-11-30T21:59:59.999Z"
+         },
+         "workTypes": [
+          {
+           "type": "BRIDGE",
+           "description": "Siltatyö"
+          }
+         ],
+         "restrictions": [
+          {
+           "type": "ROAD_CLOSED",
+           "restriction": {
+            "name": "Tie on suljettu liikenteeltä"
+           }
+          },
+          {
+           "type": "DETOUR",
+           "restriction": {
+            "name": "Kiertotie käytössä"
+           }
+          }
+         ],
+         "restrictionsLiftable": false,
+         "severity": "HIGHEST",
+         "slowTrafficTimes": [],
+         "queuingTrafficTimes": []
+        }
+       ],
+       "timeAndDuration": {
+        "startTime": "2026-09-05T21:00:00Z",
+        "endTime": "2027-06-30T20:59:59.999Z"
+       },
+       "additionalInformation": "Liikenne- ja kelitiedot verkossa: https://liikennetilanne.fintraffic.fi/",
+       "sender": "Fintraffic Tieliikennekeskus"
+      }
+     ],
+     "contact": {
+      "phone": "02002100",
+      "email": "helsinki.liikennekeskus@fintraffic.fi"
+     },
+     "dataUpdatedTime": "2026-08-25T06:40:31Z"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      21.538446,
+      61.579135
+     ]
+    },
+    "properties": {
+     "situationId": "GUID50472796",
+     "situationType": "ROAD_WORK",
+     "trafficAnnouncementType": null,
+     "version": 1,
+     "releaseTime": "2026-10-27T07:45:32.946Z",
+     "versionTime": "2026-10-27T07:45:32.945Z",
+     "announcements": [
+      {
+       "language": "FI",
+       "title": "Tie 2, Pori. Tietyö. ",
+       "location": {
+        "countryCode": 6,
+        "locationTableNumber": 17,
+        "locationTableVersion": "1.11.45",
+        "description": "Tie 2 välillä Pori - Mäntyluoto, Pori.\nTarkempi paikka: Paikasta Kaanaa 1,2 km, suuntaan Levon liittymä."
+       },
+       "locationDetails": {
+        "roadAddressLocation": {
+         "primaryPoint": {
+          "municipality": "Pori",
+          "province": "Satakunta",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 2,
+           "roadSection": 50,
+           "distance": 4499
+          },
+          "alertCLocation": {
+           "locationCode": 945,
+           "name": "Kaanaa",
+           "distance": 1170
+          }
+         },
+         "secondaryPoint": {
+          "municipality": "Pori",
+          "province": "Satakunta",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 2,
+           "roadSection": 50,
+           "distance": 4499
+          },
+          "alertCLocation": {
+           "locationCode": 946,
+           "name": "Levon liittymä",
+           "distance": 612
+          }
+         },
+         "direction": "NEG",
+         "directionDescription": "vasen puoli"
+        }
+       },
+       "locationOpenLr": {
+        "binary": "Iw9Q9CvKJQ=="
+       },
+       "features": [],
+       "roadWorkPhases": [
+        {
+         "id": "GUID50475631",
+         "location": {
+          "countryCode": 6,
+          "locationTableNumber": 17,
+          "locationTableVersion": "1.11.45",
+          "description": "Tie 2 välillä Pori - Mäntyluoto, Pori.\nTarkempi paikka: Paikasta Kaanaa 1,2 km, suuntaan Levon liittymä."
+         },
+         "locationDetails": {
+          "roadAddressLocation": {
+           "primaryPoint": {
+            "municipality": "Pori",
+            "province": "Satakunta",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 2,
+             "roadSection": 50,
+             "distance": 4499
+            },
+            "alertCLocation": {
+             "locationCode": 945,
+             "name": "Kaanaa",
+             "distance": 1170
+            }
+           },
+           "secondaryPoint": {
+            "municipality": "Pori",
+            "province": "Satakunta",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 2,
+             "roadSection": 50,
+             "distance": 4499
+            },
+            "alertCLocation": {
+             "locationCode": 946,
+             "name": "Levon liittymä",
+             "distance": 612
+            }
+           },
+           "direction": "NEG",
+           "directionDescription": "vasen puoli"
+          }
+         },
+         "locationOpenLr": {
+          "binary": "Iw9Q9CvKJQ=="
+         },
+         "workingHours": [
+          {
+           "weekday": "FRIDAY",
+           "startTime": "08:00:00",
+           "endTime": "17:00:00"
+          },
+          {
+           "weekday": "THURSDAY",
+           "startTime": "08:00:00",
+           "endTime": "17:00:00"
+          }
+         ],
+         "timeAndDuration": {
+          "startTime": "2026-10-28T22:00:00Z",
+          "endTime": "2026-10-30T21:59:59.999Z"
+         },
+         "workTypes": [
+          {
+           "type": "BURIED_CABLES",
+           "description": "Kaapelityö"
+          },
+          {
+           "type": "OTHER",
+           "description": ""
+          }
+         ],
+         "restrictions": [],
+         "restrictionsLiftable": false,
+         "severity": "LOW",
+         "slowTrafficTimes": [],
+         "queuingTrafficTimes": []
+        }
+       ],
+       "timeAndDuration": {
+        "startTime": "2026-10-28T22:00:00Z",
+        "endTime": "2026-10-30T21:59:59.999Z"
+       },
+       "additionalInformation": "Liikenne- ja kelitiedot verkossa: https://liikennetilanne.fintraffic.fi/",
+       "sender": "Fintraffic Tieliikennekeskus"
+      }
+     ],
+     "contact": {
+      "phone": "02002100",
+      "email": "tampere.liikennekeskus@fintraffic.fi"
+     },
+     "dataUpdatedTime": "2026-10-27T07:45:41Z"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "MultiLineString",
+     "coordinates": [
+      [
+       [
+        24.888076,
+        60.165605
+       ],
+       [
+        24.892944,
+        60.166153
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "situationId": "GUID50472782",
+     "situationType": "ROAD_WORK",
+     "trafficAnnouncementType": null,
+     "version": 1,
+     "releaseTime": "2026-10-27T06:08:47.932Z",
+     "versionTime": "2026-10-27T06:08:47.931Z",
+     "announcements": [
+      {
+       "language": "FI",
+       "title": "Tie 51, eli Länsiväylä, Helsinki. Tietyö. ",
+       "location": {
+        "countryCode": 6,
+        "locationTableNumber": 17,
+        "locationTableVersion": "1.11.45",
+        "description": "Tie 51, eli Länsiväylä, Helsinki.\nTarkempi paikka: Paikasta Lauttasaaren liittymä 700 m, vaikutusalue 300 m, suuntaan Porkkalankatu."
+       },
+       "locationDetails": {
+        "roadAddressLocation": {
+         "primaryPoint": {
+          "municipality": "Helsinki",
+          "province": "Uusimaa",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 51,
+           "roadSection": 3,
+           "distance": 1509
+          },
+          "roadName": "Länsiväylä",
+          "alertCLocation": {
+           "locationCode": 2844,
+           "name": "Lauttasaaren liittymä",
+           "distance": 687
+          }
+         },
+         "secondaryPoint": {
+          "municipality": "Helsinki",
+          "province": "Uusimaa",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 51,
+           "roadSection": 3,
+           "distance": 1231
+          },
+          "alertCLocation": {
+           "locationCode": 2843,
+           "name": "Porkkalankatu",
+           "distance": 1691
+          }
+         },
+         "direction": "NEG",
+         "directionDescription": "Helsinki"
+        }
+       },
+       "locationOpenLr": {
+        "binary": "CxGxmSrIrQkmEwfZANwJd1Bx"
+       },
+       "features": [
+        {
+         "name": "Nopeusrajoitus",
+         "quantity": 50,
+         "unit": "km/h"
+        },
+        {
+         "name": "Ajokaista suljettu liikenteeltä"
+        }
+       ],
+       "roadWorkPhases": [
+        {
+         "id": "GUID50475617",
+         "location": {
+          "countryCode": 6,
+          "locationTableNumber": 17,
+          "locationTableVersion": "1.11.45",
+          "description": "Tie 51, eli Länsiväylä, Helsinki.\nTarkempi paikka: Paikasta Lauttasaaren liittymä 700 m, vaikutusalue 300 m, suuntaan Porkkalankatu."
+         },
+         "locationDetails": {
+          "roadAddressLocation": {
+           "primaryPoint": {
+            "municipality": "Helsinki",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 51,
+             "roadSection": 3,
+             "distance": 1509
+            },
+            "roadName": "Länsiväylä",
+            "alertCLocation": {
+             "locationCode": 2844,
+             "name": "Lauttasaaren liittymä",
+             "distance": 687
+            }
+           },
+           "secondaryPoint": {
+            "municipality": "Helsinki",
+            "province": "Uusimaa",
+            "country": "Suomi",
+            "roadAddress": {
+             "road": 51,
+             "roadSection": 3,
+             "distance": 1231
+            },
+            "alertCLocation": {
+             "locationCode": 2843,
+             "name": "Porkkalankatu",
+             "distance": 1691
+            }
+           },
+           "direction": "NEG",
+           "directionDescription": "Helsinki"
+          }
+         },
+         "locationOpenLr": {
+          "binary": "CxGxmSrIrQkmEwfZANwJd1Bx"
+         },
+         "workingHours": [],
+         "timeAndDuration": {
+          "startTime": "2026-10-27T08:00:00Z",
+          "endTime": "2026-10-27T14:00:00Z"
+         },
+         "workTypes": [
+          {
+           "type": "BRIDGE",
+           "description": "Siltatyö"
+          },
+          {
+           "type": "OTHER",
+           "description": ""
+          }
+         ],
+         "restrictions": [
+          {
+           "type": "SINGLE_LANE_CLOSED",
+           "restriction": {
+            "name": "Yksi ajokaista suljettu"
+           }
+          },
+          {
+           "type": "SPEED_LIMIT",
+           "restriction": {
+            "name": "Nopeusrajoitus",
+            "quantity": 50,
+            "unit": "km/h"
+           }
+          },
+          {
+           "type": "SPEED_LIMIT_LENGTH",
+           "restriction": {
+            "name": "Matka, jolla nopeusrajoitus voimassa",
+            "quantity": 700,
+            "unit": "m"
+           }
+          }
+         ],
+         "restrictionsLiftable": false,
+         "severity": "HIGHEST",
+         "slowTrafficTimes": [],
+         "queuingTrafficTimes": []
+        }
+       ],
+       "timeAndDuration": {
+        "startTime": "2026-10-27T08:00:00Z",
+        "endTime": "2026-10-27T14:00:00Z"
+       },
+       "additionalInformation": "Liikenne- ja kelitiedot verkossa: https://liikennetilanne.fintraffic.fi/",
+       "sender": "Fintraffic Tieliikennekeskus"
+      }
+     ],
+     "contact": {
+      "phone": "02002100",
+      "email": "helsinki.liikennekeskus@fintraffic.fi"
+     },
+     "dataUpdatedTime": "2026-10-27T06:09:11Z"
+    }
+   }
+  ]
+ },
+ "announcement": {
+  "type": "FeatureCollection",
+  "dataUpdatedTime": "2026-10-27T08:02:51Z",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      22.488187,
+      61.550152
+     ]
+    },
+    "properties": {
+     "situationId": "GUID50472799",
+     "situationType": "TRAFFIC_ANNOUNCEMENT",
+     "trafficAnnouncementType": "ACCIDENT_REPORT",
+     "version": 1,
+     "releaseTime": "2026-10-27T07:49:57.224Z",
+     "versionTime": "2026-10-27T07:49:57.166Z",
+     "announcements": [
+      {
+       "language": "FI",
+       "title": "Tie 257, Pori. Liikennetiedote onnettomuudesta. ",
+       "location": {
+        "countryCode": 6,
+        "locationTableNumber": 17,
+        "locationTableVersion": "1.11.45",
+        "description": "Tie 257 välillä Kullaa - Lavia, Pori.\nTarkempi paikka: Paikasta Mustajoki 2,0 km, suuntaan Riuttala."
+       },
+       "locationDetails": {
+        "roadAddressLocation": {
+         "primaryPoint": {
+          "municipality": "Pori",
+          "province": "Satakunta",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 257,
+           "roadSection": 5,
+           "distance": 2032
+          },
+          "alertCLocation": {
+           "locationCode": 11433,
+           "name": "Mustajoki",
+           "distance": 2032
+          }
+         },
+         "secondaryPoint": {
+          "municipality": "Pori",
+          "province": "Satakunta",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 257,
+           "roadSection": 5,
+           "distance": 2032
+          },
+          "alertCLocation": {
+           "locationCode": 11434,
+           "name": "Riuttala",
+           "distance": 4663
+          }
+         },
+         "direction": "UNKNOWN"
+        }
+       },
+       "locationOpenLr": {
+        "binary": "Iw/92ivE3g=="
+       },
+       "features": [
+        {
+         "name": "Onnettomuus"
+        },
+        {
+         "name": "Tie on suljettu liikenteeltä"
+        }
+       ],
+       "roadWorkPhases": [],
+       "timeAndDuration": {
+        "startTime": "2026-10-27T07:48:00Z"
+       },
+       "additionalInformation": "Liikenne- ja kelitiedot verkossa: https://liikennetilanne.fintraffic.fi/",
+       "sender": "Fintraffic Tieliikennekeskus"
+      }
+     ],
+     "contact": {
+      "phone": "02002100",
+      "email": "tampere.liikennekeskus@fintraffic.fi"
+     },
+     "dataUpdatedTime": "2026-10-27T07:50:21Z"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "MultiLineString",
+     "coordinates": [
+      [
+       [
+        22.240094,
+        60.431264
+       ],
+       [
+        22.240096,
+        60.431283
+       ],
+       [
+        22.240123,
+        60.431408
+       ],
+       [
+        22.240193,
+        60.431621
+       ],
+       [
+        22.240199,
+        60.431638
+       ],
+       [
+        22.24031,
+        60.431919
+       ],
+       [
+        22.240374,
+        60.432025
+       ],
+       [
+        22.240402,
+        60.432069
+       ],
+       [
+        22.240406,
+        60.432074
+       ],
+       [
+        22.240561,
+        60.432275
+       ],
+       [
+        22.240574,
+        60.432292
+       ],
+       [
+        22.240722,
+        60.432494
+       ],
+       [
+        22.240947,
+        60.432817
+       ],
+       [
+        22.240952,
+        60.432824
+       ],
+       [
+        22.241145,
+        60.433095
+       ],
+       [
+        22.241398,
+        60.433434
+       ],
+       [
+        22.241405,
+        60.433443
+       ],
+       [
+        22.241474,
+        60.433526
+       ],
+       [
+        22.24148,
+        60.433533
+       ],
+       [
+        22.241524,
+        60.433577
+       ],
+       [
+        22.241528,
+        60.433582
+       ],
+       [
+        22.241738,
+        60.43377
+       ],
+       [
+        22.241905,
+        60.433909
+       ],
+       [
+        22.24192,
+        60.433921
+       ],
+       [
+        22.24194,
+        60.433936
+       ],
+       [
+        22.242025,
+        60.433994
+       ],
+       [
+        22.24214,
+        60.434063
+       ],
+       [
+        22.242152,
+        60.43407
+       ],
+       [
+        22.24235,
+        60.434175
+       ],
+       [
+        22.242368,
+        60.434185
+       ],
+       [
+        22.242601,
+        60.434298
+       ],
+       [
+        22.242627,
+        60.43431
+       ],
+       [
+        22.242654,
+        60.434322
+       ],
+       [
+        22.242905,
+        60.434426
+       ],
+       [
+        22.242924,
+        60.434433
+       ],
+       [
+        22.243153,
+        60.434522
+       ],
+       [
+        22.243454,
+        60.434623
+       ],
+       [
+        22.243481,
+        60.434632
+       ],
+       [
+        22.243897,
+        60.434775
+       ],
+       [
+        22.243907,
+        60.434778
+       ],
+       [
+        22.244393,
+        60.434936
+       ],
+       [
+        22.244398,
+        60.434937
+       ],
+       [
+        22.244661,
+        60.435033
+       ]
+      ],
+      [
+       [
+        22.237935,
+        60.423663
+       ],
+       [
+        22.237957,
+        60.423675
+       ],
+       [
+        22.238416,
+        60.423953
+       ],
+       [
+        22.23854,
+        60.424041
+       ],
+       [
+        22.238653,
+        60.424133
+       ],
+       [
+        22.238661,
+        60.42414
+       ],
+       [
+        22.238696,
+        60.424172
+       ],
+       [
+        22.238793,
+        60.424268
+       ],
+       [
+        22.238934,
+        60.424433
+       ],
+       [
+        22.239095,
+        60.424653
+       ],
+       [
+        22.239105,
+        60.424669
+       ],
+       [
+        22.239164,
+        60.424773
+       ],
+       [
+        22.239212,
+        60.424877
+       ],
+       [
+        22.239214,
+        60.424881
+       ],
+       [
+        22.239238,
+        60.424952
+       ],
+       [
+        22.239291,
+        60.425165
+       ],
+       [
+        22.239293,
+        60.425176
+       ],
+       [
+        22.239437,
+        60.425781
+       ],
+       [
+        22.23956,
+        60.426275
+       ],
+       [
+        22.239562,
+        60.426284
+       ],
+       [
+        22.239773,
+        60.427121
+       ],
+       [
+        22.239829,
+        60.427328
+       ],
+       [
+        22.239871,
+        60.427484
+       ],
+       [
+        22.239963,
+        60.427821
+       ],
+       [
+        22.240083,
+        60.428285
+       ],
+       [
+        22.240087,
+        60.428302
+       ],
+       [
+        22.240178,
+        60.428658
+       ],
+       [
+        22.240181,
+        60.428672
+       ],
+       [
+        22.240261,
+        60.429065
+       ],
+       [
+        22.240266,
+        60.429101
+       ],
+       [
+        22.240288,
+        60.429405
+       ],
+       [
+        22.240286,
+        60.429515
+       ],
+       [
+        22.240256,
+        60.429802
+       ],
+       [
+        22.240164,
+        60.430213
+       ],
+       [
+        22.240086,
+        60.430424
+       ],
+       [
+        22.24004,
+        60.430596
+       ],
+       [
+        22.240009,
+        60.430775
+       ],
+       [
+        22.240008,
+        60.430782
+       ],
+       [
+        22.239984,
+        60.430925
+       ],
+       [
+        22.239982,
+        60.430979
+       ],
+       [
+        22.239982,
+        60.430997
+       ],
+       [
+        22.239983,
+        60.43101
+       ],
+       [
+        22.239993,
+        60.4311
+       ],
+       [
+        22.239994,
+        60.431108
+       ],
+       [
+        22.239995,
+        60.431144
+       ],
+       [
+        22.239998,
+        60.431162
+       ],
+       [
+        22.240005,
+        60.431181
+       ],
+       [
+        22.240016,
+        60.431198
+       ],
+       [
+        22.240031,
+        60.431215
+       ],
+       [
+        22.240049,
+        60.43123
+       ],
+       [
+        22.240089,
+        60.43126
+       ],
+       [
+        22.240094,
+        60.431264
+       ]
+      ],
+      [
+       [
+        22.238049,
+        60.42362
+       ],
+       [
+        22.23845,
+        60.423852
+       ],
+       [
+        22.238461,
+        60.423859
+       ],
+       [
+        22.238682,
+        60.424001
+       ],
+       [
+        22.238785,
+        60.424075
+       ],
+       [
+        22.2388,
+        60.424086
+       ],
+       [
+        22.23895,
+        60.424208
+       ],
+       [
+        22.238968,
+        60.424225
+       ],
+       [
+        22.239085,
+        60.424336
+       ],
+       [
+        22.239159,
+        60.424418
+       ],
+       [
+        22.239198,
+        60.424469
+       ],
+       [
+        22.239201,
+        60.424473
+       ],
+       [
+        22.239257,
+        60.424558
+       ],
+       [
+        22.239328,
+        60.424698
+       ],
+       [
+        22.239343,
+        60.424733
+       ],
+       [
+        22.239441,
+        60.425016
+       ],
+       [
+        22.239445,
+        60.425033
+       ],
+       [
+        22.239549,
+        60.425426
+       ],
+       [
+        22.239711,
+        60.426031
+       ],
+       [
+        22.239712,
+        60.426034
+       ],
+       [
+        22.23985,
+        60.426568
+       ],
+       [
+        22.239853,
+        60.426579
+       ],
+       [
+        22.240034,
+        60.427309
+       ],
+       [
+        22.240036,
+        60.427317
+       ],
+       [
+        22.240081,
+        60.427475
+       ],
+       [
+        22.24018,
+        60.427939
+       ],
+       [
+        22.240183,
+        60.427951
+       ],
+       [
+        22.240287,
+        60.428396
+       ],
+       [
+        22.240291,
+        60.42841
+       ],
+       [
+        22.240394,
+        60.428819
+       ],
+       [
+        22.240394,
+        60.428822
+       ],
+       [
+        22.240458,
+        60.429072
+       ],
+       [
+        22.24046,
+        60.429079
+       ],
+       [
+        22.240493,
+        60.429294
+       ],
+       [
+        22.240494,
+        60.429298
+       ],
+       [
+        22.240517,
+        60.429584
+       ],
+       [
+        22.240518,
+        60.429599
+       ],
+       [
+        22.24045,
+        60.429921
+       ],
+       [
+        22.240445,
+        60.429938
+       ],
+       [
+        22.240342,
+        60.430239
+       ],
+       [
+        22.240341,
+        60.430244
+       ],
+       [
+        22.240287,
+        60.430434
+       ],
+       [
+        22.240238,
+        60.430618
+       ],
+       [
+        22.240165,
+        60.430849
+       ],
+       [
+        22.240161,
+        60.430862
+       ],
+       [
+        22.240117,
+        60.431095
+       ],
+       [
+        22.240095,
+        60.431256
+       ],
+       [
+        22.240094,
+        60.431264
+       ]
+      ]
+     ]
+    },
+    "properties": {
+     "situationId": "GUID50471971",
+     "situationType": "TRAFFIC_ANNOUNCEMENT",
+     "trafficAnnouncementType": "GENERAL",
+     "version": 1,
+     "releaseTime": "2026-10-07T07:16:37.191Z",
+     "versionTime": "2026-10-07T07:16:37.173Z",
+     "announcements": [
+      {
+       "language": "FI",
+       "title": "Tie 1821, Turku. Liikennetiedote. ",
+       "location": {
+        "countryCode": 6,
+        "locationTableNumber": 17,
+        "locationTableVersion": "1.11.45",
+        "description": "Tie 1821 välillä Uudenmaankatu - Kakskerta, Turku.\nTarkempi paikka: Välillä Hirvensalon silta - Perämiehenkatu. Hirvensalon puistotien ja Vähäheikkiläntien risteys."
+       },
+       "locationDetails": {
+        "roadAddressLocation": {
+         "primaryPoint": {
+          "municipality": "Turku",
+          "province": "Varsinais-Suomi",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 1821,
+           "roadSection": 2,
+           "distance": 0
+          },
+          "alertCLocation": {
+           "locationCode": 18043,
+           "name": "Hirvensalon silta",
+           "distance": 0
+          }
+         },
+         "secondaryPoint": {
+          "municipality": "Turku",
+          "province": "Varsinais-Suomi",
+          "country": "Suomi",
+          "roadAddress": {
+           "road": 1821,
+           "roadSection": 1,
+           "distance": 2542
+          },
+          "alertCLocation": {
+           "locationCode": 27463,
+           "name": "Perämiehenkatu",
+           "distance": 0
+          }
+         },
+         "direction": "BOTH"
+        }
+       },
+       "locationOpenLr": {
+        "binary": "Iw/QTSr3yw=="
+       },
+       "features": [
+        {
+         "name": "Liikennejärjestelyt ovat muuttuneet"
+        },
+        {
+         "name": "Liikenne ruuhkautuu"
+        }
+       ],
+       "roadWorkPhases": [],
+       "comment": "Tienrakennustyö.",
+       "timeAndDuration": {
+        "startTime": "2026-10-07T07:00:00Z",
+        "endTime": "2026-11-30T13:00:00Z"
+       },
+       "additionalInformation": "Liikenne- ja kelitiedot verkossa: https://liikennetilanne.fintraffic.fi/",
+       "sender": "Fintraffic Tieliikennekeskus"
+      }
+     ],
+     "contact": {
+      "phone": "02002100",
+      "email": "turku.liikennekeskus@fintraffic.fi"
+     },
+     "dataUpdatedTime": "2026-10-07T07:16:51Z"
+    }
+   }
+  ]
+ }
+}
