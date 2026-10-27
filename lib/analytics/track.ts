@@ -33,6 +33,7 @@ const OBJECT_KINDS: Record<WorldObjectKind, true> = {
   signal: true,
   country: true,
   area: true,
+  network: true,
 };
 
 /** Preset ids, layer keys and signal ids are all lowercase slugs. Anything else is dropped. */

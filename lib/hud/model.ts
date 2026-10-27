@@ -134,6 +134,34 @@ export function formatCount(n: number): string {
   return Math.max(0, Math.floor(n)).toLocaleString("en-US");
 }
 
+// ── The counts block ───────────────────────────────────────────────────────────
+
+/** The counts block's title. Everything under it must be live. */
+export const HUD_COUNTS_TITLE = "Live";
+
+/** One readout in the counts block: a short label and the number it shows. */
+export interface HudCountCell {
+  label: string;
+  value: number;
+}
+
+/**
+ * The counts block, in reading order. Pure, so the test can pin what sits under "Live".
+ *
+ * The camera cell is VIDEO (`liveCameras`: streams that played at their last check, plus,
+ * during the warm-up after a start, allowlisted streams not yet checked; see `playsNow`
+ * in lib/liveness/playcheck.ts). It was `camerasOnline` until 2026-10-27, which counts
+ * every camera whose feed answered, so about 19,000 refreshing stills were shown as
+ * "Live · CAM". A still is not live, so stills have no cell in this block.
+ */
+export function hudCountCells(m: { liveCameras: number; planes: number; satellites: number }): HudCountCell[] {
+  return [
+    { label: "VID", value: m.liveCameras },
+    { label: "PLN", value: m.planes },
+    { label: "SAT", value: m.satellites },
+  ];
+}
+
 /** Short chip label per core layer key — the HUD's chips are narrow by design. */
 export type HudChipKey = "livecams" | "staticcams" | "planes" | "satellites";
 export const HUD_CHIP_LABEL: Record<HudChipKey, string> = {

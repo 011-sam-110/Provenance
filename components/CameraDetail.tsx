@@ -97,7 +97,7 @@ export function CameraDetail({ object }: { object: WorldObject }) {
       ) : err ? (
         <div className="cam-loading">Could not load this camera.</div>
       ) : (
-        <div className="cam-loading">Loading live image…</div>
+        <div className="cam-loading">Loading camera…</div>
       )}
 
       <div className="cam-meta">

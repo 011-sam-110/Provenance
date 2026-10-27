@@ -275,7 +275,9 @@ test("a visit contacts this site and the visit counter, and no other host", asyn
 test("the calls to action and the footer links are on the page", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.locator('a[href="/app"]').first()).toBeVisible();
+  // The doors (2026-10-27): God's eye view first, and the console with its Sources rail.
+  await expect(page.locator('a[href="/eye"]').first()).toBeVisible();
+  await expect(page.locator('a[href="/app?sources=open"]').first()).toBeAttached();
   await expect(page.locator('a[href="/cameras"]').first()).toBeAttached();
   await expect(page.locator('a[href="/privacy"]').first()).toBeAttached();
   await expect(

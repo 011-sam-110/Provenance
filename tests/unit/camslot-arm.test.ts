@@ -212,6 +212,10 @@ describe("describeAppend", () => {
     expect(note).toContain("306");
     expect(note).toContain("279");
     expect(note).toContain("12");
+    // `available` counts every camera whose feed answered, stills included, and a
+    // still is not live (2026-10-27).
+    expect(note).toContain("279 with a working feed");
+    expect(note).not.toMatch(/live/i);
   });
 
   it("says the selection is the nearest ones, not an unexplained slice", () => {

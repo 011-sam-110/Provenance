@@ -56,6 +56,8 @@ import { pinsStore } from "@/lib/map/pins";
 import { isFirstRun, seedBoard } from "@/lib/console/bootSeed";
 import "@/lib/console/widgets";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
+import { railTabStore } from "@/lib/console/railTab";
+import { wantsSourcesOpen, withoutSourcesFlag } from "@/lib/console/sourcesLink";
 import { actionFor, chordOf, keymapStore } from "@/lib/shell/keymap";
 import { isDrawing, startDraw } from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
@@ -143,6 +145,15 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // over a `?sig=` link's layers. activePresetStore has hydrated above, so its value
     // here is the saved board, not a default.
     seedBoard(params, isFirstRun({ restoredVariant, activeBoard: activePresetStore.get() }));
+    // `sources=open` (God's eye view's Sources button, the landing's "All sources"):
+    // open the Sources rail on its Sources tab, then drop the flag so a reload or a
+    // copied link does not open it again. It writes no layer and nothing to storage.
+    if (wantsSourcesOpen(params)) {
+      railTabStore.set("sources");
+      sourcesRailStore.setOpen(true);
+      const { pathname, search, hash } = window.location;
+      window.history.replaceState(window.history.state, "", withoutSourcesFlag(pathname, search, hash));
+    }
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
     // THE GUIDED TOUR IS GONE, and with it this effect's only cleanup.

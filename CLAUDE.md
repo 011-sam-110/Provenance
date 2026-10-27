@@ -90,6 +90,16 @@ obligations and are not satisfied by the licence.
   its steps and no feed is fetched during it, because a film is drawn minutes slower
   than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
   three at once halved the frame rate, measured 2026-10-25.
+  **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
+  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
+  Sources button opens the console at the spot on screen with the Sources rail open
+  (`sources=open`, read once after mount by ConsoleShell, `lib/console/sourcesLink.ts`);
+  on a phone it is the console's own "≡ Sources" thumb control, first in the bar. A browser
+  with no saved board also gets `layers=` and `base=` so the console does not open empty;
+  a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
+  the doors. **Both map pages ask for WebGL before they mount MapLibre**
+  (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
+  camera directory and the source link, not Next's "Application error" page.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's
@@ -157,9 +167,13 @@ obligations and are not satisfied by the licence.
   production run of `scripts/country-event-breakdown.mts` — never hand-edit it; it
   carries its own `AUDIT_MEASURED_AT`) and `globe-snapshot.meta.ts` (GENERATED, above).
   If a sentence needs a number none of those carries, the sentence loses the number.
-  `repo-facts.data.ts` and `surveillance.data.ts` are no longer read by the page; both
-  files stay, with the tests and generators that belong to the data files, and
-  `docs/LANDING_SOURCES.md` records
+  `surveillance.data.ts` is no longer read by the page; it stays, with the tests and
+  generators that belong to the data files. `repo-facts.data.ts` (the unit-test count)
+  was deleted on 2026-10-27: nothing had read it since 2026-10-05, and its pinned count
+  went stale whenever two PRs added test files in parallel, which failed `Deploy
+  production` on main twice (2026-09-16, 2026-10-27). If a test count goes back on `/`,
+  the BUILD measures it (a prebuild step over `npx vitest list --json`), never a constant
+  typed into the repo. `docs/LANDING_SOURCES.md` records
   what left the page on 2026-10-05, the source behind every outside figure, and the
   figures REMOVED from the first draft because no source carried them — read it before
   adding a number, it is the more useful half.
@@ -174,7 +188,8 @@ obligations and are not satisfied by the licence.
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
+  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
+  (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
   disruptions for `/eye`), and the two doors
   `middleware.ts` opens, `gate` and `private`.
@@ -240,6 +255,26 @@ obligations and are not satisfied by the licence.
   registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
   Tile rows are POSITIONAL and read by index — never add a column on one side only; see
   `TILE_VERSION` and the parity test.
+- **A camera's `live` flag means its stream PLAYED at its last check, not that its URL
+  passes the HLS allowlist (2026-10-27).** `lib/liveness/playcheck.ts` reads each
+  allowlisted stream twice, one target duration apart, through the same fetch as
+  `/api/hls` (`lib/proxy/hls-upstream.ts`), then asks for the newest segment. `rolling`
+  at a check younger than two cycles (6 h) is live; stalled, error, or (after the warm-up
+  below) never checked or older is not, and the camera shows as a still. Every reader
+  goes through `isLiveCamera`: `/api/cameras` (`lib/cameras/body.ts`), `/api/camera/[id]`,
+  `/api/near` and `/camera/[id]`. The loop runs in the server process. The first of
+  those API routes to be asked starts it; a pass every 10 minutes checks what is due
+  (each camera every 3 h), six at once, 500 ms apart per host. Results are in memory
+  only, on purpose: a saved file would make /privacy's "nothing this site serves writes
+  a file" false (`discovery-admin-gate.test.ts`). So a deploy starts with no verdicts,
+  and from provenance-1 a cold pass ran at about 30 checks a minute (2026-10-27), about
+  two hours for ~3,200 streams. Hence the WARM-UP: until this process's first pass ends,
+  an allowlisted stream with no verdict yet stays video (the old rule); a failed verdict
+  is never video; after the first pass, unknown is not video. `/api/coverage` serves the
+  counts as `playcheck`, real verdicts only, with `warm: true` while the first pass runs;
+  `npx vite-node -c vitest.config.ts scripts/liveness-playcheck.mts` runs one pass and
+  prints them. The HUD's Live block and the `stat-line` count video and never stills.
+  `PLAYCHECK=off` turns the loop off, which leaves the warm-up rule on for good.
 - `lib/signals/*` — one adapter + one `registry.ts` entry per source (**49 registered, 48 of them map layers**, 2026-10-27, when TfL's London road works, incidents and closures joined).
   A removed layer's id goes into `RETIRED_SIGNAL_IDS` in `lib/layerAliases.ts`, so saved
   toggles, `?sig=` links, variant overrides and saved boards (its `signal:<id>` card) that
@@ -278,7 +313,12 @@ obligations and are not satisfied by the licence.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
-- **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from it.**
+- **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from them.**
+  After them sits the camera stats strip (`components/terminal/CameraStats.tsx`, 2026-10-27):
+  video, stills, countries, operators and the time of that count, then the Windy webcams with
+  their own source, from `/api/camera-stats`. It is the one thing in the bar that opens a panel,
+  and only on a click. Its wording lives in `lib/cameras/statsView.ts`, where a test fails if
+  any string says "live"; video there counts streams that PLAYED at their last check.
   `components/terminal/TerminalHeader.tsx` renders the tabs from `TOP_BAR_PRESET_IDS`
   (a subset of the lineup, pinned by `console-presets.test.ts`); News left the
   navbar on 2026-09-16 on request and stays a preset reachable from the Sources
@@ -354,7 +394,7 @@ Re-measure before putting a number in a README, a CV or a PR description.
 | Cards per rail | max 4 | `MAX_CARDS_PER_RAIL` in `presets.ts`. A board with more cards than one rail shows **spreads to a second rail** rather than scrolling. Pinned at 1280x620, 1440x820 and 1920x1000. |
 | Monitor variants | 13 | `BUILTIN_VARIANTS` in `lib/variants/builtins.ts` |
 | Widget types | 81 registered (2026-10-27: the three London road layers and the Roads group's rollup card joined; it was 77 on 2026-10-17, after `signal:cyber-c2` and `signal:news-coverage` left with their layers) | `listWidgetTypes()` after importing `lib/console/widgets`. Was 71 until the `cameras` grid was retired in favour of `camslot`, and 65 until `signal:news-coverage` registered with its layer on 2026-09-16 (every signal source mints a widget). NOTE: `tests/unit/widget-explainers.test.ts` does **not** assert this count — it asserts `> 40` and id uniqueness, plus a trust card for every registered type. THIS table's copy is unpinned and rots silently; the README's copy of the same figure is pinned by `tests/unit/readme-counts.test.ts`, which is what caught the retirement. Re-measure rather than trusting this row. |
-| Unit tests | **4,264 cases / 403 files (2026-09-19)** | `npx vitest list` (collects without running — safe alongside other agents). Re-measured on feat/camera-tiers rebased onto origin/main at 15c0efe, which is the tree that ships. The camera-tier split added layer-key-migration; #258 added signal-detail-key-note. Those two landed on separate branches and BOTH moved `cases`, which is why rebasing one onto the other conflicted in exactly one place — see the header of lib/marketing/repo-facts.data.ts, which predicts this and says to re-measure on the merged tree rather than pick a side. Earlier on 2026-09-18, the news comparison board added four files (news-diversity, news-framing, news-source-badge-disclosure, rail-world-headlines). The figure moved three times on 2026-09-16 alone — 4,029 / 389, then 4,044 / 390, then this — as the news board, the inspector rail, the area-colour picker and the news-depth branch each landed their own test files. This row said **1,414 / 215** until 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
+| Unit tests | **4,264 cases / 403 files (2026-09-19)** | `npx vitest list` (collects without running — safe alongside other agents). Re-measured on feat/camera-tiers rebased onto origin/main at 15c0efe, which is the tree that ships. The camera-tier split added layer-key-migration; #258 added signal-detail-key-note. Those two landed on separate branches and BOTH moved `cases`, which is why rebasing one onto the other conflicted in exactly one place — see the header of lib/marketing/repo-facts.data.ts (deleted 2026-10-27, in git history), which predicted this and says to re-measure on the merged tree rather than pick a side. Earlier on 2026-09-18, the news comparison board added four files (news-diversity, news-framing, news-source-badge-disclosure, rail-world-headlines). The figure moved three times on 2026-09-16 alone — 4,029 / 389, then 4,044 / 390, then this — as the news board, the inspector rail, the area-colour picker and the news-depth branch each landed their own test files. This row said **1,414 / 215** until 2026-08-11: the suite had **more than doubled** while the table went on stating the old figure. Exactly the silent rot the header of this section warns about, and a reminder that "unpinned" here means "will be wrong", not "might be". |
 
 ## Live-source notes (verified 2026-08-10, these change)
 - **Aircraft come from adsb.lol, not OpenSky.** OpenSky was removed on licensing grounds

@@ -30,7 +30,8 @@ import { RETIRED_LAYER_KEYS } from "@/lib/layerAliases";
 // registry would have overstated the product by a factor of thirteen.
 //
 //   livecams   — moving video we can actually play. Registry cameras whose
-//                `live` flag is true, and nothing else.
+//                `live` flag is true (the stream played at its last check,
+//                lib/liveness/playcheck.ts), and nothing else.
 //   staticcams — a still image on a refresh interval. The other ~18,900 registry
 //                cameras PLUS every Windy webcam.
 //

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import EyeApp from "@/components/eye/EyeApp";
 import { BRAND } from "@/lib/brand";
+import { railSourceCount } from "@/lib/eye/railCount";
 
 // The God's eye view. Inside app/(console) for the console layout's basemap warm-up,
 // and under the same rule as /app: DO NOT TAKE `searchParams` HERE. The link is read
@@ -27,6 +28,10 @@ export const metadata: Metadata = {
   },
 };
 
+// The Sources button's hint counts the rows the console's Sources rail draws. It is read
+// HERE, on the server at build time, and passed down as a number, so the rail's list
+// does not ride into this page's browser bundle (the same rule as CAMERA_FEED_COUNT in
+// app/(console)/app/page.tsx).
 export default function EyePage() {
-  return <EyeApp />;
+  return <EyeApp sourceCount={railSourceCount()} />;
 }
