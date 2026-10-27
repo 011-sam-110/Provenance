@@ -30,6 +30,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMetrics } from "@/lib/metrics";
+import { statLine } from "@/lib/shell/statLine";
 import { useLayers } from "@/lib/layers";
 import { useActivePreset } from "@/lib/console/activePreset";
 import { BUILTIN_PRESETS, TOP_BAR_PRESET_IDS, applyPreset, listPresets } from "@/lib/console/presets";
@@ -42,6 +43,7 @@ import SettingsPanel from "@/components/shell/SettingsPanel";
 import AccountButton from "@/components/account/AccountButton";
 import type { SettingsTabId } from "@/lib/shell/settingsTabs";
 import LivePresence from "@/components/shell/LivePresence";
+import CameraStats from "@/components/terminal/CameraStats";
 import { BRAND } from "@/lib/brand";
 
 /**
@@ -233,12 +235,10 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               tier that holds most of them is switched on. With Live cams alone up
               that read "19,520 cameras" for about 1,500 pins, which is the same
               audit trap the note above describes, pointing the other way. */}
-          {layers.livecams ? `${m.liveCameras.toLocaleString()} live cams` : "live cams off"} ·{" "}
-          {layers.staticcams
-            ? `${(m.stillCameras + m.webcams).toLocaleString()} static cams`
-            : "static cams off"} ·{" "}
-          {layers.planes ? `${m.planes.toLocaleString()} planes` : "planes off"} ·{" "}
-          {layers.satellites ? `${m.satellites.toLocaleString()} satellites` : "satellites off"}
+          {/* VIDEO AND STILLS APART. "video cams" counts the streams the play check
+              shows as video (lib/liveness/playcheck.ts); refreshing pictures are "still cams".
+              lib/shell/statLine.ts holds the words, and its test holds them. */}
+          {statLine(m, layers)}
         </span>
 
         {/* The SPOKEN status line, and deliberately a different string from the one
@@ -289,6 +289,13 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             whole workspace — widgets, map layers, stage — not one tabpanel, and a
             tablist with no tabpanel is a promise the DOM does not keep. */}
         <BoardTabs />
+
+        {/* ── Camera stats ─────────────────────────────────────────────────── */}
+        {/* VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED ‖ WEBCAMS, each number with
+            its source and time, one click from the breakdown. Video counts streams that
+            PLAYED at their last check, never stills, and the word "live" is not used;
+            see CameraStats.tsx and lib/cameras/statsView.ts. */}
+        <CameraStats />
 
         <div className="tnx-hdr-spacer" />
 

@@ -1,6 +1,8 @@
 import { getRegistry, feedHealth, CAMERA_FEED_COUNT } from "@/lib/sources/registry";
 import { groupCoverage } from "@/lib/coverage";
 import { edgeCacheHeaders } from "@/lib/http/cache";
+import { getPlayCheckSummary } from "@/lib/liveness/playcheck";
+import { ensurePlayCheck } from "@/lib/liveness/playcheck.server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,7 @@ const COVERAGE_TTL_MS = 60_000;
 // quoting a degraded total as though it were a measurement.
 export async function GET() {
   const cams = await getRegistry();
+  ensurePlayCheck(getRegistry);
   const coverage = groupCoverage(cams.map((c) => ({ source: c.source, available: c.available })));
   const health = feedHealth();
   const answered = health.filter((h) => h.ok).length;
@@ -44,6 +47,10 @@ export async function GET() {
         dormant: health.filter((h) => h.dormant).map((h) => h.key),
         detail: health,
       },
+      // How many of the cameras with an allowlisted stream PLAYED at their last check,
+      // and when those checks ran. The only figure here that says "video" honestly;
+      // see lib/liveness/playcheck.ts. Every field above is unchanged.
+      playcheck: getPlayCheckSummary(cams),
     },
     { headers: edgeCacheHeaders(COVERAGE_TTL_MS, 300_000) },
   );

@@ -1,0 +1,81 @@
+/* The no-WebGL plate (MapFallback.tsx). Two tones: dark over /eye's ground, light in
+ * the console's stage. Contrast on the dark tone: #eef3f1 on #05080a is 18:1, the 76%
+ * ink about 12:1. On the light tone: #262b15 on #ffffff is 14:1, #4d513f 8.4:1. */
+
+.plate {
+  --fb-bg: #ffffff;
+  --fb-ink: #262b15;
+  --fb-ink-2: #4d513f;
+  --fb-line: rgba(38, 43, 21, 0.26);
+  --fb-solid: #464b37;
+  --fb-on-solid: #ffffff;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 24px max(18px, env(safe-area-inset-left, 0px));
+  background: var(--fb-bg);
+  color: var(--fb-ink);
+  font-family: var(--tn-sans);
+}
+.plate[data-tone="dark"] {
+  --fb-bg: #05080a;
+  --fb-ink: #eef3f1;
+  --fb-ink-2: rgba(238, 243, 241, 0.76);
+  --fb-line: rgba(238, 243, 241, 0.34);
+  --fb-solid: #eef3f1;
+  --fb-on-solid: #0b1114;
+}
+.body {
+  width: min(480px, 100%);
+}
+.place {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fb-ink-2);
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.body p:not(.place) {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fb-ink-2);
+}
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.primary {
+  background: var(--fb-solid);
+  color: var(--fb-on-solid);
+}
+.secondary {
+  border: 1px solid var(--fb-line);
+  color: var(--fb-ink);
+}
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--fb-ink);
+  outline-offset: 2px;
+}

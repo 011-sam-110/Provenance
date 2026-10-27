@@ -74,7 +74,7 @@ export default function CoveragePanel({ docked = false }: { docked?: boolean } =
             <p className="tn-coverage-sub">
               {data
                 ? `${data.online.toLocaleString()} online of ${data.total.toLocaleString()} cameras across ${data.sources.length} sources`
-                : "Live counts per source"}
+                : "Counts per source"}
             </p>
           </div>
           {!docked && (
