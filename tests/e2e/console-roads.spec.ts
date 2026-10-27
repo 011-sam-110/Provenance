@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import type maplibregl from "maplibre-gl";
 import { normalizeTflNotices } from "@/lib/roads/tfl";
-import { roadLayerFeatures, type RoadLayer } from "@/lib/signals/roads-london";
+import { roadLayerFeatures, type RoadLayer } from "@/lib/signals/roads";
 
 /**
  * The console's three London road layers (/app), held to the road layer's rules:
@@ -141,6 +141,6 @@ test("a click on a closed street opens that notice", async ({ page }) => {
   const inspector = page.locator(".tn-inspector[role=dialog]");
   await expect(inspector).toHaveCount(1, { timeout: 10_000 });
   await expect(inspector).toHaveAttribute("aria-label", "Utility works, [A12] EASTERN AVENUE EAST");
-  await expect(inspector).toContainText("Road closures (London)");
+  await expect(inspector).toContainText("Road closures");
   await expect(inspector).toContainText("Closed, westbound");
 });

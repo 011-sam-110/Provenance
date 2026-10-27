@@ -42,6 +42,10 @@ export interface RoadNotice {
   closure?: string;
   /** The operator's own location line. */
   location?: string;
+  /** The street the map label names, where the operator names one apart from `location`. */
+  street?: string;
+  /** The operator's own description of the notice, where it gives one. */
+  description?: string;
   /** The operator's representative point. */
   lat: number;
   lon: number;

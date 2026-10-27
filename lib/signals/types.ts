@@ -81,7 +81,7 @@ export interface SignalFeature {
    * How a LINE geometry is drawn. Absent is a solid line (a cable, a route). A road
    * notice is never solid, because a solid road line is how a measured speed will be
    * drawn: "dash" is works, "dot" an incident, "bar" a street its operator marks
-   * closed (lib/signals/roads-london.ts). Ignored on a point or an area.
+   * closed (lib/signals/roads.ts). Ignored on a point or an area.
    */
   line?: SignalLineStyle;
   /** Per-feature marker colour (CSS hex). Falls back to the source colour. */

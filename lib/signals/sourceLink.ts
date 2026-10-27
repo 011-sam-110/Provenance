@@ -146,7 +146,9 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
     licence: { label: "ODbL", url: "https://opendatacommons.org/licenses/odbl/1-0/" },
   },
   ais: { label: "AISStream, Digitraffic, BarentsWatch", url: "https://aisstream.io/" },
-  // TfL's transport data terms ask for "Powered by TfL Open Data" (the layers' attribution).
+  // Each road notice links its own operator (feature.link, named by props.agency), so
+  // these show only for a row without one. The credits each operator's terms ask for
+  // are in the layers' attribution (lib/signals/roads.ts).
   "road-works": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },
   "road-incidents": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },
   "road-closures": { label: "TfL", url: "https://tfl.gov.uk/traffic/status/" },

@@ -121,12 +121,16 @@
  * tree rather than pick a side.
  *
  * Re-measured 2026-10-27 on feat/live-roads-m2 (stacked on M1, with M1's joined street lines
- * merged in). The console's road layers add `signals-roads-london` (11 cases), and one case
+ * merged in). The console's road layers add `signals-roads` (11 cases), and one case
  * each to `map-hover` and `precision-marks`, plus the explainer and source-link rows every new
  * layer gets: `npx vitest list`: 5,616 cases across 482 files.
+ *
+ * Re-measured 2026-10-27 on feat/live-roads-m3 (stacked on M2). DriveBC's road events add
+ * `roads-open511` (7 cases) and two cases to `signals-roads`: `npx vitest list`: 5,625 cases
+ * across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5616,
-  files: 482,
+  cases: 5625,
+  files: 483,
   measuredAt: "2026-10-27",
 } as const;

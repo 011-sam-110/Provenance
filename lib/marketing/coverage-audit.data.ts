@@ -654,7 +654,7 @@ export const AUDIT_LAYERS: AuditLayer[] = [
   },
   {
     "id": "road-works",
-    "label": "Roadworks (London)",
+    "label": "Roadworks",
     "group": "Roads",
     "tier": "incidents",
     "features": 0,
@@ -662,11 +662,11 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "countries": 0,
     "spansCountries": false,
     "state": "down",
-    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: TfL's keyless road disruptions feed answered 126 notices at 2026-10-27T07:09Z, of which this layer draws 93 (works with an open stretch, or with no street line), counted from provenance-1 rather than from production. London only. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: on 2026-10-27 TfL's keyless road disruptions feed answered 126 notices (07:09Z) and DriveBC's Open511 feed 290 events (07:59Z), of which this layer draws 93 from TfL and 245 from DriveBC (works with an open stretch, or with no road line), counted from provenance-1 rather than from production. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "road-incidents",
-    "label": "Road incidents (London)",
+    "label": "Road incidents",
     "group": "Roads",
     "tier": "incidents",
     "features": 0,
@@ -674,11 +674,11 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "countries": 0,
     "spansCountries": false,
     "state": "down",
-    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: TfL's keyless road disruptions feed answered 126 notices at 2026-10-27T07:09Z, of which this layer draws 5 (collisions, hazards, police activity and faults with an open stretch, or with no street line), counted from provenance-1 rather than from production. London only. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: on 2026-10-27 TfL's keyless road disruptions feed answered 126 notices (07:09Z) and DriveBC's Open511 feed 290 events (07:59Z), of which this layer draws 5 from TfL and 27 from DriveBC (incidents with an open stretch, or with no road line), counted from provenance-1 rather than from production. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   },
   {
     "id": "road-closures",
-    "label": "Road closures (London)",
+    "label": "Road closures",
     "group": "Roads",
     "tier": "incidents",
     "features": 0,
@@ -686,7 +686,7 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "countries": 0,
     "spansCountries": false,
     "state": "down",
-    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: TfL's keyless road disruptions feed answered 126 notices at 2026-10-27T07:09Z, of which this layer draws 30 (notices with a street TfL marks Closed), counted from provenance-1 rather than from production. London only. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: on 2026-10-27 TfL's keyless road disruptions feed answered 126 notices (07:09Z) and DriveBC's Open511 feed 290 events (07:59Z), of which this layer draws 30 from TfL and 18 from DriveBC (notices with a road the operator marks closed), counted from provenance-1 rather than from production. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   }
 ];
 

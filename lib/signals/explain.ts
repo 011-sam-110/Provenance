@@ -700,42 +700,45 @@ const EXPLAINERS: LayerExplainer[] = [
   },
 
   // --- Roads ----------------------------------------------------------------
-  // Three layers from one TfL read (lib/signals/roads-london.ts). Each is a NOTICE on a
-  // street, in TfL's words, never a speed: none of them is drawn as a solid line.
+  // Three layers from the road operators' own feeds (lib/signals/roads.ts): TfL in
+  // London, DriveBC in British Columbia. Each is a NOTICE on a road, in the operator's
+  // words, never a speed: none of them is drawn as a solid line.
   {
     id: "road-works",
-    whatItShows: "Planned works that TfL lists on a London street, drawn as dashes along the streets TfL names, or at TfL's own point when it names none.",
-    method: "Read directly from TfL's road disruptions (Unified API, keyless). The category, severity and words are TfL's. A stretch TfL marks Closed is drawn by the road closures layer instead, so each street is drawn once.",
+    whatItShows: "Planned works that a road operator lists on a road, drawn as dashes along the road it names, or at the operator's own point when it names no line.",
+    method: "Read directly from TfL's road disruptions (Unified API) and DriveBC's Open511 road events, both keyless. Category, severity and words are the operator's. A stretch the operator marks closed is drawn by the road closures layer instead, so each road is drawn once.",
     confidence: "official",
-    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
-      "A notice is what TfL lists, not a measurement of the road. It says nothing about speed or queues, and no open feed for London publishes a measured speed.",
-      "No line does not mean a clear road: a street with no notice may still be slow or blocked.",
-      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+      "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
+      "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
+      "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+      "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
     ],
   },
   {
     id: "road-incidents",
-    whatItShows: "Something TfL lists as happening on a London street that is not planned works: a collision, a hazard such as a burst water main, police activity or a signal fault. Drawn as dots.",
-    method: "Read directly from TfL's road disruptions (Unified API, keyless). Every TfL category except Works is an incident here; the category and the words stay TfL's. A stretch TfL marks Closed is drawn by the road closures layer instead.",
+    whatItShows: "Something a road operator lists as happening on a road that is not planned works: a collision, a hazard such as a burst water main or a washout, police activity or a signal fault. Drawn as dots.",
+    method: "Read directly from TfL's road disruptions and DriveBC's Open511 road events, both keyless. Every category except planned works (TfL's Works, Open511's CONSTRUCTION) is an incident here; the category and the words stay the operator's. A stretch the operator marks closed is drawn by the road closures layer instead.",
     confidence: "official",
-    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
-      "A notice is what TfL lists, not a measurement of the road. It says nothing about speed or queues, and no open feed for London publishes a measured speed.",
-      "No line does not mean a clear road: a street with no notice may still be slow or blocked.",
-      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+      "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
+      "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
+      "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+      "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
     ],
   },
   {
     id: "road-closures",
-    whatItShows: "A London street that TfL marks Closed, in the direction TfL states, drawn as bars.",
-    method: "Read from each street TfL names in a notice, by that street's own closure word. TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
+    whatItShows: "A road that its operator marks closed, in the direction the operator states, drawn as bars.",
+    method: "Read from each road the operator names in a notice, by that road's own closure state: TfL's per-street closure word, Open511's per-road CLOSED state. TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
     confidence: "official",
-    coverage: "Greater London only: TfL's road network. No other city's notices are read yet.",
+    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
-      "Closed is per street: one notice can close one stretch and leave the next open. The open stretch is drawn by the works or incidents layer.",
-      "No line does not mean an open road: TfL lists the closures it knows about.",
-      "Each notice's time is TfL's own last change to it. The server asks TfL every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
+      "Closed is per road: one TfL notice can close one stretch and leave the next open, and the open stretch is drawn by the works or incidents layer. DriveBC gives one line per event, so a closed DriveBC event's whole line is drawn closed.",
+      "No line does not mean an open road: each operator lists the closures it knows about.",
+      "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
     ],
   },
 ];
