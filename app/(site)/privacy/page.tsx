@@ -16,6 +16,9 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * leave it out or say plainly that you do not know.
  *
  * WHAT CHANGED ON 2026-10-27:
+ *   - Camera stats strip (#305): app/api/camera-stats serves the counts behind the console's
+ *     top-bar strip, read from the camera registry and the committed webcam manifest. It
+ *     takes no input from the visitor, reads no header and logs nothing. The route count is 54.
  *   - IP location: app/api/recon/geo (lib/recon/geo.ts), reached from the search box's
  *     "Locate network" row (components/console/MapSearch.tsx). It takes the typed IP or
  *     domain, resolves a domain through Cloudflare DNS, and asks RIPEstat's
@@ -635,7 +638,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>53 API routes</span>
+              <span>54 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1030,7 +1033,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 53 API route files. Each records that a data
+              Five log statements exist across the 54 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type

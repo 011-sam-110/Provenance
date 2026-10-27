@@ -123,9 +123,13 @@
  * Re-measured 2026-10-27 on origin/main at 3becc5f (after #301/#302/#303): #302 and #303 added
  * test files, so `Deploy production` failed on 483 vs 489 for both. `npx vitest list`: 5,671
  * cases across 489 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
+ *
+ * Re-measured 2026-10-27 merging origin/main at 0396dd6 (#308) into feat/live-cams-scoreline
+ * (#305): it adds `camera-stats`, `camera-stats-route` and `camera-stats-view`. `npx vitest
+ * list` on the merged tree: 5,724 cases across 492 files.
  */
 export const UNIT_TESTS = {
-  cases: 5671,
-  files: 489,
+  cases: 5724,
+  files: 492,
   measuredAt: "2026-10-27",
 } as const;
