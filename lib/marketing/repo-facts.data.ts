@@ -102,9 +102,14 @@
  * `eye-wording`, `eye-declutter` and `eye-cameras`: 5,564 cases across 478 files. M6 adds
  * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
  * across 479 files.
+ *
+ * 2026-10-27, feat/eye-default (God's eye view as the map behind "Open the map"): adds
+ * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
+ * case in `eye-page`. `npx vitest list` on that tree: 5,598 cases across 482 files.
+ * PR #298 (open) also edits this file; whichever lands second re-measures on the merged tree.
  */
 export const UNIT_TESTS = {
-  cases: 5576,
-  files: 479,
-  measuredAt: "2026-10-25",
+  cases: 5598,
+  files: 482,
+  measuredAt: "2026-10-27",
 } as const;
