@@ -1,9 +1,18 @@
 import type { SignalFeature, SignalGeometry, SignalSource } from "@/lib/signals/types";
 import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { newestChange, type RoadNotice } from "@/lib/roads/notice";
+import { simplifyLine } from "@/lib/roads/lines";
 import { TFL_CREDIT, TFL_DISRUPTIONS_URL, TFL_NAME, normalizeTflNotices } from "@/lib/roads/tfl";
 import { DRIVEBC_CREDIT, DRIVEBC_EVENTS_URL, DRIVEBC_HOME, DRIVEBC_NAME, normalizeOpen511 } from "@/lib/roads/open511";
 import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeedUrl } from "@/lib/roads/nsw";
+import {
+  DIGITRAFFIC_CREDIT,
+  DIGITRAFFIC_HOME,
+  DIGITRAFFIC_NAME,
+  DIGITRAFFIC_USER,
+  digitrafficUrl,
+  normalizeDigitraffic,
+} from "@/lib/roads/digitraffic";
 
 // ── Road notices: three console layers from the road operators' own feeds ──────
 //
@@ -18,6 +27,8 @@ import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeed
 //   TfL      London's roads (lib/roads/tfl.ts), "Powered by TfL Open Data"
 //   DriveBC  British Columbia's highways, Open511 (lib/roads/open511.ts), OGL-BC
 //   TfNSW    New South Wales, Live Traffic NSW's six hazard files (lib/roads/nsw.ts), CC BY
+//   Fintraffic  Finland, Digitraffic road works and traffic announcements
+//               (lib/roads/digitraffic.ts), CC BY 4.0
 //
 // A NOTICE IS NEVER A SPEED, so none of the three is ever a solid line: the console's
 // solid signal line is a cable or a route, and a solid road line will be a measured
@@ -37,7 +48,7 @@ import { NSW_CREDIT, NSW_FEEDS, NSW_HOME, NSW_NAME, normalizeNswHazards, nswFeed
 
 export const ROADS_GROUP = "Roads";
 const REFRESH_MS = 120_000;
-/** One read of each operator serves all three layers for this long. */
+/** One read of a file serves all three layers for this long, unless the file says longer. */
 const SHARED_READ_MS = 60_000;
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -54,6 +65,10 @@ export interface RoadFeed {
   name: string;
   url: string;
   normalize(raw: unknown): RoadNotice[];
+  /** Read it again after this long; a big file is read less often. Default 60 s. */
+  everyMs?: number;
+  /** Headers the operator asks for, e.g. Digitraffic's Digitraffic-User. */
+  headers?: Record<string, string>;
 }
 
 /** One road operator: its files, and how its notices are named and credited. */
@@ -93,7 +108,19 @@ export const NSW_OPERATOR: RoadOperator = {
   feeds: NSW_FEEDS.map((feed) => ({ name: feed, url: nswFeedUrl(feed), normalize: (raw: unknown) => normalizeNswHazards(raw, feed) })),
 };
 
-export const ROAD_OPERATORS: readonly RoadOperator[] = [TFL_OPERATOR, DRIVEBC_OPERATOR, NSW_OPERATOR];
+export const DIGITRAFFIC_OPERATOR: RoadOperator = {
+  key: "fi",
+  name: DIGITRAFFIC_NAME,
+  credit: DIGITRAFFIC_CREDIT,
+  home: DIGITRAFFIC_HOME,
+  feeds: [
+    // 5.9 MB on 27 Oct 2026: read every 10 minutes, not every minute.
+    { name: "road works", url: digitrafficUrl("ROAD_WORK"), normalize: normalizeDigitraffic, everyMs: 600_000, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
+    { name: "announcements", url: digitrafficUrl("TRAFFIC_ANNOUNCEMENT"), normalize: normalizeDigitraffic, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
+  ],
+};
+
+export const ROAD_OPERATORS: readonly RoadOperator[] = [TFL_OPERATOR, DRIVEBC_OPERATOR, NSW_OPERATOR, DIGITRAFFIC_OPERATOR];
 
 const multi = (lines: [number, number][][]): SignalGeometry | undefined =>
   lines.length === 0 ? undefined : lines.length === 1 ? { type: "LineString", coordinates: lines[0] } : { type: "MultiLineString", coordinates: lines };
@@ -149,7 +176,8 @@ export function roadLayerFeatures(
       if (!hasLines && n.closure) continue;
       lines = n.openLines;
     }
-    const geometry = multi(lines);
+    // No finer than the map can show (lib/roads/lines.ts).
+    const geometry = multi(lines.map((l) => simplifyLine(l)));
     out.push({
       id: `${op.key}:${n.id}${layer === "closures" ? ":closed" : ""}`,
       lat: n.lat,
@@ -171,32 +199,31 @@ interface OperatorRead {
   missing: string[];
 }
 
-const shared = new Map<string, { at: number; read: Promise<OperatorRead | null> }>();
+const shared = new Map<string, { at: number; notices: Promise<RoadNotice[] | null> }>();
 
-/** One file; null when it did not answer. Never throws. */
+/** One file, shared by the three layers for its `everyMs`; null when it did not answer. Never throws. */
 function readFeed(feed: RoadFeed): Promise<RoadNotice[] | null> {
-  return fetch(feed.url, {
-    headers: { Accept: "application/json" },
+  const now = Date.now();
+  const hit = shared.get(feed.url);
+  if (hit && now - hit.at < (feed.everyMs ?? SHARED_READ_MS)) return hit.notices;
+  const notices = fetch(feed.url, {
+    headers: { Accept: "application/json", ...feed.headers },
     cache: "no-store",
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
     .then((r) => (r.ok ? r.json() : null))
     .then((raw) => (raw == null ? null : feed.normalize(raw)))
     .catch(() => null);
+  shared.set(feed.url, { at: now, notices });
+  return notices;
 }
 
-/** One read of one operator for the three layers; null when none of its files answered. */
-function readOperator(op: RoadOperator): Promise<OperatorRead | null> {
-  const now = Date.now();
-  const hit = shared.get(op.key);
-  if (hit && now - hit.at < SHARED_READ_MS) return hit.read;
-  const read = Promise.all(op.feeds.map(readFeed)).then((lists) => {
-    const missing = op.feeds.filter((_, i) => lists[i] == null).map((f) => f.name);
-    if (missing.length === op.feeds.length) return null;
-    return { notices: lists.flatMap((l) => l ?? []), missing };
-  });
-  shared.set(op.key, { at: now, read });
-  return read;
+/** One operator for the three layers; null when none of its files answered. */
+async function readOperator(op: RoadOperator): Promise<OperatorRead | null> {
+  const lists = await Promise.all(op.feeds.map(readFeed));
+  const missing = op.feeds.filter((_, i) => lists[i] == null).map((f) => f.name);
+  if (missing.length === op.feeds.length) return null;
+  return { notices: lists.flatMap((l) => l ?? []), missing };
 }
 
 /** "TfL", or "Transport for NSW (flood)" when only some of its files did not answer. */
@@ -220,7 +247,7 @@ function roadSource(layer: RoadLayer, label: string, color: string): SignalSourc
     group: ROADS_GROUP,
     color,
     refreshMs: REFRESH_MS,
-    attribution: `${TFL_CREDIT} (TfL road disruptions, London). ${DRIVEBC_CREDIT} (DriveBC road events, British Columbia). ${NSW_CREDIT} (hazards, New South Wales).`,
+    attribution: `${TFL_CREDIT} (TfL road disruptions, London). ${DRIVEBC_CREDIT} (DriveBC road events, British Columbia). ${NSW_CREDIT} (hazards, New South Wales). ${DIGITRAFFIC_CREDIT} (traffic messages, Finland).`,
     async fetch() {
       const reads = await Promise.all(ROAD_OPERATORS.map(async (op) => ({ op, read: await readOperator(op) })));
       const missing: string[] = [];
