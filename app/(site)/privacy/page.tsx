@@ -1128,7 +1128,7 @@ export default function PrivacyPage() {
           <div>
             <h4>The product</h4>
             <a href="/">Home</a>
-            <a href="/app">Open the map</a>
+            <a href="/eye">Open the map</a>
           </div>
           {/*
             AGPL-3.0 section 13: anyone interacting with this program over a network
