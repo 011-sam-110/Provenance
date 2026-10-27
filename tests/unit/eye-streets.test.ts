@@ -8,6 +8,7 @@ import {
   severityWeight,
   speedLedgerRow,
   speedPhoneNote,
+  streetFeatures,
   streetTag,
   streetsBody,
   streetsDownRow,
@@ -29,15 +30,20 @@ describe("normalizeTflDisruptions", () => {
   it("places it at TfL's point, and draws TfL's street segments", () => {
     expect(lined.lat).toBeCloseTo(51.45711, 5);
     expect(lined.lon).toBeCloseTo(-0.194259, 6);
-    expect(lined.lines.length).toBeGreaterThan(0);
-    for (const line of lined.lines) {
+    // Its one street is Closed, so every segment is a closed one: 16 of them, which
+    // join end to end into one line (joinLines in lib/roads/tfl.ts).
+    expect(lined.openLines).toEqual([]);
+    expect(FIXTURE[0].streets[0].segments).toHaveLength(16);
+    expect(lined.closedLines.length).toBe(1);
+    for (const line of lined.closedLines) {
       expect(line.length).toBeGreaterThanOrEqual(2);
       for (const [lon, lat] of line) {
         expect(lat).toBeGreaterThan(51.4);
         expect(lon).toBeLessThan(0);
       }
     }
-    expect(pointOnly.lines).toEqual([]);
+    expect(pointOnly.openLines).toEqual([]);
+    expect(pointOnly.closedLines).toEqual([]);
   });
 
   it("reads a closure from the street, where TfL's own flag says none", () => {
@@ -75,16 +81,32 @@ describe("the words", () => {
     expect(severityWeight("No impact")).toBe(0.5);
   });
 
-  it("count what is on screen, of how many nearby, and credit TfL with the cadence", () => {
+  it("count what is on screen, of how many nearby, and credit TfL", () => {
     expect(streetsLedgerRow(2, 2)).toEqual({
       kind: "road",
       count: 2,
       label: "road disruptions",
-      detail: `${TFL_CREDIT}, every 2 min`,
+      detail: TFL_CREDIT,
       short: "disruptions",
     });
-    expect(streetsLedgerRow(3, 64).detail).toBe(`of 64 nearby · ${TFL_CREDIT}, every 2 min`);
+    expect(streetsLedgerRow(3, 64).detail).toBe(`of 64 nearby · ${TFL_CREDIT}`);
     expect(streetsLedgerRow(1, 64).label).toBe("road disruption");
+  });
+
+  it("name TfL's newest change and the fetch apart, both in UTC", () => {
+    const now = Date.parse("2026-10-27T06:00:00Z");
+    const times = { changedAt: Date.parse("2026-10-27T05:45:12Z"), fetchedAt: Date.parse("2026-10-27T05:57:30Z"), now };
+    expect(streetsLedgerRow(2, 66, times).detail).toBe(
+      `of 66 nearby · TfL's newest change 05:45 UTC · fetched 05:57 UTC · ${TFL_CREDIT}`,
+    );
+    // An answer the server has held for 22 min says so: TfL down after a good answer.
+    const stale = { ...times, now: Date.parse("2026-10-27T06:19:56Z") };
+    expect(streetsLedgerRow(2, 66, stale).detail).toContain("fetched 05:57 UTC, 22 min ago");
+    // A change on an earlier day names the day.
+    const old = { ...times, changedAt: Date.parse("2026-10-26T15:59:00Z") };
+    expect(streetsLedgerRow(2, 66, old).detail).toContain("TfL's newest change 26 Oct 15:59 UTC");
+    // Unknown times are left out, never guessed.
+    expect(streetsLedgerRow(2, 66, { changedAt: null, fetchedAt: null, now }).detail).toBe(`of 66 nearby · ${TFL_CREDIT}`);
   });
 
   it("say TfL is not answering, with no count, rather than 0", () => {
@@ -95,6 +117,32 @@ describe("the words", () => {
     expect(speedLedgerRow(true)).toMatchObject({ kind: "speed", count: null, detail: "no open speed feed for London" });
     expect(speedLedgerRow(false).detail).toBe("not measured in this view");
     expect(speedPhoneNote(true)).toBe("No open road-speed feed for London");
+    const now = Date.parse("2026-10-27T06:00:00Z");
+    expect(speedPhoneNote(true, { changedAt: Date.parse("2026-10-27T05:45:00Z"), fetchedAt: Date.parse("2026-10-27T05:57:00Z"), now })).toBe(
+      "No open road-speed feed for London · TfL notices: newest change 05:45 UTC · fetched 05:57 UTC",
+    );
+    expect(speedPhoneNote(false, { changedAt: now, fetchedAt: now, now })).toBe("Road speed is not measured in this view");
+  });
+});
+
+describe("streetFeatures", () => {
+  const [lined, pointOnly] = normalizeTflDisruptions(FIXTURE);
+
+  it("paints a street TfL marks Closed as closed, and a point-only notice at its point", () => {
+    const feats = streetFeatures([lined, pointOnly]);
+    const lines = feats.filter((f) => f.geometry.type === "LineString");
+    expect(lines).toHaveLength(1);
+    expect(new Set(lines.map((f) => f.properties?.paint))).toEqual(new Set(["closed"]));
+    const points = feats.filter((f) => f.geometry.type === "Point");
+    expect(points).toHaveLength(1);
+    expect(points[0].properties).toEqual({ id: "TIMS-236081", paint: "works", heavy: true });
+    expect(points[0].geometry).toEqual({ type: "Point", coordinates: [pointOnly.lon, pointOnly.lat] });
+  });
+
+  it("carries severity as a flag for opacity, never as a width", () => {
+    for (const f of streetFeatures([lined, pointOnly])) {
+      expect(Object.keys(f.properties ?? {}).sort()).toEqual(["heavy", "id", "paint"]);
+    }
   });
 });
 

@@ -127,9 +127,13 @@
  * Re-measured 2026-10-27 merging origin/main at 0396dd6 (#308) into feat/live-cams-scoreline
  * (#305): it adds `camera-stats`, `camera-stats-route` and `camera-stats-view`. `npx vitest
  * list` on the merged tree: 5,724 cases across 492 files.
+ *
+ * Re-measured 2026-10-27 merging origin/main at 4364bc5 (#305) into feat/live-roads-m1 (#304):
+ * road notices M1 adds `roads-tfl` (15 cases) and three cases to `eye-streets`. `npx vitest
+ * list` on the merged tree: 5,742 cases across 493 files, exactly 492+1 files and 5,724+18 cases.
  */
 export const UNIT_TESTS = {
-  cases: 5724,
-  files: 492,
+  cases: 5742,
+  files: 493,
   measuredAt: "2026-10-27",
 } as const;
