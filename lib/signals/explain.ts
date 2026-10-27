@@ -701,40 +701,42 @@ const EXPLAINERS: LayerExplainer[] = [
 
   // --- Roads ----------------------------------------------------------------
   // Three layers from the road operators' own feeds (lib/signals/roads.ts): TfL in
-  // London, DriveBC in British Columbia. Each is a NOTICE on a road, in the operator's
-  // words, never a speed: none of them is drawn as a solid line.
+  // London, DriveBC in British Columbia, Transport for NSW in New South Wales. Each is a
+  // NOTICE on a road, in the operator's words, never a speed: none of them is a solid line.
   {
     id: "road-works",
     whatItShows: "Planned works that a road operator lists on a road, drawn as dashes along the road it names, or at the operator's own point when it names no line.",
-    method: "Read directly from TfL's road disruptions (Unified API) and DriveBC's Open511 road events, both keyless. Category, severity and words are the operator's. A stretch the operator marks closed is drawn by the road closures layer instead, so each road is drawn once.",
+    method: "Read directly from TfL's road disruptions (Unified API), DriveBC's Open511 road events and Live Traffic NSW's hazard files, all keyless. Category, severity and words are the operator's. A stretch the operator marks closed is drawn by the road closures layer instead, so each road is drawn once.",
     confidence: "official",
-    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
       "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
       "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
       "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
+      "Transport for NSW gives no severity, only whether a hazard is major, so an NSW row reads Major or Not major and nothing finer. Most NSW rows are a point: few carry the road's line.",
     ],
   },
   {
     id: "road-incidents",
     whatItShows: "Something a road operator lists as happening on a road that is not planned works: a collision, a hazard such as a burst water main or a washout, police activity or a signal fault. Drawn as dots.",
-    method: "Read directly from TfL's road disruptions and DriveBC's Open511 road events, both keyless. Every category except planned works (TfL's Works, Open511's CONSTRUCTION) is an incident here; the category and the words stay the operator's. A stretch the operator marks closed is drawn by the road closures layer instead.",
+    method: "Read directly from TfL's road disruptions, DriveBC's Open511 road events and Live Traffic NSW's hazard files, all keyless. Every category except planned works (TfL's Works, Open511's CONSTRUCTION, NSW's roadwork file) is an incident here; the category and the words stay the operator's. A stretch the operator marks closed is drawn by the road closures layer instead.",
     confidence: "official",
-    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "A notice is what the operator lists, not a measurement of the road. It says nothing about speed or queues.",
       "No line does not mean a clear road: a road with no notice may still be slow or blocked.",
       "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
       "DriveBC lists works for their whole period: an active notice may describe work that happens only at set hours, which its own description states.",
+      "Transport for NSW gives no severity, only whether a hazard is major, so an NSW row reads Major or Not major and nothing finer. Most NSW rows are a point: few carry the road's line.",
     ],
   },
   {
     id: "road-closures",
     whatItShows: "A road that its operator marks closed, in the direction the operator states, drawn as bars.",
-    method: "Read from each road the operator names in a notice, by that road's own closure state: TfL's per-street closure word, Open511's per-road CLOSED state. TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
+    method: "Read from each road the operator names in a notice, by that road's own closure state: TfL's per-street closure word, Open511's per-road CLOSED state, and an NSW period whose road extent is Closed (not only Affected). TfL's notice-level closure flag is not used: on 27 Oct 2026 it was false on every notice, closed streets included.",
     confidence: "official",
-    coverage: "Greater London (TfL) and British Columbia's provincial highways (DriveBC). No other road operator is read yet, so the rest of the world shows no road notices at all.",
+    coverage: "Greater London (TfL), British Columbia's provincial highways (DriveBC) and New South Wales (Transport for NSW). No other road operator is read yet, so the rest of the world shows no road notices at all.",
     limitations: [
       "Closed is per road: one TfL notice can close one stretch and leave the next open, and the open stretch is drawn by the works or incidents layer. DriveBC gives one line per event, so a closed DriveBC event's whole line is drawn closed.",
       "No line does not mean an open road: each operator lists the closures it knows about.",
