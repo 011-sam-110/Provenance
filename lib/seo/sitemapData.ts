@@ -11,7 +11,7 @@ import { getRegistry } from "@/lib/sources/registry";
 import { buildSitemapShards, type SitemapShard, type SitemapResult } from "@/lib/seo/directory";
 
 /** Static pages that are not part of the camera directory. */
-export const STATIC_PATHS = ["/app", "/locate"];
+export const STATIC_PATHS = ["/app", "/eye", "/locate"];
 
 /**
  * Response for a sitemap route that must not publish what it cannot vouch for.

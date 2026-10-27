@@ -12,10 +12,22 @@
 
 import { useEffect, useState } from "react";
 import type maplibregl from "maplibre-gl";
+import Mark from "@/components/brand/Mark";
 import { BRAND } from "@/lib/brand";
 import type { EyeClock } from "@/lib/eye/motion";
-import type { EyeView } from "@/lib/eye/places";
-import { fmtClockUtc, fmtHeading, fmtLat, fmtLon, refreshedText, type LedgerRow } from "@/lib/eye/wording";
+import { EYE_PLACES, eyePlaceHref, type EyeView } from "@/lib/eye/places";
+import {
+  fmtClockUtc,
+  fmtHeading,
+  fmtLat,
+  fmtLon,
+  PLACES_LABEL,
+  refreshedText,
+  SOURCES_LABEL,
+  sourcesHint,
+  sourcesName,
+  type LedgerRow,
+} from "@/lib/eye/wording";
 import styles from "./eye.module.css";
 
 interface Readout {
@@ -78,8 +90,12 @@ export interface EyeHudProps {
   phoneNote?: string;
   /** Every source drawn, from MapLibre's own attribution (creditsFromAttribution). */
   credits: string[];
-  /** The console at the spot on screen NOW, read when the link is used. */
-  getBackHref: () => string;
+  /** The console at the spot on screen NOW, with its Sources rail open; read when the link is used. */
+  getSourcesHref: () => string;
+  /** How many rows the console's Sources rail draws (lib/eye/railCount.ts), for the hint. */
+  sourceCount: number;
+  /** The preset on screen, if the view is one, so the place picker can mark it. */
+  placeId?: string;
   /** Recording: no buttons over the picture. */
   record: boolean;
   /** The wall clock, or a film's own under clock=manual (lib/eye/motion.ts). */
@@ -96,7 +112,9 @@ export default function EyeHud({
   refreshedAt,
   phoneNote,
   credits,
-  getBackHref,
+  getSourcesHref,
+  sourceCount,
+  placeId,
   record,
   clock,
   children,
@@ -108,9 +126,11 @@ export default function EyeHud({
   const fresh = !record && refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;
   // The href is set as the link is used, so it is the spot on screen then, without a
   // re-render on every pan. Pointer-down covers a middle click, focus a keyboard.
-  const refreshBack = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
-    e.currentTarget.href = getBackHref();
+  const refreshSources = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
+    e.currentTarget.href = getSourcesHref();
   };
+  // The place picker on a phone: a short list over the bar, opened by "Places".
+  const [placesOpen, setPlacesOpen] = useState(false);
 
   return (
     <div className={styles.hud}>
@@ -125,6 +145,11 @@ export default function EyeHud({
       {/* data-eye-keep: EyeOverlay places no card or tag over these. */}
       <header className={styles.top} data-eye-keep>
         <div className={styles.placeBlock}>
+          {/* Who this is, for a visitor who arrived from a reel or a link: the landing page. */}
+          <a className={styles.id} href="/">
+            <Mark size={20} className={styles.mark} />
+            {BRAND.name}
+          </a>
           <h1 className={styles.place}>{title}</h1>
           <p className={styles.sub}>
             {area && (
@@ -136,6 +161,20 @@ export default function EyeHud({
             Heading {fmtHeading(readout.heading)}°<span className={styles.sep} />
             Tilt {Math.round(readout.tilt)}°
           </p>
+          {!record && (
+            <nav className={`${styles.places} ${styles.long}`} aria-label={PLACES_LABEL}>
+              {EYE_PLACES.map((p) => (
+                <a
+                  key={p.id}
+                  className={styles.chip}
+                  href={eyePlaceHref(p.id)}
+                  aria-current={p.id === placeId ? "page" : undefined}
+                >
+                  {p.name}
+                </a>
+              ))}
+            </nav>
+          )}
         </div>
         <div className={styles.topRight}>
           <p className={styles.clockBlock} aria-label="Time now, UTC">
@@ -165,18 +204,45 @@ export default function EyeHud({
       <footer className={styles.bottom} data-eye-keep>
       {!record && (
         <nav className={styles.controls} aria-label="View controls" data-eye-keep>
-          {children}
-          {/* A full page load, not a client-side route: the console boots its own
-              stores from scratch, and nothing this page set in memory reaches it. */}
+          {/* SOURCES. On a phone it is the console's own thumb control, kept as it was:
+              the "≡ Sources" button at the bottom left, in thumb reach, which opens the
+              Sources rail as a sheet with its grip (.tn-rail-fab and the .tn-rail sheet in
+              app/globals.css). Here it opens that same sheet in the console, at this spot.
+              A full page load, not a client-side route: the console boots its own stores
+              from scratch, and nothing this page set in memory reaches it. */}
           <a
-            className={styles.btn}
-            href="/app"
-            onPointerDown={refreshBack}
-            onFocus={refreshBack}
-            onClick={refreshBack}
+            className={styles.sourcesBtn}
+            href="/app?sources=open"
+            aria-label={sourcesName(sourceCount)}
+            onPointerDown={refreshSources}
+            onFocus={refreshSources}
+            onClick={refreshSources}
           >
-            Back to the console
+            <span className={styles.bars} aria-hidden>
+              ≡
+            </span>
+            <b>{SOURCES_LABEL}</b>
+            <small className={styles.long}>{sourcesHint(sourceCount)}</small>
           </a>
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.short}`}
+            aria-expanded={placesOpen}
+            onClick={() => setPlacesOpen((o) => !o)}
+          >
+            {PLACES_LABEL}
+          </button>
+          {children}
+        </nav>
+      )}
+      {!record && placesOpen && (
+        <nav className={`${styles.placeSheet} ${styles.short}`} aria-label={PLACES_LABEL}>
+          {EYE_PLACES.map((p) => (
+            <a key={p.id} href={eyePlaceHref(p.id)} aria-current={p.id === placeId ? "page" : undefined}>
+              <b>{p.name}</b>
+              <span>{p.area}</span>
+            </a>
+          ))}
         </nav>
       )}
         {phoneNote && <span className={styles.short}>{phoneNote}</span>}

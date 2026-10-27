@@ -112,16 +112,16 @@
  * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
  * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
  * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
- * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * across 480 files, exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
  * just add.
  *
- * Re-measured 2026-10-27 on feat/ip-location (origin/main at 7f1101e, after #300 and #298): the
- * IP location tool adds `recon-geo`, `recon-geo-area` and `recon-geo-guards`, one case to
- * `recon-threat`, and one route, which `route-export-contract` checks as one more case.
- * `npx vitest run`: 5,606 cases across 483 files.
+ * 2026-10-27, feat/eye-default (God's eye view as the map behind "Open the map"): adds
+ * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
+ * case in `eye-page`. Merged with origin/main at 7f1101e (#298, #300): `npx vitest list` on
+ * the merged tree: 5,604 cases across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5606,
+  cases: 5604,
   files: 483,
   measuredAt: "2026-10-27",
 } as const;

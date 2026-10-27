@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+import { EYE_CONSOLE_LAYERS, consoleHref, hasSavedBoard } from "@/lib/eye/places";
+import { railSourceCount } from "@/lib/eye/railCount";
+import { sourcesHint, sourcesName } from "@/lib/eye/wording";
+import { SOURCES_PARAM, wantsSourcesOpen, withoutSourcesFlag } from "@/lib/console/sourcesLink";
+import { ACTIVE_LAYERS } from "@/lib/layers";
+import { decodeViewState } from "@/lib/share/url";
+import { PERSIST_KEY } from "@/lib/variants/store";
+import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
+import { buildSourceSections } from "@/lib/console/sources/sections";
+
+/**
+ * God's eye view's Sources button (components/eye/EyeHud.tsx) and the landing page's
+ * "All sources" open the console with its Sources rail open. These are the rules
+ * behind that link, held without a browser.
+ */
+
+const VIEW = { lat: 51.50135, lon: -0.1218, zoom: 15.9 };
+const query = (href: string) => new URLSearchParams(href.slice(href.indexOf("?") + 1));
+
+describe("the Sources link", () => {
+  it("opens the console at the same spot with the rail open", () => {
+    const href = consoleHref(VIEW, { sources: true });
+    expect(href.startsWith("/app?")).toBe(true);
+    const q = query(href);
+    expect(q.get("lat")).toBe("51.50135");
+    expect(q.get("lon")).toBe("-0.1218");
+    expect(q.get("z")).toBe("15.9");
+    expect(wantsSourcesOpen(q)).toBe(true);
+    // Without `scene`, the console keeps the visitor's own layers and ground.
+    expect(q.has("layers")).toBe(false);
+    expect(q.has("base")).toBe(false);
+  });
+
+  it("carries the scene's layers and ground only when asked, in keys the console reads", () => {
+    const q = query(consoleHref(VIEW, { sources: true, scene: true }));
+    expect(q.get("layers")).toBe("livecams,staticcams,planes");
+    expect(q.get("base")).toBe("satellite");
+    for (const k of EYE_CONSOLE_LAYERS) expect(ACTIVE_LAYERS).toContain(k);
+    // The console's own decoder reads them back, so the link is not a dead letter.
+    const state = decodeViewState(q);
+    expect(state.layers).toEqual(["livecams", "staticcams", "planes"]);
+    expect(state.basemap).toBe("satellite");
+  });
+
+  it("keeps the old plain link when no option is given", () => {
+    expect(consoleHref(VIEW)).toBe("/app?lat=51.50135&lon=-0.1218&z=15.9");
+  });
+});
+
+describe("a saved console board keeps its own layers", () => {
+  it("reads the variant spine's own key", () => {
+    expect(PERSIST_KEY).toBe("tn.variant.v1");
+    const store = new Map([[PERSIST_KEY, "{}"]]);
+    expect(hasSavedBoard({ getItem: (k) => store.get(k) ?? null }, PERSIST_KEY)).toBe(true);
+  });
+
+  it("treats no storage, an empty storage and a throwing storage as no board", () => {
+    expect(hasSavedBoard(undefined, PERSIST_KEY)).toBe(false);
+    expect(hasSavedBoard({ getItem: () => null }, PERSIST_KEY)).toBe(false);
+    const throwing = {
+      getItem(): string | null {
+        throw new Error("SecurityError");
+      },
+    };
+    expect(hasSavedBoard(throwing, PERSIST_KEY)).toBe(false);
+  });
+});
+
+describe("sources=open on the console", () => {
+  it("opens the rail only for the exact value", () => {
+    expect(SOURCES_PARAM).toBe("sources");
+    expect(wantsSourcesOpen(new URLSearchParams("sources=open"))).toBe(true);
+    expect(wantsSourcesOpen(new URLSearchParams("sources=1"))).toBe(false);
+    expect(wantsSourcesOpen(new URLSearchParams("sources="))).toBe(false);
+    expect(wantsSourcesOpen(new URLSearchParams("lat=1"))).toBe(false);
+  });
+
+  it("drops the flag and keeps everything else, in order", () => {
+    expect(withoutSourcesFlag("/app", "?lat=51.5&sources=open&z=15", "#x")).toBe("/app?lat=51.5&z=15#x");
+    expect(withoutSourcesFlag("/app", "?sources=open")).toBe("/app");
+    expect(withoutSourcesFlag("/app", "")).toBe("/app");
+  });
+});
+
+describe("the hint under Sources", () => {
+  it("counts the rows the Sources rail draws, from the rail's own list", () => {
+    const rows = buildSourceSections(RAIL_SOURCES).flatMap((s) => s.rows);
+    expect(railSourceCount()).toBe(rows.length);
+    expect(railSourceCount()).toBeGreaterThan(20);
+  });
+
+  it("says the count and where the button goes", () => {
+    expect(sourcesHint(51)).toBe("51 on the full map");
+    expect(sourcesName(51)).toBe("Sources: open the full map with all 51 sources");
+  });
+});

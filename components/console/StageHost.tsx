@@ -8,6 +8,9 @@ import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
 import Hud from "@/components/hud/Hud";
 import IssOrbit from "@/components/console/IssOrbit";
+import MapBoundary from "@/components/map/MapBoundary";
+import MapFallback from "@/components/map/MapFallback";
+import { useWebGL } from "@/components/map/useWebGL";
 
 // The map is the product's centre stage, so give it a real loading state. It used
 // to fall back to `null`, which meant any failure to mount rendered a silent grey
@@ -25,6 +28,8 @@ const WorldMap = dynamic(() => import("@/components/WorldMap"), {
 
 export default function StageHost({ stage }: { stage: StageId }) {
   const { focusedWidgetId, widgets } = useShellLayout();
+  // With no WebGL the map cannot start: the stage says so instead (lib/map/webgl.ts).
+  const gl = useWebGL();
   // The map reads viewModeStore for its MapLibre projection: 3D=globe(explore), 2D=flat(console).
   useEffect(() => {
     if (stage === "map3d") viewModeStore.set("explore");
@@ -42,11 +47,12 @@ export default function StageHost({ stage }: { stage: StageId }) {
   // anchor inside). Hud renders null while its Map-settings pref is off;
   // IssOrbit renders null ALWAYS — it exists to drive the camera while the
   // ISS-orbit pref is on. A focused widget unmounts all three together.
+  if (gl === false) return <MapFallback tone="light" />;
   return (
-    <>
+    <MapBoundary fallback={<MapFallback tone="light" />}>
       <WorldMap />
       <Hud />
       <IssOrbit />
-    </>
+    </MapBoundary>
   );
 }
