@@ -79,6 +79,7 @@ import { RELIEFWEB_SOURCE } from "@/lib/signals/reliefweb";
 import { GRID_LOAD_SOURCE } from "@/lib/signals/entsoe";
 import { HEADLINE_PLACES_SOURCE } from "@/lib/signals/headline-places";
 import { ROAD_CLOSURES_SOURCE, ROAD_INCIDENTS_SOURCE, ROAD_WORKS_SOURCE } from "@/lib/signals/roads";
+import { ROAD_SPEED_SOURCE } from "@/lib/signals/road-speed";
 
 /** Every registered signal layer, in rail display order. */
 export const SIGNALS: SignalSource[] = [
@@ -158,6 +159,9 @@ export const SIGNALS: SignalSource[] = [
   ROAD_WORKS_SOURCE,
   ROAD_INCIDENTS_SOURCE,
   ROAD_CLOSURES_SOURCE,
+  // The one road layer that is a measurement: Hong Kong's segment speeds (keyless,
+  // Transport Department via DATA.GOV.HK), solid lines. See lib/signals/road-speed.ts.
+  ROAD_SPEED_SOURCE,
 ];
 
 /**

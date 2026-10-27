@@ -748,6 +748,19 @@ const EXPLAINERS: LayerExplainer[] = [
       "Each notice's time is its operator's own last change to it. The server asks each operator every 2 minutes, and TfL's own cache can hold its answer for up to 5 minutes more.",
     ],
   },
+  {
+    id: "road-speed",
+    whatItShows: "The average speed the Transport Department measured on one Hong Kong road segment in its latest 2-minute reading, drawn as a solid line along the segment: green 70 km/h and over, yellow 40 to 70, orange under 40.",
+    method: "Read from the Transport Department's segment speeds on DATA.GOV.HK (irnAvgSpeed, keyless, every 2 minutes). Each segment is placed on its own line from the Department's Road Network on the CSDI Portal, joined once into a committed file. A reading the Department marks invalid is not drawn.",
+    confidence: "measured",
+    coverage: "Hong Kong only: the 4,525 segments the Department publishes a speed for (4,502 of them with a line). No other city's speeds are read yet, so everywhere else the map shows no speed at all.",
+    limitations: [
+      "No colour does not mean a clear road: a road with no measured segment is simply not measured.",
+      "The bands are fixed speeds, not the road's own limit, so a 50 km/h street at its limit reads yellow and a motorway in a queue can still read green.",
+      "The time is the file's one time for all its readings, in Hong Kong time (UTC+8). The server asks every 2 minutes.",
+      "Segment ids come from the Department's network version 2022-12-10, and the lines from its current network. 23 ids have no line there and are not drawn.",
+    ],
+  },
 ];
 
 const BY_ID = new Map(EXPLAINERS.map((e) => [e.id, e]));

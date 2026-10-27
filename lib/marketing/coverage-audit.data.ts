@@ -687,6 +687,18 @@ export const AUDIT_LAYERS: AuditLayer[] = [
     "spansCountries": false,
     "state": "down",
     "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: on 2026-10-27 TfL's keyless road disruptions feed answered 126 notices (07:09Z) and DriveBC's Open511 feed 290 events (07:59Z), of which this layer draws 30 from TfL and 18 from DriveBC (notices with a road the operator marks closed), counted from provenance-1 rather than from production. Re-run the breakdown after the next deploy and this row is replaced with a real one."
+  },
+  {
+    "id": "road-speed",
+    "label": "Road speed (measured, Hong Kong)",
+    "group": "Roads",
+    "tier": "readings",
+    "features": 0,
+    "placed": 0,
+    "countries": 0,
+    "spansCountries": false,
+    "state": "down",
+    "note": "NOT MEASURED IN THE RUN ABOVE - this layer was registered on 2026-10-27, after AUDIT_MEASURED_AT, so a zero here is a placeholder rather than a reading and the totals stay reconciled to the one production run they came from. It is not dormant: the Transport Department's speed file of 2026-10-27 16:43 Hong Kong time held 4,525 segments, 4,479 of them valid, read from the laptop rather than from production. Re-run the breakdown after the next deploy and this row is replaced with a real one."
   }
 ];
 
@@ -3532,10 +3544,10 @@ export const AUDIT_TIERS: AuditTierTotal[] = [
 ];
 
 export const AUDIT_TOTALS = {
-  "layers": 52,
+  "layers": 53,
   "live": 29,
   "partial": 1,
-  "down": 20,
+  "down": 21,
   "locked": 2,
   "featuresServed": 9016,
   "featuresPlaced": 8485,
