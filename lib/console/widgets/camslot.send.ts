@@ -268,9 +268,9 @@ function sendToExisting(id: string, picks: readonly PickedCamera[]): SendResult 
   // board — which on the Streets board is exactly where the walls are.
   revealWidget(id);
 
-  // `available` is deliberately omitted. describeAppend prints "N with a live feed"
+  // `available` is deliberately omitted. describeAppend prints "N with a working feed"
   // from it, and the basket does not carry availability — passing picks.length would
-  // be asserting every pick is live, which is a coverage claim we cannot make.
+  // be asserting every pick is working, which is a coverage claim we cannot make.
   const message = describeAppend(plan, { cap, capSetBySeconds, capMixed });
 
   if (plan.added === 0) return { ok: false, message, widgetId: id };

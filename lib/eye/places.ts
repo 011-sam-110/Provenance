@@ -188,16 +188,61 @@ export function eyeCameraHref(cameraId: string, lat: number, lon: number): strin
 }
 
 /**
- * The console at this spot, in the console's own link format (lib/share/url.ts). Only
- * the camera goes back: the console keeps its own layers and basemap per browser.
+ * The console's own layer keys (ACTIVE_LAYERS in lib/layers.ts) for what this view
+ * draws: road cameras of both tiers and aircraft. Vessels are left out because `ships`
+ * is only a PLANNED key there; the console draws them as a signal layer.
  */
-export function consoleHref(view: Pick<EyeView, "lat" | "lon" | "zoom">): string {
+export const EYE_CONSOLE_LAYERS = ["livecams", "staticcams", "planes"] as const;
+
+export interface ConsoleLinkOptions {
+  /** Open the Sources rail on arrival (`sources=open`, lib/console/sourcesLink.ts). */
+  sources?: boolean;
+  /**
+   * Carry this view's layers and its satellite ground. ONLY for a browser with no saved
+   * console board: the console saves a link's `layers=` over the visitor's own toggles,
+   * so a returning visitor must keep theirs. EyeHud decides, from localStorage, when the
+   * link is used.
+   */
+  scene?: boolean;
+}
+
+/**
+ * The console at this spot, in the console's own link format (lib/share/url.ts). Only
+ * the camera goes back unless `scene` is set: the console keeps its own layers and
+ * basemap per browser.
+ */
+export function consoleHref(view: Pick<EyeView, "lat" | "lon" | "zoom">, opts: ConsoleLinkOptions = {}): string {
   const p = new URLSearchParams();
   p.set("lat", String(r(view.lat, 5)));
   p.set("lon", String(r(view.lon, 5)));
   p.set("z", String(r(clamp(view.zoom, 0, EYE_MAX_ZOOM), 2)));
+  if (opts.scene) {
+    p.set("layers", EYE_CONSOLE_LAYERS.join(","));
+    p.set("base", "satellite");
+  }
+  if (opts.sources) p.set("sources", "open");
   return `/app?${p.toString()}`;
 }
 
 /** The console's map must be at least this close for "open this spot" to mean a city. */
 export const EYE_LINK_MIN_CONSOLE_ZOOM = 12;
+
+/** The part of localStorage the check below reads. */
+export interface ItemReader {
+  getItem(key: string): string | null;
+}
+
+/**
+ * Does this browser hold a saved console board? `key` is the variant spine's own key
+ * (PERSIST_KEY in lib/variants/store.ts), passed in so this file stays free of the
+ * console's stores. A storage that throws (blocked site data, a private window) holds
+ * nothing the console could keep, so it counts as no board.
+ */
+export function hasSavedBoard(storage: ItemReader | undefined, key: string): boolean {
+  if (!storage) return false;
+  try {
+    return storage.getItem(key) != null;
+  } catch {
+    return false;
+  }
+}

@@ -242,11 +242,13 @@ export function describeAppend(plan: AppendPlan, opts: AppendNoteOpts): string {
 
   const bits: string[] = [];
   if (considered > added) {
-    const live =
+    // "working", not "live": `available` counts every camera whose feed answered,
+    // stills included, and a still is not live.
+    const working =
       typeof opts.available === "number" && opts.available !== considered
-        ? `, ${opts.available} with a live feed`
+        ? `, ${opts.available} with a working feed`
         : "";
-    bits.push(`${plural(considered, "camera")} here${live}.`);
+    bits.push(`${plural(considered, "camera")} here${working}.`);
     bits.push(`Added the ${added} nearest the centre.`);
   } else {
     bits.push(`Added ${plural(added, "camera")}.`);

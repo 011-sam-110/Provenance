@@ -161,7 +161,7 @@ function PortsBody({ report }: { report: (n: number) => void }) {
     )}</ToolShell>;
 }
 
-interface ThreatData { ok: boolean; reason?: string; ip?: string; baseline?: { ip: string; tags: string[]; vulns: string[]; flagged: boolean } | null; providers: { id: string; label: string; envKey: string; locked: boolean }[] }
+interface ThreatData { ok: boolean; reason?: string; ip?: string; baseline?: { ip: string; tags: string[]; vulns: string[]; flagged: boolean } | null; providers: { id: string; label: string; envKey: string; locked: boolean; state?: "locked" | "unwired" | "on" }[] }
 function ThreatBody({ report }: { report: (n: number) => void }) {
   const lk = useReconLookup<ThreatData>("threat");
   return <ToolShell tool="threat" label="Threat intel" lookup={lk} report={report}>{(d) => (
@@ -175,9 +175,15 @@ function ThreatBody({ report }: { report: (n: number) => void }) {
       {d.providers?.length > 0 && (
         <div className="tn-recon-providers">
           {d.providers.map((p) => (
-            <div key={p.id} className={`tn-recon-provider${p.locked ? " is-locked" : ""}`}>
-              <span>{p.locked ? "🔒" : "✓"} {p.label}</span>
-              {p.locked && <span className="tn-recon-env">set {p.envKey}</span>}
+            // A tick only when the route reads the provider. A key with nothing reading
+            // it is not "configured" (lib/recon/threat.ts, SlotState).
+            <div key={p.id} className={`tn-recon-provider${p.state === "on" ? "" : " is-locked"}`}>
+              <span>{p.state === "on" ? "✓" : "🔒"} {p.label}</span>
+              {p.state === "unwired" ? (
+                <span className="tn-recon-env">key set, not read yet</span>
+              ) : p.state !== "on" ? (
+                <span className="tn-recon-env">set {p.envKey}</span>
+              ) : null}
             </div>
           ))}
         </div>

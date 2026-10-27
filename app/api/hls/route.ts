@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getCameraById } from "@/lib/sources/registry";
 import { isHlsAllowed } from "@/lib/proxy/hls-allowlist";
 import { rewritePlaylist } from "@/lib/proxy/hls-rewrite";
+import { fetchHlsUpstream } from "@/lib/proxy/hls-upstream";
 import {
   PLAYLIST_CACHE_CONTROL,
   SEGMENT_BROWSER_TTL_SECONDS,
@@ -38,17 +39,9 @@ export async function GET(req: NextRequest) {
   const range = req.headers.get("range");
   let res: Response;
   try {
-    res = await fetch(target.toString(), {
-      headers: {
-        Referer: verdict.referer ?? "",
-        "User-Agent": "TrafficNerd/2.0 (+https://github.com/011-sam-110/TrafficNerd-V2)",
-        Accept: "*/*",
-        ...(range ? { Range: range } : {}),
-      },
-      cache: "no-store",
-      redirect: "error",
-      signal: AbortSignal.timeout(10_000),
-    });
+    // The same function the play checker uses (lib/liveness/playcheck.ts), so the check
+    // that decides which cameras show as video asks the operator exactly as this does.
+    res = await fetchHlsUpstream(target, verdict.referer, range);
   } catch (err) {
     // Logged rather than swallowed: a bare `catch {}` here meant every transport-level
     // failure — DNS, TLS, connection reset, the 10 s abort — arrived as one

@@ -86,3 +86,23 @@ export interface LedgerRow {
   /** Phone: the label under the count. */
   short: string;
 }
+
+// ── The way out to the console, and the place picker ──────────────────────────
+//
+// The Sources button opens the console at the spot on screen, with its Sources rail
+// open (lib/console/sourcesLink.ts). Its hint counts the rows that rail draws, read
+// at build time from RAIL_SOURCES by app/(console)/eye/page.tsx: never typed here.
+
+export const SOURCES_LABEL = "Sources";
+
+/** The hint under "Sources" on a wide screen. */
+export function sourcesHint(count: number): string {
+  return `${count} on the full map`;
+}
+
+/** The accessible name of the Sources button, which says where it goes. */
+export function sourcesName(count: number): string {
+  return `Sources: open the full map with all ${count} sources`;
+}
+
+export const PLACES_LABEL = "Places";
