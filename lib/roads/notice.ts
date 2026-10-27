@@ -60,6 +60,12 @@ export interface RoadNotice {
   closedLines: [number, number][][];
   /** When the operator last changed it, as the operator wrote it (ISO 8601). */
   updated?: string;
+  /**
+   * The Provenance ids of the cameras the operator itself links to this notice, e.g.
+   * "castlerock:fl:1696" (lib/roads/nearCamera.ts puts such a notice first on that
+   * camera's card). Only Castle Rock gives them today.
+   */
+  cameras?: string[];
 }
 
 /** The operator's newest change among these notices, in epoch ms, or null if none says. */

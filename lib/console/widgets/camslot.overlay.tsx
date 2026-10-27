@@ -16,6 +16,7 @@
 // running its own timer.
 
 import { frameAge, type Claim, type Density } from "@/lib/console/widgets/camslot.conditions";
+import type { cameraRoadTileWords } from "@/lib/roads/nearCamera";
 
 export function CamslotConditions({
   claim,
@@ -25,6 +26,7 @@ export function CamslotConditions({
   lastSampledAt,
   density,
   now,
+  road,
 }: {
   claim: Claim;
   weather: { text: string; title: string } | null;
@@ -33,6 +35,8 @@ export function CamslotConditions({
   lastSampledAt: string | undefined;
   density: Density;
   now: number;
+  /** The camera's road (lib/roads/nearCamera.ts), for a road camera an operator covers. */
+  road?: ReturnType<typeof cameraRoadTileWords>;
 }) {
   if (density === "hidden") return null;
 
@@ -85,6 +89,16 @@ export function CamslotConditions({
           </span>
         )}
       </div>
+      {/* Between the two rows, which take their sizes from :first-child and :last-child. */}
+      {road && (
+        <div className="tn-cscond-row tn-cscond-road" data-tone={road.tone}>
+          <span className="tn-cscond-roadmark" aria-hidden="true" />
+          <span className="tn-cscond-roadtext" title={road.title}>
+            {road.text}
+          </span>
+          {road.aside && <span className="tn-cscond-roadaside">{road.aside}</span>}
+        </div>
+      )}
       <div className="tn-cscond-row">
         <span className="tn-cscond-time">
           {place.clock} {place.offset}

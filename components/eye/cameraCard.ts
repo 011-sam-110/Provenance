@@ -30,6 +30,7 @@ import {
   type NearCamera,
 } from "@/lib/eye/cameras";
 import type { EyeClock } from "@/lib/eye/motion";
+import type { cameraRoadTileWords } from "@/lib/roads/nearCamera";
 import styles from "./eye.module.css";
 
 /** The clips on screen in a film, moved on by stepClips. */
@@ -136,6 +137,8 @@ export class CameraCard {
   private readonly frame: HTMLDivElement;
   private readonly chip: HTMLElement;
   private readonly meta: HTMLElement;
+  /** The camera's road (lib/roads/nearCamera.ts), under the words; hidden until set. */
+  private readonly road: HTMLElement;
   private shown: HTMLElement | null = null;
   private showing: CardMedia | null = null;
   private takenAt: number | null = null;
@@ -182,12 +185,40 @@ export class CameraCard {
     this.meta.textContent = "Loading";
     line.append(this.chip, this.meta);
     text.append(name, line);
-    plate.append(this.frame, text);
+    this.road = document.createElement("p");
+    this.road.className = styles.road;
+    this.road.hidden = true;
+    plate.append(this.frame, text, this.road);
     const stalk = document.createElement("i");
     stalk.className = styles.stalk;
     el.append(plate, stalk);
 
     void this.load(preferredMedia(cam, this.film));
+  }
+
+  /**
+   * What the road operators say about this camera's road, in the camera wall's one-line
+   * words. Null hides the line: no operator's notices are read here.
+   */
+  setRoad(words: ReturnType<typeof cameraRoadTileWords>): void {
+    if (!words) {
+      this.road.hidden = true;
+      return;
+    }
+    const mark = document.createElement("i");
+    mark.setAttribute("aria-hidden", "true");
+    const text = document.createElement("span");
+    text.textContent = words.text;
+    const parts: HTMLElement[] = [mark, text];
+    if (words.aside) {
+      const aside = document.createElement("em");
+      aside.textContent = words.aside;
+      parts.push(aside);
+    }
+    this.road.replaceChildren(...parts);
+    this.road.dataset.tone = words.tone;
+    this.road.title = words.title;
+    this.road.hidden = false;
   }
 
   /** What the card shows now, or null while it loads. */

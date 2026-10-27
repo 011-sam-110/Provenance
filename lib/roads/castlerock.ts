@@ -170,6 +170,7 @@ export function normalizeCastleRock(
     const comment = plain(r.comment);
     const street = plain(r.roadwayName);
     const updated = castleRockTime(r.lastUpdated, tz);
+    const cameras = linkedCameras(r, system.system);
     out.push({
       id: `${system.system}/${String(r.id)}`,
       kind: layer === "Closures" && !closesWork ? "incident" : kind,
@@ -185,9 +186,25 @@ export function normalizeCastleRock(
       openLines: [],
       closedLines: [],
       ...(updated ? { updated } : {}),
+      ...(cameras.length > 0 ? { cameras } : {}),
     });
   }
   return out;
+}
+
+/**
+ * Pure: the cameras a row names, as the camera adapter's ids ("castlerock:fl:1696",
+ * lib/sources/castlerock.ts). The row's `cameraIds` ("1696,1369"), else its `cameras`.
+ */
+export function linkedCameras(row: Record<string, unknown>, system: string): string[] {
+  const listed =
+    typeof row.cameraIds === "string" && row.cameraIds.trim()
+      ? row.cameraIds.split(",")
+      : Array.isArray(row.cameras)
+        ? (row.cameras as { id?: unknown }[]).map((c) => (c && (typeof c.id === "number" || typeof c.id === "string") ? String(c.id) : ""))
+        : [];
+  const ids = listed.map((s) => s.trim()).filter((s) => /^\d+$/.test(s));
+  return [...new Set(ids)].map((id) => `castlerock:${system}:${id}`);
 }
 
 async function postPage(site: string, layer: CastleRockLayer, start: number): Promise<{ data: unknown[]; total: number }> {

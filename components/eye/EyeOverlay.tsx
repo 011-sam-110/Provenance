@@ -71,6 +71,7 @@ import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
 import type { LedgerRow } from "@/lib/eye/wording";
 import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
+import { CAMERA_ROAD_MAX, cameraRoadParam, cameraRoadTileWords, type CameraRoad } from "@/lib/roads/nearCamera";
 import { Tag, tagSize } from "./tag";
 
 export interface OverlayReport {
@@ -121,8 +122,11 @@ const roadWidth = (at14: number, at17: number): maplibregl.ExpressionSpecificati
 /** TfL's heavier severities (Moderate and up) are drawn opaque, the lighter ones fainter. */
 const ROAD_OPACITY: maplibregl.ExpressionSpecification = ["case", ["==", ["get", "heavy"], true], 0.95, 0.65];
 
-const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 40, stalk: 52, max: 5 };
-const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 46, stalk: 34, max: 3 };
+/** The camera roads are asked again this often, as the camera wall does. */
+const CAMERA_ROAD_EVERY_MS = 120_000;
+// The words take 40 (46 on a phone) under the picture, and the camera's road line 20 (18).
+const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 60, stalk: 52, max: 5 };
+const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 64, stalk: 34, max: 3 };
 const MAX_TAGS = { wide: { ship: 8, plane: 3, road: 2 }, phone: { ship: 4, plane: 2, road: 1 } } as const;
 
 /** How often each feed is asked again. The server's own cadence for each. */
@@ -229,6 +233,8 @@ interface State {
   refreshedAt?: number;
   cards: Map<string, { card: CameraCard; marker: maplibregl.Marker }>;
   tags: Map<string, Tag>;
+  /** Each camera's road (/api/camera-road), by camera id; null until it answers. */
+  roads: Map<string, CameraRoad> | null;
 }
 
 export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, onReport, placeRef }: Props) {
@@ -243,6 +249,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     planesFetchedAt: null,
     cards: new Map(),
     tags: new Map(),
+    roads: null,
   });
   const reportRef = useRef(onReport);
   reportRef.current = onReport;
@@ -531,6 +538,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const card = new CameraCard(cam, { phone: portrait, clock, onMedia: clipsChanged });
         card.el.style.setProperty("--w", `${size.width}px`);
         card.el.style.setProperty("--stalk", `${size.stalk}px`);
+        const road = s.roads?.get(cam.id);
+        if (road) card.setRoad(cameraRoadTileWords(road, clock.now()));
         const marker = new maplibregl.Marker({ element: card.el, anchor: "bottom" }).setLngLat([cam.lon, cam.lat]).addTo(map);
         s.cards.set(p.id, { card, marker });
       }
@@ -663,10 +672,28 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
 
+    // What the road operators say about each camera's road. Asked once the cameras are
+    // known, then with the other feeds; a failed ask keeps the last answer.
+    const loadRoads = () => {
+      const cams = s.cams ?? [];
+      if (cams.length === 0) return;
+      const qs = cams.slice(0, CAMERA_ROAD_MAX).map((c) => `c=${encodeURIComponent(cameraRoadParam(c))}`).join("&");
+      void getJson(`/api/camera-road?${qs}`).then((d: { roads?: Record<string, CameraRoad> } | null) => {
+        if (disposed || !d?.roads) return;
+        s.roads = new Map(Object.entries(d.roads));
+        const now = clock.now();
+        for (const [id, { card }] of s.cards) {
+          const road = s.roads.get(id);
+          if (road) card.setRoad(cameraRoadTileWords(road, now));
+        }
+      });
+    };
+
     void getJson(`/api/near?lat=${lat}&lon=${lon}&n=25`).then((d: { cameras?: NearCamera[] } | null) => {
       if (disposed) return;
       s.cams = nearCameras(d?.cameras ?? []);
       landed();
+      loadRoads();
     });
 
     const loadShips = () =>
@@ -723,6 +750,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           setInterval(loadShips, AIS_EVERY_MS),
           setInterval(loadPlanes, PLANES_EVERY_MS),
           ...(london ? [setInterval(loadStreets, STREETS_EVERY_MS)] : []),
+          setInterval(loadRoads, CAMERA_ROAD_EVERY_MS),
         ];
 
     // The age on every card: re-worded twice a minute, or at each step of a film.

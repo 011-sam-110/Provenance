@@ -191,7 +191,9 @@ obligations and are not satisfied by the licence.
   `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
   (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
-  disruptions for `/eye`), and the two doors
+  disruptions for `/eye`), `camera-road` (what the road operators say about each camera's
+  road, for the camera detail, the camera wall and the `/eye` cards; `lib/roads/nearCamera.ts`),
+  and the two doors
   `middleware.ts` opens, `gate` and `private`.
 - **`middleware.ts` runs before every route its `matcher` does not exempt, and does three
   things in a fixed order.** (1) 301s the legacy `.vercel.app` host to the `.com`

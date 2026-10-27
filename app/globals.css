@@ -743,6 +743,20 @@ a { color: var(--tn-accent); }
 .cam-detail .dot.off { background: var(--tn-text-faint); }
 .cam-detail .cam-open { display: inline-block; margin-top: 14px; font-size: 13px; }
 .cam-detail .cam-loading { display: grid; place-items: center; aspect-ratio: 16 / 9; border-radius: 10px; background: var(--tn-surface-2); color: var(--tn-text-faint); font-size: 13px; }
+/* The camera's road (components/CameraRoad.tsx). The mark takes the road layers' own
+   colours (lib/signals/roads.ts): a notice is a filled ring, a closure a filled bar, and
+   no notice an empty ring. */
+.cam-detail .cam-road { margin: 12px 0 0; padding: 10px 0; border-top: 1px solid var(--tn-border); border-bottom: 1px solid var(--tn-border); display: grid; gap: 4px; }
+.cam-detail .cam-road p { margin: 0; }
+.cam-detail .cam-road-head { display: grid; grid-template-columns: 12px 1fr auto; column-gap: 8px; align-items: baseline; font-size: 13.5px; color: var(--tn-text); }
+.cam-detail .cam-road-head b { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.cam-detail .cam-road-head time { font-size: 11.5px; color: var(--tn-text-faint); white-space: nowrap; }
+.cam-detail .cam-road-mark { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #e11d48; background: #e11d48; display: inline-block; align-self: center; }
+.cam-detail .cam-road[data-tone="closed"] .cam-road-mark { border-radius: 1px; border-color: #be123c; background: #be123c; height: 5px; }
+.cam-detail .cam-road[data-tone="none"] .cam-road-mark { background: transparent; border-color: var(--tn-text-faint); }
+.cam-detail .cam-road .cam-road-detail { margin-left: 20px; font-size: 12.5px; color: var(--tn-text-muted); }
+.cam-detail .cam-road[data-tone="none"] > .cam-road-detail:only-child { margin-left: 0; }
+.cam-detail .cam-road .cam-road-credit { margin-left: 20px; font-size: 11.5px; color: var(--tn-text-faint); }
 
 /* ===================== Standalone /camera/[id] page ===================== */
 /* `.camera-detail` was the whole of /camera/[id] until the page was rebuilt on the
@@ -6015,6 +6029,15 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 .tn-cscond-wx { flex: none; margin-left: auto; color: #fbbf24; }
 .tn-cscond-time { flex: none; font-variant-numeric: tabular-nums; }
 .tn-cscond-age { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .82; }
+/* The camera's road (lib/roads/nearCamera.ts): a ring for a notice, a bar for a closure,
+   an empty ring for none, in light tints of the road layers' colours for live video. */
+.tn-cscond-road { font-size: var(--tn-cscond-fs2); }
+.tn-cscond-roadmark { flex: none; align-self: center; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid #fb7185; background: #fb7185; }
+.tn-cscond-road[data-tone="closed"] .tn-cscond-roadmark { border-radius: 1px; height: 4px; border-color: #f43f5e; background: #f43f5e; }
+.tn-cscond-road[data-tone="none"] .tn-cscond-roadmark { background: transparent; border-color: rgba(255, 255, 255, .62); }
+.tn-cscond-road[data-tone="none"] .tn-cscond-roadtext { color: rgba(255, 255, 255, .62); }
+.tn-cscond-roadtext { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; }
+.tn-cscond-roadaside { flex: none; opacity: .82; font-variant-numeric: tabular-nums; }
 
 /* ── Camera slot day history (Streets M5) ─────────────────────────────────
    Authored by the day-history agent and landed here because globals.css is
