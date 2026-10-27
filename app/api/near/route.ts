@@ -1,5 +1,6 @@
-import { nearestTo } from "@/lib/sources/registry";
-import { isLiveStreamUrl } from "@/lib/proxy/hls-allowlist";
+import { getRegistry, nearestTo } from "@/lib/sources/registry";
+import { isLiveCamera, liveCameraIds } from "@/lib/liveness/playcheck";
+import { ensurePlayCheck } from "@/lib/liveness/playcheck.server";
 import { clipUrl } from "@/lib/proxy/clip";
 
 export const dynamic = "force-dynamic";
@@ -23,14 +24,18 @@ export async function GET(req: Request) {
   const n = Math.min(Math.max(Number(url.searchParams.get("n")) || 8, 1), 25);
 
   try {
-    const cameras = (await nearestTo(lat, lon, n)).map(({ camera, km }) => ({
+    const near = await nearestTo(lat, lon, n);
+    ensurePlayCheck(getRegistry);
+    const live = liveCameraIds();
+    const cameras = near.map(({ camera, km }) => ({
       id: camera.id,
       name: camera.name,
       lat: camera.lat,
       lon: camera.lon,
       available: camera.available,
       source: camera.source,
-      live: isLiveStreamUrl(camera.streamUrl),
+      // Played at its last check, not merely an allowlisted URL (lib/liveness/playcheck.ts).
+      live: isLiveCamera(camera, live),
       // The God's eye view's cards: whether /api/proxy?clip=1 has a recording for this
       // camera, how often the operator publishes a picture, and whose picture it is.
       clip: clipUrl(camera.streamUrl) != null,

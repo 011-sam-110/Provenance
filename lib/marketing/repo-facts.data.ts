@@ -102,9 +102,14 @@
  * `eye-wording`, `eye-declutter` and `eye-cameras`: 5,564 cases across 478 files. M6 adds
  * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
  * across 479 files.
+ *
+ * Re-measured 2026-10-27 on feat/live-cams-m1 (origin/main at 5d618ae), M1 of the live-cams
+ * build: adds `liveness-playcheck`, `hls-upstream` and `stat-line`, and cases to
+ * `cameras-body-memo`, `hud-model` and `camslot-arm`. `npm test` on provenance-1: 5,614 cases
+ * across 482 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5576,
-  files: 479,
-  measuredAt: "2026-10-25",
+  cases: 5614,
+  files: 482,
+  measuredAt: "2026-10-27",
 } as const;

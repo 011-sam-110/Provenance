@@ -240,6 +240,24 @@ obligations and are not satisfied by the licence.
   registry, so `CAMERA_FEED_COUNT` does not move. Full write-up: `docs/WEBCAM_CATALOGUE.md`.
   Tile rows are POSITIONAL and read by index — never add a column on one side only; see
   `TILE_VERSION` and the parity test.
+- **A camera's `live` flag means its stream PLAYED at its last check, not that its URL
+  passes the HLS allowlist (2026-10-27).** `lib/liveness/playcheck.ts` reads each
+  allowlisted stream twice, one target duration apart, through the same fetch as
+  `/api/hls` (`lib/proxy/hls-upstream.ts`), then asks for the newest segment. `rolling`
+  at a check younger than two cycles (6 h) is live; stalled, error, never checked or
+  older is not, and the camera shows as a still. Every reader of the flag goes through
+  `isLiveCamera`: `/api/cameras` (`lib/cameras/body.ts`), `/api/camera/[id]`,
+  `/api/near` and `/camera/[id]`. The loop runs in the server process. The first of
+  those API routes to be asked starts it; a pass every 10 minutes checks what is due
+  (each camera every 3 h), six at once, 500 ms apart per host. Results are in memory
+  only, on purpose: a saved file would make /privacy's "nothing this site serves writes
+  a file" false (`discovery-admin-gate.test.ts`). So a deploy starts at zero video and
+  the first pass refills it. From provenance-1 a cold pass ran at about 30 checks a
+  minute (2026-10-27), so about two hours for ~3,200 streams, and the console fetches
+  `/api/cameras` once per page load. `/api/coverage` serves the counts as `playcheck`;
+  `npx vite-node -c vitest.config.ts scripts/liveness-playcheck.mts` runs one pass and
+  prints them. The HUD's Live block and the `stat-line` count only video that played.
+  `PLAYCHECK=off` turns the loop off.
 - `lib/signals/*` — one adapter + one `registry.ts` entry per source (**46 registered, 45 of them map layers**, 2026-10-17).
   A removed layer's id goes into `RETIRED_SIGNAL_IDS` in `lib/layerAliases.ts`, so saved
   toggles, `?sig=` links, variant overrides and saved boards (its `signal:<id>` card) that

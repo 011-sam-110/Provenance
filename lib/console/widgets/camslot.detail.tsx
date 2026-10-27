@@ -102,7 +102,7 @@ function DayStrip({
       </div>
       {selectedTs != null && (
         <button type="button" className="tn-csd-live" onClick={() => onScrub(null)}>
-          ↺ Back to live
+          ↺ Back to latest
         </button>
       )}
     </div>
