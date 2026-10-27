@@ -19,6 +19,18 @@ const REPO_URL = BRAND.repoUrl;
 
 const HOME_TITLE = `${BRAND.name} · ${BRAND.tagline}`;
 
+/**
+ * THE DOORS. Since 2026-10-27 the map people open from here is God's eye view (/eye),
+ * and the console is one tap further: "All sources" opens it with its Sources rail
+ * open (`sources=open`, lib/console/sourcesLink.ts). Plain links, so this page still
+ * loads no MapLibre and makes no /api call. The words name no count: this page never
+ * types one. tests/unit/landing-doors.test.ts holds the doors.
+ */
+const EYE_HREF = "/eye";
+const EYE_WORDS = "See London in 3D";
+const SOURCES_HREF = "/app?sources=open";
+const SOURCES_WORDS = "All sources";
+
 export const metadata: Metadata = {
   title: HOME_TITLE,
   description: BRAND.description,
@@ -157,8 +169,8 @@ export default function Landing() {
             <a className="lp-nav-link" href={REPO_URL} target="_blank" rel="noreferrer noopener">
               Source code
             </a>
-            <a className="lp-btn lp-btn-primary lp-btn-sm" href="/app">
-              Open the map
+            <a className="lp-btn lp-btn-primary lp-btn-sm" href={EYE_HREF}>
+              {EYE_WORDS}
             </a>
           </nav>
         </header>
@@ -176,11 +188,11 @@ export default function Landing() {
                 source, no login.
               </p>
               <div className="lp-ctas">
-                <a className="lp-btn lp-btn-primary" href="/app">
-                  Open the map
+                <a className="lp-btn lp-btn-primary" href={EYE_HREF}>
+                  {EYE_WORDS}
                 </a>
-                <a className="lp-btn lp-btn-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
-                  Source code
+                <a className="lp-btn lp-btn-ghost" href={SOURCES_HREF}>
+                  {SOURCES_WORDS}
                 </a>
               </div>
             </div>
@@ -441,8 +453,8 @@ export default function Landing() {
                         news and markets.
                       </p>
                     </div>
-                    <a className="lp-btn lp-btn-primary" href="/app">
-                      Open the map
+                    <a className="lp-btn lp-btn-primary" href={SOURCES_HREF}>
+                      {SOURCES_WORDS}
                     </a>
                   </div>
                 </div>
@@ -529,8 +541,8 @@ export default function Landing() {
                 It runs in your browser. Nothing to install, nothing to sign up for.
               </p>
               <div className="lp-ctas">
-                <a className="lp-btn lp-btn-primary" href="/app">
-                  Open the map
+                <a className="lp-btn lp-btn-primary" href={EYE_HREF}>
+                  {EYE_WORDS}
                 </a>
                 <a className="lp-btn lp-btn-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
                   Source code
@@ -557,7 +569,8 @@ export default function Landing() {
             <p className="lp-small">{BRAND.description}</p>
           </div>
           <nav className="lp-foot-links" aria-label="Footer">
-            <a href="/app">Open the map</a>
+            <a href={EYE_HREF}>{EYE_WORDS}</a>
+            <a href={SOURCES_HREF}>{SOURCES_WORDS}</a>
             {/*
               The home page takes nearly every search click, and this is its only link into
               the camera directory. Without it the camera, road and place pages are reachable

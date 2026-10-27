@@ -1,5 +1,6 @@
 // Classify a camera by what it streams. Two icon shapes:
-//   • "video" — a live stream our /api/hls proxy can actually play
+//   • "video" — a stream our /api/hls proxy can play, which played at its last
+//               check (lib/liveness/playcheck.ts)
 //   • "still" — a refreshing JPEG snapshot
 // The icon's COLOUR encodes the region (see lib/icons/svg.ts), so the two
 // dimensions together (shape = feed, colour = region) give a maximal camera

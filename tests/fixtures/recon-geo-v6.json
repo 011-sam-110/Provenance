@@ -1,0 +1,47 @@
+{
+  "messages": [],
+  "see_also": [],
+  "version": "1.0",
+  "data_call_name": "maxmind-geo-lite",
+  "data_call_status": "supported",
+  "cached": true,
+  "query_id": "20261027032623-19902edc-4a58-489e-980c-1b21e6dfe7cc",
+  "process_time": 21,
+  "server_id": "app166",
+  "build_version": "v0.12.2-2026.10.23",
+  "pipeline": "1478200",
+  "status": "ok",
+  "status_code": 200,
+  "time": "2026-10-27T03:26:23.619914",
+  "data": {
+    "located_resources": [
+      {
+        "resource": "2001:4860:4860::8888/128",
+        "locations": [
+          {
+            "country": "US",
+            "city": "",
+            "resources": [
+              "2001:4860:4800::/37"
+            ],
+            "latitude": 37.751,
+            "longitude": -97.822,
+            "covered_percentage": 100.0
+          }
+        ],
+        "unknown_percentage": 0
+      }
+    ],
+    "unknown_percentage": {
+      "v6": 0.0
+    },
+    "result_time": "2026-10-23T16:46:41",
+    "latest_time": "2026-10-23T16:46:41",
+    "earliest_time": "2026-10-23T16:46:41",
+    "parameters": {
+      "resource": "2001:4860:4860::8888/128",
+      "resolution": null,
+      "cache": null
+    }
+  }
+}

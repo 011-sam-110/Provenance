@@ -20,7 +20,7 @@ interface VariantStoreState {
   layoutOverrides: Record<string, PanelPlacement[]>; // SP1b
 }
 
-const PERSIST_KEY = "tn.variant.v1";
+export const PERSIST_KEY = "tn.variant.v1";
 const PERSIST_VERSION = 1;
 
 let state: VariantStoreState = { activeId: DEFAULT_VARIANT_ID, userVariants: [], overrides: {}, layoutOverrides: {} };
