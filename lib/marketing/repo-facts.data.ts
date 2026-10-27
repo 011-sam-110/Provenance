@@ -119,9 +119,13 @@
  * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
  * case in `eye-page`. Merged with origin/main at 7f1101e (#298, #300): `npx vitest list` on
  * the merged tree: 5,604 cases across 483 files.
+ *
+ * Re-measured 2026-10-27 on origin/main at 3becc5f (after #301/#302/#303): #302 and #303 added
+ * test files, so `Deploy production` failed on 483 vs 489 for both. `npx vitest list`: 5,671
+ * cases across 489 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  */
 export const UNIT_TESTS = {
-  cases: 5604,
-  files: 483,
+  cases: 5671,
+  files: 489,
   measuredAt: "2026-10-27",
 } as const;
