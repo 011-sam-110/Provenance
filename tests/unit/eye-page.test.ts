@@ -48,7 +48,7 @@ describe("the ways in are full page loads", () => {
     expect(code("components/CameraDetail.tsx")).toMatch(/<a\s[^>]*href=\{eyeCameraHref\(/);
   });
 
-  it("the way back is a plain anchor too", () => {
-    expect(code("components/eye/EyeHud.tsx")).toMatch(/<a\s[^>]*href="\/app"/);
+  it("the way to the console's Sources is a plain anchor too", () => {
+    expect(code("components/eye/EyeHud.tsx")).toMatch(/<a\s[^>]*href="\/app\?sources=open"/);
   });
 });
