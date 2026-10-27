@@ -7,6 +7,8 @@
 // the checker does not build a request of its own. It calls this, with the Referer the
 // allowlist rule declares, and nothing else.
 
+import { isHlsAllowed } from "@/lib/proxy/hls-allowlist";
+
 /** Sent on every upstream HLS request. */
 export const HLS_USER_AGENT = "TrafficNerd/2.0 (+https://github.com/011-sam-110/TrafficNerd-V2)";
 
@@ -46,5 +48,9 @@ export function fetchHlsUpstream(
   referer: string | undefined,
   range?: string | null,
 ): Promise<Response> {
+  const verdict = isHlsAllowed(target);
+  if (!verdict.ok) {
+    throw new Error("forbidden host");
+  }
   return fetch(target.toString(), hlsUpstreamInit(referer, range));
 }

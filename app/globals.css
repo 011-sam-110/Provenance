@@ -3244,6 +3244,37 @@ a { color: var(--tn-accent); }
 .tn-mapsearch-item-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tn-mapsearch-item-meta { font-size: 11px; color: var(--tn-text-faint); flex: 0 0 auto; }
 .tn-mapsearch-status { padding: 8px 12px; font-size: 12px; color: var(--tn-text-muted); }
+/* "Locate network": the search box's row for an IP or a domain (lib/recon/ipLocate.ts).
+   It sits above the place matches and names what it does, because a domain can also
+   read as a place. */
+.tn-mapsearch-item.is-network { border-bottom: 1px solid var(--tn-border); }
+.tn-mapsearch-item-net { font-size: 12px; flex: 0 0 auto; color: var(--tn-accent-strong); }
+
+/* The network dossier (components/NetworkDetail.tsx). Same type scale as the other
+   dossiers; no point, no coordinates, one fixed line at the top. */
+.tn-net { display: grid; gap: 10px; font-size: 13px; color: var(--tn-text); }
+.tn-net-title { margin: 0; font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+.tn-net-muted { margin: 0; color: var(--tn-text-muted); font-size: 12px; }
+.tn-net-mono { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tn-net-fixed { margin: 0; padding: 7px 10px; border: 1px solid var(--tn-border-strong); border-radius: 6px; background: var(--tn-surface-2); font-weight: 600; font-size: 12.5px; }
+.tn-net-flags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tn-net-flags li { font-size: 11px; font-weight: 600; padding: 2px 9px; border: 1px solid var(--tn-border-strong); border-radius: 999px; background: var(--tn-chip-bg); color: var(--tn-text); }
+.tn-net-section { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--tn-border); }
+.tn-net-section h4 { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tn-accent); }
+.tn-net-section p { margin: 0; }
+.tn-net-verdict { font-weight: 600; }
+.tn-net-rows { margin: 0; display: grid; gap: 8px; }
+.tn-net-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 12px; }
+.tn-net-row dt { color: var(--tn-text-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; align-self: center; }
+.tn-net-row dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.tn-net-note { color: var(--tn-text-muted); font-size: 12px; }
+.tn-net-error { color: var(--tn-down-ink); background: var(--tn-down-bg); border-radius: 6px; padding: 7px 10px; font-size: 12.5px; }
+.tn-net-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.tn-net-btn { font: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--tn-border-strong); background: var(--tn-surface-2); color: var(--tn-text); cursor: pointer; }
+.tn-net-btn:hover { border-color: var(--tn-accent); }
+.tn-net-btn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-net-btn.is-quiet { background: transparent; }
+.tn-net-foot { margin: 0; font-size: 11px; color: var(--tn-text-faint); border-top: 1px solid var(--tn-border); padding-top: 8px; }
 
 /* ── Pin navigator (top-right, below the map-view buttons) — see PinNavigator ── */
 .tn-pinnav {

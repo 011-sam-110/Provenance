@@ -16,6 +16,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * leave it out or say plainly that you do not know.
  *
  * WHAT CHANGED ON 2026-10-27:
+ *   - IP location: app/api/recon/geo (lib/recon/geo.ts), reached from the search box's
+ *     "Locate network" row (components/console/MapSearch.tsx). It takes the typed IP or
+ *     domain, resolves a domain through Cloudflare DNS, and asks RIPEstat's
+ *     maxmind-geo-lite data call: two hosts the recon row already names. It reads no
+ *     header of the visitor (the identity grep below still has one hit), and the typed
+ *     target is not sent to the geocoder (MapSearch skips Photon for a network target).
+ *     The recon row now names the search box too, and the route count is 53.
  *   - The logs section said "Nothing you type is logged anywhere." That was false. The
  *     site's own `log` block in deploy/Caddyfile masks the address and deletes headers,
  *     but it has no filter on request>uri, so every access-log line keeps the full
@@ -677,7 +684,10 @@ export default function PrivacyPage() {
                   <td>No</td>
                 </tr>
                 <tr>
-                  <td>Look up a domain or an IP in the recon widgets</td>
+                  <td>
+                    Look up a domain or an IP in the recon widgets, or with &ldquo;Locate
+                    network&rdquo; in the search box
+                  </td>
                   <td>The domain or IP you typed</td>
                   <td>
                     Cloudflare DNS, crt.sh, rdap.org and the registry it redirects to, RIPEstat,
@@ -1176,7 +1186,7 @@ export default function PrivacyPage() {
           <div>
             <h4>The product</h4>
             <a href="/">Home</a>
-            <a href="/app">Open the map</a>
+            <a href="/eye">Open the map</a>
           </div>
           {/*
             AGPL-3.0 section 13: anyone interacting with this program over a network

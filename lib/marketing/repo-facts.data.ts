@@ -112,26 +112,16 @@
  * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
  * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
  * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
- * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * across 480 files, exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
  * just add.
  *
- * Re-measured 2026-10-27 on feat/live-cams-m1 (origin/main at 5d618ae), M1 of the live-cams
- * build: adds `liveness-playcheck`, `hls-upstream` and `stat-line`, and cases to
- * `cameras-body-memo`, `hud-model` and `camslot-arm`. `npm test` on provenance-1: 5,614 cases
- * across 482 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
- * The warm-up commit after it adds five cases to `liveness-playcheck` and `cameras-body-memo`:
- * 5,619 cases across 482 files.
- *
- * Re-measured 2026-10-27 after merging origin/main (7f1101e: #300 and #298) into
- * feat/live-cams-m1: `npm test` on provenance-1, 5,625 cases across 483 files (#300 added cases
- * to `privacy-page`, so the sides do not simply add up to 5,622).
- *
- * The camera stats strip (feat/live-cams-scoreline) adds three files: `camera-stats`,
- * `camera-stats-view` and `camera-stats-route`, 53 cases: 5,678 cases across 486 files
- * (`npx tsc --noEmit && npm test` on provenance-1).
+ * 2026-10-27, feat/eye-default (God's eye view as the map behind "Open the map"): adds
+ * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
+ * case in `eye-page`. Merged with origin/main at 7f1101e (#298, #300): `npx vitest list` on
+ * the merged tree: 5,604 cases across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5678,
-  files: 486,
+  cases: 5604,
+  files: 483,
   measuredAt: "2026-10-27",
 } as const;

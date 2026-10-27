@@ -90,6 +90,16 @@ obligations and are not satisfied by the licence.
   its steps and no feed is fetched during it, because a film is drawn minutes slower
   than it plays. And while the view moves only one card's clip plays (`clipsToPlay`):
   three at once halved the frame rate, measured 2026-10-25.
+  **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
+  `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
+  Sources button opens the console at the spot on screen with the Sources rail open
+  (`sources=open`, read once after mount by ConsoleShell, `lib/console/sourcesLink.ts`);
+  on a phone it is the console's own "≡ Sources" thumb control, first in the bar. A browser
+  with no saved board also gets `layers=` and `base=` so the console does not open empty;
+  a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
+  the doors. **Both map pages ask for WebGL before they mount MapLibre**
+  (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
+  camera directory and the source link, not Next's "Application error" page.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's

@@ -22,7 +22,8 @@ type Outlines = Map<string, GeoJSON.Geometry>;
 
 let outlines: Promise<Outlines> | null = null;
 
-function loadOutlines(): Promise<Outlines> {
+/** The country outlines by ISO alpha-3, loaded once. Also read by the IP location tool. */
+export function loadOutlines(): Promise<Outlines> {
   outlines ??= fetch("/geo/countries-110m.geojson")
     .then((r) => r.json())
     .then((fc) => buildCountryOutlines(fc as GeoJSON.FeatureCollection))
