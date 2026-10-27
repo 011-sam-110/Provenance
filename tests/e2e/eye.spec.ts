@@ -62,10 +62,16 @@ for (const shape of SHAPES) {
     // Westminster's cameras and road notices are TfL's.
     await expect(credits).toContainText("Powered by TfL Open Data");
     await expect(page.locator(`footer a[href="${BRAND.repoUrl}"]`)).toHaveCount(1);
+    const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
     if (shape.query.includes("record=1")) {
-      await expect(page.getByRole("link", { name: "Back to the console" })).toHaveCount(0);
+      await expect(sources).toHaveCount(0);
     } else {
-      await expect(page.getByRole("link", { name: "Back to the console" })).toHaveAttribute("href", /^\/app/);
+      // The way to the console, its Sources rail open, at the spot on screen. The href
+      // is filled in as the link is used, so read it after a focus.
+      await sources.focus();
+      await expect(sources).toHaveAttribute("href", /^\/app\?lat=[-\d.]+&lon=[-\d.]+&z=[\d.]+.*sources=open/);
+      // Who this is, for a visitor who arrived from a reel.
+      await expect(page.locator('main a[href="/"]').first()).toHaveText(/Provenance/);
     }
 
     // "Live" only where a stream is playing.
@@ -174,4 +180,35 @@ test.describe("with reduced motion", () => {
     await page.waitForTimeout(1000);
     expect(await bearing()).toBeCloseTo(a, 3);
   });
+});
+
+test("Sources opens the console with its Sources rail open, and keeps the scene's layers on a first visit", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/eye?place=westminster");
+  await ready(page);
+  const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
+  await sources.focus();
+  const href = await sources.getAttribute("href");
+  expect(href).toContain("layers=livecams%2Cstaticcams%2Cplanes");
+  await sources.click();
+  await page.waitForURL(/\/app/);
+  // The rail is open on arrival, and the flag has left the address.
+  await expect(page.locator('aside.tn-rail[aria-label="Sources"]')).toBeVisible({ timeout: 30_000 });
+  await expect.poll(() => new URL(page.url()).searchParams.has("sources")).toBe(false);
+});
+
+test("a phone keeps the console's thumb control: Sources first in the bar at the bottom left", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/eye?place=westminster");
+  await ready(page);
+  const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
+  const box = await sources.boundingBox();
+  expect(box).not.toBeNull();
+  // Thumb reach: the left half of the screen, in the bottom third, 44 px or taller.
+  expect(box!.x).toBeLessThan(390 / 2);
+  expect(box!.y).toBeGreaterThan((844 * 2) / 3);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  // The places sit behind one button on a phone.
+  await page.getByRole("button", { name: "Places" }).click();
+  await expect(page.getByRole("navigation", { name: "Places" }).getByRole("link", { name: /Tower Bridge/ })).toBeVisible();
 });

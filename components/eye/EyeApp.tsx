@@ -34,7 +34,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
-import { consoleHref, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
+import { consoleHref, hasSavedBoard, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
+import { PERSIST_KEY as BOARD_KEY } from "@/lib/variants/store";
 import { EYE_LIGHT, eyePaintOps } from "@/lib/eye/look";
 import {
   filmClock,
@@ -101,7 +102,7 @@ interface EyeHandle extends EyeDriver {
   now(): number;
 }
 
-export default function EyeApp() {
+export default function EyeApp({ sourceCount }: { sourceCount: number }) {
   const [target, setTarget] = useState<EyeTarget | null>(null);
   const [portrait, setPortrait] = useState(false);
   const [flags, setFlags] = useState<Flags>({ overlay: true, record: false, manualClock: false, canMove: false, motion: null });
@@ -280,11 +281,21 @@ export default function EyeApp() {
     return () => watch.disconnect();
   }, [map]);
 
-  const getBackHref = useCallback(() => {
+  // The Sources button's link: the console at the spot on screen, its Sources rail open.
+  // A browser with no saved console board also gets this view's layers and ground, so
+  // the console does not open empty; one with a board keeps its own (lib/eye/places.ts).
+  const getSourcesHref = useCallback(() => {
+    let storage: Storage | undefined;
+    try {
+      storage = window.localStorage;
+    } catch {
+      storage = undefined;
+    }
+    const opts = { sources: true, scene: !hasSavedBoard(storage, BOARD_KEY) };
     const m = mapRef.current;
-    if (!m) return consoleHref(target?.view ?? { lat: 0, lon: 0, zoom: 2 });
+    if (!m) return consoleHref(target?.view ?? { lat: 0, lon: 0, zoom: 2 }, opts);
     const c = m.getCenter();
-    return consoleHref({ lat: c.lat, lon: c.lng, zoom: m.getZoom() });
+    return consoleHref({ lat: c.lat, lon: c.lng, zoom: m.getZoom() }, opts);
   }, [target]);
 
   const words = target ? titleFor(target, report.cameraName) : null;
@@ -323,7 +334,9 @@ export default function EyeApp() {
           refreshedAt={report.refreshedAt}
           phoneNote={report.phoneNote}
           credits={credits}
-          getBackHref={getBackHref}
+          getSourcesHref={getSourcesHref}
+          sourceCount={sourceCount}
+          placeId={target.kind === "place" ? target.place.id : undefined}
           record={flags.record}
           clock={clock}
         >
