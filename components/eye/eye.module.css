@@ -691,3 +691,168 @@
       radial-gradient(ellipse 90% 75% at 50% 50%, rgba(0, 0, 0, 0) 54%, rgba(0, 0, 0, 0.46) 100%);
   }
 }
+
+/* ── Front door: who this is, the place picker, and the way to the sources ──
+ * Since 2026-10-27 every "Open the map" button on the landing page opens this view,
+ * so the frame says it is Provenance, offers the three framed places, and has one
+ * strong way to the console: Sources, the only solid plate in the frame. */
+
+.id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: -6px 0 2px -3px;
+  padding: 0 3px;
+  border-radius: 4px;
+  color: var(--eye-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+}
+.id:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.mark {
+  flex: none;
+}
+
+.places {
+  display: flex;
+  gap: 6px;
+  margin-top: 11px;
+  pointer-events: auto;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--eye-hair);
+  border-radius: 4px;
+  background: var(--eye-plate);
+  color: var(--eye-ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.chip:hover {
+  border-color: rgba(238, 243, 241, 0.5);
+  color: var(--eye-ink);
+}
+.chip[aria-current="page"] {
+  color: var(--eye-ink);
+  border-color: rgba(238, 243, 241, 0.62);
+  box-shadow: inset 0 -2px 0 var(--eye-ink);
+}
+
+/* Sources: a solid plate. Text #0b1114 on --eye-ink is 17:1; the hint at 72% is 8.9:1. */
+.sourcesBtn {
+  order: 2;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 48px;
+  padding: 5px 16px 5px 12px;
+  border-radius: 4px;
+  background: var(--eye-ink);
+  color: #0b1114;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+}
+.sourcesBtn:hover {
+  background: #ffffff;
+}
+.sourcesBtn:focus-visible,
+.chip:focus-visible,
+.id:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 3px;
+}
+.bars {
+  grid-row: 1 / 3;
+  font-size: 18px;
+  line-height: 1;
+}
+.sourcesBtn b {
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.sourcesBtn small {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(11, 17, 20, 0.72);
+}
+.sourcesBtn small.long {
+  grid-column: 2;
+}
+
+.placeSheet {
+  display: none;
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .id {
+    font-size: 12.5px;
+    min-height: 26px;
+  }
+  /* The console's thumb control, kept: "≡ Sources" at the bottom left, 44 px tall,
+     first in the bar (the .tn-rail-fab look: bars in front, the word after). */
+  .sourcesBtn {
+    order: -1;
+    display: inline-flex;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 15px;
+    box-shadow: none;
+  }
+  .sourcesBtn b {
+    font-size: 14px;
+  }
+  .bars {
+    font-size: 16px;
+  }
+  .placeSheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(100% + 8px);
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--eye-hair);
+    border-radius: 6px;
+    background: rgba(6, 10, 12, 0.92);
+    pointer-events: auto;
+  }
+  .placeSheet a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 12px 10px;
+    border-radius: 4px;
+    color: var(--eye-ink);
+    text-decoration: none;
+  }
+  .placeSheet a[aria-current="page"] {
+    background: rgba(238, 243, 241, 0.1);
+  }
+  .placeSheet b {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .placeSheet span {
+    font-size: 11.5px;
+    color: var(--eye-ink-2);
+  }
+}

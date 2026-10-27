@@ -112,11 +112,16 @@
  * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
  * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
  * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
- * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * across 480 files, exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
  * just add.
+ *
+ * 2026-10-27, feat/eye-default (God's eye view as the map behind "Open the map"): adds
+ * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
+ * case in `eye-page`. Merged with origin/main at 7f1101e (#298, #300): `npx vitest list` on
+ * the merged tree: 5,604 cases across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5579,
-  files: 480,
-  measuredAt: "2026-10-25",
+  cases: 5604,
+  files: 483,
+  measuredAt: "2026-10-27",
 } as const;
