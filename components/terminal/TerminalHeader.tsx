@@ -43,6 +43,7 @@ import SettingsPanel from "@/components/shell/SettingsPanel";
 import AccountButton from "@/components/account/AccountButton";
 import type { SettingsTabId } from "@/lib/shell/settingsTabs";
 import LivePresence from "@/components/shell/LivePresence";
+import CameraStats from "@/components/terminal/CameraStats";
 import { BRAND } from "@/lib/brand";
 
 /**
@@ -288,6 +289,13 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             whole workspace — widgets, map layers, stage — not one tabpanel, and a
             tablist with no tabpanel is a promise the DOM does not keep. */}
         <BoardTabs />
+
+        {/* ── Camera stats ─────────────────────────────────────────────────── */}
+        {/* VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED ‖ WEBCAMS, each number with
+            its source and time, one click from the breakdown. Video counts streams that
+            PLAYED at their last check, never stills, and the word "live" is not used;
+            see CameraStats.tsx and lib/cameras/statsView.ts. */}
+        <CameraStats />
 
         <div className="tnx-hdr-spacer" />
 

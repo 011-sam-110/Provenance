@@ -174,7 +174,8 @@ obligations and are not satisfied by the licence.
   `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
-  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `relay/[feed]`
+  `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
+  (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
   disruptions for `/eye`), and the two doors
   `middleware.ts` opens, `gate` and `private`.
@@ -298,7 +299,12 @@ obligations and are not satisfied by the licence.
   `shellLayoutStore` (`store.ts`) is the ONLY layout the app renders. `variantStore`'s
   `layoutOverrides` slot is not drawn by anything — do not write a new feature to it
   (the Source Catalog's ＋ used to, which is why it silently did nothing).
-- **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from it.**
+- **The console top bar is exactly two board tabs — Globe and Streets — and nothing drops down from them.**
+  After them sits the camera stats strip (`components/terminal/CameraStats.tsx`, 2026-10-27):
+  video, stills, countries, operators and the time of that count, then the Windy webcams with
+  their own source, from `/api/camera-stats`. It is the one thing in the bar that opens a panel,
+  and only on a click. Its wording lives in `lib/cameras/statsView.ts`, where a test fails if
+  any string says "live"; video there counts streams that PLAYED at their last check.
   `components/terminal/TerminalHeader.tsx` renders the tabs from `TOP_BAR_PRESET_IDS`
   (a subset of the lineup, pinned by `console-presets.test.ts`); News left the
   navbar on 2026-09-16 on request and stays a preset reachable from the Sources

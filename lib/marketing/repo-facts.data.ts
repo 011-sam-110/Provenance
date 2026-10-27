@@ -125,9 +125,13 @@
  * Re-measured 2026-10-27 after merging origin/main (7f1101e: #300 and #298) into
  * feat/live-cams-m1: `npm test` on provenance-1, 5,625 cases across 483 files (#300 added cases
  * to `privacy-page`, so the sides do not simply add up to 5,622).
+ *
+ * The camera stats strip (feat/live-cams-scoreline) adds three files: `camera-stats`,
+ * `camera-stats-view` and `camera-stats-route`, 53 cases: 5,678 cases across 486 files
+ * (`npx tsc --noEmit && npm test` on provenance-1).
  */
 export const UNIT_TESTS = {
-  cases: 5625,
-  files: 483,
+  cases: 5678,
+  files: 486,
   measuredAt: "2026-10-27",
 } as const;
