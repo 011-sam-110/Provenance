@@ -59,11 +59,14 @@ import {
   severityWeight,
   speedLedgerRow,
   speedPhoneNote,
+  streetFeatures,
   streetTag,
   streetsDownRow,
   streetsLedgerRow,
   type StreetDisruption,
+  type StreetTimes,
 } from "@/lib/eye/streets";
+import { newestChange } from "@/lib/roads/notice";
 import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
 import type { LedgerRow } from "@/lib/eye/wording";
 import type { EyeClock } from "@/lib/eye/motion";
@@ -95,11 +98,28 @@ const LYR = {
   ahead: "eye-ship-ahead",
   ship: "eye-ship",
   plane: "eye-plane",
-  streetLine: "eye-street-line",
+  // Road notices, bottom to top: a closure's white base, its rose bars, works dashes,
+  // incident dots, then the rings of notices TfL gave no street line for.
+  streetClosedBase: "eye-street-closed-base",
+  streetClosed: "eye-street-closed",
+  streetWorks: "eye-street-works",
+  streetIncident: "eye-street-incident",
   streetDot: "eye-street-dot",
 } as const;
 const IMG = { ship: "eye-chevron-ship", plane: "eye-chevron-plane" } as const;
-const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24", road: "#fb7185" } as const;
+const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24", road: "#fb7185", incident: "#c4b5fd", bar: "#eef3f1" } as const;
+/** A street line's width: by zoom only, never by a feature's property (see streetFeatures). */
+const roadWidth = (at14: number, at17: number): maplibregl.ExpressionSpecification => [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  14,
+  at14,
+  17,
+  at17,
+];
+/** TfL's heavier severities (Moderate and up) are drawn opaque, the lighter ones fainter. */
+const ROAD_OPACITY: maplibregl.ExpressionSpecification = ["case", ["==", ["get", "heavy"], true], 0.95, 0.65];
 
 const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 40, stalk: 52, max: 5 };
 const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 46, stalk: 34, max: 3 };
@@ -202,6 +222,8 @@ interface State {
   streets: StreetDisruption[] | null;
   /** The streets route answered without TfL's data (a cold start with TfL down). */
   streetsDown: boolean;
+  /** When the server last asked TfL: the route's own `fetchedAt`, never the browser's. */
+  streetsFetchedAt: number | null;
   planesSampled: boolean;
   planesFetchedAt: number | null;
   refreshedAt?: number;
@@ -216,6 +238,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     planes: null,
     streets: null,
     streetsDown: false,
+    streetsFetchedAt: null,
     planesSampled: false,
     planesFetchedAt: null,
     cards: new Map(),
@@ -274,30 +297,47 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       });
     }
 
-    // TfL's disruptions lie ON the street, under the buildings like the camera rings,
-    // so a tower in front hides them. Dashed: a notice, never a measured speed.
+    // TfL's notices lie ON the street, under the buildings like the camera rings, so a
+    // tower in front hides them. None is ever a solid single colour, because a solid line
+    // is how a measured speed will be drawn: works are rose dashes, incidents violet dots,
+    // and only a street TfL marks Closed gets rose and white bars.
     if (s.streets && !map.getSource(SRC.streets)) {
       map.addSource(SRC.streets, { type: "geojson", data: EMPTY, attribution: TFL_CREDIT });
     }
     if (map.getSource(SRC.streets)) {
-      if (!map.getLayer(LYR.streetLine)) {
+      const line = (id: string, paint: string, style: maplibregl.LineLayerSpecification["paint"]) => {
+        if (map.getLayer(id)) return;
         map.addLayer(
           {
-            id: LYR.streetLine,
+            id,
             type: "line",
             source: SRC.streets,
-            filter: ["==", ["geometry-type"], "LineString"],
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": COLOUR.road,
-              "line-width": ["interpolate", ["linear"], ["zoom"], 14, ["*", 1.2, ["get", "w"]], 17, ["*", 2.6, ["get", "w"]]],
-              "line-opacity": 0.9,
-              "line-dasharray": [1.2, 1],
-            },
+            filter: ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "paint"], paint]],
+            layout: { "line-cap": paint === "incident" ? "round" : "butt", "line-join": "round" },
+            paint: style,
           },
           under,
         );
-      }
+      };
+      line(LYR.streetClosedBase, "closed", { "line-color": COLOUR.bar, "line-width": roadWidth(2.6, 6), "line-opacity": ROAD_OPACITY });
+      line(LYR.streetClosed, "closed", {
+        "line-color": COLOUR.road,
+        "line-width": roadWidth(2.6, 6),
+        "line-opacity": ROAD_OPACITY,
+        "line-dasharray": [1, 1],
+      });
+      line(LYR.streetWorks, "works", {
+        "line-color": COLOUR.road,
+        "line-width": roadWidth(1.6, 3.6),
+        "line-opacity": ROAD_OPACITY,
+        "line-dasharray": [1.4, 1],
+      });
+      line(LYR.streetIncident, "incident", {
+        "line-color": COLOUR.incident,
+        "line-width": roadWidth(2.4, 5),
+        "line-opacity": ROAD_OPACITY,
+        "line-dasharray": [0, 2],
+      });
       if (!map.getLayer(LYR.streetDot)) {
         map.addLayer(
           {
@@ -307,24 +347,21 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
             filter: ["==", ["geometry-type"], "Point"],
             paint: {
               "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 3, 17, 7],
-              "circle-color": "rgba(251,113,133,0.25)",
-              "circle-stroke-color": COLOUR.road,
-              "circle-stroke-width": 1.5,
+              "circle-color": ["match", ["get", "paint"], "closed", COLOUR.bar, "rgba(0,0,0,0)"],
+              "circle-stroke-color": ["match", ["get", "paint"], "incident", COLOUR.incident, COLOUR.road],
+              "circle-stroke-width": 1.8,
+              "circle-opacity": ROAD_OPACITY,
+              "circle-stroke-opacity": ROAD_OPACITY,
               "circle-pitch-alignment": "map",
             },
           },
           under,
         );
       }
-      const features: GeoJSON.Feature[] = [];
-      for (const d of s.streets ?? []) {
-        const w = severityWeight(d.severity);
-        if (d.lines.length === 0) features.push(point(d.id, d.lon, d.lat, { w }));
-        for (const line of d.lines) {
-          features.push({ type: "Feature", properties: { id: d.id, w }, geometry: { type: "LineString", coordinates: line } });
-        }
-      }
-      (map.getSource(SRC.streets) as maplibregl.GeoJSONSource).setData({ type: "FeatureCollection", features });
+      (map.getSource(SRC.streets) as maplibregl.GeoJSONSource).setData({
+        type: "FeatureCollection",
+        features: streetFeatures(s.streets ?? []),
+      });
     }
 
     if (!map.hasImage(IMG.ship)) map.addImage(IMG.ship, chevron(COLOUR.ship), { pixelRatio: 2 });
@@ -440,10 +477,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const ageMs = s.planesFetchedAt != null ? clock.now() - s.planesFetchedAt : null;
         rows.push(aircraftLedgerRow(labelled.planes, s.planes.length, { sampled: s.planesSampled, ageMs }));
       }
-      if (s.streets) rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, s.streets.length));
+      // TfL's newest change among the notices around the view, and when the server asked.
+      const roadTimes: StreetTimes | undefined =
+        s.streets && !s.streetsDown
+          ? { changedAt: newestChange(s.streets), fetchedAt: s.streetsFetchedAt, now: clock.now() }
+          : undefined;
+      if (s.streets) rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, s.streets.length, roadTimes));
       rows.push(speedLedgerRow(london));
       const cameraName = pinned ? s.cams?.find((c) => c.id === pinned)?.name : undefined;
-      const phoneNote = speedPhoneNote(london);
+      const phoneNote = speedPhoneNote(london, roadTimes);
       const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt]);
       if (key === lastRowsKey) return;
       lastRowsKey = key;
@@ -654,11 +696,13 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // TfL covers London only; elsewhere nothing is asked for, and the ledger says the
     // road speed is not measured in this view.
     const loadStreets = () =>
-      void getJson("/api/eye/streets").then((d: { ok?: boolean; features?: StreetDisruption[] } | null) => {
+      void getJson("/api/eye/streets").then(
+        (d: { ok?: boolean; fetchedAt?: number | null; features?: StreetDisruption[] } | null) => {
         if (disposed) return;
         if (d?.ok) {
           s.streets = (d.features ?? []).filter((f) => inBounds(f.lat, f.lon, region, 0));
           s.streetsDown = false;
+          s.streetsFetchedAt = typeof d.fetchedAt === "number" ? d.fetchedAt : null;
         } else if (s.streets == null) {
           // Nothing from TfL yet: the ledger says so rather than "0". A failed refresh
           // after a good one keeps what is drawn.
@@ -666,7 +710,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           s.streetsDown = true;
         }
         landed();
-      });
+        },
+      );
     loadShips();
     loadPlanes();
     if (london) loadStreets();

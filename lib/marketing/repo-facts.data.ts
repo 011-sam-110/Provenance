@@ -114,9 +114,14 @@
  * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
  * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
  * just add.
+ *
+ * Re-measured 2026-10-27 on feat/live-roads-m1 (origin/main at 7f1101e). Road notices M1 adds
+ * `roads-tfl` (9 cases) and three cases to `eye-streets`. `npx vitest list`: 5,594 cases across
+ * 481 files. If another branch moved this constant off the same base, re-measure the merged
+ * tree rather than pick a side.
  */
 export const UNIT_TESTS = {
-  cases: 5579,
-  files: 480,
-  measuredAt: "2026-10-25",
+  cases: 5594,
+  files: 481,
+  measuredAt: "2026-10-27",
 } as const;
