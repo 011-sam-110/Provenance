@@ -1,0 +1,750 @@
+{
+ "fl": {
+  "Closures": {
+   "rows": [
+    {
+     "DT_RowId": "461840",
+     "tooltipUrl": "/tooltip/Closures/461840?lang=%7Blang%7D&noCss=true",
+     "id": 461840,
+     "type": "Closures",
+     "layerName": "Closures",
+     "roadwayName": "Lox Rd",
+     "description": "Scheduled Road Work on Lox Rd Both Directions from SR-7 Southbound to Parkside Dr. All lanes closed.<div class='cellSpacer'><i><b>Comments:</b></i> The Florida Department of Transportation has shared that Lox Road is scheduled to close from Parkside Drive to U.S. 441 in January 12, 2026, for roundabout construction. This will be a full closure, and resident access will be maintained. As part of the Loxahatchee Road Improvements Project, crews will begin with phased roadway improvements on Loxahatchee Road between Parkside Drive and U.S. 441/S.R. 7, including the construction of the roundabout at Parkside Drive, starting Jan. 12, 2026. To ensure community and public safety, Loxahatchee Road between Parkside Drive and U.S. 441/S.R. 7 will be closed and traffic will be detoured through Fall of 2026. Business and residential access (Local Access) will be maintained at all times throughout construction. To ensure overall safety, FDOT urges motorists to use precaution as they traverse through the area.</div>",
+     "sourceId": "7699",
+     "source": "ERS",
+     "comment": "The Florida Department of Transportation has shared that Lox Road is scheduled to close from Parkside Drive to U.S. 441 in January 12, 2026, for roundabout construction. This will be a full closure, and resident access will be maintained. As part of the Loxahatchee Road Improvements Project, crews will begin with phased roadway improvements on Loxahatchee Road between Parkside Drive and U.S. 441/S.R. 7, including the construction of the roundabout at Parkside Drive, starting Jan. 12, 2026. To ensure community and public safety, Loxahatchee Road between Parkside Drive and U.S. 441/S.R. 7 will be closed and traffic will be detoured through Fall of 2026. Business and residential access (Local Access) will be maintained at all times throughout construction. To ensure overall safety, FDOT urges motorists to use precaution as they traverse through the area.",
+     "eventSubType": "ScheduledRoadWork",
+     "startDate": "1/12/26, 7:23 AM",
+     "endDate": null,
+     "lastUpdated": "4/1/26, 9:48 AM",
+     "isFullClosure": true,
+     "severity": "Major",
+     "direction": "Both Directions",
+     "locationDescription": "SR-7 Southbound | Parkside Dr",
+     "detourDescription": null,
+     "laneDescription": "All lanes closed",
+     "recurrenceDescription": "<b>Mon, Tue, Wed, Thu, Fri, Sat, Sun:</b><br/>Active all day<br/><br/>",
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Broward",
+     "dotDistrict": "District 4",
+     "region": "Southeast",
+     "state": "Florida",
+     "country": "United States",
+     "showOnMap": true
+    },
+    {
+     "DT_RowId": "833662",
+     "tooltipUrl": "/tooltip/Closures/833662?lang=%7Blang%7D&noCss=true",
+     "id": 833662,
+     "type": "Closures",
+     "layerName": "Closures",
+     "roadwayName": "I-95",
+     "description": "Planned construction in Nassau County on I-95 South, before Weigh Station (MM 376). Off-ramp closed. Last updated at 06:52 PM.",
+     "sourceId": "1044363",
+     "source": "DIVAS - District 2",
+     "comment": null,
+     "eventSubType": "95",
+     "startDate": "9/1/26, 6:17 AM",
+     "endDate": null,
+     "lastUpdated": "10/26/26, 6:52 PM",
+     "isFullClosure": false,
+     "severity": "Major",
+     "direction": "Southbound",
+     "locationDescription": null,
+     "detourDescription": null,
+     "laneDescription": "Off-ramp closed",
+     "recurrenceDescription": null,
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Nassau",
+     "dotDistrict": "District 2",
+     "region": "Northeast",
+     "state": "Florida",
+     "country": "United States",
+     "showOnMap": true,
+     "cameras": [
+      {
+       "images": [
+        {
+         "id": 1696,
+         "cameraSiteId": 1696,
+         "sortOrder": 0,
+         "description": "3123_I95_376.7_Weigh Station",
+         "imageUrl": "/map/Cctv/1696",
+         "imageType": 0,
+         "videoUrl": "https://dis-se17.divas.cloud:8200/chan-9256_h/index.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1696,
+       "sourceId": "9256",
+       "source": "DIVAS-District 2",
+       "areaId": "NAS",
+       "sortOrder": 0,
+       "roadway": "I-95",
+       "direction": 3,
+       "location": "I-95 @ MM 376.7 Weigh Station",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-81.669561 30.673691)"
+        }
+       },
+       "linkId1": "1160922007T",
+       "created": "2024-12-12T16:12:05.4688817+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      },
+      {
+       "images": [
+        {
+         "id": 1369,
+         "cameraSiteId": 1369,
+         "sortOrder": 0,
+         "description": "3122_I95_375.7",
+         "imageUrl": "/map/Cctv/1369",
+         "imageType": 0,
+         "videoUrl": "https://dis-se1.divas.cloud:8200/chan-1285_h/index.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1369,
+       "sourceId": "1285",
+       "source": "DIVAS-District 2",
+       "areaId": "NAS",
+       "sortOrder": 0,
+       "roadway": "I-95",
+       "direction": 1,
+       "location": "I-95 @ MM 375.7",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-81.663998 30.660395)"
+        }
+       },
+       "linkId1": "773287220F",
+       "created": "2024-12-12T16:12:05.3752272+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      }
+     ],
+     "cameraIds": "1696,1369"
+    }
+   ],
+   "icons": {
+    "item1": {
+     "url": "/Generated/Content/Images/511/map_closure.svg",
+     "size": [
+      29,
+      35
+     ],
+     "origin": [
+      0,
+      0
+     ],
+     "anchor": [
+      14,
+      34
+     ],
+     "zindex": 50,
+     "preventClustering": false,
+     "isClickable": true
+    },
+    "item2": [
+     {
+      "itemId": "461840",
+      "location": [
+       26.3261769491201,
+       -80.2030647475192
+      ],
+      "secondarylocation": [
+       26.3326405898617,
+       -80.2212114518391
+      ],
+      "icon": {},
+      "title": ""
+     },
+     {
+      "itemId": "833662",
+      "location": [
+       30.668905,
+       -81.668157
+      ],
+      "icon": {},
+      "title": ""
+     }
+    ]
+   }
+  },
+  "Incidents": {
+   "rows": [
+    {
+     "DT_RowId": "926459",
+     "tooltipUrl": "/tooltip/Incidents/926459?lang=%7Blang%7D&noCss=true",
+     "id": 926459,
+     "type": "Incidents",
+     "layerName": "Incidents",
+     "roadwayName": "I-4",
+     "description": "Multi-vehicle crash in Seminole County on I-4 West, before MM 104/US-17-92. Last updated at 03:59 PM. Road Ranger Ahead. Move Over or Slow Down.",
+     "sourceId": "1899030",
+     "source": "DIVAS - District 5",
+     "comment": null,
+     "eventSubType": "2203",
+     "startDate": "10/26/26, 8:27 AM",
+     "endDate": null,
+     "lastUpdated": "10/26/26, 3:59 PM",
+     "isFullClosure": false,
+     "severity": "Minor",
+     "direction": "Westbound",
+     "locationDescription": null,
+     "detourDescription": null,
+     "laneDescription": "",
+     "recurrenceDescription": null,
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Seminole",
+     "dotDistrict": "District 5",
+     "region": "Central",
+     "state": "Florida",
+     "country": "United States",
+     "showOnMap": true,
+     "cameras": [
+      {
+       "images": [
+        {
+         "id": 1020,
+         "cameraSiteId": 1020,
+         "sortOrder": 0,
+         "description": "0635_I-4_WB_MM_103.7",
+         "imageUrl": "/map/Cctv/1020",
+         "imageType": 0,
+         "videoUrl": "https://dis-se9.divas.cloud:8200/chan-9345_h/index.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1020,
+       "sourceId": "9345",
+       "source": "DIVAS-District 5",
+       "areaId": "SEM",
+       "sortOrder": 0,
+       "roadway": "I-4",
+       "direction": 4,
+       "location": "I-4 @ MM 103.7 WB",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-81.328517 28.82675)"
+        }
+       },
+       "linkId1": "1233709849T",
+       "created": "2024-12-12T16:12:05.4688817+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      },
+      {
+       "images": [
+        {
+         "id": 1145,
+         "cameraSiteId": 1145,
+         "sortOrder": 0,
+         "description": "0640_I-4_M_MM_104.3",
+         "imageUrl": "/map/Cctv/1145",
+         "imageType": 0,
+         "videoUrl": "https://dis-se11.divas.cloud:8200/chan-9687_h/index.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1145,
+       "sourceId": "9687",
+       "source": "DIVAS-District 5",
+       "areaId": "SEM",
+       "sortOrder": 0,
+       "roadway": "I-4",
+       "direction": 2,
+       "location": "I-4 @ MM 104.3 M",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-81.322259 28.832549)"
+        }
+       },
+       "linkId1": "1160506097F",
+       "created": "2024-12-12T16:12:05.4845249+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      },
+      {
+       "images": [
+        {
+         "id": 1166,
+         "cameraSiteId": 1166,
+         "sortOrder": 0,
+         "description": "0630_I-4_WB_MM_103.2",
+         "imageUrl": "/map/Cctv/1166",
+         "imageType": 0,
+         "videoUrl": "",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1166,
+       "sourceId": "9708",
+       "source": "DIVAS-District 5",
+       "areaId": "SEM",
+       "sortOrder": 0,
+       "roadway": "I-4",
+       "direction": 4,
+       "location": "I-4 @ MM 103.2 WB",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-81.333447 28.821103)"
+        }
+       },
+       "linkId1": "1160533897T",
+       "created": "2024-12-12T16:12:05.4845249+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      }
+     ],
+     "cameraIds": "1020,1145,1166"
+    },
+    {
+     "DT_RowId": "927026",
+     "tooltipUrl": "/tooltip/Incidents/927026?lang=%7Blang%7D&noCss=true",
+     "id": 927026,
+     "type": "Incidents",
+     "layerName": "Incidents",
+     "roadwayName": "I-75",
+     "description": "Multi-vehicle crash in Marion County on I-75 North, ramp from SR-200. Last updated at 04:14 PM.",
+     "sourceId": "1899236",
+     "source": "DIVAS - District 5",
+     "comment": null,
+     "eventSubType": "2203",
+     "startDate": "10/26/26, 3:13 PM",
+     "endDate": null,
+     "lastUpdated": "10/26/26, 4:14 PM",
+     "isFullClosure": false,
+     "severity": "Minor",
+     "direction": "Northbound",
+     "locationDescription": null,
+     "detourDescription": null,
+     "laneDescription": "",
+     "recurrenceDescription": null,
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Marion",
+     "dotDistrict": "District 5",
+     "region": "Central",
+     "state": "Florida",
+     "country": "United States",
+     "showOnMap": true,
+     "cameras": [
+      {
+       "images": [
+        {
+         "id": 1113,
+         "cameraSiteId": 1113,
+         "sortOrder": 0,
+         "description": "3420_I-75_NB_MM_349.6",
+         "imageUrl": "/map/Cctv/1113",
+         "imageType": 0,
+         "videoUrl": "https://dis-se6.divas.cloud:8200/chan-9438_h/index.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 1113,
+       "sourceId": "9438",
+       "source": "DIVAS-District 5",
+       "areaId": "MARI",
+       "sortOrder": 0,
+       "roadway": "I-75",
+       "direction": 1,
+       "location": "I-75 @ MM 349.6 NB",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-82.181476 29.150943)"
+        }
+       },
+       "created": "2024-12-12T16:12:05.4845249+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {},
+       "jsonDataSerialized": "{}"
+      }
+     ],
+     "cameraIds": "1113"
+    }
+   ],
+   "icons": {
+    "item1": {
+     "url": "/Generated/Content/Images/511/map_exclamationMarkOrangeBlue.svg",
+     "size": [
+      29,
+      35
+     ],
+     "origin": [
+      0,
+      0
+     ],
+     "anchor": [
+      14,
+      34
+     ],
+     "zindex": 50,
+     "preventClustering": false,
+     "isClickable": true
+    },
+    "item2": [
+     {
+      "itemId": "926459",
+      "location": [
+       28.827556,
+       -81.327444
+      ],
+      "icon": {},
+      "title": ""
+     },
+     {
+      "itemId": "927026",
+      "location": [
+       29.150406,
+       -82.184878
+      ],
+      "icon": {},
+      "title": ""
+     }
+    ]
+   }
+  }
+ },
+ "id": {
+  "Construction": {
+   "rows": [
+    {
+     "DT_RowId": "23",
+     "tooltipUrl": "/tooltip/Construction/23?lang=%7Blang%7D&noCss=true",
+     "id": 23,
+     "type": "Roadwork",
+     "layerName": "Construction",
+     "roadwayName": "SH-81",
+     "description": " Work on the shoulder on SH-81 near Poverty Gulch. 7/8/2024 9:29 PM Mon: 12:00 PM - 5:00 PM, Tue, Wed, Thu, Fri, Sat, Sun: Active all day Activities: use caution, warning.",
+     "sourceId": "4277",
+     "source": "ERS",
+     "comment": null,
+     "eventSubType": "workOnTheShoulder",
+     "startDate": "7/8/24, 9:29 PM MT",
+     "endDate": null,
+     "lastUpdated": "6/11/25, 3:02 PM MT",
+     "isFullClosure": false,
+     "severity": "None",
+     "direction": "Unknown",
+     "locationDescription": "Poverty Gulch",
+     "detourDescription": null,
+     "laneDescription": "",
+     "recurrenceDescription": "<b>Mon:</b><br/>12:00 PM - 5:00 PM<br/><br/><b>Tue, Wed, Thu, Fri, Sat, Sun:</b><br/>Active all day<br/><br/>",
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Cassia",
+     "region": "Idaho Falls/Pocatello",
+     "state": "Idaho",
+     "country": "United States",
+     "showOnMap": true,
+     "restrictions": "Width Restriction:  <br>Height Restriction:  <br>Length Restriction:  <br>Weight Restriction:  <br>Speed Restriction:  <br>"
+    },
+    {
+     "DT_RowId": "32",
+     "tooltipUrl": "/tooltip/Construction/32?lang=%7Blang%7D&noCss=true",
+     "id": 32,
+     "type": "Roadwork",
+     "layerName": "Construction",
+     "roadwayName": "W Chinden Blvd",
+     "description": " Road construction on W Chinden Blvd Both Directions At N McDermott Rd. 3/7/2025 12:00 AM MT to 11/20/2026 12:00 PM MT Mon, Sat, Sun: Paused all day, Tue: 10:00 PM - 12:00 AM, Wed, Thu: 12:00 AM - 6:00 AM, 10:00 PM - 12:00 AM, Fri: 12:00 AM - 6:00 AM Width Restriction: 12ft  Speed Restriction: 45mph Activities: Look Out for Flagger. <div class='cellSpacer'><i><b>Comments:</b></i> Night Work only on the US20/26 and SH-16 intersections will require flagging to facilitate bridge construction. \n\nSH-16 and US-20/26 expansion.</div>",
+     "sourceId": "6204",
+     "source": "ERS",
+     "comment": "Night Work only on the US20/26 and SH-16 intersections will require flagging to facilitate bridge construction. \n\nSH-16 and US-20/26 expansion.",
+     "eventSubType": "roadConstruction",
+     "startDate": "3/7/25, 12:00 AM MT",
+     "endDate": "11/20/26, 12:00 PM MT",
+     "lastUpdated": "9/28/26, 9:27 PM MT",
+     "isFullClosure": false,
+     "severity": "None",
+     "direction": "Both",
+     "locationDescription": "N McDermott Rd",
+     "detourDescription": null,
+     "laneDescription": "",
+     "recurrenceDescription": "<b>Mon, Sat, Sun:</b><br/>Paused all day<br/><br/><b>Tue:</b><br/>10:00 PM - 12:00 AM<br/><br/><b>Wed, Thu:</b><br/>12:00 AM - 6:00 AM<br/>10:00 PM - 12:00 AM<br/><br/><b>Fri:</b><br/>12:00 AM - 6:00 AM<br/><br/>",
+     "widthRestriction": 12,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Ada",
+     "region": "Idaho Falls/Pocatello",
+     "state": "Idaho",
+     "country": "United States",
+     "showOnMap": true,
+     "restrictions": "Width Restriction: 12.00 ft<br>Height Restriction:  <br>Length Restriction:  <br>Weight Restriction:  <br>Speed Restriction: 45.00 mph<br>"
+    }
+   ],
+   "icons": {
+    "item1": {
+     "url": "/Generated/Content/Images/511/map_construction.svg",
+     "size": [
+      29,
+      35
+     ],
+     "origin": [
+      0,
+      0
+     ],
+     "anchor": [
+      12,
+      34
+     ],
+     "zindex": 10,
+     "preventClustering": false,
+     "isClickable": true
+    },
+    "item2": [
+     {
+      "itemId": "23",
+      "location": [
+       42.5168038430856,
+       -113.711287649613
+      ],
+      "icon": {},
+      "title": ""
+     },
+     {
+      "itemId": "32",
+      "location": [
+       43.6628385661889,
+       -116.470326468808
+      ],
+      "icon": {},
+      "title": ""
+     }
+    ]
+   }
+  }
+ },
+ "on": {
+  "Closures": {
+   "rows": [],
+   "icons": {
+    "item2": []
+   }
+  }
+ },
+ "ga": {
+  "Construction": {
+   "rows": [
+    {
+     "DT_RowId": "2541027",
+     "tooltipUrl": "/tooltip/Construction/2541027?lang=%7Blang%7D&noCss=true",
+     "id": 2541027,
+     "type": "Construction",
+     "layerName": "Construction",
+     "roadwayName": "SR 101",
+     "description": "Road construction on SR 101 Southbound at W 5TH ST. Left lane blocked.",
+     "sourceId": "4891182",
+     "source": "GA-Events",
+     "comment": null,
+     "eventSubType": "road construction",
+     "startDate": "8/8/25, 12:00 AM",
+     "endDate": "10/31/26, 10:00 AM",
+     "lastUpdated": "9/30/26, 11:51 AM",
+     "isFullClosure": false,
+     "severity": "minor",
+     "direction": "s",
+     "locationDescription": null,
+     "detourDescription": null,
+     "laneDescription": "Left lane blocked.",
+     "recurrenceDescription": "",
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Floyd",
+     "region": "Georgia Statewide",
+     "state": "Georgia",
+     "country": "United States",
+     "showOnMap": true,
+     "cameras": [
+      {
+       "images": [
+        {
+         "id": 24047,
+         "cameraSiteId": 16637,
+         "sortOrder": 0,
+         "description": "FLYD-0012: SR 101 at West 3rd St (FLOYD)",
+         "imageUrl": "/map/Cctv/24047",
+         "imageType": 0,
+         "videoUrl": "https://sfs-msc-pub-lq-02.navigator.dot.ga.gov:443/rtplive/FLYD-CCTV-0012/playlist.m3u8",
+         "videoType": "application/x-mpegURL",
+         "isVideoAuthRequired": true,
+         "videoDisabled": false,
+         "disabled": false,
+         "blocked": false,
+         "language": "en"
+        }
+       ],
+       "id": 16637,
+       "sourceId": "20162",
+       "source": "SKYLINE",
+       "areaId": "GA",
+       "sortOrder": 0,
+       "roadway": "SR 101",
+       "direction": 1,
+       "location": "FLYD-0012: SR 101 at West 3rd St (FLOYD)",
+       "latLng": {
+        "geography": {
+         "coordinateSystemId": 4326,
+         "wellKnownText": "POINT (-85.17707 34.25557)"
+        }
+       },
+       "linkId1": "1372722973F",
+       "created": "2026-09-10T19:25:31.3007114+00:00",
+       "defaultCameraSite": false,
+       "language": "en",
+       "jsonData": {
+        "name": "FLYD-CCTV-0012"
+       },
+       "jsonDataSerialized": "{\"Name\":\"FLYD-CCTV-0012\"}"
+      }
+     ],
+     "cameraIds": "16637"
+    },
+    {
+     "DT_RowId": "2920439",
+     "tooltipUrl": "/tooltip/ConstructionClosures/2920439?lang=%7Blang%7D&noCss=true",
+     "id": 2920439,
+     "type": "Construction Closures",
+     "layerName": "ConstructionClosures",
+     "roadwayName": "SR 42",
+     "description": "Road construction on SR 42 Eastbound at SR 74. All lanes closed.",
+     "sourceId": "4971224",
+     "source": "GA-Events",
+     "comment": null,
+     "eventSubType": "road construction",
+     "startDate": "9/17/25, 12:00 AM",
+     "endDate": "12/31/26, 12:00 AM",
+     "lastUpdated": "5/7/26, 11:09 AM",
+     "isFullClosure": true,
+     "severity": "minor",
+     "direction": "ew",
+     "locationDescription": null,
+     "detourDescription": null,
+     "laneDescription": "All lanes closed.",
+     "recurrenceDescription": "",
+     "widthRestriction": null,
+     "heightRestriction": null,
+     "heightUnderRestriction": null,
+     "lengthRestriction": null,
+     "weightRestriction": null,
+     "majorEvent": null,
+     "county": "Monroe",
+     "region": "Georgia Statewide",
+     "state": "Georgia",
+     "country": "United States",
+     "showOnMap": true
+    }
+   ],
+   "icons": {
+    "item1": {
+     "url": "/Generated/Content/Images/511/map_constructionWorker.svg",
+     "size": [
+      29,
+      35
+     ],
+     "origin": [
+      0,
+      0
+     ],
+     "anchor": [
+      14,
+      34
+     ],
+     "zindex": 0,
+     "preventClustering": false,
+     "isClickable": true
+    },
+    "item2": [
+     {
+      "itemId": "2541027",
+      "location": [
+       34.256856,
+       -85.178232
+      ],
+      "icon": {},
+      "title": ""
+     }
+    ]
+   }
+  }
+ }
+}
