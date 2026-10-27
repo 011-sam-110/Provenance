@@ -29,8 +29,11 @@ still here, and each test that pins one still runs:
 
 - `lib/marketing/surveillance.data.ts`, with its sources recorded below;
 - `lib/marketing/coverage-audit.data.ts`, `scripts/gen-landing-audit.mjs` and
-  `scripts/country-event-breakdown.mts`;
-- `lib/marketing/repo-facts.data.ts`.
+  `scripts/country-event-breakdown.mts`.
+
+One file did leave: `lib/marketing/repo-facts.data.ts`, the pinned unit-test count, was
+deleted on 2026-10-27. Nothing read it, and it failed the deploy each time two PRs added test
+files in parallel. If a test count goes back on `/`, the build measures it.
 
 So the entries below are kept as the record for those files. They are not a description of
 the live page. If one of those figures goes back on `/`, its source is already written down
