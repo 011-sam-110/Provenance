@@ -44,8 +44,10 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-10-25"`);
-    expect(copy).toContain("25 October 2026");
+    expect(copy).toContain(`dateTime="2026-10-27"`);
+    expect(copy).toContain("27 October 2026");
+    expect(copy).not.toContain(`dateTime="2026-10-25"`);
+    expect(copy).not.toContain("deployed on 25 October 2026");
     // The date before this one, in both shapes it was printed in.
     expect(copy).not.toContain(`dateTime="2026-10-16"`);
     expect(copy).not.toContain("deployed on 16 October 2026");
@@ -59,6 +61,46 @@ describe("privacy page", () => {
     expect(copy).not.toContain(`dateTime="2026-10-04"`);
     expect(copy).not.toContain("deployed on 4 October 2026");
     expect(copy).not.toContain("15 September 2026");
+  });
+
+  it("says the access log keeps the query, and so what people type", () => {
+    const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+    // deploy/Caddyfile has no filter on request>uri, so ?q=, ?target= and the
+    // near-me ?lat=/?lon= reach the raw access log. The old sentence said the opposite,
+    // and the old lifetime ("about three and a half days") had no source in the repo.
+    expect(copy).not.toContain("Nothing you type is logged anywhere");
+    expect(copy).not.toContain("three and a");
+    for (const part of ["?q=", "?target=", "?lat=", "50 MiB", "five files"]) {
+      expect(copy).toContain(part);
+    }
+  });
+
+  it("states the real number of API route files and log statements", () => {
+    const copy = stripComments(readFileSync(PRIVACY, "utf8"));
+    const routes: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (/^route\.tsx?$/.test(name)) routes.push(p);
+      }
+    };
+    walk(join("app", "api"));
+    const logs = routes.reduce(
+      (n, f) => n + (stripComments(readFileSync(f, "utf8")).match(/console\.(log|error|warn|info)\(/g)?.length ?? 0),
+      0,
+    );
+    const words = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    expect(copy).toContain(`${routes.length} API routes`);
+    expect(copy).toContain(`across the ${routes.length} API route files`);
+    const said = logs < words.length ? words[logs] : String(logs);
+    expect(copy.toLowerCase()).toContain(`${said} log statement`);
+  });
+
+  it("keeps the log's size rule in step with deploy/Caddyfile", () => {
+    const caddy = readFileSync(join("deploy", "Caddyfile"), "utf8");
+    expect(caddy).toMatch(/roll_size 50MiB/);
+    expect(caddy).toMatch(/roll_keep 5\b/);
   });
 
   it("uses hyphens, not em dashes, in user-facing copy", () => {
