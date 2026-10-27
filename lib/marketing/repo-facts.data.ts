@@ -93,6 +93,12 @@
  * `tests/unit/lang-selector-honesty.test.ts` (2 cases). `npx vitest list`: 5,456 cases across
  * 467 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  *
+ * Re-measured 2026-10-24 on fix/retire-console-redesign-panels (origin/main at bdd0f50, after
+ * #297): adds `tests/unit/console-redesign-retired-panels.test.ts` (3 cases), a regression test
+ * for deleting InstabilityPanel.tsx/ConflictPanel.tsx/TopEventsPanel.tsx/RiskPanel.tsx (retired
+ * by docs/superpowers/specs/2026-06-28-ground-truth-console-redesign-design.md:112-115, never
+ * actually deleted). `npx vitest list`: 5,459 cases across 468 files.
+ *
  * Re-measured 2026-10-25 on feat/gods-eye (origin/main at bdd0f50, after #297), M1: the God's
  * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
  * 5,489 cases across 471 files. M2 adds `eye-cameras`, `eye-declutter` and `proxy-clip`: 5,514
@@ -103,15 +109,25 @@
  * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
  * across 479 files.
  *
+ * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
+ * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
+ * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
+ * across 480 files — exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * just add.
+ *
  * Re-measured 2026-10-27 on feat/live-cams-m1 (origin/main at 5d618ae), M1 of the live-cams
  * build: adds `liveness-playcheck`, `hls-upstream` and `stat-line`, and cases to
  * `cameras-body-memo`, `hud-model` and `camslot-arm`. `npm test` on provenance-1: 5,614 cases
  * across 482 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  * The warm-up commit after it adds five cases to `liveness-playcheck` and `cameras-body-memo`:
  * 5,619 cases across 482 files.
+ *
+ * Re-measured 2026-10-27 after merging origin/main (7f1101e: #300 and #298) into
+ * feat/live-cams-m1: `npm test` on provenance-1, 5,625 cases across 483 files (#300 added cases
+ * to `privacy-page`, so the sides do not simply add up to 5,622).
  */
 export const UNIT_TESTS = {
-  cases: 5619,
-  files: 482,
+  cases: 5625,
+  files: 483,
   measuredAt: "2026-10-27",
 } as const;

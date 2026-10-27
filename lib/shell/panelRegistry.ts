@@ -7,10 +7,6 @@ import MarketsPanel from "@/components/shell/MarketsPanel";
 import DailyBrief from "@/components/shell/DailyBrief";
 import WatchlistPanel from "@/components/shell/WatchlistPanel";
 import CoveragePanel from "@/components/shell/CoveragePanel";
-import InstabilityPanel from "@/components/shell/InstabilityPanel";
-import ConflictPanel from "@/components/shell/ConflictPanel";
-import TopEventsPanel from "@/components/shell/TopEventsPanel";
-import RiskPanel from "@/components/shell/RiskPanel";
 
 export const PANEL_REGISTRY: Record<PanelKey, {
   component: ComponentType;
@@ -25,10 +21,6 @@ export const PANEL_REGISTRY: Record<PanelKey, {
   brief:      { component: DailyBrief,      title: "Brief",     category: "intelligence", defaultGrid: { x: 9, y: 0, w: 3, h: 6 } },
   watchlist:  { component: WatchlistPanel,  title: "Saved places", category: "core",       defaultGrid: { x: 9, y: 6, w: 3, h: 4 } },
   coverage:   { component: CoveragePanel,   title: "Coverage",  category: "core",         defaultGrid: { x: 9, y: 0, w: 3, h: 6 } },
-  instability:{ component: InstabilityPanel, title: "Country Instability", category: "intelligence", defaultGrid: { x: 0, y: 0,  w: 12, h: 6 } },
-  conflict:   { component: ConflictPanel,    title: "Armed Conflict",      category: "intelligence", defaultGrid: { x: 0, y: 6,  w: 12, h: 6 } },
-  topEvents:  { component: TopEventsPanel,   title: "Top Events",          category: "intelligence", defaultGrid: { x: 0, y: 12, w: 12, h: 6 } },
-  risk:       { component: RiskPanel,        title: "Strategic Risk",      category: "intelligence", defaultGrid: { x: 0, y: 18, w: 12, h: 3 } },
 };
 
 /**
