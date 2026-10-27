@@ -1,0 +1,296 @@
+{
+ "events": [
+  {
+   "jurisdiction_url": "https://api.open511.gov.bc.ca/jurisdiction",
+   "url": "https://api.open511.gov.bc.ca/events/drivebc.ca/RIDE-102273",
+   "id": "drivebc.ca/RIDE-102273",
+   "headline": "CONSTRUCTION",
+   "status": "ACTIVE",
+   "created": "2026-09-11T08:50:09-07:00",
+   "updated": "2026-09-11T08:56:44-07:00",
+   "description": "Bridge construction from Gilbert Road, In Richmond to Dinsmore Bridge, In Richmond. Starting Mon Sep 14 until Thu Dec 31. From 10:00 PM to 6:00 AM PDT the next day, Monday to Thursday and Sunday. Bridge closed. Detour in effect. Watch for traffic control. Last update: September 11th, 2026 at 8:56am PDT. Bridge will be open to traffic during the day. Detour via No. 2 Rd. Bridge.",
+   "+ivr_message": "Bridge construction from Gilbert Road, In Richmond to Dinsmore Bridge, In Richmond. Starting Mon Sep 14 until Thu Dec 31. From 10:00 PM to 6:00 AM PDT the next day, Monday to Thursday and Sunday. Bridge closed. Detour in effect. Watch for traffic control. Last update: September 11th, 2026 at 8:56am PDT. Bridge will be open to traffic during the day. Detour via No. 2 Rd. Bridge.",
+   "+linear_reference_km": 0,
+   "schedule": {
+    "intervals": [
+     "2026-09-15T05:00/2026-12-31T15:00"
+    ]
+   },
+   "event_type": "CONSTRUCTION",
+   "event_subtypes": [
+    "ROAD_CONSTRUCTION"
+   ],
+   "severity": "MINOR",
+   "geography": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -123.15146,
+      49.18115
+     ],
+     [
+      -123.15118,
+      49.1809
+     ],
+     [
+      -123.15117,
+      49.18082
+     ],
+     [
+      -123.15074,
+      49.18044
+     ],
+     [
+      -123.15056,
+      49.18036
+     ],
+     [
+      -123.15024,
+      49.18008
+     ],
+     [
+      -123.14991,
+      49.1798
+     ],
+     [
+      -123.14982,
+      49.17971
+     ],
+     [
+      -123.14976,
+      49.17966
+     ],
+     [
+      -123.14966,
+      49.17957
+     ],
+     [
+      -123.14772,
+      49.17784
+     ],
+     [
+      -123.14767,
+      49.17779
+     ]
+    ]
+   },
+   "roads": [
+    {
+     "name": "Other Roads",
+     "from": "Gilbert Road",
+     "direction": "BOTH",
+     "state": "CLOSED"
+    }
+   ],
+   "areas": [
+    {
+     "url": "http://www.geonames.org/8630136",
+     "name": "Lower Mainland District",
+     "id": "drivebc.ca/1"
+    }
+   ]
+  },
+  {
+   "jurisdiction_url": "https://api.open511.gov.bc.ca/jurisdiction",
+   "url": "https://api.open511.gov.bc.ca/events/drivebc.ca/RIDE-104347",
+   "id": "drivebc.ca/RIDE-104347",
+   "headline": "CONSTRUCTION",
+   "status": "ACTIVE",
+   "created": "2026-10-26T13:27:42-07:00",
+   "updated": "2026-10-26T13:33:57-07:00",
+   "description": "Construction work at Bradner Road, In Abbotsford and At Bradner Road and Downes Road. Starting 7:00 PM PDT on Friday October 30, 2026 until 5:00 AM MST on Monday November 2, 2026. Closed. Last update: October 26th, 2026 at 1:33pm PDT. Bradner/Downes Road north intersection will be closed. Bradner Road will remain open with single lane alternating traffic in effect. Drivers asked to slow down and allow extra travel time. Watch for signage and roadside workers.",
+   "+ivr_message": "Construction work at Bradner Road, In Abbotsford and At Bradner Road and Downes Road. Starting 7:00 PM PDT on Friday October 30, 2026 until 5:00 AM MST on Monday November 2, 2026. Closed. Last update: October 26th, 2026 at 1:33pm PDT. Bradner/Downes Road north intersection will be closed. Bradner Road will remain open with single lane alternating traffic in effect. Drivers asked to slow down and allow extra travel time. Watch for signage and roadside workers.",
+   "+linear_reference_km": 0,
+   "schedule": {
+    "intervals": [
+     "2026-10-31T02:00/2026-11-02T13:00"
+    ]
+   },
+   "event_type": "CONSTRUCTION",
+   "event_subtypes": [
+    "PLANNED_EVENT"
+   ],
+   "severity": "MINOR",
+   "geography": {
+    "type": "Point",
+    "coordinates": [
+     -122.42588792,
+     49.0761186
+    ]
+   },
+   "roads": [
+    {
+     "name": "Other Roads",
+     "from": "Bradner Road",
+     "direction": "N",
+     "state": "CLOSED"
+    }
+   ],
+   "areas": [
+    {
+     "url": "http://www.geonames.org/8630136",
+     "name": "Lower Mainland District",
+     "id": "drivebc.ca/1"
+    }
+   ]
+  },
+  {
+   "jurisdiction_url": "https://api.open511.gov.bc.ca/jurisdiction",
+   "url": "https://api.open511.gov.bc.ca/events/drivebc.ca/RIDE-100047",
+   "id": "drivebc.ca/RIDE-100047",
+   "headline": "INCIDENT",
+   "status": "ACTIVE",
+   "created": "2026-06-24T17:46:33-07:00",
+   "updated": "2026-09-15T20:01:47-07:00",
+   "description": "Washout at Silver Skagit Road, In Hope. Last update: September 15th, 2026 at 8:01pm PDT. Next update: March 1st, 2027 at 11:00am MST. Road has been impacted by washout, repairs are underway. Expect delays in both directions and drive with caution.",
+   "+ivr_message": "Washout at Silver Skagit Road, In Hope. Last update: September 15th, 2026 at 8:01pm PDT. Next update: March 1st, 2027 at 11:00am MST. Road has been impacted by washout, repairs are underway. Expect delays in both directions and drive with caution.",
+   "+linear_reference_km": 0,
+   "schedule": {
+    "intervals": [
+     "2026-06-25T00:46/"
+    ]
+   },
+   "event_type": "INCIDENT",
+   "event_subtypes": [
+    "HAZARD"
+   ],
+   "severity": "MINOR",
+   "geography": {
+    "type": "Point",
+    "coordinates": [
+     -121.47184325,
+     49.36242091
+    ]
+   },
+   "roads": [
+    {
+     "name": "Other Roads",
+     "from": "Silver Skagit Road",
+     "direction": "BOTH",
+     "state": "ALL_LANES_OPEN"
+    }
+   ],
+   "areas": [
+    {
+     "url": "http://www.geonames.org/8630136",
+     "name": "Lower Mainland District",
+     "id": "drivebc.ca/1"
+    }
+   ]
+  },
+  {
+   "jurisdiction_url": "https://api.open511.gov.bc.ca/jurisdiction",
+   "url": "https://api.open511.gov.bc.ca/events/drivebc.ca/RIDE-103094",
+   "id": "drivebc.ca/RIDE-103094",
+   "headline": "CONSTRUCTION",
+   "status": "ACTIVE",
+   "created": "2026-10-02T10:43:40-07:00",
+   "updated": "2026-10-16T13:46:02-07:00",
+   "description": "Night work from Highway 99, In Delta and At Ladner Trunk Rd to In Delta and At Highway 17. Starting Sun Oct 4 until Sun Nov 8. From 9:00 PM to 5:00 AM PDT the next day, Monday to Saturday. Watch for traffic control. Last update: October 16th, 2026 at 1:46pm PDT. One lane in each direction will remain open to traffic.",
+   "+ivr_message": "Night work from Highway 99, In Delta and At Ladner Trunk Rd to In Delta and At Highway 17. Starting Sun Oct 4 until Sun Nov 8. From 9:00 PM to 5:00 AM PDT the next day, Monday to Saturday. Watch for traffic control. Last update: October 16th, 2026 at 1:46pm PDT. One lane in each direction will remain open to traffic.",
+   "+linear_reference_km": 0,
+   "schedule": {
+    "intervals": [
+     "2026-10-05T04:00/2026-11-08T13:00"
+    ]
+   },
+   "event_type": "CONSTRUCTION",
+   "event_subtypes": [
+    "PLANNED_EVENT"
+   ],
+   "severity": "MAJOR",
+   "geography": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      -122.95936,
+      49.09056
+     ],
+     [
+      -122.95945,
+      49.09056
+     ],
+     [
+      -122.96313,
+      49.0906
+     ],
+     [
+      -122.97943,
+      49.09056
+     ],
+     [
+      -122.99545,
+      49.09056
+     ],
+     [
+      -123.00045,
+      49.09056
+     ],
+     [
+      -123.00184,
+      49.09065
+     ],
+     [
+      -123.00357,
+      49.09092
+     ],
+     [
+      -123.01423,
+      49.093
+     ],
+     [
+      -123.01908,
+      49.09394
+     ],
+     [
+      -123.02308,
+      49.09472
+     ],
+     [
+      -123.02414,
+      49.09492
+     ],
+     [
+      -123.0263,
+      49.09534
+     ],
+     [
+      -123.02639,
+      49.09536
+     ],
+     [
+      -123.02655,
+      49.09539
+     ],
+     [
+      -123.02661,
+      49.09541
+     ]
+    ]
+   },
+   "roads": [
+    {
+     "name": "Highway 99",
+     "from": "Highway 99",
+     "direction": "BOTH",
+     "state": "ALL_LANES_OPEN"
+    }
+   ],
+   "areas": [
+    {
+     "url": "http://www.geonames.org/8630136",
+     "name": "Lower Mainland District",
+     "id": "drivebc.ca/1"
+    }
+   ]
+  }
+ ],
+ "pagination": {
+  "offset": "0"
+ },
+ "meta": {
+  "url": "/events",
+  "up_url": "",
+  "version": "v1"
+ }
+}

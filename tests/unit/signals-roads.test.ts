@@ -2,19 +2,21 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RoadNotice } from "@/lib/roads/notice";
-import { normalizeTflNotices } from "@/lib/roads/tfl";
+import { normalizeTflNotices, TFL_DISRUPTIONS_URL } from "@/lib/roads/tfl";
+import { DRIVEBC_EVENTS_URL, normalizeOpen511 } from "@/lib/roads/open511";
 import { readOutcome } from "@/lib/signals/outcome";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import {
+  DRIVEBC_OPERATOR,
   ROADS_GROUP,
   ROAD_CLOSURES_SOURCE,
   ROAD_INCIDENTS_SOURCE,
   ROAD_WORKS_SOURCE,
   roadLayerFeatures,
-} from "@/lib/signals/roads-london";
+} from "@/lib/signals/roads";
 import type { SignalFeature } from "@/lib/signals/types";
 
-// The console's three London road layers, held against three verbatim rows of TfL's
+// The console's three road layers, held against three verbatim rows of TfL's
 // /Road/all/Disruption answer (27 Oct 2026, 06:19 UTC; tests/fixtures/tfl-road-
 // disruptions-mixed.json):
 //   TIMS-237054  Works      A12, 7 segments Closed westbound and 13 Open
@@ -22,6 +24,8 @@ import type { SignalFeature } from "@/lib/signals/types";
 //   TIMS-237055  Emergency  A1201 Blackstock Road, 7 segments Closed both ways
 const MIXED = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/tfl-road-disruptions-mixed.json"), "utf8"));
 const NOTICES = normalizeTflNotices(MIXED);
+// Four verbatim DriveBC Open511 events, 27 Oct 2026 07:56 UTC (see roads-open511.test.ts).
+const BC = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/drivebc-open511-events.json"), "utf8"));
 
 const linesOf = (f: SignalFeature): number =>
   f.geometry?.type === "MultiLineString" ? f.geometry.coordinates.length : f.geometry?.type === "LineString" ? 1 : 0;
@@ -80,12 +84,14 @@ describe("roadLayerFeatures: one TfL read, three layers", () => {
 
   it("keeps TfL's words and TfL's own last change", () => {
     expect(closures[0].props).toMatchObject({
+      agency: "TfL",
       category: "Works",
       subCategory: "Utility works",
       severity: "Minimal",
       closure: "Closed, westbound",
-      tflLastChange: "2026-10-27T05:56:23Z",
+      lastChange: "2026-10-27T05:56:23Z",
     });
+    expect(closures[0].link).toBe("https://tfl.gov.uk/traffic/status/");
     expect(closures[0].ts).toBe("2026-10-27T05:56:23Z");
     // The label stops at TfL's postcodes; the dossier keeps the whole location.
     expect(closures[2].title).toBe("Police activity, [A1201] BLACKSTOCK ROAD");
@@ -114,15 +120,23 @@ describe("roadLayerFeatures: one TfL read, three layers", () => {
 describe("the three sources", () => {
   const SOURCES = [ROAD_WORKS_SOURCE, ROAD_INCIDENTS_SOURCE, ROAD_CLOSURES_SOURCE];
 
-  it("are map layers in the Roads group, credited to TfL, London only", () => {
+  it("are map layers in the Roads group, credited to each operator", () => {
     expect(SOURCES.map((s) => s.id)).toEqual(["road-works", "road-incidents", "road-closures"]);
+    expect(SOURCES.map((s) => s.label)).toEqual(["Roadworks", "Road incidents", "Road closures"]);
     for (const s of SOURCES) {
       expect(MAP_SIGNALS).toContain(s);
       expect(s.group).toBe(ROADS_GROUP);
       expect(s.precision).toBe("exact");
       expect(s.attribution).toContain("Powered by TfL Open Data");
-      expect(s.label).toMatch(/\(London\)$/);
+      expect(s.attribution).toContain("Contains information licensed under the Open Government Licence - British Columbia");
     }
+  });
+
+  it("names and links each DriveBC row as DriveBC's", () => {
+    const [f] = roadLayerFeatures(normalizeOpen511(BC), "closures", DRIVEBC_OPERATOR);
+    expect(f.id).toBe("bc:drivebc.ca/RIDE-102273:closed");
+    expect(f.props).toMatchObject({ agency: "DriveBC", closure: "Closed, both directions" });
+    expect(f.link).toBe("https://www.drivebc.ca/");
   });
 
   describe("fetch", () => {
@@ -139,24 +153,39 @@ describe("the three sources", () => {
       vi.useRealTimers();
     });
 
-    it("asks TfL once for the three layers, and dates the data by TfL's newest change", async () => {
-      vi.stubGlobal("fetch", async () => {
+    /** Answers TfL and DriveBC from the fixtures, or with `down` for the operators named. */
+    const answer = (down: string[] = []) =>
+      vi.stubGlobal("fetch", async (url: string) => {
         calls += 1;
-        return new Response(JSON.stringify(MIXED), { status: 200 });
+        if (url === TFL_DISRUPTIONS_URL && !down.includes("tfl")) return new Response(JSON.stringify(MIXED), { status: 200 });
+        if (url === DRIVEBC_EVENTS_URL && !down.includes("bc")) return new Response(JSON.stringify(BC), { status: 200 });
+        return new Response("", { status: 503 });
       });
+
+    it("asks each operator once for the three layers, and dates the data by the newest change", async () => {
+      answer();
       const [w, i, c] = await Promise.all(SOURCES.map((s) => s.fetch()));
-      expect(calls).toBe(1);
-      expect([w.length, i.length, c.length]).toEqual([1, 0, 3]);
+      expect(calls).toBe(2);
+      // Works: the A12's open stretch, and DriveBC's night work on Highway 99. Incidents:
+      // DriveBC's washout. Closures: TfL's three, and DriveBC's two closed events.
+      expect([w.length, i.length, c.length]).toEqual([2, 1, 5]);
       const out = readOutcome(c);
       expect(out?.ok).toBe(true);
       expect(out?.sourceAt).toBe(Date.parse("2026-10-27T05:56:23Z"));
     });
 
-    it("says TfL did not answer, and draws nothing invented", async () => {
-      vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
+    it("keeps one operator's notices when the other does not answer, and says which", async () => {
+      answer(["bc"]);
+      const c = await ROAD_CLOSURES_SOURCE.fetch();
+      expect(c.map((f) => f.id.split(":")[0])).toEqual(["tfl", "tfl", "tfl"]);
+      expect(readOutcome(c)).toMatchObject({ ok: false, reason: "DriveBC did not answer" });
+    });
+
+    it("says no operator answered, and draws nothing invented", async () => {
+      answer(["tfl", "bc"]);
       const c = await ROAD_CLOSURES_SOURCE.fetch();
       expect(c).toEqual([]);
-      expect(readOutcome(c)).toMatchObject({ ok: false, reason: "TfL did not answer" });
+      expect(readOutcome(c)).toMatchObject({ ok: false, reason: "TfL and DriveBC did not answer" });
     });
   });
 });

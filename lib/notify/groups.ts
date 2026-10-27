@@ -31,8 +31,8 @@ export const GROUP_TRIGGERS: Record<string, TriggerKind[]> = {
   // Official warnings: each is issued, then expires or is cancelled, at a fixed area.
   // No scalar to cross (the layer declares no metric).
   Weather: ["appears", "disappears", "count", "quiet"],
-  // Road notices (lib/signals/roads-london.ts): TfL lists each one, then clears it, at a
-  // fixed place. No scalar to cross, and a notice is never a speed.
+  // Road notices (lib/signals/roads.ts): the operator lists each one, then clears it, at
+  // a fixed place. No scalar to cross, and a notice is never a speed.
   Roads: ["appears", "disappears", "count", "quiet"],
 
   // Rows carry a stable id and a position that CHANGES between polls.
