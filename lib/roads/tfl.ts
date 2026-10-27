@@ -9,6 +9,12 @@
 // notice that day, closed streets included, so the street's own `closure` word is what
 // decides. The segments of a street TfL marks "Closed" go into `closedLines`, the rest into
 // `openLines`, so each segment is sent once.
+//
+// A STREET'S SEGMENTS ARE JOINED INTO ONE LINE. TfL cuts a street into short pieces, out of
+// order (on the A12 notice: 5 m to 989 m, 13 pieces), and MapLibre starts a dash pattern
+// again at the start of every line. A street of short pieces then draws as one solid line,
+// whatever its pattern, and a solid line is how a measured speed will look. Joining the
+// pieces end to end (joinLines) keeps every point TfL sent and lets the pattern run.
 
 import type { RoadKind, RoadNotice, RoadStreet } from "@/lib/roads/notice";
 
@@ -44,7 +50,54 @@ const isLonLat = (p: unknown): p is [number, number] =>
   Math.abs(p[1] as number) <= 90 &&
   Math.abs(p[0] as number) <= 180;
 
-/** One of TfL's streets: its name, its own closure word, its segments. */
+/** Two points closer than this, in degrees, are one point: about 1 m in London. */
+const JOIN_TOLERANCE_DEG = 1e-5;
+
+const samePoint = (a: [number, number], b: [number, number]) =>
+  Math.abs(a[0] - b[0]) <= JOIN_TOLERANCE_DEG && Math.abs(a[1] - b[1]) <= JOIN_TOLERANCE_DEG;
+
+const sameLine = (a: [number, number][], b: [number, number][]) =>
+  a.length === b.length && a.every((p, i) => samePoint(p, b[i]));
+
+/**
+ * Pure: joins line pieces that share an end into longer lines, in either direction, and
+ * drops a piece that repeats another (forwards or backwards). Pieces that touch nothing
+ * stay apart: a gap is never bridged. At a fork, two of the three pieces are joined and
+ * the third stays its own line.
+ */
+export function joinLines(pieces: readonly [number, number][][]): [number, number][][] {
+  const out: [number, number][][] = [];
+  for (const piece of pieces) {
+    if (piece.length < 2) continue;
+    const reversed = [...piece].reverse();
+    if (out.some((o) => sameLine(o, piece) || sameLine(o, reversed))) continue;
+    out.push([...piece]);
+  }
+  let joined = true;
+  while (joined) {
+    joined = false;
+    search: for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const a = out[i];
+        const b = out[j];
+        let line: [number, number][] | null = null;
+        if (samePoint(a[a.length - 1], b[0])) line = [...a, ...b.slice(1)];
+        else if (samePoint(b[b.length - 1], a[0])) line = [...b, ...a.slice(1)];
+        else if (samePoint(a[a.length - 1], b[b.length - 1])) line = [...a, ...b.slice(0, -1).reverse()];
+        else if (samePoint(a[0], b[0])) line = [...[...a].reverse(), ...b.slice(1)];
+        if (line) {
+          out[i] = line;
+          out.splice(j, 1);
+          joined = true;
+          break search;
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** One of TfL's streets: its name, its own closure word, its segments joined into lines. */
 function tflStreet(street: Record<string, unknown>): RoadStreet {
   const closed = street?.closure === "Closed";
   const dir = typeof street?.directions === "string" ? street.directions.trim().toLowerCase() : "";
@@ -59,7 +112,7 @@ function tflStreet(street: Record<string, unknown>): RoadStreet {
     ...(typeof street?.name === "string" && street.name ? { name: street.name } : {}),
     closed,
     ...(closed ? { closure: dir ? `Closed, ${dir}` : "Closed" } : {}),
-    lines,
+    lines: joinLines(lines),
   };
 }
 

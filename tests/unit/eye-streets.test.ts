@@ -30,9 +30,11 @@ describe("normalizeTflDisruptions", () => {
   it("places it at TfL's point, and draws TfL's street segments", () => {
     expect(lined.lat).toBeCloseTo(51.45711, 5);
     expect(lined.lon).toBeCloseTo(-0.194259, 6);
-    // Its one street is Closed, so every segment is a closed one.
+    // Its one street is Closed, so every segment is a closed one: 16 of them, which
+    // join end to end into one line (joinLines in lib/roads/tfl.ts).
     expect(lined.openLines).toEqual([]);
-    expect(lined.closedLines.length).toBe(16);
+    expect(FIXTURE[0].streets[0].segments).toHaveLength(16);
+    expect(lined.closedLines.length).toBe(1);
     for (const line of lined.closedLines) {
       expect(line.length).toBeGreaterThanOrEqual(2);
       for (const [lon, lat] of line) {
@@ -129,7 +131,7 @@ describe("streetFeatures", () => {
   it("paints a street TfL marks Closed as closed, and a point-only notice at its point", () => {
     const feats = streetFeatures([lined, pointOnly]);
     const lines = feats.filter((f) => f.geometry.type === "LineString");
-    expect(lines).toHaveLength(16);
+    expect(lines).toHaveLength(1);
     expect(new Set(lines.map((f) => f.properties?.paint))).toEqual(new Set(["closed"]));
     const points = feats.filter((f) => f.geometry.type === "Point");
     expect(points).toHaveLength(1);

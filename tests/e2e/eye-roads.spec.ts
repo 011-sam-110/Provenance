@@ -109,9 +109,10 @@ test("only the stretch TfL marks Closed gets the closure paint, and no width rea
     return { count, layers };
   });
 
-  // The A12 notice: 7 segments Closed westbound, 13 Open. The other two rows lie
+  // The A12 notice: 7 segments Closed westbound, 13 Open, each street joined into one
+  // line so its pattern runs (joinLines in lib/roads/tfl.ts). The other two rows lie
   // outside the view's area (Chessington, Finsbury Park), so they are not drawn here.
-  expect(drawn.count).toEqual({ closed: 7, works: 13 });
+  expect(drawn.count).toEqual({ closed: 1, works: 1 });
   for (const l of drawn.layers) {
     expect(l.present).toBe(true);
     expect(l.width).not.toContain('"get"');
