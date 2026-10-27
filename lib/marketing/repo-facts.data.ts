@@ -93,6 +93,12 @@
  * `tests/unit/lang-selector-honesty.test.ts` (2 cases). `npx vitest list`: 5,456 cases across
  * 467 files (`find tests/unit -name *.test.ts -o -name *.test.tsx | wc -l` agrees).
  *
+ * Re-measured 2026-10-24 on fix/retire-console-redesign-panels (origin/main at bdd0f50, after
+ * #297): adds `tests/unit/console-redesign-retired-panels.test.ts` (3 cases), a regression test
+ * for deleting InstabilityPanel.tsx/ConflictPanel.tsx/TopEventsPanel.tsx/RiskPanel.tsx (retired
+ * by docs/superpowers/specs/2026-06-28-ground-truth-console-redesign-design.md:112-115, never
+ * actually deleted). `npx vitest list`: 5,459 cases across 468 files.
+ *
  * Re-measured 2026-10-25 on feat/gods-eye (origin/main at bdd0f50, after #297), M1: the God's
  * eye view adds `eye-places`, `eye-look`, `eye-page` and `eye-wording`. `npx vitest list`:
  * 5,489 cases across 471 files. M2 adds `eye-cameras`, `eye-declutter` and `proxy-clip`: 5,514
@@ -103,13 +109,19 @@
  * `eye-words` (3 cases), six cases to `eye-cameras` and three to `eye-motion`: 5,576 cases
  * across 479 files.
  *
+ * Re-measured 2026-10-25 merging fix/retire-console-redesign-panels onto origin/main at 5d618ae
+ * (#299, feat/gods-eye merged): both branches moved this constant off the same bdd0f50 base, so
+ * neither side's number is the merged tree's. `npx vitest list` on the merged tree: 5,579 cases
+ * across 480 files, exactly 479+1 files and 5,576+3 cases, confirming the two sides' deltas
+ * just add.
+ *
  * 2026-10-27, feat/eye-default (God's eye view as the map behind "Open the map"): adds
  * `eye-sources-link` (9 cases), `webgl-probe` (4) and `landing-doors` (9), and renames one
- * case in `eye-page`. `npx vitest list` on that tree: 5,598 cases across 482 files.
- * PR #298 (open) also edits this file; whichever lands second re-measures on the merged tree.
+ * case in `eye-page`. Merged with origin/main at 7f1101e (#298, #300): `npx vitest list` on
+ * the merged tree: 5,604 cases across 483 files.
  */
 export const UNIT_TESTS = {
-  cases: 5598,
-  files: 482,
+  cases: 5604,
+  files: 483,
   measuredAt: "2026-10-27",
 } as const;

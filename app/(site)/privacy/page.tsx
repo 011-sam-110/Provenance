@@ -15,6 +15,31 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-27:
+ *   - The logs section said "Nothing you type is logged anywhere." That was false. The
+ *     site's own `log` block in deploy/Caddyfile masks the address and deletes headers,
+ *     but it has no filter on request>uri, so every access-log line keeps the full
+ *     address asked for, query included. What people type travels in that query:
+ *     ?q= (place search: components/console/MapSearch.tsx, components/shell/PlaceSearch.tsx,
+ *     components/shell/CommandPalette.tsx, lib/shell/askPlaceLookup.ts,
+ *     lib/console/widgets/camslot.picker.tsx) and ?target= (lib/console/widgets/recon.tsx).
+ *     The coordinates of "cameras near you" travel as ?lat= and ?lon=
+ *     (components/shell/PlaceSearch.tsx -> /api/near). lib/analytics/rollup.ts strips the
+ *     query before it counts a path, so the daily summaries hold none of it; the raw log
+ *     does. The sentence is gone, the log paragraph names the query, and the three table
+ *     rows that said "kept: no" or "5 minutes" now point at the log.
+ *   - The log's lifetime was stated as "about three and a half days". Nothing in the repo
+ *     backs that figure (the Caddyfile comment measured about 1.7 days at go-live, before
+ *     the header deletes). The page now gives the rule itself: deploy/Caddyfile
+ *     roll_size 50MiB and roll_keep 5, so the current file plus five rolled files, and
+ *     Caddy's default roll_keep_for of 2160h (90 days) for a rolled file.
+ *   - "One log statement exists across all 35 API route files" had rotted too. `find app/api
+ *     -name route.ts` gives 52 files (8 of them under app/api/admin), and
+ *     `grep -rn "console\.(log|error|warn|info)" app/api` gives five statements: air-quality,
+ *     hls, point-weather, signals/[id] and webcam-place. Each logs a failure with its error;
+ *     none takes free text from the visitor. The eyebrow and the sentence now say 52 and
+ *     five, and tests/unit/privacy-page.test.ts recounts both so they cannot rot again.
+ *
  * WHAT CHANGED ON 2026-10-25:
  *   - The God's eye view (/eye, components/eye/EyeApp.tsx) always raises the 3D
  *     buildings over the Satellite map, so every visit reaches Esri (the imagery) and
@@ -242,8 +267,8 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *
  *     ROLLUPS, added 2026-09-08: scripts/rollup-access-log.mts folds the access log into
  *     one aggregate per day under /srv/provenance/shared/analytics, and those aggregates
- *     are KEPT INDEFINITELY while the log itself rotates away in about three and a half
- *     days. That is a real change to what persists and the logs section says so. They
+ *     are KEPT INDEFINITELY while the log itself rotates away by size (deploy/Caddyfile:
+ *     roll_size 50MiB, roll_keep 5). That is a real change to what persists and the logs section says so. They
  *     hold counts only — paths, referrer hostnames, country codes, device classes,
  *     statuses, byte totals — and no addresses at any resolution. The one per-visitor
  *     structure is a set of salted truncated hashes of (masked address, user agent) used
@@ -297,7 +322,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-25">25 October 2026</time>
+                Last updated <time dateTime="2026-10-27">27 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -603,7 +628,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>35 API routes</span>
+              <span>52 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -628,7 +653,10 @@ export default function PrivacyPage() {
                   <td>Search for a place</td>
                   <td>The text you type, and your map centre if the search is biased to it</td>
                   <td>Photon, the open geocoder at photon.komoot.io</td>
-                  <td>In memory for 5 minutes, then dropped</td>
+                  <td>
+                    In memory for 5 minutes, then dropped. The text is also in the server&rsquo;s
+                    access log, described under <a href="#logs">Logs</a>
+                  </td>
                 </tr>
                 <tr>
                   <td>Ask for cameras near you</td>
@@ -637,7 +665,10 @@ export default function PrivacyPage() {
                     Nowhere. The nearest cameras are worked out on our server from data already
                     loaded
                   </td>
-                  <td>No</td>
+                  <td>
+                    Not by the application. The coordinates are in the server&rsquo;s access log,
+                    described under <a href="#logs">Logs</a>
+                  </td>
                 </tr>
                 <tr>
                   <td>Open a camera still or a live stream</td>
@@ -652,7 +683,10 @@ export default function PrivacyPage() {
                     Cloudflare DNS, crt.sh, rdap.org and the registry it redirects to, RIPEstat,
                     Shodan InternetDB
                   </td>
-                  <td>Cached against that target for 5 minutes</td>
+                  <td>
+                    Cached against that target for 5 minutes. The target is also in the
+                    server&rsquo;s access log, described under <a href="#logs">Logs</a>
+                  </td>
                 </tr>
                 <tr>
                   <td>Upload a photo to the location tool</td>
@@ -986,20 +1020,32 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              One log statement exists across all 35 API route files. It records that a named public
-              data feed threw an error, and the name comes from our own list of feeds rather than
-              from anything you sent. Nothing you type is logged anywhere.
+              Five log statements exist across the 52 API route files. Each records that a data
+              feed or a handler failed, with the error. None of them is given anything you typed:
+              their inputs are our own feed names, a camera&rsquo;s stream address, camera
+              coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
+              to a log. The web server in front of it does, and the next paragraph says what and for
+              how long.
             </p>
             <p>
               Underneath the application is a web server, and it keeps an access log, as any web
               server does. That used to be Vercel&rsquo;s and is now ours, which means it is worth
-              being specific about: it records the path you asked for, the status and size of the
-              reply, how long it took, your user agent, and the two-letter country your request
-              came from. <strong>It does not record your IP address.</strong> The server is told to
+              being specific about: it records the full address you asked for, the status and size
+              of the reply, how long it took, your user agent, and the two-letter country your
+              request came from. <strong>The full address includes everything after the question
+              mark, so it includes what you type.</strong> A place search sends your words as{" "}
+              <code>?q=</code>, a recon tool sends the domain or IP as <code>?target=</code>, and
+              &ldquo;cameras near you&rdquo; sends the coordinates your browser gave as{" "}
+              <code>?lat=</code> and <code>?lon=</code>. Each of those is in the log line for that
+              request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
               some sixty-five thousand addresses, and the rest is discarded. That is enough to tell
               one machine hammering the site from a genuine crowd, and not enough to point at you.
-              The log rolls and old files are deleted; nothing is exported anywhere.
+              The log is limited by size, not by date. When the current file reaches 50 MiB the
+              server starts a new one and keeps only the five files before it, so there are never
+              more than six. The web server also deletes a rolled file 90 days after it was
+              rolled, which is its default. How many days the six files cover depends on how busy
+              the site is. Nothing in the log is exported anywhere.
             </p>
             <p>
               <strong>
@@ -1009,8 +1055,9 @@ export default function PrivacyPage() {
               summary per day: how many requests, how many of them were pages, which paths,
               which referring hostnames, which country codes, which device classes, which
               status codes, how many bytes and how long things took. Those summaries are
-              kept indefinitely, while the log they came from is gone in about three and a
-              half days. This is what the traffic figures behind the scenes are read from,
+              kept indefinitely, while the log they came from is deleted as described above.
+              They count paths without anything after the question mark, so nothing you typed
+              reaches them. This is what the traffic figures behind the scenes are read from,
               and it exists because the alternative was a third party&rsquo;s dashboard.
             </p>
             <p>
@@ -1066,8 +1113,9 @@ export default function PrivacyPage() {
             </p>
             <p>
               Four things sit outside that, and they are the only places anything of yours can
-              persist. One is the server access log described above, which is IP-masked, rolled and
-              deleted &mdash; together with the daily counts taken from it, which are kept but hold
+              persist. One is the server access log described above, which is IP-masked but keeps
+              the addresses you asked for, with what you typed into them, until it rolls away
+              &mdash; together with the daily counts taken from it, which are kept but hold
               no address at any resolution. One is the page-view counter described above, which
               sets no cookie, keeps only your first and last visit dates and a count of your visit
               days on your own device, and does not run at all if you turned it off or your browser sends Do Not Track or Global
@@ -1098,14 +1146,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-25">25 October 2026</time>
+                <time dateTime="2026-10-27">27 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 25 October 2026. When the behaviour changes this
+              This describes the code as deployed on 27 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

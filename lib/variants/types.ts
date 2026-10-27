@@ -4,9 +4,14 @@ import type { Theme } from "@/lib/shell/ui";
 
 export type PanelKey =
   | "layerRail" | "markets" | "brief"
-  | "freshness" | "news" | "watchlist" | "coverage"
-  // Intel widgets (data panels surfaced in the dock)
-  | "instability" | "conflict" | "topEvents" | "risk";
+  | "freshness" | "news" | "watchlist" | "coverage";
+// "instability" | "conflict" | "topEvents" | "risk" were retired here 2026-10-24: the
+// console redesign (docs/superpowers/specs/2026-06-28-ground-truth-console-redesign-
+// design.md:112-115) replaced them with the anomaly-ranked feed
+// (lib/console/anomaly/anomaly.ts) months ago; the dock() placements and components
+// just never got deleted. Unlike these, VariantSwitcher.tsx is a DELIBERATE keep
+// (2026-07-10-navbar-opendata-overhaul-design.md:39: "keep the component + its unit
+// test; just unmount it") — do not apply this same retirement logic to it.
 // NOTE: 'dossier' is intentionally NOT a panel — it is the FeedOverlay slide-in
 // (transient, deep-linked via ?obj=), kept as overlay chrome.
 
