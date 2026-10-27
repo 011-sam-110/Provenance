@@ -1,0 +1,47 @@
+{
+  "messages": [],
+  "see_also": [],
+  "version": "1.0",
+  "data_call_name": "maxmind-geo-lite",
+  "data_call_status": "supported",
+  "cached": false,
+  "query_id": "20261027032545-3624e686-23e2-40d4-82b7-c79800378aa0",
+  "process_time": 43,
+  "server_id": "app183",
+  "build_version": "v0.12.2-2026.10.23",
+  "pipeline": "1478200",
+  "status": "ok",
+  "status_code": 200,
+  "time": "2026-10-27T03:25:45.137755",
+  "data": {
+    "located_resources": [
+      {
+        "resource": "13.51.62.86/32",
+        "locations": [
+          {
+            "country": "SE",
+            "city": "Stockholm",
+            "resources": [
+              "13.48.0.0/14"
+            ],
+            "latitude": 59.3287,
+            "longitude": 18.0717,
+            "covered_percentage": 100.0
+          }
+        ],
+        "unknown_percentage": 0
+      }
+    ],
+    "unknown_percentage": {
+      "v4": 0.0
+    },
+    "result_time": "2026-10-23T16:46:41",
+    "latest_time": "2026-10-23T16:46:41",
+    "earliest_time": "2026-10-23T16:46:41",
+    "parameters": {
+      "resource": "13.51.62.86/32",
+      "resolution": "raw",
+      "cache": null
+    }
+  }
+}

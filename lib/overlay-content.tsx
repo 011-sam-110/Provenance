@@ -7,6 +7,8 @@
 //   • satellite → identity + Esri satellite imagery of the ground beneath it
 //   • plane     → live flight info (callsign, altitude, speed, heading)
 //   • area      → a saved Inspector area: its shape, what it has on, load/remove
+//   • network   → an IP or domain from the search box's "Locate network": where the
+//                 network is registered to be, as an area (NetworkDetail)
 
 import type { WorldObject } from "@/lib/world";
 import { CameraDetail } from "@/components/CameraDetail";
@@ -16,6 +18,7 @@ import WebcamDetail from "@/components/WebcamDetail";
 import SignalDetail from "@/components/SignalDetail";
 import CountryDetail from "@/components/CountryDetail";
 import AreaDetail from "@/components/shell/inspector/AreaDetail";
+import NetworkDetail from "@/components/NetworkDetail";
 
 export function OverlayBody({ object }: { object: WorldObject }) {
   switch (object.kind) {
@@ -33,6 +36,8 @@ export function OverlayBody({ object }: { object: WorldObject }) {
       return <CountryDetail object={object} />;
     case "area":
       return <AreaDetail object={object} />;
+    case "network":
+      return <NetworkDetail object={object} />;
     default:
       return null;
   }
