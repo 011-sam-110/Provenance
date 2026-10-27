@@ -36,6 +36,9 @@ import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
 import { consoleHref, hasSavedBoard, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
 import { PERSIST_KEY as BOARD_KEY } from "@/lib/variants/store";
+import MapBoundary from "@/components/map/MapBoundary";
+import MapFallback from "@/components/map/MapFallback";
+import { useWebGL } from "@/components/map/useWebGL";
 import { EYE_LIGHT, eyePaintOps } from "@/lib/eye/look";
 import {
   filmClock,
@@ -103,6 +106,8 @@ interface EyeHandle extends EyeDriver {
 }
 
 export default function EyeApp({ sourceCount }: { sourceCount: number }) {
+  // With no WebGL the map cannot start: show the fallback instead (lib/map/webgl.ts).
+  const gl = useWebGL();
   const [target, setTarget] = useState<EyeTarget | null>(null);
   const [portrait, setPortrait] = useState(false);
   const [flags, setFlags] = useState<Flags>({ overlay: true, record: false, manualClock: false, canMove: false, motion: null });
@@ -300,7 +305,7 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
 
   const words = target ? titleFor(target, report.cameraName) : null;
   // For scripts and tests: the scene is drawn and, with the overlay on, placed.
-  const state = map && (!flags.overlay || report.ready) ? "ready" : "loading";
+  const state = gl === false ? "no-webgl" : map && (!flags.overlay || report.ready) ? "ready" : "loading";
 
   return (
     <main
@@ -311,8 +316,15 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
       data-record={flags.record || undefined}
       data-credits={(flags.overlay && credits.length > 0) || undefined}
     >
-      <div className={styles.map}>{openAt && <WorldMap openAt={openAt} onStyleReady={onStyleReady} />}</div>
-      {target && map && flags.overlay && (
+      <div className={styles.map}>
+        {openAt && gl && (
+          <MapBoundary fallback={<MapFallback tone="dark" place={words?.title} />}>
+            <WorldMap openAt={openAt} onStyleReady={onStyleReady} />
+          </MapBoundary>
+        )}
+      </div>
+      {gl === false && <MapFallback tone="dark" place={words?.title} />}
+      {gl !== false && target && map && flags.overlay && (
         <EyeOverlay
           map={map}
           styleEpoch={styleEpoch}
@@ -324,7 +336,7 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
           placeRef={placeRef}
         />
       )}
-      {target && words && flags.overlay && (
+      {gl !== false && target && words && flags.overlay && (
         <EyeHud
           map={map}
           start={target.view}
