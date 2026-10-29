@@ -34,7 +34,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
-import { consoleHref, hasSavedBoard, parseEyeLink, type EyeTarget } from "@/lib/eye/places";
+import { consoleHref, eyeLinkQuery, hasSavedBoard, parseEyeLink, type EyeTarget, type EyeView } from "@/lib/eye/places";
 import { PERSIST_KEY as BOARD_KEY } from "@/lib/variants/store";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
@@ -289,6 +289,8 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
   // The Sources button's link: the console at the spot on screen, its Sources rail open.
   // A browser with no saved console board also gets this view's layers and ground, so
   // the console does not open empty; one with a board keeps its own (lib/eye/places.ts).
+  // The link also carries this view's own link as `eye=`, so the console can offer the
+  // way back to the same place, heading and tilt.
   const getSourcesHref = useCallback(() => {
     let storage: Storage | undefined;
     try {
@@ -296,11 +298,18 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
     } catch {
       storage = undefined;
     }
-    const opts = { sources: true, scene: !hasSavedBoard(storage, BOARD_KEY) };
     const m = mapRef.current;
-    if (!m) return consoleHref(target?.view ?? { lat: 0, lon: 0, zoom: 2 }, opts);
-    const c = m.getCenter();
-    return consoleHref({ lat: c.lat, lon: c.lng, zoom: m.getZoom() }, opts);
+    const c = m?.getCenter();
+    const live: EyeView =
+      m && c
+        ? { lat: c.lat, lon: c.lng, zoom: m.getZoom(), tilt: m.getPitch(), heading: m.getBearing() }
+        : target?.view ?? { lat: 0, lon: 0, zoom: 2, tilt: 0, heading: 0 };
+    const opts = {
+      sources: true,
+      scene: !hasSavedBoard(storage, BOARD_KEY),
+      back: target ? eyeLinkQuery(target, live) : undefined,
+    };
+    return consoleHref(live, opts);
   }, [target]);
 
   const words = target ? titleFor(target, report.cameraName) : null;

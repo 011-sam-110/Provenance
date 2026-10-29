@@ -97,7 +97,12 @@ obligations and are not satisfied by the licence.
   on a phone it is the console's own "≡ Sources" thumb control, first in the bar. A browser
   with no saved board also gets `layers=` and `base=` so the console does not open empty;
   a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
-  the doors. **Both map pages ask for WebGL before they mount MapLibre**
+  the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
+  zoom, heading, tilt): ConsoleShell reads it once after mount through `parseEyeReturn`,
+  which rebuilds it from checked values and never uses it as a URL, drops it from the
+  address, and the console's map then shows "God's eye view / Back to <place>" at its top
+  left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
+  a reload drops it). **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
 - `components/marketing/*` — landing page only. ONE scroll subscriber

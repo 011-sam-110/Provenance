@@ -8,6 +8,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
 import Hud from "@/components/hud/Hud";
 import IssOrbit from "@/components/console/IssOrbit";
+import EyeReturn from "@/components/console/EyeReturn";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
 import { useWebGL } from "@/components/map/useWebGL";
@@ -46,13 +47,16 @@ export default function StageHost({ stage }: { stage: StageId }) {
   // the stage cell (`.tn-cw-stage` is the positioned ancestor both overlays
   // anchor inside). Hud renders null while its Map-settings pref is off;
   // IssOrbit renders null ALWAYS — it exists to drive the camera while the
-  // ISS-orbit pref is on. A focused widget unmounts all three together.
+  // ISS-orbit pref is on; EyeReturn renders null unless the console was opened
+  // from God's eye view's Sources link (its way back, top left). A focused
+  // widget unmounts all four together.
   if (gl === false) return <MapFallback tone="light" />;
   return (
     <MapBoundary fallback={<MapFallback tone="light" />}>
       <WorldMap />
       <Hud />
       <IssOrbit />
+      <EyeReturn />
     </MapBoundary>
   );
 }
