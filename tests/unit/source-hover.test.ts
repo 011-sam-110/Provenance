@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { SETTLE_MS, createSourceHover, litIdsForSection } from "@/lib/shell/sourceHover";
+import { SETTLE_MS, createSourceHover } from "@/lib/shell/sourceHover";
+import { previewIdsForSection } from "@/lib/shell/sourcePreview";
 
 describe("createSourceHover", () => {
   beforeEach(() => {
@@ -103,6 +104,23 @@ describe("createSourceHover", () => {
     expect(store.get()).toEqual(["a"]);
   });
 
+  test("immediate reaches subscribers with the settled ids", () => {
+    const store = createSourceHover();
+    const seen: Array<[string[], boolean]> = [];
+    store.subscribe((ids, meta) => seen.push([[...ids], meta.immediate]));
+    const release = store.hold(["a"], { immediate: true });
+    vi.advanceTimersByTime(80);
+    release();
+    vi.advanceTimersByTime(80);
+    store.hold(["b"]);
+    vi.advanceTimersByTime(80);
+    expect(seen).toEqual([
+      [["a"], true],
+      [[], false],
+      [["b"], false],
+    ]);
+  });
+
   test("the timer functions can be injected", () => {
     const fired: Array<() => void> = [];
     const store = createSourceHover({
@@ -120,7 +138,7 @@ describe("createSourceHover", () => {
   });
 });
 
-describe("litIdsForSection", () => {
+describe("previewIdsForSection", () => {
   const rows = [
     { id: "earthquakes" },
     { id: "wildfires" },
@@ -128,12 +146,11 @@ describe("litIdsForSection", () => {
     { id: "volcanoes" },
   ];
 
-  test("keeps the rows that are on, in order", () => {
-    expect(litIdsForSection(rows, (id) => id !== "wildfires")).toEqual(["earthquakes", "volcanoes"]);
+  test("keeps every row that has a map layer, on or off, in order", () => {
+    expect(previewIdsForSection(rows)).toEqual(["earthquakes", "wildfires", "volcanoes"]);
   });
 
-  test("skips a switched-off row and a widget-only row even when it reads as on", () => {
-    expect(litIdsForSection(rows, () => true)).toEqual(["earthquakes", "wildfires", "volcanoes"]);
-    expect(litIdsForSection(rows, () => false)).toEqual([]);
+  test("skips a widget-only row, which has no map layer to show", () => {
+    expect(previewIdsForSection([{ id: "news", widgetOnly: true }])).toEqual([]);
   });
 });

@@ -34,6 +34,13 @@
 // (one tile holds every mark), and 48-72 ms for the camera source alone. The
 // whole-layer sources (planes, satellites, webcams) update uniformly with no reload.
 //
+// THE GLOW. Fading the rest is half of it; the lit marks also get a bright halo drawn
+// BENEATH them, so they stay exactly as drawn and read as picked out. The halo layers
+// (HALO_PREFIX, haloSpecs) sit on the same sources as the marks and carry the same
+// owner match as their FILTER, so with nothing lit they hold no features at all: no
+// bucket, no draw, no cost at rest and while panning. A hover reloads the sources it
+// already reloads for the fade. There is no animation and no per-frame work.
+//
 // EVERY MAP SOURCE IS CLASSED. A source is either in SOURCE_OWNERS (it fades) or in
 // NEVER_FADE_SOURCES (user pins, rings, drawn areas, terrain, buildings). A test reads
 // WorldMap.tsx for every source id and fails on one that is in neither, so a future
@@ -192,6 +199,7 @@ export function applySourceHighlight(map: HighlightMap, ids: readonly string[]):
   }
   let wrapped = 0;
   for (const layer of layers?.layers ?? []) {
+    if (layer.id.startsWith(HALO_PREFIX)) continue; // the glow is lit marks only: nothing to fade
     const props = OPACITY_PROPS[layer.type];
     const mine = layer.source ? ownerMatch(layer.source) : null;
     if (!props || !mine) continue;
@@ -216,4 +224,181 @@ export function applySourceHighlight(map: HighlightMap, ids: readonly string[]):
  */
 export function presentIds(ids: readonly string[], hasMarks: (id: string) => boolean): string[] {
   return ids.filter((id) => hasMarks(id));
+}
+
+// --- The glow --------------------------------------------------------------------
+
+/** Every highlight layer id starts with this, so the fade never wraps one. */
+export const HALO_PREFIX = "srchl-";
+
+type PaintValue = unknown;
+
+export interface HaloSpec {
+  id: string;
+  source: string;
+  type: "circle" | "line";
+  layout?: Record<string, PaintValue>;
+  paint: Record<string, PaintValue>;
+  minzoom?: number;
+}
+
+/** A zoom curve through three numbers: [z0, z6, z12]. */
+const byZoom = (a: PaintValue, b: PaintValue, c: PaintValue): Expr => [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  0,
+  a,
+  6,
+  b,
+  12,
+  c,
+];
+
+/** The glow of a mark that is an ICON (cameras, planes, satellites), which grows as you zoom in. */
+const iconHalo = (world: number, mid: number, near: number): Expr => [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  0,
+  world,
+  6,
+  mid,
+  10,
+  mid + (near - mid) / 2,
+  13,
+  near,
+];
+
+/** The signal disc's own radius curve (per-feature `radius`, scaled by zoom), plus `add` px. */
+const discHalo = (add: number): Expr =>
+  byZoom(
+    ["+", ["*", ["get", "radius"], 0.7], add],
+    ["+", ["get", "radius"], add],
+    ["+", ["*", ["get", "radius"], 1.5], add],
+  );
+
+const WHITE = "#ffffff";
+
+/**
+ * The glow, per map source. In the mark's own colour, with a white edge so it holds on
+ * both a dark satellite basemap and a light one, and in the console's light and dark
+ * skins alike (the skin changes the chrome, never the map).
+ *
+ * A point source gets one circle: a soft disc in the colour, ringed in white. The dense
+ * ones (cameras, webcams) get the disc alone at world zoom: a white ring around 40,000
+ * dots is noise, and the discs run together into a field, which is what "where are
+ * they" needs. Zoomed in there are few enough to ring, and the ring fades in from z8.
+ * A line or an outline gets a white casing under a coloured band.
+ */
+export function haloSpecs(opts: { webcamColor: string }): HaloSpec[] {
+  const ring = (radius: Expr, color: PaintValue): HaloSpec["paint"] => ({
+    "circle-color": color,
+    "circle-radius": radius,
+    "circle-opacity": 0.6,
+    "circle-blur": 0.25,
+    "circle-stroke-color": WHITE,
+    "circle-stroke-width": 2.5,
+    "circle-stroke-opacity": 1,
+  });
+  // The dense sources: a soft disc that runs into its neighbours at world zoom, where a white
+  // ring around 40,000 dots is noise. Zoomed in there are few enough to ring, and a disc in
+  // the mark's OWN colour alone would vanish behind it, so the white edge fades in from z8.
+  const field = (radius: Expr, color: PaintValue): HaloSpec["paint"] => ({
+    "circle-color": color,
+    "circle-radius": radius,
+    "circle-opacity": 0.55,
+    "circle-blur": 0.8,
+    "circle-stroke-color": WHITE,
+    "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 8, 0, 11, 2.5],
+    "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 8, 0, 11, 1],
+  });
+  const casing = (width: Expr): HaloSpec["paint"] => ({
+    "line-color": WHITE,
+    "line-width": width,
+    "line-opacity": 0.8,
+  });
+  const band = (width: Expr, color: PaintValue): HaloSpec["paint"] => ({
+    "line-color": color,
+    "line-width": width,
+    "line-opacity": 0.85,
+    "line-blur": 1,
+  });
+  const roundLine = { "line-cap": "round", "line-join": "round" };
+  const lineBand = byZoom(4, 6, 9);
+  const lineCase = byZoom(8, 10, 14);
+  const shapeBand = byZoom(4, 5, 6);
+  const shapeCase = byZoom(8, 9, 11);
+  return [
+    // Casings first so each band sits on its own casing.
+    { id: `${HALO_PREFIX}countries-casing`, source: "country-polys", type: "line", layout: roundLine, paint: casing(byZoom(5, 6, 8)) },
+    { id: `${HALO_PREFIX}countries`, source: "country-polys", type: "line", layout: roundLine, paint: band(byZoom(3, 4, 5), "#64748b") },
+    { id: `${HALO_PREFIX}signal-countries-casing`, source: "signal-country-shapes", type: "line", layout: roundLine, paint: casing(shapeCase) },
+    { id: `${HALO_PREFIX}signal-countries`, source: "signal-country-shapes", type: "line", layout: roundLine, paint: band(shapeBand, ["get", "color"]) },
+    { id: `${HALO_PREFIX}signal-fills-casing`, source: "signal-fills", type: "line", layout: roundLine, paint: casing(shapeCase) },
+    { id: `${HALO_PREFIX}signal-fills`, source: "signal-fills", type: "line", layout: roundLine, paint: band(shapeBand, ["get", "color"]) },
+    { id: `${HALO_PREFIX}signal-lines-casing`, source: "signal-lines", type: "line", layout: roundLine, paint: casing(lineCase) },
+    { id: `${HALO_PREFIX}signal-lines`, source: "signal-lines", type: "line", layout: roundLine, paint: band(lineBand, ["get", "color"]) },
+    { id: `${HALO_PREFIX}trails`, source: "trails", type: "line", layout: roundLine, paint: band(byZoom(4, 5, 6), ["get", "color"]) },
+    { id: `${HALO_PREFIX}signal-marks`, source: "signal-area-marks", type: "circle", paint: ring(discHalo(12), ["get", "color"]) },
+    { id: `${HALO_PREFIX}signal-points`, source: "signals", type: "circle", paint: ring(discHalo(11), ["get", "color"]) },
+    { id: `${HALO_PREFIX}cameras`, source: "cameras", type: "circle", paint: field(iconHalo(6, 8, 24), ["get", "regionColor"]) },
+    { id: `${HALO_PREFIX}webcams`, source: "webcams", type: "circle", minzoom: 3, paint: field(iconHalo(6, 8, 24), opts.webcamColor) },
+    { id: `${HALO_PREFIX}satellites`, source: "satellites", type: "circle", paint: ring(iconHalo(16, 18, 24), ["get", "color"]) },
+    { id: `${HALO_PREFIX}planes`, source: "planes", type: "circle", paint: ring(iconHalo(15, 17, 24), ["get", "color"]) },
+  ];
+}
+
+/** Where the glow goes: under the first of these that exists, which is the lowest app mark. */
+export const HALO_BEFORE: readonly string[] = [
+  "trail-lines",
+  "satellite-glow",
+  "camera-dots",
+  "webcam-dots",
+  "plane-markers",
+  "signal-country-fill",
+];
+
+/** The slice of a maplibre Map the glow touches. */
+export interface HaloMap {
+  getLayer(id: string): unknown;
+  getSource(id: string): unknown;
+  addLayer(spec: unknown, beforeId?: string): unknown;
+}
+
+/**
+ * Add the glow layers the style does not have yet. Safe to call again, and called after
+ * every style load (a basemap switch throws the layers away). Returns how many it added.
+ */
+export function ensureHighlightLayers(map: HaloMap, opts: { webcamColor: string }): number {
+  let before: string | undefined;
+  for (const id of HALO_BEFORE) {
+    if (map.getLayer(id)) {
+      before = id;
+      break;
+    }
+  }
+  let added = 0;
+  for (const spec of haloSpecs(opts)) {
+    try {
+      const filter = ownerMatch(spec.source);
+      if (!filter || map.getLayer(spec.id) || !map.getSource(spec.source)) continue;
+      map.addLayer(
+        {
+          id: spec.id,
+          type: spec.type,
+          source: spec.source,
+          filter,
+          ...(spec.layout ? { layout: spec.layout } : {}),
+          ...(spec.minzoom !== undefined ? { minzoom: spec.minzoom } : {}),
+          paint: spec.paint,
+        },
+        before,
+      );
+      added += 1;
+    } catch {
+      // A style torn down mid-swap must not throw out of addAppLayers.
+    }
+  }
+  return added;
 }

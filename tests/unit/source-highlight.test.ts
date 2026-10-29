@@ -4,11 +4,15 @@ import { join } from "node:path";
 import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import {
   FADE,
+  HALO_BEFORE,
+  HALO_PREFIX,
   HIGHLIGHT_STATE_KEY,
   NEVER_FADE_SOURCES,
   OPACITY_PROPS,
   SOURCE_OWNERS,
   applySourceHighlight,
+  ensureHighlightLayers,
+  haloSpecs,
   ownerMatch,
   presentIds,
   wrapOpacity,
@@ -276,5 +280,115 @@ describe("presentIds", () => {
     expect(presentIds(["earthquakes", "aurora", "wildfires"], has)).toEqual(["earthquakes", "wildfires"]);
     expect(presentIds([], has)).toEqual([]);
     expect(presentIds(["aurora"], has)).toEqual([]);
+  });
+});
+
+describe("the glow under the lit marks", () => {
+  const specs = haloSpecs({ webcamColor: "#ec4899" });
+
+  test("every glow layer is on a source that fades, and has the owner match as its filter", () => {
+    expect(specs.length).toBeGreaterThanOrEqual(10);
+    for (const spec of specs) {
+      expect(spec.id.startsWith(HALO_PREFIX), spec.id).toBe(true);
+      expect(spec.source in SOURCE_OWNERS, `${spec.id} is on ${spec.source}`).toBe(true);
+      expect(ownerMatch(spec.source), spec.id).not.toBeNull();
+    }
+    expect(new Set(specs.map((x) => x.id)).size).toBe(specs.length);
+  });
+
+  test("every source that fades has a glow, bar the one that is only names", () => {
+    const glowed = new Set(specs.map((x) => x.source));
+    // The country NAME labels have no shape to ring: the borders layer of the same row is
+    // what glows. Anything else that fades and is not in this list needs a glow layer.
+    const NAMES_ONLY = ["country-label-pts"];
+    for (const id of Object.keys(SOURCE_OWNERS)) {
+      if (NAMES_ONLY.includes(id)) continue;
+      expect(glowed.has(id), `${id} has no glow layer`).toBe(true);
+    }
+  });
+
+  test("a casing is added before its band, so the band sits on it", () => {
+    const ids = specs.map((x) => x.id);
+    for (const id of ids.filter((i) => i.endsWith("-casing"))) {
+      expect(ids.indexOf(id), id).toBeLessThan(ids.indexOf(id.replace(/-casing$/, "")));
+    }
+  });
+
+  test("MapLibre's own validator accepts every glow layer, filter and paint", () => {
+    const sources: Record<string, unknown> = {};
+    for (const spec of specs) sources[spec.source] = { type: "geojson", data: { type: "FeatureCollection", features: [] } };
+    const style = {
+      version: 8,
+      state: { [HIGHLIGHT_STATE_KEY]: { default: [] } },
+      sources,
+      layers: specs.map((spec) => ({
+        id: spec.id,
+        type: spec.type,
+        source: spec.source,
+        filter: ownerMatch(spec.source),
+        ...(spec.layout ? { layout: spec.layout } : {}),
+        ...(spec.minzoom !== undefined ? { minzoom: spec.minzoom } : {}),
+        paint: spec.paint,
+      })),
+    };
+    expect(validateStyleMin(style as never)).toEqual([]);
+  });
+
+  function fakeStyle(existing: string[], sources: string[]) {
+    const layers = new Set(existing);
+    const added: Array<{ id: string; before?: string }> = [];
+    const map = {
+      getLayer: (id: string) => (layers.has(id) ? {} : undefined),
+      getSource: (id: string) => (sources.includes(id) ? {} : undefined),
+      addLayer: (spec: { id: string }, before?: string) => {
+        layers.add(spec.id);
+        added.push({ id: spec.id, before });
+      },
+    };
+    return { map, added };
+  }
+
+  test("ensureHighlightLayers adds each layer once, under the lowest app mark", () => {
+    const all = Object.keys(SOURCE_OWNERS);
+    const { map, added } = fakeStyle(["country-fill", "camera-dots", "signal-dots"], all);
+    expect(ensureHighlightLayers(map, { webcamColor: "#ec4899" })).toBe(specs.length);
+    expect(added.every((a) => a.before === "camera-dots")).toBe(true);
+    // The list's own order decides: the first of HALO_BEFORE that exists.
+    expect(HALO_BEFORE.indexOf("camera-dots")).toBeGreaterThanOrEqual(0);
+    // A second call adds nothing.
+    expect(ensureHighlightLayers(map, { webcamColor: "#ec4899" })).toBe(0);
+  });
+
+  test("a source the style does not have yet is skipped, and a throwing map does not throw out", () => {
+    const { map } = fakeStyle(["trail-lines"], ["signals"]);
+    expect(ensureHighlightLayers(map, { webcamColor: "#ec4899" })).toBe(specs.filter((x) => x.source === "signals").length);
+    const boom = {
+      getLayer: () => undefined,
+      getSource: () => ({}),
+      addLayer: () => {
+        throw new Error("style torn down");
+      },
+    };
+    expect(() => ensureHighlightLayers(boom, { webcamColor: "#ec4899" })).not.toThrow();
+  });
+
+  test("the fade never wraps a glow layer", () => {
+    const calls: string[] = [];
+    const map: HighlightMap = {
+      setGlobalStateProperty: () => {},
+      getStyle: () => ({
+        layers: [
+          { id: "srchl-signal-points", type: "circle", source: "signals" },
+          { id: "signal-dots", type: "circle", source: "signals" },
+        ],
+      }),
+      getPaintProperty: () => 0.5,
+      setPaintProperty: (id) => {
+        calls.push(id);
+      },
+    };
+    applySourceHighlight(map, []);
+    expect(calls.every((id) => id === "signal-dots")).toBe(true);
+    expect(calls.length).toBeGreaterThan(0);
   });
 });

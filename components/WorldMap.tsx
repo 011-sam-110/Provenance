@@ -101,8 +101,21 @@ import {
 } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
 import { aoiDrawStore, attachAoi } from "@/lib/map/aoi";
-import { HIGHLIGHT_STATE_KEY, applySourceHighlight, presentIds } from "@/lib/map/sourceHighlight";
+import {
+  HIGHLIGHT_STATE_KEY,
+  applySourceHighlight,
+  ensureHighlightLayers,
+  presentIds,
+} from "@/lib/map/sourceHighlight";
 import { sourceHoverStore } from "@/lib/shell/sourceHover";
+import {
+  isPhoneClass,
+  kindOf,
+  sourcePreviewStore,
+  withPreview,
+  type PreviewCamera,
+  type PreviewWebcam,
+} from "@/lib/shell/sourcePreview";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map picking. Every rule lives in camslot.pick and camslot.arm; this file supplies
 // geometry and side effects and decides nothing. See the block above addPicks for
@@ -129,9 +142,9 @@ import { shellLayoutStore } from "@/lib/console/store";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { useSignals, signalCountsStore } from "@/lib/signals/store";
 import { signalFreshnessStore, signalFreshnessFromPayload } from "@/lib/signals/freshness";
-import type { SignalSource } from "@/lib/signals/types";
+import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { readMapSignal, startMapSignalPoll } from "@/lib/signals/mapFeedPoll";
-import { resolvePrecision } from "@/lib/signals/precision";
+import { toSignalObjects } from "@/lib/map/signalObjects";
 import {
   buildCountryOutlines,
   marksPresent,
@@ -293,6 +306,82 @@ const COUNTRY_LABEL_SRC = "country-label-pts";
 const COUNTRY_LABEL_LAYER = "country-labels";
 
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+/**
+ * What the Sources rail is previewing right now (lib/shell/sourcePreview.ts), as the
+ * map draws it. ONE React state, set at most once per animation frame, so several
+ * reads that land together cost one draw.
+ */
+interface PreviewState {
+  /** Core layer keys (livecams, staticcams, planes, satellites, countries) drawn as a preview. */
+  keys: string[];
+  /** Rows of each previewed signal source, by id. */
+  signals: Record<string, SignalFeature[]>;
+  /** The camera rows, when no camera tier is loaded to draw them from. */
+  cams: PreviewCamera[] | null;
+  /** The Windy catalogue, for a previewed Static cams once the map is zoomed in. */
+  webcams: PreviewWebcam[] | null;
+  /** Layers whose own feed is mounted for the preview (planes, satellites). */
+  feeds: string[];
+}
+const EMPTY_PREVIEW: PreviewState = { keys: [], signals: {}, cams: null, webcams: null, feeds: [] };
+const EMPTY_PLANES: PlanesLayer = { objects: [], trails: [], fetchedAt: null };
+/** How long the last preview of planes or satellites is kept after the hover ends. */
+const PREVIEW_KEEP_MS = 300_000;
+
+const sameList = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((v, i) => v === b[i]);
+
+function samePreview(a: PreviewState, b: PreviewState): boolean {
+  if (a === b) return true;
+  if (a.cams !== b.cams || a.webcams !== b.webcams) return false;
+  if (!sameList(a.keys, b.keys) || !sameList(a.feeds, b.feeds)) return false;
+  const ka = Object.keys(a.signals);
+  const kb = Object.keys(b.signals);
+  return sameList(ka, kb) && ka.every((k) => a.signals[k] === b.signals[k]);
+}
+
+/**
+ * What to draw for the sources the pointer is on, from the preview module's own
+ * statuses and cache. An id the map already draws is skipped here too, because a
+ * source can be switched on while it is being previewed.
+ */
+function computePreview(isDrawn: (id: string) => boolean): PreviewState {
+  const keys: string[] = [];
+  const signals: Record<string, SignalFeature[]> = {};
+  const feeds: string[] = [];
+  let cameraReady = false;
+  let stillsReady = false;
+  for (const id of sourcePreviewStore.wanted()) {
+    if (isDrawn(id)) continue;
+    const status = sourcePreviewStore.status(id);
+    switch (kindOf(id)) {
+      case "signal": {
+        const rows = status === "ready" ? (sourcePreviewStore.data(id) as SignalFeature[] | undefined) : undefined;
+        if (rows) signals[id] = rows;
+        break;
+      }
+      case "cameras":
+        if (status === "ready") {
+          keys.push(id);
+          cameraReady = true;
+          if (id === "staticcams") stillsReady = true;
+        }
+        break;
+      case "planes":
+      case "satellites":
+        if (status === "loading" || status === "ready") feeds.push(id);
+        if (status === "ready") keys.push(id);
+        break;
+      case "countries":
+        keys.push(id);
+        break;
+    }
+  }
+  const cams = cameraReady ? ((sourcePreviewStore.data("cameras") as PreviewCamera[] | undefined) ?? null) : null;
+  const webcams = stillsReady ? ((sourcePreviewStore.data("webcams") as PreviewWebcam[] | undefined) ?? null) : null;
+  return { keys, signals, cams, webcams, feeds };
+}
 
 /** One point feature at the tracked plane's live position (empty when idle/lost). */
 function toTrackFC(o: WorldObject | null | undefined): GeoJSON.FeatureCollection {
@@ -640,6 +729,19 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
    * it has actually changed sides.
    */
   const [webcamTierArmed, setWebcamTierArmed] = useState(false);
+  const webcamTierArmedRef = useRef(false);
+  webcamTierArmedRef.current = webcamTierArmed;
+  // THE SOURCES RAIL'S PREVIEW of a switched-off source (lib/shell/sourcePreview.ts).
+  // It writes no store, no layout and no link: these states are the whole of it.
+  const [preview, setPreview] = useState<PreviewState>(EMPTY_PREVIEW);
+  const previewRef = useRef(preview);
+  previewRef.current = preview;
+  // Planes and satellites come from their own feeds, mounted only while previewed. The
+  // last result is kept for 5 minutes so the next hover draws at once.
+  const [previewPlanes, setPreviewPlanes] = useState<PlanesLayer>(EMPTY_PLANES);
+  const [previewSats, setPreviewSats] = useState<WorldObject[]>([]);
+  const previewPlanesAtRef = useRef(0);
+  const previewSatsAtRef = useRef(0);
   // Global signals are merged from per-source <SignalFeed> children into one map
   // (id → that source's objects); `signals` is the flattened union the aggregated
   // MapLibre source renders. Toggling a signal off unmounts its feed, which clears
@@ -655,6 +757,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   const terrainOn = view.terrain;
   const buildingsOn = view.buildings;
   const layers = useLayers();
+  const globalScope = useScope();
   const track = useTrack();
   trackingRef.current = track; // keep the spin loop / input handlers current without a re-subscribe
   const pins = useMapPins();
@@ -673,6 +776,9 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   const picking = usePicks().mode === "picking";
   const camFilter = useCameraFilter();
   const signalsState = useSignals();
+  // What the map draws (World plus every area), for "is this already on?" in the hover.
+  const signalsStateRef = useRef(signalsState);
+  signalsStateRef.current = signalsState;
   // Global time-window filter (M-final): trims time-stamped signals by recency.
   // A coarse 30s clock re-evaluates the filter a couple of times a minute (the
   // windows are ≥1h, so a fast clock would only churn renders for nothing).
@@ -681,10 +787,21 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   const nowCoarse = useNow(30_000);
   const precisionFilter = usePrecisionFilter();
 
+  // The core layer keys the Sources rail is previewing (switched off, drawn for the hover).
+  const previewKeySet = useMemo(() => new Set(preview.keys), [preview.keys]);
+  const ptsRef = useRef(pts);
+  ptsRef.current = pts;
+  // The camera rows to draw. The live feed's own rows when it has loaded; otherwise,
+  // for a previewed tier with both tiers off, the rows the preview read itself.
+  const camRows = useMemo<Pt[]>(
+    () => (pts.length > 0 ? pts : ((preview.cams as unknown as Pt[] | null) ?? pts)),
+    [pts, preview.cams],
+  );
+
   // Cameras → WorldObject[] (shape = feed, colour = region).
   const cameraObjects = useMemo<WorldObject[]>(
     () =>
-      pts.map((p) => {
+      camRows.map((p) => {
         const feed = cameraFeed(p.live);
         const meta = CAMERA_FEED_META[feed];
         const color = cameraRegionColor(p.source);
@@ -700,7 +817,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
           meta: { available: p.available, source: p.source, country: p.country, live: p.live, feed },
         };
       }),
-    [pts],
+    [camRows],
   );
 
   // Which registry cameras are drawn: the two TIER toggles first, then the per-source
@@ -715,10 +832,11 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
     () =>
       cameraObjects.filter((c) => {
         const live = Boolean(c.meta?.live);
-        if (!(live ? layers.livecams : layers.staticcams)) return false;
+        const tier = live ? "livecams" : "staticcams";
+        if (!(layers[tier] || previewKeySet.has(tier))) return false;
         return cameraFilterStore.passes((c.meta?.source as string) ?? "", live);
       }),
-    [cameraObjects, camFilter, layers.livecams, layers.staticcams],
+    [cameraObjects, camFilter, layers.livecams, layers.staticcams, previewKeySet],
   );
 
   // --- Shared stores the calm shell reads (counts + freshness) ----------------
@@ -758,16 +876,28 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
 
   // Refs holding the latest data so addAppLayers (called on every style.load,
   // i.e. each basemap swap) can re-seed sources, and clicks can resolve objects.
+  //
+  // What is DRAWN, which for a switched-off layer under the Sources rail's preview is
+  // the preview's own data. The counts and freshness effects above stay on the live
+  // states, so a preview never moves a number in the top bar.
+  const drawnPlanes = !layers.planes && previewKeySet.has("planes") ? previewPlanes : planesLayer;
+  const drawnSats = !layers.satellites && previewKeySet.has("satellites") ? previewSats : satellites;
+  const previewWebcamObjs = useMemo(
+    () => (preview.webcams ? toWebcamObjects(preview.webcams as unknown as WebcamMarker[]) : null),
+    [preview.webcams],
+  );
+  const drawnWebcams =
+    !layers.staticcams && previewKeySet.has("staticcams") && previewWebcamObjs ? previewWebcamObjs : webcams;
   const camerasRef = useRef<WorldObject[]>([]);
   camerasRef.current = filteredCameras;
   const planesRef = useRef<WorldObject[]>([]);
-  planesRef.current = planesLayer.objects;
+  planesRef.current = drawnPlanes.objects;
   const trailsRef = useRef<PlaneTrail[]>([]);
-  trailsRef.current = planesLayer.trails;
+  trailsRef.current = drawnPlanes.trails;
   const satsRef = useRef<WorldObject[]>([]);
-  satsRef.current = satellites;
+  satsRef.current = drawnSats;
   const webcamsRef = useRef<WorldObject[]>([]);
-  webcamsRef.current = webcams;
+  webcamsRef.current = drawnWebcams;
   // Time-window-filtered signals — what the map actually renders. Untimed features
   // (no `ts`) pass through unconditionally (withinWindow returns true), so the
   // filter only ever hides timed events that are older than the chosen window.
@@ -832,13 +962,30 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   // Merge one signal source's objects into the aggregated set. A SignalFeed calls
   // this with its features on load and with [] on unmount (toggle-off), so the
   // union always reflects exactly the ON signals — no per-layer WorldMap code.
-  const mergeSignalChunk = useCallback((id: string, objs: WorldObject[]) => {
+  const mergeSignalChunks = useCallback((updates: Record<string, WorldObject[] | null>) => {
     const next = { ...signalChunksRef.current };
-    if (objs.length) next[id] = objs;
-    else delete next[id];
+    for (const [id, objs] of Object.entries(updates)) {
+      if (objs && objs.length) next[id] = objs;
+      else delete next[id];
+    }
     signalChunksRef.current = next;
     setSignals(Object.values(next).flat());
   }, []);
+  const mergeSignalChunk = useCallback(
+    (id: string, objs: WorldObject[]) => mergeSignalChunks({ [id]: objs }),
+    [mergeSignalChunks],
+  );
+  // Is this Sources rail id already on the map (World or any area)? Then it is only lit,
+  // never previewed. Reads the UNION the map draws, not the context the rail is editing.
+  const isDrawnNow = useCallback(
+    (id: string): boolean =>
+      kindOf(id) === "signal"
+        ? signalsStateRef.current[id] === true
+        : (layersRef.current as unknown as Record<string, boolean>)[id] === true,
+    [],
+  );
+  // The lit ids the map was last given, so an unchanged light costs no call.
+  const lightRef = useRef("");
 
   // --- Map helpers (stable; read from refs) --------------------------------
 
@@ -1853,10 +2000,14 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
         });
       }
 
-      applyVisibility(map, layersRef.current);
+      applyVisibility(map, withPreview(layersRef.current, previewRef.current.keys));
       // A basemap switch (setStyle) wipes the layers AND the global state, so the rail's
       // hover light is put back here, after every layer exists.
-      applySourceHighlight(map, presentIds(sourceHoverStore.get(), hasMarks));
+      const lit = presentIds(sourceHoverStore.get(), hasMarks);
+      lightRef.current = lit.join("|");
+      applySourceHighlight(map, lit);
+      // The glow under the lit marks. After the fade is applied, so it is never wrapped.
+      ensureHighlightLayers(map, { webcamColor: WEBCAM_COLOR });
       readyRef.current = true;
     },
     [applyTerrain, applyBuildingLabels, applyVisibility, ensureGeoJSON, ensureIcons, hasMarks],
@@ -2352,9 +2503,24 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
     // The Sources rail's hover light: one global-state write, no React state and no
     // pointer listener here (lib/map/sourceHighlight.ts). A style mid-swap throws, and
     // addAppLayers puts the light back when the new style is up.
-    const offHover = sourceHoverStore.subscribe((ids) => {
+    const offHover = sourceHoverStore.subscribe((ids, meta) => {
+      // A switched-off source is read and previewed (lib/shell/sourcePreview.ts); one the
+      // map already draws is only lit. The phone pass is read now, so a rotation or a
+      // resize between two hovers is honoured.
+      sourcePreviewStore.want(ids, {
+        immediate: meta.immediate,
+        phone: isPhoneClass({
+          coarsePointer: window.matchMedia("(pointer: coarse)").matches,
+          width: window.innerWidth,
+        }),
+        isDrawn: isDrawnNow,
+        have: () => ptsRef.current.length > 0,
+        webcamsArmed: webcamTierArmedRef.current,
+      });
+      const lit = presentIds(ids, hasMarks);
+      lightRef.current = lit.join("|");
       try {
-        map.setGlobalStateProperty(HIGHLIGHT_STATE_KEY, presentIds(ids, hasMarks));
+        map.setGlobalStateProperty(HIGHLIGHT_STATE_KEY, lit);
       } catch {
         /* style mid-swap */
       }
@@ -2657,12 +2823,86 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
     applyBuildingLabels(map, buildingsOn);
   }, [buildingsOn, applyBuildingLabels]);
 
-  // Layer visibility toggles.
+  // Layer visibility toggles: the user's, plus whatever the Sources rail is previewing.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    applyVisibility(map, layers);
-  }, [layers, applyVisibility]);
+    applyVisibility(map, withPreview(layers, preview.keys));
+  }, [layers, preview.keys, applyVisibility]);
+
+  // The previewed planes and satellites arrive from their own feeds, mounted only while
+  // previewed. The feed's first state is empty, so an empty one keeps the last preview
+  // while it is recent (5 minutes) and clears it once it is not.
+  const onPreviewPlanes = useCallback((layer: PlanesLayer) => {
+    if (layer.objects.length === 0) {
+      if (Date.now() - previewPlanesAtRef.current >= PREVIEW_KEEP_MS) {
+        setPreviewPlanes((prev) => (prev.objects.length === 0 ? prev : EMPTY_PLANES));
+      }
+      return;
+    }
+    previewPlanesAtRef.current = Date.now();
+    setPreviewPlanes(layer);
+    sourcePreviewStore.setStatus("planes", "ready");
+  }, []);
+  const onPreviewSats = useCallback((sats: WorldObject[]) => {
+    if (sats.length === 0) {
+      if (Date.now() - previewSatsAtRef.current >= PREVIEW_KEEP_MS) {
+        setPreviewSats((prev) => (prev.length === 0 ? prev : []));
+      }
+      return;
+    }
+    previewSatsAtRef.current = Date.now();
+    setPreviewSats(sats);
+    // The feed ticks every second; only the first answer is news to the rail.
+    if (sourcePreviewStore.status("satellites") !== "ready") sourcePreviewStore.setStatus("satellites", "ready");
+  }, []);
+
+  // THE PREVIEW, drawn at most once per animation frame. The preview module calls this
+  // once per frame however many reads landed in it, so they become ONE React update (and
+  // WorldMap itself schedules no animation frame: see tests/unit/console-globe-still.test.ts).
+  useEffect(() => {
+    const flush = () => {
+      const next = computePreview(isDrawnNow);
+      setPreview((prev) => (samePreview(prev, next) ? prev : next));
+    };
+    return sourcePreviewStore.subscribeFrame(flush);
+  }, [isDrawnNow]);
+  // A source switched on while it is being previewed is drawn by its own feed now.
+  useEffect(() => {
+    sourcePreviewStore.poke();
+  }, [layers, signalsState]);
+
+  // Previewed signal rows join the aggregated set under their own chunk key, drawn by the
+  // same layers and the same code as a switched-on source (toSignalObjects). Only the
+  // global place scope applies: that is what switching the source on for World would show.
+  const previewChunksRef = useRef(new Map<string, WorldObject[]>());
+  const previewConvertedRef = useRef(
+    new Map<string, { features: SignalFeature[]; scope: unknown; objs: WorldObject[] }>(),
+  );
+  useEffect(() => {
+    const applied = previewChunksRef.current;
+    const converted = previewConvertedRef.current;
+    const next = new Map<string, WorldObject[]>();
+    const updates: Record<string, WorldObject[] | null> = {};
+    for (const [id, features] of Object.entries(preview.signals)) {
+      const source = MAP_SIGNALS.find((m) => m.id === id);
+      if (!source) continue;
+      const hit = converted.get(id);
+      let objs: WorldObject[];
+      if (hit && hit.features === features && hit.scope === globalScope) {
+        objs = hit.objs;
+      } else {
+        objs = filterToScope(toSignalObjects(features, source), globalScope, (o) => o);
+        converted.set(id, { features, scope: globalScope, objs });
+      }
+      next.set(id, objs);
+      if (applied.get(id) !== objs) updates[`preview:${id}`] = objs;
+    }
+    for (const id of applied.keys()) if (!next.has(id)) updates[`preview:${id}`] = null;
+    for (const id of [...converted.keys()]) if (!next.has(id)) converted.delete(id);
+    previewChunksRef.current = next;
+    if (Object.keys(updates).length) mergeSignalChunks(updates);
+  }, [preview.signals, globalScope, mergeSignalChunks]);
 
   // Live data → source updates.
   useEffect(() => {
@@ -2674,14 +2914,14 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    (map.getSource(SAT_SRC) as GeoJSONSource | undefined)?.setData(toSatelliteFC(satellites));
-  }, [satellites]);
+    (map.getSource(SAT_SRC) as GeoJSONSource | undefined)?.setData(toSatelliteFC(drawnSats));
+  }, [drawnSats]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    (map.getSource(WEBCAM_SRC) as GeoJSONSource | undefined)?.setData(toWebcamFC(webcams));
-  }, [webcams]);
+    (map.getSource(WEBCAM_SRC) as GeoJSONSource | undefined)?.setData(toWebcamFC(drawnWebcams));
+  }, [drawnWebcams]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -2698,9 +2938,27 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    (map.getSource(PLANE_SRC) as GeoJSONSource | undefined)?.setData(toPlaneFC(planesLayer.objects));
-    (map.getSource(TRAIL_SRC) as GeoJSONSource | undefined)?.setData(toTrailFC(planesLayer.trails));
-  }, [planesLayer]);
+    (map.getSource(PLANE_SRC) as GeoJSONSource | undefined)?.setData(toPlaneFC(drawnPlanes.objects));
+    (map.getSource(TRAIL_SRC) as GeoJSONSource | undefined)?.setData(toTrailFC(drawnPlanes.trails));
+  }, [drawnPlanes]);
+
+  // THE LIGHT FOLLOWS THE DRAWN DATA. A preview's marks land after the hover has settled,
+  // and a layer's rows can arrive late, so the lit ids are worked out again whenever what
+  // is drawn changes (and after the data effects above, so the refs are current).
+  // MapLibre is only called when the answer differs from the last one given.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    const lit = presentIds(sourceHoverStore.get(), hasMarks);
+    const key = lit.join("|");
+    if (key === lightRef.current) return;
+    lightRef.current = key;
+    try {
+      map.setGlobalStateProperty(HIGHLIGHT_STATE_KEY, lit);
+    } catch {
+      /* style mid-swap; addAppLayers puts the light back */
+    }
+  }, [visibleSignals, filteredCameras, drawnPlanes, drawnSats, drawnWebcams, preview, hasMarks]);
 
   // Plane tracking: keep the highlight ring on the tracked plane's live position,
   // and (in follow mode) gently re-centre the globe on it each poll. Re-runs when a
@@ -3116,6 +3374,13 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       {(layers.livecams || layers.staticcams) && <CamerasFeed onData={setPts} />}
       {layers.planes && <PlanesFeed onData={setPlanesLayer} />}
       {layers.satellites && <SatellitesFeed onData={setSatellites} />}
+      {/* The same two feeds, mounted for a PREVIEW of the layer while it is off and the
+          pointer is on its row. Their data goes to the preview states, never to the live
+          ones, so the top bar's counts and freshness do not move. */}
+      {!layers.planes && preview.feeds.includes("planes") && <PlanesFeed onData={onPreviewPlanes} unscoped />}
+      {!layers.satellites && preview.feeds.includes("satellites") && (
+        <SatellitesFeed onData={onPreviewSats} unscoped />
+      )}
       {layers.staticcams && webcamTierArmed && <WebcamsFeed onData={setWebcams} />}
 
       {/* One gating feed per ON signal — mounted only while its toggle is on, so a
@@ -3203,40 +3468,7 @@ function SignalFeed({
       refreshMs: source.refreshMs,
       read: (sid) => readMapSignal(sid),
       onRows: (features, declaredOk) => {
-        const objs: WorldObject[] = features.map((f) => ({
-          kind: "signal",
-          id: f.id,
-          lat: f.lat,
-          lon: f.lon,
-          label: f.title,
-          color: f.color ?? source.color,
-          typeLabel: source.label,
-          meta: {
-            signalId: f.signalId,
-            // How precise the place is. The route writes the resolved level on
-            // every feature; the layer default covers a payload that predates it.
-            precision: resolvePrecision(f, source),
-            // The country a country-level feature stands for (ISO alpha-3), so the
-            // map can shade its outline. See lib/map/precisionMarks.ts.
-            ...(f.countryIso3 ? { countryIso3: f.countryIso3 } : {}),
-            props: f.props ?? {},
-            attribution: source.attribution,
-            sourceLabel: source.label,
-            link: f.link,
-            // Provider dataset/home URL for the dossier's mandatory clickable
-            // source (used when a feature carries no deep record link). Optional
-            // on the adapter; SignalDetail falls back to the keyed provider table.
-            sourceUrl: source.sourceUrl,
-            // ISO timestamp (when known) — the global time-window filter reads
-            // this; untimed features have no ts and are always shown.
-            ts: f.ts,
-            // Carries line/area geometry (cables, jamming) through to the
-            // line/fill builders in lib/map/features; absent for point signals.
-            ...(f.geometry ? { geometry: f.geometry } : {}),
-            // A road notice's line pattern (dash, dot, bar); absent is solid.
-            ...(f.line ? { line: f.line } : {}),
-          },
-        }));
+        const objs = toSignalObjects(features, source);
         rawRef.current = objs;
         loadedOnceRef.current = true;
         publish(objs);
@@ -3312,16 +3544,16 @@ function CamerasFeed({ onData }: { onData: (pts: Pt[]) => void }) {
   return null;
 }
 
-function PlanesFeed({ onData }: { onData: (layer: PlanesLayer) => void }) {
-  const layer = usePlanes();
+function PlanesFeed({ onData, unscoped }: { onData: (layer: PlanesLayer) => void; unscoped?: boolean }) {
+  const layer = usePlanes({ unscoped });
   useEffect(() => {
     onData(layer);
   }, [layer, onData]);
   return null;
 }
 
-function SatellitesFeed({ onData }: { onData: (sats: WorldObject[]) => void }) {
-  const sats = useSatellites();
+function SatellitesFeed({ onData, unscoped }: { onData: (sats: WorldObject[]) => void; unscoped?: boolean }) {
+  const sats = useSatellites("visual", 1000, { unscoped });
   useEffect(() => {
     onData(sats);
   }, [sats, onData]);

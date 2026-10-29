@@ -210,6 +210,7 @@ obligations and are not satisfied by the licence.
   guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
   Hovering a Sources rail row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
+  The lit marks also get a glow drawn under them (`srchl-*` layers, filtered by the same key, so they hold nothing at rest). A switched-off source previews while you point at it through `lib/shell/sourcePreview.ts`, which writes no store, layout or link and keeps its own 5-minute cache.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - **The command palette reads a typed question into filters, with rules and no model.**
   `lib/shell/ask.ts` (pure, `parseAsk`) turns "fires in Spain last 24h" into a layer, a

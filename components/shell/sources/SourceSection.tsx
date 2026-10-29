@@ -10,7 +10,8 @@
 import { useEffect, useRef } from "react";
 import type { SourceRowModel, SourceSectionModel } from "@/lib/console/sources/sections";
 import SourceRow from "@/components/shell/sources/SourceRow";
-import { litIdsForSection, sourceHoverStore } from "@/lib/shell/sourceHover";
+import { sourceHoverStore } from "@/lib/shell/sourceHover";
+import { previewIdsForSection } from "@/lib/shell/sourcePreview";
 
 export default function SourceSection({
   section,
@@ -26,9 +27,10 @@ export default function SourceSection({
   onDragHandle: (e: React.PointerEvent, row: SourceRowModel) => void;
 }) {
   const onCount = section.rows.filter((r) => isOn(r.id)).length;
-  // Pointing at the heading lights every source in the section that is switched on.
-  // Mouse and pen only: a heading is not a button, so a tap on it does nothing.
-  const litIds = litIdsForSection(section.rows, isOn);
+  // Pointing at the heading lights every source in the section that is switched on and
+  // previews the ones that are off. Mouse and pen only: a heading is not a button, so a
+  // tap on it does nothing.
+  const litIds = previewIdsForSection(section.rows);
   const releaseRef = useRef<(() => void) | null>(null);
   useEffect(() => () => releaseRef.current?.(), []);
 

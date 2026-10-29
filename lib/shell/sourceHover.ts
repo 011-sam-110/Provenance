@@ -17,13 +17,22 @@
 
 export type HoverIds = readonly string[];
 
+/** How the settled ids came about. */
+export interface HoverMeta {
+  /**
+   * A tap or a keyboard focus, not a pointer resting on a row. The preview of a
+   * switched-off source reads at once for these, and after a rest for a pointer.
+   */
+  immediate: boolean;
+}
+
 export interface SourceHoverStore {
   /** The ids the map is lighting now (settled, not pending). */
   get(): HoverIds;
   /** Light these ids. Returns the release, which is a no-op once a newer hold exists. */
-  hold(ids: HoverIds): () => void;
+  hold(ids: HoverIds, opts?: { immediate?: boolean }): () => void;
   /** Called with the settled ids, only when they changed. Returns the unsubscribe. */
-  subscribe(fn: (ids: HoverIds) => void): () => void;
+  subscribe(fn: (ids: HoverIds, meta: HoverMeta) => void): () => void;
 }
 
 export interface SourceHoverOptions {
@@ -49,26 +58,26 @@ export function createSourceHover(opts: SourceHoverOptions = {}): SourceHoverSto
   let settled: HoverIds = NONE;
   let newest = 0;
   let timer: unknown = null;
-  const subs = new Set<(ids: HoverIds) => void>();
+  const subs = new Set<(ids: HoverIds, meta: HoverMeta) => void>();
 
-  const schedule = (ids: HoverIds) => {
+  const schedule = (ids: HoverIds, immediate: boolean) => {
     if (timer !== null) clearTimer(timer);
     timer = setTimer(() => {
       timer = null;
       if (sameIds(settled, ids)) return;
       settled = ids;
-      for (const fn of [...subs]) fn(settled);
+      for (const fn of [...subs]) fn(settled, { immediate });
     }, settleMs);
   };
 
   return {
     get: () => settled,
-    hold(ids) {
+    hold(ids, o) {
       const mine = ++newest;
-      schedule([...ids]);
+      schedule([...ids], o?.immediate ?? false);
       return () => {
         if (mine !== newest) return; // a newer hold owns the light now
-        schedule(NONE);
+        schedule(NONE, false);
       };
     },
     subscribe(fn) {
@@ -81,14 +90,3 @@ export function createSourceHover(opts: SourceHoverOptions = {}): SourceHoverSto
 }
 
 export const sourceHoverStore: SourceHoverStore = createSourceHover();
-
-/**
- * The ids a section heading lights: the rows that are switched on and paint the map.
- * A widget-only row has no map layer, so it is never lit.
- */
-export function litIdsForSection(
-  rows: ReadonlyArray<{ id: string; widgetOnly?: boolean }>,
-  isOn: (id: string) => boolean,
-): string[] {
-  return rows.filter((r) => !r.widgetOnly && isOn(r.id)).map((r) => r.id);
-}
