@@ -15,7 +15,8 @@
 // it, and the argument doesn't change because the rail moved. Same for the hover
 // LABEL, which is not the thing that rule forbids — it names a control that is
 // already visible, already clickable and already has an accessible name. On a phone
-// it never appears and nothing is lost.
+// there is no hover, so the hover label never appears; one word under each icon
+// (NAME below) names the tool there instead.
 //
 // ESCAPE IS SEQUENCED, NOT ASSUMED, and the ordering is the load-bearing part.
 // lib/map/aoi.ts binds Escape on `document` in the BUBBLE phase for the life of a
@@ -114,6 +115,29 @@ const LABELS: Record<InspectorTool, string> = {
   alerts: "Notifications",
 };
 
+/**
+ * The word under each icon on a phone (the max-width: 900px pass), where no hover label
+ * can show. ONE word each: the 60px column fits "Settings" (43.4px at 11px/600) and
+ * nothing much longer. Each word must be inside its button's accessible name (WCAG
+ * 2.5.3, label in name), which is why the bell's name is widened in SPOKEN.
+ */
+const NAME: Record<InspectorTool, string> = {
+  search: "Search",
+  view: "View",
+  settings: "Settings",
+  draw: "Draw",
+  alerts: "Alerts",
+};
+
+/**
+ * Accessible names that differ from the hover label. The bell's word on a phone is
+ * "Alerts", its label is "Notifications", and someone using voice control says the
+ * word they can see. The hover label and `title` stay "Notifications".
+ */
+const SPOKEN: Partial<Record<InspectorTool, string>> = {
+  alerts: "Notifications and alerts",
+};
+
 // WRITTEN OUT, NOT BUILT WITH `tn-insp-rail-btn-${slot}`. The CSS and
 // tests/e2e/inspector-rail.spec.ts both name these strings, and neither can find a
 // class that is assembled at runtime — the retired stage rail kept the same rule
@@ -135,7 +159,7 @@ const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
 };
 
 /**
- * Which slots start a group, and so get a rule above them.
+ * Which slots start a group, and so get a GAP above them.
  *
  * THREE GROUPS, NOT TWO: the map's own controls (search, view, settings), then the
  * areas you define (draw), then what is said about them (notifications). The rules are
@@ -144,9 +168,15 @@ const GLYPH: Record<InspectorTool, () => React.ReactElement> = {
  * after the first attempt: "the alerts isnt its own separate section, its part of the
  * drawing". The approved mock had a rule above the bell; the build did not.
  *
+ * A GAP, NOT A LINE (2026-10-28). The groups used to be drawn by a 20px rule span in the
+ * cell's flex ROW, beside the button, so it shrank to a 5px stub against the rail's left
+ * border and pushed the button 2.5px off centre. Leon: "remove those two lines poking out
+ * from the left side". The groups stay: the cell carries `data-group-start` and the CSS
+ * turns it into a top margin (`--tn-insp-rail-group-gap`).
+ *
  * If the grouping changes, this set is the only place it is written down.
  */
-const RULE_BEFORE = new Set<InspectorTool>(["draw", "alerts"]);
+const GROUP_START = new Set<InspectorTool>(["draw", "alerts"]);
 
 export default function InspectorRail() {
   const open = useInspectorRail();
@@ -230,11 +260,11 @@ export default function InspectorRail() {
         const Glyph = GLYPH[slot];
         const label = LABELS[slot];
         return (
-          <div className="tn-insp-rail-cell" key={slot}>
-            {/* The rule that separates "what the map looks like" from "the areas you
-                define on it, and what should be said about them". Rendered above a
-                slot that starts a group — see RULE_BEFORE. */}
-            {RULE_BEFORE.has(slot) ? <span className="tn-insp-rail-rule" aria-hidden /> : null}
+          <div
+            className="tn-insp-rail-cell"
+            key={slot}
+            data-group-start={GROUP_START.has(slot) ? "" : undefined}
+          >
             <button
               type="button"
               className={`tn-insp-rail-btn ${SLOT_CLASS[slot]}`}
@@ -254,7 +284,7 @@ export default function InspectorRail() {
               // "View" appears nowhere else on screen, so hiding it there would leave
               // the button unlabelled in the state it is in most of the time.
               data-panel={open === slot ? "" : undefined}
-              aria-label={label}
+              aria-label={SPOKEN[slot] ?? label}
               title={label}
               tabIndex={tabStop === slot ? 0 : -1}
               onClick={() => {
@@ -269,10 +299,13 @@ export default function InspectorRail() {
               onKeyDown={(e) => onKeyDown(e, slot)}
             >
               <Glyph />
+              <span className="tn-insp-rail-name" aria-hidden="true">
+                {NAME[slot]}
+              </span>
               {/* The hover/focus label. `aria-hidden`, because `aria-label` above
-                  already gives a screen reader this exact string and a visible copy
-                  would have it announced twice. It opens to the LEFT — into the
-                  panels — because this rail's right edge is the panel's edge. */}
+                  already names this button and a visible copy would have it announced
+                  twice. It opens to the LEFT — into the panels — because this rail's
+                  right edge is the panel's edge. */}
               <span className="tn-insp-rail-tip" aria-hidden="true">
                 {label}
               </span>

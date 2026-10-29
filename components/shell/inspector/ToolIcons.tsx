@@ -28,6 +28,11 @@
 // rasterised into a MapLibre sprite; `IconKey` is consumed as an exhaustive union
 // and widening it for chrome widens every signature that reads it.
 //
+//   CENTRED ON THE DRAWING, NOT THE GRID. Each mark's drawn extent is centred on x = 12
+//   of its 24-unit box. Where the art is lopsided (the magnifier's handle, the polygon's
+//   corner dot, the bell's badge) one group translate holds the measured correction, so
+//   the geometry above stays as drawn. Measured with getBBox, 2026-10-28.
+//
 // No size props. The CSS sizes them (`.tn-insp-rail-btn svg`), so one rule moves
 // every mark on the rail and two glyphs in the same place can never disagree.
 
@@ -45,8 +50,10 @@ const BASE = {
 export function SearchGlyph() {
   return (
     <svg {...BASE} strokeWidth={2}>
-      <circle cx={10.2} cy={10.2} r={6.3} />
-      <line x1={14.9} y1={14.9} x2={20.6} y2={20.6} />
+      <g transform="translate(-0.25 0)">
+        <circle cx={10.2} cy={10.2} r={6.3} />
+        <line x1={14.9} y1={14.9} x2={20.6} y2={20.6} />
+      </g>
     </svg>
   );
 }
@@ -103,10 +110,12 @@ export function PinGearGlyph() {
 export function DrawGlyph() {
   return (
     <svg {...BASE} strokeWidth={1.8}>
-      <path d="M4 18.5 7.4 8.9l5.1 6.4 3.3-8.2L20 18.5z" />
-      <circle cx={7.4} cy={8.9} r={1.5} />
-      <circle cx={15.8} cy={7.1} r={1.5} />
-      <circle cx={4} cy={18.5} r={1.5} />
+      <g transform="translate(0.75 0)">
+        <path d="M4 18.5 7.4 8.9l5.1 6.4 3.3-8.2L20 18.5z" />
+        <circle cx={7.4} cy={8.9} r={1.5} />
+        <circle cx={15.8} cy={7.1} r={1.5} />
+        <circle cx={4} cy={18.5} r={1.5} />
+      </g>
     </svg>
   );
 }
@@ -126,16 +135,18 @@ export function DrawGlyph() {
 export function AlertGlyph() {
   return (
     <svg {...BASE} strokeWidth={1.8}>
-      {/* the bell */}
-      <path d="M10.6 3.6v1.5" />
-      <path d="M10.6 5.1a5.1 5.1 0 0 0-5.1 5.1v5.5" />
-      <path d="M10.6 5.1a5.1 5.1 0 0 1 2.9.9" />
-      <path d="M4.4 15.7h12.4" />
-      <path d="M8.8 18.3a2 2 0 0 0 3.6 0" />
-      {/* the badge */}
-      <path d="M14.9 9.8 17.3 4.9a1.3 1.3 0 0 1 2.3 0l2.4 4.9z" />
-      <path d="M18.45 6.2v1.9" />
-      <circle cx={18.45} cy={8.9} r={0.5} />
+      <g transform="translate(-1.2 0)">
+        {/* the bell */}
+        <path d="M10.6 3.6v1.5" />
+        <path d="M10.6 5.1a5.1 5.1 0 0 0-5.1 5.1v5.5" />
+        <path d="M10.6 5.1a5.1 5.1 0 0 1 2.9.9" />
+        <path d="M4.4 15.7h12.4" />
+        <path d="M8.8 18.3a2 2 0 0 0 3.6 0" />
+        {/* the badge */}
+        <path d="M14.9 9.8 17.3 4.9a1.3 1.3 0 0 1 2.3 0l2.4 4.9z" />
+        <path d="M18.45 6.2v1.9" />
+        <circle cx={18.45} cy={8.9} r={0.5} />
+      </g>
     </svg>
   );
 }

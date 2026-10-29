@@ -108,7 +108,7 @@ test("the rail is one toolbar, it is on BOTH tabs, and the eye waits for a selec
   await expect(rail).toHaveAttribute("role", "toolbar");
 
   // FOUR, and the names are asserted separately so a missing one reads as a missing
-  // one. Draw and Alerts are below the rule and open panels like the rest.
+  // one. Draw and Alerts each start a group and open panels like the rest.
   expect(await slots(page)).toEqual(["search", "settings", "draw", "alerts"]);
   await expect(rail.getByRole("button", { name: "Search for a place" })).toBeVisible();
   await expect(rail.getByRole("button", { name: "Map settings" })).toBeVisible();
@@ -440,6 +440,80 @@ test("the rail's marks are big enough to hit and to read", async ({ page }) => {
   expect(box.width / btn.width).toBeLessThan(0.72);
 });
 
+/** Every rail button, measured against the rail's centre (inside its left border). */
+function measureRail(page: Page) {
+  return page.locator(RAIL).evaluate((rail) => {
+    const rb = rail.getBoundingClientRect();
+    const bl = parseFloat(getComputedStyle(rail).borderLeftWidth);
+    const cx = rb.x + bl + (rb.width - bl) / 2;
+    return [...rail.querySelectorAll<HTMLElement>(".tn-insp-rail-btn")].map((b) => {
+      const r = b.getBoundingClientRect();
+      const ink = [...b.querySelectorAll("svg path, svg circle, svg line")].map((s) =>
+        s.getBoundingClientRect(),
+      );
+      const left = Math.min(...ink.map((k) => k.left));
+      const right = Math.max(...ink.map((k) => k.right));
+      const name = b.querySelector<HTMLElement>(".tn-insp-rail-name");
+      const nr = name?.getBoundingClientRect();
+      return {
+        slot: b.dataset.slot ?? "?",
+        aria: b.getAttribute("aria-label") ?? "",
+        button: r.x + r.width / 2 - cx,
+        ink: (left + right) / 2 - cx,
+        name:
+          name && nr && nr.width > 0
+            ? { text: name.textContent ?? "", h: nr.height, inside: nr.left >= r.left && nr.right <= r.right }
+            : null,
+        strays: [...b.querySelectorAll("*")].filter(
+          (e) =>
+            !e.closest(".tn-insp-rail-tip") &&
+            e.getBoundingClientRect().width > 0 &&
+            e.getBoundingClientRect().left < rb.left + bl - 0.01,
+        ).length,
+      };
+    });
+  });
+}
+
+test("every mark on the rail is centred, and desktop shows no word", async ({ page }) => {
+  // Leon: "centre the elements horizontally on the bar, and remove those two lines poking
+  // out from the left side". The lines were rule spans in the cell's flex row that shrank
+  // to a 5px stub and pushed Draw and Notifications 2.5px right of centre; the glyph art
+  // itself sat up to 1.2 units off its own 24-unit box. Both are measured: the BUTTON's
+  // centre and the drawn INK's centre, each against the rail's centre, within half a px.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openInspector(page);
+  const rows = await measureRail(page);
+  expect(rows.map((r) => r.slot)).toEqual(["search", "settings", "draw", "alerts"]);
+  for (const r of rows) {
+    expect(Math.abs(r.button), `${r.slot} button`).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(r.ink), `${r.slot} drawing`).toBeLessThanOrEqual(0.5);
+    // Desktop names a tool with the hover label; the word under the icon is phone-only.
+    expect(r.name, `${r.slot} word`).toBeNull();
+    expect(r.strays, `${r.slot} painted left of the rail border`).toBe(0);
+  }
+});
+
+test("a phone names every tool under its icon, centred", async ({ page }) => {
+  // Leon: "There should be labels on mobile so the user can tell what they are". There
+  // is no hover on a phone, so each tool carries one word under its icon, in a 60px
+  // column. The word is also INSIDE the button's accessible name (WCAG 2.5.3), which is
+  // why the bell is announced "Notifications and alerts" while its word is "Alerts".
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openInspector(page);
+  const rows = await measureRail(page);
+  expect(rows.map((r) => r.name?.text)).toEqual(["Search", "Settings", "Draw", "Alerts"]);
+  for (const r of rows) {
+    expect(Math.abs(r.button), `${r.slot} button`).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(r.ink), `${r.slot} drawing`).toBeLessThanOrEqual(0.5);
+    expect(r.strays, `${r.slot} painted left of the rail border`).toBe(0);
+    if (!r.name) throw new Error(`${r.slot} has no word on a phone`);
+    expect(r.name.h, `${r.slot} word is one line`).toBeLessThanOrEqual(14);
+    expect(r.name.inside, `${r.slot} word sits inside its tile`).toBe(true);
+    expect(r.aria.toLowerCase(), `${r.slot} accessible name`).toContain(r.name.text.toLowerCase());
+  }
+});
+
 test("the panel's hierarchy is measurable, not just intended", async ({ page }) => {
   // Sam's brief was about visual weight, and visual weight is exactly the kind of
   // thing a later retune undoes without noticing. So the three claims are MEASURED:
@@ -487,21 +561,27 @@ test("Alerts is its own rail button AND its own group, and the Draw panel is onl
   await openInspector(page);
   await expect(page.locator(`${RAIL} .tn-insp-rail-btn-alerts`)).toHaveCount(1);
 
-  // ITS OWN GROUP: a rule above the bell, and none directly above it inside a block
-  // with the polygon button. The rule is the only thing on the column saying where one
-  // idea stops and the next starts.
+  // ITS OWN GROUP: Draw and Notifications each start one. Until 2026-10-28 a rule drew the
+  // boundary; Leon asked for the lines to go ("remove those two lines poking out from the
+  // left side") and the groups to stay as a GAP, so the gap is what is measured.
+  await expect(page.locator(`${RAIL} .tn-insp-rail-rule`)).toHaveCount(0);
   const groups = await page.locator(`${RAIL} .tn-insp-rail-cell`).evaluateAll((els) =>
     els.map((el) => ({
       slot: (el.querySelector("button") as HTMLElement | null)?.dataset.slot ?? "?",
-      rule: !!el.querySelector(".tn-insp-rail-rule"),
+      group: el.hasAttribute("data-group-start"),
+      top: el.getBoundingClientRect().top,
+      bottom: el.getBoundingClientRect().bottom,
     })),
   );
-  expect(groups).toEqual([
-    { slot: "search", rule: false },
-    { slot: "settings", rule: false },
-    { slot: "draw", rule: true },
-    { slot: "alerts", rule: true },
+  expect(groups.map(({ slot, group }) => ({ slot, group }))).toEqual([
+    { slot: "search", group: false },
+    { slot: "settings", group: false },
+    { slot: "draw", group: true },
+    { slot: "alerts", group: true },
   ]);
+  const step = (i: number) => groups[i].top - groups[i - 1].bottom;
+  expect(step(2)).toBeGreaterThanOrEqual(step(1) + 6);
+  expect(Math.abs(step(3) - step(2))).toBeLessThan(0.5);
 
   await page.click(`${RAIL} .tn-insp-rail-btn-alerts`);
   await expect(page.locator(".tn-insp-tool-title")).toHaveText(/Notifications/i);
