@@ -503,7 +503,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              The console remembers how you set it up. It does that in your browser, under 30 keys
+              The console remembers how you set it up. It does that in your browser, about 40 keys
               prefixed <span className="pv-num">tn.</span> in local storage, plus one IndexedDB
               database and one service-worker cache. Almost none of it is ever sent to us, and the
               table says which parts are the exception.
@@ -525,7 +525,7 @@ export default function PrivacyPage() {
                   <td>No</td>
                 </tr>
                 <tr>
-                  <td>Theme, skin, language, view mode, which map layers are on</td>
+                  <td>Theme, skin, language, view mode, which map layers are on, and whether the God&rsquo;s eye view shows camera previews</td>
                   <td>Local storage</td>
                   <td>No</td>
                 </tr>

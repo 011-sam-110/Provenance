@@ -28,6 +28,13 @@
 //                   feed is fetched again during the film, the cards' clips step with
 //                   it, and no card plays a stream.
 // With reduced motion asked for, no move runs and "Turn" is not offered.
+//
+// PREVIEWS. The "Previews" switch beside Turn is on by default. Off, a camera is a small
+// icon that fetches no picture, and a tap opens that one camera's card (EyeOverlay,
+// cameraIcon.ts). The choice is kept in this browser as { previews: boolean } under
+// tn.eye.v1 (lib/eye/previews.ts), read after mount and saved at each switch; it is not
+// in a link and not synced to an account. A recording (record=1) or a film
+// (clock=manual) ignores it: previews are on, and the switch is not offered.
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -51,7 +58,17 @@ import {
   type EyeMotion,
   type EyePose,
 } from "@/lib/eye/motion";
+import {
+  EYE_PREFS_KEY,
+  EYE_PREFS_VERSION,
+  PREVIEWS_LABEL,
+  previewsInEffect,
+  readEyePrefs,
+  type EyePrefs,
+} from "@/lib/eye/previews";
 import { creditsFromAttribution, fmtLat, fmtLon } from "@/lib/eye/wording";
+import { ICON_SVG } from "@/lib/icons/svg";
+import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { clipsSettled, stepClips } from "./cameraCard";
 import EyeHud from "./EyeHud";
 import EyeOverlay, { type OverlayReport } from "./EyeOverlay";
@@ -116,6 +133,8 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
   const [report, setReport] = useState<OverlayReport>({ rows: [], ready: false });
   const [motion, setMotion] = useState<EyeMotion | null>(null);
   const [credits, setCredits] = useState<string[]>([]);
+  // Camera pictures on (the default) or off: icons instead (EyeOverlay).
+  const [previews, setPreviews] = useState(true);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const placeRef = useRef<(() => void) | null>(null);
   // The film's clock under clock=manual, made when the link is read; else the wall clock.
@@ -132,10 +151,15 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
     const tall = window.matchMedia(PORTRAIT_QUERY).matches;
     const canMove = !window.matchMedia(REDUCED_MOTION_QUERY).matches;
     setPortrait(tall);
+    const record = params.get("record") === "1";
+    const manualClock = params.get("clock") === "manual";
+    // The remembered choice, unless a recording or a film is asked for.
+    const stored = readEyePrefs(loadPersisted<EyePrefs>(EYE_PREFS_KEY, EYE_PREFS_VERSION)).previews;
+    setPreviews(previewsInEffect(stored, { record, film: manualClock }));
     setFlags({
       overlay: params.get("overlay") !== "0",
-      record: params.get("record") === "1",
-      manualClock: params.get("clock") === "manual",
+      record,
+      manualClock,
       canMove,
       motion: canMove ? parseMotion(params.get("motion")) : null,
     });
@@ -286,6 +310,12 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
     return () => watch.disconnect();
   }, [map]);
 
+  const togglePreviews = useCallback(() => {
+    const next = !previews;
+    setPreviews(next);
+    savePersisted<EyePrefs>(EYE_PREFS_KEY, EYE_PREFS_VERSION, { previews: next });
+  }, [previews]);
+
   // The Sources button's link: the console at the spot on screen, its Sources rail open.
   // A browser with no saved console board also gets this view's layers and ground, so
   // the console does not open empty; one with a board keeps its own (lib/eye/places.ts).
@@ -323,6 +353,7 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
       data-eye-state={state}
       data-overlay={flags.overlay || undefined}
       data-record={flags.record || undefined}
+      data-previews={previews ? undefined : "off"}
       data-credits={(flags.overlay && credits.length > 0) || undefined}
     >
       <div className={styles.map}>
@@ -341,6 +372,7 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
           portrait={portrait}
           record={flags.record}
           clock={clock}
+          previews={previews}
           onReport={setReport}
           placeRef={placeRef}
         />
@@ -361,6 +393,21 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
           record={flags.record}
           clock={clock}
         >
+          {!flags.record && !flags.manualClock && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={previews}
+              aria-label={PREVIEWS_LABEL}
+              className={`${styles.btn} ${styles.previewsBtn}`}
+              onClick={togglePreviews}
+            >
+              {/* A constant from lib/icons/svg.ts, never user text. */}
+              <span className={styles.previewsGlyph} aria-hidden dangerouslySetInnerHTML={{ __html: ICON_SVG["cam-still"] }} />
+              <span className={styles.previewsWord}>{PREVIEWS_LABEL}</span>
+              <span className={styles.previewsTrack} aria-hidden />
+            </button>
+          )}
           {flags.canMove && (
             <button
               type="button"

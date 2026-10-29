@@ -105,6 +105,9 @@ obligations and are not satisfied by the licence.
   a reload drops it). **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
+  The "Previews" switch beside Turn turns the camera pictures off: each camera is then an
+  icon that fetches nothing, one tapped icon opens that one card (a close button, Esc),
+  the choice is kept in this browser under `tn.eye.v1`, and a film or a recording ignores it.
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's

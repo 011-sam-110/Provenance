@@ -1247,3 +1247,242 @@
     font-size: 19px;
   }
 }
+
+/* ── Previews: the switch, camera icons, an opened card ── */
+
+/* The switch beside Turn: the console's camera pictogram, the word, and a mini track.
+   Off, the pictogram is crossed out and dims. It stands on .btn for the plate, the
+   border, the hover and the focus ring. */
+.previewsBtn {
+  gap: 8px;
+  padding: 0 10px 0 9px;
+}
+.previewsGlyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--eye-cam);
+  flex: none;
+}
+.previewsGlyph svg {
+  width: 100%;
+  height: 100%;
+}
+.previewsBtn[aria-checked="false"] .previewsGlyph svg {
+  opacity: 0.55;
+}
+.previewsBtn[aria-checked="false"] .previewsGlyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: 1.5px;
+  height: 20px;
+  border-radius: 1px;
+  background: var(--eye-ink);
+  box-shadow: 0 0 0 1.5px rgba(6, 10, 12, 0.92);
+  transform: translateX(-50%) rotate(-45deg);
+}
+.previewsTrack {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(238, 243, 241, 0.5);
+  flex: none;
+}
+.previewsTrack::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--eye-ink-3);
+}
+.previewsBtn[aria-checked="true"] .previewsTrack {
+  background: var(--eye-ink);
+  border-color: var(--eye-ink);
+}
+.previewsBtn[aria-checked="true"] .previewsTrack::after {
+  left: 11px;
+  background: #0b1114;
+}
+
+/* A camera with previews off: a plate with the pictogram on a short stalk that ends on
+   the camera's white ground ring. The marker is the button itself, so MapLibre owns its
+   transform; nothing here sets one. */
+.camIcon {
+  appearance: none;
+  box-sizing: border-box;
+  width: 32px;
+  margin: 0;
+  padding: 1px 1px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--eye-cam);
+  font: inherit;
+  will-change: transform;
+}
+.camIcon:focus-visible {
+  outline: none;
+}
+.camIconPlate {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: var(--eye-plate);
+  border: 1px solid rgba(232, 241, 248, 0.62);
+  border-radius: 5px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+}
+.camIconPlate svg {
+  width: 18px;
+  height: 18px;
+}
+.camIcon:hover .camIconPlate {
+  border-color: rgba(232, 241, 248, 0.85);
+}
+.camIcon:focus-visible .camIconPlate {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+.camIconStalk {
+  width: 1px;
+  height: 14px;
+  background: linear-gradient(to bottom, rgba(232, 241, 248, 0.9), rgba(232, 241, 248, 0.35));
+}
+
+/* A card opened from an icon: the link as ever, and a sibling close button at its top
+   right. The wrapper is the marker, so MapLibre owns ITS transform; the grow-in below
+   runs on the link inside it. Near the top of the frame it hangs below its camera. */
+.camOpen {
+  --w: 172px;
+  --stalk: 52px;
+  position: relative;
+  width: var(--w);
+  will-change: transform;
+}
+.camOpen[data-side="below"] .cam {
+  flex-direction: column-reverse;
+}
+.camClose {
+  appearance: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: grid;
+  place-items: center;
+  color: var(--eye-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.camOpen[data-side="below"] .camClose {
+  top: var(--stalk);
+}
+.camCloseFace {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--eye-hair);
+  background: var(--eye-plate);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+}
+.camClose:hover .camCloseFace {
+  border-color: rgba(238, 243, 241, 0.6);
+}
+.camClose:focus-visible {
+  outline: none;
+}
+.camClose:focus-visible .camCloseFace {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .previewsTrack::after {
+    transition: left 0.14s ease;
+  }
+  .camOpen .cam {
+    animation: camGrow 0.14s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    transform-origin: 50% 100%;
+  }
+  .camOpen[data-side="below"] .cam {
+    transform-origin: 50% 0;
+  }
+  @keyframes camGrow {
+    from {
+      opacity: 0;
+      scale: 0.92;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+}
+
+/* Phone: the switch is its camera alone, 44 px square (its name is still "Previews");
+   an icon's hit area is 44 px around a 32 px plate; the close button is 44 px around a
+   26 px face. The bar wraps rather than overflowing a 360 px screen. */
+@media (max-aspect-ratio: 4/5) {
+  .controls {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .previewsBtn {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .previewsWord,
+  .previewsTrack {
+    display: none;
+  }
+  .previewsGlyph {
+    width: 20px;
+    height: 20px;
+  }
+  .previewsBtn[aria-checked="false"] .previewsGlyph::after {
+    height: 25px;
+  }
+  .camIcon {
+    width: 44px;
+    padding: 6px 6px 0;
+  }
+  .camIconPlate {
+    width: 32px;
+    height: 32px;
+  }
+  .camIconStalk {
+    height: 10px;
+  }
+  .camClose {
+    width: 44px;
+    height: 44px;
+  }
+  .camCloseFace {
+    width: 26px;
+    height: 26px;
+  }
+}
