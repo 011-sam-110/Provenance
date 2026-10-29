@@ -30,17 +30,24 @@ function blockAfter(needle: string): string {
 }
 
 /**
- * ONE PALETTE, WHERE THERE WERE TWO.
+ * TWO PALETTES: the light default and the opt-in dark skin.
  *
- * This held both skins and every colour assertion below walks it, which is why they
- * are still worded "in BOTH skins" in places. The dark skin was removed and the light
- * values were folded into `.tn-terminal` itself, so there is one entry now — and it
- * stays a LIST rather than being inlined, because the assertions it feeds are the
- * ones that caught a 4.15:1 accent shipping as the default text colour in 92 rules,
- * and unrolling six loops into six straight-line tests to save one array is how a
- * guard like that gets weakened by accident.
+ * The console had two skins, PR #162 folded them into one (`.tn-terminal` itself), and
+ * on 2026-10-29 a dark one came back as an OPT-IN: the DARK SKIN block, keyed on
+ * `html[data-tnx-skin="dark"]` and written by lib/terminal/skin.ts. Every colour
+ * assertion below walks this list, so the dark palette meets the SAME floors as the
+ * light one: that is the whole reason the list survived as a list. The dark block's
+ * selector line must stay at column 0, spelled exactly as below, because blockAfter()
+ * finds the block by that string and by its closing `\n}`.
+ *
+ * The assertions are the ones that caught a 4.15:1 accent shipping as the default text
+ * colour in 92 rules, and unrolling six loops into six straight-line tests to save one
+ * array is how a guard like that gets weakened by accident.
  */
-const SKINS = [["light", "\n.tn-terminal {"]] as const;
+const SKINS = [
+  ["light", "\n.tn-terminal {"],
+  ["dark", '\n:root[data-tnx-skin="dark"] .tn-terminal {'],
+] as const;
 
 function token(block: string, name: string): string {
   const hex = new RegExp(`${name}:\\s*(#[0-9a-f]{3,8})`, "i").exec(block)?.[1];

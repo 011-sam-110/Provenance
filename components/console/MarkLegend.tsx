@@ -56,7 +56,10 @@ function Swatch({ mark }: { mark: SignalMark }) {
     case "ring":
       return (
         <svg {...common}>
-          <circle cx="11" cy="11" r="7.5" fill={INK} fillOpacity="0.22" stroke="#0f172a" strokeWidth="1.7" strokeDasharray="3.6 2.6" />
+          {/* The legend draws the ring in its own ink so it reads in both skins; on the map the
+              ring stays dark over imagery (WorldMap). A var() in an SVG attribute resolves
+              like any other: components/Chart.tsx does the same. */}
+          <circle cx="11" cy="11" r="7.5" fill={INK} fillOpacity="0.22" stroke="var(--tnx-ink)" strokeWidth="1.7" strokeDasharray="3.6 2.6" />
         </svg>
       );
     // The road marks keep the map's own patterns (WorldMap's roadLine layers).

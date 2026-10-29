@@ -100,7 +100,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // aliased to `--tn-font-sans` in globals.css, because a handful of rules
     // (app/admin/admin.css, the analytics tables) read the mono variable by name and
     // must still resolve to Inter rather than dropping to their fallback list.
-    <html lang="en" data-theme="light" className={inter.variable}>
+    // suppressHydrationWarning: /app's before-paint script sets data-tnx-skin on <html> (lib/terminal/skin.ts).
+    <html lang="en" data-theme="light" className={inter.variable} suppressHydrationWarning>
       <body>
         {/*
           WHAT COUNTS PAGE VIEWS HERE, AND WHAT DOES NOT.

@@ -1,13 +1,18 @@
 "use client";
-// The Display tab: what the console shows you — its language, which board is loaded, and
-// the link that reproduces both.
+// The Display tab: what the console shows you — its light or dark look, its language, which
+// board is loaded, and the link that reproduces them.
 //
 // NO MAP VIEW CONTROLS HERE, deliberately. Basemap, 2D/3D, terrain and buildings live in
 // the Inspector rail's Map settings tool (components/shell/inspector/tools/SettingsTool.tsx),
 // and that file argues the case against a second surface for one concept better than a
-// comment here could. There is no Appearance row to move either: the light/dark pair was
-// deleted from the product, and a segment with one option left in it is a control that
-// cannot do anything.
+// comment here could.
+//
+// THE APPEARANCE ROW IS BACK, and it is a different row. The old light/dark pair (a Theme
+// segment) was deleted with the dark theme, and a segment with one option left in it is a
+// control that cannot do anything. This one switches the console's opt-in dark SKIN
+// (lib/terminal/skin.ts, not the Theme in lib/shell/ui.ts), it has two live options, and it
+// shares its store with the moon button beside SETTINGS in the header, so the two cannot
+// disagree.
 //
 // THE TRANSIENT STATE MOVED WITH THE MARKUP, and that is not incidental. Inactive tabs
 // unmount, so `copied` and its timer live here rather than in SettingsPanel — otherwise a
@@ -23,6 +28,7 @@ import { shellLayoutStore } from "@/lib/console/store";
 import { BUILTIN_PRESETS, applyPreset, listPresets, saveCustomPreset } from "@/lib/console/presets";
 import { useActivePreset } from "@/lib/console/activePreset";
 import { track } from "@/lib/analytics/track";
+import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
 
 /** A shareable URL that carries BOTH the map view state and the widget layout (?c=). */
 async function copyLayoutLink(): Promise<boolean> {
@@ -63,6 +69,7 @@ function BoardCard({ id, icon, title, blurb, active }: {
 export default function DisplayTab() {
   const lang = useLang();
   const t = useT();
+  const skin = useTerminalSkin();
   const activeId = useActivePreset();
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -97,6 +104,20 @@ export default function DisplayTab() {
 
   return (
     <>
+      <section className="tn-settings-sec">
+        <h3 className="tn-settings-sec-title">Appearance</h3>
+        <p className="tn-settings-hint">Light or dark. Saved in this browser only.</p>
+        <div className="tn-settings-row">
+          <span className="tn-settings-label">Theme</span>
+          <div className="tn-settings-seg" role="group" aria-label="Theme">
+            <button type="button" className="tn-settings-seg-btn" aria-pressed={skin === "light"}
+              onClick={() => terminalSkinStore.set("light")}>Light</button>
+            <button type="button" className="tn-settings-seg-btn" aria-pressed={skin === "dark"}
+              onClick={() => terminalSkinStore.set("dark")}>Dark</button>
+          </div>
+        </div>
+      </section>
+
       <section className="tn-settings-sec">
         <h3 className="tn-settings-sec-title">Language</h3>
         <p className="tn-settings-hint">{t("langScopeNote")}</p>

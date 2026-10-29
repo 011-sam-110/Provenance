@@ -12,6 +12,12 @@
 // The store stays because the shell still hydrates it and still stamps the attribute
 // before paint. It persists to localStorage, which now round-trips one value.
 //
+// THE CONSOLE'S OPT-IN DARK MODE IS NOT THIS FIELD. It is lib/terminal/skin.ts: an
+// attribute of its own on <html> (`data-tnx-skin`), its own key, its own store. It cannot
+// be a second member of `Theme`, because lib/variants/store.ts calls `setTheme(v.theme)`
+// on EVERY board switch and every variant declares "light", so a theme-based dark would be
+// reset by the first tab click. Do not widen `Theme` to add it.
+//
 // Rail collapse is now local component state in LayerRail.tsx.
 // News-ticker visibility is variant-driven via PanelHost (Task 9).
 
