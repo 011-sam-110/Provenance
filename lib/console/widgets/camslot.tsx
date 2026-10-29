@@ -58,6 +58,8 @@ import {
 } from "@/lib/console/widgets/camslot.conditions";
 import { CamslotConditions } from "@/lib/console/widgets/camslot.overlay";
 import { usePointWeather } from "@/lib/console/widgets/camslot.conditions.store";
+import { useCameraRoads } from "@/lib/roads/cameraRoadStore";
+import { cameraRoadTileWords, type CameraAt } from "@/lib/roads/nearCamera";
 import { coordKey, type Coord } from "@/lib/weather/pointWeather";
 import { watchingStore } from "@/lib/console/widgets/camslot.watching";
 
@@ -354,6 +356,18 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
     [streams, placeStateFor],
   );
   const { data: weatherByCoord, failed: weatherFailed } = usePointWeather(conditionCoords);
+  // The road of every road camera in the playlist, for the same reason: a rotation is a
+  // lookup (lib/roads/cameraRoadStore.ts, one poll for the page).
+  const roadCams = useMemo(
+    () =>
+      streams.flatMap((s): CameraAt[] => {
+        if (s.k !== "cam") return [];
+        const coord = placeStateFor(s).coord;
+        return coord ? [{ id: s.id, lat: coord.lat, lon: coord.lon }] : [];
+      }),
+    [streams, placeStateFor],
+  );
+  const roadOf = useCameraRoads(roadCams);
 
   const conditionsNow = useNow30s();
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -489,6 +503,8 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
       })
     : null;
   const weatherChipForCurrent = weatherChip(currentWeather);
+  const currentRoad = current?.k === "cam" ? roadOf(current.id) : undefined;
+  const roadForCurrent = currentRoad ? cameraRoadTileWords(currentRoad, conditionsNow) : null;
   const clockForCurrent = currentWeather ? formatLocalClock(currentWeather.timeZone, conditionsNow) : "";
   const offsetForCurrent = currentWeather
     ? zoneOffsetLabel(currentWeather.timeZone, conditionsNow, currentWeather.utcOffsetSeconds)
@@ -600,6 +616,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
             lastSampledAt={currentSampledAt}
             density={density}
             now={conditionsNow}
+            road={roadForCurrent}
           />
         )}
       </div>
@@ -679,6 +696,7 @@ function CamslotBody({ instanceId, config }: WidgetBodyProps) {
               weatherChipForCurrent ? `, ${weatherChipForCurrent.text}` : ""
             }${clockForCurrent ? `, ${clockForCurrent} ${offsetForCurrent}`.trim() : ""}`
           : ""}
+        {conditionsOn(cfg) && roadForCurrent ? `. ${roadForCurrent.title}` : ""}
       </span>
         </>
       )}

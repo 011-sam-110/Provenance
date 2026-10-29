@@ -12,6 +12,7 @@ import { CameraVideo } from "@/components/CameraVideo";
 import { useNow, formatAge } from "@/lib/shell/useNow";
 import { msUntilRefresh, refreshProgress, formatCountdown, sampledAgeMs } from "@/lib/cameras/freshness";
 import { eyeCameraHref } from "@/lib/eye/places";
+import { CameraRoad } from "@/components/CameraRoad";
 
 type CamInfo = {
   id: string;
@@ -138,6 +139,9 @@ export function CameraDetail({ object }: { object: WorldObject }) {
         )}
         {sampledAge != null && <span>Updated {formatAge(sampledAge)} ago</span>}
       </div>
+
+      {/* What the road operators say about this camera's road (lib/roads/nearCamera.ts). */}
+      <CameraRoad id={object.id} lat={object.lat} lon={object.lon} />
 
       <Link className="cam-open" href={href}>
         Open full page ↗

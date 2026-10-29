@@ -96,6 +96,11 @@ export interface RoadOperator {
   /** Where a reader can check a notice: the operator's own traffic page. */
   home: string;
   feeds: readonly RoadFeed[];
+  /**
+   * The box its roads lie in, [west, south, east, north] in degrees. A camera's road line
+   * (lib/roads/nearCamera.ts) reads only the operators whose box holds the camera.
+   */
+  area: readonly [number, number, number, number];
 }
 
 export const TFL_OPERATOR: RoadOperator = {
@@ -104,6 +109,7 @@ export const TFL_OPERATOR: RoadOperator = {
   credit: TFL_CREDIT,
   home: "https://tfl.gov.uk/traffic/status/",
   feeds: [{ name: "road disruptions", url: TFL_DISRUPTIONS_URL, normalize: normalizeTflNotices }],
+  area: [-0.53, 51.27, 0.34, 51.7],
 };
 
 export const DRIVEBC_OPERATOR: RoadOperator = {
@@ -112,6 +118,7 @@ export const DRIVEBC_OPERATOR: RoadOperator = {
   credit: DRIVEBC_CREDIT,
   home: DRIVEBC_HOME,
   feeds: [{ name: "events", url: DRIVEBC_EVENTS_URL, normalize: normalizeOpen511 }],
+  area: [-139.1, 48.2, -114, 60.1],
 };
 
 export const NSW_OPERATOR: RoadOperator = {
@@ -120,6 +127,8 @@ export const NSW_OPERATOR: RoadOperator = {
   credit: NSW_CREDIT,
   home: NSW_HOME,
   feeds: NSW_FEEDS.map((feed) => ({ name: feed, url: nswFeedUrl(feed), normalize: (raw: unknown) => normalizeNswHazards(raw, feed) })),
+  // New South Wales, with the ACT inside it.
+  area: [140.9, -37.6, 153.7, -28.1],
 };
 
 export const DIGITRAFFIC_OPERATOR: RoadOperator = {
@@ -132,6 +141,21 @@ export const DIGITRAFFIC_OPERATOR: RoadOperator = {
     { name: "road works", url: digitrafficUrl("ROAD_WORK"), normalize: normalizeDigitraffic, everyMs: 600_000, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
     { name: "announcements", url: digitrafficUrl("TRAFFIC_ANNOUNCEMENT"), normalize: normalizeDigitraffic, headers: { "Digitraffic-User": DIGITRAFFIC_USER } },
   ],
+  area: [19, 59.6, 31.7, 70.1],
+};
+
+/** Each Castle Rock system's state or province, [west, south, east, north]. */
+const CASTLEROCK_AREAS: Readonly<Record<string, readonly [number, number, number, number]>> = {
+  fl: [-87.7, 24.4, -79.9, 31.1],
+  ga: [-85.7, 30.3, -80.8, 35.1],
+  id: [-117.3, 41.9, -111, 49.1],
+  // Maine, New Hampshire and Vermont.
+  newengland: [-73.5, 42.6, -66.8, 47.5],
+  la: [-94.1, 28.9, -88.8, 33.1],
+  on: [-95.2, 41.6, -74.3, 56.9],
+  ab: [-120.1, 48.9, -109.9, 60.1],
+  ns: [-66.4, 43.3, -59.6, 47.1],
+  nb: [-69.1, 44.5, -63.7, 48.1],
 };
 
 /** Each Castle Rock system is its own operator: its own agency names and links its rows. */
@@ -148,6 +172,7 @@ export const CASTLEROCK_OPERATORS: readonly RoadOperator[] = CASTLEROCK_SYSTEMS.
     everyMs: 600_000,
     load: () => loadCastleRockLayer(sys, layer),
   })),
+  area: CASTLEROCK_AREAS[sys.system] ?? [0, 0, 0, 0],
 }));
 
 export const ROAD_OPERATORS: readonly RoadOperator[] = [
@@ -238,7 +263,12 @@ interface OperatorRead {
   missing: string[];
 }
 
-const shared = new Map<string, { at: number; notices: Promise<RoadNotice[] | null> }>();
+// ON globalThis, NOT IN THIS MODULE. Each Next route is bundled with its own copy of this
+// module, so a module-level Map would give /api/camera-road its own reads of every
+// operator beside /api/signals/[id]'s. One map per server process means one read of
+// each file, whichever route asks first.
+const g = globalThis as unknown as { __pvRoadReads?: Map<string, { at: number; notices: Promise<RoadNotice[] | null> }> };
+const shared = (g.__pvRoadReads ??= new Map());
 
 /** One file, shared by the three layers for its `everyMs`; null when it did not answer. Never throws. */
 function readFeed(feed: RoadFeed): Promise<RoadNotice[] | null> {
@@ -265,6 +295,40 @@ async function readOperator(op: RoadOperator): Promise<OperatorRead | null> {
   const missing = op.feeds.filter((_, i) => lists[i] == null).map((f) => f.name);
   if (missing.length === op.feeds.length) return null;
   return { notices: lists.flatMap((l) => l ?? []), missing };
+}
+
+/** True when the operator's area holds this point. */
+export function operatorCovers(op: Pick<RoadOperator, "area">, lat: number, lon: number): boolean {
+  const [w, s, e, n] = op.area;
+  return lon >= w && lon <= e && lat >= s && lat <= n;
+}
+
+/** One operator's notices for one place, and when they were read. */
+export interface OperatorNotices {
+  op: RoadOperator;
+  notices: RoadNotice[];
+  /** The oldest read of its files that this answer used, epoch ms. */
+  readAt: number;
+}
+
+/** The operators whose area holds the point. */
+export function operatorsAt(lat: number, lon: number): RoadOperator[] {
+  return ROAD_OPERATORS.filter((op) => operatorCovers(op, lat, lon));
+}
+
+/**
+ * The notices of these operators, through the same shared reads as the three layers.
+ * An operator none of whose files answered is left out.
+ */
+export async function noticesOf(ops: readonly RoadOperator[]): Promise<OperatorNotices[]> {
+  const reads = await Promise.all(
+    ops.map(async (op) => {
+      const read = await readOperator(op);
+      const readAt = Math.min(...op.feeds.map((f) => shared.get(f.url)?.at ?? Date.now()));
+      return read ? { op, notices: read.notices, readAt } : null;
+    }),
+  );
+  return reads.filter((r): r is OperatorNotices => r != null);
 }
 
 /** "TfL", or "Transport for NSW (flood)" when only some of its files did not answer. */

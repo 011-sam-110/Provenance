@@ -396,6 +396,54 @@
   font-style: normal;
 }
 
+/* The camera's road (lib/roads/nearCamera.ts): one line under the words. A ring for a
+   notice, a bar for a closure, an empty ring where the operator lists none near. */
+.road {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 4px 8px 5px;
+  border-top: 1px solid var(--eye-hair);
+  font-size: 10.5px;
+  color: var(--eye-ink);
+  min-width: 0;
+}
+.road[hidden] {
+  display: none;
+}
+.road i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--eye-road);
+  background: var(--eye-road);
+}
+.road[data-tone="closed"] i {
+  border-radius: 1px;
+  height: 4px;
+}
+.road[data-tone="none"] {
+  color: var(--eye-ink-3);
+}
+.road[data-tone="none"] i {
+  background: transparent;
+  border-color: var(--eye-none);
+}
+.road span {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.road em {
+  flex: none;
+  font-style: normal;
+  color: var(--eye-ink-2);
+}
+
 .kind {
   font-style: normal;
   font-weight: 700;
@@ -596,6 +644,10 @@
   }
   .camText span {
     font-size: 9.5px;
+  }
+  .road {
+    font-size: 9.5px;
+    padding: 3px 6px 4px;
   }
   .kind {
     font-size: 8.5px;
