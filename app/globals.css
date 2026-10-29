@@ -7083,6 +7083,7 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   --tn-insp-rail-w: 48px;
   --tn-insp-rail-btn: 42px;
   --tn-insp-rail-glyph: 27px;
+  --tn-insp-rail-group-gap: 9px;
 
   flex: 0 0 var(--tn-insp-rail-w);
   width: var(--tn-insp-rail-w);
@@ -7099,8 +7100,12 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 
 .tn-insp-rail-cell { position: relative; display: flex; justify-content: center; width: 100%; }
-/* The rule between "what the panel shows" and "what acts on the map". */
-.tn-insp-rail-rule { width: 20px; height: 1px; background: var(--tn-border-strong); margin: 5px 0; }
+/* A GROUP IS A GAP, NOT A LINE (2026-10-28). The groups (map tools, then Draw, then
+   Notifications: GROUP_START in InspectorRail.tsx) were drawn by a rule span in the
+   cell's flex ROW, beside the button, so it shrank to a 5px stub against the left
+   border and pushed the button 2.5px right. Leon asked for the lines to go and the
+   groups to stay: 3px between tools inside a group, 12px between groups. */
+.tn-insp-rail-cell[data-group-start] { margin-top: var(--tn-insp-rail-group-gap); }
 
 .tn-insp-rail-btn {
   position: relative;
@@ -7134,6 +7139,9 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    a ~1.4px stroke: still a hairline, and the reason the geometry is trimmed where
    strokes meet. */
 .tn-insp-rail-btn svg { width: var(--tn-insp-rail-glyph); height: var(--tn-insp-rail-glyph); display: block; }
+/* The word under the icon. Phones only (the max-width: 900px pass below shows it);
+   on desktop the hover label names the tool, so the word stays hidden. */
+.tn-insp-rail-name { display: none; }
 
 /* The hover/focus label. A 30px column of glyphs cannot name anything on its own,
    and the native `title` takes about a second, paints in OS chrome that ignores the
@@ -7442,13 +7450,29 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    (`.tn-terminal .tn-cw-shell > .tn-rail`, max-height 66dvh); hiding this rail would
    take the search box, the map settings and the only draw entry point with it,
    which is the strictly bigger loss the stage rail's own mobile pass already argued
-   about once. 40px is the measured touch target, technique (a): real size, since the
-   column has room around it and does not need a transparent ::before.
+   about once. Each tool is a 54 x 55px tile, above the 44px touch minimum.
    THIS @media IS LAST IN THE BLOCK ON PURPOSE — a media query adds no specificity,
    so any `.tn-insp-rail` rule appended after it would silently kill it. */
 @media (max-width: 900px) {
-  .tn-insp-rail { --tn-insp-rail-btn: 44px; --tn-insp-rail-glyph: 28px; }
-  .tn-insp-rail-rule { width: 24px; }
+  /* LABELS ON PHONES (Leon, 2026-10-28): "There should be labels on mobile so the user
+     can tell what they are". There is no hover here, so the word sits under the icon:
+     a 60px column of 54px tiles, a 26px icon over an 11px word. 60 is the measured fit
+     for the longest word, "Settings" (43.4px at 11px/600), with 5px either side. */
+  .tn-insp-rail {
+    --tn-insp-rail-w: 60px; --tn-insp-rail-btn: 54px; --tn-insp-rail-glyph: 26px;
+    --tn-insp-rail-group-gap: 10px;
+  }
+  .tn-insp-rail-btn {
+    height: auto; min-height: 52px;
+    flex-direction: column; gap: 3px; padding: 6px 0 5px;
+  }
+  .tn-insp-rail-name {
+    display: block;
+    font-size: var(--tnx-fs-xs); font-weight: 600; line-height: 13px;
+    white-space: nowrap;
+  }
+  /* The word already names the tool, so the hover label would only repeat it. */
+  .tn-insp-rail-tip { display: none; }
   /* iOS zooms the page when a focused input is under 16px. Carried over from the
      stage rail's mobile rule, where it was load-bearing. */
   .tn-insp-search .tn-mapsearch-input { font-size: var(--tnx-fs-lg); min-height: 44px; }
