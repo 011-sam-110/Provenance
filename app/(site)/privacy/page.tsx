@@ -15,6 +15,16 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-29:
+ *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
+ *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
+ *     lib/eye/vessels.ts) for the boats around what is on screen. The route reads the
+ *     bbox query and nothing else (no header, no body), keeps nothing about the asker and
+ *     logs nothing. The box is rounded outward to a 0.01 degree grid (about 1 km), so the
+ *     access log, which keeps the whole address, never holds a place finer than that. The
+ *     access-log paragraph now names ?bbox=, and the route count is 56 (55 with M4's
+ *     camera-road, plus this one).
+ *
  * WHAT CHANGED ON 2026-10-27:
  *   - Camera roads (M4 of the live road data plan): app/api/camera-road answers what the road
  *     operators say about the road of each camera on screen (lib/roads/nearCamera.ts). Its query
@@ -64,7 +74,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     come from OpenFreeMap whatever the basemap is, and the switch is off by default
  *     (lib/mapView.ts). Everything else on /eye comes through this site: camera images
  *     through /api/proxy and /api/hls, vessels, aircraft and TfL's road notices through
- *     /api/signals/ais, /api/planes and /api/eye/streets.
+ *     /api/eye/vessels, /api/planes and /api/eye/streets.
  *   - Like every page under app/(console), /eye inherits the layout's warm-up
  *     (basemapWarmup), which asks the browser to open a connection to the imagery host
  *     and to CARTO's font host. /eye draws no labels, so it loads no CARTO font, but the
@@ -648,7 +658,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>55 API routes</span>
+              <span>56 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1043,7 +1053,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 55 API route files. Each records that a data
+              Five log statements exist across the 56 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1059,8 +1069,10 @@ export default function PrivacyPage() {
               mark, so it includes what you type.</strong> A place search sends your words as{" "}
               <code>?q=</code>, a recon tool sends the domain or IP as <code>?target=</code>, and
               &ldquo;cameras near you&rdquo; sends the coordinates your browser gave as{" "}
-              <code>?lat=</code> and <code>?lon=</code>. Each of those is in the log line for that
-              request. <strong>It does not record your IP address.</strong> The server is told to
+              <code>?lat=</code> and <code>?lon=</code>. The God&rsquo;s eye view asks for the
+              vessels around what is on screen as <code>?bbox=</code>, four numbers that are the
+              edges of a box about the size of the view, rounded outward to about a kilometre.
+              Each of those is in the log line for that request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
               some sixty-five thousand addresses, and the rest is discarded. That is enough to tell
               one machine hammering the site from a genuine crowd, and not enough to point at you.

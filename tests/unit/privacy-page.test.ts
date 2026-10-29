@@ -70,7 +70,7 @@ describe("privacy page", () => {
     // and the old lifetime ("about three and a half days") had no source in the repo.
     expect(copy).not.toContain("Nothing you type is logged anywhere");
     expect(copy).not.toContain("three and a");
-    for (const part of ["?q=", "?target=", "?lat=", "50 MiB", "five files"]) {
+    for (const part of ["?q=", "?target=", "?lat=", "?bbox=", "50 MiB", "five files"]) {
       expect(copy).toContain(part);
     }
   });

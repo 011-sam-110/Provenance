@@ -52,7 +52,7 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     label: "Ship traffic (AIS)",
     env: ["AISSTREAM_API_KEY"],
     degrades:
-      "No live vessel positions at the nine AISStream chokepoints (Hormuz, the Red Sea, Malacca and the rest). Only the Gulf of Finland still shows, from Digitraffic, which is keyless.",
+      "No AISStream vessels anywhere: the console's 11 chokepoints and God's eye view show only Digitraffic's Finnish and Baltic waters (and Norway once BarentsWatch is set).",
     obtain: "Free — aisstream.io.",
   },
   {
@@ -63,7 +63,7 @@ export const KEY_REQUIREMENTS: KeyRequirement[] = [
     label: "Ship traffic: Barents Sea (BarentsWatch)",
     env: ["BARENTSWATCH_CLIENT_ID", "BARENTSWATCH_CLIENT_SECRET"],
     degrades:
-      "The ship layer has no Norwegian coastal AIS, so the Barents Sea and North Cape box shows only what AISStream's volunteer receivers hear there. Nothing else changes.",
+      "The ship layer's Barents box and God's eye view along the Norwegian coast have no Kystverket AIS; AISStream's volunteer receivers still hear much of the coast.",
     obtain:
       "Free, no card - a personal account at barentswatch.no, then My page > create an API client (OAuth client credentials, scope ais). Data is NLOD.",
   },

@@ -105,7 +105,16 @@ import {
   type StreetTimes,
 } from "@/lib/eye/streets";
 import { newestChange } from "@/lib/roads/notice";
-import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
+import {
+  EYE_VESSELS_EVERY_MS,
+  MOVE_RELOAD_GAP_MS,
+  boxAround,
+  inFrame,
+  needsReload,
+  viewRadius,
+  type Box as GeoBox,
+} from "@/lib/eye/vessels";
+import { AISSTREAM_ATTRIBUTION, type StreamState } from "@/lib/signals/ais";
 import { signalLedgerRow, type LedgerRow } from "@/lib/eye/wording";
 import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
@@ -189,10 +198,13 @@ const SIGNAL_READ_LAYERS = [SIGNAL_LAYER, SIGNAL_ICON_LAYER, SIGNAL_DISC_LAYER, 
 /** The sources whose data landing means the marks are worth counting again. */
 const SIGNAL_SOURCES = new Set([SIGNAL_SRC, SIGNAL_ANCHOR_SRC, SIGNAL_FILL_SRC, SIGNAL_LINE_SRC]);
 
-/** How often each feed is asked again. The server's own cadence for each. */
-const AIS_EVERY_MS = 60_000;
+/**
+ * How often each feed is asked again. The server's own cadence for each (vessels:
+ * EYE_VESSELS_EVERY_MS, lib/eye/vessels.ts; they are also asked again when the view
+ * leaves the box they were asked for).
+ */
 const PLANES_EVERY_MS = 90_000;
-/** Vessels and aircraft this far outside the opening view are not kept at all. */
+/** Aircraft and TfL's notices this far outside the opening view are not kept at all. */
 const KEEP_PAD_DEG = 0.06;
 
 /**
@@ -308,6 +320,8 @@ interface Props {
 interface State {
   cams: NearCamera[] | null;
   ships: Vessel[] | null;
+  /** The vessels route's stream state, for the ledger's wording; null before the first answer. */
+  shipStream: StreamState | null;
   planes: Aircraft[] | null;
   /** TfL's disruptions around the view; stays null outside London, where none are asked for. */
   streets: StreetDisruption[] | null;
@@ -352,6 +366,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const state = useRef<State>({
     cams: null,
     ships: null,
+    shipStream: null,
     planes: null,
     streets: null,
     streetsDown: false,
@@ -709,7 +724,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     let lastRowsKey = "";
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
     // so every count can be read off the view. "of N nearby" is what was fetched around it.
-    let labelled = { cams: 0, ships: [] as Vessel[], planes: 0, roads: 0 };
+    // Vessels are the exception: every vessel drawn inside the frame, and how many of
+    // them carry a name tag.
+    let labelled = { cams: 0, shipsInView: [] as Vessel[], shipsNamed: 0, planes: 0, roads: 0 };
     // The marks each switched-on console layer has in view, counted in place() only.
     let signalCounts = new Map<string, number>();
     const london = inLondon(target.view.lat, target.view.lon);
@@ -723,7 +740,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (s.cams && !(hid.has("livecams") && hid.has("staticcams"))) {
         rows.push(cameraLedgerRow(labelled.cams, s.cams.filter(camShown)));
       }
-      if (s.ships && !hid.has("ships")) rows.push(vesselLedgerRow(labelled.ships, s.ships.length));
+      if (s.ships && !hid.has("ships")) rows.push(vesselLedgerRow(labelled.shipsInView, labelled.shipsNamed, s.shipStream ?? "live"));
       if (s.planes && !hid.has("planes")) {
         const ageMs = s.planesFetchedAt != null ? clock.now() - s.planesFetchedAt : null;
         rows.push(aircraftLedgerRow(labelled.planes, s.planes.length, { sampled: s.planesSampled, ageMs }));
@@ -959,7 +976,12 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const tagged = (kind: Item["kind"]) => tagPlaced.filter((t) => byId.get(t.id)?.kind === kind);
       labelled = {
         cams: placed.length + offShown,
-        ships: ships.filter((v) => keepTags.has(v.id)),
+        // The ships projected for the tags above, those whose spot is inside the frame.
+        shipsInView: ships.filter((v) => {
+          const at = byId.get(v.id);
+          return at != null && inFrame(at.x, at.y, width, height);
+        }),
+        shipsNamed: tagged("ship").length,
         planes: tagged("plane").length,
         roads: tagged("road").length,
       };
@@ -1074,9 +1096,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // --- when to place --------------------------------------------------------
     let settle: ReturnType<typeof setTimeout> | null = null;
     let lastPlace = 0;
+    // Ships switched back on in the Sources tray: the view may have moved while they were
+    // off (no feed is asked for then), so ask again if it left the box held.
+    let shipsWereHidden = hiddenRef.current.has("ships");
     const placeNow = () => {
       lastPlace = performance.now();
       place();
+      const shipsHidden = hiddenRef.current.has("ships");
+      if (shipsWereHidden && !shipsHidden) reloadShipsIfMoved();
+      shipsWereHidden = shipsHidden;
     };
     if (placeRef) placeRef.current = placeNow;
     placeNowRef.current = placeNow;
@@ -1086,6 +1114,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         settle = null;
         moving = false;
         placeNow();
+        // After placement, so the tags already shown keep their places; the answer
+        // lands through landed() like every other feed.
+        reloadShipsIfMoved();
       }, 300);
     };
     const onMove = () => {
@@ -1297,16 +1328,70 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       loadRoads();
     });
 
-    const loadShips = () =>
-      void getJson("/api/signals/ais").then((d: { features?: AisFeatureLike[] } | null) => {
-        if (disposed) return;
-        s.ships = (d?.features ?? [])
-          .filter((f) => inBounds(f.lat, f.lon, region, 0))
-          .map(toVessel)
-          .filter((v): v is Vessel => v != null);
-        s.refreshedAt = clock.now();
-        landed();
-      });
+    // The vessels around what is on screen, asked again when the view settles outside
+    // the box held (lib/eye/vessels.ts). The planes and streets keep the opening region.
+    let shipBox: GeoBox | null = null;
+    let shipSeq = 0;
+    let shipLoadAt = -Infinity;
+    let shipTrail: ReturnType<typeof setTimeout> | null = null;
+    /** The centre and how far the view reaches, from the canvas corners (a turn changes neither). */
+    const viewNow = () => {
+      const c = map.getCenter();
+      const el = map.getContainer();
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const corners = [
+        map.unproject([0, 0]),
+        map.unproject([w, 0]),
+        map.unproject([w, h]),
+        map.unproject([0, h]),
+      ].map((p) => ({ lat: p.lat, lon: p.lng }));
+      const centre = { lat: c.lat, lon: c.lng };
+      return { centre, radius: viewRadius(centre, corners) };
+    };
+    const loadShips = () => {
+      const { centre, radius } = viewNow();
+      const box = boxAround(centre, radius);
+      const seq = ++shipSeq;
+      shipLoadAt = performance.now();
+      void getJson(`/api/eye/vessels?bbox=${box.join(",")}`).then(
+        (d: { ok?: boolean; stream?: StreamState; box?: GeoBox; features?: AisFeatureLike[] } | null) => {
+          // An older answer never replaces a newer one, and none lands after the view is gone.
+          if (disposed || seq !== shipSeq) return;
+          if (d?.ok && Array.isArray(d.features)) {
+            s.ships = d.features.map(toVessel).filter((v): v is Vessel => v != null);
+            s.shipStream = d.stream === "off" || d.stream === "warming" || d.stream === "down" ? d.stream : "live";
+            // The box the server says it covered (it may have cut ours); ours if it names none.
+            shipBox = Array.isArray(d.box) ? d.box : box;
+            s.refreshedAt = clock.now();
+          } else {
+            // Not answering: what is drawn stays, and the ledger says so (as the streets do).
+            s.shipStream = "down";
+            if (s.ships == null) s.ships = [];
+          }
+          landed();
+        },
+      );
+    };
+    /** The view settled: ask again if it left the box held, at most once every MOVE_RELOAD_GAP_MS. */
+    const reloadShipsIfMoved = () => {
+      // A hidden kind's feed is not asked for (the Sources tray's rule, askShips below).
+      if (disposed || clock.film || hiddenRef.current.has("ships")) return;
+      const again = () => {
+        const { centre, radius } = viewNow();
+        return needsReload(shipBox, centre, radius);
+      };
+      if (!again()) return;
+      const wait = MOVE_RELOAD_GAP_MS - (performance.now() - shipLoadAt);
+      if (wait <= 0) {
+        loadShips();
+      } else if (!shipTrail) {
+        shipTrail = setTimeout(() => {
+          shipTrail = null;
+          if (!disposed && !hiddenRef.current.has("ships") && again()) loadShips();
+        }, wait);
+      }
+    };
     const loadPlanes = () =>
       void getJson("/api/planes").then(
         (d: { planes?: PlaneLike[]; fetchedAt?: number; coverage?: { capped?: boolean } } | null) => {
@@ -1359,7 +1444,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const timers = clock.film
       ? []
       : [
-          setInterval(askShips, AIS_EVERY_MS),
+          setInterval(askShips, EYE_VESSELS_EVERY_MS),
           setInterval(askPlanes, PLANES_EVERY_MS),
           ...(london ? [setInterval(askStreets, STREETS_EVERY_MS)] : []),
           setInterval(loadRoads, CAMERA_ROAD_EVERY_MS),
@@ -1401,6 +1486,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         }
       }
       if (settle) clearTimeout(settle);
+      if (shipTrail) clearTimeout(shipTrail);
       if (ticker) clearInterval(ticker);
       leaveFilm?.();
       for (const t of timers) clearInterval(t);

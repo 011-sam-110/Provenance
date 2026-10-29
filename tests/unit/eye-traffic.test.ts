@@ -125,22 +125,52 @@ describe("aircraft", () => {
 });
 
 describe("the ledger rows", () => {
-  it("counts vessels and how many are moving", () => {
+  it("counts every vessel in view, how many carry a name tag, and how many move", () => {
     const vs = [
       toVessel(feature({ speedKt: 4.4, course: "028°" }))!,
       toVessel(feature({ speedKt: 0 }, { id: "ais:2" }))!,
     ];
-    expect(vesselLedgerRow(vs, 2)).toEqual({
+    expect(vesselLedgerRow(vs, 1)).toEqual({
       kind: "ship",
       count: 2,
       label: "vessels",
-      detail: "1 moving · AIS heard in the last 20 min",
+      detail: "1 named · 1 moving · AIS heard in the last 20 min",
       short: "vessels",
     });
-    // On screen 2, of 5 the view fetched: the count stays what a reader can see.
-    expect(vesselLedgerRow(vs, 5).detail).toBe("of 5 nearby · 1 moving · AIS heard in the last 20 min");
-    // None on screen: no "0 moving".
-    expect(vesselLedgerRow([], 2).detail).toBe("of 2 nearby · AIS heard in the last 20 min");
+    // The count is the vessels drawn, not the tags: 10 in view, 1 named, none moving.
+    const ten = Array.from({ length: 10 }, (_, i) => toVessel(feature({ speedKt: 0 }, { id: `ais:${i}` }))!);
+    const row = vesselLedgerRow(ten, 1);
+    expect(row.count).toBe(10);
+    expect(`${row.count} ${row.label}`).toBe("10 vessels");
+    expect(row.detail).toBe("1 named · 0 moving · AIS heard in the last 20 min");
+    // Singular, and no "of N nearby" for vessels any more.
+    expect(vesselLedgerRow(vs.slice(0, 1), 0)).toMatchObject({ count: 1, label: "vessel", short: "vessel" });
+    expect(vesselLedgerRow(ten, 1).detail).not.toContain("nearby");
+  });
+
+  it("says nothing about names or movement when no vessel is in view", () => {
+    expect(vesselLedgerRow([], 0)).toEqual({
+      kind: "ship",
+      count: 0,
+      label: "vessels",
+      detail: "AIS heard in the last 20 min",
+      short: "vessels",
+    });
+    expect(vesselLedgerRow([], 0).detail).not.toContain("named");
+    expect(vesselLedgerRow([], 0).detail).not.toContain("moving");
+  });
+
+  it("says how the stream is, in its own words", () => {
+    const vs = [toVessel(feature({ speedKt: 4.4, course: "028°" }))!];
+    expect(vesselLedgerRow(vs, 1, "live").detail).toBe("1 named · 1 moving · AIS heard in the last 20 min");
+    expect(vesselLedgerRow(vs, 1).detail).toBe(vesselLedgerRow(vs, 1, "live").detail);
+    expect(vesselLedgerRow(vs, 1, "warming").detail).toBe("1 named · 1 moving · AIS stream started under 2 min ago, still filling");
+    expect(vesselLedgerRow(vs, 1, "down").detail).toBe(
+      "1 named · 1 moving · AISStream not answering, showing what was heard in the last 20 min",
+    );
+    expect(vesselLedgerRow(vs, 1, "off").detail).toBe("1 named · 1 moving · AISStream not connected");
+    expect(vesselLedgerRow([], 0, "off").detail).toBe("AISStream not connected");
+    expect(vesselLedgerRow([], 0, "down").detail).toBe("AISStream not answering, showing what was heard in the last 20 min");
   });
 
   it("says aircraft are a sample, never the whole sky, and how old the positions are", () => {

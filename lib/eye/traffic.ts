@@ -2,15 +2,16 @@
 // a vessel's one-minute line ends, and the ledger rows. Pinned by
 // tests/unit/eye-traffic.test.ts.
 //
-// EVERY MARK IS A REPORT. Vessels come from /api/signals/ais (the long-lived AISStream
-// socket on the server, whose English Channel box covers the Thames) and aircraft from
+// EVERY MARK IS A REPORT. Vessels come from /api/eye/vessels (AISStream's whole-world
+// stream on the server, Digitraffic, and BarentsWatch once its client is set; the
+// console's chokepoint-only /api/signals/ais is not read here) and aircraft from
 // /api/planes (adsb.lol). A mark sits where its last report put it and jumps when the
 // next report lands: nothing is animated between reports, because an in-between
 // position is a place nobody reported. The one-minute line shows where a vessel is
 // heading at its reported speed and course; it is drawn as a line, not as a position.
 
 import { destinationPoint } from "@/lib/cinematic/verbs";
-import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
+import { AISSTREAM_ATTRIBUTION, type StreamState } from "@/lib/signals/ais";
 import { DIGITRAFFIC_CREDIT } from "@/lib/signals/aisDigitraffic";
 import { BARENTSWATCH_CREDIT } from "@/lib/signals/aisBarentswatch";
 import { ADSB_ATTRIBUTION } from "@/lib/sources/adsb";
@@ -256,11 +257,24 @@ export function vesselCredits(vessels: readonly Pick<Vessel, "source">[]): strin
   return out;
 }
 
-/** The vessel row: vessels tagged on screen, of how many nearby, and how many of those move. */
-export function vesselLedgerRow(inView: readonly Vessel[], nearby: number): LedgerRow {
-  const moving = inView.filter((v) => v.moving).length;
+/** The last words of the vessel row: how the stream is, said as it is. */
+const STREAM_WORDS: Record<StreamState, string> = {
+  live: "AIS heard in the last 20 min",
+  warming: "AIS stream started under 2 min ago, still filling",
+  down: "AISStream not answering, showing what was heard in the last 20 min",
+  off: "AISStream not connected",
+};
+
+/**
+ * The vessel row: every vessel drawn inside the view (not only the ones with a tag),
+ * how many of those have a name tag, how many move, and how the stream is. There is no
+ * "of N nearby" here: the view asks for the boats around what is on screen, so the
+ * count is what a reader can see.
+ */
+export function vesselLedgerRow(inView: readonly Vessel[], named: number, stream: StreamState = "live"): LedgerRow {
   const n = inView.length;
-  const parts = [...ofNearby(n, nearby), ...(n > 0 ? [`${moving} moving`] : []), "AIS heard in the last 20 min"];
+  const moving = inView.filter((v) => v.moving).length;
+  const parts = [...(n > 0 ? [`${named} named`, `${moving} moving`] : []), STREAM_WORDS[stream]];
   return {
     kind: "ship",
     count: n,

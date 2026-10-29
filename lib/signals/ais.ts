@@ -28,6 +28,14 @@ import { cleanCallSign, etaFromParts, sizeFrom, validImo } from "@/lib/signals/a
 // the very first call, which waits up to FIRST_WINDOW_MS so a cold start is not an
 // empty map. This does NOT work on serverless hosting, where no process lives on.
 //
+// THE SOCKET HEARS THE WHOLE WORLD (2026-10-29), Class A and Class B. The God's eye view
+// (lib/eye/vessels.ts, lib/eye/vesselFeed.ts) shows boats anywhere, and 11 boxes could
+// not: measured 2026-10-28, the same one connection hears 11,583 vessels in 4 minutes
+// (88 messages and 49 KB a second), against 1,956 held over 20 minutes by the boxes. THIS
+// layer is still the chokepoints, Class A only: mergeVessels keeps the chokepoint boxes,
+// consoleStream drops Class B, and AIS_CAP and its fair share are unchanged, so it shows
+// the vessels it always did. aisHeard() is the unfiltered read.
+//
 // The collector lives on globalThis behind Symbol.for, not in module scope: Next
 // bundles each route separately, so module state is per bundle, and two bundles
 // with a socket each would also spend two of AISStream's three connections per IP.
@@ -72,8 +80,14 @@ export const CHOKEPOINTS: Chokepoint[] = [
   { name: "Barents Sea – North Cape", bbox: [[68, 15], [72, 35]] },
 ];
 
-/** The bounding boxes in the raw [[swLat,swLon],[neLat,neLon]] shape AISStream subscribes to. */
-const chokepointBoxes = (): number[][][] => CHOKEPOINTS.map((c) => c.bbox);
+/**
+ * What the socket is asked for: the whole world, in the [[swLat,swLon],[neLat,neLon]]
+ * shape AISStream subscribes to. ONE box is ONE subscription on the one connection
+ * production holds. The console's Ships layer still shows only the chokepoints,
+ * because mergeVessels drops everything outside them and consoleStream drops Class B;
+ * the God's eye view (lib/eye/vessels.ts) reads the whole of what was heard.
+ */
+export const WORLD_BOX: [[number, number], [number, number]] = [[-90, -180], [90, 180]];
 
 /** Pure: which chokepoint a position falls in (first match), or undefined for open water. */
 export function chokepointFor(lat: number, lon: number): string | undefined {
@@ -130,6 +144,8 @@ export interface AisVessel {
   draughtM?: number;
   /** "MM-DD" or "MM-DDTHH:MMZ", UTC; AIS sends no year. */
   eta?: string;
+  /** Which transponder class sent the position: A (ships) or B (small craft). AISStream only. */
+  aisClass?: "A" | "B";
 }
 
 /** AIS navigational-status code → label (the common ones). */
@@ -207,21 +223,38 @@ function reportedAt(v: AisVessel): number {
 }
 
 /**
- * Pure: merge vessels from several feeds. A ship heard by two feeds is kept once,
- * with its NEWER report; vessels outside every chokepoint box are dropped, because
- * this layer is the chokepoints and Digitraffic reports the whole Baltic.
+ * Pure: one row per ship from several feeds, its NEWER report, optionally only the
+ * ships `keep` accepts. `keep` runs BEFORE the newest-wins comparison, so a report
+ * that is refused never displaces an accepted one.
  */
-export function mergeVessels(...feeds: (AisVessel[] | null | undefined)[]): AisVessel[] {
+export function newestPerMmsi(
+  feeds: (AisVessel[] | null | undefined)[],
+  keep?: (v: AisVessel) => boolean,
+): AisVessel[] {
   const by = new Map<number, AisVessel>();
   for (const feed of feeds) {
     for (const v of feed ?? []) {
       if (!v.MMSI || typeof v.latitude !== "number" || typeof v.longitude !== "number") continue;
-      if (!chokepointFor(v.latitude, v.longitude)) continue;
+      if (keep && !keep(v)) continue;
       const prev = by.get(v.MMSI);
       if (!prev || reportedAt(v) > reportedAt(prev)) by.set(v.MMSI, v);
     }
   }
   return [...by.values()];
+}
+
+/**
+ * Pure: merge vessels from several feeds. A ship heard by two feeds is kept once,
+ * with its NEWER report; vessels outside every chokepoint box are dropped, because
+ * this layer is the chokepoints and Digitraffic reports the whole Baltic.
+ */
+export function mergeVessels(...feeds: (AisVessel[] | null | undefined)[]): AisVessel[] {
+  return newestPerMmsi(feeds, (v) => chokepointFor(v.latitude!, v.longitude!) != null);
+}
+
+/** Pure: the console's share of the stream: Class A ships only. Class B is for God's eye view. */
+export function consoleStream(vessels: AisVessel[]): AisVessel[] {
+  return vessels.filter((v) => v.aisClass !== "B");
 }
 
 /**
@@ -284,6 +317,56 @@ export function pruneHeard(heard: Map<number, { vessel: AisVessel; heardAt: numb
   for (const [mmsi, h] of heard) if (now - h.heardAt > ttlMs) heard.delete(mmsi);
 }
 
+// --- positions: Class A and Class B -------------------------------------------
+//
+// AISStream sends a position as one of three message types, and which one says what
+// kind of transponder sent it: PositionReport is Class A (ships), the other two are
+// Class B (leisure boats, small fishing boats, workboats, many river craft). Class B
+// was 2,704 of the 11,583 vessels heard worldwide in 4 minutes on 2026-10-28 and none
+// of it reached the map while the subscription asked for PositionReport alone.
+// Only Class A carries a navigational status.
+
+type PositionType = "PositionReport" | "StandardClassBPositionReport" | "ExtendedClassBPositionReport";
+
+/**
+ * Pure: one AISStream frame → a vessel, or null when it is not a position, has no MMSI
+ * or has no numeric position. Name, position and time come from the frame's MetaData
+ * (AISStream fills them for every type); speed, course and heading from the message.
+ * A heading of 511 ("not available") is passed through: the layers read it as none.
+ */
+export function positionFromMessage(m: unknown): AisVessel | null {
+  if (!m || typeof m !== "object") return null;
+  const f = m as {
+    MessageType?: unknown;
+    MetaData?: { MMSI?: unknown; ShipName?: unknown; latitude?: unknown; longitude?: unknown; time_utc?: unknown };
+    Message?: Record<string, { Sog?: number; Cog?: number; TrueHeading?: number; NavigationalStatus?: number } | undefined>;
+  };
+  const type = f.MessageType;
+  if (type !== "PositionReport" && type !== "StandardClassBPositionReport" && type !== "ExtendedClassBPositionReport") {
+    return null;
+  }
+  const md = f.MetaData;
+  const mmsi = md?.MMSI;
+  if (typeof mmsi !== "number" || !mmsi) return null;
+  const lat = md?.latitude;
+  const lon = md?.longitude;
+  if (typeof lat !== "number" || !Number.isFinite(lat) || typeof lon !== "number" || !Number.isFinite(lon)) return null;
+  const pr = f.Message?.[type as PositionType] ?? {};
+  const classA = type === "PositionReport";
+  return {
+    MMSI: mmsi,
+    ShipName: typeof md?.ShipName === "string" ? md.ShipName : undefined,
+    latitude: lat,
+    longitude: lon,
+    Sog: pr.Sog,
+    Cog: pr.Cog,
+    TrueHeading: pr.TrueHeading,
+    ...(classA ? { NavigationalStatus: pr.NavigationalStatus } : {}),
+    time_utc: typeof md?.time_utc === "string" ? md.time_utc : undefined,
+    aisClass: classA ? "A" : "B",
+  };
+}
+
 // --- static data: what kind of ship -----------------------------------------
 //
 // A position report carries no ship type. Measured on production 2026-10-24: 993 of
@@ -292,12 +375,12 @@ export function pruneHeard(heard: Map<number, { vessel: AisVessel; heardAt: numb
 // a Class A ship sends it every 6 minutes. It is kept per MMSI, apart from the
 // positions, and joined to a vessel's newest position when the snapshot is taken.
 
-/** What the stream is asked for. Both on every (re)connect. */
+/** What the stream is asked for. All of them on every (re)connect. */
 export const AIS_MESSAGE_TYPES = ["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport", "ShipStaticData", "StaticDataReport"] as const;
 
 /** Pure: the subscription frame AISStream expects within 3 s of the socket opening. */
 export function subscriptionMessage(key: string): string {
-  return JSON.stringify({ APIKey: key, BoundingBoxes: chokepointBoxes(), FilterMessageTypes: AIS_MESSAGE_TYPES });
+  return JSON.stringify({ APIKey: key, BoundingBoxes: [WORLD_BOX], FilterMessageTypes: AIS_MESSAGE_TYPES });
 }
 
 /** A ship's type does not change between reports; six hours spans a long passage. */
@@ -417,6 +500,28 @@ export function reconnectDelay(attempt: number, rand: number = Math.random()): n
   return Math.round(base * (0.75 + 0.5 * rand));
 }
 
+/** What the stream is doing, in the four words the God's eye view's ledger can say truthfully. */
+export type StreamState = "off" | "warming" | "live" | "down";
+
+/**
+ * Pure: the stream's state. No key is "off". A rejected key, or a socket that is not
+ * connected and has a failure on record, is "down" (the test fetch() has always used).
+ * The first two minutes after the stream first opened, or before it ever has, are
+ * "warming": the snapshot is still filling. Anything else is "live".
+ */
+export function streamState(
+  s: { hasKey: boolean; connected: boolean; failure?: string; refusedAt: number | null; firstOpenAt: number | null },
+  now: number,
+): StreamState {
+  if (!s.hasKey) return "off";
+  if (s.refusedAt != null || (!s.connected && Boolean(s.failure))) return "down";
+  if (s.firstOpenAt == null || now - s.firstOpenAt < WARM_MS) return "warming";
+  return "live";
+}
+
+/** The collector prunes what it holds this often, so a world map cannot grow without end. */
+const PRUNE_EVERY_MS = 60_000;
+
 // --- the long-lived collector ------------------------------------------------
 
 interface Collector {
@@ -430,6 +535,8 @@ interface Collector {
   /** When this collector first connected; the snapshot is warm after WARM_MS. */
   firstOpenAt: number | null;
   lastMessageAt: number | null;
+  /** When the collector last pruned what it holds (positions and statics). */
+  prunedAt: number;
   /** The last socket failure, cleared by the next message. */
   failure?: string;
   refusedAt: number | null;
@@ -516,20 +623,19 @@ function connect(c: Collector) {
         if (s) c.statics.set(mmsi, { ...c.statics.get(mmsi), ...s, heardAt: now });
         return;
       }
-      if (m.MessageType !== "PositionReport" || !mmsi) return;
-      const md = m.MetaData!, pr = m.Message?.PositionReport ?? {};
+      const vessel = positionFromMessage(m);
+      if (!vessel) return;
       const now = Date.now();
-      c.heard.set(mmsi, {
-        heardAt: now,
-        vessel: {
-          MMSI: mmsi, ShipName: md.ShipName, latitude: md.latitude, longitude: md.longitude,
-          Sog: pr.Sog, Cog: pr.Cog, TrueHeading: pr.TrueHeading, NavigationalStatus: pr.NavigationalStatus,
-          time_utc: md.time_utc,
-        },
-      });
+      c.heard.set(vessel.MMSI!, { heardAt: now, vessel });
       c.lastMessageAt = now;
       c.failure = undefined;
       c.attempt = 0;
+      // The world is heard now, so nothing may wait for fetch() to forget the old.
+      if (now - c.prunedAt >= PRUNE_EVERY_MS) {
+        pruneHeard(c.heard, now);
+        pruneStatics(c.statics, now);
+        c.prunedAt = now;
+      }
     } catch { /* skip malformed frame */ }
   };
   ws.onerror = () => {
@@ -581,6 +687,7 @@ function collectorFor(key: string): { c: Collector; fresh: boolean } {
     openedAt: null,
     firstOpenAt: null,
     lastMessageAt: null,
+    prunedAt: Date.now(),
     refusedAt: null,
     attempt: 0,
     timer: null,
@@ -626,6 +733,35 @@ export function snapshotRule(firstOpenAt: number | null, now: number): string {
   return `vessels heard in the last ${Math.round(VESSEL_TTL_MS / 60_000)} min — ${CAP_RULE}`;
 }
 
+/**
+ * What the God's eye view reads: every vessel the stream heard inside the TTL, Class A
+ * and B, anywhere on Earth, joined to its static data, with the state of the stream
+ * (lib/eye/vessels.ts filters it to the view). Without a key the stream is "off" and
+ * nothing is heard. The first call after a (re)start waits for the stream to fill, as
+ * the console layer's does. Never throws: a read that fails is a "down" stream.
+ */
+export async function aisHeard(): Promise<{ vessels: AisVessel[]; state: StreamState; lastMessageAt: number | null }> {
+  const key = (process.env.AISSTREAM_API_KEY ?? "").trim();
+  if (!key) return { vessels: [], state: "off", lastMessageAt: null };
+  try {
+    const { c, fresh } = collectorFor(key);
+    if (fresh) await firstWindow(c, FIRST_WINDOW_MS);
+    const now = Date.now();
+    pruneHeard(c.heard, now);
+    pruneStatics(c.statics, now);
+    return {
+      vessels: liveVessels(c.heard, now).map((v) => withStatic(v, v.MMSI ? c.statics.get(v.MMSI) : undefined)),
+      state: streamState(
+        { hasKey: true, connected: Boolean(c.ws), failure: c.failure, refusedAt: c.refusedAt, firstOpenAt: c.firstOpenAt },
+        now,
+      ),
+      lastMessageAt: c.lastMessageAt,
+    };
+  } catch {
+    return { vessels: [], state: "down", lastMessageAt: null };
+  }
+}
+
 export const AIS_SOURCE: SignalSource = {
   id: "ais",
   // A reported AIS position.
@@ -658,7 +794,10 @@ export const AIS_SOURCE: SignalSource = {
         const t = Date.now();
         pruneHeard(c.heard, t);
         pruneStatics(c.statics, t);
-        stream = liveVessels(c.heard, t).map((v) => withStatic(v, v.MMSI ? c.statics.get(v.MMSI) : undefined));
+        // The socket hears the whole world, Class A and B (God's eye view reads all of
+        // it, aisHeard below). This layer is Class A, and mergeVessels keeps it to the
+        // chokepoints, so it shows what it always did.
+        stream = consoleStream(liveVessels(c.heard, t).map((v) => withStatic(v, v.MMSI ? c.statics.get(v.MMSI) : undefined)));
         streamFailure = c.failure;
         streamDown = !c.ws && Boolean(c.failure);
         firstOpenAt = c.firstOpenAt;
