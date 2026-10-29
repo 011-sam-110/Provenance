@@ -2,8 +2,7 @@
 // The God's eye view's frame: the place, the UTC clock, heading and tilt, the ledger
 // of what is on screen and who measured it, the credits, and the way back to the
 // console. Every word comes from lib/eye/wording.ts. The look (a vignette with scrims
-// under the words, one sweep when a feed refreshes) is eye.module.css; the sweep is
-// off with reduced motion and in a recording.
+// under the words) is eye.module.css.
 //
 // RE-RENDERS ONLY WHEN THE TEXT CHANGES. The camera moves every frame while the view
 // turns, and a setState per frame would re-render this whole frame per frame. The
@@ -134,9 +133,6 @@ export default function EyeHud({
 
   return (
     <div className={styles.hud}>
-      {/* Keyed on the refresh, so each new report runs the sweep once. */}
-      {!record && refreshedAt != null && <i key={refreshedAt} className={styles.sweep} aria-hidden />}
-
       {/* data-eye-keep: EyeOverlay places no card or tag over these. */}
       <header className={styles.top} data-eye-keep>
         <div className={styles.placeBlock}>

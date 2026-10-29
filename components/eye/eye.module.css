@@ -74,44 +74,6 @@
     radial-gradient(ellipse 75% 70% at 50% 46%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.5) 100%);
 }
 
-/* One sweep down the frame when vessels or aircraft arrive. A transform on its own
-   layer: no repaint of the scene. Off with reduced motion (below) and in a recording. */
-.sweep {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 2px;
-  background: linear-gradient(to right, rgba(238, 243, 241, 0), rgba(238, 243, 241, 0.55) 22%, rgba(238, 243, 241, 0.8) 50%, rgba(238, 243, 241, 0.55) 78%, rgba(238, 243, 241, 0));
-  box-shadow: 0 0 14px rgba(45, 212, 191, 0.5);
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: eye-sweep 1.8s cubic-bezier(0.45, 0, 0.25, 1) both;
-}
-
-@keyframes eye-sweep {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  82% {
-    opacity: 0.7;
-  }
-  100% {
-    transform: translateY(100vh);
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sweep {
-    display: none;
-  }
-}
-
 /* MapLibre's own attribution control, collapsed behind its info button in the
    console (lib/map/attribution.ts), is hidden here only while the frame shows the
    same credits in full along its bottom edge (EyeHud). EyeApp sets data-credits only
