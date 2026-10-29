@@ -128,3 +128,34 @@ describe("the rail header does not scroll away", () => {
     expect(padding![1].trim().split(/\s+/)[0]).toBe("0");
   });
 });
+
+describe("a section heading's counts never wrap; the title gives way", () => {
+  // Leon, 2026-10-28: "fix this formatting error with 6 on". At a 372px rail and on every
+  // phone, "NATURAL HAZARDS & WE… 13 6 ON" broke "6 on" onto two lines: a flex item may
+  // shrink by default, and "6 on" has a space to break at. This is a source assertion
+  // because nothing in this suite lays out a page; drop either declaration below and the
+  // wrap is back with every other test still green.
+  const css = read(CSS);
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThan(-1);
+    const block = css.slice(at);
+    return block.slice(0, block.indexOf("}") + 1);
+  };
+
+  for (const selector of [".tn-src-sec-n", ".tn-src-sec-on"]) {
+    it(`${selector} neither shrinks nor wraps`, () => {
+      const r = rule(selector);
+      expect(r).toMatch(/flex:\s*none/);
+      expect(r).toMatch(/white-space:\s*nowrap/);
+    });
+  }
+
+  it("the title is the part that gives way: it can shrink below its text and ellipsises", () => {
+    // Any overflow other than `visible` makes a flex item's automatic minimum width 0.
+    const r = rule(".tn-src-sec-name");
+    expect(r).toMatch(/overflow:\s*hidden/);
+    expect(r).toMatch(/text-overflow:\s*ellipsis/);
+    expect(r).toMatch(/white-space:\s*nowrap/);
+  });
+});
