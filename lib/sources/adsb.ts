@@ -194,6 +194,26 @@ export interface AdsbRow {
   lon?: number;
   seen_pos?: number; // seconds since the network last had a position
   dbFlags?: number; // readsb database flags; bit 1 = military
+  type?: string; // where the position came from: "adsb_icao", "adsr_icao", "tisb_icao", "mlat", "adsc"...
+  emergency?: string; // "none", or "general", "lifeguard", "minfuel", "nordo", "unlawful", "downed"
+  nav_altitude_mcp?: number; // the altitude selected on the autopilot panel, feet
+}
+
+/**
+ * Pure: adsb.lol's `type` (which kind of message the position came from) to the short
+ * code the God's eye view words. `adsb_icao`, `adsb_icao_nt` and `adsb_other` are all
+ * the aircraft's own ADS-B; undefined stays undefined, so a row with no `type` says
+ * nothing about where its position came from.
+ */
+export function positionSourceOf(type?: string): "adsb" | "adsr" | "tisb" | "mlat" | "adsc" | "other" | undefined {
+  if (type === undefined) return undefined;
+  const t = type.trim().toLowerCase();
+  if (t.startsWith("adsb")) return "adsb";
+  if (t.startsWith("adsr")) return "adsr";
+  if (t.startsWith("tisb")) return "tisb";
+  if (t === "mlat") return "mlat";
+  if (t === "adsc") return "adsc";
+  return "other";
 }
 
 // Unit conversions, named so the parser reads as physics rather than magic numbers.
@@ -247,6 +267,10 @@ export function adsbRowToWorldObject(row: AdsbRow): WorldObject | null {
   const callsign = (row.flight ?? "").trim() || hex;
   const typeCode = (row.t ?? "").trim();
   const registration = (row.r ?? "").trim();
+  const posSource = positionSourceOf(row.type);
+  const seenPos = num(row.seen_pos);
+  const emergency = (row.emergency ?? "").trim();
+  const selAlt = num(row.nav_altitude_mcp);
 
   return {
     kind: "plane",
@@ -279,6 +303,11 @@ export function adsbRowToWorldObject(row: AdsbRow): WorldObject | null {
       ...(typeCode ? { typeCode } : {}),
       ...(registration ? { registration } : {}),
       ...(row.desc?.trim() ? { typeDescription: row.desc.trim() } : {}),
+      // What the God's eye view's panel shows, each only when the row carries it.
+      ...(posSource ? { posSource } : {}),
+      ...(seenPos !== null ? { posAgeS: Math.round(seenPos * 10) / 10 } : {}),
+      ...(emergency && emergency !== "none" ? { emergency } : {}),
+      ...(selAlt !== null ? { selAltFt: Math.round(selAlt) } : {}),
     },
   };
 }

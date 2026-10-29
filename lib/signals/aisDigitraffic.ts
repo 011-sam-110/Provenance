@@ -1,4 +1,5 @@
 import type { AisVessel } from "@/lib/signals/ais";
+import { cleanCallSign, draughtFromTenths, etaFromPacked, sizeFrom, validImo } from "@/lib/signals/aisStatic";
 
 // Vessel positions from Fintraffic's Digitraffic Marine AIS — keyless, CC BY 4.0,
 // straight from the Finnish state traffic agency's own receivers. Covers the Baltic
@@ -10,7 +11,9 @@ import type { AisVessel } from "@/lib/signals/ais";
 // Two REST calls: /locations (positions, refreshed about once a minute; asked only
 // for the last VESSEL_WINDOW_MS) and /vessels (names, types, destinations), which
 // changes slowly and is held for METADATA_TTL_MS on globalThis. Digitraffic asks
-// every caller to send a Digitraffic-User header naming itself.
+// every caller to send a Digitraffic-User header naming itself. The register also
+// carries each ship's call sign, IMO number, size, draught and ETA; they are read
+// through lib/signals/aisStatic.ts, which says what each is.
 
 export const DIGITRAFFIC_LOCATIONS = "https://meri.digitraffic.fi/api/ais/v1/locations";
 export const DIGITRAFFIC_VESSELS = "https://meri.digitraffic.fi/api/ais/v1/vessels";
@@ -31,6 +34,17 @@ export interface DigitrafficVessel {
   name?: string;
   shipType?: number;
   destination?: string;
+  callSign?: string;
+  imo?: number;
+  /** Tenths of a metre; 0 is "not available" and 255 is "25.5 m or more". */
+  draught?: number;
+  /** Month, day, hour and minute packed in one number (see etaFromPacked). */
+  eta?: number;
+  /** Distances from the position reference point to bow, stern, port and starboard, metres. */
+  referencePointA?: number;
+  referencePointB?: number;
+  referencePointC?: number;
+  referencePointD?: number;
 }
 
 /** AIS ship-type code (ITU-R M.1371) → a short label. */
@@ -74,6 +88,11 @@ export function normalizeDigitraffic(
     if (!mmsi || typeof lat !== "number" || typeof lon !== "number" || typeof t !== "number") continue;
     if (now - t > windowMs) continue;
     const m = meta.get(mmsi);
+    const callSign = cleanCallSign(m?.callSign);
+    const imo = validImo(m?.imo);
+    const { lengthM, beamM } = sizeFrom(m?.referencePointA, m?.referencePointB, m?.referencePointC, m?.referencePointD);
+    const draughtM = draughtFromTenths(m?.draught);
+    const eta = etaFromPacked(m?.eta);
     out.push({
       MMSI: mmsi,
       ShipName: m?.name?.trim() || undefined,
@@ -89,6 +108,12 @@ export function normalizeDigitraffic(
       source: "Digitraffic",
       shipType: shipTypeLabel(m?.shipType),
       destination: m?.destination?.trim() || undefined,
+      ...(callSign ? { callSign } : {}),
+      ...(imo ? { imo } : {}),
+      ...(lengthM ? { lengthM } : {}),
+      ...(beamM ? { beamM } : {}),
+      ...(draughtM ? { draughtM } : {}),
+      ...(eta ? { eta } : {}),
     });
   }
   return out;

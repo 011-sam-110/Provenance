@@ -23,6 +23,28 @@ describe("Digitraffic", () => {
     expect(tanker.source).toBe("Digitraffic");
   });
 
+  it("reads the register's call sign, IMO, size, draught and ETA", () => {
+    // KRASNOYARSK's register row, verbatim (tests/fixtures/digitraffic-ais-vessels.json).
+    const tanker = dt.find((v) => v.MMSI === 273257030)!;
+    expect(tanker.callSign).toBe("UAWA8");
+    expect(tanker.imo).toBe(9312896);
+    expect(tanker.draughtM).toBe(8.2); // 82 tenths of a metre
+    expect(tanker.eta).toBe("09-20T15:00Z"); // 631744 packed
+    expect(tanker.lengthM).toBeUndefined(); // its four reference points are all 0: not sent
+    expect(tanker.beamM).toBeUndefined();
+    // HWA LAND: 197 + 28 long, 22 + 10 wide.
+    const bulk = dt.find((v) => v.MMSI === 357381000)!;
+    expect(bulk).toMatchObject({ callSign: "3FHP9", imo: 9187722, lengthM: 225, beamM: 32, draughtM: 6.2 });
+  });
+
+  it("leaves out a draught of 0 and an IMO of 0, which the register sends for 'none'", () => {
+    // NORDENSKIOLD: draught 0, imo 0, a size of 4+3 by 1+2.
+    const survey = dt.find((v) => v.MMSI === 230182220)!;
+    expect(survey.draughtM).toBeUndefined();
+    expect(survey.imo).toBeUndefined();
+    expect(survey).toMatchObject({ callSign: "OHA5145", lengthM: 7, beamM: 3 });
+  });
+
   it("reads 102.2 kt as 'speed not available', not as a speed", () => {
     expect(dt.find((v) => v.MMSI === 273299870)!.Sog).toBeNull();
   });
@@ -56,7 +78,7 @@ describe("mergeVessels", () => {
 
 describe("BarentsWatch", () => {
   // No capture: the API needs the sign-up. These rows follow the field names of the
-  // published OpenAPI document (AisComboSimple); the values are made up for the test.
+  // published OpenAPI document (AisComboFull); the values are made up for the test.
   const rows = [
     { mmsi: 257000001, name: "TEST VESSEL", latitude: 70.5, longitude: 25.0, speedOverGround: 11.2, courseOverGround: 80, trueHeading: 79, navigationalStatus: 0, shipType: 80, msgtime: "2026-10-16T20:00:00+00:00" },
     { mmsi: 257000002, name: null, latitude: 70.6, longitude: 26.0, msgtime: "2026-10-15T20:00:00+00:00" },
@@ -70,12 +92,38 @@ describe("BarentsWatch", () => {
     expect(chokepointFor(out[0].latitude!, out[0].longitude!)).toBe("Barents Sea – North Cape");
   });
 
+  it("reads call sign, IMO, size, draught, destination and ETA from a Full row", () => {
+    const [v] = normalizeBarentswatch(
+      [
+        {
+          mmsi: 257000003, name: "FULL ROW", latitude: 70.5, longitude: 25.0, shipType: 70, msgtime: "2026-10-16T20:00:00+00:00",
+          callSign: "LABC@@@", imoNumber: 9773064, shipLength: 183, shipWidth: 32, draught: 112, destination: "NO HVG ", eta: "2026-10-18T06:30:00Z",
+        },
+      ],
+      NOW,
+      VESSEL_TTL_MS,
+    );
+    expect(v).toMatchObject({
+      callSign: "LABC", imo: 9773064, lengthM: 183, beamM: 32, draughtM: 11.2, destination: "NO HVG", eta: "10-18T06:30Z",
+    });
+  });
+
+  it("leaves out a Full row's empty fields", () => {
+    const [v] = normalizeBarentswatch(
+      [{ mmsi: 257000004, latitude: 70.5, longitude: 25.0, msgtime: "2026-10-16T20:00:00+00:00", callSign: "", imoNumber: 0, shipLength: 0, shipWidth: 0, draught: 0, destination: "  ", eta: "0001-01-01T00:00:00Z" }],
+      NOW,
+      VESSEL_TTL_MS,
+    );
+    for (const k of ["callSign", "imo", "lengthM", "beamM", "draughtM", "destination", "eta"]) expect(k in v, k).toBe(false);
+  });
+
   it("asks for a closed GeoJSON polygon around the box, lon before lat", () => {
     const body = bwRequestBody([[68, 15], [72, 35]], NOW);
     expect(body.geometry.coordinates[0][0]).toEqual([15, 68]);
     expect(body.geometry.coordinates[0][4]).toEqual([15, 68]);
     expect(body.since).toBe("2026-10-16T20:07:51.000Z");
-    expect(body.modelType).toBe("Simple");
+    // "Full" is the model that carries call sign, IMO, size, draught, destination and ETA.
+    expect(body.modelType).toBe("Full");
   });
 });
 
