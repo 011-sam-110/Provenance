@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EYE_CONSOLE_LAYERS, consoleHref, hasSavedBoard } from "@/lib/eye/places";
 import { railSourceCount } from "@/lib/eye/railCount";
-import { sourcesHint, sourcesName } from "@/lib/eye/wording";
+import { fullMapName, sourcesName } from "@/lib/eye/wording";
 import { SOURCES_PARAM, wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
 import { ACTIVE_LAYERS } from "@/lib/layers";
 import { decodeViewState } from "@/lib/share/url";
@@ -106,15 +106,15 @@ describe("sources=open on the console", () => {
   });
 });
 
-describe("the hint under Sources", () => {
+describe("the way out in the Sources tray", () => {
   it("counts the rows the Sources rail draws, from the rail's own list", () => {
     const rows = buildSourceSections(RAIL_SOURCES).flatMap((s) => s.rows);
     expect(railSourceCount()).toBe(rows.length);
     expect(railSourceCount()).toBeGreaterThan(20);
   });
 
-  it("says the count and where the button goes", () => {
-    expect(sourcesHint(51)).toBe("51 on the full map");
-    expect(sourcesName(51)).toBe("Sources: open the full map with all 51 sources");
+  it("names the button, and says where the link goes", () => {
+    expect(sourcesName()).toBe("Sources");
+    expect(fullMapName(55)).toBe("Open the full map with all 55 sources");
   });
 });

@@ -62,12 +62,16 @@ for (const shape of SHAPES) {
     // Westminster's cameras and road notices are TfL's.
     await expect(credits).toContainText("Powered by TfL Open Data");
     await expect(page.locator(`footer a[href="${BRAND.repoUrl}"]`)).toHaveCount(1);
-    const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
+    // Sources is a button that opens the console's rail as a tray; the way to the console is
+    // the tray's link.
+    const sourcesButton = page.getByRole("button", { name: /^Sources/ });
     if (shape.query.includes("record=1")) {
-      await expect(sources).toHaveCount(0);
+      await expect(sourcesButton).toHaveCount(0);
     } else {
       // The way to the console, its Sources rail open, at the spot on screen. The href
       // is filled in as the link is used, so read it after a focus.
+      await sourcesButton.click();
+      const sources = page.getByRole("link", { name: /^Open the full map/ });
       await sources.focus();
       await expect(sources).toHaveAttribute("href", /^\/app\?lat=[-\d.]+&lon=[-\d.]+&z=[\d.]+.*sources=open/);
       // Who this is, for a visitor who arrived from a reel.
@@ -186,7 +190,8 @@ test("Sources opens the console with its Sources rail open, and keeps the scene'
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/eye?place=westminster");
   await ready(page);
-  const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
+  await page.getByRole("button", { name: /^Sources/ }).click();
+  const sources = page.getByRole("link", { name: /^Open the full map/ });
   await sources.focus();
   const href = await sources.getAttribute("href");
   expect(href).toContain("layers=livecams%2Cstaticcams%2Cplanes");
@@ -201,7 +206,7 @@ test("a phone keeps the console's thumb control: Sources first in the bar at the
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/eye?place=westminster");
   await ready(page);
-  const sources = page.getByRole("link", { name: /^Sources: open the full map/ });
+  const sources = page.getByRole("button", { name: /^Sources/ });
   const box = await sources.boundingBox();
   expect(box).not.toBeNull();
   // Thumb reach: the left half of the screen, in the bottom third, 44 px or taller.

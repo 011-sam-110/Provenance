@@ -1,0 +1,421 @@
+/* The God's eye view's Sources tray and pins (EyeSources.tsx).
+ *
+ * THE TRAY IS THE CONSOLE'S RAIL, not a second design of it. It is a `.tn-rail` in a
+ * `.tn-terminal` token scope, its header is `.tn-rail-header` with `.tn-rail-tabs` and
+ * `.tn-rail-collapse`, and its rows are SourceRowView's, so app/globals.css styles all of
+ * it: surface, edge, 14 px corners, shadow, the two-column rows, the dots and switches. In
+ * this view that is always the console's DARK mode (lib/eye/skin.ts sets the attribute),
+ * which is why nothing here names a colour: every colour below is a `--tn-*` token that the
+ * console's dark rules already remap.
+ *
+ * WHAT THIS FILE HOLDS is placement and the few pieces only this view has:
+ *   - where the tray stands (top right on a wide screen, a pop-up above the bar on a phone),
+ *     written with a doubled class (.tray.tray) so it beats `.tn-rail` and its <=768 px
+ *     bottom-sheet rules, which are the console's own and are not edited;
+ *   - the Sources button and the pins, which are the console's `.tn-rail-fab` with its
+ *     fixed top-left placement taken off;
+ *   - the section strip (a second `.tn-rail-tabs`), the phone's grip and 44 px hit boxes,
+ *     the pin bar's phone strip, the drag ghost, the drop mark and the pin menu.
+ * The `.tn-terminal` wrapper adds no box of its own (display: contents). */
+
+.scope {
+  display: contents;
+}
+
+/* ── The tray ───────────────────────────────────────────────────────────── */
+
+.tray.tray {
+  position: fixed;
+  top: 116px;
+  right: 26px;
+  bottom: auto;
+  left: auto;
+  z-index: 40;
+  /* 600 px is deliberate: `.tn-src-sec` is a container and its rows go two-column only at
+     562 px of content, as in the console. */
+  width: min(600px, calc(100vw - 52px));
+  max-height: min(680px, calc(100dvh - 140px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--tn-border);
+  border-radius: 14px;
+  box-shadow: var(--tn-shadow);
+  animation: none;
+  pointer-events: auto;
+  font-weight: 400;
+  text-shadow: none;
+}
+/* The console's bottom-sheet grab handle (<= 768 px) is not wanted on a pop-up. */
+.tray.tray::before {
+  display: none;
+}
+
+.strip.strip {
+  flex: none;
+  margin: 0 12px 10px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.strip::-webkit-scrollbar {
+  display: none;
+}
+.strip :global(.tn-rail-tab) {
+  flex: none;
+  padding: 4px 10px 5px;
+  font-size: 12px;
+}
+.stripN {
+  margin-left: 4px;
+  color: var(--tn-text-faint);
+  font-weight: 500;
+}
+.strip :global(.tn-rail-tab[aria-selected="true"]) .stripN {
+  color: var(--tn-text-muted);
+}
+
+.search.search {
+  display: block;
+  flex: none;
+  width: calc(100% - 24px);
+  margin: 2px 12px 10px;
+}
+
+.body.body {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+/* A row's popover hangs under it. The console draws its own beside the rail, from code in
+   SourceRow; here it is inline in the row, which is its containing block. */
+.tray :global(.tn-src-pop) {
+  left: 14px;
+  top: calc(100% - 2px);
+}
+
+/* "3 here", after the label of a switched-on row. */
+.here {
+  flex: none;
+  font-size: 11px;
+  color: var(--tn-text-faint);
+  white-space: nowrap;
+}
+
+/* The foot: the way to the full console, then what this view leaves out. */
+.foot.foot {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--tn-border);
+}
+.foot a {
+  color: var(--tn-text);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.foot a:focus-visible {
+  outline: 2px solid var(--tn-accent);
+  outline-offset: 2px;
+}
+
+/* The bar sits above the tray, so the pin menu (inside it) is not covered by the tray when
+   the two overlap. They do not overlap otherwise. */
+.barLayer {
+  z-index: 45;
+}
+
+/* ── The Sources button and the pins: the console's `.tn-rail-fab`, in the bar ───── */
+
+.fab.fab {
+  position: static;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  z-index: auto;
+  min-height: 34px;
+  padding: 0 13px;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+.fab:focus-visible {
+  outline: 2px solid var(--tn-accent);
+  outline-offset: 2px;
+}
+/* Sources keeps the right-hand end of the bar on a wide screen (Turn and the pins before it). */
+.sourcesBtn.sourcesBtn {
+  order: 2;
+}
+.sourcesBtn[aria-expanded="true"] {
+  border-color: var(--tn-accent);
+}
+
+.pin.pin {
+  gap: 8px;
+  touch-action: none;
+  --c: var(--tn-text-muted);
+}
+.pin[aria-pressed="false"] {
+  color: var(--tn-text-muted);
+  font-weight: 500;
+}
+.pin[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: default;
+}
+.pinDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+  /* The console's own off-dot in its dark mode (app/globals.css, .tn-src-dot). */
+  opacity: 0.7;
+}
+.pin[aria-pressed="true"] .pinDot {
+  opacity: 1;
+  box-shadow: 0 0 6px var(--c);
+}
+
+/* The pins' own area. It shows a dashed outline while a source is carried, and takes the
+   accent when the pointer is over it. */
+.pins {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  border-radius: 12px;
+}
+.pins[data-dragging] {
+  min-width: 96px;
+  min-height: 34px;
+  outline: 1.5px dashed var(--tn-border-strong);
+  outline-offset: 3px;
+}
+.pins[data-over] {
+  outline-color: var(--tn-accent);
+  background: var(--tn-accent-soft);
+}
+.pin[data-lifted] {
+  opacity: 0.35;
+}
+/* Where the carried source would land: a bar on the side of a pin. */
+.pin[data-drop] {
+  position: relative;
+}
+.pin[data-drop]::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--tn-accent);
+}
+.pin[data-drop="before"]::after {
+  left: -6px;
+}
+.pin[data-drop="after"]::after {
+  right: -6px;
+}
+
+/* The carried source, following the pointer by transform only. */
+.ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 80;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--tn-border-strong);
+  border-radius: 10px;
+  background: var(--tn-surface-solid);
+  color: var(--tn-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--tn-shadow);
+  pointer-events: none;
+  will-change: transform;
+}
+.ghost[hidden] {
+  display: none;
+}
+
+/* The pin menu: the console's `.tn-src-pop` surface, placed by the code (fixed). */
+.menu.menu {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 70;
+  display: grid;
+  width: auto;
+  min-width: 150px;
+  padding: 4px;
+  pointer-events: auto;
+}
+.menu button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--tn-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.menu button:hover,
+.menu button:focus-visible {
+  background: var(--tn-surface-2);
+  outline: none;
+}
+.menu button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--tn-accent);
+}
+.menu button[aria-disabled="true"] {
+  color: var(--tn-text-faint);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin[data-drop]::after {
+    transition: none;
+  }
+}
+
+/* ── The grip is the phone's; a wide screen does not show it ─────────────── */
+
+.tray :global(.tn-src-grip) {
+  display: none;
+}
+
+/* ── A phone: a pop-up above the bar, the bar's strip, thumb-sized rows ───────────────
+   The same line the rest of the view draws between the wide and the phone layouts. */
+
+/* The controls bar's scrolling wrapper (EyeHud): on a wide screen it adds no box, its
+   buttons are the controls' own. */
+.bar {
+  display: contents;
+}
+
+@media (max-aspect-ratio: 4/5) {
+  .tray.tray {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    /* 8 px above the bar; EyeSources.tsx measures the bar and sets --tray-bottom. */
+    bottom: var(--tray-bottom, 80px);
+    width: auto;
+    max-height: min(470px, 56dvh);
+  }
+  /* Show all is taller: its top edge stays about 92 px from the top of the screen. */
+  .tray.tray[data-view="all"] {
+    top: 92px;
+    max-height: none;
+  }
+
+  .tray :global(.tn-src-row) {
+    min-height: 44px;
+    padding: 0 6px 0 0;
+    gap: 16px;
+  }
+  .tray :global(.tn-src-label) {
+    padding: 13px 0;
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .tray :global(.tn-src-grip) {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 24px;
+    height: 40px;
+    margin-right: -8px;
+    color: var(--tn-text-faint);
+    font-size: 13px;
+    letter-spacing: -2px;
+    touch-action: none;
+    cursor: grab;
+  }
+  /* The ＋ and the switch keep the console's painted size and get a transparent hit box
+     to 44 px: the console's own technique (b), in the note above its <= 900 px touch pass
+     (app/globals.css). Neighbours are 16 px apart, so the boxes touch and never overlap
+     (9 and 8 px reach out sideways). */
+  .tray :global(.tn-src-add) {
+    position: relative;
+  }
+  /* The ＋ has a 1 px border and the box is measured from inside it, so -12 and -9 make 44
+     tall and 38 wide. */
+  .tray :global(.tn-src-add)::before {
+    content: "";
+    position: absolute;
+    inset: -12px -9px;
+  }
+  .tray :global(.tn-src-toggle)::before {
+    content: "";
+    position: absolute;
+    inset: -14px -8px;
+  }
+  .tray :global(.tn-rail-tab) {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  .strip :global(.tn-rail-tab) {
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .tray :global(.tn-rail-collapse) {
+    width: 44px;
+    height: 44px;
+  }
+  .search.search {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  .fab.fab {
+    min-height: 44px;
+  }
+  /* Sources first in the bar, at the bottom left, in thumb reach. */
+  .sourcesBtn.sourcesBtn {
+    order: -1;
+  }
+  .menu button {
+    min-height: 44px;
+  }
+
+  /* The bar: Sources stays first and fixed; Places, the other buttons and the pins scroll
+     sideways in one strip, with a fade on the right. */
+  .bar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 26px;
+    margin-right: -26px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent);
+  }
+  .bar::-webkit-scrollbar {
+    display: none;
+  }
+  .bar > * {
+    flex: none;
+  }
+}

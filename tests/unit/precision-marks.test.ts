@@ -308,8 +308,16 @@ describe("WorldMap wiring", () => {
   });
 
   test("the layer ids in the map match the ids the click arbiter knows", () => {
+    // The ids moved out of WorldMap into lib/map/signalLayerIds.ts (values unchanged) so the
+    // God's eye view can name them too: the map must still import them from there.
+    const ids = readFileSync(join(root, "lib", "map", "signalLayerIds.ts"), "utf8");
+    expect(src).toContain('from "@/lib/map/signalLayerIds"');
     for (const id of ["signal-area-discs", "signal-area-rings", "signal-area-hit", "signal-country-fill"]) {
-      expect(src, id).toContain(`"${id}"`);
+      expect(ids, id).toContain(`"${id}"`);
+    }
+    // And the map still names each of them, by their constants.
+    for (const name of ["SIGNAL_DISC_LAYER", "SIGNAL_RING_LAYER", "SIGNAL_ANCHOR_HIT", "SIGNAL_COUNTRY_FILL"]) {
+      expect(src, name).toContain(name);
     }
   });
 });

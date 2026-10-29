@@ -92,11 +92,19 @@ obligations and are not satisfied by the licence.
   three at once halved the frame rate, measured 2026-10-25.
   **Since 2026-10-27 it is the map behind every "Open the map" door** (the landing page,
   `/privacy`), and `/` stays the landing page with no MapLibre and no /api call. Its
-  Sources button opens the console at the spot on screen with the Sources rail open
-  (`sources=open`, read once after mount by ConsoleShell, `lib/console/sourcesLink.ts`);
-  on a phone it is the console's own "≡ Sources" thumb control, first in the bar. A browser
-  with no saved board also gets `layers=` and `base=` so the console does not open empty;
-  a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
+  Sources button opens the console's own rail as a tray in this view (Sections, Show all,
+  a ＋ that pins a source to the bar, remembered in this browser as `tn.eye.sources.v1`),
+  built from `SourceSection` and `SourceRowView` inside a `.tn-terminal` token scope
+  (`components/eye/EyeSources.tsx`; the rows are built on the server by
+  `lib/eye/sourceRows.ts`, so the widget registry stays out of the page's bundle). Console
+  layers that are switched on draw through WorldMap with this view's own paint pass
+  (`eyeSignalPaintOps`), their own ledger line and credit; the country-level layers and the
+  headlines widget are left out by rule (their `precision`, `widgetOnly`), not by a list.
+  The tray's "Open the full map" goes to the console at the spot on screen with its Sources
+  rail open (`getSourcesHref()`; `sources=open`, read once after mount by ConsoleShell,
+  `lib/console/sourcesLink.ts`); on a phone Sources is the console's own "≡ Sources" thumb
+  control, first in the bar. A browser with no saved board also gets `layers=` and `base=`
+  so the console does not open empty; a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
   the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
   zoom, heading, tilt): ConsoleShell reads it once after mount through `parseEyeReturn`,
   which rebuilds it from checked values and never uses it as a URL, drops it from the
@@ -368,10 +376,14 @@ obligations and are not satisfied by the licence.
 - Every upstream fetch is keyless-first and **dormant-safe**: failures resolve to `[]` / last-good / a labelled placeholder, never a 5xx, never fabricated data.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
-- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app` only) has an
+- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app`) has an
   opt-in dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
   `globals.css`): light by default, remembered per browser, and never read from the OS
   (`prefers-color-scheme` appears nowhere). It is not a `Theme`; see the header of `lib/shell/ui.ts`.
+  `/eye` switches that dark mode on for itself, always (`app/(console)/eye/layout.tsx`,
+  `lib/eye/skin.ts`, Leon's call), so its Sources tray, Sources button and pins are dark
+  whatever the console is set to. Its own frame does not use the skin, and it never reads or
+  writes the console's saved choice.
 - **ONE typeface: Inter, everywhere — with two route-scoped exceptions.** Loaded once, self-hosted by next/font in
   `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads
   Inter — `(site)/layout.tsx` reads that same variable rather than loading its own copy.

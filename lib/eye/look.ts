@@ -13,6 +13,15 @@
 
 import type { LightSpecification } from "maplibre-gl";
 import { BUILDING_LAYER, BUILDINGS_MIN_ZOOM } from "@/lib/map/buildings";
+import {
+  SIGNAL_ANCHOR_LABEL,
+  SIGNAL_DISC_LAYER,
+  SIGNAL_FILL_LAYER,
+  SIGNAL_FILL_OUTLINE,
+  SIGNAL_ICON_LAYER,
+  SIGNAL_LABEL,
+  SIGNAL_LAYER,
+} from "@/lib/map/signalLayerIds";
 
 /** The Esri raster layer in the satellite style (lib/basemaps.ts). */
 export const IMAGERY_LAYER = "esri-imagery";
@@ -92,4 +101,44 @@ export function eyePaintOps(): PaintOp[] {
     { layer: BUILDING_LAYER, property: "fill-extrusion-vertical-gradient", value: true },
   );
   return ops;
+}
+
+// ── The console's layers, drawn in this scene ──────────────────────────────────────
+//
+// A console layer that is on in the God's eye view is drawn by WorldMap's own signal
+// layers (components/WorldMap.tsx), which are made for a flat map seen from above. Seen
+// at a tilt over buildings they need a second pass, run after every style like the one
+// above (components/eye/EyeApp.tsx, applyLook). WorldMap's own paint is not touched.
+//
+// POINTS (dots, pictograms) are laid flat on the ground and sunk UNDER the buildings, as
+// the camera rings are: a tower in front hides a mark behind it, the way it would hide
+// the street. AREAS (the soft discs) stay ABOVE the buildings, faint and ringed: a disc
+// stands for a whole district, not a spot, and one hidden behind a block would be a
+// district that looks empty. Their labels are off: this view names a mark in its own tags.
+
+/** One MapLibre write on a signal layer: a paint property or a layout property. */
+export interface SignalOp {
+  layer: string;
+  kind: "paint" | "layout";
+  property: string;
+  value: unknown;
+}
+
+/** The layers moved to just under the buildings (map.moveLayer(id, BUILDING_LAYER)), in this order. */
+export const EYE_SIGNAL_SINK: readonly string[] = [SIGNAL_LAYER, SIGNAL_ICON_LAYER];
+
+/** Every write the console's layers get here, in order. Layers a style lacks are skipped by the caller. */
+export function eyeSignalPaintOps(): SignalOp[] {
+  return [
+    { layer: SIGNAL_LAYER, kind: "paint", property: "circle-pitch-alignment", value: "map" },
+    { layer: SIGNAL_LAYER, kind: "paint", property: "circle-stroke-color", value: "rgba(6,10,12,0.9)" },
+    { layer: SIGNAL_ICON_LAYER, kind: "layout", property: "icon-pitch-alignment", value: "map" },
+    { layer: SIGNAL_DISC_LAYER, kind: "paint", property: "circle-opacity", value: 0.18 },
+    { layer: SIGNAL_DISC_LAYER, kind: "paint", property: "circle-stroke-opacity", value: 0.8 },
+    { layer: SIGNAL_DISC_LAYER, kind: "paint", property: "circle-pitch-alignment", value: "map" },
+    { layer: SIGNAL_FILL_LAYER, kind: "paint", property: "fill-opacity", value: 0.08 },
+    { layer: SIGNAL_FILL_OUTLINE, kind: "paint", property: "line-width", value: 1 },
+    { layer: SIGNAL_LABEL, kind: "layout", property: "visibility", value: "none" },
+    { layer: SIGNAL_ANCHOR_LABEL, kind: "layout", property: "visibility", value: "none" },
+  ];
 }

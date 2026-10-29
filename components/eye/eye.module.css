@@ -1528,3 +1528,7 @@
     height: 26px;
   }
 }
+
+/* ── A console layer in the ledger (Sources tray) ────────────────────────────
+ * One row for each console layer that is switched on, in the layer's own colour. */
+.ledger p[data-k="signal"] > i { background: var(--c); }

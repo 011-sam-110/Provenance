@@ -93,6 +93,21 @@ export function streetFeatures(list: readonly StreetDisruption[]): GeoJSON.Featu
   return features;
 }
 
+/**
+ * Which of the Sources tray's three road rows a notice is drawn under, mirroring
+ * streetFeatures: its kind where it has open streets (or no street at all, and no
+ * closure), and "closures" where it has a closed street or a closure word. A notice may
+ * be both. Hiding a row hides its paint; a notice with no row left shown has no tag.
+ */
+export function noticeRows(d: Pick<StreetDisruption, "kind" | "closure" | "openLines" | "closedLines">): ("works" | "incidents" | "closures")[] {
+  const kind = d.kind === "works" ? "works" : "incidents";
+  if (d.openLines.length === 0 && d.closedLines.length === 0) return [d.closure ? "closures" : kind];
+  const out: ("works" | "incidents" | "closures")[] = [];
+  if (d.openLines.length > 0) out.push(kind);
+  if (d.closedLines.length > 0) out.push("closures");
+  return out;
+}
+
 /** "Utility works" / "Serious · Closed, southbound". TfL's words, never a speed. */
 export function streetTag(d: StreetDisruption): { title: string; meta: string } {
   const meta = [d.severity, d.closure].filter(Boolean).join(" · ");

@@ -13,7 +13,8 @@ import maplibregl from "maplibre-gl";
 import { estimateTextWidth } from "@/lib/eye/declutter";
 import styles from "./eye.module.css";
 
-export type TagKind = "ship" | "plane" | "road";
+/** "signal" is a console layer's mark (UK street crime, a quake): its colour is the layer's own, inline. */
+export type TagKind = "ship" | "plane" | "road" | "signal";
 
 /** Plate padding, edge and letter spacing, beyond the text itself. */
 const PLATE_EXTRA = 19;
@@ -38,10 +39,11 @@ export class Tag {
   private marker: maplibregl.Marker | null = null;
   private flip = false;
 
-  constructor(kind: TagKind, opts?: { onSelect?: () => void }) {
+  constructor(kind: TagKind, opts?: { onSelect?: () => void; color?: string }) {
     const el = document.createElement("div");
     el.className = styles.tag;
     el.dataset.kind = kind;
+    if (opts?.color) el.style.setProperty("--c", opts.color);
     const leader = document.createElement("i");
     leader.className = styles.leader;
     const onSelect = opts?.onSelect;

@@ -7,8 +7,11 @@ import {
   IMAGERY_LAYER,
   buildingColorByHeight,
   buildingOpacity,
+  EYE_SIGNAL_SINK,
   eyePaintOps,
+  eyeSignalPaintOps,
 } from "@/lib/eye/look";
+import * as signalLayerIds from "@/lib/map/signalLayerIds";
 import { BUILDING_LAYER, BUILDINGS_LIGHT, BUILDINGS_MIN_ZOOM } from "@/lib/map/buildings";
 import { BASEMAPS } from "@/lib/basemaps";
 
@@ -72,5 +75,57 @@ describe("eyePaintOps", () => {
   it("touches only the imagery and the buildings", () => {
     const layers = new Set(eyePaintOps().map((op) => op.layer));
     expect([...layers].sort()).toEqual([BUILDING_LAYER, IMAGERY_LAYER].sort());
+  });
+});
+
+describe("eyeSignalPaintOps", () => {
+  const ids = new Set<string>(Object.values(signalLayerIds));
+  const COUNTRY_LAYERS = [
+    signalLayerIds.SIGNAL_COUNTRY_FILL,
+    signalLayerIds.SIGNAL_COUNTRY_OUTLINE,
+    signalLayerIds.SIGNAL_RING_LAYER,
+    signalLayerIds.SIGNAL_ANCHOR_HIT,
+    signalLayerIds.SIGNAL_FIGURE_LAYER,
+  ];
+
+  it("touches only layers WorldMap names in lib/map/signalLayerIds.ts, and none of the country layers", () => {
+    const touched = new Set(eyeSignalPaintOps().map((op) => op.layer));
+    for (const layer of touched) expect(ids.has(layer), layer).toBe(true);
+    for (const layer of COUNTRY_LAYERS) expect(touched.has(layer), layer).toBe(false);
+    for (const layer of EYE_SIGNAL_SINK) expect(ids.has(layer), layer).toBe(true);
+  });
+
+  it("lays the points flat and sinks them under the buildings, and keeps the discs above them", () => {
+    const ops = eyeSignalPaintOps();
+    const on = (layer: string, property: string) => ops.find((o) => o.layer === layer && o.property === property)?.value;
+    expect(on(signalLayerIds.SIGNAL_LAYER, "circle-pitch-alignment")).toBe("map");
+    expect(on(signalLayerIds.SIGNAL_LAYER, "circle-stroke-color")).toBe("rgba(6,10,12,0.9)");
+    expect(on(signalLayerIds.SIGNAL_ICON_LAYER, "icon-pitch-alignment")).toBe("map");
+    expect(EYE_SIGNAL_SINK).toEqual([signalLayerIds.SIGNAL_LAYER, signalLayerIds.SIGNAL_ICON_LAYER]);
+    // Areas stay above the buildings: they are never in the sink, only repainted faint and flat.
+    expect(EYE_SIGNAL_SINK).not.toContain(signalLayerIds.SIGNAL_DISC_LAYER);
+    expect(on(signalLayerIds.SIGNAL_DISC_LAYER, "circle-opacity")).toBe(0.18);
+    expect(on(signalLayerIds.SIGNAL_DISC_LAYER, "circle-stroke-opacity")).toBe(0.8);
+    expect(on(signalLayerIds.SIGNAL_DISC_LAYER, "circle-pitch-alignment")).toBe("map");
+    expect(on(signalLayerIds.SIGNAL_FILL_LAYER, "fill-opacity")).toBe(0.08);
+    expect(on(signalLayerIds.SIGNAL_FILL_OUTLINE, "line-width")).toBe(1);
+  });
+
+  it("hides both sets of labels: this view names a mark in its own tags", () => {
+    const ops = eyeSignalPaintOps();
+    for (const layer of [signalLayerIds.SIGNAL_LABEL, signalLayerIds.SIGNAL_ANCHOR_LABEL]) {
+      expect(ops.find((o) => o.layer === layer)).toMatchObject({ kind: "layout", property: "visibility", value: "none" });
+    }
+  });
+
+  it("is a second list: the imagery and buildings pass still touches two layers", () => {
+    expect(new Set(eyePaintOps().map((op) => op.layer)).size).toBe(2);
+  });
+
+  it("keeps the layer ids' values as WorldMap always had them", () => {
+    expect(signalLayerIds.SIGNAL_LAYER).toBe("signal-dots");
+    expect(signalLayerIds.SIGNAL_ICON_LAYER).toBe("signal-icons");
+    expect(signalLayerIds.SIGNAL_DISC_LAYER).toBe("signal-area-discs");
+    expect(signalLayerIds.SIGNAL_FILL_LAYER).toBe("signal-fill-areas");
   });
 });
