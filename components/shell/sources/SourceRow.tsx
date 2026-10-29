@@ -1,5 +1,11 @@
 "use client";
-// One source, one line: dot · label · ＋ · toggle.
+// One source, one line: dot · label · ＋ · toggle, as the CONSOLE means it.
+//
+// The drawing is SourceRowView.tsx, shared with the God's eye view's Sources tray. This file
+// is what is specific to the console: the ＋ names the dashboard widget and opens the
+// placement picker, the popover carries the provenance chip, the locked badge, the widget
+// line and the preview hint and is drawn in the shell beside the rail, the row lights its
+// marks while you point at it, and a press that lands off a control starts the rail drag.
 //
 // The detail a row used to show inline — attribution, provenance class, freshness,
 // live count — moves into a popover. That is a deliberate density trade and it has
@@ -39,6 +45,7 @@ import { sourcePreviewStore, type PreviewStatus } from "@/lib/shell/sourcePrevie
 import { explainerFor, confidenceChip, confidenceLabel } from "@/lib/signals/explain";
 import { capabilityBadge } from "@/lib/console/widgets/signals";
 import type { SourceRowModel } from "@/lib/console/sources/sections";
+import SourceRowView from "@/components/shell/sources/SourceRowView";
 
 /**
  * How this layer knows what it knows — one of five grades.
@@ -226,114 +233,81 @@ export default function SourceRow({
   const widgetTitle = getWidgetType(widgetType)?.title ?? null;
 
   return (
-    <div
-      ref={rowRef}
-      className="tn-src-row"
-      data-source-row={row.id}
-      data-on={on}
-      data-preview={previewStatus === "idle" ? undefined : previewStatus}
-      aria-busy={previewStatus === "loading" ? true : undefined}
-      style={{ ["--tn-src-dot" as string]: row.color }}
+    <SourceRowView
+      row={row}
+      on={on}
+      rowRef={rowRef}
+      rowProps={{
+        "data-preview": previewStatus === "idle" ? undefined : previewStatus,
+        "aria-busy": previewStatus === "loading" ? true : undefined,
+        // Mouse and pen only. A finger fires enter, down, up, leave in that order, so
+        // counting it here opened the popover and shut it again before the click arrived,
+        // and a second tap re-opened what it meant to close. For touch the click alone
+        // decides: a tap opens, the next tap on the label closes, and moving focus away
+        // (a tap elsewhere) closes it too.
+        onPointerEnter: (e) => {
+          if (e.pointerType === "touch") return;
+          setOpen(true);
+          setHovered(true);
+        },
+        onPointerLeave: (e) => {
+          if (e.pointerType === "touch") return;
+          setOpen(false);
+          setHovered(false);
+        },
+      }}
+      slot={{
+        placed,
+        disabled: widgetTitle === null,
+        ariaLabel:
+          widgetTitle === null
+            ? `${row.label} has no dashboard widget`
+            : `Place ${widgetTitle} on the dashboard`,
+        onPress: () => {
+          if (widgetTitle === null) return;
+          placementStore.ask({ type: widgetType, label: widgetTitle });
+        },
+      }}
+      // A widget-only row has no map layer, so it has no toggle (see SourceRowView).
+      onToggle={row.widgetOnly ? undefined : onToggle}
+      toggleLabel={`Show ${row.label} on the map`}
+      open={open}
+      popoverId={popId}
+      labelProps={{
+        // KEYBOARD focus only. A tap focuses the button before the click arrives (Chrome),
+        // so opening here as well made the click's toggle shut the popover again and a
+        // phone tap lit nothing. The click does the opening for a tap; `:focus-visible`
+        // is true for a Tab and false for a press, and iOS Safari never focuses on a tap.
+        onFocus: (e) => {
+          if (e.currentTarget.matches(":focus-visible")) setOpen(true);
+        },
+        onBlur: () => setOpen(false),
+        onClick: () => setOpen((o) => !o),
+      }}
       // A press that lands on a control is that control's, not the drag's.
       // Without this the toggle and the ＋ would both begin a drag on the way down.
       onPointerDown={(e) => {
         if ((e.target as HTMLElement).closest("button")) return;
         onDragHandle(e, row);
       }}
-      // Mouse and pen only. A finger fires enter, down, up, leave in that order, so
-      // counting it here opened the popover and shut it again before the click arrived,
-      // and a second tap re-opened what it meant to close. For touch the click alone
-      // decides: a tap opens, the next tap on the label closes, and moving focus away
-      // (a tap elsewhere) closes it too.
-      onPointerEnter={(e) => {
-        if (e.pointerType === "touch") return;
-        setOpen(true);
-        setHovered(true);
-      }}
-      onPointerLeave={(e) => {
-        if (e.pointerType === "touch") return;
-        setOpen(false);
-        setHovered(false);
-      }}
-    >
-      <span className="tn-src-dot" aria-hidden />
-      <button
-        type="button"
-        className="tn-src-label"
-        title={row.label}
-        aria-expanded={open}
-        aria-describedby={open ? popId : undefined}
-        // KEYBOARD focus only. A tap focuses the button before the click arrives (Chrome),
-        // so opening here as well made the click's toggle shut the popover again and a
-        // phone tap lit nothing. The click does the opening for a tap; `:focus-visible`
-        // is true for a Tab and false for a press, and iOS Safari never focuses on a tap.
-        onFocus={(e) => {
-          if (e.currentTarget.matches(":focus-visible")) setOpen(true);
-        }}
-        onBlur={() => setOpen(false)}
-        onClick={() => setOpen((o) => !o)}
-      >
-        {row.label}
-      </button>
-      <button
-        type="button"
-        className="tn-src-add"
-        data-source-add={row.id}
-        data-placed={placed}
-        disabled={widgetTitle === null}
-        aria-label={
-          widgetTitle === null
-            ? `${row.label} has no dashboard widget`
-            : `Place ${widgetTitle} on the dashboard`
-        }
-        onClick={() => {
-          if (widgetTitle === null) return;
-          placementStore.ask({ type: widgetType, label: widgetTitle });
-        }}
-      >
-        ＋
-      </button>
-      {/*
-        A widget-only row has no map layer, so it has no toggle. Rendering a
-        switch labelled "Show X on the map" beside something the map cannot draw
-        would be a control that lies; worse, the rail's onToggle falls through to
-        signalsStore for any id it does not recognise, so the switch would have
-        written a phantom signal and then reported itself as off.
-      */}
-      {row.widgetOnly ? (
-        <span className="tn-src-toggle-none" aria-hidden />
-      ) : (
-        <button
-          type="button"
-          className="tn-src-toggle"
-          role="switch"
-          aria-checked={on}
-          aria-label={`Show ${row.label} on the map`}
-          onClick={onToggle}
-        />
-      )}
-      {open && place
-        ? createPortal(
-            <div
-              ref={popRef}
-              className="tn-src-pop"
-              id={popId}
-              role="tooltip"
-              style={{ left: 0, top: 0 }}
-            >
-              <div className="tn-src-pop-grades">
-                <ProvenanceChip id={row.id} />
-                <LockedBadge id={row.id} />
-              </div>
-              <div className="tn-src-pop-attr">{row.attribution}</div>
-              <div className="tn-src-pop-hint">
-                {widgetTitle === null ? `${row.group} · map layer only` : `Places: ${widgetTitle}`}
-              </div>
-              {previewHint ? <div className="tn-src-pop-hint">{previewHint}</div> : null}
-            </div>,
-            place.host,
-          )
-        : null}
-    </div>
+      pop={
+        open && place
+          ? createPortal(
+              <div ref={popRef} className="tn-src-pop" id={popId} role="tooltip" style={{ left: 0, top: 0 }}>
+                <div className="tn-src-pop-grades">
+                  <ProvenanceChip id={row.id} />
+                  <LockedBadge id={row.id} />
+                </div>
+                <div className="tn-src-pop-attr">{row.attribution}</div>
+                <div className="tn-src-pop-hint">
+                  {widgetTitle === null ? `${row.group} · map layer only` : `Places: ${widgetTitle}`}
+                </div>
+                {previewHint ? <div className="tn-src-pop-hint">{previewHint}</div> : null}
+              </div>,
+              place.host,
+            )
+          : null
+      }
+    />
   );
 }

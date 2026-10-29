@@ -160,7 +160,12 @@ describe("every map source is classed", () => {
   const read = (rel: string) => readFileSync(join(root, rel), "utf8");
   const idsIn = (src: string, re: RegExp) => [...src.matchAll(re)].map((m) => m[1]);
 
-  const worldMap = idsIn(read("components/WorldMap.tsx"), /const\s+[A-Z_]+_SRC\s*=\s*"([^"]+)"/g);
+  // The five signal sources' ids live in lib/map/signalLayerIds.ts (moved out of WorldMap, values
+  // unchanged, so the God's eye view can name them); WorldMap imports them back.
+  const worldMap = [
+    ...idsIn(read("components/WorldMap.tsx"), /const\s+[A-Z_]+_SRC\s*=\s*"([^"]+)"/g),
+    ...idsIn(read("lib/map/signalLayerIds.ts"), /export const\s+[A-Z_]+_SRC\s*=\s*"([^"]+)"/g),
+  ];
   const aoi = idsIn(read("lib/map/aoi.ts"), /const\s+[A-Z_]+_SRC\s*=\s*"([^"]+)"/g);
   const buildings = idsIn(read("lib/map/buildings.ts"), /export const BUILDING_SRC\s*=\s*"([^"]+)"/g);
 

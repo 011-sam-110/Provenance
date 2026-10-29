@@ -42,9 +42,10 @@ async function moveTheView(page: Page) {
   await page.waitForTimeout(500);
 }
 
-/** Focus the Sources link (it takes its address on focus) and follow it. */
+/** Open the Sources tray, focus its way to the console (it takes its address on focus) and follow it. */
 async function openSources(page: Page) {
-  const sources = page.getByRole("link", { name: /^Sources/ });
+  await page.getByRole("button", { name: /^Sources/ }).click();
+  const sources = page.getByRole("link", { name: /^Open the full map/ });
   await sources.focus();
   await sources.click();
   await page.waitForURL(/\/app/);

@@ -35,18 +35,39 @@
 // tn.eye.v1 (lib/eye/previews.ts), read after mount and saved at each switch; it is not
 // in a link and not synced to an account. A recording (record=1) or a film
 // (clock=manual) ignores it: previews are on, and the switch is not offered.
+//
+// SOURCES. The Sources tray (EyeSources.tsx) switches this view's own seven kinds on and
+// off (cameras of both kinds, vessels, aircraft, TfL's works, incidents and closures) and
+// switches the console's other layers ON, which WorldMap draws and a paint pass here lays
+// flat (lib/eye/look.ts). What is on and what is pinned to the bar is remembered in this
+// browser (tn.eye.sources.v1, lib/eye/sources.ts), apart from the console's boards;
+// record=1 and clock=manual ignore it. This page never starts the console's variant spine
+// or hydrates its inspector store, so nothing here reaches tn.variant.v1 or tn.inspector.v1.
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import { mapViewStore } from "@/lib/mapView";
 import { ACTIVE_LAYERS, layersStore, type LayerKey } from "@/lib/layers";
+import { signalsStore } from "@/lib/signals/store";
+import { BUILDING_LAYER } from "@/lib/map/buildings";
 import { consoleHref, eyeLinkQuery, hasSavedBoard, parseEyeLink, type EyeTarget, type EyeView } from "@/lib/eye/places";
 import { PERSIST_KEY as BOARD_KEY } from "@/lib/variants/store";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
 import { useWebGL } from "@/components/map/useWebGL";
-import { EYE_LIGHT, eyePaintOps } from "@/lib/eye/look";
+import { EYE_LIGHT, EYE_SIGNAL_SINK, eyePaintOps, eyeSignalPaintOps } from "@/lib/eye/look";
+import { inLondon } from "@/lib/eye/streets";
+import {
+  EYE_SOURCES_KEY,
+  EYE_SOURCES_VERSION,
+  consoleOn,
+  defaultSources,
+  hiddenKinds,
+  sourcesReducer,
+  type EyeSourceRow,
+  type SourcesState,
+} from "@/lib/eye/sources";
 import {
   filmClock,
   flyAheadOf,
@@ -92,6 +113,16 @@ function applyLook(map: maplibregl.Map): void {
     if (!map.getLayer(op.layer)) continue;
     map.setPaintProperty(op.layer, op.property, op.value as never);
   }
+  // The console's layers, laid flat for a tilted scene (lib/eye/look.ts): WorldMap's own
+  // signal layers exist by now, switched on or not.
+  for (const op of eyeSignalPaintOps()) {
+    if (!map.getLayer(op.layer)) continue;
+    if (op.kind === "paint") map.setPaintProperty(op.layer, op.property, op.value as never);
+    else map.setLayoutProperty(op.layer, op.property, op.value as never);
+  }
+  if (map.getLayer(BUILDING_LAYER)) {
+    for (const id of EYE_SIGNAL_SINK) if (map.getLayer(id)) map.moveLayer(id, BUILDING_LAYER);
+  }
   map.setLight(EYE_LIGHT);
 }
 
@@ -122,7 +153,18 @@ interface EyeHandle extends EyeDriver {
   now(): number;
 }
 
-export default function EyeApp({ sourceCount }: { sourceCount: number }) {
+export default function EyeApp({
+  sourceCount,
+  sources,
+  leftOut,
+}: {
+  /** How many rows the console's Sources rail draws. */
+  sourceCount: number;
+  /** The rows of the Sources tray (lib/eye/sourceRows.ts, built on the server). */
+  sources: EyeSourceRow[];
+  /** How many of the rail's rows this view leaves out, by reason. */
+  leftOut: { country: number; widget: number };
+}) {
   // With no WebGL the map cannot start: show the fallback instead (lib/map/webgl.ts).
   const gl = useWebGL();
   const [target, setTarget] = useState<EyeTarget | null>(null);
@@ -130,7 +172,11 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
   const [flags, setFlags] = useState<Flags>({ overlay: true, record: false, manualClock: false, canMove: false, motion: null });
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [styleEpoch, setStyleEpoch] = useState(0);
-  const [report, setReport] = useState<OverlayReport>({ rows: [], ready: false });
+  const [report, setReport] = useState<OverlayReport>({ rows: [], ready: false, counts: {} });
+  // What is switched on and pinned. Read from this browser's storage once the link is read
+  // (never for a recording or a film), and saved when it changes.
+  const [picks, dispatch] = useReducer(sourcesReducer, undefined, defaultSources);
+  const [restored, setRestored] = useState(false);
   const [motion, setMotion] = useState<EyeMotion | null>(null);
   const [credits, setCredits] = useState<string[]>([]);
   // Camera pictures on (the default) or off: icons instead (EyeOverlay).
@@ -164,7 +210,54 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
       motion: canMove ? parseMotion(params.get("motion")) : null,
     });
     setTarget(parseEyeLink(params, tall));
+    // A recording or a film is a frame, not a tool: it shows the defaults and saves nothing.
+    if (!record && !manualClock) {
+      dispatch({
+        type: "load",
+        saved: loadPersisted<unknown>(EYE_SOURCES_KEY, EYE_SOURCES_VERSION),
+        rowIds: sources.map((r) => r.id),
+      });
+      setRestored(true);
+    }
+    // Read once, at mount; the rows are the same for the life of the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Saved on change: not when it was only read, so a first visit stores nothing.
+  const savedFrom = useRef<SourcesState | null>(null);
+  useEffect(() => {
+    if (!restored) return;
+    if (savedFrom.current === null) {
+      savedFrom.current = picks;
+      return;
+    }
+    if (picks === savedFrom.current) return;
+    savePersisted(EYE_SOURCES_KEY, EYE_SOURCES_VERSION, picks);
+  }, [picks, restored]);
+
+  // The console's layers that are on draw through WorldMap, in this tab only: the stores
+  // below are the ones the console's map reads, and neither the variant spine nor the
+  // inspector's hydrate runs on this page, so nothing here reaches the saved board.
+  const consoleRows = useMemo(() => sources.filter((r) => !r.own), [sources]);
+  useEffect(() => {
+    const on = new Set(consoleOn(picks));
+    for (const r of consoleRows) {
+      if (r.layer) layersStore.set(r.id as LayerKey, on.has(r.id));
+      else signalsStore.set(r.id, on.has(r.id));
+    }
+  }, [picks, consoleRows]);
+
+  // What the scene is told: the kinds of its own that are hidden, and the console rows on.
+  // Both keep their identity until the choice changes, so the overlay's effect runs then.
+  const { ownOff, consoleOn: onIds } = picks;
+  const hidden = useMemo(() => hiddenKinds({ ownOff, consoleOn: [], pins: [] }), [ownOff]);
+  const signals = useMemo(() => onIds.flatMap((id) => consoleRows.filter((r) => r.id === id)), [onIds, consoleRows]);
+  // Every credit the map holds, then each switched-on console layer's own, each once.
+  const allCredits = useMemo(() => {
+    const out = [...credits];
+    for (const r of signals) if (r.credit && !out.includes(r.credit)) out.push(r.credit);
+    return out;
+  }, [credits, signals]);
 
   // The console's right-click "Add pin here" menu belongs to the console. Caught on
   // the way down, so it never reaches the map.
@@ -173,6 +266,9 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
     const el = rootRef.current;
     if (!el) return;
     const stop = (e: Event) => {
+      // The pins on the bar open their own menu on a right-click (EyeSources.tsx), so a
+      // press on the controls is not the console's to catch.
+      if ((e.target as Element | null)?.closest?.("[data-eye-bar]")) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -359,7 +455,8 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
       <div className={styles.map}>
         {openAt && gl && (
           <MapBoundary fallback={<MapFallback tone="dark" place={words?.title} />}>
-            <WorldMap openAt={openAt} onStyleReady={onStyleReady} />
+            {/* No Marks key: this view lists what is on screen in its own ledger. */}
+            <WorldMap openAt={openAt} onStyleReady={onStyleReady} legend={false} />
           </MapBoundary>
         )}
       </div>
@@ -373,6 +470,8 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
           record={flags.record}
           clock={clock}
           previews={previews}
+          hidden={hidden}
+          signals={signals}
           onReport={setReport}
           placeRef={placeRef}
         />
@@ -386,9 +485,16 @@ export default function EyeApp({ sourceCount }: { sourceCount: number }) {
           rows={report.rows}
           refreshedAt={report.refreshedAt}
           phoneNote={report.phoneNote}
-          credits={credits}
+          credits={allCredits}
           getSourcesHref={getSourcesHref}
           sourceCount={sourceCount}
+          sourceRows={sources}
+          leftOut={leftOut}
+          sources={picks}
+          dispatch={dispatch}
+          counts={report.counts}
+          london={inLondon(target.view.lat, target.view.lon)}
+          portrait={portrait}
           placeId={target.kind === "place" ? target.place.id : undefined}
           record={flags.record}
           clock={clock}

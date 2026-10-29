@@ -6,31 +6,40 @@
 // something. The "N on" only appears when it is non-zero and says how much of it
 // is currently painting the map, which is what you need when the map looks busy
 // and you want to know why.
+//
+// The row is the CALLER's (`renderRow`), not imported here: the console passes SourceRow
+// (components/shell/SourceCatalog.tsx), the God's eye view passes its own pins-and-counts
+// row built on SourceRowView. A section that imported SourceRow would pull the widget
+// registry into /eye's bundle with it.
 
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import type { SourceRowModel, SourceSectionModel } from "@/lib/console/sources/sections";
-import SourceRow from "@/components/shell/sources/SourceRow";
 import { sourceHoverStore } from "@/lib/shell/sourceHover";
 import { previewIdsForSection } from "@/lib/shell/sourcePreview";
 
 export default function SourceSection({
   section,
   isOn,
-  isPlaced,
-  onToggle,
-  onDragHandle,
+  renderRow,
+  highlight = true,
 }: {
   section: SourceSectionModel;
   isOn: (id: string) => boolean;
-  isPlaced: (id: string) => boolean;
-  onToggle: (id: string) => void;
-  onDragHandle: (e: React.PointerEvent, row: SourceRowModel) => void;
+  renderRow: (row: SourceRowModel) => ReactNode;
+  /**
+   * Light (and preview) the section's marks on the map while the pointer is on its heading.
+   * On for the console's rail. The God's eye view's tray passes false: its own seven are
+   * drawn by the scene, not by the map this would light, so a hover there is its own
+   * follow-up.
+   */
+  highlight?: boolean;
 }) {
   const onCount = section.rows.filter((r) => isOn(r.id)).length;
   // Pointing at the heading lights every source in the section that is switched on and
   // previews the ones that are off. Mouse and pen only: a heading is not a button, so a
   // tap on it does nothing.
-  const litIds = previewIdsForSection(section.rows);
+  const litIds = highlight ? previewIdsForSection(section.rows) : [];
   const releaseRef = useRef<(() => void) | null>(null);
   useEffect(() => () => releaseRef.current?.(), []);
 
@@ -54,14 +63,7 @@ export default function SourceSection({
       </h3>
       <div className="tn-src-rows">
         {section.rows.map((row) => (
-          <SourceRow
-            key={row.id}
-            row={row}
-            on={isOn(row.id)}
-            placed={isPlaced(row.id)}
-            onToggle={() => onToggle(row.id)}
-            onDragHandle={onDragHandle}
-          />
+          <Fragment key={row.id}>{renderRow(row)}</Fragment>
         ))}
       </div>
     </section>

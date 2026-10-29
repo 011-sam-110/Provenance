@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  noticeRows,
   TFL_CREDIT,
   inLondon,
   normalizeTflDisruptions,
@@ -158,5 +159,40 @@ describe("inLondon", () => {
     expect(inLondon(51.5013, -0.1218)).toBe(true);
     expect(inLondon(51.5062, -0.0772)).toBe(true);
     expect(inLondon(48.8584, 2.2945)).toBe(false);
+  });
+});
+
+describe("noticeRows", () => {
+  const base = { kind: "works" as const, closure: undefined as string | undefined, openLines: [] as [number, number][][], closedLines: [] as [number, number][][] };
+  const line: [number, number][][] = [[[0, 0], [1, 1]]];
+
+  it("a notice with no street is drawn under its kind, or under closures when it closes one", () => {
+    expect(noticeRows(base)).toEqual(["works"]);
+    expect(noticeRows({ ...base, kind: "incident" })).toEqual(["incidents"]);
+    expect(noticeRows({ ...base, closure: "Closed, southbound" })).toEqual(["closures"]);
+  });
+
+  it("a notice with open streets is its kind, with closed streets it is closures, with both it is both", () => {
+    expect(noticeRows({ ...base, openLines: line })).toEqual(["works"]);
+    expect(noticeRows({ ...base, kind: "incident", openLines: line })).toEqual(["incidents"]);
+    expect(noticeRows({ ...base, closedLines: line })).toEqual(["closures"]);
+    expect(noticeRows({ ...base, openLines: line, closedLines: line })).toEqual(["works", "closures"]);
+  });
+
+  it("agrees with the paints streetFeatures draws, for each of the shapes above", () => {
+    const shapes = [
+      base,
+      { ...base, kind: "incident" as const },
+      { ...base, closure: "Closed" },
+      { ...base, openLines: line },
+      { ...base, closedLines: line },
+      { ...base, openLines: line, closedLines: line },
+    ];
+    const rowOf: Record<string, string> = { works: "works", incident: "incidents", closed: "closures" };
+    for (const shape of shapes) {
+      const d = { ...shape, id: "x", category: "c", severity: "Minimal", lat: 51.5, lon: -0.1 } as never;
+      const paints = new Set(streetFeatures([d]).map((f) => rowOf[(f.properties as { paint: string }).paint]));
+      expect(new Set(noticeRows(shape))).toEqual(paints);
+    }
   });
 });

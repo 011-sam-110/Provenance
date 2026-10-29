@@ -79,6 +79,7 @@ import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
 import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/sourcesRail";
 import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
+import SourceRow from "@/components/shell/sources/SourceRow";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
 import InspectorPanel from "@/components/shell/InspectorPanel";
@@ -438,9 +439,15 @@ export default function SourceCatalog() {
                 key={section.id}
                 section={section}
                 isOn={isOn}
-                isPlaced={isPlaced}
-                onToggle={onToggle}
-                onDragHandle={onDragHandle}
+                renderRow={(row) => (
+                  <SourceRow
+                    row={row}
+                    on={isOn(row.id)}
+                    placed={isPlaced(row.id)}
+                    onToggle={() => onToggle(row.id)}
+                    onDragHandle={onDragHandle}
+                  />
+                )}
               />
             ))
           )}

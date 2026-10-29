@@ -22,6 +22,13 @@
 // ONE CLIP PLAYS WHILE THE VIEW MOVES. Three clips playing at once halved the moving
 // view's frames, one cost none (lib/eye/cameras.ts, clipsToPlay). At rest every clip plays.
 //
+// A KIND CAN BE HIDDEN (the Sources tray, components/eye/EyeSources.tsx). A hidden kind is
+// not drawn, not tagged, not counted and not fetched: its layers are hidden or filtered,
+// its list is empty in place(), and its feed is not called. Shown again, its layers come
+// back, and a list never fetched is fetched once. The console's layers that are switched on
+// draw through WorldMap; here they are only counted and named: one ledger row and up to
+// two tags, from queryRenderedFeatures at placement, never per frame.
+//
 // A VESSEL OR AN AIRCRAFT CAN BE CLICKED. A click on the map picks the nearest mark
 // within reach (lib/eye/pick.ts: every mark is projected to the screen and measured, the
 // GPU layer is never asked), a plate is a button for the same, and either opens the
@@ -39,6 +46,18 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { BUILDING_LAYER } from "@/lib/map/buildings";
+import {
+  SIGNAL_ANCHOR_SRC,
+  SIGNAL_DISC_LAYER,
+  SIGNAL_FILL_LAYER,
+  SIGNAL_FILL_SRC,
+  SIGNAL_ICON_LAYER,
+  SIGNAL_LAYER,
+  SIGNAL_LINE_SRC,
+  SIGNAL_SRC,
+} from "@/lib/map/signalLayerIds";
+import { SIGNAL_DRAWN_LINE_LAYERS } from "@/lib/map/hitTest";
+import { countBySignal, signalTagPicks, type EyeKind, type EyeSourceRow, type RenderedSignal } from "@/lib/eye/sources";
 import { haversineKm } from "@/lib/geo/haversine";
 import { PICK_RADIUS, marksAround, pickMarks, type PickCandidate } from "@/lib/eye/pick";
 import type { EyeTarget } from "@/lib/eye/places";
@@ -78,6 +97,7 @@ import {
   speedLedgerRow,
   speedPhoneNote,
   streetFeatures,
+  noticeRows,
   streetTag,
   streetsDownRow,
   streetsLedgerRow,
@@ -86,7 +106,7 @@ import {
 } from "@/lib/eye/streets";
 import { newestChange } from "@/lib/roads/notice";
 import { AISSTREAM_ATTRIBUTION } from "@/lib/signals/ais";
-import type { LedgerRow } from "@/lib/eye/wording";
+import { signalLedgerRow, type LedgerRow } from "@/lib/eye/wording";
 import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { CAMERA_ROAD_MAX, cameraRoadParam, cameraRoadTileWords, type CameraRoad } from "@/lib/roads/nearCamera";
@@ -104,6 +124,8 @@ export interface OverlayReport {
   refreshedAt?: number;
   /** The phone's one line about what is not here (no measured road speed). */
   phoneNote?: string;
+  /** What each switched-on row has in the scene now, by row id: the tray's "N here". */
+  counts: Record<string, number>;
 }
 
 const SRC = {
@@ -152,7 +174,20 @@ const CAMERA_ROAD_EVERY_MS = 120_000;
 // The words take 40 (46 on a phone) under the picture, and the camera's road line 20 (18).
 const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 60, stalk: 52, max: 5 };
 const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 64, stalk: 34, max: 3 };
-const MAX_TAGS = { wide: { ship: 8, plane: 3, road: 2 }, phone: { ship: 4, plane: 2, road: 1 } } as const;
+const MAX_TAGS = {
+  wide: { ship: 8, plane: 3, road: 2, signal: 2 },
+  phone: { ship: 4, plane: 2, road: 1, signal: 1 },
+} as const;
+/**
+ * How many marks of the console's layers are offered to the tag placement; it places the
+ * first one or two (MAX_TAGS.signal) that fit clear of the frame's words, nearest the middle.
+ * Offered only the first two, a view whose first two marks sat under the header got none.
+ */
+const SIGNAL_TAG_POOL = 200;
+/** The layers a switched-on console layer is read from (the points, the discs, the areas, the lines). */
+const SIGNAL_READ_LAYERS = [SIGNAL_LAYER, SIGNAL_ICON_LAYER, SIGNAL_DISC_LAYER, SIGNAL_FILL_LAYER, ...SIGNAL_DRAWN_LINE_LAYERS];
+/** The sources whose data landing means the marks are worth counting again. */
+const SIGNAL_SOURCES = new Set([SIGNAL_SRC, SIGNAL_ANCHOR_SRC, SIGNAL_FILL_SRC, SIGNAL_LINE_SRC]);
 
 /** How often each feed is asked again. The server's own cadence for each. */
 const AIS_EVERY_MS = 60_000;
@@ -196,6 +231,23 @@ function keptBoxes(container: HTMLElement): Box[] {
 }
 
 const EMPTY: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+
+/** One feature MapLibre drew from a console layer, as the counting and the tags read it. */
+function renderedSignal(f: maplibregl.MapGeoJSONFeature): RenderedSignal {
+  const p = (f.properties ?? {}) as { signalId?: unknown; id?: unknown; label?: unknown };
+  const g = f.geometry;
+  const at = g.type === "Point" ? g.coordinates : null;
+  return {
+    signalId: typeof p.signalId === "string" ? p.signalId : "",
+    id: typeof p.id === "string" || typeof p.id === "number" ? String(p.id) : "",
+    label: typeof p.label === "string" ? p.label : "",
+    lon: at ? at[0] : null,
+    lat: at ? at[1] : null,
+  };
+}
+
+/** TfL's notices are not asked for while all three road rows are off. */
+const allRoadsHidden = (hid: ReadonlySet<EyeKind>) => hid.has("works") && hid.has("incidents") && hid.has("closures");
 
 /** A chevron for the GPU symbol layers, drawn once per style on a canvas. */
 function chevron(fill: string): ImageData {
@@ -244,6 +296,10 @@ interface Props {
    * places again, and never refetches the feeds.
    */
   previews: boolean;
+  /** The kinds of this view's own the Sources tray has switched off. */
+  hidden: ReadonlySet<EyeKind>;
+  /** The console's layers switched on, in the order they were: counted and named here, drawn by WorldMap. */
+  signals: readonly EyeSourceRow[];
   onReport: (r: OverlayReport) => void;
   /** Filled with "place the cards and tags now", for the record script's frame-by-frame clock. */
   placeRef?: React.MutableRefObject<(() => void) | null>;
@@ -285,12 +341,14 @@ interface PanelState {
 /** What the panel's buttons call, filled by the effect that owns the map and the marks. */
 interface PanelApi {
   close(): void;
+  /** Close without moving focus: a hidden kind's selection goes while the person is in the tray. */
+  clear(): void;
   pick(id: string, kind: "ship" | "plane"): void;
   layout(): void;
 }
-const NO_API: PanelApi = { close() {}, pick() {}, layout() {} };
+const NO_API: PanelApi = { close() {}, clear() {}, pick() {}, layout() {} };
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, onReport, placeRef }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, hidden, signals, onReport, placeRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -322,6 +380,47 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const ringRef = useRef<GeoJSON.FeatureCollection>(EMPTY);
   const [panel, setPanel] = useState<PanelState | null>(null);
   const panelApi = useRef<PanelApi>(NO_API);
+  // What the Sources tray has chosen is read through refs, so a change never rebuilds the
+  // big effect below (its cards, tags and timers); the effect after ensureLayers acts on it.
+  const hiddenRef = useRef(hidden);
+  hiddenRef.current = hidden;
+  const signalsRef = useRef(signals);
+  signalsRef.current = signals;
+  // What the big effect gives the small one: place now, and the feeds' loaders.
+  const placeNowRef = useRef<(() => void) | null>(null);
+  const loaders = useRef<{ ships?: () => void; planes?: () => void; streets?: () => void }>({});
+  const prevHidden = useRef(hidden);
+
+  /**
+   * Hide or show the layers of the kinds the Sources tray has switched off. Layers that do
+   * not exist yet are skipped, and ensureLayers calls this again as it adds them. Cameras
+   * are one pair of layers for both kinds, so they are filtered on the feature's `live`.
+   */
+  const applyHidden = () => {
+    const hid = hiddenRef.current;
+    const show = (id: string, shown: boolean) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", shown ? "visible" : "none");
+    };
+    const live = !hid.has("livecams");
+    const still = !hid.has("staticcams");
+    for (const id of [LYR.ring, LYR.dot]) {
+      if (!map.getLayer(id)) continue;
+      map.setFilter(id, (live && still ? null : ["==", ["get", "live"], live]) as maplibregl.FilterSpecification | null);
+      show(id, live || still);
+    }
+    for (const id of [LYR.ship, LYR.ahead]) show(id, !hid.has("ships"));
+    show(LYR.plane, !hid.has("planes"));
+    show(LYR.streetWorks, !hid.has("works"));
+    show(LYR.streetIncident, !hid.has("incidents"));
+    for (const id of [LYR.streetClosedBase, LYR.streetClosed]) show(id, !hid.has("closures"));
+    // The rings of notices TfL gave no street line for carry their paint, so they are
+    // filtered by it.
+    const paints = [!hid.has("works") && "works", !hid.has("incidents") && "incident", !hid.has("closures") && "closed"].filter(Boolean);
+    if (map.getLayer(LYR.streetDot)) {
+      map.setFilter(LYR.streetDot, ["all", ["==", ["geometry-type"], "Point"], ["in", ["get", "paint"], ["literal", paints]]] as maplibregl.FilterSpecification);
+      show(LYR.streetDot, paints.length > 0);
+    }
+  };
 
   /**
    * Sources, images and layers on the current style. Idempotent: every style gets
@@ -368,7 +467,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       }
       (map.getSource(SRC.cams) as maplibregl.GeoJSONSource).setData({
         type: "FeatureCollection",
-        features: (s.cams ?? []).filter((c) => c.available).map((c) => point(c.id, c.lon, c.lat)),
+        features: (s.cams ?? []).filter((c) => c.available).map((c) => point(c.id, c.lon, c.lat, { live: c.live })),
       });
     }
 
@@ -551,6 +650,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         );
       }
     }
+    // Layers just added start visible; a hidden kind's go back off.
+    applyHidden();
   };
 
   // Every finished style: the layers go back on (a basemap swap wipes them).
@@ -565,6 +666,39 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     shownPreviews.current = previews;
     resetMarks.current();
   }, [previews]);
+  // The Sources tray changed what is shown. A kind hidden: its layers go, its marks and
+  // tags are re-placed away, a selection of it is cleared. A kind shown again: its layers
+  // come back FIRST and then ensureLayers runs, so a layer another feature owns the look of
+  // (eye-boat-models hides the chevrons while its models draw) gets the last word; a feed
+  // never fetched is fetched once. A console layer switched on or off: counted and named
+  // again, now and as its data lands.
+  useEffect(() => {
+    applyHidden();
+    ensureLayers.current();
+    const sel = selRef.current;
+    if (sel && hidden.has(sel.kind === "ship" ? "ships" : "planes")) panelApi.current.clear();
+    const s = state.current;
+    const was = prevHidden.current;
+    prevHidden.current = hidden;
+    if (was.has("ships") && !hidden.has("ships") && s.ships == null) loaders.current.ships?.();
+    if (was.has("planes") && !hidden.has("planes") && s.planes == null) loaders.current.planes?.();
+    if (allRoadsHidden(was) && !allRoadsHidden(hidden) && s.streets == null) loaders.current.streets?.();
+    placeNowRef.current?.();
+
+    let settle: ReturnType<typeof setTimeout> | null = null;
+    const onData = (e: { sourceId?: string; dataType?: string }) => {
+      if (e.dataType !== "source" || !e.sourceId || !SIGNAL_SOURCES.has(e.sourceId)) return;
+      if (settle) clearTimeout(settle);
+      settle = setTimeout(() => placeNowRef.current?.(), 400);
+    };
+    if (signals.length > 0) map.on("sourcedata", onData);
+    return () => {
+      if (settle) clearTimeout(settle);
+      map.off("sourcedata", onData);
+    };
+    // applyHidden reads the refs; what changes is the two sets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, hidden, signals]);
 
   useEffect(() => {
     let disposed = false;
@@ -576,29 +710,53 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
     // so every count can be read off the view. "of N nearby" is what was fetched around it.
     let labelled = { cams: 0, ships: [] as Vessel[], planes: 0, roads: 0 };
+    // The marks each switched-on console layer has in view, counted in place() only.
+    let signalCounts = new Map<string, number>();
     const london = inLondon(target.view.lat, target.view.lon);
+    // Which marks the Sources tray lets this view show.
+    const camShown = (c: Pick<NearCamera, "live">) => (c.live ? !hiddenRef.current.has("livecams") : !hiddenRef.current.has("staticcams"));
+    const noticeShown = (d: StreetDisruption) => noticeRows(d).some((r) => !hiddenRef.current.has(r));
 
     const report = () => {
+      const hid = hiddenRef.current;
       const rows: LedgerRow[] = [];
-      if (s.cams) rows.push(cameraLedgerRow(labelled.cams, s.cams));
-      if (s.ships) rows.push(vesselLedgerRow(labelled.ships, s.ships.length));
-      if (s.planes) {
+      if (s.cams && !(hid.has("livecams") && hid.has("staticcams"))) {
+        rows.push(cameraLedgerRow(labelled.cams, s.cams.filter(camShown)));
+      }
+      if (s.ships && !hid.has("ships")) rows.push(vesselLedgerRow(labelled.ships, s.ships.length));
+      if (s.planes && !hid.has("planes")) {
         const ageMs = s.planesFetchedAt != null ? clock.now() - s.planesFetchedAt : null;
         rows.push(aircraftLedgerRow(labelled.planes, s.planes.length, { sampled: s.planesSampled, ageMs }));
       }
       // TfL's newest change among the notices around the view, and when the server asked.
+      const shownStreets = (s.streets ?? []).filter(noticeShown);
       const roadTimes: StreetTimes | undefined =
         s.streets && !s.streetsDown
-          ? { changedAt: newestChange(s.streets), fetchedAt: s.streetsFetchedAt, now: clock.now() }
+          ? { changedAt: newestChange(shownStreets), fetchedAt: s.streetsFetchedAt, now: clock.now() }
           : undefined;
-      if (s.streets) rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, s.streets.length, roadTimes));
+      if (s.streets && !allRoadsHidden(hid)) {
+        rows.push(s.streetsDown ? streetsDownRow() : streetsLedgerRow(labelled.roads, shownStreets.length, roadTimes));
+      }
+      // One row for each console layer that is on, then the line about the road speed.
+      for (const r of signalsRef.current) rows.push(signalLedgerRow(r, r.layer ? null : signalCounts.get(r.id) ?? 0));
       rows.push(speedLedgerRow(london));
+      // The tray's "N here": the marks each switched-on row has in the scene.
+      const counts: Record<string, number> = {};
+      for (const r of signalsRef.current) if (!r.layer) counts[r.id] = signalCounts.get(r.id) ?? 0;
+      if (s.cams) {
+        counts.livecams = 0;
+        counts.staticcams = 0;
+        for (const c of s.cams) if (c.available) counts[c.live ? "livecams" : "staticcams"] += 1;
+      }
+      if (s.ships) counts.ais = s.ships.length;
+      if (s.planes) counts.planes = s.planes.length;
+      for (const d of s.streets ?? []) for (const r of new Set(noticeRows(d))) counts[`road-${r}`] = (counts[`road-${r}`] ?? 0) + 1;
       const cameraName = pinned ? s.cams?.find((c) => c.id === pinned)?.name : undefined;
       const phoneNote = speedPhoneNote(london, roadTimes);
-      const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt]);
+      const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt, counts]);
       if (key === lastRowsKey) return;
       lastRowsKey = key;
-      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote });
+      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote, counts });
     };
 
     // --- previews off: icons, and one open card ---------------------------------------
@@ -710,8 +868,10 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const centre = { x: width / 2, y: height / 2 };
       const taken: Box[] = keptBoxes(box);
 
-      // Cards first: they are the largest and the reason for the view.
-      const cams = (s.cams ?? []).filter((c) => c.available);
+      // Cards first: they are the largest and the reason for the view. A kind the Sources
+      // tray has switched off is left out of the list ONCE, here: no card, no count.
+      const hid = hiddenRef.current;
+      const cams = (s.cams ?? []).filter((c) => c.available && camShown(c));
       const camCands = cams.map((c) => {
         const p = map.project([c.lon, c.lat]);
         return { id: c.id, x: p.x, y: p.y };
@@ -748,7 +908,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       }
 
       // Then tags: moving vessels before stopped ones, then aircraft, then streets.
-      type Item = TagCandidate & { kind: "ship" | "plane" | "road"; lngLat: [number, number]; title: string; meta: string };
+      type Item = TagCandidate & { kind: "ship" | "plane" | "road" | "signal"; lngLat: [number, number]; title: string; meta: string };
       const tagItems = (list: { id: string; lat: number; lon: number; words: { title: string; meta: string } }[], kind: Item["kind"]) =>
         list.map((o): Item => {
           const p = map.project([o.lon, o.lat]);
@@ -756,14 +916,35 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           return { id: o.id, x: p.x, y: p.y, ...sz, kind, lngLat: [o.lon, o.lat], ...o.words };
         });
       const shownTags = new Set(s.tags.keys());
-      const ships = s.ships ?? [];
+      const ships = hid.has("ships") ? [] : s.ships ?? [];
       const moving = tagItems(ships.filter((v) => v.moving).map((v) => ({ ...v, words: vesselTag(v) })), "ship");
       const stopped = tagItems(ships.filter((v) => !v.moving).map((v) => ({ ...v, words: vesselTag(v) })), "ship");
       const shipOrder = [...placementOrder(moving, centre, shownTags), ...placementOrder(stopped, centre, shownTags)];
-      const planeItems = tagItems((s.planes ?? []).map((a) => ({ ...a, words: aircraftTag(a) })), "plane");
-      const roadItems = tagItems((s.streets ?? []).map((d) => ({ ...d, words: streetTag(d) })), "road");
+      const planeItems = tagItems((hid.has("planes") ? [] : s.planes ?? []).map((a) => ({ ...a, words: aircraftTag(a) })), "plane");
+      const shownStreets = (s.streets ?? []).filter(noticeShown);
+      const roadItems = tagItems(shownStreets.map((d) => ({ ...d, words: streetTag(d) })), "road");
       // TfL's most severe first; among equals, the usual order.
-      const weight = new Map((s.streets ?? []).map((d) => [d.id, severityWeight(d.severity)]));
+      const weight = new Map(shownStreets.map((d) => [d.id, severityWeight(d.severity)]));
+      // The console's layers that are on: what MapLibre drew of them in view, counted, and the
+      // first one or two named. A layer's marks are read once per placement, never per frame.
+      const sigRows = signalsRef.current;
+      let rendered: RenderedSignal[] = [];
+      if (sigRows.length > 0) {
+        const layers = SIGNAL_READ_LAYERS.filter((id) => map.getLayer(id));
+        if (layers.length > 0) rendered = map.queryRenderedFeatures({ layers }).map(renderedSignal);
+      }
+      signalCounts = countBySignal(rendered);
+      const sigColour = new Map(sigRows.map((r) => [r.id, r.color]));
+      const sigLabel = new Map(sigRows.map((r) => [r.id, r.label]));
+      const sigItems = tagItems(
+        signalTagPicks(rendered, sigRows.map((r) => r.id), SIGNAL_TAG_POOL).map((f) => ({
+          id: `sig:${f.signalId}:${f.id}`,
+          lat: f.lat!,
+          lon: f.lon!,
+          words: { title: f.label, meta: sigLabel.get(f.signalId) ?? "" },
+        })),
+        "signal",
+      );
       const roadOrder = placementOrder(roadItems, centre, shownTags).sort(
         (a, b) => (weight.get(b.id) ?? 0) - (weight.get(a.id) ?? 0),
       );
@@ -771,8 +952,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         ...placeTags(shipOrder, frame, maxTags.ship, taken),
         ...placeTags(placementOrder(planeItems, centre, shownTags), frame, maxTags.plane, taken),
         ...placeTags(roadOrder, frame, maxTags.road, taken),
+        ...placeTags(placementOrder(sigItems, centre, shownTags), frame, maxTags.signal, taken),
       ];
-      const byId = new Map<string, Item>([...shipOrder, ...planeItems, ...roadItems].map((i) => [i.id, i]));
+      const byId = new Map<string, Item>([...shipOrder, ...planeItems, ...roadItems, ...sigItems].map((i) => [i.id, i]));
       const keepTags = new Set(tagPlaced.map((t) => t.id));
       const tagged = (kind: Item["kind"]) => tagPlaced.filter((t) => byId.get(t.id)?.kind === kind);
       labelled = {
@@ -791,7 +973,16 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         let tag = s.tags.get(t.id);
         if (!tag) {
           const kind = item.kind;
-          tag = new Tag(kind, interactive && kind !== "road" ? { onSelect: () => select(kind, t.id) } : undefined);
+          // A console layer's tag id is "sig:<layer id>:<feature id>"; a layer id has no colon.
+          const sig = kind === "signal" ? item.id.slice(4).split(":")[0] : undefined;
+          tag = new Tag(
+            kind,
+            kind === "signal"
+              ? { color: sig ? sigColour.get(sig) : undefined }
+              : interactive && kind !== "road"
+                ? { onSelect: () => select(kind, t.id) }
+                : undefined,
+          );
           s.tags.set(t.id, tag);
         }
         tag.setText(item.title, item.meta);
@@ -799,7 +990,11 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         tag.show(map, item.lngLat, t.flip);
       }
 
-      ready = s.cams != null && s.ships != null && s.planes != null && (!london || s.streets != null);
+      ready =
+        s.cams != null &&
+        (hid.has("ships") || s.ships != null) &&
+        (hid.has("planes") || s.planes != null) &&
+        (!london || allRoadsHidden(hid) || s.streets != null);
       report();
       playClips();
     };
@@ -884,6 +1079,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       place();
     };
     if (placeRef) placeRef.current = placeNow;
+    placeNowRef.current = placeNow;
     const onMoveEnd = () => {
       if (settle) clearTimeout(settle);
       settle = setTimeout(() => {
@@ -1061,7 +1257,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     if (interactive) {
       map.on("click", onClick);
       map.on("mousemove", onHover);
-      panelApi.current = { close: () => close(true), pick: (id, kind) => select(kind, id), layout: onLayout };
+      panelApi.current = { close: () => close(true), clear: () => close(false), pick: (id, kind) => select(kind, id), layout: onLayout };
     }
 
     // --- data -------------------------------------------------------------------
@@ -1144,17 +1340,28 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         landed();
         },
       );
-    loadShips();
-    loadPlanes();
-    if (london) loadStreets();
+    // A hidden kind's feed is not asked for (the loaders' own bodies are untouched).
+    const askShips = () => {
+      if (!hiddenRef.current.has("ships")) loadShips();
+    };
+    const askPlanes = () => {
+      if (!hiddenRef.current.has("planes")) loadPlanes();
+    };
+    const askStreets = () => {
+      if (!allRoadsHidden(hiddenRef.current)) loadStreets();
+    };
+    loaders.current = { ships: loadShips, planes: loadPlanes, streets: london ? loadStreets : undefined };
+    askShips();
+    askPlanes();
+    if (london) askStreets();
     // A film keeps the reports it opened with: it is drawn far slower than it plays, so
     // a report fetched during it would be minutes newer than the film's own clock.
     const timers = clock.film
       ? []
       : [
-          setInterval(loadShips, AIS_EVERY_MS),
-          setInterval(loadPlanes, PLANES_EVERY_MS),
-          ...(london ? [setInterval(loadStreets, STREETS_EVERY_MS)] : []),
+          setInterval(askShips, AIS_EVERY_MS),
+          setInterval(askPlanes, PLANES_EVERY_MS),
+          ...(london ? [setInterval(askStreets, STREETS_EVERY_MS)] : []),
           setInterval(loadRoads, CAMERA_ROAD_EVERY_MS),
         ];
 
@@ -1171,6 +1378,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       resetMarks.current = () => {};
       document.removeEventListener("keydown", onCardKey);
       if (placeRef?.current === placeNow) placeRef.current = null;
+      if (placeNowRef.current === placeNow) placeNowRef.current = null;
+      loaders.current = {};
       map.off("moveend", onMoveEnd);
       map.off("move", onMove);
       if (interactive) {

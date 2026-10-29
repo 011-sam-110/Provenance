@@ -9,13 +9,14 @@
 // readout is keyed on what it DISPLAYS (four decimals, whole degrees), the same rule
 // as components/hud/Hud.tsx.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import Mark from "@/components/brand/Mark";
 import ControlHint, { HintToggle, useControlHint } from "./ControlHint";
 import { BRAND } from "@/lib/brand";
 import type { EyeClock } from "@/lib/eye/motion";
 import { EYE_PLACES, eyePlaceHref, type EyeView } from "@/lib/eye/places";
+import { pinCap, type EyeSourceRow, type SourcesAction, type SourcesState } from "@/lib/eye/sources";
 import {
   fmtClockUtc,
   fmtHeading,
@@ -23,12 +24,12 @@ import {
   fmtLon,
   PLACES_LABEL,
   refreshedText,
-  SOURCES_LABEL,
-  sourcesHint,
   sourcesName,
   type LedgerRow,
 } from "@/lib/eye/wording";
+import { PinChrome, PinnedSources, SourcesTray, TRAY_ID, useSourcesBar, type TrayMemory } from "./EyeSources";
 import styles from "./eye.module.css";
+import sx from "./EyeSources.module.css";
 
 interface Readout {
   lat: number;
@@ -92,8 +93,20 @@ export interface EyeHudProps {
   credits: string[];
   /** The console at the spot on screen NOW, with its Sources rail open; read when the link is used. */
   getSourcesHref: () => string;
-  /** How many rows the console's Sources rail draws (lib/eye/railCount.ts), for the hint. */
+  /** How many rows the console's Sources rail draws (lib/eye/railCount.ts): the tray's foot and its empty search say it. */
   sourceCount: number;
+  /** The rows of the Sources tray (lib/eye/sourceRows.ts), and how many of the rail's this view leaves out. */
+  sourceRows: EyeSourceRow[];
+  leftOut: { country: number; widget: number };
+  /** What is switched on and pinned, and how to change it (lib/eye/sources.ts). */
+  sources: SourcesState;
+  dispatch: (a: SourcesAction) => void;
+  /** What each row has in the scene now, by row id, for the "N here" after a switched-on label. */
+  counts: Readonly<Record<string, number>>;
+  /** The view opened in London: TfL's three road rows have something to show. */
+  london: boolean;
+  /** A phone's layout: the bar's strip, six pins, the grips. */
+  portrait: boolean;
   /** The preset on screen, if the view is one, so the place picker can mark it. */
   placeId?: string;
   /** Recording: no buttons over the picture. */
@@ -114,6 +127,13 @@ export default function EyeHud({
   credits,
   getSourcesHref,
   sourceCount,
+  sourceRows,
+  leftOut,
+  sources,
+  dispatch,
+  counts,
+  london,
+  portrait,
   placeId,
   record,
   clock,
@@ -124,18 +144,53 @@ export default function EyeHud({
   // A recording is filmed slower than it plays, so a count of seconds since the last
   // refresh would race; it is left out there, like the clock's seconds.
   const fresh = !record && refreshedAt != null && now != null ? refreshedText(refreshedAt, now) : undefined;
-  // The href is set as the link is used, so it is the spot on screen then, without a
-  // re-render on every pan. Pointer-down covers a middle click, focus a keyboard.
-  const refreshSources = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
-    e.currentTarget.href = getSourcesHref();
-  };
-  // The place picker on a phone: a short list over the bar, opened by "Places".
+  // The place picker on a phone: a short list over the bar, opened by "Places". Places and
+  // the Sources tray take the same room, so each closes the other.
   const [placesOpen, setPlacesOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  // Which view and section the tray was last on: kept for the visit, never saved.
+  const [memory, setMemory] = useState<TrayMemory>({ view: "sections", section: "view" });
+  const barRef = useRef<HTMLElement>(null);
+  const sourcesBtn = useRef<HTMLButtonElement>(null);
+  const cap = pinCap(portrait);
+  const bar = useSourcesBar({ rows: sourceRows, state: sources, cap, portrait, dispatch, barRef });
+  const dragging = bar.lifted != null;
   // The control hint's state, shared by the "?" beside the clock and the plate in the footer.
-  // `blocked` is the panels that take the plate's room. eye-sources-menu widens it to the
-  // sources tray and a drag, and makes the toggle's onOpen close that tray too: whoever lands
-  // second does both.
-  const hint = useControlHint(map, placesOpen);
+  // `blocked` is whatever takes the plate's room: the places sheet, the sources tray and a
+  // carried source. Its toggle closes the tray too (see HintToggle's onOpen below).
+  const hint = useControlHint(map, placesOpen || sourcesOpen || dragging);
+  const closeTray = (refocus: boolean) => {
+    setSourcesOpen(false);
+    if (refocus) sourcesBtn.current?.focus();
+  };
+
+  // Escape closes what is on top: a carried source (its own listener cancels it), then the
+  // pin menu, then the tray. In the capture phase and with preventDefault, so a camera
+  // card or a vessel's panel, which look at `defaultPrevented`, close on the NEXT press.
+  useEffect(() => {
+    if (!sourcesOpen && !bar.menu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || bar.activeRef.current) return;
+      e.preventDefault();
+      if (bar.menu) bar.closeMenu(true);
+      else closeTray(true);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourcesOpen, bar.menu]);
+
+  // On a phone the tray is a pop-up: a tap on the scene outside it closes it. On a wide
+  // screen it stays open while the map is panned.
+  useEffect(() => {
+    if (!sourcesOpen || !portrait) return;
+    const onDown = (e: PointerEvent) => {
+      if ((e.target as Element | null)?.closest("[data-eye-tray], [data-eye-bar]")) return;
+      setSourcesOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    return () => document.removeEventListener("pointerdown", onDown, true);
+  }, [sourcesOpen, portrait]);
 
   return (
     <div className={styles.hud}>
@@ -178,14 +233,26 @@ export default function EyeHud({
             <span className={styles.clock}>{now != null ? fmtClockUtc(now, !record) : record ? "--:--" : "--:--:--"}</span>
             <span className={styles.utc}>UTC</span>
           </p>
-          {!record && <HintToggle hint={hint} onOpen={() => setPlacesOpen(false)} />}
+          {!record && <HintToggle
+              hint={hint}
+              onOpen={() => {
+                setPlacesOpen(false);
+                setSourcesOpen(false);
+              }}
+            />}
         </div>
       </header>
 
       {rows.length > 0 && (
         <section className={styles.ledger} aria-label="What this view shows" data-eye-keep>
           {rows.map((row) => (
-            <p key={row.kind} data-k={row.kind} data-zero={row.count === 0 || undefined} data-note={row.count == null || undefined}>
+            <p
+              key={row.id ?? row.kind}
+              data-k={row.kind}
+              data-zero={row.count === 0 || undefined}
+              data-note={row.count == null || undefined}
+              style={row.color ? ({ ["--c" as string]: row.color } as React.CSSProperties) : undefined}
+            >
               <i aria-hidden />
               {row.count != null && <b>{row.count}</b>}
               <span className={styles.long}>
@@ -202,36 +269,47 @@ export default function EyeHud({
       <footer className={styles.bottom} data-eye-keep>
       {!record && <ControlHint hint={hint} />}
       {!record && (
-        <nav className={styles.controls} aria-label="View controls" data-eye-keep>
-          {/* SOURCES. On a phone it is the console's own thumb control, kept as it was:
-              the "≡ Sources" button at the bottom left, in thumb reach, which opens the
-              Sources rail as a sheet with its grip (.tn-rail-fab and the .tn-rail sheet in
-              app/globals.css). Here it opens that same sheet in the console, at this spot.
-              A full page load, not a client-side route: the console boots its own stores
-              from scratch, and nothing this page set in memory reaches it. */}
-          <a
-            className={styles.sourcesBtn}
-            href="/app?sources=open"
-            aria-label={sourcesName(sourceCount)}
-            onPointerDown={refreshSources}
-            onFocus={refreshSources}
-            onClick={refreshSources}
+        // `tn-terminal` is the console's token scope only: it lets the Sources button and the
+        // pins resolve the `--tn-*` tokens. GEV's own `.btn`s use `--eye-*` and are unaffected.
+        <nav ref={barRef} className={`${styles.controls} ${sx.barLayer} tn-terminal`} aria-label="View controls" data-eye-keep data-eye-bar>
+          {/* SOURCES. The console's own rail button (.tn-rail-fab: the bars in front, the word
+              after), here opening the console's rail as a tray in this view (EyeSources.tsx).
+              On a phone it stays first in the bar, at thumb height. */}
+          <button
+            ref={sourcesBtn}
+            type="button"
+            data-sources-button=""
+            className={`tn-rail-fab ${sx.fab} ${sx.sourcesBtn}`}
+            aria-expanded={sourcesOpen}
+            aria-controls={TRAY_ID}
+            onClick={() => {
+              setPlacesOpen(false);
+              setSourcesOpen((o) => !o);
+            }}
           >
-            <span className={styles.bars} aria-hidden>
+            <span className="tn-rail-fab-bars" aria-hidden>
               ≡
             </span>
-            <b>{SOURCES_LABEL}</b>
-            <small className={styles.long}>{sourcesHint(sourceCount)}</small>
-          </a>
-          <button
-            type="button"
-            className={`${styles.btn} ${styles.short}`}
-            aria-expanded={placesOpen}
-            onClick={() => setPlacesOpen((o) => !o)}
-          >
-            {PLACES_LABEL}
+            {sourcesName()}
           </button>
-          {children}
+          {/* On a phone Places, the other buttons and the pins scroll sideways in one strip
+              beside Sources; on a wide screen the wrapper adds no box. */}
+          <div className={sx.bar}>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.short}`}
+              aria-expanded={placesOpen}
+              onClick={() => {
+                setSourcesOpen(false);
+                setPlacesOpen((o) => !o);
+              }}
+            >
+              {PLACES_LABEL}
+            </button>
+            {children}
+            <PinnedSources rows={sourceRows} state={sources} dispatch={dispatch} cap={cap} london={london} bar={bar} />
+          </div>
+          <PinChrome rows={sourceRows} state={sources} dispatch={dispatch} cap={cap} bar={bar} />
         </nav>
       )}
       {!record && placesOpen && (
@@ -243,6 +321,24 @@ export default function EyeHud({
             </a>
           ))}
         </nav>
+      )}
+      {!record && sourcesOpen && (
+        <SourcesTray
+          rows={sourceRows}
+          state={sources}
+          dispatch={dispatch}
+          counts={counts}
+          london={london}
+          portrait={portrait}
+          sourceCount={sourceCount}
+          leftOut={leftOut}
+          memory={memory}
+          setMemory={setMemory}
+          bar={bar}
+          getSourcesHref={getSourcesHref}
+          anchorRef={barRef}
+          onClose={closeTray}
+        />
       )}
         {phoneNote && <span className={styles.short}>{phoneNote}</span>}
         <span className={styles.coords}>
