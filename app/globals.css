@@ -131,7 +131,11 @@
    nothing else was asking for it, and `Theme` is now the single-member union "light"
    so nothing can ask again. app/layout.tsx still stamps data-theme="light" on <html>:
    the attribute is now decoration, but removing it would change the SSR markup for no
-   gain. The console skin folded the same way in the commit before this one. */
+   gain. The console skin folded the same way in the commit before this one.
+
+   That 30-token block stays gone. The console's opt-in dark is something else: the
+   DARK SKIN block further down, on `<html data-tnx-skin="dark">`, written by
+   lib/terminal/skin.ts. It is not a theme, and the console only — see that file. */
 
 * { box-sizing: border-box; }
 html, body {
@@ -3830,6 +3834,10 @@ a.tn-w-place { display: flex; align-items: center; }
    is dark because it is the Terminal, not because a theme said so, and the light
    console tokens are still intact underneath for /locate and any future surface.
 
+   (Written when the dark Terminal was the default. The console is light now; its
+   opt-in dark is the DARK SKIN block further down, which sidesteps the same trap with
+   an attribute of its own, `data-tnx-skin`, rather than a theme.)
+
    Two blocks follow. The first defines the design's own --tnx-* palette. The
    second REMAPS the app's existing --tn-* tokens onto it, which is how ~1,500
    lines of widget chrome (.tn-cw*, .tn-w-*, the rail, the palette, the settings
@@ -3998,6 +4006,9 @@ a.tn-w-place { display: flex; align-items: center; }
      it. Blue was fine; the brief asked for this palette. */
   --tnx-accent: #464b37;
   --tnx-accent-soft: rgba(70, 75, 55, 0.10);
+  /* Text on an accent fill: white on the olive accent here, near-black on the sage one
+     in the DARK SKIN block, where white measured 2.29:1. */
+  --tnx-on-accent: #ffffff;
 
   /* ── The ALERT ramp — deliberately NOT the accent ───────────────────────
      An OSINT analyst reviewing the console read the left column as "a visual
@@ -4209,7 +4220,11 @@ a.tn-w-place { display: flex; align-items: center; }
    nothing to do with the skin toggle going away: lib/variants/store.ts re-asserts a
    variant's theme on every board switch, so a theme-based console palette would be
    yanked back the first time a tab is clicked. The tokens stay scoped to
-   `.tn-terminal`. */
+   `.tn-terminal`.
+
+   UPDATE 2026-10-29: one dark palette is back, as an OPT-IN. It is the DARK SKIN block
+   after the scrollbar rules below, keyed on `html[data-tnx-skin="dark"]`, and the
+   values above stay the default. */
 /* The five status INKS collapse onto their fills on near-black because the vivid
    hue is the legible one there. On white the opposite is true, so they are pointed
    at the light ramp rather than left inheriting the dark one. */
@@ -4221,6 +4236,181 @@ a.tn-w-place { display: flex; align-items: center; }
 .tn-terminal ::-webkit-scrollbar-thumb:hover {
   background: rgba(16, 22, 29, 0.30);
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ██ DARK SKIN ██  opt-in, light stays the default.
+   ════════════════════════════════════════════════════════════════════════════
+   PR #162 (Sam, 2026-09-05) removed both dark modes for "one palette". This block
+   brings ONE back as an opt-in, on Leon's request (2026-10-29). It is NOT the old
+   blue-on-near-black Terminal palette: that one predates the white + olive redesign
+   and white text on its #5cb1ff accent measured 2.29:1. These values are a dark
+   reading of the CURRENT identity: olive near-black ground, cream ink, sage accent.
+
+   WHY AN ATTRIBUTE ON <html> AND NOT [data-theme]. lib/variants/store.ts writes
+   data-theme on every board switch (see the note at the top of the Terminal block),
+   so a theme-based dark would be yanked back to light by the first tab click.
+   `data-tnx-skin` is written by lib/terminal/skin.ts and by the before-paint script
+   in app/(console)/app/layout.tsx and by nothing else, and no variant knows it exists.
+
+   Every token below is a hex where tests/unit/terminal-tokens.test.ts reads one, and
+   that test walks this block with the same floors as the light one.
+
+   Measured on --tnx-panel #15170f:
+       --tnx-ink        #eceee4  15.43   body text
+       --tnx-ink-dim    #b9bcab   9.34   secondary text
+       --tnx-ink-faint  #969a86   6.25   de-emphasised text
+       --tnx-ink-ghost  #5d6150   2.83   NOT text: glyph fills, disabled chrome
+       --tnx-accent     #c9d1a6  11.33   identity, selection, focus
+   and the accent on --tnx-bg 11.90, on --tnx-panel-head 10.59.
+   Text on an accent fill is --tnx-on-accent #15170f: 11.33 on the accent. */
+:root[data-tnx-skin="dark"] { color-scheme: dark; }
+:root[data-tnx-skin="dark"],
+:root[data-tnx-skin="dark"] body { background: #0f110b; color: #eceee4; }
+
+:root[data-tnx-skin="dark"] .tn-terminal {
+  --tnx-bg: #0f110b;
+  --tnx-panel: #15170f;
+  --tnx-panel-head: #1b1e14;
+  --tnx-chrome: #0f110b;
+  --tnx-ink: #eceee4;
+  --tnx-ink-dim: #b9bcab;
+  --tnx-ink-faint: #969a86;
+  --tnx-ink-ghost: #5d6150;
+  --tnx-line: rgba(236, 238, 228, 0.10);
+  --tnx-line-strong: rgba(236, 238, 228, 0.20);
+  --tnx-row-rule: rgba(236, 238, 228, 0.06);
+  --tnx-accent: #c9d1a6;
+  --tnx-accent-soft: rgba(201, 209, 166, 0.14);
+  --tnx-on-accent: #15170f;
+  /* The badge prints --tnx-bg ON these: 7.43 / 8.10 / 5.99. */
+  --tnx-alert-none: #9aa3ad;
+  --tnx-alert-warn: #ff8a3d;
+  --tnx-alert-critical: #ff5449;
+  --tnx-glass: rgba(21, 23, 15, 0.92);
+  --tnx-glass-soft: rgba(21, 23, 15, 0.88);
+  --tnx-glass-bar: rgba(21, 23, 15, 0.90);
+  --tnx-glass-solid: rgba(21, 23, 15, 0.97);
+  /* On near-black the vivid hues ARE the legible ones (the old dark block's
+     measured set): live 7.97, lag 9.89, down 5.70 on --tnx-panel. */
+  --tnx-live: #35c46a;
+  --tnx-lag: #ffb020;
+  --tnx-down: #ff5449;
+  --tnx-dormant: #3d4134;
+  --tnx-key: #6b705c;
+  --tnx-grid-line: rgba(236, 238, 228, 0.06);
+  --tnx-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 3px 10px rgba(0, 0, 0, 0.30);
+
+  --tn-surface-2: #1b1e14;
+  --tn-glass: rgba(21, 23, 15, 0.92);
+  --tn-topbar-fill: rgba(21, 23, 15, 0.74);
+  --tn-topbar-pill: rgba(21, 23, 15, 0.94);
+  --tn-hover: rgba(236, 238, 228, 0.06);
+  --tn-accent-strong: #dfe5c2;
+  --tn-chip-bg: #20231a;
+  --tn-toggle-off: rgba(236, 238, 228, 0.16);
+  --tn-shadow: 0 14px 40px rgba(0, 0, 0, 0.60);
+  --tn-stale: #ff8a3d;
+  /* Status inks collapse onto the vivid fills, except red: #ff5449 on its own 14%
+     ground measures 4.47, so the ink is lifted to #ff7468 (5.38). */
+  --tn-live-ink: var(--tnx-live);
+  --tn-lagging-ink: var(--tnx-lag);
+  --tn-stale-ink: #ff8a3d;
+  --tn-down-ink: #ff7468;
+  --tn-unknown-ink: var(--tnx-ink-faint);
+  /* The four pill grounds, 14% of the vivid hue: live 5.83, lagging 6.94,
+     stale 5.68, down 5.38 (with the lifted ink). */
+  --tn-live-bg: rgba(53, 196, 106, 0.14);
+  --tn-lagging-bg: rgba(255, 176, 32, 0.14);
+  --tn-stale-bg: rgba(255, 138, 61, 0.14);
+  --tn-down-bg: rgba(255, 84, 73, 0.14);
+
+  scrollbar-color: rgba(236, 238, 228, 0.20) transparent;
+}
+
+/* ── Overrides: rules that paint a literal light colour ───────────────────── */
+:root[data-tnx-skin="dark"] .tn-terminal ::-webkit-scrollbar-thumb { background: rgba(236, 238, 228, 0.18); }
+:root[data-tnx-skin="dark"] .tn-terminal ::-webkit-scrollbar-thumb:hover { background: rgba(236, 238, 228, 0.28); }
+:root[data-tnx-skin="dark"] body:has(.tn-terminal) { background: #0f110b; color: #eceee4; }
+
+/* The stage's fade was literal white: on dark it drew a white halo round the globe. */
+:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-stage {
+  background:
+    radial-gradient(58% 62% at 50% 46%, #0f110b 0%, rgba(15, 17, 11, 0.94) 46%, rgba(15, 17, 11, 0) 100%),
+    repeating-linear-gradient(0deg, var(--tnx-grid-line) 0 1px, transparent 1px var(--tnx-grid-step)),
+    repeating-linear-gradient(90deg, var(--tnx-grid-line) 0 1px, transparent 1px var(--tnx-grid-step)),
+    var(--tnx-bg);
+}
+:root[data-tnx-skin="dark"] .tn-terminal .tn-seg-slot.is-held,
+:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-stage.is-held { box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55); }
+
+/* Text on an accent (or live) fill was literal white. 2.29:1 on a sage fill. */
+:root[data-tnx-skin="dark"] .tn-terminal :is(
+  .tn-ask-apply.is-active, .tn-signals-badge, .tn-news-label, .tn-widget-toggle[data-on="true"],
+  .tn-cw-menu-pop .tn-cw-chip[data-on="true"], .tn-nv-chips button.is-on, .tn-nv-mtoggle.is-on,
+  .tn-hd-chips button.is-on, .tn-fc-check, .tn-mk-tab.active, .tn-mk-seg button.active,
+  .tn-profile-btn.is-primary, .tn-settings-share, .tn-kofi:hover, .tn-fb-rate.is-on,
+  .tn-fb-btn.is-primary, .tn-dev-btn.is-primary, .tn-src-add[data-placed="true"],
+  .tn-insp-rail-btn[aria-pressed="true"], .tn-account-btn.is-primary
+) { color: var(--tnx-on-accent); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-ask-apply.is-active .tn-kbd { background: rgba(21, 23, 15, 0.16); color: var(--tnx-on-accent); }
+
+/* Literal red and amber TEXT, picked for white: #b91c1c is 2.79 on the dark panel. */
+:root[data-tnx-skin="dark"] .tn-terminal :is(
+  .tn-risk-gauge[data-level="severe"] .tn-risk-score, .tn-ev-threats-h, .tn-ev-threats-h > span:first-child,
+  .tn-ev-threat-chip, .tn-evd-err, .tn-evd-asset-x:hover, .tn-evd-threatboard-h, .tn-sd-delta.down,
+  .tn-sch-cd.is-imminent, .tn-sd-kpi-value.down, .tn-av-delta.down, .tn-cm-delta.down, .tn-sat-delta.down,
+  .tn-mk-chg.down, .tn-mk-metric.down, .tn-mk-ohlc b.down, .tn-mk-alert.below
+) { color: var(--tn-down-ink) !important; }
+:root[data-tnx-skin="dark"] .tn-terminal :is(
+  .tn-hd-upd, .tn-hd-change, .tn-hd-srcb-tag.is-state, .tn-hd-div-state, .tn-sch-cd.is-soon
+) { color: var(--tn-lagging-ink); }
+
+/* Light grounds and dark-alpha washes. */
+:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-rail { background: rgba(236, 238, 228, 0.03); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-hd-primary { background: rgba(236, 238, 228, 0.06); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-mk-ohlc { background: rgba(21, 23, 15, 0.78); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button { background: var(--tnx-panel); border-color: var(--tnx-line-strong); color: var(--tnx-ink-dim); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button.is-on { background: var(--tnx-accent); border-color: var(--tnx-accent); color: var(--tnx-on-accent); }
+:root[data-tnx-skin="dark"] .tn-terminal :is(.tn-newsw-picker, .tn-newsw-custom) { border-color: var(--tnx-line-strong); }
+:root[data-tnx-skin="dark"] .tn-terminal .cs-skel { background: rgba(236, 238, 228, 0.08); }
+:root[data-tnx-skin="dark"] .tn-terminal .cs-skel::after { background: linear-gradient(90deg, transparent, rgba(236, 238, 228, 0.10), transparent); }
+:root[data-tnx-skin="dark"] .tn-terminal .cs-x:hover { background: rgba(236, 238, 228, 0.08); }
+:root[data-tnx-skin="dark"] .tn-terminal .cs-scrim { background: rgba(0, 0, 0, 0.55); }
+
+/* Control edges: --tn-srx-edge is olive at 50% (3.04 on white). Cream at 38% is
+   3.24 on --tnx-panel (3.17 on the lightest ground, --tn-chip-bg), so a control
+   boundary still clears 3:1. */
+:root[data-tnx-skin="dark"] .tn-terminal .tn-rail { --tn-srx-edge: rgba(236, 238, 228, 0.38); }
+
+/* Source rows: an off dot at 0.42 went muddy on near-black; the switch's on and off
+   tracks were near-identical. Off is now a hollow track with a dim knob, on is the
+   source's colour with a bright knob. */
+:root[data-tnx-skin="dark"] .tn-terminal .tn-src-dot { opacity: 0.7; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-src-toggle { box-shadow: inset 0 0 0 1px var(--tn-srx-edge); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-src-toggle::after { background: var(--tnx-ink-faint); box-shadow: none; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-src-row[data-on="true"] .tn-src-toggle { box-shadow: none; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-src-row[data-on="true"] .tn-src-toggle::after { background: #f4f5ee; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch { background: rgba(236, 238, 228, 0.16); box-shadow: inset 0 0 0 1px rgba(236, 238, 228, 0.38); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch-knob { background: var(--tnx-ink-faint); box-shadow: none; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch[aria-checked="true"] { background: var(--tnx-accent); box-shadow: none; }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { background: var(--tnx-on-accent); }
+
+/* The collapsed Sources tab runs the full height of the page, so its 1px edge is a
+   seam down the whole left side. In light the launch hint paints it olive on white;
+   the same accent on near-black is a bright cream-green line (11.9:1), much louder
+   than the olive one reads. The hint keeps its colour at half strength (about 3.7:1,
+   still over the 3:1 a boundary needs) and the label keeps the full accent; out of
+   the hint the edge is a hairline like every other dark edge. */
+:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab { border-color: var(--tnx-line); }
+:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { border-color: color-mix(in srgb, var(--tnx-accent) 50%, transparent); }
+
+/* ── The header toggle (both skins) ───────────────────────────────────────
+   Icon-only and FIXED at 30px above 900px, its border included: the camera stats
+   strip's drop bands (1420/1320/1240/1180) leave about 32px of slack and a label
+   would not fit in it in every language. */
+.tn-terminal .tnx-hdr-skin { width: 30px; padding: 0; justify-content: center; flex: none; }
+.tn-terminal .tnx-hdr-skin svg { width: 15px; height: 15px; display: block; }
+@media (max-width: 900px) { .tn-terminal .tnx-hdr-skin { width: 44px; } }
 
 /* ── The mark, and the boot sequence ───────────────────────────────────────
    The mark is the camera sphere, its screens filled: a filtered screenshot of the landing

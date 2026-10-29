@@ -69,6 +69,36 @@ function contrast(a: RGB, b: RGB): number {
 /** The solid surface a pill sits on. */
 const SURFACE = parseHex(token("tn-surface-solid"));
 
+/**
+ * THE DARK SKIN'S PASS. The dark block (globals.css, `html[data-tnx-skin="dark"]
+ * .tn-terminal`) redefines the four inks, the four 14% grounds and the chip ground, and
+ * the console remaps `--tn-surface-solid` onto `--tnx-panel-head`, so a pill in the dark
+ * skin sits on #1b1e14, not on white. `token()` above finds the FIRST declaration in the
+ * file, which is the light one, so this reads the dark block on its own, and resolves
+ * the inks the block writes as `var(--tnx-…)` through the same block.
+ */
+const DARK_SELECTOR = '\n:root[data-tnx-skin="dark"] .tn-terminal {';
+
+function darkBlock(): string {
+  const bare = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+  const at = bare.indexOf(DARK_SELECTOR);
+  if (at < 0) throw new Error("the dark skin block is not in globals.css");
+  const open = bare.indexOf("{", at);
+  return bare.slice(open, bare.indexOf("\n}", open));
+}
+
+/** A token's value in the dark block, following `var(--x)` references inside it. */
+function darkToken(name: string, block = darkBlock()): string {
+  const m = block.match(new RegExp(`--${name}:\\s*([^;]+);`));
+  if (!m) throw new Error(`token --${name} is not declared in the dark skin block`);
+  const v = m[1].trim();
+  const ref = v.match(/^var\(--([\w-]+)\)$/);
+  return ref ? darkToken(ref[1], block) : v;
+}
+
+/** A pill's ground in the dark skin is the panel-head the console remaps the surface to. */
+const DARK_SURFACE = parseHex(darkToken("tnx-panel-head"));
+
 /** Every pill state that paints a tinted ground, ink ↔ ground. */
 const TINTED: { state: string; ink: string; bg: string }[] = [
   { state: "live", ink: "tn-live-ink", bg: "tn-live-bg" },
@@ -88,6 +118,20 @@ describe("status pill contrast", () => {
     const { rgb, a } = parseRgba(token(bg));
     const ground = over(rgb, a, SURFACE);
     expect(contrast(parseHex(token(ink)), ground)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Measured on #1b1e14 when the dark skin was written: live 5.83, lagging 6.94, stale
+  // 5.68, down 5.38. Down needed its own lifted ink (#ff7468): the vivid #ff5449 is 4.47
+  // on its own 14% ground.
+  it.each(TINTED)("dark skin: $state ink clears AA on its own tinted ground", ({ ink, bg }) => {
+    const { rgb, a } = parseRgba(darkToken(bg));
+    const ground = over(rgb, a, DARK_SURFACE);
+    expect(contrast(parseHex(darkToken(ink)), ground)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("dark skin: the neutral states also clear AA", () => {
+    const faint = parseHex(darkToken("tnx-ink-faint"));
+    expect(contrast(faint, parseHex(darkToken("tn-chip-bg")))).toBeGreaterThanOrEqual(4.5);
   });
 
   it("puts the neutral states on a ground that also clears AA", () => {

@@ -3,7 +3,7 @@
 // components/shell/StatusBar.tsx.
 //
 // Left → right: brand block (logo · h1) │ board tabs │ ——— │
-// presence · DISCORD · ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS · ACCOUNT.
+// presence · DISCORD · ☕ SUPPORT · SOURCE · SHORTCUTS · ⚙ SETTINGS · DARK MODE · ACCOUNT.
 //
 // The board tabs are the console's whole navigation: exactly TWO — Globe and
 // Streets. The other five boards (World, Nature, Skywatch, Infrastructure,
@@ -45,6 +45,8 @@ import type { SettingsTabId } from "@/lib/shell/settingsTabs";
 import LivePresence from "@/components/shell/LivePresence";
 import CameraStats from "@/components/terminal/CameraStats";
 import { BRAND } from "@/lib/brand";
+import { terminalSkinStore, useTerminalSkin } from "@/lib/terminal/skin";
+import { MoonGlyph, SunGlyph } from "@/components/terminal/SkinGlyphs";
 
 /**
  * The tab label IS the board's title, uppercased. One string, one source:
@@ -212,6 +214,11 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
   const activePresetId = useActivePreset();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTabId | undefined>(undefined);
+  // The dark skin lives in lib/terminal/skin.ts. Read the saved choice after mount (never
+  // during render: the server snapshot is always light), so the icon and aria-pressed
+  // catch up with what the before-paint script already put on <html>.
+  const skin = useTerminalSkin();
+  useEffect(() => { terminalSkinStore.hydrate(); }, []);
 
   // Board name for the spoken status line. Same source the tabs read, so the two can
   // never disagree about which board is loaded. listPresets() (not BUILTIN_PRESETS)
@@ -415,6 +422,19 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
           >
             <span aria-hidden>⚙</span>
             <span className="tnx-hdr-btn-label">SETTINGS</span>
+          </button>
+          {/* DARK MODE. Icon-only and 30px wide on purpose: see .tnx-hdr-skin in globals.css.
+              The icon shows where a press takes you (moon in light, sun in dark); the name
+              stays "Dark mode" and aria-pressed carries the state. */}
+          <button
+            type="button"
+            className="tnx-hdr-btn tnx-hdr-skin"
+            onClick={() => terminalSkinStore.toggle()}
+            aria-label="Dark mode"
+            aria-pressed={skin === "dark"}
+            title={skin === "dark" ? "Switch to light" : "Switch to dark"}
+          >
+            {skin === "dark" ? <SunGlyph /> : <MoonGlyph />}
           </button>
           {/* THE ACCOUNT DOOR. Last in the cluster: it is the newest control and the only one
               about the person rather than the console. Nothing renders when accounts are off. */}

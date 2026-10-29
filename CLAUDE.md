@@ -356,7 +356,10 @@ obligations and are not satisfied by the licence.
 - Every upstream fetch is keyless-first and **dormant-safe**: failures resolve to `[]` / last-good / a labelled placeholder, never a 5xx, never fabricated data.
 - Keep the upstream→domain mapping in a PURE exported function with a unit test.
 - Tests are vitest, NODE environment, in `tests/unit/**/*.test.ts`. No React testing library is installed — no component tests.
-- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`.
+- Calm light identity; `.tn-*` CSS tokens in `app/globals.css`. The console (`/app` only) has an
+  opt-in dark skin (`lib/terminal/skin.ts`, `html[data-tnx-skin="dark"]`, the DARK SKIN block in
+  `globals.css`): light by default, remembered per browser, and never read from the OS
+  (`prefers-color-scheme` appears nowhere). It is not a `Theme`; see the header of `lib/shell/ui.ts`.
 - **ONE typeface: Inter, everywhere — with two route-scoped exceptions.** Loaded once, self-hosted by next/font in
   `app/layout.tsx`, published as `--tn-font-sans` on `<html>`. Nothing else loads
   Inter — `(site)/layout.tsx` reads that same variable rather than loading its own copy.
