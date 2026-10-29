@@ -6923,13 +6923,19 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
   color: var(--tnx-ink);
 }
 .tn-src-sec-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* THE COUNTS NEVER GIVE WAY; THE TITLE DOES. A flex item may shrink by default, and
+   "6 on" has a space in it, so in a tight heading (a 372px rail, every phone) it gave
+   up a few pixels and broke into "6" over "ON" while the title was already being cut.
+   Leon: "fix this formatting error with 6 on". `flex: none` hands the whole shortfall
+   to the title, which can shrink to nothing (overflow: hidden) and ellipsises;
+   `nowrap` is the backstop. Pinned by tests/unit/sources-rail-controls.test.ts. */
 /* A STATED COLOUR, NOT AN OPACITY. `opacity: 0.7` on the heading ink composited
    to 5.50:1 and moved whenever the ink did; --tn-text-muted is 8.19:1 and says
    what it is. Same visual weight relative to the title, better floor. */
-.tn-src-sec-n { font-weight: 600; color: var(--tn-text-muted); }
+.tn-src-sec-n { flex: none; white-space: nowrap; font-weight: 600; color: var(--tn-text-muted); }
 /* Pushed to the far end so the "on" reading sits in one column down the rail
    instead of moving with the length of each heading. */
-.tn-src-sec-on { margin-left: auto; color: var(--tn-accent); font-weight: 600; }
+.tn-src-sec-on { flex: none; white-space: nowrap; margin-left: auto; color: var(--tn-accent); font-weight: 600; }
 /* ── end sources rail sections ────────────────── */
 
 /* ── SOURCES RAIL SPLITTER ───────────────────────────────────────────────────
