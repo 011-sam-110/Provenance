@@ -116,7 +116,7 @@ test.describe("on a wide screen", () => {
     await plate.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByRole("dialog", { name: "MILLENNIUM DIAMOND" })).toBeVisible();
-    await page.getByRole("button", { name: "Close" }).click();
+    await dialog(page).getByRole("button", { name: "Close", exact: true }).click();
     await expect(dialog(page)).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -210,7 +210,7 @@ test.describe("on a phone", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(390);
     expect(box.y + box.height).toBeLessThanOrEqual(844);
     expect(box.y).toBeGreaterThan(844 * 0.4);
-    const close = (await page.getByRole("button", { name: "Close" }).boundingBox())!;
+    const close = (await sheet.getByRole("button", { name: "Close", exact: true }).boundingBox())!;
     expect(close.height).toBeGreaterThanOrEqual(44);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
@@ -219,7 +219,7 @@ test.describe("on a phone", () => {
     const now = await screenOf(page, -0.07279, 51.5041);
     expect(now.y).toBeLessThan(box.y);
 
-    await page.getByRole("button", { name: "Close" }).tap();
+    await sheet.getByRole("button", { name: "Close", exact: true }).tap();
     await expect(dialog(page)).toHaveCount(0);
     expect(errors).toEqual([]);
   });

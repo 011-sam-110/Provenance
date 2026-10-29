@@ -14,6 +14,14 @@
 //   2. TOUCH_QUERY picks the WORDS, by input: a phone or a tablet has only a finger.
 //      The phone LAYOUT is a different question (the screen's shape, PORTRAIT_QUERY in
 //      EyeApp.tsx), and the two are allowed to disagree: a tablet is wide and touch.
+//
+// THE "?" BESIDE THE CLOCK (HintToggle in ControlHint.tsx) brings the plate back or hides
+// it. A plate brought back follows the same rules as on arrival: it fades FADE_AFTER_MS
+// after the next move, and the x, the "?" or a panel opening closes it. The button's
+// accessible name is HINT_NAME, and it must never contain a word another e2e spec matches
+// by substring (Close, Turn, Places, Sources, Previews): getByRole name matching is a
+// substring match unless `exact` is set, which is how #319's "Close this hint" broke
+// #321's spec.
 
 export type HintKind = "mouse" | "touch" | "touch-desktop";
 
@@ -93,7 +101,11 @@ export type HintEvent =
   | { type: "touches-lifted" }
   | { type: "timeout" }
   | { type: "close" }
-  | { type: "panel-open" };
+  | { type: "panel-open" }
+  /** The "?" beside the clock was pressed: hide a shown plate, or bring it back. `pointerType`
+   *  is what pressed it ("mouse", "pen", "touch", or "" for the keyboard); `onlyTouch` is
+   *  TOUCH_QUERY at that moment. */
+  | { type: "toggle"; pointerType: string; onlyTouch: boolean };
 
 export function initialHint(onlyTouch: boolean): HintState {
   return { kind: onlyTouch ? "touch" : "mouse", shown: true, armed: false, switched: false };
@@ -120,5 +132,13 @@ export function hintReducer(s: HintState, e: HintEvent): HintState {
     case "close":
     case "panel-open":
       return s.shown || s.armed ? { ...s, ...HIDDEN } : s;
+    case "toggle": {
+      if (s.shown) return { ...s, ...HIDDEN };
+      // The words follow the input that asked for them. A finger gets the finger gestures
+      // WITHOUT Leon's line (it is said once, on the first touch, never by the button).
+      const touch = e.onlyTouch || e.pointerType === "touch";
+      // Having asked for the finger words, a later touch must not swap in the line.
+      return { kind: touch ? "touch" : "mouse", shown: true, armed: false, switched: s.switched || e.pointerType === "touch" };
+    }
   }
 }

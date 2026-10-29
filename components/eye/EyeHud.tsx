@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import Mark from "@/components/brand/Mark";
-import ControlHint from "./ControlHint";
+import ControlHint, { HintToggle, useControlHint } from "./ControlHint";
 import { BRAND } from "@/lib/brand";
 import type { EyeClock } from "@/lib/eye/motion";
 import { EYE_PLACES, eyePlaceHref, type EyeView } from "@/lib/eye/places";
@@ -131,6 +131,11 @@ export default function EyeHud({
   };
   // The place picker on a phone: a short list over the bar, opened by "Places".
   const [placesOpen, setPlacesOpen] = useState(false);
+  // The control hint's state, shared by the "?" beside the clock and the plate in the footer.
+  // `blocked` is the panels that take the plate's room. eye-sources-menu widens it to the
+  // sources tray and a drag, and makes the toggle's onOpen close that tray too: whoever lands
+  // second does both.
+  const hint = useControlHint(map, placesOpen);
 
   return (
     <div className={styles.hud}>
@@ -173,6 +178,7 @@ export default function EyeHud({
             <span className={styles.clock}>{now != null ? fmtClockUtc(now, !record) : record ? "--:--" : "--:--:--"}</span>
             <span className={styles.utc}>UTC</span>
           </p>
+          {!record && <HintToggle hint={hint} onOpen={() => setPlacesOpen(false)} />}
         </div>
       </header>
 
@@ -194,7 +200,7 @@ export default function EyeHud({
       )}
 
       <footer className={styles.bottom} data-eye-keep>
-      {!record && <ControlHint map={map} blocked={placesOpen} />}
+      {!record && <ControlHint hint={hint} />}
       {!record && (
         <nav className={styles.controls} aria-label="View controls" data-eye-keep>
           {/* SOURCES. On a phone it is the console's own thumb control, kept as it was:

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  CLOSE_NAME,
   FADE_AFTER_MS,
+  HINT_NAME,
   TOUCH_ON_DESKTOP_LINE,
   TOUCH_QUERY,
   hintCopy,
@@ -105,6 +107,89 @@ describe("the wait before it fades", () => {
     const gone = hintReducer(initialHint(false), { type: "close" });
     expect(hintReducer(gone, { type: "timeout" })).toBe(gone);
     expect(hintReducer(gone, { type: "panel-open" })).toBe(gone);
+  });
+});
+
+describe("the ? beside the clock", () => {
+  const shown = (kind: HintKind, extra: Partial<HintState> = {}): HintState => ({
+    kind,
+    shown: true,
+    armed: false,
+    switched: false,
+    ...extra,
+  });
+
+  it("hides a shown plate and keeps its kind", () => {
+    const armed = shown("mouse", { armed: true });
+    expect(hintReducer(armed, { type: "toggle", pointerType: "mouse", onlyTouch: false })).toEqual({
+      kind: "mouse",
+      shown: false,
+      armed: false,
+      switched: false,
+    });
+    expect(hintReducer(shown("touch"), { type: "toggle", pointerType: "touch", onlyTouch: true })).toEqual({
+      kind: "touch",
+      shown: false,
+      armed: false,
+      switched: false,
+    });
+  });
+
+  it("brings the mouse words back for a mouse, a pen or the keyboard on a mouse desktop", () => {
+    const closed = hintReducer(initialHint(false), { type: "close" });
+    for (const pointerType of ["mouse", "pen", ""]) {
+      expect(hintReducer(closed, { type: "toggle", pointerType, onlyTouch: false })).toEqual({
+        kind: "mouse",
+        shown: true,
+        armed: false,
+        switched: false,
+      });
+    }
+  });
+
+  it("brings the finger gestures back for a finger, without Leon's line, and does not repeat the line later", () => {
+    const closed = hintReducer(initialHint(false), { type: "close" });
+    const s = hintReducer(closed, { type: "toggle", pointerType: "touch", onlyTouch: false });
+    expect(s).toEqual({ kind: "touch", shown: true, armed: false, switched: true });
+    expect(hintCopy(s.kind).lead).toBeUndefined();
+    // The line is said once, by the first touch; having asked for the finger words, a later
+    // touch must not swap it in.
+    expect(hintReducer(s, { type: "press", pointerType: "touch" })).toBe(s);
+  });
+
+  it("gives a touch-only device the finger gestures whatever pressed it", () => {
+    const closed = hintReducer(initialHint(true), { type: "close" });
+    for (const pointerType of ["mouse", "", "touch"]) {
+      const s = hintReducer(closed, { type: "toggle", pointerType, onlyTouch: true });
+      expect(s.kind).toBe("touch");
+      expect(s.shown).toBe(true);
+      expect(hintCopy(s.kind).lead).toBeUndefined();
+    }
+  });
+
+  it("gives the mouse words to a mouse even after a touch plate was closed", () => {
+    let s = hintReducer(initialHint(false), { type: "press", pointerType: "touch" });
+    expect(s).toMatchObject({ kind: "touch-desktop", switched: true });
+    s = hintReducer(s, { type: "close" });
+    s = hintReducer(s, { type: "toggle", pointerType: "mouse", onlyTouch: false });
+    expect(s).toEqual({ kind: "mouse", shown: true, armed: false, switched: true });
+  });
+
+  it("follows the arrival rules once it is back: a move arms it, a timeout or a panel hides it", () => {
+    const closed = hintReducer(initialHint(false), { type: "close" });
+    const back = hintReducer(closed, { type: "toggle", pointerType: "mouse", onlyTouch: false });
+    const armed = hintReducer(back, { type: "move-end" });
+    expect(armed).toEqual({ kind: "mouse", shown: true, armed: true, switched: false });
+    expect(hintReducer(armed, { type: "timeout" })).toMatchObject({ shown: false, armed: false });
+    expect(hintReducer(back, { type: "panel-open" })).toMatchObject({ shown: false, armed: false });
+    expect(hintReducer(back, { type: "close" })).toMatchObject({ shown: false, armed: false });
+  });
+
+  it("has a name that no other spec's button lookup can match by substring", () => {
+    expect(HINT_NAME).toBe("How to move the view");
+    expect(HINT_NAME).not.toMatch(/close|turn|places|sources|previews/i);
+    // The x keeps its own name, which the Close lookups already know to exclude.
+    expect(CLOSE_NAME).toBe("Close this hint");
   });
 });
 
