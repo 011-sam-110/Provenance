@@ -1,7 +1,7 @@
 "use client";
 // The camera stats strip in the console's top bar, and the breakdown it opens.
 //
-// VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED <n> min ago ‖ WEBCAMS, read from
+// VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED <n> min ago | WEBCAMS, read from
 // /api/camera-stats. One button: a click opens the breakdown under it (on a phone, a
 // bottom sheet). Every number says what it counts, its source and its time on hover and
 // on keyboard focus.
@@ -48,6 +48,7 @@ import {
   type Tip,
 } from "@/lib/cameras/statsView";
 import { useNow } from "@/lib/shell/useNow";
+import { StillsGlyph, VideoGlyph } from "@/components/terminal/StatGlyphs";
 
 const POLL_MS = 5 * 60_000;
 /** A stale answer is usually the server refreshing in the background: ask again soon. */
@@ -390,6 +391,7 @@ export default function CameraStats() {
     [
       "cs-seg cs-desk",
       id === "countries" || id === "operators" ? "is-minor" : "",
+      id === "video" || id === "stills" ? "is-major" : "",
       id === "counted" ? "cs-fresh" : "",
       id === "webcams" ? "cs-web" : "",
       dropClass(id),
@@ -425,8 +427,8 @@ export default function CameraStats() {
       {SEGMENTS.map((id) => (
         <span key={id} className={segClass(id)} data-k={stats ? id : undefined}>
           <span className="cs-lab">
-            {id === "video" && <span className="cs-chip v" aria-hidden="true" />}
-            {id === "stills" && <span className="cs-chip s" aria-hidden="true" />}
+            {id === "video" && <VideoGlyph />}
+            {id === "stills" && <StillsGlyph />}
             {id === "counted" && !stats ? "Counting" : SEGMENT_LABEL[id]}
           </span>
           {segValue(id)}
@@ -436,10 +438,10 @@ export default function CameraStats() {
         <span className="cs-chev" />
       </span>
       <span className="cs-pline cs-phone" aria-hidden="true">
-        <span className="cs-lab">Video</span>
+        <VideoGlyph />
         {stats ? <span className="cs-num">{fmt(stats.road.video)}</span> : <Skel w={32} />}
         <span className="cs-gap" />
-        <span className="cs-lab">Stills</span>
+        <StillsGlyph />
         {stats ? <span className="cs-num">{fmt(stats.road.stills)}</span> : <Skel w={42} />}
         <span className="cs-chev" />
       </span>
@@ -547,7 +549,7 @@ export default function CameraStats() {
     <div className={`cs-facts${compact ? " sh-facts" : ""}`}>
       <div className="cs-frow">
         <div className="cs-fcap">
-          <span className="cs-chip v" aria-hidden="true" />
+          <VideoGlyph />
           <b>Video</b>
           <span>
             {fmt(s.road.video)} cameras shown as video; {playedShort(s)}
@@ -587,7 +589,7 @@ export default function CameraStats() {
       </div>
       <div className="cs-frow">
         <div className="cs-fcap">
-          <span className="cs-chip s" aria-hidden="true" />
+          <StillsGlyph />
           <b>Stills</b>
           <span>
             {fmt(s.road.stills)} pictures; {median} median refresh
@@ -696,7 +698,7 @@ export default function CameraStats() {
         <div className="sh-pair">
           <div>
             <span className="cs-lab">
-              <span className="cs-chip v" aria-hidden="true" />
+              <VideoGlyph />
               Video
             </span>
             <div className="cs-big" {...tipAttrs("seg:video")}>
@@ -706,7 +708,7 @@ export default function CameraStats() {
           </div>
           <div>
             <span className="cs-lab">
-              <span className="cs-chip s" aria-hidden="true" />
+              <StillsGlyph />
               Stills
             </span>
             <div className="cs-big" {...tipAttrs("seg:stills")}>

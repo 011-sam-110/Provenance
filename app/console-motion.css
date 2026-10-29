@@ -114,7 +114,7 @@
    and positioned from two custom properties the header measures.
 
    `data-ind="1"` is set by the header only once it has measured. Until then —
-   server render, no JS, a measurement that failed — the per-tab border is
+   server render, no JS, a measurement that failed — the per-tab inset shadow is
    still the marker and nothing is lost. */
 .tn-terminal .tnx-hdr-boards { position: relative; }
 
@@ -133,10 +133,10 @@
     width var(--tn-mo-slow) var(--tn-mo-ease);
 }
 
-/* Hand the marker over. With the travelling bar live, the per-tab border would
-   double it. */
+/* Hand the marker over. With the travelling bar live, the per-tab inset shadow
+   would double it. */
 .tn-terminal .tnx-hdr-boards[data-ind="1"] .tnx-hdr-board.is-active {
-  border-bottom-color: transparent;
+  box-shadow: none;
 }
 
 /* The tabs themselves. A board switch is a navigation, so the label's arrival
@@ -355,17 +355,6 @@
 .tn-terminal .tnx-hdr-btn:active,
 .tn-terminal .tn-note-btn:active {
   transform: scale(calc(1 - var(--tn-mo-travel) * 0.06));
-}
-
-/* The "customised" dot arrives the moment a board is first edited. It is a
-   state change the operator caused, so it should be seen arriving. */
-@keyframes tn-mo-dot-in {
-  from { opacity: 0; transform: scale(calc(1 - var(--tn-mo-travel) * 0.5)); }
-  to   { opacity: 1; transform: none; }
-}
-.tn-terminal .tnx-hdr-board-dot {
-  display: inline-block;
-  animation: tn-mo-dot-in var(--tn-mo-base) var(--tn-mo-ease) both;
 }
 
 /* Freshness chips carry the feed's state. A change between live, lagging and

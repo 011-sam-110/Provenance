@@ -28,14 +28,14 @@
 // The third live region, `a11y-alert-live`, is NOT here: it belongs to BreakingBanner
 // and stays there. Moving it would break `.tn-alert ~ .tn-cw-shell` in globals.css.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useMetrics } from "@/lib/metrics";
 import { statLine } from "@/lib/shell/statLine";
 import { useLayers } from "@/lib/layers";
 import { useActivePreset } from "@/lib/console/activePreset";
 import { BUILTIN_PRESETS, TOP_BAR_PRESET_IDS, applyPreset, listPresets } from "@/lib/console/presets";
 import { isBoardEdited } from "@/lib/console/boards";
-import { useShellLayout } from "@/lib/console/store";
+import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import { appStatusLine } from "@/components/shell/a11y";
 import Mark from "@/components/brand/Mark";
 import DiscordMark from "@/components/brand/DiscordMark";
@@ -56,6 +56,16 @@ const boardLabel = (title: string) => title.toUpperCase();
  *  From TOP_BAR_PRESET_IDS (a subset of the lineup, pinned by
  *  console-presets.test.ts), so this file never has to learn a board id. */
 const BOARD_ORDER: readonly string[] = [...TOP_BAR_PRESET_IDS];
+
+/** The tabs whose board has been edited, as one comma-joined string. A string, so
+ *  `useSyncExternalStore`'s identity check holds between emits (an array would be a
+ *  new object on every read). Reads localStorage, so it is only ever called in the
+ *  browser. */
+const editedSnapshot = () => BOARD_ORDER.filter((id) => isBoardEdited(id)).join(",");
+/** What the server renders, and what hydration uses: nothing is edited. The real
+ *  answer lives in localStorage, which the server cannot see, so it is read right
+ *  after hydration instead of during it. */
+const noneEdited = () => "";
 
 /** The presets the tabs render, resolved once. Every id is pinned to exist. */
 const TAB_PRESETS = TOP_BAR_PRESET_IDS.map(
@@ -89,7 +99,7 @@ function boardStep(from: string, dir: 1 | -1): string {
  * per-frame state.
  *
  * `data-ind` is set one frame AFTER the first measurement, for two reasons: the
- * per-tab border stays the marker until a real position exists (so a server
+ * per-tab inset shadow stays the marker until a real position exists (so a server
  * render, a JS failure or a browser with no ResizeObserver still shows which
  * board is open), and the bar's first appearance is already in place rather than
  * sliding in from x=0.
@@ -132,10 +142,18 @@ function useBoardMarker(activePresetId: string | null) {
 
 function BoardTabs() {
   const activePresetId = useActivePreset();
-  // Subscribed, not read: `isBoardEdited` hits localStorage, so without a re-render
-  // trigger the dot would be a snapshot from whenever the header last happened to
-  // paint. The value itself is unused — the subscription is the point.
+  // Which boards are "edited" is read from localStorage, so it is not known to the
+  // server. `noneEdited` is the server snapshot: hydration agrees with the server's
+  // HTML, and React re-renders with the real answer right after (reading it during
+  // render gave "Hydration failed" on every load for anyone with an edited board).
+  //
+  // Two subscriptions, on purpose. The store tells its listeners BEFORE it writes the
+  // board's slot (`emit` in lib/console/store), so a snapshot read inside the
+  // listener is one edit behind and would not re-render. `useShellLayout()` is the
+  // re-render trigger; the render that follows runs after the write and reads the
+  // fresh answer.
   useShellLayout();
+  const editedIds = useSyncExternalStore(shellLayoutStore.subscribe, editedSnapshot, noneEdited);
 
   const { navRef, measured } = useBoardMarker(activePresetId);
 
@@ -173,12 +191,12 @@ function BoardTabs() {
         // something on it. Merely opening a board does not count — see the
         // `archive: false` path in lib/console/store.
         //
-        // The dot exists because the state model used to be invisible in both
-        // directions: a board switch silently rebuilt the board from its template
-        // and destroyed the user's arrangement, and the only signal was noticing
-        // later that the cards had moved. Switching now preserves the work, and
-        // this says so.
-        const edited = isBoardEdited(p.id);
+        // The state is said in the tab's hover text and its accessible name, not in
+        // a visible mark: a dot beside the label used to carry it, and was removed
+        // on Leon's request (2026-10-29). It exists at all because a board switch
+        // once silently rebuilt the board from its template; switching now preserves
+        // the work, and this says so.
+        const edited = editedIds.split(",").includes(p.id);
         return (
           <button
             key={p.id}
@@ -186,7 +204,7 @@ function BoardTabs() {
               btnRefs.current[p.id] = el;
             }}
             type="button"
-            className={`tnx-hdr-board${active ? " is-active" : ""}${edited ? " is-edited" : ""}`}
+            className={`tnx-hdr-board${active ? " is-active" : ""}`}
             aria-pressed={active}
             tabIndex={tabStop === p.id ? 0 : -1}
             title={`${p.title} — ${p.blurb}${edited ? " · customised" : ""}`}
@@ -195,7 +213,6 @@ function BoardTabs() {
             onKeyDown={(e) => onTabKeyDown(e, p.id)}
           >
             {boardLabel(p.title)}
-            {edited && <span className="tnx-hdr-board-dot" aria-hidden>•</span>}
             {/* Appends to the visible text, so the accessible name still contains
                 it (WCAG 2.5.3 label-in-name). */}
             <span className="tn-sr-only"> board{edited ? ", customised" : ""}</span>
