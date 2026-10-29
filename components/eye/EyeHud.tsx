@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import type maplibregl from "maplibre-gl";
 import Mark from "@/components/brand/Mark";
+import ControlHint from "./ControlHint";
 import { BRAND } from "@/lib/brand";
 import type { EyeClock } from "@/lib/eye/motion";
 import { EYE_PLACES, eyePlaceHref, type EyeView } from "@/lib/eye/places";
@@ -193,6 +194,7 @@ export default function EyeHud({
       )}
 
       <footer className={styles.bottom} data-eye-keep>
+      {!record && <ControlHint map={map} blocked={placesOpen} />}
       {!record && (
         <nav className={styles.controls} aria-label="View controls" data-eye-keep>
           {/* SOURCES. On a phone it is the console's own thumb control, kept as it was:
