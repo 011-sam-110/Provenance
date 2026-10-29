@@ -1010,10 +1010,9 @@ a { color: var(--tn-accent); }
    stores/components — no component rebuild.
    =========================================================================== */
 @media (max-width: 768px) {
-  /* Top bar compacts; the palette trigger is desktop-only (no mobile palette). */
+  /* Top bar compacts. */
   .tn-topbar { gap: 10px; padding: 0 10px; }
   .tn-topbar-metrics { gap: 8px; }
-  .tn-palette-trigger { display: none; }
   .tn-icon-btn { height: 36px; min-width: 40px; }
   .tn-basemap-btn { padding: 8px 10px; }
 
@@ -5790,6 +5789,13 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    that says nothing. */
 @media (max-width: 720px) { .tn-terminal .tn-presence { display: none; } }
 .tn-terminal .tnx-hdr-btn-label { color: inherit; }
+/* THE STAND-IN MARK for a header button whose only content is its word (SHORTCUTS).
+   The ≤900px header pass hides every `.tnx-hdr-btn-label`; the other buttons keep a
+   glyph, and this mark is the glyph SHORTCUTS lacks. Hidden here so it costs the
+   desktop bar no width; shown by the ≤900px pass beside the rule that hides the words.
+   Same specificity, so that pass must stay LATER in the sheet than this rule.
+   tests/unit/header-phone-mark.test.ts pins both. */
+.tn-terminal .tnx-hdr-btn-mark { display: none; flex: none; }
 .tn-terminal .tnx-hdr-profile .tn-profile-avatar { width: 22px; height: 22px; font-size: var(--tnx-fs-sm); border-radius: var(--tnx-r-sm); }
 /* Focus has to stay visible on a dark, borderless bar — these buttons have no
    resting outline for a focus ring to thicken. */
@@ -5996,6 +6002,8 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tnx-hdr-spacer { display: none; }
   .tn-terminal .tnx-hdr-btn-label,
   .tn-terminal .tnx-hdr-utc-label { display: none; }
+  /* ...and the mark that stands in for a word with no glyph of its own (SHORTCUTS). */
+  .tn-terminal .tnx-hdr-btn-mark { display: block; }
   .tn-terminal .tnx-hdr-brand { flex: 1 1 auto; min-width: 0; border-right: 0; }
 
   /* Strip: the 37 cells are the payload. The view controls keep the projection

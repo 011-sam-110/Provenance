@@ -357,7 +357,7 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               it is the same kind of control as the two beside it — a way OUT of the
               console — and it uses `.tnx-hdr-btn-label` (as SHORTCUTS and SETTINGS
               do, and SUPPORT and SOURCE do not) so it collapses to the mark alone
-              under 720px and adds no width on a phone. */}
+              at 900px and below and adds no width on a phone. */}
           <a
             className="tnx-hdr-btn"
             href={BRAND.discordUrl}
@@ -404,6 +404,16 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             beside it was doing all the explaining on its own. "Shortcuts" names what
             people open it for. `.tn-palette-trigger` is unchanged — it is the
             selector the e2e suite opens the palette with.
+
+            ON A PHONE IT IS A MAGNIFIER. At 900px and below the header hides every
+            label (globals.css, the max-width: 900px header pass), and once the ⌘K cap
+            left (#162) this button had nothing else in it, so phones showed an empty
+            box. The 12px mark below stands in for the word there and only there:
+            `.tnx-hdr-btn-mark` is display:none above 900px, so the desktop bar keeps
+            its width. A magnifier because on a phone the palette is what you search
+            and ask with ("Search actions, or ask"); it is the Inspector rail's Search
+            ring and handle redrawn on the header's 12-unit grid, at the account mark's
+            1.3 stroke. tests/e2e/header-phone.spec.ts holds it.
           */}
           <button
             type="button"
@@ -416,6 +426,21 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
             // palette's door; it does not have a chord of its own.
             title="Shortcuts and commands"
           >
+            <svg
+              className="tnx-hdr-btn-mark"
+              width={12}
+              height={12}
+              viewBox="0 0 12 12"
+              aria-hidden
+              focusable="false"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.3}
+              strokeLinecap="round"
+            >
+              <circle cx="5.1" cy="5.1" r="3.15" />
+              <path d="M7.45 7.45 10.3 10.3" />
+            </svg>
             <span className="tnx-hdr-btn-label">SHORTCUTS</span>
           </button>
 
