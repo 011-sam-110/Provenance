@@ -20,6 +20,10 @@
 // reads the film's clock. A card that first appears during a film fetches its picture
 // then, so that picture can be newer than the film's clock; its age then reads
 // "just now".
+//
+// OPENED FROM AN ICON (previews off). With `onClose` the card is wrapped, and the wrapper
+// is what the overlay stands on the map: the link as ever, and beside it a sibling
+// close button (never a button inside the link). Without `onClose` nothing changes.
 
 import {
   cardMeta,
@@ -31,6 +35,7 @@ import {
 } from "@/lib/eye/cameras";
 import type { EyeClock } from "@/lib/eye/motion";
 import type { cameraRoadTileWords } from "@/lib/roads/nearCamera";
+import { closeLabel } from "@/lib/eye/previews";
 import styles from "./eye.module.css";
 
 /** The clips on screen in a film, moved on by stepClips. */
@@ -134,6 +139,9 @@ async function fetchPicture(cam: NearCamera, media: "clip" | "still", signal: Ab
 
 export class CameraCard {
   readonly el: HTMLAnchorElement;
+  /** The wrapper holding the link and its close button, when opened from an icon. */
+  private readonly wrap: HTMLDivElement | null = null;
+  private readonly closeBtn: HTMLButtonElement | null = null;
   private readonly frame: HTMLDivElement;
   private readonly chip: HTMLElement;
   private readonly meta: HTMLElement;
@@ -156,7 +164,7 @@ export class CameraCard {
 
   constructor(
     private readonly cam: NearCamera,
-    opts: { phone: boolean; clock: EyeClock; onMedia: () => void },
+    opts: { phone: boolean; clock: EyeClock; onMedia: () => void; onClose?: () => void },
   ) {
     this.phone = opts.phone;
     this.clock = opts.clock;
@@ -193,6 +201,28 @@ export class CameraCard {
     stalk.className = styles.stalk;
     el.append(plate, stalk);
 
+    if (opts.onClose) {
+      const onClose = opts.onClose;
+      const wrap = document.createElement("div");
+      wrap.className = styles.camOpen;
+      const close = document.createElement("button");
+      close.type = "button";
+      close.className = styles.camClose;
+      close.setAttribute("aria-label", closeLabel(cam.name));
+      const face = document.createElement("span");
+      face.className = styles.camCloseFace;
+      face.textContent = "\u00d7";
+      close.append(face);
+      // The map also listens for a click (a vessel pick): closing a card is not one.
+      close.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onClose();
+      });
+      wrap.append(el, close);
+      this.wrap = wrap;
+      this.closeBtn = close;
+    }
+
     void this.load(preferredMedia(cam, this.film));
   }
 
@@ -219,6 +249,16 @@ export class CameraCard {
     this.road.dataset.tone = words.tone;
     this.road.title = words.title;
     this.road.hidden = false;
+  }
+
+  /** What the overlay stands on the map: the wrapper when there is a close button, else the link. */
+  get node(): HTMLElement {
+    return this.wrap ?? this.el;
+  }
+
+  /** Move focus to the close button (an opened card). */
+  focusClose(): void {
+    this.closeBtn?.focus();
   }
 
   /** What the card shows now, or null while it loads. */

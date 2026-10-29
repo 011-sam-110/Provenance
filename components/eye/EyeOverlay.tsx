@@ -28,6 +28,13 @@
 // detail panel (DetailPanel.tsx) with a ring under the mark. Only the selection and the
 // panel's content are React state, and they change on a click or a feed refresh, never
 // per frame. A recording or a film (record=1, clock=manual) is not interactive at all.
+//
+// PREVIEWS OFF (the switch in EyeApp). A camera is a CameraIcon on its spot and fetches
+// nothing; a tap opens that one camera's card, with a close button, in its place. One card
+// is open at a time. It is closed by its button, by Esc, or when its spot leaves the
+// frame. The open card lives in `cards` like any card, so the clips, the ages and the
+// cleanup treat it alike. Switching clears every mark and places again: it does NOT
+// fetch the feeds again, because `previews` is read through a ref, not an effect input.
 
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
@@ -38,6 +45,7 @@ import type { EyeTarget } from "@/lib/eye/places";
 import { cameraCredits, cameraLedgerRow, clipsToPlay, nearCameras, type NearCamera, type PlayingCandidate } from "@/lib/eye/cameras";
 import {
   GAP,
+  cardBox,
   placeCards,
   placeTags,
   placementOrder,
@@ -46,6 +54,7 @@ import {
   type Frame,
   type TagCandidate,
 } from "@/lib/eye/declutter";
+import { ICON_PHONE, ICON_WIDE, cardBoxBelow, openCardSide } from "@/lib/eye/previews";
 import {
   AIRCRAFT_CREDIT,
   aircraftLedgerRow,
@@ -81,6 +90,7 @@ import type { LedgerRow } from "@/lib/eye/wording";
 import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { CAMERA_ROAD_MAX, cameraRoadParam, cameraRoadTileWords, type CameraRoad } from "@/lib/roads/nearCamera";
+import { CameraIcon } from "./cameraIcon";
 import { Tag, tagSize } from "./tag";
 import DetailPanel, { type AlsoHere, type DetailSubject } from "./DetailPanel";
 
@@ -228,6 +238,12 @@ interface Props {
    * every age reads it, no feed is fetched again, and the cards' clips step with it.
    */
   clock: EyeClock;
+  /**
+   * Camera pictures on (the default) or off. Off, each camera is an icon that fetches
+   * nothing and a tap opens its card. Read through a ref: a change clears the marks and
+   * places again, and never refetches the feeds.
+   */
+  previews: boolean;
   onReport: (r: OverlayReport) => void;
   /** Filled with "place the cards and tags now", for the record script's frame-by-frame clock. */
   placeRef?: React.MutableRefObject<(() => void) | null>;
@@ -250,6 +266,13 @@ interface State {
   tags: Map<string, Tag>;
   /** Each camera's road (/api/camera-road), by camera id; null until it answers. */
   roads: Map<string, CameraRoad> | null;
+  /** Previews off: a camera's icon on its spot, until its card is opened. */
+  icons: Map<string, { icon: CameraIcon; marker: maplibregl.Marker }>;
+  /** Previews off: the camera whose card is open (it is in `cards`), if any. */
+  open: string | null;
+  openSide: "above" | "below";
+  /** A camera link's own camera has had its one opening. */
+  pinnedOpened: boolean;
 }
 
 /** What the detail panel shows: the mark, its neighbours and, when it left the report, since when. */
@@ -267,7 +290,7 @@ interface PanelApi {
 }
 const NO_API: PanelApi = { close() {}, pick() {}, layout() {} };
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, onReport, placeRef }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, onReport, placeRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -280,9 +303,18 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     cards: new Map(),
     tags: new Map(),
     roads: null,
+    icons: new Map(),
+    open: null,
+    openSide: "above",
+    pinnedOpened: false,
   });
   const reportRef = useRef(onReport);
   reportRef.current = onReport;
+  // Not an input of the main effect below: a change must not fetch four feeds again.
+  const previewsRef = useRef(previews);
+  previewsRef.current = previews;
+  /** Filled by the main effect: clear every mark, then place again. */
+  const resetMarks = useRef<() => void>(() => {});
   const pinned = target.kind === "camera" ? target.cameraId : null;
   // A recording or a film is a frame, not a tool: nothing in it can be clicked.
   const interactive = !record && !clock.film;
@@ -526,6 +558,14 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     ensureLayers.current();
   }, [map, styleEpoch]);
 
+  // The switch changed: every card and icon goes, and the marks are placed again.
+  const shownPreviews = useRef(previews);
+  useEffect(() => {
+    if (shownPreviews.current === previews) return;
+    shownPreviews.current = previews;
+    resetMarks.current();
+  }, [previews]);
+
   useEffect(() => {
     let disposed = false;
     const s = state.current;
@@ -561,6 +601,102 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote });
     };
 
+    // --- previews off: icons, and one open card ---------------------------------------
+    const iconSize = portrait ? ICON_PHONE : ICON_WIDE;
+
+    /** Take the open card's marker off the map and forget it. Does not place again. */
+    const dropOpen = () => {
+      const id = s.open;
+      if (!id) return;
+      const entry = s.cards.get(id);
+      if (entry) {
+        entry.marker.remove();
+        entry.card.destroy();
+        s.cards.delete(id);
+      }
+      s.open = null;
+    };
+
+    /** Stand a card's wrapper (or link) on its camera's spot, above it or hanging below. */
+    const standOpen = (card: CameraCard, cam: NearCamera, side: "above" | "below") => {
+      card.node.dataset.side = side;
+      return new maplibregl.Marker({ element: card.node, anchor: side === "below" ? "top" : "bottom" })
+        .setLngLat([cam.lon, cam.lat])
+        .addTo(map);
+    };
+
+    /**
+     * Previews off. The pinned camera opens once; the open card stands first (above its
+     * camera, or below near the top of the frame) and keeps its room; the other cameras
+     * get icons through placeCards. Returns what the ledger counts: the icons and the card.
+     */
+    const placeOff = (
+      cams: NearCamera[],
+      camCands: { id: string; x: number; y: number }[],
+      centre: { x: number; y: number },
+      frame: Frame,
+      taken: Box[],
+    ): number => {
+      if (pinned && !s.pinnedOpened && cams.some((c) => c.id === pinned)) {
+        s.pinnedOpened = true;
+        s.open = pinned;
+      }
+      if (s.open) {
+        const id = s.open;
+        const cand = camCands.find((c) => c.id === id);
+        const cam = cams.find((c) => c.id === id);
+        // Gone from the list, or its spot has left the frame: the card closes.
+        const inView =
+          cand != null &&
+          Number.isFinite(cand.x) &&
+          Number.isFinite(cand.y) &&
+          cand.x >= frame.side &&
+          cand.x <= frame.width - (frame.right ?? frame.side) &&
+          cand.y >= frame.top &&
+          cand.y <= frame.height - frame.bottom;
+        if (!cand || !cam || !inView) {
+          dropOpen();
+        } else {
+          const side = openCardSide(cand.x, cand.y, size, frame, taken);
+          const entry = s.cards.get(id);
+          if (!entry) {
+            const card = new CameraCard(cam, { phone: portrait, clock, onMedia: clipsChanged, onClose: () => closeOpen(true) });
+            card.el.style.setProperty("--w", `${size.width}px`);
+            card.el.style.setProperty("--stalk", `${size.stalk}px`);
+            card.node.style.setProperty("--w", `${size.width}px`);
+            card.node.style.setProperty("--stalk", `${size.stalk}px`);
+            const road = s.roads?.get(cam.id);
+            if (road) card.setRoad(cameraRoadTileWords(road, clock.now()));
+            s.cards.set(id, { card, marker: standOpen(card, cam, side) });
+            s.openSide = side;
+          } else if (side !== s.openSide) {
+            // The same card, hung on the other side of its camera.
+            entry.marker.remove();
+            s.cards.set(id, { card: entry.card, marker: standOpen(entry.card, cam, side) });
+            s.openSide = side;
+          }
+          taken.push(side === "below" ? cardBoxBelow(cand.x, cand.y, size) : cardBox(cand.x, cand.y, size));
+        }
+      }
+
+      const rest = camCands.filter((c) => c.id !== s.open);
+      const placedIcons = placeCards(placementOrder(rest, centre, new Set(s.icons.keys()), null), iconSize, frame, iconSize.max, taken);
+      const keepIcons = new Set(placedIcons.map((p) => p.id));
+      for (const [id, entry] of s.icons) {
+        if (keepIcons.has(id)) continue;
+        entry.marker.remove();
+        s.icons.delete(id);
+      }
+      for (const p of placedIcons) {
+        if (s.icons.has(p.id)) continue;
+        const cam = cams.find((c) => c.id === p.id)!;
+        const icon = new CameraIcon(cam, { onOpen: openCam });
+        const marker = new maplibregl.Marker({ element: icon.el, anchor: "bottom" }).setLngLat([cam.lon, cam.lat]).addTo(map);
+        s.icons.set(p.id, { icon, marker });
+      }
+      return placedIcons.length + (s.open ? 1 : 0);
+    };
+
     const place = () => {
       if (disposed) return;
       const box = map.getContainer();
@@ -580,14 +716,19 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const p = map.project([c.lon, c.lat]);
         return { id: c.id, x: p.x, y: p.y };
       });
+      // Previews off: icons, and the one open card, take their room first. The cards below
+      // are then given no candidates, and the open card is kept.
+      const on = previewsRef.current;
+      const offShown = on ? 0 : placeOff(cams, camCands, centre, frame, taken);
       const placed = placeCards(
-        placementOrder(camCands, centre, new Set(s.cards.keys()), pinned),
+        placementOrder(on ? camCands : [], centre, new Set(s.cards.keys()), pinned),
         size,
         frame,
         size.max,
         taken,
       );
       const keepCards = new Set(placed.map((p) => p.id));
+      if (s.open) keepCards.add(s.open);
       for (const [id, entry] of s.cards) {
         if (keepCards.has(id)) continue;
         entry.marker.remove();
@@ -635,7 +776,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const keepTags = new Set(tagPlaced.map((t) => t.id));
       const tagged = (kind: Item["kind"]) => tagPlaced.filter((t) => byId.get(t.id)?.kind === kind);
       labelled = {
-        cams: placed.length,
+        cams: placed.length + offShown,
         ships: ships.filter((v) => keepTags.has(v.id)),
         planes: tagged("plane").length,
         roads: tagged("road").length,
@@ -688,6 +829,51 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         clipsQueued = false;
         playClips();
       });
+    };
+
+    /** Close the open card; by its button or Esc, focus goes back to its icon. */
+    const closeOpen = (focusIcon: boolean) => {
+      const id = s.open;
+      if (!id || disposed) return;
+      dropOpen();
+      placeNow();
+      if (focusIcon) s.icons.get(id)?.icon.focus();
+    };
+    /** An icon was tapped: its card opens on its spot, and any other open card closes. */
+    const openCam = (id: string) => {
+      if (disposed || previewsRef.current || s.open === id) return;
+      dropOpen();
+      const icon = s.icons.get(id);
+      if (icon) {
+        icon.marker.remove();
+        s.icons.delete(id);
+      }
+      s.open = id;
+      placeNow();
+      requestAnimationFrame(() => s.cards.get(id)?.card.focusClose());
+    };
+    // On `document`, so it runs before the detail panel's `window` listener below: one Esc
+    // closes the open card, and the prevented default keeps the panel open for the next.
+    const onCardKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || !s.open) return;
+      e.preventDefault();
+      closeOpen(true);
+    };
+    document.addEventListener("keydown", onCardKey);
+    // The switch changed: nothing stays, and the link's own camera has had its turn.
+    resetMarks.current = () => {
+      if (disposed) return;
+      for (const { card, marker } of s.cards.values()) {
+        marker.remove();
+        card.destroy();
+      }
+      s.cards.clear();
+      for (const { marker } of s.icons.values()) marker.remove();
+      s.icons.clear();
+      s.open = null;
+      s.pinnedOpened = true;
+      releaseCardMedia();
+      placeNow();
     };
 
     // --- when to place --------------------------------------------------------
@@ -982,6 +1168,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
 
     return () => {
       disposed = true;
+      resetMarks.current = () => {};
+      document.removeEventListener("keydown", onCardKey);
       if (placeRef?.current === placeNow) placeRef.current = null;
       map.off("moveend", onMoveEnd);
       map.off("move", onMove);
@@ -1012,6 +1200,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         card.destroy();
       }
       s.cards.clear();
+      for (const { marker } of s.icons.values()) marker.remove();
+      s.icons.clear();
+      s.open = null;
       for (const tag of s.tags.values()) tag.remove();
       s.tags.clear();
       releaseCardMedia();
