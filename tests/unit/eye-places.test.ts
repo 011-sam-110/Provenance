@@ -9,6 +9,7 @@ import {
   EYE_PLACES,
   consoleHref,
   eyeCameraHref,
+  eyeLinkQuery,
   eyePlaceHref,
   eyeSpotHref,
   parseEyeLink,
@@ -89,6 +90,36 @@ describe("parseEyeLink", () => {
     expect(parse("/eye?cam=%3Cscript%3E&lat=51.5&lon=-0.12").kind).toBe("spot");
     expect(parse("/eye?cam=no-colon&lat=51.5&lon=-0.12").kind).toBe("spot");
   });
+
+  it("opens a place link that also names a view at that view, under the place's name", () => {
+    const t = parse("/eye?place=tower-bridge&lat=51.50531&lon=-0.08056&z=15.7&heading=247&tilt=48");
+    expect(t).toEqual({
+      kind: "place",
+      place: EYE_PLACES.find((p) => p.id === "tower-bridge"),
+      view: { lat: 51.50531, lon: -0.08056, zoom: 15.7, tilt: 48, heading: 247 },
+    });
+    expect(t.kind === "place" && t.place.name).toBe("Tower Bridge");
+  });
+
+  it("frames what such a link leaves out as the place is framed, for the screen's shape", () => {
+    const tower = EYE_PLACES.find((p) => p.id === "tower-bridge")!;
+    const bare = "/eye?place=tower-bridge&lat=51.5&lon=-0.08";
+    expect(parse(bare).view).toEqual({ lat: 51.5, lon: -0.08, zoom: tower.wide.zoom, tilt: tower.wide.tilt, heading: tower.wide.heading });
+    expect(parse(bare, true).view).toEqual({ lat: 51.5, lon: -0.08, zoom: tower.tall.zoom, tilt: tower.tall.tilt, heading: tower.tall.heading });
+  });
+
+  it("clamps such a link as it clamps a spot, and ignores a broken position", () => {
+    const far = parse("/eye?place=westminster&lat=51.5&lon=-0.12&z=3&heading=-30&tilt=88");
+    expect(far.view).toEqual({ lat: 51.5, lon: -0.12, zoom: EYE_MIN_ZOOM, tilt: EYE_MAX_TILT, heading: 330 });
+    // A broken position is no position: the place opens as framed by hand.
+    expect(parse("/eye?place=westminster&lat=abc&lon=-0.12")).toEqual(parse("/eye?place=westminster"));
+    expect(parse("/eye?place=westminster&lat=91&lon=0")).toEqual(parse("/eye?place=westminster"));
+  });
+
+  it("leaves a bare place link as it was", () => {
+    const t = parse("/eye?place=piccadilly");
+    expect(t.kind === "place" && t.view).toEqual(EYE_PLACES.find((p) => p.id === "piccadilly")!.wide);
+  });
 });
 
 describe("links", () => {
@@ -117,6 +148,26 @@ describe("links", () => {
     expect(t.kind).toBe("camera");
     expect(t.view.lat).toBe(51.50127);
     expect(t.view.lon).toBe(-0.12397);
+  });
+
+  it("eyeLinkQuery reopens the same view for a place, a camera and a spot", () => {
+    const moved = { lat: 51.50531234, lon: -0.08056789, zoom: 15.7123, tilt: 47.6, heading: -113.2 };
+    const rounded = { lat: 51.50531, lon: -0.08057, zoom: 15.71, tilt: 48, heading: 247 };
+    const tower = EYE_PLACES.find((p) => p.id === "tower-bridge")!;
+    const toLink = (q: string) => new URLSearchParams(q);
+
+    const place = eyeLinkQuery({ kind: "place", place: tower, view: tower.wide }, moved);
+    expect(place).toBe("place=tower-bridge&lat=51.50531&lon=-0.08057&z=15.71&heading=247&tilt=48");
+    expect(parseEyeLink(toLink(place), false)).toEqual({ kind: "place", place: tower, view: rounded });
+
+    const cam = "tfl:JamCams_00001.04227";
+    const camera = eyeLinkQuery({ kind: "camera", cameraId: cam, view: tower.wide }, moved);
+    expect(camera.startsWith("cam=")).toBe(true);
+    expect(parseEyeLink(toLink(camera), false)).toEqual({ kind: "camera", cameraId: cam, view: rounded });
+
+    const spot = eyeLinkQuery({ kind: "spot", view: tower.wide }, moved);
+    expect(spot).toBe("lat=51.50531&lon=-0.08057&z=15.71&heading=247&tilt=48");
+    expect(parseEyeLink(toLink(spot), false)).toEqual({ kind: "spot", view: rounded });
   });
 
   it("the way back is the console's own link format, at the same spot", () => {

@@ -8,9 +8,12 @@
 // READ ONCE, IN THE BROWSER, AFTER MOUNT. app/(console)/app/page.tsx must not take
 // `searchParams` (tests/unit/console-static.test.ts says why), so ConsoleShell reads
 // the flag from window.location in its boot effect and then drops it from the
-// address. The flag only opens the rail. It writes no layer, no board and nothing to
+// address. The flags only open the rail and offer the way back to God's eye view
+// (`eye=`, lib/eye/places.ts). They write no layer, no board and nothing to
 // localStorage, so the variant spine (lib/variants) stays the one owner of layer
 // state.
+
+import { EYE_RETURN_PARAM } from "@/lib/eye/places";
 
 export const SOURCES_PARAM = "sources";
 export const SOURCES_OPEN = "open";
@@ -21,12 +24,14 @@ export function wantsSourcesOpen(params: URLSearchParams): boolean {
 }
 
 /**
- * The same address without the flag, so a reload or a copied link does not open the
- * rail again. `search` is `location.search` (with or without its "?").
+ * The same address without the arrival flags (`sources=` and `eye=`), so a reload or a
+ * copied link does not open the rail again or carry the way back. `search` is
+ * `location.search` (with or without its "?").
  */
-export function withoutSourcesFlag(pathname: string, search: string, hash = ""): string {
+export function withoutArrivalFlags(pathname: string, search: string, hash = ""): string {
   const params = new URLSearchParams(search);
   params.delete(SOURCES_PARAM);
+  params.delete(EYE_RETURN_PARAM);
   const qs = params.toString();
   return `${pathname}${qs ? `?${qs}` : ""}${hash}`;
 }

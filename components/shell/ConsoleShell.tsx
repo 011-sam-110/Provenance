@@ -57,7 +57,9 @@ import { isFirstRun, seedBoard } from "@/lib/console/bootSeed";
 import "@/lib/console/widgets";
 import { sourcesRailStore } from "@/lib/console/sourcesRail";
 import { railTabStore } from "@/lib/console/railTab";
-import { wantsSourcesOpen, withoutSourcesFlag } from "@/lib/console/sourcesLink";
+import { wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
+import { eyeReturnStore } from "@/lib/console/eyeReturn";
+import { EYE_RETURN_PARAM, parseEyeReturn } from "@/lib/eye/places";
 import { actionFor, chordOf, keymapStore } from "@/lib/shell/keymap";
 import { isDrawing, startDraw } from "@/lib/map/aoi";
 import { getMapInstance } from "@/lib/map/instance";
@@ -148,11 +150,18 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // `sources=open` (God's eye view's Sources button, the landing's "All sources"):
     // open the Sources rail on its Sources tab, then drop the flag so a reload or a
     // copied link does not open it again. It writes no layer and nothing to storage.
-    if (wantsSourcesOpen(params)) {
+    // `eye=` (God's eye view's Sources link) is the way back to that view: checked and
+    // rebuilt by parseEyeReturn, held in memory for this visit (lib/console/eyeReturn.ts).
+    const back = parseEyeReturn(params.get(EYE_RETURN_PARAM));
+    if (back) eyeReturnStore.set(back);
+    const opensSources = wantsSourcesOpen(params);
+    if (opensSources) {
       railTabStore.set("sources");
       sourcesRailStore.setOpen(true);
+    }
+    if (opensSources || params.has(EYE_RETURN_PARAM)) {
       const { pathname, search, hash } = window.location;
-      window.history.replaceState(window.history.state, "", withoutSourcesFlag(pathname, search, hash));
+      window.history.replaceState(window.history.state, "", withoutArrivalFlags(pathname, search, hash));
     }
     registerServiceWorker(); // production-only; a no-op under `next dev`
 
