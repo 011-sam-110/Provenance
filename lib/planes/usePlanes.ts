@@ -47,7 +47,7 @@ export function snapshotInstant(body: { fetchedAt?: unknown }): number | null {
  * client-side across polls (the server only knows "now"), capped per plane and
  * pruned when a plane leaves coverage. Keeps the last good data on fetch error.
  */
-export function usePlanes(): PlanesLayer {
+export function usePlanes(opts: { unscoped?: boolean } = {}): PlanesLayer {
   const [layer, setLayer] = useState<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });
   const historyRef = useRef<Map<string, TrailPoint[]>>(new Map());
   const lastGoodRef = useRef<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });
@@ -106,8 +106,14 @@ export function usePlanes(): PlanesLayer {
   // unrestricted when World has it on and cropped to the rings of the areas that
   // asked for it otherwise. The map-rail Draw filter still applies on top of both.
   // See lib/shell/sourceScope.ts.
+  //
+  // `unscoped` is the Sources rail's PREVIEW of a switched-off layer
+  // (lib/shell/sourcePreview.ts): the source is on nowhere, so its rings are an empty
+  // list and the crop would return nothing. The preview shows the layer as it would
+  // look with World switched on, so it skips the per-source rings and keeps the rest.
   const scope = useScope();
-  const rings = useSourceScopes("planes");
+  const sourceRings = useSourceScopes("planes");
+  const rings = opts.unscoped ? null : sourceRings;
   return useMemo(() => {
     const objects = filterToScopes(filterToScope(layer.objects, scope, (o) => o), rings, (o) => o);
     if (objects === layer.objects) return layer; // unrestricted: same array, same identity

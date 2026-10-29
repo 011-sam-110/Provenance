@@ -42,13 +42,17 @@ export function satellitesPayloadOk(d: unknown): boolean {
  * @param group  CelesTrak group (default "visual" — bright, recognisable sats).
  * @param stepMs Propagation cadence in ms (default 1000; lower = smoother/heavier).
  */
-export function useSatellites(group = "visual", stepMs = 1000): WorldObject[] {
-  return useSatelliteFeed(group, stepMs).objects;
+export function useSatellites(group = "visual", stepMs = 1000, opts: { unscoped?: boolean } = {}): WorldObject[] {
+  return useSatelliteFeed(group, stepMs, opts).objects;
 }
 
 /** `useSatellites` plus whether the TLE load actually succeeded, for callers that must
  *  tell "still loading" from "CelesTrak did not answer". */
-export function useSatelliteFeed(group = "visual", stepMs = 1000): { objects: WorldObject[]; load: SatelliteLoad } {
+export function useSatelliteFeed(
+  group = "visual",
+  stepMs = 1000,
+  opts: { unscoped?: boolean } = {},
+): { objects: WorldObject[]; load: SatelliteLoad } {
   const [objects, setObjects] = useState<WorldObject[]>([]);
   const [load, setLoad] = useState<SatelliteLoad>("loading");
   const builtRef = useRef<Built[]>([]);
@@ -136,8 +140,13 @@ export function useSatelliteFeed(group = "visual", stepMs = 1000): { objects: Wo
   // unrestricted when World has it on and cropped to the rings of the areas that
   // asked for it otherwise. The map-rail Draw filter still applies on top of both.
   // See lib/shell/sourceScope.ts.
+  //
+  // `unscoped` is the Sources rail's PREVIEW of a switched-off layer
+  // (lib/shell/sourcePreview.ts): the source is on nowhere, so its rings are an empty
+  // list and the crop would return nothing. See usePlanes.
   const scope = useScope();
-  const rings = useSourceScopes("satellites");
+  const sourceRings = useSourceScopes("satellites");
+  const rings = opts.unscoped ? null : sourceRings;
   const scoped = useMemo(
     () => filterToScopes(filterToScope(objects, scope, (o) => o), rings, (o) => o),
     [objects, scope, rings],
