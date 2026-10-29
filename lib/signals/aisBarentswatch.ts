@@ -1,5 +1,6 @@
 import type { AisVessel } from "@/lib/signals/ais";
 import { shipTypeLabel } from "@/lib/signals/aisDigitraffic";
+import { cleanCallSign, draughtFromTenths, etaFromIso, validImo } from "@/lib/signals/aisStatic";
 
 // Vessel positions from BarentsWatch Live AIS (Kystverket, the Norwegian Coastal
 // Administration), licensed NLOD. Covers the Norwegian economic zone, Svalbard and
@@ -12,13 +13,15 @@ import { shipTypeLabel } from "@/lib/signals/aisDigitraffic";
 // token is held until a minute before it expires. One POST to /v1/latest/combined
 // returns the newest message per MMSI inside a polygon since a given time; the field
 // names follow the published OpenAPI document
-// (live.ais.barentswatch.no/live/openapi/ais/openapi.json, AisComboSimple).
+// (live.ais.barentswatch.no/live/openapi/ais/openapi.json). Only the "Full" model
+// (AisComboFull) carries call sign, IMO number, size, draught, destination and ETA; the
+// "Simple" one this used to ask for has none of them.
 
 export const BW_TOKEN_URL = "https://id.barentswatch.no/connect/token";
 export const BW_LATEST_URL = "https://live.ais.barentswatch.no/v1/latest/combined";
 export const BARENTSWATCH_CREDIT = "AIS data: Kystverket / BarentsWatch, NLOD";
 
-/** One row of AisComboSimple. */
+/** One row of AisComboFull (a superset of AisComboSimple). */
 export interface BwAis {
   mmsi?: number;
   name?: string | null;
@@ -30,13 +33,23 @@ export interface BwAis {
   navigationalStatus?: number | null;
   shipType?: number | null;
   msgtime?: string;
+  callSign?: string | null;
+  imoNumber?: number | null;
+  /** Metres, bow to stern and port to starboard. */
+  shipLength?: number | null;
+  shipWidth?: number | null;
+  /** Tenths of a metre. */
+  draught?: number | null;
+  destination?: string | null;
+  /** ISO date-time. */
+  eta?: string | null;
 }
 
 /** Pure: the request body for one bounding box [[swLat,swLon],[neLat,neLon]], since `sinceMs`. */
 export function bwRequestBody(bbox: [[number, number], [number, number]], sinceMs: number) {
   const [[s, w], [n, e]] = bbox;
   return {
-    modelType: "Simple",
+    modelType: "Full",
     modelFormat: "Json",
     since: new Date(sinceMs).toISOString(),
     geometry: { type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
@@ -50,6 +63,13 @@ export function normalizeBarentswatch(rows: BwAis[], now: number, windowMs: numb
     const t = Date.parse(r.msgtime ?? "");
     if (!r.mmsi || !Number.isFinite(t) || now - t > windowMs) continue;
     if (typeof r.latitude !== "number" || typeof r.longitude !== "number") continue;
+    const callSign = cleanCallSign(r.callSign);
+    const imo = validImo(r.imoNumber);
+    const lengthM = typeof r.shipLength === "number" && r.shipLength > 0 ? r.shipLength : undefined;
+    const beamM = typeof r.shipWidth === "number" && r.shipWidth > 0 ? r.shipWidth : undefined;
+    const draughtM = draughtFromTenths(r.draught);
+    const destination = r.destination?.trim() || undefined;
+    const eta = etaFromIso(r.eta);
     out.push({
       MMSI: r.mmsi,
       ShipName: r.name?.trim() || undefined,
@@ -62,6 +82,13 @@ export function normalizeBarentswatch(rows: BwAis[], now: number, windowMs: numb
       time_utc: new Date(t).toISOString(),
       source: "BarentsWatch",
       shipType: shipTypeLabel(r.shipType),
+      ...(destination ? { destination } : {}),
+      ...(callSign ? { callSign } : {}),
+      ...(imo ? { imo } : {}),
+      ...(lengthM ? { lengthM } : {}),
+      ...(beamM ? { beamM } : {}),
+      ...(draughtM ? { draughtM } : {}),
+      ...(eta ? { eta } : {}),
     });
   }
   return out;

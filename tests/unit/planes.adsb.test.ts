@@ -13,11 +13,14 @@
  * which carries `true_heading` but NO `track`.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   adsbRowToWorldObject,
   dedupeById,
   normalizeAdsbRows,
+  positionSourceOf,
   pullToObjects,
   TYPE_BATCHES,
   TYPE_REQUESTS,
@@ -427,5 +430,61 @@ describe("TYPE_BATCHES", () => {
 
   it("builds the documented comma-separated type URL", () => {
     expect(typeBatchUrl(["A320", "B738"])).toBe("https://api.adsb.lol/v2/type/A320,B738");
+  });
+});
+
+// --- what the God's eye view's panel reads ------------------------------------
+
+// ONE verbatim row of https://api.adsb.lol/v2/type/A20N, fetched 28 Oct 2026 (from a
+// home IP, not prod), with the fields the panel reads: type, emergency,
+// nav_altitude_mcp and seen_pos.
+const EZY78XP = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/adsb-row-ezy78xp.json"), "utf8")).row as AdsbRow;
+
+describe("positionSourceOf", () => {
+  it("names where a position came from, from adsb.lol's own type", () => {
+    expect(positionSourceOf("adsb_icao")).toBe("adsb");
+    expect(positionSourceOf("adsb_icao_nt")).toBe("adsb");
+    expect(positionSourceOf("adsb_other")).toBe("adsb");
+    expect(positionSourceOf("adsr_icao")).toBe("adsr");
+    expect(positionSourceOf("tisb_icao")).toBe("tisb");
+    expect(positionSourceOf("tisb_other")).toBe("tisb");
+    expect(positionSourceOf("mlat")).toBe("mlat");
+    expect(positionSourceOf("adsc")).toBe("adsc");
+  });
+  it("says other for a type it does not know, and nothing for no type", () => {
+    expect(positionSourceOf("mode_s")).toBe("other");
+    expect(positionSourceOf("")).toBe("other");
+    expect(positionSourceOf(undefined)).toBeUndefined();
+  });
+});
+
+describe("adsbRowToWorldObject — the extras the panel reads", () => {
+  it("carries the position source, its age, and the selected altitude of a real row", () => {
+    const o = adsbRowToWorldObject(EZY78XP)!;
+    expect(o.id).toBe("plane:407568");
+    expect(o.meta!.posSource).toBe("adsb");
+    expect(o.meta!.posAgeS).toBe(0.3);
+    expect(o.meta!.selAltFt).toBe(2016);
+  });
+  it('leaves emergency out when the row says "none"', () => {
+    const o = adsbRowToWorldObject(EZY78XP)!;
+    expect("emergency" in o.meta!).toBe(false);
+  });
+  it("carries an emergency the aircraft sent, and an mlat position", () => {
+    const o = adsbRowToWorldObject({ ...EZY78XP, emergency: "general", type: "mlat" })!;
+    expect(o.meta!.emergency).toBe("general");
+    expect(o.meta!.posSource).toBe("mlat");
+  });
+  it("omits each extra the row does not carry", () => {
+    const o = adsbRowToWorldObject({ hex: "abc123", lat: 51, lon: 0, alt_baro: 3000 })!;
+    for (const k of ["posSource", "posAgeS", "emergency", "selAltFt"]) expect(k in o.meta!, k).toBe(false);
+  });
+  it("keeps a position age of 0 and rounds the age to a tenth and the altitude to a foot", () => {
+    const o = adsbRowToWorldObject({ ...EZY78XP, seen_pos: 0, nav_altitude_mcp: 2016.4 })!;
+    expect(o.meta!.posAgeS).toBe(0);
+    expect(o.meta!.selAltFt).toBe(2016);
+  });
+  it("adds no country: the file's reasoning stands", () => {
+    expect(adsbRowToWorldObject(EZY78XP)!.meta!.country).toBe("");
   });
 });

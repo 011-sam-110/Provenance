@@ -4,6 +4,7 @@ import { degraded, degradedWith, observed } from "@/lib/signals/outcome";
 import { recordCredentialRefusal } from "@/lib/sources/upstreamEvidence";
 import { DIGITRAFFIC_CREDIT, fetchDigitraffic, shipTypeLabel } from "@/lib/signals/aisDigitraffic";
 import { BARENTSWATCH_CREDIT, fetchBarentswatch } from "@/lib/signals/aisBarentswatch";
+import { cleanCallSign, etaFromParts, sizeFrom, validImo } from "@/lib/signals/aisStatic";
 
 // Real-time ship tracking at strategic chokepoints, from three feeds:
 //   AISStream.io  free WebSocket, the only free source for the Gulf, the Red Sea and
@@ -117,6 +118,18 @@ export interface AisVessel {
   /** Ship type, where the feed carries it (Digitraffic, BarentsWatch). */
   shipType?: string;
   destination?: string;
+  // What the ship's own static report carries (lib/signals/aisStatic.ts tidies each):
+  /** Call sign, without AIS's "@" padding. */
+  callSign?: string;
+  /** IMO number, only when its check digit holds. */
+  imo?: number;
+  /** Length and beam in metres, from the reference-point distances. */
+  lengthM?: number;
+  beamM?: number;
+  /** Draught in metres. */
+  draughtM?: number;
+  /** "MM-DD" or "MM-DDTHH:MMZ", UTC; AIS sends no year. */
+  eta?: string;
 }
 
 /** AIS navigational-status code → label (the common ones). */
@@ -176,6 +189,12 @@ export function vesselFeature(v: AisVessel): SignalFeature | null {
       source: v.source ?? "AISStream",
       ...(v.shipType ? { shipType: v.shipType } : {}),
       ...(v.destination ? { destination: v.destination } : {}),
+      ...(v.callSign ? { callSign: v.callSign } : {}),
+      ...(v.imo ? { imo: v.imo } : {}),
+      ...(v.lengthM ? { lengthM: v.lengthM } : {}),
+      ...(v.beamM ? { beamM: v.beamM } : {}),
+      ...(v.draughtM ? { draughtM: v.draughtM } : {}),
+      ...(v.eta ? { eta: v.eta } : {}),
     },
   };
 }
@@ -274,7 +293,7 @@ export function pruneHeard(heard: Map<number, { vessel: AisVessel; heardAt: numb
 // positions, and joined to a vessel's newest position when the snapshot is taken.
 
 /** What the stream is asked for. Both on every (re)connect. */
-export const AIS_MESSAGE_TYPES = ["PositionReport", "ShipStaticData"] as const;
+export const AIS_MESSAGE_TYPES = ["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport", "ShipStaticData", "StaticDataReport"] as const;
 
 /** Pure: the subscription frame AISStream expects within 3 s of the socket opening. */
 export function subscriptionMessage(key: string): string {
@@ -287,23 +306,88 @@ export const STATIC_TTL_MS = 6 * 3_600_000;
 export interface AisStatic {
   shipType?: string;
   destination?: string;
+  callSign?: string;
+  imo?: number;
+  lengthM?: number;
+  beamM?: number;
+  draughtM?: number;
+  eta?: string;
   heardAt: number;
 }
 
+/** The four reference-point distances AIS sends for a ship's size. */
+interface AisDimension {
+  A?: number | null;
+  B?: number | null;
+  C?: number | null;
+  D?: number | null;
+}
+
 /**
- * Pure: the useful part of a ShipStaticData message, or null when it has none. The
- * destination is typed in by the crew and padded with `@` by the protocol; empty
- * after trimming means none.
+ * Pure: the useful part of a ShipStaticData message (AIS message 5), or null when it
+ * has none. The destination is typed in by the crew and padded with `@` by the
+ * protocol; empty after trimming means none. AISStream's MaximumStaticDraught is already
+ * in metres (0 is "not sent"), unlike the tenths Digitraffic and BarentsWatch send.
  */
 export function staticFromMessage(
-  msg: { Type?: number | null; Destination?: string | null } | undefined,
+  msg:
+    | {
+        Type?: number | null;
+        Destination?: string | null;
+        ImoNumber?: number | null;
+        CallSign?: string | null;
+        Dimension?: AisDimension | null;
+        Eta?: { Month?: number | null; Day?: number | null; Hour?: number | null; Minute?: number | null } | null;
+        MaximumStaticDraught?: number | null;
+      }
+    | undefined,
   heardAt: number,
 ): AisStatic | null {
   if (!msg) return null;
   const shipType = shipTypeLabel(typeof msg.Type === "number" ? msg.Type : undefined);
   const destination = (msg.Destination ?? "").replace(/@+/g, " ").trim() || undefined;
-  if (!shipType && !destination) return null;
-  return { ...(shipType ? { shipType } : {}), ...(destination ? { destination } : {}), heardAt };
+  const callSign = cleanCallSign(msg.CallSign);
+  const imo = validImo(msg.ImoNumber);
+  const { lengthM, beamM } = sizeFrom(msg.Dimension?.A, msg.Dimension?.B, msg.Dimension?.C, msg.Dimension?.D);
+  const draughtM =
+    typeof msg.MaximumStaticDraught === "number" && msg.MaximumStaticDraught > 0 ? msg.MaximumStaticDraught : undefined;
+  const eta = etaFromParts(msg.Eta?.Month, msg.Eta?.Day, msg.Eta?.Hour, msg.Eta?.Minute);
+  if (!shipType && !destination && !callSign && !imo && !lengthM && !beamM && !draughtM && !eta) return null;
+  return {
+    ...(shipType ? { shipType } : {}),
+    ...(destination ? { destination } : {}),
+    ...(callSign ? { callSign } : {}),
+    ...(imo ? { imo } : {}),
+    ...(lengthM ? { lengthM } : {}),
+    ...(beamM ? { beamM } : {}),
+    ...(draughtM ? { draughtM } : {}),
+    ...(eta ? { eta } : {}),
+    heardAt,
+  };
+}
+
+/**
+ * Pure: the useful part of a Class B ship's static report (StaticDataReport, AIS message
+ * 24), part B: its ship type, call sign and size. Part A carries the name only, which
+ * the position messages already carry. Null when nothing is usable, so a part A
+ * message or an invalid part B changes nothing.
+ */
+export function staticFromClassB(
+  msg: { Valid?: boolean | null; ShipType?: number | null; CallSign?: string | null; Dimension?: AisDimension | null } | undefined,
+  heardAt: number,
+): AisStatic | null {
+  if (!msg || msg.Valid === false) return null;
+  const shipType = shipTypeLabel(typeof msg.ShipType === "number" ? msg.ShipType : undefined);
+  const callSign = cleanCallSign(msg.CallSign);
+  const { lengthM, beamM } = sizeFrom(msg.Dimension?.A, msg.Dimension?.B, msg.Dimension?.C, msg.Dimension?.D);
+  if (!shipType && !callSign && !lengthM && !beamM) return null;
+  return {
+    ...(shipType ? { shipType } : {}),
+    ...(callSign ? { callSign } : {}),
+    ...(lengthM ? { lengthM } : {}),
+    ...(beamM ? { beamM } : {}),
+    heardAt,
+  };
 }
 
 /** Pure: a vessel with its static data joined in. A feed's own value is never replaced. */
@@ -313,6 +397,12 @@ export function withStatic(v: AisVessel, s: AisStatic | undefined): AisVessel {
     ...v,
     ...(v.shipType || !s.shipType ? {} : { shipType: s.shipType }),
     ...(v.destination || !s.destination ? {} : { destination: s.destination }),
+    ...(v.callSign || !s.callSign ? {} : { callSign: s.callSign }),
+    ...(v.imo || !s.imo ? {} : { imo: s.imo }),
+    ...(v.lengthM || !s.lengthM ? {} : { lengthM: s.lengthM }),
+    ...(v.beamM || !s.beamM ? {} : { beamM: s.beamM }),
+    ...(v.draughtM || !s.draughtM ? {} : { draughtM: s.draughtM }),
+    ...(v.eta || !s.eta ? {} : { eta: s.eta }),
   };
 }
 
@@ -389,7 +479,8 @@ function connect(c: Collector) {
         MetaData?: { MMSI?: number; ShipName?: string; latitude?: number; longitude?: number; time_utc?: string };
         Message?: {
           PositionReport?: { Sog?: number; Cog?: number; TrueHeading?: number; NavigationalStatus?: number };
-          ShipStaticData?: { Type?: number; Destination?: string };
+          ShipStaticData?: Parameters<typeof staticFromMessage>[0];
+          StaticDataReport?: { ReportB?: Parameters<typeof staticFromClassB>[0] };
         };
       };
       // upstreamEvidence.ts wraps fetch() to catch 401/402/403s, which structurally
@@ -413,8 +504,16 @@ function connect(c: Collector) {
       }
       const mmsi = m.MetaData?.MMSI;
       if (m.MessageType === "ShipStaticData" && mmsi) {
-        const s = staticFromMessage(m.Message?.ShipStaticData, Date.now());
-        if (s) c.statics.set(mmsi, s);
+        const now = Date.now();
+        const s = staticFromMessage(m.Message?.ShipStaticData, now);
+        // Kept MERGED with what this ship sent before, so a Class B part never wipes a type 5.
+        if (s) c.statics.set(mmsi, { ...c.statics.get(mmsi), ...s, heardAt: now });
+        return;
+      }
+      if (m.MessageType === "StaticDataReport" && mmsi) {
+        const now = Date.now();
+        const s = staticFromClassB(m.Message?.StaticDataReport?.ReportB, now);
+        if (s) c.statics.set(mmsi, { ...c.statics.get(mmsi), ...s, heardAt: now });
         return;
       }
       if (m.MessageType !== "PositionReport" || !mmsi) return;

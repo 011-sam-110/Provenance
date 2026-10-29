@@ -30,6 +30,17 @@ export interface AisFeatureLike {
     heading?: string;
     shipType?: string;
     source?: string;
+    mmsi?: number;
+    /** The adapter's navigational status in words, or "—" for none. */
+    status?: string;
+    destination?: string;
+    callSign?: string;
+    imo?: number;
+    lengthM?: number;
+    beamM?: number;
+    draughtM?: number;
+    /** "MM-DD" or "MM-DDTHH:MMZ", UTC. */
+    eta?: string;
   };
 }
 
@@ -41,7 +52,24 @@ export interface PlaneLike {
   altKm?: number;
   heading?: number;
   label?: string;
-  meta?: { callsign?: string; typeCode?: string; onGround?: boolean; registration?: string };
+  meta?: {
+    callsign?: string;
+    typeCode?: string;
+    onGround?: boolean;
+    registration?: string;
+    velocityMs?: number | null;
+    verticalRateMs?: number | null;
+    squawk?: string;
+    typeDescription?: string;
+    typeLabel?: string;
+    categoryTrusted?: boolean;
+    /** Which network heard it; absent means adsb.lol. */
+    network?: string;
+    posSource?: string;
+    posAgeS?: number;
+    emergency?: string;
+    selAltFt?: number;
+  };
 }
 
 export interface Vessel {
@@ -59,6 +87,20 @@ export interface Vessel {
   rot: number;
   /** Where the one-minute line ends, or null when there is no course to draw. */
   ahead: [number, number] | null;
+  /** The bow's direction as the ship reports it, apart from its course. */
+  heading: number | null;
+  /** When the ship's last report was made, epoch ms (the feature's own time). */
+  reportedAt: number | null;
+  mmsi?: number;
+  /** Its navigational status in words, as the crew's transponder set it. */
+  status?: string;
+  destination?: string;
+  callSign?: string;
+  imo?: number;
+  lengthM?: number;
+  beamM?: number;
+  draughtM?: number;
+  eta?: string;
 }
 
 export interface Aircraft {
@@ -69,10 +111,29 @@ export interface Aircraft {
   feet: number | null;
   typeCode?: string;
   rot: number;
+  /** The ICAO address, from the id `plane:<hex>`. */
+  hex: string;
+  knots: number | null;
+  /** Feet a minute, to the nearest 10. */
+  fpm: number | null;
+  registration?: string;
+  typeDescription?: string;
+  squawk?: string;
+  network: "adsb.lol" | "adsb.fi";
+  /** The kind of aircraft ("Airliner"), and whether the aircraft broadcast it (else estimated). */
+  classLabel?: string;
+  classTrusted: boolean;
+  posSource?: string;
+  posAgeS?: number;
+  emergency?: string;
+  selAltFt?: number;
 }
 
 /** Above this a vessel is under way; at or below it, stopped (the console's own line). */
 export const MOVING_KNOTS = 0.5;
+/** Metres a second in one knot, and in one foot a minute: the adapter's own units, undone. */
+const KNOT_MS = 0.514444;
+const FPM_MS = 0.00508;
 /** AIS sends 102.3 kn for "speed not available". */
 const NO_SPEED_KNOTS = 102.2;
 /** One knot is 1,852 m an hour. */
@@ -99,6 +160,8 @@ export function toVessel(f: AisFeatureLike): Vessel | null {
   const course = readDegrees(p.course);
   const heading = readDegrees(p.heading);
   const moving = kn != null && kn > MOVING_KNOTS;
+  const reported = f.ts ? Date.parse(f.ts) : Number.NaN;
+  const status = p.status && p.status !== "\u2014" ? p.status : undefined;
   return {
     id: f.id,
     lat: f.lat,
@@ -111,20 +174,46 @@ export function toVessel(f: AisFeatureLike): Vessel | null {
     source: p.source ?? "AISStream",
     rot: (moving ? course : heading) ?? course ?? heading ?? 0,
     ahead: moving && course != null ? oneMinuteAhead(f.lat, f.lon, course, kn!) : null,
+    heading,
+    reportedAt: Number.isFinite(reported) ? reported : null,
+    ...(typeof p.mmsi === "number" ? { mmsi: p.mmsi } : {}),
+    ...(status ? { status } : {}),
+    ...(p.destination ? { destination: p.destination } : {}),
+    ...(p.callSign ? { callSign: p.callSign } : {}),
+    ...(typeof p.imo === "number" ? { imo: p.imo } : {}),
+    ...(typeof p.lengthM === "number" ? { lengthM: p.lengthM } : {}),
+    ...(typeof p.beamM === "number" ? { beamM: p.beamM } : {}),
+    ...(typeof p.draughtM === "number" ? { draughtM: p.draughtM } : {}),
+    ...(p.eta ? { eta: p.eta } : {}),
   };
 }
 
 export function toAircraft(p: PlaneLike): Aircraft | null {
   if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon) || p.meta?.onGround) return null;
-  const callsign = (p.meta?.callsign || p.label || p.meta?.registration || "").trim() || "Aircraft";
+  const m = p.meta ?? {};
+  const callsign = (m.callsign || p.label || m.registration || "").trim() || "Aircraft";
+  const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
   return {
     id: p.id,
     lat: p.lat,
     lon: p.lon,
     callsign,
     feet: typeof p.altKm === "number" && Number.isFinite(p.altKm) ? Math.round((p.altKm * 3280.84) / 50) * 50 : null,
-    ...(p.meta?.typeCode ? { typeCode: p.meta.typeCode } : {}),
+    ...(m.typeCode ? { typeCode: m.typeCode } : {}),
     rot: typeof p.heading === "number" && Number.isFinite(p.heading) ? p.heading : 0,
+    hex: p.id.replace(/^plane:/, ""),
+    knots: finite(m.velocityMs) ? Math.round(m.velocityMs / KNOT_MS) : null,
+    fpm: finite(m.verticalRateMs) ? Math.round(m.verticalRateMs / FPM_MS / 10) * 10 : null,
+    ...(m.registration ? { registration: m.registration } : {}),
+    ...(m.typeDescription ? { typeDescription: m.typeDescription } : {}),
+    ...(m.squawk ? { squawk: m.squawk } : {}),
+    network: m.network === "adsb.fi" ? "adsb.fi" : "adsb.lol",
+    ...(m.typeLabel ? { classLabel: m.typeLabel } : {}),
+    classTrusted: m.categoryTrusted === true,
+    ...(m.posSource ? { posSource: m.posSource } : {}),
+    ...(finite(m.posAgeS) ? { posAgeS: m.posAgeS } : {}),
+    ...(m.emergency ? { emergency: m.emergency } : {}),
+    ...(finite(m.selAltFt) ? { selAltFt: m.selAltFt } : {}),
   };
 }
 

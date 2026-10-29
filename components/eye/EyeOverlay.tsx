@@ -21,10 +21,19 @@
 //
 // ONE CLIP PLAYS WHILE THE VIEW MOVES. Three clips playing at once halved the moving
 // view's frames, one cost none (lib/eye/cameras.ts, clipsToPlay). At rest every clip plays.
+//
+// A VESSEL OR AN AIRCRAFT CAN BE CLICKED. A click on the map picks the nearest mark
+// within reach (lib/eye/pick.ts: every mark is projected to the screen and measured, the
+// GPU layer is never asked), a plate is a button for the same, and either opens the
+// detail panel (DetailPanel.tsx) with a ring under the mark. Only the selection and the
+// panel's content are React state, and they change on a click or a feed refresh, never
+// per frame. A recording or a film (record=1, clock=manual) is not interactive at all.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import { BUILDING_LAYER } from "@/lib/map/buildings";
+import { haversineKm } from "@/lib/geo/haversine";
+import { PICK_RADIUS, marksAround, pickMarks, type PickCandidate } from "@/lib/eye/pick";
 import type { EyeTarget } from "@/lib/eye/places";
 import { cameraCredits, cameraLedgerRow, clipsToPlay, nearCameras, type NearCamera, type PlayingCandidate } from "@/lib/eye/cameras";
 import {
@@ -73,6 +82,7 @@ import type { EyeClock } from "@/lib/eye/motion";
 import { CameraCard, releaseCardMedia } from "./cameraCard";
 import { CAMERA_ROAD_MAX, cameraRoadParam, cameraRoadTileWords, type CameraRoad } from "@/lib/roads/nearCamera";
 import { Tag, tagSize } from "./tag";
+import DetailPanel, { type AlsoHere, type DetailSubject } from "./DetailPanel";
 
 export interface OverlayReport {
   rows: LedgerRow[];
@@ -92,6 +102,7 @@ const SRC = {
   ahead: "eye-ship-ahead",
   planes: "eye-planes",
   streets: "eye-streets",
+  selected: "eye-selected",
 } as const;
 const LYR = {
   ring: "eye-cam-ring",
@@ -99,6 +110,8 @@ const LYR = {
   ahead: "eye-ship-ahead",
   ship: "eye-ship",
   plane: "eye-plane",
+  /** The ring under the selected vessel or aircraft, beneath the chevrons. */
+  selectedRing: "eye-selected-ring",
   // Road notices, bottom to top: a closure's white base, its rose bars, works dashes,
   // incident dots, then the rings of notices TfL gave no street line for.
   streetClosedBase: "eye-street-closed-base",
@@ -109,6 +122,8 @@ const LYR = {
 } as const;
 const IMG = { ship: "eye-chevron-ship", plane: "eye-chevron-plane" } as const;
 const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24", road: "#fb7185", incident: "#c4b5fd", bar: "#eef3f1" } as const;
+/** The selection ring's fill: its kind's colour at 0.16 alpha. */
+const RING_FILL = { ship: "rgba(45,212,191,0.16)", plane: "rgba(251,191,36,0.16)" } as const;
 /** A street line's width: by zoom only, never by a feature's property (see streetFeatures). */
 const roadWidth = (at14: number, at17: number): maplibregl.ExpressionSpecification => [
   "interpolate",
@@ -237,6 +252,21 @@ interface State {
   roads: Map<string, CameraRoad> | null;
 }
 
+/** What the detail panel shows: the mark, its neighbours and, when it left the report, since when. */
+interface PanelState {
+  subject: DetailSubject;
+  also: AlsoHere[];
+  staleSince: number | null;
+}
+
+/** What the panel's buttons call, filled by the effect that owns the map and the marks. */
+interface PanelApi {
+  close(): void;
+  pick(id: string, kind: "ship" | "plane"): void;
+  layout(): void;
+}
+const NO_API: PanelApi = { close() {}, pick() {}, layout() {} };
+
 export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, onReport, placeRef }: Props) {
   const state = useRef<State>({
     cams: null,
@@ -254,6 +284,12 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const reportRef = useRef(onReport);
   reportRef.current = onReport;
   const pinned = target.kind === "camera" ? target.cameraId : null;
+  // A recording or a film is a frame, not a tool: nothing in it can be clicked.
+  const interactive = !record && !clock.film;
+  const selRef = useRef<{ kind: "ship" | "plane"; id: string } | null>(null);
+  const ringRef = useRef<GeoJSON.FeatureCollection>(EMPTY);
+  const [panel, setPanel] = useState<PanelState | null>(null);
+  const panelApi = useRef<PanelApi>(NO_API);
 
   /**
    * Sources, images and layers on the current style. Idempotent: every style gets
@@ -457,6 +493,32 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         features: (s.planes ?? []).map((a) => point(a.id, a.lon, a.lat, { rot: a.rot })),
       });
     }
+
+    // The ring under the selected mark, flattened by the view's tilt as the chevrons are,
+    // and under them: before the first of their layers that exists. Its own source, never
+    // a filter on SRC.ships, because that source is removed and put back whenever the
+    // vessels' credit changes. Empty until something is selected.
+    if (interactive) {
+      if (!map.getSource(SRC.selected)) map.addSource(SRC.selected, { type: "geojson", data: ringRef.current });
+      if (!map.getLayer(LYR.selectedRing)) {
+        const before = [LYR.ahead, LYR.ship, LYR.plane].find((id) => map.getLayer(id));
+        map.addLayer(
+          {
+            id: LYR.selectedRing,
+            type: "circle",
+            source: SRC.selected,
+            paint: {
+              "circle-radius": portrait ? 20 : 16,
+              "circle-color": ["match", ["get", "kind"], "plane", RING_FILL.plane, RING_FILL.ship],
+              "circle-stroke-color": ["match", ["get", "kind"], "plane", COLOUR.plane, COLOUR.ship],
+              "circle-stroke-width": 2.5,
+              "circle-pitch-alignment": "map",
+            },
+          },
+          before,
+        );
+      }
+    }
   };
 
   // Every finished style: the layers go back on (a basemap swap wipes them).
@@ -587,10 +649,12 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const item = byId.get(t.id)!;
         let tag = s.tags.get(t.id);
         if (!tag) {
-          tag = new Tag(item.kind);
+          const kind = item.kind;
+          tag = new Tag(kind, interactive && kind !== "road" ? { onSelect: () => select(kind, t.id) } : undefined);
           s.tags.set(t.id, tag);
         }
         tag.setText(item.title, item.meta);
+        tag.setSelected(selRef.current?.id === t.id);
         tag.show(map, item.lngLat, t.flip);
       }
 
@@ -654,10 +718,165 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const landed = () => {
       if (disposed) return;
       ensureLayers.current();
+      refreshSelection();
       report();
       map.once("idle", placeNow);
       map.triggerRepaint();
     };
+
+    // --- the selection: which vessel or aircraft has its details open -------------------
+    type Kind = "ship" | "plane";
+    const minR = portrait ? PICK_RADIUS.phone : PICK_RADIUS.wide;
+    /**
+     * How far from a mark's point a click still means it, in px. One number for every
+     * mark today. eye-boat-models replaces the body of this for vessels with the drawn
+     * hull's own radius, so a long ship is no harder to hit than a small one.
+     */
+    const markRadius = (_kind: Kind, _item: Vessel | Aircraft): number => minR;
+    const find = (kind: Kind, id: string): Vessel | Aircraft | undefined =>
+      kind === "ship" ? s.ships?.find((v) => v.id === id) : s.planes?.find((a) => a.id === id);
+    /** Every vessel and aircraft, projected onto the screen, for pickMarks. */
+    const candidates = (): PickCandidate[] => {
+      const out: PickCandidate[] = [];
+      for (const v of s.ships ?? []) {
+        const p = map.project([v.lon, v.lat]);
+        out.push({ id: v.id, kind: "ship", x: p.x, y: p.y, r: markRadius("ship", v) });
+      }
+      for (const a of s.planes ?? []) {
+        const p = map.project([a.lon, a.lat]);
+        out.push({ id: a.id, kind: "plane", x: p.x, y: p.y, r: markRadius("plane", a) });
+      }
+      return out;
+    };
+    const alsoItems = (centre: Vessel | Aircraft, near: readonly PickCandidate[]): AlsoHere[] =>
+      near.flatMap((c) => {
+        const o = find(c.kind, c.id);
+        if (!o) return [];
+        const name = "name" in o ? o.name : o.callsign;
+        return [{ id: c.id, kind: c.kind, name, metres: haversineKm(centre.lat, centre.lon, o.lat, o.lon) * 1000 }];
+      });
+    const subjectOf = (kind: Kind, item: Vessel | Aircraft): DetailSubject =>
+      kind === "ship" ? { kind, v: item as Vessel } : { kind, a: item as Aircraft, pulledAt: s.planesFetchedAt };
+    const setRing = (fc: GeoJSON.FeatureCollection) => {
+      ringRef.current = fc;
+      (map.getSource(SRC.selected) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
+    };
+    const ringOf = (kind: Kind, item: Vessel | Aircraft): GeoJSON.FeatureCollection => ({
+      type: "FeatureCollection",
+      features: [point(item.id, item.lon, item.lat, { kind })],
+    });
+    const nearTo = (item: Vessel | Aircraft, kind: Kind): PickCandidate[] => {
+      const all = candidates();
+      const me = all.find((c) => c.kind === kind && c.id === item.id);
+      return me ? marksAround(all, me, minR) : [];
+    };
+
+    const select = (kind: Kind, id: string, near?: readonly PickCandidate[]) => {
+      const item = find(kind, id);
+      if (!item) return;
+      selRef.current = { kind, id };
+      setRing(ringOf(kind, item));
+      for (const [tagId, tag] of s.tags) tag.setSelected(tagId === id);
+      setPanel({ subject: subjectOf(kind, item), also: alsoItems(item, near ?? nearTo(item, kind)), staleSince: null });
+      window.addEventListener("keydown", onKey);
+    };
+
+    /** Close the panel. A button or a key puts focus back on the plate (or the map); a click on the map does not. */
+    const close = (refocus: boolean) => {
+      const sel = selRef.current;
+      if (!sel) return;
+      selRef.current = null;
+      setRing(EMPTY);
+      for (const tag of s.tags.values()) tag.setSelected(false);
+      setPanel(null);
+      window.removeEventListener("keydown", onKey);
+      if (refocus) {
+        const tag = s.tags.get(sel.id);
+        if (tag) tag.focusPlate();
+        else map.getCanvas().focus({ preventScroll: true });
+      }
+    };
+
+    // Escape closes the panel, after anything that closed something else first (a camera
+    // card's own listener, the sources menu) and so did not get to prevent the default.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || !selRef.current) return;
+      e.preventDefault();
+      close(true);
+    };
+
+    /** After each feed: the mark again as it now is, or, if it left the report, as it last was. */
+    const refreshSelection = () => {
+      const sel = selRef.current;
+      if (!sel) return;
+      const item = find(sel.kind, sel.id);
+      if (item) {
+        setRing(ringOf(sel.kind, item));
+        setPanel({ subject: subjectOf(sel.kind, item), also: alsoItems(item, nearTo(item, sel.kind)), staleSince: null });
+        return;
+      }
+      setRing(EMPTY);
+      setPanel((prev) => {
+        if (!prev || prev.staleSince != null) return prev;
+        const was = prev.subject.kind === "ship" ? prev.subject.v.reportedAt : prev.subject.pulledAt;
+        return { ...prev, staleSince: was ?? clock.now() };
+      });
+    };
+
+    /** The mark must not hide under the panel: after it lays out, pan it clear. */
+    const keepClear = () => {
+      const sel = selRef.current;
+      const item = sel ? find(sel.kind, sel.id) : undefined;
+      const el = document.querySelector<HTMLElement>('[role="dialog"][data-eye-keep]');
+      if (!item || !el) return;
+      const box = map.getContainer().getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const p = map.project([item.lon, item.lat]);
+      const x = box.left + p.x;
+      const y = box.top + p.y;
+      const NEAR = 24;
+      if (x < r.left - NEAR || x > r.right + NEAR || y < r.top - NEAR || y > r.bottom + NEAR) return;
+      // A wide screen moves it sideways, to the left of the panel; a phone moves it up
+      // above the sheet. Panning the map by +d moves what is on it by -d.
+      const offset: [number, number] = portrait ? [0, y - (r.top - 2 * NEAR)] : [x - (r.left - 2 * NEAR), 0];
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      map.panBy(offset, { duration: still ? 0 : 300 });
+    };
+    let layoutFrame = 0;
+    const onLayout = () => {
+      cancelAnimationFrame(layoutFrame);
+      layoutFrame = requestAnimationFrame(() => {
+        if (disposed) return;
+        placeNow();
+        keepClear();
+      });
+    };
+
+    // A click on the map. MapLibre also fires `click` for clicks inside a marker (the
+    // camera cards, the plates), which handle themselves, so only the canvas counts.
+    const onClick = (e: maplibregl.MapMouseEvent) => {
+      if (e.originalEvent.target !== map.getCanvas()) return;
+      const { hit, also } = pickMarks(candidates(), e.point, minR);
+      if (hit) select(hit.kind, hit.id, also);
+      else close(false);
+    };
+    // A pointer cursor over a mark you can click: at most once a frame, never while the view moves.
+    let hoverFrame = 0;
+    let hoverAt: { x: number; y: number } | null = null;
+    const onHover = (e: maplibregl.MapMouseEvent) => {
+      hoverAt = e.point;
+      if (hoverFrame) return;
+      hoverFrame = requestAnimationFrame(() => {
+        hoverFrame = 0;
+        if (disposed || !hoverAt || map.isMoving()) return;
+        map.getCanvas().style.cursor = pickMarks(candidates(), hoverAt, minR).hit ? "pointer" : "";
+      });
+    };
+    if (interactive) {
+      map.on("click", onClick);
+      map.on("mousemove", onHover);
+      panelApi.current = { close: () => close(true), pick: (id, kind) => select(kind, id), layout: onLayout };
+    }
 
     // --- data -------------------------------------------------------------------
     const { lat, lon } = target.view;
@@ -766,6 +985,24 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (placeRef?.current === placeNow) placeRef.current = null;
       map.off("moveend", onMoveEnd);
       map.off("move", onMove);
+      if (interactive) {
+        map.off("click", onClick);
+        map.off("mousemove", onHover);
+        window.removeEventListener("keydown", onKey);
+        cancelAnimationFrame(hoverFrame);
+        cancelAnimationFrame(layoutFrame);
+        map.getCanvas().style.cursor = "";
+        panelApi.current = NO_API;
+        if (selRef.current) {
+          selRef.current = null;
+          try {
+            setRing(EMPTY);
+          } catch {
+            /* the map is already gone */
+          }
+          setPanel(null);
+        }
+      }
       if (settle) clearTimeout(settle);
       if (ticker) clearInterval(ticker);
       leaveFilm?.();
@@ -779,7 +1016,18 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       s.tags.clear();
       releaseCardMedia();
     };
-  }, [map, target, portrait, record, clock, pinned, placeRef]);
+  }, [map, target, portrait, record, clock, pinned, placeRef, interactive]);
 
-  return null;
+  if (!panel) return null;
+  return (
+    <DetailPanel
+      subject={panel.subject}
+      also={panel.also}
+      staleSince={panel.staleSince}
+      clock={clock}
+      onClose={() => panelApi.current.close()}
+      onPick={(id, kind) => panelApi.current.pick(id, kind)}
+      onLayout={() => panelApi.current.layout()}
+    />
+  );
 }

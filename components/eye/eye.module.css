@@ -525,6 +525,38 @@
   text-overflow: ellipsis;
 }
 
+/* A vessel's or aircraft's plate is a button that opens its details (tag.ts). The tag
+   itself stays pointer-events: none, so only the plate takes a click and the rest of
+   the scene still pans. A button resets to the plate's own look, and keeps its margin
+   (a button's UA margin is 0, the plate's is the 14px that lifts it off the leader). */
+.tagBtn {
+  appearance: none;
+  margin: 0 0 14px;
+  border: 0;
+  border-left: 2px solid var(--c);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.tag[data-flip] .tagBtn {
+  border-left: 0;
+  border-right: 2px solid var(--c);
+  text-align: right;
+}
+.tagBtn:hover {
+  background: rgba(6, 10, 12, 0.92);
+}
+.tagBtn:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+/* The mark whose details are open. */
+.tag[data-selected] .tagPlate {
+  box-shadow: inset 0 0 0 1px var(--c);
+}
+
 /* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
 
 @media (max-aspect-ratio: 4/5) {
@@ -952,5 +984,266 @@
   .placeSheet span {
     font-size: 11.5px;
     color: var(--eye-ink-2);
+  }
+}
+
+/* ── The detail panel: a vessel or an aircraft that was clicked ─────────────
+   Docked on the right under the controls, 340 px; a bottom sheet on a phone. Above the
+   frame (z-index 30) and not above a camera card's own page. It is its own box: the
+   scene beneath it still pans, and the words on it sit on its own plate. */
+
+.detail {
+  --c: var(--eye-ship);
+  position: absolute;
+  top: 112px;
+  right: 26px;
+  z-index: 31;
+  width: 340px;
+  max-height: calc(100% - 112px - 92px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(6, 10, 12, 0.92);
+  border: 1px solid var(--eye-hair);
+  border-radius: 6px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  color: var(--eye-ink);
+  pointer-events: auto;
+}
+.detail[data-kind="plane"] {
+  --c: var(--eye-plane);
+}
+
+.dHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: start;
+  padding: 14px 14px 0;
+}
+.dMark {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+.dMark path {
+  fill: var(--c);
+  stroke: rgba(3, 7, 9, 0.9);
+  stroke-width: 5;
+  stroke-linejoin: round;
+}
+.dName h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.dName h2:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+.dName p {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--eye-ink-2);
+}
+
+/* The mark is no longer in the latest report: the panel keeps what it last had. */
+.dStale {
+  margin: 12px 14px 0;
+  padding: 7px 10px;
+  border-radius: 4px;
+  background: rgba(238, 243, 241, 0.08);
+  font-size: 12px;
+  color: var(--eye-ink-2);
+}
+
+/* The figures. Three across for a vessel, two for an aircraft's four. */
+.dRead {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--eye-hair);
+}
+.dRead b {
+  display: block;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.dRead b.dNone {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--eye-ink-3);
+  padding-top: 5px;
+}
+.dRead span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eye-ink-3);
+}
+
+/* Marks that sit close to this one, so none is hidden behind another. */
+.dAlso {
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--eye-hair);
+}
+.dAlso h3 {
+  margin: 0 0 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--eye-ink-2);
+}
+.dAlso ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dAlso li {
+  margin: 0;
+  max-width: 100%;
+}
+.alsoBtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--eye-hair);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--eye-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.alsoBtn:hover {
+  border-color: rgba(238, 243, 241, 0.5);
+}
+.alsoBtn:focus-visible {
+  outline: 2px solid var(--eye-ink);
+  outline-offset: 2px;
+}
+.alsoBtn svg {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+.alsoBtn[data-kind="ship"] svg path {
+  fill: var(--eye-ship);
+}
+.alsoBtn[data-kind="plane"] svg path {
+  fill: var(--eye-plane);
+}
+.alsoBtn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.alsoBtn small {
+  flex: none;
+  font-weight: 500;
+  color: var(--eye-ink-3);
+  font-size: 11px;
+}
+
+.dBody {
+  overflow: auto;
+  padding: 2px 14px 10px;
+  min-height: 0;
+}
+.dGroup h3 {
+  margin: 12px 0 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--eye-ink-2);
+}
+.dGroup dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 5px 14px;
+  margin: 0;
+  font-size: 12.5px;
+}
+.dGroup dt {
+  color: var(--eye-ink-3);
+}
+.dGroup dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.dGroup dd small {
+  display: block;
+  color: var(--eye-ink-3);
+  font-size: 11px;
+}
+
+.dFoot {
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--eye-hair);
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--eye-ink-3);
+}
+.dFoot p {
+  margin: 0;
+}
+.dFoot p + p {
+  margin-top: 4px;
+}
+
+/* A phone: the same panel as a bottom sheet, with thumb-sized buttons and one row of
+   neighbours to swipe along. The line is the view's own portrait line (PORTRAIT_QUERY). */
+@media (max-aspect-ratio: 4/5) {
+  .detail {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 52dvh;
+    background: rgba(6, 10, 12, 0.97);
+  }
+  .detail .btn {
+    min-height: 44px;
+    padding: 0 15px;
+    font-size: 13px;
+  }
+  .dHead {
+    padding: 12px 12px 0 14px;
+  }
+  .dName h2 {
+    font-size: 17px;
+  }
+  .dAlso ul {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 2px;
+  }
+  .dAlso li {
+    flex: none;
+    max-width: none;
+    scroll-snap-align: start;
+  }
+  .alsoBtn {
+    min-height: 44px;
+    max-width: none;
+  }
+  .dRead b {
+    font-size: 19px;
   }
 }

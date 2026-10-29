@@ -10,6 +10,7 @@ import {
   pruneHeard,
   reconnectDelay,
   snapshotRule,
+  vesselFeature,
   VESSEL_TTL_MS,
   WARM_MS,
   type AisVessel,
@@ -40,6 +41,17 @@ test("stationary vessels render slate; moving render teal", () => {
 
   const moving = out.find((f) => f.id === "ais:538011030")!; // FIYUH, Sog 5
   expect(moving.color).toBe("#0d9488");
+});
+
+test("a vessel feature carries the ship's own static fields, each only when present", () => {
+  const base: AisVessel = { MMSI: 230108270, ShipName: "VALBORG", latitude: 60.1712, longitude: 24.9621, Sog: 0, Cog: 330 };
+  const f = vesselFeature({
+    ...base,
+    callSign: "OFNR", imo: 5375462, lengthM: 30, beamM: 7, draughtM: 2.4, eta: "09-18T19:00Z",
+  })!;
+  expect(f.props).toMatchObject({ mmsi: 230108270, callSign: "OFNR", imo: 5375462, lengthM: 30, beamM: 7, draughtM: 2.4, eta: "09-18T19:00Z" });
+  const bare = vesselFeature(base)!;
+  for (const k of ["callSign", "imo", "lengthM", "beamM", "draughtM", "eta"]) expect(k in bare.props!, k).toBe(false);
 });
 
 test("nav-status codes map to human labels", () => {
