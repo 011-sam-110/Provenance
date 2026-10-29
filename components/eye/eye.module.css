@@ -131,6 +131,8 @@
 
 .topRight {
   display: grid;
+  grid-auto-flow: column;
+  align-items: center;
   justify-items: end;
   gap: 10px;
   flex: none;
@@ -721,8 +723,11 @@
 
 /* ── Control hint: how to move the view (ControlHint.tsx) ─────────────────
  * A wide screen holds it under the controls at top right (top 60 + Sources 48 + 12);
- * a phone keeps it in the footer's column, just above the bar. It never takes a press
- * meant for the map: the plate has no pointer events, only its x does. */
+ * a phone holds it just above the bar, positioned out of the footer's flow so the
+ * footer's kept box does not grow. It reserves no room (no data-eye-keep): EyeOverlay
+ * places cards as if it were not there. The "?" beside the clock brings it back. It
+ * never takes a press meant for the map: the plate has no pointer events, only its x
+ * does. */
 .hint {
   position: fixed;
   top: 120px;
@@ -800,6 +805,34 @@
 }
 .hintClose:hover { color: var(--eye-ink); background: rgba(238, 243, 241, 0.1); }
 .hintClose:focus-visible { outline: 2px solid var(--eye-ink); outline-offset: 2px; }
+/* The "?" beside the clock: left of it on a wide screen, under it on a phone. Its open state is
+   the place chip's selected look, not Turn's solid fill: the plate opens on every arrival, and
+   Sources stays the only solid plate in the frame. */
+.hintToggle {
+  order: -1;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--eye-hair);
+  border-radius: 4px;
+  background: var(--eye-plate);
+  color: var(--eye-ink-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.hintToggle:hover { border-color: rgba(238, 243, 241, 0.5); color: var(--eye-ink); }
+.hintToggle[aria-expanded="true"] {
+  color: var(--eye-ink);
+  border-color: rgba(238, 243, 241, 0.62);
+  box-shadow: inset 0 -2px 0 var(--eye-ink);
+}
+.hintToggle:focus-visible { outline: 2px solid var(--eye-ink); outline-offset: 2px; }
 /* A wide window too narrow for the plate beside the place chips: below them. */
 @media (min-aspect-ratio: 4/5) and (max-width: 820px) {
   .hint { top: 156px; }
@@ -809,10 +842,15 @@
 }
 @media (max-aspect-ratio: 4/5) {
   .hint {
-    position: static;
-    align-self: flex-start;
+    /* top and right must be reset: the wide rule's top: 120px would still apply and drop the
+       plate under the bar. */
+    position: absolute;
+    top: auto;
+    right: auto;
+    left: 0;
+    bottom: calc(100% + 5px);
+    margin: 0;
     max-width: 100%;
-    margin-bottom: 5px;
     padding: 9px 2px 10px 11px;
     font-size: 12px;
   }
@@ -820,6 +858,10 @@
   .hintRows { grid-template-columns: auto auto; column-gap: 12px; }
   .hintRows .hintKeys { display: none; }
   .hintClose { width: 44px; height: 44px; margin: -10px -2px -10px 0; }
+  /* Under the clock, in the header's empty corner: 20 + 1 + 44 = 65 px, the header's own height,
+     so the header (a kept box) and the ledger below it do not move. */
+  .topRight { grid-auto-flow: row; align-items: start; gap: 1px; }
+  .hintToggle { order: 0; width: 44px; height: 44px; font-size: 17px; }
 }
 
 /* ── Front door: who this is, the place picker, and the way to the sources ──
