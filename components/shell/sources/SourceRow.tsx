@@ -11,8 +11,13 @@
 // The ＋ is a SECOND, ALWAYS-VISIBLE control, not a hover reveal. Toggling a source
 // paints it on the map; ＋ puts a widget for it on the dashboard. They are different
 // actions on different surfaces, so the row shows both at rest.
+//
+// A row that is ON also lights its marks on the map while you point at it (see
+// lib/map/sourceHighlight.ts). The light follows the pointer OR the popover, so a
+// phone tap and a keyboard focus light it too. It is held through sourceHoverStore,
+// and the hold's release is the effect's cleanup.
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 // Side-effect import: getWidgetType reads a registry that the widget modules fill
 // on import. ConsoleShell already does this, but CommandPalette repeats it for the
 // same reason — a component that asks the registry a question should not depend on
@@ -23,6 +28,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import { placementStore } from "@/lib/console/placement";
 import { widgetTypeForSource } from "@/lib/console/sourceWidgets";
 import { useCapabilityStatus } from "@/lib/sources/useStatus";
+import { sourceHoverStore } from "@/lib/shell/sourceHover";
 import { explainerFor, confidenceChip, confidenceLabel } from "@/lib/signals/explain";
 import { capabilityBadge } from "@/lib/console/widgets/signals";
 import type { SourceRowModel } from "@/lib/console/sources/sections";
@@ -91,7 +97,15 @@ export default function SourceRow({
   onDragHandle: (e: React.PointerEvent, row: SourceRowModel) => void;
 }) {
   const [open, setOpen] = useState(false);
+  // Pointing at the row with a mouse or pen. Not `open` alone: a click on the label
+  // toggles `open`, which would switch the light off under a desktop user who is
+  // still pointing at it. A touch tap never sets this, so there the light follows the
+  // popover.
+  const [hovered, setHovered] = useState(false);
   const popId = useId();
+
+  const lit = (open || hovered) && on && !row.widgetOnly;
+  useEffect(() => (lit ? sourceHoverStore.hold([row.id]) : undefined), [lit, row.id]);
 
   const widgetType = widgetTypeForSource(row.id);
   // The ＋ names the WIDGET; the row names the SOURCE. A camera row stays "Live
@@ -115,8 +129,21 @@ export default function SourceRow({
         if ((e.target as HTMLElement).closest("button")) return;
         onDragHandle(e, row);
       }}
-      onPointerEnter={() => setOpen(true)}
-      onPointerLeave={() => setOpen(false)}
+      // Mouse and pen only. A finger fires enter, down, up, leave in that order, so
+      // counting it here opened the popover and shut it again before the click arrived,
+      // and a second tap re-opened what it meant to close. For touch the click alone
+      // decides: a tap opens, the next tap on the label closes, and moving focus away
+      // (a tap elsewhere) closes it too.
+      onPointerEnter={(e) => {
+        if (e.pointerType === "touch") return;
+        setOpen(true);
+        setHovered(true);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === "touch") return;
+        setOpen(false);
+        setHovered(false);
+      }}
     >
       <span className="tn-src-dot" aria-hidden />
       <button
@@ -125,7 +152,13 @@ export default function SourceRow({
         title={row.label}
         aria-expanded={open}
         aria-describedby={open ? popId : undefined}
-        onFocus={() => setOpen(true)}
+        // KEYBOARD focus only. A tap focuses the button before the click arrives (Chrome),
+        // so opening here as well made the click's toggle shut the popover again and a
+        // phone tap lit nothing. The click does the opening for a tap; `:focus-visible`
+        // is true for a Tab and false for a press, and iOS Safari never focuses on a tap.
+        onFocus={(e) => {
+          if (e.currentTarget.matches(":focus-visible")) setOpen(true);
+        }}
         onBlur={() => setOpen(false)}
         onClick={() => setOpen((o) => !o)}
       >

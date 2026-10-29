@@ -101,6 +101,8 @@ import {
 } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
 import { aoiDrawStore, attachAoi } from "@/lib/map/aoi";
+import { HIGHLIGHT_STATE_KEY, applySourceHighlight, presentIds } from "@/lib/map/sourceHighlight";
+import { sourceHoverStore } from "@/lib/shell/sourceHover";
 import { createThumbnailManager } from "@/lib/map/liveThumbnails";
 // Map picking. Every rule lives in camslot.pick and camslot.arm; this file supplies
 // geometry and side effects and decides nothing. See the block above addPicks for
@@ -784,6 +786,29 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
   );
   const signalsRef = useRef<WorldObject[]>([]);
   signalsRef.current = visibleSignals;
+  // Does this Sources rail id have a mark drawn right now? The rail hover lights only
+  // ids that do (lib/map/sourceHighlight.ts): a source that is off, or has nothing
+  // loaded, fades nothing. Reads the refs above, so it is stable and holds no state.
+  const hasMarks = useCallback((id: string): boolean => {
+    switch (id) {
+      case "livecams":
+      case "staticcams": {
+        const feed = id === "livecams" ? "video" : "still";
+        return (
+          camerasRef.current.some((c) => c.meta?.feed === feed) ||
+          (id === "staticcams" && webcamsRef.current.length > 0)
+        );
+      }
+      case "planes":
+        return planesRef.current.length > 0;
+      case "satellites":
+        return satsRef.current.length > 0;
+      case "countries":
+        return true;
+      default:
+        return signalsRef.current.some((s) => s.meta?.signalId === id);
+    }
+  }, []);
   // What lib/map/precisionMarks needs to choose a mark: the country outlines (null
   // until the file loads, and then every country figure is a dashed ring, never a
   // pin) and the metric of each layer. State, not only a ref, so the marks are
@@ -1829,9 +1854,12 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       }
 
       applyVisibility(map, layersRef.current);
+      // A basemap switch (setStyle) wipes the layers AND the global state, so the rail's
+      // hover light is put back here, after every layer exists.
+      applySourceHighlight(map, presentIds(sourceHoverStore.get(), hasMarks));
       readyRef.current = true;
     },
-    [applyTerrain, applyBuildingLabels, applyVisibility, ensureGeoJSON, ensureIcons],
+    [applyTerrain, applyBuildingLabels, applyVisibility, ensureGeoJSON, ensureIcons, hasMarks],
   );
 
   // Click + cursor handlers, wired ONCE. Layer-scoped handlers survive basemap
@@ -2321,6 +2349,16 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
     // switch (which throws the whole style away). Owns its own layers — see
     // lib/map/aoi — so nothing in this file has to know about scope.
     const detachAoi = attachAoi(map);
+    // The Sources rail's hover light: one global-state write, no React state and no
+    // pointer listener here (lib/map/sourceHighlight.ts). A style mid-swap throws, and
+    // addAppLayers puts the light back when the new style is up.
+    const offHover = sourceHoverStore.subscribe((ids) => {
+      try {
+        map.setGlobalStateProperty(HIGHLIGHT_STATE_KEY, presentIds(ids, hasMarks));
+      } catch {
+        /* style mid-swap */
+      }
+    });
     (window as unknown as { __map?: maplibregl.Map }).__map = map; // debug handle
     (window as unknown as { __overlay?: typeof overlay }).__overlay = overlay;
     // Same debug-handle pattern as the two above, and it earns its place: arming is
@@ -2565,6 +2603,7 @@ export default function WorldMap({ openAt, onStyleReady }: WorldMapProps = {}) {
       thumbMgrRef.current = null;
       clearStyleWatchdog(); // never let a pending retry fire at a removed map
       detachAoi();
+      offHover();
       map.remove();
       mapRef.current = null;
       setMapInstance(null); // a removed map must never be handed to a capture
