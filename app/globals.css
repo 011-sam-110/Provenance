@@ -5490,7 +5490,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   font: inherit; font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0.1em;
   padding: 0 13px; background: none; cursor: pointer; white-space: nowrap;
   border: 0; border-right: 1px solid var(--tnx-line);
-  border-bottom: 2px solid transparent; color: var(--tnx-ink-faint);
+  color: var(--tnx-ink-faint);
 }
 @media (min-width: 901px) and (max-width: 1439px) {
   .tn-terminal .tnx-hdr-board { padding: 0 8px; }
@@ -5498,21 +5498,21 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 .tn-terminal .tnx-hdr-board:hover { color: var(--tnx-ink-dim); }
 .tn-terminal .tnx-hdr-board.is-active {
   color: var(--tnx-ink); background: var(--tnx-panel-head);
-  border-bottom-color: var(--tnx-accent);
+  /* The marker before the sliding bar is measured (server render, no JS). An INSET
+     shadow, because a border takes room from the content box: the 2px transparent
+     bottom border this replaces shrank the box to 35px and lifted the label 1px
+     above the bar's middle. Same device as `.cs-score[aria-expanded="true"]`. */
+  box-shadow: inset 0 -2px 0 var(--tnx-accent);
 }
 
-/* ── "This board has been customised" ─────────────────────────────────────
+/* ── Inactive tab colour ──────────────────────────────────────────────────
    An accessibility auditor measured `--tnx-ink-faint` (#67757f) at 4.16:1 on the
    header ground — under AA for text this size, and it was carrying five of the six
    board tabs. Inactive tabs move to --tnx-ink-dim (7.3:1 measured on the panel).
-   The dot is a SECOND channel on top of the tooltip and the screen-reader tail, not
-   a colour-only signal, so it survives both a greyscale screen and deuteranopia. */
+   An edited tab looks like any other: the "customised" state is in the tab's hover
+   text and its accessible name only (the visible dot was removed on request,
+   2026-10-29), so nothing here carries it by colour. */
 .tn-terminal .tnx-hdr-board { color: var(--tnx-ink-dim); }
-.tn-terminal .tnx-hdr-board-dot {
-  margin-left: 5px; font-size: var(--tnx-fs-md); line-height: 0; vertical-align: middle;
-  color: var(--tnx-accent);
-}
-.tn-terminal .tnx-hdr-board.is-edited { color: var(--tnx-ink); }
 
 .tn-terminal .tnx-hdr-spacer { flex: 1; min-width: 0; }
 .tn-terminal .tnx-hdr-utc {
@@ -8067,9 +8067,11 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-account-trigger svg { flex: none; }
 
 /* ── CAMERA STATS STRIP (components/terminal/CameraStats.tsx) ─────────────────
-   VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED, a double rule, then WEBCAMS:
-   a score bug after the board tabs, each segment a small label over its number.
-   One button; a click opens the breakdown under it, a bottom sheet on a phone.
+   VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED | WEBCAMS: a score bug after the
+   board tabs, each segment a small label over its number, one hairline between
+   neighbours. VIDEO and STILLS, the two headline counts, carry a camcorder and a
+   camera (StatGlyphs.tsx) and get a little more room (`.is-major`). One button; a
+   click opens the breakdown under it, a bottom sheet on a phone.
 
    NO LIVE GREEN IN THIS BLOCK, and tests/unit/camera-stats-view.test.ts holds it:
    most of these cameras are stills, so the green would read as "live". The time dot
@@ -8091,7 +8093,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px;
   padding: 0 8px; position: relative; white-space: nowrap;
 }
-.tn-terminal .cs-seg + .cs-seg::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: var(--tnx-line); }
+/* The two headline counts get 12px each side instead of 8px, so the pair stands a
+   little apart from the four quieter numbers and neither feels cramped. */
+.tn-terminal .cs-seg.is-major { padding: 0 12px; }
+.tn-terminal .cs-seg.is-major .cs-lab { gap: 5px; }
+/* `.cs-retry` is in the list so that, when the counts fail to load, WEBCAMS still
+   gets the one hairline after RETRY. */
+.tn-terminal :is(.cs-seg, .cs-retry) + .cs-seg::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: var(--tnx-line); }
 .tn-terminal .cs-lab {
   display: inline-flex; align-items: center; gap: 4px; font-size: var(--tnx-fs-xs); line-height: 1;
   font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tnx-ink-faint);
@@ -8101,6 +8109,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-terminal .cs-chip { width: 7px; height: 7px; border-radius: 2px; flex: none; display: inline-block; }
 .tn-terminal .cs-chip.v { background: var(--tnx-accent); }
 .tn-terminal .cs-chip.s { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tnx-ink-faint); }
+/* The camcorder and the camera. 14px beside the 11px label, and the -1.5px margins
+   give the 3px back, so the label row stays 11px tall and every number in the strip
+   keeps one baseline. */
+.tn-terminal .cs-glyph { width: 14px; height: 14px; margin: -1.5px 0; flex: none; color: var(--tnx-ink-dim); }
 .tn-terminal .cs-ftime { display: inline-flex; align-items: center; gap: 5px; font-size: var(--tnx-fs-sm); line-height: 18px; font-weight: 600; color: var(--tnx-ink-dim); }
 .tn-terminal .cs-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tnx-ink-faint); flex: none; display: inline-block; }
 .tn-terminal .cs-chevwrap { display: flex; align-items: center; padding: 0 9px 0 1px; }
@@ -8146,20 +8158,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-terminal .cs-retry:hover { background: var(--tnx-panel-head); }
 
-/* WEBCAMS: the second source. A DOUBLE rule, not the hairline between the road
-   numbers, so the strip reads as two counts, each with its own source and time. */
-.tn-terminal :is(.cs-score, .cs-err) .cs-seg.cs-web { margin-left: 4px; }
-.tn-terminal :is(.cs-score, .cs-err) .cs-seg.cs-web::before,
-.tn-terminal :is(.cs-score, .cs-err) .cs-seg.cs-web::after {
-  content: ""; position: absolute; top: 6px; bottom: 6px; width: 1px; background: var(--tnx-line-strong);
-}
-.tn-terminal :is(.cs-score, .cs-err) .cs-seg.cs-web::before { left: -4px; }
-.tn-terminal :is(.cs-score, .cs-err) .cs-seg.cs-web::after { left: -1px; }
-
 /* The phone form (two numbers over their time) is hidden above 720px. */
 .tn-terminal .cs-phone { display: none; }
-.tn-terminal .cs-pline { align-items: center; gap: 4px; white-space: nowrap; }
-.tn-terminal .cs-pline .cs-lab { letter-spacing: 0.02em; color: var(--tnx-ink-dim); }
+.tn-terminal .cs-pline { align-items: center; gap: 5px; white-space: nowrap; }
+.tn-terminal .cs-pline .cs-glyph { margin: 0; }
 .tn-terminal .cs-pline .cs-num { font-size: var(--tnx-fs); line-height: 16px; font-weight: 800; }
 .tn-terminal .cs-pline .cs-gap { width: 7px; }
 .tn-terminal .cs-pline .cs-chev { margin-left: auto; }
@@ -8265,7 +8267,7 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-terminal .cs-facts { border-top: 1px solid var(--tnx-line); }
 .tn-terminal .cs-frow + .cs-frow { border-top: 1px solid var(--tnx-line); }
 .tn-terminal .cs-fcap { display: flex; align-items: baseline; gap: 7px; padding: 10px 12px 0; font-size: var(--tnx-fs-sm); color: var(--tnx-ink-dim); line-height: 1.45; }
-.tn-terminal .cs-fcap .cs-chip { width: 8px; height: 8px; align-self: center; }
+.tn-terminal .cs-fcap .cs-glyph { margin: 0; align-self: center; }
 .tn-terminal .cs-fcap b { color: var(--tnx-ink); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .tn-terminal .cs-fgrid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); }
 .tn-terminal .cs-fgrid.is-one { grid-template-columns: minmax(0, 1fr); }

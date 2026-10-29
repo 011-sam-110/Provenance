@@ -71,6 +71,11 @@ test("desktop: the strip, its breakdown and the operator list", async ({ page })
   expect((await strip.textContent()) ?? "").not.toMatch(LIVE);
   expect((await strip.getAttribute("aria-label")) ?? "").not.toMatch(LIVE);
 
+  // WEBCAMS takes the one hairline every other number has: a single ::before, no ::after.
+  const web = strip.locator('[data-k="webcams"]');
+  expect(await web.evaluate((el) => getComputedStyle(el, "::after").content)).toBe("none");
+  expect(await web.evaluate((el) => getComputedStyle(el, "::before").width)).toBe("1px");
+
   // Hover: each segment says what it counts and where it comes from.
   const tip = page.locator("#cs-tip");
   for (const k of ["video", "stills", "countries", "operators", "counted", "webcams"]) {
@@ -143,8 +148,10 @@ test("phone: two numbers in the boards row, a bottom sheet", async ({ page }) =>
   await expect(strip).toHaveAttribute("aria-label", /^Road and public operator cameras/, { timeout: 120_000 });
   const line = strip.locator(".cs-pline");
   await expect(line).toBeVisible();
-  await expect(line).toContainText("Video");
-  await expect(line).toContainText("Stills");
+  // The icons replace the words on a phone; the row's spoken name still says both.
+  await expect(line.locator('[data-glyph="video"]')).toBeVisible();
+  await expect(line.locator('[data-glyph="stills"]')).toBeVisible();
+  expect(await page.locator(".tnx-hdr").evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
   await expect(strip.locator(".cs-pfresh")).toContainText(/counted/);
   await expect(strip.locator(".cs-desk").first()).toBeHidden();
   expect((await strip.textContent()) ?? "").not.toMatch(LIVE);
