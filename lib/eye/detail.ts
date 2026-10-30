@@ -1,4 +1,4 @@
-// Every word the God's eye view's detail panel shows for a vessel or an aircraft, as
+// Every word the God's eye view's detail panel shows for a vessel, an aircraft or a road notice, as
 // pure functions: components/eye/DetailPanel.tsx renders a model and writes nothing of
 // its own. Pinned by tests/unit/eye-detail.test.ts.
 //
@@ -7,11 +7,18 @@
 // the flag is worked out from the MMSI, so its label says "from MMSI"; an aircraft's
 // registration and type come from adsb.lol's database, not from the aircraft. A value a
 // feed did not send is left out of a group, and shown as "Not sent" in the readout, where
-// an empty place would otherwise look like a zero.
+// an empty place would otherwise look like a zero. A road notice is all TfL's: its
+// headings say so ("TfL's description"), its footer is TfL's credit alone, and it names no
+// company, because TfL names none.
 
 import { flagFromMmsi } from "@/lib/eye/mid";
 import { fmtClockUtc, fmtLat, fmtLon } from "@/lib/eye/wording";
 import { vesselCredits, type Aircraft, type Vessel } from "@/lib/eye/traffic";
+import { noticePaint, tflPlace, type StreetDisruption, type StreetPaint } from "@/lib/eye/streets";
+import { utcStamp } from "@/lib/roads/notice";
+import { TFL_CREDIT } from "@/lib/roads/tfl";
+
+export { tflPlace };
 
 export interface DetailRow {
   label: string;
@@ -24,15 +31,20 @@ export interface DetailGroup {
   rows: DetailRow[];
 }
 export interface DetailModel {
-  kind: "ship" | "plane";
+  kind: "ship" | "plane" | "road";
   id: string;
   title: string;
   kindLine: string;
+  /** A road notice's mark: how its street is painted on the map (lib/eye/streets.ts). */
+  paint?: StreetPaint;
   /** The big figures. A null value is drawn as NOT_SENT. */
   readout: { label: string; value: string | null }[];
+  /** A notice's own sentences, in the operator's words, drawn before the groups. */
+  prose?: { heading: string; text: string }[];
   /** A group with no rows is left out. */
   groups: DetailGroup[];
-  note: string;
+  /** One sentence of the footer, about where the values come from. A road notice has none: its credit is enough. */
+  note?: string;
   credit: string;
 }
 
@@ -64,6 +76,11 @@ export function ageText(at: number, now: number): string {
 /** The line over a panel whose mark is no longer in the latest report. */
 export function staleText(lastHeard: number): string {
   return `Not in the latest report. Last heard ${fmtClockUtc(lastHeard, false)} UTC.`;
+}
+
+/** The line over a road notice that TfL no longer lists: when TfL last changed it. */
+export function noticeGoneText(lastChanged: number, now: number): string {
+  return `Not in TfL's latest list. Last changed ${utcStamp(lastChanged, now)}.`;
 }
 
 /** The "<n> m" beside a name in the Also here list. */
@@ -226,5 +243,110 @@ export function aircraftDetail(a: Aircraft, now: number, pulledAt: number | null
     ].filter((g) => g.rows.length > 0),
     note: `Altitude, speed, track and squawk are what the aircraft's transponder sent. Registration and type come from ${a.network}'s aircraft database.`,
     credit: lol ? "Aircraft © adsb.lol contributors (ODbL)" : "Aircraft © adsb.fi (non-commercial use)",
+  };
+}
+
+// --- a road notice: TfL's own fields, as TfL wrote them ---------------------------------
+
+/** "8 Oct", and " 2022" after it when the UTC year is not `now`'s. Null for text that is no date. */
+export function dayMonthText(iso: string, now: number): string | null {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  const d = new Date(t);
+  const year = d.getUTCFullYear();
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year === new Date(now).getUTCFullYear() ? "" : ` ${year}`}`;
+}
+
+/** "8 Oct 11:00": the day always, unlike utcStamp, which drops it for today. */
+function dayTimeText(iso: string, now: number): string | null {
+  const day = dayMonthText(iso, now);
+  return day ? `${day} ${fmtClockUtc(Date.parse(iso), false)}` : null;
+}
+
+/** "8 Oct 11:00 UTC". */
+function dateTimeText(iso: string, now: number): string | null {
+  const t = dayTimeText(iso, now);
+  return t ? `${t} UTC` : null;
+}
+
+/** A street's name without the postcode bracket TfL ends it with. */
+export function streetLabel(name: string): string {
+  return name.replace(/\s*\([^()]*\)\s*$/, "").trim();
+}
+
+/** "29 Oct 08:00 to 20:00 UTC" for a run inside one day, "31 Oct 08:00 to 2 Nov 16:00 UTC" across days. */
+function scheduleText(s: { from: string; to: string }, now: number): string | null {
+  const from = dayTimeText(s.from, now);
+  const to = dayTimeText(s.to, now);
+  if (!from || !to) return null;
+  const a = new Date(Date.parse(s.from)).toISOString().slice(0, 10);
+  const b = new Date(Date.parse(s.to)).toISOString().slice(0, 10);
+  return a === b ? `${from} to ${fmtClockUtc(Date.parse(s.to), false)} UTC` : `${from} to ${to} UTC`;
+}
+
+/**
+ * A road notice from TfL: its title and road, three figures, TfL's own sentences, and two
+ * groups of what TfL sent (where, and the notice itself). Nothing is guessed: no company
+ * is pulled out of the text, a field TfL left empty is left out, and a street's closure and
+ * direction are TfL's own words for it.
+ */
+export function roadDetail(d: StreetDisruption, now: number, fetchedAt: number | null): DetailModel {
+  const place = tflPlace(d.location);
+  const changed = d.updated ? Date.parse(d.updated) : NaN;
+  const updateAt = d.updateAt ? Date.parse(d.updateAt) : NaN;
+  const runs = d.starts && d.ends ? { from: dateTimeText(d.starts, now), to: dateTimeText(d.ends, now) } : null;
+  const times = (d.schedule ?? [])
+    .slice()
+    .sort((a, b) => Date.parse(a.from) - Date.parse(b.from))
+    .map((s) => scheduleText(s, now))
+    .filter((t): t is string => t !== null);
+  return {
+    kind: "road",
+    id: d.id,
+    paint: noticePaint(d),
+    title: d.subCategory ?? d.category,
+    kindLine: place.road || d.street || "Road not named",
+    readout: [
+      { label: "Severity", value: d.severity },
+      { label: "From", value: d.starts ? dayMonthText(d.starts, now) : null },
+      { label: "Until", value: d.ends ? dayMonthText(d.ends, now) : null },
+    ],
+    prose: [
+      d.description ? { heading: "TfL's description", text: d.description } : null,
+      d.update
+        ? { heading: Number.isFinite(updateAt) ? `TfL's latest update, ${utcStamp(updateAt, now)}` : "TfL's latest update", text: d.update }
+        : null,
+    ].filter((p): p is { heading: string; text: string } => p !== null),
+    groups: [
+      {
+        heading: "Where",
+        rows: rows([
+          row("Road", place.road),
+          row(place.boroughs?.includes(",") ? "Boroughs" : "Borough", place.boroughs),
+          row("Postcode areas", place.postcodes),
+          ...(d.namedStreets ?? []).map((s) =>
+            row(
+              "Street named",
+              streetLabel(s.name),
+              `${s.closed ? "Closed" : "Open"}${s.direction ? `, ${s.direction.toLowerCase()}` : ""}`,
+            ),
+          ),
+        ]),
+      },
+      {
+        heading: "Notice",
+        rows: rows([
+          row("TfL reference", d.id),
+          row("Status", d.status),
+          row("Runs", runs?.from && runs.to ? `${runs.from} to ${runs.to}` : null),
+          row("Works times", times.length > 0 ? times.join("; ") : null),
+          d.provisional ? { label: "Dates", value: "Provisional", note: "as TfL marks them" } : null,
+          row("Level of interest", d.interest),
+          row("Last change", Number.isFinite(changed) ? `${utcStamp(changed, now)}, ${ageText(changed, now)}` : null),
+          row("Fetched", fetchedAt != null ? `${utcStamp(fetchedAt, now)}, ${ageText(fetchedAt, now)}` : null),
+        ]),
+      },
+    ].filter((g) => g.rows.length > 0),
+    credit: TFL_CREDIT,
   };
 }

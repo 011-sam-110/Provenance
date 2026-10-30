@@ -20,6 +20,8 @@
   --eye-ship: #2dd4bf;
   --eye-plane: #fbbf24;
   --eye-road: #fb7185;
+  /* A TfL incident: the violet of its dots on the street (COLOUR.incident in EyeOverlay). */
+  --eye-incident: #c4b5fd;
   --eye-none: #8b97a6;
   font-family: var(--tn-sans);
   font-variant-numeric: tabular-nums;
@@ -1103,6 +1105,16 @@
 .detail[data-kind="plane"] {
   --c: var(--eye-plane);
 }
+.detail[data-kind="road"] {
+  --c: var(--eye-road);
+}
+.detail[data-kind="road"][data-paint="incident"] {
+  --c: var(--eye-incident);
+}
+/* A road figure can carry a year ("11 Aug 2022"): it may wrap rather than overflow. */
+.detail[data-kind="road"] .dRead b {
+  white-space: normal;
+}
 
 .dHead {
   display: grid;
@@ -1240,6 +1252,11 @@
 .alsoBtn[data-kind="plane"] svg path {
   fill: var(--eye-plane);
 }
+/* A road chip carries the notice's own paint, a little larger than a chevron. */
+.alsoBtn[data-kind="road"] svg {
+  width: 12px;
+  height: 12px;
+}
 .alsoBtn span {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1280,6 +1297,14 @@
   display: block;
   color: var(--eye-ink-3);
   font-size: 11px;
+}
+/* A road notice's own sentences (TfL's description and latest update). */
+.dProse {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--eye-ink);
+  overflow-wrap: anywhere;
 }
 
 .dFoot {

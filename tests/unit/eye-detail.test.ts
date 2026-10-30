@@ -5,13 +5,19 @@ import {
   NOT_SENT,
   ageText,
   aircraftDetail,
+  dayMonthText,
   distanceText,
   etaText,
+  noticeGoneText,
   positionSourceText,
+  roadDetail,
   staleText,
+  streetLabel,
+  tflPlace,
   vesselDetail,
   type DetailModel,
 } from "@/lib/eye/detail";
+import { normalizeTflNotices } from "@/lib/roads/tfl";
 import { AIRCRAFT_CREDIT, toAircraft, toVessel, type AisFeatureLike, type PlaneLike } from "@/lib/eye/traffic";
 import { AISSTREAM_ATTRIBUTION, vesselFeature } from "@/lib/signals/ais";
 import { DIGITRAFFIC_CREDIT, normalizeDigitraffic, type DigitrafficLocations, type DigitrafficVessel } from "@/lib/signals/aisDigitraffic";
@@ -58,12 +64,20 @@ const PULLED = Date.parse("2026-10-28T23:09:10Z");
 const rowsOf = (m: DetailModel, heading: string) => m.groups.find((g) => g.heading === heading)?.rows ?? [];
 const valueOf = (m: DetailModel, label: string) => m.groups.flatMap((g) => g.rows).find((r) => r.label === label);
 const labelsOf = (m: DetailModel) => m.groups.flatMap((g) => g.rows.map((r) => r.label));
+const rowsNamed = (m: DetailModel, label: string) => m.groups.flatMap((g) => g.rows).filter((r) => r.label === label);
+
+// TfL's own rows, verbatim, from its /Road/all/Disruption answer of 27 Oct 2026: works that
+// close one stretch of the A12, a burst water main and police activity.
+const [A12, WATER, POLICE] = normalizeTflNotices(fixture("tfl-road-disruptions-mixed.json"));
+const NOW_ROAD = Date.parse("2026-10-27T06:20:00Z");
+const FETCHED = NOW_ROAD - 4 * 60_000;
 
 /** Every string a model can put on screen. */
 function strings(m: DetailModel): string[] {
   return [
-    m.title, m.kindLine, m.note, m.credit,
+    m.title, m.kindLine, ...(m.note ? [m.note] : []), m.credit,
     ...m.readout.flatMap((r) => [r.label, r.value ?? NOT_SENT]),
+    ...(m.prose ?? []).flatMap((p) => [p.heading, p.text]),
     ...m.groups.flatMap((g) => [g.heading, ...g.rows.flatMap((r) => [r.label, r.value, r.note ?? ""])]),
   ];
 }
@@ -340,6 +354,9 @@ describe("every word of every model", () => {
     ["MT5300", vesselDetail(MT5300, NOW)],
     ["EZY78XP", aircraftDetail(EZY, NOW, PULLED)],
     ["EZY78XP on adsb.fi", aircraftDetail({ ...EZY, network: "adsb.fi", emergency: "general", squawk: "7700", fpm: 1340 }, NOW, PULLED)],
+    ["TIMS-237054, utility works", roadDetail(A12, NOW_ROAD, FETCHED)],
+    ["TIMS-236919, burst water main", roadDetail(WATER, NOW_ROAD, FETCHED)],
+    ["TIMS-237055, police activity", roadDetail(POLICE, NOW_ROAD, FETCHED)],
   ];
 
   it.each(models)("%s never says live, and has no em or en dash", (_name, m) => {
@@ -359,5 +376,209 @@ describe("every word of every model", () => {
         for (const r of g.rows) expect(r.value.trim()).not.toBe("");
       }
     }
+  });
+});
+
+describe("tflPlace, from the detail module", () => {
+  it("is the same function the Also here chip uses", () => {
+    expect(tflPlace("[A400] NORTHUMBERLAND AVENUE (SW1A ,WC2N ) (Westminster)")).toEqual({
+      road: "[A400] NORTHUMBERLAND AVENUE",
+      postcodes: "SW1A, WC2N",
+      boroughs: "Westminster",
+    });
+    expect(tflPlace("[A3220] WARWICK ROAD (SW5 ) (Kensington & Chelsea,Wandsworth)").boroughs).toBe("Kensington & Chelsea, Wandsworth");
+    expect(tflPlace("HIGH STREET")).toEqual({ road: "HIGH STREET" });
+  });
+});
+
+describe("the road notice's small words", () => {
+  it("dayMonthText gives the day and month, and the year only when it is not this one", () => {
+    const now = Date.parse("2026-10-27T06:20:00Z");
+    expect(dayMonthText("2026-10-08T11:00:00Z", now)).toBe("8 Oct");
+    expect(dayMonthText("2026-12-31T23:59:59Z", now)).toBe("31 Dec");
+    expect(dayMonthText("2022-08-11T07:30:00Z", now)).toBe("11 Aug 2022");
+    expect(dayMonthText("2027-01-01T00:00:00Z", now)).toBe("1 Jan 2027");
+    expect(dayMonthText("not a date", now)).toBeNull();
+  });
+
+  it("noticeGoneText names the time TfL last changed it, with the day when it is not today", () => {
+    const now = Date.parse("2026-10-27T06:20:00Z");
+    expect(noticeGoneText(Date.parse("2026-10-27T03:30:00Z"), now)).toBe("Not in TfL's latest list. Last changed 03:30 UTC.");
+    expect(noticeGoneText(Date.parse("2026-10-26T15:59:00Z"), now)).toBe("Not in TfL's latest list. Last changed 26 Oct 15:59 UTC.");
+  });
+
+  it("streetLabel drops the postcode bracket TfL ends a street's name with, and nothing else", () => {
+    expect(streetLabel("[A400] NORTHUMBERLAND AVENUE (SW1A ,WC2N)")).toBe("[A400] NORTHUMBERLAND AVENUE");
+    expect(streetLabel("[A12] EASTERN AVENUE EAST (RM2 ,RM3)")).toBe("[A12] EASTERN AVENUE EAST");
+    expect(streetLabel("[A23] BRIXTON HILL")).toBe("[A23] BRIXTON HILL");
+  });
+});
+
+describe("roadDetail, utility works that close one stretch of the A12", () => {
+  const m = roadDetail(A12, NOW_ROAD, FETCHED);
+
+  it("titles it by TfL's sub-category, names the road, and wears the closure's paint", () => {
+    expect(m).toMatchObject({ kind: "road", id: "TIMS-237054", paint: "closed", title: "Utility works", kindLine: "[A12] EASTERN AVENUE EAST" });
+  });
+
+  it("reads severity and the two dates as figures", () => {
+    expect(m.readout).toEqual([
+      { label: "Severity", value: "Minimal" },
+      { label: "From", value: "27 Oct" },
+      { label: "Until", value: "27 Oct" },
+    ]);
+  });
+
+  it("puts TfL's own sentences first, the update headed by its time", () => {
+    expect(m.prose).toEqual([
+      {
+        heading: "TfL's description",
+        text: "[A12] Eastern Avenue East (Westbound) at the junction of [A127] Southend Arterial Road - Flyover is closed for Cadent Gas works.",
+      },
+      { heading: "TfL's latest update, 05:56 UTC", text: "Use another route. Diverted traffic is flowing well." },
+    ]);
+  });
+
+  it("has a Where group and a Notice group, in that order, with the rows TfL filled", () => {
+    expect(m.groups.map((g) => g.heading)).toEqual(["Where", "Notice"]);
+    expect(labelsOf(m)).toEqual([
+      "Road",
+      "Borough",
+      "Postcode areas",
+      "Street named",
+      "Street named",
+      "TfL reference",
+      "Status",
+      "Runs",
+      "Level of interest",
+      "Last change",
+      "Fetched",
+    ]);
+  });
+
+  it("says where it is, in TfL's words", () => {
+    expect(valueOf(m, "Road")?.value).toBe("[A12] EASTERN AVENUE EAST");
+    expect(valueOf(m, "Borough")?.value).toBe("Havering");
+    expect(valueOf(m, "Postcode areas")?.value).toBe("RM2, RM3");
+  });
+
+  it("lists each street TfL names with its closure and direction in TfL's words, lower-cased", () => {
+    expect(rowsNamed(m, "Street named")).toEqual([
+      { label: "Street named", value: "[A12] EASTERN AVENUE EAST", note: "Closed, westbound" },
+      { label: "Street named", value: "[A12] EASTERN AVENUE EAST", note: "Open, both directions" },
+    ]);
+  });
+
+  it("states the notice: reference, status, dates with the time, interest, and both ages", () => {
+    expect(rowsOf(m, "Notice")).toEqual([
+      { label: "TfL reference", value: "TIMS-237054" },
+      { label: "Status", value: "Active" },
+      { label: "Runs", value: "27 Oct 00:17 UTC to 27 Oct 23:59 UTC" },
+      { label: "Level of interest", value: "Medium" },
+      { label: "Last change", value: "05:56 UTC, 23 min ago" },
+      { label: "Fetched", value: "06:16 UTC, 4 min ago" },
+    ]);
+  });
+
+  it("names no company, and its footer is TfL's credit alone", () => {
+    expect(labelsOf(m)).not.toContain("Works by");
+    // TfL's description names the company, and says so in its own words; the panel adds no row for it.
+    expect(m.groups.flatMap((g) => g.rows.map((r) => r.label)).join(" ")).not.toMatch(/\b(by|company|contractor|operator)\b/i);
+    expect(m.note).toBeUndefined();
+    expect(m.credit).toBe("Powered by TfL Open Data");
+    expect(JSON.stringify(m)).not.toContain("Every value is TfL's own");
+  });
+
+  it("leaves a vessel's and an aircraft's footers as they were", () => {
+    expect(vesselDetail(DIAMOND, NOW).note).toMatch(/^Each value is what the ship's AIS transponder sent/);
+    expect(aircraftDetail(EZY, NOW, PULLED).note).toMatch(/^Altitude, speed, track and squawk/);
+  });
+});
+
+describe("roadDetail, a burst water main", () => {
+  const m = roadDetail(WATER, NOW_ROAD, FETCHED);
+
+  it("is an incident, titled by TfL's sub-category, with one borough", () => {
+    expect(m).toMatchObject({ paint: "incident", title: "Burst water main", kindLine: "[A243] HOOK ROAD" });
+    expect(m.readout.map((r) => r.value)).toEqual(["Minimal", "24 Oct", "24 Oct"]);
+    expect(rowsNamed(m, "Borough")[0].value).toBe("Kingston upon Thames");
+    expect(rowsNamed(m, "Boroughs")).toEqual([]);
+    expect(valueOf(m, "Postcode areas")?.value).toBe("KT6, KT9");
+    expect(m.prose?.map((p) => p.heading)).toEqual(["TfL's description", "TfL's latest update, 05:23 UTC"]);
+  });
+
+  it("says the road is closed northbound, as TfL's street entry does", () => {
+    expect(rowsNamed(m, "Street named")).toEqual([{ label: "Street named", value: "[A243] HOOK ROAD", note: "Closed, northbound" }]);
+    expect(valueOf(m, "Runs")?.value).toBe("24 Oct 05:43 UTC to 24 Oct 23:59 UTC");
+  });
+});
+
+describe("roadDetail, police activity that closes Blackstock Road", () => {
+  const m = roadDetail(POLICE, NOW_ROAD, FETCHED);
+
+  it("is an incident even though it closes the road, and calls three boroughs Boroughs", () => {
+    expect(m).toMatchObject({ paint: "incident", title: "Police activity", kindLine: "[A1201] BLACKSTOCK ROAD" });
+    expect(m.readout[0]).toEqual({ label: "Severity", value: "No impact" });
+    expect(rowsNamed(m, "Borough")).toEqual([]);
+    expect(rowsNamed(m, "Boroughs")[0].value).toBe("Hackney, Haringey, Islington");
+    expect(valueOf(m, "Level of interest")?.value).toBe("Low");
+  });
+});
+
+describe("roadDetail, what TfL did not send", () => {
+  it("leaves the empty rows and blocks out, and shows a missing date as Not sent", () => {
+    const bare = { ...A12, description: undefined, update: undefined, updateAt: undefined, starts: undefined, ends: undefined, status: undefined, interest: undefined, namedStreets: undefined, location: undefined, updated: undefined, street: undefined };
+    const m = roadDetail(bare, NOW_ROAD, null);
+    expect(m.prose).toEqual([]);
+    expect(m.kindLine).toBe("Road not named");
+    expect(m.readout).toEqual([
+      { label: "Severity", value: "Minimal" },
+      { label: "From", value: null },
+      { label: "Until", value: null },
+    ]);
+    expect(m.groups.map((g) => g.heading)).toEqual(["Notice"]);
+    expect(labelsOf(m)).toEqual(["TfL reference"]);
+  });
+
+  it("names the street when TfL gave one and no location, and keeps TfL's missing-severity word", () => {
+    const m = roadDetail({ ...A12, location: undefined, street: "Eastern Avenue", severity: "Unknown" }, NOW_ROAD, FETCHED);
+    expect(m.kindLine).toBe("Eastern Avenue");
+    expect(m.readout[0].value).toBe("Unknown");
+  });
+
+  it("heads the update with no time when TfL sent none", () => {
+    const m = roadDetail({ ...A12, updateAt: undefined }, NOW_ROAD, FETCHED);
+    expect(m.prose?.[1].heading).toBe("TfL's latest update");
+  });
+
+  it("says the dates are provisional only where TfL marks them, and gives the works times it sent", () => {
+    const m = roadDetail(
+      {
+        ...A12,
+        provisional: true,
+        schedule: [
+          { from: "2026-10-31T08:00:00Z", to: "2026-11-02T16:00:00Z" },
+          { from: "2026-10-29T08:00:00Z", to: "2026-10-29T20:00:00Z" },
+        ],
+      },
+      NOW_ROAD,
+      FETCHED,
+    );
+    expect(valueOf(m, "Dates")).toEqual({ label: "Dates", value: "Provisional", note: "as TfL marks them" });
+    expect(valueOf(m, "Works times")?.value).toBe("29 Oct 08:00 to 20:00 UTC; 31 Oct 08:00 to 2 Nov 16:00 UTC");
+    expect(valueOf(roadDetail(A12, NOW_ROAD, FETCHED), "Dates")).toBeUndefined();
+    expect(valueOf(roadDetail(A12, NOW_ROAD, FETCHED), "Works times")).toBeUndefined();
+  });
+
+  it("puts a year on a date from another year, and the day on a last change from another day", () => {
+    const m = roadDetail({ ...A12, starts: "2022-08-11T07:30:00Z", ends: "2022-08-12T07:30:00Z", updated: "2026-10-26T15:59:00Z" }, NOW_ROAD, FETCHED);
+    expect(m.readout.map((r) => r.value)).toEqual(["Minimal", "11 Aug 2022", "12 Aug 2022"]);
+    expect(valueOf(m, "Runs")?.value).toBe("11 Aug 2022 07:30 UTC to 12 Aug 2022 07:30 UTC");
+    expect(valueOf(m, "Last change")?.value).toBe("26 Oct 15:59 UTC, 14 h ago");
+  });
+
+  it("calls a notice with a closure word but no closed line closed, and one with neither works", () => {
+    expect(roadDetail({ ...A12, closedLines: [], closure: "Closed" }, NOW_ROAD, null).paint).toBe("closed");
+    expect(roadDetail({ ...A12, closedLines: [], closure: undefined }, NOW_ROAD, null).paint).toBe("works");
   });
 });

@@ -119,6 +119,10 @@ export interface EyeHudProps {
   record: boolean;
   /** The wall clock, or a film's own under clock=manual (lib/eye/motion.ts). */
   clock: EyeClock;
+  /** A details panel is open: it takes the hint's room. */
+  detailOpen?: boolean;
+  /** The "?" opened the hint: close the details panel. */
+  onHintOpen?: () => void;
   children?: React.ReactNode;
 }
 
@@ -144,6 +148,8 @@ export default function EyeHud({
   placeId,
   record,
   clock,
+  detailOpen,
+  onHintOpen,
   children,
 }: EyeHudProps) {
   // The exit's address is read as it is used (pressed, focused or clicked), so it is the
@@ -168,9 +174,10 @@ export default function EyeHud({
   const bar = useSourcesBar({ rows: sourceRows, state: sources, cap, portrait, dispatch, barRef });
   const dragging = bar.lifted != null;
   // The control hint's state, shared by the "?" beside the clock and the plate in the footer.
-  // `blocked` is whatever takes the plate's room: the places sheet, the sources tray and a
-  // carried source. Its toggle closes the tray too (see HintToggle's onOpen below).
-  const hint = useControlHint(map, placesOpen || sourcesOpen || dragging);
+  // `blocked` is whatever takes the plate's room: the places sheet, the sources tray, a
+  // carried source and a details panel (a vessel, an aircraft, a road notice). Its toggle
+  // closes the tray and the details panel too (see HintToggle's onOpen below).
+  const hint = useControlHint(map, placesOpen || sourcesOpen || dragging || Boolean(detailOpen));
   const closeTray = (refocus: boolean) => {
     setSourcesOpen(false);
     if (refocus) sourcesBtn.current?.focus();
@@ -270,6 +277,7 @@ export default function EyeHud({
               onOpen={() => {
                 setPlacesOpen(false);
                 setSourcesOpen(false);
+                onHintOpen?.();
               }}
             />}
         </div>

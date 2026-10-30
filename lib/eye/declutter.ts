@@ -127,6 +127,35 @@ export function placeTags(cands: readonly TagCandidate[], frame: Frame, max: num
   return out;
 }
 
+/** How many tags of each kind a frame hangs at most. */
+export interface TagCaps {
+  ship: number;
+  plane: number;
+  road: number;
+  signal: number;
+}
+
+const WIDE_CAPS: TagCaps = { ship: 8, plane: 3, road: 2, signal: 2 };
+const PHONE_CAPS: TagCaps = { ship: 4, plane: 2, road: 1, signal: 1 };
+/**
+ * A phone sees a small patch of street, so it gets more of TfL's road plates than a wide
+ * screen: up to four (Leon, 30 Oct). Each one still has to fit clear of the frame's words,
+ * the cards and the other plates, so a crowded view hangs fewer. A notice beyond the cap, or
+ * with no room, stays a street line or a ring, which can still be tapped.
+ */
+export const PHONE_ROAD_TAGS = 4;
+
+/**
+ * The tag caps for a frame: a portrait phone's, or a wide screen's. A portrait or a
+ * landscape phone takes the four road plates; a recording or a film keeps the old caps, so a
+ * reel looks as it did.
+ */
+export function tagCaps(f: { portrait: boolean; record: boolean; landscapePhone: boolean }): TagCaps {
+  const base = f.portrait ? PHONE_CAPS : WIDE_CAPS;
+  if (f.record || !(f.portrait || f.landscapePhone)) return base;
+  return { ...base, road: PHONE_ROAD_TAGS };
+}
+
 /**
  * The width a tag's text needs, near enough to keep tags apart. Inter at the tag's
  * sizes runs about 0.62 em a character in capitals and 0.55 em otherwise.

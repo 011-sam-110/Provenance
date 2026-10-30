@@ -126,6 +126,9 @@ obligations and are not satisfied by the licence.
   The "Previews" switch beside Turn turns the camera pictures off: each camera is then an
   icon that fetches nothing, one tapped icon opens that one card (a close button, Esc),
   the choice is kept in this browser under `tn.eye.v1`, and a film or a recording ignores it.
+  A TfL road notice (works, incident or closure) can be clicked like a vessel: its
+  streets are redrawn over the buildings and the panel shows only TfL's own fields
+  (`roadDetail`, `lib/eye/detail.ts`).
 - `components/marketing/*` — landing page only. ONE scroll subscriber
   (`LandingStage.tsx`): one passive `scroll` listener whose whole job is to wake one
   rAF loop. The loop smooths one scroll value, paints the canvas only when the globe's

@@ -29,12 +29,15 @@
 // draw through WorldMap; here they are only counted and named: one ledger row and up to
 // two tags, from queryRenderedFeatures at placement, never per frame.
 //
-// A VESSEL OR AN AIRCRAFT CAN BE CLICKED. A click on the map picks the nearest mark
-// within reach (lib/eye/pick.ts: every mark is projected to the screen and measured, the
-// GPU layer is never asked), a plate is a button for the same, and either opens the
-// detail panel (DetailPanel.tsx) with a ring under the mark. Only the selection and the
-// panel's content are React state, and they change on a click or a feed refresh, never
-// per frame. A recording or a film (record=1, clock=manual) is not interactive at all.
+// A VESSEL, AN AIRCRAFT OR A TfL ROAD NOTICE CAN BE CLICKED. A click on the map picks the
+// nearest mark within reach (lib/eye/pick.ts: every mark is projected to the screen and
+// measured, the GPU layer is never asked), a plate is a button for the same, and either
+// opens the detail panel (DetailPanel.tsx) with a ring under the mark. A notice is hit
+// anywhere along its street lines, a vessel or an aircraft wins a click they share, and a
+// selected notice's streets are redrawn OVER the buildings (the eye-selected-* layers), so
+// the person sees which street it is. Only the selection and the panel's content are React
+// state, and they change on a click or a feed refresh, never per frame. A recording or a
+// film (record=1, clock=manual) is not interactive at all.
 //
 // PREVIEWS OFF (the switch in EyeApp). A camera is a CameraIcon on its spot and fetches
 // nothing; a tap opens that one camera's card, with a close button, in its place. One card
@@ -59,7 +62,7 @@ import {
 import { SIGNAL_DRAWN_LINE_LAYERS } from "@/lib/map/hitTest";
 import { countBySignal, signalTagPicks, type EyeKind, type EyeSourceRow, type RenderedSignal } from "@/lib/eye/sources";
 import { haversineKm } from "@/lib/geo/haversine";
-import { PICK_RADIUS, marksAround, pickMarks, type PickCandidate } from "@/lib/eye/pick";
+import { PICK_RADIUS, marksAround, pickMarks, runsInside, type PickCandidate, type PickKind } from "@/lib/eye/pick";
 import type { EyeTarget } from "@/lib/eye/places";
 import { cameraCredits, cameraLedgerRow, clipsToPlay, nearCameras, type NearCamera, type PlayingCandidate } from "@/lib/eye/cameras";
 import {
@@ -68,6 +71,7 @@ import {
   placeCards,
   placeTags,
   placementOrder,
+  tagCaps,
   type Box,
   type CardSize,
   type Frame,
@@ -93,6 +97,9 @@ import {
   STREETS_EVERY_MS,
   TFL_CREDIT,
   inLondon,
+  noticeMetres,
+  noticeName,
+  noticePaint,
   severityWeight,
   speedLedgerRow,
   speedPhoneNote,
@@ -153,6 +160,12 @@ const LYR = {
   plane: "eye-plane",
   /** The ring under the selected vessel or aircraft, beneath the chevrons. */
   selectedRing: "eye-selected-ring",
+  /** The selected road notice's streets, over the buildings: casing, then the pattern of its paint. */
+  selectedCasing: "eye-selected-casing",
+  selectedClosedBase: "eye-selected-closed-base",
+  selectedClosed: "eye-selected-closed",
+  selectedWorks: "eye-selected-works",
+  selectedIncident: "eye-selected-incident",
   // Road notices, bottom to top: a closure's white base, its rose bars, works dashes,
   // incident dots, then the rings of notices TfL gave no street line for.
   streetClosedBase: "eye-street-closed-base",
@@ -164,7 +177,12 @@ const LYR = {
 const IMG = { ship: "eye-chevron-ship", plane: "eye-chevron-plane" } as const;
 const COLOUR = { ship: "#2dd4bf", plane: "#fbbf24", road: "#fb7185", incident: "#c4b5fd", bar: "#eef3f1" } as const;
 /** The selection ring's fill: its kind's colour at 0.16 alpha. */
-const RING_FILL = { ship: "rgba(45,212,191,0.16)", plane: "rgba(251,191,36,0.16)" } as const;
+const RING_FILL = {
+  ship: "rgba(45,212,191,0.16)",
+  plane: "rgba(251,191,36,0.16)",
+  road: "rgba(251,113,133,0.16)",
+  incident: "rgba(196,181,253,0.16)",
+} as const;
 /** A street line's width: by zoom only, never by a feature's property (see streetFeatures). */
 const roadWidth = (at14: number, at17: number): maplibregl.ExpressionSpecification => [
   "interpolate",
@@ -183,13 +201,11 @@ const CAMERA_ROAD_EVERY_MS = 120_000;
 // The words take 40 (46 on a phone) under the picture, and the camera's road line 20 (18).
 const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 60, stalk: 52, max: 5 };
 const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 64, stalk: 34, max: 3 };
-const MAX_TAGS = {
-  wide: { ship: 8, plane: 3, road: 2, signal: 2 },
-  phone: { ship: 4, plane: 2, road: 1, signal: 1 },
-} as const;
+/** A phone held sideways: wide and short. Its road plates are capped like a portrait phone's (tagCaps). */
+const LANDSCAPE_PHONE_QUERY = "(min-aspect-ratio: 4/5) and (max-height: 500px)";
 /**
  * How many marks of the console's layers are offered to the tag placement; it places the
- * first one or two (MAX_TAGS.signal) that fit clear of the frame's words, nearest the middle.
+ * first one or two (the signal cap in tagCaps) that fit clear of the frame's words, nearest the middle.
  * Offered only the first two, a view whose first two marks sat under the header got none.
  */
 const SIGNAL_TAG_POOL = 200;
@@ -315,6 +331,10 @@ interface Props {
   onReport: (r: OverlayReport) => void;
   /** Filled with "place the cards and tags now", for the record script's frame-by-frame clock. */
   placeRef?: React.MutableRefObject<(() => void) | null>;
+  /** Told when the details panel opens or closes (any kind), so the HUD can close the hint. */
+  onDetail?: (open: boolean) => void;
+  /** Filled with "close the details panel, focus stays where it is", for the hint's "?". */
+  detailCloseRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 interface State {
@@ -357,12 +377,12 @@ interface PanelApi {
   close(): void;
   /** Close without moving focus: a hidden kind's selection goes while the person is in the tray. */
   clear(): void;
-  pick(id: string, kind: "ship" | "plane"): void;
+  pick(id: string, kind: PickKind): void;
   layout(): void;
 }
 const NO_API: PanelApi = { close() {}, clear() {}, pick() {}, layout() {} };
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, hidden, signals, onReport, placeRef }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, hidden, signals, onReport, placeRef, onDetail, detailCloseRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -383,6 +403,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   });
   const reportRef = useRef(onReport);
   reportRef.current = onReport;
+  const detailRef = useRef(onDetail);
+  detailRef.current = onDetail;
   // Not an input of the main effect below: a change must not fetch four feeds again.
   const previewsRef = useRef(previews);
   previewsRef.current = previews;
@@ -391,10 +413,17 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const pinned = target.kind === "camera" ? target.cameraId : null;
   // A recording or a film is a frame, not a tool: nothing in it can be clicked.
   const interactive = !record && !clock.film;
-  const selRef = useRef<{ kind: "ship" | "plane"; id: string } | null>(null);
+  const selRef = useRef<{ kind: PickKind; id: string } | null>(null);
   const ringRef = useRef<GeoJSON.FeatureCollection>(EMPTY);
   const [panel, setPanel] = useState<PanelState | null>(null);
   const panelApi = useRef<PanelApi>(NO_API);
+  // The HUD is told when a details panel (any kind) is open, so the control hint steps aside.
+  // A recording or a film has no panel and never reports true.
+  const detailOpen = panel != null;
+  useEffect(() => {
+    detailRef.current?.(detailOpen);
+  }, [detailOpen]);
+  useEffect(() => () => detailRef.current?.(false), []);
   // What the Sources tray has chosen is read through refs, so a change never rebuilds the
   // big effect below (its cards, tags and timers); the effect after ensureLayers acts on it.
   const hiddenRef = useRef(hidden);
@@ -643,7 +672,11 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // The ring under the selected mark, flattened by the view's tilt as the chevrons are,
     // and under them: before the first of their layers that exists. Its own source, never
     // a filter on SRC.ships, because that source is removed and put back whenever the
-    // vessels' credit changes. Empty until something is selected.
+    // vessels' credit changes. Empty until something is selected. A selected road notice
+    // puts its street lines in the same source: the ring layer draws POINTS only (a circle
+    // layer would draw a dot at every vertex of a line), and the lines get layers of their
+    // own, below the ring and above everything else, so the selected streets draw OVER the
+    // buildings where the unselected ones sit under them.
     if (interactive) {
       if (!map.getSource(SRC.selected)) map.addSource(SRC.selected, { type: "geojson", data: ringRef.current });
       if (!map.getLayer(LYR.selectedRing)) {
@@ -653,10 +686,31 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
             id: LYR.selectedRing,
             type: "circle",
             source: SRC.selected,
+            filter: ["==", ["geometry-type"], "Point"],
             paint: {
               "circle-radius": portrait ? 20 : 16,
-              "circle-color": ["match", ["get", "kind"], "plane", RING_FILL.plane, RING_FILL.ship],
-              "circle-stroke-color": ["match", ["get", "kind"], "plane", COLOUR.plane, COLOUR.ship],
+              "circle-color": [
+                "match",
+                ["get", "kind"],
+                "plane",
+                RING_FILL.plane,
+                "road",
+                RING_FILL.road,
+                "incident",
+                RING_FILL.incident,
+                RING_FILL.ship,
+              ],
+              "circle-stroke-color": [
+                "match",
+                ["get", "kind"],
+                "plane",
+                COLOUR.plane,
+                "road",
+                COLOUR.road,
+                "incident",
+                COLOUR.incident,
+                COLOUR.ship,
+              ],
               "circle-stroke-width": 2.5,
               "circle-pitch-alignment": "map",
             },
@@ -664,6 +718,46 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           before,
         );
       }
+      // Bottom to top, each just below the ring: a dark casing, then the paint of the
+      // notice's own pattern. Never one solid colour: a solid line is how a measured speed
+      // will look.
+      const selectedLine = (id: string, paint: string | null, layout: maplibregl.LineLayerSpecification["layout"], style: maplibregl.LineLayerSpecification["paint"]) => {
+        if (map.getLayer(id)) return;
+        map.addLayer(
+          {
+            id,
+            type: "line",
+            source: SRC.selected,
+            filter: paint
+              ? ["all", ["==", ["geometry-type"], "LineString"], ["==", ["get", "paint"], paint]]
+              : ["==", ["geometry-type"], "LineString"],
+            layout,
+            paint: style,
+          },
+          LYR.selectedRing,
+        );
+      };
+      const selWidth = roadWidth(3.4, 7.6);
+      selectedLine(LYR.selectedCasing, null, { "line-cap": "round", "line-join": "round" }, {
+        "line-color": "rgba(3,7,9,0.82)",
+        "line-width": roadWidth(7, 13),
+      });
+      selectedLine(LYR.selectedClosedBase, "closed", { "line-join": "round" }, { "line-color": COLOUR.bar, "line-width": selWidth });
+      selectedLine(LYR.selectedClosed, "closed", { "line-join": "round" }, {
+        "line-color": COLOUR.road,
+        "line-width": selWidth,
+        "line-dasharray": [1, 1],
+      });
+      selectedLine(LYR.selectedWorks, "works", { "line-join": "round" }, {
+        "line-color": COLOUR.road,
+        "line-width": selWidth,
+        "line-dasharray": [1.4, 1],
+      });
+      selectedLine(LYR.selectedIncident, "incident", { "line-cap": "round", "line-join": "round" }, {
+        "line-color": COLOUR.incident,
+        "line-width": selWidth,
+        "line-dasharray": [0, 2],
+      });
     }
     // Layers just added start visible; a hidden kind's go back off.
     applyHidden();
@@ -690,8 +784,17 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   useEffect(() => {
     applyHidden();
     ensureLayers.current();
+    // A selection clears when the tray hides what it is: a vessel's or an aircraft's kind,
+    // or a notice whose rows are all hidden (a notice may sit under two rows, works and closures).
     const sel = selRef.current;
-    if (sel && hidden.has(sel.kind === "ship" ? "ships" : "planes")) panelApi.current.clear();
+    if (sel) {
+      const d = sel.kind === "road" ? state.current.streets?.find((x) => x.id === sel.id) : undefined;
+      const gone =
+        sel.kind === "road"
+          ? d != null && noticeRows(d).every((r) => hidden.has(r))
+          : hidden.has(sel.kind === "ship" ? "ships" : "planes");
+      if (gone) panelApi.current.clear();
+    }
     const s = state.current;
     const was = prevHidden.current;
     prevHidden.current = hidden;
@@ -719,7 +822,6 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     let disposed = false;
     const s = state.current;
     const size = portrait ? CARD_PHONE : CARD_WIDE;
-    const maxTags = portrait ? MAX_TAGS.phone : MAX_TAGS.wide;
     let ready = false;
     let lastRowsKey = "";
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
@@ -965,6 +1067,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const roadOrder = placementOrder(roadItems, centre, shownTags).sort(
         (a, b) => (weight.get(b.id) ?? 0) - (weight.get(a.id) ?? 0),
       );
+      // Worked out here, once per placement (never per frame): a window can change shape.
+      const maxTags = tagCaps({ portrait, record, landscapePhone: window.matchMedia(LANDSCAPE_PHONE_QUERY).matches });
       const tagPlaced = [
         ...placeTags(shipOrder, frame, maxTags.ship, taken),
         ...placeTags(placementOrder(planeItems, centre, shownTags), frame, maxTags.plane, taken),
@@ -1001,7 +1105,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
             kind,
             kind === "signal"
               ? { color: sig ? sigColour.get(sig) : undefined }
-              : interactive && kind !== "road"
+              : interactive
                 ? { onSelect: () => select(kind, t.id) }
                 : undefined,
           );
@@ -1137,8 +1241,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       map.triggerRepaint();
     };
 
-    // --- the selection: which vessel or aircraft has its details open -------------------
-    type Kind = "ship" | "plane";
+    // --- the selection: which vessel, aircraft or road notice has its details open ------
+    type Kind = PickKind;
+    type Item = Vessel | Aircraft | StreetDisruption;
     const minR = portrait ? PICK_RADIUS.phone : PICK_RADIUS.wide;
     /**
      * How far from a mark's point a click still means it, in px. One number for every
@@ -1146,9 +1251,18 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
      * hull's own radius, so a long ship is no harder to hit than a small one.
      */
     const markRadius = (_kind: Kind, _item: Vessel | Aircraft): number => minR;
-    const find = (kind: Kind, id: string): Vessel | Aircraft | undefined =>
-      kind === "ship" ? s.ships?.find((v) => v.id === id) : s.planes?.find((a) => a.id === id);
-    /** Every vessel and aircraft, projected onto the screen, for pickMarks. */
+    const find = (kind: Kind, id: string): Item | undefined =>
+      kind === "ship"
+        ? s.ships?.find((v) => v.id === id)
+        : kind === "plane"
+          ? s.planes?.find((a) => a.id === id)
+          : s.streets?.find((d) => d.id === id);
+    /**
+     * Every vessel, aircraft and SHOWN road notice, projected onto the screen, for
+     * pickMarks. A notice that the Sources tray hides is not offered, so it cannot be
+     * clicked. A notice carries its street lines too, cut to the screen padded by half its
+     * size on every side (runsInside says why: a point behind the camera is mirrored).
+     */
     const candidates = (): PickCandidate[] => {
       const out: PickCandidate[] = [];
       for (const v of s.ships ?? []) {
@@ -1159,26 +1273,64 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const p = map.project([a.lon, a.lat]);
         out.push({ id: a.id, kind: "plane", x: p.x, y: p.y, r: markRadius("plane", a) });
       }
+      const notices = (s.streets ?? []).filter(noticeShown);
+      if (notices.length > 0) {
+        const { clientWidth: w, clientHeight: h } = map.getContainer();
+        const frame = { x0: -w / 2, y0: -h / 2, x1: w * 1.5, y1: h * 1.5 };
+        for (const d of notices) {
+          const p = map.project([d.lon, d.lat]);
+          const path = [...d.openLines, ...d.closedLines].flatMap((line) =>
+            runsInside(line.map(([lon, lat]) => map.project([lon, lat])), frame),
+          );
+          out.push({ id: d.id, kind: "road", x: p.x, y: p.y, path });
+        }
+      }
       return out;
     };
-    const alsoItems = (centre: Vessel | Aircraft, near: readonly PickCandidate[]): AlsoHere[] =>
-      near.flatMap((c) => {
+    const alsoItems = (centre: Item, near: readonly PickCandidate[]): AlsoHere[] =>
+      near.flatMap((c): AlsoHere[] => {
         const o = find(c.kind, c.id);
         if (!o) return [];
-        const name = "name" in o ? o.name : o.callsign;
-        return [{ id: c.id, kind: c.kind, name, metres: haversineKm(centre.lat, centre.lon, o.lat, o.lon) * 1000 }];
+        if (c.kind === "road") {
+          const d = o as StreetDisruption;
+          return [{ id: c.id, kind: "road", name: noticeName(d), metres: noticeMetres(centre.lat, centre.lon, d), paint: noticePaint(d) }];
+        }
+        const m = o as Vessel | Aircraft;
+        const name = "name" in m ? m.name : m.callsign;
+        return [{ id: c.id, kind: c.kind, name, metres: haversineKm(centre.lat, centre.lon, m.lat, m.lon) * 1000 }];
       });
-    const subjectOf = (kind: Kind, item: Vessel | Aircraft): DetailSubject =>
-      kind === "ship" ? { kind, v: item as Vessel } : { kind, a: item as Aircraft, pulledAt: s.planesFetchedAt };
+    const subjectOf = (kind: Kind, item: Item): DetailSubject =>
+      kind === "ship"
+        ? { kind, v: item as Vessel }
+        : kind === "plane"
+          ? { kind, a: item as Aircraft, pulledAt: s.planesFetchedAt }
+          : { kind: "road", d: item as StreetDisruption, fetchedAt: s.streetsFetchedAt };
     const setRing = (fc: GeoJSON.FeatureCollection) => {
       ringRef.current = fc;
       (map.getSource(SRC.selected) as maplibregl.GeoJSONSource | undefined)?.setData(fc);
     };
-    const ringOf = (kind: Kind, item: Vessel | Aircraft): GeoJSON.FeatureCollection => ({
-      type: "FeatureCollection",
-      features: [point(item.id, item.lon, item.lat, { kind })],
-    });
-    const nearTo = (item: Vessel | Aircraft, kind: Kind): PickCandidate[] => {
+    /**
+     * The selection source: a ring at the mark's point and, for a road notice, one line
+     * for each of its street lines (the eye-selected-* layers draw those over the buildings).
+     */
+    const ringOf = (kind: Kind, item: Item): GeoJSON.FeatureCollection => {
+      if (kind !== "road") return { type: "FeatureCollection", features: [point(item.id, item.lon, item.lat, { kind })] };
+      const d = item as StreetDisruption;
+      const line = (coordinates: [number, number][], paint: string): GeoJSON.Feature => ({
+        type: "Feature",
+        properties: { id: d.id, paint },
+        geometry: { type: "LineString", coordinates },
+      });
+      return {
+        type: "FeatureCollection",
+        features: [
+          point(d.id, d.lon, d.lat, { kind: d.kind === "incident" ? "incident" : "road" }),
+          ...d.openLines.map((l) => line(l, d.kind)),
+          ...d.closedLines.map((l) => line(l, "closed")),
+        ],
+      };
+    };
+    const nearTo = (item: Item, kind: Kind): PickCandidate[] => {
       const all = candidates();
       const me = all.find((c) => c.kind === kind && c.id === item.id);
       return me ? marksAround(all, me, minR) : [];
@@ -1231,8 +1383,14 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       setRing(EMPTY);
       setPanel((prev) => {
         if (!prev || prev.staleSince != null) return prev;
-        const was = prev.subject.kind === "ship" ? prev.subject.v.reportedAt : prev.subject.pulledAt;
-        return { ...prev, staleSince: was ?? clock.now() };
+        const subject = prev.subject;
+        const was =
+          subject.kind === "ship"
+            ? subject.v.reportedAt
+            : subject.kind === "plane"
+              ? subject.pulledAt
+              : Date.parse(subject.d.updated ?? "");
+        return { ...prev, staleSince: was != null && Number.isFinite(was) ? was : clock.now() };
       });
     };
 
@@ -1285,10 +1443,13 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         map.getCanvas().style.cursor = pickMarks(candidates(), hoverAt, minR).hit ? "pointer" : "";
       });
     };
+    // The hint's "?" closes the panel and leaves focus where it is (on the "?").
+    const closeFromHint = () => close(false);
     if (interactive) {
       map.on("click", onClick);
       map.on("mousemove", onHover);
       panelApi.current = { close: () => close(true), clear: () => close(false), pick: (id, kind) => select(kind, id), layout: onLayout };
+      if (detailCloseRef) detailCloseRef.current = closeFromHint;
     }
 
     // --- data -------------------------------------------------------------------
@@ -1475,6 +1636,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         cancelAnimationFrame(layoutFrame);
         map.getCanvas().style.cursor = "";
         panelApi.current = NO_API;
+        if (detailCloseRef?.current && closeFromHint === detailCloseRef.current) detailCloseRef.current = null;
         if (selRef.current) {
           selRef.current = null;
           try {
@@ -1502,7 +1664,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       s.tags.clear();
       releaseCardMedia();
     };
-  }, [map, target, portrait, record, clock, pinned, placeRef, interactive]);
+  }, [map, target, portrait, record, clock, pinned, placeRef, detailCloseRef, interactive]);
 
   if (!panel) return null;
   return (

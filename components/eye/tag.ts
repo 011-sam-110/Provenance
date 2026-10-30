@@ -3,11 +3,11 @@
 // coloured edge, hung off a short leader from its object. Text goes in through
 // textContent only. Words come from lib/eye/traffic.ts and lib/eye/streets.ts.
 //
-// A vessel's or aircraft's plate is a BUTTON when it is given `onSelect`: a click, a tap
-// or Enter opens that mark's details (components/eye/DetailPanel.tsx). The tag stays
-// pointer-events: none, so only the plate takes a click and the rest of the scene still
-// pans; a drag that starts on the plate must pan the map and select nothing, which is
-// what the guard below is for. A road tag and a recording's tag stay plain text.
+// A vessel's, aircraft's or road notice's plate is a BUTTON when it is given `onSelect`: a
+// click, a tap or Enter opens that mark's details (components/eye/DetailPanel.tsx). The tag
+// stays pointer-events: none, so only the plate takes a click and the rest of the scene
+// still pans; a drag that starts on the plate must pan the map and select nothing, which is
+// what the guard below is for. A recording's tag stays plain text.
 
 import maplibregl from "maplibre-gl";
 import { estimateTextWidth } from "@/lib/eye/declutter";
@@ -47,7 +47,7 @@ export class Tag {
     const leader = document.createElement("i");
     leader.className = styles.leader;
     const onSelect = opts?.onSelect;
-    this.noun = onSelect ? (kind === "plane" ? "aircraft details" : "vessel details") : null;
+    this.noun = onSelect ? (kind === "plane" ? "aircraft details" : kind === "road" ? "road notice details" : "vessel details") : null;
     let plate: HTMLElement;
     if (onSelect) {
       const button = document.createElement("button");
