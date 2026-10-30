@@ -85,6 +85,18 @@ export interface SignalFeature {
    * line in its band's colour (lib/signals/road-speed.ts). Ignored on a point or an area.
    */
   line?: SignalLineStyle;
+  /**
+   * How a PIN is drawn. Absent is the round pin. "diamond" marks the second side of a
+   * two-sided pair of layers (the Ukrainian vehicle losses beside the Russian ones), so
+   * colour is never the only cue. Ignored on an area or a line.
+   */
+  shape?: "diamond";
+  /**
+   * How an AREA is filled. Absent is a flat tint. "hatch" is diagonal lines, for ground
+   * whose status its source does not know (War zones' contested areas). Ignored on a
+   * point or a line.
+   */
+  fill?: "hatch";
   /** Per-feature marker colour (CSS hex). Falls back to the source colour. */
   color?: string;
   /**

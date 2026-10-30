@@ -40,7 +40,13 @@ export const SIGNAL_LINE_HOVER = "signal-line-hover";
 export const SIGNAL_LINE_HIT = "signal-line-hit";
 export const SIGNAL_FILL_SRC = "signal-fills";
 export const SIGNAL_FILL_LAYER = "signal-fill-areas";
+// The diagonal lines over an area of unknown status (SignalFeature.fill "hatch"). Drawn
+// over SIGNAL_FILL_LAYER, which leaves those areas untinted and stays their click target.
+export const SIGNAL_FILL_HATCH = "signal-fill-hatch";
 export const SIGNAL_FILL_OUTLINE = "signal-fill-outline";
+// The diamond pin (SignalFeature.shape "diamond"), drawn where SIGNAL_LAYER leaves that
+// pin's own circle transparent. The circle stays the click and hover target.
+export const SIGNAL_DIAMOND_LAYER = "signal-diamonds";
 // DRAWN BY PRECISION (lib/map/precisionMarks.ts). An area or a country figure is
 // never a pin, so those features leave SIGNAL_SRC and are drawn from two more
 // aggregated sources:

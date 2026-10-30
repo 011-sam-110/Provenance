@@ -2,7 +2,8 @@
 // The map legend: which MARK means what.
 //
 // The map draws a signal by how precise its place is (lib/map/precisionMarks.ts): a
-// pin for an exact point or a named site, a shaded shape or a soft disc for an area,
+// pin for an exact point or a named site (a diamond for the second side of a pair), a
+// shaded shape or a soft disc for an area (hatched where the status is not known),
 // a shaded country for a country figure, and a dashed ring for a country figure
 // where the map has no outline to shade. A road notice is a patterned line: dashes
 // for works, dots for an incident, bars for a closed street, with one note that a
@@ -28,10 +29,25 @@ function Swatch({ mark }: { mark: SignalMark }) {
           <circle cx="11" cy="11" r="1.7" fill="#ffffff" />
         </svg>
       );
+    case "diamond":
+      // The map's diamond pin (WorldMap's SIGNAL_DIAMOND_LAYER): a solid mark, a white rim.
+      return (
+        <svg {...common}>
+          <path d="M11 3.6 18.4 11 11 18.4 3.6 11Z" fill={INK} stroke="#ffffff" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
+      );
     case "shape":
       return (
         <svg {...common}>
           <path d="M11 3.5 17.5 7.2v7.6L11 18.5 4.5 14.8V7.2Z" fill={INK} fillOpacity="0.3" stroke={INK} strokeWidth="1.2" />
+        </svg>
+      );
+    case "hatch":
+      // The map's hatch (addHatchImage): diagonal lines, clear gaps, no tint under them.
+      return (
+        <svg {...common}>
+          <path d="M4 8 8 4M4 13 13 4M4 18 18 4M9 18 18 9M14 18 18 14" stroke={INK} strokeWidth="1.5" strokeLinecap="square" />
+          <rect x="4" y="4" width="14" height="14" fill="none" stroke={INK} strokeWidth="1.2" />
         </svg>
       );
     case "disc":

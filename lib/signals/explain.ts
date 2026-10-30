@@ -313,6 +313,82 @@ const EXPLAINERS: LayerExplainer[] = [
       "Static infrastructure — no operational status, no capacity, no current traffic.",
     ],
   },
+  // --- War sources (scraped on provenance-1, pushed through lib/relay) ------
+  {
+    id: "war-zones",
+    whatItShows: "Ground held by Russia, ground whose status is unknown (hatched) and ground Ukraine has retaken, as DeepState maps the war in Ukraine.",
+    method: "DeepState's analysts draw the map from open sources and update it several times a day. provenance-1 reads their latest map every 30 minutes, keeps the front-line shapes, drops their political shapes (such as \"occupied East Prussia\"), and measures the Russian-held area from each day's map.",
+    confidence: "reported",
+    coverage: "Ukraine. Another war joins this layer when a source of the same kind is added for it.",
+    limitations: [
+      "DeepState is a Ukrainian project: the map is its analysts' reading, not an official line.",
+      "A change on the ground reaches the map hours to days later.",
+      "Contested means DeepState marks the status as unknown, not that fighting is confirmed there.",
+      "The area moves when DeepState redraws a line, not only when ground changes hands.",
+      "DeepState's directions of attack are counted, not drawn: its data does not give their direction.",
+    ],
+  },
+  {
+    id: "frontline-changes",
+    whatItShows: "A change DeepState logged in the last 14 days, at the spot its own map link points to, in its own words.",
+    method: "Read from DeepState's change log on provenance-1. Only entries with a map link are placed, and the side is read from DeepState's sentence (\"The enemy has advanced\" is a Russian advance).",
+    confidence: "reported",
+    coverage: "Ukraine.",
+    limitations: [
+      "The spot is where DeepState's link centres its map, not a measured position.",
+      "DeepState logs only some changes, and an entry without a map link is not shown.",
+    ],
+  },
+  {
+    id: "losses-ru",
+    whatItShows: "A Russian vehicle or weapon system lost in the war, documented by WarSpotting with a photo or video, at the place WarSpotting gives.",
+    method: "WarSpotting volunteers record each loss from a photo or video and geolocate some of them. provenance-1 reads its API one day at a time within its rate limit. Only located losses are drawn; every loss counts in the widget. The claimed totals are the General Staff of Ukraine's, read from russianwarship.rip and checked each day against index.minfin.com.ua.",
+    confidence: "reported",
+    coverage: "Ukraine and the Russian border regions. About one loss in three carries a location.",
+    limitations: [
+      "Documented losses are a floor: a loss nobody filmed is not counted.",
+      "The General Staff's totals are a warring party's claims and are not checked by anyone independent.",
+      "The two sources group vehicles differently, so the claimed-against-documented categories are matched by hand.",
+      "A location is approximate, and a loss is shown days after it happened, never live.",
+      "WarSpotting adds losses for past days as footage appears, so recent counts grow for weeks.",
+    ],
+  },
+  {
+    id: "losses-ua",
+    whatItShows: "A Ukrainian vehicle or weapon system lost in the war, as documented by LostArmour, a Russian-side project, with the photo or video it cites.",
+    method: "LostArmour records each loss from a photo or video, most of them posted by Russian units. Creamy Caprice republishes the located ones as a KML file, which provenance-1 reads every hour. Names and categories are translated from Russian and the original is kept.",
+    confidence: "reported",
+    coverage: "Ukraine. Every entry carries a location.",
+    limitations: [
+      "This is the Russian side's documentation and no neutral party has checked it.",
+      "Documented losses are a floor: a loss nobody filmed is not counted.",
+      "A loss is shown days after it happened, never live.",
+    ],
+  },
+  {
+    id: "forces-near-nato",
+    whatItShows: "A Russian base, garrison or storage site near NATO's borders that a named outlet or analyst reported on, with the claim, who made it and when.",
+    method: "Curated by hand from the articles each site cites. Each claim is quoted, not restated as fact.",
+    confidence: "reported",
+    coverage: "Only the sites in the cited reporting. This is not an order of battle.",
+    limitations: [
+      "A site is placed at its town unless the article gives the base's own position.",
+      "The claims are the reporters' and analysts', often read from satellite images, and are not checked here.",
+      "It changes when an article is added, not on a timer.",
+    ],
+  },
+  {
+    id: "war-news",
+    whatItShows: "A post from one of the chosen outlets or public Telegram channels, at the place it names, labelled with the side it comes from.",
+    method: "provenance-1 reads the outlets' RSS feeds (for UNITED24 and Radio Svoboda, their Google News sitemaps) and the channels' public t.me pages every hour, translates Russian and Ukrainian posts, and places a post at the town it names. Opinion channels are listed and never placed. While the model is out, English posts are listed unchecked, with no war zone and no place, and Russian and Ukrainian posts wait.",
+    confidence: "reported",
+    coverage: "Mostly the war in Ukraine. Some channels also post about other wars, and the widget can filter by war zone.",
+    limitations: [
+      "A post is its outlet's claim, not a verified event. Channels on both sides carry propaganda.",
+      "Translations are machine-made and the original is kept.",
+      "The place is the one the post names, which is not always where something happened.",
+    ],
+  },
   {
     id: "ukraineAlerts",
     whatItShows:

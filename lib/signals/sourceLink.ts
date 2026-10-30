@@ -97,6 +97,12 @@ export const SIGNAL_PROVIDER_URLS: Record<string, Provider> = {
   cables: { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
   "cable-landings": { label: "TeleGeography", url: "https://www.submarinecablemap.com/" },
   ukraineAlerts: { label: "alerts.in.ua", url: "https://alerts.in.ua/" },
+  // War sources. Each row credits the upstream; losses-ru and war-news also carry a
+  // link per feature (the record, the post).
+  "war-zones": { label: "DeepState", url: "https://deepstatemap.live/en" },
+  "frontline-changes": { label: "DeepState", url: "https://deepstatemap.live/en" },
+  "losses-ru": { label: "WarSpotting", url: "https://ukr.warspotting.net/" },
+  "losses-ua": { label: "LostArmour", url: "https://lostarmour.info/" },
   gpsJamming: { label: "gpsjam.org", url: "https://gpsjam.org/" },
   gpsJammingLive: { label: "adsb.lol", url: "https://adsb.lol/" },
   "cable-routes": { label: "NOAA MarineCadastre / EMODnet", url: "https://marinecadastre.gov/" },
@@ -177,6 +183,18 @@ export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
   // No geocoder and no upstream of its own: the coordinates are committed tables in this
   // repo and the headlines are the publishers'. The dataset the centroids were generated
   // from is credited because "a table in our repo" is not a source a reader can check.
+  // Curated from the reporting each site cites (lib/signals/forces-near-nato.data.ts).
+  "forces-near-nato": [
+    { label: "RFE/RL Radio Svoboda", url: "https://www.svoboda.org/" },
+    { label: "UNITED24 Media", url: "https://united24media.com/" },
+    { label: "Kyiv Post", url: "https://www.kyivpost.com/" },
+    { label: "UA.NEWS", url: "https://ua.news/en" },
+  ],
+  // Many outlets and channels; each post links its own.
+  "war-news": [
+    { label: "Kyiv Post", url: "https://www.kyivpost.com/" },
+    { label: "Telegram public channels", url: "https://t.me/" },
+  ],
   "headline-places": [
     { label: "Country centroids (eesur/country-codes-lat-long)", url: "https://github.com/eesur/country-codes-lat-long" },
   ],

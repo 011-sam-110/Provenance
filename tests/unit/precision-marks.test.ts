@@ -9,7 +9,8 @@ import { withResolvedPrecision } from "@/lib/signals/precision";
 import { DISPLACEMENT_SOURCE, normalizeDisplacement } from "@/lib/signals/displacement";
 import { centroidByName } from "@/lib/signals/country-centroids.data";
 import { buildSignalObject } from "@/lib/widgets/signalObject";
-import { toSignalFC } from "@/lib/map/features";
+import { toSignalFC, toSignalFillFC } from "@/lib/map/features";
+import { toSignalObjects } from "@/lib/map/signalObjects";
 import { PIN_HIT_LAYERS, resolveMapClickTarget } from "@/lib/map/hitTest";
 import {
   EMPTY_MARK_CONTEXT,
@@ -319,5 +320,77 @@ describe("WorldMap wiring", () => {
     for (const name of ["SIGNAL_DISC_LAYER", "SIGNAL_RING_LAYER", "SIGNAL_ANCHOR_HIT", "SIGNAL_COUNTRY_FILL"]) {
       expect(src, name).toContain(name);
     }
+  });
+});
+
+describe("the diamond pin and the hatched area (war sources, 2026-10-30)", () => {
+  const hex = { type: "Polygon", coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
+  const withMeta = (s: WorldObject, extra: Record<string, unknown>): WorldObject => ({ ...s, meta: { ...s.meta, ...extra } });
+
+  test("a diamond is a pin drawn as a diamond, and it still reaches the pin source", () => {
+    const d = withMeta(sig({ precision: "exact" }), { shape: "diamond" });
+    expect(markOf(d, ctx)).toBe("diamond");
+    const [f] = toSignalFC(pinSignals([d], ctx)).features;
+    expect(f.properties?.shape).toBe("diamond");
+    expect(toSignalFC(pinSignals([sig({ precision: "exact" })], ctx)).features[0].properties?.shape).toBe("round");
+  });
+
+  test("only a pin can be a diamond: an area or a country with shape 'diamond' is never a pin", () => {
+    for (const precision of ["area", "country"] as const) {
+      const d = withMeta(sig({ precision, countryIso3: "AFG" }), { shape: "diamond" });
+      expect(markOf(d, ctx), precision).not.toBe("diamond");
+      expect(markOf(d, ctx), precision).not.toBe("pin");
+      expect(toSignalFC(pinSignals([d], ctx)).features).toHaveLength(0);
+    }
+  });
+
+  test("a hatched polygon is its own mark, and only a polygon can be hatched", () => {
+    const h = withMeta(sig({ precision: "area", geometry: hex }), { fill: "hatch" });
+    expect(markOf(h, ctx)).toBe("hatch");
+    expect(toSignalFillFC([h]).features[0].properties?.fill).toBe("hatch");
+    expect(toSignalFillFC([sig({ precision: "area", geometry: hex })]).features[0].properties?.fill).toBe("flat");
+    // On anything but a polygon the field is ignored.
+    expect(markOf(withMeta(sig({ precision: "area" }), { fill: "hatch" }), ctx)).toBe("disc");
+    expect(markOf(withMeta(sig({ precision: "exact" }), { fill: "hatch" }), ctx)).toBe("pin");
+  });
+
+  test("toSignalObjects carries both fields from the feature to the map object", () => {
+    const source = MAP_SIGNALS[0];
+    const [obj] = toSignalObjects(
+      [{ id: "x:1", lat: 1, lon: 1, title: "T", signalId: source.id, shape: "diamond", fill: "hatch" }],
+      source,
+    );
+    expect(obj.meta?.shape).toBe("diamond");
+    expect(obj.meta?.fill).toBe("hatch");
+    const [plain] = toSignalObjects([{ id: "x:2", lat: 1, lon: 1, title: "T", signalId: source.id }], source);
+    expect(plain.meta).not.toHaveProperty("shape");
+    expect(plain.meta).not.toHaveProperty("fill");
+  });
+
+  test("the legend names both, and lists them only when they are on the map", () => {
+    expect(SIGNAL_MARKS).toContain("diamond");
+    expect(SIGNAL_MARKS).toContain("hatch");
+    const marks = marksPresent(
+      [withMeta(sig({ precision: "exact" }), { shape: "diamond" }), withMeta(sig({ precision: "area", geometry: hex }), { fill: "hatch" })],
+      ctx,
+    );
+    expect(marks).toEqual(["diamond", "hatch"]);
+  });
+
+  test("WorldMap draws them: lines over an untinted fill, a diamond over a transparent circle", () => {
+    const src = readFileSync(join(root, "components", "WorldMap.tsx"), "utf8");
+    // The fill leaves a hatched area untinted, and stays its click target.
+    expect(src).toContain('"fill-opacity": ["case", ["==", ["get", "fill"], "hatch"], 0, 0.28]');
+    expect(src).toMatch(/id: SIGNAL_FILL_HATCH,[\s\S]{0,200}filter: \["==", \["get", "fill"\], "hatch"\]/);
+    expect(src).toContain('"fill-pattern": ["concat", HATCH_IMAGE_PREFIX, ["get", "color"]]');
+    // The circle of a diamond is transparent and still under the click handler.
+    expect(src).toContain('"circle-opacity": ["case", ["==", ["get", "shape"], "diamond"], 0, 0.82]');
+    expect(src).toMatch(/id: SIGNAL_DIAMOND_LAYER,[\s\S]{0,200}filter: \["==", \["get", "shape"\], "diamond"\]/);
+    // Both images are drawn when the style asks for them.
+    expect(src).toContain("addHatchImage(map, e.id)");
+    expect(src).toContain("addDiamondImage(map, e.id)");
+    // Neither new layer is a source of its own: the fade and the glow (sourceHighlight) cover them.
+    expect(src).toMatch(/id: SIGNAL_FILL_HATCH,\s*type: "fill",\s*source: SIGNAL_FILL_SRC/);
+    expect(src).toMatch(/id: SIGNAL_DIAMOND_LAYER,\s*type: "symbol",\s*source: SIGNAL_SRC/);
   });
 });

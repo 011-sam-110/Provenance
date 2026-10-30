@@ -8697,3 +8697,331 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* Narrow phones: the label alone, so the plate clears the mark legend (11px at 360px). */
 @media (max-width: 400px) { .tn-terminal .tn-eye-return-where { display: none; } }
 /* ── end back to God's eye view ── */
+
+/* ── War zones and Front line changes (lib/console/widgets/war/war-zones.tsx and
+   frontline-changes.tsx). The cards and expanded views of the two DeepState sources.
+   Tokens only, except the four map colours, which are the map's own marks (WorldMap,
+   lib/signals/war-zones.ts and frontline-changes.ts) and must match them exactly. Each
+   side's TEXT uses its own ink per skin, measured on the panel: light #9b2c1f 7.2,
+   #1f4f8a 8.1, #5f5a52 6.6 on #fff; dark #ff8f80 8.0, #93bbf0 9.0, #c4beb2 9.6 on #15170f.
+   A side is never colour alone: every mark sits beside its words. ── */
+.tn-wz, .tn-flc {
+  --wz-held: #c0392b; --wz-contested: #8a8178; --wz-retaken: #2b6cb0; --wz-change: #e0a020;
+  --wz-ru-ink: #9b2c1f; --wz-ua-ink: #1f4f8a; --wz-unk-ink: #5f5a52;
+  --wz-ru-soft: rgba(192, 57, 43, 0.08); --wz-ua-soft: rgba(43, 108, 176, 0.08);
+  font-variant-numeric: tabular-nums;
+}
+:root[data-tnx-skin="dark"] .tn-wz, :root[data-tnx-skin="dark"] .tn-flc {
+  --wz-ru-ink: #ff8f80; --wz-ua-ink: #93bbf0; --wz-unk-ink: #c4beb2;
+  --wz-ru-soft: rgba(255, 143, 128, 0.10); --wz-ua-soft: rgba(147, 187, 240, 0.10);
+}
+.tn-wz-card, .tn-flc-card { display: grid; gap: 8px; padding: 8px 10px 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-wz-zone { display: grid; gap: 6px; }
+.tn-wz-zone + .tn-wz-zone { border-top: 1px solid var(--tn-border); padding-top: 10px; }
+.tn-wz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+.tn-wz-name { font-weight: 650; font-size: var(--tnx-fs); }
+.tn-wz-meta { font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-wz-big { font-size: calc(var(--tnx-fs) + 8px); font-weight: 650; letter-spacing: -0.01em; line-height: 1.1; }
+.tn-wz-big small { font-size: var(--tnx-fs-sm); font-weight: 500; color: var(--tn-text-muted); margin-left: 4px; letter-spacing: 0; }
+.tn-wz-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.tn-wz-chip { font-size: var(--tnx-fs-xs); line-height: 1.5; border: 1px solid var(--tn-border); border-radius: 999px; padding: 0 8px; color: var(--tn-text-muted); background: var(--tn-surface); white-space: nowrap; }
+.tn-wz-chip.is-ru { color: var(--wz-ru-ink); border-color: color-mix(in srgb, var(--wz-ru-ink) 35%, transparent); background: var(--wz-ru-soft); }
+.tn-wz-chip.is-ua { color: var(--wz-ua-ink); border-color: color-mix(in srgb, var(--wz-ua-ink) 35%, transparent); background: var(--wz-ua-soft); }
+.tn-wz-chip b { font-weight: 650; }
+.tn-wz-line { display: block; width: 100%; overflow: visible; }
+.tn-wz-line .grid { stroke: var(--tn-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tn-wz-line .fill { fill: var(--wz-held); opacity: 0.12; }
+.tn-wz-line .stroke { fill: none; stroke: var(--wz-held); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.tn-wz-axis { display: flex; justify-content: space-between; gap: 8px; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+.tn-wz-contested { display: flex; align-items: center; gap: 7px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+.tn-wz-contested b { color: var(--tn-text); font-weight: 650; }
+.tn-wz-swatch { flex: none; display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--tn-border-strong); }
+.tn-wz-swatch.held { background: color-mix(in srgb, var(--wz-held) 45%, transparent); border-color: var(--wz-held); }
+.tn-wz-swatch.retaken { background: color-mix(in srgb, var(--wz-retaken) 25%, transparent); border-color: var(--wz-retaken); }
+.tn-wz-swatch.contested { background: repeating-linear-gradient(135deg, var(--wz-contested) 0 1.6px, transparent 1.6px 4px); border-color: var(--wz-contested); }
+.tn-wz-swatch.change { width: 10px; border-radius: 50%; border: 2px solid var(--wz-change); background: color-mix(in srgb, var(--wz-change) 35%, transparent); }
+.tn-wz-foot { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); line-height: 1.4; }
+.tn-wz a, .tn-flc a { color: var(--tn-accent); text-underline-offset: 2px; }
+.tn-wz a:focus-visible, .tn-flc a:focus-visible, .tn-flc-row:focus-visible, .tn-wz button:focus-visible, .tn-flc button:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; border-radius: 3px; }
+
+/* Expanded War zones. */
+.tn-wz .tn-sd-kpi-value { font-size: calc(var(--tnx-fs) + 7px); font-weight: 650; }
+.tn-wz .tn-sd-kpi-value.is-ru { color: var(--wz-ru-ink); }
+.tn-wz .tn-sd-kpi-value.is-ua { color: var(--wz-ua-ink); }
+.tn-wz-zonehead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0; font-size: var(--tnx-fs-md); font-weight: 650; }
+.tn-wz-zonehead span { font-size: var(--tnx-fs-sm); font-weight: 400; color: var(--tn-text-muted); }
+.tn-wz-yaxis { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: stretch; }
+.tn-wz-yaxis > div:first-child { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); text-align: right; }
+.tn-wz-sketch { display: block; width: 100%; height: auto; max-height: 360px; background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: var(--tnx-r, 8px); }
+.tn-wz-sketch .land { fill: var(--tn-surface); stroke: var(--tn-border-strong); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .land.home { stroke: var(--tn-text-faint); stroke-width: 1.2; }
+.tn-wz-sketch .held { fill: var(--wz-held); fill-opacity: 0.42; stroke: var(--wz-held); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .retaken { fill: var(--wz-retaken); fill-opacity: 0.18; stroke: var(--wz-retaken); stroke-opacity: 0.7; stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .contested { stroke: var(--wz-contested); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); margin-top: 6px; }
+.tn-wz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tn-wz-note { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); line-height: 1.5; margin: 0; max-width: 80ch; }
+.tn-wz .tn-sd-table td, .tn-wz .tn-sd-table th { text-align: right; white-space: nowrap; }
+.tn-wz .tn-sd-table td:first-child, .tn-wz .tn-sd-table th:first-child { text-align: left; }
+.tn-wz .tn-sd-table th { cursor: default; }
+.tn-wz-empty { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); padding: 18px 8px; text-align: center; }
+
+/* Bars of changes per day, stacked by side (both views). */
+.tn-flc-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: end; gap: 2px; height: 110px; border-bottom: 1px solid var(--tn-border-strong); }
+.tn-flc-bar { display: flex; flex-direction: column-reverse; min-width: 0; height: 100%; }
+.tn-flc-bar i { display: block; width: 100%; }
+.tn-flc-bar i.ru { background: var(--wz-change); }
+.tn-flc-bar i.ua { background: var(--wz-retaken); }
+.tn-flc-bar i.unknown { background: var(--wz-contested); }
+.tn-flc-bar i + i { box-shadow: inset 0 -1px 0 var(--tn-surface); }
+
+/* Front line changes. */
+.tn-flc-mark { flex: none; display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid; box-sizing: border-box; }
+.tn-flc-mark.ru { border-color: var(--wz-change); background: color-mix(in srgb, var(--wz-change) 35%, transparent); }
+.tn-flc-mark.ua { border-color: var(--wz-retaken); background: color-mix(in srgb, var(--wz-retaken) 30%, transparent); }
+.tn-flc-mark.unknown { border-color: var(--wz-contested); background: transparent; }
+.tn-flc-side { flex: none; font-size: var(--tnx-fs-xs); font-weight: 650; border-radius: 4px; padding: 0 5px; line-height: 1.6; white-space: nowrap; }
+.tn-flc-side.ru { color: var(--wz-ru-ink); background: var(--wz-ru-soft); }
+.tn-flc-side.ua { color: var(--wz-ua-ink); background: var(--wz-ua-soft); }
+.tn-flc-side.unknown { color: var(--wz-unk-ink); background: var(--tn-chip-bg); }
+.tn-flc-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-flc-list > li { border-top: 1px solid var(--tn-border); }
+.tn-flc-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 2px 8px; align-items: baseline; width: 100%; padding: 6px 2px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.tn-flc-row:hover { background: var(--tn-hover); }
+.tn-flc-row .tn-flc-mark { align-self: center; }
+.tn-flc-text { font-size: var(--tnx-fs-sm); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tn-flc-age { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); white-space: nowrap; }
+.tn-flc-counts { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.tn-flc-window { font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+
+/* Expanded Front line changes. */
+.tn-flc .tn-flc-entries { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-flc-entry { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 14px; padding: 9px 2px; border-top: 1px solid var(--tn-border); }
+.tn-flc-entry.is-selected { background: var(--tn-hover); }
+.tn-flc-entry time { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-flc-entry p { margin: 0; font-size: var(--tnx-fs); line-height: 1.45; max-width: 80ch; }
+.tn-flc-entry p.orig { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-flc-spots { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 2px 0 0; padding: 0; list-style: none; font-size: var(--tnx-fs-sm); }
+.tn-flc-spots li { display: inline-flex; align-items: center; gap: 6px; }
+.tn-flc-divider { padding: 12px 2px 4px; font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tn-text-muted); border-top: 1px solid var(--tn-border-strong); }
+@media (max-width: 560px) { .tn-flc-entry { grid-template-columns: minmax(0, 1fr); } .tn-flc-spots { grid-column: 1; } }
+/* ── end War zones and Front line changes ── */
+
+/* ── Forces near NATO (lib/console/widgets/war/forces-near-nato.tsx) ──
+   The card: the curated sites grouped by the NATO border they face, one line each.
+   The expanded view: each site's quoted claims beside the inset map. Tokens only, so
+   the dark skin follows; a site that is listed but not drawn gets a hollow swatch. */
+.tn-fnn { display: flex; flex-direction: column; gap: 6px; }
+.tn-fnn .tn-w-capnote { margin: 0 var(--tn-row-px, 6px); }
+.tn-fnn-grp { margin: 2px 0 0; padding: 0 var(--tn-row-px, 6px); font-size: var(--tnx-fs-xs); font-weight: 600; color: var(--tn-text-muted); }
+.tn-fnn-list { list-style: none; margin: 0; padding: 0; }
+.tn-fnn-list li { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline; padding: 4px var(--tn-row-px, 6px); border-bottom: 1px solid var(--tn-border); }
+.tn-fnn-list li:last-child { border-bottom: 0; }
+.tn-fnn-swatch { flex: none; width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box; align-self: center; }
+.tn-fnn-swatch.is-unplaced { background: transparent; border: 1.5px solid; }
+.tn-fnn-t { font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-text); min-width: 0; }
+.tn-fnn-t b { font-weight: 600; }
+.tn-fnn-a { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-fnn-s { grid-column: 2 / -1; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-fnn-foot { margin: 2px var(--tn-row-px, 6px) 0; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+
+.tn-fnn-x-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 38%); gap: 18px; align-items: start; }
+.tn-fnn-x-map { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 900px) {
+  .tn-fnn-x-body { grid-template-columns: 1fr; }
+  .tn-fnn-x-map { position: static; order: -1; }
+}
+.tn-fnn-x-list { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tn-fnn-x-group { display: flex; flex-direction: column; gap: 8px; }
+.tn-fnn-x-group > h3, .tn-fnn-left > h3 { margin: 0; font-size: var(--tnx-fs); font-weight: 600; color: var(--tn-text-muted); }
+.tn-fnn-site { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--tn-border); border-radius: 8px; background: var(--tn-surface-2); }
+.tn-fnn-site.is-selected { box-shadow: inset 3px 0 0 var(--tn-accent); background: var(--tn-accent-soft); }
+.tn-fnn-site-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tn-fnn-site-head h4 { margin: 0; font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tn-text); }
+.tn-fnn-where { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-fnn-dist { margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-fnn-claim { display: flex; flex-direction: column; gap: 3px; padding-top: 6px; border-top: 1px solid var(--tn-border); }
+.tn-fnn-claim blockquote { margin: 0; font-size: var(--tnx-fs); line-height: 1.5; color: var(--tn-text); max-width: 72ch; }
+.tn-fnn-tr { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-muted); max-width: 72ch; }
+.tn-fnn-tr > span { font-weight: 600; }
+.tn-fnn-by { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.45; color: var(--tn-text-muted); }
+.tn-fnn-by a, .tn-fnn-left a { color: var(--tn-accent); text-decoration: underline; text-underline-offset: 2px; }
+.tn-fnn-img { display: block; color: var(--tn-text-faint); font-variant-numeric: tabular-nums; }
+.tn-fnn-site-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+.tn-fnn-site-foot button { font: inherit; font-size: var(--tnx-fs-xs); color: var(--tn-text); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.tn-fnn-site-foot button[aria-pressed="true"] { border-color: var(--tn-accent); color: var(--tn-accent); }
+.tn-fnn-site-foot button:focus-visible, .tn-fnn-by a:focus-visible, .tn-fnn-left a:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-fnn-left ul { margin: 6px 0 0; padding-left: 18px; font-size: var(--tnx-fs-sm); line-height: 1.5; color: var(--tn-text-muted); }
+/* ── end Forces near NATO ── */
+
+/* ── War sources: Vehicle losses, Russian and Ukrainian ───────────────────────
+   lib/console/widgets/war/losses-ru.tsx and losses-ua.tsx (cards and expanded views).
+   Side colours are this block's own tokens, red-brown for Russian losses and blue for
+   Ukrainian, as on the map. The dark skin lifts both, because #7a1f14 on the dark
+   panel measures about 1.6:1; the lifted values clear 4.5:1 on --tnx-panel #15170f.
+   Every other colour is a console token, so both skins follow without more rules.
+   Shape carries what colour carries: filled vs hollow mark (on the map or not) and a
+   diamond for the Ukrainian side. */
+.tn-loss, .tn-loss-x {
+  --tnl-ru: #7a1f14; --tnl-ru-ink: #9b2c1f;
+  --tnl-ua: #1f4f8a; --tnl-ua-ink: #1f4f8a;
+}
+:root[data-tnx-skin="dark"] .tn-loss, :root[data-tnx-skin="dark"] .tn-loss-x {
+  --tnl-ru: #e07b69; --tnl-ru-ink: #f0907f;
+  --tnl-ua: #86aee6; --tnl-ua-ink: #9cbdec;
+}
+.tn-loss { display: grid; gap: 7px; padding: 8px 10px 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); font-variant-numeric: tabular-nums; }
+.tn-loss b { font-weight: 600; color: var(--tn-text); }
+.tn-loss-k { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.4; color: var(--tn-text-muted); }
+.tn-loss-window { padding-top: 2px; }
+/* Claimed against documented: the hatched track is the claim, the solid part what is documented. */
+.tn-loss-gap { display: grid; grid-template-columns: 112px 1fr; gap: 3px 8px; align-items: center; }
+.tn-loss-gap-name { color: var(--tn-text); }
+.tn-loss-gb {
+  position: relative; height: 7px; border-radius: 2px;
+  background: repeating-linear-gradient(135deg,
+    color-mix(in srgb, var(--tnl-ru) 32%, transparent) 0 3px,
+    color-mix(in srgb, var(--tnl-ru) 10%, transparent) 3px 6px);
+}
+.tn-loss-gb > i { position: absolute; inset: 0 auto 0 0; min-width: 2px; border-radius: 2px; background: var(--tnl-ru); }
+.tn-loss-gn { grid-column: 2; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+/* Recent rows: mark, name, age; the place or category under the name. */
+.tn-loss-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-loss-list li {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline;
+  padding: 5px 0; border-top: 1px solid var(--tn-border);
+}
+.tn-loss-list .t { font-size: var(--tnx-fs-sm); line-height: 1.35; overflow-wrap: anywhere; }
+.tn-loss-list .s { grid-column: 2 / -1; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-loss-list .a { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); white-space: nowrap; }
+.tn-loss-dot, .tn-loss-dia { display: inline-block; flex: none; align-self: center; box-sizing: border-box; }
+.tn-loss-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tnl-ru); border: 1.5px solid var(--tnl-ru); }
+.tn-loss-dot.is-off { background: transparent; }
+.tn-loss-dia { width: 8px; height: 8px; margin-left: 1px; background: var(--tnl-ua); transform: rotate(45deg); }
+/* Count bars by category or type. */
+.tn-loss-cat { display: grid; gap: 4px; font-size: var(--tnx-fs-xs); }
+.tn-loss-cat-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr 40px; gap: 8px; align-items: center; }
+.tn-loss-cat-row > span:first-child { color: var(--tn-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-loss-cat .b { position: relative; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--tnl-ua) 14%, transparent); }
+.tn-loss-cat .b > i { position: absolute; inset: 0 auto 0 0; min-width: 2px; border-radius: 2px; background: var(--tnl-ua); }
+.tn-loss-cat.is-ru .b { background: color-mix(in srgb, var(--tnl-ru) 14%, transparent); }
+.tn-loss-cat.is-ru .b > i { background: var(--tnl-ru); }
+.tn-loss-cat .n { text-align: right; color: var(--tn-text-muted); font-variant-numeric: tabular-nums; }
+/* Expanded views. */
+.tn-loss-x { font-variant-numeric: tabular-nums; }
+.tn-loss-sec > h3 { font-size: var(--tnx-fs-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--tn-text-faint); margin: 0 0 6px; }
+.tn-loss-table th, .tn-loss-table td { text-align: right; vertical-align: top; }
+.tn-loss-table th:first-child, .tn-loss-table td:first-child,
+.tn-loss-table tbody th { text-align: left; }
+.tn-loss-table thead th { cursor: default; }
+.tn-loss-table td { white-space: nowrap; }
+.tn-loss-table td.w { white-space: normal; min-width: 9em; }
+.tn-loss-table tbody th { font-weight: 500; font-size: var(--tnx-fs); color: var(--tn-text); text-transform: none; letter-spacing: 0; padding: 5px 8px; border-bottom: 1px solid var(--tn-border); }
+.tn-loss-match { display: block; font-size: var(--tnx-fs-xs); font-weight: 400; color: var(--tn-text-faint); }
+.tn-loss-ratio { color: var(--tnl-ru-ink); font-weight: 600; }
+.tn-loss-note { margin: 6px 0 0; font-size: var(--tnx-fs-xs); line-height: 1.5; color: var(--tn-text-muted); max-width: 90ch; }
+.tn-loss-x a { color: var(--tn-accent); text-underline-offset: 2px; }
+.tn-loss-show {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 2px 9px;
+  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-text); cursor: pointer;
+  background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: 6px;
+}
+.tn-loss-show:hover { border-color: var(--tn-accent); }
+.tn-loss-off { display: inline-flex; align-items: center; gap: 6px; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); white-space: nowrap; }
+.tn-loss-x a:focus-visible, .tn-loss-show:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; border-radius: 3px; }
+@media (max-width: 720px) {
+  .tn-loss-table thead { display: none; }
+  .tn-loss-table, .tn-loss-table tbody, .tn-loss-table tr { display: block; }
+  .tn-loss-table tr { padding: 6px 0; border-bottom: 1px solid var(--tn-border); }
+  .tn-loss-table th, .tn-loss-table td { display: inline-block; border: 0; padding: 2px 8px 2px 0; text-align: left; }
+  .tn-loss-table tbody th { display: block; }
+}
+/* ── end Vehicle losses ── */
+
+/* ── War news (lib/console/widgets/war/war-news.tsx) ───────────────────────────
+   The card and expanded view of the `war-news` layer. Tokens only, except the three
+   side tints, which are the war palette's own (Ukrainian blue, Russian red, the
+   console's neutral for independent) and have a dark-skin pair below. The side is
+   always the badge's TEXT (UA, RU, IND); the tint is a second cue, never the only one. */
+.tn-wn { display: grid; gap: 6px; padding: 8px var(--tn-row-px) 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-wn-visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.tn-wn-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.tn-wn-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tn-wn-seg button,
+.tn-wn-zone select,
+.tn-wn-more,
+.tn-wn-showmore {
+  min-height: 26px; padding: 2px 9px; font: inherit; font-size: var(--tnx-fs-xs); font-weight: 550;
+  color: var(--tn-text-muted); background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong); border-radius: 999px; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.tn-wn-seg button:hover, .tn-wn-zone select:hover, .tn-wn-more:hover, .tn-wn-showmore:hover { color: var(--tn-text); border-color: var(--tn-text-faint); }
+.tn-wn-seg button[aria-pressed="true"] { color: var(--tn-surface-solid); background: var(--tn-text); border-color: var(--tn-text); }
+.tn-wn-seg button:focus-visible, .tn-wn-zone select:focus-visible, .tn-wn-more:focus-visible,
+.tn-wn-showmore:focus-visible, .tn-wn-search input:focus-visible,
+.tn-wn a:focus-visible, .tn-wn-detail a:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-wn-n { margin-left: 5px; font-weight: 450; opacity: .78; }
+.tn-wn-zone { margin-left: auto; }
+.tn-wn-zone select { padding-right: 6px; }
+@media (pointer: coarse) {
+  .tn-wn-seg button, .tn-wn-zone select, .tn-wn-more, .tn-wn-showmore { min-height: 36px; }
+}
+
+.tn-wn-badge {
+  display: inline-block; flex: none; min-width: 26px; padding: 1px 5px; border-radius: 4px;
+  font-size: calc(var(--tnx-fs-xs) - 1px); font-weight: 650; letter-spacing: .02em; line-height: 1.5; text-align: center;
+  color: var(--tn-text-muted); background: var(--tn-chip-bg);
+}
+.tn-wn-badge.is-ua { color: #1f4f8a; background: #e1ebf6; }
+.tn-wn-badge.is-ru { color: #7a1f14; background: #f6e3e0; }
+:root[data-tnx-skin="dark"] .tn-wn-badge { background: rgba(236, 238, 228, 0.08); }
+:root[data-tnx-skin="dark"] .tn-wn-badge.is-ua { color: #a9c8ef; background: rgba(110, 160, 220, 0.16); }
+:root[data-tnx-skin="dark"] .tn-wn-badge.is-ru { color: #f2ad9f; background: rgba(220, 110, 95, 0.16); }
+
+.tn-wn-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-wn-list li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline;
+  padding: 6px 0; border-top: 1px solid var(--tn-border);
+}
+.tn-wn-title {
+  color: var(--tn-text); text-decoration: none; line-height: 1.35; font-size: var(--tnx-fs-sm);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tn-wn-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+.tn-wn-age { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-wn-by { grid-column: 2 / -1; display: block; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-wn-foot { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.4; color: var(--tn-text-muted); }
+.tn-wn-muted { color: var(--tn-text-muted); }
+/* A post the model has not checked says so, in words, in the warning ink. */
+.tn-wn-flag { display: block; color: var(--tn-lagging-ink); }
+
+/* Expanded view */
+.tn-wn-detail { gap: 14px; }
+.tn-wn-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; }
+.tn-wn-bar .tn-wn-filters { flex: 1 1 380px; }
+.tn-wn-search { display: grid; gap: 3px; flex: 1 1 240px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+.tn-wn-search input {
+  font: inherit; font-size: var(--tnx-fs); color: var(--tn-text); background: var(--tn-surface-2);
+  border: 1px solid var(--tn-border-strong); border-radius: 8px; padding: 5px 10px; min-height: 30px;
+}
+.tn-wn-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; }
+@media (max-width: 900px) { .tn-wn-panels { grid-template-columns: minmax(0, 1fr); } }
+.tn-wn-outlets td { vertical-align: top; }
+.tn-wn-outlets a, .tn-wn-table a.tn-wn-title { color: var(--tn-text); }
+.tn-wn-why { display: block; margin-top: 1px; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-wn-why.is-warn { color: var(--tn-lagging-ink); }
+.tn-wn-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-wn-table td { vertical-align: top; }
+.tn-wn-table .tn-sd-row { cursor: default; }
+.tn-wn-table .tn-wn-title { -webkit-line-clamp: 3; font-size: var(--tnx-fs); }
+.tn-wn-table .tn-wn-by { margin-top: 2px; }
+.tn-wn-place { min-width: 6.5em; max-width: 220px; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-wn-more { margin-top: 5px; min-height: 22px; padding: 1px 8px; font-size: var(--tnx-fs-xs); }
+.tn-wn-text { margin: 4px 0; max-width: 75ch; font-size: var(--tnx-fs-sm); line-height: 1.5; color: var(--tn-text); }
+.tn-wn-original { color: var(--tn-text-muted); }
+.tn-wn-showmore { justify-self: start; }
+/* ── end war news ── */

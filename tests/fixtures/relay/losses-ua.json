@@ -1,0 +1,2409 @@
+{
+ "version": 1,
+ "feed": "losses-ua",
+ "fetchedAt": "2026-10-30T01:19:17Z",
+ "data": {
+  "losses": [
+   {
+    "id": "pvo/71805",
+    "name": "П-18",
+    "nameEn": "P-18",
+    "category": "ПВО",
+    "categoryEn": "Air defence",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-27",
+    "lat": 48.0325,
+    "lon": 34.9278,
+    "links": [
+     "https://lostarmour.info/pvo/71805",
+     "https://t.me/icpbtrubicon/3002"
+    ]
+   },
+   {
+    "id": "armour/71806",
+    "name": "2С22 «Богдана» (8х8 Tatra T815-7)",
+    "nameEn": "2S22 \"Bohdana\" (8x8 Tatra T815-7)",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-27",
+    "lat": 49.8222,
+    "lon": 37.3586,
+    "links": [
+     "https://lostarmour.info/armour/71806",
+     "https://t.me/operationall_space/13847"
+    ]
+   },
+   {
+    "id": "mraps/71802",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-26",
+    "lat": 48.7566,
+    "lon": 37.4881,
+    "links": [
+     "https://lostarmour.info/mraps/71802",
+     "https://t.me/icpbtrubicon/2982"
+    ]
+   },
+   {
+    "id": "armour/71808",
+    "name": "VAB",
+    "nameEn": "VAB",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-26",
+    "lat": 49.9933,
+    "lon": 37.6115,
+    "links": [
+     "https://lostarmour.info/armour/71808",
+     "https://t.me/kcaebirds/3916"
+    ]
+   },
+   {
+    "id": "armour/71804",
+    "name": "БМП",
+    "nameEn": "Infantry fighting vehicle",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-26",
+    "lat": 47.7695,
+    "lon": 35.8132,
+    "links": [
+     "https://lostarmour.info/armour/71804",
+     "https://t.me/icpbtrubicon/2982"
+    ]
+   },
+   {
+    "id": "armour/71801",
+    "name": "САУ",
+    "nameEn": "Self-propelled gun",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-26",
+    "lat": 47.9869,
+    "lon": 35.7686,
+    "links": [
+     "https://lostarmour.info/armour/71801",
+     "https://t.me/icpbtrubicon/2982"
+    ]
+   },
+   {
+    "id": "auto/71789",
+    "name": "ЗИЛ-131",
+    "nameEn": "ZIL-131",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-25",
+    "lat": 48.5457,
+    "lon": 36.9829,
+    "links": [
+     "https://lostarmour.info/auto/71789",
+     "https://t.me/icpbtrubicon/2972"
+    ]
+   },
+   {
+    "id": "armour/71791",
+    "name": "2С22 «Богдана»",
+    "nameEn": "2S22 \"Bohdana\"",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-25",
+    "lat": 48.4853,
+    "lon": 36.8358,
+    "links": [
+     "https://lostarmour.info/armour/71791",
+     "https://t.me/icpbtrubicon/2972"
+    ]
+   },
+   {
+    "id": "mraps/71727",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.6509,
+    "lon": 36.9375,
+    "links": [
+     "https://lostarmour.info/mraps/71727",
+     "https://t.me/icpbtrubicon/2962"
+    ]
+   },
+   {
+    "id": "mraps/71726",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.5698,
+    "lon": 37.0226,
+    "links": [
+     "https://lostarmour.info/mraps/71726",
+     "https://t.me/icpbtrubicon/2962"
+    ]
+   },
+   {
+    "id": "mraps/71713",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.6594,
+    "lon": 37.5338,
+    "links": [
+     "https://lostarmour.info/mraps/71713",
+     "https://vt.tiktok.com/ZSgmDbbeY/"
+    ]
+   },
+   {
+    "id": "mraps/71712",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.6638,
+    "lon": 37.5339,
+    "links": [
+     "https://lostarmour.info/mraps/71712",
+     "https://vt.tiktok.com/ZSgmDbbeY/"
+    ]
+   },
+   {
+    "id": "mraps/71701",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.4032,
+    "lon": 37.1696,
+    "links": [
+     "https://lostarmour.info/mraps/71701"
+    ]
+   },
+   {
+    "id": "mraps/71699",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.6505,
+    "lon": 37.5143,
+    "links": [
+     "https://lostarmour.info/mraps/71699"
+    ]
+   },
+   {
+    "id": "artd/71685",
+    "name": "Д-30",
+    "nameEn": "D-30",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-23",
+    "lat": 48.7113,
+    "lon": 37.6482,
+    "links": [
+     "https://lostarmour.info/artd/71685"
+    ]
+   },
+   {
+    "id": "mraps/71696",
+    "name": "«Джура» НПО Практика",
+    "nameEn": "\"Dzhura\" NPO Praktika",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.5373,
+    "lon": 36.8518,
+    "links": [
+     "https://lostarmour.info/mraps/71696",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "mraps/71688",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.5795,
+    "lon": 37.0742,
+    "links": [
+     "https://lostarmour.info/mraps/71688",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "artd/71694",
+    "name": "Д-30",
+    "nameEn": "D-30",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.0018,
+    "lon": 36.28,
+    "links": [
+     "https://lostarmour.info/artd/71694",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71722",
+    "name": "2С3",
+    "nameEn": "2S3",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.889,
+    "lon": 37.7019,
+    "links": [
+     "https://lostarmour.info/armour/71722",
+     "https://t.me/lost_armour/11932"
+    ]
+   },
+   {
+    "id": "armour/71721",
+    "name": "БТР-3Е",
+    "nameEn": "BTR-3E",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 47.9879,
+    "lon": 36.5094,
+    "links": [
+     "https://lostarmour.info/armour/71721"
+    ]
+   },
+   {
+    "id": "armour/71700",
+    "name": "бронетехника",
+    "nameEn": "Armoured vehicle",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.4224,
+    "lon": 36.8156,
+    "links": [
+     "https://lostarmour.info/armour/71700",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71698",
+    "name": "VAB",
+    "nameEn": "VAB",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.4224,
+    "lon": 36.8157,
+    "links": [
+     "https://lostarmour.info/armour/71698",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71693",
+    "name": "M113",
+    "nameEn": "M113",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.5209,
+    "lon": 37.0973,
+    "links": [
+     "https://lostarmour.info/armour/71693",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71692",
+    "name": "FV103 Spartan",
+    "nameEn": "FV103 Spartan",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.5976,
+    "lon": 37.0597,
+    "links": [
+     "https://lostarmour.info/armour/71692",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71691",
+    "name": "Valuk",
+    "nameEn": "Valuk",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.8176,
+    "lon": 37.5637,
+    "links": [
+     "https://lostarmour.info/armour/71691",
+     "https://t.me/icpbtrubicon/2953",
+     "https://t.me/SouthernRepublic/37303"
+    ]
+   },
+   {
+    "id": "armour/71690",
+    "name": "VAB",
+    "nameEn": "VAB",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 48.3974,
+    "lon": 36.8881,
+    "links": [
+     "https://lostarmour.info/armour/71690",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71689",
+    "name": "БТР-Т (бронетранспортер на базе Т-64)",
+    "nameEn": "BTR-T (armoured personnel carrier based on T-64)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 47.6487,
+    "lon": 35.9067,
+    "links": [
+     "https://lostarmour.info/armour/71689",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "armour/71684",
+    "name": "BvS-10",
+    "nameEn": "BvS-10",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-22",
+    "lat": 49.6951,
+    "lon": 37.3798,
+    "links": [
+     "https://lostarmour.info/armour/71684",
+     "https://t.me/rashepilo/5662"
+    ]
+   },
+   {
+    "id": "mraps/71687",
+    "name": "UAT-TISA",
+    "nameEn": "UAT-TISA",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-21",
+    "lat": 48.5776,
+    "lon": 37.0701,
+    "links": [
+     "https://lostarmour.info/mraps/71687",
+     "https://t.me/icpbtrubicon/2953"
+    ]
+   },
+   {
+    "id": "mraps/71686",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-21",
+    "lat": 48.6275,
+    "lon": 37.5704,
+    "links": [
+     "https://lostarmour.info/mraps/71686",
+     "https://t.me/icpbtrubicon/2944"
+    ]
+   },
+   {
+    "id": "auto/71624",
+    "name": "Урал-4320",
+    "nameEn": "Ural-4320",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-21",
+    "lat": 48.6277,
+    "lon": 37.5469,
+    "links": [
+     "https://lostarmour.info/auto/71624"
+    ]
+   },
+   {
+    "id": "armour/71661",
+    "name": "НРТК «Protector»",
+    "nameEn": "Ground robotic system \"Protector\"",
+    "category": "Другое",
+    "categoryEn": "Other",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-21",
+    "lat": 49.4212,
+    "lon": 37.6065,
+    "links": [
+     "https://lostarmour.info/armour/71661"
+    ]
+   },
+   {
+    "id": "mraps/71631",
+    "name": "UAT-TISA",
+    "nameEn": "UAT-TISA",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 49.1713,
+    "lon": 37.4561,
+    "links": [
+     "https://lostarmour.info/mraps/71631",
+     "https://t.me/RabotaemsKremlem/79"
+    ]
+   },
+   {
+    "id": "mraps/71616",
+    "name": "UAT Gyurza 01",
+    "nameEn": "UAT Gyurza 01",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.5374,
+    "lon": 37.0494,
+    "links": [
+     "https://lostarmour.info/mraps/71616",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "mraps/71609",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.5482,
+    "lon": 37.0318,
+    "links": [
+     "https://lostarmour.info/mraps/71609",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "mdst/71621",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.4187,
+    "lon": 36.7483,
+    "links": [
+     "https://lostarmour.info/mdst/71621",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "armour/71651",
+    "name": "CAESAR (6x6 Sherpa 5)",
+    "nameEn": "CAESAR (6x6 Sherpa 5)",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.4726,
+    "lon": 36.8585,
+    "links": [
+     "https://lostarmour.info/armour/71651",
+     "https://t.me/icpbtrubicon/2950"
+    ]
+   },
+   {
+    "id": "armour/71620",
+    "name": "PzH 2000",
+    "nameEn": "PzH 2000",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.5343,
+    "lon": 36.8607,
+    "links": [
+     "https://lostarmour.info/armour/71620",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "armour/71618",
+    "name": "танк",
+    "nameEn": "Tank",
+    "category": "Танк",
+    "categoryEn": "Tanks",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.8405,
+    "lon": 37.6536,
+    "links": [
+     "https://lostarmour.info/armour/71618",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "armour/71617",
+    "name": "M-80A",
+    "nameEn": "M-80A",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.6684,
+    "lon": 37.6009,
+    "links": [
+     "https://lostarmour.info/armour/71617",
+     "https://t.me/icpbtrubicon/2931"
+    ]
+   },
+   {
+    "id": "armour/71582",
+    "name": "МТ-ЛБу",
+    "nameEn": "MT-LBu",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-20",
+    "lat": 48.1308,
+    "lon": 36.5814,
+    "links": [
+     "https://lostarmour.info/armour/71582",
+     "https://t.me/sudoplatov_official/9550"
+    ]
+   },
+   {
+    "id": "mraps/71613",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 48.5436,
+    "lon": 37.0507,
+    "links": [
+     "https://lostarmour.info/mraps/71613",
+     "https://t.me/icpbtrubicon/2920"
+    ]
+   },
+   {
+    "id": "mraps/71574",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 47.5849,
+    "lon": 35.7918,
+    "links": [
+     "https://lostarmour.info/mraps/71574",
+     "https://t.me/Brigada_VARYAG/354"
+    ]
+   },
+   {
+    "id": "mraps/71560",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 48.6063,
+    "lon": 37.5764,
+    "links": [
+     "https://lostarmour.info/mraps/71560"
+    ]
+   },
+   {
+    "id": "armour/71610",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 48.532,
+    "lon": 37.0529,
+    "links": [
+     "https://lostarmour.info/armour/71610",
+     "https://t.me/icpbtrubicon/2920"
+    ]
+   },
+   {
+    "id": "armour/71571",
+    "name": "DITA",
+    "nameEn": "DITA",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 48.5806,
+    "lon": 37.0342,
+    "links": [
+     "https://lostarmour.info/armour/71571",
+     "https://www.tiktok.com/@venomdnepr/video/7699937560319069461",
+     "https://t.me/icpbtrubicon/2929"
+    ]
+   },
+   {
+    "id": "armour/71563",
+    "name": "2С22 «Богдана» (8х8 Tatra T815-7)",
+    "nameEn": "2S22 \"Bohdana\" (8x8 Tatra T815-7)",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-19",
+    "lat": 49.8926,
+    "lon": 37.3912,
+    "links": [
+     "https://lostarmour.info/armour/71563",
+     "https://t.me/sudoplatov_official/9543"
+    ]
+   },
+   {
+    "id": "mraps/71622",
+    "name": "Новатор 2",
+    "nameEn": "Novator 2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 48.6318,
+    "lon": 36.9674,
+    "links": [
+     "https://lostarmour.info/mraps/71622",
+     "https://vt.tiktok.com/ZSgUvxjDF/"
+    ]
+   },
+   {
+    "id": "mraps/71547",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 48.5364,
+    "lon": 37.0563,
+    "links": [
+     "https://lostarmour.info/mraps/71547",
+     "https://t.me/icpbtrubicon/2909"
+    ]
+   },
+   {
+    "id": "mraps/71545",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 47.6529,
+    "lon": 35.8988,
+    "links": [
+     "https://lostarmour.info/mraps/71545",
+     "https://t.me/icpbtrubicon/2909"
+    ]
+   },
+   {
+    "id": "mdst/71550",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 47.7508,
+    "lon": 35.8537,
+    "links": [
+     "https://lostarmour.info/mdst/71550",
+     "https://t.me/icpbtrubicon/2909"
+    ]
+   },
+   {
+    "id": "auto/71546",
+    "name": "КАМАЗ-5511 (самосвал)",
+    "nameEn": "KamAZ-5511 (dump truck)",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 48.6492,
+    "lon": 37.4992,
+    "links": [
+     "https://lostarmour.info/auto/71546",
+     "https://www.tiktok.com/@vinttik1301/video/7694604898230488341",
+     "https://t.me/icpbtrubicon/2909"
+    ]
+   },
+   {
+    "id": "armour/71543",
+    "name": "бронетехника",
+    "nameEn": "Armoured vehicle",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-18",
+    "lat": 49.8234,
+    "lon": 37.5021,
+    "links": [
+     "https://lostarmour.info/armour/71543",
+     "https://t.me/icpbtrubicon/2913"
+    ]
+   },
+   {
+    "id": "mraps/71529",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-17",
+    "lat": 48.4028,
+    "lon": 37.1554,
+    "links": [
+     "https://lostarmour.info/mraps/71529"
+    ]
+   },
+   {
+    "id": "mraps/71527",
+    "name": "Козак-5 (3 дв.)",
+    "nameEn": "Kozak-5 (3-door)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-17",
+    "lat": 48.4047,
+    "lon": 37.1541,
+    "links": [
+     "https://lostarmour.info/mraps/71527"
+    ]
+   },
+   {
+    "id": "mraps/71526",
+    "name": "Козак-5 (3 дв.)",
+    "nameEn": "Kozak-5 (3-door)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-17",
+    "lat": 48.5455,
+    "lon": 37.0324,
+    "links": [
+     "https://lostarmour.info/mraps/71526"
+    ]
+   },
+   {
+    "id": "mraps/71536",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 47.7099,
+    "lon": 35.7239,
+    "links": [
+     "https://lostarmour.info/mraps/71536",
+     "https://t.me/icpbtrubicon/2903"
+    ]
+   },
+   {
+    "id": "mraps/71535",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 48.6246,
+    "lon": 37.5496,
+    "links": [
+     "https://lostarmour.info/mraps/71535",
+     "https://t.me/icpbtrubicon/2904"
+    ]
+   },
+   {
+    "id": "mraps/71509",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 48.0256,
+    "lon": 36.5123,
+    "links": [
+     "https://lostarmour.info/mraps/71509",
+     "https://t.me/lost_armour/11821",
+     "https://t.me/icpbtrubicon/2909"
+    ]
+   },
+   {
+    "id": "mraps/71508",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 48.0251,
+    "lon": 36.5114,
+    "links": [
+     "https://lostarmour.info/mraps/71508",
+     "https://t.me/lost_armour/11821"
+    ]
+   },
+   {
+    "id": "mraps/71505",
+    "name": "BMC 350-16Z Kirpi",
+    "nameEn": "BMC 350-16Z Kirpi",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 48.1572,
+    "lon": 36.6256,
+    "links": [
+     "https://lostarmour.info/mraps/71505",
+     "https://t.me/sudoplatov_official/9533"
+    ]
+   },
+   {
+    "id": "armour/71530",
+    "name": "БРМ-1К",
+    "nameEn": "BRM-1K",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-16",
+    "lat": 48.6738,
+    "lon": 37.6041,
+    "links": [
+     "https://lostarmour.info/armour/71530"
+    ]
+   },
+   {
+    "id": "mraps/71537",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.623,
+    "lon": 37.5513,
+    "links": [
+     "https://lostarmour.info/mraps/71537",
+     "https://t.me/icpbtrubicon/2893"
+    ]
+   },
+   {
+    "id": "mraps/71518",
+    "name": "Козак-2",
+    "nameEn": "Kozak-2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5555,
+    "lon": 37.0271,
+    "links": [
+     "https://lostarmour.info/mraps/71518"
+    ]
+   },
+   {
+    "id": "mraps/71516",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5549,
+    "lon": 37.0273,
+    "links": [
+     "https://lostarmour.info/mraps/71516"
+    ]
+   },
+   {
+    "id": "mraps/71515",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5432,
+    "lon": 37.0332,
+    "links": [
+     "https://lostarmour.info/mraps/71515",
+     "https://t.me/kaspiyskyberet/29296"
+    ]
+   },
+   {
+    "id": "mraps/71514",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5423,
+    "lon": 37.0334,
+    "links": [
+     "https://lostarmour.info/mraps/71514"
+    ]
+   },
+   {
+    "id": "mraps/71513",
+    "name": "UAT-TISA",
+    "nameEn": "UAT-TISA",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5424,
+    "lon": 37.0335,
+    "links": [
+     "https://lostarmour.info/mraps/71513",
+     "https://t.me/icpbtrubicon/2897"
+    ]
+   },
+   {
+    "id": "mraps/71504",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.4949,
+    "lon": 37.0372,
+    "links": [
+     "https://lostarmour.info/mraps/71504"
+    ]
+   },
+   {
+    "id": "mraps/71503",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5102,
+    "lon": 37.0324,
+    "links": [
+     "https://lostarmour.info/mraps/71503"
+    ]
+   },
+   {
+    "id": "mraps/71502",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.3843,
+    "lon": 37.1729,
+    "links": [
+     "https://lostarmour.info/mraps/71502"
+    ]
+   },
+   {
+    "id": "auto/71517",
+    "name": "КрАЗ-6322",
+    "nameEn": "KrAZ-6322",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-15",
+    "lat": 48.5481,
+    "lon": 37.0317,
+    "links": [
+     "https://lostarmour.info/auto/71517",
+     "https://t.me/icpbtrubicon/2897"
+    ]
+   },
+   {
+    "id": "mraps/71531",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-14",
+    "lat": 48.6333,
+    "lon": 37.5361,
+    "links": [
+     "https://lostarmour.info/mraps/71531",
+     "https://vt.tiktok.com/ZSgYxAcSc/"
+    ]
+   },
+   {
+    "id": "mraps/71497",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-14",
+    "lat": 49.6774,
+    "lon": 37.456,
+    "links": [
+     "https://lostarmour.info/mraps/71497",
+     "https://t.me/icpbtrubicon/2883"
+    ]
+   },
+   {
+    "id": "mdst/71506",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-14",
+    "lat": 47.7494,
+    "lon": 35.8425,
+    "links": [
+     "https://lostarmour.info/mdst/71506",
+     "https://t.me/icpbtrubicon/2943",
+     "https://t.me/lost_armour/11804"
+    ]
+   },
+   {
+    "id": "armour/71507",
+    "name": "БРЭМ-1",
+    "nameEn": "BREM-1",
+    "category": "Другое",
+    "categoryEn": "Other",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-14",
+    "lat": 47.7495,
+    "lon": 35.8422,
+    "links": [
+     "https://lostarmour.info/armour/71507",
+     "https://t.me/icpbtrubicon/2943",
+     "https://t.me/lost_armour/11804"
+    ]
+   },
+   {
+    "id": "mraps/71667",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.5935,
+    "lon": 37.4365,
+    "links": [
+     "https://lostarmour.info/mraps/71667"
+    ]
+   },
+   {
+    "id": "mraps/71511",
+    "name": "Козак-5 (мед.эвак)",
+    "nameEn": "Kozak-5 (medical evacuation)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.5773,
+    "lon": 37.0811,
+    "links": [
+     "https://lostarmour.info/mraps/71511",
+     "https://t.me/icpbtrubicon/2881"
+    ]
+   },
+   {
+    "id": "mraps/71473",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.5427,
+    "lon": 37.0406,
+    "links": [
+     "https://lostarmour.info/mraps/71473",
+     "https://t.me/icpbtrubicon/2871"
+    ]
+   },
+   {
+    "id": "mdst/71471",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.6285,
+    "lon": 37.1493,
+    "links": [
+     "https://lostarmour.info/mdst/71471",
+     "https://t.me/icpbtrubicon/2871"
+    ]
+   },
+   {
+    "id": "armour/71510",
+    "name": "VAB",
+    "nameEn": "VAB",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.3988,
+    "lon": 36.8858,
+    "links": [
+     "https://lostarmour.info/armour/71510",
+     "https://t.me/icpbtrubicon/2881"
+    ]
+   },
+   {
+    "id": "armour/71472",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-13",
+    "lat": 48.7607,
+    "lon": 37.5141,
+    "links": [
+     "https://lostarmour.info/armour/71472",
+     "https://t.me/icpbtrubicon/2871"
+    ]
+   },
+   {
+    "id": "mraps/71478",
+    "name": "Land Rover Snatch",
+    "nameEn": "Land Rover Snatch",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 47.8302,
+    "lon": 35.803,
+    "links": [
+     "https://lostarmour.info/mraps/71478",
+     "https://t.me/icpbtrubicon/2863"
+    ]
+   },
+   {
+    "id": "mraps/71475",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.6635,
+    "lon": 37.6234,
+    "links": [
+     "https://lostarmour.info/mraps/71475",
+     "https://t.me/icpbtrubicon/2864"
+    ]
+   },
+   {
+    "id": "mraps/71462",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 49.0461,
+    "lon": 37.6773,
+    "links": [
+     "https://lostarmour.info/mraps/71462",
+     "https://vt.tiktok.com/ZSbo3tvX9/"
+    ]
+   },
+   {
+    "id": "mraps/71460",
+    "name": "Новатор 2",
+    "nameEn": "Novator 2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.8502,
+    "lon": 37.7109,
+    "links": [
+     "https://lostarmour.info/mraps/71460",
+     "https://t.me/SouthernRepublic/37029"
+    ]
+   },
+   {
+    "id": "mraps/71456",
+    "name": "«Джура» НПО Практика",
+    "nameEn": "\"Dzhura\" NPO Praktika",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.6682,
+    "lon": 37.6391,
+    "links": [
+     "https://lostarmour.info/mraps/71456",
+     "https://t.me/SouthernRepublic/37029",
+     "https://www.youtube.com/watch?v=CyA9s4MEwnw&t=122s"
+    ]
+   },
+   {
+    "id": "mraps/71450",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.5426,
+    "lon": 37.7236,
+    "links": [
+     "https://lostarmour.info/mraps/71450",
+     "https://t.me/aukrop/1010"
+    ]
+   },
+   {
+    "id": "mraps/71447",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.5792,
+    "lon": 37.3051,
+    "links": [
+     "https://lostarmour.info/mraps/71447"
+    ]
+   },
+   {
+    "id": "mraps/71443",
+    "name": "HMMWV (пикап)",
+    "nameEn": "HMMWV (pickup)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.2686,
+    "lon": 36.7407,
+    "links": [
+     "https://lostarmour.info/mraps/71443",
+     "https://t.me/sudoplatov_official/9513",
+     "https://t.me/freeukrainianrepublic/2146"
+    ]
+   },
+   {
+    "id": "artd/71476",
+    "name": "2П22 «Богдана-Б»",
+    "nameEn": "2P22 \"Bohdana-B\"",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.7234,
+    "lon": 37.6286,
+    "links": [
+     "https://lostarmour.info/artd/71476",
+     "https://t.me/SouthernRepublic/37061",
+     "https://t.me/icpbtrubicon/2864"
+    ]
+   },
+   {
+    "id": "armour/71477",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 47.9184,
+    "lon": 35.9944,
+    "links": [
+     "https://lostarmour.info/armour/71477",
+     "https://t.me/icpbtrubicon/2863"
+    ]
+   },
+   {
+    "id": "armour/71438",
+    "name": "CAESAR (6x6 Sherpa 5)",
+    "nameEn": "CAESAR (6x6 Sherpa 5)",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-12",
+    "lat": 48.0522,
+    "lon": 36.3862,
+    "links": [
+     "https://lostarmour.info/armour/71438",
+     "https://t.me/lost_armour/11754"
+    ]
+   },
+   {
+    "id": "armour/71470",
+    "name": "САУ",
+    "nameEn": "Self-propelled gun",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-11",
+    "lat": 48.6468,
+    "lon": 37.5386,
+    "links": [
+     "https://lostarmour.info/armour/71470",
+     "https://t.me/KubanArtilery/1609"
+    ]
+   },
+   {
+    "id": "armour/71424",
+    "name": "2С3",
+    "nameEn": "2S3",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-11",
+    "lat": 48.683,
+    "lon": 37.5846,
+    "links": [
+     "https://lostarmour.info/armour/71424",
+     "https://t.me/SouthernRepublic/37000"
+    ]
+   },
+   {
+    "id": "mraps/71428",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-10",
+    "lat": 50.2034,
+    "lon": 37.3602,
+    "links": [
+     "https://lostarmour.info/mraps/71428",
+     "https://www.youtube.com/watch?v=ctVYPaOotzA"
+    ]
+   },
+   {
+    "id": "mraps/71427",
+    "name": "Козак-2",
+    "nameEn": "Kozak-2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-10",
+    "lat": 50.1839,
+    "lon": 37.3682,
+    "links": [
+     "https://lostarmour.info/mraps/71427",
+     "https://www.youtube.com/watch?v=ctVYPaOotzA"
+    ]
+   },
+   {
+    "id": "armour/71425",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-10",
+    "lat": 48.971,
+    "lon": 37.7553,
+    "links": [
+     "https://lostarmour.info/armour/71425",
+     "https://t.me/BV25org/3728"
+    ]
+   },
+   {
+    "id": "mraps/71421",
+    "name": "Husky TSV",
+    "nameEn": "Husky TSV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-09",
+    "lat": 49.0462,
+    "lon": 37.7566,
+    "links": [
+     "https://lostarmour.info/mraps/71421",
+     "https://t.me/RabotaemsKremlem/77",
+     "https://t.me/official144msd/4841"
+    ]
+   },
+   {
+    "id": "auto/71414",
+    "name": "КАМАЗ-5350",
+    "nameEn": "KamAZ-5350",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-09",
+    "lat": 49.6784,
+    "lon": 37.4503,
+    "links": [
+     "https://lostarmour.info/auto/71414",
+     "https://t.me/rashepilo/5052"
+    ]
+   },
+   {
+    "id": "armour/71401",
+    "name": "M109A5ÖE",
+    "nameEn": "M109A5ÖE",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-09",
+    "lat": 47.7442,
+    "lon": 35.8381,
+    "links": [
+     "https://lostarmour.info/armour/71401",
+     "https://t.me/lost_armour/11703"
+    ]
+   },
+   {
+    "id": "armour/71403",
+    "name": "2С3",
+    "nameEn": "2S3",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-08",
+    "lat": 50.0587,
+    "lon": 37.5059,
+    "links": [
+     "https://lostarmour.info/armour/71403",
+     "https://t.me/sudoplatov_official/9498"
+    ]
+   },
+   {
+    "id": "mraps/71394",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-06",
+    "lat": 50.0479,
+    "lon": 37.3538,
+    "links": [
+     "https://lostarmour.info/mraps/71394",
+     "https://vt.tiktok.com/ZSbqNJYNx/"
+    ]
+   },
+   {
+    "id": "mraps/71348",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-06",
+    "lat": 50.06,
+    "lon": 37.3731,
+    "links": [
+     "https://lostarmour.info/mraps/71348",
+     "https://t.me/sudoplatov_official/9479"
+    ]
+   },
+   {
+    "id": "mraps/71461",
+    "name": "UAT-TISA",
+    "nameEn": "UAT-TISA",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-05",
+    "lat": 48.6354,
+    "lon": 37.5409,
+    "links": [
+     "https://lostarmour.info/mraps/71461",
+     "https://t.me/SouthernRepublic/37008",
+     "https://vt.tiktok.com/ZSgMUvoVq/",
+     "https://vt.tiktok.com/ZSbVWWevj/"
+    ]
+   },
+   {
+    "id": "mraps/71345",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-05",
+    "lat": 50.0562,
+    "lon": 37.3745,
+    "links": [
+     "https://lostarmour.info/mraps/71345",
+     "https://vt.tiktok.com/ZSbqNJYNx/",
+     "https://t.me/sudoplatov_official/9468"
+    ]
+   },
+   {
+    "id": "armour/71397",
+    "name": "YPR-765A1",
+    "nameEn": "YPR-765A1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-05",
+    "lat": 50.0562,
+    "lon": 37.3746,
+    "links": [
+     "https://lostarmour.info/armour/71397",
+     "https://t.me/sudoplatov_official/9487",
+     "https://vt.tiktok.com/ZSb4QWoYV/",
+     "https://vt.tiktok.com/ZSgYXF16F/",
+     "https://vt.tiktok.com/ZSbvsUrUH/"
+    ]
+   },
+   {
+    "id": "armour/71385",
+    "name": "DITA",
+    "nameEn": "DITA",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-05",
+    "lat": 50.1465,
+    "lon": 36.3916,
+    "links": [
+     "https://lostarmour.info/armour/71385",
+     "https://t.me/yatarboys/1030",
+     "https://t.me/rshbr_rubezh/348",
+     "https://t.me/icpbtrubicon/2808",
+     "https://t.me/warriorofnorth/22489"
+    ]
+   },
+   {
+    "id": "armour/71384",
+    "name": "Leopard 1A5",
+    "nameEn": "Leopard 1A5",
+    "category": "Танк",
+    "categoryEn": "Tanks",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-05",
+    "lat": 51.0848,
+    "lon": 34.6987,
+    "links": [
+     "https://lostarmour.info/armour/71384",
+     "https://t.me/icpbtrubicon/2808"
+    ]
+   },
+   {
+    "id": "mdst/71336",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-04",
+    "lat": 48.6015,
+    "lon": 37.5587,
+    "links": [
+     "https://lostarmour.info/mdst/71336",
+     "https://t.me/icpbtrubicon/2798"
+    ]
+   },
+   {
+    "id": "armour/71335",
+    "name": "2С22 «Богдана» (8х8 Tatra T158)",
+    "nameEn": "2S22 \"Bohdana\" (8x8 Tatra T158)",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-04",
+    "lat": 48.3687,
+    "lon": 36.7966,
+    "links": [
+     "https://lostarmour.info/armour/71335",
+     "https://t.me/icpbtrubicon/2794"
+    ]
+   },
+   {
+    "id": "armour/71334",
+    "name": "Т-72",
+    "nameEn": "T-72",
+    "category": "Танк",
+    "categoryEn": "Tanks",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-04",
+    "lat": 48.0397,
+    "lon": 36.2977,
+    "links": [
+     "https://lostarmour.info/armour/71334",
+     "https://t.me/icpbtrubicon/2794"
+    ]
+   },
+   {
+    "id": "armour/71333",
+    "name": "AHS Krab",
+    "nameEn": "AHS Krab",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-04",
+    "lat": 48.6962,
+    "lon": 37.5805,
+    "links": [
+     "https://lostarmour.info/armour/71333",
+     "https://t.me/SouthernRepublic/36853"
+    ]
+   },
+   {
+    "id": "mraps/71298",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-02",
+    "lat": 47.6279,
+    "lon": 35.8171,
+    "links": [
+     "https://lostarmour.info/mraps/71298",
+     "https://t.me/icpbtrubicon/2787"
+    ]
+   },
+   {
+    "id": "mdst/71289",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-02",
+    "lat": 48.6968,
+    "lon": 37.5496,
+    "links": [
+     "https://lostarmour.info/mdst/71289",
+     "https://t.me/kalashnikovnews/6878"
+    ]
+   },
+   {
+    "id": "armour/71297",
+    "name": "2С22 «Богдана»",
+    "nameEn": "2S22 \"Bohdana\"",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-02",
+    "lat": 47.8868,
+    "lon": 36.1075,
+    "links": [
+     "https://lostarmour.info/armour/71297",
+     "https://t.me/icpbtrubicon/2787"
+    ]
+   },
+   {
+    "id": "mraps/71288",
+    "name": "Новатор 2",
+    "nameEn": "Novator 2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 48.608,
+    "lon": 37.5477,
+    "links": [
+     "https://lostarmour.info/mraps/71288",
+     "https://vt.tiktok.com/ZSbfTpRpD/"
+    ]
+   },
+   {
+    "id": "mraps/71287",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 48.6081,
+    "lon": 37.5476,
+    "links": [
+     "https://lostarmour.info/mraps/71287",
+     "https://vt.tiktok.com/ZSbfTpRpD/"
+    ]
+   },
+   {
+    "id": "mraps/71286",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 48.3963,
+    "lon": 36.6839,
+    "links": [
+     "https://lostarmour.info/mraps/71286",
+     "https://vt.tiktok.com/ZSbP1nTLS/"
+    ]
+   },
+   {
+    "id": "mraps/71276",
+    "name": "Roshel Senator",
+    "nameEn": "Roshel Senator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 50.2342,
+    "lon": 37.407,
+    "links": [
+     "https://lostarmour.info/mraps/71276",
+     "https://t.me/sudoplatov_official/9450"
+    ]
+   },
+   {
+    "id": "mdst/71284",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 48.6932,
+    "lon": 37.52,
+    "links": [
+     "https://lostarmour.info/mdst/71284",
+     "https://t.me/SouthernRepublic/36766"
+    ]
+   },
+   {
+    "id": "armour/71293",
+    "name": "БТР-4Е",
+    "nameEn": "BTR-4E",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-10-01",
+    "lat": 48.6706,
+    "lon": 37.6325,
+    "links": [
+     "https://lostarmour.info/armour/71293",
+     "https://t.me/icpbtrubicon/2780",
+     "https://t.me/SouthernRepublic/37017"
+    ]
+   },
+   {
+    "id": "mraps/71704",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 50.2287,
+    "lon": 37.4082,
+    "links": [
+     "https://lostarmour.info/mraps/71704",
+     "https://t.me/warriorofnorth/22820",
+     "https://t.me/Ukr_G_M/93200"
+    ]
+   },
+   {
+    "id": "mraps/71703",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 50.2287,
+    "lon": 37.4082,
+    "links": [
+     "https://lostarmour.info/mraps/71703",
+     "https://t.me/warriorofnorth/22820",
+     "https://t.me/Ukr_G_M/93200"
+    ]
+   },
+   {
+    "id": "mraps/71653",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 50.1789,
+    "lon": 37.2441,
+    "links": [
+     "https://lostarmour.info/mraps/71653",
+     "https://t.me/warriorofnorth/22731"
+    ]
+   },
+   {
+    "id": "mraps/71423",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 50.2779,
+    "lon": 37.3842,
+    "links": [
+     "https://lostarmour.info/mraps/71423",
+     "https://t.me/lost_armour/11727"
+    ]
+   },
+   {
+    "id": "mraps/71255",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 48.6719,
+    "lon": 37.6294,
+    "links": [
+     "https://lostarmour.info/mraps/71255",
+     "https://vt.tiktok.com/ZSbA1P7fP/"
+    ]
+   },
+   {
+    "id": "armour/71257",
+    "name": "M113",
+    "nameEn": "M113",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-30",
+    "lat": 50.0696,
+    "lon": 37.5455,
+    "links": [
+     "https://lostarmour.info/armour/71257",
+     "https://t.me/dva_majors/99801"
+    ]
+   },
+   {
+    "id": "mraps/71249",
+    "name": "Новатор 2",
+    "nameEn": "Novator 2",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-29",
+    "lat": 49.6994,
+    "lon": 37.488,
+    "links": [
+     "https://lostarmour.info/mraps/71249",
+     "https://t.me/rashepilo/5154"
+    ]
+   },
+   {
+    "id": "armour/71274",
+    "name": "M109",
+    "nameEn": "M109",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-29",
+    "lat": 49.2428,
+    "lon": 37.7559,
+    "links": [
+     "https://lostarmour.info/armour/71274",
+     "https://t.me/RabotaemsKremlem/77"
+    ]
+   },
+   {
+    "id": "mraps/71265",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.5331,
+    "lon": 36.9427,
+    "links": [
+     "https://lostarmour.info/mraps/71265"
+    ]
+   },
+   {
+    "id": "mraps/71264",
+    "name": "Козак-2М1",
+    "nameEn": "Kozak-2M1",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.5299,
+    "lon": 36.9434,
+    "links": [
+     "https://lostarmour.info/mraps/71264",
+     "https://t.me/icpbtrubicon/2750"
+    ]
+   },
+   {
+    "id": "mraps/71262",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.535,
+    "lon": 36.9953,
+    "links": [
+     "https://lostarmour.info/mraps/71262",
+     "https://t.me/icpbtrubicon/2750"
+    ]
+   },
+   {
+    "id": "mraps/71261",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.0177,
+    "lon": 36.4634,
+    "links": [
+     "https://lostarmour.info/mraps/71261",
+     "https://t.me/icpbtrubicon/2750"
+    ]
+   },
+   {
+    "id": "mraps/71242",
+    "name": "Новатор",
+    "nameEn": "Novator",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.5899,
+    "lon": 37.5733,
+    "links": [
+     "https://lostarmour.info/mraps/71242"
+    ]
+   },
+   {
+    "id": "mraps/71241",
+    "name": "Козак-5 (3 дв.)",
+    "nameEn": "Kozak-5 (3-door)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.589,
+    "lon": 37.5741,
+    "links": [
+     "https://lostarmour.info/mraps/71241"
+    ]
+   },
+   {
+    "id": "auto/71311",
+    "name": "КАМАЗ",
+    "nameEn": "KamAZ",
+    "category": "Небронированный транспорт",
+    "categoryEn": "Trucks and unarmoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.6482,
+    "lon": 37.5153,
+    "links": [
+     "https://lostarmour.info/auto/71311"
+    ]
+   },
+   {
+    "id": "armour/71219",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 50.0992,
+    "lon": 37.4869,
+    "links": [
+     "https://lostarmour.info/armour/71219",
+     "https://t.me/warriorofnorth/22263",
+     "https://t.me/warriorofnorth/22801"
+    ]
+   },
+   {
+    "id": "armour/71215",
+    "name": "БТР-60ПБ",
+    "nameEn": "BTR-60PB",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 49.1682,
+    "lon": 37.8383,
+    "links": [
+     "https://lostarmour.info/armour/71215"
+    ]
+   },
+   {
+    "id": "armour/71212",
+    "name": "Leopard 1A5",
+    "nameEn": "Leopard 1A5",
+    "category": "Танк",
+    "categoryEn": "Tanks",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-28",
+    "lat": 48.6412,
+    "lon": 37.6077,
+    "links": [
+     "https://lostarmour.info/armour/71212",
+     "https://t.me/SouthernRepublic/36675"
+    ]
+   },
+   {
+    "id": "mraps/71220",
+    "name": "бронеавтомобиль",
+    "nameEn": "Armoured car",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.4898,
+    "lon": 37.0455,
+    "links": [
+     "https://lostarmour.info/mraps/71220",
+     "https://vt.tiktok.com/ZSb6MhPU7/"
+    ]
+   },
+   {
+    "id": "mraps/71211",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.6336,
+    "lon": 37.5385,
+    "links": [
+     "https://lostarmour.info/mraps/71211",
+     "https://t.me/SouthernRepublic/36652"
+    ]
+   },
+   {
+    "id": "mdst/71210",
+    "name": "БМ-21",
+    "nameEn": "BM-21",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.6718,
+    "lon": 37.3533,
+    "links": [
+     "https://lostarmour.info/mdst/71210",
+     "https://t.me/nm_dnr/15941"
+    ]
+   },
+   {
+    "id": "armour/71225",
+    "name": "2С22 «Богдана»",
+    "nameEn": "2S22 \"Bohdana\"",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.5272,
+    "lon": 36.9532,
+    "links": [
+     "https://lostarmour.info/armour/71225",
+     "https://t.me/icpbtrubicon/2739"
+    ]
+   },
+   {
+    "id": "armour/71224",
+    "name": "2С1",
+    "nameEn": "2S1",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.6272,
+    "lon": 37.57,
+    "links": [
+     "https://lostarmour.info/armour/71224",
+     "https://t.me/icpbtrubicon/2739"
+    ]
+   },
+   {
+    "id": "armour/71218",
+    "name": "M109",
+    "nameEn": "M109",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 47.686,
+    "lon": 35.8028,
+    "links": [
+     "https://lostarmour.info/armour/71218",
+     "https://t.me/NSDVLuganske/43537"
+    ]
+   },
+   {
+    "id": "armour/71194",
+    "name": "M109",
+    "nameEn": "M109",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-27",
+    "lat": 48.6585,
+    "lon": 37.661,
+    "links": [
+     "https://lostarmour.info/armour/71194",
+     "https://t.me/SouthernRepublic/36633"
+    ]
+   },
+   {
+    "id": "mraps/71199",
+    "name": "Козак-5 (мед.эвак)",
+    "nameEn": "Kozak-5 (medical evacuation)",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-26",
+    "lat": 49.5946,
+    "lon": 37.6072,
+    "links": [
+     "https://lostarmour.info/mraps/71199",
+     "https://t.me/vpolezrenia1/12376"
+    ]
+   },
+   {
+    "id": "mraps/71191",
+    "name": "HMMWV",
+    "nameEn": "HMMWV",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-26",
+    "lat": 47.6035,
+    "lon": 35.7562,
+    "links": [
+     "https://lostarmour.info/mraps/71191",
+     "https://vt.tiktok.com/ZSbY6Cq9Y/"
+    ]
+   },
+   {
+    "id": "mraps/71190",
+    "name": "UAT-TISA",
+    "nameEn": "UAT-TISA",
+    "category": "Бронированный транспорт",
+    "categoryEn": "Armoured vehicles",
+    "status": "Уничтожен",
+    "statusEn": "Destroyed",
+    "date": "2026-09-26",
+    "lat": 50.2243,
+    "lon": 37.3643,
+    "links": [
+     "https://lostarmour.info/mraps/71190",
+     "https://t.me/warriorofnorth/22215"
+    ]
+   }
+  ],
+  "from": "2025-10-31"
+ }
+}

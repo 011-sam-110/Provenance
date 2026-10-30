@@ -177,3 +177,93 @@ export function addRingImage(map: maplibregl.Map, id: string): boolean {
   map.addImage(id, { width: RING_PX, height: RING_PX, data: new Uint8Array(d.data.buffer.slice(0)) }, { pixelRatio: 2 });
   return true;
 }
+
+// ── The hatch over an area of unknown status, and the diamond pin ───────────────────
+//
+// Both are per-colour images drawn on a canvas when the style first asks for one, the
+// same way as the ring above (WorldMap wires `styleimagemissing` to each). A fill-pattern
+// image carries its own colour, so the hatch needs one image for each feature colour.
+
+/** Prefix of every hatch image id. The colour follows it: "sig-hatch-#8a8178". */
+export const HATCH_IMAGE_PREFIX = "sig-hatch-";
+/** Prefix of every diamond image id. The colour follows it: "sig-diamond-#1f4f8a". */
+export const DIAMOND_IMAGE_PREFIX = "sig-diamond-";
+
+const HATCH_PX = 24; // canvas pixels; one 12 CSS px tile at pixelRatio 2
+/** The diamond's half-diagonal in CSS pixels. WorldMap scales icon-size by radius / this. */
+export const DIAMOND_HALF_PX = 16;
+
+const tintOf = (color: string) => (/^#[0-9a-fA-F]{3,8}$/.test(color) ? color : "#64748b");
+
+/**
+ * Diagonal lines in the feature colour on a thin white casing, with clear gaps between:
+ * the ground (or the imagery) shows through, so a hatched area reads as "not known" and
+ * never as one more flat tint. The casing keeps the lines visible on dark satellite
+ * imagery. The tile repeats without a seam: each line runs corner to corner of a square.
+ */
+export function addHatchImage(map: maplibregl.Map, id: string): boolean {
+  if (!id.startsWith(HATCH_IMAGE_PREFIX) || map.hasImage(id)) return false;
+  const tint = tintOf(id.slice(HATCH_IMAGE_PREFIX.length));
+  const canvas = document.createElement("canvas");
+  canvas.width = HATCH_PX;
+  canvas.height = HATCH_PX;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+  const S = HATCH_PX;
+  const lines = () => {
+    ctx.beginPath();
+    for (const o of [-S, -S / 2, 0, S / 2, S]) {
+      ctx.moveTo(o, S);
+      ctx.lineTo(o + S, 0);
+    }
+  };
+  ctx.lineCap = "square";
+  lines();
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  lines();
+  ctx.strokeStyle = tint;
+  ctx.globalAlpha = 0.95;
+  ctx.lineWidth = 2.6;
+  ctx.stroke();
+  const d = ctx.getImageData(0, 0, S, S);
+  map.addImage(id, { width: S, height: S, data: new Uint8Array(d.data.buffer.slice(0)) }, { pixelRatio: 2 });
+  return true;
+}
+
+/**
+ * A diamond in the feature colour with a white edge: the round pin's own paint (a solid
+ * mark, a white rim), turned into a different shape so two sides never differ by colour
+ * alone. Drawn at DIAMOND_HALF_PX; the layer scales it with the pin's radius and the zoom.
+ */
+export function addDiamondImage(map: maplibregl.Map, id: string): boolean {
+  if (!id.startsWith(DIAMOND_IMAGE_PREFIX) || map.hasImage(id)) return false;
+  const tint = tintOf(id.slice(DIAMOND_IMAGE_PREFIX.length));
+  const r = DIAMOND_HALF_PX * 2; // canvas pixels at pixelRatio 2
+  const pad = 4;
+  const size = (r + pad) * 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+  const c = size / 2;
+  ctx.beginPath();
+  ctx.moveTo(c, c - r);
+  ctx.lineTo(c + r, c);
+  ctx.lineTo(c, c + r);
+  ctx.lineTo(c - r, c);
+  ctx.closePath();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = tint;
+  ctx.fill();
+  ctx.globalAlpha = 0.9;
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 4.4;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  const d = ctx.getImageData(0, 0, size, size);
+  map.addImage(id, { width: size, height: size, data: new Uint8Array(d.data.buffer.slice(0)) }, { pixelRatio: 2 });
+  return true;
+}

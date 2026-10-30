@@ -33,6 +33,7 @@ import { makeAssetDetail } from "./cables.detail";
 import { makeScheduleDetail } from "./schedule.detail";
 import { makeForecastDetail } from "./forecast.detail";
 import { makeAisDetail } from "./ais.detail";
+import { WAR_WIDGETS } from "./war";
 
 /**
  * Whether the footer should say "needs an API key". Reads the SAME live status the rail
@@ -70,6 +71,8 @@ export function makeSignalDetail(source: SignalSource) {
   // Forward-looking, time-anchored layers (rocket launches) render a SCHEDULE — a
   // countdown-ordered agenda. Event layers (earthquakes, storms, …) keep the
   // schema below unchanged.
+  const war = WAR_WIDGETS[source.id]?.Detail;
+  if (war) return war;
   if (source.kind === "asset") return makeAssetDetail(source);
   if (source.kind === "schedule") return makeScheduleDetail(source);
   if (source.kind === "forecast") return makeForecastDetail(source);

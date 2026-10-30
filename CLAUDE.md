@@ -300,7 +300,8 @@ obligations and are not satisfied by the licence.
   `npx vite-node -c vitest.config.ts scripts/liveness-playcheck.mts` runs one pass and
   prints them. The HUD's Live block and the `stat-line` count video and never stills.
   `PLAYCHECK=off` turns the loop off, which leaves the warm-up rule on for good.
-- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**50 registered, 49 of them map layers**, 2026-10-27, when Hong Kong's measured road speed joined; 49 and 48 earlier that day, when TfL's London road works, incidents and closures joined).
+- `lib/signals/*` — one adapter + one `registry.ts` entry per source (**56 registered, 55 of them map layers**, 2026-10-30, when the six war sources joined; 50 and 49 on 2026-10-27, when Hong Kong's measured road speed joined).
+  **The war sources** (`war-zones`, `frontline-changes`, `losses-ru`, `losses-ua`, `forces-near-nato`, `war-news`) are scraped on provenance-1 by the NewsScraper `sources` package and pushed through `lib/relay` (schemas in `lib/relay/schemas/*`, one file per feed); `forces-near-nato` is a curated file instead. Each may bring its own card and expanded view (`lib/console/widgets/war/*`, the generic ones are the fallback), and a layer's figures that are not points ride on the feature array as its `summary` (`lib/signals/summary.ts`), which `/api/signals/<id>` sends and `useSignalFeed` returns.
   A removed layer's id goes into `RETIRED_SIGNAL_IDS` in `lib/layerAliases.ts`, so saved
   toggles, `?sig=` links, variant overrides and saved boards (its `signal:<id>` card) that
   name it still load. `cyber-c2` and `news-coverage` were removed on 2026-10-17 because
@@ -320,7 +321,8 @@ obligations and are not satisfied by the licence.
   outline from `public/geo/countries-110m.geojson` with the layer's metric as the
   figure, or a dashed ring when that file has no outline (it has 177). An area or a
   country never gets a pin, and `tests/unit/precision-marks.test.ts` holds that for
-  every registered layer. A country-level adapter sends `countryIso3`. The shading is
+  every registered layer. `shape: "diamond"` draws a pin as a diamond and `fill: "hatch"`
+  draws a polygon hatched; an area never becomes a diamond. A country-level adapter sends `countryIso3`. The shading is
   not a click target: a click on it opens the country dossier, the figure opens the
   signal. `components/console/MarkLegend.tsx` is the key, top right of the map, and
   lists only the marks on the map now.
