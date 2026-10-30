@@ -18,6 +18,7 @@ import type { EyeClock } from "@/lib/eye/motion";
 import { EYE_PLACES, eyePlaceHref, type EyeView } from "@/lib/eye/places";
 import { pinCap, type EyeSourceRow, type SourcesAction, type SourcesState } from "@/lib/eye/sources";
 import {
+  EXIT_LABEL,
   fmtClockUtc,
   fmtHeading,
   fmtLat,
@@ -93,6 +94,11 @@ export interface EyeHudProps {
   credits: string[];
   /** The console at the spot on screen NOW, with its Sources rail open; read when the link is used. */
   getSourcesHref: () => string;
+  /**
+   * The console at the spot on screen NOW, for "Exit to main dashboard"; read when the link
+   * is used. Left out for a recording or a film, which draw no way out.
+   */
+  getDashboardHref?: () => string;
   /** How many rows the console's Sources rail draws (lib/eye/railCount.ts): the tray's foot and its empty search say it. */
   sourceCount: number;
   /** The rows of the Sources tray (lib/eye/sourceRows.ts), and how many of the rail's this view leaves out. */
@@ -126,6 +132,7 @@ export default function EyeHud({
   phoneNote,
   credits,
   getSourcesHref,
+  getDashboardHref,
   sourceCount,
   sourceRows,
   leftOut,
@@ -139,6 +146,11 @@ export default function EyeHud({
   clock,
   children,
 }: EyeHudProps) {
+  // The exit's address is read as it is used (pressed, focused or clicked), so it is the
+  // spot on screen then, not where the view opened. Same as the tray's "Open the full map".
+  const refreshExit = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
+    if (getDashboardHref) e.currentTarget.href = getDashboardHref();
+  };
   const readout = useReadout(map, start);
   const now = useClock(clock);
   // A recording is filmed slower than it plays, so a count of seconds since the last
@@ -193,15 +205,35 @@ export default function EyeHud({
   }, [sourcesOpen, portrait]);
 
   return (
-    <div className={styles.hud}>
+    <div className={styles.hud} data-exit={getDashboardHref ? "" : undefined}>
       {/* data-eye-keep: EyeOverlay places no card or tag over these. */}
       <header className={styles.top} data-eye-keep>
         <div className={styles.placeBlock}>
-          {/* Who this is, for a visitor who arrived from a reel or a link: the landing page. */}
-          <a className={styles.id} href="/">
-            <Mark size={20} className={styles.mark} />
-            {BRAND.name}
-          </a>
+          <div className={styles.idRow}>
+            {/* Who this is, for a visitor who arrived from a reel or a link: the landing page. */}
+            <a className={styles.id} href="/">
+              <Mark size={20} className={styles.mark} />
+              {BRAND.name}
+            </a>
+            {/* THE WAY OUT to the console, always on screen: beside the name on a wide screen,
+                under the place on a phone (eye.module.css). A plain <a> and a full page load,
+                like every way between the two maps (EyeReturn.tsx is the way back). */}
+            {getDashboardHref && (
+              <a
+                className={`${styles.btn} ${styles.exit}`}
+                href="/app"
+                data-eye-exit=""
+                onPointerDown={refreshExit}
+                onFocus={refreshExit}
+                onClick={refreshExit}
+              >
+                <span className={styles.exitArrow} aria-hidden>
+                  ←
+                </span>
+                {EXIT_LABEL}
+              </a>
+            )}
+          </div>
           <h1 className={styles.place}>{title}</h1>
           <p className={styles.sub}>
             {area && (

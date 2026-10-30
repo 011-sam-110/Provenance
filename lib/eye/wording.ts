@@ -111,6 +111,13 @@ export function fullMapName(count: number): string {
 /** The footer link's visible words. */
 export const FULL_MAP_LABEL = "Open the full map";
 
+/**
+ * The way out of this view to the console, top left beside the name (EyeHud.tsx): the
+ * console at the spot on screen, with its rail as the visitor left it. Sentence case,
+ * like every control in the console.
+ */
+export const EXIT_LABEL = "Exit to main dashboard";
+
 /** The first section of the tray: this view's own seven. */
 export const THIS_VIEW = "This view";
 
