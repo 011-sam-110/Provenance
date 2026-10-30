@@ -8697,3 +8697,50 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* Narrow phones: the label alone, so the plate clears the mark legend (11px at 360px). */
 @media (max-width: 400px) { .tn-terminal .tn-eye-return-where { display: none; } }
 /* ── end back to God's eye view ── */
+
+/* ── Forces near NATO (lib/console/widgets/war/forces-near-nato.tsx) ──
+   The card: the curated sites grouped by the NATO border they face, one line each.
+   The expanded view: each site's quoted claims beside the inset map. Tokens only, so
+   the dark skin follows; a site that is listed but not drawn gets a hollow swatch. */
+.tn-fnn { display: flex; flex-direction: column; gap: 6px; }
+.tn-fnn .tn-w-capnote { margin: 0 var(--tn-row-px, 6px); }
+.tn-fnn-grp { margin: 2px 0 0; padding: 0 var(--tn-row-px, 6px); font-size: var(--tnx-fs-xs); font-weight: 600; color: var(--tn-text-muted); }
+.tn-fnn-list { list-style: none; margin: 0; padding: 0; }
+.tn-fnn-list li { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline; padding: 4px var(--tn-row-px, 6px); border-bottom: 1px solid var(--tn-border); }
+.tn-fnn-list li:last-child { border-bottom: 0; }
+.tn-fnn-swatch { flex: none; width: 9px; height: 9px; border-radius: 50%; box-sizing: border-box; align-self: center; }
+.tn-fnn-swatch.is-unplaced { background: transparent; border: 1.5px solid; }
+.tn-fnn-t { font-size: var(--tnx-fs-sm); line-height: 1.35; color: var(--tn-text); min-width: 0; }
+.tn-fnn-t b { font-weight: 600; }
+.tn-fnn-a { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-fnn-s { grid-column: 2 / -1; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-fnn-foot { margin: 2px var(--tn-row-px, 6px) 0; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+
+.tn-fnn-x-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 38%); gap: 18px; align-items: start; }
+.tn-fnn-x-map { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 900px) {
+  .tn-fnn-x-body { grid-template-columns: 1fr; }
+  .tn-fnn-x-map { position: static; order: -1; }
+}
+.tn-fnn-x-list { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tn-fnn-x-group { display: flex; flex-direction: column; gap: 8px; }
+.tn-fnn-x-group > h3, .tn-fnn-left > h3 { margin: 0; font-size: var(--tnx-fs); font-weight: 600; color: var(--tn-text-muted); }
+.tn-fnn-site { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--tn-border); border-radius: 8px; background: var(--tn-surface-2); }
+.tn-fnn-site.is-selected { box-shadow: inset 3px 0 0 var(--tn-accent); background: var(--tn-accent-soft); }
+.tn-fnn-site-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.tn-fnn-site-head h4 { margin: 0; font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tn-text); }
+.tn-fnn-where { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-fnn-dist { margin: 0; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-fnn-claim { display: flex; flex-direction: column; gap: 3px; padding-top: 6px; border-top: 1px solid var(--tn-border); }
+.tn-fnn-claim blockquote { margin: 0; font-size: var(--tnx-fs); line-height: 1.5; color: var(--tn-text); max-width: 72ch; }
+.tn-fnn-tr { margin: 0; font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text-muted); max-width: 72ch; }
+.tn-fnn-tr > span { font-weight: 600; }
+.tn-fnn-by { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.45; color: var(--tn-text-muted); }
+.tn-fnn-by a, .tn-fnn-left a { color: var(--tn-accent); text-decoration: underline; text-underline-offset: 2px; }
+.tn-fnn-img { display: block; color: var(--tn-text-faint); font-variant-numeric: tabular-nums; }
+.tn-fnn-site-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+.tn-fnn-site-foot button { font: inherit; font-size: var(--tnx-fs-xs); color: var(--tn-text); background: var(--tn-chip-bg); border: 1px solid var(--tn-border); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.tn-fnn-site-foot button[aria-pressed="true"] { border-color: var(--tn-accent); color: var(--tn-accent); }
+.tn-fnn-site-foot button:focus-visible, .tn-fnn-by a:focus-visible, .tn-fnn-left a:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-fnn-left ul { margin: 6px 0 0; padding-left: 18px; font-size: var(--tnx-fs-sm); line-height: 1.5; color: var(--tn-text-muted); }
+/* ── end Forces near NATO ── */
