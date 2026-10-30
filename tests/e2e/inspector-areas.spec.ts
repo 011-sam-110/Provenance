@@ -230,7 +230,7 @@ test("switching context draws nothing different, and an area's own source is cro
   //
   // An equality rather than "fewer than before", which would also pass on a build
   // that simply drops everything.
-  await switchContext(page, "World");
+  await switchContext(page, "Globe"); // the whole-map context is named after the open view
   await row.locator(".tn-src-toggle").click();
   await expect(row).toHaveAttribute("data-on", "false");
 

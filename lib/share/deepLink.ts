@@ -12,6 +12,8 @@ import { inspectorStore } from "@/lib/shell/inspector";
 import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { mapViewStore } from "@/lib/mapView";
 import { overlay } from "@/lib/overlay";
+import { activePresetStore } from "@/lib/console/activePreset";
+import { presetById } from "@/lib/console/presets";
 import { track } from "@/lib/analytics/track";
 
 const WRITE_DEBOUNCE_MS = 400;
@@ -19,10 +21,14 @@ const WRITE_DEBOUNCE_MS = 400;
 /**
  * Compose the current view state from the live map + the external stores.
  *
- * The active board is NOT included. It was, as `?v=`, and the server reading it back
- * for a per-board social card is what made `/app` dynamic for every request. The
- * board is now per-browser state, so it is not something a link can carry — see the
- * note at the top of lib/share/url.ts.
+ * The VARIANT is NOT included. It was, as `?v=`, and the server reading it back for a
+ * per-board social card is what made `/app` dynamic for every request. See the note at
+ * the top of lib/share/url.ts.
+ *
+ * The VIEW is: `preset` names the board the link was copied from (Globe, Streets, News),
+ * so it opens that view and its sources land in that view only (lib/console/bootSeed.ts
+ * reads it back, after load). Only a built-in board is written; a saved board's id
+ * means nothing in another browser.
  *
  * `sig` IS INCLUDED, AND LEAVING IT OUT WAS A BUG. This function is what the URL
  * writer runs on every store change, so a field it omits is a field the address bar
@@ -38,7 +44,9 @@ export function composeViewState(map: MlMap): ViewState {
   const layerState = layersStore.get();
   const world = inspectorStore.get().world;
   const sig = MAP_SIGNALS.filter((s) => world[s.id] === true).map((s) => s.id);
+  const board = activePresetStore.get();
   return {
+    ...(board && presetById(board) ? { preset: board } : {}),
     lat: c.lat,
     lon: c.lng,
     zoom: map.getZoom(),

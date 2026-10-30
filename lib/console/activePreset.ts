@@ -37,6 +37,19 @@ export const activePresetStore = {
       listeners.delete(listener);
     };
   },
+  /**
+   * The saved board id, READ WITHOUT HYDRATING THE STORE.
+   *
+   * variantStore.bootstrap needs to know which board the browser was last on, because
+   * each board now has its own sources. hydrate() cannot simply move up to answer that:
+   * shellLayoutStore files every layout change under the active board, and its own
+   * hydrate (which runs before this store's) deliberately finds the id still null, so
+   * the layout it loads is not filed as the board's saved edits. Hydrating early would
+   * file it, and every board would read as customised on the next boot.
+   */
+  saved(): string | null {
+    return loadPersisted<string>(KEY, VERSION) ?? null;
+  },
   /** Pull the persisted active-preset id back in. Call once, client-side, after mount. */
   hydrate() {
     const saved = loadPersisted<string>(KEY, VERSION);

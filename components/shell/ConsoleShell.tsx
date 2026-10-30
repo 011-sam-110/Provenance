@@ -110,7 +110,11 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // `?sig=`, and it reports whether this browser had saved state at all. The board
     // seed at the end of this effect needs that answer: see lib/console/bootSeed.ts.
     const params = new URLSearchParams(window.location.search);
-    const restoredVariant = variantStore.bootstrap(params);
+    //
+    // EACH BOARD HAS ITS OWN SOURCES, so bootstrap is told which board the browser was last
+    // on. The id is READ from storage here, not hydrated: activePresetStore.hydrate() has
+    // to stay after shellLayoutStore.hydrate() (see activePresetStore.saved).
+    const restoredVariant = variantStore.bootstrap(params, activePresetStore.saved());
     inspectorStore.hydrate();
     watchlistStore.hydrate();
     timeWindowStore.hydrate();
@@ -147,6 +151,10 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // over a `?sig=` link's layers. activePresetStore has hydrated above, so its value
     // here is the saved board, not a default.
     seedBoard(params, isFirstRun({ restoredVariant, activeBoard: activePresetStore.get() }));
+    // World is final: from here every change to it is filed under the open board, and the
+    // set bootstrap restored for the board the browser was last on is filed if it had none
+    // (variantStore.bootDone says why this waits).
+    variantStore.bootDone();
     // `sources=open` (God's eye view's Sources button, the landing's "All sources"):
     // open the Sources rail on its Sources tab, then drop the flag so a reload or a
     // copied link does not open it again. It writes no layer and nothing to storage.

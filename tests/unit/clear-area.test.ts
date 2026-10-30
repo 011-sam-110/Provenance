@@ -55,11 +55,18 @@ describe("clearAreaLabel", () => {
     expect(clearAreaLabel(null)).toBe("Clear the drawn area and go back to World");
   });
 
+  it("goes back to the view that is open, not to a word for the whole globe", () => {
+    // Each view has its own sources now, so "World" is "Globe" or "Streets" to a person.
+    expect(clearAreaLabel("Kharkiv", "Streets")).toBe("Clear Kharkiv and go back to Streets");
+    expect(clearAreaLabel(null, "Globe")).toBe("Clear the drawn area and go back to Globe");
+  });
+
   it("never returns an empty or glyph-only name", () => {
     for (const input of [null, "", "Kharkiv"]) {
       const label = clearAreaLabel(input || null);
       expect(label.length).toBeGreaterThan(10);
       expect(label).toMatch(/World/);
+      expect(clearAreaLabel(input || null, "Globe")).toMatch(/Globe/);
     }
   });
 });

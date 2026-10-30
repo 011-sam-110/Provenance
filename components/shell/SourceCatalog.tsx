@@ -82,6 +82,7 @@ import SourceSection from "@/components/shell/sources/SourceSection";
 import SourceRow from "@/components/shell/sources/SourceRow";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
+import SameSourcesButton from "@/components/shell/sources/SameSourcesButton";
 import InspectorPanel from "@/components/shell/InspectorPanel";
 import InspectorRail from "@/components/shell/inspector/InspectorRail";
 import { railTabStore, useRailTab } from "@/lib/console/railTab";
@@ -165,6 +166,10 @@ function CloseGlyph() {
 // Built once: the mapping is static, and rebuilding it per render would re-derive
 // every label collision on every keystroke in the search box.
 const SECTIONS = buildSourceSections(RAIL_SOURCES);
+// Each source's rail label, in rail order: what "Use same sources from <view>" names.
+const SOURCE_LABELS: ReadonlyMap<string, string> = new Map(
+  SECTIONS.flatMap((s) => s.rows.map((r): [string, string] => [r.id, r.label])),
+);
 
 export default function SourceCatalog() {
   // Mounts CLOSED, as the "≡ Sources" launcher. In the old shell the rail owned the
@@ -413,6 +418,7 @@ export default function SourceCatalog() {
         <div className="tn-rail-panes">
           {tab === "sources" ? (
             <div id="tn-rail-panel-sources" role="tabpanel" aria-labelledby="tn-rail-tab-sources">
+          <SameSourcesButton labelOf={SOURCE_LABELS} />
           <ContextSwitcher />
 
           {/* THE SEARCH BOX SITS HERE, directly above the list it filters, and not

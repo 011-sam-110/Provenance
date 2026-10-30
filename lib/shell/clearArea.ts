@@ -45,9 +45,13 @@ export function needsClearArea(editingAreaId: string | null, scopeMode: ScopeMod
  * glyph and this is the one control standing between a user and a filter they
  * cannot otherwise remove. The same string is the `title`, so a pointer user and
  * a screen-reader user are told the same thing.
+ *
+ * `viewName` is what the bar calls the whole-map context: each view (Globe, Streets,
+ * News) has its own sources now, and "go back to World" would name a thing the person
+ * has no word for on screen. Defaults to "World" for a caller with no board open.
  */
-export function clearAreaLabel(areaLabel: string | null): string {
+export function clearAreaLabel(areaLabel: string | null, viewName = "World"): string {
   return areaLabel
-    ? `Clear ${areaLabel} and go back to World`
-    : "Clear the drawn area and go back to World";
+    ? `Clear ${areaLabel} and go back to ${viewName}`
+    : `Clear the drawn area and go back to ${viewName}`;
 }

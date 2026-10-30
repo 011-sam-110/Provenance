@@ -9,6 +9,10 @@ import { layersStore, type LayerKey, type LayerState } from "@/lib/layers";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
 import { layersForLayout } from "@/lib/console/presetLayers";
 import { activePresetStore } from "@/lib/console/activePreset";
+import { variantStore } from "@/lib/variants/store";
+import { inspectorStore } from "@/lib/shell/inspector";
+import { sameSources, viewSetFromWorld } from "@/lib/console/viewSources";
+import { parkView, restoreView } from "@/lib/console/viewMemory";
 import { forgetBoardLayout, isBoardEdited, layoutSignature, readBoardLayout, writeBoardLayout } from "@/lib/console/boards";
 import { sanitizeLayout } from "@/lib/console/sanitize";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
@@ -563,6 +567,13 @@ function migrateOutgoing(presetId: string): void {
  *     would write the INCOMING board's cards into the OUTGOING board's slot.
  *  3. Saved edits beat the template. `reset: true` is the one caller that wants
  *     the template back, and it is what makes "Reset this board" a real action.
+ *
+ * EACH BOARD IS A VIEW WITH ITS OWN SOURCES AND ITS OWN INSPECTOR. Leaving a board
+ * parks its Inspector state and map position (viewMemory), and opening one puts the
+ * sources it was last left with back (`views` in tn.variant.v1) instead of writing the
+ * board's template over World; the template is only for a first visit or a Reset. The
+ * Inspector and the map follow, and a person's switch offers "Use same sources from
+ * <the board you left>" once (viewSources).
  */
 export function applyPreset(presetId: string, opts: { reset?: boolean; track?: boolean } = {}): void {
   const built = presetById(presetId);
@@ -570,6 +581,13 @@ export function applyPreset(presetId: string, opts: { reset?: boolean; track?: b
   if (!built && !custom) return;
 
   const outgoing = activePresetStore.get();
+  // A real switch: not the first open (nothing outgoing) and not re-selecting the open board.
+  const switching = !!outgoing && outgoing !== presetId;
+  // World as the board being left holds it, read before anything below writes. It is what
+  // "Use same sources from <this board>" would copy.
+  const leftBehind = switching ? viewSetFromWorld(inspectorStore.get().world) : null;
+  // The outgoing board's Inspector and camera, while they are still the outgoing board's.
+  if (switching) parkView(outgoing!);
   if (outgoing && outgoing !== presetId) migrateOutgoing(outgoing);
 
   activePresetStore.set(presetId);
@@ -582,17 +600,32 @@ export function applyPreset(presetId: string, opts: { reset?: boolean; track?: b
   const layout = saved ?? (built ? built.build(visibleShell()) : custom!.layout);
   // `archive: false` — opening a board is not editing it. See store.ts's emit().
   shellLayoutStore.replace(layout, { archive: Boolean(saved) });
-  // Drive the map to match. The board's widgets imply layers, and the preset's
-  // own `layers` / `signals` add the ones no card implies; everything else is
-  // switched off so a previous preset cannot linger under this one.
-  const { core, signals } = layersForLayout(layout, built?.signals ?? [], built?.layers ?? []);
-  layersStore.applyWorld(core);
-  signalsStore.applyWorld(signals);
+  // Drive the map to match. A board that has been open before brings back the sources it
+  // was left with (its own view); the first visit, and a Reset, take the template: the
+  // board's widgets imply layers, and the preset's own `layers` / `signals` add the ones
+  // no card implies; everything else is switched off so a previous preset cannot linger
+  // under this one. Either way it is a whole-set write to WORLD (see applyWorld).
+  if (opts.reset) variantStore.forgetView(presetId);
+  const own = opts.reset ? null : variantStore.viewSet(presetId);
+  if (own) {
+    variantStore.applyViewSet(own);
+  } else {
+    const { core, signals } = layersForLayout(layout, built?.signals ?? [], built?.layers ?? []);
+    layersStore.applyWorld(core);
+    signalsStore.applyWorld(signals);
+  }
+  // The Inspector and the map position this board was left with, after its sources.
+  if (switching) restoreView(presetId);
   // A SWITCH, made by a person. Boot passes track: false, a reset is not a switch, and
   // re-selecting the board already open changes nothing. A custom board's id never leaves
   // the browser: it is sent as "custom".
   if (opts.track !== false && !opts.reset && outgoing !== presetId) {
     track({ name: "board_switched", board: built ? presetId : "custom" });
+    // Offer the board just left. Only a person's switch does: boot never reaches here.
+    if (outgoing && leftBehind) sameSources.offer(outgoing, presetId, leftBehind);
+    else sameSources.clear();
+  } else if (switching) {
+    sameSources.clear();
   }
 }
 

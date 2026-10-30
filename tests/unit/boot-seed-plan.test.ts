@@ -6,7 +6,7 @@ import { DEFAULT_PRESET_ID } from "@/lib/console/presets";
 // boot-reload-keeps-signals, boot-sig-link and boot-first-run; this pins the table.
 
 const BASE: BootSeedInput = {
-  c: null, preset: null, presetKnown: false, widgetCount: 0, firstRun: false, sig: undefined,
+  c: null, preset: null, presetKnown: false, activeBoard: null, widgetCount: 0, firstRun: false, sig: undefined,
 };
 
 describe("isFirstRun", () => {
@@ -47,6 +47,18 @@ describe("planBootSeed", () => {
     expect(planBootSeed({ ...BASE, preset: "streets", presetKnown: true, sig: ["volcanoes"] })).toEqual({
       board: { kind: "preset", id: "streets" }, reassertSig: ["volcanoes"],
     });
+  });
+
+  it("does not re-apply a ?preset= that names the board already open", () => {
+    // variantStore.bootstrap already restored that view's own sources and the link's
+    // ?sig=; applying the template again would only replace them.
+    expect(planBootSeed({ ...BASE, preset: "streets", presetKnown: true, activeBoard: "streets", sig: ["volcanoes"] }))
+      .toEqual({ board: { kind: "none" }, reassertSig: null });
+  });
+
+  it("still opens a ?preset= that names a different board than the open one", () => {
+    expect(planBootSeed({ ...BASE, preset: "streets", presetKnown: true, activeBoard: "overview" }).board)
+      .toEqual({ kind: "preset", id: "streets" });
   });
 
   it("ignores an unknown ?preset= and falls through to the first-run rule", () => {

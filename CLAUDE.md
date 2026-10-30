@@ -369,6 +369,11 @@ obligations and are not satisfied by the licence.
   count. Chrome is a **sibling store** (`tn.console.sceneChrome.v1`), deliberately orthogonal
   to `boards.ts`, so Reset and `?c=` links needed no changes — which also means share links
   do NOT carry hidden state.
+  **Each view (board) keeps its own whole-map sources** in `tn.variant.v1` `views` (the old
+  `overrides` field is still written for older builds), its Inspector and map position for
+  the visit (`lib/console/viewMemory.ts`), and the Sources pane offers "Use same sources from
+  <view>" once after a switch (`lib/console/viewSources.ts`); a shared link names its view
+  as `preset=`.
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
 - **Vehicle tracking on live video** (2026-10-30): a "Track vehicles" switch on `/camera/[id]`
