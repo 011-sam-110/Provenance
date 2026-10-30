@@ -8697,3 +8697,87 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* Narrow phones: the label alone, so the plate clears the mark legend (11px at 360px). */
 @media (max-width: 400px) { .tn-terminal .tn-eye-return-where { display: none; } }
 /* ── end back to God's eye view ── */
+
+/* ── War sources: Vehicle losses, Russian and Ukrainian ───────────────────────
+   lib/console/widgets/war/losses-ru.tsx and losses-ua.tsx (cards and expanded views).
+   Side colours are this block's own tokens, red-brown for Russian losses and blue for
+   Ukrainian, as on the map. The dark skin lifts both, because #7a1f14 on the dark
+   panel measures about 1.6:1; the lifted values clear 4.5:1 on --tnx-panel #15170f.
+   Every other colour is a console token, so both skins follow without more rules.
+   Shape carries what colour carries: filled vs hollow mark (on the map or not) and a
+   diamond for the Ukrainian side. */
+.tn-loss, .tn-loss-x {
+  --tnl-ru: #7a1f14; --tnl-ru-ink: #9b2c1f;
+  --tnl-ua: #1f4f8a; --tnl-ua-ink: #1f4f8a;
+}
+:root[data-tnx-skin="dark"] .tn-loss, :root[data-tnx-skin="dark"] .tn-loss-x {
+  --tnl-ru: #e07b69; --tnl-ru-ink: #f0907f;
+  --tnl-ua: #86aee6; --tnl-ua-ink: #9cbdec;
+}
+.tn-loss { display: grid; gap: 7px; padding: 8px 10px 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); font-variant-numeric: tabular-nums; }
+.tn-loss b { font-weight: 600; color: var(--tn-text); }
+.tn-loss-k { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.4; color: var(--tn-text-muted); }
+.tn-loss-window { padding-top: 2px; }
+/* Claimed against documented: the hatched track is the claim, the solid part what is documented. */
+.tn-loss-gap { display: grid; grid-template-columns: 112px 1fr; gap: 3px 8px; align-items: center; }
+.tn-loss-gap-name { color: var(--tn-text); }
+.tn-loss-gb {
+  position: relative; height: 7px; border-radius: 2px;
+  background: repeating-linear-gradient(135deg,
+    color-mix(in srgb, var(--tnl-ru) 32%, transparent) 0 3px,
+    color-mix(in srgb, var(--tnl-ru) 10%, transparent) 3px 6px);
+}
+.tn-loss-gb > i { position: absolute; inset: 0 auto 0 0; min-width: 2px; border-radius: 2px; background: var(--tnl-ru); }
+.tn-loss-gn { grid-column: 2; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+/* Recent rows: mark, name, age; the place or category under the name. */
+.tn-loss-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-loss-list li {
+  display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline;
+  padding: 5px 0; border-top: 1px solid var(--tn-border);
+}
+.tn-loss-list .t { font-size: var(--tnx-fs-sm); line-height: 1.35; overflow-wrap: anywhere; }
+.tn-loss-list .s { grid-column: 2 / -1; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-loss-list .a { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); white-space: nowrap; }
+.tn-loss-dot, .tn-loss-dia { display: inline-block; flex: none; align-self: center; box-sizing: border-box; }
+.tn-loss-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--tnl-ru); border: 1.5px solid var(--tnl-ru); }
+.tn-loss-dot.is-off { background: transparent; }
+.tn-loss-dia { width: 8px; height: 8px; margin-left: 1px; background: var(--tnl-ua); transform: rotate(45deg); }
+/* Count bars by category or type. */
+.tn-loss-cat { display: grid; gap: 4px; font-size: var(--tnx-fs-xs); }
+.tn-loss-cat-row { display: grid; grid-template-columns: minmax(96px, 150px) 1fr 40px; gap: 8px; align-items: center; }
+.tn-loss-cat-row > span:first-child { color: var(--tn-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tn-loss-cat .b { position: relative; height: 7px; border-radius: 2px; background: color-mix(in srgb, var(--tnl-ua) 14%, transparent); }
+.tn-loss-cat .b > i { position: absolute; inset: 0 auto 0 0; min-width: 2px; border-radius: 2px; background: var(--tnl-ua); }
+.tn-loss-cat.is-ru .b { background: color-mix(in srgb, var(--tnl-ru) 14%, transparent); }
+.tn-loss-cat.is-ru .b > i { background: var(--tnl-ru); }
+.tn-loss-cat .n { text-align: right; color: var(--tn-text-muted); font-variant-numeric: tabular-nums; }
+/* Expanded views. */
+.tn-loss-x { font-variant-numeric: tabular-nums; }
+.tn-loss-sec > h3 { font-size: var(--tnx-fs-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--tn-text-faint); margin: 0 0 6px; }
+.tn-loss-table th, .tn-loss-table td { text-align: right; vertical-align: top; }
+.tn-loss-table th:first-child, .tn-loss-table td:first-child,
+.tn-loss-table tbody th { text-align: left; }
+.tn-loss-table thead th { cursor: default; }
+.tn-loss-table td { white-space: nowrap; }
+.tn-loss-table td.w { white-space: normal; min-width: 9em; }
+.tn-loss-table tbody th { font-weight: 500; font-size: var(--tnx-fs); color: var(--tn-text); text-transform: none; letter-spacing: 0; padding: 5px 8px; border-bottom: 1px solid var(--tn-border); }
+.tn-loss-match { display: block; font-size: var(--tnx-fs-xs); font-weight: 400; color: var(--tn-text-faint); }
+.tn-loss-ratio { color: var(--tnl-ru-ink); font-weight: 600; }
+.tn-loss-note { margin: 6px 0 0; font-size: var(--tnx-fs-xs); line-height: 1.5; color: var(--tn-text-muted); max-width: 90ch; }
+.tn-loss-x a { color: var(--tn-accent); text-underline-offset: 2px; }
+.tn-loss-show {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 2px 9px;
+  font: inherit; font-size: var(--tnx-fs-sm); color: var(--tn-text); cursor: pointer;
+  background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: 6px;
+}
+.tn-loss-show:hover { border-color: var(--tn-accent); }
+.tn-loss-off { display: inline-flex; align-items: center; gap: 6px; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); white-space: nowrap; }
+.tn-loss-x a:focus-visible, .tn-loss-show:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; border-radius: 3px; }
+@media (max-width: 720px) {
+  .tn-loss-table thead { display: none; }
+  .tn-loss-table, .tn-loss-table tbody, .tn-loss-table tr { display: block; }
+  .tn-loss-table tr { padding: 6px 0; border-bottom: 1px solid var(--tn-border); }
+  .tn-loss-table th, .tn-loss-table td { display: inline-block; border: 0; padding: 2px 8px 2px 0; text-align: left; }
+  .tn-loss-table tbody th { display: block; }
+}
+/* ── end Vehicle losses ── */

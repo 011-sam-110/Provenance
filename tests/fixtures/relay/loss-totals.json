@@ -1,20 +1,61 @@
 {
  "version": 1,
  "feed": "loss-totals",
- "fetchedAt": "2026-10-29T12:00:00Z",
- "_placeholder": "foundation stub: replace with a real capture (python -m sources push loss-totals --dry-run --out)",
+ "fetchedAt": "2026-10-30T01:19:16Z",
  "data": {
   "claimed": {
    "date": "2026-10-29",
    "day": 1709,
-   "source": "https://www.facebook.com/GeneralStaff.ua",
+   "source": "https://www.facebook.com/GeneralStaff.ua/posts/pfbid0gq7HaD6eCfW1diPPgTQPPDPcTcA5SGmkWwjga84LqysKVft3AcWMHQmctJD5B38Tl",
    "stats": {
-    "tanks": 12449
+    "personnel_units": 1584910,
+    "tanks": 12449,
+    "armoured_fighting_vehicles": 25614,
+    "artillery_systems": 51699,
+    "mlrs": 2245,
+    "aa_warfare_systems": 1727,
+    "planes": 450,
+    "helicopters": 356,
+    "vehicles_fuel_tanks": 168010,
+    "warships_cutters": 35,
+    "cruise_missiles": 5140,
+    "uav_systems": 587409,
+    "special_military_equip": 4860,
+    "atgm_srbm_systems": 3036,
+    "submarines": 2
    },
    "increase": {
-    "tanks": 1
+    "personnel_units": 1560,
+    "tanks": 1,
+    "armoured_fighting_vehicles": 5,
+    "artillery_systems": 25,
+    "mlrs": 4,
+    "aa_warfare_systems": 0,
+    "planes": 1,
+    "helicopters": 0,
+    "vehicles_fuel_tanks": 272,
+    "warships_cutters": 0,
+    "cruise_missiles": 0,
+    "uav_systems": 1614,
+    "special_military_equip": 1,
+    "atgm_srbm_systems": 4,
+    "submarines": 0
    }
   },
-  "crossCheck": null
+  "crossCheck": {
+   "date": "2026-10-29",
+   "checked": [
+    "tanks",
+    "armoured_fighting_vehicles",
+    "artillery_systems",
+    "mlrs",
+    "aa_warfare_systems",
+    "planes",
+    "helicopters",
+    "vehicles_fuel_tanks",
+    "warships_cutters"
+   ],
+   "agrees": true
+  }
  }
 }
