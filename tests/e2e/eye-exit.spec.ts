@@ -128,7 +128,8 @@ test("keyboard: Tab reaches it with a visible focus ring, and Enter follows it",
 
   const link = exit(page);
   let reached = false;
-  for (let i = 0; i < 6 && !reached; i++) {
+  // The map and each camera card on screen come first in the tab order, then the name.
+  for (let i = 0; i < 20 && !reached; i++) {
     await page.keyboard.press("Tab");
     reached = await link.evaluate((el) => el === document.activeElement);
   }
