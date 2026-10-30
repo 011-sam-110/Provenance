@@ -97,7 +97,7 @@ describe("privacy page dependency count", () => {
   // count as evidence for "nothing here stores you". On 2026-09-07 the page said BOTH
   // "nine" in one place and "ten" in another — one of them fossilised when
   // @vercel/analytics was removed. Nobody noticed, because prose has no compiler.
-  const WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve"];
+  const WORDS = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen"];
 
   it("matches package.json, in every place the page states it", () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));

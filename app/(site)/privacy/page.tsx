@@ -258,7 +258,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     has to carry whatever the app does. It terminates TLS, so it necessarily sees
  *     every visitor's full IP address before we do. What reaches our log is masked; what
  *     reaches Cloudflare is not, and no wording on our side changes that.
- *   • persistence — package.json ships twelve runtime deps. One, @supabase/supabase-js, is
+ *   • persistence — package.json ships fourteen runtime deps. One, @supabase/supabase-js, is
  *     a database client. Since M2 (2026-10-16) ONE file reaches it: lib/account/client.ts,
  *     through a dynamic import() that runs only when both NEXT_PUBLIC_SUPABASE_* variables
  *     were set at build (plus a type-only import). Production builds without them, so "No
@@ -441,7 +441,7 @@ export default function PrivacyPage() {
           <div className="pv-prose">
             <p>
               This is the strongest thing on the page, so it is the one worth checking. The app has
-              twelve runtime dependencies. One of them, the Supabase client, can talk to a database.
+              fourteen runtime dependencies. One of them, the Supabase client, can talk to a database.
               No page loads it, and the site sends no data to Supabase. There is no
               key-value store, no object store and no cloud storage account. Nothing this site
               serves writes a file.

@@ -205,6 +205,7 @@ export default async function CameraPage({ params }: { params: Promise<{ id: str
               id={cam.id} alt={cam.name}
               attribution={cam.attribution} license={cam.license}
               refreshSeconds={cam.refreshSeconds}
+              tracking
             />
           ) : (
             <CameraImage
