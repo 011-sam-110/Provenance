@@ -151,7 +151,7 @@ test.describe("on a phone", () => {
       expect(box!.width).toBeGreaterThanOrEqual(44);
       expect(box!.height).toBeGreaterThanOrEqual(44);
     }
-    // The switch is a 44 px button with only its picture, and still has its name.
+    // The switch is a 44 px button with the word Cameras (not a picture), and its name still says Previews.
     const sw = await previewsSwitch(page).boundingBox();
     expect(sw!.width).toBeGreaterThanOrEqual(44);
     expect(sw!.height).toBeGreaterThanOrEqual(44);
