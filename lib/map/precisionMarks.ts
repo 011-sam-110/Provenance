@@ -17,6 +17,14 @@
 // an incident, bars for a street the operator marks closed. None is solid, because a
 // notice is never a speed, and the legend says that no line is not a clear road.
 //
+// TWO VARIANTS keep their level's rule and change only the look:
+//   diamond   a pin drawn as a diamond (SignalFeature.shape), for the second side of a
+//             two-sided pair (Ukrainian vehicle losses beside Russian ones), so colour is
+//             never the only cue. Only a pin can be a diamond: an area stays a disc.
+//   hatch     an area polygon drawn with diagonal lines (SignalFeature.fill), for ground
+//             whose status its source does not know (War zones' contested areas). Only a
+//             polygon can be hatched.
+//
 // No branch below gives an area or a country a pin. tests/unit/precision-marks.test.ts
 // holds that for every mark and for every registered layer.
 //
@@ -30,10 +38,10 @@ import { isSignalPrecision } from "@/lib/signals/precision";
  * The marks. "pin" also stands for a feature's own solid line (a cable route); a road
  * notice's patterned line is its own mark, named by its pattern.
  */
-export type SignalMark = "pin" | "shape" | "disc" | "country" | "ring" | SignalLineStyle;
+export type SignalMark = "pin" | "diamond" | "shape" | "hatch" | "disc" | "country" | "ring" | SignalLineStyle;
 
 /** Every mark, in the order the legend lists them. */
-export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "shape", "disc", "country", "ring", "speed", "dash", "dot", "bar"];
+export const SIGNAL_MARKS: readonly SignalMark[] = ["pin", "diamond", "shape", "hatch", "disc", "country", "ring", "speed", "dash", "dot", "bar"];
 
 const LINE_STYLES: ReadonlySet<string> = new Set<SignalLineStyle>(["dash", "dot", "bar", "speed"]);
 
@@ -105,7 +113,7 @@ function iso3Of(s: WorldObject, ctx: MarkContext): string | undefined {
  */
 export function markOf(s: WorldObject, ctx: MarkContext): SignalMark {
   const g = geometryOf(s);
-  if (g && (g.type === "Polygon" || g.type === "MultiPolygon")) return "shape";
+  if (g && (g.type === "Polygon" || g.type === "MultiPolygon")) return s.meta?.fill === "hatch" ? "hatch" : "shape";
   if (g) {
     // A line: drawn as the line it is. A road notice's line carries its pattern.
     const line = s.meta?.line;
@@ -117,12 +125,14 @@ export function markOf(s: WorldObject, ctx: MarkContext): SignalMark {
     return iso3 && ctx.countryOutline(iso3) ? "country" : "ring";
   }
   if (precision === "area") return "disc";
-  return "pin";
+  return s.meta?.shape === "diamond" ? "diamond" : "pin";
 }
 
-/** True when the signal is a point that the pin layer draws. */
+/** True when the signal is a point that the pin layer draws: a round pin or a diamond. */
 export function isPinPoint(s: WorldObject, ctx: MarkContext): boolean {
-  return !geometryOf(s) && markOf(s, ctx) === "pin";
+  if (geometryOf(s)) return false;
+  const mark = markOf(s, ctx);
+  return mark === "pin" || mark === "diamond";
 }
 
 /** A short figure for the map: 3220274 -> "3.2M", 45210 -> "45K", 412 -> "412", 2.46 -> "2.5". */
@@ -291,7 +301,9 @@ export function marksPresent(signals: readonly WorldObject[], ctx: MarkContext):
 /** The legend's words for each mark. */
 export const MARK_LEGEND: Readonly<Record<SignalMark, { name: string; meaning: string }>> = {
   pin: { name: "Pin", meaning: "An exact point or a named site" },
+  diamond: { name: "Diamond pin", meaning: "An exact point on the second side of a pair, such as Ukrainian losses beside Russian ones" },
   shape: { name: "Shaded shape", meaning: "An area with a known outline" },
+  hatch: { name: "Hatched shape", meaning: "An area whose status its source does not know, such as contested ground" },
   disc: { name: "Soft disc", meaning: "An area or a city, not an exact point" },
   country: { name: "Shaded country", meaning: "A figure for the whole country" },
   ring: { name: "Dashed ring", meaning: "A country figure. This map has no outline for that country" },

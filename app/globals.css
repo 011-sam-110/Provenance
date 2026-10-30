@@ -8697,3 +8697,112 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 /* Narrow phones: the label alone, so the plate clears the mark legend (11px at 360px). */
 @media (max-width: 400px) { .tn-terminal .tn-eye-return-where { display: none; } }
 /* ── end back to God's eye view ── */
+
+/* ── War zones and Front line changes (lib/console/widgets/war/war-zones.tsx and
+   frontline-changes.tsx). The cards and expanded views of the two DeepState sources.
+   Tokens only, except the four map colours, which are the map's own marks (WorldMap,
+   lib/signals/war-zones.ts and frontline-changes.ts) and must match them exactly. Each
+   side's TEXT uses its own ink per skin, measured on the panel: light #9b2c1f 7.2,
+   #1f4f8a 8.1, #5f5a52 6.6 on #fff; dark #ff8f80 8.0, #93bbf0 9.0, #c4beb2 9.6 on #15170f.
+   A side is never colour alone: every mark sits beside its words. ── */
+.tn-wz, .tn-flc {
+  --wz-held: #c0392b; --wz-contested: #8a8178; --wz-retaken: #2b6cb0; --wz-change: #e0a020;
+  --wz-ru-ink: #9b2c1f; --wz-ua-ink: #1f4f8a; --wz-unk-ink: #5f5a52;
+  --wz-ru-soft: rgba(192, 57, 43, 0.08); --wz-ua-soft: rgba(43, 108, 176, 0.08);
+  font-variant-numeric: tabular-nums;
+}
+:root[data-tnx-skin="dark"] .tn-wz, :root[data-tnx-skin="dark"] .tn-flc {
+  --wz-ru-ink: #ff8f80; --wz-ua-ink: #93bbf0; --wz-unk-ink: #c4beb2;
+  --wz-ru-soft: rgba(255, 143, 128, 0.10); --wz-ua-soft: rgba(147, 187, 240, 0.10);
+}
+.tn-wz-card, .tn-flc-card { display: grid; gap: 8px; padding: 8px 10px 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-wz-zone { display: grid; gap: 6px; }
+.tn-wz-zone + .tn-wz-zone { border-top: 1px solid var(--tn-border); padding-top: 10px; }
+.tn-wz-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+.tn-wz-name { font-weight: 650; font-size: var(--tnx-fs); }
+.tn-wz-meta { font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-wz-big { font-size: calc(var(--tnx-fs) + 8px); font-weight: 650; letter-spacing: -0.01em; line-height: 1.1; }
+.tn-wz-big small { font-size: var(--tnx-fs-sm); font-weight: 500; color: var(--tn-text-muted); margin-left: 4px; letter-spacing: 0; }
+.tn-wz-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; padding: 0; list-style: none; }
+.tn-wz-chip { font-size: var(--tnx-fs-xs); line-height: 1.5; border: 1px solid var(--tn-border); border-radius: 999px; padding: 0 8px; color: var(--tn-text-muted); background: var(--tn-surface); white-space: nowrap; }
+.tn-wz-chip.is-ru { color: var(--wz-ru-ink); border-color: color-mix(in srgb, var(--wz-ru-ink) 35%, transparent); background: var(--wz-ru-soft); }
+.tn-wz-chip.is-ua { color: var(--wz-ua-ink); border-color: color-mix(in srgb, var(--wz-ua-ink) 35%, transparent); background: var(--wz-ua-soft); }
+.tn-wz-chip b { font-weight: 650; }
+.tn-wz-line { display: block; width: 100%; overflow: visible; }
+.tn-wz-line .grid { stroke: var(--tn-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tn-wz-line .fill { fill: var(--wz-held); opacity: 0.12; }
+.tn-wz-line .stroke { fill: none; stroke: var(--wz-held); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.tn-wz-axis { display: flex; justify-content: space-between; gap: 8px; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); }
+.tn-wz-contested { display: flex; align-items: center; gap: 7px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+.tn-wz-contested b { color: var(--tn-text); font-weight: 650; }
+.tn-wz-swatch { flex: none; display: inline-block; width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--tn-border-strong); }
+.tn-wz-swatch.held { background: color-mix(in srgb, var(--wz-held) 45%, transparent); border-color: var(--wz-held); }
+.tn-wz-swatch.retaken { background: color-mix(in srgb, var(--wz-retaken) 25%, transparent); border-color: var(--wz-retaken); }
+.tn-wz-swatch.contested { background: repeating-linear-gradient(135deg, var(--wz-contested) 0 1.6px, transparent 1.6px 4px); border-color: var(--wz-contested); }
+.tn-wz-swatch.change { width: 10px; border-radius: 50%; border: 2px solid var(--wz-change); background: color-mix(in srgb, var(--wz-change) 35%, transparent); }
+.tn-wz-foot { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); line-height: 1.4; }
+.tn-wz a, .tn-flc a { color: var(--tn-accent); text-underline-offset: 2px; }
+.tn-wz a:focus-visible, .tn-flc a:focus-visible, .tn-flc-row:focus-visible, .tn-wz button:focus-visible, .tn-flc button:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; border-radius: 3px; }
+
+/* Expanded War zones. */
+.tn-wz .tn-sd-kpi-value { font-size: calc(var(--tnx-fs) + 7px); font-weight: 650; }
+.tn-wz .tn-sd-kpi-value.is-ru { color: var(--wz-ru-ink); }
+.tn-wz .tn-sd-kpi-value.is-ua { color: var(--wz-ua-ink); }
+.tn-wz-zonehead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0; font-size: var(--tnx-fs-md); font-weight: 650; }
+.tn-wz-zonehead span { font-size: var(--tnx-fs-sm); font-weight: 400; color: var(--tn-text-muted); }
+.tn-wz-yaxis { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; align-items: stretch; }
+.tn-wz-yaxis > div:first-child { display: flex; flex-direction: column; justify-content: space-between; font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); text-align: right; }
+.tn-wz-sketch { display: block; width: 100%; height: auto; max-height: 360px; background: var(--tn-surface-2); border: 1px solid var(--tn-border); border-radius: var(--tnx-r, 8px); }
+.tn-wz-sketch .land { fill: var(--tn-surface); stroke: var(--tn-border-strong); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .land.home { stroke: var(--tn-text-faint); stroke-width: 1.2; }
+.tn-wz-sketch .held { fill: var(--wz-held); fill-opacity: 0.42; stroke: var(--wz-held); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .retaken { fill: var(--wz-retaken); fill-opacity: 0.18; stroke: var(--wz-retaken); stroke-opacity: 0.7; stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.tn-wz-sketch .contested { stroke: var(--wz-contested); stroke-width: 0.8; vector-effect: non-scaling-stroke; }
+.tn-wz-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); margin-top: 6px; }
+.tn-wz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.tn-wz-note { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); line-height: 1.5; margin: 0; max-width: 80ch; }
+.tn-wz .tn-sd-table td, .tn-wz .tn-sd-table th { text-align: right; white-space: nowrap; }
+.tn-wz .tn-sd-table td:first-child, .tn-wz .tn-sd-table th:first-child { text-align: left; }
+.tn-wz .tn-sd-table th { cursor: default; }
+.tn-wz-empty { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); padding: 18px 8px; text-align: center; }
+
+/* Bars of changes per day, stacked by side (both views). */
+.tn-flc-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: end; gap: 2px; height: 110px; border-bottom: 1px solid var(--tn-border-strong); }
+.tn-flc-bar { display: flex; flex-direction: column-reverse; min-width: 0; height: 100%; }
+.tn-flc-bar i { display: block; width: 100%; }
+.tn-flc-bar i.ru { background: var(--wz-change); }
+.tn-flc-bar i.ua { background: var(--wz-retaken); }
+.tn-flc-bar i.unknown { background: var(--wz-contested); }
+.tn-flc-bar i + i { box-shadow: inset 0 -1px 0 var(--tn-surface); }
+
+/* Front line changes. */
+.tn-flc-mark { flex: none; display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid; box-sizing: border-box; }
+.tn-flc-mark.ru { border-color: var(--wz-change); background: color-mix(in srgb, var(--wz-change) 35%, transparent); }
+.tn-flc-mark.ua { border-color: var(--wz-retaken); background: color-mix(in srgb, var(--wz-retaken) 30%, transparent); }
+.tn-flc-mark.unknown { border-color: var(--wz-contested); background: transparent; }
+.tn-flc-side { flex: none; font-size: var(--tnx-fs-xs); font-weight: 650; border-radius: 4px; padding: 0 5px; line-height: 1.6; white-space: nowrap; }
+.tn-flc-side.ru { color: var(--wz-ru-ink); background: var(--wz-ru-soft); }
+.tn-flc-side.ua { color: var(--wz-ua-ink); background: var(--wz-ua-soft); }
+.tn-flc-side.unknown { color: var(--wz-unk-ink); background: var(--tn-chip-bg); }
+.tn-flc-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-flc-list > li { border-top: 1px solid var(--tn-border); }
+.tn-flc-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 2px 8px; align-items: baseline; width: 100%; padding: 6px 2px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.tn-flc-row:hover { background: var(--tn-hover); }
+.tn-flc-row .tn-flc-mark { align-self: center; }
+.tn-flc-text { font-size: var(--tnx-fs-sm); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tn-flc-age { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); white-space: nowrap; }
+.tn-flc-counts { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.tn-flc-window { font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+
+/* Expanded Front line changes. */
+.tn-flc .tn-flc-entries { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-flc-entry { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 14px; padding: 9px 2px; border-top: 1px solid var(--tn-border); }
+.tn-flc-entry.is-selected { background: var(--tn-hover); }
+.tn-flc-entry time { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-flc-entry p { margin: 0; font-size: var(--tnx-fs); line-height: 1.45; max-width: 80ch; }
+.tn-flc-entry p.orig { font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-flc-spots { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 2px 0 0; padding: 0; list-style: none; font-size: var(--tnx-fs-sm); }
+.tn-flc-spots li { display: inline-flex; align-items: center; gap: 6px; }
+.tn-flc-divider { padding: 12px 2px 4px; font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tn-text-muted); border-top: 1px solid var(--tn-border-strong); }
+@media (max-width: 560px) { .tn-flc-entry { grid-template-columns: minmax(0, 1fr); } .tn-flc-spots { grid-column: 1; } }
+/* ── end War zones and Front line changes ── */
