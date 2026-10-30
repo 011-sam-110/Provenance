@@ -85,6 +85,7 @@ export function CameraDetail({ object }: { object: WorldObject }) {
             attribution={cam.attribution}
             license={cam.license}
             refreshSeconds={cam.refreshSeconds}
+            tracking
           />
         ) : (
           <CameraImage

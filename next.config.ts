@@ -91,6 +91,12 @@ const nextConfig: NextConfig = {
       // the page changes and never between them.
       rule("/marketing/:path*", assets),
       rule("/favicon.svg", assets),
+      // The vehicle tracker's model and ONNX Runtime (lib/vision/*). 12 MB and 28 MB,
+      // fetched only when someone switches tracking on, and unchanged between deploys.
+      // Neither name is hashed, so a NEW model must get a new file name, not replace
+      // this one, or browsers keep the old weights for up to a week.
+      rule("/models/:path*", assets),
+      rule("/ort/:path*", assets),
       rule("/geo/:path*", data),
       rule("/webcams/:path*", data),
     ];

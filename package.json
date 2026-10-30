@@ -17,14 +17,18 @@
     "e2e": "playwright test",
     "webcams:plan": "node scripts/harvest-webcams.mjs --plan",
     "webcams:cycle": "node scripts/harvest-webcams.mjs --cycle",
-    "webcams:status": "node scripts/harvest-webcams.mjs --status"
+    "webcams:status": "node scripts/harvest-webcams.mjs --status",
+    "predev": "node scripts/copy-ort.mjs",
+    "prebuild": "node scripts/copy-ort.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
+    "d3-contour": "^4.0.2",
     "h3-js": "^4.4.0",
     "hls.js": "^1.6.16",
     "maplibre-gl": "^5.24.0",
     "next": "15.5.24",
+    "onnxruntime-web": "1.31.1",
     "posthog-js": "^1.428.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -35,6 +39,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.51.1",
+    "@types/d3-contour": "^3.0.6",
     "@types/node": "22.10.5",
     "@types/react": "19.0.4",
     "@types/react-dom": "19.0.2",

@@ -893,6 +893,41 @@
   flex: none;
 }
 
+/* The way out to the console (EyeHud): the name, then "Exit to main dashboard" on the
+   same row. It is a .btn plate, the look of Turn and the place chips, so it reads as a
+   control and not as part of the name. The header takes no pointer events; this asks
+   for its own. The arrow is the console's "God's eye view" plate turned round: each map
+   offers the other at its top left. */
+.idRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.exit {
+  gap: 7px;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.exitArrow {
+  color: var(--eye-ink-2);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms ease-out;
+}
+.exit:hover .exitArrow,
+.exit:focus-visible .exitArrow {
+  color: var(--eye-ink);
+  transform: translateX(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .exitArrow {
+    transition: none;
+  }
+  .exit:hover .exitArrow,
+  .exit:focus-visible .exitArrow {
+    transform: none;
+  }
+}
+
 .places {
   display: flex;
   gap: 6px;
@@ -976,6 +1011,20 @@
   .id {
     font-size: 12.5px;
     min-height: 26px;
+  }
+  /* A phone has no room beside the name (the clock is there): the way out takes the row
+     under the place, where a wide screen has the place chips, 44 px tall. The ledger
+     moves down by that row, and only while the row is drawn (data-exit on the frame). */
+  .idRow {
+    display: contents;
+  }
+  .exit {
+    order: 1;
+    justify-self: start;
+    margin-top: 5px;
+  }
+  .hud[data-exit] .ledger {
+    top: 136px;
   }
   /* The console's thumb control, kept: "≡ Sources" at the bottom left, 44 px tall,
      first in the bar (the .tn-rail-fab look: bars in front, the word after). */

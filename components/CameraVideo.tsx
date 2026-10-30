@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import { AttributionBadge } from "@/components/AttributionBadge";
 import { CameraImage } from "@/components/CameraImage";
+import { TrackingOverlay } from "@/components/TrackingOverlay";
 import { clearVideoFatal, markVideoFatal, videoRecentlyFatal } from "@/lib/cameras/videoFatal";
 import { VIDEO_RECHECK_MS, pictureOutcome, readPicture } from "@/lib/console/widgets/camslot.picture";
 import type { StreamOutcome } from "@/lib/console/widgets/camslot.health";
@@ -19,8 +20,11 @@ export function CameraVideo(props: {
   onOutcome?: (outcome: StreamOutcome) => void;
   /** True while this view is the hidden prefetch. See the play() effect below. */
   hidden?: boolean;
+  /** Offer the "Track vehicles" switch over the video (TrackingOverlay.tsx). Off for
+   *  the camera wall's tiles: one detector per tile would run a dozen models at once. */
+  tracking?: boolean;
 }) {
-  const { id, alt, attribution, license, refreshSeconds, onOutcome, hidden = false } = props;
+  const { id, alt, attribution, license, refreshSeconds, onOutcome, hidden = false, tracking = false } = props;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(() => videoRecentlyFatal(id, Date.now()));
   const src = `/api/hls?id=${encodeURIComponent(id)}`;
@@ -159,21 +163,30 @@ export function CameraVideo(props: {
       />
     );
   }
+  const video = (
+    <video
+      ref={videoRef}
+      poster={poster}
+      controls
+      autoPlay
+      muted
+      playsInline
+      aria-label={alt}
+      onPlaying={onPlaying}
+      onTimeUpdate={onTimeUpdate}
+      onError={onError}
+      style={{ width: "100%" }}
+    />
+  );
   return (
     <figure style={{ margin: 0 }}>
-      <video
-        ref={videoRef}
-        poster={poster}
-        controls
-        autoPlay
-        muted
-        playsInline
-        aria-label={alt}
-        onPlaying={onPlaying}
-        onTimeUpdate={onTimeUpdate}
-        onError={onError}
-        style={{ width: "100%" }}
-      />
+      {tracking && !hidden ? (
+        <TrackingOverlay videoRef={videoRef} resetKey={id}>
+          {video}
+        </TrackingOverlay>
+      ) : (
+        video
+      )}
       <figcaption><AttributionBadge attribution={attribution} license={license} /></figcaption>
     </figure>
   );

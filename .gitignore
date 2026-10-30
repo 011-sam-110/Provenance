@@ -54,3 +54,6 @@ data/liveness/raw/
 
 # macOS Finder metadata — junk, never ours
 .DS_Store
+
+# ONNX Runtime Web, copied from node_modules by scripts/copy-ort.mjs (predev/prebuild)
+public/ort/

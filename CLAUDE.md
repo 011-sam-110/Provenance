@@ -110,7 +110,12 @@ obligations and are not satisfied by the licence.
   which rebuilds it from checked values and never uses it as a URL, drops it from the
   address, and the console's map then shows "God's eye view / Back to <place>" at its top
   left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
-  a reload drops it). **Both map pages ask for WebGL before they mount MapLibre**
+  a reload drops it). "Exit to main dashboard" (2026-10-30) is the view's always-visible way
+  out: a plate beside the name at its top left, under the place on a phone (the ledger moves
+  down by that row). It is the same link without `sources=open` (`getDashboardHref()`), so
+  the console opens at the spot on screen with its rail as the visitor left it, plus the
+  way back; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
+  **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
   The "Previews" switch beside Turn turns the camera pictures off: each camera is then an
@@ -357,6 +362,15 @@ obligations and are not satisfied by the licence.
   do NOT carry hidden state.
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
+- **Vehicle tracking on live video** (2026-10-30): a "Track vehicles" switch on `/camera/[id]`
+  and in `CameraDetail`, never on camera-wall tiles (`CameraVideo`'s `tracking` prop).
+  YOLO11n-seg (AGPL-3.0, `public/models/`) runs in a worker through onnxruntime-web, which
+  `scripts/copy-ort.mjs` copies into the gitignored `public/ort/` on predev/prebuild; the
+  tracker (`lib/vision/tracker.ts`, pure, tested) gives each vehicle an ID. Two rules are
+  not style preferences: nothing leaves the browser, and a weak box is shown only once it
+  has MOVED (signs and logos score as trucks on every frame). The counts are what the tab
+  followed, never a traffic count. Write-up and measurements: `docs/VEHICLE_TRACKING.md`.
+  Its e2e spec needs Google Chrome (Playwright's Chromium has no H.264).
 - **Camera-tile conditions** — `lib/console/widgets/camslot.conditions.ts` (pure: what may be
   SAID), `camslot.provenance.ts` (pure: what may be SHOWN as the basis), `camslot.overlay.tsx`
   (the corner scrim), `camslot.conditions.store.ts` (one board-wide weather subscription).
