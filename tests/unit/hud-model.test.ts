@@ -6,12 +6,9 @@ import {
   HUD_CHIP_LABEL,
   HUD_COUNTS_TITLE,
   HUD_HOTKEY,
-  HUD_OPACITY_MAX,
-  HUD_OPACITY_MIN,
   HUD_VARIANTS,
   VARIANT_LABEL,
   VARIANT_SPEC,
-  clampOpacity,
   compassPoint,
   formatCount,
   formatHeading,
@@ -28,15 +25,16 @@ import {
 // the readout formatters. Node environment, pure functions only.
 
 describe("defaults and variants", () => {
-  it("ships every switch off (HUD off, animation off), full variant, opacity inside the band", () => {
+  it("ships every switch off (HUD off, animation off) and the full variant", () => {
     expect(DEFAULT_HUD_PREFS).toEqual({
       enabled: false,
       variant: "full",
       animate: false,
-      opacity: 88,
     });
-    expect(DEFAULT_HUD_PREFS.opacity).toBeGreaterThanOrEqual(HUD_OPACITY_MIN);
-    expect(DEFAULT_HUD_PREFS.opacity).toBeLessThanOrEqual(HUD_OPACITY_MAX);
+  });
+
+  it("has no opacity setting: the HUD is always drawn solid (Leon, 2026-10-29)", () => {
+    expect("opacity" in DEFAULT_HUD_PREFS).toBe(false);
   });
 
   it("lists exactly three variants and labels every one", () => {
@@ -70,28 +68,6 @@ describe("defaults and variants", () => {
   });
 });
 
-describe("clampOpacity", () => {
-  it("passes values inside the 40–100 band through, rounded", () => {
-    expect(clampOpacity(40)).toBe(40);
-    expect(clampOpacity(100)).toBe(100);
-    expect(clampOpacity(88.4)).toBe(88);
-    expect(clampOpacity(88.5)).toBe(89);
-  });
-
-  it("clamps the extremes", () => {
-    expect(clampOpacity(0)).toBe(HUD_OPACITY_MIN);
-    expect(clampOpacity(25)).toBe(HUD_OPACITY_MIN);
-    expect(clampOpacity(150)).toBe(HUD_OPACITY_MAX);
-    expect(clampOpacity(1000)).toBe(HUD_OPACITY_MAX);
-  });
-
-  it("non-finite input falls back to the default rather than rendering invisibly", () => {
-    expect(clampOpacity(NaN)).toBe(DEFAULT_HUD_PREFS.opacity);
-    expect(clampOpacity(Infinity)).toBe(DEFAULT_HUD_PREFS.opacity);
-    expect(clampOpacity(-Infinity)).toBe(DEFAULT_HUD_PREFS.opacity);
-  });
-});
-
 describe("sanitizeHudPrefs", () => {
   it("a foreign shape yields all defaults", () => {
     expect(sanitizeHudPrefs(null)).toEqual(DEFAULT_HUD_PREFS);
@@ -103,29 +79,34 @@ describe("sanitizeHudPrefs", () => {
 
   it("repairs field by field, keeping what is valid", () => {
     expect(
-      sanitizeHudPrefs({ enabled: false, variant: "compact", animate: false, opacity: 55 }),
-    ).toEqual({ enabled: false, variant: "compact", animate: false, opacity: 55 });
+      sanitizeHudPrefs({ enabled: true, variant: "compact", animate: true }),
+    ).toEqual({ enabled: true, variant: "compact", animate: true });
   });
 
   it("a bad variant falls back to full without touching the rest", () => {
-    expect(sanitizeHudPrefs({ variant: "huge", opacity: 60 }).variant).toBe("full");
-    expect(sanitizeHudPrefs({ variant: "huge", opacity: 60 }).opacity).toBe(60);
+    const p = sanitizeHudPrefs({ enabled: true, variant: "huge", animate: true });
+    expect(p.variant).toBe("full");
+    expect(p.enabled).toBe(true);
+    expect(p.animate).toBe(true);
   });
 
-  it("non-boolean flags and non-numeric opacity fall back to defaults", () => {
-    const p = sanitizeHudPrefs({ enabled: "yes", animate: 1, opacity: "77" });
+  it("non-boolean flags fall back to defaults", () => {
+    const p = sanitizeHudPrefs({ enabled: "yes", animate: 1 });
     expect(p).toEqual(DEFAULT_HUD_PREFS);
   });
 
-  it("clamps a persisted out-of-band opacity instead of trusting it", () => {
-    expect(sanitizeHudPrefs({ opacity: 250 }).opacity).toBe(HUD_OPACITY_MAX);
-    expect(sanitizeHudPrefs({ opacity: -5 }).opacity).toBe(HUD_OPACITY_MIN);
+  it("an old stored opacity is ignored: the result carries no opacity key", () => {
+    // A browser that saved the slider before 2026-10-29 still loads; hudStore.hydrate()
+    // then rewrites tn.hud.v1 without the field.
+    const p = sanitizeHudPrefs({ enabled: true, variant: "full", animate: false, opacity: 40 });
+    expect(p).toEqual({ enabled: true, variant: "full", animate: false });
+    expect("opacity" in p).toBe(false);
   });
 
   it("round-trips the defaults and drops unknown keys", () => {
     expect(sanitizeHudPrefs(DEFAULT_HUD_PREFS)).toEqual(DEFAULT_HUD_PREFS);
     const p = sanitizeHudPrefs({ ...DEFAULT_HUD_PREFS, extra: "junk" });
-    expect(Object.keys(p).sort()).toEqual(["animate", "enabled", "opacity", "variant"]);
+    expect(Object.keys(p).sort()).toEqual(["animate", "enabled", "variant"]);
   });
 });
 

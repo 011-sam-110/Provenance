@@ -55,7 +55,7 @@ describe("SYNC_KEYS", () => {
   it("leaves screen, cache, flag and analytics keys on the device", () => {
     for (const k of ["tn.sources.railw", "tn.viewmode.v1", "tn.terminal.mode.v1", "tn.ui.v1", "tn.timewindow.v1",
       "tn.analytics.optout.v1", "tn.visit.v1", "tn.presence.id.v1", "tn.profile.v1", "tn.news.snapshot.v1",
-      "tn.terminal.skin.v2"]) {
+      "tn.terminal.skin.v2", "tn.map.legend.v1"]) {
       expect(SYNC_KEY_NAMES).not.toContain(k);
     }
   });

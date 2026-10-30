@@ -13,7 +13,18 @@
 // It lists ONLY the marks on the map now, and renders nothing while no signal layer
 // draws one, so the empty Globe board stays empty. WorldMap mounts it and hands it
 // the marks: there is one map, and the legend is about what that map shows.
+//
+// THE TITLE IS A BUTTON. Folded, the key is a one-line "Marks" chip in the same corner,
+// and the fold is remembered in this browser (lib/map/markKey.ts, tn.map.legend.v1).
+// WHERE IT SITS: top right, unless the HUD readout (top left) would reach it, which on a
+// phone it does; the key then sits just below the HUD and opens downward, and it stops
+// 8px above the map's bottom-right controls (the compass and the i) and scrolls inside
+// rather than run over them. The maths is markKeyPlacement; this file measures the boxes
+// and writes two custom properties (the pattern of EyeReturn.tsx).
 
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { useHudPrefs } from "@/lib/hud/store";
+import { markKeyPlacement, markKeyStore, useMarkKeyFolded } from "@/lib/map/markKey";
 import { MARK_LEGEND, ROAD_MARKS, ROAD_MARK_NOTE, type SignalMark } from "@/lib/map/precisionMarks";
 
 /** A neutral swatch colour: the key explains the SHAPE, and every layer has its own hue. */
@@ -110,23 +121,108 @@ function Swatch({ mark }: { mark: SignalMark }) {
   }
 }
 
-export default function MarkLegend({ marks }: { marks: readonly SignalMark[] }) {
-  if (marks.length === 0) return null;
+/** The fold arrow: down when open, turned to the side by CSS when folded. */
+function Chevron() {
   return (
-    <aside className="tn-markkey" aria-label="Map legend: what each mark means" data-testid="mark-legend">
-      <div className="tn-markkey-title">Marks</div>
-      <ul className="tn-markkey-list">
-        {marks.map((mark) => (
-          <li key={mark} className="tn-markkey-row" data-mark={mark}>
-            <Swatch mark={mark} />
-            <span>
-              <b>{MARK_LEGEND[mark].name}</b>
-              <span className="tn-markkey-meaning">{MARK_LEGEND[mark].meaning}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      {marks.some((m) => ROAD_MARKS.includes(m)) ? <p className="tn-markkey-note">{ROAD_MARK_NOTE}</p> : null}
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+      <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function MarkLegend({ marks }: { marks: readonly SignalMark[] }) {
+  const folded = useMarkKeyFolded();
+  const hud = useHudPrefs();
+  const ref = useRef<HTMLElement>(null);
+  const shown = marks.length > 0;
+
+  // The saved fold is read after mount (never during render: the server draws it open).
+  useEffect(() => markKeyStore.hydrate(), []);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const map = el?.offsetParent as HTMLElement | null | undefined;
+    if (!el || !map) return;
+    const watched = new Set<Element>();
+    let ro: ResizeObserver | null = null;
+    const watch = (target: Element | null) => {
+      if (target && ro && !watched.has(target)) {
+        watched.add(target);
+        ro.observe(target);
+      }
+    };
+    const place = () => {
+      const m = map.getBoundingClientRect();
+      const hudEl = el.closest(".tn-cw-stage")?.querySelector<HTMLElement>("[data-tn-hud]") ?? null;
+      const group = map.querySelector<HTMLElement>(".maplibregl-ctrl-bottom-right");
+      const body = el.querySelector<HTMLElement>(".tn-markkey-body");
+      watch(hudEl);
+      watch(group);
+      watch(body);
+      const h = hudEl?.getBoundingClientRect();
+      // The open width is the key's own max-width, so folding never moves the chip.
+      const maxW = parseFloat(getComputedStyle(el).maxWidth);
+      const p = markKeyPlacement({
+        mapW: m.width,
+        mapH: m.height,
+        hud: h ? { left: h.left - m.left, top: h.top - m.top, right: h.right - m.left, bottom: h.bottom - m.top } : null,
+        groupTop: group && group.offsetHeight > 0 ? group.getBoundingClientRect().top - m.top : Number.NaN,
+        openW: Number.isFinite(maxW) ? maxW : el.offsetWidth,
+      });
+      el.style.setProperty("--tn-markkey-top", `${p.top}px`);
+      // Never below the folded chip (30px): a HUD that fills a short map must not squash the
+      // key to a sliver, and the chip is the least it can be.
+      el.style.setProperty("--tn-markkey-max", `${Math.max(p.maxHeight, 30)}px`);
+      if (body && body.scrollHeight > body.clientHeight + 1) el.setAttribute("data-scroll", "");
+      else el.removeAttribute("data-scroll");
+    };
+    ro = new ResizeObserver(place);
+    watched.add(map);
+    ro.observe(map);
+    watched.add(el);
+    ro.observe(el);
+    place();
+    // The map's own controls are added a moment after the first render.
+    const raf = requestAnimationFrame(place);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+    };
+  }, [shown, folded, hud.enabled, hud.variant]);
+
+  if (!shown) return null;
+  return (
+    <aside
+      ref={ref}
+      className="tn-markkey"
+      aria-label="Map legend: what each mark means"
+      data-testid="mark-legend"
+      data-folded={folded || undefined}
+    >
+      <button
+        type="button"
+        className="tn-markkey-toggle"
+        aria-expanded={!folded}
+        aria-controls="tn-markkey-body"
+        onClick={() => markKeyStore.toggle()}
+      >
+        <span>Marks</span>
+        <Chevron />
+      </button>
+      <div id="tn-markkey-body" className="tn-markkey-body" hidden={folded}>
+        <ul className="tn-markkey-list">
+          {marks.map((mark) => (
+            <li key={mark} className="tn-markkey-row" data-mark={mark}>
+              <Swatch mark={mark} />
+              <span>
+                <b>{MARK_LEGEND[mark].name}</b>
+                <span className="tn-markkey-meaning">{MARK_LEGEND[mark].meaning}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        {marks.some((m) => ROAD_MARKS.includes(m)) ? <p className="tn-markkey-note">{ROAD_MARK_NOTE}</p> : null}
+      </div>
     </aside>
   );
 }

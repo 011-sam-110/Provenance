@@ -14,9 +14,6 @@ export type HudVariant = (typeof HUD_VARIANTS)[number];
 /** The hotkey that toggles the overlay — scoped to the /demo-hud page, not global. */
 export const HUD_HOTKEY = "H";
 
-export const HUD_OPACITY_MIN = 40;
-export const HUD_OPACITY_MAX = 100;
-
 export interface HudPrefs {
   /** The overlay is drawn at all. Default OFF — opt-in from Map settings. */
   enabled: boolean;
@@ -25,15 +22,12 @@ export interface HudPrefs {
   /** Split-flap cascades run, or values settle instantly. Default OFF — every
    *  switch ships off; the user turns the flourishes on. */
   animate: boolean;
-  /** Overlay opacity in percent, clamped to 40–100. */
-  opacity: number;
 }
 
 export const DEFAULT_HUD_PREFS: HudPrefs = {
   enabled: false,
   variant: "full",
   animate: false,
-  opacity: 88,
 };
 
 /** User-facing variant names, in the repo's calm plain language. */
@@ -62,13 +56,6 @@ export function isHudVariant(v: unknown): v is HudVariant {
   return typeof v === "string" && (HUD_VARIANTS as readonly string[]).includes(v);
 }
 
-/** Clamp + round an opacity percent into the 40–100 band. Non-finite input falls
- *  back to the default, because a persisted NaN would render an invisible HUD. */
-export function clampOpacity(n: number): number {
-  if (!Number.isFinite(n)) return DEFAULT_HUD_PREFS.opacity;
-  return Math.min(HUD_OPACITY_MAX, Math.max(HUD_OPACITY_MIN, Math.round(n)));
-}
-
 /**
  * Validate + repair a persisted blob into a usable HudPrefs. Mirror of the shell
  * stores' coerce functions: anything wrong falls back to the default for THAT field,
@@ -82,7 +69,6 @@ export function sanitizeHudPrefs(raw: unknown): HudPrefs {
     enabled: typeof r.enabled === "boolean" ? r.enabled : d.enabled,
     variant: isHudVariant(r.variant) ? r.variant : d.variant,
     animate: typeof r.animate === "boolean" ? r.animate : d.animate,
-    opacity: typeof r.opacity === "number" ? clampOpacity(r.opacity) : d.opacity,
   };
 }
 

@@ -41,12 +41,6 @@ export const hudStore = {
     state = { ...state, animate: on };
     emit();
   },
-  setOpacity(pct: number) {
-    const o = sanitizeHudPrefs({ opacity: pct }).opacity; // clamp via the model
-    if (state.opacity === o) return;
-    state = { ...state, opacity: o };
-    emit();
-  },
   get(): HudPrefs {
     return state;
   },

@@ -536,9 +536,10 @@ export default function PrivacyPage() {
                 </tr>
                 <tr>
                   <td>
-                    Theme, skin, language, view mode, which map layers are on, and, in the
-                    God&rsquo;s eye view, whether camera previews show, which sources are switched
-                    on and which are pinned to its bar (kept apart from the console&rsquo;s boards)
+                    Theme, skin, language, view mode, which map layers are on, whether the
+                    map&rsquo;s Marks key is folded, and, in the God&rsquo;s eye view, whether camera
+                    previews show, which sources are switched on and which are pinned to its bar
+                    (kept apart from the console&rsquo;s boards)
                   </td>
                   <td>Local storage</td>
                   <td>No</td>

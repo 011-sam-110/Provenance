@@ -60,6 +60,7 @@ import {
   type MapLoadStatus,
 } from "@/lib/map/resilience";
 import { ATTRIB_CONTROL_CLASS, collapseAttribution } from "@/lib/map/attribution";
+import { CompassControl } from "@/lib/map/compass";
 import { HILLSHADE_MIN_ZOOM, TERRAIN_MIN_ZOOM, terrainChanged, wantedTerrain } from "@/lib/map/terrain";
 import { layersToTrim } from "@/lib/map/styleTrim";
 import { whenStyleReady } from "@/lib/map/styleReady";
@@ -631,10 +632,17 @@ export interface WorldMapProps {
    * the key would sit over its Turn and Sources buttons.
    */
   legend?: boolean;
+  /**
+   * Draw the compass (lib/map/compass.ts) above the i, bottom right. Default true, and only
+   * where the console's own skin is (`.tn-terminal`): the demo pages carry none of its
+   * styles. The God's eye view passes false: it has its own Turn controls.
+   */
+  compass?: boolean;
 }
 
-export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps = {}) {
+export default function WorldMap({ openAt, onStyleReady, legend, compass }: WorldMapProps = {}) {
   const openAtRef = useRef(openAt);
+  const compassRef = useRef(compass);
   const onStyleReadyRef = useRef(onStyleReady);
   onStyleReadyRef.current = onStyleReady;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2587,9 +2595,16 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
     // ever takes it off again. See lib/map/attribution.ts (the credit stays, and
     // stays reachable through the info button — that part is a licence obligation).
     collapseAttribution(map.getContainer().querySelector("." + ATTRIB_CONTROL_CLASS));
-    // NO NavigationControl. The zoom ± and the compass-reset are gone: the stage
+    // The console's compass: one round button of our own (lib/map/compass.ts), not a
+    // `.maplibregl-ctrl-group`. MapLibre inserts a bottom control BEFORE the ones already
+    // there, so it stacks directly above the i. Read once, at construction.
+    if (compassRef.current !== false && map.getContainer().closest(".tn-terminal")) {
+      map.addControl(new CompassControl(), "bottom-right");
+    }
+    // NO NavigationControl. MapLibre's zoom ± / compass cluster is still gone: the stage
     // rail is the map's one control surface now, and a second cluster in the
-    // opposite corner was the thing it exists to remove. Zoom is the wheel, a
+    // opposite corner was the thing it exists to remove. The one control added back is
+    // our own single compass button above (Leon, 2026-10-29). Zoom is the wheel, a
     // pinch, a double-tap and the +/- keys; MapLibre's own keyboard handler still
     // rotates and pitches.
     //

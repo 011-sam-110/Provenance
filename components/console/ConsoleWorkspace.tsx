@@ -132,7 +132,9 @@ export default function ConsoleWorkspace() {
   // The frame does not change. Five columns, three rows, same element, same
   // children in the same order. What changes is which cell each occupant sits
   // in: the WALL takes the hero cell (column 3) and the STAGE moves to the
-  // right-hand track (column 5), where it is the map dock.
+  // right-hand track (column 5), where it is the map dock. The one exception is an
+  // EMPTY wall (`fullBleed` below): it has nothing to put in column 3, so the stage
+  // stays in the hero cell, the same frame as Globe's.
   //
   // THE STAGE SECTION KEEPS ITS REACT POSITION IN BOTH MODES, and that is the
   // constraint this whole file already bends around. A `StageHost` remount costs
@@ -147,6 +149,13 @@ export default function ConsoleWorkspace() {
   // sibling index stable for React's positional reconciliation.
   const wall = layout.mode === "wall";
   const dock = wall ? dockSize(layout, box) : 0;
+  // An empty wall shows the map in the hero column, the same frame as Globe. `dockSize`
+  // hands the dock the WHOLE box then (lib/terminal/rails.ts), but the grid still adds a
+  // column gap around each of the empty tracks beside it, so a stage in column 5 ended up
+  // four gaps wider than the free width and ran 40px off the screen at 1440 (12px at 390).
+  // In the hero cell, with the dock track at 0, it is exactly Globe's frame. `dockSize`
+  // and its unit pin stay as they are; the stage is never remounted, only its column moves.
+  const fullBleed = wall && layout.widgets.length === 0 && dock > 0;
 
   /** Every rail's widgets, already ordered — `order` is dense and 0-based. */
   const byRail = useMemo(() => {
@@ -172,7 +181,7 @@ export default function ConsoleWorkspace() {
 
   const railVars = {
     "--tn-lw": `${wall ? 0 : sizes.left}px`,
-    "--tn-rw": `${wall ? dock : sizes.right}px`,
+    "--tn-rw": `${wall ? (fullBleed ? 0 : dock) : sizes.right}px`,
     "--tn-bh": `${wall ? 0 : sizes.bottom}px`,
   } as CSSProperties;
 
@@ -361,9 +370,9 @@ export default function ConsoleWorkspace() {
         {wall ? null : renderSplit("left")}
 
         {/* SLOT 2 — the stage. Emitted unconditionally and never keyed, in both
-            modes. Only `gridColumn` differs: the hero cell on rails, the dock's
-            track on a wall. See the WALL MODE note at the top of the component
-            for what a remount here would cost. */}
+            modes. Only `gridColumn` differs: the hero cell on rails (and on an
+            empty wall), the dock's track on a wall with tiles. See the WALL MODE
+            note at the top of the component for what a remount here would cost. */}
         <section
           // A CLOSED DOCK IS NOT `hidden` AND NOT `aria-hidden`, and both of
           // those were tried and are wrong. `hidden` is display:none, which does
@@ -388,7 +397,7 @@ export default function ConsoleWorkspace() {
           tabIndex={wall ? undefined : -1}
           aria-labelledby="tn-cw-stage-h"
           data-grid-id={STAGE_ID}
-          style={{ gridColumn: wall ? 5 : 3, gridRow: 1 }}
+          style={{ gridColumn: wall && !fullBleed ? 5 : 3, gridRow: 1 }}
         >
           <h2 id="tn-cw-stage-h" className="tn-sr-only">{stageLabel}</h2>
           <StageHost stage={layout.stage} />

@@ -25,14 +25,9 @@
   border: 1px solid var(--tn-border);
   border-radius: 10px;
   box-shadow: var(--tn-shadow-sm);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   padding: 10px 12px;
   max-width: calc(100vw - 28px);
 }
-
-/* Opacity is driven by the hudStore preference on the element's inline style;
-   nothing here re-sets it. */
 
 .inner {
   display: flex;
@@ -76,20 +71,6 @@
   color: var(--tn-accent-strong);
   border: 1px solid var(--tn-border);
 }
-
-/* Corner brackets — four quiet L marks, no glow. */
-.corner {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border: 0 solid var(--tn-accent);
-  pointer-events: none;
-}
-
-.corner[data-corner="tl"] { top: 3px; left: 3px; border-top-width: 2px; border-left-width: 2px; }
-.corner[data-corner="tr"] { top: 3px; right: 3px; border-top-width: 2px; border-right-width: 2px; }
-.corner[data-corner="bl"] { bottom: 3px; left: 3px; border-bottom-width: 2px; border-left-width: 2px; }
-.corner[data-corner="br"] { bottom: 3px; right: 3px; border-bottom-width: 2px; border-right-width: 2px; }
 
 /* ── Split-flap readout ───────────────────────────────────────────────────── */
 
