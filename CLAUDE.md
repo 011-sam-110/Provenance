@@ -110,7 +110,12 @@ obligations and are not satisfied by the licence.
   which rebuilds it from checked values and never uses it as a URL, drops it from the
   address, and the console's map then shows "God's eye view / Back to <place>" at its top
   left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
-  a reload drops it). **Both map pages ask for WebGL before they mount MapLibre**
+  a reload drops it). "Exit to main dashboard" (2026-10-30) is the view's always-visible way
+  out: a plate beside the name at its top left, under the place on a phone (the ledger moves
+  down by that row). It is the same link without `sources=open` (`getDashboardHref()`), so
+  the console opens at the spot on screen with its rail as the visitor left it, plus the
+  way back; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
+  **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.
   The "Previews" switch beside Turn turns the camera pictures off: each camera is then an

@@ -412,12 +412,13 @@ export default function EyeApp({
     savePersisted<EyePrefs>(EYE_PREFS_KEY, EYE_PREFS_VERSION, { previews: next });
   }, [previews]);
 
-  // The Sources button's link: the console at the spot on screen, its Sources rail open.
-  // A browser with no saved console board also gets this view's layers and ground, so
-  // the console does not open empty; one with a board keeps its own (lib/eye/places.ts).
-  // The link also carries this view's own link as `eye=`, so the console can offer the
-  // way back to the same place, heading and tilt.
-  const getSourcesHref = useCallback(() => {
+  // The console at the spot on screen, read when a link to it is used. The Sources tray's
+  // "Open the full map" opens its Sources rail too (`sources`); "Exit to main dashboard"
+  // does not. A browser with no saved console board also gets this view's layers and
+  // ground, so the console does not open empty; one with a board keeps its own
+  // (lib/eye/places.ts). Both carry this view's own link as `eye=`, so the console can
+  // offer the way back to the same place, heading and tilt.
+  const consoleLink = useCallback((sources: boolean) => {
     let storage: Storage | undefined;
     try {
       storage = window.localStorage;
@@ -431,12 +432,14 @@ export default function EyeApp({
         ? { lat: c.lat, lon: c.lng, zoom: m.getZoom(), tilt: m.getPitch(), heading: m.getBearing() }
         : target?.view ?? { lat: 0, lon: 0, zoom: 2, tilt: 0, heading: 0 };
     const opts = {
-      sources: true,
+      sources,
       scene: !hasSavedBoard(storage, BOARD_KEY),
       back: target ? eyeLinkQuery(target, live) : undefined,
     };
     return consoleHref(live, opts);
   }, [target]);
+  const getSourcesHref = useCallback(() => consoleLink(true), [consoleLink]);
+  const getDashboardHref = useCallback(() => consoleLink(false), [consoleLink]);
 
   const words = target ? titleFor(target, report.cameraName) : null;
   // For scripts and tests: the scene is drawn and, with the overlay on, placed.
@@ -487,6 +490,8 @@ export default function EyeApp({
           phoneNote={report.phoneNote}
           credits={allCredits}
           getSourcesHref={getSourcesHref}
+          // A recording or a film is a frame, not a tool: no way out is drawn on it.
+          getDashboardHref={flags.record || flags.manualClock ? undefined : getDashboardHref}
           sourceCount={sourceCount}
           sourceRows={sources}
           leftOut={leftOut}
