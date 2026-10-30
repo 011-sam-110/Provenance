@@ -311,10 +311,11 @@ for (const source of SIGNALS) {
     title: source.label,
     icon: iconFor(source),
     category: source.group,
-    defaultHeight: 240,
+    // A war source may bring its own card body, height and count noun
+    // (lib/console/widgets/war); the generic ones are the fallback.
+    defaultHeight: WAR_WIDGETS[source.id]?.defaultHeight ?? 240,
+    ...(WAR_WIDGETS[source.id]?.countNoun ? { countNoun: WAR_WIDGETS[source.id]?.countNoun } : {}),
     defaultConfig: {},
-    // A war source may bring its own card body (lib/console/widgets/war); the generic
-    // list is the fallback until it does.
     component: WAR_WIDGETS[source.id]?.Card ?? makeSignalBody(source),
     detail: makeSignalDetail(source),
     help: signalHelp(source),

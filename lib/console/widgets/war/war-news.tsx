@@ -391,4 +391,6 @@ function WarNewsDetail(_props: WidgetDetailProps) {
 }
 
 export const Card: ComponentType<WidgetBodyProps> | undefined = WarNewsCard;
+export const defaultHeight = 300;
+export const countNoun = "posts";
 export const Detail: ComponentType<WidgetDetailProps> | undefined = WarNewsDetail;

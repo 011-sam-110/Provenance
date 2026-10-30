@@ -44,6 +44,11 @@ function Swatch({ placed }: { placed: boolean }) {
   );
 }
 
+/** Room for a border group and its first rows; the frame scrolls the rest. */
+export const defaultHeight = 300;
+/** The expanded view counts sites, not rows. */
+export const countNoun = "sites";
+
 export function Card(_props: WidgetBodyProps) {
   const { summary, status, updatedAt, ok, features, sourceAt } = useForces();
   const sites = summary?.sites ?? [];

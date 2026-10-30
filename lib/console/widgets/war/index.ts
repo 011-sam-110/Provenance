@@ -15,6 +15,10 @@ import * as warZones from "./war-zones";
 export interface WarWidget {
   Card?: ComponentType<WidgetBodyProps>;
   Detail?: ComponentType<WidgetDetailProps>;
+  /** The card's starting height in px, when its rows need more than the generic 240. */
+  defaultHeight?: number;
+  /** What the expanded view's count names ("posts"), when it is more exact than "rows in view". */
+  countNoun?: string;
 }
 
 export const WAR_WIDGETS: Readonly<Record<string, WarWidget>> = {

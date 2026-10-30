@@ -380,7 +380,7 @@ const EXPLAINERS: LayerExplainer[] = [
   {
     id: "war-news",
     whatItShows: "A post from one of the chosen outlets or public Telegram channels, at the place it names, labelled with the side it comes from.",
-    method: "provenance-1 reads the outlets' RSS feeds and the channels' public t.me pages every hour, translates Russian and Ukrainian posts, and places a post at the town it names. Opinion channels are listed and never placed.",
+    method: "provenance-1 reads the outlets' RSS feeds (for UNITED24 and Radio Svoboda, their Google News sitemaps) and the channels' public t.me pages every hour, translates Russian and Ukrainian posts, and places a post at the town it names. Opinion channels are listed and never placed. While the model is out, English posts are listed unchecked, with no war zone and no place, and Russian and Ukrainian posts wait.",
     confidence: "reported",
     coverage: "Mostly the war in Ukraine. Some channels also post about other wars, and the widget can filter by war zone.",
     limitations: [
