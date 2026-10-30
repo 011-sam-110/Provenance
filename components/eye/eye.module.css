@@ -1606,3 +1606,193 @@
 /* ── A console layer in the ledger (Sources tray) ────────────────────────────
  * One row for each console layer that is switched on, in the layer's own colour. */
 .ledger p[data-k="signal"] > i { background: var(--c); }
+
+/* ── Phone, landscape: the phone's compact frame on a short wide screen ─────────────
+ * A phone on its side is wider than 4:5, so it took the wide layout, and at 300-430 px
+ * tall that layout's pieces ran into each other: the title under the bar, the ledger
+ * (anchored 76 px up) into the credits and the place chips, the hint over the ledger,
+ * and five pins pushed Previews and Turn off the left edge (eye-landscape, 29 Oct 2026).
+ * Under 500 px of height the frame takes the phone's words and sizes (Leon's call) and
+ * splits the width in two halves:
+ *   left:  the place, heading and tilt, and the counts right under them, in flow;
+ *   right: the clock, the bar, and what the bar opens (the hint, the tray, the places
+ *          list, a details panel), each hung 8 px under the bar.
+ * The buttons keep the wide size (32-34 px): 44 px would push the hint into the credits
+ * on a 320 px screen. The way out ("Exit to main dashboard") keeps its wide-screen place,
+ * beside the name, and drops under the name when the left half is too narrow for both
+ * (568 px); it needs no rule here. Portrait phones (max-aspect-ratio: 4/5) and any window
+ * 500 px tall or more never match this block. Its twin in EyeSources.module.css places the
+ * tray and makes the bar's strip scroll. It must stay AFTER the hint's 820 px rule and the
+ * detail panel's rules: it overrides them with the same specificity. */
+@media (min-aspect-ratio: 4/5) and (max-height: 500px) {
+  /* The header and the ledger stack in the frame's flow, as on a portrait phone, so the
+     counts follow the title whatever its height. position: relative, not static: an
+     in-flow block that is not positioned paints under the scrim (.hud::before). */
+  .hud {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 6px;
+    padding: 14px 22px 0;
+  }
+  .top {
+    position: relative;
+    inset: auto;
+    align-self: stretch;
+  }
+  /* The left half ends 16 px before the middle of the screen; the bar starts at it. */
+  .placeBlock {
+    max-width: calc(50% - 16px);
+  }
+  .id {
+    font-size: 12.5px;
+    min-height: 26px;
+  }
+  .place {
+    font-size: 22px;
+  }
+  .sub {
+    font-size: 11px;
+  }
+  .clock {
+    font-size: 17px;
+  }
+  /* The phone's words: Places in the bar instead of the chips, the ledger's short labels
+     instead of its sentences, and TfL's times on the bottom line. */
+  .long {
+    display: none !important;
+  }
+  .short {
+    display: block;
+  }
+  /* The phone's row of counts, wrapping inside the left half. It holds one row's room from
+     the start, as on a portrait phone: EyeOverlay measures the box it keeps clear before
+     the counts arrive. */
+  .ledger {
+    position: relative;
+    inset: auto;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 20px;
+    row-gap: 6px;
+    max-width: calc(50% - 16px);
+    min-height: 36px;
+  }
+  .ledger p {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-areas: "dot count" "label label";
+    justify-content: start;
+    column-gap: 6px;
+  }
+  .ledger p > i {
+    grid-area: dot;
+    align-self: center;
+    transform: none;
+  }
+  .ledger p > b {
+    grid-area: count;
+    font-size: 16px;
+    line-height: 1.1;
+  }
+  .ledger p > .short {
+    grid-area: label;
+    font-size: 10.5px;
+    color: var(--eye-ink-2);
+  }
+  /* A zero and a stated absence: shown on the bottom line only, as on a phone. */
+  .ledger p[data-zero],
+  .ledger p[data-note] {
+    display: none;
+  }
+  /* The bottom line: TfL's times over the coordinates, the credits on the right as on a
+     wide screen, in the phone's sizes. */
+  .bottom {
+    left: 22px;
+    right: 22px;
+    bottom: 12px;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10.5px;
+  }
+  .bottom > .short {
+    color: var(--eye-ink-3);
+  }
+  .sources {
+    font-size: 9.5px;
+  }
+  /* The bar keeps to the right half, under the clock. Its strip scrolls sideways
+     (EyeSources.module.css); Sources stays at its right-hand end. */
+  .controls {
+    top: 54px;
+    right: 22px;
+    max-width: calc(50% - 22px);
+  }
+  /* Previews is its camera alone, as on a phone. Its name is still "Previews". */
+  .previewsBtn {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .previewsWord,
+  .previewsTrack {
+    display: none;
+  }
+  /* The hint, the places list and a details panel hang 8 px under the bar (54 + 34) in
+     the right half. The hint takes the phone's two columns. */
+  .hint {
+    top: 96px;
+    right: 22px;
+    max-width: calc(50% - 6px);
+  }
+  .hintRows {
+    grid-template-columns: auto auto;
+    column-gap: 12px;
+  }
+  .hintRows .hintKeys {
+    display: none;
+  }
+  .placeSheet {
+    position: fixed;
+    top: 96px;
+    right: 22px;
+    width: min(320px, calc(50% - 6px));
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--eye-hair);
+    border-radius: 6px;
+    background: rgba(6, 10, 12, 0.92);
+    pointer-events: auto;
+  }
+  .placeSheet a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 12px 10px;
+    border-radius: 4px;
+    color: var(--eye-ink);
+    text-decoration: none;
+  }
+  .placeSheet a[aria-current="page"] {
+    background: rgba(238, 243, 241, 0.1);
+  }
+  .placeSheet b {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .placeSheet span {
+    font-size: 11.5px;
+    color: var(--eye-ink-2);
+  }
+  /* A details panel runs to 10 px above the bottom edge. It covers the credits while it is
+     open; its own foot names its feed. */
+  .detail {
+    top: 96px;
+    right: 22px;
+    width: min(340px, calc(50% - 6px));
+    max-height: calc(100% - 106px);
+  }
+}

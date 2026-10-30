@@ -419,3 +419,54 @@
     flex: none;
   }
 }
+
+/* ── A phone on its side (eye.module.css holds the twin block and the reasons) ───────
+   The tray hangs 8 px under the bar and runs to 10 px above the bottom edge, and the
+   whole tray scrolls under its sticky header, as the console's own rail does: on a
+   300-390 px screen the strip, the section's title and the foot left the rows one line
+   or none when only the rows scrolled. The bar keeps to the right half, so Places,
+   Previews, Turn and the pins scroll sideways in its strip, as on a phone, with a fade at
+   its end; Sources keeps the bar's right-hand end. */
+@media (min-aspect-ratio: 4/5) and (max-height: 500px) {
+  .tray.tray {
+    top: 96px;
+    right: 22px;
+    width: min(600px, calc(100vw - 44px));
+    max-height: calc(100dvh - 106px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .tray .body.body {
+    flex: none;
+    overflow: visible;
+  }
+  /* The console pins a rail's header (.tn-rail-header: sticky, top 0) and then, inside
+     .tn-terminal, makes it static because its panes scroll (app/globals.css). Here the whole
+     tray scrolls, so the header is pinned again: its 10 px gap becomes padding, so no row
+     shows through between it and the strip while the rows pass under it. */
+  .tray.tray :global(.tn-rail-header) {
+    position: sticky;
+    top: 0;
+    margin: 0;
+    padding-bottom: 18px;
+  }
+  .bar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-right: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 12px), transparent);
+  }
+  .bar::-webkit-scrollbar {
+    display: none;
+  }
+  .bar > * {
+    flex: none;
+  }
+}
