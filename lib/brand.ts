@@ -30,9 +30,9 @@ export const BRAND = {
    * LINE. Invites are created with an expiry by default (7 days, or a custom one),
    * and an expired invite does not fail loudly — it serves a normal-looking
    * "Invite Invalid" page, so the console, the site footer and every shared link
-   * keep pointing at a dead end with nothing in this repo going red. Nothing here
-   * can detect it either: no test can reach discord.gg, and a link check would only
-   * tell you it was already broken.
+   * keep pointing at a dead end with nothing in this repo going red. No test here
+   * can reach Discord, so nothing here detects it. To check by hand, read `expires_at`
+   * from https://discord.com/api/v10/invites/<code> (null means it never expires).
    *
    * So the rule is a SETTING on Discord's side, not a check on ours: this must be a
    * "never expire" invite (server → Invites → Edit → Expire After: Never, max uses
@@ -42,9 +42,10 @@ export const BRAND = {
    * served in place of every page while the site is down, and this is the only link
    * on it. A dead invite there does not degrade the experience, it IS the experience.
    *
-   * Code confirmed live by Sampo on 2026-09-07, replacing H5vB8TsVK.
+   * Code given by Sampo on 2026-10-30, replacing q45NU8qWk, which expired on
+   * 2026-10-07 and left every Discord link dead. `expires_at` was null when this was set.
    */
-  discordUrl: "https://discord.gg/q45NU8qWk",
+  discordUrl: "https://discord.gg/bjJMe9MHXg",
   /**
    * Canonical host, WITHOUT a scheme, for the one caller that needs a bare hostname to
    * print rather than a URL to fetch: the OG card footer.

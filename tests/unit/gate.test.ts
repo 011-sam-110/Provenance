@@ -277,11 +277,11 @@ describe("the curtain", () => {
 });
 
 describe("the invite", () => {
-  // Confirmed live by Sampo on 2026-09-07, replacing H5vB8TsVK. Nothing here can check
+  // Given by Sampo on 2026-10-30, replacing q45NU8qWk. Nothing here can check
   // that it still resolves - no test can reach discord.gg - so this only pins WHICH
   // invite ships. The expiry rule is a setting on Discord's side; see lib/brand.ts.
   it("is the one that was confirmed", () => {
-    expect(BRAND.discordUrl).toBe("https://discord.gg/q45NU8qWk");
+    expect(BRAND.discordUrl).toBe("https://discord.gg/bjJMe9MHXg");
   });
 });
 
