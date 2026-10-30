@@ -222,6 +222,9 @@ for (const vp of [
       await page.locator("#tn-rail-tab-sources").click();
       // The shot shows the counts, so wait for them rather than their skeletons.
       await loaded(page);
+      // The map's own "couldn't start" notice is retracted by its first idle frame; give it
+      // that, so the picture shows the console and not a transient notice.
+      await page.getByText(/couldn.t start in this browser/).waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
       await page.screenshot({ path: `persona-shots/console-chrome-${vp.name}-${skin}.png` });
     });
   }
@@ -362,4 +365,136 @@ test("phone: the sheet slides up on open and down on close", async ({ page }) =>
   expect(close.find((s) => s.x === null), "close: and left").toBeTruthy();
   // The map does not resize for a sheet.
   expect(widths(close)).toHaveLength(1);
+});
+
+type Nudge = { t: number; x: number; y: number; boxes: string };
+
+/** Start a frame sampler: the arrow's `translate`, and the boxes that must not move. */
+async function startNudgeSampler(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { __nudge: Nudge[]; __stop: boolean };
+    w.__nudge = [];
+    w.__stop = false;
+    const svg = document.querySelector(".tn-rail-close-cell .tn-rail-collapse svg") as SVGElement;
+    const rect = (el: Element | null) => {
+      const r = el?.getBoundingClientRect();
+      return r ? `${r.x},${r.y},${r.width},${r.height}` : "none";
+    };
+    const t0 = performance.now();
+    const tick = () => {
+      const [x = "0px", y = "0px"] = getComputedStyle(svg).translate.split(" ");
+      w.__nudge.push({
+        t: performance.now() - t0,
+        x: Number.parseFloat(x) || 0,
+        y: Number.parseFloat(y) || 0,
+        // The tile, the tabs, the first tool and the pane: none may move.
+        boxes: [
+          rect(svg.closest(".tn-rail-collapse")),
+          rect(document.querySelector(".tn-rail-tabs")),
+          rect(document.querySelector("#inspector-rail .tn-insp-rail-btn")),
+          rect(document.querySelector(".tn-cw-shell > .tn-rail")),
+        ].join("|"),
+      });
+      if (!w.__stop) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  await page.waitForTimeout(150); // a clean "before"
+}
+const stopNudgeSampler = (page: Page) =>
+  page.evaluate(() => {
+    const w = window as unknown as { __nudge: Nudge[]; __stop: boolean };
+    w.__stop = true;
+    return w.__nudge;
+  });
+
+/** Hover the close tile with the sampler already running, and return what it saw. */
+async function hoverNudge(page: Page, ms = 900): Promise<Nudge[]> {
+  await page.mouse.move(2, 400);
+  await startNudgeSampler(page);
+  await page.locator(".tn-rail-close-cell .tn-rail-collapse").hover();
+  await page.waitForTimeout(ms);
+  return stopNudgeSampler(page);
+}
+
+for (const vp of [
+  { name: "desktop", width: 1440, height: 900, axis: "x" as const, sign: -1 },
+  { name: "phone", width: 390, height: 844, axis: "y" as const, sign: 1 },
+]) {
+  test(`${vp.name}: the arrow points where the pane goes, nudges that way once on hover, and nothing moves`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: vp.width, height: vp.height });
+    await page.goto("/app");
+    await expect(page.locator(".map-canvas")).toHaveCount(1);
+    await openRail(page);
+
+    // Pointing: the shown group is wider than tall for a left arrow and taller than wide for a down arrow.
+    const shown = await page.evaluate(() => {
+      const box = (sel: string) => {
+        const el = document.querySelector(sel)!;
+        const r = el.getBoundingClientRect();
+        return { display: getComputedStyle(el).display, w: r.width, h: r.height };
+      };
+      return { left: box(".tn-collapse-left"), down: box(".tn-collapse-down") };
+    });
+    if (vp.axis === "x") {
+      expect(shown.left.display).not.toBe("none");
+      expect(shown.down.display).toBe("none");
+      expect(shown.left.w).toBeGreaterThan(shown.left.h);
+    } else {
+      expect(shown.left.display).toBe("none");
+      expect(shown.down.display).not.toBe("none");
+      expect(shown.down.h).toBeGreaterThan(shown.down.w);
+    }
+    // The name and the phone's word are as before.
+    await expect(page.locator(".tn-rail-close-cell").getByRole("button", { name: "Close sources" })).toBeVisible();
+
+    const samples = await hoverNudge(page);
+    const travel = samples.map((s) => s[vp.axis] * vp.sign);
+    expect(Math.max(...travel), "it travelled toward the edge the pane leaves by").toBeGreaterThan(2);
+    expect(Math.min(...travel), "and never the other way").toBeGreaterThan(-0.5);
+    const cross = samples.map((s) => Math.abs(s[vp.axis === "x" ? "y" : "x"]));
+    expect(Math.max(...cross), "and not across").toBeLessThan(0.5);
+    // Once: it is back at rest and stays there while the pointer is still on the tile.
+    const late = samples.filter((s) => s.t > samples[0].t + 150 + 650);
+    expect(late.length).toBeGreaterThan(5);
+    expect(late.every((s) => s.x === 0 && s.y === 0), "back at rest, not looping").toBe(true);
+    // The whole move is inside about half a second.
+    const start = samples.find((s) => s.x !== 0 || s.y !== 0)!;
+    const end = [...samples].reverse().find((s) => s.x !== 0 || s.y !== 0)!;
+    expect(end.t - start.t).toBeLessThan(600);
+    // Nothing around it moved, and neither did the tile.
+    expect(new Set(samples.map((s) => s.boxes)).size, "no box moved").toBe(1);
+  });
+}
+
+test("reduced motion: the arrow does not travel on hover", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/app");
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
+  await openRail(page);
+  const samples = await hoverNudge(page, 700);
+  expect(samples.every((s) => s.x === 0 && s.y === 0)).toBe(true);
+  expect(new Set(samples.map((s) => s.boxes)).size).toBe(1);
+});
+
+test("keyboard focus nudges the arrow too", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/app");
+  await expect(page.locator(".map-canvas")).toHaveCount(1);
+  await openRail(page);
+  await page.mouse.move(2, 400);
+  await page.locator("#tn-rail-tab-inspector").focus();
+  await startNudgeSampler(page);
+  // A real Tab, so it is :focus-visible: the close tile is next in order after the tabs.
+  await page.keyboard.press("Tab");
+  await expect(page.locator(".tn-rail-close-cell .tn-rail-collapse")).toBeFocused();
+  await page.waitForTimeout(800);
+  const samples = await stopNudgeSampler(page);
+  expect(Math.min(...samples.map((s) => s.x))).toBeLessThan(-2);
+  expect(samples.at(-1)!.x).toBe(0);
+  expect(new Set(samples.map((s) => s.boxes)).size, "no box moved").toBe(1);
 });

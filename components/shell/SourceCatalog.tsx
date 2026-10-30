@@ -133,32 +133,39 @@ function CameraFilters() {
 }
 
 /**
- * The rail's close mark.
+ * The rail's close mark: an arrow that points where the pane goes.
  *
- * INLINE SVG, and drawn here rather than imported. components/console/RailGlyph.tsx
- * is this repo's precedent for chrome-only art as real JSX, and its reasoning
- * applies unchanged: lib/icons/svg.ts is the registry for marks that name a feature
- * ON THE MAP and is rasterised into a MapLibre sprite, which an ✕ on a panel header
- * has no business being in.
+ * Leon, 2026-10-30, replacing the ✕: "a left pointing arrow (collapsable symbol) that
+ * shows an arrow moving left and back when hovered to demo that's what it'll do". On a
+ * desktop the pane slides out to the LEFT, so the arrow points left. On a phone the
+ * pane is a bottom sheet that slides DOWN, so there the same arrow, drawn turned, points
+ * down. Both are in the markup and CSS shows one (`.tn-collapse-left`,
+ * `.tn-collapse-down`, switched at the sheet's 900px breakpoint in globals.css), so the
+ * mark cannot disagree with the motion it announces.
  *
- * A "✕" text character was the obvious cheaper option and is the thing being
- * replaced. It renders at whatever weight the first font in the stack happens to
- * carry it at — the rail's mono stack does not — so it arrived thin, small and
- * vertically off-centre next to a 16px uppercase title. Two strokes at the same 1.9
- * weight the stage-rail glyphs use cannot drift.
+ * INLINE SVG, REDRAWN, NEVER EMBEDDED, and drawn here rather than imported. It is the
+ * strip's own rule (components/shell/inspector/ToolIcons.tsx): currentColor, round caps
+ * and joins, a stroke of 1.8 like the tools beside it, and the sizing left to CSS (the
+ * tile's tool-glyph token) so it is the same size as Search and Settings by
+ * construction. The drawn extent (x 4 to 20.5) is centred on x = 12 by one group
+ * translate, as ToolIcons does for its lopsided marks. The hover nudge is
+ * app/console-motion.css, section 8.
  */
-function CloseGlyph() {
+function CollapseGlyph() {
+  const arrow = <path d="M20.5 12H4M10.5 5.5L4 12l6.5 6.5" />;
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.9}
+      strokeWidth={1.8}
       strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden
       focusable="false"
     >
-      <path d="M6 6l12 12M18 6L6 18" />
+      <g className="tn-collapse-left" transform="translate(-0.25 0)">{arrow}</g>
+      <g className="tn-collapse-down" transform="rotate(-90 12 12) translate(-0.25 0)">{arrow}</g>
     </svg>
   );
 }
@@ -426,7 +433,8 @@ export default function SourceCatalog() {
       {/* THE CLOSE TILE IS THE TOP OF THE TOOL STRIP (Leon, 2026-10-30: "X button doesn't
           look like it's part of the UI - add it to the sidebar and shade the underneath to
           differentiate it"). It used to be a loose 30px square in the header, outside the
-          strip. It now sits in the strip's first cell, level with the tabs, and wears the
+          strip, and a ✕; it is now an arrow that points where the pane goes (CollapseGlyph).
+          It sits in the strip's first cell, level with the tabs, and wears the
           tool tiles' own classes on purpose: the tile size, the hover wash, the focus ring
           and the phone's word under the mark come from the same rules as Search, Settings,
           Draw and Alerts and cannot drift from them. DOM order stays tabs, close, panes,
@@ -439,7 +447,7 @@ export default function SourceCatalog() {
           aria-label="Close sources"
           title="Close sources"
         >
-          <CloseGlyph />
+          <CollapseGlyph />
           <span className="tn-insp-rail-name" aria-hidden="true">Close</span>
         </button>
       </div>

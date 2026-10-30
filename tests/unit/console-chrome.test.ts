@@ -127,7 +127,7 @@ describe("the slide", () => {
   test("reads the console's motion settings, so reduced motion is handled in one place", () => {
     const at = motion.indexOf("THE SOURCES PANE SLIDES");
     expect(at, "the section is in console-motion.css").toBeGreaterThan(0);
-    const section = motion.slice(at);
+    const section = motion.slice(at, motion.indexOf("THE COLLAPSE ARROW"));
     expect(section).toContain("--tn-mo-travel");
     expect(section).toContain("--tn-mo-slow");
     expect(section).toContain("--tn-mo-base");
@@ -137,6 +137,54 @@ describe("the slide", () => {
     const bare = [...section.matchAll(/(?<![\w-])(\d+)ms/g)].map((m) => m[0]);
     expect(bare.every((v) => v === "260ms")).toBe(true);
     expect(section).toContain("calc(260ms * var(--tn-mo))");
+  });
+});
+
+describe("the collapse arrow", () => {
+  test("is a redrawn stroke mark that points where the pane goes: left on a desktop, down on a phone", () => {
+    expect(catalog).not.toContain("CloseGlyph");
+    const at = catalog.indexOf("function CollapseGlyph()");
+    expect(at).toBeGreaterThan(0);
+    const glyph = catalog.slice(at, catalog.indexOf("// Built once: the mapping is static"));
+    // The strip's own rule (ToolIcons.tsx): currentColor, round caps and joins, 1.8.
+    expect(glyph).toContain('stroke="currentColor"');
+    expect(glyph).toContain("strokeWidth={1.8}");
+    expect(glyph).toContain('strokeLinecap="round"');
+    expect(glyph).toContain('strokeLinejoin="round"');
+    expect(glyph).toContain("aria-hidden");
+    expect(glyph).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    // No size prop: the tile's tool-glyph token sizes it, like every other mark in the strip.
+    expect(glyph).not.toMatch(/\b(width|height)=/);
+    expect(glyph).toContain('className="tn-collapse-left"');
+    expect(glyph).toContain('className="tn-collapse-down"');
+    expect(glyph).toContain("rotate(-90 12 12)");
+  });
+
+  test("CSS shows the left arrow above 900px and the down arrow at and below it, at the tools' own size", () => {
+    expect(ruleBody(css, ".tn-terminal .tn-rail-close-cell .tn-collapse-down")).toContain("display: none");
+    expect(css).toMatch(
+      /@media \(max-width: 900px\) \{[^@]*\.tn-terminal \.tn-rail-close-cell \.tn-collapse-left \{ display: none; \}\s*\.tn-terminal \.tn-rail-close-cell \.tn-collapse-down \{ display: inline; \}/,
+    );
+    // The arrow takes `.tn-insp-rail-btn svg`'s size; no size of its own.
+    expect(css).not.toMatch(/\.tn-rail-close-cell \.tn-rail-collapse svg \{[^}]*(width|height)/);
+  });
+
+  test("nudges once on hover and keyboard focus, never loops, and travels only through the motion settings", () => {
+    const at = motion.indexOf("THE COLLAPSE ARROW");
+    expect(at, "the section is in console-motion.css").toBeGreaterThan(0);
+    const section = motion.slice(at);
+    expect(section).toContain("@keyframes tn-mo-nudge");
+    expect(section).toContain(".tn-rail-collapse:is(:hover, :focus-visible) svg");
+    expect(section).toContain("calc(var(--tn-nudge-x) * var(--tn-mo-travel))");
+    expect(section).toContain("calc(var(--tn-nudge-y) * var(--tn-mo-travel))");
+    expect(section).toContain("--tn-nudge-x: -4px;");
+    expect(section).toContain("--tn-nudge-y: 4px;");
+    expect(section).toMatch(/animation: tn-mo-nudge calc\(450ms \* var\(--tn-mo\)\) var\(--tn-mo-ease-io\) 1;/);
+    expect(section).not.toContain("infinite");
+    // Paint-only: nothing in the section may change a box.
+    const keyframes = section.slice(section.indexOf("@keyframes tn-mo-nudge"), section.indexOf(".tn-terminal .tn-rail-close-cell"));
+    expect(keyframes).toContain("translate:");
+    expect(keyframes).not.toMatch(/\b(width|height|margin|padding|top|left)\s*:/);
   });
 });
 

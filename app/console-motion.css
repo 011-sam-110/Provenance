@@ -463,3 +463,44 @@
     transition-timing-function: var(--tn-mo-ease-io);
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · THE COLLAPSE ARROW SHOWS WHAT IT DOES — one nudge toward the edge, and back
+   ═══════════════════════════════════════════════════════════════════════════
+   Leon, 2026-10-30: the close tile at the top of the Sources pane's tool strip is an
+   arrow, and "shows an arrow moving left and back when hovered to demo that's what
+   it'll do". So on hover or keyboard focus the arrow travels a few pixels the way the
+   pane will go (left on a desktop, down on a phone, where the sheet slides down) and
+   comes back.
+
+   ONCE PER HOVER, NOT A LOOP. This file bans endless animation, and a mark that never
+   stops moving stops reading as a demonstration. A CSS animation starts when the
+   selector starts matching and runs its one iteration; it plays again only after the
+   pointer has left and come back.
+
+   NOTHING AROUND IT MOVES. Only the SVG's `translate` changes, which is paint-only: the
+   tile, the tabs and the tools keep their boxes. The 4px of travel stays inside the 42px
+   tile (54px on a phone).
+
+   One multiplier, as everywhere here: `--tn-mo-travel` is 0 under reduced motion, so
+   the arrow does not travel at all there.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes tn-mo-nudge {
+  0%, 100% { translate: 0 0; }
+  40% {
+    translate: calc(var(--tn-nudge-x) * var(--tn-mo-travel)) calc(var(--tn-nudge-y) * var(--tn-mo-travel));
+  }
+}
+.tn-terminal .tn-rail-close-cell .tn-rail-collapse:is(:hover, :focus-visible) svg {
+  --tn-nudge-x: -4px;
+  --tn-nudge-y: 0px;
+  animation: tn-mo-nudge calc(450ms * var(--tn-mo)) var(--tn-mo-ease-io) 1;
+}
+@media (max-width: 900px) {
+  .tn-terminal .tn-rail-close-cell .tn-rail-collapse:is(:hover, :focus-visible) svg {
+    --tn-nudge-x: 0px;
+    --tn-nudge-y: 4px;
+  }
+}

@@ -7338,10 +7338,12 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   border-left: 1px solid var(--tn-border);
 }
 /* The tile is the tool tiles' (`.tn-insp-rail-btn`), so the base close rule's pull to the
-   right is off, and the x is drawn at 22px: it fills only the middle 12 of 24 units, so
-   at the tools' 27px it would look heavier than they do. */
+   right is off, and its arrow takes the tools' own glyph size (`.tn-insp-rail-btn svg`),
+   so it is the same size as Search and Settings by construction. The arrow points where
+   the pane goes: left on a desktop (the pane slides out to the left), down on a phone (a
+   bottom sheet), so each is its own group in the markup and one is shown. */
 .tn-terminal .tn-rail-close-cell .tn-rail-collapse { margin: 0; }
-.tn-terminal .tn-rail-close-cell .tn-rail-collapse svg { width: 22px; height: 22px; }
+.tn-terminal .tn-rail-close-cell .tn-collapse-down { display: none; }
 .tn-terminal .tn-rail-main {
   grid-column: 1 / -1; grid-row: 2;
   min-height: 0;
@@ -7749,7 +7751,8 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
     --tn-insp-rail-w: 60px; --tn-insp-rail-btn: 54px; --tn-insp-rail-glyph: 26px;
     --tn-insp-rail-group-gap: 10px;
   }
-  .tn-terminal .tn-rail-close-cell .tn-rail-collapse svg { width: 24px; height: 24px; }
+  .tn-terminal .tn-rail-close-cell .tn-collapse-left { display: none; }
+  .tn-terminal .tn-rail-close-cell .tn-collapse-down { display: inline; }
   .tn-insp-rail-btn {
     height: auto; min-height: 52px;
     flex-direction: column; gap: 3px; padding: 6px 0 5px;
