@@ -318,6 +318,10 @@ export const SIGNAL_ICON: Record<string, IconKey> = {
   conflict: "sig-conflict",
   acled: "sig-conflict",
   protests: "sig-protest",
+  // A documented vehicle loss: the burst, not the generic "!", whose filled white disc
+  // hid the pin's colour, and the colour is what tells the two sides apart.
+  "losses-ru": "sig-conflict",
+  "losses-ua": "sig-conflict",
   "cyber-ransomware": "sig-cyber",
   "cyber-disclosures": "sig-cyber",
   "cyber-attackers": "sig-cyber",
