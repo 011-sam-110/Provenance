@@ -88,7 +88,7 @@ import {
   readEyePrefs,
   type EyePrefs,
 } from "@/lib/eye/previews";
-import { creditsFromAttribution, fmtLat, fmtLon } from "@/lib/eye/wording";
+import { creditsFromAttribution, fmtSpot } from "@/lib/eye/wording";
 import { ICON_SVG } from "@/lib/icons/svg";
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { clipsSettled, stepClips } from "./cameraCard";
@@ -130,7 +130,7 @@ function applyLook(map: maplibregl.Map): void {
 function titleFor(target: EyeTarget, cameraName?: string): { title: string; area?: string } {
   if (target.kind === "place") return { title: target.place.name, area: target.place.area };
   if (target.kind === "camera") return { title: cameraName ?? "Road camera", area: cameraName ? "Road camera" : undefined };
-  return { title: `${fmtLat(target.view.lat)}, ${fmtLon(target.view.lon)}` };
+  return { title: fmtSpot(target.view.lat, target.view.lon) };
 }
 
 interface Flags {
