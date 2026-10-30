@@ -1,0 +1,35 @@
+{
+ "version": 1,
+ "feed": "losses-ru",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push losses-ru --dry-run --out)",
+ "data": {
+  "losses": [
+   {
+    "id": 47829,
+    "model": "'Ulan' all-terrain vehicle",
+    "type": "Transport",
+    "status": "Destroyed",
+    "date": "2026-10-27",
+    "place": "Svatove raion, Luhansk oblast",
+    "lat": null,
+    "lon": null,
+    "unit": null,
+    "tags": null
+   }
+  ],
+  "stats": {
+   "byStatus": {
+    "destroyed": 18949
+   },
+   "byType": [
+    {
+     "type": "Tanks",
+     "losses": 3762,
+     "damaged": 329
+    }
+   ]
+  },
+  "from": "2026-10-27"
+ }
+}

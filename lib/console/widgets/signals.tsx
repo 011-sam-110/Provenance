@@ -22,6 +22,7 @@ import { useCapabilityStatus } from "@/lib/sources/useStatus";
 import type { StatusEntry } from "@/lib/sources/statusReport";
 import { MetricBar } from "@/components/MetricBar";
 import { makeSignalDetail } from "./signals.detail";
+import { WAR_WIDGETS } from "./war";
 
 /**
  * The "you can't have this right now" badge for one capability's status.
@@ -312,7 +313,9 @@ for (const source of SIGNALS) {
     category: source.group,
     defaultHeight: 240,
     defaultConfig: {},
-    component: makeSignalBody(source),
+    // A war source may bring its own card body (lib/console/widgets/war); the generic
+    // list is the fallback until it does.
+    component: WAR_WIDGETS[source.id]?.Card ?? makeSignalBody(source),
     detail: makeSignalDetail(source),
     help: signalHelp(source),
   });

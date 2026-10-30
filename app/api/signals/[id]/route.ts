@@ -1,5 +1,6 @@
 import { getSignal } from "@/lib/signals/registry";
 import { describeCoverage, readCoverage } from "@/lib/signals/coverage";
+import { readSummary } from "@/lib/signals/summary";
 import type { SignalFeature, SignalSource } from "@/lib/signals/types";
 import { cacheTtlMs } from "@/lib/signals/cacheTtl";
 import { edgeCacheHeaders } from "@/lib/http/cache";
@@ -72,10 +73,14 @@ function payload(
   outcome: ReturnType<typeof publishOutcome>,
 ) {
   const coverage = readCoverage(features);
+  // A layer's figures that belong to no single point (lib/signals/summary.ts). Read
+  // from the adapter's own array, like coverage, before the precision copy below.
+  const summary = readSummary(features);
   return {
     ...outcome,
     count: features.length,
     ...(coverage ? { coverage: describeCoverage(coverage) } : {}),
+    ...(summary !== undefined ? { summary } : {}),
     features: withResolvedPrecision(features, source),
   };
 }

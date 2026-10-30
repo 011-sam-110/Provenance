@@ -1,0 +1,20 @@
+{
+ "version": 1,
+ "feed": "loss-totals",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push loss-totals --dry-run --out)",
+ "data": {
+  "claimed": {
+   "date": "2026-10-29",
+   "day": 1709,
+   "source": "https://www.facebook.com/GeneralStaff.ua",
+   "stats": {
+    "tanks": 12449
+   },
+   "increase": {
+    "tanks": 1
+   }
+  },
+  "crossCheck": null
+ }
+}

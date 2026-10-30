@@ -1,0 +1,26 @@
+{
+ "version": 1,
+ "feed": "losses-ua",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push losses-ua --dry-run --out)",
+ "data": {
+  "losses": [
+   {
+    "id": "armour/71806",
+    "name": "2С22 «Богдана»",
+    "nameEn": "2S22 Bohdana",
+    "category": "Артиллерия",
+    "categoryEn": "Artillery",
+    "status": null,
+    "statusEn": null,
+    "date": "2026-10-27",
+    "lat": 49.8222,
+    "lon": 37.3586,
+    "links": [
+     "https://lostarmour.info/armour/71806"
+    ]
+   }
+  ],
+  "from": "2026-10-27"
+ }
+}

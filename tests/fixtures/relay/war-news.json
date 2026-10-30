@@ -1,0 +1,26 @@
+{
+ "version": 1,
+ "feed": "war-news",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push war-news --dry-run --out)",
+ "data": {
+  "items": [
+   {
+    "id": "0123456789abcdef",
+    "outlet": "Kyiv Post",
+    "channel": "rss",
+    "side": "ua",
+    "url": "https://www.kyivpost.com/",
+    "title": "placeholder",
+    "summary": null,
+    "lang": "en",
+    "translated": false,
+    "original": null,
+    "publishedAt": "2026-10-29T21:49:39Z",
+    "zone": "ukraine",
+    "place": null,
+    "opinion": false
+   }
+  ]
+ }
+}

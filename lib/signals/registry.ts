@@ -51,6 +51,12 @@ import { AIRPORTS_SOURCE } from "@/lib/signals/airports";
 import { PORTS_SOURCE } from "@/lib/signals/ports";
 import { CONFLICT_SOURCE, PROTESTS_SOURCE } from "@/lib/signals/conflict";
 import { UKRAINE_ALERTS_SOURCE } from "@/lib/signals/ukraine-alerts";
+import { WAR_ZONES_SOURCE } from "@/lib/signals/war-zones";
+import { FRONTLINE_CHANGES_SOURCE } from "@/lib/signals/frontline-changes";
+import { LOSSES_RU_SOURCE } from "@/lib/signals/losses-ru";
+import { LOSSES_UA_SOURCE } from "@/lib/signals/losses-ua";
+import { FORCES_NEAR_NATO_SOURCE } from "@/lib/signals/forces-near-nato";
+import { WAR_NEWS_SOURCE } from "@/lib/signals/war-news";
 import { GDACS_SOURCE } from "@/lib/signals/gdacs";
 import { FIRE_FIRMS_SOURCE } from "@/lib/signals/fire-firms";
 import { AIR_QUALITY_SOURCE } from "@/lib/signals/airquality";
@@ -121,6 +127,15 @@ export const SIGNALS: SignalSource[] = [
   PORTS_SOURCE,
   INTERNET_OUTAGES_SOURCE, // IODA national internet-shutdown detection (keyless, country-aggregated)
   CLOUD_STATUS_SOURCE, // vendor Statuspage summaries (keyless); empty until something is actually down
+  // War sources, scraped on provenance-1 and pushed through the relay (lib/relay):
+  // DeepState's front line, documented losses on both sides, sites near NATO from
+  // reporting, and both sides' war news. Each draws only where its data is.
+  WAR_ZONES_SOURCE,
+  FRONTLINE_CHANGES_SOURCE,
+  LOSSES_RU_SOURCE,
+  LOSSES_UA_SOURCE,
+  FORCES_NEAR_NATO_SOURCE,
+  WAR_NEWS_SOURCE,
   // Intel (UCDP verified events, U.S. Embassy alerts, UK and Canadian travel advice)
   CONFLICT_SOURCE,
   // The World Headlines stream, pinned at the places its headlines NAME. Reads the same

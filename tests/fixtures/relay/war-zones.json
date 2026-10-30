@@ -1,0 +1,56 @@
+{
+ "version": 1,
+ "feed": "war-zones",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push war-zones --dry-run --out)",
+ "data": {
+  "zones": [
+   {
+    "id": "ukraine",
+    "name": "Ukraine",
+    "source": "DeepState",
+    "sourceUrl": "https://deepstatemap.live/en",
+    "mapId": 1793223200,
+    "mapAt": "2026-10-28T21:33:20Z",
+    "areas": [
+     {
+      "kind": "occupied",
+      "name": "placeholder",
+      "geometry": {
+       "type": "Polygon",
+       "coordinates": [
+        [
+         [
+          36.0,
+          48.0
+         ],
+         [
+          36.1,
+          48.0
+         ],
+         [
+          36.1,
+          48.1
+         ],
+         [
+          36.0,
+          48.0
+         ]
+        ]
+       ]
+      }
+     }
+    ],
+    "attacks": [],
+    "series": [
+     {
+      "day": "2026-10-28",
+      "mapId": 1793223200,
+      "heldKm2": 117148,
+      "contestedKm2": 1696
+     }
+    ]
+   }
+  ]
+ }
+}

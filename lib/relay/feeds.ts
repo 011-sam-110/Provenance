@@ -13,6 +13,12 @@
 // NewsScraper, `python -m sources push <feed>`). Each module there names the feed id it
 // pushes, and its payload shape must match the schema below.
 import { z } from "zod";
+import { frontlineChangesSchema } from "@/lib/relay/schemas/frontline-changes";
+import { lossTotalsSchema } from "@/lib/relay/schemas/loss-totals";
+import { lossesRuSchema } from "@/lib/relay/schemas/losses-ru";
+import { lossesUaSchema } from "@/lib/relay/schemas/losses-ua";
+import { warNewsSchema } from "@/lib/relay/schemas/war-news";
+import { warZonesSchema } from "@/lib/relay/schemas/war-zones";
 
 const KiB = 1024;
 const MiB = 1024 * KiB;
@@ -268,6 +274,49 @@ export const RELAY_FEEDS = {
     maxBytes: 2 * MiB,
     maxAgeMs: 7 * 24 * H,
     upstream: "https://oag.my.site.com/datasecuritybreachreport/apex/DataSecurityReportsPage",
+  },
+  // --- war sources (schemas in lib/relay/schemas/*, one file per feed) -------------
+  "war-zones": {
+    label: "War zones: DeepState control areas and a daily held-area series",
+    schema: warZonesSchema,
+    maxBytes: 3 * MiB,
+    maxAgeMs: 12 * H,
+    upstream: "https://deepstatemap.live/api/history/last",
+  },
+  "frontline-changes": {
+    label: "Front line changes: DeepState change log entries with a map link",
+    schema: frontlineChangesSchema,
+    maxBytes: 1 * MiB,
+    maxAgeMs: 12 * H,
+    upstream: "https://deepstatemap.live/api/history/public",
+  },
+  "losses-ru": {
+    label: "Documented Russian vehicle losses (WarSpotting)",
+    schema: lossesRuSchema,
+    maxBytes: 3 * MiB,
+    maxAgeMs: 48 * H,
+    upstream: "https://ukr.warspotting.net/api/losses/russia/",
+  },
+  "losses-ua": {
+    label: "Documented Ukrainian vehicle losses (LostArmour, via creamy-caprice.net)",
+    schema: lossesUaSchema,
+    maxBytes: 3 * MiB,
+    maxAgeMs: 48 * H,
+    upstream: "https://www.creamy-caprice.net/kml/Geolocations/Military_equipment.kml",
+  },
+  "loss-totals": {
+    label: "Claimed Russian losses (General Staff of Ukraine), cross-checked",
+    schema: lossTotalsSchema,
+    maxBytes: 64 * KiB,
+    maxAgeMs: 72 * H,
+    upstream: "https://russianwarship.rip/api/v2/statistics/latest",
+  },
+  "war-news": {
+    label: "War news: chosen outlets and public Telegram channels, both sides",
+    schema: warNewsSchema,
+    maxBytes: 2 * MiB,
+    maxAgeMs: 6 * H,
+    upstream: "RSS feeds and https://t.me/s/<channel> (NewsScraper sources/war_news.py)",
   },
 } as const satisfies Record<string, RelayFeedSpec>;
 

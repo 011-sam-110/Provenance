@@ -1,0 +1,22 @@
+{
+ "version": 1,
+ "feed": "frontline-changes",
+ "fetchedAt": "2026-10-29T12:00:00Z",
+ "_placeholder": "foundation stub: replace with a real capture (python -m sources push frontline-changes --dry-run --out)",
+ "data": {
+  "changes": [
+   {
+    "id": 1793223200,
+    "zone": "ukraine",
+    "at": "2026-10-28T21:33:20Z",
+    "text": "The enemy has advanced near Maiske.",
+    "textOriginal": null,
+    "side": "ru",
+    "lat": 48.6467764,
+    "lon": 37.7667016,
+    "zoom": 14,
+    "link": "https://deepstatemap.live/en#14/48.6467764/37.7667016"
+   }
+  ]
+ }
+}

@@ -28,6 +28,10 @@ export interface SignalFeed {
    *  adapter has no better answer than "the read instant is the data's age" (most
    *  of them), or serving last-good rows before any successful load ever set it. */
   sourceAt: number | null;
+  /** The layer's own figures that are not points (lib/signals/summary.ts), as the route
+   *  sent them. `unknown` on purpose: the layer that publishes one also exports the
+   *  reader that checks its shape. Kept from the last good load, like the features. */
+  summary?: unknown;
 }
 
 interface Entry {
@@ -88,6 +92,7 @@ function load(id: string, e: Entry) {
         updatedAt: Date.now(),
         ok: true,
         sourceAt: typeof d?.sourceAt === "number" ? d.sourceAt : null,
+        summary: d?.summary,
       };
       emit(e);
     })
@@ -104,6 +109,7 @@ function load(id: string, e: Entry) {
         updatedAt: e.state.updatedAt,
         ok: false,
         sourceAt: e.state.sourceAt,
+        summary: e.state.summary,
       };
       emit(e);
     });
