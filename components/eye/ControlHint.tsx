@@ -55,7 +55,7 @@ export interface ControlHintApi {
 }
 
 /** The hint's state, shared by the "?" in the header and the plate in the footer. `blocked`
- *  is true while a panel that takes the plate's room is open (the Places sheet). */
+ *  is true while a panel that takes the plate's room is open (the Places sheet, the Sources tray, a details panel). */
 export function useControlHint(map: maplibregl.Map | null, blocked: boolean): ControlHintApi {
   const [state, dispatch] = useReducer(hintReducer, undefined, () =>
     initialHint(typeof window !== "undefined" && window.matchMedia(TOUCH_QUERY).matches),

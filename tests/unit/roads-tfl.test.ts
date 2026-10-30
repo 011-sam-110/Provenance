@@ -10,6 +10,9 @@ import { streetFeatures } from "@/lib/eye/streets";
 // a burst water main (category Hazards) with a closed street, and police activity
 // (Emergency service incidents) that closes Blackstock Road.
 const MIXED = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/tfl-road-disruptions-mixed.json"), "utf8"));
+// Two verbatim rows of 24 Oct 2026 (a Wandsworth utility works and a Redbridge borough
+// works); they carry no `status`, and the second names no street.
+const EARLIER = JSON.parse(readFileSync(resolve(__dirname, "../fixtures/tfl-road-disruptions.json"), "utf8"));
 
 describe("normalizeTflNotices: closed is per street", () => {
   const [a12, water, police] = normalizeTflNotices(MIXED);
@@ -53,6 +56,91 @@ describe("normalizeTflNotices: closed is per street", () => {
     expect(tflKind("Works")).toBe("works");
     expect(tflKind("Collisions")).toBe("incident");
     expect(tflKind("Asset issues")).toBe("incident");
+  });
+});
+
+describe("normalizeTflNotices: everything TfL sends about a notice", () => {
+  const [a12, water, police] = normalizeTflNotices(MIXED);
+
+  it("keeps TfL's description and its latest update, trimmed, with the update's own time", () => {
+    expect(a12.description).toBe(
+      "[A12] Eastern Avenue East (Westbound) at the junction of [A127] Southend Arterial Road - Flyover is closed for Cadent Gas works.",
+    );
+    expect(MIXED[0].comments.endsWith(" ")).toBe(true);
+    expect(a12.update).toBe("Use another route. Diverted traffic is flowing well.");
+    expect(a12.updateAt).toBe("2026-10-27T05:56:22Z");
+    expect(police.description).toContain("The road has been closed due to a police investigation.");
+  });
+
+  it("keeps its dates, its status and its level of interest as TfL wrote them", () => {
+    expect(a12).toMatchObject({
+      starts: "2026-10-27T00:17:01Z",
+      ends: "2026-10-27T23:59:59Z",
+      status: "Active",
+      interest: "Medium",
+    });
+    expect(water).toMatchObject({ starts: "2026-10-24T05:43:17Z", ends: "2026-10-24T23:59:59Z", interest: "Medium" });
+    expect(police.interest).toBe("Low");
+  });
+
+  it("names the streets with TfL's own closure and direction words", () => {
+    expect(a12.namedStreets).toEqual([
+      { name: "[A12] EASTERN AVENUE EAST (RM2 ,RM3)", closed: true, direction: "Westbound" },
+      { name: "[A12] EASTERN AVENUE EAST (RM1 ,RM2 ,RM3)", closed: false, direction: "Both directions" },
+    ]);
+    expect(police.namedStreets).toEqual([{ name: "[A1201] BLACKSTOCK ROAD (N4)", closed: true, direction: "Both directions" }]);
+  });
+
+  it("leaves a field out when TfL did not send it, and invents no status", () => {
+    const [wandsworth, redbridge] = normalizeTflNotices(EARLIER);
+    expect(EARLIER[0]).not.toHaveProperty("status");
+    expect(wandsworth).not.toHaveProperty("status");
+    expect(redbridge).not.toHaveProperty("status");
+    // The Redbridge row names no street at all.
+    expect(EARLIER[1].streets).toBeUndefined();
+    expect(redbridge).not.toHaveProperty("namedStreets");
+    expect(wandsworth.namedStreets).toEqual([{ name: "[A218] BUCKHOLD ROAD (SW18)", closed: true, direction: "Southbound" }]);
+    expect(wandsworth.interest).toBe("High");
+  });
+
+  it("marks the dates provisional only where TfL does", () => {
+    expect(MIXED[0].isProvisional).toBe(false);
+    expect(a12).not.toHaveProperty("provisional");
+    const [yes] = normalizeTflNotices([{ ...MIXED[0], isProvisional: true }]);
+    expect(yes.provisional).toBe(true);
+  });
+
+  it("keeps the times within its dates when the works run, as TfL wrote them", () => {
+    expect(a12).not.toHaveProperty("schedule");
+    const recurringSchedules = [
+      { $type: "Tfl.Api.Presentation.Entities.RoadDisruptionSchedule, Tfl.Api.Presentation.Entities", startTime: "2026-10-31T08:00:00Z", endTime: "2026-11-02T16:00:00Z" },
+      { $type: "Tfl.Api.Presentation.Entities.RoadDisruptionSchedule, Tfl.Api.Presentation.Entities", startTime: "2026-10-29T08:00:00Z", endTime: "2026-10-30T16:00:00Z" },
+      { startTime: "2026-11-03T08:00:00Z" },
+    ];
+    const [timed] = normalizeTflNotices([{ ...MIXED[0], recurringSchedules }]);
+    expect(timed.schedule).toEqual([
+      { from: "2026-10-31T08:00:00Z", to: "2026-11-02T16:00:00Z" },
+      { from: "2026-10-29T08:00:00Z", to: "2026-10-30T16:00:00Z" },
+    ]);
+  });
+
+  it("collapses TfL's line breaks and runs of spaces, and drops text that is only blanks", () => {
+    const [messy] = normalizeTflNotices([
+      { ...MIXED[0], comments: "Lane  closed\r\non   the A12. ", currentUpdate: "  \r\n ", status: "  ", levelOfInterest: "" },
+    ]);
+    expect(messy.description).toBe("Lane closed on the A12.");
+    expect(messy).not.toHaveProperty("update");
+    expect(messy).not.toHaveProperty("status");
+    expect(messy).not.toHaveProperty("interest");
+    const [none] = normalizeTflNotices([{ ...MIXED[0], comments: "   ", streets: [{ name: " ", closure: "Open", segments: [] }] }]);
+    expect(none).not.toHaveProperty("description");
+    expect(none).not.toHaveProperty("namedStreets");
+  });
+
+  it("does not change what was already kept, or the drawn lines", () => {
+    expect(a12).toMatchObject({ id: "TIMS-237054", kind: "works", closure: "Closed, westbound", updated: "2026-10-27T05:56:23Z" });
+    expect(a12.closedLines).toHaveLength(1);
+    expect(a12.openLines).toHaveLength(1);
   });
 });
 

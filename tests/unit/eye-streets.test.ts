@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  noticeMetres,
+  noticeName,
+  noticePaint,
   noticeRows,
+  tflPlace,
   TFL_CREDIT,
   inLondon,
   normalizeTflDisruptions,
@@ -194,5 +198,88 @@ describe("noticeRows", () => {
       const paints = new Set(streetFeatures([d]).map((f) => rowOf[(f.properties as { paint: string }).paint]));
       expect(new Set(noticeRows(shape))).toEqual(paints);
     }
+  });
+});
+
+describe("noticeMetres", () => {
+  const [lined, pointOnly] = normalizeTflDisruptions(FIXTURE);
+  const vertex = lined.closedLines[0][3];
+
+  it("is the distance to the nearest vertex of the notice's lines", () => {
+    expect(noticeMetres(vertex[1], vertex[0], lined)).toBeCloseTo(0, 6);
+    // 0.0001 degrees of latitude is about 11 m, and no other vertex of the line is nearer.
+    const d = noticeMetres(vertex[1] + 0.0001, vertex[0], lined);
+    expect(d).toBeGreaterThan(10);
+    expect(d).toBeLessThan(12);
+  });
+
+  it("looks at the open lines too", () => {
+    const open = { ...lined, openLines: [[[0, 0], [0.001, 0]] as [number, number][]], closedLines: [] };
+    expect(noticeMetres(0, 0.001, open)).toBeCloseTo(0, 6);
+    expect(noticeMetres(0, 0.0005, open)).toBeCloseTo(55.6, 0);
+  });
+
+  it("is the distance to its own point when TfL gave it no line", () => {
+    expect(pointOnly.openLines).toEqual([]);
+    expect(pointOnly.closedLines).toEqual([]);
+    expect(noticeMetres(pointOnly.lat + 0.001, pointOnly.lon, pointOnly)).toBeCloseTo(111.2, 0);
+    expect(noticeMetres(pointOnly.lat, pointOnly.lon, pointOnly)).toBe(0);
+  });
+});
+
+describe("noticeName", () => {
+  const [lined, pointOnly] = normalizeTflDisruptions(FIXTURE);
+
+  it("is the sub-category and the road, as the chip in Also here says them", () => {
+    expect(noticeName(lined)).toBe("Utility works, [A3] WANDSWORTH HIGH STREET");
+    expect(noticeName(pointOnly)).toBe("Borough works, [A1008] CAMBRIDGE PARK");
+  });
+
+  it("falls back to the category, and to the street when TfL's location has no road", () => {
+    expect(noticeName({ category: "Works", location: "[A23] BRIXTON HILL (SW2 ) (Lambeth)" })).toBe("Works, [A23] BRIXTON HILL");
+    expect(noticeName({ category: "Hazards", street: "High Street" })).toBe("Hazards, High Street");
+    expect(noticeName({ category: "Hazards" })).toBe("Hazards");
+  });
+});
+
+describe("noticePaint", () => {
+  const base = { kind: "works" as const, closure: undefined, closedLines: [] };
+
+  it("is the incident's dots, a closure's bars, or works' dashes", () => {
+    expect(noticePaint(base)).toBe("works");
+    expect(noticePaint({ ...base, closure: "Closed, southbound" })).toBe("closed");
+    expect(noticePaint({ ...base, closedLines: [[[0, 0], [1, 1]]] })).toBe("closed");
+    expect(noticePaint({ ...base, kind: "incident" })).toBe("incident");
+    expect(noticePaint({ ...base, kind: "incident", closure: "Closed" })).toBe("incident");
+  });
+});
+
+describe("tflPlace", () => {
+  it("splits the road, the postcode areas and one borough", () => {
+    expect(tflPlace("[A400] NORTHUMBERLAND AVENUE (SW1A ,WC2N ) (Westminster)")).toEqual({
+      road: "[A400] NORTHUMBERLAND AVENUE",
+      postcodes: "SW1A, WC2N",
+      boroughs: "Westminster",
+    });
+  });
+
+  it("keeps a borough name that holds an ampersand, and several boroughs in TfL's order", () => {
+    expect(tflPlace("[A3220] WARWICK ROAD (SW5 ) (Kensington & Chelsea,Wandsworth)").boroughs).toBe("Kensington & Chelsea, Wandsworth");
+    expect(tflPlace("[A1201] BLACKSTOCK ROAD (N4 ,N5 ) (Hackney,Haringey,Islington)").boroughs).toBe("Hackney, Haringey, Islington");
+  });
+
+  it("gives the whole line as the road when it has no brackets, or none at all", () => {
+    expect(tflPlace("  HIGH STREET  ")).toEqual({ road: "HIGH STREET" });
+    expect(tflPlace("")).toEqual({ road: "" });
+    expect(tflPlace(undefined)).toEqual({ road: "" });
+  });
+
+  it("reads a single bracket as postcode areas when it looks like them, and as boroughs otherwise", () => {
+    expect(tflPlace("[A23] BRIXTON HILL (SW2 ,SW9)")).toEqual({ road: "[A23] BRIXTON HILL", postcodes: "SW2, SW9" });
+    expect(tflPlace("[A23] BRIXTON HILL (Lambeth)")).toEqual({ road: "[A23] BRIXTON HILL", boroughs: "Lambeth" });
+  });
+
+  it("leaves the parts out that TfL left empty", () => {
+    expect(tflPlace("[A4] ROAD () (Hounslow)")).toEqual({ road: "[A4] ROAD", boroughs: "Hounslow" });
   });
 });

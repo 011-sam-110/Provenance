@@ -16,6 +16,7 @@
 // its answer up to 5 min and this route holds it 2 min more, so "every 2 min" alone
 // told a reader nothing about how old the notices were.
 
+import { haversineKm } from "@/lib/geo/haversine";
 import { ofNearby, type LedgerRow } from "@/lib/eye/wording";
 import { changeText, fetchedText, type RoadKind, type RoadNotice } from "@/lib/roads/notice";
 import { TFL_CREDIT, TFL_NAME, normalizeTflNotices } from "@/lib/roads/tfl";
@@ -106,6 +107,75 @@ export function noticeRows(d: Pick<StreetDisruption, "kind" | "closure" | "openL
   if (d.openLines.length > 0) out.push(kind);
   if (d.closedLines.length > 0) out.push("closures");
   return out;
+}
+
+/**
+ * The paint a notice's mark wears in the panel and on its chip: an incident's violet dots;
+ * else rose bars on white when the notice has a closed street or a closure word; else works'
+ * rose dashes.
+ */
+export function noticePaint(d: Pick<StreetDisruption, "kind" | "closure" | "closedLines">): StreetPaint {
+  if (d.kind === "incident") return "incident";
+  return d.closedLines.length > 0 || d.closure ? "closed" : "works";
+}
+
+/** The metres from a point to the nearest vertex of a notice's street lines, or to its own point if it has none. */
+export function noticeMetres(lat: number, lon: number, d: Pick<StreetDisruption, "lat" | "lon" | "openLines" | "closedLines">): number {
+  let best = Number.POSITIVE_INFINITY;
+  for (const line of [...d.openLines, ...d.closedLines]) {
+    for (const [x, y] of line) best = Math.min(best, haversineKm(lat, lon, y, x) * 1000);
+  }
+  return Number.isFinite(best) ? best : haversineKm(lat, lon, d.lat, d.lon) * 1000;
+}
+
+/** The parts of TfL's location line, as it wrote them. Each part is left out when TfL gave none. */
+export interface TflPlace {
+  road: string;
+  postcodes?: string;
+  boroughs?: string;
+}
+
+/** "SW1A ,WC2N " to "SW1A, WC2N": TfL's comma lists, one space after each comma. */
+const tidyList = (s: string) =>
+  s
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .join(", ");
+
+/** A postcode list: outward codes only, e.g. "SW1A ,WC2N ". */
+const POSTCODES = /^\s*[A-Z]{1,2}\d[A-Z\d]?\s*(,\s*[A-Z]{1,2}\d[A-Z\d]?\s*)*$/;
+
+/**
+ * TfL's location line split into its road, postcode areas and boroughs:
+ * "[A400] NORTHUMBERLAND AVENUE (SW1A ,WC2N ) (Westminster)". The last bracket holds the
+ * boroughs, the one before it the postcode areas. A line with one bracket gives it to the
+ * postcodes when it reads as postcode areas, and to the boroughs otherwise; a line with
+ * none is all road.
+ */
+export function tflPlace(location: string | undefined): TflPlace {
+  let rest = (location ?? "").trim();
+  const groups: string[] = [];
+  for (let i = 0; i < 2; i++) {
+    const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(rest);
+    if (!m) break;
+    groups.unshift(m[2]);
+    rest = m[1].trim();
+  }
+  if (groups.length === 0) return { road: rest };
+  const [postcodes, boroughs] = groups.length === 2 ? groups : POSTCODES.test(groups[0]) ? [groups[0], ""] : ["", groups[0]];
+  return {
+    road: rest,
+    ...(tidyList(postcodes) ? { postcodes: tidyList(postcodes) } : {}),
+    ...(tidyList(boroughs) ? { boroughs: tidyList(boroughs) } : {}),
+  };
+}
+
+/** The chip text in "Also here": "TfL works, [A23] BRIXTON HILL". TfL's words, never a speed. */
+export function noticeName(d: Pick<StreetDisruption, "subCategory" | "category" | "location" | "street">): string {
+  const what = d.subCategory ?? d.category;
+  const road = tflPlace(d.location).road || d.street;
+  return road ? `${what}, ${road}` : what;
 }
 
 /** "Utility works" / "Serious · Closed, southbound". TfL's words, never a speed. */

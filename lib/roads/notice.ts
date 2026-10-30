@@ -18,9 +18,20 @@
  */
 export type RoadKind = "works" | "incident";
 
+/** One street a notice names, in the operator's words: the panel lists it as it came. */
+export interface NamedStreet {
+  name: string;
+  /** True only where the operator marks this street "Closed". */
+  closed: boolean;
+  /** The operator's own words for the directions, e.g. "Westbound", "Both directions". */
+  direction?: string;
+}
+
 /** One street a notice names, with the operator's own closure word for it. */
 export interface RoadStreet {
   name?: string;
+  /** The operator's own words for the directions the street's entry covers, trimmed. */
+  direction?: string;
   /** True only where the operator marks this street "Closed". */
   closed: boolean;
   /** The operator's words, e.g. "Closed, southbound", where it is closed. */
@@ -46,6 +57,22 @@ export interface RoadNotice {
   street?: string;
   /** The operator's own description of the notice, where it gives one. */
   description?: string;
+  /** The operator's start and end of the notice, ISO 8601, as it wrote them. */
+  starts?: string;
+  ends?: string;
+  /** The operator's own status words, e.g. TfL's "Active", "Active Long Term". */
+  status?: string;
+  /** The operator's latest update, and when it wrote it (ISO 8601). */
+  update?: string;
+  updateAt?: string;
+  /** TfL's level of interest: "Low", "Medium", "High". */
+  interest?: string;
+  /** Present (true) only where the operator marks the dates provisional. */
+  provisional?: true;
+  /** The streets the notice names, in the operator's words; often absent. */
+  namedStreets?: NamedStreet[];
+  /** Times within its dates when the works run, where the operator gives them. */
+  schedule?: { from: string; to: string }[];
   /** The operator's representative point. */
   lat: number;
   lon: number;

@@ -105,6 +105,11 @@ describe("roadLayerFeatures: one TfL read, three layers", () => {
     });
     expect(closures[0].link).toBe("https://tfl.gov.uk/traffic/status/");
     expect(closures[0].ts).toBe("2026-10-27T05:56:23Z");
+    // TfL's own description reaches the dossier (the God's eye view's panel shows it too).
+    expect(closures[0].props?.description).toBe(
+      "[A12] Eastern Avenue East (Westbound) at the junction of [A127] Southend Arterial Road - Flyover is closed for Cadent Gas works.",
+    );
+    expect(closures[2].props?.description).toContain("The road has been closed due to a police investigation.");
     // The label stops at TfL's postcodes; the dossier keeps the whole location.
     expect(closures[2].title).toBe("Police activity, [A1201] BLACKSTOCK ROAD");
     expect(closures[2].props?.location).toBe("[A1201] BLACKSTOCK ROAD (N4 ,N5 ) (Hackney,Haringey,Islington)");

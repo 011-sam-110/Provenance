@@ -1,5 +1,5 @@
 "use client";
-// The details of the vessel or aircraft that was clicked in the God's eye view: docked
+// The details of the vessel, aircraft or TfL road notice that was clicked in the God's eye view: docked
 // on the right on a wide screen, a bottom sheet on a phone (eye.module.css).
 //
 // IT WRITES NO WORDS OF ITS OWN. Every label, value, note and credit is built by
@@ -12,18 +12,35 @@
 // changes: EyeOverlay hands it a new subject at each feed refresh, never in between.
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { PANEL_WORDS, NOT_SENT, aircraftDetail, distanceText, staleText, vesselDetail, type DetailModel } from "@/lib/eye/detail";
+import {
+  PANEL_WORDS,
+  NOT_SENT,
+  aircraftDetail,
+  distanceText,
+  noticeGoneText,
+  roadDetail,
+  staleText,
+  vesselDetail,
+  type DetailModel,
+} from "@/lib/eye/detail";
+import type { PickKind } from "@/lib/eye/pick";
+import type { StreetDisruption, StreetPaint } from "@/lib/eye/streets";
 import type { Aircraft, Vessel } from "@/lib/eye/traffic";
 import type { EyeClock } from "@/lib/eye/motion";
 import styles from "./eye.module.css";
 
-export type DetailSubject = { kind: "ship"; v: Vessel } | { kind: "plane"; a: Aircraft; pulledAt: number | null };
+export type DetailSubject =
+  | { kind: "ship"; v: Vessel }
+  | { kind: "plane"; a: Aircraft; pulledAt: number | null }
+  | { kind: "road"; d: StreetDisruption; fetchedAt: number | null };
 
 export interface AlsoHere {
   id: string;
-  kind: "ship" | "plane";
+  kind: PickKind;
   name: string;
   metres: number;
+  /** A road notice's paint, for its chip's mark. */
+  paint?: StreetPaint;
 }
 
 interface Props {
@@ -34,7 +51,7 @@ interface Props {
   staleSince: number | null;
   clock: EyeClock;
   onClose(): void;
-  onPick(id: string, kind: "ship" | "plane"): void;
+  onPick(id: string, kind: PickKind): void;
   /** The panel's box changed (it opened, closed or switched mark): place the tags around it. */
   onLayout(): void;
 }
@@ -44,6 +61,34 @@ function Chevron({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="-32 -32 64 64" aria-hidden="true">
       <path d="M0 -25L17 21L0 11L-17 21Z" />
+    </svg>
+  );
+}
+
+/**
+ * A road notice's mark: a short stretch of its own paint on a dark casing (the map's own
+ * patterns, EyeOverlay's eye-selected-* layers). Works are rose dashes, an incident violet
+ * dots, a closure rose bars on white. Never one solid colour.
+ */
+function RoadMark({ paint, className }: { paint: StreetPaint; className?: string }) {
+  // The colours come from the view's own tokens (eye.module.css), through `style`: a
+  // `var()` is not reliable in an SVG presentation attribute.
+  const stroke = (colour: string, width: number, dash?: string, cap: "butt" | "round" = "butt") => (
+    <line x1="2" y1="15" x2="18" y2="5" style={{ stroke: colour }} strokeWidth={width} strokeDasharray={dash} strokeLinecap={cap} />
+  );
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden="true">
+      {stroke("rgba(3,7,9,0.9)", 7, undefined, "round")}
+      {paint === "closed" ? (
+        <>
+          {stroke("#eef3f1", 4.4)}
+          {stroke("var(--eye-road)", 4.4, "3.2 3.2")}
+        </>
+      ) : paint === "incident" ? (
+        stroke("var(--eye-incident)", 4, "0 5.4", "round")
+      ) : (
+        stroke("var(--eye-road)", 3.2, "4 2.8")
+      )}
     </svg>
   );
 }
@@ -59,7 +104,12 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
     return () => clearInterval(t);
   }, [clock]);
 
-  const model: DetailModel = subject.kind === "ship" ? vesselDetail(subject.v, now) : aircraftDetail(subject.a, now, subject.pulledAt);
+  const model: DetailModel =
+    subject.kind === "ship"
+      ? vesselDetail(subject.v, now)
+      : subject.kind === "plane"
+        ? aircraftDetail(subject.a, now, subject.pulledAt)
+        : roadDetail(subject.d, now, subject.fetchedAt);
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -86,10 +136,11 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
       aria-labelledby={titleId}
       data-eye-keep
       data-kind={model.kind}
+      data-paint={model.paint}
       className={styles.detail}
     >
       <header className={styles.dHead}>
-        <Chevron className={styles.dMark} />
+        {model.paint ? <RoadMark paint={model.paint} className={styles.dMark} /> : <Chevron className={styles.dMark} />}
         <div className={styles.dName}>
           <h2 id={titleId} ref={headingRef} tabIndex={-1}>
             {model.title}
@@ -103,7 +154,7 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
 
       {staleSince != null && (
         <p className={styles.dStale} role="status">
-          {staleText(staleSince)}
+          {subject.kind === "road" ? noticeGoneText(staleSince, now) : staleText(staleSince)}
         </p>
       )}
 
@@ -123,7 +174,7 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
             {also.map((m) => (
               <li key={m.id}>
                 <button type="button" className={styles.alsoBtn} data-kind={m.kind} onClick={() => onPick(m.id, m.kind)}>
-                  <Chevron />
+                  {m.kind === "road" ? <RoadMark paint={m.paint ?? "works"} /> : <Chevron />}
                   <span>{m.name}</span>
                   <small>{distanceText(m.metres)}</small>
                 </button>
@@ -134,12 +185,19 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
       )}
 
       <div className={styles.dBody}>
+        {model.prose?.map((p) => (
+          <div key={p.heading} className={styles.dGroup}>
+            <h3>{p.heading}</h3>
+            <p className={styles.dProse}>{p.text}</p>
+          </div>
+        ))}
         {model.groups.map((g) => (
           <div key={g.heading} className={styles.dGroup}>
             <h3>{g.heading}</h3>
             <dl>
-              {g.rows.map((r) => (
-                <div key={r.label} style={{ display: "contents" }}>
+              {g.rows.map((r, i) => (
+                // A label may repeat (one "Street named" row for each street TfL names).
+                <div key={`${r.label}:${i}`} style={{ display: "contents" }}>
                   <dt>{r.label}</dt>
                   <dd>
                     {r.value}

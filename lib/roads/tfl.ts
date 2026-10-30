@@ -97,10 +97,16 @@ export function joinLines(pieces: readonly [number, number][][]): [number, numbe
   return out;
 }
 
+/** A string TfL typed, trimmed, with line breaks and runs of spaces made one space; "" if none. */
+const clean = (v: unknown): string => (typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "");
+
+const isText = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
+
 /** One of TfL's streets: its name, its own closure word, its segments joined into lines. */
 function tflStreet(street: Record<string, unknown>): RoadStreet {
   const closed = street?.closure === "Closed";
-  const dir = typeof street?.directions === "string" ? street.directions.trim().toLowerCase() : "";
+  const directions = typeof street?.directions === "string" ? street.directions.trim() : "";
+  const dir = directions.toLowerCase();
   const lines: [number, number][][] = [];
   for (const seg of Array.isArray(street?.segments) ? (street.segments as Record<string, unknown>[]) : []) {
     const coords = parseJson(seg?.lineString);
@@ -109,7 +115,8 @@ function tflStreet(street: Record<string, unknown>): RoadStreet {
     }
   }
   return {
-    ...(typeof street?.name === "string" && street.name ? { name: street.name } : {}),
+    ...(typeof street?.name === "string" && street.name.trim() ? { name: street.name.trim() } : {}),
+    ...(directions ? { direction: directions } : {}),
     closed,
     ...(closed ? { closure: dir ? `Closed, ${dir}` : "Closed" } : {}),
     lines: joinLines(lines),
@@ -130,6 +137,16 @@ export function normalizeTflNotices(raw: unknown): RoadNotice[] {
     let closure = streets.find((s) => s.closed)?.closure;
     if (!closure && d.hasClosures === true) closure = "Closed";
     const category = typeof d.category === "string" && d.category ? d.category : "Disruption";
+    const description = clean(d.comments);
+    const update = clean(d.currentUpdate);
+    const namedStreets = streets
+      .filter((s) => s.name)
+      .map((s) => ({ name: s.name!, closed: s.closed, ...(s.direction ? { direction: s.direction } : {}) }));
+    const schedule = (Array.isArray(d.recurringSchedules) ? (d.recurringSchedules as Record<string, unknown>[]) : []).flatMap((r) =>
+      typeof r?.startTime === "string" && r.startTime && typeof r?.endTime === "string" && r.endTime
+        ? [{ from: r.startTime, to: r.endTime }]
+        : [],
+    );
     out.push({
       id: d.id,
       kind: tflKind(category),
@@ -138,11 +155,21 @@ export function normalizeTflNotices(raw: unknown): RoadNotice[] {
       severity: typeof d.severity === "string" && d.severity ? d.severity : "Unknown",
       ...(closure ? { closure } : {}),
       ...(typeof d.location === "string" && d.location ? { location: d.location.trim() } : {}),
+      ...(description ? { description } : {}),
       lat: pt[1],
       lon: pt[0],
       openLines,
       closedLines,
       ...(typeof d.lastModifiedTime === "string" ? { updated: d.lastModifiedTime } : {}),
+      ...(isText(d.startDateTime) ? { starts: d.startDateTime } : {}),
+      ...(isText(d.endDateTime) ? { ends: d.endDateTime } : {}),
+      ...(isText(d.status) ? { status: d.status.trim() } : {}),
+      ...(update ? { update } : {}),
+      ...(isText(d.currentUpdateDateTime) ? { updateAt: d.currentUpdateDateTime } : {}),
+      ...(isText(d.levelOfInterest) ? { interest: d.levelOfInterest.trim() } : {}),
+      ...(d.isProvisional === true ? { provisional: true as const } : {}),
+      ...(namedStreets.length > 0 ? { namedStreets } : {}),
+      ...(schedule.length > 0 ? { schedule } : {}),
     });
   }
   return out;

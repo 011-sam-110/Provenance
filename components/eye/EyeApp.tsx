@@ -183,6 +183,10 @@ export default function EyeApp({
   const [previews, setPreviews] = useState(true);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const placeRef = useRef<(() => void) | null>(null);
+  // A details panel (a vessel, an aircraft, a road notice) is open: the control hint steps
+  // aside, and the "?" that brings it back closes the panel (EyeHud, EyeOverlay).
+  const [detailOpen, setDetailOpen] = useState(false);
+  const detailCloseRef = useRef<(() => void) | null>(null);
   // The film's clock under clock=manual, made when the link is read; else the wall clock.
   const film = useMemo(() => (flags.manualClock ? filmClock(Date.now()) : null), [flags.manualClock]);
   const clock = film ?? wallClock;
@@ -477,6 +481,8 @@ export default function EyeApp({
           signals={signals}
           onReport={setReport}
           placeRef={placeRef}
+          onDetail={setDetailOpen}
+          detailCloseRef={detailCloseRef}
         />
       )}
       {gl !== false && target && words && flags.overlay && (
@@ -503,6 +509,8 @@ export default function EyeApp({
           placeId={target.kind === "place" ? target.place.id : undefined}
           record={flags.record}
           clock={clock}
+          detailOpen={detailOpen}
+          onHintOpen={() => detailCloseRef.current?.()}
         >
           {!flags.record && !flags.manualClock && (
             <button
