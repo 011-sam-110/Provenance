@@ -90,7 +90,9 @@ import {
   SIGNAL_LINE_HIT,
   SIGNAL_FILL_SRC,
   SIGNAL_FILL_LAYER,
+  SIGNAL_FILL_HATCH,
   SIGNAL_FILL_OUTLINE,
+  SIGNAL_DIAMOND_LAYER,
   SIGNAL_COUNTRY_SRC,
   SIGNAL_COUNTRY_FILL,
   SIGNAL_COUNTRY_OUTLINE,
@@ -125,6 +127,11 @@ import {
   loadSignalIcons,
   addRingImage,
   RING_IMAGE_PREFIX,
+  addHatchImage,
+  HATCH_IMAGE_PREFIX,
+  addDiamondImage,
+  DIAMOND_IMAGE_PREFIX,
+  DIAMOND_HALF_PX,
 } from "@/lib/map/icons";
 import { setMapInstance } from "@/lib/map/instance";
 import { aoiDrawStore, attachAoi } from "@/lib/map/aoi";
@@ -1556,6 +1563,10 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
       // Global signals — AREA fill (Polygon/MultiPolygon, e.g. GPS jamming). Added
       // first so it sits beneath the line + circle layers; per-feature `color`
       // tints both the fill and its outline. Always visible (source = ON signals).
+      // A HATCHED area (fill "hatch": ground whose status its source does not know)
+      // gets no tint here, only the lines of SIGNAL_FILL_HATCH over it, so it never
+      // reads as one more flat fill. It stays in this layer as its click target: a
+      // fill at opacity 0 is still hit by queryRenderedFeatures.
       if (!map.getLayer(SIGNAL_FILL_LAYER)) {
         map.addLayer({
           id: SIGNAL_FILL_LAYER,
@@ -1563,7 +1574,21 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
           source: SIGNAL_FILL_SRC,
           paint: {
             "fill-color": ["get", "color"],
-            "fill-opacity": 0.28,
+            "fill-opacity": ["case", ["==", ["get", "fill"], "hatch"], 0, 0.28],
+          },
+        });
+      }
+      // The diagonal lines of a hatched area, one pattern image per colour, drawn on
+      // demand (the `styleimagemissing` handler in wireInteractions, addHatchImage).
+      if (!map.getLayer(SIGNAL_FILL_HATCH)) {
+        map.addLayer({
+          id: SIGNAL_FILL_HATCH,
+          type: "fill",
+          source: SIGNAL_FILL_SRC,
+          filter: ["==", ["get", "fill"], "hatch"],
+          paint: {
+            "fill-pattern": ["concat", HATCH_IMAGE_PREFIX, ["get", "color"]],
+            "fill-opacity": 0.95,
           },
         });
       }
@@ -1688,10 +1713,35 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
               12,
               ["*", ["get", "radius"], 1.4],
             ],
-            "circle-opacity": 0.82,
+            // A diamond pin (shape "diamond") keeps its circle here as the click and
+            // hover target, drawn transparent; SIGNAL_DIAMOND_LAYER draws the diamond.
+            "circle-opacity": ["case", ["==", ["get", "shape"], "diamond"], 0, 0.82],
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1,
-            "circle-stroke-opacity": 0.85,
+            "circle-stroke-opacity": ["case", ["==", ["get", "shape"], "diamond"], 0, 0.85],
+          },
+        });
+      }
+      // The diamond pin: the second side of a two-sided pair of layers, so colour is
+      // never the only cue. Sized from the same `radius` and zoom curve as the circle,
+      // with the half-diagonal 1.25 x the radius so it weighs the same as a round pin.
+      if (!map.getLayer(SIGNAL_DIAMOND_LAYER)) {
+        const k = 1.25 / DIAMOND_HALF_PX;
+        map.addLayer({
+          id: SIGNAL_DIAMOND_LAYER,
+          type: "symbol",
+          source: SIGNAL_SRC,
+          filter: ["==", ["get", "shape"], "diamond"],
+          layout: {
+            "icon-image": ["concat", DIAMOND_IMAGE_PREFIX, ["get", "color"]],
+            "icon-size": [
+              "interpolate", ["linear"], ["zoom"],
+              0, ["*", ["get", "radius"], 0.7 * k],
+              6, ["*", ["get", "radius"], k],
+              12, ["*", ["get", "radius"], 1.4 * k],
+            ],
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
           },
         });
       }
@@ -2132,7 +2182,11 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
     // The dashed ring is one small image for each colour, drawn when the style first
     // asks for it. A handler and not a preload: the colours come from the data, and
     // setStyle wipes every image, so a swap of the basemap asks again by itself.
-    map.on("styleimagemissing", (e) => addRingImage(map, e.id));
+    map.on("styleimagemissing", (e) => {
+      if (e.id.startsWith(HATCH_IMAGE_PREFIX)) addHatchImage(map, e.id);
+      else if (e.id.startsWith(DIAMOND_IMAGE_PREFIX)) addDiamondImage(map, e.id);
+      else addRingImage(map, e.id);
+    });
 
     // ── Cables: a hairline you can actually hit ────────────────────────────
     // The four handlers above only fire when the pointer is ON the drawn

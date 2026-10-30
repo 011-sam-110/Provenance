@@ -43,6 +43,10 @@ export function toSignalObjects(features: SignalFeature[], source: SignalSource)
       ...(f.geometry ? { geometry: f.geometry } : {}),
       // A road notice's line pattern (dash, dot, bar); absent is solid.
       ...(f.line ? { line: f.line } : {}),
+      // The second side of a two-sided pair draws a diamond pin; an area whose status
+      // its source does not know is hatched. Absent: the round pin, the flat tint.
+      ...(f.shape === "diamond" ? { shape: "diamond" } : {}),
+      ...(f.fill === "hatch" ? { fill: "hatch" } : {}),
     },
   }));
 }

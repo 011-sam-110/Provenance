@@ -109,6 +109,9 @@ function signalProps(s: WorldObject) {
     color: s.color ?? "#64748b",
     // The line's pattern (SignalFeature.line); "solid" when the feature names none.
     line: line === "dash" || line === "dot" || line === "bar" || line === "speed" ? line : "solid",
+    // How an area is filled (SignalFeature.fill): "hatch" for ground of unknown status,
+    // "flat" for the tint every other area gets. Read by WorldMap's fill layers only.
+    fill: s.meta?.fill === "hatch" ? "hatch" : "flat",
   };
 }
 
@@ -140,7 +143,9 @@ export function toSignalFC(signals: WorldObject[]): GeoJSON.FeatureCollection {
         return {
           type: "Feature" as const,
           geometry: { type: "Point" as const, coordinates: [s.lon, s.lat] },
-          properties: { ...signalProps(s), radius, icon },
+          // `shape`: "diamond" draws the pin as a diamond (SignalFeature.shape), so the
+          // second side of a two-sided pair is never told apart by colour alone.
+          properties: { ...signalProps(s), radius, icon, shape: s.meta?.shape === "diamond" ? "diamond" : "round" },
         };
       }),
   };
