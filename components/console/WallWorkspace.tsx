@@ -9,7 +9,9 @@ import { useGridDrag, gridArea, type ResizeDir } from "@/lib/terminal/useGridDra
 import { visibleShell } from "@/lib/terminal/rowBudget";
 import { SKIP_TARGET_ID } from "@/components/shell/SkipLink";
 import { clearMonitorArea } from "@/lib/console/widgets/camslot.apply";
-import { useActivePreset } from "@/lib/console/activePreset";
+import { activePresetStore, useActivePreset } from "@/lib/console/activePreset";
+import { offerWallUndo, takeNewAreaFocus } from "@/lib/console/wallUndo";
+import { RestartGlyph } from "@/components/console/WallGlyphs";
 import { useSceneChrome, visibleWidgets } from "@/lib/console/sceneChrome";
 
 // The camera wall: ONE free twelve-column grid of tiles, and no map in it.
@@ -49,14 +51,6 @@ import { useSceneChrome, visibleWidgets } from "@/lib/console/sceneChrome";
 /** The eight resize handles, in the order they are painted. */
 const HANDLES: ResizeDir[] = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
 
-/** Into ConsoleShell's single `.tn-toast` live region. Inlined because there is
- *  no shared helper to import: every caller in the tree dispatches this event
- *  directly, and CameraTray keeps a local `toast` of exactly this shape. A
- *  module for it would be a change to all of them, not to this one. */
-function toast(message: string): void {
-  window.dispatchEvent(new CustomEvent("tn-toast", { detail: message }));
-}
-
 export default function WallWorkspace({
   style,
   skipTarget = false,
@@ -71,6 +65,7 @@ export default function WallWorkspace({
 }) {
   const layout = useShellLayout();
   const gridRef = useRef<HTMLDivElement>(null);
+  const newAreaRef = useRef<HTMLButtonElement>(null);
   const drag = useGridDrag(gridRef);
   // Which scene's chrome applies — see lib/console/sceneChrome.ts. Streets is
   // the one `mode: "wall"` board and every one of its tiles is type "camslot",
@@ -106,6 +101,16 @@ export default function WallWorkspace({
       shellLayoutStore.seedWall(Math.floor(visibleShell().h / (ROW_PX + GAP_PX)));
     }
   }, [layout.widgets]);
+
+  /**
+   * After a keyboard undo, focus returns to "New area" (the button the keyboard user
+   * pressed). This component stays mounted while the wall is empty, so "on mount" is
+   * not enough: the request is taken whenever tiles are back, and once on arrival.
+   */
+  const hasTiles = layout.widgets.length > 0;
+  useEffect(() => {
+    if (hasTiles && takeNewAreaFocus()) newAreaRef.current?.focus();
+  }, [hasTiles]);
 
   /**
    * DOM order is READING order — top to bottom, then left to right — not the
@@ -226,19 +231,33 @@ export default function WallWorkspace({
             It CLEARS rather than clearing-and-arming; camslot.apply.ts records
             the measurement behind that. Emptying the board is what brings the
             prompt back, and the prompt asks the question and carries the button
-            that starts the draw. */}
+            that starts the draw.
+
+            ONE CLICK, NO CONFIRM, AND AN UNDO. Clearing swaps nine tiles for a
+            full-bleed map in one frame — a big enough change to read as something
+            having gone wrong — so the popup (WallUndo, over the area card) says
+            how many cameras went and offers to put them back. That replaces the
+            toast this used to raise: a toast cannot be clicked, and "draw an area
+            to fill it again" was the one thing the user could already see. A
+            keyboard activation (`detail === 0`) hands focus to the popup; a mouse
+            click does not, or the popup would wait forever.
+
+            IT IS THE BAR'S ONE FILLED CONTROL, and the restart mark says it starts
+            over (Leon, 2026-10-29). The glyph is aria-hidden, so the name stays
+            "New area". */}
         <button
+          ref={newAreaRef}
           type="button"
-          className="tn-wall-btn"
+          className="tn-wall-btn is-new-area"
           title="Clear the board and draw a different area to monitor"
-          onClick={() => {
-            // The toast names what happened, because clearing swaps nine tiles
-            // for a full-bleed map in one frame — a big enough change to read as
-            // something having gone wrong rather than as the board asking again.
-            if (clearMonitorArea()) toast("Board cleared — draw an area to fill it again.");
+          onClick={(e) => {
+            const snapshot = shellLayoutStore.get();
+            const board = activePresetStore.get();
+            if (clearMonitorArea()) offerWallUndo(snapshot, board, { focus: e.detail === 0 });
           }}
         >
-          New area
+          <RestartGlyph />
+          <span>New area</span>
         </button>
         <button
           type="button"

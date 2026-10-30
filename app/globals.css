@@ -5012,6 +5012,16 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   outline: 2px solid var(--tnx-accent);
   outline-offset: 1px;
 }
+/* NEW AREA is the wall's one filled control (Leon, 2026-10-29): it leaves the board, so it
+   has to read as an action, and the restart mark says it resets. MAP keeps its outline,
+   which means "switched on". */
+.tn-terminal .tn-wall-btn.is-new-area {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--tnx-on-accent); background: var(--tnx-accent); border-color: var(--tnx-accent);
+  font-weight: 600;
+}
+.tn-terminal .tn-wall-btn.is-new-area:hover { color: var(--tnx-on-accent); border-color: var(--tnx-ink); }
+.tn-terminal .tn-wall-btn.is-new-area svg { width: 13px; height: 13px; flex: none; }
 
 /* A STOWED MAP DOCK — the stage on a wall board whose dock is closed.
    `visibility: hidden` and not `display: none`, because the two differ in exactly
@@ -8214,30 +8224,94 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    so the token is always in scope. calc(var(--tnx-fs) + 2px) is 15px on the
    scale's current 13px root, matching --tnx-fs-lg's own "+4px" idiom rather
    than inventing a bare number. */
+.tn-streets-corner{
+  /* = the area ring in camslot.circle.ts (#ffb020); streets-area-css.test.ts pins the match */
+  --tn-streets-amber: 255 176 32;
+  position:absolute;left:12px;z-index:6;
+  /* The floor is the clock bar's reserve (map-time-strip owns the property; the fallback
+     is its value, so this is right whichever lands first), or the Discord note's lift,
+     whichever is higher. */
+  bottom:max(12px, var(--tnx-stage-foot-clear, 46px), var(--tn-streets-note-clear, 0px));
+  /* 100% - 64px leaves the map's right-hand column free: the credit "i" (and the compass
+     above it) sit 8px in from the right edge and take 30px, so on a phone a card that
+     filled the width would lie across them. 100vw - 48px is for a stage wider than the
+     window. At 380px and up, on any desktop, the 380 wins and none of this shows. */
+  width:min(380px, calc(100% - 64px), calc(100vw - 48px));
+  max-height:calc(100% - 24px);
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+  /* Takes no pointer events, so a press beside the card falls through to the map, which
+     is where the drag that answers the card starts. */
+  pointer-events:none;
+}
+/* The clock bar is hidden at these widths, so there is nothing to clear. */
+@media (max-width:900px){
+  .tn-streets-corner{ bottom:max(12px, var(--tnx-stage-foot-clear, 0px), var(--tn-streets-note-clear, 0px)); }
+}
+@container tnstage (max-width:600px){
+  .tn-streets-corner{ bottom:max(12px, var(--tnx-stage-foot-clear, 0px), var(--tn-streets-note-clear, 0px)); }
+}
 .tn-streets-prompt{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  padding:18px 22px;text-align:center;max-width:min(90%,420px);
-  border-radius:12px;border:1px solid var(--tn-border);
-  background:var(--tn-surface);box-shadow:0 6px 20px rgba(0,0,0,.18);
-  /* The card sits in the middle of the map, which is where the drag that answers
-     it starts. pointer-events:none lets that press fall THROUGH to the map; only
-     the button takes the cursor back. */
+  box-sizing:border-box;width:100%;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  padding:14px 16px;text-align:left;
+  border-radius:12px;border:1px solid rgb(var(--tn-streets-amber) / .85);
+  background:var(--tn-surface);
+  /* The glow: a hairline ring, a soft halo, then the card's own drop shadow. The one-shot
+     that fades it up is console-motion.css (tn-streets-glow-in); this is where it rests. */
+  box-shadow:0 0 0 1px rgb(var(--tn-streets-amber) / .45),0 0 16px 1px rgb(var(--tn-streets-amber) / .42),0 6px 20px rgba(0,0,0,.18);
+  /* pointer-events:none lets a press beside the button fall THROUGH to the map; only the
+     button takes the cursor back. */
   pointer-events:none;
 }
 .tn-streets-prompt-t{
-  margin:0;font-size:calc(var(--tnx-fs) + 2px);font-weight:600;color:var(--tn-text);text-wrap:balance;
+  margin:0;font-size:calc(var(--tnx-fs) + 2px);font-weight:600;color:var(--tn-text);text-wrap:pretty;
 }
 .tn-streets-prompt-s{
   margin:0;font-size:var(--tnx-fs);color:var(--tn-text-muted);font-variant-numeric:tabular-nums;
 }
 .tn-streets-prompt-b{
-  pointer-events:auto;margin-top:6px;font:inherit;font-size:var(--tnx-fs);
+  pointer-events:auto;margin-top:4px;font:inherit;font-size:var(--tnx-fs);
   padding:6px 14px;border-radius:8px;border:1px solid var(--tn-border);
   background:var(--tn-surface-2);color:var(--tn-text);cursor:pointer;
 }
 .tn-streets-prompt-b:hover{border-color:var(--tn-accent);}
 .tn-streets-prompt-b:focus-visible{outline:2px solid var(--tn-accent);outline-offset:2px;}
+/* The Streets placement of the shared undo note: it sits in the corner's column, which
+   takes no pointer events, so the note takes them back. */
+.tn-streets-undo{pointer-events:auto;}
+
+/* ── The console's undo note (shared: Streets "New area" and Sources "Use same sources",
+   agreed 2026-10-29). Same face as the Sources pane's context bar: panel surface, control
+   edge, 3px accent left edge. --tn-srx-edge is set HERE because the global one exists only
+   inside .tn-rail, and this note also floats over the map. */
+.tn-terminal .tn-undo{
+  --tn-srx-edge: rgba(38, 43, 21, 0.5);
+  box-sizing:border-box;max-width:100%;
+  display:flex;align-items:center;gap:4px;min-height:40px;
+  padding:4px 4px 4px 12px;border-radius:var(--tnx-r-sm);
+  font-size:var(--tnx-fs-md);color:var(--tn-text);
+  background:var(--tn-surface-solid);
+  border:1px solid var(--tn-srx-edge);border-left:3px solid var(--tn-accent);
+  box-shadow:var(--tn-shadow-sm);
+}
+:root[data-tnx-skin="dark"] .tn-terminal .tn-undo{ --tn-srx-edge: rgba(236, 238, 228, 0.38); }
+.tn-terminal .tn-undo-msg{min-width:0;}
+.tn-terminal .tn-undo-act{
+  font:inherit;font-weight:700;color:var(--tn-accent);background:none;border:0;
+  border-radius:var(--tnx-r-sm);padding:6px 8px;cursor:pointer;white-space:nowrap;
+}
+.tn-terminal .tn-undo-act:hover{background:var(--tn-accent-soft);}
+.tn-terminal .tn-undo-x{
+  font:inherit;line-height:1;color:var(--tn-text-muted);background:none;border:0;
+  border-radius:var(--tnx-r-sm);width:28px;height:28px;flex:none;cursor:pointer;
+}
+.tn-terminal .tn-undo-x:hover{color:var(--tn-text);background:var(--tn-accent-soft);}
+.tn-terminal .tn-undo-act:focus-visible,
+.tn-terminal .tn-undo-x:focus-visible{outline:2px solid var(--tn-accent);outline-offset:1px;}
+@media (max-width:900px){
+  .tn-terminal .tn-undo-act{min-height:44px;}
+  .tn-terminal .tn-undo-x{width:44px;height:44px;}
+}
 
 /* ── "Alert me" — the area-rule composer ──────────────────────────────────────
    SAME BOX AS THE PLACEHOLDER IT REPLACED (10px radius, the solid
