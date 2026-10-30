@@ -187,6 +187,8 @@ export const SIGNAL_COMPOSITE_SOURCES: Record<string, Provider[]> = {
   "forces-near-nato": [
     { label: "RFE/RL Radio Svoboda", url: "https://www.svoboda.org/" },
     { label: "UNITED24 Media", url: "https://united24media.com/" },
+    { label: "Kyiv Post", url: "https://www.kyivpost.com/" },
+    { label: "UA.NEWS", url: "https://ua.news/en" },
   ],
   // Many outlets and channels; each post links its own.
   "war-news": [

@@ -316,7 +316,8 @@ obligations and are not satisfied by the licence.
   outline from `public/geo/countries-110m.geojson` with the layer's metric as the
   figure, or a dashed ring when that file has no outline (it has 177). An area or a
   country never gets a pin, and `tests/unit/precision-marks.test.ts` holds that for
-  every registered layer. A country-level adapter sends `countryIso3`. The shading is
+  every registered layer. `shape: "diamond"` draws a pin as a diamond and `fill: "hatch"`
+  draws a polygon hatched; an area never becomes a diamond. A country-level adapter sends `countryIso3`. The shading is
   not a click target: a click on it opens the country dossier, the figure opens the
   signal. `components/console/MarkLegend.tsx` is the key, top right of the map, and
   lists only the marks on the map now.

@@ -316,7 +316,7 @@ const EXPLAINERS: LayerExplainer[] = [
   // --- War sources (scraped on provenance-1, pushed through lib/relay) ------
   {
     id: "war-zones",
-    whatItShows: "Ground held by Russia, ground whose status is unknown and ground Ukraine has retaken, as DeepState maps the war in Ukraine, with the directions of attack it marks.",
+    whatItShows: "Ground held by Russia, ground whose status is unknown (hatched) and ground Ukraine has retaken, as DeepState maps the war in Ukraine.",
     method: "DeepState's analysts draw the map from open sources and update it several times a day. provenance-1 reads their latest map every 30 minutes, keeps the front-line shapes, drops their political shapes (such as \"occupied East Prussia\"), and measures the Russian-held area from each day's map.",
     confidence: "reported",
     coverage: "Ukraine. Another war joins this layer when a source of the same kind is added for it.",
@@ -325,6 +325,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "A change on the ground reaches the map hours to days later.",
       "Contested means DeepState marks the status as unknown, not that fighting is confirmed there.",
       "The area moves when DeepState redraws a line, not only when ground changes hands.",
+      "DeepState's directions of attack are counted, not drawn: its data does not give their direction.",
     ],
   },
   {
@@ -349,6 +350,7 @@ const EXPLAINERS: LayerExplainer[] = [
       "The General Staff's totals are a warring party's claims and are not checked by anyone independent.",
       "The two sources group vehicles differently, so the claimed-against-documented categories are matched by hand.",
       "A location is approximate, and a loss is shown days after it happened, never live.",
+      "WarSpotting adds losses for past days as footage appears, so recent counts grow for weeks.",
     ],
   },
   {
