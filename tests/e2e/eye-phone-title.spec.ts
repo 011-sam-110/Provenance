@@ -130,6 +130,23 @@ for (const size of PHONES) {
       await ready(page);
       await expectStacked(page, size.width);
     });
+
+    test("the ? sits about 6 px under the clock and touches nothing below it", async ({ page }) => {
+      await answerNear(page, near("tfl:JamCams_00001.09060", A406, 51.6112, -0.13544));
+      await page.goto("/eye?cam=tfl:JamCams_00001.09060&lat=51.6112&lon=-0.13544");
+      await ready(page);
+      await expect(page.locator("header h1")).toHaveText(A406);
+      const b = await boxes(page);
+      const q = (await page.locator("header button").first().boundingBox())!;
+      const way = (await page.locator("[data-eye-exit]").boundingBox())!;
+      const gap = q.y - bottom(b.clock);
+      expect(gap, "air between the clock and the ?").toBeGreaterThanOrEqual(5.5);
+      expect(gap).toBeLessThanOrEqual(6.5);
+      expect(bottom(q), "the ? stays inside the header").toBeLessThanOrEqual(bottom(b.header) + 0.5);
+      for (const [name, other] of [["title", b.h1], ["sub line", b.sub], ["way out", way], ["ledger", b.ledger]] as const) {
+        expect(meet(q, other), `the ? and the ${name} do not meet`).toBe(false);
+      }
+    });
   });
 }
 

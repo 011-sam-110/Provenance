@@ -872,9 +872,11 @@
   .hintRows { grid-template-columns: auto auto; column-gap: 12px; }
   .hintRows .hintKeys { display: none; }
   .hintClose { width: 44px; height: 44px; margin: -10px -2px -10px 0; }
-  /* Under the clock, in the header's empty corner: 20 + 1 + 44 = 65 px, the header's own height,
-     so the header (a kept box) and the ledger below it do not move. */
-  .topRight { grid-auto-flow: row; align-items: start; gap: 1px; }
+  /* Under the clock, in the header's empty corner: 20 + 6 + 44 = 70 px. The 6 px is air between
+     the clock and the button (Leon's QA, 30 Oct 2026: it sat 1 px under the clock). The way out's
+     row keeps the place's column taller than that corner, so the header (a kept box) and the
+     ledger below it do not move. */
+  .topRight { grid-auto-flow: row; align-items: start; gap: 6px; }
   .hintToggle { order: 0; width: 44px; height: 44px; font-size: 17px; }
 }
 
