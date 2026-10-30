@@ -7,8 +7,10 @@ import {
   overlaps,
   placeCards,
   placeTags,
+  PHONE_ROAD_TAGS,
   placementOrder,
   tagBox,
+  tagCaps,
   type Box,
   type Frame,
   type TagCandidate,
@@ -117,5 +119,78 @@ describe("estimateTextWidth", () => {
   it("gives capitals more room than lower case", () => {
     expect(estimateTextWidth("PEARL OF LONDON", 11.5)).toBeGreaterThan(estimateTextWidth("pearl of london", 11.5));
     expect(estimateTextWidth("", 11.5)).toBe(0);
+  });
+});
+
+describe("tagCaps", () => {
+  const frame = (o: Partial<{ portrait: boolean; record: boolean; landscapePhone: boolean }> = {}) => ({
+    portrait: false,
+    record: false,
+    landscapePhone: false,
+    ...o,
+  });
+
+  it("gives a portrait phone four road plates, and the rest of its caps as they were", () => {
+    expect(PHONE_ROAD_TAGS).toBe(4);
+    expect(tagCaps(frame({ portrait: true }))).toEqual({ ship: 4, plane: 2, road: 4, signal: 1 });
+  });
+
+  it("gives a landscape phone four road plates, and the wide caps for the rest", () => {
+    expect(tagCaps(frame({ landscapePhone: true }))).toEqual({ ship: 8, plane: 3, road: 4, signal: 2 });
+  });
+
+  it("keeps a wide screen at two road plates", () => {
+    expect(tagCaps(frame())).toEqual({ ship: 8, plane: 3, road: 2, signal: 2 });
+  });
+
+  it("leaves a recording or a film as it was, wide or portrait", () => {
+    expect(tagCaps(frame({ portrait: true, record: true }))).toEqual({ ship: 4, plane: 2, road: 1, signal: 1 });
+    expect(tagCaps(frame({ record: true, landscapePhone: true }))).toEqual({ ship: 8, plane: 3, road: 2, signal: 2 });
+  });
+});
+
+describe("four road plates on a phone", () => {
+  // A 390 x 844 phone: the frame's edge bands, the header and the counts as kept boxes.
+  const phone: Frame = { width: 390, height: 844, top: 10, bottom: 10, side: 8 };
+  const kept = (): Box[] => [
+    { x0: 0, y0: 0, x1: 390, y1: 130 },
+    { x0: 0, y0: 690, x1: 390, y1: 760 },
+  ];
+  const plate = (id: string, x: number, y: number): TagCandidate => ({ id, x, y, width: 150, height: 34 });
+  const overlapAny = (placed: { id: string; x: number; y: number; flip: boolean }[], cands: TagCandidate[]) => {
+    const boxes = placed.map((p) => tagBox(cands.find((c) => c.id === p.id)!, p.flip));
+    return boxes.some((a, i) => boxes.slice(i + 1).some((b) => overlaps(a, b)));
+  };
+
+  it("hangs four notices that have room, apart from each other and from the header and the counts", () => {
+    const cands = [plate("a", 40, 250), plate("b", 40, 340), plate("c", 40, 430), plate("d", 40, 520), plate("e", 40, 600)];
+    const taken = kept();
+    const placed = placeTags(cands, phone, tagCaps({ portrait: true, record: false, landscapePhone: false }).road, taken);
+    expect(placed.map((p) => p.id)).toEqual(["a", "b", "c", "d"]);
+    expect(overlapAny(placed, cands)).toBe(false);
+    for (const p of placed) {
+      const box = tagBox(cands.find((c) => c.id === p.id)!, p.flip);
+      for (const k of kept()) expect(overlaps(box, k)).toBe(false);
+      expect(insideFrame(box, phone)).toBe(true);
+    }
+  });
+
+  it("hangs fewer than four when they crowd each other, never overlapping", () => {
+    // Four notices within 20 px of each other can hang one plate, not four.
+    const cands = [plate("a", 60, 300), plate("b", 70, 310), plate("c", 80, 305), plate("d", 90, 315)];
+    const placed = placeTags(cands, phone, 4, kept());
+    expect(placed).toHaveLength(1);
+  });
+
+  it("hangs fewer when a notice sits under the header, or too near the edge for a plate to fit", () => {
+    const cands = [plate("under-header", 100, 90), plate("edge", 380, 400), plate("ok", 40, 300)];
+    const placed = placeTags(cands, phone, 4, kept());
+    expect(placed.map((p) => p.id)).toEqual(["ok"]);
+  });
+
+  it("opens a plate to the left where only that fits", () => {
+    const placed = placeTags([plate("right-edge", 300, 300)], phone, 4, kept());
+    expect(placed).toHaveLength(1);
+    expect(placed[0].flip).toBe(true);
   });
 });

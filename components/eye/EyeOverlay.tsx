@@ -71,6 +71,7 @@ import {
   placeCards,
   placeTags,
   placementOrder,
+  tagCaps,
   type Box,
   type CardSize,
   type Frame,
@@ -200,13 +201,11 @@ const CAMERA_ROAD_EVERY_MS = 120_000;
 // The words take 40 (46 on a phone) under the picture, and the camera's road line 20 (18).
 const CARD_WIDE: CardSize & { max: number } = { width: 172, height: Math.round(172 / (352 / 288)) + 60, stalk: 52, max: 5 };
 const CARD_PHONE: CardSize & { max: number } = { width: 120, height: Math.round(120 / (352 / 288)) + 64, stalk: 34, max: 3 };
-const MAX_TAGS = {
-  wide: { ship: 8, plane: 3, road: 2, signal: 2 },
-  phone: { ship: 4, plane: 2, road: 1, signal: 1 },
-} as const;
+/** A phone held sideways: wide and short. Its road plates are capped like a portrait phone's (tagCaps). */
+const LANDSCAPE_PHONE_QUERY = "(min-aspect-ratio: 4/5) and (max-height: 500px)";
 /**
  * How many marks of the console's layers are offered to the tag placement; it places the
- * first one or two (MAX_TAGS.signal) that fit clear of the frame's words, nearest the middle.
+ * first one or two (the signal cap in tagCaps) that fit clear of the frame's words, nearest the middle.
  * Offered only the first two, a view whose first two marks sat under the header got none.
  */
 const SIGNAL_TAG_POOL = 200;
@@ -823,7 +822,6 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     let disposed = false;
     const s = state.current;
     const size = portrait ? CARD_PHONE : CARD_WIDE;
-    const maxTags = portrait ? MAX_TAGS.phone : MAX_TAGS.wide;
     let ready = false;
     let lastRowsKey = "";
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
@@ -1069,6 +1067,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const roadOrder = placementOrder(roadItems, centre, shownTags).sort(
         (a, b) => (weight.get(b.id) ?? 0) - (weight.get(a.id) ?? 0),
       );
+      // Worked out here, once per placement (never per frame): a window can change shape.
+      const maxTags = tagCaps({ portrait, record, landscapePhone: window.matchMedia(LANDSCAPE_PHONE_QUERY).matches });
       const tagPlaced = [
         ...placeTags(shipOrder, frame, maxTags.ship, taken),
         ...placeTags(placementOrder(planeItems, centre, shownTags), frame, maxTags.plane, taken),

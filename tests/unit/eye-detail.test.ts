@@ -75,7 +75,7 @@ const FETCHED = NOW_ROAD - 4 * 60_000;
 /** Every string a model can put on screen. */
 function strings(m: DetailModel): string[] {
   return [
-    m.title, m.kindLine, m.note, m.credit,
+    m.title, m.kindLine, ...(m.note ? [m.note] : []), m.credit,
     ...m.readout.flatMap((r) => [r.label, r.value ?? NOT_SENT]),
     ...(m.prose ?? []).flatMap((p) => [p.heading, p.text]),
     ...m.groups.flatMap((g) => [g.heading, ...g.rows.flatMap((r) => [r.label, r.value, r.note ?? ""])]),
@@ -480,14 +480,18 @@ describe("roadDetail, utility works that close one stretch of the A12", () => {
     ]);
   });
 
-  it("names no company and calls the values TfL's own", () => {
+  it("names no company, and its footer is TfL's credit alone", () => {
     expect(labelsOf(m)).not.toContain("Works by");
     // TfL's description names the company, and says so in its own words; the panel adds no row for it.
     expect(m.groups.flatMap((g) => g.rows.map((r) => r.label)).join(" ")).not.toMatch(/\b(by|company|contractor|operator)\b/i);
-    expect(m.note).toBe(
-      "Every value is TfL's own, as TfL wrote it. A road notice says what is on the street, never how fast traffic moves.",
-    );
+    expect(m.note).toBeUndefined();
     expect(m.credit).toBe("Powered by TfL Open Data");
+    expect(JSON.stringify(m)).not.toContain("Every value is TfL's own");
+  });
+
+  it("leaves a vessel's and an aircraft's footers as they were", () => {
+    expect(vesselDetail(DIAMOND, NOW).note).toMatch(/^Each value is what the ship's AIS transponder sent/);
+    expect(aircraftDetail(EZY, NOW, PULLED).note).toMatch(/^Altitude, speed, track and squawk/);
   });
 });
 

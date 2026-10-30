@@ -211,7 +211,7 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
       </div>
 
       <footer className={styles.dFoot}>
-        <p>{model.note}</p>
+        {model.note && <p>{model.note}</p>}
         <p>{model.credit}</p>
       </footer>
     </section>

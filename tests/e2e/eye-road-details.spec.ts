@@ -66,16 +66,19 @@ const OPEN_LINE = A12_NOTICE.openLines[0];
  * capture at a [lon, lat] for the NEXT load of the page; until then the aircraft feed is
  * empty. The vessel feed is always empty.
  */
-async function feeds(page: Page): Promise<{ errors: string[]; setPlane(at: [number, number] | null): void }> {
+async function feeds(
+  page: Page,
+): Promise<{ errors: string[]; setPlane(at: [number, number] | null): void; setNotices(list: typeof NOTICES | null): void }> {
   const errors: string[] = [];
   let plane: [number, number] | null = null;
+  let notices: typeof NOTICES = NOTICES;
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
   const json = (body: string) => ({ status: 200, contentType: "application/json", body });
   await page.route((url) => url.pathname === "/api/eye/streets", (route) =>
-    route.fulfill(json(streetsBody(NOTICES, NOW - MIN))),
+    route.fulfill(json(streetsBody(notices, NOW - MIN))),
   );
   await page.route((url) => url.pathname === "/api/signals/ais", (route) => route.fulfill(json(JSON.stringify({ features: [] }))));
   await page.route((url) => url.pathname === "/api/eye/vessels", (route) =>
@@ -85,8 +88,65 @@ async function feeds(page: Page): Promise<{ errors: string[]; setPlane(at: [numb
     const planes = plane ? [{ ...PLANES.planes[0], lon: plane[0], lat: plane[1] }] : [];
     return route.fulfill(json(JSON.stringify({ ...PLANES, count: planes.length, planes })));
   });
-  return { errors, setPlane: (at) => (plane = at) };
+  return { errors, setPlane: (at) => (plane = at), setNotices: (list) => (notices = list ?? NOTICES) };
 }
+
+/**
+ * Six notices in a column, 80 px apart, down the left of the screen: the A12 row with the
+ * words of other notices and no street line (built here, not TfL's data), so only their
+ * plates and rings show. Open the A12, read where each spot is on the map, put a notice there
+ * and load the page again. Returns the spots in page px, nearest the top first, with the
+ * sub-category each notice carries as its plate's title.
+ */
+const CROWD_TITLES = ["Utility works", "Borough works", "TfL works", "Road resurfacing", "Gas works", "Water works"];
+async function openWithCrowd(page: Page, feed: Awaited<ReturnType<typeof feeds>>, x: number) {
+  await page.goto(A12);
+  await ready(page);
+  const spots = CROWD_TITLES.map((title, i) => ({ title, x, y: 230 + i * 80 }));
+  const at = await page.evaluate((list) => {
+    const map = (window as unknown as { __map: { unproject(p: [number, number]): { lng: number; lat: number } } }).__map;
+    const r = document.querySelector("canvas.maplibregl-canvas")!.getBoundingClientRect();
+    return list.map((p) => {
+      const g = map.unproject([p.x - r.left, p.y - r.top]);
+      return [g.lng, g.lat] as [number, number];
+    });
+  }, spots);
+  feed.setNotices(
+    spots.map((spot, i) => ({
+      ...A12_NOTICE,
+      id: `TIMS-CROWD-${i}`,
+      subCategory: spot.title,
+      severity: "Minimal",
+      closure: undefined,
+      namedStreets: undefined,
+      location: `[A${100 + i}] CROWD ROAD ${i} (SW1A ) (Westminster)`,
+      lon: at[i][0],
+      lat: at[i][1],
+      openLines: [],
+      closedLines: [],
+    })),
+  );
+  await page.reload();
+  await ready(page);
+  return spots;
+}
+
+/** The road plates on screen, with their boxes, and how many overlap each other or the frame's words. */
+const platesOnScreen = (page: Page) =>
+  page.evaluate(() => {
+    const plates = [...document.querySelectorAll('div[data-kind="road"] [class*="tagPlate"]')].map((e) => ({
+      title: e.querySelector("b")?.textContent ?? "",
+      r: e.getBoundingClientRect(),
+    }));
+    const keeps = [...document.querySelectorAll("[data-eye-keep]")].map((e) => e.getBoundingClientRect()).filter((b) => b.width && b.height);
+    const hit = (a: DOMRect, b: DOMRect) => !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+    let overlaps = 0;
+    plates.forEach((p, i) => {
+      for (const q of plates.slice(i + 1)) if (hit(p.r, q.r)) overlaps++;
+      for (const k of keeps) if (hit(p.r, k)) overlaps++;
+    });
+    return { titles: plates.map((p) => p.title), overlaps, inside: plates.every((p) => p.r.left >= 0 && p.r.right <= innerWidth && p.r.top >= 0 && p.r.bottom <= innerHeight) };
+  });
 
 /**
  * Open the A12, put an aircraft on bare ground at a fraction of the screen (away from the
@@ -189,8 +249,9 @@ test.describe("on a wide screen", () => {
     await expect(panel).toContainText(NOTICE_ID);
     await expect(panel).toContainText("Cadent Gas works");
     await expect(panel).toContainText("Powered by TfL Open Data");
-    // The panel says whose values they are, and names no "Works by".
-    await expect(panel).toContainText("Every value is TfL's own");
+    // The footer is TfL's credit alone; the panel names no "Works by".
+    await expect(panel).not.toContainText("Every value is TfL's own");
+    await expect(panel.locator("footer p")).toHaveText(["Powered by TfL Open Data"]);
     await expect(panel).not.toContainText("Works by");
     // TfL's own sentences come before the groups.
     const order = await panel.locator("h3").allTextContents();
@@ -315,6 +376,15 @@ test.describe("on a wide screen", () => {
     expect(feed.errors).toEqual([]);
   });
 
+  test("the same crowd gets two plates on a wide screen, as before", async ({ page }) => {
+    const feed = await feeds(page);
+    await openWithCrowd(page, feed, 420);
+    await expect(page.locator('div[data-kind="road"] [class*="tagPlate"]')).toHaveCount(2);
+    const shown = await platesOnScreen(page);
+    expect(shown.overlaps).toBe(0);
+    expect(feed.errors).toEqual([]);
+  });
+
   test("a screenshot of the panel on the A12", async ({ page }) => {
     await feeds(page);
     await page.goto(A12);
@@ -367,6 +437,27 @@ test.describe("on a phone", () => {
     const feed = await feeds(page);
     await openWithPlaneAside(page, feed);
     await hintCase(page);
+    expect(feed.errors).toEqual([]);
+  });
+
+  test("a crowd of notices gets up to four plates, never overlapping, and the rest stay tappable", async ({ page }) => {
+    const feed = await feeds(page);
+    const spots = await openWithCrowd(page, feed, 60);
+
+    // Six notices, a cap of four: four plates, clear of each other and of the frame's words.
+    await expect(page.locator('div[data-kind="road"] [class*="tagPlate"]')).toHaveCount(4);
+    const shown = await platesOnScreen(page);
+    expect(shown.overlaps).toBe(0);
+    expect(shown.inside).toBe(true);
+    for (const t of shown.titles) expect(CROWD_TITLES).toContain(t);
+    expect(new Set(shown.titles).size).toBe(4);
+    // The ledger counts what has a plate, as it does for every kind.
+    await expect(page.locator('section[aria-label="What this view shows"] p[data-k="road"] b')).toHaveText("4");
+
+    // A notice with no plate is still a ring you can tap.
+    const bare = spots.find((s) => !shown.titles.includes(s.title))!;
+    await page.touchscreen.tap(bare.x, bare.y);
+    await expect(page.getByRole("dialog", { name: bare.title })).toBeVisible();
     expect(feed.errors).toEqual([]);
   });
 

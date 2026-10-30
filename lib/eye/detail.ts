@@ -7,8 +7,9 @@
 // the flag is worked out from the MMSI, so its label says "from MMSI"; an aircraft's
 // registration and type come from adsb.lol's database, not from the aircraft. A value a
 // feed did not send is left out of a group, and shown as "Not sent" in the readout, where
-// an empty place would otherwise look like a zero. A road notice is all TfL's: its model
-// says every value is TfL's own, and names no company, because TfL names none.
+// an empty place would otherwise look like a zero. A road notice is all TfL's: its
+// headings say so ("TfL's description"), its footer is TfL's credit alone, and it names no
+// company, because TfL names none.
 
 import { flagFromMmsi } from "@/lib/eye/mid";
 import { fmtClockUtc, fmtLat, fmtLon } from "@/lib/eye/wording";
@@ -42,7 +43,8 @@ export interface DetailModel {
   prose?: { heading: string; text: string }[];
   /** A group with no rows is left out. */
   groups: DetailGroup[];
-  note: string;
+  /** One sentence of the footer, about where the values come from. A road notice has none: its credit is enough. */
+  note?: string;
   credit: string;
 }
 
@@ -345,7 +347,6 @@ export function roadDetail(d: StreetDisruption, now: number, fetchedAt: number |
         ]),
       },
     ].filter((g) => g.rows.length > 0),
-    note: "Every value is TfL's own, as TfL wrote it. A road notice says what is on the street, never how fast traffic moves.",
     credit: TFL_CREDIT,
   };
 }
