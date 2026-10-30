@@ -429,7 +429,7 @@ export default function CameraStats() {
           <span className="cs-lab">
             {id === "video" && <VideoGlyph />}
             {id === "stills" && <StillsGlyph />}
-            {id === "counted" && !stats ? "Counting" : SEGMENT_LABEL[id]}
+            <span className="cs-word">{id === "counted" && !stats ? "Counting" : SEGMENT_LABEL[id]}</span>
           </span>
           {segValue(id)}
         </span>

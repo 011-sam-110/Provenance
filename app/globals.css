@@ -4379,7 +4379,6 @@ a.tn-w-place { display: flex; align-items: center; }
 ) { color: var(--tn-lagging-ink); }
 
 /* Light grounds and dark-alpha washes. */
-:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-rail { background: rgba(236, 238, 228, 0.03); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-hd-primary { background: rgba(236, 238, 228, 0.06); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-mk-ohlc { background: rgba(21, 23, 15, 0.78); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button { background: var(--tnx-panel); border-color: var(--tnx-line-strong); color: var(--tnx-ink-dim); }
@@ -5496,12 +5495,17 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { animation: none; }
 }
 @media (min-width: 901px) {
-  /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
+  /* A PANE THAT IS LEAVING (`data-leaving`, set by SourceCatalog for the length of the
+     slide out) COUNTS AS CLOSED in every selector below, so the shell's padding, and with
+     it the map's box, changes ONCE, at the click. The pane then slides out over the map
+     instead of the map resizing frame by frame under it (Leon, 2026-10-30).
+
+     The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
      the shell, not `left:` — the shell is `position:relative` here (see the
      `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
      element sideways and push its right edge out of the viewport instead of
      reflowing the grid inside it. */
-  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: var(--tn-rail-w); }
+  .tn-terminal .tn-cw-shell:has(> .tn-rail:not([data-leaving])) { padding-left: var(--tn-rail-w); }
 
   /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
      tab, so the grid starts to the RIGHT of the control.
@@ -5516,8 +5520,8 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
      rather than merely unlikely — a grid item cannot start left of the padding
      edge, whatever the layout does. The tab itself still resolves `left:0` against
      the shell's PADDING box, which is the reserved strip, not the widget area. */
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) { padding-left: var(--tnx-rail-tab-w); }
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab {
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail:not([data-leaving]))) { padding-left: var(--tnx-rail-tab-w); }
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail:not([data-leaving]))) > .tn-rail-fab {
     top: 0; left: 0; bottom: auto;
     width: var(--tnx-rail-tab-w);
     height: 100%;
@@ -5535,7 +5539,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   }
   /* The ≡ glyph is a pictogram, not text — let it stay upright while the label
      runs down the tab. */
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab .tn-rail-fab-bars {
+  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail:not([data-leaving]))) > .tn-rail-fab .tn-rail-fab-bars {
     writing-mode: horizontal-tb;
   }
 }
@@ -7273,9 +7277,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    the sticky header is gone with it — there is no longer a scrollport under them.
 
    WHAT THE PANEL'S OWN LAYOUT IS NOW, because the rules below assume it:
-     - `.tn-terminal .tn-cw-shell > .tn-rail` is a flex COLUMN with `overflow:
-       hidden`, and it is still `position: absolute; top: 0; bottom: 0`, so it has a
-       definite height for the rail to stretch into.
+     - `.tn-terminal .tn-cw-shell > .tn-rail` is a GRID with `overflow: hidden` (it was
+       a flex column until 2026-10-30), and it is still `position: absolute; top: 0;
+       bottom: 0`, so it has a definite height for the rail to stretch into. Row one is
+       `[.tn-rail-header | .tn-rail-close-cell]`, row two is `.tn-rail-main` across both.
+     - `.tn-rail-close-cell` is the TOP OF THE TOOL STRIP: the close tile, level with the
+       tabs, above the toolbar and sharing its width, shade and left edge, so the strip
+       reads as one column from the pane's top edge to its bottom (Leon, 2026-10-30).
      - `.tn-rail-main` is the row: `[.tn-rail-panes | .tn-insp-rail]`.
      - `.tn-rail-panes` is the SCROLLPORT. It replaced the panel as one, which is
        what lets the header stop being sticky and what keeps a scrollbar out of the
@@ -7284,8 +7292,15 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 
 /* ── The panel: a header, then [panes | tool rail] ───────────────────────────── */
 .tn-terminal .tn-cw-shell > .tn-rail {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  /* THE TOOL STRIP'S SHADE, one token for both skins and both halves of the strip (the
+     close cell and the toolbar): 7% of the console's ink mixed into the panel colour,
+     so light comes out near #f0f0ef and dark near #24261e with no colour literal and no
+     second rule for the dark skin. It was a 2.7% slate wash that did not read as a
+     shade at all. Declared here, on the pane, so both halves inherit it. */
+  --tn-rail-strip-bg: color-mix(in srgb, var(--tnx-ink) 7%, var(--tnx-panel));
   /* THE PANES SCROLL, NOT THE PANEL — see the block header. `padding: 0` because
      the header and the panes carry their own now; the base rule's `0 12px 10px`
      belonged to the era when this element was the scrollport whose padding the
@@ -7293,6 +7308,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   overflow: hidden;
   padding: 0;
 }
+/* The phone sheet's grab line (`.tn-rail::before`, 38 x 4 in the old shell). In this
+   console it renders 0.8px tall, which is to say it is not there, and in a grid it
+   would take a cell of its own, so it goes. The sheet's tabs sit 9px higher on a phone. */
+.tn-terminal .tn-cw-shell > .tn-rail::before { display: none; }
 /* The header kept its `position: sticky; top: 0` until the panes took over the
    scrolling, and it is a plain flex item now: there is nothing above it to scroll
    under, and the negative side margins it needed to span the panel's padding are
@@ -7303,8 +7322,28 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   margin: 0 0 10px;
   padding: 12px 12px 8px;
 }
+.tn-terminal .tn-cw-shell > .tn-rail > .tn-rail-header { grid-column: 1; grid-row: 1; }
+/* The close cell: the top of the strip. It is as wide as the toolbar under it and as
+   tall as the header's row (the header's own 12px top, 8px bottom and 10px margin), and
+   its tile is centred on the tabs' centre line whatever height the tabs take. The tile
+   is 42px (54px on a phone), taller than the tabs, so `contain: size` stops it making
+   row one taller than the header. */
+.tn-terminal .tn-rail-close-cell {
+  grid-column: 2; grid-row: 1;
+  width: var(--tn-insp-rail-w);
+  display: flex; justify-content: center; align-items: center;
+  padding: 12px 0 18px;
+  contain: size;
+  background: var(--tn-rail-strip-bg);
+  border-left: 1px solid var(--tn-border);
+}
+/* The tile is the tool tiles' (`.tn-insp-rail-btn`), so the base close rule's pull to the
+   right is off, and the x is drawn at 22px: it fills only the middle 12 of 24 units, so
+   at the tools' 27px it would look heavier than they do. */
+.tn-terminal .tn-rail-close-cell .tn-rail-collapse { margin: 0; }
+.tn-terminal .tn-rail-close-cell .tn-rail-collapse svg { width: 22px; height: 22px; }
 .tn-terminal .tn-rail-main {
-  flex: 1 1 auto;
+  grid-column: 1 / -1; grid-row: 2;
   min-height: 0;
   display: flex;
   align-items: stretch;
@@ -7316,15 +7355,23 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   padding: 0 12px 12px;
 }
 
-.tn-insp-rail {
-  /* Metrics as tokens so the narrow pass changes ONE value and everything derived
-     follows. Declared here rather than on `.tn-terminal`: that block is parsed by
-     tests/unit/terminal-tokens.test.ts and this rail has no business in it. */
+/* Metrics as tokens so the narrow pass changes ONE value and everything derived
+   follows. Declared here rather than on `.tn-terminal`: that block is parsed by
+   tests/unit/terminal-tokens.test.ts and this rail has no business in it. The close cell
+   is the top of the same strip, so it takes the same four and cannot drift in width or
+   tile size. */
+.tn-insp-rail, .tn-rail-close-cell {
   --tn-insp-rail-w: 48px;
   --tn-insp-rail-btn: 42px;
   --tn-insp-rail-glyph: 27px;
   --tn-insp-rail-group-gap: 9px;
-
+}
+/* The strip's shade in the console: the pane's token, so it is one colour from the close
+   cell to the bottom of the toolbar. The plain rule below stays for the old shell. */
+.tn-terminal .tn-insp-rail {
+  background: var(--tn-rail-strip-bg);
+}
+.tn-insp-rail {
   flex: 0 0 var(--tn-insp-rail-w);
   width: var(--tn-insp-rail-w);
   /* FULL HEIGHT BY CONSTRUCTION, not by measurement. `align-items: stretch` on
@@ -7698,10 +7745,11 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
      can tell what they are". There is no hover here, so the word sits under the icon:
      a 60px column of 54px tiles, a 26px icon over an 11px word. 60 is the measured fit
      for the longest word, "Settings" (43.4px at 11px/600), with 5px either side. */
-  .tn-insp-rail {
+  .tn-insp-rail, .tn-rail-close-cell {
     --tn-insp-rail-w: 60px; --tn-insp-rail-btn: 54px; --tn-insp-rail-glyph: 26px;
     --tn-insp-rail-group-gap: 10px;
   }
+  .tn-terminal .tn-rail-close-cell .tn-rail-collapse svg { width: 24px; height: 24px; }
   .tn-insp-rail-btn {
     height: auto; min-height: 52px;
     flex-direction: column; gap: 3px; padding: 6px 0 5px;
@@ -8332,10 +8380,14 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 
 /* ── CAMERA STATS STRIP (components/terminal/CameraStats.tsx) ─────────────────
    VIDEO | STILLS | COUNTRIES | OPERATORS | COUNTED | WEBCAMS: a score bug after the
-   board tabs, each segment a small label over its number, one hairline between
-   neighbours. VIDEO and STILLS, the two headline counts, carry a camcorder and a
-   camera (StatGlyphs.tsx) and get a little more room (`.is-major`). One button; a
-   click opens the breakdown under it, a bottom sheet on a phone.
+   board tabs, one hairline between neighbours. The four quieter counts are a small
+   word over their number. VIDEO and STILLS, the two headline counts (`.is-major`),
+   are ONE LINE each: the camcorder or the camera (StatGlyphs.tsx), then the number,
+   with a little more room either side. Their words leave the bar (`.cs-word` is
+   hidden) and stay in the hover tip, the strip's spoken name and the breakdown, so
+   nothing is lost to a screen reader (Leon, 2026-10-30: the numbers looked too big and
+   cramped). Every number in the strip is the same 14px / 700. One button; a click
+   opens the breakdown under it, a bottom sheet on a phone.
 
    NO LIVE GREEN IN THIS BLOCK, and tests/unit/camera-stats-view.test.ts holds it:
    most of these cameras are stills, so the green would read as "live". The time dot
@@ -8357,10 +8409,13 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px;
   padding: 0 8px; position: relative; white-space: nowrap;
 }
-/* The two headline counts get 12px each side instead of 8px, so the pair stands a
-   little apart from the four quieter numbers and neither feels cramped. */
-.tn-terminal .cs-seg.is-major { padding: 0 12px; }
-.tn-terminal .cs-seg.is-major .cs-lab { gap: 5px; }
+/* The two headline counts are a mark and a number on ONE line, with 14px each side
+   instead of 8px, so the pair stands a little apart from the four quieter numbers and
+   neither feels cramped. The word is hidden, not removed: the tip, the strip's
+   aria-label and the breakdown still say it. */
+.tn-terminal .cs-seg.is-major { flex-direction: row; align-items: center; gap: 7px; padding: 0 14px; }
+.tn-terminal .cs-seg.is-major .cs-word { display: none; }
+.tn-terminal .cs-seg.is-major .cs-glyph { width: 16px; height: 16px; margin: 0; }
 /* `.cs-retry` is in the list so that, when the counts fail to load, WEBCAMS still
    gets the one hairline after RETRY. */
 .tn-terminal :is(.cs-seg, .cs-retry) + .cs-seg::before { content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: var(--tnx-line); }
@@ -8368,8 +8423,8 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   display: inline-flex; align-items: center; gap: 4px; font-size: var(--tnx-fs-xs); line-height: 1;
   font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tnx-ink-faint);
 }
-.tn-terminal .cs-num { font-size: var(--tnx-fs-lg); line-height: 18px; font-weight: 800; color: var(--tnx-ink); letter-spacing: -0.01em; }
-.tn-terminal .cs-seg.is-minor .cs-num { font-size: var(--tnx-fs-md); font-weight: 700; color: var(--tnx-ink-dim); }
+.tn-terminal .cs-num { font-size: var(--tnx-fs-md); line-height: 16px; font-weight: 700; color: var(--tnx-ink); letter-spacing: 0; }
+.tn-terminal .cs-seg.is-minor .cs-num { color: var(--tnx-ink-dim); }
 .tn-terminal .cs-chip { width: 7px; height: 7px; border-radius: 2px; flex: none; display: inline-block; }
 .tn-terminal .cs-chip.v { background: var(--tnx-accent); }
 .tn-terminal .cs-chip.s { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tnx-ink-faint); }
@@ -8426,8 +8481,8 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 .tn-terminal .cs-phone { display: none; }
 .tn-terminal .cs-pline { align-items: center; gap: 5px; white-space: nowrap; }
 .tn-terminal .cs-pline .cs-glyph { margin: 0; }
-.tn-terminal .cs-pline .cs-num { font-size: var(--tnx-fs); line-height: 16px; font-weight: 800; }
-.tn-terminal .cs-pline .cs-gap { width: 7px; }
+.tn-terminal .cs-pline .cs-num { font-size: var(--tnx-fs); line-height: 16px; font-weight: 700; }
+.tn-terminal .cs-pline .cs-gap { width: 12px; }
 .tn-terminal .cs-pline .cs-chev { margin-left: auto; }
 .tn-terminal .cs-pfresh { align-items: center; gap: 5px; font-size: var(--tnx-fs-sm); line-height: 14px; color: var(--tnx-ink-faint); white-space: nowrap; }
 .tn-terminal .cs-pfresh .cs-dot { width: 5px; height: 5px; }

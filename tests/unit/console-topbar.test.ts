@@ -76,7 +76,7 @@ describe("the camera stats strip", () => {
   });
 
   test("VIDEO and STILLS are the roomier pair, and the glyph is sized by CSS in an existing token", () => {
-    expect(ruleBody(block, ".tn-terminal .cs-seg.is-major")).toContain("padding: 0 12px");
+    expect(ruleBody(block, ".tn-terminal .cs-seg.is-major")).toContain("padding: 0 14px");
     const glyph = ruleBody(block, ".tn-terminal .cs-glyph");
     expect(glyph).toContain("width: 14px");
     expect(glyph).toContain("height: 14px");
