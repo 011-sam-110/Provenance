@@ -199,7 +199,8 @@ test.describe("a phone held sideways", () => {
         const f = await frame(page);
         expect(f.bar!.x, `${size.width}`).toBeGreaterThanOrEqual(size.width / 2 - 0.5);
         for (const name of ["Previews", "Turn"]) {
-          const b = (await bar.getByRole(name === "Previews" ? "switch" : "button", { name, exact: true }).boundingBox())!;
+          const target = name === "Previews" ? bar.getByRole("switch", { name: "Cameras previews", exact: true }) : bar.getByRole("button", { name, exact: true });
+          const b = (await target.boundingBox())!;
           expect(b.x, `${name} at ${size.width}`).toBeGreaterThanOrEqual(f.bar!.x - 0.5);
         }
         const sources = (await page.locator("[data-sources-button]").boundingBox())!;
@@ -335,8 +336,106 @@ test.describe("unchanged", () => {
         expect(Math.round(f.header!.y)).toBe(22);
         await expect(page.locator("header nav")).toBeVisible(); // the place chips
         expect(await page.locator("header h1").evaluate((h) => getComputedStyle(h).fontSize)).toBe("28px");
+        // The switch keeps its camera icon, the word "Previews" and its track; "Cameras" is the phone's.
+        const sw = page.getByRole("switch", { name: "Previews", exact: true });
+        await expect(sw).toBeVisible();
+        expect(await sw.evaluate((el) => (el as HTMLElement).innerText.trim())).toBe("Previews");
+        const marks = sw.locator("span[aria-hidden]");
+        expect(await marks.count()).toBe(2);
+        for (let i = 0; i < 2; i++) await expect(marks.nth(i)).toBeVisible();
       } finally {
         await ctx.close();
+      }
+    });
+  }
+});
+
+/**
+ * The switch on a phone says "Cameras" instead of drawing a camera (Leon, 30 Oct 2026). It is
+ * a switch with the bar's own type and height, its name is built from the word drawn ("Cameras
+ * previews"), it says off with the word alone (dimmed and struck through), and the bar stays on
+ * ONE row with Sources in its place and every button reachable, with no pins and with five,
+ * upright (320, 360, 390) and sideways (568x320, 667x375, 844x390).
+ */
+const BAR_SIZES = [
+  { width: 320, height: 568, upright: true },
+  { width: 360, height: 780, upright: true },
+  { width: 390, height: 844, upright: true },
+  { width: 568, height: 320, upright: false },
+  { width: 667, height: 375, upright: false },
+  { width: 844, height: 390, upright: false },
+];
+
+test.describe("the Cameras switch on a phone", () => {
+  for (const size of BAR_SIZES) {
+    test(`${size.width} x ${size.height}: the word, the state, and a bar of one row`, async ({ browser }) => {
+      for (const pins of [false, true]) {
+        const { ctx, page } = await phone(browser, size, { pins });
+        try {
+          await page.goto(size.upright ? "/eye?place=westminster" : SPOT);
+          await ready(page);
+          const bar = page.getByRole("navigation", { name: "View controls" });
+          const sw = bar.getByRole("switch", { name: "Cameras previews", exact: true });
+          await expect(sw).toBeVisible();
+          // What is drawn is the word alone, in the type of Places and Turn.
+          // ("previews" is in the name only: a visually hidden 1 px box, not part of what is drawn.)
+          const drawn = await sw.evaluate((el) => {
+            const hidden = el.querySelector(".tn-sr-only")!;
+            const box = hidden.getBoundingClientRect();
+            const word = [...hidden.parentElement!.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join("").trim();
+            return { word, hiddenWidth: box.width, hiddenHeight: box.height };
+          });
+          expect(drawn.word).toBe("Cameras");
+          expect(drawn.hiddenWidth).toBeLessThanOrEqual(1);
+          expect(drawn.hiddenHeight).toBeLessThanOrEqual(1);
+          expect(await sw.locator("span[aria-hidden]").evaluateAll((els) => els.filter((e) => e.getClientRects().length > 0).length)).toBe(0);
+          const type = (loc: ReturnType<typeof bar.getByRole>) => loc.evaluate((el) => { const c = getComputedStyle(el); return `${c.fontSize} ${c.fontWeight} ${c.fontFamily}`; });
+          const places = bar.getByRole("button", { name: "Places", exact: true });
+          const turn = bar.getByRole("button", { name: "Turn", exact: true });
+          expect(await type(sw)).toBe(await type(places));
+          // 44 px tall upright; sideways it is as tall as Places and Turn (the bar's compact height).
+          const h = (await sw.boundingBox())!.height;
+          if (size.upright) expect(h).toBeGreaterThanOrEqual(44);
+          else expect(Math.abs(h - (await turn.boundingBox())!.height)).toBeLessThanOrEqual(0.5);
+          // One row, and Sources keeps the bar's end (its right edge upright is the bar's own).
+          const tops = await bar.locator("button").evaluateAll((els) =>
+            els.filter((e) => e.getClientRects().length > 0).map((e) => Math.round(e.getBoundingClientRect().top)),
+          );
+          expect(new Set(tops).size, `one row (${pins ? "five pins" : "no pins"})`).toBe(1);
+          const sources = (await page.locator("[data-sources-button]").boundingBox())!;
+          if (size.upright) expect(Math.round(sources.x)).toBe(18);
+          else expect(Math.round(size.width - right(sources))).toBe(22);
+          expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+          // Every button of the strip can be scrolled into the strip: the first at rest, the last at the end.
+          const reach = await page.evaluate(() => {
+            const src = document.querySelector("[data-sources-button]")!;
+            const strip = [...src.parentElement!.children].find((c) => c !== src && getComputedStyle(c).overflowX === "auto") as HTMLElement;
+            const kids = [...strip.children].filter((c) => c.getClientRects().length > 0);
+            const pad = parseFloat(getComputedStyle(strip).paddingRight);
+            strip.scrollLeft = 0;
+            const first = kids[0].getBoundingClientRect().left - strip.getBoundingClientRect().left;
+            strip.scrollLeft = strip.scrollWidth;
+            const last = strip.getBoundingClientRect().right - pad - kids[kids.length - 1].getBoundingClientRect().right;
+            return { first, last, scrolls: strip.scrollWidth > strip.clientWidth + 1 };
+          });
+          expect(reach.first, "the first button starts inside the strip").toBeGreaterThanOrEqual(-0.5);
+          expect(reach.last, "the last button can be scrolled into view").toBeGreaterThanOrEqual(-0.5);
+          if (pins) expect(reach.scrolls, "five pins scroll").toBe(true);
+          // Off says so with the word alone; pressing again brings it back.
+          const word = sw.locator("span").filter({ hasText: "Cameras" }).first();
+          const line = () => word.evaluate((el) => getComputedStyle(el).textDecorationLine);
+          await expect(sw).toHaveAttribute("aria-checked", "true");
+          expect(await line()).toBe("none");
+          await sw.scrollIntoViewIfNeeded();
+          await sw.tap();
+          await expect(sw).toHaveAttribute("aria-checked", "false");
+          expect(await line()).toContain("line-through");
+          await sw.tap();
+          await expect(sw).toHaveAttribute("aria-checked", "true");
+          expect(await line()).toBe("none");
+        } finally {
+          await ctx.close();
+        }
       }
     });
   }

@@ -1427,6 +1427,18 @@
   left: 11px;
   background: #0b1114;
 }
+/* The phone's word, "Cameras" (EyeApp), drawn by the two phone blocks below and hidden on a
+   wide screen, where the glyph, "Previews" and the track stay as they were. It stands in
+   .btn's own type, like Places and Turn. Off, the word alone says so: dimmed (the third
+   ink, 4.8:1 on the plate) and struck through, as the wide switch's crossed-out camera. */
+.previewsPhone {
+  display: none;
+}
+.previewsBtn[aria-checked="false"] .previewsPhone {
+  color: var(--eye-ink-3);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
 
 /* A camera with previews off: a plate with the pictogram on a short stalk that ends on
    the camera's white ground ring. The marker is the button itself, so MapLibre owns its
@@ -1558,29 +1570,25 @@
   }
 }
 
-/* Phone: the switch is its camera alone, 44 px square (its name is still "Previews");
-   an icon's hit area is 44 px around a 32 px plate; the close button is 44 px around a
-   26 px face. The bar wraps rather than overflowing a 360 px screen. */
+/* Phone: the switch is the word "Cameras", 44 px tall like Places and Turn (the icon it had
+   gave way to the word, 30 Oct 2026); an icon's hit area is 44 px around a 32 px plate; the
+   close button is 44 px around a 26 px face. The bar keeps to ONE row: its strip
+   (EyeSources.module.css) scrolls sideways where the buttons do not fit, so a 320 or 360 px
+   screen neither wraps the strip under Sources nor overflows. */
 @media (max-aspect-ratio: 4/5) {
   .controls {
-    flex-wrap: wrap;
-    row-gap: 8px;
+    flex-wrap: nowrap;
   }
   .previewsBtn {
-    width: 44px;
-    padding: 0;
-    justify-content: center;
+    padding: 0 14px;
   }
+  .previewsGlyph,
   .previewsWord,
   .previewsTrack {
     display: none;
   }
-  .previewsGlyph {
-    width: 20px;
-    height: 20px;
-  }
-  .previewsBtn[aria-checked="false"] .previewsGlyph::after {
-    height: 25px;
+  .previewsPhone {
+    display: inline;
   }
   .camIcon {
     width: 44px;
@@ -1728,15 +1736,17 @@
     right: 22px;
     max-width: calc(50% - 22px);
   }
-  /* Previews is its camera alone, as on a phone. Its name is still "Previews". */
+  /* Previews is the word "Cameras", as on a phone, in the bar's own size. */
   .previewsBtn {
-    width: 34px;
-    padding: 0;
-    justify-content: center;
+    padding: 0 12px;
   }
+  .previewsGlyph,
   .previewsWord,
   .previewsTrack {
     display: none;
+  }
+  .previewsPhone {
+    display: inline;
   }
   /* The hint, the places list and a details panel hang 8 px under the bar (54 + 34) in
      the right half. The hint takes the phone's two columns. */

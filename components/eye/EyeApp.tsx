@@ -83,6 +83,7 @@ import {
   EYE_PREFS_KEY,
   EYE_PREFS_VERSION,
   PREVIEWS_LABEL,
+  PREVIEWS_PHONE_WORD,
   previewsInEffect,
   readEyePrefs,
   type EyePrefs,
@@ -517,13 +518,20 @@ export default function EyeApp({
               type="button"
               role="switch"
               aria-checked={previews}
-              aria-label={PREVIEWS_LABEL}
               className={`${styles.btn} ${styles.previewsBtn}`}
               onClick={togglePreviews}
             >
+              {/* No aria-label: the name is built from the words that are drawn. A wide screen
+                  draws the icon, "Previews" and the track (name "Previews"); a phone draws only
+                  "Cameras" (name "Cameras previews"), struck through while it is off. The words
+                  that are not drawn are display: none, so they are not in the name. */}
               {/* A constant from lib/icons/svg.ts, never user text. */}
               <span className={styles.previewsGlyph} aria-hidden dangerouslySetInnerHTML={{ __html: ICON_SVG["cam-still"] }} />
               <span className={styles.previewsWord}>{PREVIEWS_LABEL}</span>
+              <span className={styles.previewsPhone}>
+                {PREVIEWS_PHONE_WORD}
+                <span className="tn-sr-only"> previews</span>
+              </span>
               <span className={styles.previewsTrack} aria-hidden />
             </button>
           )}
