@@ -13,6 +13,16 @@ export function fmtLon(lon: number): string {
   return `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? "E" : "W"}`;
 }
 
+/**
+ * The title of a view with no place name: "51.5072° N, 0.1268° W". A no-break space holds each
+ * figure to its letter, so a narrow screen breaks the title only after the comma, never before
+ * the "W" (seen at 390 px, 29 Oct 2026). fmtLat and fmtLon keep a plain space: the footer's
+ * readout does not wrap, and the vessel panel's Position row reads them as they are.
+ */
+export function fmtSpot(lat: number, lon: number): string {
+  return `${fmtLat(lat).replace(" ", "\u00A0")}, ${fmtLon(lon).replace(" ", "\u00A0")}`;
+}
+
 /** A compass heading as three digits, "032". */
 export function fmtHeading(deg: number): string {
   const d = Math.round(((deg % 360) + 360) % 360) % 360;

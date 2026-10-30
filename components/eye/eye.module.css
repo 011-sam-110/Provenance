@@ -564,10 +564,22 @@
 /* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
 
 @media (max-aspect-ratio: 4/5) {
+  /* The header and the ledger stack in the frame's own flow, so a title that wraps (a
+     camera's long name, a spot's coordinates) moves the ledger down instead of running
+     under it. The footer stays absolute at the bottom. position: relative, not static:
+     an in-flow block that is not positioned paints UNDER the scrim (.hud::before), and
+     the words went grey in the first mockup. */
+  .hud {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 4px;
+    padding: 16px 18px 0;
+  }
   .top {
-    top: 16px;
-    left: 18px;
-    right: 18px;
+    position: relative;
+    inset: auto;
+    align-self: stretch;
   }
   .place {
     font-size: 22px;
@@ -595,9 +607,12 @@
     display: block;
   }
   .ledger {
-    top: 80px;
-    bottom: auto;
-    left: 18px;
+    position: relative;
+    inset: auto;
+    /* A percentage is now of the frame's content box (the .hud's padding is outside it), so
+       the wide rule's "100% - 52px" would allow 36 px less than it did and overflow four
+       counts at 320 (they need 261 px). The phone's ledger may use the whole row. */
+    max-width: 100%;
     grid-template-columns: repeat(4, auto);
     justify-content: start;
     column-gap: 22px;
@@ -701,14 +716,11 @@
    buttons down the right edge, and its header over the top. The frame's words move
    inside those bands, and EyeOverlay's safeFrame keeps cards and tags inside them too. */
 @media (max-aspect-ratio: 4/5) {
-  .root[data-record] .top {
-    top: 6.5%;
-    left: 7%;
-    right: 7%;
-  }
-  .root[data-record] .ledger {
-    top: calc(6.5% + 70px);
-    left: 7%;
+  /* The header 6.5% down and 7% in, as before, and the ledger right under it. A recording's
+     frame is the whole viewport (.root is fixed, inset 0), so vh and vw are its own height and
+     width; a padding percentage would be of the width only. */
+  .root[data-record] .hud {
+    padding: 6.5vh 7vw 0;
   }
   .root[data-record] .bottom {
     left: 7%;
@@ -1016,7 +1028,8 @@
   }
   /* A phone has no room beside the name (the clock is there): the way out takes the row
      under the place, where a wide screen has the place chips, 44 px tall. The ledger
-     moves down by that row, and only while the row is drawn (data-exit on the frame). */
+     follows the header in the frame's flow (the phone .hud above), so it moves down by
+     that row with no offset of its own, and only while the row is drawn. */
   .idRow {
     display: contents;
   }
@@ -1024,9 +1037,6 @@
     order: 1;
     justify-self: start;
     margin-top: 5px;
-  }
-  .hud[data-exit] .ledger {
-    top: 136px;
   }
   /* The console's thumb control, kept: "≡ Sources" at the bottom left, 44 px tall,
      first in the bar (the .tn-rail-fab look: bars in front, the word after). */
