@@ -360,6 +360,15 @@ obligations and are not satisfied by the licence.
   do NOT carry hidden state.
 - `lib/variants/*` — the top-left "variant" switcher (13 built-in monitor profiles in `variants/builtins.ts`).
 - `lib/i18n/*` — EN/ES/FR catalog + store.
+- **Vehicle tracking on live video** (2026-10-30): a "Track vehicles" switch on `/camera/[id]`
+  and in `CameraDetail`, never on camera-wall tiles (`CameraVideo`'s `tracking` prop).
+  YOLO11n-seg (AGPL-3.0, `public/models/`) runs in a worker through onnxruntime-web, which
+  `scripts/copy-ort.mjs` copies into the gitignored `public/ort/` on predev/prebuild; the
+  tracker (`lib/vision/tracker.ts`, pure, tested) gives each vehicle an ID. Two rules are
+  not style preferences: nothing leaves the browser, and a weak box is shown only once it
+  has MOVED (signs and logos score as trucks on every frame). The counts are what the tab
+  followed, never a traffic count. Write-up and measurements: `docs/VEHICLE_TRACKING.md`.
+  Its e2e spec needs Google Chrome (Playwright's Chromium has no H.264).
 - **Camera-tile conditions** — `lib/console/widgets/camslot.conditions.ts` (pure: what may be
   SAID), `camslot.provenance.ts` (pure: what may be SHOWN as the basis), `camslot.overlay.tsx`
   (the corner scrim), `camslot.conditions.store.ts` (one board-wide weather subscription).
