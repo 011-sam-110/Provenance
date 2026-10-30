@@ -21,6 +21,8 @@ import type { WorldObject } from "@/lib/world";
 import { areaSummary, inspectorStore, useInspector } from "@/lib/shell/inspector";
 import { mapViewStore } from "@/lib/mapView";
 import { overlay } from "@/lib/overlay";
+import { useActivePreset } from "@/lib/console/activePreset";
+import { listPresets } from "@/lib/console/presets";
 
 const CARD_STYLE: CSSProperties = {
   padding: "10px",
@@ -68,6 +70,10 @@ export default function AreaDetail({ object }: { object: WorldObject }) {
     if (document.activeElement?.getAttribute("data-tn-area-label") === area.id) return;
     setDraft(area.label);
   }, [area]);
+
+  // What the Sources bar calls the whole-map context: the open view's name.
+  const activeView = useActivePreset();
+  const viewName = listPresets().find((p) => p.id === activeView)?.title ?? "World";
 
   if (!area) {
     return (
@@ -148,7 +154,7 @@ export default function AreaDetail({ object }: { object: WorldObject }) {
           }}
           onClick={() => inspectorStore.edit(editing ? null : area.id)}
         >
-          {editing ? "Editing this area — switch back to World" : "Edit this area's sources"}
+          {editing ? `Editing this area — switch back to ${viewName}` : "Edit this area's sources"}
         </button>
         <button
           type="button"

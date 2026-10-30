@@ -20,6 +20,7 @@
 // map state bootstrap restored.
 
 import { applyPreset, presetById, DEFAULT_PRESET_ID } from "@/lib/console/presets";
+import { activePresetStore } from "@/lib/console/activePreset";
 import { decodeLayout } from "@/lib/console/share";
 import { shellLayoutStore } from "@/lib/console/store";
 import { signalsStore, type SignalState } from "@/lib/signals/store";
@@ -32,6 +33,12 @@ export interface BootSeedInput {
   preset: string | null;
   /** True when `preset` names a board that exists. */
   presetKnown: boolean;
+  /**
+   * The board the browser opened on (saved by the last visit), or null. A `?preset=` that
+   * names THIS board needs nothing applied: variantStore.bootstrap has already put that
+   * view's own sources back, and the link's `?sig=` on top of them.
+   */
+  activeBoard: string | null;
   /** Widgets on the board after shellLayoutStore.hydrate(). */
   widgetCount: number;
   /** No saved variant state and no saved active board: this browser has never booted the console. */
@@ -66,8 +73,11 @@ export function planBootSeed(input: BootSeedInput): BootSeedPlan {
   // VALIDATED AGAINST THE REGISTRY, never applied as given: applyPreset on an unknown
   // id would be a silent no-op. An unrecognised id falls through to the first-run seed.
   let board: BootBoard = { kind: "none" };
-  if (input.preset && input.presetKnown) board = { kind: "preset", id: input.preset };
-  else if (input.firstRun && input.widgetCount === 0) board = { kind: "preset", id: DEFAULT_PRESET_ID };
+  if (input.preset && input.presetKnown) {
+    // Applying the template of the board that is already open would replace the sources
+    // bootstrap restored (the view's own, or the link's) with the board's defaults.
+    if (input.preset !== input.activeBoard) board = { kind: "preset", id: input.preset };
+  } else if (input.firstRun && input.widgetCount === 0) board = { kind: "preset", id: DEFAULT_PRESET_ID };
   const reassertSig = board.kind === "preset" && input.sig ? input.sig : null;
   return { board, reassertSig };
 }
@@ -87,6 +97,7 @@ export function seedBoard(params: URLSearchParams, firstRun: boolean): void {
     c: params.get("c"),
     preset: presetParam,
     presetKnown: Boolean(presetParam && presetById(presetParam)),
+    activeBoard: activePresetStore.get(),
     widgetCount: shellLayoutStore.get().widgets.length,
     firstRun,
     sig: decodeViewState(params).sig,

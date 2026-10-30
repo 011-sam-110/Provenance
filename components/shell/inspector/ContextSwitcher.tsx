@@ -46,6 +46,8 @@ import { areaSummary, editingArea, inspectorStore, useInspector } from "@/lib/sh
 import { clearAoi } from "@/lib/map/aoi";
 import { useScope } from "@/lib/shell/scope";
 import { clearAreaLabel, needsClearArea } from "@/lib/shell/clearArea";
+import { useActivePreset } from "@/lib/console/activePreset";
+import { listPresets } from "@/lib/console/presets";
 
 /**
  * The ✕, drawn rather than typed.
@@ -76,6 +78,10 @@ export default function ContextSwitcher() {
   const state = useInspector();
   const area = editingArea(state);
   const scope = useScope();
+  // The whole-map context is the OPEN VIEW's sources, so the bar names it: "Globe",
+  // "Streets", "News" or a saved board's own name. "World" only if no board is open.
+  const activeView = useActivePreset();
+  const viewName = listPresets().find((p) => p.id === activeView)?.title ?? "World";
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -162,11 +168,11 @@ export default function ContextSwitcher() {
           // The accessible name states the EFFECT, not the state. "World" alone read
           // out is a place; what the user needs to know before touching a toggle is
           // where the toggle will land.
-          aria-label={`Editing ${area ? area.label : "World"}. Change which context the sources below apply to.`}
+          aria-label={`Editing ${area ? area.label : viewName}. Change which context the sources below apply to.`}
         >
           <span className="tn-ctxbar-glyph" aria-hidden>{area ? "▣" : "⌂"}</span>
           <span className="tn-ctxbar-lead" aria-hidden>Editing</span>
-          <span className="tn-ctxbar-name">{area ? area.label : "World"}</span>
+          <span className="tn-ctxbar-name">{area ? area.label : viewName}</span>
           <span className="tn-ctxbar-caret" aria-hidden>▾</span>
         </button>
 
@@ -181,8 +187,8 @@ export default function ContextSwitcher() {
             type="button"
             className="tn-ctxbar-clear"
             onClick={clear}
-            aria-label={clearAreaLabel(area ? area.label : null)}
-            title={clearAreaLabel(area ? area.label : null)}
+            aria-label={clearAreaLabel(area ? area.label : null, viewName)}
+            title={clearAreaLabel(area ? area.label : null, viewName)}
           >
             <ClearGlyph />
           </button>
@@ -200,8 +206,8 @@ export default function ContextSwitcher() {
           >
             <span className="tn-ctxbar-glyph" aria-hidden>⌂</span>
             <span className="tn-insp-main">
-              <span className="tn-insp-label">World</span>
-              <span className="tn-insp-sub">Draws everywhere</span>
+              <span className="tn-insp-label">{viewName}</span>
+              <span className="tn-insp-sub">Whole map</span>
             </span>
           </button>
 
@@ -239,8 +245,8 @@ export default function ContextSwitcher() {
               question it answers — "have I just turned the globe off?" — is the exact
               report that produced the model. */}
           <p className="tn-ctxbar-foot">
-            Every area draws at once. Switching only changes where the toggles below
-            are written.
+            Every area draws at once, on every view. Switching only changes where the
+            toggles below are written.
           </p>
         </div>
       ) : null}

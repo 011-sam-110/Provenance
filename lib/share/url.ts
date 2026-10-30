@@ -32,6 +32,13 @@ import { MAP_SIGNALS } from "@/lib/signals/registry";
 import { expandRetiredSignalIds } from "@/lib/layerAliases";
 
 export interface ViewState {
+  /**
+   * The view (board) the link was copied from: "overview" (Globe), "streets", "news".
+   * WRITTEN only; decodeViewState leaves it to the boot step, which checks it against
+   * the board registry (this file must not import that). A saved board's id is never
+   * written, because it means nothing in another browser.
+   */
+  preset?: string;
   lat?: number;
   lon?: number;
   zoom?: number;
@@ -55,6 +62,7 @@ const VALID_BASEMAPS = new Set<string>(Object.keys(BASEMAPS));
 // MAP_SIGNALS: a shared ?sig= URL may only turn on things that are actually layers.
 const VALID_SIGNALS = new Set<string>(MAP_SIGNALS.map((s) => s.id));
 const SIG_MAX = 40;
+const PRESET_SLUG = /^[a-z0-9-]{1,32}$/;
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
@@ -74,6 +82,11 @@ function num(raw: string | null): number | null {
 /** Serialise a view state to a query string (no leading "?"). Absent keys are omitted. */
 export function encodeViewState(state: ViewState): string {
   const p = new URLSearchParams();
+  // First, so the address reads as "this view, here". A plain slug only, never a saved
+  // board's `custom-` id.
+  if (state.preset && PRESET_SLUG.test(state.preset) && !state.preset.startsWith("custom-")) {
+    p.set("preset", state.preset);
+  }
   if (state.lat != null && Number.isFinite(state.lat)) {
     p.set("lat", String(round(clamp(state.lat, -LAT_MAX, LAT_MAX), 5)));
   }

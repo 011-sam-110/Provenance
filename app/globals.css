@@ -7930,6 +7930,76 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
    .test.ts guards exactly that). It only needs to be smaller than the label. */
 .tn-ctxbar-caret { color: var(--tn-text-muted); flex: 0 0 auto; font-size: var(--tnx-fs-sm); }
 
+/* ── "Use same sources from <view>" — the button at the top of Sources, and the Undo ──
+   note that takes its place once it has been used.
+   See components/shell/sources/SameSourcesButton.tsx and lib/console/viewSources.ts.
+
+   THE BUTTON IS THE ACCENT FILL ON PURPOSE. It is the one thing in this pane that
+   changes many switches at once, it appears for a few moments after a switch, and Leon
+   asked for it to be "big and obvious"; the accent with its on-accent text is
+   9.04:1 in the light skin and 11.33:1 in the dark one. Tokens only, so the dark skin
+   needs nothing of its own.
+
+   THE NOTE KEEPS THE BUTTON'S HEIGHT (56px + the same 10px below) so the list under it
+   does not jump when the one replaces the other. The note itself is the console's
+   shared `.tn-undo` (below, beside the Streets rules); only its placement and its time
+   line are set here. */
+.tn-terminal .tn-same-wrap { display: flex; gap: 6px; margin: 0 0 10px; }
+@media (prefers-reduced-motion: no-preference) {
+  .tn-terminal .tn-same-wrap { animation: tn-same-in 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+}
+@keyframes tn-same-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.tn-terminal .tn-same {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 11px;
+  min-height: 56px; padding: 9px 12px;
+  border: 0; border-radius: var(--tnx-r-sm);
+  background: var(--tn-accent); color: var(--tnx-on-accent);
+  font: inherit; text-align: left; cursor: pointer;
+  box-shadow: var(--tn-shadow-sm);
+}
+.tn-terminal .tn-same:hover { background: color-mix(in srgb, var(--tn-accent) 90%, var(--tnx-on-accent)); }
+.tn-terminal .tn-same:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-terminal .tn-same-glyph { flex: 0 0 auto; display: inline-flex; }
+.tn-terminal .tn-same-glyph svg { width: 20px; height: 20px; }
+.tn-terminal .tn-same-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tn-terminal .tn-same-title { font-size: calc(var(--tnx-fs) + 2px); font-weight: 700; line-height: 1.25; }
+.tn-terminal .tn-same-sub {
+  font-size: var(--tnx-fs-sm); opacity: 0.86;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tn-terminal .tn-same-x {
+  flex: 0 0 40px; min-height: 56px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0; border-radius: var(--tnx-r-sm);
+  border: 1px solid var(--tn-srx-edge);
+  background: var(--tn-surface-solid);
+  color: var(--tn-text-muted); cursor: pointer;
+}
+.tn-terminal .tn-same-x svg { width: 16px; height: 16px; }
+.tn-terminal .tn-same-x:hover { color: var(--tn-down); border-color: var(--tn-down); }
+.tn-terminal .tn-same-x:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+/* The note, in the button's place. */
+.tn-terminal .tn-same-slot .tn-undo { min-height: 56px; margin: 0 0 10px; }
+.tn-terminal .tn-same-slot .tn-undo-msg { flex: 1; font-weight: 600; }
+/* The shared note's time line: 2px along its bottom edge, draining over --tn-undo-ms
+   (UndoNote sets it from its `ms`), stopped with the timer by [data-paused], and not
+   drawn at all when motion is reduced (the timer itself still runs). */
+.tn-terminal .tn-undo { position: relative; overflow: hidden; }
+.tn-terminal .tn-undo-time {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--tn-accent); transform-origin: left;
+  animation: tn-undo-drain var(--tn-undo-ms, 6000ms) linear forwards;
+}
+.tn-terminal .tn-undo[data-paused] .tn-undo-time { animation-play-state: paused; }
+@keyframes tn-undo-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .tn-terminal .tn-undo-time { display: none; } }
+@media (max-width: 900px) {
+  /* The title fits one line in the phone sheet without the glyph (measured at 390). */
+  .tn-terminal .tn-same-glyph { display: none; }
+  .tn-terminal .tn-same-x { flex-basis: 44px; }
+}
+
 /* ── THE CLEAR-AREA ✕ — the only way out of a persisted filter ────────────────
    See components/shell/inspector/ContextSwitcher.tsx and lib/shell/clearArea.ts
    for why this control exists at all. What matters here is that it is VISIBLE and
@@ -8238,6 +8308,39 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-streets-prompt-b:hover{border-color:var(--tn-accent);}
 .tn-streets-prompt-b:focus-visible{outline:2px solid var(--tn-accent);outline-offset:2px;}
+
+/* ── The console's undo note (shared: Streets "New area" and Sources "Use same sources",
+   agreed 2026-10-29). Same face as the Sources pane's context bar: panel surface, control
+   edge, 3px accent left edge. --tn-srx-edge is set HERE because the global one exists only
+   inside .tn-rail, and this note also floats over the map. */
+.tn-terminal .tn-undo{
+  --tn-srx-edge: rgba(38, 43, 21, 0.5);
+  box-sizing:border-box;max-width:100%;
+  display:flex;align-items:center;gap:4px;min-height:40px;
+  padding:4px 4px 4px 12px;border-radius:var(--tnx-r-sm);
+  font-size:var(--tnx-fs-md);color:var(--tn-text);
+  background:var(--tn-surface-solid);
+  border:1px solid var(--tn-srx-edge);border-left:3px solid var(--tn-accent);
+  box-shadow:var(--tn-shadow-sm);
+}
+:root[data-tnx-skin="dark"] .tn-terminal .tn-undo{ --tn-srx-edge: rgba(236, 238, 228, 0.38); }
+.tn-terminal .tn-undo-msg{min-width:0;}
+.tn-terminal .tn-undo-act{
+  font:inherit;font-weight:700;color:var(--tn-accent);background:none;border:0;
+  border-radius:var(--tnx-r-sm);padding:6px 8px;cursor:pointer;white-space:nowrap;
+}
+.tn-terminal .tn-undo-act:hover{background:var(--tn-accent-soft);}
+.tn-terminal .tn-undo-x{
+  font:inherit;line-height:1;color:var(--tn-text-muted);background:none;border:0;
+  border-radius:var(--tnx-r-sm);width:28px;height:28px;flex:none;cursor:pointer;
+}
+.tn-terminal .tn-undo-x:hover{color:var(--tn-text);background:var(--tn-accent-soft);}
+.tn-terminal .tn-undo-act:focus-visible,
+.tn-terminal .tn-undo-x:focus-visible{outline:2px solid var(--tn-accent);outline-offset:1px;}
+@media (max-width:900px){
+  .tn-terminal .tn-undo-act{min-height:44px;}
+  .tn-terminal .tn-undo-x{width:44px;height:44px;}
+}
 
 /* ── "Alert me" — the area-rule composer ──────────────────────────────────────
    SAME BOX AS THE PLACEHOLDER IT REPLACED (10px radius, the solid

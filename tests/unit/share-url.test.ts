@@ -83,3 +83,31 @@ test("over-long obj ids are rejected", () => {
   expect(encodeViewState({ obj: longId })).toBe("");
   expect(rt(`obj=${longId}`).obj).toBeUndefined();
 });
+
+// A link carries the VIEW it was copied from, as `preset=<board id>`. The codec stays
+// pure: it writes the id when it is a plain slug and never reads it back, because the
+// boot step checks it against the registry (lib/console/bootSeed.ts), which this file
+// must not import.
+test("preset is written first, for a plain built-in board id", () => {
+  expect(encodeViewState({ preset: "streets", lat: 1, lon: 2 })).toBe("preset=streets&lat=1&lon=2");
+  expect(encodeViewState({ preset: "overview" })).toBe("preset=overview");
+  expect(encodeViewState({ preset: "news", basemap: "topo" })).toBe("preset=news&base=topo");
+});
+
+test("a saved board's id is never written: it means nothing in another browser", () => {
+  expect(encodeViewState({ preset: "custom-m3x9a", lat: 1 })).toBe("lat=1");
+});
+
+test("a preset that is not a short plain slug is dropped", () => {
+  expect(encodeViewState({ preset: "Streets" })).toBe("");
+  expect(encodeViewState({ preset: "a b" })).toBe("");
+  expect(encodeViewState({ preset: "x".repeat(33) })).toBe("");
+  expect(encodeViewState({ preset: "" })).toBe("");
+  expect(encodeViewState({ preset: "a&b=c" })).toBe("");
+});
+
+test("decode leaves preset alone and a preset link does not disturb the rest", () => {
+  const out = rt("preset=streets&lat=3&lon=4");
+  expect(out.preset).toBeUndefined();
+  expect(out).toMatchObject({ lat: 3, lon: 4 });
+});

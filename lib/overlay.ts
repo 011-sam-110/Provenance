@@ -51,6 +51,22 @@ export const overlay = {
     // points the tab, and for the same reason: one opener, every door.
     inspectorRailStore.close();
   },
+  /**
+   * Put a selection back WITHOUT opening anything: set the state and tell subscribers,
+   * and that is all.
+   *
+   * It is for a view being re-entered (lib/console/viewMemory.ts), where the selection
+   * was made earlier and the rail's tab, open tool and presence are put back by the same
+   * caller. open() would do the wrong thing on every count: it sends an `object_opened`
+   * analytics event for something nobody just clicked, flips the rail to Inspector,
+   * opens the rail and closes the tool. Passing null clears the selection without
+   * touching the tab either, unlike close().
+   */
+  restore(object: WorldObject | null) {
+    if (state.object === object) return;
+    state = { object };
+    emit();
+  },
   close() {
     if (state.object === null) return;
     state = { object: null };
