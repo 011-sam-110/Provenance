@@ -8937,3 +8937,91 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   .tn-loss-table tbody th { display: block; }
 }
 /* ── end Vehicle losses ── */
+
+/* ── War news (lib/console/widgets/war/war-news.tsx) ───────────────────────────
+   The card and expanded view of the `war-news` layer. Tokens only, except the three
+   side tints, which are the war palette's own (Ukrainian blue, Russian red, the
+   console's neutral for independent) and have a dark-skin pair below. The side is
+   always the badge's TEXT (UA, RU, IND); the tint is a second cue, never the only one. */
+.tn-wn { display: grid; gap: 6px; padding: 8px var(--tn-row-px) 10px; font-size: var(--tnx-fs-sm); color: var(--tn-text); }
+.tn-wn-visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.tn-wn-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.tn-wn-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tn-wn-seg button,
+.tn-wn-zone select,
+.tn-wn-more,
+.tn-wn-showmore {
+  min-height: 26px; padding: 2px 9px; font: inherit; font-size: var(--tnx-fs-xs); font-weight: 550;
+  color: var(--tn-text-muted); background: var(--tn-surface-solid);
+  border: 1px solid var(--tn-border-strong); border-radius: 999px; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.tn-wn-seg button:hover, .tn-wn-zone select:hover, .tn-wn-more:hover, .tn-wn-showmore:hover { color: var(--tn-text); border-color: var(--tn-text-faint); }
+.tn-wn-seg button[aria-pressed="true"] { color: var(--tn-surface-solid); background: var(--tn-text); border-color: var(--tn-text); }
+.tn-wn-seg button:focus-visible, .tn-wn-zone select:focus-visible, .tn-wn-more:focus-visible,
+.tn-wn-showmore:focus-visible, .tn-wn-search input:focus-visible,
+.tn-wn a:focus-visible, .tn-wn-detail a:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
+.tn-wn-n { margin-left: 5px; font-weight: 450; opacity: .78; }
+.tn-wn-zone { margin-left: auto; }
+.tn-wn-zone select { padding-right: 6px; }
+@media (pointer: coarse) {
+  .tn-wn-seg button, .tn-wn-zone select, .tn-wn-more, .tn-wn-showmore { min-height: 36px; }
+}
+
+.tn-wn-badge {
+  display: inline-block; flex: none; min-width: 26px; padding: 1px 5px; border-radius: 4px;
+  font-size: calc(var(--tnx-fs-xs) - 1px); font-weight: 650; letter-spacing: .02em; line-height: 1.5; text-align: center;
+  color: var(--tn-text-muted); background: var(--tn-chip-bg);
+}
+.tn-wn-badge.is-ua { color: #1f4f8a; background: #e1ebf6; }
+.tn-wn-badge.is-ru { color: #7a1f14; background: #f6e3e0; }
+:root[data-tnx-skin="dark"] .tn-wn-badge { background: rgba(236, 238, 228, 0.08); }
+:root[data-tnx-skin="dark"] .tn-wn-badge.is-ua { color: #a9c8ef; background: rgba(110, 160, 220, 0.16); }
+:root[data-tnx-skin="dark"] .tn-wn-badge.is-ru { color: #f2ad9f; background: rgba(220, 110, 95, 0.16); }
+
+.tn-wn-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.tn-wn-list li {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline;
+  padding: 6px 0; border-top: 1px solid var(--tn-border);
+}
+.tn-wn-title {
+  color: var(--tn-text); text-decoration: none; line-height: 1.35; font-size: var(--tnx-fs-sm);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tn-wn-title:hover { text-decoration: underline; text-underline-offset: 2px; }
+.tn-wn-age { font-size: var(--tnx-fs-xs); color: var(--tn-text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-wn-by { grid-column: 2 / -1; display: block; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-wn-foot { margin: 0; font-size: var(--tnx-fs-xs); line-height: 1.4; color: var(--tn-text-muted); }
+.tn-wn-muted { color: var(--tn-text-muted); }
+/* A post the model has not checked says so, in words, in the warning ink. */
+.tn-wn-flag { display: block; color: var(--tn-lagging-ink); }
+
+/* Expanded view */
+.tn-wn-detail { gap: 14px; }
+.tn-wn-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; }
+.tn-wn-bar .tn-wn-filters { flex: 1 1 380px; }
+.tn-wn-search { display: grid; gap: 3px; flex: 1 1 240px; font-size: var(--tnx-fs-xs); color: var(--tn-text-muted); }
+.tn-wn-search input {
+  font: inherit; font-size: var(--tnx-fs); color: var(--tn-text); background: var(--tn-surface-2);
+  border: 1px solid var(--tn-border-strong); border-radius: 8px; padding: 5px 10px; min-height: 30px;
+}
+.tn-wn-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; }
+@media (max-width: 900px) { .tn-wn-panels { grid-template-columns: minmax(0, 1fr); } }
+.tn-wn-outlets td { vertical-align: top; }
+.tn-wn-outlets a, .tn-wn-table a.tn-wn-title { color: var(--tn-text); }
+.tn-wn-why { display: block; margin-top: 1px; font-size: var(--tnx-fs-xs); line-height: 1.35; color: var(--tn-text-muted); }
+.tn-wn-why.is-warn { color: var(--tn-lagging-ink); }
+.tn-wn-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tn-wn-table td { vertical-align: top; }
+.tn-wn-table .tn-sd-row { cursor: default; }
+.tn-wn-table .tn-wn-title { -webkit-line-clamp: 3; font-size: var(--tnx-fs); }
+.tn-wn-table .tn-wn-by { margin-top: 2px; }
+.tn-wn-place { min-width: 6.5em; max-width: 220px; font-size: var(--tnx-fs-sm); color: var(--tn-text-muted); }
+.tn-wn-more { margin-top: 5px; min-height: 22px; padding: 1px 8px; font-size: var(--tnx-fs-xs); }
+.tn-wn-text { margin: 4px 0; max-width: 75ch; font-size: var(--tnx-fs-sm); line-height: 1.5; color: var(--tn-text); }
+.tn-wn-original { color: var(--tn-text-muted); }
+.tn-wn-showmore { justify-self: start; }
+/* ── end war news ── */
