@@ -129,6 +129,7 @@ import { CAMERA_ROAD_MAX, cameraRoadParam, cameraRoadTileWords, type CameraRoad 
 import { CameraIcon } from "./cameraIcon";
 import { Tag, tagSize } from "./tag";
 import DetailPanel, { type AlsoHere, type DetailSubject } from "./DetailPanel";
+import { VESSEL_LAYER_ID, createVesselLayer, type VesselLayerHandle, type VesselLayerState } from "./vesselLayer";
 
 export interface OverlayReport {
   rows: LedgerRow[];
@@ -434,6 +435,11 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const placeNowRef = useRef<(() => void) | null>(null);
   const loaders = useRef<{ ships?: () => void; planes?: () => void; streets?: () => void }>({});
   const prevHidden = useRef(hidden);
+  // The vessels as 3D models (vesselLayer.ts): one layer per map, made when the first vessels
+  // land. While it is "ready" it draws them and the chevron layer is hidden; "failed" removes it
+  // and the chevrons stay.
+  const modelLayer = useRef<VesselLayerHandle | null>(null);
+  const modelState = useRef<VesselLayerState>("loading");
 
   /**
    * Hide or show the layers of the kinds the Sources tray has switched off. Layers that do
@@ -452,7 +458,11 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       map.setFilter(id, (live && still ? null : ["==", ["get", "live"], live]) as maplibregl.FilterSpecification | null);
       show(id, live || still);
     }
-    for (const id of [LYR.ship, LYR.ahead]) show(id, !hid.has("ships"));
+    // The Ships switch hides the vessels' models with their chevrons and one-minute lines.
+    const modelsOn = modelState.current === "ready";
+    show(LYR.ship, !hid.has("ships") && !modelsOn);
+    show(LYR.ahead, !hid.has("ships"));
+    show(VESSEL_LAYER_ID, !hid.has("ships") && modelsOn);
     show(LYR.plane, !hid.has("planes"));
     show(LYR.streetWorks, !hid.has("works"));
     show(LYR.streetIncident, !hid.has("incidents"));
@@ -643,6 +653,31 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
             geometry: { type: "LineString", coordinates: [[v.lon, v.lat], v.ahead!] },
           })),
       });
+      // The models stand over the chevrons: made once per map, put back on each new style. A
+      // failed layer is not made again, and its chevrons are what is drawn.
+      if (!modelLayer.current && modelState.current !== "failed") {
+        const handle = createVesselLayer(map);
+        handle.onState((next) => {
+          modelState.current = next;
+          // A style swap: ensureLayers puts the layer back and applies the hide list again.
+          if (next === "loading") return;
+          // After the current frame: the layer can give up in the middle of MapLibre's render
+          // (the slow-draw guard), and a layer is not removed from under a render.
+          queueMicrotask(() => {
+            try {
+              if (next === "failed" && map.getLayer(VESSEL_LAYER_ID)) map.removeLayer(VESSEL_LAYER_ID);
+              applyHidden();
+              // `ready` waits for the models, so place again now that they are in (or gone).
+              placeNowRef.current?.();
+            } catch {
+              /* the map is already gone */
+            }
+          });
+        });
+        modelLayer.current = handle;
+      }
+      if (modelLayer.current && modelState.current !== "failed" && !map.getLayer(VESSEL_LAYER_ID)) map.addLayer(modelLayer.current.layer);
+      modelLayer.current?.setVessels(hiddenRef.current.has("ships") ? [] : ships);
     }
 
     if (s.planes && !map.getSource(SRC.planes)) {
@@ -767,6 +802,22 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   useEffect(() => {
     ensureLayers.current();
   }, [map, styleEpoch]);
+
+  // This map goes (the page leaves): the models go with it.
+  useEffect(
+    () => () => {
+      const handle = modelLayer.current;
+      modelLayer.current = null;
+      modelState.current = "loading";
+      try {
+        if (map.getLayer(VESSEL_LAYER_ID)) map.removeLayer(VESSEL_LAYER_ID);
+      } catch {
+        /* the map is already gone */
+      }
+      handle?.dispose();
+    },
+    [map],
+  );
 
   // The switch changed: every card and icon goes, and the marks are placed again.
   const shownPreviews = useRef(previews);
@@ -1116,9 +1167,14 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         tag.show(map, item.lngLat, t.flip);
       }
 
+      // The models are in, or gave up, before the first frame counts as drawn, so a recording's
+      // first frame has its boats. With no vessels there is nothing to wait for.
+      const modelsSettled = hid.has("ships") || !s.ships?.length || modelState.current !== "loading";
+      modelLayer.current?.setVessels(hid.has("ships") ? [] : s.ships ?? []);
       ready =
         s.cams != null &&
         (hid.has("ships") || s.ships != null) &&
+        modelsSettled &&
         (hid.has("planes") || s.planes != null) &&
         (!london || allRoadsHidden(hid) || s.streets != null);
       report();
