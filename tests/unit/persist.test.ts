@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { loadPersisted, savePersisted } from "@/lib/shell/persist";
+import { loadPersisted, removePersisted, savePersisted } from "@/lib/shell/persist";
 
 // A minimal in-memory Storage shim so the round-trip + version guard are testable
 // in the node vitest environment (there is no real `window.localStorage`).
@@ -40,4 +40,27 @@ test("no-ops silently when storage is unavailable", () => {
   // No window in node, no injected storage → load returns null, save does nothing.
   expect(() => savePersisted("tn.x", 1, { a: 1 })).not.toThrow();
   expect(loadPersisted("tn.x", 1)).toBeNull();
+});
+
+test("removePersisted deletes the key, and leaves its neighbours alone", () => {
+  const s = fakeStorage();
+  savePersisted("tn.test", 1, { a: 1 }, s);
+  savePersisted("tn.other", 1, { b: 2 }, s);
+  removePersisted("tn.test", s);
+  expect(loadPersisted("tn.test", 1, s)).toBeNull();
+  expect(s._map.has("tn.test")).toBe(false);
+  expect(loadPersisted("tn.other", 1, s)).toEqual({ b: 2 });
+});
+
+test("removePersisted is a no-op without storage and never throws", () => {
+  // No `window` in the node environment and no storage handed in.
+  expect(() => removePersisted("tn.absent")).not.toThrow();
+  const throwing = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {
+      throw new Error("denied");
+    },
+  };
+  expect(() => removePersisted("tn.test", throwing)).not.toThrow();
 });

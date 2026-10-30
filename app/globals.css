@@ -5863,24 +5863,34 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    up to nine) so anything under it has to be laid out by the stack rather than
    pinned to a guessed offset. `pointer-events:none` on the column with `auto` back
    on each child keeps the gap between them clickable map. */
-/* Clock bar. WorldClock's root is an absolutely-positioned rounded glass ribbon;
-   flatten it into this frame rather than forking the component (one clock timer). */
-/* THE CLOCK IS A PILL NOW, NOT A BAR.
-   It was a full-width translucent strip glued to the bottom edge of the stage,
-   which cost 24px of map across the whole width to show seven readings that
-   occupy about a third of it — and it cut the map card's bottom corners off,
-   because a square strip cannot sit inside a 14px radius.
+/* ── THE MAP CLOCK ───────────────────────────────────────────────────────────
+   components/console/WorldClock.tsx (the pill, the gear) and ClockPicker.tsx (the
+   panel that opens upward from the gear). Everything here is --tnx-* tokens, so the
+   dark skin needs nothing of its own.
 
-   The frame keeps its job (centring) and gives up its paint: the bar is now an
-   invisible positioning row and the CHROME lives on the clock itself. It floats
-   10px clear of the stage floor so the map runs underneath it, which is what
-   makes it read as something resting on the map rather than a band taken out of
-   it.
+   A PILL, NOT A BAR. It was a full-width translucent strip glued to the stage floor,
+   which cost 24px of map across the whole width to show seven readings that occupy
+   about a third of it, and it cut the map card's bottom corners off. The foot row
+   keeps its job (centring) and gives up its paint: it is an invisible positioning
+   row, and the CHROME lives on the pill. The pill floats 10px clear of the stage
+   floor so the map runs underneath it. `pointer-events` is `none` on the row and
+   comes back on the pill, so the map either side of it stays draggable.
 
-   `pointer-events` stays `none` on the row and comes back on the pill, so the
-   map either side of it is still draggable — the same reasoning the rail used
-   before it became a solid toolbar, and here it still applies because the row
-   really is mostly empty. */
+   THE PILL IS 26px TALL AND 10px OFF THE FLOOR IN EVERY LABEL TIER AND EVERY STATE.
+   The label shortens as the map narrows (LHR · United Kingdom, LHR · UK, LHR) and
+   clocks past the end hide behind the gear's "+N", but the height never changes.
+   Which tier fits is measured (WorldClock.tsx, lib/console/clockZones.ts), not
+   guessed in CSS, because the widths decide it.
+
+   --tnx-stage-foot-clear IS PUBLISHED HERE: the room the clock takes at the foot of
+   the stage, 10px offset + 26px pill + 10px air. Things that sit above the clock read
+   it with a fallback of their own (the map's bottom-right controls and the Streets
+   prompt card: console-map-overlays and streets-area), so the pill itself reserves
+   nothing on the right. It is 0 wherever the bar is hidden: in the <=900px pass and
+   in the narrow-stage container query below. A container query cannot restyle its own
+   container, so the narrow-stage 0 is declared on the stage's children. */
+.tn-terminal .tn-cw-stage { --tnx-stage-foot-clear: 46px; }
+
 .tn-terminal .tnx-stage-foot {
   position: absolute; left: 0; right: 0; bottom: 10px; height: auto; z-index: 6;
   display: flex; align-items: center; justify-content: center; padding: 0 8px;
@@ -5888,37 +5898,220 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   backdrop-filter: none; -webkit-backdrop-filter: none;
   pointer-events: none;
 }
+
+/* THE BASE `.tn-worldclock` RULE ABSOLUTELY POSITIONS THE PILL (bottom: 46px; left: 50%).
+   This rule used to set `position: static`; the gear and the picker are anchored to the
+   pill now, so it must be `relative`, and `left` and `bottom` have to go back to `auto`
+   or the pill jumps right by half the row. */
 .tn-terminal .tnx-stage-foot .tn-worldclock {
-  position: static; transform: none; display: flex;
+  position: relative; left: auto; bottom: auto; transform: none;
+  display: flex; align-items: center; box-sizing: border-box;
+  height: 26px; padding: 0 6px;
   pointer-events: auto;
-  padding: 5px 6px;
   border: 1px solid var(--tnx-line-strong);
-  /* A true pill, not --tnx-r-lg: the shape is short and wide and reads as a
-     capsule at any width, which is what stops seven times looking like a table. */
+  /* A true pill, not --tnx-r-lg: short and wide, a capsule at any width. */
   border-radius: 999px;
   background: var(--tnx-panel);
   box-shadow: var(--tnx-shadow-1);
   backdrop-filter: none; -webkit-backdrop-filter: none;
+  color: var(--tnx-ink);
 }
+
+/* One cell per clock. The cell is only the divider's anchor; the BUTTON inside carries the
+   padding, so a hover fill reaches the dividers either side and the click target is the
+   whole cell. */
 .tn-terminal .tnx-stage-foot .tn-wc-cell {
-  flex-direction: row; align-items: baseline; gap: 5px; padding: 0 9px; min-width: 0;
+  flex: none; flex-direction: row; align-items: center; gap: 0; padding: 0; min-width: 0;
 }
 .tn-terminal .tnx-stage-foot .tn-wc-cell + .tn-wc-cell::before { background: var(--tnx-line); }
-.tn-terminal .tnx-stage-foot .tn-wc-glyph { display: none; }
-.tn-terminal .tnx-stage-foot .tn-wc-city {
-  order: -1; font-size: var(--tnx-fs-xs); font-weight: 400; letter-spacing: 0.1em; color: var(--tnx-ink-faint);
+
+/* A clock is a button that flies the map to its airport. 20px tall inside the 24px the
+   pill leaves, so its hover fill sits 2px clear of the pill's edge all round. */
+.tn-terminal .tnx-stage-foot .tn-wc-go {
+  display: inline-flex; align-items: baseline; gap: 5px;
+  box-sizing: border-box; margin: 0; padding: 3px 9px;
+  border: 0; border-radius: 999px; background: none;
+  font: inherit; line-height: 14px; color: inherit; text-align: left;
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
 }
+.tn-terminal .tnx-stage-foot .tn-wc-city {
+  font-size: var(--tnx-fs-xs); font-weight: 400; letter-spacing: 0.1em; line-height: 14px; color: var(--tnx-ink-faint);
+}
+.tn-terminal .tnx-stage-foot .tn-wc-sep,
+.tn-terminal .tnx-stage-foot .tn-wc-country {
+  font-size: var(--tnx-fs-xs); font-weight: 400; letter-spacing: 0; line-height: 14px; color: var(--tnx-ink-faint);
+}
+.tn-terminal .tnx-stage-foot .tn-wc-sep { margin: 0 -1px; }
 .tn-terminal .tnx-stage-foot .tn-wc-time,
 .tn-terminal .tnx-stage-foot .tn-wc-cell.is-night .tn-wc-time {
-  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0; color: var(--tnx-ink);
+  font-size: var(--tnx-fs-sm); font-weight: 700; letter-spacing: 0; line-height: 14px; color: var(--tnx-ink);
   font-variant-numeric: tabular-nums;
 }
-/* London tinted accent. POSITIONAL, and knowingly so: WorldClock renders one cell
-   per entry of its CITIES array (LA, NYC, LDN, DXB, SGP, TYO, SYD) and puts no
-   per-city hook in the DOM, so :nth-child(3) is the only handle CSS has. If that
-   array changes this tints the wrong city — cosmetic, not a lie, but fix it at
-   components/console/WorldClock.tsx rather than here. */
-.tn-terminal .tnx-stage-foot .tn-wc-cell:nth-child(3) .tn-wc-time { color: var(--tnx-accent); }
+/* London keeps its accent tint, keyed on the zone: the old rule was :nth-child(3) and tinted
+   the wrong city the moment the list changed. */
+.tn-terminal .tnx-stage-foot .tn-wc-go[data-zone="Europe/London"] .tn-wc-time { color: var(--tnx-accent); }
+
+/* Hover or keyboard focus: an 8% ink fill, and the code and country come up to full ink. */
+.tn-terminal .tnx-stage-foot .tn-wc-go:hover,
+.tn-terminal .tnx-stage-foot .tn-wc-go:focus-visible {
+  background: color-mix(in srgb, var(--tnx-ink) 8%, transparent);
+}
+.tn-terminal .tnx-stage-foot .tn-wc-go:hover .tn-wc-city,
+.tn-terminal .tnx-stage-foot .tn-wc-go:hover .tn-wc-sep,
+.tn-terminal .tnx-stage-foot .tn-wc-go:hover .tn-wc-country,
+.tn-terminal .tnx-stage-foot .tn-wc-go:focus-visible .tn-wc-city,
+.tn-terminal .tnx-stage-foot .tn-wc-go:focus-visible .tn-wc-sep,
+.tn-terminal .tnx-stage-foot .tn-wc-go:focus-visible .tn-wc-country { color: var(--tnx-ink); }
+.tn-terminal .tnx-stage-foot .tn-wc-go:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+
+/* The tooltip: placed by WorldClock's ClockTip (its `left` is set in px so it can clamp inside
+   the stage). 10px above the pill: the pill's 1px border is outside the box `bottom` measures
+   from, hence 11. */
+.tn-terminal .tnx-stage-foot .tn-wc-tip {
+  position: absolute; left: 0; bottom: calc(100% + 11px); z-index: 2;
+  display: grid; gap: 1px; padding: 6px 10px; border-radius: 8px;
+  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong); box-shadow: var(--tnx-shadow-1);
+  white-space: nowrap; text-align: left; pointer-events: none;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-tip b { font-size: var(--tnx-fs-sm); font-weight: 600; color: var(--tnx-ink); }
+.tn-terminal .tnx-stage-foot .tn-wc-tip span { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); }
+
+/* The gear and the picker hang off the pill's right end, out of the flow, so showing the gear
+   never moves a clock. 7px, not 6: `left: 100%` starts inside the pill's 1px border. The 8px
+   `::before` is a bridge over the gap so the pointer does not leave the bar on its way there. */
+.tn-terminal .tnx-stage-foot .tn-wc-more {
+  position: absolute; left: calc(100% + 7px); top: 0; bottom: 0;
+  display: flex; align-items: center;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-more::before {
+  content: ""; position: absolute; right: 100%; top: 0; bottom: 0; width: 8px;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-gear {
+  box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 26px; min-width: 26px; margin: 0; padding: 0;
+  border: 1px solid var(--tnx-line-strong); border-radius: 999px;
+  background: var(--tnx-panel); box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink-faint); font: inherit; font-size: var(--tnx-fs-xs); font-weight: 700; line-height: 1;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  opacity: 0; transition: opacity 150ms ease;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-gear svg { width: 14px; height: 14px; flex: none; }
+/* Shown while the pointer is on the bar or the gear, while anything in the bar has focus, while
+   the picker is open, and whenever clocks are hidden (+N). Hidden at rest, but still focusable:
+   focusing it is what shows it. */
+.tn-terminal .tnx-stage-foot .tn-worldclock:hover .tn-wc-gear,
+.tn-terminal .tnx-stage-foot .tn-worldclock:focus-within .tn-wc-gear,
+.tn-terminal .tnx-stage-foot .tn-wc-gear[aria-expanded="true"],
+.tn-terminal .tnx-stage-foot .tn-wc-gear[data-more] { opacity: 1; }
+.tn-terminal .tnx-stage-foot .tn-wc-gear:hover,
+.tn-terminal .tnx-stage-foot .tn-wc-gear[aria-expanded="true"],
+.tn-terminal .tnx-stage-foot .tn-wc-gear[data-more] { color: var(--tnx-ink); }
+.tn-terminal .tnx-stage-foot .tn-wc-gear[data-more] { padding: 0 8px 0 6px; }
+.tn-terminal .tnx-stage-foot .tn-wc-gear:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+/* No hover on a touch screen, so the gear is simply there. */
+@media (hover: none) { .tn-terminal .tnx-stage-foot .tn-wc-gear { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .tn-terminal .tnx-stage-foot .tn-wc-gear { transition: none; } }
+
+/* The ruler WorldClock measures to choose a tier: the three tiers of the current list,
+   rendered with the pill's own classes so the widths are exactly the pill's, and then made
+   invisible and out of flow. 0x0 with overflow hidden so it adds no scrollable area. */
+.tn-terminal .tnx-stage-foot .tn-wc-ruler {
+  position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden;
+  visibility: hidden; pointer-events: none;
+}
+.tn-terminal .tnx-stage-foot .tn-wc-measure { flex: none; width: max-content; pointer-events: none; }
+.tn-terminal .tnx-stage-foot .tn-wc-measure-gear { position: static; width: max-content; opacity: 1; transition: none; }
+
+/* The picker: opens UPWARD, its right edge on the gear's right edge, 10px above the pill. At most
+   380px, and never wider than the stage less 8px each side (100cqw is the stage: it is the
+   `tnstage` container). Its height is capped by the stage's own height, which WorldClock
+   measures into --tn-wc-stage-h; the lists inside scroll, the panel does not. */
+.tn-terminal .tnx-stage-foot .tn-wc-picker {
+  position: absolute; right: 0; bottom: calc(100% + 11px); z-index: 3;
+  box-sizing: border-box; width: min(380px, calc(100cqw - 16px));
+  max-height: calc(var(--tn-wc-stage-h, 100dvh) - 72px);
+  display: flex; flex-direction: column; gap: 10px; padding: 12px;
+  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong); border-radius: 10px;
+  box-shadow: var(--tnx-shadow-1), 0 14px 36px rgba(0, 0, 0, 0.18);
+  color: var(--tnx-ink); text-align: left; font-size: var(--tnx-fs-sm);
+}
+.tn-wc-pk-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+/* The same small-caps head the colour picker uses (.tn-insp-color-head). */
+.tn-wc-pk-title {
+  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--tnx-ink-faint);
+}
+.tn-wc-pk-count { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); font-variant-numeric: tabular-nums; }
+
+.tn-wc-pk-rows, .tn-wc-pk-results { list-style: none; }
+.tn-wc-pk-rows { margin: 0; padding: 0; }
+.tn-wc-pk-rows { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.tn-wc-pk-rows .tn-wc-pk-row + .tn-wc-pk-row { border-top: 1px solid var(--tnx-line); }
+/* One grid for both lists, so a clock reads the same whether it is yours or a result. Fixed
+   tracks, so the offsets and the times line up from row to row. */
+.tn-wc-pk-row {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) 52px 38px 26px;
+  align-items: center; column-gap: 10px; min-height: 32px; box-sizing: border-box;
+}
+.tn-wc-pk-code { font-size: var(--tnx-fs-xs); letter-spacing: 0.1em; color: var(--tnx-ink-faint); }
+.tn-wc-pk-place {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--tnx-fs-sm); color: var(--tnx-ink-faint);
+}
+.tn-wc-pk-place b { font-weight: 600; color: var(--tnx-ink); }
+.tn-wc-pk-off { font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tn-wc-pk-time { font-size: var(--tnx-fs-sm); font-weight: 700; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.tn-wc-pk-btn {
+  box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; margin: 0; padding: 0; justify-self: end;
+  font: inherit; color: var(--tnx-ink); cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tn-wc-pk-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.tn-wc-pk-x { border: 0; border-radius: 8px; background: none; color: var(--tnx-ink-faint); }
+.tn-wc-pk-x:hover:not(:disabled) { background: color-mix(in srgb, var(--tnx-ink) 8%, transparent); color: var(--tnx-ink); }
+.tn-wc-pk-plus { border: 1px solid var(--tnx-line-strong); border-radius: 7px; background: var(--tnx-panel); }
+.tn-wc-pk-plus:hover:not(:disabled) { background: color-mix(in srgb, var(--tnx-ink) 8%, transparent); }
+.tn-wc-pk-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tn-wc-pk-btn:focus-visible, .tn-wc-pk-reset:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 1px; }
+
+.tn-wc-pk-add { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
+.tn-wc-pk-label { margin-bottom: 4px; font-size: var(--tnx-fs-xs); font-weight: 600; color: var(--tnx-ink-faint); }
+.tn-wc-pk-input {
+  box-sizing: border-box; width: 100%; height: 34px; margin: 0; padding: 0 10px;
+  border: 1px solid var(--tnx-line-strong); border-radius: 8px;
+  background: var(--tnx-panel); color: var(--tnx-ink);
+  font: inherit; font-size: var(--tnx-fs-md);
+  -webkit-appearance: none; appearance: none;
+}
+.tn-wc-pk-input::placeholder { color: var(--tnx-ink-faint); opacity: 1; }
+.tn-wc-pk-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.tn-wc-pk-input:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 0; border-color: var(--tnx-accent); }
+.tn-wc-pk-note, .tn-wc-pk-empty { margin: 6px 0 0; font-size: var(--tnx-fs-xs); color: var(--tnx-ink-faint); }
+
+/* Six rows show, then the list scrolls: 6 x 32px. */
+/* The list's own padding is what the rows' negative margins spend, so the highlight can run
+   6px past the text each side without making the list scroll sideways. */
+.tn-wc-pk-results {
+  flex: 0 1 auto; min-height: 0; max-height: 192px; margin: 8px -6px 0; padding: 0 6px;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.tn-wc-pk-opt { padding: 0 6px; margin: 0 -6px; border-radius: 8px; cursor: pointer; }
+.tn-wc-pk-opt[data-active] { background: color-mix(in srgb, var(--tnx-ink) 8%, transparent); }
+.tn-wc-pk-opt[data-added] { cursor: default; }
+.tn-wc-pk-added { justify-self: end; font-size: var(--tnx-fs-xs); font-weight: 600; color: var(--tnx-ink-faint); white-space: nowrap; }
+
+.tn-wc-pk-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding-top: 10px; border-top: 1px solid var(--tnx-line);
+  font-size: var(--tnx-fs-xs);
+}
+.tn-wc-pk-reset {
+  margin: 0; padding: 0; border: 0; background: none; font: inherit; color: var(--tnx-ink);
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer; border-radius: 2px;
+}
+.tn-wc-pk-reset:disabled { color: var(--tnx-ink-faint); text-decoration: none; cursor: default; }
+.tn-wc-pk-hint { color: var(--tnx-ink-faint); }
 
 /* ════════════════════════════════════════════════════════════════════════════
    4. (the 24px footer used to be here)
@@ -6021,6 +6214,8 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
      tool column the narrow pass keeps for the same reason — see the inspector
      tool-rail block at the end of this sheet. */
   .tn-terminal .tnx-stage-foot { display: none; }
+  /* The clock is gone, so it reserves nothing (the map clock block publishes this property). */
+  .tn-terminal .tn-cw-stage { --tnx-stage-foot-clear: 0px; }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
@@ -6727,6 +6922,9 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 
 @container tnstage (max-width: 600px) {
   .tn-terminal .tnx-stage-foot { display: none; }
+  /* A container query cannot restyle its own container, so the 0 goes on the stage's children
+     (the map, the prompt card...), which is where --tnx-stage-foot-clear is read. */
+  .tn-terminal .tn-cw-stage > * { --tnx-stage-foot-clear: 0px; }
 }
 /* ── Placement picker ─────────────────────────── */
 .tn-place-back {

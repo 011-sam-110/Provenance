@@ -29,6 +29,11 @@ export interface PointView {
   lat: number;
   lon: number;
   zoom?: number;
+  /**
+   * `false` jumps to the point instead of flying (reduced motion). `undefined` flies as it
+   * always has, so every existing caller is unchanged; only the map clock sets it.
+   */
+  animate?: boolean;
 }
 
 /**

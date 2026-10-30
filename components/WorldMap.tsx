@@ -3131,6 +3131,10 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
     const map = mapRef.current;
     if (!map) return;
     const zoom = Math.max(2, Math.min(15, target.zoom ?? 11));
+    if (target.animate === false) {
+      map.jumpTo({ center: [target.lon, target.lat], zoom });
+      return;
+    }
     map.flyTo({ center: [target.lon, target.lat], zoom, duration: 1600, essential: true });
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 // The Terminal's stage chrome — what still floats OVER the map inside the stage
 // cell. It is two things now: the camera tray along the bottom of the stage, and
-// the 24px clock strip.
+// the clock pill.
 //
 // ─── THE STAGE RAIL IS GONE FROM HERE (2026-09-16) ────────────────────────────
 // This file used to mount <MapRail/> — the two icon groups on the right edge of the
@@ -21,46 +21,21 @@
 // focusInspectorSearch() in InspectorRail.tsx. StageBar no longer has an opinion
 // about search at all.
 //
-// ─── CSS THIS COMPONENT NEEDS (integrator owns app/globals.css) ───────────────
-// All scoped under .tn-terminal, using the --tnx-* token block.
+// ─── THE CLOCK'S CSS ──────────────────────────────────────────────────────────
+// `.tnx-stage-foot` is an invisible positioning row, absolutely placed 10px off the foot of
+// the stage and centring what is in it: the pill (components/console/WorldClock.tsx) with its
+// gear and picker (ClockPicker.tsx). All of it is styled in ONE block of app/globals.css, the
+// one headed "THE MAP CLOCK", under .tn-terminal and the --tnx-* tokens. Read that block, not
+// the 24px full-width ribbon this file used to describe: the bar is a 26px pill now, its
+// London tint is keyed on `data-zone="Europe/London"` and not on a position, and the label
+// shortens as the map narrows.
 //
-// CLOCK BAR (restyle of components/console/WorldClock)
-// .tnx-stage-foot       position:absolute; left:0; right:0; bottom:0; height:24px; z-index:6;
-//                       display:flex; align-items:center; justify-content:center; padding:0 8px;
-//                       background:rgba(8,11,15,.88); backdrop-filter:blur(6px);
-//                       -webkit-backdrop-filter:blur(6px); pointer-events:none;
-//   /* WorldClock's root is an absolutely-positioned rounded glass ribbon; flatten it. */
-// .tnx-stage-foot .tn-worldclock   position:static; transform:none; display:flex; padding:0;
-//                                  border:0; border-radius:0; background:none; box-shadow:none;
-//                                  backdrop-filter:none; -webkit-backdrop-filter:none;
-// .tnx-stage-foot .tn-wc-cell      flex-direction:row; align-items:baseline; gap:5px;
-//                                  padding:0 9px; min-width:0;
-// .tnx-stage-foot .tn-wc-cell + .tn-wc-cell::before { background:var(--tnx-line); }
-// .tnx-stage-foot .tn-wc-glyph     display:none;
-// .tnx-stage-foot .tn-wc-city      order:-1; font-size:9px; font-weight:400; letter-spacing:.1em;
-//                                  color:var(--tnx-ink-faint);
-// .tnx-stage-foot .tn-wc-time      font-size:11px; font-weight:700; letter-spacing:0;
-//                                  color:var(--tnx-ink); font-variant-numeric:tabular-nums;
-// .tnx-stage-foot .tn-wc-cell.is-night .tn-wc-time { color:var(--tnx-ink); }
-//   /* London tinted accent. POSITIONAL, and knowingly so: WorldClock renders one cell per
-//      entry of its CITIES array and puts no per-city hook in the DOM, so index 2 (LA, NYC,
-//      →LDN) is the only handle CSS has. If CITIES ever changes, this tints the wrong city —
-//      cosmetic, not a lie, but fix it here (components/console/WorldClock.tsx:14-22). */
-// .tnx-stage-foot .tn-wc-cell:nth-child(3) .tn-wc-time { color:var(--tnx-accent); }
-//
-// THE CLOCKS ARE CENTRED, and the flex spacer that used to sit beside them is gone
-// rather than kept at width zero. It existed to push the clock hard left and reserve
-// the right-hand end for an attribution that was never typed there — attribution is
-// a licensing requirement for OpenFreeMap, Esri, OpenTopoMap and CARTO and it
-// changes with the basemap, so it stays MapLibre's own AttributionControl
-// (WorldMap.tsx, raised by CSS to sit just above this bar). With nothing to reserve,
-// a spacer is just an off-centre clock.
-//
-// ATTRIBUTION — a licensing requirement, not styling:
-// .tn-terminal .maplibregl-ctrl-bottom-right { bottom:28px; right:8px; }
-// .tn-terminal .maplibregl-ctrl-attrib       { background:rgba(8,11,15,.85); font-size:9px;
-//                                              color:var(--tnx-ink-ghost); }
-// .tn-terminal .maplibregl-ctrl-attrib a     { color:var(--tnx-ink-faint); }
+// WHAT THE CLOCK RESERVES, AND FOR WHOM. The pill reserves nothing on the right. It publishes
+// `--tnx-stage-foot-clear` (46px on `.tn-cw-stage`, 0 wherever this row is hidden) for things
+// that sit above it: the map's bottom-right controls and the Streets prompt card read it with a
+// fallback. ATTRIBUTION is a licensing requirement for OpenFreeMap, Esri, OpenTopoMap and CARTO
+// and changes with the basemap, so it stays MapLibre's own AttributionControl (WorldMap.tsx),
+// lifted clear of this row by the MapLibre chrome block, never typed in here.
 
 import { useShellLayout } from "@/lib/console/store";
 import CameraTray from "@/components/console/CameraTray";

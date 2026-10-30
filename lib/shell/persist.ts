@@ -48,3 +48,18 @@ export function savePersisted<T>(key: string, version: number, value: T, storage
     /* quota exceeded / private mode — non-fatal */
   }
 }
+
+/**
+ * Forget a persisted value: the key is removed, not overwritten with a default, so a
+ * person who resets goes back to being someone who never chose. Silently no-ops if
+ * storage is unavailable.
+ */
+export function removePersisted(key: string, storage?: StorageLike): void {
+  const s = resolveStorage(storage);
+  if (!s) return;
+  try {
+    s.removeItem(key);
+  } catch {
+    /* private mode / blocked storage: non-fatal */
+  }
+}
