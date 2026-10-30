@@ -81,8 +81,13 @@ obligations and are not satisfied by the licence.
   style preferences. A still is never called live: `mediaLabel` says "Live" only while a
   stream plays, and a still or a clip says its operator's own age. And there is no road
   speed in it, because no open feed for London publishes one: the ledger says so, and
-  nothing draws an invented flow (`lib/eye/streets.ts`). Its link flags are listed at the
-  top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
+  nothing draws an invented flow (`lib/eye/streets.ts`). Its vessels come from
+  `/api/eye/vessels?bbox=`, not from the console's Ships layer: the whole world, Class A
+  and B, the 500 nearest the middle of the view, asked every minute and again once the
+  view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);
+  the console's Ships layer (`/api/signals/ais`) stays the 11 chokepoints, Class A only.
+  The HUD's vessel number counts every boat drawn inside the frame. Its link flags are
+  listed at the top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
   frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
   Two more rules hold the film and the frame rate. A film runs on its own clock
@@ -212,7 +217,8 @@ obligations and are not satisfied by the licence.
   `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
   (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
-  disruptions for `/eye`), `camera-road` (what the road operators say about each camera's
+  disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box),
+  `camera-road` (what the road operators say about each camera's
   road, for the camera detail, the camera wall and the `/eye` cards; `lib/roads/nearCamera.ts`),
   and the two doors
   `middleware.ts` opens, `gate` and `private`.
@@ -552,6 +558,19 @@ Re-measure before putting a number in a README, a CV or a PR description.
   24 h files. Canonical env-var names live in `docs/API_KEYS.md` —
   use those names, never invent one (the README used to say `WINDY_KEY`; it is
   `WINDY_WEBCAMS_API_KEY`).
+- **AISStream allows 3 subscribed sockets per ACCOUNT and 3 open sockets per IP, and
+  production holds one (2026-10-28).** A 4th is refused on the spot (close 1006, zero
+  messages, measured). Every dev server that runs with `AISSTREAM_API_KEY` set and is
+  asked for `/eye` or `/api/signals/ais` opens another, so **run a dev server keyless**:
+  `AISSTREAM_API_KEY= npx next dev -p <port>` (Next keeps an empty process env var over
+  `.env.local`). Without the key `/api/eye/vessels` still serves Digitraffic's Finnish and
+  Baltic waters and says `stream: "off"`. The one socket subscribes to the WHOLE WORLD,
+  Class A and B, five message types: measured 88 messages and 49 KB a second, 11,583
+  vessels positioned in 4 minutes (1,956 held over 20 minutes by the 11 chokepoint boxes
+  it replaced). The console layer filters that back to what it always showed
+  (`mergeVessels`' chokepoint test, `consoleStream` dropping Class B, cap 1,200).
+  BarentsWatch stays off until its two env vars exist; `lib/eye/vesselFeed.ts` then asks
+  it for Norway's box by itself.
 
 ## State of play
 See `ROADMAP.md` and `docs/superpowers/research/2026-08-09-competitive-sweep.md`.

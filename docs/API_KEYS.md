@@ -19,7 +19,7 @@ Keys you've already given me are wired in `.env.local` and **live locally**:
 
 | Key | Layer it powers | State |
 |-----|-----------------|-------|
-| `AISSTREAM_API_KEY` | **Ships (AIS chokepoints)** — real-time vessels at Hormuz/Suez/Malacca/… | ✅ live |
+| `AISSTREAM_API_KEY` | **Ships (AIS chokepoints)** — real-time vessels at Hormuz/Suez/Malacca/…; and **God's eye view** (`/eye`) — vessels anywhere in the world, Class A and B | ✅ live |
 | `OPENAQ_API_KEY` | **Air quality — stations** — real PM2.5 from ~25.8k OpenAQ monitors | ✅ live |
 | `ACLED_EMAIL` + `ACLED_PASSWORD` | **Conflict events** + the conflict factor of the Index | ⏳ dormant — login works but the account's **API read access isn't activated yet** (returns 403). Activate it on myACLED and it goes live with no code change. |
 
@@ -36,7 +36,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 
 | # | Source | Unlocks | Free tier | Env var(s) |
 |---|--------|---------|-----------|-----------|
-| 1 | **AISStream.io** | Real‑time global ship tracking (named vessels, Hormuz/Suez) | Free, no card, WebSocket | `AISSTREAM_API_KEY` |
+| 1 | **AISStream.io** | Real‑time global ship tracking (named vessels, Hormuz/Suez for the console; the whole world, small craft included, for God's eye view) | Free, no card, WebSocket | `AISSTREAM_API_KEY` |
 | 2 | **ENTSO‑E Transparency** | Grid load for about 20 continental European bidding zones (GB, France and Denmark are keyless from their own operators) | Free w/ registration | `ENTSOE_API_TOKEN` |
 | 3 | **OpenAQ** | Real air‑quality **station** measurements (upgrades the modelled CAMS layer) | Free | `OPENAQ_API_KEY` |
 | 4 | **UCDP** (Uppsala) | Geocoded conflict events + fatalities (structural conflict history) | Free token | `UCDP_API_TOKEN` |
@@ -45,7 +45,7 @@ Every layer now shows a live **freshness dot** in the rail (the trust spine).
 | 7 | ~~**ReliefWeb**~~ (OCHA) | **No key needed since 2026-10-16.** Its API refuses any appname it has not approved, so the layer reads ReliefWeb's own weekly export on HDX (CC BY 4.0) plus the keyless IFRC GO appeals API. `RELIEFWEB_APPNAME` is no longer read. | — | — |
 | 8 | **ISOC Pulse** | Verified intentional internet shutdowns in the Internet outages layer (IODA stays keyless) | Free account, **non-commercial use only** | `ISOC_PULSE_API_KEY` |
 | 9 | **EIA (U.S. Energy Information Administration)** | Grid load for about 50 US balancing authorities (EIA-930, hourly), and megawatts offline per US nuclear plant, daily (the keyless NRC report already gives each unit's % power) | Free, instant, email only | `EIA_API_KEY` |
-| 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
+| 10 | **BarentsWatch** (Kystverket) | Norwegian coastal AIS for the Barents Sea / North Cape box of the Ships layer, and for God's eye view along the Norwegian coast | Free API client, no card; NLOD | `BARENTSWATCH_CLIENT_ID` + `BARENTSWATCH_CLIENT_SECRET` |
 | — | **Ransomware.live PRO** | The supported endpoint for the Ransomware victims layer (the keyless legacy one is compatibility-only) | Free personal key | `RANSOMWARE_LIVE_API_KEY` |
 | — | **alerts.in.ua** | Ukraine air-raid alerts, down to raion and hromada level | Free token (form, 1 to 7 days) | `ALERTS_IN_UA_TOKEN` |
 

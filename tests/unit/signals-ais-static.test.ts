@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AIS_MESSAGE_TYPES,
   AIS_SOURCE,
-  CHOKEPOINTS,
   STATIC_TTL_MS,
+  WORLD_BOX,
   pruneStatics,
   resetAisCollector,
   staticFromClassB,
@@ -18,12 +18,13 @@ import {
 // positions. Before this, 993 of 1,200 vessels on production carried no type.
 
 describe("the subscription", () => {
-  it("asks for positions and static data, over every chokepoint, with the key", () => {
+  it("asks for both classes of position and the static data, over the whole world, with the key", () => {
     const sub = JSON.parse(subscriptionMessage("k"));
     expect(sub.APIKey).toBe("k");
     expect(sub.FilterMessageTypes).toEqual(["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport", "ShipStaticData", "StaticDataReport"]);
     expect(AIS_MESSAGE_TYPES).toEqual(["PositionReport", "StandardClassBPositionReport", "ExtendedClassBPositionReport", "ShipStaticData", "StaticDataReport"]);
-    expect(sub.BoundingBoxes).toEqual(CHOKEPOINTS.map((c) => c.bbox));
+    expect(sub.BoundingBoxes).toEqual([WORLD_BOX]);
+    expect(WORLD_BOX).toEqual([[-90, -180], [90, 180]]);
   });
 });
 
