@@ -15,6 +15,17 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - Full flight trail: the server's plane pull now also feeds a memory store of where each
+ *     plane has been (lib/planes/trackStore.ts), and app/api/planes/track serves one plane's
+ *     line, read by id. The store holds aircraft positions and nothing about who asks, writes
+ *     no file (the write check in discovery-admin-gate.test.ts still has its two files), and
+ *     goes on a restart or a deploy. The route reads the id query and no header, and logs
+ *     nothing. The prose under "No database" says what is held, the server table has a row
+ *     for it, the access-log paragraph names ?id=, the browser's table names the switch
+ *     (tn.planes.fullTrail.v1, this device only: lib/account/syncKeys.ts leaves it out), and
+ *     the route count is 57.
+ *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
  *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
@@ -348,7 +359,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-27">27 October 2026</time>
+                Last updated <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -499,6 +510,12 @@ export default function PrivacyPage() {
               repeated request does not hit an upstream service twice. That is listed below. It also
               lives in RAM on one serverless instance and is gone when the instance recycles.
             </p>
+            <p>
+              The server also holds where each aircraft has been, for up to 12 hours, so that the
+              Full flight trail setting can draw a plane&rsquo;s line from when we first heard it.
+              That is aircraft positions from the same public feed as the map, and nothing about
+              you. It lives in memory only, and a restart or a deploy clears it.
+            </p>
           </div>
         </section>
 
@@ -536,7 +553,8 @@ export default function PrivacyPage() {
                 </tr>
                 <tr>
                   <td>
-                    Theme, skin, language, view mode, which map layers are on, and, in the
+                    Theme, skin, language, view mode, which map layers are on, whether the Full
+                    flight trail setting is on, and, in the
                     God&rsquo;s eye view, whether camera previews show, which sources are switched
                     on and which are pinned to its bar (kept apart from the console&rsquo;s boards)
                   </td>
@@ -658,7 +676,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>56 API routes</span>
+              <span>57 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -719,6 +737,15 @@ export default function PrivacyPage() {
                   <td>
                     Cached against that target for 5 minutes. The target is also in the
                     server&rsquo;s access log, described under <a href="#logs">Logs</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Click a plane with the Full flight trail setting on</td>
+                  <td>That plane&rsquo;s id</td>
+                  <td>Nowhere. Its line is read from our server&rsquo;s memory</td>
+                  <td>
+                    Not by the application. The id is in the server&rsquo;s access log, described
+                    under <a href="#logs">Logs</a>
                   </td>
                 </tr>
                 <tr>
@@ -1053,7 +1080,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 56 API route files. Each records that a data
+              Five log statements exist across the 57 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1072,6 +1099,8 @@ export default function PrivacyPage() {
               <code>?lat=</code> and <code>?lon=</code>. The God&rsquo;s eye view asks for the
               vessels around what is on screen as <code>?bbox=</code>, four numbers that are the
               edges of a box about the size of the view, rounded outward to about a kilometre.
+              A click on a plane with the Full flight trail setting on sends that plane&rsquo;s id
+              as <code>?id=</code>.
               Each of those is in the log line for that request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
               some sixty-five thousand addresses, and the rest is discarded. That is enough to tell
@@ -1181,14 +1210,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-27">27 October 2026</time>
+                <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 27 October 2026. When the behaviour changes this
+              This describes the code as deployed on 31 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

@@ -49,6 +49,7 @@ import {
   type SignalCoverage,
 } from "@/lib/signals/coverage";
 import { fetchAdsbTypePull, pullToObjects, PULL_BUDGET_MS } from "@/lib/sources/adsb";
+import { noteAircraftSnapshot } from "@/lib/planes/trackStore";
 import {
   FAILOVER_CELLS,
   GAP_CELLS,
@@ -582,7 +583,12 @@ export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
     // too (or, with no cache, the one direct attempt failed). Nothing to serve.
     snapshot = { planes: [] };
   }
-  return gateSnapshot(snapshot);
+  const gated = gateSnapshot(snapshot);
+  // Here and not inside `fetchAircraftOnce`: after the cap and the gate, so the track store
+  // holds only what the layer would serve, and outside the cached callback, whose source text
+  // is part of the cache key. It also picks up a snapshot the Data Cache kept across a restart.
+  noteAircraftSnapshot(gated);
+  return gated;
 }
 
 /**
