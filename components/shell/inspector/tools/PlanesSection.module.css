@@ -1,0 +1,9 @@
+/* The Full flight trail switch keeps the panel's own look (.tn-insp-switch, a 40 x 22 track) and
+   gets a 44 px target on a phone without growing what is painted. */
+@media (max-width: 900px) {
+  .hit::after {
+    content: "";
+    position: absolute;
+    inset: -11px -2px;
+  }
+}
