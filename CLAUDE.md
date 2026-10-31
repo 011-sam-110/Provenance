@@ -115,15 +115,24 @@ obligations and are not satisfied by the licence.
   control, first in the bar. A browser with no saved board also gets `layers=` and `base=`
   so the console does not open empty; a saved board (`tn.variant.v1`) keeps its own. `tests/unit/landing-doors.test.ts` holds
   the doors. The same link carries `eye=`, the view's own link (place or camera, centre,
-  zoom, heading, tilt): ConsoleShell reads it once after mount through `parseEyeReturn`,
-  which rebuilds it from checked values and never uses it as a URL, drops it from the
-  address, and the console's map then shows "God's eye view / Back to <place>" at its top
-  left for the rest of that visit (`components/console/EyeReturn.tsx`, in memory only, so
-  a reload drops it). "Exit to main dashboard" (2026-10-30) is the view's always-visible way
+  zoom, heading, tilt). The console reads nothing from it and only drops it from the address
+  (`withoutArrivalFlags`), because the "Back to <place>" chip it fed left on 2026-10-31.
+  **The way in from the console is the person** (`components/console/EyePerson.tsx`, the rules
+  in `lib/console/eyePerson.ts`, 2026-10-31, on the map stage only, not on a Streets wall): a
+  round button directly above the map's i. Drag it onto the map and the view opens at the ring
+  under it; a tap, Enter or Space opens the centre of the map. Always a full page load, at
+  `EYE_SPOT_ZOOM` or closer, with the map's bearing as its heading, titled with its coordinates
+  like any spot. Two rules are not style preferences. `map.unproject` answers with the horizon
+  for a point off the globe, so a drop opens nothing unless `map.project` brings the answer back
+  to the point (`spotAtPoint`), and a latitude past `EYE_MAX_LAT` opens nothing either, because
+  /eye reads it as a broken link and opens Westminster. And the button is absolute against the
+  corner's bottom edge, in a slot of its own directly before the credit, so a credit that wraps
+  does not move it and anything MapLibre adds later lands above it (`tests/e2e/eye-person.spec.ts`).
+  "Exit to main dashboard" (2026-10-30) is the view's always-visible way
   out: a plate beside the name at its top left, under the place on a phone (the ledger moves
   down by that row). It is the same link without `sources=open` (`getDashboardHref()`), so
-  the console opens at the spot on screen with its rail as the visitor left it, plus the
-  way back; a recording or a film draws none (`tests/e2e/eye-exit.spec.ts`).
+  the console opens at the spot on screen with its rail as the visitor left it; a recording
+  or a film draws none (`tests/e2e/eye-exit.spec.ts`).
   **Both map pages ask for WebGL before they mount MapLibre**
   (`lib/map/webgl.ts`, `components/map/*`): without it they show a plain fallback with the
   camera directory and the source link, not Next's "Application error" page.

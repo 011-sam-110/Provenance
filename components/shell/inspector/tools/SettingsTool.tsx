@@ -1,6 +1,5 @@
 "use client";
-// The Map settings tool — projection, basemap, terrain, 3D buildings, and the way
-// into the God's eye view at the spot on screen. It was the
+// The Map settings tool — projection, basemap, terrain and 3D buildings. It was the
 // stage rail's View flyout (components/console/maprail/ViewFlyout.tsx): a lateral
 // strip of chips over the map, sized for a 40px column. The panel is a column now, so
 // every control is a labelled ROW with the reason it exists under it.
@@ -33,10 +32,8 @@
 // this panel has, so both states are visible at once and the current one is filled —
 // which is the same segmented control the rail's own Sources/Inspector tabs use.
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { BASEMAPS } from "@/lib/basemaps";
-import { getMapInstance } from "@/lib/map/instance";
-import { EYE_LINK_MIN_CONSOLE_ZOOM, eyeSpotHref } from "@/lib/eye/places";
 import { mapViewStore, useMapView } from "@/lib/mapView";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import { basemapKeys, modeForStage, stageForMode } from "@/lib/console/viewControls";
@@ -64,75 +61,6 @@ function Field({
       </span>
       {control}
     </div>
-  );
-}
-
-/** The live map's zoom, kept current on every zoomend. Null until a map exists. */
-function useMapZoom(): number | null {
-  const [zoom, setZoom] = useState<number | null>(null);
-  useEffect(() => {
-    let map = getMapInstance();
-    let poll: ReturnType<typeof setInterval> | null = null;
-    const read = () => setZoom(map ? map.getZoom() : null);
-    const attach = () => {
-      read();
-      map!.on("zoomend", read);
-    };
-    if (map) attach();
-    else
-      poll = setInterval(() => {
-        map = getMapInstance();
-        if (!map) return;
-        if (poll) clearInterval(poll);
-        poll = null;
-        attach();
-      }, 500);
-    return () => {
-      if (poll) clearInterval(poll);
-      map?.off("zoomend", read);
-    };
-  }, []);
-  return zoom;
-}
-
-/**
- * The way into the God's eye view, at the spot the map shows. A plain link and a
- * full page load, never a client-side route: the view sets its own layers and
- * basemap in memory, and a full load keeps those away from the console's saved ones.
- * Its href is read from the live map as the link is used, so it is never a stale spot.
- */
-function EyeLink() {
-  const zoom = useMapZoom();
-  if (zoom == null || zoom < EYE_LINK_MIN_CONSOLE_ZOOM) {
-    return (
-      <button type="button" className="tn-insp-draw" disabled>
-        Zoom in on a city to open it
-      </button>
-    );
-  }
-  const refresh = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
-    const map = getMapInstance();
-    if (!map) return;
-    const c = map.getCenter();
-    e.currentTarget.href = eyeSpotHref({
-      lat: c.lat,
-      lon: c.lng,
-      zoom: map.getZoom(),
-      tilt: map.getPitch(),
-      heading: map.getBearing(),
-    });
-  };
-  return (
-    <a
-      className="tn-insp-draw"
-      style={{ display: "block", textDecoration: "none" }}
-      href="/eye"
-      onPointerDown={refresh}
-      onFocus={refresh}
-      onClick={refresh}
-    >
-      Open this spot
-    </a>
   );
 }
 
@@ -243,17 +171,6 @@ export default function SettingsTool() {
             </button>
           }
         />
-      </ToolSection>
-
-      <ToolSection title="God's eye view">
-        {/* Its own page, /eye (components/eye): this spot tilted over satellite with
-            the buildings up and the cameras, vessels and aircraft placed in it. */}
-        <Field
-          label="This spot from above"
-          sub="A tilted 3D city with its cameras, vessels and aircraft"
-          control={null}
-        />
-        <EyeLink />
       </ToolSection>
 
       <ToolSection title="HUD">

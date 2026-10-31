@@ -8,10 +8,13 @@
 // READ ONCE, IN THE BROWSER, AFTER MOUNT. app/(console)/app/page.tsx must not take
 // `searchParams` (tests/unit/console-static.test.ts says why), so ConsoleShell reads
 // the flag from window.location in its boot effect and then drops it from the
-// address. The flags only open the rail and offer the way back to God's eye view
-// (`eye=`, lib/eye/places.ts). They write no layer, no board and nothing to
-// localStorage, so the variant spine (lib/variants) stays the one owner of layer
-// state.
+// address. The flag only opens the rail. It writes no layer, no board and nothing to
+// localStorage, so the variant spine (lib/variants) stays the one owner of layer state.
+//
+// `eye=` IS DROPPED AND NOTHING ELSE. It used to carry God's eye view's own link for a "Back
+// to <place>" chip on the map, which was removed on Sam's word (2026-10-31): the person on the
+// map (components/console/EyePerson.tsx) is the way in now. /eye still sends the param and old
+// links carry it, so the address has to shed it, and nothing here reads what it holds.
 
 import { EYE_RETURN_PARAM } from "@/lib/eye/places";
 

@@ -23,6 +23,8 @@ for (const path of ["/eye?place=westminster", "/app"]) {
     await expect(plate.locator('a[href="/cameras"]')).toBeVisible();
     await expect(plate.locator(`a[href="${BRAND.repoUrl}"]`)).toBeVisible();
     await expect(page.getByText("Application error")).toHaveCount(0);
+    // With no map there is nothing to drop the person on (components/console/EyePerson.tsx).
+    await expect(page.locator("[data-eye-person]")).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 }

@@ -1,14 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { EYE_PLACES, consoleHref, eyeLinkQuery, parseEyeReturn, type EyeView } from "@/lib/eye/places";
+import { EYE_PLACES, consoleHref, eyeLinkQuery, type EyeView } from "@/lib/eye/places";
 import { EXIT_LABEL } from "@/lib/eye/wording";
 import { wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
 import { decodeViewState } from "@/lib/share/url";
 
 /**
  * "Exit to main dashboard" on God's eye view (components/eye/EyeHud.tsx): the console at
- * the spot on screen, with its rail as the visitor left it and the way back to this view.
+ * the spot on screen, with its rail as the visitor left it.
  * These are the rules behind it, held without a browser; tests/e2e/eye-exit.spec.ts
  * drives the real journey.
  */
@@ -41,12 +41,9 @@ describe("the link", () => {
     expect(q.has("sources")).toBe(false);
   });
 
-  it("carries the way back to this view, which the console reads and then drops", () => {
+  it("carries this view's own link, which the console drops without reading", () => {
     const q = query(href);
-    const ret = parseEyeReturn(q.get("eye"));
-    expect(ret?.kind).toBe("place");
-    expect(ret?.placeName).toBe("Tower Bridge");
-    expect(ret?.href).toBe(`/eye?${back}`);
+    expect(q.get("eye")).toBe(back);
     expect(withoutArrivalFlags("/app", `?${q.toString()}`)).toBe("/app?lat=51.50531&lon=-0.08056&z=15.7");
   });
 

@@ -8,7 +8,7 @@ import { getWidgetType } from "@/lib/console/registry";
 import WidgetDetail from "@/components/console/WidgetDetail";
 import Hud from "@/components/hud/Hud";
 import IssOrbit from "@/components/console/IssOrbit";
-import EyeReturn from "@/components/console/EyeReturn";
+import EyePerson from "@/components/console/EyePerson";
 import MapBoundary from "@/components/map/MapBoundary";
 import MapFallback from "@/components/map/MapFallback";
 import { useWebGL } from "@/components/map/useWebGL";
@@ -43,20 +43,20 @@ export default function StageHost({ stage }: { stage: StageId }) {
   if (focused) return <WidgetDetail instance={focused} />;
   // The old full-screen "clock" stage is retired (the world clock is an ambient map
   // overlay now); a persisted clock stage falls back to the map.
-  // The map plus its two opt-in overlays, mounted as SIBLINGS: WorldMap fills
-  // the stage cell (`.tn-cw-stage` is the positioned ancestor both overlays
-  // anchor inside). Hud renders null while its Map-settings pref is off;
-  // IssOrbit renders null ALWAYS — it exists to drive the camera while the
-  // ISS-orbit pref is on; EyeReturn renders null unless the console was opened
-  // from God's eye view's Sources link (its way back, top left). A focused
-  // widget unmounts all four together.
+  // The map plus its overlays, mounted as SIBLINGS: WorldMap fills the stage cell
+  // (`.tn-cw-stage` is the positioned ancestor the overlays anchor inside). Hud renders
+  // null while its Map-settings pref is off; IssOrbit renders null ALWAYS — it exists to
+  // drive the camera while the ISS-orbit pref is on; EyePerson, the way into God's eye
+  // view, draws itself into the map's bottom-right corner, and not on a Streets wall. A
+  // focused widget, or a browser with no WebGL, gets none of the four: the early returns
+  // above come first.
   if (gl === false) return <MapFallback tone="light" />;
   return (
     <MapBoundary fallback={<MapFallback tone="light" />}>
       <WorldMap />
       <Hud />
       <IssOrbit />
-      <EyeReturn />
+      <EyePerson />
     </MapBoundary>
   );
 }

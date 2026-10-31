@@ -1,0 +1,254 @@
+/* The person on the console's map (EyePerson.tsx). Tokens for the plate, so it matches the i
+   beside it in both skins, and it is inside `.tn-terminal`, where the tokens start. Two literal
+   colours, both the figure's: #e8c25a is the person's own colour in the HUD v2 plan, and it is
+   1.6:1 on the light plate, so the light skin draws it in #8a6a12 (5.1:1). */
+
+/* ── In the corner ─────────────────────────────────────────────────────────────
+   The slot only takes up room in the corner's stack, between the i and whatever is above it.
+   It is NOT a `.maplibregl-ctrl`: that class carries a transform, which would make the slot the
+   box the button measures from, and the button would ride up with a credit that wraps. */
+.slot {
+  float: right;
+  clear: both;
+  width: 30px;
+  height: 36px;
+  margin: 0 0 8px;
+  pointer-events: none;
+}
+
+/* 36 px, centred on the i's 30 px (3 px wider each side), 8 px above it. The i is 30 px tall at
+   the corner's bottom edge, so `bottom` is its height and the gap. The open credit's words stop
+   34 px or more short of the corner's right edge, and this reaches 33 px in from it. */
+.person {
+  position: absolute;
+  z-index: 1;
+  right: -3px;
+  bottom: 38px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 999px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: #8a6a12;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+:global(html[data-tnx-skin="dark"]) .person {
+  color: #e8c25a;
+}
+.person:hover {
+  background: var(--tnx-panel-head);
+  border-color: currentColor;
+}
+.person:focus-visible {
+  outline: 2px solid var(--tnx-accent);
+  outline-offset: 2px;
+}
+.person:active {
+  cursor: grabbing;
+}
+.figure {
+  display: block;
+  pointer-events: none;
+}
+/* Its place while it is carried. */
+.person:not([data-state="idle"]) {
+  border-color: var(--tnx-line-strong);
+  background: var(--tnx-panel);
+  cursor: grabbing;
+}
+.person:not([data-state="idle"]) .figure {
+  opacity: 0.3;
+}
+
+/* A phone: a 44 px target, with the visible plate still 36 px. 12 px above the i, so a 44 px area
+   on the i (#339 adds one) meets this one and does not overlap it. */
+@media (max-width: 900px) {
+  .slot {
+    margin-bottom: 12px;
+  }
+  .person {
+    bottom: 42px;
+  }
+  .person::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+}
+
+/* ── Carried ───────────────────────────────────────────────────────────────────
+   A zero-size box whose origin IS the drop point: the ring is centred on it, the figure stands
+   on it, the label hangs off it. Only its transform moves, so nothing re-lays out per frame. */
+.layer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 2500;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Flat on the ground, with a dot at the exact point. Dark edges, because it crosses a
+   satellite picture, a pale basemap and the console's panels. */
+.ring {
+  position: absolute;
+  left: -16px;
+  top: -8px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 16px;
+  border: 2px solid #e8c25a;
+  border-radius: 50%;
+  background: rgba(232, 194, 90, 0.2);
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7), inset 0 0 0 1px rgba(10, 13, 16, 0.35);
+}
+.ring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #e8c25a;
+  box-shadow: 0 0 0 1px rgba(10, 13, 16, 0.7);
+}
+
+/* The figure's feet are 0.6/24 of its box above the box's bottom edge. The dark outline keeps it
+   readable on a pale map, and the shadow lifts it off the ground. */
+.carried {
+  position: absolute;
+  left: -24px;
+  bottom: -1px;
+  width: 48px;
+  height: 48px;
+  color: #e8c25a;
+  transform-origin: 50% 98%;
+  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.45));
+}
+.carried svg {
+  display: block;
+  overflow: visible;
+}
+.carried svg * {
+  stroke: rgba(14, 16, 10, 0.86);
+  stroke-width: 1.1px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.label {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  transform: translateX(calc(-50% + var(--person-label-x, 0px)));
+  padding: 6px 10px;
+  border: 1px solid var(--tnx-line-strong);
+  border-radius: 8px;
+  background: var(--tnx-panel);
+  box-shadow: var(--tnx-shadow-1);
+  color: var(--tnx-ink);
+  font-family: var(--tn-sans);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.layer[data-label="above"] .label {
+  top: auto;
+  bottom: 58px;
+}
+.label [data-when] {
+  display: none;
+}
+.layer[data-on="true"] .label [data-when="on"],
+.layer:not([data-on]) .label [data-when="on"],
+.layer[data-on="false"] .label [data-when="off"] {
+  display: inline;
+}
+/* After a drop the sentence is "Opening", wherever the pointer was. */
+.layer[data-state="dropped"] .label [data-when] {
+  display: none;
+}
+.layer[data-state="dropped"] .label [data-when="dropped"] {
+  display: inline;
+}
+
+/* A release here opens nothing: the ring says so before the words do. */
+.layer[data-on="false"] .ring {
+  border-style: dashed;
+  border-color: var(--tnx-ink-faint);
+  background: transparent;
+}
+.layer[data-on="false"] .ring::after {
+  display: none;
+}
+.layer[data-on="false"] .carried {
+  opacity: 0.72;
+}
+
+/* On its way home the ring and the words are done, and the figure shrinks to its place. */
+.layer[data-state="return"] .ring,
+.layer[data-state="return"] .label {
+  opacity: 0;
+}
+.layer[data-state="return"] .carried {
+  opacity: 1;
+  transform: scale(0.46);
+}
+
+/* ── Motion, only where the visitor allows it ─────────────────────────────────
+   With reduced motion the figure is upright, nothing springs, and a cancel is instant
+   (goHome in EyePerson.tsx); the drag itself works the same. */
+@media (prefers-reduced-motion: no-preference) {
+  .person {
+    transition: background-color 120ms ease, border-color 120ms ease;
+  }
+  .figure {
+    transition: opacity 120ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .person:hover .figure {
+    transform: translateY(-1px);
+  }
+  .carried {
+    transform: rotate(-9deg);
+    animation: personLift 180ms cubic-bezier(0.3, 1.25, 0.6, 1);
+  }
+  .layer[data-state="return"] {
+    transition: transform 240ms cubic-bezier(0.3, 1.15, 0.6, 1);
+  }
+  .layer[data-state="return"] .carried {
+    transform: scale(0.46);
+    transition: transform 240ms cubic-bezier(0.3, 1.15, 0.6, 1);
+  }
+  .layer[data-state="return"] .ring,
+  .layer[data-state="return"] .label {
+    transition: opacity 100ms ease;
+  }
+  .layer[data-state="dropped"] .carried {
+    transform: rotate(0deg);
+    transition: transform 120ms ease;
+  }
+}
+
+@keyframes personLift {
+  from {
+    transform: rotate(0deg) scale(0.46);
+  }
+  to {
+    transform: rotate(-9deg) scale(1);
+  }
+}

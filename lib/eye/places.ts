@@ -12,9 +12,10 @@
 //   /eye?place=westminster            a preset, framed by hand for a wide screen and
 //                                     again for a 9:16 phone
 //   /eye?cam=tfl:…&lat=…&lon=…        a camera's spot, opened from its detail panel
-//   /eye?lat=…&lon=…&z=…&heading=…&tilt=…   any spot, opened from Map settings
+//   /eye?lat=…&lon=…&z=…&heading=…&tilt=…   any spot, opened by the person on the console's
+//                                     map (components/console/EyePerson.tsx)
 // A preset that also names a position (`place=…&lat=…&lon=…`) opens that position under
-// the preset's name: the way back from the console (`eyeLinkQuery`, `parseEyeReturn`).
+// the preset's name: `eyeLinkQuery` writes one, and any link kept from a view opens it.
 // Anything else, including a link with a broken number in it, opens the first preset.
 
 /** One camera position. MapLibre's own terms: tilt is pitch, heading is bearing. */
@@ -90,6 +91,8 @@ export const EYE_MIN_ZOOM = 14.5;
 export const EYE_MAX_ZOOM = 19;
 /** MapLibre's own default ceiling. Tilting further shows the sky. */
 export const EYE_MAX_TILT = 60;
+/** The furthest north or south a link may ask for. Past it the link counts as broken. */
+export const EYE_MAX_LAT = 85;
 /** What a spot or camera link gets when it names no tilt: oblique, like the presets. */
 export const EYE_DEFAULT_TILT = 55;
 /** A camera link opens close enough for its card to stand among the buildings. */
@@ -119,7 +122,7 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 function readSpot(params: URLSearchParams): { lat: number; lon: number } | null {
   const lat = num(params.get("lat"));
   const lon = num(params.get("lon"));
-  if (lat == null || lon == null || Math.abs(lat) > 85 || Math.abs(lon) > 180) return null;
+  if (lat == null || lon == null || Math.abs(lat) > EYE_MAX_LAT || Math.abs(lon) > 180) return null;
   return { lat, lon };
 }
 
@@ -195,8 +198,8 @@ export function eyePlaceHref(id: string): string {
 }
 
 /**
- * A link to any spot, from the console's own camera. A console looking straight down
- * gets the view's default tilt instead, because a flat view is the console, not this.
+ * A link to any spot. A view looking straight down gets the default tilt instead, because
+ * a flat view is the console, not this.
  */
 export function eyeSpotHref(view: EyeView): string {
   const p = new URLSearchParams();
@@ -231,9 +234,9 @@ export interface ConsoleLinkOptions {
    */
   scene?: boolean;
   /**
-   * This view's own link, from `eyeLinkQuery`, carried as `eye=` so the console can
-   * offer the way back to it. The console reads it through `parseEyeReturn`, never as
-   * a URL of its own.
+   * This view's own link, from `eyeLinkQuery`, carried as `eye=`. The console no longer
+   * reads it: its way back was removed for the person on its map, and `withoutArrivalFlags`
+   * drops the param from the address, so a link that carries one still opens cleanly.
    */
   back?: string;
 }
@@ -258,9 +261,6 @@ export function consoleHref(view: Pick<EyeView, "lat" | "lon" | "zoom">, opts: C
   return `/app?${p.toString()}`;
 }
 
-/** The console's map must be at least this close for "open this spot" to mean a city. */
-export const EYE_LINK_MIN_CONSOLE_ZOOM = 12;
-
 /** The part of localStorage the check below reads. */
 export interface ItemReader {
   getItem(key: string): string | null;
@@ -282,8 +282,8 @@ export function hasSavedBoard(storage: ItemReader | undefined, key: string): boo
 }
 
 /**
- * The console link's param that carries this view's own link, for the way back
- * (components/console/EyeReturn.tsx). Its value is a query string, `eyeLinkQuery`'s.
+ * The console link's param that carries this view's own link. Its value is a query string,
+ * `eyeLinkQuery`'s. The console only drops it (lib/console/sourcesLink.ts).
  */
 export const EYE_RETURN_PARAM = "eye";
 
@@ -298,36 +298,4 @@ export function eyeLinkQuery(target: EyeTarget, view: EyeView): string {
   else if (target.kind === "camera") p.set("cam", target.cameraId);
   viewQuery(view, p);
   return p.toString();
-}
-
-/** Longest `eye=` value accepted; a real one is under 160 characters. */
-const RETURN_MAX = 400;
-
-export interface EyeReturn {
-  /** Always `/eye?…`, rebuilt from checked values; never the raw param. */
-  href: string;
-  kind: EyeTarget["kind"];
-  /** The preset's name, for a place. */
-  placeName?: string;
-}
-
-/**
- * Read the console's `eye=` param. Null for anything that is not a place or a position
- * this page would open: an outside URL, a scheme, an unknown place, a broken number.
- * The link it returns is built here from the checked values, so the raw text never
- * reaches an `href`.
- */
-export function parseEyeReturn(raw: string | null | undefined): EyeReturn | null {
-  if (!raw || raw.length > RETURN_MAX) return null;
-  const params = new URLSearchParams(raw);
-  const place = placeById(params.get("place"));
-  const spot = readSpot(params);
-  if (!place && !spot) return null;
-  if (place && !spot) return { href: eyePlaceHref(place.id), kind: "place", placeName: place.name };
-  const target = parseEyeLink(params, false);
-  return {
-    href: `/eye?${eyeLinkQuery(target, target.view)}`,
-    kind: target.kind,
-    placeName: target.kind === "place" ? target.place.name : undefined,
-  };
 }

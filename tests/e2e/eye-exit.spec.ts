@@ -7,8 +7,8 @@ import { expect, test, type Page } from "@playwright/test";
  *     phone, 44 px tall there, clear of the ledger and the clock, and nothing scrolls
  *     sideways.
  *   - One click (or Enter on it) opens the console at the spot on screen NOW, wherever
- *     the view has been moved to, without the Sources rail, and the console then offers
- *     the way back ("God's eye view: back to <place>").
+ *     the view has been moved to, without the Sources rail, and the person on the console's
+ *     map is the way back in (tests/e2e/eye-person.spec.ts holds the person itself).
  *   - A recording (record=1) and an overlay-free film (overlay=0) draw no way out.
  *
  * THE HOOKS: `main[data-eye-state="ready"]` on /eye, `window.__map` (WorldMap's debug
@@ -27,7 +27,7 @@ const shot = async (page: Page, name: string) => {
 
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
 const exit = (page: Page) => page.getByRole("link", { name: "Exit to main dashboard", exact: true });
-const plate = (page: Page, place: string) => page.getByRole("link", { name: `God's eye view: back to ${place}` });
+const person = (page: Page) => page.getByRole("button", { name: "Open God's eye view at the centre of the map" });
 
 interface Spot {
   lat: number;
@@ -105,7 +105,7 @@ test("wide screen: the way out is beside the name, and one click opens the dashb
   expect(url.searchParams.get("eye")).toMatch(/^place=tower-bridge&lat=/);
 
   await page.waitForURL(/\/app/);
-  await expect(plate(page, "Tower Bridge")).toBeVisible({ timeout: 60_000 });
+  await expect(person(page)).toBeVisible({ timeout: 60_000 });
   expectSameSpot(await mapSpot(page), left);
   // The arrival flag has left the address; the spot has not.
   await expect.poll(() => new URL(page.url()).searchParams.has("eye")).toBe(false);
@@ -113,11 +113,13 @@ test("wide screen: the way out is beside the name, and one click opens the dashb
   await page.waitForTimeout(1500);
   await shot(page, "03-desktop-dashboard");
 
-  // And the way back still returns to the view that was left.
-  await plate(page, "Tower Bridge").click();
-  await page.waitForURL(/\/eye\?place=tower-bridge&lat=/);
+  // And the person goes back in at the same spot. It is a spot now, so it has no place name.
+  await person(page).click();
+  await page.waitForURL(/\/eye\?lat=/);
   await ready(page);
-  expectSameSpot(await mapSpot(page), left);
+  const back = await mapSpot(page);
+  expect(Math.abs(back.lat - left.lat)).toBeLessThan(2e-4);
+  expect(Math.abs(back.lon - left.lon)).toBeLessThan(2e-4);
   expect(errors).toEqual([]);
 });
 
@@ -148,7 +150,7 @@ test("keyboard: Tab reaches it with a visible focus ring, and Enter follows it",
   const url = await asked;
   expect(url.searchParams.has("sources")).toBe(false);
   await page.waitForURL(/\/app/);
-  await expect(plate(page, "Westminster")).toBeVisible({ timeout: 60_000 });
+  await expect(person(page)).toBeVisible({ timeout: 60_000 });
   expectSameSpot(await mapSpot(page), at);
 });
 
@@ -189,7 +191,7 @@ test("phone: under the place, 44 px tall, clear of the ledger and the clock, and
   const url = await asked;
   expect(url.searchParams.has("sources")).toBe(false);
   await page.waitForURL(/\/app/);
-  await expect(plate(page, "Tower Bridge")).toBeVisible({ timeout: 60_000 });
+  await expect(person(page)).toBeVisible({ timeout: 60_000 });
   expectSameSpot(await mapSpot(page), at);
   await bootDone(page);
   await page.waitForTimeout(1500);
