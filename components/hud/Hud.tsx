@@ -2,7 +2,8 @@
 // HUD — the calm-light heads-up overlay. A thin, read-only DOM layer over the map:
 // camera readout (lat / lon / zoom / heading), a UTC clock, the live counts (video that
 // played, planes, satellites; hudCountCells in lib/hud/model.ts), and chips for the
-// active core layers. Corner brackets, quiet --tn-* styling, no glow. 'H' toggles it —
+// active core layers. Quiet --tn-* styling, no glow, drawn solid (no corner brackets, no
+// opacity setting: Leon, 2026-10-29). 'H' toggles it —
 // but ONLY the /demo-hud page binds that key (see app/demo-hud/page.tsx), so the
 // console's own keymap is untouched.
 //
@@ -141,13 +142,7 @@ export default function Hud() {
       className={styles.hud}
       data-tn-hud=""
       data-tn-hud-variant={prefs.variant}
-      style={{ opacity: prefs.opacity / 100 }}
     >
-      <span className={styles.corner} data-corner="tl" aria-hidden="true" />
-      <span className={styles.corner} data-corner="tr" aria-hidden="true" />
-      <span className={styles.corner} data-corner="bl" aria-hidden="true" />
-      <span className={styles.corner} data-corner="br" aria-hidden="true" />
-
       <div className={styles.inner}>
         {spec.camera && cam && (
           <div className={styles.block} data-tn-hud-block="camera">

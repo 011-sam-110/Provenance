@@ -374,7 +374,8 @@ obligations and are not satisfied by the licence.
   draws a polygon hatched; an area never becomes a diamond. A country-level adapter sends `countryIso3`. The shading is
   not a click target: a click on it opens the country dossier, the figure opens the
   signal. `components/console/MarkLegend.tsx` is the key, top right of the map, and
-  lists only the marks on the map now.
+  lists only the marks on the map now; its title is a button that folds it to a one-line
+  chip, remembered in this browser as `tn.map.legend.v1` (device-only, `lib/map/markKey.ts`).
 - `lib/console/*` — widget registry, presets (**3 presets** in `presets.ts`), store, share (`?c=` layout URL).
   **A preset is the whole workspace**: core layers + signal layers + the board that reads
   them, and the Sources rail's tiles and the ⌘K Profiles list drive the same three. There is

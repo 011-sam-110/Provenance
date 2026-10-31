@@ -3342,18 +3342,46 @@ a { color: var(--tn-accent); }
 /* ── Map legend: which mark means what (components/console/MarkLegend.tsx) ────
    Top-right of the stage, the one corner nothing else on the map uses. OPAQUE, like
    every panel that sits on the map: a translucent key over a data surface is a
-   legibility bug. pointer-events:none, so the map under it still drags and clicks.
-   It is not there at all while no signal layer draws a mark. */
+   legibility bug. pointer-events:none, so the map under it still drags and clicks —
+   except its MARKS title, which is a button and folds the key to a one-line chip
+   (remembered in this browser, lib/map/markKey.ts), and the list while it has to scroll.
+   It is not there at all while no signal layer draws a mark.
+   WHERE IT SITS is written by MarkLegend as two custom properties: `--tn-markkey-top`
+   (10px, or just below the HUD when the two would overlap, which is a phone) and
+   `--tn-markkey-max` (stops 8px above the compass and the i, and the key scrolls
+   inside instead of running over them). Both fall back to today's box.
+   THE LIST SCROLLS, NOT THE BOX: the title button stays put above it, and because the
+   box itself is never a scroller it does not clip the title's 44px tap area. */
 .tn-markkey {
-  position: absolute; z-index: 6; top: 10px; right: 10px; pointer-events: none;
+  position: absolute; z-index: 6; top: var(--tn-markkey-top, 10px); right: 10px; pointer-events: none;
+  display: flex; flex-direction: column;
   max-width: 250px; padding: 8px 10px 9px; border-radius: 8px;
+  max-height: var(--tn-markkey-max, none);
   color: var(--tn-text); background: var(--tn-surface-solid); border: 1px solid var(--tn-border);
   box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
   font-size: 11.5px; line-height: 1.3;
 }
-.tn-markkey-title {
-  margin-bottom: 5px; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+/* The list and the road note. It is a scroller always, but only takes the pointer once
+   MarkLegend says it has to scroll (data-scroll); until then the map under it still drags. */
+.tn-markkey-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.tn-markkey[data-scroll] .tn-markkey-body { pointer-events: auto; }
+.tn-markkey-toggle {
+  pointer-events: auto; flex: none; align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 5px;
+  margin: -3px 0 4px -4px; padding: 3px 4px; border: 0; border-radius: 6px;
+  background: none; cursor: pointer; font: inherit;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
   text-transform: uppercase; color: var(--tn-text-muted);
+}
+.tn-markkey-toggle:hover { color: var(--tn-text); }
+.tn-markkey-toggle:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
+.tn-markkey-toggle svg { display: block; }
+/* Folded, the key is a chip: the title alone, 30px tall with its border. */
+.tn-markkey[data-folded] { padding: 0; }
+.tn-markkey[data-folded] .tn-markkey-toggle { margin: 0; padding: 0 9px 0 10px; min-height: 28px; }
+.tn-markkey[data-folded] .tn-markkey-toggle svg { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .tn-markkey-toggle svg { transition: transform 160ms ease; }
 }
 .tn-markkey-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
 .tn-markkey-row { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: center; }
@@ -3370,6 +3398,13 @@ a { color: var(--tn-accent); }
 @media (max-width: 900px) {
   .tn-markkey { max-width: 150px; padding: 6px 8px; }
   .tn-markkey-meaning { display: none; }
+  /* A 44px tap area on the title button; the chip keeps its 30px look. Centred on the
+     button, so it is 44px whatever the font does to the button's own height. */
+  .tn-markkey-toggle { position: relative; }
+  .tn-markkey-toggle::before {
+    content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 44px;
+    transform: translateY(-50%);
+  }
 }
 
 /* ── The filters a typed question put on the map ─────────────────────────────────
@@ -5543,12 +5578,16 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 /* ── MapLibre chrome ───────────────────────────────────────────────────────
    ATTRIBUTION IS A LICENSING REQUIREMENT (Esri / OpenTopoMap / CARTO), and it is
    MapLibre's own control rather than text we type, so it stays correct when the
-   basemap changes. It shares one bottom-right container with the zoom/compass
-   control, so both are lifted clear of the stage's 24px world-clock bar.
+   basemap changes. It shares one bottom-right container with our own compass
+   (below), and the container is lifted clear of the stage's world-clock pill:
+   `--tnx-stage-foot-clear` is the clock block's property (the pill's clearance above
+   the map's bottom edge: 46px while it shows, 0 while it is hidden) and is only READ
+   here, with the 46px it has today as the fallback. On a phone there is no clock and
+   the ≤900px pass puts the corner back at 10px.
    `bottom:12px` at globals.css:1474 beats the `var(--tn-ticker-h)` rule above it on
    source order, so this has to be an explicitly higher-specificity override rather
    than a token change alone. */
-.tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: 28px; }
+.tn-terminal .maplibregl-ctrl-bottom-right { right: 8px; bottom: max(10px, var(--tnx-stage-foot-clear, 46px)); }
 .tn-terminal .maplibregl-ctrl-bottom-left { left: 8px; bottom: 28px; }
 /* THE MAP'S ⓘ — restyled, never removed. It is the door to the basemap credits,
    which are a licence obligation of the upstream tiles and not ours to drop; what
@@ -5566,7 +5605,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    at equal specificity, so anything not doubled up loses on source order. */
 .tn-terminal .maplibregl-ctrl-attrib {
   background: var(--tnx-panel) !important;
-  color: var(--tnx-ink-ghost);
+  color: var(--tnx-ink-faint);
   font-family: var(--tnx-font-mono);
   font-size: var(--tnx-fs-xs);
   border: 1px solid var(--tnx-line-strong);
@@ -5574,6 +5613,10 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   box-shadow: var(--tnx-shadow-1);
 }
 .tn-terminal .maplibregl-ctrl-attrib a { color: var(--tnx-ink-faint); }
+/* The open credit's own text. maplibre-gl.css sets `.maplibregl-ctrl-attrib.maplibregl-compact
+   { color: #000 }`, which outranks the rule above and left the credit black on the dark
+   panel; this compound beats it. --tnx-ink-faint is 5.9:1 on the light panel, 6.3:1 on the dark. */
+.tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact { color: var(--tnx-ink-faint); }
 /* THE BOX HAD TO BE FIXED TOO, AND THAT IS THE BUG THIS BLOCK NOW ANSWERS.
    Recolouring the mark above left the CONTAINER at maplibre-gl.css's compact
    metrics — `box-sizing: content-box; min-height: 20px; padding: 2px 24px 2px 0` —
@@ -5608,12 +5651,21 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
 .tn-terminal .maplibregl-ctrl-attrib.maplibregl-compact-show {
   box-sizing: border-box !important;
   max-width: min(420px, calc(100vw - 24px));
-  padding: 5px 34px 5px 10px !important;
+  /* THE i MUST NOT MOVE WHEN IT OPENS. `margin: 0` because maplibre-gl.css gives the
+     compact control `margin: 10px` and the collapsed rule above zeroes it only for
+     `:not(.maplibregl-compact-show)`, so opening the credit shoved the button 10px left
+     and 8px up. `min-height: 30px` and the flex centring make a one-line credit exactly
+     as tall as the button, so the pill grows leftwards and the circle stays put. */
+  margin: 0 !important;
+  min-height: 30px !important;
+  display: flex;
+  align-items: center;
+  padding: 5px 36px 5px 12px !important;
   line-height: 1.45;
 }
 .tn-terminal .maplibregl-ctrl-bottom-left > .maplibregl-ctrl-attrib.maplibregl-compact-show,
 .tn-terminal .maplibregl-ctrl-top-left > .maplibregl-ctrl-attrib.maplibregl-compact-show {
-  padding: 5px 10px 5px 34px !important;
+  padding: 5px 12px 5px 36px !important;
 }
 .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button,
 .tn-terminal .maplibregl-ctrl.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
@@ -5628,7 +5680,51 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   background-size: 17px 17px !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
+  /* PINNED TO THE CORNER, in both states. maplibre-gl.css pins the button `top: 0;
+     right: 0` from INSIDE the container's 1px border, so the 30px button sat 1px left
+     and 1px low of the 30px circle; -1px cancels the border so it covers the circle
+     exactly, and anchoring to the bottom keeps it there whatever the pill's height. */
+  top: auto !important;
+  bottom: -1px !important;
+  right: -1px !important;
 }
+/* The same for a control in a left corner (the credit has moved corners before). It
+   follows the rule above on purpose: both are !important at one specificity. */
+.tn-terminal .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib-button,
+.tn-terminal .maplibregl-ctrl-top-left .maplibregl-ctrl-attrib-button {
+  right: auto !important;
+  left: -1px !important;
+}
+/* maplibre-gl.css rings a focused button with a blue 2px glow (`box-shadow: 0 0 2px 2px
+   #0096ff`), which stayed on after a mouse click. Keyboard focus gets the console's own
+   outline instead. */
+.tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:focus { box-shadow: none !important; }
+.tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:focus-visible {
+  outline: 2px solid var(--tnx-accent) !important;
+  outline-offset: 2px;
+}
+/* The mark in the dark skin: the stroke above (#464b37) is near-invisible on the dark panel.
+   #c9d1a6 is the dark --tnx-accent (11.3:1 on the panel). */
+:root[data-tnx-skin="dark"] .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c9d1a6' stroke-width='1.9' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5'/%3E%3Cpath d='M12 8h.01'/%3E%3C/svg%3E") !important;
+}
+/* THE COMPASS (lib/map/compass.ts): one round 30px button directly above the i, styled
+   like it, with an olive needle that turns with the map through --tn-compass-turn (written
+   by the control on the map's `rotate` event). Not a `.maplibregl-ctrl-group`. Tokens only. */
+.tn-terminal .maplibregl-ctrl.tn-compass-ctrl { margin: 0 0 8px 0; }
+.tn-terminal .maplibregl-ctrl button.tn-compass {
+  position: relative; display: grid; place-items: center;
+  width: 30px; height: 30px; padding: 0; border-radius: 999px;
+  background: var(--tnx-panel); border: 1px solid var(--tnx-line-strong);
+  box-shadow: var(--tnx-shadow-1); color: var(--tnx-accent); cursor: pointer;
+}
+/* maplibre-gl.css tints every control button on :hover/:active at (0,3,1); beat it. */
+.tn-terminal .maplibregl-ctrl button.tn-compass:not(:disabled):hover,
+.tn-terminal .maplibregl-ctrl button.tn-compass:not(:disabled):active {
+  background: var(--tnx-panel-head); border-color: var(--tnx-accent);
+}
+.tn-terminal .maplibregl-ctrl button.tn-compass:focus-visible { outline: 2px solid var(--tnx-accent); outline-offset: 2px; }
+.tn-terminal .tn-compass svg { display: block; transform: rotate(var(--tn-compass-turn, 0deg)); }
 /* Expanded, the control becomes a credit line rather than a mark, so the pill
    relaxes back to the console's own radius and stops pretending to be a button. */
 .tn-terminal .maplibregl-ctrl-attrib:not(.maplibregl-compact) {
@@ -6024,6 +6120,13 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
+  /* The compass and the i are 30px circles, so each gets a 44px tap area. They sit 14px
+     apart here (8px on a desktop), which puts their centres 44px apart: the two areas
+     touch and never overlap. An inset is measured from the PADDING box, and the compass
+     has a 1px border where the i's button has none, so it takes 8px and the i 7px. */
+  .tn-terminal .maplibregl-ctrl.tn-compass-ctrl { margin-bottom: 14px; }
+  .tn-terminal .maplibregl-ctrl button.tn-compass::before { content: ""; position: absolute; inset: -8px; }
+  .tn-terminal .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button::before { content: ""; position: absolute; inset: -7px; }
 
   /* The rail is a bottom sheet at this width (the existing block re-homes it); it is
      absolute inside the workspace band now, so the sheet fills that band. */

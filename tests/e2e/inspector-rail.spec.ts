@@ -341,8 +341,11 @@ test("Draw opens a panel, and the gesture starts from the button inside it", asy
 test("the map's right edge is plain map now, and the ⓘ attribution is not", async ({ page }) => {
   // Two assertions that have to travel together. The stage rail, the zoom/compass
   // cluster and the centred search box are all gone from the stage — the map's own
-  // controls live on the Inspector tab now. The attribution was NOT removed, because
-  // OpenStreetMap/OpenMapTiles (ODbL), Esri and OpenTopoMap all require the credit
+  // controls live on the Inspector tab now. (The one compass button is back on its own,
+  // since 2026-10-29: a single round button above the i, not a `.maplibregl-ctrl-group`,
+  // so the count below stays 0; tests/e2e/map-overlays.spec.ts holds it.) The
+  // attribution was NOT removed, because OpenStreetMap/OpenMapTiles (ODbL), Esri and
+  // OpenTopoMap all require the credit
   // (lib/map/attribution.ts); deleting it would be a licensing regression that no
   // other test would notice.
   await expect(page.locator("#map-rail")).toHaveCount(0);

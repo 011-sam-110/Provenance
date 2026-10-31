@@ -464,7 +464,7 @@ export default function EyeApp({
         {openAt && gl && (
           <MapBoundary fallback={<MapFallback tone="dark" place={words?.title} />}>
             {/* No Marks key: this view lists what is on screen in its own ledger. */}
-            <WorldMap openAt={openAt} onStyleReady={onStyleReady} legend={false} />
+            <WorldMap openAt={openAt} onStyleReady={onStyleReady} legend={false} compass={false} />
           </MapBoundary>
         )}
       </div>

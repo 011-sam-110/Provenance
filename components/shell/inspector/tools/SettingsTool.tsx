@@ -41,7 +41,7 @@ import { mapViewStore, useMapView } from "@/lib/mapView";
 import { shellLayoutStore, useShellLayout } from "@/lib/console/store";
 import { basemapKeys, modeForStage, stageForMode } from "@/lib/console/viewControls";
 import { hudStore, useHudPrefs } from "@/lib/hud/store";
-import { HUD_OPACITY_MAX, HUD_OPACITY_MIN, HUD_VARIANTS, VARIANT_LABEL } from "@/lib/hud/model";
+import { HUD_VARIANTS, VARIANT_LABEL } from "@/lib/hud/model";
 import { issOrbitStore, useIssOrbitPrefs } from "@/lib/cinematic/orbitStore";
 import { ISS_ORBIT_SPEED_LABEL, ISS_ORBIT_SPEEDS } from "@/lib/cinematic/prefs";
 import ToolSection from "@/components/shell/inspector/ToolSection";
@@ -312,26 +312,6 @@ export default function SettingsTool() {
             >
               <span className="tn-insp-switch-knob" aria-hidden />
             </button>
-          }
-        />
-
-        <Field
-          label="Opacity"
-          sub="40–100% over the map"
-          control={
-            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                type="range"
-                min={HUD_OPACITY_MIN}
-                max={HUD_OPACITY_MAX}
-                step={1}
-                value={hud.opacity}
-                aria-label="HUD opacity"
-                style={{ accentColor: "var(--tn-accent)", width: 110 }}
-                onChange={(e) => hudStore.setOpacity(Number(e.target.value))}
-              />
-              <span className="tn-num">{hud.opacity}%</span>
-            </span>
           }
         />
       </ToolSection>
