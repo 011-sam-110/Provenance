@@ -1,0 +1,2964 @@
+{
+ "A109": {
+  "spanM": 11,
+  "lengthM": 13.04,
+  "heightM": 3.5,
+  "power": "2 x Turbomeca Arrius 2K1 or 2 x Pratt & Whitney PW206C",
+  "engines": 2,
+  "classCode": "H2T",
+  "wing": "Four-blade main rotor",
+  "engine": "Above cabin",
+  "tail": "Two-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A109"
+ },
+ "A119": {
+  "source": null,
+  "override": {
+   "lengthM": 12.92,
+   "spanM": 10.83,
+   "heightM": 3.6,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/AgustaWestland_AW119_Koala",
+   "note": "helicopter; span = main rotor dia; length not stated as fuselage or rotors turning (AW119Kx)"
+  }
+ },
+ "A139": {
+  "source": null,
+  "override": {
+   "lengthM": 16.66,
+   "spanM": 13.8,
+   "heightM": 4.98,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/AgustaWestland_AW139",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "A169": {
+  "source": null,
+  "override": {
+   "lengthM": 14.645,
+   "spanM": 12.12,
+   "heightM": 4.5,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/AgustaWestland_AW169",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "A189": {
+  "source": null,
+  "override": {
+   "lengthM": 17.6,
+   "spanM": 14.6,
+   "heightM": 5.06,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/AgustaWestland_AW189",
+   "note": "helicopter; span = main rotor dia; length overall with rotors turning"
+  }
+ },
+ "A20N": {
+  "spanM": 35.8,
+  "lengthM": 37.57,
+  "heightM": 11.76,
+  "power": "2 x 120.6kN CFM International LEAP-1A or Pratt & Whitney PW1100G",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (sharklets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A20N",
+  "override": {
+   "lengthM": 37.57,
+   "spanM": 35.8,
+   "heightM": 11.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A320neo_family",
+   "note": "sharklets; span and height given once for the family"
+  }
+ },
+ "A21N": {
+  "spanM": 35.8,
+  "lengthM": 44.51,
+  "heightM": 11.76,
+  "power": "2 x 147.3kN CFM International LEAP-1A or Pratt & Whitney PW1100G",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (sharklets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A21N",
+  "override": {
+   "lengthM": 44.51,
+   "spanM": 35.8,
+   "heightM": 11.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A320neo_family",
+   "note": "sharklets; span and height given once for the family"
+  }
+ },
+ "A306": {
+  "spanM": 44.84,
+  "lengthM": 54.1,
+  "heightM": 16.54,
+  "power": "2 x 262kN CF6-80C2 or 2 x 249kN P&W PW4000 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A306"
+ },
+ "A310": {
+  "spanM": 43.9,
+  "lengthM": 46.66,
+  "heightM": 15.8,
+  "power": "2 x 233 kN GE CF6-50-C2 or 2 x 234 kN P&W JT9D-59A1T turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A310"
+ },
+ "A318": {
+  "spanM": 34.1,
+  "lengthM": 31.45,
+  "heightM": 12.56,
+  "power": "2 x 90kN P&W PW6124 or 2 x 98kN CFM 56-5B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A318"
+ },
+ "A319": {
+  "spanM": 34.1,
+  "lengthM": 33.84,
+  "heightM": 11.76,
+  "power": "2 x 98kN CFM56-5A4 or 2 x 104.6kN IAE V2524-A5 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A319",
+  "override": {
+   "lengthM": 33.84,
+   "spanM": 35.8,
+   "heightM": 11.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A320_family",
+   "note": "sharklets; page table does not label which subtypes share span/height"
+  }
+ },
+ "A320": {
+  "spanM": 34.1,
+  "lengthM": 37.57,
+  "heightM": 11.76,
+  "power": "2 x 111kN CFM56-5A1 or 2 x 118kN CFM56-5A3 or 2 x 125kN IAE V2500 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A320",
+  "override": {
+   "lengthM": 37.57,
+   "spanM": 35.8,
+   "heightM": 11.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A320_family",
+   "note": "sharklets; 33.91 m without per article text"
+  }
+ },
+ "A321": {
+  "spanM": 34.1,
+  "lengthM": 44.51,
+  "heightM": 11.76,
+  "power": "2 x 133kN CFM56-5B1 or 2 x 133kN IAE V2530-A5 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A321",
+  "override": {
+   "lengthM": 44.51,
+   "spanM": 35.8,
+   "heightM": 11.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A320_family",
+   "note": "sharklets"
+  }
+ },
+ "A332": {
+  "spanM": 60.3,
+  "lengthM": 58.8,
+  "heightM": 17.4,
+  "power": "2 x 306kN GE CF6-80E1 or 2 x 300kN R-R Trent 772 or 2 x 308kN PW 4173 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A332",
+  "override": {
+   "lengthM": 58.82,
+   "spanM": 60.3,
+   "heightM": 17.39,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A330",
+   "note": "span 60.3 m as single family value; sharklet status not stated"
+  }
+ },
+ "A333": {
+  "spanM": 60.3,
+  "lengthM": 63.6,
+  "heightM": 16.85,
+  "power": "2 x 306kN GE CF6-80E1 or 2 x 300kN R-R Trent 772 or 2 x 308kN PW 4000 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A333",
+  "override": {
+   "lengthM": 63.66,
+   "spanM": 60.3,
+   "heightM": 16.79,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A330",
+   "note": "table gives 63.66 m, text 63.69 m; span single family value"
+  }
+ },
+ "A339": {
+  "spanM": 64,
+  "lengthM": 63.66,
+  "heightM": 16.79,
+  "power": "2 x 324kN Rolls-Royce Trent 7000",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A339",
+  "override": {
+   "lengthM": 63.69,
+   "spanM": 64,
+   "heightM": 16.79,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A330neo",
+   "note": "sharklets"
+  }
+ },
+ "A343": {
+  "spanM": 60.3,
+  "lengthM": 63.6,
+  "heightM": 16.85,
+  "power": "4 x 154kN CFM56-5C4/P turbofans.",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A343"
+ },
+ "A346": {
+  "spanM": 63.45,
+  "lengthM": 75.3,
+  "heightM": 17.3,
+  "power": "4 x 249kN R-R Trent 556 turbofans.",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A346"
+ },
+ "A359": {
+  "spanM": 64.8,
+  "lengthM": 66.9,
+  "heightM": 17.05,
+  "power": "2x RR Trent XWB delivering 374kN each.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A359",
+  "override": {
+   "lengthM": 66.8,
+   "spanM": 64.75,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A350",
+   "note": "no height on page"
+  }
+ },
+ "A35K": {
+  "spanM": 64.75,
+  "lengthM": 73.79,
+  "heightM": 17.08,
+  "power": "2 x RR Trent XWB (430kN each)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A35K",
+  "override": {
+   "lengthM": 73.79,
+   "spanM": 64.75,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A350",
+   "note": "span shared with -900 per page; no height"
+  }
+ },
+ "A388": {
+  "spanM": 79.8,
+  "lengthM": 73,
+  "heightM": 24.1,
+  "power": "4 x 311kN R-R Trent 900 or GP7200",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=A388",
+  "override": {
+   "lengthM": 72.72,
+   "spanM": 79.75,
+   "heightM": 24.09,
+   "engines": 4,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A380"
+  }
+ },
+ "AJ27": {
+  "source": null,
+  "override": {
+   "lengthM": 33.46,
+   "spanM": 27.28,
+   "heightM": 8.44,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/COMAC_ARJ21"
+  }
+ },
+ "AS50": {
+  "source": null,
+  "override": {
+   "lengthM": 10.93,
+   "spanM": 10.7,
+   "heightM": 3.145,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_AS350_%C3%89cureuil",
+   "note": "helicopter AS350 B3; span = main rotor dia; length is fuselage only"
+  }
+ },
+ "AS65": {
+  "source": null,
+  "override": {
+   "lengthM": 13.73,
+   "spanM": 11.94,
+   "heightM": 4.06,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_AS365_Dauphin",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "ASTR": {
+  "spanM": 16.1,
+  "lengthM": 16.9,
+  "heightM": 5.5,
+  "power": "1125: 2 x 16.23 kN Garett TFE 731-3B-100G turbofans. SP: 2 x 16,6 kN AlliedSignal TFE731-3C-200G turbofans. SPX: 2 x 18.91 kN AlliedSignal TFE731-40R-200G turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=ASTR"
+ },
+ "AT43": {
+  "spanM": 24.6,
+  "lengthM": 22.7,
+  "heightM": 7.6,
+  "power": "300: 2 x 1.800 SHP PWC PW120 turboprops with 4 blade propellers. 320: 2 x 2.100 SHP PWC PW121 turboprops with 4 blade propellers.",
+  "engines": null,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=AT43"
+ },
+ "AT45": {
+  "spanM": 24.6,
+  "lengthM": 22.7,
+  "heightM": 7.6,
+  "power": "2 x 2.500 SHP PWC PW127 turboprops with 6 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=AT45"
+ },
+ "AT46": {
+  "source": null,
+  "override": {
+   "lengthM": 22.67,
+   "spanM": 24.57,
+   "heightM": 7.59,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/ATR_42",
+   "note": "one value set for the family; -600 not listed separately"
+  }
+ },
+ "AT72": {
+  "spanM": 27.1,
+  "lengthM": 27.2,
+  "heightM": 7.7,
+  "power": "200: 2 x 2160 SHP PWC PW124B turboprops with 4 blade propellers. 210: 2 x 2500 SHP PWC127E turboprops with 6 blade propellers.",
+  "engines": null,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=AT72"
+ },
+ "AT75": {
+  "spanM": 27.05,
+  "lengthM": 27.17,
+  "heightM": 7.65,
+  "power": "2 x 2500 SHP PWC PW127F turboprops with 6 blade propellers",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=AT75"
+ },
+ "AT76": {
+  "source": null,
+  "override": {
+   "lengthM": 27.17,
+   "spanM": 27.05,
+   "heightM": 7.65,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/ATR_72",
+   "note": "page labels table ATR 72-600"
+  }
+ },
+ "B06": {
+  "spanM": 10.16,
+  "lengthM": 12.11,
+  "heightM": 2.83,
+  "power": "1 x Allison 250-C20B turboshaft, 450 shp derated to 317shp due to drive train limitations",
+  "engines": 1,
+  "classCode": "H1T",
+  "wing": "Two-blade main rotor",
+  "engine": "Above cabin",
+  "tail": "Two-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B06"
+ },
+ "B190": {
+  "spanM": 17.7,
+  "lengthM": 17.6,
+  "heightM": 4.7,
+  "power": "1900C: 2 x 1.100 SHP P&W PT6A - 65B turboprops with 4 blade propellers. 1900D: 2 x 1.279 SHP P&W PT6A - 67D turboprops with 4 blade propellers.",
+  "engines": null,
+  "classCode": "L2T",
+  "wing": "Low wing (winglets)",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail (tail-lets)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B190"
+ },
+ "B212": {
+  "source": null,
+  "override": {
+   "lengthM": 17.4163,
+   "spanM": 14.63,
+   "heightM": 3.8311,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Bell_212",
+   "note": "helicopter; span = main rotor dia; length basis not stated; page lists one PT6T-3 TwinPac and calls it twin-engine"
+  }
+ },
+ "B350": {
+  "spanM": 17.7,
+  "lengthM": 14.2,
+  "heightM": 4.4,
+  "power": "2 x 1.050 SHP P&W PT6A-60A turboprop with 4 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing (winglets)",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B350"
+ },
+ "B37M": {
+  "spanM": 35.9,
+  "lengthM": 35.56,
+  "heightM": 12.29,
+  "power": "2 x CFM International LEAP-1B (130 kN) turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B37M"
+ },
+ "B38M": {
+  "spanM": 35.9,
+  "lengthM": 39.52,
+  "heightM": 12.29,
+  "power": "2 x CFM International LEAP-1B (130 kN) turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B38M",
+  "override": {
+   "lengthM": 39.52,
+   "spanM": 35.9,
+   "heightM": 12.3,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_737_MAX",
+   "note": "AT winglets"
+  }
+ },
+ "B39M": {
+  "spanM": 35.9,
+  "lengthM": 42.16,
+  "heightM": 12.29,
+  "power": "2 x CFM International LEAP-1B (130 kN) turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B39M",
+  "override": {
+   "lengthM": 42.1,
+   "spanM": 35.92,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_737_MAX",
+   "note": "AT winglets; engines from MAX family (LEAP-1B)"
+  }
+ },
+ "B3XM": {
+  "spanM": 35.92,
+  "lengthM": 43.8,
+  "heightM": 12.29,
+  "power": "2 x CFM International LEAP-1B (130 kN) turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B3XM"
+ },
+ "B407": {
+  "source": null,
+  "override": {
+   "lengthM": 12.7,
+   "spanM": 10.67,
+   "heightM": 3.56,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Bell_407",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "B412": {
+  "spanM": 14,
+  "lengthM": 17.1,
+  "heightM": 4.6,
+  "power": "2 \u00d7 Pratt & Whitney Canada PT6T-3BE Twin-Pac turboshafts, 900 shp (671 kW) each&#13;&#10;",
+  "engines": null,
+  "classCode": "H2T",
+  "wing": "Four-blade main rotor",
+  "engine": "Above cabin",
+  "tail": "Two-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B412"
+ },
+ "B429": {
+  "source": null,
+  "override": {
+   "lengthM": 12.7,
+   "spanM": 11.0,
+   "heightM": 4.04,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Bell_429_GlobalRanger",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "B462": {
+  "spanM": 26.34,
+  "lengthM": 28.55,
+  "heightM": 8.61,
+  "power": "4 \u00d7 31kN Honeywell ALF 502R-5 turbofans",
+  "engines": null,
+  "classCode": "L4J",
+  "wing": "High wing",
+  "engine": "Underwing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B462"
+ },
+ "B463": {
+  "spanM": 26.34,
+  "lengthM": 31,
+  "heightM": 8.61,
+  "power": "4 \u00d7 31kN Honeywell ALF 502R-5 turbofans",
+  "engines": null,
+  "classCode": "L4J",
+  "wing": "High wing",
+  "engine": "Underwing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B463"
+ },
+ "B505": {
+  "source": null,
+  "override": {
+   "lengthM": 12.93,
+   "spanM": 11.28,
+   "heightM": 3.25,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Bell_505_Jet_Ranger_X",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "B712": {
+  "spanM": 28.5,
+  "lengthM": 37.8,
+  "heightM": 8.9,
+  "power": "2 x 93,4 kN R-R BR715-C1-30 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B712"
+ },
+ "B733": {
+  "spanM": 28.9,
+  "lengthM": 33.4,
+  "heightM": 11.1,
+  "power": "2 x 90 kN CFM56-3B1 or 2 x 99 kN CFM56-3B2 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B733"
+ },
+ "B734": {
+  "spanM": 28.9,
+  "lengthM": 36.4,
+  "heightM": 11.1,
+  "power": "2 x 97.9 kN CFM56-3B2 or 2 x 105 kN CFM56-3C turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B734"
+ },
+ "B735": {
+  "spanM": 28.9,
+  "lengthM": 31,
+  "heightM": 11.1,
+  "power": "2 x 82 kN CFM56-3B4 or 2 x 89 kN CFM56-3B1 turbofans, optional derated to 82.3 kN.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B735"
+ },
+ "B737": {
+  "spanM": 34.3,
+  "lengthM": 33.6,
+  "heightM": 12.6,
+  "power": "2 x 89 kN CFM56-7 or 2 x 107 kN CFM56-7HGW turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B737",
+  "override": {
+   "lengthM": 33.63,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_737_Next_Generation",
+   "note": "the family's one wing: the page gives 35.79 m with blended winglets for the -800",
+   "spanM": 35.79
+  }
+ },
+ "B738": {
+  "spanM": 34.3,
+  "lengthM": 39.2,
+  "heightM": 12.6,
+  "power": "2 x 117 kN CFMI CFM56-7B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B738",
+  "override": {
+   "lengthM": 39.47,
+   "spanM": 35.79,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_737_Next_Generation",
+   "note": "blended winglets (34.32 m without); no height on page"
+  }
+ },
+ "B739": {
+  "spanM": 34.3,
+  "lengthM": 42.1,
+  "heightM": 12.5,
+  "power": "2 x 116,5 kN CFMI CFM56-7B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B739",
+  "override": {
+   "lengthM": 42.11,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_737_Next_Generation",
+   "note": "the family's one wing: the page gives 35.79 m with blended winglets for the -800",
+   "spanM": 35.79
+  }
+ },
+ "B744": {
+  "spanM": 64.8,
+  "lengthM": 70.6,
+  "heightM": 19.4,
+  "power": "4 x 258 kN R-R RB 211-524 G/H or 4 x 252.4 kN P&W PW 4056 or 4 x 257.5 kN GE CF6-80C2B4 turbofans.",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B744",
+  "override": {
+   "engines": 4,
+   "source": "https://en.wikipedia.org/wiki/Boeing_747-400",
+   "note": "Wikipedia 747 and 747-400 pages as fetched had no 747-400 dimensions"
+  }
+ },
+ "B748": {
+  "spanM": 68.5,
+  "lengthM": 76.3,
+  "heightM": 19.4,
+  "power": "4x 66500 lbs GEnx-2B67",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "Low swept wing (Raked wings)",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B748",
+  "override": {
+   "lengthM": 76.25,
+   "spanM": 68.4,
+   "heightM": 20,
+   "engines": 4,
+   "source": "https://en.wikipedia.org/wiki/Boeing_747-8",
+   "note": "747-8 Intercontinental"
+  }
+ },
+ "B752": {
+  "spanM": 38.1,
+  "lengthM": 47.3,
+  "heightM": 13.6,
+  "power": "2 x 162.8 kN P&W PW2037 or &#13;&#10;2 x 178.4 kN P&W PW2040 or &#13;&#10;2 x 193.5 kN R-R RB 211-535E4B or &#13;&#10;2 x 179 kN R-R RB 211-535E4 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B752",
+  "override": {
+   "lengthM": 47.3,
+   "heightM": 13.6,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_757",
+   "note": "38.0 m span is without winglets; no winglet span on page"
+  }
+ },
+ "B753": {
+  "spanM": 38.1,
+  "lengthM": 54.5,
+  "heightM": 13.6,
+  "power": "2 x 162.8 kN P&W PW2037 or 2 x 178.4 kN P&W PW2040 or 2 x 189.4 P&W PW2043 or 2 x 193.5 kN R-R RB 211-535E4B turbofans.&#13;&#10;",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B753"
+ },
+ "B763": {
+  "spanM": 47.6,
+  "lengthM": 54.9,
+  "heightM": 15.9,
+  "power": "2 x 281.6kN P&W PW4062 or 2 x 276.2kN GE CF6-80C2B7F or 2 x 264.7kN RR RB211-524H",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B763",
+  "override": {
+   "lengthM": 54.94,
+   "heightM": 16.03,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_767",
+   "note": "47.57 m span is without winglets; no winglet span on page"
+  }
+ },
+ "B764": {
+  "spanM": 51.9,
+  "lengthM": 61.4,
+  "heightM": 16.8,
+  "power": "2 x 281.6kN P&W PW4062 or 2 x 282.5kN GE CF6-80C2B8F",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B764"
+ },
+ "B772": {
+  "spanM": 60.9,
+  "lengthM": 63.7,
+  "heightM": 18.4,
+  "power": "2 x 332 kN P&W PW 4074 or 2 x 336 kN GE GE90-75B or 2 x 336.3 kN R-R Trent 875 or 2 x 345 kN P&W PW 4077 or 2 x 340 kN GE GE90-76B or 2 x 345.3 kN R-R Trent 877 or 2 x 376.3 kN P&W PW 4084 or 2 x 376.3 kN GE GE90-85B or 2 x 376.3 kN R-R Trent 884 turbofan",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B772",
+  "override": {
+   "lengthM": 63.73,
+   "spanM": 60.93,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_777",
+   "note": "777-200/200ER; no height on page"
+  }
+ },
+ "B77L": {
+  "spanM": 64.8,
+  "lengthM": 63.7,
+  "heightM": 18.6,
+  "power": "2x General Electric GE90-110B1 110.100lbf(490kN) / GE90-115B1 115.540lbf (514kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B77L",
+  "override": {
+   "lengthM": 63.73,
+   "spanM": 64.8,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_777",
+   "note": "from flattened comparison table (columns merged, mapping inferred); raked tips; no height"
+  }
+ },
+ "B77W": {
+  "spanM": 64.8,
+  "lengthM": 73.9,
+  "heightM": 18.5,
+  "power": "2 x General Electric GE90-115B 115,000 lbF (510 kN).",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low swept wing (Raked wings)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B77W",
+  "override": {
+   "lengthM": 73.86,
+   "spanM": 64.8,
+   "heightM": 18.85,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_777",
+   "note": "raked tips"
+  }
+ },
+ "B788": {
+  "spanM": 52,
+  "lengthM": 56.7,
+  "heightM": 16.9,
+  "power": "2x 280kN General Electric GEnx or 2x 280kN Rolls-Royce Trent 1000",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B788",
+  "override": {
+   "lengthM": 56.72,
+   "spanM": 60.12,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_787_Dreamliner",
+   "note": "span from text 'same wingspan as the 787-8' in 787-9 section; no -8 height (787-9 is 17.09)"
+  }
+ },
+ "B789": {
+  "spanM": 60.12,
+  "lengthM": 62.8,
+  "heightM": 16.9,
+  "power": "2x 320kN GEnx-1B or 2x 320kN RR Trent 1000 TEN turbofans (newer productions with 2x 340kn Genx-1B or RR Trent 1000 TEN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B789",
+  "override": {
+   "lengthM": 62.81,
+   "spanM": 60.12,
+   "heightM": 17.09,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_787_Dreamliner"
+  }
+ },
+ "B78X": {
+  "spanM": 60.12,
+  "lengthM": 68.3,
+  "heightM": 16.9,
+  "power": "2x 340kN GEnx-1B or 2x 340kN RR Trent 1000 TEN turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=B78X",
+  "override": {
+   "lengthM": 68.28,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Boeing_787_Dreamliner",
+   "note": "page gives no -10 span or height"
+  }
+ },
+ "BCS1": {
+  "spanM": 35.1,
+  "lengthM": 35,
+  "heightM": 11.5,
+  "power": "2 x Pratt & Whitney Pure Power PW1500G",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BCS1",
+  "override": {
+   "lengthM": 35,
+   "spanM": 35.1,
+   "heightM": 11.5,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A220",
+   "note": "span and height listed once for the family"
+  }
+ },
+ "BCS3": {
+  "spanM": 35.1,
+  "lengthM": 38.7,
+  "heightM": 11.5,
+  "power": "2 x Pratt & Whitney PurePower PW1500G",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BCS3",
+  "override": {
+   "lengthM": 38.71,
+   "spanM": 35.1,
+   "heightM": 11.5,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_A220",
+   "note": "span and height listed once for the family"
+  }
+ },
+ "BE20": {
+  "spanM": 16.6,
+  "lengthM": 13.4,
+  "heightM": 4.5,
+  "power": "2 x 850 SHP P&W PT6A-42 turboprops with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE20"
+ },
+ "BE30": {
+  "source": null
+ },
+ "BE33": {
+  "spanM": 10.2,
+  "lengthM": 7.8,
+  "heightM": 2.5,
+  "power": "1 x 225 HP Continental IO-470-K piston engine with two blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE33"
+ },
+ "BE35": {
+  "source": null
+ },
+ "BE36": {
+  "spanM": 8.4,
+  "lengthM": 8.1,
+  "heightM": 2.6,
+  "power": "1 x 300 HP Continental IO-550-B piston or 1 x 300 HP Continental TIO-520-UB turbocharged piston engine with 3 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE36"
+ },
+ "BE40": {
+  "spanM": 13.3,
+  "lengthM": 14.8,
+  "heightM": 4.2,
+  "power": "2 x 12.9 kN P&W JT15D-5 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE40"
+ },
+ "BE58": {
+  "spanM": 11.5,
+  "lengthM": 9.1,
+  "heightM": 2.97,
+  "power": "2 x 300 HP Continental IO 550-C piston engines or 2 x 325 HP Continental TSIO 520-W3 turbocharged piston engines with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE58"
+ },
+ "BE95": {
+  "spanM": 11.5,
+  "lengthM": 7.9,
+  "heightM": 2.9,
+  "power": "2 x Lycoming IO-360-B1B 180hp",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE95"
+ },
+ "BE9L": {
+  "spanM": 15.3,
+  "lengthM": 10.8,
+  "heightM": 4.3,
+  "power": "2 x 500 SHP P&W PT6A -6 or 2 x 530 SHP P&W PT6A -20 or 2 x 550 SHP P&W PT6A -21 or 2 x 560 SHP P&W PT6A -34 turboprops with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=BE9L"
+ },
+ "C150": {
+  "spanM": 10.2,
+  "lengthM": 6.6,
+  "heightM": 2.1,
+  "power": "1 x 100 HP Continental O-200-A piston engine with two blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C150"
+ },
+ "C152": {
+  "spanM": 10.2,
+  "lengthM": 7.3,
+  "heightM": 2.6,
+  "power": "1 x 180 HP Lycoming O-235-N26 piston engine with 2 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C152"
+ },
+ "C172": {
+  "spanM": 10.9,
+  "lengthM": 8.2,
+  "heightM": 2.7,
+  "power": "1 x 145 HP Continental O-300-A or 1 x 175 HP Continental GO-300-C or 1 x 145 HP Continental O-300-C or 1 x 160 HP Lycoming O-320-H2AD or 1 x 195 HP Continental IO-360-KB piston engine with 2 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C172"
+ },
+ "C177": {
+  "spanM": 10.8,
+  "lengthM": 8.2,
+  "heightM": 2.8,
+  "power": "1 x 150 HP Lycoming IO-320-E2D or 1 x 180 HP Lycoming O-360-A1F6D piston engine with two blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "High wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C177"
+ },
+ "C182": {
+  "spanM": 11,
+  "lengthM": 8.6,
+  "heightM": 2.8,
+  "power": "1 x 230 Hp Lycoming IO-540-AB1A5 piston engine with 2 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C182"
+ },
+ "C206": {
+  "spanM": 10.9,
+  "lengthM": 8.6,
+  "heightM": 3,
+  "power": "206: 1 x 260 HP Continental IO-470-S piston engine with 2 blade propeller. T206: 1 x 285 HP Continental TSIO-520-C turbocharged piston engine with 3 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C206"
+ },
+ "C208": {
+  "spanM": 15.9,
+  "lengthM": 11.5,
+  "heightM": 4.3,
+  "power": "1 x 600 SHP PWC PT6A-114 turboprop with 3 blade propeller. 208B: 1 x 675 SHP PWC PT6A-114A turboprop with 3 blade propeller.",
+  "engines": 1,
+  "classCode": "L1T",
+  "wing": "High wing (wing struts)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C208"
+ },
+ "C210": {
+  "spanM": 11.2,
+  "lengthM": 8.6,
+  "heightM": 3,
+  "power": "210: 1 x 300 HP Continental IO-520L piston engine with 3 blade propeller. T210: 1 x 310 HP Continental TSIO-520R turbocharged piston engine with 3 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "High wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C210"
+ },
+ "C25A": {
+  "spanM": 15.19,
+  "lengthM": 14.53,
+  "heightM": 4.27,
+  "power": "no data",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C25A"
+ },
+ "C25B": {
+  "spanM": 16.26,
+  "lengthM": 15.59,
+  "heightM": 4.2,
+  "power": "2x 12.54kN Williams FJ44-3A",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C25B"
+ },
+ "C25C": {
+  "spanM": 15.49,
+  "lengthM": 16.26,
+  "heightM": 4.2,
+  "power": "2x 16.11kN Williams FJ44-4A",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C25C"
+ },
+ "C25M": {
+  "spanM": 14.39,
+  "lengthM": 12.98,
+  "heightM": 4.2,
+  "power": "2x 8.74kN Williams FJ44-1AP-21",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C25M"
+ },
+ "C310": {
+  "spanM": 11.3,
+  "lengthM": 9.7,
+  "heightM": 3.3,
+  "power": "2 x 240 HP Continental IO-470-M or 2 x 260 HP Continental IO-470-D or 2 x 285 HP Continental IO-520-M piston engines with 3 blade propellers. T310: 2 x 285 HP Continental TSIO-520-B turbocharged piston engines with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing with wing tip tanks",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C310"
+ },
+ "C340": {
+  "spanM": 11.6,
+  "lengthM": 10.5,
+  "heightM": 3.8,
+  "power": "2 x 285 HP Continental TSIO -520-K or 2 x 310 HP Continental TSIO -520-NB piston engines with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing with wing tip tanks",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C340"
+ },
+ "C414": {
+  "spanM": 12.5,
+  "lengthM": 10.3,
+  "heightM": 3.6,
+  "power": "2 x 310 HP Continental TSIO-520-NB turbocharged piston engines with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C414"
+ },
+ "C421": {
+  "spanM": 12.2,
+  "lengthM": 10.3,
+  "heightM": 3.6,
+  "power": "2 x 375 HP Continental GTSIO-520-H turbocharged piston engine with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C421"
+ },
+ "C441": {
+  "spanM": 15,
+  "lengthM": 11.9,
+  "heightM": 4,
+  "power": "2 x 635 SHP Garrett TPE331-8-401S/402S turboprops with 3 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C441"
+ },
+ "C500": {
+  "source": null,
+  "override": {
+   "lengthM": 13.26,
+   "spanM": 14.35,
+   "heightM": 4.37,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Cessna_Citation_I",
+   "note": "one set for Citation I; 14.35 m span is the long wing"
+  }
+ },
+ "C501": {
+  "source": null,
+  "override": {
+   "lengthM": 13.26,
+   "spanM": 14.35,
+   "heightM": 4.37,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Cessna_Citation_I",
+   "note": "page gives one set for Citation I, none separate for I/SP"
+  }
+ },
+ "C510": {
+  "source": null,
+  "override": {
+   "lengthM": 12.37,
+   "spanM": 13.16,
+   "heightM": 4.09,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Cessna_Citation_Mustang"
+  }
+ },
+ "C525": {
+  "spanM": 14.3,
+  "lengthM": 13,
+  "heightM": 4.2,
+  "power": "2 x 8.45 kN Williams R-R FJ44-1A turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C525"
+ },
+ "C526": {
+  "spanM": 11.28,
+  "lengthM": 14.4,
+  "heightM": 4.2,
+  "power": "2 x Williams FJ44-1B delivering 1500 lbs of thrust each",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of fuselage",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C526"
+ },
+ "C550": {
+  "spanM": 15.9,
+  "lengthM": 14.4,
+  "heightM": 4.6,
+  "power": "Citation 2: 2 x 11.12 kN P&W JT15D-4B turbofans. Bravo: 2 x 12,23 kN P&W PW 530A turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing (straight)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C550"
+ },
+ "C551": {
+  "source": null
+ },
+ "C55B": {
+  "source": null
+ },
+ "C560": {
+  "spanM": 13.8,
+  "lengthM": 14.9,
+  "heightM": 4.2,
+  "power": "Citation 5: 2 x 12.89 kN P&W JT15D-5A turbofans. Ultra: 2 x 13.6 kN P&W JT15D-5D turbofans. Encore: 2 x 14,9 kN P&W PW 535A turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C560"
+ },
+ "C56X": {
+  "spanM": 17,
+  "lengthM": 15.8,
+  "heightM": 5.2,
+  "power": "2 x 16,2 kN P&W PW545A turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C56X"
+ },
+ "C650": {
+  "spanM": 16.31,
+  "lengthM": 16.9,
+  "heightM": 5.11,
+  "power": "Citatin 3/6: 2 x 16.24 kN Allied Signal TFE 731-3B-100S turbofans. Citation 7: 2 x 18,5 kN Allied Signal TFE 731-4R-2S turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C650"
+ },
+ "C680": {
+  "spanM": 19.24,
+  "lengthM": 19.37,
+  "heightM": 6.2,
+  "power": "2x 25.3kN Pratt & Whitney PW306C",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C680"
+ },
+ "C68A": {
+  "source": null,
+  "override": {
+   "lengthM": 18.97,
+   "spanM": 22.05,
+   "heightM": 6.38,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Cessna_Citation_Latitude"
+  }
+ },
+ "C700": {
+  "source": null,
+  "override": {
+   "lengthM": 22.3,
+   "spanM": 21.01,
+   "heightM": 5.92,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Cessna_Citation_Longitude"
+  }
+ },
+ "C72R": {
+  "source": null
+ },
+ "C750": {
+  "spanM": 19.5,
+  "lengthM": 22,
+  "heightM": 5.8,
+  "power": "2 x 28,47 kN Allison AE300 7C turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=C750"
+ },
+ "C82S": {
+  "source": null
+ },
+ "C82T": {
+  "source": null
+ },
+ "C919": {
+  "source": null,
+  "override": {
+   "lengthM": 38.9,
+   "spanM": 35.8,
+   "heightM": 11.95,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Comac_C919",
+   "note": "table columns unclear and some TBA; span with winglets (33.6 m without per article text)"
+  }
+ },
+ "CL30": {
+  "spanM": 18.4,
+  "lengthM": 20.9,
+  "heightM": 6.1,
+  "power": "2x Honeywell HTF7000 turbofans , Thrust: 6,826 lb (30.4 kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CL30"
+ },
+ "CL35": {
+  "spanM": 21,
+  "lengthM": 20.9,
+  "heightM": 6.1,
+  "power": "2 x Honeywell HTF7350 turbofans (33 kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CL35"
+ },
+ "CL60": {
+  "spanM": 19.6,
+  "lengthM": 20.85,
+  "heightM": 6.3,
+  "power": "2x General Electric CF34-3A",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CL60"
+ },
+ "CRJ2": {
+  "spanM": 21.21,
+  "lengthM": 26.8,
+  "heightM": 6.3,
+  "power": "2 x 41 KN GE CF34-3B1 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CRJ2"
+ },
+ "CRJ7": {
+  "spanM": 23.24,
+  "lengthM": 32.51,
+  "heightM": 7.57,
+  "power": "2 x 56.4 or 61.3 kN rated GE CF34 - 8C1 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CRJ7",
+  "override": {
+   "spanM": 23.2,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Bombardier_CRJ700_series",
+   "note": "comparison table has merged columns; first value taken as CRJ700 by inference; no CRJ700 height (CRJ900 is 7.5)"
+  }
+ },
+ "CRJ9": {
+  "spanM": 24.9,
+  "lengthM": 36.2,
+  "heightM": 7.5,
+  "power": "2 x General Electric CF34-8C5 turbofans (58.4kN each)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CRJ9",
+  "override": {
+   "lengthM": 36.2,
+   "spanM": 24.9,
+   "heightM": 7.5,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Bombardier_CRJ700_series"
+  }
+ },
+ "CRJX": {
+  "spanM": 26.18,
+  "lengthM": 39.13,
+  "heightM": 7.5,
+  "power": "2 x GE CF34-8C5A1 (64.5kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=CRJX"
+ },
+ "DA40": {
+  "spanM": 11.63,
+  "lengthM": 8.06,
+  "heightM": 1.97,
+  "power": "1x Fixed pitch Textron Lycoming O-360-A4M (180HP)F or&#13;&#10;1x constants speed propellor Textron Lycoming IO-360 M1A or&#13;&#10;1x constant speed FADEC controlled Thielert &quot;Centurion&quot; 135 hp (101 kW) diesel engine or&#13;&#10;Austro Engine AE 300 turbocharged common-rail injected&#13;&#10;2.0 liter diesel engine with 168 HP and EECU single lever&#13;&#10;control system",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DA40"
+ },
+ "DA42": {
+  "spanM": 13.42,
+  "lengthM": 8.56,
+  "heightM": 2.49,
+  "power": "2x Austro turbocharged diesel engine E-4-B (114kW)&#13;&#10;",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing (winglets)",
+  "engine": "In wing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DA42"
+ },
+ "DA62": {
+  "source": null,
+  "override": {
+   "lengthM": 9.19,
+   "spanM": 14.55,
+   "heightM": 2.82,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Diamond_DA62"
+  }
+ },
+ "DH8A": {
+  "spanM": 25.9,
+  "lengthM": 22.3,
+  "heightM": 7.5,
+  "power": "2 x 2.000 SHP P&W 120A or 2 x 2.150 SHP P&W 121A turboprops with 4 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DH8A"
+ },
+ "DH8B": {
+  "source": null,
+  "override": {
+   "lengthM": 22.25,
+   "spanM": 25.89,
+   "heightM": 7.49,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/De_Havilland_Canada_Dash_8",
+   "note": "Q200 column, same airframe as Series 100"
+  }
+ },
+ "DH8C": {
+  "spanM": 27.4,
+  "lengthM": 25.7,
+  "heightM": 7.5,
+  "power": "2 x 2.380 SHP PWC PW 123 turboprops with 4 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DH8C"
+ },
+ "DH8D": {
+  "spanM": 28.4,
+  "lengthM": 32.8,
+  "heightM": 8.3,
+  "power": "2 x 5071 SHP P&W PW150A turboprops with 6 blade Dowty propellers - 4.11 meters in diameter.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DH8D"
+ },
+ "DHC6": {
+  "spanM": 19.8,
+  "lengthM": 15.1,
+  "heightM": 5.9,
+  "power": "100: 2 x 578 SHP P&W PT6A-20 turboprops with 3 blade propellers. 200: 2 x 652 SHP P&W PT6A-27 turboprops with 3 blade propellers.",
+  "engines": null,
+  "classCode": "L2T",
+  "wing": "High wing (wing struts)",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=DHC6"
+ },
+ "E135": {
+  "spanM": 20.2,
+  "lengthM": 26.3,
+  "heightM": 6.7,
+  "power": "ER: 2 x 31,3 kN Allison AE-3007A3 turbofans. LR: 2 x 33,0 kN Allison AE-3007A4 turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E135"
+ },
+ "E145": {
+  "spanM": 20.2,
+  "lengthM": 29.8,
+  "heightM": 6.7,
+  "power": "ER: 2 x 31,3 kN Allison AE-3007A turbofans. LR: 2 x 30,0 kN Allison AE-3007A1 turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E145"
+ },
+ "E170": {
+  "spanM": 26,
+  "lengthM": 29.9,
+  "heightM": 9.85,
+  "power": "2x GF34-8E",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E170",
+  "override": {
+   "lengthM": 29.9,
+   "spanM": 26.01,
+   "heightM": 9.83,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_family"
+  }
+ },
+ "E190": {
+  "spanM": 28.7,
+  "lengthM": 36.2,
+  "heightM": 10.6,
+  "power": "General Electric CF34-10E",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail (Dihedral)",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E190",
+  "override": {
+   "lengthM": 36.25,
+   "spanM": 28.73,
+   "heightM": 10.57,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_family"
+  }
+ },
+ "E195": {
+  "spanM": 28.7,
+  "lengthM": 38.65,
+  "heightM": 10.55,
+  "power": "2 x Pratt&Whitney PW190G (85-102kN) or 2 x General Electric CF34-10 (82kN) turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E195"
+ },
+ "E290": {
+  "source": null,
+  "override": {
+   "lengthM": 36.25,
+   "spanM": 33.72,
+   "heightM": 10.96,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_E2_family"
+  }
+ },
+ "E295": {
+  "source": null,
+  "override": {
+   "lengthM": 41.51,
+   "spanM": 35.12,
+   "heightM": 10.91,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_E2_family"
+  }
+ },
+ "E35L": {
+  "source": null,
+  "override": {
+   "lengthM": 26.33,
+   "spanM": 21.17,
+   "heightM": 6.64,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_Legacy_600"
+  }
+ },
+ "E45X": {
+  "source": null,
+  "override": {
+   "lengthM": 29.87,
+   "spanM": 20.04,
+   "heightM": 6.76,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_ERJ_family",
+   "note": "ERJ 145XR; span and height given once for the table"
+  }
+ },
+ "E50P": {
+  "spanM": 12.3,
+  "lengthM": 12.8,
+  "heightM": 4.4,
+  "power": "2 \u00d7 Pratt & Whitney Canada PW617F-E turbofans, 7.2 kN (1,695 lbf) each&#13;&#10;",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E50P"
+ },
+ "E545": {
+  "source": null,
+  "override": {
+   "lengthM": 19.69,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_Praetor_600",
+   "note": "table values unlabeled by model; pairing of shorter length/span to Legacy 450 inferred from text; height 6.43 or 6.44 not assignable"
+  }
+ },
+ "E550": {
+  "source": null,
+  "override": {
+   "lengthM": 20.74,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_Praetor_600",
+   "note": "table values unlabeled by model; pairing to Legacy 500/Praetor 600 inferred; height 6.43 or 6.44 not assignable"
+  }
+ },
+ "E55P": {
+  "spanM": 16.2,
+  "lengthM": 15.9,
+  "heightM": 5,
+  "power": "2 \u00d7 Pratt & Whitney Canada PW535E turbofans, 14.2 kN (3,200 lbf) each&#13;&#10;",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=E55P"
+ },
+ "E75L": {
+  "source": null,
+  "override": {
+   "lengthM": 31.67,
+   "spanM": 28.65,
+   "heightM": 9.86,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_family",
+   "note": "E175 long wing (LR)"
+  }
+ },
+ "E75S": {
+  "source": null,
+  "override": {
+   "lengthM": 31.67,
+   "spanM": 26.01,
+   "heightM": 9.86,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Embraer_E-Jet_family",
+   "note": "E175 short wing (STD)"
+  }
+ },
+ "EA50": {
+  "source": null,
+  "override": {
+   "lengthM": 10.2,
+   "spanM": 11.6,
+   "heightM": 3.4,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Eclipse_500"
+  }
+ },
+ "EC20": {
+  "source": null,
+  "override": {
+   "lengthM": 11.52,
+   "spanM": 10.0,
+   "heightM": 3.4,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_EC120_Colibri",
+   "note": "helicopter; span = main rotor dia; 11.52 m is 'overall' (basis not stated), fuselage 9.6 m"
+  }
+ },
+ "EC25": {
+  "source": null,
+  "override": {
+   "lengthM": 19.5,
+   "spanM": 16.2,
+   "heightM": 4.97,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_EC225_Super_Puma",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "EC30": {
+  "source": null,
+  "override": {
+   "lengthM": 12.64,
+   "spanM": 10.69,
+   "heightM": 3.34,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_EC130",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "EC35": {
+  "spanM": 10.2,
+  "lengthM": 12.16,
+  "heightM": 3.51,
+  "power": "2 x Pratt & Whitney 206B2 498kW (667shp) or 2 x Turbomecca Arrius 2B2 473kW (634 shp)",
+  "engines": 2,
+  "classCode": "H2T",
+  "wing": "Four-blade main rotor",
+  "engine": "In fuselage",
+  "tail": "Six-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=EC35"
+ },
+ "EC45": {
+  "source": null,
+  "override": {
+   "lengthM": 13.54,
+   "spanM": 10.8,
+   "heightM": 3.45,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_EC145",
+   "note": "helicopter; span = main rotor dia; length basis not stated; height is for EC145 C-2"
+  }
+ },
+ "EC55": {
+  "source": null,
+  "override": {
+   "lengthM": 14.3,
+   "spanM": 12.6,
+   "heightM": 4.35,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Eurocopter_EC155",
+   "note": "helicopter EC155 B1; span = main rotor dia; length basis not stated"
+  }
+ },
+ "EC75": {
+  "source": null,
+  "override": {
+   "lengthM": 18.06,
+   "spanM": 14.8,
+   "heightM": 5.34,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Airbus_Helicopters_H175",
+   "note": "helicopter; span = main rotor dia; length with rotors running (15.68 m nose to tail rotor disc)"
+  }
+ },
+ "EXPL": {
+  "source": null,
+  "override": {
+   "lengthM": 9.86,
+   "spanM": 10.31,
+   "heightM": 3.66,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/MD_Helicopters_MD_902_Explorer",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "F100": {
+  "spanM": 28.1,
+  "lengthM": 35.5,
+  "heightM": 8.5,
+  "power": "2 x 44 kN R-R RB.183 Mk 555-15P or 2 x 61,2 kN RR Tay Mk 620-15 or 2 x 67.6 kN R-R Tay Mk 650-15 turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=F100"
+ },
+ "F2TH": {
+  "spanM": 19.3,
+  "lengthM": 20.2,
+  "heightM": 7.1,
+  "power": "2 x 26.7 kN GE CFE738-1-1B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=F2TH"
+ },
+ "F70": {
+  "spanM": 29.1,
+  "lengthM": 30.9,
+  "heightM": 8.5,
+  "power": "2 x 61.6 kN Rolls-Royce TAY Mk 620 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=F70"
+ },
+ "F900": {
+  "spanM": 19.3,
+  "lengthM": 20.2,
+  "heightM": 7.6,
+  "power": "3 x 20 kN Garrett TFE731-5AR-1C or 3 x 21,1 kN Alliend Signal TFE731-5BR turbofans.",
+  "engines": 3,
+  "classCode": "L3J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage and fin-integrated",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=F900"
+ },
+ "FA10": {
+  "spanM": 13.08,
+  "lengthM": 13.86,
+  "heightM": 4.61,
+  "power": "2 x 14.65 kN Garrett TFE731-2 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=FA10"
+ },
+ "FA20": {
+  "spanM": 16.3,
+  "lengthM": 17.2,
+  "heightM": 5.3,
+  "power": "20: 2 x 19.6 kN GE CF700-2D-2 turbofans. 200: 2 x 23,13 kN Garrett ATF3-6A-4C turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=FA20"
+ },
+ "FA50": {
+  "spanM": 18.86,
+  "lengthM": 18.52,
+  "heightM": 6.97,
+  "power": "3 x 16.8 kN Garrett TFE731-3 turbofans. EX: 3 x 16,5 kN Garrett TFE731-40 turbofans.",
+  "engines": 3,
+  "classCode": "L3J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage and fin-integrated",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=FA50"
+ },
+ "FA6X": {
+  "source": null,
+  "override": {
+   "lengthM": 25.68,
+   "spanM": 25.94,
+   "heightM": 7.47,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Dassault_Falcon_6X"
+  }
+ },
+ "FA7X": {
+  "spanM": 26.21,
+  "lengthM": 23.19,
+  "heightM": 7.8,
+  "power": "2x Pratt & Whitney Canada PW307A delivering 6402 lbf (28.5kN) of thrust",
+  "engines": 2,
+  "classCode": "L3J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage and fin-integrated",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=FA7X",
+  "override": {
+   "engines": 3,
+   "tail": "Cruciform tail",
+   "source": "https://en.wikipedia.org/wiki/Dassault_Falcon_7X",
+   "note": "EUROCONTROL's row counts two engines and its own engine text says 'rear fuselage and fin-integrated'; the page calls it a trijet with a cruciform tail"
+  }
+ },
+ "FA8X": {
+  "source": null,
+  "override": {
+   "lengthM": 24.46,
+   "spanM": 26.29,
+   "heightM": 7.94,
+   "engines": 3,
+   "source": "https://en.wikipedia.org/wiki/Dassault_Falcon_8X"
+  }
+ },
+ "G150": {
+  "spanM": 16.94,
+  "lengthM": 17.3,
+  "heightM": 5.82,
+  "power": "2x Honeywell TFE731-40AR (19.7kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=G150"
+ },
+ "G280": {
+  "spanM": 19.2,
+  "lengthM": 20.37,
+  "heightM": 6.5,
+  "power": "2x Honeywell HTF7250G (7445lb /33kN)",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=G280"
+ },
+ "GA5C": {
+  "source": null,
+  "override": {
+   "lengthM": 27.79,
+   "spanM": 26.31,
+   "heightM": 7.77,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Gulfstream_G500/G600"
+  }
+ },
+ "GA6C": {
+  "source": null,
+  "override": {
+   "lengthM": 29.29,
+   "spanM": 28.7,
+   "heightM": 7.7,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Gulfstream_G500/G600"
+  }
+ },
+ "GA7C": {
+  "source": null,
+  "override": {
+   "lengthM": 33.48,
+   "spanM": 31,
+   "heightM": 7.75,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Gulfstream_G700",
+   "note": "merged table cells, model matched by inference"
+  }
+ },
+ "GALX": {
+  "spanM": 17.7,
+  "lengthM": 19,
+  "heightM": 6.5,
+  "power": "2 x 25,4 kN P&W PW306A-5 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GALX"
+ },
+ "GL5T": {
+  "spanM": 28.65,
+  "lengthM": 29.5,
+  "heightM": 7.7,
+  "power": "2 \u00d7 Rolls-Royce BR710A2-20 turbofans, 14,750 lbf (65.6 kN) each",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GL5T"
+ },
+ "GL7T": {
+  "source": null,
+  "override": {
+   "lengthM": 34,
+   "spanM": 32,
+   "heightM": 8.2,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Bombardier_Global_7500",
+   "note": "rounded figures; section flagged out of date"
+  }
+ },
+ "GL8T": {
+  "source": null
+ },
+ "GLEX": {
+  "spanM": 28.6,
+  "lengthM": 30.3,
+  "heightM": 7.6,
+  "power": "2 x 65,3 kN R-R BR710-48-C2 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GLEX"
+ },
+ "GLF2": {
+  "source": null,
+  "override": {
+   "lengthM": 24.36,
+   "spanM": 23.72,
+   "heightM": 7.47,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Gulfstream_II",
+   "note": "G-IIB figures"
+  }
+ },
+ "GLF3": {
+  "spanM": 23.7,
+  "lengthM": 25.3,
+  "heightM": 7.5,
+  "power": "2 x 50.7 kN R-R Spey Mk 511-8 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GLF3"
+ },
+ "GLF4": {
+  "spanM": 23.7,
+  "lengthM": 26.9,
+  "heightM": 7.4,
+  "power": "2 x 61.6 kN Rolls-Royce Tay Mk 611-8 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GLF4"
+ },
+ "GLF5": {
+  "spanM": 28.5,
+  "lengthM": 29.4,
+  "heightM": 7.9,
+  "power": "2 x 65,3 kN Rolls-Royce BR710A1-10 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=GLF5"
+ },
+ "GLF6": {
+  "source": null,
+  "override": {
+   "lengthM": 30.4,
+   "spanM": 30.35,
+   "heightM": 7.82,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Gulfstream_G650"
+  }
+ },
+ "H25A": {
+  "spanM": 14.33,
+  "lengthM": 14.45,
+  "heightM": 5.03,
+  "power": "2x Rolls-Royce Bristol Viper 522 3330lb turbojet engines.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=H25A"
+ },
+ "H25B": {
+  "spanM": 16.6,
+  "lengthM": 15.6,
+  "heightM": 5.5,
+  "power": "700: 2 x 16.6kN Garrett TFE 731-3-RH turbofans. 800: 2 x 20.7kN Garrett TFE 731-5BR-1H turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=H25B"
+ },
+ "H25C": {
+  "spanM": 15.7,
+  "lengthM": 16.4,
+  "heightM": 5.2,
+  "power": "2 x 23.13kN PWC PW 305 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=H25C"
+ },
+ "H500": {
+  "source": null,
+  "override": {
+   "lengthM": 9.93,
+   "spanM": 8.33,
+   "heightM": 2.67,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/MD_Helicopters_MD_500",
+   "note": "helicopter; span = main rotor dia; page heads block MD 530F but cites MD500E data; length basis not stated"
+  }
+ },
+ "HDJT": {
+  "spanM": 12.15,
+  "lengthM": 12.71,
+  "heightM": 4.03,
+  "power": "2x 9.1kN GE Honda HF-120 turbofans",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Over wing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=HDJT"
+ },
+ "IL76": {
+  "spanM": 50.5,
+  "lengthM": 46.6,
+  "heightM": 14.8,
+  "power": "76: 4 x 117 kN Soloviev D-30KP turbofans. 76M: 4 x 156,9 kN AviadVigatal PS-90AN turbofans.",
+  "engines": null,
+  "classCode": "L4J",
+  "wing": "High wing",
+  "engine": "Underwing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=IL76"
+ },
+ "JS41": {
+  "spanM": 18.42,
+  "lengthM": 19.33,
+  "heightM": 5.61,
+  "power": "2 x 1.500SHP Garrett TPE331-14 GR/HR or 2 x 1.650SHP Garrett TPE33 -14 turboprops with 5 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Cruciform tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=JS41"
+ },
+ "KODI": {
+  "source": null,
+  "override": {
+   "lengthM": 10.41,
+   "spanM": 13.72,
+   "heightM": 4.65,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Quest_Kodiak",
+   "note": "base Kodiak; converted from 34 ft 2 in, 45 ft 0 in, 15 ft 3 in as written on page"
+  }
+ },
+ "L410": {
+  "spanM": 20,
+  "lengthM": 14.4,
+  "heightM": 5.8,
+  "power": "410: 2 x 750 SHP Motorlet Walter M 601E turboprops with five blade propellers. 420: 2 x 775 SHP Motorlet Walter M 601F turboprops with five blade propellers.",
+  "engines": null,
+  "classCode": "L2T",
+  "wing": "High wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=L410"
+ },
+ "LJ23": {
+  "source": null,
+  "override": {
+   "lengthM": 13.18,
+   "spanM": 10.84,
+   "heightM": 3.84,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Learjet_23"
+  }
+ },
+ "LJ24": {
+  "source": null,
+  "override": {
+   "lengthM": 13.18,
+   "spanM": 10.85,
+   "heightM": 3.73,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Learjet_24",
+   "note": "24F; span includes wingtip tanks"
+  }
+ },
+ "LJ25": {
+  "spanM": 10.8,
+  "lengthM": 14.5,
+  "heightM": 3.7,
+  "power": "2 x 13.1 kN GE CJ610-8A turbojets.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing with wing tip tanks",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ25"
+ },
+ "LJ31": {
+  "spanM": 13.3,
+  "lengthM": 14.8,
+  "heightM": 3.8,
+  "power": "2 x 15.6 kN Garrett TFE731-2B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ31"
+ },
+ "LJ35": {
+  "spanM": 12,
+  "lengthM": 14.8,
+  "heightM": 3.7,
+  "power": "2 x 15.6 kN Garrett TFE731-2-2B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing with wing tip tanks",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ35"
+ },
+ "LJ40": {
+  "spanM": 14.56,
+  "lengthM": 16.93,
+  "heightM": 4.31,
+  "power": "2 \u00d7 Honeywell TFE731-20AR, or -20BR in the Lear 40XR, turbofan engines, 3500 lbs (15.56 kN) each&#13;&#10;",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ40"
+ },
+ "LJ45": {
+  "spanM": 14.6,
+  "lengthM": 17.6,
+  "heightM": 4.3,
+  "power": "2 x 15.57 kN Garrett TFE731-20 turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ45"
+ },
+ "LJ55": {
+  "spanM": 13.3,
+  "lengthM": 16.8,
+  "heightM": 4.5,
+  "power": "2 x 16.46 kN Garrett TFE731-3A-2B turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ55"
+ },
+ "LJ60": {
+  "spanM": 13.4,
+  "lengthM": 17.9,
+  "heightM": 4.5,
+  "power": "2 x 20.46 kN Pratt & Whitney Canada PW305A turbofans.",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing (winglets)",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=LJ60"
+ },
+ "LJ70": {
+  "source": null
+ },
+ "LJ75": {
+  "source": null,
+  "override": {
+   "lengthM": 17.7,
+   "spanM": 15.5,
+   "heightM": 4.31,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Learjet_75"
+  }
+ },
+ "M20P": {
+  "spanM": 11.1,
+  "lengthM": 8.15,
+  "heightM": 2.5,
+  "power": "20C: 1 x 180 HP Lycoming O-360-A1D piston engine with 2 blade propeller. 20E: 1 x 200 HP Lycoming IO-360-A1A piston engine with 2 blade propeller. 20R: 1 x 280 HP Continental IO-550G piston engine with 2 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=M20P"
+ },
+ "M20T": {
+  "spanM": 11,
+  "lengthM": 8.2,
+  "heightM": 2.5,
+  "power": "TLS: 1 x 270 HP Lycoming TIO-540-AF1A turbocharged piston engine with 3 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, high set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=M20T"
+ },
+ "MA60": {
+  "source": null,
+  "override": {
+   "lengthM": 24.71,
+   "spanM": 29.2,
+   "heightM": 8.86,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Xi%27an_MA60"
+  }
+ },
+ "MD11": {
+  "spanM": 51.7,
+  "lengthM": 61.2,
+  "heightM": 17.6,
+  "power": "3 x 274 kN GE CF6-80C2 or 3 x 267 kN P&W PW 4460 or 4462 turbofans.",
+  "engines": 3,
+  "classCode": "L3J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted and fin-integrated",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=MD11"
+ },
+ "MD52": {
+  "source": null
+ },
+ "MD82": {
+  "spanM": 32.8,
+  "lengthM": 45.1,
+  "heightM": 9.05,
+  "power": "2 x 89kN Pratt & Whitney JT8D-217A/C&#13;&#10;",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=MD82"
+ },
+ "MD83": {
+  "spanM": 32.8,
+  "lengthM": 45.1,
+  "heightM": 9.05,
+  "power": "2 x 93.4kN Pratt & Whitney JT8D-219",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=MD83"
+ },
+ "MD88": {
+  "spanM": 32.82,
+  "lengthM": 45.01,
+  "heightM": 9.02,
+  "power": "2 x Pratt & Whitney JT8D-219 (93.4kN) engines",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=MD88"
+ },
+ "MD90": {
+  "spanM": 32.9,
+  "lengthM": 46.5,
+  "heightM": 9.3,
+  "power": "30: 2 x 111.21 kN IAE V2500-D5 turbofans. 55: 2 x 124.55 kN IAE V2528 D5 turbofans.",
+  "engines": null,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=MD90"
+ },
+ "MU30": {
+  "source": null
+ },
+ "P180": {
+  "spanM": 14,
+  "lengthM": 14.4,
+  "heightM": 3.9,
+  "power": "2 x 850 SHP P&W PT6A-66 turboprops with 5 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Mid wing with canard front wing",
+  "engine": "On wing mounted, pusher propellers",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=P180"
+ },
+ "P208": {
+  "source": null,
+  "override": {
+   "lengthM": 6.93,
+   "spanM": 8.8,
+   "heightM": 2.46,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Tecnam_P2008"
+  }
+ },
+ "P28A": {
+  "spanM": 10.7,
+  "lengthM": 7.2,
+  "heightM": 2.25,
+  "power": "161 Warrior 2: 1 x 160 HP Lycoming O - 320 - A2B piston engine with 2 blade propeller. 181 Archer 3: 1 x 180 HP Lycoming O - 360 - A4M piston engine with 2 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=P28A"
+ },
+ "P28R": {
+  "spanM": 9.1,
+  "lengthM": 7.4,
+  "heightM": 2.4,
+  "power": "180: 1 x 180 HP Lycoming IO-360-B1E piston engine with two blade propeller. 200: 1 x 200 HP Lycoming IO-360-C1C piston engine with three blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=P28R"
+ },
+ "P32R": {
+  "spanM": 11,
+  "lengthM": 8.6,
+  "heightM": 2.6,
+  "power": "1 x 300 HP Lycoming IO-540-K1G5 piston engine with 2 or 3 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=P32R"
+ },
+ "P46T": {
+  "spanM": 13.1,
+  "lengthM": 9,
+  "heightM": 3.5,
+  "power": "1 x 1,209 SHP P&W PT6A-42A turboprop with Hartzell 3 blade constant speed propeller.",
+  "engines": 1,
+  "classCode": "L1T",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=P46T"
+ },
+ "PA23": {
+  "spanM": 11.34,
+  "lengthM": 9.52,
+  "heightM": 3.15,
+  "power": "2x Lycoming IO-540-C4B5 , 250hp each with Hartzell HC-E2YK-2RB constant speed propeller.&#13;&#10;&#13;&#10;",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "Over wing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA23"
+ },
+ "PA30": {
+  "source": null,
+  "override": {
+   "lengthM": 7.67,
+   "spanM": 11.214,
+   "heightM": 2.51,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Piper_PA-30_Twin_Comanche",
+   "note": "page spec block is PA-39 (Twin Comanche C/R); span includes tip tanks"
+  }
+ },
+ "PA31": {
+  "spanM": 12.4,
+  "lengthM": 9.9,
+  "heightM": 4,
+  "power": "PA-31: 2 x 310 HP Lycoming TIO-540-A turbocharged piston engines with 3 blade propellers. Chieftain: 2 x 350 HP Lycoming TIO-540-J2BD turbocharged piston engines with 3 blade propellers.",
+  "engines": null,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA31"
+ },
+ "PA32": {
+  "spanM": 10,
+  "lengthM": 8.4,
+  "heightM": 2.9,
+  "power": "1 X 300 HP Lycoming IO-540 piston engine with 2 blade propeller.",
+  "engines": 1,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA32"
+ },
+ "PA34": {
+  "spanM": 11.9,
+  "lengthM": 8.7,
+  "heightM": 3,
+  "power": "2 x 200 HP Lycoming IO-360-A1A piston engines or 2 x 200 HP Continental TSIO-360-E turbocharged piston engines with 2 blade propellers. &#13;&#10;Seneca III & IV: 2 x 220 HP Continental TSIO-360-KB turbocharged piston engines with 3 blade propellers.&#13;&#10;Seneca V: 2x 220HP Continental TSIO-360-RB with 3 blade propellers",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA34"
+ },
+ "PA44": {
+  "spanM": 11.8,
+  "lengthM": 8.4,
+  "heightM": 2.6,
+  "power": "PA-44-180: 2 x 180 HP Lycoming O-360-E1AD piston engines with 2 or 3 blade propellers. PA-44-180T: 2 x 180 HP Lycoming TO-360-E1A6D turbocharged piston engines with 2 blade propellers.",
+  "engines": null,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA44"
+ },
+ "PA46": {
+  "spanM": 13.1,
+  "lengthM": 8.7,
+  "heightM": 3.5,
+  "power": "310P: 1 x 310 HP Continental TSIO-520-BE turbocharged piston engine with 2 blade propeller. 350P: 1 x 350 HP Lycoming TIO-540-AE2A turbocharged piston engine with 2 blade propeller.",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PA46"
+ },
+ "PC12": {
+  "spanM": 16.2,
+  "lengthM": 14.4,
+  "heightM": 4.3,
+  "power": "1 x 1.200 SHP P&W PT6A-67B turboprop with 4 bladed Hartzell propeller.",
+  "engines": 1,
+  "classCode": "L1T",
+  "wing": "Low wing (winglets)",
+  "engine": "Nose mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PC12"
+ },
+ "PC24": {
+  "source": null,
+  "override": {
+   "lengthM": 16.85,
+   "spanM": 17.0,
+   "heightM": 5.4,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Pilatus_PC-24"
+  }
+ },
+ "PRM1": {
+  "spanM": 13.56,
+  "lengthM": 14.02,
+  "heightM": 4.67,
+  "power": "2x Williams / Rolls-Royce FJ44-2A",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Both sides of rear fuselage",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=PRM1"
+ },
+ "R22": {
+  "source": null,
+  "override": {
+   "lengthM": 8.74,
+   "spanM": 7.67,
+   "heightM": 2.72,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Robinson_R22",
+   "note": "helicopter; span = main rotor dia; original R22 figures; length basis not stated"
+  }
+ },
+ "R44": {
+  "spanM": 10.1,
+  "lengthM": 9,
+  "heightM": 3.3,
+  "power": "RAVEN II :1 \u00d7 Lycoming IO-540-AE1A5 6 cylinder, flat engine with fuel injection, 245 bhp (183 kW) &#13;&#10;Raven I + Astro : 1x Lycoming O-540 Carbureted 6 cylinders",
+  "engines": null,
+  "classCode": "H1P",
+  "wing": "Two-blade main rotor",
+  "engine": "Above cabin",
+  "tail": "Two-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=R44"
+ },
+ "R66": {
+  "source": null,
+  "override": {
+   "lengthM": 8.99,
+   "spanM": 10,
+   "heightM": 3.48,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Robinson_R66",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "RJ1H": {
+  "spanM": 26.34,
+  "lengthM": 31,
+  "heightM": 8.61,
+  "power": "4 x 31.15kN Textron Lycoming LF 507 turbofans.",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "High wing",
+  "engine": "Underwing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=RJ1H"
+ },
+ "RJ85": {
+  "spanM": 26.34,
+  "lengthM": 28.55,
+  "heightM": 8.61,
+  "power": "4 x 31.15 kN Textron Lycoming LF 507 turbofans.",
+  "engines": 4,
+  "classCode": "L4J",
+  "wing": "High wing",
+  "engine": "Underwing mounted",
+  "tail": "T-tail",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=RJ85"
+ },
+ "RV12": {
+  "source": null,
+  "override": {
+   "lengthM": 6.07,
+   "spanM": 8.15,
+   "heightM": 2.54,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Van%27s_Aircraft_RV-12",
+   "note": "RV-12iS figures"
+  }
+ },
+ "S22T": {
+  "source": null,
+  "override": {
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Cirrus_SR22",
+   "note": "no SR22T dimensions; SR22 G5 only: 7.92 / 11.68 / 2.72"
+  }
+ },
+ "S76": {
+  "spanM": 13.41,
+  "lengthM": 16,
+  "heightM": 4.42,
+  "power": "2 \u00d7 Turbomeca Arriel 2S2 turboshaft, 922 shp (688 kW) each&#13;&#10;S76D : 2x Pratt & Whitney Canada PW210S 1050 hp (783 kW) engines&#13;&#10;earlier models were powered by the Allison 250-C30s engines.",
+  "engines": null,
+  "classCode": "H2T",
+  "wing": "Four-blade main rotor",
+  "engine": "In fuselage",
+  "tail": "Four-blade tail rotor",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=S76"
+ },
+ "S92": {
+  "source": null,
+  "override": {
+   "lengthM": 20.88,
+   "spanM": 17.17,
+   "heightM": 4.7,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/Sikorsky_S-92",
+   "note": "helicopter; span = main rotor dia; length basis not stated"
+  }
+ },
+ "SB20": {
+  "spanM": 24.8,
+  "lengthM": 27.3,
+  "heightM": 7.7,
+  "power": "2 x 4.125 SHP Allison AE-2100A turboprops with 6 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SB20"
+ },
+ "SF34": {
+  "spanM": 21.4,
+  "lengthM": 19.7,
+  "heightM": 7,
+  "power": "2 x 1.735 SHP GE CT75A2 turboprops with 4 blade propellers.",
+  "engines": 2,
+  "classCode": "L2T",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SF34"
+ },
+ "SF50": {
+  "source": null,
+  "override": {
+   "lengthM": 9.42,
+   "spanM": 11.8,
+   "heightM": 3.32,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Cirrus_Vision_SF50",
+   "note": "G2 figures"
+  }
+ },
+ "SR20": {
+  "spanM": 11.68,
+  "lengthM": 7.92,
+  "heightM": 2.7,
+  "power": "1 \u00d7 Continental IO-360-ES, 200 hp (149 kW)",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SR20"
+ },
+ "SR22": {
+  "spanM": 11.68,
+  "lengthM": 7.92,
+  "heightM": 2.72,
+  "power": "1 \u00d7 Continental IO-550-N Six cylinder horizontally opposed aircraft engine, 310 hp (230 kW)",
+  "engines": null,
+  "classCode": "L1P",
+  "wing": "Low wing (straight)",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SR22"
+ },
+ "SU95": {
+  "spanM": 27.8,
+  "lengthM": 29.94,
+  "heightM": 10.28,
+  "power": "2x (78kN) PowerJet SaM 146",
+  "engines": 2,
+  "classCode": "L2J",
+  "wing": "Low wing",
+  "engine": "Underwing mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SU95"
+ },
+ "SW4": {
+  "spanM": 17.37,
+  "lengthM": 18.09,
+  "heightM": 5.08,
+  "power": "2x Garrett TPE331-12 Turboprop",
+  "engines": 2,
+  "classCode": "L2P",
+  "wing": "Low wing",
+  "engine": "(Front) Wing leading mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=SW4"
+ },
+ "T206": {
+  "source": null,
+  "override": {
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Cessna_206",
+   "note": "page has 206H only (8.61 / 10.97 / 2.832), not T206H"
+  }
+ },
+ "T210": {
+  "source": null,
+  "override": {
+   "lengthM": 8.59,
+   "spanM": 11.2,
+   "heightM": 2.95,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Cessna_210",
+   "note": "T210N Turbo Centurion II figures"
+  }
+ },
+ "TBM7": {
+  "spanM": 12.2,
+  "lengthM": 10.4,
+  "heightM": 4.2,
+  "power": "1 x 700 SHP P&W PT6A-64 turboprop with 4 blade propeller.",
+  "engines": 1,
+  "classCode": "L1T",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, mid set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=TBM7"
+ },
+ "TBM8": {
+  "spanM": 12.2,
+  "lengthM": 10.4,
+  "heightM": 4.2,
+  "power": "1 x P&W PT6A-66D engine flat rated at 850 shp (634 kW)",
+  "engines": 1,
+  "classCode": "L1T",
+  "wing": "Low wing",
+  "engine": "Nose mounted",
+  "tail": "Regular tail, low set",
+  "source": "https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/details.aspx?ICAO=TBM8"
+ },
+ "TBM9": {
+  "source": null,
+  "override": {
+   "lengthM": 10.72,
+   "spanM": 12.83,
+   "heightM": 4.355,
+   "engines": 1,
+   "source": "https://en.wikipedia.org/wiki/Daher_TBM"
+  }
+ },
+ "WW24": {
+  "source": null,
+  "override": {
+   "lengthM": 15.93,
+   "spanM": 13.65,
+   "heightM": 4.81,
+   "engines": 2,
+   "source": "https://en.wikipedia.org/wiki/IAI_Westwind",
+   "note": "1124A Westwind II; span with tip tanks, 13.16 m without"
+  }
+ }
+}
