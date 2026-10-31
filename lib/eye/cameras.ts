@@ -3,6 +3,7 @@
 // the DOM. Pinned by tests/unit/eye-cameras.test.ts, which is where "a still is never
 // labelled live" is held.
 
+import { haversineKm } from "@/lib/geo/haversine";
 import { ofNearby, type LedgerRow } from "@/lib/eye/wording";
 
 /** One row of /api/near, as the view reads it. */
@@ -28,9 +29,56 @@ export interface NearCamera {
  */
 export const NEAR_KM = 4;
 
-/** The cameras the view may show and count as nearby: within NEAR_KM of where it opened. */
+/**
+ * How many cameras one ask may bring. The view used to ask for 25, /api/near's old limit,
+ * and Westminster has 197 within NEAR_KM, so 172 were never asked for. The densest circle
+ * of that size in the registry held 545, around Vancouver (measured 31 Oct 2026). A far
+ * camera does not ride along: the view also sends `km=NEAR_KM`.
+ */
+export const NEAR_MAX = 600;
+
+/**
+ * The cameras the view may show and count as nearby: within NEAR_KM of where it asked.
+ * The route stops at `km` too. This keeps the rule if an answer comes from anywhere else.
+ */
 export function nearCameras<T extends Pick<NearCamera, "km">>(cams: readonly T[]): T[] {
   return cams.filter((c) => Number.isFinite(c.km) && c.km <= NEAR_KM);
+}
+
+/**
+ * The view asks again once it settles this far from where it last asked. Half of NEAR_KM,
+ * so what it holds still reaches 2 km past the middle of the view in every direction.
+ */
+export const NEAR_REASK_KM = NEAR_KM / 2;
+
+type Spot = { lat: number; lon: number };
+
+/** Has the view moved far enough to ask for cameras again? Null: nothing is held yet. */
+export function camerasMoved(asked: Spot | null, centre: Spot): boolean {
+  if (!asked) return true;
+  return haversineKm(asked.lat, asked.lon, centre.lat, centre.lon) > NEAR_REASK_KM;
+}
+
+/** The tray's two camera rows (lib/eye/sources.ts). */
+export type CameraRow = "livecams" | "staticcams";
+
+/**
+ * The row a camera is sorted into. A camera with moving pictures, a stream or a recording
+ * such as TfL's JamCam clips, is under Live cams, and only a still is under Static cams:
+ * one switch for "the ones that move" (Sam, 31 Oct 2026). Without this, London read
+ * "Live cams 0 here" and switching Static cams off emptied it. THE ROW ONLY SORTS. A card
+ * still says what is on its screen (mediaLabel), so a recording says "Clip" and its age.
+ */
+export function cameraRow(cam: Pick<NearCamera, "live" | "clip">): CameraRow {
+  return cam.live || cam.clip ? "livecams" : "staticcams";
+}
+
+/**
+ * The cameras in the order /api/camera-road is asked about them: the ones on screen first,
+ * because an ask names at most CAMERA_ROAD_MAX and a dense city holds far more than that.
+ */
+export function roadAskOrder<T extends { id: string }>(cams: readonly T[], onScreen: ReadonlySet<string>): T[] {
+  return [...cams.filter((c) => onScreen.has(c.id)), ...cams.filter((c) => !onScreen.has(c.id))];
 }
 
 /** What a card asks for first. A stream before a clip before a still. */

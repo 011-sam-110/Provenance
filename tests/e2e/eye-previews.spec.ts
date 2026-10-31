@@ -117,8 +117,9 @@ test("the choice is remembered in this browser, and on brings the cards back", a
 
   await previewsSwitch(page).click();
   await expect(previewsSwitch(page)).toHaveAttribute("aria-checked", "true");
-  await expect(icons(page)).toHaveCount(0);
   await expect.poll(() => cards(page).count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+  // A camera with no room for a card stays an icon (eye-cameras.spec.ts), and it fetches nothing.
+  expect(await cards(page).count()).toBeLessThanOrEqual(5);
 });
 
 test("a recording ignores it: no icons, no switch", async ({ page }) => {
