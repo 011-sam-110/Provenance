@@ -49,6 +49,7 @@ import {
   type SignalCoverage,
 } from "@/lib/signals/coverage";
 import { fetchAdsbTypePull, pullToObjects, PULL_BUDGET_MS } from "@/lib/sources/adsb";
+import { notePlanePool } from "@/lib/planes/pool";
 import {
   FAILOVER_CELLS,
   GAP_CELLS,
@@ -219,7 +220,8 @@ export function planeToWorldObject(p: Plane): WorldObject {
  *     (~436 B each), so 3,000 ≈ 1.3 MB and ~4,500 is the ceiling.
  *   - Every open console downloads it every 12 s (lib/planes/usePlanes.ts), edge
  *     cached for 20 s. 3,000 aircraft is ~1.3 MB before compression per poll.
- * The uncapped pool exists only inside the revalidation invocation.
+ * The uncapped pool leaves the server only as /api/eye/planes' answer for one box, and it is
+ * kept nowhere but in this process's memory (lib/planes/pool.ts).
  */
 export const MAX_PLANES = 3000;
 
@@ -392,6 +394,7 @@ async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
       cellsPlanned: gap.cellsPlanned,
     });
     const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
+    notePlanePool(merged.objects, snapshot.fetchedAt!);
     // One line per revalidation so runtime logs show the pool, the served set and the
     // cached entry's size against the Data Cache's 2 MB limit.
     console.info(

@@ -40,6 +40,13 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *   - The front page's main button reads the browser's time zone and language
  *     (components/marketing/CtaRotor.tsx) to order the places it offers. Neither is stored or
  *     sent. "What your own browser keeps" gained a row saying so.
+ *   - Aircraft in the God's eye view: the view no longer reads /api/planes. It asks
+ *     /api/eye/planes?bbox=west,south,east,north (app/api/eye/planes/route.ts, lib/eye/planes.ts)
+ *     for the aircraft around what is on screen. The route reads the bbox query and nothing else
+ *     (no header, no body), keeps nothing about the asker and logs nothing, and the box is rounded
+ *     outward to about 1 km as the vessels' is. It asks no outside service for anything: it reads
+ *     what the site's own plane pull already holds in memory. The access-log paragraph now says
+ *     aircraft too, and the route count is 58 (57, plus this one).
  *
  * WHAT CHANGED ON 2026-10-27:
  *   - Camera roads (M4 of the live road data plan): app/api/camera-road answers what the road
@@ -90,7 +97,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     come from OpenFreeMap whatever the basemap is, and the switch is off by default
  *     (lib/mapView.ts). Everything else on /eye comes through this site: camera images
  *     through /api/proxy and /api/hls, vessels, aircraft and TfL's road notices through
- *     /api/eye/vessels, /api/planes and /api/eye/streets.
+ *     /api/eye/vessels, /api/eye/planes and /api/eye/streets.
  *   - Like every page under app/(console), /eye inherits the layout's warm-up
  *     (basemapWarmup), which asks the browser to open a connection to the imagery host
  *     and to CARTO's font host. /eye draws no labels, so it loads no CARTO font, but the
@@ -682,7 +689,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>57 API routes</span>
+              <span>58 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1077,7 +1084,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 57 API route files. Each records that a data
+              Five log statements exist across the 58 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1094,7 +1101,7 @@ export default function PrivacyPage() {
               <code>?q=</code>, a recon tool sends the domain or IP as <code>?target=</code>, and
               &ldquo;cameras near you&rdquo; sends the coordinates your browser gave as{" "}
               <code>?lat=</code> and <code>?lon=</code>. The God&rsquo;s eye view asks for the
-              vessels around what is on screen as <code>?bbox=</code>, four numbers that are the
+              vessels and aircraft around what is on screen as <code>?bbox=</code>, four numbers that are the
               edges of a box about the size of the view, rounded outward to about a kilometre.
               Each of those is in the log line for that request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
