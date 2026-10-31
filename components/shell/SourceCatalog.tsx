@@ -1,5 +1,8 @@
 "use client";
-// Source Catalog — the left rail, rebuilt as six sections of two-column bullet rows.
+// THE PANEL BESIDE THE SIDEBAR. It draws whichever panel lib/console/consolePanel.ts says is
+// open: this file's own Source Catalog, or components/shell/InspectorPanel.tsx for the
+// Inspector and the three tools. Below is the catalogue's history, and the catalogue is still
+// most of this file: six sections of two-column bullet rows.
 //
 // WHAT CHANGED AND WHY. The rail used to be a single column of tall rows: each one
 // carried a name, an attribution line, a freshness note, a live count, a widget
@@ -42,12 +45,16 @@
 // pill and ⌘K's Profiles group — so it was a third copy charging every visitor a
 // choice on the way in. `PresetBar.tsx` survives on disk, unmounted.
 //
+// GONE from here on 2026-10-31: the "≡ Sources" launcher tab, the Sources | Inspector tabs
+// and the tool column on this panel's right edge. The rows on the sidebar
+// (components/shell/ConsoleSidebar.tsx) do all three jobs, one panel at a time.
+//
 // GONE from here on 2026-09-05: TimeWindowControl. It was the only caller of
 // timeWindowStore.set, so the window is now fixed at its default -- see
 // lib/shell/timeWindow.ts, where hydrate() was made a no-op in the same change so a
 // stale persisted "1h" cannot outlive the control that set it.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 // THE EDITING PROJECTIONS, NOT THE UNION. `useLayers`/`useSignals` answer "is this
 // on anywhere" — World or any drawn area — which is what the MAP needs and is the
 // wrong answer for a tick beside a toggle. With the rail pointed at an area, a row
@@ -76,15 +83,18 @@ import { widgetTypeForSource } from "@/lib/console/sourceWidgets";
 import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 import { buildSourceSections, type SourceRowModel } from "@/lib/console/sources/sections";
 import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
-import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/sourcesRail";
-import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
+import {
+  CONSOLE_PANEL_ID,
+  PANEL_TITLE,
+  closePanel,
+  mapAbsenceNote,
+  useConsolePanel,
+} from "@/lib/console/consolePanel";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import SourceRow from "@/components/shell/sources/SourceRow";
 import { useRailDrag } from "@/components/shell/sources/useRailDrag";
 import ContextSwitcher from "@/components/shell/inspector/ContextSwitcher";
 import InspectorPanel from "@/components/shell/InspectorPanel";
-import InspectorRail from "@/components/shell/inspector/InspectorRail";
-import { railTabStore, useRailTab } from "@/lib/console/railTab";
 
 function CameraFilters() {
   const filter = useCameraFilter();
@@ -167,26 +177,22 @@ function CloseGlyph() {
 const SECTIONS = buildSourceSections(RAIL_SOURCES);
 
 export default function SourceCatalog() {
-  // Mounts CLOSED, as the "≡ Sources" launcher. In the old shell the rail owned the
-  // left edge; in the widget console that edge is a widget column, and a panel
-  // opening over it on every page load would hide the seeded widgets on desktop and
-  // eat two-thirds of a phone screen. One click opens it — see ConsoleWorkspace.
-  // OPEN STATE LIVES IN A STORE, not here. The keymap's Sources chord opens this rail from
-  // ConsoleShell's global keydown handler, which is nowhere near this tree — see
-  // lib/console/sourcesRail.ts. The mount-closed rule below is unchanged; the store
-  // starts closed for exactly the reasons stated here.
-  const rail = useSourcesRail();
-  // THE TOOLTIP NAMES THE USER'S OWN KEY, not a hardcoded one. This said "(⌘K)"
-  // while ⌘K opened the command palette, which was simply wrong; it is right today
-  // by coincidence and would be wrong again the moment anyone rebinds Sources in
-  // Settings. Reading the keymap is the only version that cannot go stale.
-  const keymap = useKeymap();
-  const railOpen = rail.open;
-  const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
-  const { tab } = useRailTab();
-  // No hydrate effect: the hint is scoped to one launch and nothing about it is
-  // persisted, so the server render and the first client pass already agree.
+  // Mounts with NO PANEL OPEN. In the old shell the rail owned the left edge; in the widget
+  // console a panel opening on every page load would hide the seeded widgets on desktop and
+  // eat two-thirds of a phone screen. One click on the sidebar opens it.
+  const panel = useConsolePanel();
+  // The Sources search box keeps its words while another panel is showing, so a click on the
+  // map and back again does not lose them.
   const [query, setQuery] = useState("");
+
+  // THE CATALOGUE KEEPS ITS SCROLL. The panes are one scrollport shared by every panel, and
+  // someone who opened a dossier from row 30 of Sources comes back to row 30. Each of the
+  // others starts at its top: a new object is a new page.
+  const panesRef = useRef<HTMLDivElement>(null);
+  const sourcesScroll = useRef(0);
+  useLayoutEffect(() => {
+    if (panesRef.current) panesRef.current.scrollTop = panel === "sources" ? sourcesScroll.current : 0;
+  }, [panel]);
 
   // ── RAIL WIDTH ─────────────────────────────────────────────────────────────
   // The width is PUBLISHED AS A CSS VARIABLE rather than applied as an inline
@@ -226,12 +232,11 @@ export default function SourceCatalog() {
     if (e.button !== 0) return;
     const el = e.currentTarget as HTMLElement;
     const pointerId = e.pointerId;
-    // Measured against the WORKSPACE band, not the viewport. The rail is absolutely
-    // positioned inside `.tn-cw-shell`, so its left edge is that element's left edge
-    // — which is not 0 once anything sits outside it. Falling back to the viewport
-    // when the shell cannot be found keeps a drag usable rather than dead.
-    const shell = el.closest(".tn-cw-shell");
-    const boxLeft = shell ? shell.getBoundingClientRect().left : 0;
+    // Measured from the panel's own left edge, not the viewport's: the sidebar stands to its
+    // left and is 64px or 232px wide. Falling back to the viewport when the panel cannot be
+    // found keeps a drag usable rather than dead.
+    const box = document.getElementById(CONSOLE_PANEL_ID);
+    const boxLeft = box ? box.getBoundingClientRect().left : 0;
 
     // Pointer capture rather than window listeners: this element is never
     // reordered or re-parented mid-gesture (the constraint that ruled capture out
@@ -311,27 +316,10 @@ export default function SourceCatalog() {
     track({ name: "layer_toggled", layer: id });
   };
 
-  if (!railOpen) {
-    return (
-      <button
-        type="button"
-        className="tn-rail-fab"
-        onClick={() => setRailOpen(true)}
-        title={`Show sources${keymap.sources[0] ? ` (${formatChord(keymap.sources[0], isMac())})` : ""}`}
-        // THE HINT. On every fresh launch this tab jumps a few times and then stops,
-        // because in review nobody found it — it is a thin tab on an edge that is
-        // otherwise a widget column. It is an attribute rather than a class so the
-        // CSS reads as a state and one grep finds both halves, and it ends for the
-        // rest of the visit the first time the rail is opened by ANY route.
-        // `shouldHintRail` is the whole rule and is unit-tested; see
-        // lib/console/sourcesRail.ts for why the scope is a launch and not a browser.
-        data-hint={shouldHintRail(rail) ? "" : undefined}
-      >
-        <span className="tn-rail-fab-bars" aria-hidden>≡</span>
-        Sources
-      </button>
-    );
-  }
+  // The layout drives one note, on the panels that act on a map that may not be on screen.
+  const absent = mapAbsenceNote(consoleLayout);
+
+  if (!panel) return null;
 
   const q = query.trim().toLowerCase();
   const visible =
@@ -349,77 +337,40 @@ export default function SourceCatalog() {
     // its width and the console would lose the gap it sits in. See SourcesSplitter
     // for why the handle cannot simply live inside the rail.
     <>
-    <aside className="tn-rail" aria-label="Sources">
+    <aside id={CONSOLE_PANEL_ID} className="tn-rail" aria-label={PANEL_TITLE[panel]} data-panel={panel}>
+      {/* ONE HEAD FOR ALL FIVE: the name, and the ✕ that names what it closes. tabIndex -1
+          so a keyboard opener can land on the title (ConsoleSidebar.tsx). */}
       <div className="tn-rail-header">
-        <div className="tn-rail-tabs" role="tablist" aria-label="Sources rail views">
-          <button
-            type="button"
-            id="tn-rail-tab-sources"
-            role="tab"
-            aria-selected={tab === "sources"}
-            aria-controls="tn-rail-panel-sources"
-            className="tn-rail-tab"
-            onClick={() => railTabStore.set("sources")}
-          >
-            Sources
-          </button>
-          <button
-            type="button"
-            id="tn-rail-tab-inspector"
-            role="tab"
-            aria-selected={tab === "inspector"}
-            aria-controls="tn-rail-panel-inspector"
-            className="tn-rail-tab"
-            onClick={() => railTabStore.set("inspector")}
-          >
-            Inspector
-          </button>
-        </div>
-        {/* THE WIDGET COUNTER IS GONE (2026-09-16), on Sam's ask: "0 ▦". It counted
-            the widgets on the workspace and sat between the tab strip and the close
-            mark, where it was the only thing in the header that was neither a control
-            nor a label for one — a number with a glyph that needed its own title
-            attribute to be understood, and one that read "0" for anyone who had not
-            placed a widget. `consoleLayout` is still subscribed below: the source rows
-            use it to say which sources already have a widget open. */}
+        <h2 className="tn-insp-tool-title" tabIndex={-1}>
+          {PANEL_TITLE[panel]}
+        </h2>
         <button
           type="button"
           className="tn-rail-collapse"
-          onClick={() => setRailOpen(false)}
-          aria-label="Close sources"
-          title="Close sources"
+          onClick={() => closePanel()}
+          aria-label={`Close ${PANEL_TITLE[panel].toLowerCase()}`}
+          title={`Close ${PANEL_TITLE[panel].toLowerCase()}`}
         >
           <CloseGlyph />
         </button>
       </div>
 
-      {/* ── TWO TABS, AND ONE TOOL RAIL BESIDE BOTH OF THEM ────────────────────
-          The Sources tab is the catalogue. The Inspector tab is the tool pane:
-          Search, Map settings, Draw, and the object's own view when no tool is open.
-
-          THE RAIL IS NOT INSIDE EITHER TAB. Sam's second pass: the buttons should be
-          there whichever tab is being read, and a click on one should land on the
-          Inspector with that tool open — so it is a sibling of the tab panels, and
-          InspectorRail's click does the switching. `tn-rail-main` is the flex row
-          that holds them; `.tn-rail-panes` is the scrollport, which is what keeps the
-          rail out of the scroll region (it used to be a sticky column inside it, and
-          a sticky column is only ever as tall as its content — see the CSS block).
-
-          The areas block used to sit at the top of the Sources tab — "drawing an area
-          and then turning sources on for it is one job", which was true while the
-          only way to draw one was a button at the bottom of that tab. It is the Draw
-          tool's body now, on the rail, where the entry point is. */}
-      <div className="tn-rail-main">
-        <div className="tn-rail-panes">
-          {tab === "sources" ? (
-            <div id="tn-rail-panel-sources" role="tabpanel" aria-labelledby="tn-rail-tab-sources">
+      <div
+        ref={panesRef}
+        className="tn-rail-panes"
+        onScroll={(e) => {
+          if (panel === "sources") sourcesScroll.current = e.currentTarget.scrollTop;
+        }}
+      >
+        {panel === "sources" ? (
+          <>
           <ContextSwitcher />
 
           {/* THE SEARCH BOX SITS HERE, directly above the list it filters, and not
               under the header where it used to be. It moved into the slot the four
-              core-layer shortcuts vacated, and then the areas block left this tab for
-              the Draw tool's panel, so it is now the only thing between the context
-              switcher and the list it filters. */}
+              core-layer shortcuts vacated, and then the areas block left this panel for
+              Areas, so it is now the only thing between the context switcher and the
+              list it filters. */}
           <div className="tn-rail-divider" />
 
           <input
@@ -428,6 +379,15 @@ export default function SourceCatalog() {
             placeholder="Search sources…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              // Words in the box: Escape empties it, and the panel stays. An empty box:
+              // Escape closes the panel, as it does from anywhere else in here. The shell's
+              // own ladder ignores keys typed into a field, so this has to say so itself.
+              if (e.key !== "Escape") return;
+              e.stopPropagation();
+              if (query) setQuery("");
+              else closePanel();
+            }}
             aria-label="Search sources"
           />
 
@@ -490,22 +450,10 @@ export default function SourceCatalog() {
             Only sources you can see are fetched. ＋ or drag a source to put it on the left, bottom or
             right rail.
           </p>
-            </div>
-          ) : (
-            <div id="tn-rail-panel-inspector" role="tabpanel" aria-labelledby="tn-rail-tab-inspector">
-              <InspectorPanel />
-            </div>
-          )}
-        </div>
-
-        {/* ON BOTH TABS, OUTSIDE THE SCROLLPORT. It is a sibling of the panes rather
-            than a child of either one, and that is the fix for the wonky band Sam
-            reported while resizing: inside the scrollport a sticky column is only
-            ever as tall as its content (measured: 164px at a 300px panel, 127px at
-            the 452 default, 112px at 620 — and absent entirely on the Sources tab,
-            where the rail did not exist at all). Out here it stretches to the panel,
-            keeps its width, and cannot be moved by a scrollbar or a reflow. */}
-        <InspectorRail />
+          </>
+        ) : (
+          <InspectorPanel mapAbsent={absent} />
+        )}
       </div>
     </aside>
     <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />

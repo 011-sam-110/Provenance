@@ -1,0 +1,25 @@
+/* The one control the plane's panel has that is not a link: "Try again" on a stored line that
+   did not load. The rest of the panel is styled inline, which cannot say focus or phone. */
+.retry {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tn-accent-strong);
+  background: transparent;
+  border: 1px solid var(--tn-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--tn-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .retry {
+    min-height: 44px;
+    padding-inline: 16px;
+  }
+}

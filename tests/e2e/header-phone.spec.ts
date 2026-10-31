@@ -2,23 +2,21 @@ import { test, expect, type Page } from "@playwright/test";
 
 // THE CONSOLE HEADER'S BUTTON ROW ON A PHONE.
 //
-// At 900px and below the header hides every button's word (globals.css, the
-// `max-width: 900px` header pass), so each button must carry a mark of its own or it
-// is an empty box. SHORTCUTS had none from #162 (2026-09-05), when its ⌘K cap left,
-// until it got the magnifier (`.tnx-hdr-btn-mark`). Above 900px the mark takes no
-// width, because the desktop bar has only a few pixels to spare.
+// At 900px and below the header hides every `.tnx-hdr-btn-label` (globals.css, the
+// `max-width: 900px` header pass), so each button must keep a mark or a word of its own or it
+// is an empty box. SHORTCUTS was that button from #162 (2026-09-05) until it left the bar for
+// Settings on 2026-10-31; SETTINGS and ACCOUNT lose their words here and keep their glyphs,
+// and SUPPORT and SOURCE keep their words.
 //
 // The boot stamp is the one map-rail.spec.ts and sources-rail.spec.ts use: without it
 // the launch sequence covers the page and a click lands on the plate.
-
-const NAME = "Shortcuts and command palette";
 
 async function open(page: Page) {
   await page.addInitScript(() => {
     window.localStorage.setItem("tn.terminal.boot.v1", JSON.stringify({ v: 1, d: { seenVersion: 1 } }));
   });
   await page.goto("/app");
-  await expect(page.locator(".tn-palette-trigger")).toBeVisible();
+  await expect(page.locator(".tn-settings-trigger")).toBeVisible();
 }
 
 for (const [w, h] of [[390, 844], [360, 780]] as const) {
@@ -38,43 +36,52 @@ for (const [w, h] of [[390, 844], [360, 780]] as const) {
       expect(empty).toEqual([]);
     });
 
-    test("SHORTCUTS shows the magnifier, keeps its name and opens the palette", async ({ page }) => {
+    test("SETTINGS shows the gear, keeps its name and opens the drawer", async ({ page }) => {
       await open(page);
-      const btn = page.getByRole("button", { name: NAME });
-      await expect(btn.locator(".tnx-hdr-btn-mark")).toBeVisible();
+      const btn = page.getByRole("button", { name: "Settings", exact: true });
       await expect(btn.locator(".tnx-hdr-btn-label")).toBeHidden();
-      const box = await btn.boundingBox();
-      expect(box!.width).toBeGreaterThanOrEqual(34);
-      expect(box!.height).toBeGreaterThanOrEqual(34);
+      await expect(btn).toContainText("⚙");
       await btn.click();
-      await expect(page.locator(".tn-palette-root")).toBeVisible();
+      await expect(page.locator(".tn-settings")).toBeVisible();
     });
 
-    test("the button row fits the screen", async ({ page }) => {
+    test("every control in the bar is a 44px target", async ({ page }) => {
       await open(page);
-      const row = await page.locator(".tnx-hdr-right").boundingBox();
-      expect(row!.x + row!.width).toBeLessThanOrEqual(w);
+      const small = await page.locator(".tnx-hdr").locator("a, button").evaluateAll((els) =>
+        els
+          .map((el) => ({ name: el.textContent?.trim(), h: el.getBoundingClientRect().height, w: el.getBoundingClientRect().width }))
+          .filter((c) => c.h < 44 || c.w < 44),
+      );
+      expect(small).toEqual([]);
+    });
+
+    test("the buttons fit the screen", async ({ page }) => {
+      // Each button, not the row: below 440px `.tnx-hdr-right` is `display: contents` and has no box.
+      await open(page);
+      const off = await page.locator(".tnx-hdr-right .tnx-hdr-btn").evaluateAll(
+        (btns, vw) => btns.filter((b) => {
+          const r = b.getBoundingClientRect();
+          return r.left < 0 || r.right > vw;
+        }).map((b) => b.textContent),
+        w,
+      );
+      expect(off).toEqual([]);
     });
   });
 }
 
-test.describe("desktop keeps the word and its width", () => {
+test.describe("desktop keeps the word", () => {
   for (const w of [1440, 901]) {
-    test(`${w}px: SHORTCUTS, no mark`, async ({ page }) => {
+    test(`${w}px: SETTINGS has its word`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: 900 });
       await open(page);
-      const btn = page.getByRole("button", { name: NAME });
-      await expect(btn).toHaveText("SHORTCUTS");
-      await expect(btn.locator(".tnx-hdr-btn-label")).toBeVisible();
-      await expect(btn.locator(".tnx-hdr-btn-mark")).toBeHidden();
+      await expect(page.locator(".tn-settings-trigger .tnx-hdr-btn-label")).toBeVisible();
     });
   }
 
-  test("900px is the widest width with the mark", async ({ page }) => {
+  test("900px is the widest width without it", async ({ page }) => {
     await page.setViewportSize({ width: 900, height: 900 });
     await open(page);
-    const btn = page.getByRole("button", { name: NAME });
-    await expect(btn.locator(".tnx-hdr-btn-mark")).toBeVisible();
-    await expect(btn.locator(".tnx-hdr-btn-label")).toBeHidden();
+    await expect(page.locator(".tn-settings-trigger .tnx-hdr-btn-label")).toBeHidden();
   });
 });

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import type { WorldObject } from "@/lib/world";
 import { TypeIcon } from "@/lib/icons/Icon";
 import type { FlightEnrichment, FlightAirport } from "@/lib/sources/adsbdb";
+import { fullTrailStore, storedLineStore, useFullTrail, useStoredLine } from "@/lib/planes/fullTrail";
+import { lineWords } from "@/lib/planes/lineWords";
+import styles from "./PlaneDetail.module.css";
 
 interface Props {
   object: WorldObject;
@@ -109,6 +112,36 @@ function Endpoint({
           }}
         >
           {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * What the plane's line is, with the Full flight trail switch on, and the door that loads the
+ * stored line: every way of opening this panel is "clicking a plane", so the request lives here
+ * and not in one click handler. `request` asks once. With the switch off this draws nothing.
+ */
+function FlightLine({ id }: { id: string }) {
+  const on = useFullTrail();
+  const line = useStoredLine(id);
+  useEffect(() => {
+    fullTrailStore.hydrate();
+  }, []);
+  useEffect(() => {
+    if (on) storedLineStore.request(id);
+  }, [on, id]);
+  // No state is a plane that has just opened, or one that left the feed with its line.
+  if (!on || !line) return null;
+  return (
+    <div style={{ marginTop: 10, fontSize: 13, color: "var(--tn-text-muted)", lineHeight: 1.5 }} aria-live="polite">
+      {lineWords(line)}
+      {line.status === "failed" && (
+        <div style={{ marginTop: 6 }}>
+          <button type="button" className={styles.retry} onClick={() => storedLineStore.request(id)}>
+            Try again
+          </button>
         </div>
       )}
     </div>
@@ -368,6 +401,8 @@ export default function PlaneDetail({ object }: Props) {
           {aircraft?.owner && <div style={{ color: "var(--tn-text-faint)" }}>{aircraft.owner}</div>}
         </div>
       )}
+
+      <FlightLine id={object.id} />
 
       {/* ── Source (clickable upstream) ── */}
       <div style={{ marginTop: 14, borderTop: "1px solid var(--tn-border)", paddingTop: 10 }}>

@@ -5,13 +5,13 @@
 // lib/eye/controls.ts and are tested there; this file only wires them to the page.
 //
 // Shown on every visit, nothing is remembered (no localStorage, no sessionStorage), and
-// it reacts to discrete events only (a move ending, a press, a timer, a close, the "?"),
-// never to the camera frame by frame.
+// it reacts to discrete events only (a move ending, a press, a timer, a close, the sidebar's
+// row), never to the camera frame by frame.
 //
-// THE "?" BESIDE THE CLOCK (HintToggle, below) brings the plate back or hides it (Leon,
-// 29 Oct 2026). The state is lifted into useControlHint so the header holds the "?" and
-// the footer holds the plate and both read the same state. A plate brought back follows
-// the arrival rules: it fades 5 s after the next move, and the x or the "?" closes it.
+// THE SIDEBAR'S CONTROLS ROW (EyeHud.tsx) brings the plate back or hides it (Leon, 29 Oct 2026,
+// for the "?" it replaced). The state is lifted into useControlHint so the sidebar holds the row
+// and the frame holds the plate and both read the same state. A plate brought back follows the
+// arrival rules: it fades 5 s after the next move, and the x or that row closes it.
 //
 // IT RESERVES NO ROOM. The plate has no `data-eye-keep`, so EyeOverlay places cameras and
 // tags as if it were not there, and it may cover part of a card while it is up (Leon's
@@ -20,7 +20,7 @@
 // a move or on new data.
 //
 // THE FIRST MOVE is a `moveend` that carries `originalEvent`: a drag, its inertia, the
-// wheel, a key or a tap all do. "Turn" moves the view with jumpTo and no event data, so
+// wheel, a key or a tap all do. "Auto-turn" moves the view with jumpTo and no event data, so
 // it fires `moveend` every frame with NO `originalEvent`, and must not count.
 
 import { useEffect, useId, useReducer, useRef, useState } from "react";
@@ -46,16 +46,16 @@ export interface ControlHintApi {
   state: HintState;
   /** Shown, or still fading out. */
   present: boolean;
-  /** The plate's id, for the toggle's aria-controls. */
+  /** The plate's id, for the sidebar row's aria-controls. */
   plateId: string;
-  /** `pointerType` is what pressed the "?": "mouse", "pen", "touch", or "" for the keyboard. */
-  toggle(pointerType: string): void;
+  /** The sidebar's row was pressed. The hook knows what pressed it. */
+  toggle(): void;
   close(fromKeyboard: boolean): void;
   setFocused(focused: boolean): void;
 }
 
-/** The hint's state, shared by the "?" in the header and the plate in the footer. `blocked`
- *  is true while a panel that takes the plate's room is open (the Places sheet, the Sources tray, a details panel). */
+/** The hint's state, shared by the row in the sidebar and the plate in the frame. `blocked` is
+ *  true while a panel that takes the plate's room is open (the Sources tray, a details panel). */
 export function useControlHint(map: maplibregl.Map | null, blocked: boolean): ControlHintApi {
   const [state, dispatch] = useReducer(hintReducer, undefined, () =>
     initialHint(typeof window !== "undefined" && window.matchMedia(TOUCH_QUERY).matches),
@@ -63,6 +63,9 @@ export function useControlHint(map: maplibregl.Map | null, blocked: boolean): Co
   const [focused, setFocused] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const plateId = useId();
+  // What last pressed anything: "mouse", "pen", "touch", or "" for the keyboard. Kept for the
+  // sidebar's row, whose click may not say (Safari's click from a tap carries no pointerType).
+  const lastPointer = useRef("");
   // Shown, or still fading out.
   const present = state.shown || leaving;
 
@@ -82,9 +85,10 @@ export function useControlHint(map: maplibregl.Map | null, blocked: boolean): Co
   useEffect(() => {
     const fingers = new Set<number>();
     const down = (e: PointerEvent) => {
-      // The "?" decides for itself: a first touch landing on it must not swap in Leon's
-      // line, only for the click that follows to close the plate again.
-      if (e.target instanceof Element && e.target.closest("[data-hint-toggle]")) return;
+      lastPointer.current = e.pointerType;
+      // The sidebar's row decides for itself: a first touch landing on it must not swap in
+      // Leon's line, only for the click that follows to close the plate again.
+      if (e.target instanceof Element && e.target.closest('[data-rail-entry="controls"]')) return;
       if (e.pointerType === "touch") fingers.add(e.pointerId);
       dispatch({ type: "press", pointerType: e.pointerType });
     };
@@ -93,18 +97,23 @@ export function useControlHint(map: maplibregl.Map | null, blocked: boolean): Co
         dispatch({ type: "touches-lifted" });
       }
     };
+    const key = () => {
+      lastPointer.current = "";
+    };
     const opts = { capture: true, passive: true } as const;
+    document.addEventListener("keydown", key, opts);
     document.addEventListener("pointerdown", down, opts);
     document.addEventListener("pointerup", up, opts);
     document.addEventListener("pointercancel", up, opts);
     return () => {
+      document.removeEventListener("keydown", key, opts);
       document.removeEventListener("pointerdown", down, opts);
       document.removeEventListener("pointerup", up, opts);
       document.removeEventListener("pointercancel", up, opts);
     };
   }, []);
 
-  // The Places sheet (and the sources menu, when it exists) takes the plate's room.
+  // The Sources tray and a details panel take the plate's room.
   useEffect(() => {
     if (blocked) dispatch({ type: "panel-open" });
   }, [blocked]);
@@ -117,7 +126,7 @@ export function useControlHint(map: maplibregl.Map | null, blocked: boolean): Co
   }, [state.shown, state.armed, focused]);
 
   // A swap remounts the plate, and a plate that unmounts sends no blur: the x that was just
-  // pressed still held focus when it went, and the "?" brings the plate back, so a stale
+  // pressed still held focus when it went, and the sidebar's row brings the plate back, so a stale
   // `focused` would hold the wait for ever.
   useEffect(() => {
     setFocused(false);
@@ -142,8 +151,8 @@ export function useControlHint(map: maplibregl.Map | null, blocked: boolean): Co
     if (fromKeyboard) map?.getCanvas().focus();
   };
 
-  const toggle = (pointerType: string) => {
-    dispatch({ type: "toggle", pointerType, onlyTouch: window.matchMedia(TOUCH_QUERY).matches });
+  const toggle = () => {
+    dispatch({ type: "toggle", pointerType: lastPointer.current, onlyTouch: window.matchMedia(TOUCH_QUERY).matches });
   };
 
   return { state, present, plateId, toggle, close, setFocused };
@@ -204,34 +213,6 @@ export default function ControlHint({ hint }: { hint: ControlHintApi }) {
         {announce}
       </span>
     </>
-  );
-}
-
-/** The "?" beside the clock: hides a shown plate, brings a hidden one back. Focus stays on
- *  the button, which is a disclosure. `onOpen` runs when the press opens the plate, so the
- *  caller can close whatever else wants the room (the Places sheet). */
-export function HintToggle({ hint, onOpen }: { hint: ControlHintApi; onOpen?: () => void }) {
-  // Safari's click from a tap may not carry pointerType, so the button keeps its own.
-  const pointer = useRef("");
-  return (
-    <button
-      type="button"
-      className={styles.hintToggle}
-      data-hint-toggle
-      aria-label={HINT_NAME}
-      aria-expanded={hint.state.shown}
-      aria-controls={hint.present ? hint.plateId : undefined}
-      onPointerDown={(e) => {
-        pointer.current = e.pointerType;
-      }}
-      onClick={(e) => {
-        const opening = !hint.state.shown;
-        hint.toggle(e.detail === 0 ? "" : pointer.current);
-        if (opening) onOpen?.();
-      }}
-    >
-      <span aria-hidden="true">?</span>
-    </button>
   );
 }
 

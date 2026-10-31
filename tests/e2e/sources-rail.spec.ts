@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-// The Sources rail: its two keyboard doors, and the fresh-launch hint on its tab.
+// The Sources panel: its two keyboard doors, and the fresh-launch hint on its row.
 //
 // WHY E2E AND NOT A UNIT TEST. The rule about when the hint fires is pure and lives
 // in tests/unit/sources-rail.test.ts. What cannot be tested there is everything that
@@ -18,7 +18,8 @@ async function stampSeen(page: import("@playwright/test").Page) {
   });
 }
 
-const FAB = ".tn-rail-fab";
+const WRAP = ".tn-sidebar";
+const ROW = 'nav[data-rail="console"] [data-rail-entry="sources"]';
 const RAIL = ".tn-rail";
 
 test("⌘K opens Sources — NOT the command palette", async ({ page }) => {
@@ -41,42 +42,44 @@ test("⌘K opens Sources — NOT the command palette", async ({ page }) => {
   await expect(page.locator(RAIL)).toHaveCount(0);
 });
 
-test("Ctrl+Space is SEARCH now, and it does not touch the rail", async ({ page }) => {
+test("Ctrl+Space is SEARCH now, and it does not touch the panel", async ({ page }) => {
   // Ctrl+Space opened Sources in the first cut of this feature. The keymap gave every
   // action one job, and the half of that worth pinning is the NEGATIVE: a chord that
-  // still opened the rail as a side effect would be a second door nobody documented.
+  // still opened the panel as a side effect would be a second door nobody documented.
   await stampSeen(page);
   await page.goto("/app");
   await expect(page.locator(".map-canvas")).toHaveCount(1);
 
   await page.keyboard.press("Control+Space");
-  await expect(page.locator("#stage-search input")).toBeFocused();
+  await expect(page.locator("#tn-map-search")).toBeFocused();
   await expect(page.locator(RAIL)).toHaveCount(0);
 });
 
-test("the SHORTCUTS button still opens the palette, now that ⌘K does not", async ({ page }) => {
-  // The palette did not lose its door, it lost its chord. If this ever fails, the
-  // palette is unreachable from anywhere.
+test("Settings > Shortcuts still opens the palette, now that ⌘K does not", async ({ page }) => {
+  // The palette did not lose its door, it lost its chord, and on 2026-10-31 the door moved
+  // from the navbar to the top of the Shortcuts tab. If this ever fails, the palette is
+  // unreachable from anywhere.
   await stampSeen(page);
   await page.goto("/app");
+  await page.locator(".tn-settings-trigger").click();
+  await page.getByRole("tab", { name: "Shortcuts" }).click();
   await page.locator(".tn-palette-trigger").click();
   await expect(page.locator(".tn-palette-root")).toBeVisible();
 });
 
-test("the tab jumps on a fresh launch, stops once opened, and IS BACK NEXT LAUNCH", async ({ page }) => {
+test("the row hops on a fresh launch, stops once opened, and IS BACK NEXT LAUNCH", async ({ page }) => {
   // THE HINT, END TO END: armed on arrival, actually animating, ended by opening the
-  // rail, and armed again on the next launch.
+  // panel, and armed again on the next launch.
   await stampSeen(page);
   await page.goto("/app");
 
-  const fab = page.locator(FAB);
-  await expect(fab).toHaveAttribute("data-hint", "");
+  await expect(page.locator(WRAP)).toHaveAttribute("data-hint", "");
 
-  // That the attribute is set is not evidence that anything moves. The CSS hangs off
-  // `.tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint]`, a DIRECT-child selector, so
-  // any future wrapper around the tab silently kills the animation while leaving the
-  // attribute and every unit test green. Resolving the animation is what catches that.
-  const anim = await fab.evaluate((el) => {
+  // That the attribute is set is not evidence that anything moves. The CSS hangs off a
+  // selector across two components, so a future change to either silently kills the
+  // animation while leaving the attribute and every unit test green. Resolving the
+  // animation is what catches that.
+  const anim = await page.locator(ROW).evaluate((el) => {
     const cs = getComputedStyle(el);
     return { name: cs.animationName, iterations: cs.animationIterationCount };
   });
@@ -86,20 +89,15 @@ test("the tab jumps on a fresh launch, stops once opened, and IS BACK NEXT LAUNC
   expect(anim.iterations).not.toBe("infinite");
   expect(Number(anim.iterations)).toBeGreaterThan(0);
 
-  await fab.click();
+  await page.locator(ROW).click();
   await expect(page.locator(RAIL)).toBeVisible();
+  await expect(page.locator(WRAP)).not.toHaveAttribute("data-hint", "");
 
-  // Ended for the rest of THIS visit. Closing the rail again does not bring it back:
+  // Ended for the rest of THIS visit. Closing the panel again does not bring it back:
   // someone who opened Sources and shut it has found the control.
-  //
-  // The collapse button, not Escape. Escape was the obvious guess and it does not
-  // close this rail — ConsoleShell sequences Escape for picking mode and the current
-  // selection, and the rail is not in that ladder. Written down because the failure
-  // looks nothing like the cause: the rail stays open, so the tab never re-renders,
-  // so the assertion below fails with "element not found" rather than with a hint
-  // that would not go away.
-  await page.getByRole("button", { name: "Collapse sources" }).click();
-  await expect(page.locator(FAB)).not.toHaveAttribute("data-hint", "");
+  await page.getByRole("button", { name: "Close sources" }).click();
+  await expect(page.locator(RAIL)).toHaveCount(0);
+  await expect(page.locator(WRAP)).not.toHaveAttribute("data-hint", "");
 
   // AND BACK ON THE NEXT LAUNCH. This assertion is the inverse of the one it replaces,
   // which read "it stays earned out across a reload — this is a first-visit hint, not
@@ -107,19 +105,44 @@ test("the tab jumps on a fresh launch, stops once opened, and IS BACK NEXT LAUNC
   // opening Sources once, ever, retired the hint on every later launch and the console
   // then looked exactly like one where the hint had never been built.
   await page.reload();
-  await expect(page.locator(FAB)).toHaveAttribute("data-hint", "");
+  await expect(page.locator(WRAP)).toHaveAttribute("data-hint", "");
 });
 
-test("opening by keyboard ends the hint too, not just clicking the tab", async ({ page }) => {
-  // The flag is set in the store's setOpen, so every door ends it. If it were set in
-  // the tab's onClick instead, a Ctrl+K user would be nagged for the whole visit.
+test("a person who asks for reduced motion gets the colour and no movement", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  const page = await context.newPage();
   await stampSeen(page);
   await page.goto("/app");
-  await expect(page.locator(FAB)).toHaveAttribute("data-hint", "");
+  await expect(page.locator(WRAP)).toHaveAttribute("data-hint", "");
+  const anim = await page.locator(ROW).evaluate((el) => getComputedStyle(el).animationName);
+  expect(anim).toBe("none");
+  // The part of the hint that does not move stays.
+  const ring = await page.locator(ROW).evaluate((el) => getComputedStyle(el).boxShadow);
+  expect(ring).not.toBe("none");
+  await context.close();
+});
+
+test("opening by keyboard ends the hint too, not just clicking the row", async ({ page }) => {
+  // The flag is set in the store's setOpen, so every door ends it. If it were set in
+  // the row's onClick instead, a Ctrl+K user would be nagged for the whole visit.
+  await stampSeen(page);
+  await page.goto("/app");
+  await expect(page.locator(WRAP)).toHaveAttribute("data-hint", "");
 
   await page.keyboard.press("ControlOrMeta+k");
   await expect(page.locator(RAIL)).toBeVisible();
   await page.keyboard.press("ControlOrMeta+k");
   await expect(page.locator(RAIL)).toHaveCount(0);
-  await expect(page.locator(FAB)).not.toHaveAttribute("data-hint", "");
+  await expect(page.locator(WRAP)).not.toHaveAttribute("data-hint", "");
+});
+
+test("on a phone the ☰ hops instead, because the row is inside a closed sheet", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await stampSeen(page);
+  await page.goto("/app");
+  await expect(page.locator(WRAP)).toHaveAttribute("data-hint", "");
+  const menu = await page.locator('nav[data-rail="console"] [data-rail-menu]').evaluate((el) => getComputedStyle(el).animationName);
+  expect(menu).not.toBe("none");
+  const row = await page.locator(ROW).evaluate((el) => getComputedStyle(el).animationName);
+  expect(row).toBe("none");
 });

@@ -201,7 +201,7 @@ test("the light survives a basemap switch", async ({ page }) => {
 
   // Inspector -> Map settings -> Topographic. A restyle throws away the layers AND the
   // global state; addAppLayers puts both back.
-  await page.locator("#inspector-rail").getByRole("button", { name: "Map settings" }).click();
+  await page.locator('nav[data-rail="console"] [data-rail-entry="settings"]').click();
   const basemaps = page.locator(".tn-insp-tool").getByRole("radiogroup", { name: "Basemap" });
   await basemaps.getByRole("radio", { name: "Topographic" }).click();
   await expect(page.locator(".maplibregl-ctrl-attrib")).toContainText(/OpenTopoMap/, { timeout: 15_000 });
@@ -222,8 +222,8 @@ test("the light survives a basemap switch", async ({ page }) => {
     }),
   ).toBeGreaterThanOrEqual(10);
 
-  // The rail shows the Inspector while it is open; the Sources tab brings the rows back.
-  await page.getByRole("tab", { name: "Sources" }).click();
+  // The panel shows Map settings while it is open; the Sources row brings the rows back.
+  await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
   await page.locator(".map-canvas").hover({ position: { x: 600, y: 400 } });
   await expect.poll(() => lit(page), { timeout: 2_000 }).toEqual([]);
   await row(page, "wildfires").hover();
@@ -255,7 +255,7 @@ test("touch: a tap on a label lights it, a second tap clears it, a tap on the ma
 
     // A tap on a section heading does nothing: a heading is not a button. (The map tap
     // above opened a country in the rail, so bring the Sources list back first.)
-    await page.getByRole("tab", { name: "Sources" }).click();
+    await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
     await heading(page, "hazards").tap();
     await page.waitForTimeout(300);
     expect(await lit(page)).toEqual([]);
@@ -275,7 +275,8 @@ const snapshot = (page: Page) =>
   page.evaluate(() => ({
     keys: Object.fromEntries(
       Object.keys(window.localStorage)
-        .filter((k) => k.startsWith("tn."))
+        // The two notes count time on the page, and that ticks by itself every few seconds.
+        .filter((k) => k.startsWith("tn.") && k !== "tn.community.v1" && k !== "tn.feedback.v1")
         .sort()
         .map((k) => [k, window.localStorage.getItem(k)]),
     ),

@@ -126,7 +126,7 @@ describe("rebinding", () => {
     const r = bindChord(fresh(), "draw", 0, "ctrl+k");
     expect(r.ok).toBe(false);
     if (r.ok) return;
-    expect(r.reason).toContain("Sources rail");
+    expect(r.reason).toContain("Sources panel");
     expect(r.reason).toContain("Ctrl+K");
   });
 

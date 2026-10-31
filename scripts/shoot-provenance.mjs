@@ -7,9 +7,8 @@
 // Never assumes :3000 — a parallel session's dev server usually owns that, and two
 // Next servers sharing a .next corrupts it.
 //
-// The rail is not on screen at load: SourceCatalog mounts collapsed as the
-// "≡ Sources" launcher (`.tn-rail-fab`) and only renders its <aside> once that is
-// clicked. Once open, all six sections (Ground, Air & space, …) render straight
+// The panel is not on screen at load: SourceCatalog renders its <aside> once the Sources row
+// on the sidebar is clicked. Once open, all six sections (Ground, Air & space, …) render straight
 // away — the reskin (components/shell/sources/SourceSection.tsx) replaced the old
 // single collapsed "Global signals" disclosure with always-open sections, so there
 // is nothing left to expand. What DID move behind a gesture is the per-row detail:
@@ -44,11 +43,9 @@ await page.waitForTimeout(9000); // dev-mode first compile + store hydration
 // `text=SOURCES` used to open the rail but is now ambiguous post-reskin: the
 // literal text "SOURCES" is also the bottom-bar freshness ticker's label
 // (components/shell/FreshnessTicker.tsx), which sits in the DOM alongside the
-// real launcher. The button that actually opens the rail carries no visible
-// "SOURCES" text at all — its label is "Sources" beside a ≡ glyph and its title
-// is "Show sources" — so target its dedicated class instead:
-// `.tn-rail-fab` (components/shell/SourceCatalog.tsx).
-await page.locator(".tn-rail-fab").first().click({ force: true }).catch(() => {});
+// real control, so target the sidebar's row by its own attribute
+// (components/shell/ConsoleSidebar.tsx).
+await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').first().click({ force: true }).catch(() => {});
 await page.waitForTimeout(1200);
 
 // Rows are keyed by catalog id via `data-source-row` (SourceRow.tsx), which

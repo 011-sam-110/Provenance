@@ -64,8 +64,8 @@
 }
 
 /* The vignette, and the scrims under the words: the header's band at the top, the
-   ledger's and the credits' at the bottom. They darken the photograph, never the
-   words, so the faint ink keeps its measured contrast over bright roofs. */
+   compass's or the ledger's and the credits' at the bottom. They darken the photograph,
+   never the words, so the faint ink keeps its measured contrast over bright roofs. */
 .hud::before {
   content: "";
   position: absolute;
@@ -77,14 +77,15 @@
 }
 
 /* MapLibre's own attribution control, collapsed behind its info button in the
-   console (lib/map/attribution.ts), is hidden here only while the frame shows the
-   same credits in full along its bottom edge (EyeHud). EyeApp sets data-credits only
-   when it has read them from that control, so the credit is never hidden twice. */
+   console (lib/map/attribution.ts), is hidden here only while the frame holds the
+   same credits (EyeHud's © Credits, a film's bottom edge). EyeApp sets data-credits
+   only when it has read them from that control, so the credit is never hidden twice. */
 .root[data-credits] :global(.maplibregl-ctrl-attrib) {
   display: none;
 }
 
-/* ── Top band: the place, the clock, the controls ───────────────────────── */
+/* ── A film's frame (EyeFilmFrame.tsx), from here to the ledger ─────────── */
+/* The HUD's own frame is EyeHud.module.css. */
 
 .top {
   position: absolute;
@@ -157,17 +158,6 @@
   font-size: 11px;
   color: var(--eye-ink-3);
   font-weight: 600;
-}
-
-/* The buttons live in the footer's markup, so a phone can stack them over the
-   credits; a wide screen lifts them to the top right, under the clock. */
-.controls {
-  position: fixed;
-  top: 60px;
-  right: 26px;
-  display: flex;
-  gap: 8px;
-  pointer-events: auto;
 }
 
 .btn {
@@ -564,12 +554,12 @@
 /* ── Phone, portrait: the chrome at the top, the scene below it ─────────── */
 
 @media (max-aspect-ratio: 4/5) {
-  /* The header and the ledger stack in the frame's own flow, so a title that wraps (a
+  /* The header and the ledger stack in the film frame's own flow, so a title that wraps (a
      camera's long name, a spot's coordinates) moves the ledger down instead of running
      under it. The footer stays absolute at the bottom. position: relative, not static:
      an in-flow block that is not positioned paints UNDER the scrim (.hud::before), and
      the words went grey in the first mockup. */
-  .hud {
+  .film {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -593,12 +583,6 @@
   .btn {
     min-height: 44px;
     padding: 0 14px;
-  }
-  /* On a phone the buttons stay in the footer's flow, over the credits, at thumb
-     height: the header is full with the place and the clock. */
-  .controls {
-    position: static;
-    margin-bottom: 8px;
   }
   .long {
     display: none !important;
@@ -719,7 +703,7 @@
   /* The header 6.5% down and 7% in, as before, and the ledger right under it. A recording's
      frame is the whole viewport (.root is fixed, inset 0), so vh and vw are its own height and
      width; a padding percentage would be of the width only. */
-  .root[data-record] .hud {
+  .root[data-record] .film {
     padding: 6.5vh 7vw 0;
   }
   .root[data-record] .bottom {
@@ -736,30 +720,33 @@
 }
 
 /* ── Control hint: how to move the view (ControlHint.tsx) ─────────────────
- * A wide screen holds it under the controls at top right (top 60 + Sources 48 + 12);
- * a phone holds it just above the bar, positioned out of the footer's flow so the
- * footer's kept box does not grow. It reserves no room (no data-eye-keep): EyeOverlay
- * places cards as if it were not there. The "?" beside the clock brings it back. It
- * never takes a press meant for the map: the plate has no pointer events, only its x
- * does. */
+ * The design's pop-over beside the sidebar's foot, 12 px from its edge. The compass stands in the
+ * middle of the bottom edge, so a plate that would reach it stands above it instead: with the
+ * sidebar open (the calc takes 64 px to 12 and 232 px to 118, over the sidebar's own .18s), and in
+ * a window too narrow to have the room with it closed. It reserves no room (no data-eye-keep):
+ * EyeOverlay places cards as if it were not there. The sidebar's Controls row brings it back. It
+ * never takes a press meant for the map: the plate has no pointer events, only its x does. */
 .hint {
-  position: fixed;
-  top: 120px;
-  right: 26px;
+  position: absolute;
+  left: calc(var(--rail-w, 64px) + 24px);
+  bottom: calc(12px + (var(--rail-w, 64px) - 64px) * 0.63);
+  z-index: 11;
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  max-width: min(460px, calc(100vw - 52px));
-  padding: 10px 6px 11px 12px;
-  background: var(--eye-plate);
-  border: 1px solid var(--eye-hair);
-  border-radius: 4px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
-  color: var(--eye-ink);
-  font-size: 12.5px;
+  gap: 2px;
+  box-sizing: border-box;
+  max-width: min(460px, calc(100vw - var(--rail-w, 64px) - 48px));
+  padding: 14px 6px 14px 14px;
+  background: rgba(12, 15, 19, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e8ecf0;
+  font-size: 12px;
   line-height: 1.35;
   pointer-events: none;
   animation: eye-hint-in 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  transition: left 0.18s ease, bottom 0.18s ease;
 }
 .hint[data-leaving] { animation: eye-hint-out 300ms ease both; }
 @keyframes eye-hint-in {
@@ -776,15 +763,15 @@
   margin: 0;
   display: grid;
   grid-template-columns: auto auto auto;
-  column-gap: 14px;
+  column-gap: 8px;
   row-gap: 5px;
   align-items: baseline;
 }
 .hint[data-kind="touch"] .hintRows,
 .hint[data-kind="touch-desktop"] .hintRows { grid-template-columns: auto auto; }
 .hintRows dt { font-weight: 600; }
-.hintRows dd { margin: 0; color: var(--eye-ink-2); white-space: nowrap; }
-.hintRows .hintKeys { color: var(--eye-ink-3); }
+.hintRows dd { margin: 0; color: #a9b4bf; white-space: nowrap; }
+.hintRows .hintKeys { color: #8e9aa6; }
 .hint kbd {
   display: inline-block;
   min-width: 18px;
@@ -799,14 +786,14 @@
   line-height: 1;
   text-align: center;
 }
-.hintNote { margin: 0; color: var(--eye-ink-3); font-size: 11.5px; }
+.hintNote { margin: 0; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #8e9aa6; }
 .hintClose {
   flex: none;
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  margin: -5px 0 -5px 4px;
+  margin: -5px 0 -5px 0;
   border: 0;
   border-radius: 4px;
   background: transparent;
@@ -819,71 +806,39 @@
 }
 .hintClose:hover { color: var(--eye-ink); background: rgba(238, 243, 241, 0.1); }
 .hintClose:focus-visible { outline: 2px solid var(--eye-ink); outline-offset: 2px; }
-/* The "?" beside the clock: left of it on a wide screen, under it on a phone. Its open state is
-   the place chip's selected look, not Turn's solid fill: the plate opens on every arrival, and
-   Sources stays the only solid plate in the frame. */
-.hintToggle {
-  order: -1;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid var(--eye-hair);
-  border-radius: 4px;
-  background: var(--eye-plate);
-  color: var(--eye-ink-2);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.hintToggle:hover { border-color: rgba(238, 243, 241, 0.5); color: var(--eye-ink); }
-.hintToggle[aria-expanded="true"] {
-  color: var(--eye-ink);
-  border-color: rgba(238, 243, 241, 0.62);
-  box-shadow: inset 0 -2px 0 var(--eye-ink);
-}
-.hintToggle:focus-visible { outline: 2px solid var(--eye-ink); outline-offset: 2px; }
-/* A wide window too narrow for the plate beside the place chips: below them. */
-@media (min-aspect-ratio: 4/5) and (max-width: 820px) {
-  .hint { top: 156px; }
+/* Too narrow for the plate beside the compass, with the sidebar closed: above it. At 1440 px the
+   compass starts at 460 px and the plate, at its widest, ends at 450 px. */
+@media (max-width: 1439px) {
+  .hint {
+    bottom: 118px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hint, .hint[data-leaving] { animation: none; }
+  .hint, .hint[data-leaving] { animation: none; transition: none; }
 }
+/* Upright: across the phone, over the compass, whose top is 113 px up (129 px when the credits take
+   two lines under it, as EyeHud.module.css says). */
 @media (max-aspect-ratio: 4/5) {
   .hint {
-    /* top and right must be reset: the wide rule's top: 120px would still apply and drop the
-       plate under the bar. */
-    position: absolute;
-    top: auto;
-    right: auto;
-    left: 0;
-    bottom: calc(100% + 5px);
-    margin: 0;
-    max-width: 100%;
+    left: calc(var(--rail-w, 0px) + 12px);
+    right: 12px;
+    bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
     padding: 9px 2px 10px 11px;
-    font-size: 12px;
   }
   .hintLead { font-size: 12.5px; }
   .hintRows { grid-template-columns: auto auto; column-gap: 12px; }
   .hintRows .hintKeys { display: none; }
-  .hintClose { width: 44px; height: 44px; margin: -10px -2px -10px 0; }
-  /* Under the clock, in the header's empty corner: 20 + 6 + 44 = 70 px. The 6 px is air between
-     the clock and the button (Leon's QA, 30 Oct 2026: it sat 1 px under the clock). The way out's
-     row keeps the place's column taller than that corner, so the header (a kept box) and the
-     ledger below it do not move. */
-  .topRight { grid-auto-flow: row; align-items: start; gap: 6px; }
-  .hintToggle { order: 0; width: 44px; height: 44px; font-size: 17px; }
+  .hintClose { width: 44px; height: 44px; margin: -10px -2px -10px auto; }
 }
 
-/* ── Front door: who this is, the place picker, and the way to the sources ──
- * Since 2026-10-27 every "Open the map" button on the landing page opens this view,
- * so the frame says it is Provenance, offers the three framed places, and has one
- * strong way to the console: Sources, the only solid plate in the frame. */
+@media (max-aspect-ratio: 4/5) and (max-width: 350px) {
+  .hint {
+    bottom: calc(136px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Who this is, on a film's frame ─────────────────────────────────────── */
 
 .id {
   display: inline-flex;
@@ -908,203 +863,31 @@
 .mark {
   flex: none;
 }
-
-/* The way out to the console (EyeHud): the name, then "Exit to main dashboard" on the
-   same row. It is a .btn plate, the look of Turn and the place chips, so it reads as a
-   control and not as part of the name. The header takes no pointer events; this asks
-   for its own. The arrow is the console's "God's eye view" plate turned round: each map
-   offers the other at its top left. */
-.idRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-}
-.exit {
-  gap: 7px;
-  white-space: nowrap;
-  pointer-events: auto;
-}
-.exitArrow {
-  color: var(--eye-ink-2);
-  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms ease-out;
-}
-.exit:hover .exitArrow,
-.exit:focus-visible .exitArrow {
-  color: var(--eye-ink);
-  transform: translateX(-2px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .exitArrow {
-    transition: none;
-  }
-  .exit:hover .exitArrow,
-  .exit:focus-visible .exitArrow {
-    transform: none;
-  }
-}
-
-.places {
-  display: flex;
-  gap: 6px;
-  margin-top: 11px;
-  pointer-events: auto;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--eye-hair);
-  border-radius: 4px;
-  background: var(--eye-plate);
-  color: var(--eye-ink-2);
-  font-size: 12px;
-  font-weight: 600;
-  text-decoration: none;
-}
-.chip:hover {
-  border-color: rgba(238, 243, 241, 0.5);
-  color: var(--eye-ink);
-}
-.chip[aria-current="page"] {
-  color: var(--eye-ink);
-  border-color: rgba(238, 243, 241, 0.62);
-  box-shadow: inset 0 -2px 0 var(--eye-ink);
-}
-
-/* Sources: a solid plate. Text #0b1114 on --eye-ink is 17:1; the hint at 72% is 8.9:1. */
-.sourcesBtn {
-  order: 2;
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 10px;
-  min-height: 48px;
-  padding: 5px 16px 5px 12px;
-  border-radius: 4px;
-  background: var(--eye-ink);
-  color: #0b1114;
-  text-decoration: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  pointer-events: auto;
-}
-.sourcesBtn:hover {
-  background: #ffffff;
-}
-.sourcesBtn:focus-visible,
-.chip:focus-visible,
 .id:focus-visible {
   outline: 2px solid var(--eye-ink);
   outline-offset: 3px;
 }
-.bars {
-  grid-row: 1 / 3;
-  font-size: 18px;
-  line-height: 1;
-}
-.sourcesBtn b {
-  font-size: 14.5px;
-  font-weight: 700;
-  line-height: 1.15;
-}
-.sourcesBtn small {
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: rgba(11, 17, 20, 0.72);
-}
-.sourcesBtn small.long {
-  grid-column: 2;
-}
-
-.placeSheet {
-  display: none;
-}
-
 @media (max-aspect-ratio: 4/5) {
   .id {
     font-size: 12.5px;
     min-height: 26px;
   }
-  /* A phone has no room beside the name (the clock is there): the way out takes the row
-     under the place, where a wide screen has the place chips, 44 px tall. The ledger
-     follows the header in the frame's flow (the phone .hud above), so it moves down by
-     that row with no offset of its own, and only while the row is drawn. */
-  .idRow {
-    display: contents;
-  }
-  .exit {
-    order: 1;
-    justify-self: start;
-    margin-top: 5px;
-  }
-  /* The console's thumb control, kept: "≡ Sources" at the bottom left, 44 px tall,
-     first in the bar (the .tn-rail-fab look: bars in front, the word after). */
-  .sourcesBtn {
-    order: -1;
-    display: inline-flex;
-    gap: 8px;
-    min-height: 44px;
-    padding: 0 15px;
-    box-shadow: none;
-  }
-  .sourcesBtn b {
-    font-size: 14px;
-  }
-  .bars {
-    font-size: 16px;
-  }
-  .placeSheet {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 8px);
-    display: grid;
-    gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--eye-hair);
-    border-radius: 6px;
-    background: rgba(6, 10, 12, 0.92);
-    pointer-events: auto;
-  }
-  .placeSheet a {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    min-height: 44px;
-    padding: 12px 10px;
-    border-radius: 4px;
-    color: var(--eye-ink);
-    text-decoration: none;
-  }
-  .placeSheet a[aria-current="page"] {
-    background: rgba(238, 243, 241, 0.1);
-  }
-  .placeSheet b {
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .placeSheet span {
-    font-size: 11.5px;
-    color: var(--eye-ink-2);
-  }
 }
 
 /* ── The detail panel: a vessel or an aircraft that was clicked ─────────────
-   Docked on the right under the controls, 340 px; a bottom sheet on a phone. Above the
-   frame (z-index 30) and not above a camera card's own page. It is its own box: the
-   scene beneath it still pans, and the words on it sit on its own plate. */
+   Docked on the right under the clock, 340 px, down to above the credits; a bottom sheet on
+   a phone, beside the sidebar. Above the frame (z-index 30) and not above a camera card's own
+   page. It is its own box: the scene beneath it still pans, and the words on it sit on its
+   own plate. */
 
 .detail {
   --c: var(--eye-ship);
   position: absolute;
-  top: 112px;
-  right: 26px;
+  top: 64px;
+  right: 24px;
   z-index: 31;
   width: 340px;
-  max-height: calc(100% - 112px - 92px);
+  max-height: calc(100% - 64px - 112px);
   display: flex;
   flex-direction: column;
   background: rgba(6, 10, 12, 0.92);
@@ -1338,7 +1121,7 @@
 @media (max-aspect-ratio: 4/5) {
   .detail {
     top: auto;
-    left: 10px;
+    left: calc(var(--rail-w, 0px) + 10px);
     right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     width: auto;
@@ -1376,81 +1159,7 @@
   }
 }
 
-/* ── Previews: the switch, camera icons, an opened card ── */
-
-/* The switch beside Turn: the console's camera pictogram, the word, and a mini track.
-   Off, the pictogram is crossed out and dims. It stands on .btn for the plate, the
-   border, the hover and the focus ring. */
-.previewsBtn {
-  gap: 8px;
-  padding: 0 10px 0 9px;
-}
-.previewsGlyph {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  color: var(--eye-cam);
-  flex: none;
-}
-.previewsGlyph svg {
-  width: 100%;
-  height: 100%;
-}
-.previewsBtn[aria-checked="false"] .previewsGlyph svg {
-  opacity: 0.55;
-}
-.previewsBtn[aria-checked="false"] .previewsGlyph::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: -2px;
-  width: 1.5px;
-  height: 20px;
-  border-radius: 1px;
-  background: var(--eye-ink);
-  box-shadow: 0 0 0 1.5px rgba(6, 10, 12, 0.92);
-  transform: translateX(-50%) rotate(-45deg);
-}
-.previewsTrack {
-  position: relative;
-  width: 22px;
-  height: 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(238, 243, 241, 0.5);
-  flex: none;
-}
-.previewsTrack::after {
-  content: "";
-  position: absolute;
-  top: 1px;
-  left: 1px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--eye-ink-3);
-}
-.previewsBtn[aria-checked="true"] .previewsTrack {
-  background: var(--eye-ink);
-  border-color: var(--eye-ink);
-}
-.previewsBtn[aria-checked="true"] .previewsTrack::after {
-  left: 11px;
-  background: #0b1114;
-}
-/* The phone's word, "Cameras" (EyeApp), drawn by the two phone blocks below and hidden on a
-   wide screen, where the glyph, "Previews" and the track stay as they were. It stands in
-   .btn's own type, like Places and Turn. Off, the word alone says so: dimmed (the third
-   ink, 4.8:1 on the plate) and struck through, as the wide switch's crossed-out camera. */
-.previewsPhone {
-  display: none;
-}
-.previewsBtn[aria-checked="false"] .previewsPhone {
-  color: var(--eye-ink-3);
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
-}
+/* ── Previews: camera icons, an opened card ── */
 
 /* A camera with previews off: a plate with the pictogram on a short stalk that ends on
    the camera's white ground ring. The marker is the button itself, so MapLibre owns its
@@ -1560,9 +1269,6 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .previewsTrack::after {
-    transition: left 0.14s ease;
-  }
   .camOpen .cam {
     animation: camGrow 0.14s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     transform-origin: 50% 100%;
@@ -1582,26 +1288,9 @@
   }
 }
 
-/* Phone: the switch is the word "Cameras", 44 px tall like Places and Turn (the icon it had
-   gave way to the word, 30 Oct 2026); an icon's hit area is 44 px around a 32 px plate; the
-   close button is 44 px around a 26 px face. The bar keeps to ONE row: its strip
-   (EyeSources.module.css) scrolls sideways where the buttons do not fit, so a 320 or 360 px
-   screen neither wraps the strip under Sources nor overflows. */
+/* Phone: an icon's hit area is 44 px around a 32 px plate; the close button is 44 px around a
+   26 px face. */
 @media (max-aspect-ratio: 4/5) {
-  .controls {
-    flex-wrap: nowrap;
-  }
-  .previewsBtn {
-    padding: 0 14px;
-  }
-  .previewsGlyph,
-  .previewsWord,
-  .previewsTrack {
-    display: none;
-  }
-  .previewsPhone {
-    display: inline;
-  }
   .camIcon {
     width: 44px;
     padding: 6px 6px 0;
@@ -1623,32 +1312,24 @@
   }
 }
 
-/* ── A console layer in the ledger (Sources tray) ────────────────────────────
+/* ── A console layer in a film's ledger ──────────────────────────────────────
  * One row for each console layer that is switched on, in the layer's own colour. */
 .ledger p[data-k="signal"] > i { background: var(--c); }
 
-/* ── Phone, landscape: the phone's compact frame on a short wide screen ─────────────
- * A phone on its side is wider than 4:5, so it took the wide layout, and at 300-430 px
- * tall that layout's pieces ran into each other: the title under the bar, the ledger
- * (anchored 76 px up) into the credits and the place chips, the hint over the ledger,
- * and five pins pushed Previews and Turn off the left edge (eye-landscape, 29 Oct 2026).
- * Under 500 px of height the frame takes the phone's words and sizes (Leon's call) and
- * splits the width in two halves:
- *   left:  the place, heading and tilt, and the counts right under them, in flow;
- *   right: the clock, the bar, and what the bar opens (the hint, the tray, the places
- *          list, a details panel), each hung 8 px under the bar.
- * The buttons keep the wide size (32-34 px): 44 px would push the hint into the credits
- * on a 320 px screen. The way out ("Exit to main dashboard") keeps its wide-screen place,
- * beside the name, and drops under the name when the left half is too narrow for both
- * (568 px); it needs no rule here. Portrait phones (max-aspect-ratio: 4/5) and any window
- * 500 px tall or more never match this block. Its twin in EyeSources.module.css places the
- * tray and makes the bar's strip scroll. It must stay AFTER the hint's 820 px rule and the
- * detail panel's rules: it overrides them with the same specificity. */
+/* ── Phone, landscape: the compact frame on a short wide screen ─────────────────────
+ * A phone on its side is wider than 4:5, so it took the wide layout, and at 300-430 px tall that
+ * layout's pieces ran into each other (eye-landscape, 29 Oct 2026). Under 500 px of height a film
+ * takes the phone's words and sizes (Leon's call): the place, heading and tilt, and the counts
+ * right under them, in flow, in the left half. EyeHud.module.css and EyeSources.module.css hold
+ * the twin rules for the HUD. The hint and a details panel stand under the clock in the right
+ * half, down to above the bottom edge. Portrait phones (max-aspect-ratio: 4/5) and any window
+ * 500 px tall or more never match this block. It must stay AFTER the hint's rules and the detail
+ * panel's rules: it overrides them with the same specificity. */
 @media (min-aspect-ratio: 4/5) and (max-height: 500px) {
   /* The header and the ledger stack in the frame's flow, as on a portrait phone, so the
      counts follow the title whatever its height. position: relative, not static: an
      in-flow block that is not positioned paints under the scrim (.hud::before). */
-  .hud {
+  .film {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -1660,7 +1341,6 @@
     inset: auto;
     align-self: stretch;
   }
-  /* The left half ends 16 px before the middle of the screen; the bar starts at it. */
   .placeBlock {
     max-width: calc(50% - 16px);
   }
@@ -1677,8 +1357,7 @@
   .clock {
     font-size: 17px;
   }
-  /* The phone's words: Places in the bar instead of the chips, the ledger's short labels
-     instead of its sentences, and TfL's times on the bottom line. */
+  /* The ledger's short labels instead of its sentences, and TfL's times on the bottom line. */
   .long {
     display: none !important;
   }
@@ -1741,30 +1420,12 @@
   .sources {
     font-size: 9.5px;
   }
-  /* The bar keeps to the right half, under the clock. Its strip scrolls sideways
-     (EyeSources.module.css); Sources stays at its right-hand end. */
-  .controls {
-    top: 54px;
-    right: 22px;
-    max-width: calc(50% - 22px);
-  }
-  /* Previews is the word "Cameras", as on a phone, in the bar's own size. */
-  .previewsBtn {
-    padding: 0 12px;
-  }
-  .previewsGlyph,
-  .previewsWord,
-  .previewsTrack {
-    display: none;
-  }
-  .previewsPhone {
-    display: inline;
-  }
-  /* The hint, the places list and a details panel hang 8 px under the bar (54 + 34) in
-     the right half. The hint takes the phone's two columns. */
+  /* The hint takes the phone's two columns, in the right half under the clock. */
   .hint {
-    top: 96px;
-    right: 22px;
+    left: auto;
+    right: 12px;
+    top: 56px;
+    bottom: auto;
     max-width: calc(50% - 6px);
   }
   .hintRows {
@@ -1774,47 +1435,12 @@
   .hintRows .hintKeys {
     display: none;
   }
-  .placeSheet {
-    position: fixed;
-    top: 96px;
-    right: 22px;
-    width: min(320px, calc(50% - 6px));
-    display: grid;
-    gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--eye-hair);
-    border-radius: 6px;
-    background: rgba(6, 10, 12, 0.92);
-    pointer-events: auto;
-  }
-  .placeSheet a {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 44px;
-    padding: 12px 10px;
-    border-radius: 4px;
-    color: var(--eye-ink);
-    text-decoration: none;
-  }
-  .placeSheet a[aria-current="page"] {
-    background: rgba(238, 243, 241, 0.1);
-  }
-  .placeSheet b {
-    font-size: 14px;
-    font-weight: 600;
-  }
-  .placeSheet span {
-    font-size: 11.5px;
-    color: var(--eye-ink-2);
-  }
   /* A details panel runs to 10 px above the bottom edge. It covers the credits while it is
      open; its own foot names its feed. */
   .detail {
-    top: 96px;
-    right: 22px;
+    top: 68px;
+    right: 12px;
     width: min(340px, calc(50% - 6px));
-    max-height: calc(100% - 106px);
+    max-height: calc(100% - 78px);
   }
 }

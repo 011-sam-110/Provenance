@@ -1,8 +1,7 @@
 // `sources=open`: a link that opens the console with its Sources rail open.
 //
-// God's eye view (/eye) has a Sources button, and the landing page has an
-// "All sources" button. Both open the console on the rail that lists every source.
-// The rail's open state lives in lib/console/sourcesRail.ts and starts closed, so a
+// The landing page has an "All sources" button, which opens the console on the rail
+// that lists every source. The rail's open state lives in lib/console/sourcesRail.ts and starts closed, so a
 // link needs a way to say "open it".
 //
 // READ ONCE, IN THE BROWSER, AFTER MOUNT. app/(console)/app/page.tsx must not take

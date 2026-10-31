@@ -1,7 +1,8 @@
 // The God's eye view's Sources, the pure half: which rows the tray offers, the state that
 // is remembered about them, and the rules for changing it. components/eye/EyeSources.tsx
-// draws the tray and the pins; components/eye/EyeApp.tsx holds the state and puts it on
-// the map. Pinned by tests/unit/eye-sources.test.ts.
+// draws the tray, components/eye/EyeHud.tsx puts the pins in the sidebar, and
+// components/eye/EyeApp.tsx holds the state and puts it on the map. Pinned by
+// tests/unit/eye-sources.test.ts.
 //
 // CLIENT-SAFE ON PURPOSE. /eye loads this file in the browser, so it imports no catalogue,
 // no registry and no widget module (tests/unit/eye-sources-bundle.test.ts holds the line).
@@ -14,13 +15,12 @@
 //     incidents and closures) are ON by default, so the state records the ones switched OFF;
 //   - every other row is a console layer, OFF by default, so the state records the ones
 //     switched ON. They draw through WorldMap (components/eye/EyeApp.tsx).
-// Pins are a list of row ids, in bar order.
+// Pins are a list of row ids, in the order they were pinned: the sidebar's order.
 
 import { RETIRED_SIGNAL_IDS } from "@/lib/layerAliases";
 import type { SignalPrecision } from "@/lib/signals/types";
 import type { SourceRowModel, SourceSectionModel } from "@/lib/console/sources/sections";
-import { movePin } from "@/lib/eye/pins";
-import { SECTION_SHORT, THIS_VIEW } from "@/lib/eye/wording";
+import { LONDON_ONLY, SECTION_SHORT, THIS_VIEW, type LedgerKind, type LedgerRow } from "@/lib/eye/wording";
 
 /** localStorage key and version of what is remembered. Never in lib/account/syncKeys.ts. */
 export const EYE_SOURCES_KEY = "tn.eye.sources.v1";
@@ -92,16 +92,25 @@ export interface SourcesState {
   ownOff: string[];
   /** Console rows switched ON, in the order they were switched on (they are off by default). */
   consoleOn: string[];
-  /** Row ids on the bar, in order. */
+  /** Row ids in the sidebar, in order. */
   pins: string[];
 }
 
-/** The state holds at most this many pins; the bar shows the first `pinCap(portrait)`. */
+/** The state holds at most this many pins, on any screen. */
 export const PIN_STATE_MAX = 6;
 
-/** How many pins the bar holds: five on a wide screen, six on a phone's strip. */
-export function pinCap(portrait: boolean): number {
-  return portrait ? 6 : 5;
+/** The sidebar's rows above the pins and under them, and its padding, in px (rail.module.css). */
+const RAIL_ROW_PX = 48;
+const RAIL_FIXED_PX = 12 + 44 + 13 + 3 * RAIL_ROW_PX + 13 + 2 * RAIL_ROW_PX + 12;
+
+/**
+ * How many pins the wide sidebar can show in a window this tall, so its foot stays on screen:
+ * closed, it cannot scroll, or its tooltips would be clipped. The rest stay pinned in the tray.
+ * A phone's sheet scrolls, so it shows them all.
+ */
+export function railPinRoom(windowHeight: number, narrow: boolean): number {
+  if (narrow) return PIN_STATE_MAX;
+  return Math.max(0, Math.min(PIN_STATE_MAX, Math.floor((windowHeight - RAIL_FIXED_PX) / RAIL_ROW_PX)));
 }
 
 export function defaultSources(): SourcesState {
@@ -110,9 +119,8 @@ export function defaultSources(): SourcesState {
 
 export type SourcesAction =
   | { type: "toggle"; id: string }
-  | { type: "pin"; id: string; at?: number }
+  | { type: "pin"; id: string }
   | { type: "unpin"; id: string }
-  | { type: "move"; id: string; delta: number }
   | { type: "load"; saved: unknown; rowIds: readonly string[] };
 
 function flip(list: readonly string[], id: string): string[] {
@@ -126,25 +134,11 @@ export function sourcesReducer(state: SourcesState, action: SourcesAction): Sour
       return ownKind(action.id)
         ? { ...state, ownOff: flip(state.ownOff, action.id) }
         : { ...state, consoleOn: flip(state.consoleOn, action.id) };
-    case "pin": {
-      if (state.pins.includes(action.id)) {
-        if (action.at == null) return state;
-        const moved = movePin(state.pins, action.id, action.at);
-        return moved === state.pins ? state : { ...state, pins: [...moved] };
-      }
-      if (state.pins.length >= PIN_STATE_MAX) return state;
-      const at = action.at == null ? state.pins.length : Math.max(0, Math.min(state.pins.length, Math.trunc(action.at)));
-      return { ...state, pins: [...state.pins.slice(0, at), action.id, ...state.pins.slice(at)] };
-    }
+    case "pin":
+      if (state.pins.includes(action.id) || state.pins.length >= PIN_STATE_MAX) return state;
+      return { ...state, pins: [...state.pins, action.id] };
     case "unpin":
       return state.pins.includes(action.id) ? { ...state, pins: state.pins.filter((p) => p !== action.id) } : state;
-    case "move": {
-      const from = state.pins.indexOf(action.id);
-      if (from < 0) return state;
-      const to = Math.max(0, Math.min(state.pins.length - 1, from + Math.trunc(action.delta)));
-      const moved = movePin(state.pins, action.id, to);
-      return moved === state.pins ? state : { ...state, pins: [...moved] };
-    }
     case "load":
       return coerceSaved(action.saved, action.rowIds);
   }
@@ -262,7 +256,49 @@ export function filterSections(sections: readonly EyeSection[], query: string): 
     .filter((s) => s.rows.length > 0);
 }
 
-// ── What is on screen, for the ledger, the tags and "N here" ────────────────────────
+// ── What the tray says about a row ──────────────────────────────────────────────────
+
+/** Which ledger row holds the facts about each of this view's own seven. */
+const LEDGER_OF: Readonly<Record<EyeOwnId, LedgerKind>> = {
+  livecams: "cam",
+  staticcams: "cam",
+  ais: "ship",
+  planes: "plane",
+  "road-works": "road",
+  "road-incidents": "road",
+  "road-closures": "road",
+};
+
+/** A ledger row's source and cadence with its counts taken out ("of 24 nearby", "4 named"). */
+export function withoutCounts(detail: string): string {
+  return detail
+    .split(" · ")
+    .filter((part) => !/^(of )?\d/.test(part.trim()))
+    .join(" · ");
+}
+
+/**
+ * The line under a row's name: who it comes from and how fresh it is, and never how many
+ * (Sam's ask). The counts' ledger left the normal view, so its facts live here. A console layer,
+ * or a kind that has no ledger row yet, says its credit.
+ */
+export function trayDetail(row: EyeSourceRow, ledger: readonly LedgerRow[], london: boolean): string {
+  if (isRoadRow(row.id) && !london) return LONDON_ONLY;
+  if (!ownKind(row.id)) return row.credit;
+  const kept = ledger.find((l) => l.kind === LEDGER_OF[row.id as EyeOwnId]);
+  return (kept && withoutCounts(kept.detail)) || row.credit;
+}
+
+/**
+ * Can the tray stand beside a details panel? The tray is 340 px wide beside the sidebar and the
+ * panel 340 px wide at the right edge. On a phone or a portrait screen they share the room, so
+ * each closes the other.
+ */
+export function trayFitsBesidePanel(windowWidth: number, railWidth: number, narrow: boolean, portrait: boolean): boolean {
+  return !narrow && !portrait && railWidth + 12 + 340 + 12 + 340 + 24 <= windowWidth;
+}
+
+// ── What is on screen, for the ledger and the tags ──────────────────────────────────
 
 /** One feature of a console layer that MapLibre drew in the current view. */
 export interface RenderedSignal {

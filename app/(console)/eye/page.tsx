@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import EyeApp from "@/components/eye/EyeApp";
 import { BRAND } from "@/lib/brand";
-import { railSourceCount } from "@/lib/eye/railCount";
 import { eyeLeftOut, eyeSourceRows, leftOutCounts } from "@/lib/eye/sourceRows";
 
 // The God's eye view. Inside app/(console) for the console layout's basemap warm-up,
@@ -30,10 +29,9 @@ export const metadata: Metadata = {
 };
 
 // The Sources tray's rows are built from the console's own rail (lib/eye/sourceRows.ts), and
-// its foot counts the rows that rail draws and the ones this view leaves out. All of it is
-// read HERE, on the server at build time, and passed down as plain data, so the rail's list
-// and the signal registry do not ride into this page's browser bundle (the same rule as
-// CAMERA_FEED_COUNT in app/(console)/app/page.tsx).
+// its foot says what this view leaves out. All of it is read HERE, on the server at build time,
+// and passed down as plain data, so the rail's list and the signal registry do not ride into
+// this page's browser bundle (the same rule as CAMERA_FEED_COUNT in app/(console)/app/page.tsx).
 export default function EyePage() {
-  return <EyeApp sourceCount={railSourceCount()} sources={eyeSourceRows()} leftOut={leftOutCounts(eyeLeftOut())} />;
+  return <EyeApp sources={eyeSourceRows()} leftOut={leftOutCounts(eyeLeftOut())} />;
 }

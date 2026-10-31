@@ -1,5 +1,6 @@
 "use client";
-// The Sources rail's open state, and the hint that says it is there.
+// Whether the console's panel is on screen, and the hint that says the sidebar is there.
+// lib/console/consolePanel.ts reads this with the two stores beside it to say WHICH panel.
 //
 // WHY A STORE AND NOT `useState` IN SourceCatalog. It was local state, and that was
 // correct while the only thing that could open the rail was the tab you clicked to
@@ -9,12 +10,13 @@
 // useSyncExternalStore — so it reads like lib/shell/scope.ts rather than introducing
 // a third way to hold shell state.
 //
-// THE HINT PLAYS ONCE PER LAUNCH, AND NOTHING ABOUT IT IS WRITTEN DOWN. The rail
-// collapses to a thin tab on the left edge, and in review nobody found it — the same
+// THE HINT PLAYS ONCE PER LAUNCH, AND NOTHING ABOUT IT IS WRITTEN DOWN. The panel used to
+// collapse to a thin tab on the left edge, and in review nobody found it — the same
 // complaint that produced the light skin, and the same class of bug this codebase has
 // argued about twice ("dead controls that sit exactly where a thumb starts a swipe").
-// So the tab jumps, and it stops the instant the rail is opened by ANY route — the
-// tab, the keymap's Sources chord, or the command palette — because at that point the
+// So the sidebar's Sources row hops (the ☰ on a phone, where the row is inside a closed
+// sheet), and it stops the instant a panel is opened by ANY route — the row, the keymap's
+// Sources chord, a click on the map, or the command palette — because at that point the
 // user has demonstrably found it.
 //
 // IT USED TO BE ONCE PER BROWSER, and that is the part that changed. A
@@ -43,10 +45,10 @@
 import { useSyncExternalStore } from "react";
 
 interface RailState {
-  /** Is the rail expanded? */
+  /** Is a panel on screen? */
   open: boolean;
   /**
-   * Has the rail been opened at any point in THIS visit? Drives the hint, and
+   * Has a panel been opened at any point in THIS visit? Drives the hint, and
    * nothing else. Starts false, which is the honest answer on a fresh launch.
    */
   openedThisVisit: boolean;
@@ -92,11 +94,11 @@ export function useSourcesRail(): RailState {
 }
 
 /**
- * Pure: should the tab be jumping?
+ * Pure: should the Sources row be hopping?
  *
  * Split out and exported so the rule is testable without a DOM. It is deliberately
- * narrow — the hint plays only when the rail is CLOSED and has not been opened this
- * visit. A hint on an open rail would be pointing at something the user is already
+ * narrow — the hint plays only when no panel is open and none has been this
+ * visit. A hint on an open panel would be pointing at something the user is already
  * looking at.
  */
 export function shouldHintRail(s: RailState): boolean {

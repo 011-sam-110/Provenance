@@ -86,7 +86,17 @@ const open = async (page: Page, url = SPOT) => {
 
 const openTray = (page: Page) => page.getByRole("button", { name: "Sources", exact: false }).first().click();
 const rowSwitch = (page: Page, row: string) => page.getByRole("switch", { name: `Show ${row} in this view` });
-const here = (page: Page, row: string) => rowSwitch(page, row).locator("..");
+
+/** Every camera the map holds, in frame or not, by its tray row. */
+const held = (page: Page) =>
+  page.evaluate(() => {
+    const map = (window as unknown as {
+      __map: { getSource: (id: string) => { serialize: () => { data: { features: { properties: { row: string } }[] } } } };
+    }).__map;
+    const out: Record<string, number> = {};
+    for (const f of map.getSource("eye-cams").serialize().data.features) out[f.properties.row] = (out[f.properties.row] ?? 0) + 1;
+    return out;
+  });
 
 /** What the ring layer has drawn: each camera once, by its tray row. */
 const rings = (page: Page) =>
@@ -123,11 +133,8 @@ test("asks for every camera of a dense place, not the 25 nearest", async ({ page
   expect(asks[0].searchParams.get("n")).toBe("600");
   expect(asks[0].searchParams.get("km")).toBe("4");
 
-  await expect(page.getByRole("region", { name: "What this view shows" })).toContainText("of 197 nearby");
+  await expect.poll(() => held(page), { timeout: 15_000 }).toEqual({ livecams: 197 });
   await expect.poll(async () => (await rings(page)).livecams ?? 0, { timeout: 15_000 }).toBeGreaterThan(25);
-  await openTray(page);
-  await expect(here(page, "Live cams")).toContainText("197 here");
-  await expect(here(page, "Static cams")).toContainText("0 here");
 });
 
 test("a recording is under Live cams and a still under Static cams, and each switch moves its own", async ({ page }) => {
@@ -136,8 +143,7 @@ test("a recording is under Live cams and a still under Static cams, and each swi
   }));
   await open(page);
   await openTray(page);
-  await expect(here(page, "Live cams")).toContainText("6 here");
-  await expect(here(page, "Static cams")).toContainText("4 here");
+  await expect.poll(() => held(page), { timeout: 15_000 }).toEqual({ livecams: 6, staticcams: 4 });
   await expect.poll(() => rings(page), { timeout: 15_000 }).toEqual({ livecams: 6, staticcams: 4 });
 
   await rowSwitch(page, "Static cams").click();
@@ -164,9 +170,6 @@ test("every camera in the frame is a card or an icon, and a tapped icon opens it
   await expect.poll(() => cards.count(), { timeout: 15_000 }).toBeGreaterThan(0);
   expect(await cards.count()).toBeLessThanOrEqual(5);
   expect(await icons.count()).toBeGreaterThan(0);
-  const marks = (await cards.count()) + (await icons.count());
-  await expect(page.getByRole("region", { name: "What this view shows" })).toContainText(`${marks}`);
-
   const before = await cards.count();
   await icons.first().click();
   const close = page.getByRole("button", { name: /^Close (?!this hint)/ });
@@ -184,8 +187,7 @@ test("asks again once the view has moved 2 km, and takes the new operator's cred
       : { cams: grid("Clip", WESTMINSTER, 5, { clip: true }) },
   );
   await open(page);
-  await openTray(page);
-  await expect(here(page, "Live cams")).toContainText("5 here");
+  await expect.poll(() => held(page), { timeout: 15_000 }).toEqual({ livecams: 5 });
 
   await moveTo(page, CLOSE_LAT);
   await page.waitForTimeout(2_600);
@@ -194,9 +196,8 @@ test("asks again once the view has moved 2 km, and takes the new operator's cred
   await moveTo(page, FAR_LAT);
   await expect.poll(() => asks.length, { timeout: 8_000 }).toBe(2);
   expect(Number(asks[1].searchParams.get("lat"))).toBeCloseTo(FAR_LAT, 3);
-  await expect(here(page, "Live cams")).toContainText("9 here");
+  await expect.poll(() => held(page), { timeout: 15_000 }).toEqual({ livecams: 9 });
   await expect.poll(() => rings(page), { timeout: 15_000 }).toEqual({ livecams: 9 });
-  await expect(page.getByRole("region", { name: "What this view shows" })).toContainText("Other operator");
   const credit = await page.evaluate(
     () => (window as unknown as { __map: { getSource: (id: string) => { attribution?: string } } }).__map.getSource("eye-cams").attribution,
   );
@@ -206,13 +207,12 @@ test("asks again once the view has moved 2 km, and takes the new operator's cred
 test("a failed ask keeps what is drawn, and the next move asks again", async ({ page }) => {
   const asks = await feeds(page, (_ask, nth) => (nth === 2 ? { status: 500 } : { cams: grid("Clip", WESTMINSTER, 5, { clip: true }) }));
   await open(page);
-  await openTray(page);
-  await expect(here(page, "Live cams")).toContainText("5 here");
+  await expect.poll(() => held(page), { timeout: 15_000 }).toEqual({ livecams: 5 });
 
   await moveTo(page, FAR_LAT);
   await expect.poll(() => asks.length, { timeout: 8_000 }).toBe(2);
   await page.waitForTimeout(500);
-  await expect(here(page, "Live cams")).toContainText("5 here");
+  expect(await held(page)).toEqual({ livecams: 5 });
 
   await page.waitForTimeout(2_100);
   await moveTo(page, FAR_LAT + 0.0001);

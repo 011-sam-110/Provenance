@@ -38,7 +38,10 @@ async function feeds(page: Page, vessels: string, planes: string = PLANES): Prom
     (url) => url.pathname === "/api/eye/vessels",
     (route) => route.fulfill(json(JSON.stringify({ ok: true, stream: "live", features: JSON.parse(vessels).features }))),
   );
-  await page.route((url) => url.pathname === "/api/planes", (route) => route.fulfill(json(planes)));
+  await page.route((url) => url.pathname === "/api/eye/planes", (route) => {
+    const box = new URL(route.request().url()).searchParams.get("bbox")!.split(",").map(Number);
+    return route.fulfill(json(JSON.stringify({ ...JSON.parse(planes), ok: true, box, sampled: false })));
+  });
   return errors;
 }
 
@@ -87,11 +90,11 @@ test.describe("on a wide screen", () => {
     await expect(panel).toContainText("United Kingdom");
     await expect(panel).toContainText("Vessel positions © AISStream.io");
     expect(await ringFeatures(page)).toBe(1);
-    // The panel's own box is docked on the right, 340 px wide, under the controls.
+    // The panel's own box is docked on the right, 340 px wide, under the clock.
     const box = (await panel.boundingBox())!;
     expect(Math.round(box.width)).toBe(340);
     expect(box.x + box.width).toBeLessThanOrEqual(1440 - 20);
-    expect(box.y).toBeGreaterThanOrEqual(100);
+    expect(box.y).toBeGreaterThanOrEqual(56);
 
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);

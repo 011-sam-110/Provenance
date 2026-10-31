@@ -6,8 +6,8 @@ import { fmtLat, fmtLon, fmtSpot } from "@/lib/eye/wording";
 /**
  * God's eye view's title on a phone (eye-phone-title, 29 Oct 2026). A title that wraps, a
  * spot's coordinates or a camera's long name, ran under the ledger, which sat at a fixed
- * 80 px. The header and the ledger now stack in the frame's flow, and a spot's title breaks
- * only after its comma. tests/e2e/eye-phone-title.spec.ts measures the boxes in a browser.
+ * 80 px. The header and the ledger now stack in a film's frame's flow, and a spot's title
+ * breaks only after its comma. tests/e2e/eye-phone-title.spec.ts measures the boxes in a browser.
  */
 
 const NBSP = " ";
@@ -37,17 +37,16 @@ describe("fmtSpot", () => {
   });
 });
 
-describe("the phone frame", () => {
+describe("a film's frame on a phone", () => {
   it("puts the ledger after the header, not at a fixed height", () => {
     expect(CSS).not.toMatch(/\.ledger\s*\{[^}]*\btop:\s*80px/);
     expect(CSS).not.toContain("calc(6.5% + 70px)");
-    expect(CSS).toMatch(/\.hud\s*\{[^}]*flex-direction:\s*column/);
+    expect(CSS).toMatch(/\.film\s*\{[^}]*flex-direction:\s*column/);
     expect(CSS).toMatch(/\.top\s*\{[^}]*position:\s*relative/);
     expect(CSS).toMatch(/\.ledger\s*\{[^}]*position:\s*relative/);
   });
 
-  it("leaves no fixed offset on the ledger when the way out is drawn", () => {
-    // The row of "Exit to main dashboard" lengthens the header, and the ledger follows it.
+  it("leaves no fixed offset on the ledger", () => {
     expect(CSS).not.toMatch(/\[data-exit\]\s*\.ledger\s*\{[^}]*\btop:/);
   });
 });

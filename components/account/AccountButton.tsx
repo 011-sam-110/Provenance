@@ -1,7 +1,7 @@
 "use client";
 // The console's door to the Account tab. Renders NOTHING when accounts are off, so a
 // self-hosted build's header is unchanged. Same `.tnx-hdr-btn` family as its neighbours,
-// and its label collapses under 900px like SHORTCUTS and SETTINGS, so the mark alone must
+// and its label collapses under 900px like SETTINGS, so the mark alone must
 // say "account" on a phone: a person, outlined when signed out and filled when signed in.
 
 import { useEffect, useRef } from "react";

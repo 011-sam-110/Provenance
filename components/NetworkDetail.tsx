@@ -1,6 +1,6 @@
 "use client";
 // The network dossier: what the search box's "Locate network" found for an IP or a
-// domain. It renders in the Inspector tab like every other dossier (lib/overlay-content
+// domain. It renders in the Inspector panel like every other dossier (lib/overlay-content
 // .tsx), from three answers:
 //
 //   Location    /api/recon/geo (through lib/recon/ipLocate.ts): MaxMind GeoLite2 via RIPEstat

@@ -1,130 +1,93 @@
 "use client";
-// The INSPECTOR RAIL — the tool column on the right edge of the Sources rail, shown
-// on BOTH tabs, and the one store behind it.
+// WHICH TOOL HAS TAKEN THE INSPECTOR'S PLACE: Map settings, Areas or Notifications.
 //
-// WHY IT EXISTS. Sam asked for the map's own controls to come off the map: the stage
-// rail (components/console/maprail/MapRail.tsx) carried Search and View settings on
-// the right edge of the globe, and "Draw an area" was a button in the Sources tab.
-// All of them are one rail on this panel now. CHOSEN FROM RENDERED OPTIONS, not from
-// a description: option C for the rail's edge (map side) and option D for what a tool
-// does when it opens (it takes the panel body). Both are in ~/Desktop/rail-options/
-// with the rejected layouts.
+// lib/console/consolePanel.ts is the door everything goes through; this is the store under
+// it, and it keeps the name of the column that first held these buttons.
 //
-// IT IS ON BOTH TABS, AND IT IS NOT PART OF EITHER ONE. Sam's second pass: the
-// buttons should be there whichever tab you are reading, and clicking one should
-// bring you to the Inspector and open that tool. So the rail is a sibling of the tab
-// panels rather than a child of the Inspector's — see components/shell/
-// SourceCatalog.tsx for the layout and InspectorRail.tsx for the click that switches.
+// WHY THE TOOLS EXIST AS THEY DO. Sam asked for the map's own controls to come off the
+// map: the stage rail (components/console/maprail/MapRail.tsx) carried them on the right
+// edge of the globe, and "Draw an area" was a button in the Sources tab. They moved to
+// a tool column on the Sources panel, CHOSEN FROM RENDERED OPTIONS, not from a description
+// (option C for its edge, option D for what a tool does when it opens: it takes the panel
+// body; both are in ~/Desktop/rail-options/). Since the HUD v2 work (2026-10-31) the buttons
+// are rows on the console's sidebar, components/shell/ConsoleSidebar.tsx, and option D still
+// holds: a tool takes the whole panel, it is never a card over the object.
 //
-// ONE TOOL OPEN AT A TIME, and the same reasoning the stage rail wrote down still
-// holds: these are panels over a workstation, not independent windows, and a second
-// one open would halve a column that is already the narrowest surface in the console.
+// ONE TOOL OPEN AT A TIME, and the same reasoning the stage rail wrote down still holds:
+// these are panels over a workstation, not independent windows.
 //
-// "VIEW" IS NOT A PANEL, IT IS THE HOME STATE. `open === null` IS the view — the
-// dossier for whatever the map has selected. That is why clicking the eye closes
-// whatever tool is open rather than opening a fourth thing, why the eye reads as
-// pressed whenever nothing else is, and why it is absent entirely until a click has
-// selected something (there is nothing to view before then, and a control that opens
-// an empty pane is the dead control this codebase keeps writing about).
+// "VIEW" IS NOT A TOOL, IT IS THE HOME STATE. `open === null` IS the Inspector's own view,
+// the dossier for whatever the map has selected. That is why opening "view" closes whatever
+// tool is open rather than opening a fourth thing. Until 2026-10-31 the eye button was
+// absent until a click had selected something, because "a control that opens an empty pane
+// is the dead control this codebase keeps writing about". Sam then asked for Inspector to
+// be a place you can see: the row is always on the sidebar, and with nothing selected the
+// pane says what to do instead of being empty (components/shell/InspectorPanel.tsx). The
+// objection was to a control that does nothing, and that one now tells you how to use it.
 //
-// DRAW IS A TOOL NOW, AND IT WAS AN ACTION. It used to arm the map the moment you
-// clicked its button, which Sam judged wrong: the button is the way IN to drawing,
-// not the gesture itself, and a click that starts a map interaction from a panel the
-// user has not read yet is a click with no undo. So it opens a panel like the rest,
-// and the gesture starts from a button INSIDE it — which is also where the areas list
-// lives, moved off the Sources tab, because "what areas do I have" and "draw another
-// one" are the same question.
+// DRAW IS A TOOL, AND IT WAS AN ACTION. It used to arm the map the moment you clicked its
+// button, which Sam judged wrong: the button is the way IN to drawing, not the gesture
+// itself, and a click that starts a map interaction from a panel the user has not read yet
+// is a click with no undo. So it opens a panel like the rest, and the gesture starts from a
+// button INSIDE it, which is also where the areas list lives, because "what areas do I
+// have" and "draw another one" are the same question. The sidebar calls this tool Areas;
+// its store id stays "draw".
 //
-// ALERTS JOINED IT LATER, AND FOR A BLUNTER REASON: as a section inside the Draw panel
-// it went unfound. Sam's report was "i cant see the alerts and bell", and a control
-// nobody can find is not a control. It has its own button and its own panel now.
+// ALERTS JOINED IT LATER, AND FOR A BLUNTER REASON: as a section inside the Draw panel it
+// went unfound. Sam's report was "i cant see the alerts and bell", and a control nobody can
+// find is not a control. It has its own row and its own panel.
 //
-// DRAW AND ALERTS ARE SEPARATE GROUPS ON THE RAIL, each opening with its own rule:
-// the three above them change what the MAP looks like, Draw defines the areas you
-// have, and Alerts says what should be said about them. They were one group for one
-// build and that was wrong in a way only Sam could see — "the alerts isnt its own
-// separate section, its part of the drawing" — because a rule is the only thing on
-// that column saying where one idea stops and the next starts.
+// DRAW AND ALERTS ARE SEPARATE GROUPS on the sidebar, each opening with a rule: Map settings
+// changes what the MAP looks like, Areas defines the places you have, and Notifications says
+// what should be said about them. They were one group for one build and that was wrong in a
+// way only Sam could see: "the alerts isnt its own separate section, its part of the
+// drawing".
 //
-// Both are in TOOLS like everything else, so the roving-focus arithmetic never needs a
-// special case for either.
+// SEARCH LEFT ON 2026-10-31. It is a pill on the map now (components/console/MapSearch.tsx),
+// so it is not a tool and the store cannot hold it.
 //
 // WHY THE REDUCERS ARE HERE AND NOT IN THE COMPONENT. vitest is configured
-// `environment: "node"` with `include: ["tests/unit/**/*.test.ts"]`, .tsx is not
-// collected and no React testing library is installed, so anything left inside the
-// component cannot be tested at all. Same constraint, same answer as the file this
-// one replaces: every invariant that matters is a pure export with a test on it.
+// `environment: "node"` with `include: ["tests/unit/**/*.test.ts"]`, .tsx is not collected
+// and no React testing library is installed, so anything left inside the component cannot
+// be tested at all. Every invariant that matters is a pure export with a test on it.
 //
-// NOT PERSISTED, and this is where the retired stage rail's reasoning had to be
-// re-checked rather than copied. Chrome that reopens a panel on every visit outstays
-// its welcome, and a rail that remembered "Map settings" would hide the object the
-// user just clicked — which is the whole reason they clicked. `open` therefore starts
-// null on every launch, and overlay.open() closes it (see lib/overlay.ts), so a map
-// click always lands on that object's view.
+// NOT PERSISTED, and this is where the retired stage rail's reasoning had to be re-checked
+// rather than copied. Chrome that reopens a panel on every visit outstays its welcome, and
+// a rail that remembered "Map settings" would hide the object the user just clicked, which
+// is the whole reason they clicked. `open` therefore starts null on every launch, and
+// overlay.open() closes it (see lib/overlay.ts), so a map click always lands on that
+// object's view.
 
 import { useSyncExternalStore } from "react";
 
-/** Everything the rail can put on screen, in render order, top to bottom. */
-export type InspectorTool = "search" | "view" | "settings" | "draw" | "alerts";
+/** The tools the STORE can be holding. */
+export type OpenTool = "settings" | "draw" | "alerts";
+
+/** Everything `open` and `toggle` accept. "view" is the store's null. */
+export type InspectorTool = OpenTool | "view";
 
 /**
- * The tools the STORE can be holding. "view" is not one of them: the store's null IS
- * the view, so `open()` translates "view" to null on the way in and nothing
- * downstream ever has to handle a state that means "no panel, but differently".
- */
-export type OpenTool = Exclude<InspectorTool, "view">;
-
-/** Render order. Also the arrow-key order and the roving-focus order. */
-export const TOOLS: readonly InspectorTool[] = [
-  "search",
-  "view",
-  "settings",
-  "draw",
-  "alerts",
-] as const;
-
-/**
- * The tools that are actually on screen, in order.
- *
- * "View" is filtered out while nothing is selected: the eye appears the moment a map
- * click gives it something to show. This is the ONE place that membership is decided,
- * so the roving tabindex, the arrow keys and the rendered buttons cannot disagree
- * about how many there are.
- *
- * THIS IS ALSO THE FOCUS ORDER, and it used to be a second list. When Draw was an
- * action rather than a tool there was a `railSlots` that appended it, because the
- * rail is ONE tab stop and a button outside the roving set is unreachable from a
- * keyboard rather than merely last. Draw is a tool, so the two lists are the same
- * list and the second one is gone — if a future rail grows a button that is not a
- * tool, that function comes back rather than a special case in the component.
- */
-export function railTools(hasObject: boolean): InspectorTool[] {
-  return TOOLS.filter((t) => t !== "view" || hasObject);
-}
-
-/**
- * Click a rail button. Clicking the open tool closes it; clicking any other opens
- * it. `null` — the view — is what a close lands on, so "close" and "show me the
- * object" are the same state rather than two that can drift apart.
+ * Click a tool's button. Clicking the open tool closes it; clicking any other opens it.
+ * `null`, the view, is what a close lands on, so "close" and "show me the object" are the
+ * same state rather than two that can drift apart.
  */
 export function toggleTool(open: OpenTool | null, tool: OpenTool): OpenTool | null {
   return open === tool ? null : tool;
 }
 
 /**
- * Move along the rail by one, wrapping at both ends. Roving-tabindex arithmetic.
+ * Move along a column of buttons by one, wrapping at both ends. The arrow keys on the
+ * sidebar use it.
  *
- * TAKES THE RENDERED LIST rather than reading a constant, and is generic over what
- * that list holds: the eye comes and goes with the map selection, so arithmetic over
- * a fixed four would step onto a button that is not in the DOM — focus would move
- * nowhere and the arrow key would read as broken.
+ * TAKES THE RENDERED LIST rather than reading a constant, and is generic over what that list
+ * holds, so arithmetic over a fixed count cannot step onto a button that is not in the DOM:
+ * focus would move nowhere and the arrow key would read as broken.
  */
 export function railStep<T>(ids: readonly T[], from: T, dir: 1 | -1): T {
   const i = ids.indexOf(from);
   const n = ids.length;
-  // `from` can be absent when the eye disappears under the focused button — a map
-  // click clearing the selection while "view" holds focus. Falling back to the first
-  // entry keeps the key doing something sane instead of returning undefined.
+  // `from` can be absent when focus is not on a row at all. Falling back to the first entry
+  // keeps the key doing something sane instead of returning undefined.
   if (i === -1) return ids[0];
   return ids[(i + dir + n) % n];
 }

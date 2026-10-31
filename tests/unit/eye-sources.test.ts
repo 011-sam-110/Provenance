@@ -10,16 +10,20 @@ import {
   hiddenKinds,
   isRoadRow,
   ownKind,
-  pinCap,
+  railPinRoom,
   rowIsOn,
   sectionsOf,
   signalTagPicks,
   sourcesReducer,
   toSectionModel,
+  trayDetail,
+  trayFitsBesidePanel,
+  withoutCounts,
   type EyeSourceRow,
   type RenderedSignal,
   type SourcesState,
 } from "@/lib/eye/sources";
+import { LONDON_ONLY, type LedgerRow } from "@/lib/eye/wording";
 
 const ROWS = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const IDS = [...EYE_OWN_IDS, ...ROWS];
@@ -84,29 +88,15 @@ describe("toggle", () => {
   });
 });
 
-describe("pin, move and unpin", () => {
-  it("pins at the end, or at an index", () => {
-    const s = reduce(defaultSources(), { type: "pin", id: "a" }, { type: "pin", id: "b" }, { type: "pin", id: "c", at: 1 });
-    expect(s.pins).toEqual(["a", "c", "b"]);
-    expect(sourcesReducer(s, { type: "pin", id: "d", at: 0 }).pins).toEqual(["d", "a", "c", "b"]);
-    expect(sourcesReducer(s, { type: "pin", id: "d", at: 99 }).pins).toEqual(["a", "c", "b", "d"]);
-    expect(sourcesReducer(s, { type: "pin", id: "d", at: -3 }).pins).toEqual(["d", "a", "c", "b"]);
+describe("pin and unpin", () => {
+  it("pins at the end, in the order pressed", () => {
+    const s = reduce(defaultSources(), { type: "pin", id: "a" }, { type: "pin", id: "b" }, { type: "pin", id: "c" });
+    expect(s.pins).toEqual(["a", "b", "c"]);
   });
 
-  it("pinning what is pinned does nothing, or moves it when given a place", () => {
+  it("pinning what is pinned changes nothing", () => {
     const s = reduce(defaultSources(), { type: "pin", id: "a" }, { type: "pin", id: "b" });
     expect(sourcesReducer(s, { type: "pin", id: "a" })).toBe(s);
-    expect(sourcesReducer(s, { type: "pin", id: "a", at: 1 }).pins).toEqual(["b", "a"]);
-    expect(sourcesReducer(s, { type: "pin", id: "a", at: 0 })).toBe(s);
-  });
-
-  it("moves a pin by a step, and stops at the ends", () => {
-    const s = reduce(defaultSources(), { type: "pin", id: "a" }, { type: "pin", id: "b" }, { type: "pin", id: "c" });
-    expect(sourcesReducer(s, { type: "move", id: "c", delta: -1 }).pins).toEqual(["a", "c", "b"]);
-    expect(sourcesReducer(s, { type: "move", id: "a", delta: 1 }).pins).toEqual(["b", "a", "c"]);
-    expect(sourcesReducer(s, { type: "move", id: "a", delta: -1 })).toBe(s);
-    expect(sourcesReducer(s, { type: "move", id: "c", delta: 1 })).toBe(s);
-    expect(sourcesReducer(s, { type: "move", id: "zzz", delta: 1 })).toBe(s);
   });
 
   it("unpins, and unpinning what is not pinned changes nothing", () => {
@@ -117,17 +107,20 @@ describe("pin, move and unpin", () => {
 });
 
 describe("the caps", () => {
-  it("the bar holds five on a wide screen and six on a phone", () => {
-    expect(pinCap(false)).toBe(5);
-    expect(pinCap(true)).toBe(6);
-  });
-
   it("the state holds at most six, and a seventh is refused", () => {
     expect(PIN_STATE_MAX).toBe(6);
     const six = ROWS.slice(0, 6).reduce((s, id) => sourcesReducer(s, { type: "pin", id }), defaultSources());
     expect(six.pins).toHaveLength(6);
     expect(sourcesReducer(six, { type: "pin", id: "g" })).toBe(six);
-    expect(sourcesReducer(six, { type: "pin", id: "g", at: 0 })).toBe(six);
+  });
+
+  it("the wide sidebar shows what fits above its foot, and a phone's sheet shows them all", () => {
+    expect(railPinRoom(900, true)).toBe(6);
+    expect(railPinRoom(300, true)).toBe(6);
+    expect(railPinRoom(1400, false)).toBe(6);
+    expect(railPinRoom(800, false)).toBeGreaterThanOrEqual(5);
+    expect(railPinRoom(400, false)).toBeLessThan(railPinRoom(800, false));
+    expect(railPinRoom(200, false)).toBe(0);
   });
 });
 
@@ -242,6 +235,51 @@ describe("sections", () => {
     expect(filterSections(s, "wild")[0].rows.map((r) => r.id)).toEqual(["fires"]);
     expect(filterSections(s, "zzz")).toEqual([]);
     expect(filterSections(s, "").map((x) => x.id)).toEqual(["view", "hazards", "human"]);
+  });
+});
+
+describe("the tray's detail line", () => {
+  const ledger: LedgerRow[] = [
+    { kind: "cam", count: 12, label: "cameras", detail: "of 24 nearby · TfL JamCam", short: "cameras" },
+    { kind: "ship", count: 3, label: "vessels", detail: "4 named · Digitraffic · positions from the last 5 min", short: "vessels" },
+  ];
+  const own = (id: string) => row(id, "view", "This view");
+
+  it("takes a ledger line's counts out and keeps its source and cadence", () => {
+    expect(withoutCounts("of 24 nearby · TfL JamCam")).toBe("TfL JamCam");
+    expect(withoutCounts("4 named · Digitraffic · positions from the last 5 min")).toBe("Digitraffic · positions from the last 5 min");
+    expect(withoutCounts("12")).toBe("");
+  });
+
+  it("says who a row of this view comes from, and never how many", () => {
+    expect(trayDetail(own("livecams"), ledger, true)).toBe("TfL JamCam");
+    expect(trayDetail(own("ais"), ledger, true)).toBe("Digitraffic · positions from the last 5 min");
+    for (const r of ledger) for (const id of ["livecams", "ais"]) expect(trayDetail(own(id), [r], true)).not.toMatch(/\d+ (named|nearby)/);
+  });
+
+  it("says the credit for a console layer, and for a kind with nothing in the ledger yet", () => {
+    expect(trayDetail(row("crime", "human", "Human"), ledger, true)).toBe("crime credit");
+    expect(trayDetail(own("planes"), ledger, true)).toBe("planes credit");
+  });
+
+  it("says a road row is for London, outside London", () => {
+    expect(trayDetail(own("road-works"), ledger, false)).toBe(LONDON_ONLY);
+    expect(trayDetail(own("road-works"), ledger, true)).toBe("road-works credit");
+  });
+});
+
+describe("the tray beside a details panel", () => {
+  it("stands beside it when the window has room for both, with the sidebar as it is", () => {
+    expect(trayFitsBesidePanel(1440, 64, false, false)).toBe(true);
+    expect(trayFitsBesidePanel(1440, 232, false, false)).toBe(true);
+    expect(trayFitsBesidePanel(900, 232, false, false)).toBe(false);
+    expect(trayFitsBesidePanel(792, 64, false, false)).toBe(true);
+    expect(trayFitsBesidePanel(791, 64, false, false)).toBe(false);
+  });
+
+  it("never does on a phone or an upright screen", () => {
+    expect(trayFitsBesidePanel(1440, 0, true, false)).toBe(false);
+    expect(trayFitsBesidePanel(1440, 64, false, true)).toBe(false);
   });
 });
 

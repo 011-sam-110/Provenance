@@ -8,9 +8,10 @@ import { clampBox, inBox, parseBox, snapBox, type Box } from "@/lib/eye/vessels"
  *
  *   - It asks /api/eye/vessels?bbox= for the boats around what is on screen, with a box
  *     that holds the view's centre, and never asks /api/signals/ais.
- *   - The HUD's vessel number is every boat drawn inside the frame, not the ones with a tag.
+ *   - A film's vessel number is every boat drawn inside the frame, not the ones with a tag.
  *   - Once the view settles outside the box it holds, it asks again with a new box.
- *   - When the route says the stream is down, the vessel row says AISStream is not answering.
+ *   - When the route says the stream is down, the Sources tray's Ships row and a film's vessel
+ *     row say AISStream is not answering.
  *   - A film keeps the vessels it opened with: it asks once and never again for a move.
  *
  * The route is answered from 38 verbatim features of production's /api/signals/ais
@@ -97,10 +98,10 @@ test("asks for the boats around the view with a box that holds its centre, and n
   expect(errors).toEqual([]);
 });
 
-test("the vessel row counts every boat drawn inside the frame", async ({ page }) => {
+test("a film's vessel row counts every boat drawn inside the frame", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const seen = await answerVessels(page);
-  await page.goto(TOWER);
+  await page.goto(`${TOWER}&record=1`);
   await ready(page);
 
   const drawn = async () => {
@@ -149,6 +150,13 @@ test("says AISStream is not answering when the route says the stream is down", a
   await page.setViewportSize({ width: 1440, height: 900 });
   await answerVessels(page, { stream: "down" });
   await page.goto(TOWER);
+  await ready(page);
+  await page.locator('[data-rail="eye"] [data-rail-entry="sources"]').click();
+  const ships = page.locator('[data-eye-tray] .tn-src-row[data-source-row="ais"]');
+  await expect(ships).toContainText("AISStream not answering");
+  await expect(ships).toContainText("showing what was heard in the last 20 min");
+
+  await page.goto(`${TOWER}&record=1`);
   await ready(page);
   await expect(row(page)).toContainText("AISStream not answering");
   await expect(row(page)).toContainText("showing what was heard in the last 20 min");

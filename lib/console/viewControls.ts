@@ -1,5 +1,5 @@
 "use client";
-// The pure tables behind the Inspector rail's MAP SETTINGS tool — projection and
+// The pure tables behind the MAP SETTINGS panel — projection and
 // basemap. Moved out of lib/console/mapRail.ts when the stage rail was retired;
 // what did NOT come across is that file's rail store (RailGroup, RAIL_GROUPS,
 // toggleGroup, railStep, railEdge, mapRailStore, useMapRail), which is now

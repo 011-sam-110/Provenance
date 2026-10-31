@@ -1,5 +1,6 @@
 "use client";
-// How wide the Sources rail is, and who gets to decide.
+// How wide the panel beside the sidebar is, and who gets to decide. All five panels share it,
+// and it keeps the name of the rail that first had it: `tn.sources.railw` is saved in browsers.
 //
 // WHY THIS IS NOT `shellLayoutStore.setSegment`. That store and its splitter
 // (components/console/RailSplitter.tsx, lib/terminal/useRailSplitter.ts) are typed
@@ -35,13 +36,11 @@ const PERSIST_VERSION = 1;
  * truncating and the rail stops being readable, which is a worse failure than
  * simply refusing to go narrower.
  *
- * IT IS 372 AND IT WAS 300, because the panel grew a tool column on 2026-09-16 —
- * `--tn-insp-rail-w`, which is 48px since Sam asked for the icons half again as big.
- * The column is chrome, so it comes out of the width before the rows see any of it,
- * and the floor moved by exactly that much plus the panes' 24px of padding: the
- * sentence above stays true at 372 − 48 − 24 = 300.
+ * IT IS 324, 300 OF ROWS AND THE PANES' 24px OF PADDING. It was 372 while the panel held a
+ * 48px tool column as well; that column is rows on the sidebar now (2026-10-31), so the
+ * floor came down by exactly that much. A saved 372 is inside the bounds and is kept.
  */
-export const SOURCES_RAIL_MIN = 372;
+export const SOURCES_RAIL_MIN = 324;
 
 /**
  * The widest.
@@ -52,16 +51,15 @@ export const SOURCES_RAIL_MIN = 372;
  * `@container (max-width: 561px)`). Capping at the old default would have made the
  * two-column layout unreachable, so the ceiling sits clear of it instead.
  *
- * 680, AND IT WAS 640, for the same reason the floor moved: two columns need 634px
- * of panel now (562 of content + 24 of padding + 48 of tool column), so a 640 ceiling
- * would have put the fold out of reach — the exact regression the 640 was raised
- * from 602 to prevent. 680 keeps 46px of clearance above the fold.
+ * 680, AND IT WAS 640, because two columns needed 634px of panel while a 48px tool column
+ * sat in it. That column left on 2026-10-31 and the fold now needs 586px (562 of content +
+ * 24 of padding), so 680 has clearance to spare, and a width someone saved stays reachable.
  *
  * WHAT THIS DOES NOT PROMISE: that the fold is reachable at every viewport. The CSS
- * ceiling is `min(680px, 100vw - 800px)` — the reserve that stops the rail starving
- * the map stage — so at a 1440px window the panel tops out at 640 and its 568px of
- * content sits just above the fold. On a narrower window it does not, and that is the
- * stage's floor winning rather than an oversight.
+ * ceiling is `min(680px, 100vw - 848px)` — the reserve that stops the panel starving
+ * the map stage, plus the sidebar's 64px — so at a 1440px window the panel tops out at 592
+ * and its 568px of content sits just above the fold. On a narrower window it does not, and
+ * that is the stage's floor winning rather than an oversight.
  */
 export const SOURCES_RAIL_MAX = 680;
 
@@ -108,8 +106,8 @@ export function clampSourcesRailWidth(px: number): number {
 /**
  * Pure: the width a pointer at `clientX` is asking for.
  *
- * The rail is pinned to the left edge of the workspace band, so the distance from
- * that edge to the pointer IS the width. Kept out of the component so the
+ * The caller passes the panel's own left edge, which is just right of the sidebar, so the
+ * distance from that edge to the pointer IS the width. Kept out of the component so the
  * arithmetic is node-testable — the repo has no jsdom, so anything that reads an
  * element cannot be covered by a unit test.
  */

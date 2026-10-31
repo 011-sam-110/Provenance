@@ -1,13 +1,13 @@
 // The Discord wordmark's glyph, monochrome, as an inline SVG.
 //
-// WHY A GLYPH AND NOT AN EMOJI. Every other button in the console header's right
-// cluster uses a text glyph (☕, <>, ⚙) because at 34px a glyph is the fastest way
-// to tell same-shaped segments apart. Discord has no such character — the closest
-// is 🎮, which names a category rather than the product and would read as "games".
+// WHY A GLYPH AND NOT AN EMOJI. The buttons in the console header's right cluster use
+// a text glyph (☕, <>, ⚙) because a glyph is the fastest way to tell same-shaped
+// segments apart. Discord has no such character — the closest is 🎮, which names a
+// category rather than the product and would read as "games".
 // The real mark is the thing people recognise, so it is worth the ~700 bytes.
 //
 // It inherits `currentColor` and takes its size from the caller, so it tracks the
-// header's hover/focus ink and the invitation card's accent without a second rule.
+// settings drawer's hover ink and the invitation card's accent without a second rule.
 // `aria-hidden` is unconditional: every caller already labels itself in text, and a
 // logo announced as "Discord" beside the word "Discord" is a stutter, not a label.
 

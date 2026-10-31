@@ -2,45 +2,44 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-// SHORTCUTS IS NOT AN EMPTY BOX ON A PHONE. The ≤900px header pass hides every button's
-// word; SHORTCUTS has no glyph of its own (its ⌘K cap left in #162), so it needs the
-// stand-in mark `.tnx-hdr-btn-mark`, hidden above 900px so the desktop bar keeps its
-// width. These pins keep the wiring; tests/e2e/header-phone.spec.ts checks what is painted.
+// NO HEADER BUTTON IS AN EMPTY BOX ON A PHONE. The ≤900px header pass hides every
+// `.tnx-hdr-btn-label`, so a button may only use that class on a word it can lose: it must
+// keep a glyph, or a word in a plain span. SHORTCUTS was the button that once had neither,
+// and it had a stand-in mark (`.tnx-hdr-btn-mark`) until it left the bar on 2026-10-31.
+// These pins keep the wiring; tests/e2e/header-phone.spec.ts checks what is painted.
 
 const TSX = readFileSync(join(process.cwd(), "components", "terminal", "TerminalHeader.tsx"), "utf8");
+const ACCOUNT = readFileSync(join(process.cwd(), "components", "account", "AccountButton.tsx"), "utf8");
 const CSS = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
 
-/** The SHORTCUTS <button>…</button>, found by its e2e hook. */
-function paletteButton(): string {
-  const hook = TSX.indexOf('className="tnx-hdr-btn tn-palette-trigger"');
-  expect(hook).toBeGreaterThan(-1);
-  return TSX.slice(TSX.lastIndexOf("<button", hook), TSX.indexOf("</button>", hook));
+/** Every element in the source that wears `.tnx-hdr-btn`, up to its closing tag. */
+function headerButtons(src: string): string[] {
+  const out: string[] = [];
+  for (const m of src.matchAll(/className=(?:"|\{`)tnx-hdr-btn(?=[ "`])/g)) {
+    const open = Math.max(src.lastIndexOf("<a", m.index), src.lastIndexOf("<button", m.index));
+    const tag = src.startsWith("<a", open) ? "</a>" : "</button>";
+    out.push(src.slice(open, src.indexOf(tag, m.index)));
+  }
+  return out;
 }
 
-/** The `@media (max-width: 900px)` block that hides the header's words. */
-function narrowHeaderPass(): { start: number; body: string } {
-  const hide = CSS.indexOf(".tn-terminal .tnx-hdr-utc-label { display: none; }");
-  expect(hide).toBeGreaterThan(-1);
-  const start = CSS.lastIndexOf("@media (max-width: 900px) {", hide);
-  expect(start).toBeGreaterThan(-1);
-  return { start, body: CSS.slice(start, CSS.indexOf("\n}\n", hide)) };
-}
+describe("the header's buttons on a phone", () => {
+  const buttons = [...headerButtons(TSX), ...headerButtons(ACCOUNT)];
 
-describe("the SHORTCUTS button on a phone", () => {
-  it("carries a decorative mark beside its word, and keeps its name", () => {
-    const btn = paletteButton();
-    expect(btn).toMatch(/<svg[^>]*className="tnx-hdr-btn-mark"[^>]*aria-hidden/s);
-    expect(btn).toContain('<span className="tnx-hdr-btn-label">SHORTCUTS</span>');
-    expect(btn).toContain('aria-label="Shortcuts and command palette"');
+  it("finds the buttons it is about", () => {
+    expect(headerButtons(TSX).length).toBe(3); // Support, Source, Settings
+    expect(headerButtons(ACCOUNT).length).toBeGreaterThan(0);
   });
 
-  it("the mark is hidden by default and shown by the 900px pass, which comes later", () => {
-    const base = CSS.search(/^\.tn-terminal \.tnx-hdr-btn-mark\s*\{[^}]*display:\s*none/m);
-    const pass = narrowHeaderPass();
-    expect(base).toBeGreaterThan(-1);
-    // Same specificity (0,2,0) on both, so source order decides: the show rule must be later.
-    expect(base).toBeLessThan(pass.start);
-    expect(pass.body).toMatch(/\.tn-terminal \.tnx-hdr-btn-mark\s*\{\s*display:\s*block;/);
+  it.each(buttons.map((b, i) => [i, b] as const))("button %i keeps something once its word is hidden", (_i, btn) => {
+    const rest = btn.replace(/<span className="tnx-hdr-btn-label">[\s\S]*?<\/span>/g, "");
+    expect(rest).toMatch(/<span\b|<svg\b|<PersonMark\b/);
+  });
+
+  it("the 900px pass still hides the words", () => {
+    const hide = CSS.indexOf(".tn-terminal .tnx-hdr-utc-label { display: none; }");
+    expect(hide).toBeGreaterThan(-1);
+    expect(CSS.slice(CSS.lastIndexOf("@media (max-width: 900px) {", hide), hide)).toContain(".tnx-hdr-btn-label");
   });
 
   it("the old 'no mobile palette' hide rule is gone", () => {

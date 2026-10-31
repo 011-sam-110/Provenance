@@ -385,12 +385,6 @@ export function feedHealth(): FeedHealth[] {
   return health;
 }
 
-/** When the camera set last refreshed (ms epoch), or null before the first refresh.
- *  /api/camera-stats states its counts at this time, not at the request's time. */
-export function registryAt(): number | null {
-  return cache ? cache.at : null;
-}
-
 // Stale-while-revalidate: a fresh cache returns instantly; a stale cache returns
 // instantly too while a single shared refresh runs in the background. Only the
 // very first (cold) call, with no cache at all, waits for the fetch — important
