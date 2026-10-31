@@ -10,6 +10,13 @@
 // snapshot, so the tab holds a hard number of points, measured with
 // `scripts/planes-trail-fps.mjs`. Past it, every line gives up its oldest points until the
 // total fits. The lines someone clicked lose theirs last, and there are at most MAX_KEPT_LINES.
+//
+// WHAT THE MEASURE SAID (2026-10-31, Intel Arc, mains, 120 Hz, the map panning with the source
+// written three times in 14 s). Up to 60,000 points a pan had no long task and no frame over
+// 42 ms. At 120,000 it had long tasks of about 120 ms, at 240,000 about 180 ms. Replaying
+// production's feed through these rules, a tab settled at about 14,000 points within 90 minutes,
+// because a plane that leaves the served 3,000 takes its line with it. That is 20,000 points drawn
+// with each plane's own two, against the 39,000 the 12-point lines draw with the switch off.
 
 import type { WorldObject } from "@/lib/world";
 import {
@@ -29,7 +36,7 @@ import type { PlaneTrail } from "@/lib/planes/usePlanes";
 
 /** Points for one plane in the tab. Matches the server's, so a stored line always fits. */
 export const FULL_MAX_POINTS_PER_PLANE = 500;
-/** Points in the tab, over all planes. What the frame-time measurement chose. */
+/** Points in the tab, over all planes. The most a pan took with no long task: see above. */
 export const FULL_MAX_TOTAL_POINTS = 60_000;
 /** Lines a click has loaded that the overall cap spares. */
 export const MAX_KEPT_LINES = 8;

@@ -31,7 +31,7 @@ export interface PlanesLayer {
   /**
    * Epoch ms the server pulled these positions from upstream (`fetchedAt` in the
    * /api/planes body), or null before the first snapshot. The poll runs every 12 s
-   * but the snapshot changes about every 90 s, so THIS is the age of what is drawn,
+   * but the snapshot changes about every 2 minutes, so THIS is the age of what is drawn,
    * not the time the poll returned.
    */
   fetchedAt: number | null;

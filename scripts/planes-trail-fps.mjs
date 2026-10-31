@@ -2,20 +2,26 @@
 // switch off against switch on, at today's plane count with simulated history.
 //
 //   node scripts/planes-trail-fps.mjs http://localhost:3126 [--hours=1] [--planes=3000]
-//        [--base=snapshots.jsonl] [--json=out.json] [--shot=dir]
+//        [--base=snapshots.jsonl] [--json=out.json] [--shot=dir] [--only=on]
 //
 // WHY THIS EXISTS. `setData` on the trail source runs when a line changes, and a long line is
 // tens of thousands of points. The unit tests can hold a cap, and cannot say what the cap should
 // be. This runs the real page, polls included, and counts frames. Not in the gate: it needs a
 // real screen. The header of scripts/landing-fps.mjs lists the four ways a frame rate lies here
 // (headless, a covered window, Energy Saver, battery), and this keeps the same rules: a covered
-// window is reported INVALID, and the power state is printed with the numbers.
+// window is reported INVALID, and the power state is printed with the numbers. Windows' own
+// occlusion check is off, so a window behind another one still draws, and a run with a stretch at
+// one frame a second is still INVALID, even when its median looks fine.
 //
 // HOW. /api/planes is routed and answers a moving fleet at a real snapshot's positions (--base)
 // or scattered ones, with a new snapshot on each poll. The poll's 12 s interval is shortened
 // while the history builds, so an hour of snapshots takes under a minute, and then it runs at
 // one poll every 12 s while the camera pans: at 2 minutes a snapshot a real tab sees a new line a
 // tenth as often as this does, so this is the worse case. Each scenario is a new page.
+// A plane turns often enough that a line costs what real lines cost: 6.2 points a plane an hour
+// on production's planes heard for a whole hour (2026-10-31). `sized` then draws lines of a set
+// size straight through the source, past any cap the tab holds, to show where the cost starts.
+// A run is INVALID if the source was never written or a page script failed to load.
 import { chromium } from "@playwright/test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -32,6 +38,7 @@ const PLANES = Number(flag("planes", 3000));
 const basePath = flag("base", "");
 const jsonPath = flag("json", "");
 const shotDir = flag("shot", "");
+const only = flag("only", "");
 const PULL_MS = 120_000;
 const SEED_POLL_MS = 450;
 const seedSnapshots = Math.round((HOURS * 3_600_000) / PULL_MS);
@@ -88,7 +95,7 @@ function makeFleet() {
 
 function snapshotBody(fleet, rand, at) {
   const planes = fleet.map((p) => {
-    p.heading = (p.heading + (rand() - 0.5) * 1.6 + (rand() < 0.03 ? (rand() < 0.5 ? -1 : 1) * (15 + rand() * 60) : 0) + 360) % 360;
+    p.heading = (p.heading + (rand() - 0.5) * 1.6 + (rand() < 0.1 ? (rand() < 0.5 ? -1 : 1) * (15 + rand() * 60) : 0) + 360) % 360;
     const n = step(p.lat, p.lon, p.heading, p.km);
     p.lat = n.lat;
     p.lon = n.lon;
@@ -116,6 +123,11 @@ function snapshotBody(fleet, rand, at) {
 
 async function scenario(context, on) {
   const page = await context.newPage();
+  const faults = [];
+  page.on("pageerror", (e) => faults.push(`page error: ${e.message}`));
+  page.on("requestfailed", (r) => {
+    if (r.url().includes("/_next/")) faults.push(`failed: ${r.url()}`);
+  });
   const fleet = makeFleet();
   const rand = prng(7);
   let pull = 0;
@@ -125,20 +137,28 @@ async function scenario(context, on) {
     await route.fulfill({ contentType: "application/json", body: snapshotBody(fleet, rand, T0 + pull * PULL_MS) });
   });
   await page.addInitScript(({ on, seedMs }) => {
+    // One profile runs every scenario, so each one starts from a console that has saved nothing.
+    window.localStorage.clear();
     const set = (k, v) => window.localStorage.setItem(k, JSON.stringify({ v: 1, d: v }));
     set("tn.terminal.boot.v1", { seenVersion: 1 });
     if (on) set("tn.planes.fullTrail.v1", { on: true });
     const real = window.setInterval.bind(window);
+    const realClear = window.clearInterval.bind(window);
+    const stopped = new Set();
+    let nextId = -1;
     window.__pollMs = seedMs;
     window.setInterval = (fn, ms, ...rest) => {
       if (ms !== 12_000) return real(fn, ms, ...rest);
+      const id = nextId--;
       const tick = () => {
+        if (stopped.has(id)) return;
         fn();
         setTimeout(tick, window.__pollMs);
       };
       setTimeout(tick, window.__pollMs);
-      return 0;
+      return id;
     };
+    window.clearInterval = (id) => (id < 0 ? void stopped.add(id) : realClear(id));
   }, { on, seedMs: SEED_POLL_MS });
   await page.goto(`${base}/app`);
   await page.waitForFunction(() => window.__map && window.__map.isStyleLoaded(), null, { timeout: 120_000 });
@@ -147,17 +167,30 @@ async function scenario(context, on) {
   await page.keyboard.press("ControlOrMeta+k");
   await page.click("#tn-rail-tab-sources");
   await page.getByLabel("Search sources").fill("Planes");
-  await page.locator('.tn-src-row[data-source-row="planes"] .tn-src-toggle').click();
+  const toggle = page.locator('.tn-src-row[data-source-row="planes"] .tn-src-toggle');
+  if ((await toggle.getAttribute("aria-checked")) !== "true") await toggle.click();
   await page.keyboard.press("ControlOrMeta+k");
 
   const startPull = pull;
-  while (pull - startPull < seedSnapshots) await sleep(250);
+  let lastPull = pull;
+  let lastMoved = Date.now();
+  while (pull - startPull < seedSnapshots) {
+    await sleep(250);
+    if (pull !== lastPull) {
+      lastPull = pull;
+      lastMoved = Date.now();
+    } else if (Date.now() - lastMoved > 30_000) {
+      throw new Error(`the page stopped polling /api/planes after ${pull - startPull} snapshots`);
+    }
+  }
+  await page.bringToFront();
   await page.evaluate(() => {
     window.__pollMs = 12_000;
   });
   await sleep(1500);
 
-  const measured = await page.evaluate(async () => {
+  const wantSized = on && !args.includes("--no-sized");
+  const measured = await page.evaluate(async ({ wantSized }) => {
     const map = window.__map;
     const src = map.getSource("trails");
     const real = src.setData.bind(src);
@@ -195,9 +228,10 @@ async function scenario(context, on) {
     const size = { w: innerWidth, h: innerHeight, dpr: devicePixelRatio };
 
     // A pan the whole time, as a person dragging the map would, with polls landing in it.
-    const camera = async (center, zoom, seconds) => {
+    const camera = async (center, zoom, seconds, onStart) => {
       map.jumpTo({ center, zoom });
-      await new Promise((r) => map.once("idle", r));
+      await Promise.race([new Promise((r) => map.once("idle", r)), new Promise((r) => setTimeout(r, 15_000))]);
+      onStart?.();
       const frames = [];
       const startAt = performance.now();
       let last = startAt;
@@ -217,7 +251,10 @@ async function scenario(context, on) {
     const world = await camera([10, 30], 2.2, 30);
     const region = await camera([5, 50], 6, 30);
 
-    // The same call at bigger sizes, to see the curve past what a tab holds today.
+    // The same call at bigger sizes, to see the curve past what a tab holds today. The polls
+    // stop first, so nothing writes over these lines.
+    window.__pollMs = 3_600_000;
+    await new Promise((r) => setTimeout(r, 13_000));
     const curve = [];
     const data = src.serialize().data;
     const sized = (target) => {
@@ -227,10 +264,23 @@ async function scenario(context, on) {
         f.geometry.type = "LineString";
         const lon = -170 + (i % 340);
         const lat = -50 + ((i * 7) % 110);
-        f.geometry.coordinates = Array.from({ length: per }, (_, k) => [lon + k * 0.05, lat + Math.sin(k / 3) * 0.3]);
+        // About 100 km between points, as a thinned line has, so a long line crosses many tiles.
+        f.geometry.coordinates = Array.from({ length: per }, (_, k) => [lon + k, lat + Math.sin(k / 3) * 2]);
       });
       return copy;
     };
+    const done = () =>
+      new Promise((resolve) => {
+        const on = (e) => {
+          if (e.sourceId === "trails" && e.isSourceLoaded) {
+            map.off("sourcedata", on);
+            resolve();
+          }
+        };
+        map.on("sourcedata", on);
+        setTimeout(resolve, 20_000);
+      });
+    const sizedFrames = [];
     for (const target of [15_000, 30_000, 60_000, 120_000, 240_000]) {
       const fc = sized(target);
       const t = performance.now();
@@ -248,12 +298,23 @@ async function scenario(context, on) {
         setTimeout(() => resolve(-1), 20_000);
       });
       curve.push({ target, syncMs, doneMs });
+      if (!wantSized) continue;
+      // A pan with these lines up and the source written three times in it. A real tab writes
+      // it once every 2 minutes, so this is the worse case again.
+      const before = longTasks.length;
+      let writes = [];
+      const frames = await camera([10, 30], 2.2, 14, () => {
+        writes = [3000, 7000, 11000].map((ms) => setTimeout(() => real(fc), ms));
+      });
+      writes.forEach(clearTimeout);
+      await done();
+      sizedFrames.push({ target, frames, longTasks: longTasks.slice(before) });
     }
-    return { drawn, battery, renderer, size, world, region, calls, curve, longTasks };
-  });
+    return { drawn, battery, renderer, size, world, region, calls, curve, sizedFrames, longTasks };
+  }, { wantSized });
   if (shotDir) await page.screenshot({ path: join(shotDir, `fps-${on ? "on" : "off"}.jpg`), type: "jpeg", quality: 60 });
   await page.close();
-  return measured;
+  return { ...measured, faults };
 }
 
 const profile = mkdtempSync(join(tmpdir(), "planes-trail-fps-"));
@@ -265,7 +326,7 @@ const context = await chromium.launchPersistentContext(profile, {
   channel: "chrome",
   headless: false,
   viewport: null,
-  args: ["--start-maximized", "--enable-gpu", "--ignore-gpu-blocklist"],
+  args: ["--start-maximized", "--enable-gpu", "--ignore-gpu-blocklist", "--disable-features=CalculateNativeWinOcclusion"],
 });
 
 const describe = (name, f) => {
@@ -279,13 +340,15 @@ const describe = (name, f) => {
     maxMs: r1(Math.max(...f)),
     over50ms: f.filter((x) => x > 50).length,
     fps: r1(1000 / med),
-    valid: med < 500,
+    secondFrames: f.filter((x) => x > 900).length,
+    valid: med < 500 && f.filter((x) => x > 900).length === 0,
   };
 };
 
 const out = {};
 try {
-  for (const [label, on] of [["off", false], ["on", true], ["off-again", false]]) {
+  const runs = [["off", false], ["on", true], ["off-again", false]].filter(([label]) => !only || label === only);
+  for (const [label, on] of runs) {
     const m = await scenario(context, on);
     const calls = m.calls.map((c) => c.syncMs);
     const done = m.calls.map((c) => c.doneMs).filter((x) => x !== null);
@@ -299,6 +362,12 @@ try {
       world: describe("world z2.2", m.world),
       region: describe("region z6", m.region),
       curve: m.curve.map((c) => ({ target: c.target, syncMs: r1(c.syncMs), doneMs: r1(c.doneMs) })),
+      sized: m.sizedFrames.map((s) => ({
+        target: s.target,
+        ...describe("world z2.2, 3 writes", s.frames),
+        longTasks: { count: s.longTasks.length, maxMs: r1(Math.max(0, ...s.longTasks)) },
+      })),
+      faults: m.faults,
       env: { battery: m.battery, renderer: m.renderer, size: m.size },
     };
     console.log(label, JSON.stringify(out[label], null, 1));
@@ -309,4 +378,11 @@ try {
 }
 if (jsonPath) writeFileSync(jsonPath, JSON.stringify(out, null, 2));
 const invalid = Object.values(out).some((o) => !o.world.valid || !o.region.valid);
-if (invalid) console.log("INVALID: the median frame is over half a second, so the window was covered. Run it again.");
+if (invalid) console.log("INVALID: frames of about a second, so the window was covered or minimised. Run it again.");
+// A snapshot writes the source once in the off case, and once in the on case: a run with no write
+// measured a page that had stopped drawing lines.
+const broken = Object.entries(out).filter(([, o]) => o.setDataCalls === 0 || o.faults.length > 0);
+if (broken.length) {
+  console.log(`INVALID: ${broken.map(([k]) => k).join(", ")} never wrote the source or lost a script, so its page was not running.`);
+  process.exitCode = 1;
+}

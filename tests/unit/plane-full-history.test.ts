@@ -446,7 +446,7 @@ describe("the words", () => {
   it("say the setting's line in the words the plan gave", () => {
     const settings = sources()[1];
     expect(settings).toContain('label="Full flight trail"');
-    expect(settings).toContain("Keeps each plane's whole line. Click a plane to load it from when we first heard it.");
+    expect(settings).toContain("Each line grows while this tab is open. Click a plane to load its line from when we first heard it.");
     // The word "take-off" appears in this file's comment, never in a string the row shows.
     expect(settings).not.toMatch(/sub="[^"]*take-?off/i);
   });

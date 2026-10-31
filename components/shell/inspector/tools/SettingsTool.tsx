@@ -347,7 +347,7 @@ export default function SettingsTool() {
             the plane, not at take-off. */}
         <Field
           label="Full flight trail"
-          sub="Keeps each plane's whole line. Click a plane to load it from when we first heard it."
+          sub="Each line grows while this tab is open. Click a plane to load its line from when we first heard it."
           control={
             <button
               type="button"
