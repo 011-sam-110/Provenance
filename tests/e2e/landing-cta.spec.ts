@@ -29,6 +29,22 @@ const turning = (page: Page, which = "hero") =>
     { timeout: 15_000, polling: 16 },
   );
 
+/** The phrases on this visitor's list that this button has no room for. */
+const tooWideFor = (page: Page, sel: string) =>
+  page.evaluate((sel) => {
+    const label = document.querySelector(`${sel} .lp-rotor`) as HTMLElement;
+    const probe = document.createElement("span");
+    probe.className = "lp-rotor-probe";
+    label.appendChild(probe);
+    const out: string[] = [];
+    for (const d of window.__pvCta!.deck) {
+      probe.textContent = d.words;
+      if (probe.getBoundingClientRect().width > label.clientWidth) out.push(d.words);
+    }
+    probe.remove();
+    return out;
+  }, sel);
+
 test.describe("in Madrid", () => {
   test.use({ timezoneId: "Europe/Madrid", viewport: { width: 1440, height: 900 } });
 
@@ -93,22 +109,64 @@ test.describe("in Madrid", () => {
     expect(await boxes()).toEqual(before);
   });
 
-  test("only one button turns at a time, and the nav takes over past the hero", async ({ page }) => {
+  test("at the top of the page the nav's button turns with the hero's, into the same words", async ({ page }) => {
     await page.goto("/#hero");
     await ready(page);
     await turning(page);
-    await expect(label(page, "nav")).not.toHaveAttribute("data-turning", "");
-    expect(await page.evaluate(() => window.__pvCta!.active())).toBe("hero");
+    await expect(label(page, "nav")).toHaveAttribute("data-turning", "");
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+
+    const said = new Set<string>();
+    for (let step = 0; step < 3; step++) {
+      const start = await turns(page);
+      await page.waitForFunction((n) => window.__pvCta!.turns > n, start, { timeout: 15_000 });
+      const nav = page.locator('a[data-rotor="nav"]');
+      await expect(label(page, "nav")).toHaveText((await hero(page).getAttribute("aria-label"))!);
+      expect(await nav.getAttribute("href")).toBe(await hero(page).getAttribute("href"));
+      said.add((await nav.getAttribute("aria-label"))!);
+    }
+    expect(said.size).toBe(3);
+  });
+
+  test("the buttons on screen turn together, and one off screen is ready when it scrolls in", async ({ page }) => {
+    await page.goto("/#hero");
+    await ready(page);
+    const on = () => page.evaluate(() => window.__pvCta!.onScreen().sort());
+    await expect.poll(on).toEqual(["hero", "nav"]);
 
     await page.evaluate(() => document.querySelector("#plates")!.scrollIntoView());
-    await expect.poll(() => page.evaluate(() => window.__pvCta!.active())).toBe("nav");
+    await expect.poll(on).toEqual(["nav"]);
     await turning(page, "nav");
     await expect(label(page, "hero")).not.toHaveAttribute("data-turning", "");
+    // It took the words as the turn began, with no cells of its own.
+    const words = await page.locator('a[data-rotor="nav"]').getAttribute("aria-label");
+    expect(await hero(page).getAttribute("aria-label")).toBe(words);
+    await expect(label(page, "hero")).toHaveText(words!);
 
     await page.evaluate(() => document.querySelector(`a[data-rotor="close"]`)!.scrollIntoView({ block: "center" }));
-    await expect.poll(() => page.evaluate(() => window.__pvCta!.active())).toBe("close");
+    await expect.poll(on).toEqual(["close", "nav"]);
     await turning(page, "close");
-    await expect(label(page, "nav")).not.toHaveAttribute("data-turning", "");
+    await expect(label(page, "nav")).toHaveAttribute("data-turning", "");
+  });
+
+  test("the pointer on the nav's button holds them all still", async ({ page }) => {
+    await page.goto("/#hero");
+    await ready(page);
+    await page.waitForFunction(() => window.__pvCta!.turns >= 1);
+    await page.locator('a[data-rotor="nav"]').hover();
+    await page.waitForTimeout(1500);
+    const count = await turns(page);
+    const words = await hero(page).getAttribute("aria-label");
+    await page.waitForTimeout(REST_PLUS_TURN_MS);
+    expect(await turns(page)).toBe(count);
+    expect(await hero(page).getAttribute("aria-label")).toBe(words);
+    expect(await page.locator('a[data-rotor="nav"]').getAttribute("aria-label")).toBe(words);
+  });
+
+  test("the nav's button can hold every phrase on the list, so it never falls out of step", async ({ page }) => {
+    await page.goto("/#hero");
+    await ready(page);
+    expect(await tooWideFor(page, 'a[data-rotor="nav"]')).toEqual([]);
   });
 
   test("it holds still under the pointer, so the words cannot change under a click", async ({ page }) => {
@@ -209,6 +267,7 @@ for (const { name, width, height } of [
   { name: "desktop", width: 1440, height: 900 },
   { name: "phone", width: 390, height: 844 },
   { name: "small phone", width: 360, height: 640 },
+  { name: "smallest phone", width: 320, height: 568 },
 ]) {
   test.describe(`at ${name} size`, () => {
     test.use({ viewport: { width, height } });
@@ -216,20 +275,25 @@ for (const { name, width, height } of [
     test("every phrase on every list fits the button it can land on", async ({ page }) => {
       await page.goto("/#hero");
       await ready(page);
-      const tooWide = await page.evaluate((sel) => {
-        const label = document.querySelector(`${sel} .lp-rotor`) as HTMLElement;
-        const probe = document.createElement("span");
-        probe.className = "lp-rotor-probe";
-        label.appendChild(probe);
-        const out: string[] = [];
-        for (const d of window.__pvCta!.deck) {
-          probe.textContent = d.words;
-          if (probe.getBoundingClientRect().width > label.clientWidth) out.push(d.words);
-        }
-        probe.remove();
-        return out;
-      }, HERO);
-      expect(tooWide).toEqual([]);
+      expect(await tooWideFor(page, HERO)).toEqual([]);
+    });
+
+    test("the nav's button changes at the top of the page, and only ever says what fits", async ({ page }) => {
+      await page.goto("/#hero");
+      await ready(page);
+      const nav = page.locator('a[data-rotor="nav"]');
+      await page.waitForFunction(() => window.__pvCta!.turns >= 1, null, { timeout: 15_000 });
+      const said = new Set<string>();
+      for (let step = 0; step < 4; step++) {
+        const start = await turns(page);
+        await page.waitForFunction((n) => window.__pvCta!.turns > n, start, { timeout: 15_000 });
+        said.add((await nav.getAttribute("aria-label"))!);
+        await expect(label(page, "nav")).toHaveText((await nav.getAttribute("aria-label"))!);
+        const room = await label(page, "nav").evaluate((el) => el.scrollWidth <= el.clientWidth);
+        expect(room).toBe(true);
+      }
+      expect(said.size).toBeGreaterThan(1);
+      expect(await page.evaluate(() => scrollY)).toBe(0);
     });
 
     test("the nav's button keeps inside the screen, whatever it lands on", async ({ page }) => {
@@ -243,7 +307,8 @@ for (const { name, width, height } of [
         return { right: a.right, left: a.left, brandRight: b.right, width: innerWidth, scroll: document.documentElement.scrollWidth };
       });
       expect(fit.right).toBeLessThanOrEqual(fit.width);
-      expect(fit.left).toBeGreaterThanOrEqual(fit.brandRight);
+      // A real gap: at 360 px the word "Provenance" once ran straight into the button.
+      expect(fit.left - fit.brandRight).toBeGreaterThanOrEqual(8);
       expect(fit.scroll).toBeLessThanOrEqual(fit.width);
     });
   });
