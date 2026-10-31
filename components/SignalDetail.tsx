@@ -2,8 +2,8 @@
 // In-overlay body for a clicked global signal (earthquake, wildfire, aurora, …).
 // Generic by design: it renders the signal's title, a definition list of whatever
 // `props` the adapter surfaced, the source link, and the mandatory attribution —
-// so a NEW signal layer needs no new detail component. Rendered in the Sources
-// rail's Inspector tab.
+// so a NEW signal layer needs no new detail component. Rendered in the Inspector
+// panel.
 
 import type { WorldObject } from "@/lib/world";
 import { humaniseKey } from "@/lib/text/humanise";

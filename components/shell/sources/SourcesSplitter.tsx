@@ -1,5 +1,5 @@
 "use client";
-// The draggable seam between the Sources rail and the console.
+// The draggable seam between the panel beside the sidebar and the console.
 //
 // ── IT IS A SIBLING OF THE RAIL, NOT A CHILD, AND THAT IS LOAD-BEARING ───────
 // `.tn-rail` is its own scrollport (`overflow-y: auto`, so the sticky header can
@@ -53,10 +53,10 @@ export default function SourcesSplitter({
       case "ArrowRight":
         setWidth(width + step);
         break;
-      // Home/End jump to the rail's own bounds rather than to 0. There is no
-      // collapse-to-nothing here — the rail already has a distinct closed state
-      // with its own control (the ≡ tab), and End must mean "as wide as it goes",
-      // never "gone".
+      // Home/End jump to the panel's own bounds rather than to 0. There is no
+      // collapse-to-nothing here — the panel already has a distinct closed state
+      // with its own controls (its ✕, and its row on the sidebar), and End must mean
+      // "as wide as it goes", never "gone".
       case "Home":
         setWidth(SOURCES_RAIL_MIN);
         break;

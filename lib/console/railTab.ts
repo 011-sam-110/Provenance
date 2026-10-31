@@ -1,14 +1,15 @@
 "use client";
-// The Sources rail's active tab — "sources" (the catalog) or "inspector" (the detail
-// body for the currently open object).
+// Whether the console's panel shows "sources" (the catalog) or "inspector" (the detail body
+// for the open object, or the tool that has taken its place). The tabs that named these two
+// are gone: the sidebar's rows choose now, through lib/console/consolePanel.ts.
 //
-// WHY A STORE AND NOT `useState` IN SourceCatalog. The tab has to be settable from
-// lib/overlay.ts — every `overlay.open()` points the rail at Inspector, and
-// `overlay.close()` returns it to Sources — and overlay.ts is nowhere near
-// SourceCatalog's tree. Same shape as every other shell store here (module state, a
-// listener set, useSyncExternalStore), so it reads like lib/console/sourcesRail.ts.
+// WHY A STORE AND NOT `useState` IN SourceCatalog. It has to be settable from
+// lib/overlay.ts — every `overlay.open()` points the panel at the Inspector — and
+// overlay.ts is nowhere near SourceCatalog's tree. Same shape as every other shell store
+// here (module state, a listener set, useSyncExternalStore), so it reads like
+// lib/console/sourcesRail.ts.
 //
-// SESSION-ONLY, like the rail's open state. Nothing here persists: a fresh launch
+// SESSION-ONLY, like the panel's open state. Nothing here persists: a fresh launch
 // should land on the Sources catalog, not on the last thing someone inspected.
 //
 // Nothing here touches window/document at all, at module scope or otherwise, so

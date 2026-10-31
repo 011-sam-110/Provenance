@@ -731,7 +731,12 @@ function beginGesture(map: MapLibreMap, g: Gesture): boolean {
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (e.key === "Escape") abandon();
+    if (e.key === "Escape") {
+      // One press, one thing: the window's listeners (the object's view and ConsoleShell's
+      // ladder) would otherwise also close a panel or clear the selection on this press.
+      e.stopPropagation();
+      abandon();
+    }
     if (e.key === "Enter") {
       // preventDefault, or Enter finishes the area and IMMEDIATELY starts another.
       // Seen in the browser: press the rail button to arm the tool, place three

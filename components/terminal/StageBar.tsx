@@ -6,20 +6,17 @@
 // ─── THE STAGE RAIL IS GONE FROM HERE (2026-09-16) ────────────────────────────
 // This file used to mount <MapRail/> — the two icon groups on the right edge of the
 // map, Search and View settings, with one flyout open at a time. Sam asked for both
-// to move onto the Inspector panel's new tool rail, together with "Draw an area",
-// which came off the Sources tab. They are all
-// components/shell/inspector/InspectorRail.tsx now, and components/console/maprail/
-// is deleted rather than left unmounted — an exported component nothing renders
-// still greps as live art and still has to be read by whoever comes next, which is
-// the argument RailIcons.tsx made for the six glyphs it retired the same way.
+// to come off the map, together with "Draw an area", which came off the Sources tab.
+// Map settings and Areas are rows on components/shell/ConsoleSidebar.tsx now, and
+// components/console/maprail/ is deleted rather than left unmounted — an exported component
+// nothing renders still greps as live art and still has to be read by whoever comes next,
+// which is the argument RailIcons.tsx made for the six glyphs it retired the same way.
 //
-// focusStageSearch() WENT WITH IT, and it is worth being precise about what that
-// means, because the function's contract outlived it. The console's search shortcut
-// still returns a boolean and ConsoleShell still preventDefaults only on a truthy
-// return (tests/unit/search-shortcut-contract.test.ts holds that across both
-// files); what changed is WHERE the box is, so the function is now
-// focusInspectorSearch() in InspectorRail.tsx. StageBar no longer has an opinion
-// about search at all.
+// SEARCH CAME BACK ONTO THE MAP on 2026-10-31, as the pill in components/console/MapSearch.tsx,
+// mounted by StageHost. The console's search shortcut still returns a boolean and
+// ConsoleShell still preventDefaults only on a truthy return
+// (tests/unit/search-shortcut-contract.test.ts holds that across both files). StageBar has
+// no opinion about search at all.
 //
 // ─── CSS THIS COMPONENT NEEDS (integrator owns app/globals.css) ───────────────
 // All scoped under .tn-terminal, using the --tnx-* token block.

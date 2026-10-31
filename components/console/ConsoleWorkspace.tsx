@@ -13,6 +13,7 @@ import StageHost from "@/components/console/StageHost";
 import StageBar from "@/components/terminal/StageBar";
 import PinNavigator from "@/components/console/PinNavigator";
 import PanelHost from "@/components/shell/PanelHost";
+import ConsoleSidebar from "@/components/shell/ConsoleSidebar";
 import PlacementPicker from "@/components/console/PlacementPicker";
 import CoveragePanel from "@/components/shell/CoveragePanel";
 import MarketsPanel from "@/components/shell/MarketsPanel";
@@ -174,6 +175,11 @@ export default function ConsoleWorkspace() {
     "--tn-lw": `${wall ? 0 : sizes.left}px`,
     "--tn-rw": `${wall ? dock : sizes.right}px`,
     "--tn-bh": `${wall ? 0 : sizes.bottom}px`,
+    // How far the stage starts past the sidebar's reserved 64px, with no panel open. The
+    // open column overlays this distance first, and the map's own plates (the search pill,
+    // the HUD, the pin list) slide right only by what it covers of the stage itself. A wall
+    // with tiles keeps the stage in the far column, out of reach.
+    "--tn-stage-gap": `${wall ? (layout.widgets.length === 0 ? 0 : 9999) : sizes.left}px`,
   } as CSSProperties;
 
   /**
@@ -337,6 +343,20 @@ export default function ConsoleWorkspace() {
       style={railVars}
       data-density={chrome.quick.compactCards === true ? "compact" : undefined}
     >
+      {/* The sidebar and its one panel come first, so Tab reaches them in the order they
+          are read: left to right, then the map. */}
+      <ConsoleSidebar />
+
+      {/* The variant's persistent chrome — the Source Catalog rail, and the ONLY
+          surface in the product with per-layer map toggles for all 37 signal
+          layers, the per-layer freshness dot and the "needs a key" badge. It must
+          stay a DIRECT child of this element: `.tn-cw-shell > .tn-rail` re-homes
+          it and `.tn-cw-shell:has(> .tn-rail)` makes it PUSH the grid instead of
+          covering it. Nest it one level deeper and it silently reverts to the
+          fixed base rule — the exact regression that removed it from the product
+          once already. */}
+      <PanelHost />
+
       {/* The grid is a separate element from `.tn-cw-shell`, and that is not
           incidental: grid placement only applies to DIRECT children of the grid
           container, while the rail (PanelHost) has to stay a direct child of
@@ -410,16 +430,6 @@ export default function ConsoleWorkspace() {
         {wall ? null : renderSplit("bottom")}
         {wall ? null : renderRail("bottom")}
       </div>
-
-      {/* The variant's persistent chrome — the Source Catalog rail, and the ONLY
-          surface in the product with per-layer map toggles for all 37 signal
-          layers, the per-layer freshness dot and the "needs a key" badge. It must
-          stay a DIRECT child of this element: `.tn-cw-shell > .tn-rail` re-homes
-          it and `.tn-cw-shell:has(> .tn-rail)` makes it PUSH the grid instead of
-          covering it. Nest it one level deeper and it silently reverts to the
-          fixed base rule — the exact regression that removed it from the product
-          once already. */}
-      <PanelHost />
 
       {/* Where a new widget goes. Mounted HERE, once, rather than inside the
           Source Catalog rail next to the ＋ that opens it: the rail is

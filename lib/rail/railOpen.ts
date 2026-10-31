@@ -72,7 +72,7 @@ export function railMenuName(menuLabel: string): string {
  *
  * It stands down when something else has already taken the press (`defaultPrevented`), and
  * when the press lands inside `[data-owns-escape]`, the attribute that
- * components/shell/inspector/InspectorRail.tsx describes: an inline field or a picker that
+ * components/shell/ConsoleSidebar.tsx describes: an inline field or a picker that
  * must get Escape for itself.
  */
 export function sheetTakesEscape(e: {

@@ -31,7 +31,7 @@
 // you would get, and its stated justification was width: "two buttons for two mutually
 // exclusive states spend a chip of strip width". A chip of strip width is exactly what
 // this panel has, so both states are visible at once and the current one is filled —
-// which is the same segmented control the rail's own Sources/Inspector tabs use.
+// which is the same segmented control God's eye view's Sources tray uses.
 
 import { useEffect, useState } from "react";
 import { BASEMAPS } from "@/lib/basemaps";

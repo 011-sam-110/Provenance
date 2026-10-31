@@ -46,11 +46,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     site's own `log` block in deploy/Caddyfile masks the address and deletes headers,
  *     but it has no filter on request>uri, so every access-log line keeps the full
  *     address asked for, query included. What people type travels in that query:
- *     ?q= (place search: components/console/MapSearch.tsx, components/shell/PlaceSearch.tsx,
+ *     ?q= (place search: components/console/MapSearch.tsx,
  *     components/shell/CommandPalette.tsx, lib/shell/askPlaceLookup.ts,
  *     lib/console/widgets/camslot.picker.tsx) and ?target= (lib/console/widgets/recon.tsx).
  *     The coordinates of "cameras near you" travel as ?lat= and ?lon=
- *     (components/shell/PlaceSearch.tsx -> /api/near). lib/analytics/rollup.ts strips the
+ *     (components/console/MapSearch.tsx -> /api/near). lib/analytics/rollup.ts strips the
  *     query before it counts a path, so the daily summaries hold none of it; the raw log
  *     does. The sentence is gone, the log paragraph names the query, and the three table
  *     rows that said "kept: no" or "5 minutes" now point at the log.

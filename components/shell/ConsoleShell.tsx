@@ -24,7 +24,7 @@ import { variantStore } from "@/lib/variants/store";
 import TerminalHeader from "@/components/terminal/TerminalHeader";
 import BootSequence from "@/components/terminal/BootSequence";
 import { SIGNALS } from "@/lib/signals/registry";
-import { focusInspectorSearch } from "@/components/shell/inspector/InspectorRail";
+import { focusMapSearch } from "@/components/console/MapSearch";
 import SelectionAnnouncer from "@/components/terminal/SelectionAnnouncer";
 import { mapViewStore } from "@/lib/mapView";
 import { selectionStore } from "@/lib/terminal/selection";
@@ -55,8 +55,7 @@ import { trackStore } from "@/lib/planes/track";
 import { pinsStore } from "@/lib/map/pins";
 import { isFirstRun, seedBoard } from "@/lib/console/bootSeed";
 import "@/lib/console/widgets";
-import { sourcesRailStore } from "@/lib/console/sourcesRail";
-import { railTabStore } from "@/lib/console/railTab";
+import { closePanel, openPanel, readPanel, togglePanel } from "@/lib/console/consolePanel";
 import { wantsSourcesOpen, withoutArrivalFlags } from "@/lib/console/sourcesLink";
 import { eyeReturnStore } from "@/lib/console/eyeReturn";
 import { EYE_RETURN_PARAM, parseEyeReturn } from "@/lib/eye/places";
@@ -148,17 +147,14 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
     // here is the saved board, not a default.
     seedBoard(params, isFirstRun({ restoredVariant, activeBoard: activePresetStore.get() }));
     // `sources=open` (God's eye view's Sources button, the landing's "All sources"):
-    // open the Sources rail on its Sources tab, then drop the flag so a reload or a
+    // open the Sources panel, then drop the flag so a reload or a
     // copied link does not open it again. It writes no layer and nothing to storage.
     // `eye=` (God's eye view's Sources link) is the way back to that view: checked and
     // rebuilt by parseEyeReturn, held in memory for this visit (lib/console/eyeReturn.ts).
     const back = parseEyeReturn(params.get(EYE_RETURN_PARAM));
     if (back) eyeReturnStore.set(back);
     const opensSources = wantsSourcesOpen(params);
-    if (opensSources) {
-      railTabStore.set("sources");
-      sourcesRailStore.setOpen(true);
-    }
+    if (opensSources) openPanel("sources");
     if (opensSources || params.has(EYE_RETURN_PARAM)) {
       const { pathname, search, hash } = window.location;
       window.history.replaceState(window.history.state, "", withoutArrivalFlags(pathname, search, hash));
@@ -207,9 +203,10 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // ask "which action, if any, is this chord?" and run it. The defaults:
   //
   //   Ctrl-Space, ;   search the map
-  //   Ctrl-K          toggle the Sources rail
+  //   Ctrl-K          toggle the Sources panel
   //   Ctrl-Q          arm the draw-an-area tool
-  //   Escape          leave picking mode, then clear the selection
+  //   Escape          leave picking mode, close Sources or the empty Inspector, then
+  //                   clear the selection
   //
   // ESCAPE IS DELIBERATELY NOT IN THE KEYMAP. It is a close/cancel gesture, sequenced
   // by hand below and by every dialog on the page. Making it rebindable would let a
@@ -229,7 +226,15 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
   // user's selection as a side effect of closing a dialog would be a silent data
   // loss they never asked for. Any mounted role="dialog" hands Escape (and the rest)
   // back to that surface.
+  //
+  // IT IS READ WHEN THE PRESS STARTS, in the capture phase. A dialog that closes from a React
+  // handler (the placement picker, the palette) is gone by the time this listener runs, so a
+  // read down here finds nothing and one press closes the dialog AND the panel behind it.
   useEffect(() => {
+    let dialogAtPress = false;
+    const onPress = () => {
+      dialogAtPress = document.querySelector('[role="dialog"]') != null;
+    };
     const onKey = (e: KeyboardEvent) => {
       // THE TEXT-FIELD GUARD RUNS FIRST NOW, and it has to. ";" is a printable
       // character, so a keymap that can hold single keys must never be consulted
@@ -252,23 +257,21 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
           // TOGGLE, NOT OPEN. A key that only opens is a dead key the second time it
           // is pressed.
           e.preventDefault();
-          sourcesRailStore.toggle();
+          togglePanel("sources");
           return;
         }
         if (action === "search") {
           // Only swallow the key if there was actually a search box to focus. The box
-          // lives on the Inspector panel's tool rail now (it was stage chrome until
-          // 2026-09-16), and the rail is hidden rather than unmounted on the narrow
-          // pass — so the helper answers "is the console's left rail on screen", and
+          // is a pill on the map, so a focused widget or a closed dock leaves none, and
           // a preventDefault with nothing to show for it would look like a dead key.
-          if (focusInspectorSearch()) e.preventDefault();
+          if (focusMapSearch()) e.preventDefault();
           return;
         }
         if (action === "draw") {
           // IT ONLY ARMS NOW. It used to open the rail's Draw group as well, and that
           // group is gone — but the shortcut is not, and removing it would have been
           // the wrong read of what was asked for. What was removed is a rail button;
-          // startDraw() is still a live feature reached from the inspector's "Draw an
+          // startDraw() is still a live feature reached from the Areas panel's "Draw an
           // area" and from the camera picker, this key is rebindable and listed in
           // Settings under its own name, and nothing about "arm the polygon tool"
           // depended on a panel being on screen.
@@ -294,7 +297,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       // A modifier means the user is aiming at the browser or the OS, not at us.
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (typing) return;
-      if (document.querySelector('[role="dialog"]')) return;
+      if (dialogAtPress || document.querySelector('[role="dialog"]')) return;
 
       switch (e.key) {
         case "Escape":
@@ -313,14 +316,27 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
             pickStore.setMode("off");
             break;
           }
+          // THE NEXT RUNG IS THE PANEL. Sources and the empty Inspector hold nothing a press
+          // could lose, so they close here, ahead of the selection, and a second press then
+          // clears it. An open tool never reaches this line (ConsoleSidebar's capture-phase
+          // handler has it), an object's view is a dialog and returned above, and a draw's
+          // Escape stops at lib/map/aoi.ts, so cancelling a draw leaves the panel open.
+          if (readPanel() === "sources" || readPanel() === "inspector") {
+            closePanel();
+            break;
+          }
           selectionStore.clear();
           break;
         default:
           break;
       }
     };
+    window.addEventListener("keydown", onPress, true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onPress, true);
+      window.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   // ── Arming is a MAP mode, so anything that takes the map away ends it ──────
@@ -404,7 +420,7 @@ export default function ConsoleShell({ feeds }: { feeds: number }) {
       <SelectionAnnouncer />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {/* The old right-edge dossier (FeedOverlay) is retired; its detail now renders
-          in the Sources rail's Inspector tab. The dive below stays full-screen. */}
+          in the Inspector panel. The dive below stays full-screen. */}
       <CinematicDive />
       {/* Gates itself entirely (lib/shell/feedback.ts) and renders null until it
           decides to ask, so mounting it unconditionally costs one interval. */}

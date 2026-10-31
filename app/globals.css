@@ -382,15 +382,15 @@ a { color: var(--tn-accent); }
   color: var(--tn-text); font-weight: 600; box-shadow: var(--tn-shadow);
 }
 
-/* ── Inspector tab ───────────────────────────────────────────────────────── */
+/* ── Inspector panel ───────────────────────────────────────────────────────── */
 .tn-inspector-bar {
   display: flex; justify-content: flex-end; align-items: center; gap: 8px;
   margin-bottom: 10px;
 }
 .tn-inspector-close {
-  width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+  height: 28px; padding: 0 10px; border-radius: 8px;
   background: var(--tn-chip-bg); color: var(--tn-text-muted);
-  border: 1px solid var(--tn-border); font-size: 17px; line-height: 1; cursor: pointer;
+  border: 1px solid var(--tn-border); font: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer;
 }
 .tn-inspector-close:hover { color: var(--tn-down); border-color: var(--tn-down); }
 .tn-inspector-export {
@@ -685,54 +685,6 @@ a { color: var(--tn-accent); }
 @media (prefers-reduced-motion: reduce) { .tn-ask-chip, .tn-ask-apply { transition: none; } }
 
 /* ===================== Place search + near-me (M5) ===================== */
-.tn-explore {
-  position: fixed; top: calc(var(--tn-topbar-h) + 12px); left: 50%; transform: translateX(-50%);
-  z-index: 28; width: min(440px, 92vw); color: var(--tn-text);
-}
-.tn-explore-bar {
-  display: flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px;
-  background: var(--tn-surface); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border: 1px solid var(--tn-border); border-radius: 12px; box-shadow: var(--tn-shadow);
-}
-.tn-explore-icon { color: var(--tn-text-faint); font-size: 15px; line-height: 1; }
-.tn-explore-input {
-  flex: 1; min-width: 0; border: none; background: transparent; color: var(--tn-text);
-  font: inherit; font-size: 14px; padding: 6px 2px; outline: none;
-}
-.tn-explore-input::placeholder { color: var(--tn-text-faint); }
-.tn-explore-input::-webkit-search-cancel-button { -webkit-appearance: none; }
-.tn-explore-locate {
-  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12px; font-weight: 600;
-  color: var(--tn-accent); background: var(--tn-accent-soft);
-  border: 1px solid var(--tn-border); border-radius: 8px; padding: 6px 10px; cursor: pointer; white-space: nowrap;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.tn-explore-locate:hover { background: var(--tn-chip-bg); color: var(--tn-accent-strong); }
-.tn-explore-locate:disabled { opacity: 0.6; cursor: default; }
-
-.tn-explore-results {
-  margin-top: 8px; max-height: min(48vh, 420px); overflow: auto;
-  background: var(--tn-surface-solid); border: 1px solid var(--tn-border); border-radius: 12px;
-  box-shadow: var(--tn-shadow); padding: 6px; animation: tn-pop 0.16s ease;
-}
-.tn-explore-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  width: 100%; text-align: left; font: inherit; cursor: pointer;
-  background: transparent; border: none; border-radius: 9px; padding: 9px 11px; color: var(--tn-text);
-}
-.tn-explore-item:hover, .tn-explore-item:focus-visible { background: var(--tn-accent-soft); outline: none; }
-.tn-explore-item-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.tn-explore-item-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-explore-item-meta { font-size: 11px; color: var(--tn-text-faint); white-space: nowrap; flex-shrink: 0; }
-.tn-explore-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--tn-text-faint); }
-.tn-explore-dot.on { background: var(--tn-live); box-shadow: 0 0 6px var(--tn-live); }
-.tn-explore-status { padding: 11px 12px; font-size: 12.5px; color: var(--tn-text-faint); }
-
-@media (max-width: 720px) {
-  .tn-explore { left: auto; right: 12px; transform: none; width: min(360px, calc(100vw - 24px)); }
-}
-@media (max-width: 460px) { .tn-explore-locate-label { display: none; } }
-@media (prefers-reduced-motion: reduce) { .tn-explore-results { animation: none; } }
 
 /* ===================== Dossier bodies (camera) ===================== */
 .cam-detail h2 { margin: 0 30px 4px 0; font-size: 18px; letter-spacing: 0.01em; color: var(--tn-text); }
@@ -3234,39 +3186,6 @@ a { color: var(--tn-accent); }
    Two guards, because one is not enough: max-width keeps the bar clear of the
    control cluster in the first place, and the controls now sit ABOVE it so a
    layout we did not anticipate can never make a control unclickable again. */
-.tn-mapsearch {
-  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 6;
-  width: clamp(240px, 36vw, 400px); max-width: calc(100% - 230px); pointer-events: auto;
-}
-.tn-mapsearch-bar {
-  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
-  border-radius: 12px; background: var(--tn-surface); border: 1px solid var(--tn-border);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, .18);
-}
-.tn-mapsearch-icon { font-size: 15px; color: var(--tn-text-muted); }
-.tn-mapsearch-input {
-  flex: 1; border: 0; background: none; outline: none; font-size: 13px; color: var(--tn-text);
-}
-.tn-mapsearch-input::placeholder { color: var(--tn-text-faint); }
-.tn-mapsearch-results {
-  margin-top: 6px; border-radius: 12px; overflow: hidden; background: var(--tn-surface);
-  border: 1px solid var(--tn-border); box-shadow: 0 10px 28px rgba(0, 0, 0, .22); max-height: 320px; overflow-y: auto;
-}
-.tn-mapsearch-item {
-  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-  border: 0; background: none; padding: 8px 12px; cursor: pointer; color: var(--tn-text); font-size: 13px;
-}
-.tn-mapsearch-item:hover { background: var(--tn-surface-2); }
-.tn-mapsearch-item-pin { font-size: 12px; flex: 0 0 auto; }
-.tn-mapsearch-item-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tn-mapsearch-item-meta { font-size: 11px; color: var(--tn-text-faint); flex: 0 0 auto; }
-.tn-mapsearch-status { padding: 8px 12px; font-size: 12px; color: var(--tn-text-muted); }
-/* "Locate network": the search box's row for an IP or a domain (lib/recon/ipLocate.ts).
-   It sits above the place matches and names what it does, because a domain can also
-   read as a place. */
-.tn-mapsearch-item.is-network { border-bottom: 1px solid var(--tn-border); }
-.tn-mapsearch-item-net { font-size: 12px; flex: 0 0 auto; color: var(--tn-accent-strong); }
-
 /* The network dossier (components/NetworkDetail.tsx). Same type scale as the other
    dossiers; no point, no coordinates, one fixed line at the top. */
 .tn-net { display: grid; gap: 10px; font-size: 13px; color: var(--tn-text); }
@@ -3405,7 +3324,6 @@ a { color: var(--tn-accent); }
 }
 .tn-pinmenu-add:hover { background: var(--tn-surface-2); color: var(--tn-accent); }
 .tn-pinmenu-coord { font-size: 10px; color: var(--tn-text-faint); padding: 0 10px 4px; }
-@media (max-width: 640px) { .tn-mapsearch { width: min(70vw, 320px); } }
 
 /* ════════════════════════════════════════════════════════════════════════
    Onboarding chrome — the Ko-fi support button and the widget "?" help popover.
@@ -3584,7 +3502,7 @@ a { color: var(--tn-accent); }
    Source Catalog rail, re-homed into the widget console.
    ════════════════════════════════════════════════════════════════════════
    The console rebuild swapped <PanelHost/> for <ConsoleWorkspace/> and no one
-   mounted the rail again, so `.tn-rail`, `.tn-rail-fab` and `.tn-layer-row`
+   mounted the rail again, so `.tn-rail`, the launcher and `.tn-layer-row`
    measured 0 in the DOM at 1440, 390 AND 360 — the full 36-layer list, the
    per-layer map toggles, the per-layer freshness dot and the grey "needs a key"
    badge were product-wide unreachable. ConsoleWorkspace mounts PanelHost again;
@@ -3611,15 +3529,6 @@ a { color: var(--tn-accent); }
   max-height: none;
   z-index: 26;
 }
-.tn-cw-shell > .tn-rail-fab {
-  top: calc(var(--tn-topbar-h) + 20px);
-  left: calc(var(--tn-lw) + 30px);
-  bottom: auto;
-  z-index: 6;
-  border-color: var(--tn-border-strong);
-}
-.tn-cw-shell > .tn-rail-fab:hover { border-color: var(--tn-accent); color: var(--tn-accent); }
-
 @media (min-width: 901px) {
   .tn-cw-shell:has(> .tn-rail) { left: 324px; }
 }
@@ -3646,9 +3555,6 @@ a { color: var(--tn-accent); }
     border-radius: 16px 16px 0 0;
     border-left: none; border-right: none; border-bottom: none;
     box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.20);
-  }
-  .tn-cw-shell > .tn-rail-fab {
-    top: auto; bottom: 12px; left: 12px; padding: 11px 15px; z-index: 26;
   }
 }
 
@@ -3749,12 +3655,11 @@ a.tn-w-place { display: flex; align-items: center; }
 /* ---- (a) small pill controls -------------------------------------------------- */
 .tn-ev-tab, .tn-ev-hidden { min-height: 26px; }
 .tn-ev-tab { padding: 2px 12px; }
-.tn-mapsearch-input { min-height: 26px; }
 
 @media (max-width: 900px) {
   /* ---- (a) lists and pills: 44px for real -------------------------------- */
   .tn-ev-row, .tn-evd-rowbtn, a.tn-w-place, .tn-ev-group-h, .tn-anom-row,
-  .tn-ev-tab, .tn-ev-hidden, .tn-mapsearch-item, .tn-rail-fab, .tn-cw-shell > .tn-rail-fab,
+  .tn-ev-tab, .tn-ev-hidden, .tn-rail-fab, /* /eye's Sources button */
   /* The settings tabs, which is where the drawer is 92vw and the rail is the first
      thing a thumb reaches. Height is the only axis that needs the bump in either
      orientation: as a column the row is already full-width, and below 520px the rail
@@ -3763,12 +3668,6 @@ a.tn-w-place { display: flex; align-items: center; }
     min-height: 44px;
   }
   .tn-anom-row { padding: 5px 6px; }
-
-  /* Search: the wrapper's own padding is traded for the input's height, so the
-     control reaches 44px without the box growing to 58px. */
-  .tn-mapsearch { padding: 0 12px; }
-  .tn-mapsearch-input { min-height: 44px; }
-
 
   /* ---- (a)+(b) widget header: 40px box, 44px hit, 20px painted ring -------
      The three header buttons are now .tn-cw-btn and grow their REAL box to 40px
@@ -3944,7 +3843,7 @@ a.tn-w-place { display: flex; align-items: center; }
 
      Below 901px a separate rule re-homes the rail as a bottom sheet with
      width:auto, so none of this applies on a phone. */
-  --tn-rail-w: clamp(372px, var(--tn-rail-user-w, 452px), min(680px, calc(100vw - 800px)));
+  --tn-rail-w: clamp(324px, var(--tn-rail-user-w, 452px), min(680px, calc(100vw - 848px)));
   /* ── The design palette: THREE COLOURS AND WHITE ────────────────────────
      #262b15 ink · #464b37 accent · #afb4ad edge · #ffffff everything else.
 
@@ -4119,7 +4018,6 @@ a.tn-w-place { display: flex; align-items: center; }
   /* Width of the collapsed sources tab down the left edge. It is BOTH the tab's
      width and the shell's reserved left padding, so the two can never disagree
      and let the tab sit on top of the first widget. */
-  --tnx-rail-tab-w: 26px;
 
   /* Type. Inter for everything, headline titles included — the two role names are
      kept because the console's rules read them, but both now resolve to the same
@@ -4363,7 +4261,7 @@ a.tn-w-place { display: flex; align-items: center; }
   .tn-hd-chips button.is-on, .tn-fc-check, .tn-mk-tab.active, .tn-mk-seg button.active,
   .tn-profile-btn.is-primary, .tn-settings-share, .tn-kofi:hover, .tn-fb-rate.is-on,
   .tn-fb-btn.is-primary, .tn-dev-btn.is-primary, .tn-src-add[data-placed="true"],
-  .tn-insp-rail-btn[aria-pressed="true"], .tn-account-btn.is-primary
+  .tn-account-btn.is-primary
 ) { color: var(--tnx-on-accent); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-ask-apply.is-active .tn-kbd { background: rgba(21, 23, 15, 0.16); color: var(--tnx-on-accent); }
 
@@ -4379,7 +4277,6 @@ a.tn-w-place { display: flex; align-items: center; }
 ) { color: var(--tn-lagging-ink); }
 
 /* Light grounds and dark-alpha washes. */
-:root[data-tnx-skin="dark"] .tn-terminal .tn-insp-rail { background: rgba(236, 238, 228, 0.03); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-hd-primary { background: rgba(236, 238, 228, 0.06); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-mk-ohlc { background: rgba(21, 23, 15, 0.78); }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-newsw-tabs button { background: var(--tnx-panel); border-color: var(--tnx-line-strong); color: var(--tnx-ink-dim); }
@@ -4408,14 +4305,6 @@ a.tn-w-place { display: flex; align-items: center; }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch[aria-checked="true"] { background: var(--tnx-accent); box-shadow: none; }
 :root[data-tnx-skin="dark"] .tn-terminal .tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { background: var(--tnx-on-accent); }
 
-/* The collapsed Sources tab runs the full height of the page, so its 1px edge is a
-   seam down the whole left side. In light the launch hint paints it olive on white;
-   the same accent on near-black is a bright cream-green line (11.9:1), much louder
-   than the olive one reads. The hint keeps its colour at half strength (about 3.7:1,
-   still over the 3:1 a boundary needs) and the label keeps the full accent; out of
-   the hint the edge is a hairline like every other dark edge. */
-:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab { border-color: var(--tnx-line); }
-:root[data-tnx-skin="dark"] .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { border-color: color-mix(in srgb, var(--tnx-accent) 50%, transparent); }
 
 /* ── The header toggle (both skins) ───────────────────────────────────────
    Icon-only and FIXED at 30px above 900px, its border included: the camera stats
@@ -5432,114 +5321,6 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
   box-shadow: var(--tnx-shadow-1);
   z-index: 26;
 }
-.tn-terminal .tn-cw-shell > .tn-rail-fab {
-  position: absolute;
-  top: 8px; left: 8px; bottom: auto;
-  border-radius: var(--tnx-r-sm);
-  border: 1px solid var(--tnx-line-strong);
-  background: var(--tnx-glass);
-  font-size: var(--tnx-fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-  z-index: 6;
-}
-
-/* THE FRESH-LAUNCH HINT. The Sources tab is thin, sits on an edge that is otherwise
-   a widget column, and reviewers did not find it. It jumps a few times and then
-   stops — see lib/console/sourcesRail.ts for when the state is set, why the scope is
-   a launch rather than a browser, and `shouldHintRail` for the rule.
-
-   FINITE, NOT INFINITE. `3` iterations, not `infinite`: a control that never stops
-   moving stops reading as a hint and starts reading as a fault, and it would pull
-   the eye away from the map for the whole session rather than for the few seconds
-   it takes to notice a tab. The delay lets the console finish arriving first —
-   a thing that moves before the page has settled looks like a layout jump.
-
-   IT MOVES ON THE X AXIS, toward the middle of the screen, because that is the
-   direction the rail opens. A vertical bounce would be motion; this is a gesture
-   that shows you what the control does.
-
-   IT DOES NOT OVERSHOOT PAST ITS ORIGIN, and that was the first thing tried. A
-   curve that dips to -3px before settling is the textbook way to make a move read as
-   a jump rather than a slide — and it is invisible here. At >=901px this tab is not
-   a pill: it is a full-height 26px strip pinned to `left:0` of `.tn-cw-shell`, which
-   is `overflow:hidden` with its left edge at exactly that origin. Every negative
-   pixel is clipped, so the strip's left edge stays pinned while its right edge moves
-   and the gesture reads as the tab getting NARROWER. Measured in the browser, not
-   reasoned about. The spring is built out of decaying hops in positive X instead:
-   out far, back, out less, back. Same signature, all of it on screen.
-
-   THERE IS NO `scale` EITHER, for the same reason: the strip is ~870px tall, so the
-   1.06 that looked right on a pill grew it by 52px and read as the tab stretching
-   down the page. On an element this shape, translate is the only honest axis.
-
-   The travel was 7px and is now 16px — on a 26px-wide strip that is a lunge of more
-   than half its own width, where 7px was inside the noise floor of the peripheral
-   glance that is the only kind of glance a hint gets.
-
-   `translate` is used rather than `transform` so a future hover/active transform on
-   this button cannot silently cancel the animation, and vice versa. */
-@keyframes tnx-rail-fab-hint {
-  0%        { translate: 0 0; }
-  7%        { translate: 16px 0; }
-  18%       { translate: 0 0; }
-  27%       { translate: 7px 0; }
-  38%, 100% { translate: 0 0; }
-}
-.tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] {
-  animation: tnx-rail-fab-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;
-  border-color: var(--tnx-accent);
-  color: var(--tnx-accent);
-}
-/* A hint is the definition of decorative motion, so this one is not merely reduced —
-   it is dropped. The tab keeps the accent border, which is the non-moving half of
-   the same "look here" and is what a reduced-motion user gets instead. */
-@media (prefers-reduced-motion: reduce) {
-  .tn-terminal .tn-cw-shell > .tn-rail-fab[data-hint] { animation: none; }
-}
-@media (min-width: 901px) {
-  /* The rail PUSHES the grid rather than covering it, in BOTH states. Padding on
-     the shell, not `left:` — the shell is `position:relative` here (see the
-     `.tn-terminal .tn-cw-shell` block above), so `left` would slide the whole
-     element sideways and push its right edge out of the viewport instead of
-     reflowing the grid inside it. */
-  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: var(--tn-rail-w); }
-
-  /* CLOSED rail: reserve a slim gutter and run the toggle down it as a vertical
-     tab, so the grid starts to the RIGHT of the control.
-
-     The open-rail rule above used to be the only one here, which left the closed
-     state's button on the base `top:8px; left:8px`. That was empty map in the old
-     full-bleed console — but in the Terminal grid the shell's top-left corner is
-     the FIRST WIDGET'S cell, so a 95x40 button sat on top of that widget's title
-     and its first data row (measured: FAB 8,64 95x40 over slot w0 at 0,56 300x171).
-
-     Reserving the gutter is what makes the collision structurally impossible
-     rather than merely unlikely — a grid item cannot start left of the padding
-     edge, whatever the layout does. The tab itself still resolves `left:0` against
-     the shell's PADDING box, which is the reserved strip, not the widget area. */
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) { padding-left: var(--tnx-rail-tab-w); }
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab {
-    top: 0; left: 0; bottom: auto;
-    width: var(--tnx-rail-tab-w);
-    height: 100%;
-    /* `row`, not `column`, and that is not a typo. Under `writing-mode:
-       vertical-rl` the INLINE axis runs top-to-bottom and the BLOCK axis runs
-       right-to-left, so flex `row` (which follows the inline axis) is what stacks
-       the glyph above the label DOWN the tab. `column` would follow the block axis
-       and lay them out side by side across a 26px-wide box, clipping the label
-       away entirely — which is exactly what it did. */
-    display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
-    gap: 10px;
-    padding: 10px 0;
-    writing-mode: vertical-rl;
-    border-width: 0 1px 0 0;
-  }
-  /* The ≡ glyph is a pictogram, not text — let it stay upright while the label
-     runs down the tab. */
-  .tn-terminal .tn-cw-shell:not(:has(> .tn-rail)) > .tn-rail-fab .tn-rail-fab-bars {
-    writing-mode: horizontal-tb;
-  }
-}
-
 /* ── MapLibre chrome ───────────────────────────────────────────────────────
    ATTRIBUTION IS A LICENSING REQUIREMENT (Esri / OpenTopoMap / CARTO), and it is
    MapLibre's own control rather than text we type, so it stays correct when the
@@ -5853,7 +5634,7 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
    left in the console.
 
    Deliberately NOT done by editing `--tnx-glass*`: those tokens have eight other
-   consumers, including the rail FAB and the MapLibre attribution chrome, and
+   consumers, including the MapLibre attribution chrome, and
    moving the token would drag all of them along. */
 /* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
    translateX(-50%)`, so it has to be flattened or it re-centres itself inside this
@@ -6017,21 +5798,17 @@ body:has(.tn-terminal) { background: #d6dde6; color: #10161d; }
      this rule, which meant restrict-to-area, pick cameras, draw an area and new
      wall did not exist on a phone at all. They then lived in `.tnx-maprail` on the
      stage's right edge, which was a 44px column rather than a 200px stack of text
-     buttons; since 2026-09-16 they are on the Sources rail's INSPECTOR tab, whose
-     tool column the narrow pass keeps for the same reason — see the inspector
-     tool-rail block at the end of this sheet. */
+     buttons; since 2026-10-31 they are rows on the console's sidebar, behind the ☰ at
+     this width. */
   .tn-terminal .tnx-stage-foot { display: none; }
   .tn-terminal .maplibregl-ctrl-bottom-right,
   .tn-terminal .maplibregl-ctrl-bottom-left { bottom: 10px; }
   .tn-terminal .tn-pinnav { bottom: 10px; }
 
-  /* The rail is a bottom sheet at this width (the existing block re-homes it); it is
-     absolute inside the workspace band now, so the sheet fills that band. */
+  /* The panel is a bottom sheet at this width; app/console-sidebar.css says where. */
   .tn-terminal .tn-cw-shell > .tn-rail {
-    top: auto; left: 0; right: 0; bottom: 0; width: auto;
-    max-height: 66dvh; border-right: 0; border-top: 1px solid var(--tnx-line-strong);
+    border-right: 0; border-top: 1px solid var(--tnx-line-strong);
   }
-  .tn-terminal .tn-cw-shell > .tn-rail-fab { top: auto; bottom: 12px; left: 12px; z-index: 26; }
 }
 
 /* ── Touch targets for the new chrome ─────────────────────────────────────
@@ -6527,18 +6304,8 @@ border:1px solid var(--tn-border);background:var(--tn-accent-soft)}
 .tn-note-x:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 1px; }
 @keyframes tn-note-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .tn-note { animation: none; } }
-/* On a phone the note spans the width it can get, and it has to sit ABOVE the
-   Sources FAB rather than on top of it.
-
-   THAT OVERLAP WAS REAL AND IT MATTERED. `.tn-rail-fab` is pinned to
-   `bottom: calc(var(--tn-ticker-h) + 12px)` under 720px and measures 44px tall, so
-   a note at the bottom margin covered its top half — and on a phone that button is
-   the console's main menu, the only way into the sources rail and the board list.
-   An invitation that hides the navigation is worse than no invitation.
-
-   The offset is written in the FAB's own terms (its 12px inset + its 44px height +
-   a 16px gap) so it tracks `--tn-ticker-h` instead of freezing one measurement
-   taken on one screen. Measured at 390 wide: note bottom 772, FAB top 788. */
+/* On a phone the note spans the width it can get, and it sits clear of the map's bottom
+   strips (the clock, the pin list). The ☰ is at the top now, so nothing it holds is covered. */
 @media (max-width: 720px) {
   .tn-note { left: 8px; right: 8px; width: auto; bottom: calc(var(--tn-ticker-h) + 72px); }
 }
@@ -7244,45 +7011,22 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 /* ── end sources rail splitter ────────────────── */
 
-/* ══ INSPECTOR TOOL RAIL — prefix .tn-insp-rail / .tn-insp-tool ═════════════════
-   The tool column on the RIGHT edge of the Sources rail's INSPECTOR tab, and the
-   pane it drives. It carries what used to be on the map: Search and View settings
-   were the stage rail's two groups (components/console/maprail/, deleted with this
-   change), and Draw an area was a button in the Sources tab. Sam chose the edge
-   (option C) and the pane behaviour (option D) from rendered mockups; the rejected
+/* ══ THE INSPECTOR'S TOOLS — prefix .tn-insp-tool ═══════════════════════════════
+   The panes for Map settings, Areas and Notifications, the rows on the console's sidebar
+   (components/shell/ConsoleSidebar.tsx). They were a tool column on this panel's right edge
+   until 2026-10-31, and on the map's right edge before that (`.tnx-maprail`). Sam chose the
+   pane behaviour (option D: a tool takes the whole panel) from rendered mockups; the rejected
    layouts are in ~/Desktop/rail-options/ with the rest of that decision.
 
-   WHY THIS IS NOT `.tnx-maprail`, which is what it replaces. That block's whole
-   geometry was "float over the map, expand leftward, centred on the stage's right
-   edge" — chip widths chosen to stay LATERAL, a flyout that emerged from its own
-   row, and a container query against the stage. None of it survives the move: this
-   rail is a COLUMN IN A PANEL, docked rather than floating, and sized by the panel
-   rather than by the stage. Keeping the old prefix would have left every rule
-   lying about where it applies, which is the reason that block's own header gave
-   for not calling itself `.tn-rail*` in the first place.
-
-   IT IS ON BOTH TABS AND IT IS NOT A STICKY COLUMN, which is the second thing Sam
-   asked for and the fix for the first thing he reported. The rail was a child of the
-   Inspector pane, `position: sticky` inside `.tn-rail`'s scrollport — and a sticky
-   element is only ever as tall as its containing block, so the strip came out
-   164px tall at a 300px panel, 127px at the 452 default and 112px at 620, changing
-   shape with the pane's text as it reflowed. That is the "wonky, doesn't fit right"
-   band. It is now a flex SIBLING of the panes (see SourceCatalog), so it stretches
-   to the panel's full height, keeps its width, and nothing about the content can
-   move it. The measured `top: 50px` constant that used to hold the buttons clear of
-   the sticky header is gone with it — there is no longer a scrollport under them.
-
-   WHAT THE PANEL'S OWN LAYOUT IS NOW, because the rules below assume it:
+   WHAT THE PANEL'S OWN LAYOUT IS, because the rules below assume it:
      - `.tn-terminal .tn-cw-shell > .tn-rail` is a flex COLUMN with `overflow:
        hidden`, and it is still `position: absolute; top: 0; bottom: 0`, so it has a
-       definite height for the rail to stretch into.
-     - `.tn-rail-main` is the row: `[.tn-rail-panes | .tn-insp-rail]`.
+       definite height.
      - `.tn-rail-panes` is the SCROLLPORT. It replaced the panel as one, which is
-       what lets the header stop being sticky and what keeps a scrollbar out of the
-       gap between the panes and the rail.
+       what lets the header stop being sticky.
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── The panel: a header, then [panes | tool rail] ───────────────────────────── */
+/* ── The panel: a header, then the panes ─────────────────────────────────────── */
 .tn-terminal .tn-cw-shell > .tn-rail {
   display: flex;
   flex-direction: column;
@@ -7303,125 +7047,12 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   margin: 0 0 10px;
   padding: 12px 12px 8px;
 }
-.tn-terminal .tn-rail-main {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  align-items: stretch;
-}
 .tn-terminal .tn-rail-panes {
   flex: 1 1 auto;
   min-width: 0;
   overflow-y: auto;
   padding: 0 12px 12px;
 }
-
-.tn-insp-rail {
-  /* Metrics as tokens so the narrow pass changes ONE value and everything derived
-     follows. Declared here rather than on `.tn-terminal`: that block is parsed by
-     tests/unit/terminal-tokens.test.ts and this rail has no business in it. */
-  --tn-insp-rail-w: 48px;
-  --tn-insp-rail-btn: 42px;
-  --tn-insp-rail-glyph: 27px;
-  --tn-insp-rail-group-gap: 9px;
-
-  flex: 0 0 var(--tn-insp-rail-w);
-  width: var(--tn-insp-rail-w);
-  /* FULL HEIGHT BY CONSTRUCTION, not by measurement. `align-items: stretch` on
-     `.tn-rail-main` gives this column the panel's height whether the tab beside it
-     holds three lines of empty state or a dossier taller than the screen, and
-     because it is outside the scrollport nothing that happens in the panes can move
-     it. Both halves of that were the bug: the strip used to change height with the
-     content and to be absent on the Sources tab altogether. */
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 6px 0 10px;
-  background: rgba(15, 23, 42, 0.028);
-  border-left: 1px solid var(--tn-border);
-}
-
-.tn-insp-rail-cell { position: relative; display: flex; justify-content: center; width: 100%; }
-/* A GROUP IS A GAP, NOT A LINE (2026-10-28). The groups (map tools, then Draw, then
-   Notifications: GROUP_START in InspectorRail.tsx) were drawn by a rule span in the
-   cell's flex ROW, beside the button, so it shrank to a 5px stub against the left
-   border and pushed the button 2.5px right. Leon asked for the lines to go and the
-   groups to stay: 3px between tools inside a group, 12px between groups. */
-.tn-insp-rail-cell[data-group-start] { margin-top: var(--tn-insp-rail-group-gap); }
-
-.tn-insp-rail-btn {
-  position: relative;
-  width: var(--tn-insp-rail-btn);
-  height: var(--tn-insp-rail-btn);
-  flex: none;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0; cursor: pointer;
-  background: transparent; color: var(--tn-text-muted);
-  border: 1px solid transparent; border-radius: 8px;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-}
-.tn-insp-rail-btn:hover { color: var(--tn-text); background: var(--tn-accent-soft); }
-/* PRESSED IS A FILL, NOT AN OUTLINE, and the reason is the same one the stage rail
-   wrote down when it had four groups: at 30px with a 1px border, a tinted outline
-   and a hover wash are the same picture, so nothing would say which tool owns the
-   pane. White on --tn-accent is 4.9:1 — legible reversed, which is what a fill
-   demands. */
-.tn-insp-rail-btn[aria-pressed="true"] {
-  color: #ffffff;
-  background: var(--tn-accent);
-  border-color: var(--tn-accent);
-}
-/* AT THE AREA CAP the draw button refuses — see lib/shell/drawArea.ts. It is
-   dimmed rather than `disabled` on purpose: the rail is ONE tab stop with roving
-   focus, so a truly disabled button is a hole the arrow keys stall in. */
-.tn-insp-rail-btn[aria-disabled="true"] { opacity: 0.5; }
-.tn-insp-rail-btn:focus-visible { outline: 2px solid var(--tn-accent); outline-offset: 2px; }
-/* One rule sizes every glyph on the rail, which is why ToolIcons takes no size
-   prop. ToolIcons draws at strokeWidth 1.8-2 on a 24-unit viewBox, which at 18px is
-   a ~1.4px stroke: still a hairline, and the reason the geometry is trimmed where
-   strokes meet. */
-.tn-insp-rail-btn svg { width: var(--tn-insp-rail-glyph); height: var(--tn-insp-rail-glyph); display: block; }
-/* The word under the icon. Phones only (the max-width: 900px pass below shows it);
-   on desktop the hover label names the tool, so the word stays hidden. */
-.tn-insp-rail-name { display: none; }
-
-/* The hover/focus label. A 30px column of glyphs cannot name anything on its own,
-   and the native `title` takes about a second, paints in OS chrome that ignores the
-   skin, and cannot be told which side of the button to appear on. It opens to the
-   LEFT — into the pane — because this rail's right edge is the panel's edge.
-
-   NOT HIDDEN WHILE PRESSED, which is a deliberate difference from the stage rail's
-   tip. There the flyout occupied exactly this space; here the pane is beside the
-   rail, so the label covers a sliver of it and nothing else. Hiding it would take
-   the eye's label away in the state the eye is in most of the time. */
-.tn-insp-rail-tip {
-  pointer-events: none;
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  translate: 0 -50%;
-  z-index: 9;
-  white-space: nowrap;
-  font-size: var(--tnx-fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  line-height: 1.35;
-  padding: 4px 8px;
-  color: var(--tn-text);
-  background: var(--tn-surface-solid);
-  border: 1px solid var(--tn-border-strong);
-  border-radius: 6px;
-  box-shadow: var(--tn-shadow);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.12s ease;
-}
-.tn-insp-rail-btn:hover .tn-insp-rail-tip,
-.tn-insp-rail-btn:focus-visible .tn-insp-rail-tip { opacity: 1; visibility: visible; }
-/* ...unless this button's own panel is open: the panel's head names the tool two
-   rows under the label, and the label is the transient of the two. `[data-panel]` is
-   set only for tools — the eye's pressed state is the view, not a panel, and its word
-   appears nowhere else. See InspectorRail.tsx. */
-.tn-insp-rail-btn[data-panel] .tn-insp-rail-tip { opacity: 0; visibility: hidden; }
 
 /* ── The tool pane ─────────────────────────────────────────────────────────────
    THE PANELS SPEAK THE SOURCES TAB'S LANGUAGE, which is what Sam asked for: "sources
@@ -7434,9 +7065,9 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 
 /* The panel's own title — THE prominent thing in the pane, on Sam's ask: "make Map
    settings the prominent main title by increasing its font size and weight". It is
-   17px/800 against the section headings' 12px/800 and the rows' 13px/500, and it has
-   no ✕ beside it any more, which was the other half of the same ask: a close glyph
-   sitting at the title's own weight competes with it for the first thing you see. */
+   17px/800 against the section headings' 12px/800 and the rows' 13px/500. The ✕ beside it
+   is faint and has no box until it is pointed at, because the other half of the same ask
+   was that a close glyph at the title's own weight competes with it. */
 .tn-insp-tool-title {
   margin: 0 0 14px; padding: 0 0 10px;
   font-size: var(--tnx-fs-lg);
@@ -7486,7 +7117,7 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   border-left: 2px solid var(--tn-border);
 }
 /* `.tn-insp-head-glyph` (the bell inside a section heading) is gone with the section
-   it was added for: the mark is on the rail's own Notifications button now, and a
+   it was added for: the mark is on the sidebar's Notifications row now, and a
    heading that repeats it would put the same glyph twice in one eye-line. */
 
 /* The alerts composer keeps its own card (`.tn-alert`, further down this sheet) and
@@ -7557,10 +7188,10 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
   box-shadow: inset 0 0 0 2.4px var(--tn-surface-solid);
 }
 
-/* THE BUTTON THAT STARTS THE GESTURE, in the Draw tool's panel — and the only one
-   that does. The rail's Draw button opens this panel; this arms the map (Sam: "a
+/* THE BUTTON THAT STARTS THE GESTURE, in the Areas panel — and the only one
+   that does. The sidebar's Areas row opens this panel; this arms the map (Sam: "a
    user should click draw area on that page"), which is why the rule came back with
-   the button when the areas block moved onto the rail.
+   the button when the areas block moved off the Sources list.
 
    DASHED, and the original note for that still holds: a dashed 1.28:1 outline on
    white is not a box, and this is the only control that creates an area. Dashed
@@ -7620,113 +7251,22 @@ body:has(.tn-src-splitter[data-active]) { cursor: col-resize; user-select: none;
 }
 .tn-insp-switch[aria-checked="true"] .tn-insp-switch-knob { left: 20px; }
 
-/* Search. MapSearch's own root is `position:absolute; top:12px; left:50%;
-   translateX(-50%)` — it was built to float over the top-centre of the globe, and
-   inside an absolutely-positioned panel it would anchor to the PANEL and re-centre
-   itself there. So it is flattened, never forked: one geocoder in the app. Ported
-   from the stage rail's `.tnx-maprail-search` rules, which did the same job inside
-   a flyout.
-   
-   IT IS A BOXED FIELD NOW, and the results DROP OUT OF IT rather than pushing the
-   panel down. The first version was a bare input with a "/" glyph in front of it,
-   floating on the panel background — which is not how any other input in this product
-   looks, and the catalogue's own search box two tabs over is the comparison Sam made.
-   `position: relative` here is what the results anchor to; `.tn-mapsearch` must stay
-   `static` or it becomes the anchor instead and the list lands under the wrong box. */
-.tn-insp-search {
-  position: relative;
-  display: flex; align-items: center; gap: 7px;
-  padding: 0 10px; min-height: 38px;
-  border-radius: 9px;
-  background: var(--tn-surface-solid);
-  border: 1px solid var(--tn-border-strong);
-}
-.tn-insp-search:focus-within { border-color: var(--tn-accent); }
-.tn-insp-search-pfx {
-  font-size: var(--tnx-fs-sm); font-weight: 700; color: var(--tn-accent); flex: none;
-}
-.tn-insp-search .tn-mapsearch {
-  position: static; transform: none; width: 100%; max-width: none;
-  flex: 1; min-width: 0; padding: 0;
-}
-.tn-insp-search .tn-mapsearch-bar {
-  background: none; border: 0; box-shadow: none; padding: 8px 0; gap: 0;
-}
-.tn-insp-search .tn-mapsearch-icon { display: none; }
-.tn-insp-search .tn-mapsearch-input {
-  font-size: var(--tnx-fs); color: var(--tn-text); font-family: inherit; min-height: 0;
-}
-.tn-insp-search .tn-mapsearch-input::placeholder { color: var(--tn-text-muted); }
-.tn-insp-search .tn-mapsearch-results {
-  position: absolute; left: -1px; right: -1px; top: calc(100% + 5px); z-index: 5;
-  margin: 0; border-radius: 9px; overflow: hidden;
-  background: var(--tn-surface-solid);
-  border: 1px solid var(--tn-border-strong);
-  box-shadow: var(--tn-shadow);
-}
-.tn-insp-search .tn-mapsearch-item {
-  display: flex; align-items: center; gap: 7px;
-  font-size: var(--tnx-fs); color: var(--tn-text); padding: 8px 10px;
-  border-bottom: 1px solid var(--tn-border);
-}
-.tn-insp-search .tn-mapsearch-item:last-child { border-bottom: 0; }
-.tn-insp-search .tn-mapsearch-item:hover { background: var(--tn-accent-soft); }
-.tn-insp-search .tn-mapsearch-item-meta,
-.tn-insp-search .tn-mapsearch-status {
-  font-size: var(--tnx-fs-sm); color: var(--tn-text-muted);
-}
-.tn-insp-search .tn-mapsearch-status { padding: 8px 10px; }
-
-/* NO HOVER ON TOUCH, so the label can only ever be a focus artefact there — and the
-   button keeps its accessible name either way. */
-@media (hover: none) {
-  .tn-insp-rail-tip { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .tn-insp-rail-btn, .tn-insp-rail-tip, .tn-insp-switch, .tn-insp-switch-knob { transition: none; }
-}
-
-/* MOBILE — and the rail STAYS. Below 900px the panel becomes a bottom sheet
-   (`.tn-terminal .tn-cw-shell > .tn-rail`, max-height 66dvh); hiding this rail would
-   take the search box, the map settings and the only draw entry point with it,
-   which is the strictly bigger loss the stage rail's own mobile pass already argued
-   about once. Each tool is a 54 x 55px tile, above the 44px touch minimum.
-   THIS @media IS LAST IN THE BLOCK ON PURPOSE — a media query adds no specificity,
-   so any `.tn-insp-rail` rule appended after it would silently kill it. */
+/* MOBILE. Below 900px the panel is a bottom sheet (app/console-sidebar.css). */
 @media (max-width: 900px) {
-  /* LABELS ON PHONES (Leon, 2026-10-28): "There should be labels on mobile so the user
-     can tell what they are". There is no hover here, so the word sits under the icon:
-     a 60px column of 54px tiles, a 26px icon over an 11px word. 60 is the measured fit
-     for the longest word, "Settings" (43.4px at 11px/600), with 5px either side. */
-  .tn-insp-rail {
-    --tn-insp-rail-w: 60px; --tn-insp-rail-btn: 54px; --tn-insp-rail-glyph: 26px;
-    --tn-insp-rail-group-gap: 10px;
-  }
-  .tn-insp-rail-btn {
-    height: auto; min-height: 52px;
-    flex-direction: column; gap: 3px; padding: 6px 0 5px;
-  }
-  .tn-insp-rail-name {
-    display: block;
-    font-size: var(--tnx-fs-xs); font-weight: 600; line-height: 13px;
-    white-space: nowrap;
-  }
-  /* The word already names the tool, so the hover label would only repeat it. */
-  .tn-insp-rail-tip { display: none; }
-  /* iOS zooms the page when a focused input is under 16px. Carried over from the
-     stage rail's mobile rule, where it was load-bearing. */
-  .tn-insp-search .tn-mapsearch-input { font-size: var(--tnx-fs-lg); min-height: 44px; }
   .tn-insp-choice, .tn-insp-seg-btn { min-height: 40px; }
 }
-/* ── end inspector tool rail ─────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tn-insp-switch, .tn-insp-switch-knob { transition: none; }
+}
+/* ── end inspector tools ─────────────────────────── */
 
 /* ── Inspector: the context bar and the index ─────────────────────────────── */
 /* ── The drawing banner ───────────────────────────────────────────────────
    Over the map for as long as a draw gesture runs. TOP-CENTRE is the one free
-   band on this stage: the header owns the row above it, the rail FAB sits at the
+   band on this stage: the header owns the row above it, the search pill sits at the
    same height on the LEFT margin, and the toast (z 1200) is bottom-centre. The map
    rail that used to be centred on the right edge is gone — the map's own controls
-   are on the Inspector panel's tool rail now — so the right edge is plain map.
+   are rows on the console's sidebar now — so the right edge is plain map.
 
    CENTRED ON THE MAP STAGE, NOT ON THE VIEWPORT. `left`, `top` and `max-width` are
    overwritten inline by components/shell/DrawBanner.tsx from the stage's measured
