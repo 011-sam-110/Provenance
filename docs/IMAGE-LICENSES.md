@@ -314,6 +314,37 @@ on the map is unchanged.
 
 ---
 
+## Aircraft models (75)
+
+Files: `public/models/planes/`, 75 `.glb` files (394,996 bytes in all, the largest 6,676). A view
+fetches the three plain models and then only the types it shows.
+
+They are this project's own work. No mesh, picture or model was taken from anyone:
+`scripts/plane-models/build.py` draws each one from numbers, in plain Python with no Blender and
+no generated model, and `scripts/plane-models/pack.mjs` packs it with gltfpack 1.3.0 (`-cc -kn`).
+They carry no airline's paint or logo: every one has the same amber tail. They show an aircraft
+type's general shape, and no maker's drawing is reproduced. A maker's name and a type's designator
+are used only to say what a model is of.
+
+| What | Where it comes from |
+|---|---|
+| Length, wingspan, height, engine count, wing position, tail layout and engine position | `scripts/plane-models/dimensions.json`, one row per type code, each row naming its own page. Most are from EUROCONTROL's Aircraft Performance Database (https://learningzone.eurocontrol.int/ilp/customs/ATCPFDB/), read by `scripts/plane-models/fetch-dimensions.mjs`. A row's `override` is a figure from the Wikipedia page it names, where EUROCONTROL has no figure or a different variant. |
+| Fuselage width, wing sweep, chords, engine sizes, fin and tailplane sizes | Estimated by this project from the type's look, in `scripts/plane-models/shapes.json`. None of these is a published figure, and no one should read one off a model. |
+| Which model a type without its own is drawn with | The `closest` table in `scripts/plane-models/shapes.json`, this project's judgement, checked by `tests/unit/eye-plane-models.test.ts`: the same engine count, and a helicopter is never drawn as a plane. |
+
+Known limits. 72 models cover 243 type codes, so a type can be drawn with a close relative's shape
+at its own length. 13 codes have no published length here (BE30, BE35, C551, C55B, C72R, C82S, C82T,
+GL8T, LJ70, MD52, MU30, S22T, T206), so they borrow their model's, and the table marks them
+`borrowed`; 11 of those have no page of their own. Helicopter lengths are not on one basis: four
+are from rotor tip to tail (`basis: "overall"` in `shapes.json`), the others run along the fuselage.
+The `plain-jet`, `plain-light` and `plain-heli` models have no engines and are drawn at the floor
+size, so a plane whose type is not in the table is never given a named shape.
+
+EUROCONTROL's and Wikipedia's figures are facts about aircraft, used here to size a shape; neither
+site's text or pictures are in this repository. The aircraft source's credit on the map is unchanged.
+
+---
+
 ## The renders, the screenshots and this file
 
 The two renders, the three screenshots and the recording are this project's own work. This file records
