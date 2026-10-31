@@ -395,3 +395,21 @@
 .tn-terminal ::-webkit-scrollbar-thumb {
   transition: background-color var(--tn-mo-base) var(--tn-mo-ease-io);
 }
+
+
+/* ── Streets: the area card's edge glows up ONCE as it mounts, then holds (Leon,
+   2026-10-29). A one-shot on an element that just mounted, so at rest this is worth zero
+   frames (#158). Only `from` is given: it animates to the card's own resting glow. */
+@keyframes tn-streets-glow-in {
+  from {
+    border-color: var(--tn-border);
+    box-shadow: 0 0 0 0 rgb(var(--tn-streets-amber) / 0), 0 0 0 0 rgb(var(--tn-streets-amber) / 0), 0 6px 20px rgba(0,0,0,.18);
+  }
+}
+.tn-terminal .tn-streets-prompt { animation: tn-streets-glow-in var(--tn-mo-focal) var(--tn-mo-ease) both; }
+/* Leon: with reduced motion the glow is steady from the first frame (stricter than this
+   file's usual "fewer and gentler"). The undo note's own motion, if any, belongs to the
+   shared .tn-undo pattern, not to this block. */
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-streets-prompt { animation: none; }
+}
