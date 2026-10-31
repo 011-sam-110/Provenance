@@ -144,6 +144,24 @@ obligations and are not satisfied by the licence.
   `.lp-root` so none can reach `/privacy` or the console (the two rules outside it,
   `html:has(.lp-root)` and the Discord note's corner, match only while this page is
   mounted).
+- **The landing page's main button offers a different place every few seconds** (2026-10-31).
+  The server prints plain links saying "See London in 3D"; `components/marketing/CtaRotor.tsx`
+  renders nothing, finds the links marked `data-rotor` after mount and rewrites their words and
+  `href`, with no React state, no scroll listener and no `/api` call. The list is
+  `lib/marketing/ctaDeck.ts`, ordered by the browser's own time zone and language (read, never
+  sent or stored; `/privacy` says so). When the words change, each changed character turns a
+  full 360 about its own axis into the new one (`lib/marketing/ctaTurn.ts`, Web Animations on
+  transform and opacity); the words that stay only slide. Only one button turns at a time (the
+  hero's, else the close's, else the nav's), the button's width is fixed so nothing beside it
+  moves, it holds still under a pointer or keyboard focus, and with reduced motion it takes the
+  visitor's first phrase once and stays there. **A place is offered only if its buildings are
+  worth seeing:** `node scripts/gen-eye-cities.mjs --write` reads each candidate from the tiles
+  the map draws and writes `lib/eye/cities.data.ts`, `lib/marketing/cta-places.data.ts` and
+  `docs/EYE_CITIES.md`; a person then looks at the frames, and `REFUSED` in that script holds
+  what the numbers passed and a person turned down. `/eye?place=<id>` opens a city by name; the
+  HUD's own list stays the three framed London presets (`EYE_PLACES`). A topic names its layers
+  under `needs`: `npx vite-node -c vitest.config.ts scripts/check-cta-deck.mts` asks production
+  for each and fails on an empty one. `tests/e2e/landing-cta.spec.ts` holds the browser half.
 - **The globe on `/` draws ONE saved snapshot, on two stacked canvases. It is not a map
   and it is not live.** `lib/marketing/landingGlobe.ts` is the choreography and the 2D
   painter, and touches no DOM: scroll position in, plain state objects out, pixels on a

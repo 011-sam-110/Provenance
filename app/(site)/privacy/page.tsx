@@ -25,6 +25,11 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *     access-log paragraph now names ?bbox=, and the route count is 56 (55 with M4's
  *     camera-road, plus this one).
  *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - The front page's main button reads the browser's time zone and language
+ *     (components/marketing/CtaRotor.tsx) to order the places it offers. Neither is stored or
+ *     sent. "What your own browser keeps" gained a row saying so.
+ *
  * WHAT CHANGED ON 2026-10-27:
  *   - Camera roads (M4 of the live road data plan): app/api/camera-road answers what the road
  *     operators say about the road of each camera on screen (lib/roads/nearCamera.ts). Its query
@@ -348,7 +353,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-27">27 October 2026</time>
+                Last updated <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -529,6 +534,14 @@ export default function PrivacyPage() {
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td>
+                    Your browser&rsquo;s time zone and language, which the front page&rsquo;s main
+                    button reads to choose which places to offer you first
+                  </td>
+                  <td>Read on the page, not stored</td>
+                  <td>No</td>
+                </tr>
                 <tr>
                   <td>Console layout, boards, presets, saved monitor profiles</td>
                   <td>Local storage</td>
@@ -1181,14 +1194,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-27">27 October 2026</time>
+                <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 27 October 2026. When the behaviour changes this
+              This describes the code as deployed on 31 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.
