@@ -27,7 +27,7 @@ function requestedCodes() {
 /** PURE: the fields of one page. Anything missing is null, never a guess. */
 export function parsePage(rawHtml) {
   const text = rawHtml
-    .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, " ")
+    .replace(/<(script|style)[\s\S]*?<\/[^>]*>/gi, " ")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
