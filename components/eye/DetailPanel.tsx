@@ -31,7 +31,7 @@ import styles from "./eye.module.css";
 
 export type DetailSubject =
   | { kind: "ship"; v: Vessel }
-  | { kind: "plane"; a: Aircraft; pulledAt: number | null }
+  | { kind: "plane"; a: Aircraft; pulledAt: number | null; drawn?: "lowered" | "unsent" | null }
   | { kind: "road"; d: StreetDisruption; fetchedAt: number | null };
 
 export interface AlsoHere {
@@ -108,7 +108,7 @@ export default function DetailPanel({ subject, also, staleSince, clock, onClose,
     subject.kind === "ship"
       ? vesselDetail(subject.v, now)
       : subject.kind === "plane"
-        ? aircraftDetail(subject.a, now, subject.pulledAt)
+        ? aircraftDetail(subject.a, now, subject.pulledAt, subject.drawn ?? null)
         : roadDetail(subject.d, now, subject.fetchedAt);
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);

@@ -94,11 +94,24 @@ obligations and are not satisfied by the licence.
   and B, the 500 nearest the middle of the view, asked every minute and again once the
   view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);
   the console's Ships layer (`/api/signals/ais`) stays the 11 chokepoints, Class A only.
+  Its aircraft come from `/api/eye/planes?bbox=`, not from the console's 3,000 sample: the same box
+  rules, the 500 nearest the middle of the view, read from everything the one type pull heard
+  (`lib/planes/pool.ts`, in memory), so it makes no new adsb.lol request; after a restart, until the
+  next pull, it is the sample's share and says `sampled: true` (`lib/eye/planes.ts`).
   The HUD's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
   models (`components/eye/vesselLayer.ts`, a MapLibre custom layer with three.js loaded lazily,
   ten packed files in `public/models/vessels/`, a bare hull for an untyped boat), drawn at their
   AIS length with a 28 px minimum; the chevrons are the fallback, and the licences are in
-  `docs/IMAGE-LICENSES.md`. Its link flags are
+  `docs/IMAGE-LICENSES.md`. Aircraft are 3D models of their real type (`components/eye/planeLayer.ts`,
+  the pure half `lib/eye/planeModels.ts`, 75 packed files in `public/models/planes/` built from
+  published figures by `scripts/plane-models/build.py`, fetched only for the types in view; a code
+  the table does not hold gets a plain model, never a named one). Two rules are not style
+  preferences. A plane's height is capped so it stays in view (the lower of half the camera's height
+  and 16% of the frame above its spot), with a line down to a ring on its real spot, and the tag and
+  panel always give the height it reported, the panel saying "Drawn lower than its real height". And
+  `/app` draws no models: it loads no three.js. The layer is placed by MapLibre's `getMatrixForModel`,
+  because the map is a globe below zoom 12 and takes different coordinates there.
+  Its link flags are
   listed at the top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
   frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
@@ -252,7 +265,8 @@ obligations and are not satisfied by the licence.
   `status`, `presence`, `feedback`, `community` (the Discord invite's state and counts), `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
   (the top bar's camera stats strip, `lib/cameras/stats.ts`), `relay/[feed]`
   (signed snapshots pushed from provenance-1, see `lib/relay`), `eye/streets` (TfL's road
-  disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box),
+  disruptions for `/eye`), `eye/vessels` (the boats around the God's eye view's box), `eye/planes`
+  (the aircraft around it),
   `camera-road` (what the road operators say about each camera's
   road, for the camera detail, the camera wall and the `/eye` cards; `lib/roads/nearCamera.ts`),
   and the two doors
