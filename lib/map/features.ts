@@ -58,6 +58,22 @@ export function toPlaneFC(planes: WorldObject[]): GeoJSON.FeatureCollection {
   };
 }
 
+/**
+ * One plane's line. A line with `breaks` (Full flight trail) is one part for each stretch we
+ * heard: nothing is drawn across a gap, and a part with one point draws nothing.
+ */
+function trailGeometry(t: PlaneTrail): GeoJSON.LineString | GeoJSON.MultiLineString {
+  const coords = t.points.map((p) => [p[1], p[0]]);
+  if (!t.breaks?.length) return { type: "LineString", coordinates: coords };
+  const parts: number[][][] = [];
+  let start = 0;
+  for (const b of [...t.breaks, coords.length]) {
+    if (b - start >= 2) parts.push(coords.slice(start, b));
+    start = b;
+  }
+  return parts.length === 1 ? { type: "LineString", coordinates: parts[0] } : { type: "MultiLineString", coordinates: parts };
+}
+
 /** Plane breadcrumb trails → line features (history + projected heading ahead). */
 export function toTrailFC(trails: PlaneTrail[]): GeoJSON.FeatureCollection {
   return {
@@ -66,7 +82,7 @@ export function toTrailFC(trails: PlaneTrail[]): GeoJSON.FeatureCollection {
       .filter((t) => t.points.length >= 2)
       .map((t) => ({
         type: "Feature",
-        geometry: { type: "LineString", coordinates: t.points.map((p) => [p[1], p[0]]) },
+        geometry: trailGeometry(t),
         properties: { id: t.id, color: t.color },
       })),
   };
