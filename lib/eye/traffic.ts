@@ -292,9 +292,10 @@ export function vesselLedgerRow(inView: readonly Vessel[], named: number, stream
 export const AIRCRAFT_CREDIT = ADSB_ATTRIBUTION.replace(/^Live aircraft/, "Aircraft");
 
 /**
- * The aircraft row says what the count is: a share of a worldwide SAMPLE (the route
- * keeps 3,000 of what adsb.lol hears, spread by area), so "0 aircraft" here can mean
- * "none in the sample", never "the sky is empty". And how old the positions are.
+ * The aircraft row says what the count is. /api/eye/planes answers from everything the pull
+ * heard; only until the first pull after a restart is it a share of the worldwide SAMPLE (3,000
+ * of what adsb.lol hears, spread by area), when "0 aircraft" can mean "none in the sample". It
+ * is never "the sky is empty": the pull asks for listed types only. And how old the positions are.
  */
 export function aircraftLedgerRow(n: number, nearby: number, opts: { sampled: boolean; ageMs: number | null }): LedgerRow {
   const detail = [...ofNearby(n, nearby), "adsb.lol (ODbL)"];

@@ -147,6 +147,9 @@ import { CameraIcon } from "./cameraIcon";
 import { Tag, tagSize } from "./tag";
 import DetailPanel, { type AlsoHere, type DetailSubject } from "./DetailPanel";
 import { VESSEL_LAYER_ID, createVesselLayer, type VesselLayerHandle, type VesselLayerState } from "./vesselLayer";
+import { PLANE_LAYER_ID, createPlaneLayer, readView, type PlaneLayerHandle, type PlaneLayerState } from "./planeLayer";
+import { drawnHeightM } from "@/lib/eye/planeModels";
+import { EYE_PLANES_EVERY_MS } from "@/lib/eye/planes";
 
 export interface OverlayReport {
   rows: LedgerRow[];
@@ -237,8 +240,7 @@ const SIGNAL_SOURCES = new Set([SIGNAL_SRC, SIGNAL_ANCHOR_SRC, SIGNAL_FILL_SRC, 
  * EYE_VESSELS_EVERY_MS, lib/eye/vessels.ts; they are also asked again when the view
  * leaves the box they were asked for).
  */
-const PLANES_EVERY_MS = 90_000;
-/** Aircraft and TfL's notices this far outside the opening view are not kept at all. */
+/** TfL's notices this far outside the opening view are not kept at all. */
 const KEEP_PAD_DEG = 0.06;
 
 /**
@@ -459,6 +461,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   // and the chevrons stay.
   const modelLayer = useRef<VesselLayerHandle | null>(null);
   const modelState = useRef<VesselLayerState>("loading");
+  // The aircraft as 3D models of their type (planeLayer.ts), on the same terms.
+  const planeLayer = useRef<PlaneLayerHandle | null>(null);
+  const planeState = useRef<PlaneLayerState>("loading");
 
   /**
    * Hide or show the layers of the kinds the Sources tray has switched off. Layers that do
@@ -482,7 +487,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     show(LYR.ship, !hid.has("ships") && !modelsOn);
     show(LYR.ahead, !hid.has("ships"));
     show(VESSEL_LAYER_ID, !hid.has("ships") && modelsOn);
-    show(LYR.plane, !hid.has("planes"));
+    const planeModelsOn = planeState.current === "ready";
+    show(LYR.plane, !hid.has("planes") && !planeModelsOn);
+    show(PLANE_LAYER_ID, !hid.has("planes") && planeModelsOn);
     show(LYR.streetWorks, !hid.has("works"));
     show(LYR.streetIncident, !hid.has("incidents"));
     for (const id of [LYR.streetClosedBase, LYR.streetClosed]) show(id, !hid.has("closures"));
@@ -728,6 +735,26 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         type: "FeatureCollection",
         features: (s.planes ?? []).map((a) => point(a.id, a.lon, a.lat, { rot: a.rot })),
       });
+      // As the boats' models: made once per map, put back on each new style, never remade after failing.
+      if (!planeLayer.current && planeState.current !== "failed") {
+        const handle = createPlaneLayer(map);
+        handle.onState((next) => {
+          planeState.current = next;
+          if (next === "loading") return;
+          queueMicrotask(() => {
+            try {
+              if (next === "failed" && map.getLayer(PLANE_LAYER_ID)) map.removeLayer(PLANE_LAYER_ID);
+              applyHidden();
+              placeNowRef.current?.();
+            } catch {
+              /* the map is already gone */
+            }
+          });
+        });
+        planeLayer.current = handle;
+      }
+      if (planeLayer.current && planeState.current !== "failed" && !map.getLayer(PLANE_LAYER_ID)) map.addLayer(planeLayer.current.layer);
+      planeLayer.current?.setPlanes(hiddenRef.current.has("planes") ? [] : s.planes ?? []);
     }
 
     // The ring under the selected mark, flattened by the view's tilt as the chevrons are,
@@ -841,6 +868,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         /* the map is already gone */
       }
       handle?.dispose();
+      const planes = planeLayer.current;
+      planeLayer.current = null;
+      planeState.current = "loading";
+      try {
+        if (map.getLayer(PLANE_LAYER_ID)) map.removeLayer(PLANE_LAYER_ID);
+      } catch {
+        /* the map is already gone */
+      }
+      planes?.dispose();
     },
     [map],
   );
@@ -900,6 +936,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const s = state.current;
     const size = portrait ? CARD_PHONE : CARD_WIDE;
     let ready = false;
+    /** Set below when the view can be clicked: keeps an open panel's height line true after the camera moves. */
+    let noteDrawnHeight: () => void = () => {};
     let lastRowsKey = "";
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
     // so every count can be read off the view. "of N nearby" is what was fetched around it.
@@ -1210,11 +1248,16 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       // first frame has its boats. With no vessels there is nothing to wait for.
       const modelsSettled = hid.has("ships") || !s.ships?.length || modelState.current !== "loading";
       modelLayer.current?.setVessels(hid.has("ships") ? [] : s.ships ?? []);
+      // The cap follows the camera, so the planes are placed again each time the view settles.
+      const planesSettled = hid.has("planes") || !s.planes?.length || planeState.current !== "loading";
+      planeLayer.current?.setPlanes(hid.has("planes") ? [] : s.planes ?? []);
+      noteDrawnHeight();
       ready =
         s.cams != null &&
         (hid.has("ships") || s.ships != null) &&
         modelsSettled &&
         (hid.has("planes") || s.planes != null) &&
+        planesSettled &&
         (!london || allRoadsHidden(hid) || s.streets != null);
       report();
       playClips();
@@ -1299,6 +1342,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // off (no feed is asked for then), so ask again if it left the box held.
     let shipsWereHidden = hiddenRef.current.has("ships");
     let camsWereHidden = allCamsHidden(hiddenRef.current);
+    let planesWereHidden = hiddenRef.current.has("planes");
     const placeNow = () => {
       lastPlace = performance.now();
       place();
@@ -1309,6 +1353,9 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const camsHidden = allCamsHidden(hiddenRef.current);
       if (camsWereHidden && !camsHidden) reloadCamsIfMoved();
       camsWereHidden = camsHidden;
+      const planesHidden = hiddenRef.current.has("planes");
+      if (planesWereHidden && !planesHidden) reloadPlanesIfMoved();
+      planesWereHidden = planesHidden;
     };
     if (placeRef) placeRef.current = placeNow;
     placeNowRef.current = placeNow;
@@ -1322,6 +1369,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         // lands through landed() like every other feed.
         reloadShipsIfMoved();
         reloadCamsIfMoved();
+        reloadPlanesIfMoved();
       }, 300);
     };
     const onMove = () => {
@@ -1372,7 +1420,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       }
       for (const a of s.planes ?? []) {
         const p = map.project([a.lon, a.lat]);
-        out.push({ id: a.id, kind: "plane", x: p.x, y: p.y, r: markRadius("plane", a) });
+        // Drawn as a model, a plane is hit on its body, anywhere along its line, or on its ring.
+        const at = planeState.current === "ready" ? planeLayer.current?.drawnAt(a) : null;
+        if (at) {
+          const { clientWidth: w, clientHeight: h } = map.getContainer();
+          const path = runsInside([at, p], { x0: -w / 2, y0: -h / 2, x1: w * 1.5, y1: h * 1.5 });
+          out.push({ id: a.id, kind: "plane", x: at.x, y: at.y, r: Math.max(minR, at.radiusPx), path });
+        } else {
+          out.push({ id: a.id, kind: "plane", x: p.x, y: p.y, r: markRadius("plane", a) });
+        }
       }
       const notices = (s.streets ?? []).filter(noticeShown);
       if (notices.length > 0) {
@@ -1400,11 +1456,13 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const name = "name" in m ? m.name : m.callsign;
         return [{ id: c.id, kind: c.kind, name, metres: haversineKm(centre.lat, centre.lon, m.lat, m.lon) * 1000 }];
       });
+    /** What the details panel says about a plane's drawn height; null while the chevrons stand in. */
+    const drawnNote = (a: Aircraft) => (planeState.current === "ready" ? drawnHeightM(a.feet, readView(map).cameraHeightM).note : null);
     const subjectOf = (kind: Kind, item: Item): DetailSubject =>
       kind === "ship"
         ? { kind, v: item as Vessel }
         : kind === "plane"
-          ? { kind, a: item as Aircraft, pulledAt: s.planesFetchedAt }
+          ? { kind, a: item as Aircraft, pulledAt: s.planesFetchedAt, drawn: drawnNote(item as Aircraft) }
           : { kind: "road", d: item as StreetDisruption, fetchedAt: s.streetsFetchedAt };
     const setRing = (fc: GeoJSON.FeatureCollection) => {
       ringRef.current = fc;
@@ -1469,6 +1527,16 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (e.key !== "Escape" || e.defaultPrevented || !selRef.current) return;
       e.preventDefault();
       close(true);
+    };
+
+    /** The view settled: the cap moved with the camera, so the open panel says so if that changed the plane's line. */
+    noteDrawnHeight = () => {
+      const sel = selRef.current;
+      if (sel?.kind !== "plane") return;
+      const a = find("plane", sel.id) as Aircraft | undefined;
+      if (!a) return;
+      const note = drawnNote(a);
+      setPanel((prev) => (prev && prev.subject.kind === "plane" && (prev.subject.drawn ?? null) !== note ? { ...prev, subject: { ...prev.subject, drawn: note } } : prev));
     };
 
     /** After each feed: the mark again as it now is, or, if it left the report, as it last was. */
@@ -1624,7 +1692,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     loadCams({ lat, lon });
 
     // The vessels around what is on screen, asked again when the view settles outside
-    // the box held (lib/eye/vessels.ts). The planes and streets keep the opening region.
+    // the box held (lib/eye/vessels.ts). The planes do the same (lib/eye/planes.ts); the streets
+    // keep the opening region.
     let shipBox: GeoBox | null = null;
     let shipSeq = 0;
     let shipLoadAt = -Infinity;
@@ -1687,20 +1756,49 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         }, wait);
       }
     };
-    const loadPlanes = () =>
-      void getJson("/api/planes").then(
-        (d: { planes?: PlaneLike[]; fetchedAt?: number; coverage?: { capped?: boolean } } | null) => {
-          if (disposed) return;
-          s.planes = (d?.planes ?? [])
-            .filter((p) => inBounds(p.lat, p.lon, region, 0))
-            .map(toAircraft)
-            .filter((a): a is Aircraft => a != null);
-          s.planesSampled = Boolean(d?.coverage?.capped);
-          s.planesFetchedAt = typeof d?.fetchedAt === "number" ? d.fetchedAt : null;
-          s.refreshedAt = clock.now();
+    let planeBox: GeoBox | null = null;
+    let planeSeq = 0;
+    let planeLoadAt = -Infinity;
+    let planeTrail: ReturnType<typeof setTimeout> | null = null;
+    const loadPlanes = () => {
+      const { centre, radius } = viewNow();
+      const box = boxAround(centre, radius);
+      const seq = ++planeSeq;
+      planeLoadAt = performance.now();
+      void getJson(`/api/eye/planes?bbox=${box.join(",")}`).then(
+        (d: { ok?: boolean; box?: GeoBox; planes?: PlaneLike[]; sampled?: boolean; fetchedAt?: number } | null) => {
+          if (disposed || seq !== planeSeq) return;
+          if (d?.ok && Array.isArray(d.planes)) {
+            s.planes = d.planes.map(toAircraft).filter((a): a is Aircraft => a != null);
+            s.planesSampled = d.sampled === true;
+            s.planesFetchedAt = typeof d.fetchedAt === "number" ? d.fetchedAt : null;
+            planeBox = Array.isArray(d.box) ? d.box : box;
+            s.refreshedAt = clock.now();
+          } else if (s.planes == null) {
+            s.planes = [];
+          }
           landed();
         },
       );
+    };
+    /** The view settled: ask again if it left the box held, at most once every MOVE_RELOAD_GAP_MS. */
+    const reloadPlanesIfMoved = () => {
+      if (disposed || clock.film || hiddenRef.current.has("planes")) return;
+      const again = () => {
+        const { centre, radius } = viewNow();
+        return needsReload(planeBox, centre, radius);
+      };
+      if (!again()) return;
+      const wait = MOVE_RELOAD_GAP_MS - (performance.now() - planeLoadAt);
+      if (wait <= 0) {
+        loadPlanes();
+      } else if (!planeTrail) {
+        planeTrail = setTimeout(() => {
+          planeTrail = null;
+          if (!disposed && !hiddenRef.current.has("planes") && again()) loadPlanes();
+        }, wait);
+      }
+    };
     // TfL covers London only; elsewhere nothing is asked for, and the ledger says the
     // road speed is not measured in this view.
     const loadStreets = () =>
@@ -1740,7 +1838,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       ? []
       : [
           setInterval(askShips, EYE_VESSELS_EVERY_MS),
-          setInterval(askPlanes, PLANES_EVERY_MS),
+          setInterval(askPlanes, EYE_PLANES_EVERY_MS),
           ...(london ? [setInterval(askStreets, STREETS_EVERY_MS)] : []),
           setInterval(loadRoads, CAMERA_ROAD_EVERY_MS),
         ];
@@ -1784,6 +1882,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (settle) clearTimeout(settle);
       if (shipTrail) clearTimeout(shipTrail);
       if (camTrail) clearTimeout(camTrail);
+      if (planeTrail) clearTimeout(planeTrail);
       if (ticker) clearInterval(ticker);
       leaveFilm?.();
       for (const t of timers) clearInterval(t);

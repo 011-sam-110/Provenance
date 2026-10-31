@@ -19,12 +19,12 @@ export type PickKind = "ship" | "plane" | "road";
 export interface PickCandidate {
   id: string;
   kind: PickKind;
-  /** Screen pixels, in the map's own box. A road notice: TfL's own point, projected. */
+  /** Screen pixels, in the map's own box. A road notice: TfL's own point, projected. A plane: where it is drawn. */
   x: number;
   y: number;
   /** This mark's own reach in px, when it is larger than the minimum (a longer hull). */
   r?: number;
-  /** A road notice's street lines on screen, already cut to the frame (runsInside). */
+  /** A road notice's street lines on screen, or a plane's line down to its spot, already cut to the frame (runsInside). */
   path?: { x: number; y: number }[][];
 }
 
