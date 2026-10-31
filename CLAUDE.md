@@ -218,7 +218,7 @@ obligations and are not satisfied by the licence.
   line of the landing footer's credits is a claim about what the page loads, so a
   credit arrives and leaves with its asset.
 - `app/` — routes + API. `app/api/*` are internal Next handlers (no user auth):
-  `cameras`, `camera`, `coverage`, `planes`, `flight`, `satellites`, `signals/[id]`,
+  `cameras`, `camera`, `coverage`, `planes`, `planes/track`, `flight`, `satellites`, `signals/[id]`,
   `webcams`, `webcam-image`, `markets`, `news`, `brief`, `advisory`, `recon`, `geocode`,
   `near`, `geolocate`, `proxy`, `hls`, `discord`, `telegram`, `air-quality`, `point-weather`,
   `status`, `presence`, `feedback`, `webcam-place`, `webcam-search`, `youtube-live`, `camera-stats`
@@ -464,6 +464,19 @@ Re-measure before putting a number in a README, a CV or a PR description.
   its turn in `lib/http/hostLane.ts`. Four batches plus a `/v2/mil` poll in between is
   what dropped the GA batch from 3 of 5 prod snapshots. Do not add an adsb.lol call
   outside that lane.
+- **The Full flight trail setting keeps a plane's line on our own server (2026-10-31).** The free
+  networks have no history a server can read: adsb.lol's and adsb.fi's `/data/traces/` answer 403
+  at a verification page, and adsb.lol's API has no history path. So the pull (`fetchAircraftOnce`)
+  also feeds a memory store (`lib/planes/trackStore.ts`), with its whole pool of about 10,000 BEFORE
+  the cap and no request of its own, because the served 3,000 are a sample that moves and a line
+  fed from it has holes. Its log line gives the store's size. `GET /api/planes/track?id=` serves one line, and the switch in Map settings
+  (`lib/planes/fullTrail.ts`, this browser only) lets a tab grow its own lines past 12 points
+  (`lib/planes/fullHistory.ts`). Three rules are not style preferences. The words say "from when we
+  first heard it", never "since take-off" (`lib/planes/lineWords.ts`). A stretch we hold no position
+  for is a break in the line and nothing is drawn across it (`lib/planes/trackLine.ts`). And the
+  store writes no file, so a restart or a deploy starts every line again, which `/privacy` states.
+  Re-measure with `scripts/track-store-memory.mts` and `scripts/planes-trail-fps.mjs` (neither is
+  in the gate).
 - **GDELT left the live path on 2026-10-16.** An audit labelled a random sample: 86% of
   its conflict rows and 58% of its protest rows were not that event at that place. The
   `conflict` and `protests` layers now read UCDP's monthly verified events, U.S. Embassy
