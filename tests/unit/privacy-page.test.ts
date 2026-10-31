@@ -44,8 +44,10 @@ describe("privacy page", () => {
     const copy = stripComments(readFileSync(PRIVACY, "utf8"));
     // Both the machine-readable attribute and the human-readable text, because a
     // reader needs the second and a crawler reads the first.
-    expect(copy).toContain(`dateTime="2026-10-27"`);
-    expect(copy).toContain("27 October 2026");
+    expect(copy).toContain(`dateTime="2026-10-31"`);
+    // A new route, /api/eye/coverage: a drag sends no location, and its ?bbox= is rounded outward.
+    expect(copy).not.toContain(`dateTime="2026-10-27"`);
+    expect(copy).toContain("31 October 2026");
     expect(copy).not.toContain(`dateTime="2026-10-25"`);
     expect(copy).not.toContain("deployed on 25 October 2026");
     // The date before this one, in both shapes it was printed in.

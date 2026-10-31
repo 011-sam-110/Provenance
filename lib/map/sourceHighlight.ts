@@ -42,7 +42,7 @@
 // already reloads for the fade. There is no animation and no per-frame work.
 //
 // EVERY MAP SOURCE IS CLASSED. A source is either in SOURCE_OWNERS (it fades) or in
-// NEVER_FADE_SOURCES (user pins, rings, drawn areas, terrain, buildings). A test reads
+// NEVER_FADE_SOURCES (user pins, rings, drawn areas, terrain, buildings, the person's coverage). A test reads
 // WorldMap.tsx for every source id and fails on one that is in neither, so a future
 // layer cannot slip in unfaded or, worse, faded when it should not.
 
@@ -104,6 +104,7 @@ export const NEVER_FADE_SOURCES: readonly string[] = [
   "aoi-areas",
   "aoi-draft",
   "tn-buildings",
+  "eye-coverage",
 ];
 
 const H: Expr = ["global-state", HIGHLIGHT_STATE_KEY];

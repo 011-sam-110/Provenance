@@ -15,6 +15,17 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-31:
+ *   - The person on the console's map (components/console/EyePerson.tsx) has a new route,
+ *     /api/eye/coverage. It reads the bbox query and nothing else, keeps nothing about the asker
+ *     and logs nothing. The browser asks for the whole index once (no query), and every search
+ *     during a drag runs on that copy, so a drag sends no location. At zoom 9 and closer it asks
+ *     for the cameras in view as ?bbox=, once when he is picked up and once after the map pans
+ *     under him, rounded outward to a 0.1 degree grid. To name the place it chose it asks
+ *     /api/geocode for that camera cell's ?lat= and ?lon=, not the pointer's. A spot in /eye names
+ *     itself the same way, from the coordinates it opened at. The access-log paragraph now says
+ *     all of this, and the route count is 57.
+ *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
  *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
@@ -348,7 +359,7 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Privacy</span>
               <span>
-                Last updated <time dateTime="2026-10-27">27 October 2026</time>
+                Last updated <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h1 className="pv-h2">What this site knows about you.</h1>
@@ -658,7 +669,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>56 API routes</span>
+              <span>57 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1053,7 +1064,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 56 API route files. Each records that a data
+              Five log statements exist across the 57 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
@@ -1072,6 +1083,12 @@ export default function PrivacyPage() {
               <code>?lat=</code> and <code>?lon=</code>. The God&rsquo;s eye view asks for the
               vessels around what is on screen as <code>?bbox=</code>, four numbers that are the
               edges of a box about the size of the view, rounded outward to about a kilometre.
+              The person you drag onto the console&rsquo;s map sends no location while you drag him:
+              the search runs in your browser, on a list of camera positions it asked for once. Zoomed
+              in, it asks for the cameras in view as <code>?bbox=</code>, rounded outward to about ten
+              kilometres, and to name the place it chose it sends that camera&rsquo;s area as{" "}
+              <code>?lat=</code> and <code>?lon=</code>. A spot opened in the God&rsquo;s eye view
+              names itself from its own coordinates in the same way.
               Each of those is in the log line for that request. <strong>It does not record your IP address.</strong> The server is told to
               mask it before writing &mdash; the first 16 bits survive for IPv4, which is a block of
               some sixty-five thousand addresses, and the rest is discarded. That is enough to tell
@@ -1181,14 +1198,14 @@ export default function PrivacyPage() {
             <p className="pv-eyebrow">
               <span>Changes</span>
               <span>
-                <time dateTime="2026-10-27">27 October 2026</time>
+                <time dateTime="2026-10-31">31 October 2026</time>
               </span>
             </p>
             <h2 className="pv-h2">This page has a version history.</h2>
           </div>
           <div className="pv-prose">
             <p>
-              This describes the code as deployed on 27 October 2026. When the behaviour changes this
+              This describes the code as deployed on 31 October 2026. When the behaviour changes this
               page is supposed to change with it, and if it has not then that is a bug worth
               reporting. Both histories live in the same public repository, so the two can be read
               against each other.

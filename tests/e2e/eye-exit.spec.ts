@@ -27,7 +27,7 @@ const shot = async (page: Page, name: string) => {
 
 const ready = (page: Page) => page.waitForSelector('main[data-eye-state="ready"]', { timeout: 90_000 });
 const exit = (page: Page) => page.getByRole("link", { name: "Exit to main dashboard", exact: true });
-const person = (page: Page) => page.getByRole("button", { name: "Open God's eye view at the centre of the map" });
+const person = (page: Page) => page.locator("[data-eye-person]");
 
 interface Spot {
   lat: number;
@@ -113,8 +113,11 @@ test("wide screen: the way out is beside the name, and one click opens the dashb
   await page.waitForTimeout(1500);
   await shot(page, "03-desktop-dashboard");
 
-  // And the person goes back in at the same spot. It is a spot now, so it has no place name.
-  await person(page).click();
+  // And the person goes back in at the same spot, by the keyboard's drop: Enter turns coverage on
+  // with the ring at the map's centre, and Enter drops. At this zoom a drop opens at the ring.
+  await person(page).focus();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Enter");
   await page.waitForURL(/\/eye\?lat=/);
   await ready(page);
   const back = await mapSpot(page);

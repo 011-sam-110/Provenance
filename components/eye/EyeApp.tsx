@@ -94,6 +94,7 @@ import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 import { clipsSettled, stepClips } from "./cameraCard";
 import EyeHud from "./EyeHud";
 import EyeOverlay, { type OverlayReport } from "./EyeOverlay";
+import { useSpotName } from "./useSpotName";
 import styles from "./eye.module.css";
 
 const WorldMap = dynamic(() => import("@/components/WorldMap"), {
@@ -127,10 +128,11 @@ function applyLook(map: maplibregl.Map): void {
   map.setLight(EYE_LIGHT);
 }
 
-function titleFor(target: EyeTarget, cameraName?: string): { title: string; area?: string } {
+function titleFor(target: EyeTarget, cameraName?: string, spotName?: string | null): { title: string; area?: string } {
   if (target.kind === "place") return { title: target.place.name, area: target.place.area };
   if (target.kind === "camera") return { title: cameraName ?? "Road camera", area: cameraName ? "Road camera" : undefined };
-  return { title: fmtSpot(target.view.lat, target.view.lon) };
+  const spot = fmtSpot(target.view.lat, target.view.lon);
+  return spotName ? { title: spotName, area: spot } : { title: spot };
 }
 
 interface Flags {
@@ -446,7 +448,8 @@ export default function EyeApp({
   const getSourcesHref = useCallback(() => consoleLink(true), [consoleLink]);
   const getDashboardHref = useCallback(() => consoleLink(false), [consoleLink]);
 
-  const words = target ? titleFor(target, report.cameraName) : null;
+  const spotName = useSpotName(target, flags.manualClock || flags.record);
+  const words = target ? titleFor(target, report.cameraName, spotName) : null;
   // For scripts and tests: the scene is drawn and, with the overlay on, placed.
   const state = gl === false ? "no-webgl" : map && (!flags.overlay || report.ready) ? "ready" : "loading";
 
