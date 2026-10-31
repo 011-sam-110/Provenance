@@ -60,6 +60,8 @@ export type RailEntry =
       href: string;
       /** Read when the link is pressed, focused or clicked, so the address is right at that moment. */
       refreshHref?: () => string;
+      /** A host's own hooks on the <a>, such as God's eye view's `data-eye-exit`. */
+      attrs?: Record<`data-${string}`, string>;
     }
   | { kind: "rule"; id: string };
 
@@ -114,7 +116,7 @@ function RailRow({ entry }: { entry: RailEntry }) {
     );
   } else if (entry.kind === "link") {
     // A plain <a> and a full page load, like every way between the two maps. The address is
-    // read as it is used, the same as `refreshExit` in components/eye/EyeHud.tsx.
+    // read as it is used, so a map that moved since the last render still carries its spot.
     const refresh = (e: React.SyntheticEvent<HTMLAnchorElement>) => {
       if (entry.refreshHref) e.currentTarget.href = entry.refreshHref();
     };
@@ -122,6 +124,7 @@ function RailRow({ entry }: { entry: RailEntry }) {
       <a
         className={styles.row}
         href={entry.href}
+        {...entry.attrs}
         data-rail-entry={entry.id}
         onPointerDown={refresh}
         onFocus={refresh}

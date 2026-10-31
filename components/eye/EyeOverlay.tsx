@@ -26,8 +26,8 @@
 // not drawn, not tagged, not counted and not fetched: its layers are hidden or filtered,
 // its list is empty in place(), and its feed is not called. Shown again, its layers come
 // back, and a list never fetched is fetched once. The console's layers that are switched on
-// draw through WorldMap; here they are only counted and named: one ledger row and up to
-// two tags, from queryRenderedFeatures at placement, never per frame.
+// draw through WorldMap; here they are only counted and named: one row in a film's ledger and
+// up to two tags, from queryRenderedFeatures at placement, never per frame.
 //
 // A VESSEL, AN AIRCRAFT OR A TfL ROAD NOTICE CAN BE CLICKED. A click on the map picks the
 // nearest mark within reach (lib/eye/pick.ts: every mark is projected to the screen and
@@ -141,9 +141,15 @@ export interface OverlayReport {
   refreshedAt?: number;
   /** The phone's one line about what is not here (no measured road speed). */
   phoneNote?: string;
-  /** What each switched-on row has in the scene now, by row id: the tray's "N here". */
+  /** What each switched-on row has in the scene now, by row id. */
   counts: Record<string, number>;
+  /** The cameras and the vessels the view holds now, for the search. Null until they answer. */
+  cameras?: readonly NearCamera[] | null;
+  vessels?: readonly Vessel[] | null;
 }
+
+/** Open a camera's card or a vessel's panel by its id, for the search (EyeSearch.tsx). */
+export type OpenMark = (kind: "camera" | "vessel", id: string) => void;
 
 const SRC = {
   cams: "eye-cams",
@@ -239,9 +245,9 @@ export function safeFrame(width: number, height: number, portrait: boolean, reco
 }
 
 /**
- * The boxes of the frame's words (EyeHud marks them data-eye-keep), in the map's
- * own pixels and padded by GAP: the header, the buttons, the ledger and the credits,
- * wherever the layout of the moment puts them.
+ * The boxes of the frame's parts (EyeHud marks them data-eye-keep), in the map's own pixels and
+ * padded by GAP: the sidebar, the search, the title, the clock, the compass, the credits and an
+ * open Sources tray, or a film's header and ledger, wherever the layout of the moment puts them.
  */
 function keptBoxes(container: HTMLElement): Box[] {
   const origin = container.getBoundingClientRect();
@@ -334,8 +340,10 @@ interface Props {
   placeRef?: React.MutableRefObject<(() => void) | null>;
   /** Told when the details panel opens or closes (any kind), so the HUD can close the hint. */
   onDetail?: (open: boolean) => void;
-  /** Filled with "close the details panel, focus stays where it is", for the hint's "?". */
+  /** Filled with "close the details panel, focus stays where it is", for the sidebar's Controls. */
   detailCloseRef?: React.MutableRefObject<(() => void) | null>;
+  /** Filled with "open this camera's card or this vessel's panel", for the search. */
+  markRef?: React.MutableRefObject<OpenMark | null>;
 }
 
 interface State {
@@ -383,7 +391,7 @@ interface PanelApi {
 }
 const NO_API: PanelApi = { close() {}, clear() {}, pick() {}, layout() {} };
 
-export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, hidden, signals, onReport, placeRef, onDetail, detailCloseRef }: Props) {
+export default function EyeOverlay({ map, styleEpoch, target, portrait, record, clock, previews, hidden, signals, onReport, placeRef, onDetail, detailCloseRef, markRef }: Props) {
   const state = useRef<State>({
     cams: null,
     ships: null,
@@ -418,7 +426,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
   const ringRef = useRef<GeoJSON.FeatureCollection>(EMPTY);
   const [panel, setPanel] = useState<PanelState | null>(null);
   const panelApi = useRef<PanelApi>(NO_API);
-  // The HUD is told when a details panel (any kind) is open, so the control hint steps aside.
+  // The HUD is told when a details panel (any kind) is open, so the control hint and, where
+  // they cannot stand side by side, the Sources tray step aside.
   // A recording or a film has no panel and never reports true.
   const detailOpen = panel != null;
   useEffect(() => {
@@ -874,6 +883,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const s = state.current;
     const size = portrait ? CARD_PHONE : CARD_WIDE;
     let ready = false;
+    let reportedCams: typeof s.cams = null;
+    let reportedShips: typeof s.ships = null;
     let lastRowsKey = "";
     // What the ledger counts: the marks that carry words on screen now (a card, a tag),
     // so every count can be read off the view. "of N nearby" is what was fetched around it.
@@ -910,7 +921,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       // One row for each console layer that is on, then the line about the road speed.
       for (const r of signalsRef.current) rows.push(signalLedgerRow(r, r.layer ? null : signalCounts.get(r.id) ?? 0));
       rows.push(speedLedgerRow(london));
-      // The tray's "N here": the marks each switched-on row has in the scene.
+      // The marks each switched-on row has in the scene.
       const counts: Record<string, number> = {};
       for (const r of signalsRef.current) if (!r.layer) counts[r.id] = signalCounts.get(r.id) ?? 0;
       if (s.cams) {
@@ -924,9 +935,12 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const cameraName = pinned ? s.cams?.find((c) => c.id === pinned)?.name : undefined;
       const phoneNote = speedPhoneNote(london, roadTimes);
       const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt, counts]);
-      if (key === lastRowsKey) return;
+      // The same counts can be new vessels: the search must fly to where they are now.
+      if (key === lastRowsKey && s.cams === reportedCams && s.ships === reportedShips) return;
       lastRowsKey = key;
-      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote, counts });
+      reportedCams = s.cams;
+      reportedShips = s.ships;
+      reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote, counts, cameras: s.cams, vessels: s.ships });
     };
 
     // --- previews off: icons, and one open card ---------------------------------------
@@ -1499,13 +1513,22 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         map.getCanvas().style.cursor = pickMarks(candidates(), hoverAt, minR).hit ? "pointer" : "";
       });
     };
-    // The hint's "?" closes the panel and leaves focus where it is (on the "?").
+    // The sidebar's Controls closes the panel and leaves focus where it is (on that row).
     const closeFromHint = () => close(false);
+    // The search flew here. A vessel opens its panel. A camera with previews off opens its card,
+    // and with previews on every card is placed again from the middle of the view, where the
+    // flight put this camera, so its card stands first.
+    const openMark: OpenMark = (kind, id) => {
+      if (kind === "vessel") select("ship", id);
+      else if (previewsRef.current) resetMarks.current();
+      else openCam(id);
+    };
     if (interactive) {
       map.on("click", onClick);
       map.on("mousemove", onHover);
       panelApi.current = { close: () => close(true), clear: () => close(false), pick: (id, kind) => select(kind, id), layout: onLayout };
       if (detailCloseRef) detailCloseRef.current = closeFromHint;
+      if (markRef) markRef.current = openMark;
     }
 
     // --- data -------------------------------------------------------------------
@@ -1693,6 +1716,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         map.getCanvas().style.cursor = "";
         panelApi.current = NO_API;
         if (detailCloseRef?.current && closeFromHint === detailCloseRef.current) detailCloseRef.current = null;
+        if (markRef?.current === openMark) markRef.current = null;
         if (selRef.current) {
           selRef.current = null;
           try {
@@ -1720,7 +1744,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       s.tags.clear();
       releaseCardMedia();
     };
-  }, [map, target, portrait, record, clock, pinned, placeRef, detailCloseRef, interactive]);
+  }, [map, target, portrait, record, clock, pinned, placeRef, detailCloseRef, markRef, interactive]);
 
   if (!panel) return null;
   return (
