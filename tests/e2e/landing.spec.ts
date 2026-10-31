@@ -276,7 +276,8 @@ test("the calls to action and the footer links are on the page", async ({ page }
   await page.goto("/");
 
   // The doors (2026-10-27): God's eye view first, and the console with its Sources rail.
-  await expect(page.locator('a[href="/eye"]').first()).toBeVisible();
+  // The main button's words and link change after mount: tests/e2e/landing-cta.spec.ts.
+  await expect(page.locator('a[data-rotor="hero"]')).toBeVisible();
   await expect(page.locator('a[href="/app?sources=open"]').first()).toBeAttached();
   await expect(page.locator('a[href="/cameras"]').first()).toBeAttached();
   await expect(page.locator('a[href="/privacy"]').first()).toBeAttached();
