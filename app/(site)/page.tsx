@@ -5,6 +5,7 @@ import { BRAND, siteUrl } from "@/lib/brand";
 import { shareMetadata } from "@/lib/seo/shareCard";
 import { serializeJsonLd, websiteJsonLd } from "@/lib/seo/structuredData";
 import Mark from "@/components/brand/Mark";
+import CtaRotor from "@/components/marketing/CtaRotor";
 import LandingStage from "@/components/marketing/LandingStage";
 import SphereIntro from "@/components/marketing/SphereIntro";
 import Starfield from "@/components/marketing/Starfield";
@@ -25,6 +26,10 @@ const HOME_TITLE = `${BRAND.name} · ${BRAND.tagline}`;
  * open (`sources=open`, lib/console/sourcesLink.ts). Plain links, so this page still
  * loads no MapLibre and makes no /api call. The words name no count: this page never
  * types one. tests/unit/landing-doors.test.ts holds the doors.
+ *
+ * `data-rotor` marks the links components/marketing/CtaRotor.tsx rewrites after mount, so
+ * a visitor is offered a different place every few seconds, in the order that suits their
+ * time zone. These words and this link are what the page says with no script.
  */
 const EYE_HREF = "/eye";
 const EYE_WORDS = "See London in 3D";
@@ -159,6 +164,7 @@ export default function Landing() {
 
         {/* The one fixed canvas, the lens label, the one scroll listener and the one loop. */}
         <LandingStage />
+        <CtaRotor />
 
         <header className="lp-nav" data-tone="space">
           <a className="lp-brand" href="#hero" aria-label={`${BRAND.name}, back to top`}>
@@ -169,8 +175,8 @@ export default function Landing() {
             <a className="lp-nav-link" href={REPO_URL} target="_blank" rel="noreferrer noopener">
               Source code
             </a>
-            <a className="lp-btn lp-btn-primary lp-btn-sm" href={EYE_HREF}>
-              {EYE_WORDS}
+            <a className="lp-btn lp-btn-primary lp-btn-sm" href={EYE_HREF} data-rotor="nav">
+              <span className="lp-rotor">{EYE_WORDS}</span>
             </a>
           </nav>
         </header>
@@ -188,8 +194,8 @@ export default function Landing() {
                 source, no login.
               </p>
               <div className="lp-ctas">
-                <a className="lp-btn lp-btn-primary" href={EYE_HREF}>
-                  {EYE_WORDS}
+                <a className="lp-btn lp-btn-primary" href={EYE_HREF} data-rotor="hero">
+                  <span className="lp-rotor">{EYE_WORDS}</span>
                 </a>
                 <a className="lp-btn lp-btn-ghost" href={SOURCES_HREF}>
                   {SOURCES_WORDS}
@@ -541,8 +547,8 @@ export default function Landing() {
                 It runs in your browser. Nothing to install, nothing to sign up for.
               </p>
               <div className="lp-ctas">
-                <a className="lp-btn lp-btn-primary" href={EYE_HREF}>
-                  {EYE_WORDS}
+                <a className="lp-btn lp-btn-primary" href={EYE_HREF} data-rotor="close">
+                  <span className="lp-rotor">{EYE_WORDS}</span>
                 </a>
                 <a className="lp-btn lp-btn-ghost" href={REPO_URL} target="_blank" rel="noreferrer noopener">
                   Source code
@@ -569,7 +575,7 @@ export default function Landing() {
             <p className="lp-small">{BRAND.description}</p>
           </div>
           <nav className="lp-foot-links" aria-label="Footer">
-            <a href={EYE_HREF}>{EYE_WORDS}</a>
+            <a href={EYE_HREF} data-rotor="foot">{EYE_WORDS}</a>
             <a href={SOURCES_HREF}>{SOURCES_WORDS}</a>
             {/*
               The home page takes nearly every search click, and this is its only link into

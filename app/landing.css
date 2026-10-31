@@ -96,6 +96,21 @@
 .lp-root .lp-btn-sm { height: 44px; padding: 0 18px; font-size: .9375rem; }
 .lp-root .lp-ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 
+/* The button that offers a different place (components/marketing/CtaRotor.tsx). ITS WIDTH IS
+   FIXED, wide enough for the longest phrase (tests/e2e/landing-cta.spec.ts measures every one),
+   so a phrase never moves the button beside it under someone's pointer. It is in em so the
+   server's first paint is already this wide: no shift when the script arrives. */
+.lp-root .lp-btn[data-rotor] { width: 16.75em; padding-inline: 12px; }
+.lp-root .lp-rotor { position: relative; display: block; flex: 1 1 auto; min-width: 0; height: 1.25em; line-height: 1.25; text-align: center; white-space: pre; font-variant-ligatures: none; }
+.lp-root .lp-rotor-probe { position: absolute; left: 0; top: 0; width: max-content; visibility: hidden; }
+/* A cell stands at a character's middle, with no width of its own: `.lp-rs` turns about that
+   point, and each face is pulled back by half its own width to centre on it. */
+.lp-root .lp-rc { position: absolute; left: 0; top: 0; width: 0; will-change: transform; }
+.lp-root .lp-rs { display: block; width: 0; transform-style: preserve-3d; transform-origin: 0 50%; will-change: transform; }
+.lp-root .lp-rf { position: absolute; left: 0; top: 0; width: max-content; transform: translateX(-50%); transform-origin: 0 50%; }
+.lp-root .lp-rs > .lp-rf { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.lp-root .lp-rs > .lp-rb { transform: rotateY(180deg) translateX(-50%); }
+
 /* a layer swatch is always a dot on a piece of the globe's ocean */
 .lp-root .lp-chip { display: inline-grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); border: 1px solid rgba(238, 242, 247, .16); }
 .lp-root .lp-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
@@ -378,6 +393,9 @@
   .lp-root .lp-nav-link { display: none; }
   .lp-root .lp-hero { padding-bottom: 40px; }
   .lp-root .lp-hero .lp-ctas { margin-top: 26px; }
+  .lp-root .lp-ctas .lp-btn { width: 100%; }
+  /* The nav holds the brand and this button side by side. The rotor skips what will not fit. */
+  .lp-root .lp-nav .lp-btn[data-rotor] { width: min(12.5em, calc(100vw - 2 * var(--gutter) - 148px)); padding-inline: 8px; }
   .lp-root .lp-hero::after { width: 100%; height: 56%; background: linear-gradient(to top, rgba(5, 7, 13, .5) 62%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-close::after { background: radial-gradient(ellipse 90% 50% at 50% 42%, rgba(5, 7, 13, .5) 60%, rgba(5, 7, 13, 0) 100%); }
   .lp-root .lp-bridge { height: 48vh; }
