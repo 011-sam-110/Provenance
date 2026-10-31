@@ -289,7 +289,7 @@ obligations and are not satisfied by the licence.
   `gateMatcher()`; `tests/unit/gate.test.ts` fails if the two drift. It is **not** the `/admin`
   guard — that is the 404-in-production check described under discovery below.
 - `components/WorldMap.tsx` — the single MapLibre globe→2D instance; all layers are data-driven.
-  Hovering a Sources rail row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
+  Hovering a Sources panel row or section heading fades every other app mark through ONE MapLibre global-state key (`srcHover`, `lib/map/sourceHighlight.ts`); every map source is classed there as fading or never fading, and a test fails on an unclassed one.
   The lit marks also get a glow drawn under them (`srchl-*` layers, filtered by the same key, so they hold nothing at rest). A switched-off source previews while you point at it through `lib/shell/sourcePreview.ts`, which writes no store, layout or link and keeps its own 5-minute cache.
 - `components/shell/*` — thin console chrome (StatusBar, CommandPalette, BreakingBanner, panels).
 - **The Discord pop-up** (`components/shell/CommunityNote.tsx`, `app/community.css`, gate in
@@ -300,6 +300,17 @@ obligations and are not satisfied by the licence.
   answer it opens with no number, and the globe draws one dot per member
   (`lib/community/memberGlobe.ts`). `?discord=1` opens it for review and stays on for the tab
   (`?discord=0` ends that). Automation never gets it unasked (`navigator.webdriver`).
+- **The console's left edge is the shared sidebar** (`components/shell/ConsoleSidebar.tsx`, on
+  `components/rail/SideRail.tsx`, since 2026-10-31), and search is a pill on the map
+  (`components/console/MapSearch.tsx`). Its rows open ONE panel at a time beside it: Sources,
+  Inspector, Map settings, Areas, Notifications (`lib/console/consolePanel.ts`, a view over
+  the three older stores; drawn by `SourceCatalog.tsx`). Three widths, and only one moves the
+  map: the workspace always reserves 64px, the open column (232px, `--rail-w`) overlays what is
+  beside it while the map's plates slide clear, and a panel (`--tn-rail-w`, saved as
+  `tn.sources.railw`) pads the workspace, so the stage resizes. The Escape ladder is written
+  down at the top of `ConsoleSidebar.tsx`; `data-owns-escape` is how a field joins it. The
+  styles are `app/console-sidebar.css`. On a phone the column is a ☰ sheet and the panel is a
+  bottom sheet.
 - **The command palette reads a typed question into filters, with rules and no model.**
   `lib/shell/ask.ts` (pure, `parseAsk`) turns "fires in Spain last 24h" into a layer, a
   place, a time window and a precision rule, and gives back the words it did not

@@ -162,8 +162,8 @@ export interface BannerAnchors {
  * rail widths. They are unreachable from here: ConsoleWorkspace spreads them onto
  * `.tn-cw-shell`, and the banner is mounted by ConsoleShell as a SIBLING of that
  * element, so a `var(--tn-lw)` in its CSS resolves to nothing and takes the whole
- * `calc()` down with it. Nor would they be enough — the Sources rail is not a
- * widget rail at all; it insets the console with `padding-left: var(--tn-rail-w)`
+ * `calc()` down with it. Nor would they be enough — the panel beside the sidebar is not a
+ * widget rail at all; it insets the console through `padding-left`
  * on `.tn-cw-shell`, which is a third number in a third place. The stage's own
  * bounding box is the one value that already has all of them folded in, and it
  * cannot drift from the layout the way a second copy of the arithmetic would.

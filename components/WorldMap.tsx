@@ -2817,7 +2817,12 @@ export default function WorldMap({ openAt, onStyleReady, legend }: WorldMapProps
   // the full viewport), so dragging a side/bottom panel wall changes the map's box
   // WITHOUT a window resize — a ResizeObserver re-fits the globe on those drags.
   useEffect(() => {
-    const onResize = () => mapRef.current?.resize();
+    // redraw() AS WELL. resize() sets the canvas size, which clears it, and a ResizeObserver
+    // runs after layout and before the browser paints, so without a draw here the empty canvas
+    // is what gets painted. MapLibre's own observer also resizes and redraws, but at most once
+    // in 50 ms. That covers one change, such as a panel opening. A drag on the panel's edge
+    // changes the size on every frame, and the frames between its calls are drawn here.
+    const onResize = () => mapRef.current?.resize().redraw();
     window.addEventListener("resize", onResize);
     const el = containerRef.current;
     const ro = el ? new ResizeObserver(onResize) : null;

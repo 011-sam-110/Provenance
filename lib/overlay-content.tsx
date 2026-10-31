@@ -1,5 +1,5 @@
 "use client";
-// kind → detail-component registry for the Sources rail's Inspector tab.
+// kind → detail-component registry for the Inspector panel.
 //
 // <InspectorPanel> renders <OverlayBody object={openObject} />; this switch maps a
 // WorldObject.kind to its detail view:

@@ -1,0 +1,354 @@
+/*
+ * THE CONSOLE'S SIDEBAR AND WHAT MOVES WITH IT.
+ *
+ * components/shell/ConsoleSidebar.tsx is the column (the shared components/rail/SideRail.tsx),
+ * components/shell/SourceCatalog.tsx is the one panel beside it, and
+ * components/console/MapSearch.tsx is the search pill on the map. This file is loaded by the
+ * console's layout, after globals.css, so it wins a specificity tie against the rules it
+ * refines.
+ *
+ * THREE WIDTHS, AND ONLY ONE OF THEM MOVES THE MAP.
+ *   - The workspace reserves 64px on the left for the closed sidebar, always.
+ *   - The OPEN sidebar (232px, `--rail-w` on <html>) overlays what is beside it. Nothing
+ *     resizes, so a click on the ☰ costs the map no redraw. The panel, the seam and the map's
+ *     own plates slide right with it, by the same .18s, and only as far as they must.
+ *   - A PANEL (`--tn-rail-w`) pads the workspace, so the stage really gets narrower. WorldMap's
+ *     ResizeObserver then resizes the map and redraws it in the same frame.
+ *
+ * `--tn-cover` is how far the open sidebar reaches past the stage's left edge. The workspace's
+ * own gutters (three of `--tnx-gap`: its padding and the two gaps around the empty seam) and a
+ * left widget rail (`--tn-stage-gap`, written by ConsoleWorkspace) take the overlay first, so
+ * a plate 12px into the stage lands 12px past the sidebar. On a phone `--rail-w` is 0, so it is 0.
+ * The plates use `translate`, which never costs a layout. The panel uses `left`, because
+ * a transform would give position:fixed inside the dossier a new containing block.
+ */
+
+/* ── The two looks the plates over the map share ───────────────────────────── */
+.tn-terminal .tn-cw-shell {
+  --tn-plate-bg: rgba(14, 18, 22, 0.94);
+  --tn-plate-solid: rgba(14, 18, 22, 0.97);
+  --tn-plate-line: rgba(255, 255, 255, 0.12);
+  --tn-plate-text: #e8ecf0;
+  --tn-plate-dim: #a9b4bf;
+  --tn-plate-faint: #8e9aa6;
+  --tn-plate-hover: rgba(255, 255, 255, 0.07);
+  --tn-plate-ring: #e8ecf0;
+  --tn-plate-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  --tn-pop-bg: rgba(12, 15, 19, 0.96);
+  --tn-pop-line: rgba(255, 255, 255, 0.1);
+  --tn-pop-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --rail-z: 28;
+  --rail-sheet-z: 60;
+}
+:root:not([data-tnx-skin="dark"]) .tn-terminal .tn-cw-shell {
+  --tn-plate-bg: var(--tn-topbar-pill);
+  --tn-plate-solid: var(--tn-surface-solid);
+  --tn-plate-line: var(--tn-border-strong);
+  --tn-plate-text: var(--tn-text);
+  --tn-plate-dim: var(--tn-text-muted);
+  --tn-plate-faint: var(--tn-text-muted);
+  --tn-plate-hover: var(--tn-hover, rgba(15, 23, 42, 0.05));
+  --tn-plate-ring: var(--tn-accent);
+  --tn-plate-shadow: var(--tn-shadow-sm);
+  --tn-pop-bg: var(--tn-surface-solid);
+  --tn-pop-line: var(--tn-border-strong);
+  --tn-pop-shadow: var(--tn-shadow-sm);
+}
+
+/* ── The workspace ─────────────────────────────────────────────────────────── */
+.tn-sidebar { display: contents; }
+
+@media (min-width: 901px) {
+  /* Padding on the shell, not `left:`. The shell is `position: relative`, so `left` would
+     slide the whole element sideways and push its right edge out of the viewport instead of
+     reflowing the grid inside it. */
+  .tn-terminal .tn-cw-shell { padding-left: 64px; }
+  .tn-terminal .tn-cw-shell:has(> .tn-rail) { padding-left: calc(64px + var(--tn-rail-w)); }
+
+  .tn-terminal .tn-cw-shell > .tn-rail {
+    left: var(--rail-w, 64px);
+    border-radius: 0;
+    transition: left 0.18s ease;
+  }
+  .tn-terminal .tn-cw-shell > .tn-src-splitter {
+    left: calc(var(--rail-w, 64px) + var(--tn-rail-w));
+    transition: left 0.18s ease;
+  }
+  /* The head's line continues the sidebar's first rule, and its title sits level with the
+     ☰: 12px of padding + the 44px row + 4px of gap + the rule's 6px margin, then the line. */
+  .tn-terminal .tn-cw-shell > .tn-rail .tn-rail-header {
+    box-sizing: border-box; height: 67px; padding-top: 0; padding-bottom: 0;
+  }
+}
+
+/* ── The fresh-launch hint ─────────────────────────────────────────────────────
+   lib/console/sourcesRail.ts says when and why. Finite, because a control that never stops
+   moving reads as a fault. It hops toward the map, the way the panel opens. `translate`, so
+   it cannot cancel or be cancelled by a transform on the row. A person who asks for reduced
+   motion gets the part that does not move: the accent. */
+@keyframes tn-sidebar-hint {
+  0%        { translate: 0 0; }
+  7%        { translate: 10px 0; }
+  18%       { translate: 0 0; }
+  27%       { translate: 5px 0; }
+  38%, 100% { translate: 0 0; }
+}
+.tn-sidebar[data-hint] [data-rail-entry="sources"] {
+  --rail-icon: var(--tnx-accent);
+  color: var(--tnx-accent);
+  box-shadow: inset 0 0 0 1px var(--tnx-accent);
+  animation: tn-sidebar-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;
+}
+:root[data-tnx-skin="dark"] .tn-sidebar[data-hint] [data-rail-entry="sources"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tnx-accent) 50%, transparent);
+}
+/* The open column scrolls, and a scroller clips a row that hops. The word is there to read. */
+.tn-sidebar[data-hint] nav[data-expanded="true"] [data-rail-entry="sources"] { animation: none; }
+@media (max-width: 900px) {
+  /* The row is inside a closed sheet here, so the ☰ hops. The row keeps its ring, so the
+     sheet opens with the place to look already marked. */
+  .tn-sidebar[data-hint] [data-rail-entry="sources"] { animation: none; }
+  .tn-sidebar[data-hint] [data-rail-menu] {
+    color: var(--tnx-accent);
+    animation: tn-sidebar-hint 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.2s 3 both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-sidebar[data-hint] [data-rail-entry="sources"],
+  .tn-sidebar[data-hint] [data-rail-menu] { animation: none; }
+  .tn-terminal .tn-cw-shell > .tn-rail,
+  .tn-terminal .tn-cw-shell > .tn-src-splitter { transition: none; }
+}
+
+/* The dot on the Inspector row: an object is selected and its view is not showing. */
+.tn-sidebar-dot {
+  display: block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--tnx-accent);
+  box-shadow: 0 0 0 2px var(--rail-bg, transparent);
+}
+
+/* ── The Controls popover ──────────────────────────────────────────────────── */
+.tn-sidebar-controls {
+  position: absolute; bottom: 12px; left: calc(var(--rail-w, 64px) + 12px);
+  z-index: 29;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 88px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 14px 16px 12px;
+  color: var(--tn-plate-text);
+  background: var(--tn-pop-bg);
+  border: 1px solid var(--tn-pop-line);
+  border-radius: 12px;
+  box-shadow: var(--tn-pop-shadow);
+  font-family: var(--tn-sans);
+  transition: left 0.18s ease;
+}
+.tn-sidebar-controls-title { margin: 0 0 10px; font-size: 14px; font-weight: 700; line-height: 1.2; color: var(--tn-plate-text); }
+.tn-sidebar-controls-head { margin: 12px 0 4px; font-size: 12px; font-weight: 600; color: var(--tn-plate-faint); }
+.tn-sidebar-controls-title + section .tn-sidebar-controls-head { margin-top: 0; }
+.tn-sidebar-controls-list { margin: 0; }
+.tn-sidebar-controls-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 3px 0; font-size: 12.5px; line-height: 1.35;
+}
+.tn-sidebar-controls-row dt { color: var(--tn-plate-text); }
+.tn-sidebar-controls-row dd { margin: 0; color: var(--tn-plate-dim); text-align: right; }
+/* The gestures this screen can make. A laptop with a touch screen still gets the mouse. */
+@media (hover: hover) { .tn-sidebar-controls [data-group="touch"] { display: none; } }
+@media (hover: none) {
+  .tn-sidebar-controls [data-group="mouse"],
+  .tn-sidebar-controls [data-group="keys"] { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .tn-sidebar-controls { transition: none; } }
+
+/* ── The panel's head and its small parts ──────────────────────────────────── */
+.tn-terminal .tn-cw-shell > .tn-rail .tn-rail-header {
+  margin: 0; padding: 12px 12px 11px 16px;
+  border-bottom: 1px solid var(--tn-border-strong);
+}
+.tn-terminal .tn-cw-shell > .tn-rail .tn-insp-tool-title {
+  flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; border: 0;
+}
+.tn-terminal .tn-cw-shell > .tn-rail .tn-insp-tool-title:focus { outline: none; }
+.tn-terminal .tn-cw-shell > .tn-rail .tn-insp-tool-title:focus-visible {
+  outline: 2px solid var(--tn-accent); outline-offset: 2px; border-radius: 3px;
+}
+.tn-terminal .tn-cw-shell > .tn-rail .tn-rail-panes { min-height: 0; padding: 14px 12px 12px 16px; }
+.tn-terminal .tn-cw-shell > .tn-rail .tn-rail-collapse { margin-right: 0; }
+
+/* Why the map is not on screen, on the panels that act on it. */
+.tn-panel-note {
+  margin: 0 0 12px; padding: 8px 10px;
+  font-size: var(--tnx-fs-sm); line-height: 1.45; color: var(--tn-text);
+  background: var(--tn-surface-2); border-radius: 8px;
+}
+.tn-inspector-empty-lead {
+  margin: 0; font-size: var(--tnx-fs); font-weight: 600; line-height: 1.4; color: var(--tn-text);
+}
+.tn-terminal .tn-inspector-empty .tn-rail-foot { margin-left: 0; margin-right: 0; }
+
+/* ── The plates over the map ───────────────────────────────────────────────── */
+.tn-terminal .tn-cw-stage {
+  --tn-cover: max(0px, calc(var(--rail-w, 64px) - 64px - 3 * var(--tnx-gap) - var(--tn-stage-gap, 0px)));
+}
+.tn-terminal .tn-cw-stage [data-tn-hud] {
+  top: 68px; left: 12px;
+  max-width: calc(100% - 24px);
+}
+.tn-terminal .tn-cw-stage .tn-eye-return {
+  top: var(--tn-eye-return-top, 68px); left: var(--tn-eye-return-left, 12px);
+}
+.tn-terminal .tn-cw-stage [data-tn-hud],
+.tn-terminal .tn-cw-stage .tn-eye-return,
+.tn-terminal .tn-cw-stage .tn-pinnav,
+.tn-terminal .tn-cw-stage .tn-mapsearch {
+  translate: var(--tn-cover) 0;
+  transition: translate 0.18s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tn-terminal .tn-cw-stage [data-tn-hud],
+  .tn-terminal .tn-cw-stage .tn-eye-return,
+  .tn-terminal .tn-cw-stage .tn-pinnav,
+  .tn-terminal .tn-cw-stage .tn-mapsearch { transition: none; }
+}
+
+/* THE TOP OF THE STAGE IS SHARED, and the pill has its left end. The rest keeps out by size:
+   - WIDE (over 1100px): the chips of a typed question, a followed plane and the camera-pick
+     hint stay top centre, with room left for the pill on both sides so they stay centred.
+   - MIDDLE: they step down to the pill's underside.
+   - NARROW (700px or less): the legend steps down too, because the pill and the legend no
+     longer fit on one line, and the question's chips take the full width above it.
+   `--tn-markkey-top` is a measured value when something on the page writes one, and it wins. */
+.tn-terminal .tn-cw-stage .tn-markkey {
+  top: var(--tn-markkey-top, var(--tn-markkey-floor, 10px));
+}
+.tn-terminal .tn-cw-stage .tn-askbar { max-width: calc(100% - 848px); }
+@container tnstage (max-width: 1100px) {
+  .tn-terminal .tn-cw-stage .tn-askbar { top: 68px; max-width: calc(100% - 560px); }
+  .tn-terminal .tn-cw-stage .tn-track-chip,
+  .tn-terminal .tn-cw-stage .tn-arm-hint { top: 68px; }
+}
+@container tnstage (max-width: 700px) {
+  .tn-terminal .tn-cw-stage .tn-markkey { --tn-markkey-floor: 68px; }
+  .tn-terminal .tn-cw-stage .tn-askbar {
+    left: 12px; right: 12px; width: auto; max-width: none; transform: none;
+    flex-wrap: wrap;
+  }
+  .tn-terminal .tn-cw-stage:has(.tn-askbar) .tn-markkey { --tn-markkey-floor: 116px; }
+  /* The HUD takes the width under the pill, so the legend goes to the other end of the map. */
+  .tn-terminal .tn-cw-stage:has([data-tn-hud]) .tn-markkey { top: auto; bottom: 44px; }
+}
+
+/* ── The search pill ───────────────────────────────────────────────────────────
+   The root is the height of the stage and lets every touch through, so the list can use the
+   room there is and is never clipped by the stage's own edge. */
+.tn-terminal .tn-cw-stage .tn-mapsearch {
+  /* `right` gives back what `translate` takes, so the pill's end stays on the stage. */
+  position: absolute; top: 12px; bottom: 12px; left: 12px; right: calc(12px + var(--tn-cover));
+  z-index: 41;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  pointer-events: none;
+  font-family: var(--tn-sans);
+}
+.tn-mapsearch-bar {
+  pointer-events: auto;
+  flex: none;
+  box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px;
+  width: min(400px, 100%); height: 48px;
+  padding: 0 14px 0 20px;
+  color: var(--tn-plate-text);
+  background: var(--tn-plate-bg);
+  border: 1px solid var(--tn-plate-line);
+  border-radius: 24px;
+  box-shadow: var(--tn-plate-shadow);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.tn-mapsearch-bar:focus-within { border-color: var(--tn-plate-ring); }
+.tn-mapsearch-input {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; min-width: 0; height: 100%;
+  padding: 0; border: 0; outline: none; background: none;
+  color: var(--tn-plate-text);
+  font: inherit; font-size: 14px;
+  text-overflow: ellipsis;
+}
+.tn-mapsearch-input::placeholder { color: var(--tn-plate-faint); opacity: 1; }
+.tn-mapsearch-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.tn-mapsearch-icon { flex: none; display: block; width: 18px; height: 18px; color: var(--tn-plate-dim); }
+.tn-mapsearch-icon svg { display: block; width: 18px; height: 18px; }
+
+.tn-mapsearch-results {
+  pointer-events: auto;
+  box-sizing: border-box;
+  width: min(400px, 100%);
+  min-height: 0; max-height: min(100%, 360px);
+  overflow-y: auto;
+  padding: 6px;
+  color: var(--tn-plate-text);
+  background: var(--tn-plate-solid);
+  border: 1px solid var(--tn-plate-line);
+  border-radius: 16px;
+  box-shadow: var(--tn-pop-shadow);
+}
+.tn-mapsearch-item {
+  -webkit-appearance: none; appearance: none;
+  box-sizing: border-box;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 10px 14px;
+  border: 0; border-radius: 10px; background: none;
+  color: var(--tn-plate-text);
+  font: inherit; font-size: 13px; line-height: 1.3; text-align: left;
+  cursor: pointer;
+}
+.tn-mapsearch-item:disabled { cursor: default; color: var(--tn-plate-dim); }
+.tn-mapsearch-item:not(:disabled):hover { background: var(--tn-plate-hover); }
+.tn-mapsearch-item:focus-visible { outline: 2px solid var(--tn-plate-ring); outline-offset: -2px; }
+.tn-mapsearch-item-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tn-mapsearch-item-meta { flex: none; font-size: 11px; color: var(--tn-plate-faint); }
+.tn-mapsearch-status { padding: 10px 14px; font-size: 12.5px; line-height: 1.4; color: var(--tn-plate-dim); }
+
+/* ── The narrow pass: a phone ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* The ☰ strip starts under the header. ConsoleSidebar measures where that is. The ☰ stands
+     12px into the map card, past the workspace's gutter, level with the pill beside it. */
+  .tn-terminal nav[data-rail="console"] {
+    top: var(--tn-workspace-top, 56px);
+    padding-top: calc(var(--tnx-gap) + 12px + env(safe-area-inset-top, 0px));
+  }
+  .tn-terminal nav[data-rail="console"][data-expanded="false"] {
+    padding-left: calc(var(--tnx-gap) + 12px + env(safe-area-inset-left, 0px));
+  }
+
+  /* The panel is a bottom sheet. FIXED, because the workspace is the scroller here and the
+     ☰ can be reached from any scroll position: an absolute sheet would open out of sight. */
+  .tn-terminal .tn-cw-shell > .tn-rail {
+    position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: auto;
+    max-height: 66dvh;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tn-terminal .tn-cw-shell > .tn-rail .tn-rail-header { padding-left: 16px; }
+  .tn-terminal .tn-cw-shell > .tn-rail .tn-rail-collapse { width: 44px; height: 44px; margin: -8px -6px -8px 0; }
+  .tn-terminal .tn-inspector-close { min-height: 44px; min-width: 44px; }
+
+  .tn-sidebar-controls {
+    position: fixed; left: 10px; right: 10px; bottom: 12px; width: auto;
+    max-height: 60dvh;
+    z-index: 61;
+  }
+
+  /* Beside the ☰: its 12px inset, its 44px and an 8px gap. */
+  .tn-terminal .tn-cw-stage .tn-mapsearch { left: 64px; right: 10px; }
+  .tn-mapsearch-bar { height: 44px; padding-left: 16px; border-radius: 22px; }
+  /* iOS zooms the page when a focused input is under 16px. */
+  .tn-mapsearch-input { font-size: 16px; }
+  .tn-mapsearch-item { min-height: 44px; align-items: center; }
+}
+
+@media (forced-colors: active) {
+  .tn-mapsearch-bar, .tn-mapsearch-results, .tn-sidebar-controls { border: 1px solid CanvasText; }
+  .tn-sidebar-dot { background: Highlight; forced-color-adjust: none; }
+}

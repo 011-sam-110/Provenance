@@ -35,6 +35,13 @@ describe("clampSourcesRailWidth", () => {
     expect(clampSourcesRailWidth("wide" as unknown as number)).toBe(SOURCES_RAIL_DEFAULT);
   });
 
+  it("keeps a width saved under the old 372 floor's bounds as it was", () => {
+    // Every visitor has a saved value: hydrate() writes the default back on load. Lowering
+    // the floor must not move a width somebody chose.
+    expect(clampSourcesRailWidth(372)).toBe(372);
+    expect(clampSourcesRailWidth(452)).toBe(452);
+  });
+
   it("reads the infinities as directions, not as junk", () => {
     expect(clampSourcesRailWidth(Infinity)).toBe(SOURCES_RAIL_MAX);
     expect(clampSourcesRailWidth(-Infinity)).toBe(SOURCES_RAIL_MIN);
@@ -42,10 +49,10 @@ describe("clampSourcesRailWidth", () => {
 });
 
 describe("widthFromPointer", () => {
-  it("measures from the workspace's left edge, not the viewport's", () => {
-    // The rail is absolutely positioned inside `.tn-cw-shell`. If the shell starts
-    // at x=100 and the pointer is at x=500, the rail is 400 wide — not 500.
-    expect(widthFromPointer(500, 100)).toBe(400);
+  it("measures from the panel's left edge, not the viewport's", () => {
+    // The panel stands right of the sidebar. If its left edge is at x=64 and the pointer is
+    // at x=500, it is 436 wide — not 500.
+    expect(widthFromPointer(500, 64)).toBe(436);
     expect(widthFromPointer(500, 0)).toBe(500);
   });
 
@@ -69,18 +76,11 @@ describe("the chosen bounds", () => {
     // two-column layout barely — or, after any chrome change, not at all —
     // reachable. This is the assertion that fails if someone lowers the max.
     //
-    // THE TOOL COLUMN IS CHROME TOO (2026-09-16). `--tn-insp-rail-w` is 48px of the
-    // panel that no source row ever sees, so it comes off the top with the padding
-    // and the scrollbar — which is why the ceiling moved 640 → 680 rather than the
-    // guarantee being quietly dropped. Split in two here rather than folded into one
-    // number, because they are different things: one is the panel's own inset, the
-    // other is a column of buttons that belongs to the tool rail.
+    // THE TOOL COLUMN LEFT ON 2026-10-31, when its buttons became rows on the sidebar. So
+    // nothing but the panel's own inset comes off the top now, and 680 has room to spare.
     const CONTENT_INSET_PX = 40; // 12px padding either side, plus a scrollbar
-    const TOOL_RAIL_PX = 48; // --tn-insp-rail-w in the inspector tool-rail block
     const TWO_COLUMN_MIN_CONTENT_PX = 562;
-    expect(SOURCES_RAIL_MAX - CONTENT_INSET_PX - TOOL_RAIL_PX).toBeGreaterThanOrEqual(
-      TWO_COLUMN_MIN_CONTENT_PX,
-    );
+    expect(SOURCES_RAIL_MAX - CONTENT_INSET_PX).toBeGreaterThanOrEqual(TWO_COLUMN_MIN_CONTENT_PX);
   });
 
   it("defaults BELOW the two-column fold, which is the point of the change", () => {
@@ -88,22 +88,20 @@ describe("the chosen bounds", () => {
     // sized to one column. The old default sat just above/around the fold and drew
     // one column in a two-column pane, which is the waste this change removes.
     const CONTENT_INSET_PX = 40;
-    const TOOL_RAIL_PX = 48;
-    expect(SOURCES_RAIL_DEFAULT - CONTENT_INSET_PX - TOOL_RAIL_PX).toBeLessThan(562);
+    expect(SOURCES_RAIL_DEFAULT - CONTENT_INSET_PX).toBeLessThan(562);
   });
 
   it("keeps the catalogue's measured content floor at the narrow end", () => {
-    // The min is 372 because the ROWS need 300 — the label column has ~150px there,
-    // which is what clears "Borders & names" without ellipsis. The tool column and
-    // the padding sit on top of that, so a min that ignored them would squeeze the
-    // catalogue below the width it was measured at.
+    // The min is 324 because the ROWS need 300 — the label column has ~150px there,
+    // which is what clears "Borders & names" without ellipsis. The padding sits on top of
+    // that, so a min that ignored it would squeeze the catalogue below the width it was
+    // measured at. It is exactly that, with nothing to spare: the floor is not a guess.
     const CONTENT_INSET_PX = 24; // padding only: at the narrow end both columns fit
-    const TOOL_RAIL_PX = 48;
-    expect(SOURCES_RAIL_MIN - CONTENT_INSET_PX - TOOL_RAIL_PX).toBeGreaterThanOrEqual(300);
+    expect(SOURCES_RAIL_MIN - CONTENT_INSET_PX).toBe(300);
   });
 
   it("never lets a width outside the bounds through, whatever the source", () => {
-    for (const px of [-1, 0, 339, 340, 371, 372, 451, 452, 680, 681, 10_000]) {
+    for (const px of [-1, 0, 323, 324, 339, 340, 372, 451, 452, 680, 681, 10_000]) {
       const w = clampSourcesRailWidth(px);
       expect(w).toBeGreaterThanOrEqual(SOURCES_RAIL_MIN);
       expect(w).toBeLessThanOrEqual(SOURCES_RAIL_MAX);

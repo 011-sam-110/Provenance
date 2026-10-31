@@ -3,7 +3,7 @@
 // board is loaded, and the link that reproduces them.
 //
 // NO MAP VIEW CONTROLS HERE, deliberately. Basemap, 2D/3D, terrain and buildings live in
-// the Inspector rail's Map settings tool (components/shell/inspector/tools/SettingsTool.tsx),
+// the sidebar's Map settings panel (components/shell/inspector/tools/SettingsTool.tsx),
 // and that file argues the case against a second surface for one concept better than a
 // comment here could.
 //

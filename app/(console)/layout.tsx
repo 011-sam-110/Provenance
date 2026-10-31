@@ -5,6 +5,7 @@
 // the rules it is adding motion to — `@import` can only ever go at the top of
 // globals.css, i.e. the losing end.
 import "../console-motion.css";
+import "../console-sidebar.css";
 import ReactDOM from "react-dom";
 import { basemapWarmup, DEFAULT_BASEMAP } from "@/lib/basemaps";
 

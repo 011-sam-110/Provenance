@@ -43,8 +43,8 @@ export type Keymap = Record<KeyAction, string[]>;
  * the map" is how a rename becomes a lie in one of the two places.
  */
 export const KEY_ACTIONS: { id: KeyAction; label: string; hint: string }[] = [
-  { id: "search", label: "Search the map", hint: "Opens the rail's Search group, focused" },
-  { id: "sources", label: "Sources rail", hint: "Opens or closes the sources panel" },
+  { id: "search", label: "Search the map", hint: "Puts the cursor in the search box on the map" },
+  { id: "sources", label: "Sources panel", hint: "Opens or closes the Sources panel" },
   { id: "draw", label: "Draw an area", hint: "Arms the polygon tool on the map" },
 ];
 
@@ -76,8 +76,8 @@ export const FIXED_KEYS: {
   {
     keys: "Esc",
     chords: ["escape"],
-    short: "leave, then clear",
-    label: "Leaves camera-picking mode, then clears the selection",
+    short: "step back",
+    label: "Closes the open panel, leaves camera-picking mode, then clears the selection",
     where: "console",
   },
   // SPACED. Set adjacently, "←→" renders as one long arrow rather than as two keys —

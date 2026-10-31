@@ -21,7 +21,7 @@
 //
 // ESCAPE IS OURS, AND THE RAIL HAS TO KNOW. The rail's Escape handler is capture phase
 // on window, so it sees the key before this component does — hence `data-owns-escape`
-// on the root, which is the documented stand-down (see InspectorRail.tsx's ladder).
+// on the root, which is the documented stand-down (see ConsoleSidebar.tsx's ladder).
 // Without it, Escape with the picker open would close the whole panel behind it.
 
 import { useEffect, useRef } from "react";

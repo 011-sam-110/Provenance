@@ -148,7 +148,8 @@ test("phone: the toggle is in the header row at 44px, and the evidence shots are
   await toggle.click();
   expect(await skinAttr(page)).toBe("dark");
   // The Sources sheet open, so the shot shows the switches and dots as well as the header.
-  await page.locator(".tn-rail-fab").click();
+  await page.locator('nav[data-rail="console"] [data-rail-menu]').click();
+  await page.locator('nav[data-rail="console"] [data-rail-entry="sources"]').click();
   await expect(page.locator(".tn-rail")).toBeVisible();
   // Wait for the camera counts to land (no skeletons in the evidence), and park the pointer
   // on the header so no row's tooltip is open over the sheet.
