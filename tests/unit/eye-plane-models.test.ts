@@ -534,7 +534,7 @@ describe("the pool", () => {
 
   it("is filled by the pull, from what it held before the cap", () => {
     const src = code("lib/sources/opensky.ts");
-    expect(src).toContain("notePlanePool(merged.objects, snapshot.fetchedAt!)");
+    expect(src).toContain("notePlanePool(merged.objects, fetchedAt)");
   });
 
   it("is held in memory and writes no file: /privacy says nothing this site serves writes one", () => {
