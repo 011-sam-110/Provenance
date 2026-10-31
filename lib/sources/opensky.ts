@@ -49,7 +49,7 @@ import {
   type SignalCoverage,
 } from "@/lib/signals/coverage";
 import { fetchAdsbTypePull, pullToObjects, PULL_BUDGET_MS } from "@/lib/sources/adsb";
-import { noteAircraftSnapshot } from "@/lib/planes/trackStore";
+import { noteAircraftPull, type PullNote } from "@/lib/planes/trackStore";
 import {
   FAILOVER_CELLS,
   GAP_CELLS,
@@ -387,18 +387,27 @@ async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
   if (pull.mainlineSucceeded && pull.objects.length) {
     noteAdsbLolOk(Date.now());
     const merged = mergeGapFill(pull.objects, gap.objects);
+    const fetchedAt = Date.now();
+    // THE WHOLE POOL, BEFORE THE CAP. The served 3,000 are a sample that moves: on production
+    // about 5% of its rows changed each pull, and in 54 minutes 24% of the planes in it had
+    // fallen out at least once, for up to 26 minutes at the 90th percentile (2026-10-31). Fed
+    // from that sample, a stored line would have holes where a receiver could hear the plane.
+    // This pool has already lost what the layer never serves (military types are not asked
+    // for, and adsb.fi's military rows go in `adsbFiRowsToObjects`), and it costs no request.
+    const stored = noteAircraftPull(merged.objects, fetchedAt);
     const objects = pullToObjects({ ...pull, objects: merged.objects }, MAX_PLANES, {
       added: merged.added,
       cellsSucceeded: gap.cellsSucceeded,
       cellsPlanned: gap.cellsPlanned,
     });
-    const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.lol" };
-    // One line per revalidation so runtime logs show the pool, the served set and the
-    // cached entry's size against the Data Cache's 2 MB limit.
+    const snapshot: AircraftSnapshot = { ...toAircraftSnapshot(objects), fetchedAt, source: "adsb.lol" };
+    // One line per revalidation so runtime logs show the pool, the served set, the
+    // cached entry's size against the Data Cache's 2 MB limit, and the track store's size.
     console.info(
       `adsb.lol snapshot: serving ${objects.length} of ${merged.objects.length} aircraft ` +
         `from ${pull.batchesSucceeded}/${pull.batchesPlanned} requests, +${merged.added} from adsb.fi ` +
-        `(${gap.cellsSucceeded}/${gap.cellsPlanned} cells), ${JSON.stringify(snapshot).length} bytes`,
+        `(${gap.cellsSucceeded}/${gap.cellsPlanned} cells), ${JSON.stringify(snapshot).length} bytes` +
+        pullNoteText(stored),
     );
     return snapshot;
   }
@@ -424,12 +433,19 @@ async function fetchAircraftOnce(): Promise<AircraftSnapshot> {
   if (pool.length < MIN_FAILOVER_AIRCRAFT) {
     throw new Error(`${why}, and adsb.fi failover heard only ${pool.length} aircraft`);
   }
+  const fetchedAt = Date.now();
+  const stored = noteAircraftPull(pool, fetchedAt);
   const objects = sweepToObjects(sweep, MAX_PLANES);
   console.warn(
     `${why}; serving adsb.fi failover: ${objects.length} of ${pool.length} aircraft from ` +
-      `${sweep.cellsSucceeded}/${sweep.cellsPlanned} cells`,
+      `${sweep.cellsSucceeded}/${sweep.cellsPlanned} cells` +
+      pullNoteText(stored),
   );
-  return { ...toAircraftSnapshot(objects), fetchedAt: Date.now(), source: "adsb.fi" };
+  return { ...toAircraftSnapshot(objects), fetchedAt, source: "adsb.fi" };
+}
+
+function pullNoteText(note: PullNote | null): string {
+  return note ? `; track store ${note.planes} planes, ${note.points} points, ${note.ms} ms` : "";
 }
 
 /**
@@ -583,12 +599,7 @@ export async function fetchAircraftSnapshot(): Promise<AircraftSnapshot> {
     // too (or, with no cache, the one direct attempt failed). Nothing to serve.
     snapshot = { planes: [] };
   }
-  const gated = gateSnapshot(snapshot);
-  // Here and not inside `fetchAircraftOnce`: after the cap and the gate, so the track store
-  // holds only what the layer would serve, and outside the cached callback, whose source text
-  // is part of the cache key. It also picks up a snapshot the Data Cache kept across a restart.
-  noteAircraftSnapshot(gated);
-  return gated;
+  return gateSnapshot(snapshot);
 }
 
 /**

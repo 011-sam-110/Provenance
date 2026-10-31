@@ -10,7 +10,7 @@ const NO_STORE = { "Cache-Control": "no-store" };
  * GET /api/planes/track?id=plane:abc123: one plane's stored line, from when we first heard it,
  * for the Full flight trail setting (components/shell/inspector/tools/SettingsTool.tsx). The
  * line comes from memory, fed by the pull /api/planes already makes (lib/planes/trackStore.ts),
- * so this route asks no one for anything.
+ * with every plane that pull heard, so this route asks no one for anything.
  *
  * NOT since take-off. A line starts when our pull first heard the plane, and a restart or a
  * deploy starts them all again. Stretches we hold no position for are breaks: `breaks` lists

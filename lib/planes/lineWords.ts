@@ -15,8 +15,9 @@ function clock(t: number): string {
 export function lineWords(line: StoredLineState): string {
   if (line.status === "loading") return "Loading its line from when we first heard it.";
   if (line.status === "failed") return "Its stored line did not load. The line in this tab stays.";
-  const from = line.from ?? line.track.firstHeardAt;
-  if (from === null) return "We hold no line for it yet. Its line runs from when this tab first heard it.";
+  const heard = line.track.firstHeardAt;
+  if (heard === null) return "We hold no line for it yet. Its line runs from when this tab first heard it.";
+  const from = line.from ?? heard;
   const gaps = "Gaps are where we have no position for it.";
   return line.track.trimmed
     ? `Its line is the last 12 hours we heard, from ${clock(from)}. ${gaps}`

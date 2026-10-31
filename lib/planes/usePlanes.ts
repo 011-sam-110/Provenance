@@ -72,7 +72,7 @@ interface FullRun {
  * lib/planes/fullHistory.ts instead and a click can load the server's stored line. The 12-point
  * history below runs either way, so switching off puts back exactly the line it would have been.
  * A new line array is made only when something changed, because WorldMap's `setData` runs on
- * a change of array: the poll is every 12 s and the snapshot moves about every 90 s.
+ * a change of array: the poll is every 12 s and the snapshot moves about every 2 minutes.
  */
 export function usePlanes(opts: { unscoped?: boolean; fullTrail?: boolean } = {}): PlanesLayer {
   const [layer, setLayer] = useState<PlanesLayer>({ objects: [], trails: [], fetchedAt: null });

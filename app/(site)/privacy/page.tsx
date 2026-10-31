@@ -17,7 +17,7 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  *
  * WHAT CHANGED ON 2026-10-31:
  *   - Full flight trail: the server's plane pull now also feeds a memory store of where each
- *     plane has been (lib/planes/trackStore.ts), and app/api/planes/track serves one plane's
+ *     plane it heard has been (lib/planes/trackStore.ts), and app/api/planes/track serves one plane's
  *     line, read by id. The store holds aircraft positions and nothing about who asks, writes
  *     no file (the write check in discovery-admin-gate.test.ts still has its two files), and
  *     goes on a restart or a deploy. The route reads the id query and no header, and logs

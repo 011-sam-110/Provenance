@@ -1,10 +1,12 @@
 // The server's memory of where each plane has been, for the Full flight trail setting. Not
 // lib/planes/track.ts, which is the one plane the map is following.
 //
-// NO NEW REQUEST. `fetchAircraftSnapshot` (lib/sources/opensky.ts) hands this every snapshot
-// after the spatial cap and the staleness gate, so nothing reaches it that the planes layer
-// would not serve, and adsb.lol and adsb.fi are asked for nothing extra. A snapshot is taken
-// once, by its `fetchedAt`, however many requests read it.
+// NO NEW REQUEST. The pull (`fetchAircraftOnce` in lib/sources/opensky.ts) hands this every
+// plane it heard, about 10,000, BEFORE the spatial cap cuts them to the 3,000 the map serves. The
+// served sample moves from pull to pull, and a line fed from it would have holes where a receiver
+// could hear the plane. adsb.lol and adsb.fi are asked for nothing extra, and what the layer never
+// serves is gone by then: military types are not asked for, and adsb.fi's military rows are dropped
+// where they are read. Each pull is taken once, by its instant.
 //
 // MEMORY ONLY, ON PURPOSE. A restart or a deploy empties it and the lines build up again from
 // that moment. Nothing here writes a file, which /privacy states and
@@ -15,7 +17,10 @@
 // would be a different copy from the one /api/planes/track reads. Same reason as the
 // adsb.lol clock in opensky.ts.
 //
-// THE CAPS ARE HARD AND WERE MEASURED, by `scripts/track-store-memory.mts`. See TRACK_CAPS.
+// THE CAPS ARE HARD AND WERE MEASURED, by `scripts/track-store-memory.mts`, 2026-10-31. Twelve
+// hours of a simulated pull of 10,000 held 21,000 planes, 374,000 points and 23 MB. Filled to
+// TRACK_CAPS it holds 70 MB, on a box that had 1,133 MB free of 1,907 MB that day. One pull spends
+// about 12 ms here, 23 ms at worst, against the second or so the pull itself takes.
 
 import type { WorldObject } from "@/lib/world";
 import { heardAt, newLine, pointCount, stepLine, toStoredTrack, trimOlderThan, type TrackLine } from "@/lib/planes/trackLine";
@@ -25,7 +30,7 @@ export interface TrackCaps {
   maxPlanes: number;
   /** Points held at once, over all planes. Past it, the longest-silent go first. */
   maxPoints: number;
-  /** Points for one plane. Past it, that line's oldest go. 12 h of the 90 s pull is 480. */
+  /** Points for one plane. Past it, that line's oldest go. 12 h of a pull every 2 minutes is 360. */
   maxPointsPerPlane: number;
   /** A line keeps this far back, newest first. */
   maxAgeMs: number;
@@ -34,8 +39,8 @@ export interface TrackCaps {
 }
 
 export const TRACK_CAPS: TrackCaps = {
-  maxPlanes: 12_000,
-  maxPoints: 500_000,
+  maxPlanes: 40_000,
+  maxPoints: 1_500_000,
   maxPointsPerPlane: 500,
   maxAgeMs: 12 * 3_600_000,
   // Long enough for a North Atlantic crossing outside receiver range, which comes back as one
@@ -44,11 +49,12 @@ export const TRACK_CAPS: TrackCaps = {
 };
 
 /**
- * Half the 90 s pull, and the stale copy the same again, so a cached line is never older than
+ * Half the pull's 2 minutes (production's snapshots moved about every 120 s on 2026-10-31, with
+ * `revalidate` at 90), and the stale copy the same again, so a cached line is never older than
  * one pull (lib/http/cache.ts states the rule). The body holds absolute times only, so a cached
  * copy says nothing false, and the tab joins its own newer points on after it.
  */
-export const TRACK_TTL_MS = 45_000;
+export const TRACK_TTL_MS = 60_000;
 
 export interface TrackStore {
   lines: Map<string, TrackLine>;
@@ -142,15 +148,26 @@ export function trackBody(store: TrackStore, id: string): string {
   return body;
 }
 
+/** What one pull cost the store, for the pull's own log line. */
+export interface PullNote {
+  planes: number;
+  points: number;
+  ms: number;
+}
+
 /**
- * The feed: called with each snapshot the planes layer is about to serve. It can never cost the
- * layer an answer, so a failure here is logged and goes no further.
+ * The feed: called once with each pull's whole pool. It can never cost the layer an answer, so a
+ * failure here is logged and goes no further.
  */
-export function noteAircraftSnapshot(snapshot: { planes: readonly WorldObject[]; fetchedAt?: number }): void {
-  if (!snapshot.fetchedAt || snapshot.planes.length === 0) return;
+export function noteAircraftPull(planes: readonly WorldObject[], fetchedAt: number): PullNote | null {
+  if (planes.length === 0) return null;
   try {
-    ingestSnapshot(flightTracks(), snapshot.planes, snapshot.fetchedAt);
+    const started = performance.now();
+    const store = flightTracks();
+    if (!ingestSnapshot(store, planes, fetchedAt)) return null;
+    return { ...trackStats(store), ms: Math.round(performance.now() - started) };
   } catch (err) {
     console.warn(`plane track store failed: ${err instanceof Error ? err.message : String(err)}`);
+    return null;
   }
 }

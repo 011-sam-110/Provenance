@@ -19,11 +19,11 @@ import {
 import { projectAhead } from "@/lib/planes/trail";
 
 const T0 = 1_792_180_000_000;
-const PULL_MS = 90_000;
+const PULL_MS = 120_000;
 const MAX = 500;
 
-/** A cruise at 250 m/s (22.5 km a pull) along one heading, from a point, one row a pull. */
-function cruise(from: TrackPoint, headingDeg: number, pulls: number, kmPerPull = 22.5): TrackPoint[] {
+/** A cruise at 250 m/s (30 km a pull) along one heading, from a point, one row a pull. */
+function cruise(from: TrackPoint, headingDeg: number, pulls: number, kmPerPull = 30): TrackPoint[] {
   const out: TrackPoint[] = [];
   let at = from;
   for (let i = 0; i < pulls; i++) {
@@ -39,15 +39,15 @@ const start: TrackPoint = { lat: 51.47, lon: -0.45, altKm: 11, t: T0 };
 describe("thinning", () => {
   it("costs a straight cruise few points and keeps the end at the newest position", () => {
     const line = newLine(start);
-    const path = cruise(start, 75, 240); // 6 hours
+    const path = cruise(start, 75, 180); // 6 hours
     for (const p of path) stepLine(line, p, MAX);
     const last = pointAt(line, pointCount(line) - 1);
     expect(last.lat).toBeCloseTo(path[path.length - 1].lat, 6);
     expect(last.lon).toBeCloseTo(path[path.length - 1].lon, 6);
     expect(last.t).toBe(path[path.length - 1].t);
-    // A point every MAX_SEGMENT_KM at most: 5,400 km over 150 km straights, so about 36 + 2,
-    // against 241 positions heard.
-    expect(pointCount(line)).toBeLessThan(45);
+    // A point every MAX_SEGMENT_KM at most: 5,400 km over 300 km straights, so about 18 + 2,
+    // against 181 positions heard.
+    expect(pointCount(line)).toBeLessThan(26);
     expect(pointCount(line)).toBeGreaterThanOrEqual(5400 / MAX_SEGMENT_KM);
   });
 
@@ -55,7 +55,7 @@ describe("thinning", () => {
     const line = newLine(start);
     for (const p of cruise(start, 200, 120)) stepLine(line, p, MAX);
     for (let i = 1; i < pointCount(line) - 1; i++) {
-      expect(distanceKm(pointAt(line, i - 1), pointAt(line, i))).toBeLessThanOrEqual(MAX_SEGMENT_KM + 23);
+      expect(distanceKm(pointAt(line, i - 1), pointAt(line, i))).toBeLessThanOrEqual(MAX_SEGMENT_KM + 0.5);
     }
   });
 
@@ -86,7 +86,7 @@ describe("thinning", () => {
     let heading = 90;
     for (let i = 0; i < 60; i++) {
       heading += 1;
-      const p = projectAhead(at.lat, at.lon, heading, 22.5);
+      const p = projectAhead(at.lat, at.lon, heading, 30);
       at = { lat: p.lat, lon: p.lon, altKm: 11, t: at.t + PULL_MS };
       stepLine(line, at, MAX);
     }
@@ -232,7 +232,7 @@ describe("caps", () => {
     let heading = 0;
     for (let i = 0; i < 40; i++) {
       heading += 45;
-      const p = projectAhead(at.lat, at.lon, heading, 22.5);
+      const p = projectAhead(at.lat, at.lon, heading, 30);
       at = { lat: p.lat, lon: p.lon, altKm: 11, t: at.t + PULL_MS };
       stepLine(line, at, 10);
       expect(pointCount(line)).toBeLessThanOrEqual(10);

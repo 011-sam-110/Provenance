@@ -21,7 +21,7 @@ import type { PlaneTrail } from "@/lib/planes/usePlanes";
 import { SYNC_KEY_NAMES } from "@/lib/account/syncKeys";
 
 const T0 = 1_792_180_000_000;
-const PULL_MS = 90_000;
+const PULL_MS = 120_000;
 const ID = "plane:abc123";
 
 function plane(lat: number, lon: number, extra: Partial<WorldObject> = {}, id = ID): WorldObject {
@@ -418,7 +418,8 @@ describe("the words", () => {
   const all = [
     lineWords({ status: "loading" }),
     lineWords({ status: "failed" }),
-    lineWords({ status: "ready", track: stored({ firstHeardAt: null, lastHeardAt: null }), from: null }),
+    // `from` is set once the tab's own line was joined to it, an empty answer included.
+    lineWords({ status: "ready", track: stored({ firstHeardAt: null, lastHeardAt: null }), from: T0 }),
     lineWords({ status: "ready", track: stored({}), from: null }),
     lineWords({ status: "ready", track: stored({ trimmed: true }), from: T0 }),
   ];

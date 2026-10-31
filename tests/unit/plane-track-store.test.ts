@@ -8,7 +8,7 @@ import {
   createTrackStore,
   flightTracks,
   ingestSnapshot,
-  noteAircraftSnapshot,
+  noteAircraftPull,
   trackBody,
   trackStats,
   type TrackCaps,
@@ -17,7 +17,7 @@ import { pointCount, type StoredTrack } from "@/lib/planes/trackLine";
 import { GET } from "@/app/api/planes/track/route";
 
 const T0 = 1_792_180_000_000;
-const PULL_MS = 90_000;
+const PULL_MS = 120_000;
 
 function plane(id: string, lat: number, lon: number, extra: Partial<WorldObject> = {}): WorldObject {
   return { kind: "plane", id, lat, lon, altKm: 11, label: id, meta: {}, ...extra } as WorldObject;
@@ -111,16 +111,6 @@ describe("ingestSnapshot", () => {
 });
 
 describe("the feed", () => {
-  it("sits after the cap and the staleness gate, in the snapshot function", () => {
-    // A source guard, because the order is the point: `fetchAircraftOnce` holds the uncapped
-    // pool, and a too-old snapshot comes back from the gate with no rows.
-    const src = readFileSync("lib/sources/opensky.ts", "utf8");
-    const fn = src.slice(src.indexOf("export async function fetchAircraftSnapshot"));
-    expect(fn.indexOf("gateSnapshot(snapshot)")).toBeGreaterThan(-1);
-    expect(fn.indexOf("noteAircraftSnapshot(gated)")).toBeGreaterThan(fn.indexOf("gateSnapshot(snapshot)"));
-    expect(src.slice(0, src.indexOf("export async function fetchAircraftSnapshot"))).not.toMatch(/noteAircraftSnapshot\(/);
-  });
-
   it("makes no request of its own", () => {
     for (const f of ["lib/planes/trackStore.ts", "lib/planes/trackLine.ts", "app/api/planes/track/route.ts"]) {
       expect(readFileSync(f, "utf8")).not.toMatch(/\bfetch\(|laneFetch|adsb\.lol\/|adsb\.fi\//);
@@ -133,16 +123,27 @@ describe("the feed", () => {
     }
   });
 
-  it("ignores an empty or undated snapshot, and never throws into the layer", () => {
+  it("ignores an empty pull, and never throws into the layer", () => {
     const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const before = trackStats(flightTracks());
-    noteAircraftSnapshot({ planes: [] });
-    noteAircraftSnapshot({ planes: [plane("plane:aaaaa1", 0, 0)] });
+    expect(noteAircraftPull([], Date.now())).toBeNull();
     expect(trackStats(flightTracks())).toEqual(before);
     const hostile = [{ id: "plane:aaaaa1", get lat(): number { throw new Error("no"); } }] as unknown as WorldObject[];
-    expect(() => noteAircraftSnapshot({ planes: hostile, fetchedAt: Date.now() + 1e9 })).not.toThrow();
+    expect(noteAircraftPull(hostile, Date.now() + 1e9)).toBeNull();
     expect(spy).toHaveBeenCalledOnce();
     spy.mockRestore();
+    flightTracks().fedAt = 0;
+  });
+
+  it("says what a pull cost, for the pull's log line", () => {
+    const at = flightTracks().fedAt + 1_000_000;
+    const note = noteAircraftPull([plane("plane:abcdef", 3, 3)], at);
+    expect(note?.planes).toBeGreaterThanOrEqual(1);
+    expect(note?.points).toBeGreaterThanOrEqual(1);
+    expect(note?.ms).toBeGreaterThanOrEqual(0);
+    // A pull already taken costs nothing and says nothing.
+    expect(noteAircraftPull([plane("plane:abcdef", 3, 4)], at)).toBeNull();
+    flightTracks().lines.delete("plane:abcdef");
     flightTracks().fedAt = 0;
   });
 
