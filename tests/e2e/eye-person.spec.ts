@@ -688,12 +688,13 @@ test.describe("a phone, 390 px, with a finger", () => {
     const label = await box(page.locator("[data-eye-person-label]"));
     expect(label.x + label.width).toBeLessThanOrEqual(390);
     expect(label.x).toBeGreaterThanOrEqual(0);
-    // Back on its own place: a release there opens nothing.
+    // Back on its own place, and a finger that lifts at speed: a release there opens nothing.
     await t.move({ x: 380, y: c.y - 200 }, { x: c.x, y: c.y + 72 }, 4);
     await t.lift();
     await page.waitForTimeout(500);
     await expectAtHome(page);
 
+    // Chrome sends no click for the tap after a fast lift, so a tap must not wait for one.
     const before = await mapCentre(page);
     await page.touchscreen.tap(c.x, c.y);
     await page.waitForURL(/\/eye\?/, { timeout: 60_000 });

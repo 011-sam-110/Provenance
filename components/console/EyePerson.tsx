@@ -150,7 +150,8 @@ export default function EyePerson() {
   const press = useRef<Press | null>(null);
   const frame = useRef(0);
   const returning = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // A drag ends in a click on some browsers. A keyboard click has detail 0 and always counts.
+  // A press that has already done its job can still end in a click: a drag on some browsers, and
+  // a tap always (onPointerUp). A keyboard's click has detail 0 and always counts.
   const swallowClick = useRef(false);
   const shownOver = useRef<boolean | null>(null);
   const labelWidth = useRef(0);
@@ -227,6 +228,13 @@ export default function EyePerson() {
     window.location.assign(outcome.href);
   };
 
+  const openAtCentre = () => {
+    const map = getMapInstance();
+    if (!map || phase !== "idle") return;
+    setPhase("tapped");
+    window.location.assign(personHref(centreSpot(map), map.getZoom(), map.getBearing()));
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     swallowClick.current = false;
     if (phase !== "idle" || press.current || e.button !== 0 || !e.isPrimary) return;
@@ -256,8 +264,17 @@ export default function EyePerson() {
   const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const p = press.current;
     if (!p || e.pointerId !== p.id) return;
-    if (p.carrying) release(e.clientX, e.clientY);
-    else endPress(); // A tap: the click that follows opens the view.
+    if (p.carrying) {
+      release(e.clientX, e.clientY);
+      return;
+    }
+    // A tap opens here and not on the click that follows it, because that click may never come.
+    // After a finger lifts at speed, Chrome sends the next tap's pointer and touch events and
+    // no click, and it was still sending none 3 s later (measured on Chrome's touch input,
+    // 2026-10-31). So a fast flick to cancel would leave the person dead to the next tap.
+    endPress();
+    swallowClick.current = true;
+    openAtCentre();
   };
 
   // The browser took the pointer away (a system gesture, a lost capture). It was no drop.
@@ -268,15 +285,13 @@ export default function EyePerson() {
     else endPress();
   };
 
+  // Enter, Space and a screen reader's activation come here, with no pointer before them.
   const onClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (swallowClick.current && e.detail !== 0) {
       swallowClick.current = false;
       return;
     }
-    const map = getMapInstance();
-    if (!map || phase !== "idle") return;
-    setPhase("tapped");
-    window.location.assign(personHref(centreSpot(map), map.getZoom(), map.getBearing()));
+    openAtCentre();
   };
 
   // The layer has just mounted: put it under the pointer before it paints.
@@ -301,7 +316,9 @@ export default function EyePerson() {
   // The browser's Back button can bring this page back exactly as it was left, mid-drop.
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
-      if (e.persisted) setPhase("idle");
+      if (!e.persisted) return;
+      swallowClick.current = false;
+      setPhase("idle");
     };
     window.addEventListener("pageshow", onShow);
     return () => window.removeEventListener("pageshow", onShow);
