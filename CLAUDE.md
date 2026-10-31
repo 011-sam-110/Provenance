@@ -86,7 +86,11 @@ obligations and are not satisfied by the licence.
   and B, the 500 nearest the middle of the view, asked every minute and again once the
   view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);
   the console's Ships layer (`/api/signals/ais`) stays the 11 chokepoints, Class A only.
-  The HUD's vessel number counts every boat drawn inside the frame. Its link flags are
+  The HUD's vessel number counts every boat drawn inside the frame. Vessels are stylised 3D
+  models (`components/eye/vesselLayer.ts`, a MapLibre custom layer with three.js loaded lazily,
+  ten packed files in `public/models/vessels/`, a bare hull for an untyped boat), drawn at their
+  AIS length with a 28 px minimum; the chevrons are the fallback, and the licences are in
+  `docs/IMAGE-LICENSES.md`. Its link flags are
   listed at the top of `EyeApp.tsx` (`overlay=0`, `motion=orbit|fly`, `record=1`, `clock=manual`), and
   `node scripts/eye-record.mjs --base=http://localhost:3000` films one move frame by
   frame into a 9:16 MP4 for a reel (not in the gate: it needs a browser and a GPU).
