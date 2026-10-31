@@ -4,7 +4,11 @@ import {
   cadenceText,
   cameraCredits,
   NEAR_KM,
+  NEAR_MAX,
+  NEAR_REASK_KM,
+  camerasMoved,
   cameraLedgerRow,
+  cameraRow,
   cardMeta,
   clipsToPlay,
   fallbackMedia,
@@ -12,6 +16,7 @@ import {
   mediaLabel,
   nearCameras,
   preferredMedia,
+  roadAskOrder,
   type CardMedia,
   type NearCamera,
 } from "@/lib/eye/cameras";
@@ -163,5 +168,53 @@ describe("nearCameras", () => {
       1.4,
       NEAR_KM,
     ]);
+  });
+
+  it("asks for more than the densest 4 km circle the registry held (545 in Vancouver, 31 Oct 2026)", () => {
+    expect(NEAR_MAX).toBeGreaterThan(545);
+  });
+});
+
+describe("the tray's two camera rows", () => {
+  it("puts a stream and a recording in Live cams, and only a still in Static cams", () => {
+    expect(cameraRow({ live: true, clip: false })).toBe("livecams");
+    expect(cameraRow({ live: false, clip: true })).toBe("livecams");
+    expect(cameraRow({ live: true, clip: true })).toBe("livecams");
+    expect(cameraRow({ live: false, clip: false })).toBe("staticcams");
+    expect(cameraRow({ live: false })).toBe("staticcams");
+  });
+
+  it("only sorts: the card of a TfL recording still says Clip, never Live", () => {
+    const tfl = cam({ live: false, clip: true });
+    expect(cameraRow(tfl)).toBe("livecams");
+    expect(mediaLabel(preferredMedia(tfl))).toBe("Clip");
+  });
+});
+
+describe("asking for cameras again as the view moves", () => {
+  const westminster = { lat: 51.5013, lon: -0.1218 };
+
+  it("asks when nothing has been answered yet", () => {
+    expect(camerasMoved(null, westminster)).toBe(true);
+  });
+
+  it("keeps what it holds until the view has moved NEAR_REASK_KM", () => {
+    // One degree of latitude is about 111 km.
+    const north = (km: number) => ({ lat: westminster.lat + km / 111.19, lon: westminster.lon });
+    expect(camerasMoved(westminster, westminster)).toBe(false);
+    expect(camerasMoved(westminster, north(NEAR_REASK_KM - 0.1))).toBe(false);
+    expect(camerasMoved(westminster, north(NEAR_REASK_KM + 0.1))).toBe(true);
+  });
+
+  it("leaves the whole of a 2 km frame inside what it holds", () => {
+    expect(NEAR_REASK_KM + 2).toBeLessThanOrEqual(NEAR_KM);
+  });
+});
+
+describe("roadAskOrder", () => {
+  it("asks for the cameras on screen first, then the rest in their own order", () => {
+    const list = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }];
+    expect(roadAskOrder(list, new Set(["c", "d"])).map((c) => c.id)).toEqual(["c", "d", "a", "b"]);
+    expect(roadAskOrder(list, new Set()).map((c) => c.id)).toEqual(["a", "b", "c", "d"]);
   });
 });

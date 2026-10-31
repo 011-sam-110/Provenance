@@ -45,6 +45,11 @@
 // frame. The open card lives in `cards` like any card, so the clips, the ages and the
 // cleanup treat it alike. Switching clears every mark and places again: it does NOT
 // fetch the feeds again, because `previews` is read through a ref, not an effect input.
+//
+// PREVIEWS ON. Up to size.max cards stand first, and every other camera in the frame is
+// an icon too, opened the same way. A card needs its whole height clear inside the frame,
+// so a dense street could show 13 rings and no card (real data near King's Cross, 31 Oct
+// 2026). A film or a recording is a frame for a reel: cards only, as it always was.
 
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
@@ -64,7 +69,19 @@ import { countBySignal, signalTagPicks, type EyeKind, type EyeSourceRow, type Re
 import { haversineKm } from "@/lib/geo/haversine";
 import { PICK_RADIUS, marksAround, pickMarks, runsInside, type PickCandidate, type PickKind } from "@/lib/eye/pick";
 import type { EyeTarget } from "@/lib/eye/places";
-import { cameraCredits, cameraLedgerRow, clipsToPlay, nearCameras, type NearCamera, type PlayingCandidate } from "@/lib/eye/cameras";
+import {
+  NEAR_KM,
+  NEAR_MAX,
+  cameraCredits,
+  cameraLedgerRow,
+  cameraRow,
+  camerasMoved,
+  clipsToPlay,
+  nearCameras,
+  roadAskOrder,
+  type NearCamera,
+  type PlayingCandidate,
+} from "@/lib/eye/cameras";
 import {
   GAP,
   cardBox,
@@ -277,6 +294,8 @@ function renderedSignal(f: maplibregl.MapGeoJSONFeature): RenderedSignal {
 
 /** TfL's notices are not asked for while all three road rows are off. */
 const allRoadsHidden = (hid: ReadonlySet<EyeKind>) => hid.has("works") && hid.has("incidents") && hid.has("closures");
+/** No camera is asked for again while both camera rows are off. */
+const allCamsHidden = (hid: ReadonlySet<EyeKind>) => hid.has("livecams") && hid.has("staticcams");
 
 /** A chevron for the GPU symbol layers, drawn once per style on a canvas. */
 function chevron(fill: string): ImageData {
@@ -455,7 +474,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const still = !hid.has("staticcams");
     for (const id of [LYR.ring, LYR.dot]) {
       if (!map.getLayer(id)) continue;
-      map.setFilter(id, (live && still ? null : ["==", ["get", "live"], live]) as maplibregl.FilterSpecification | null);
+      map.setFilter(id, (live && still ? null : ["==", ["get", "row"], live ? "livecams" : "staticcams"]) as maplibregl.FilterSpecification | null);
       show(id, live || still);
     }
     // The Ships switch hides the vessels' models with their chevrons and one-minute lines.
@@ -486,9 +505,16 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     const s = state.current;
     const under = map.getLayer(BUILDING_LAYER) ? BUILDING_LAYER : undefined;
 
-    if (s.cams && !map.getSource(SRC.cams)) {
+    // A source's credit is fixed when it is added, so a view that moved into another
+    // operator's cameras puts the source back with the new credit (as the vessels do below).
+    if (s.cams) {
       const credit = cameraCredits(s.cams.filter((c) => c.available)).join(" · ");
-      map.addSource(SRC.cams, { type: "geojson", data: EMPTY, attribution: credit });
+      const had = map.getSource(SRC.cams) as { attribution?: string } | undefined;
+      if (had && (had.attribution ?? "") !== credit) {
+        for (const id of [LYR.ring, LYR.dot]) if (map.getLayer(id)) map.removeLayer(id);
+        map.removeSource(SRC.cams);
+      }
+      if (!map.getSource(SRC.cams)) map.addSource(SRC.cams, { type: "geojson", data: EMPTY, attribution: credit });
     }
     if (map.getSource(SRC.cams)) {
       if (!map.getLayer(LYR.ring)) {
@@ -521,7 +547,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       }
       (map.getSource(SRC.cams) as maplibregl.GeoJSONSource).setData({
         type: "FeatureCollection",
-        features: (s.cams ?? []).filter((c) => c.available).map((c) => point(c.id, c.lon, c.lat, { live: c.live })),
+        features: (s.cams ?? []).filter((c) => c.available).map((c) => point(c.id, c.lon, c.lat, { row: cameraRow(c) })),
       });
     }
 
@@ -884,7 +910,8 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     let signalCounts = new Map<string, number>();
     const london = inLondon(target.view.lat, target.view.lon);
     // Which marks the Sources tray lets this view show.
-    const camShown = (c: Pick<NearCamera, "live">) => (c.live ? !hiddenRef.current.has("livecams") : !hiddenRef.current.has("staticcams"));
+    const camShown = (c: Pick<NearCamera, "live" | "clip">) => !hiddenRef.current.has(cameraRow(c));
+    let pinnedName: string | undefined;
     const noticeShown = (d: StreetDisruption) => noticeRows(d).some((r) => !hiddenRef.current.has(r));
 
     const report = () => {
@@ -916,12 +943,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       if (s.cams) {
         counts.livecams = 0;
         counts.staticcams = 0;
-        for (const c of s.cams) if (c.available) counts[c.live ? "livecams" : "staticcams"] += 1;
+        for (const c of s.cams) if (c.available) counts[cameraRow(c)] += 1;
       }
       if (s.ships) counts.ais = s.ships.length;
       if (s.planes) counts.planes = s.planes.length;
       for (const d of s.streets ?? []) for (const r of new Set(noticeRows(d))) counts[`road-${r}`] = (counts[`road-${r}`] ?? 0) + 1;
-      const cameraName = pinned ? s.cams?.find((c) => c.id === pinned)?.name : undefined;
+      // Kept once known: the view can move away, and the title stays the camera the link named.
+      const pinnedCam = pinned ? s.cams?.find((c) => c.id === pinned) : undefined;
+      if (pinnedCam) pinnedName = pinnedCam.name;
+      const cameraName = pinnedName;
       const phoneNote = speedPhoneNote(london, roadTimes);
       const key = JSON.stringify([rows, ready, cameraName, s.refreshedAt, counts]);
       if (key === lastRowsKey) return;
@@ -929,7 +959,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       reportRef.current({ rows, ready, cameraName, refreshedAt: s.refreshedAt, phoneNote, counts });
     };
 
-    // --- previews off: icons, and one open card ---------------------------------------
+    // --- icons, and one open card -------------------------------------------------------
     const iconSize = portrait ? ICON_PHONE : ICON_WIDE;
 
     /** Take the open card's marker off the map and forget it. Does not place again. */
@@ -954,21 +984,15 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     };
 
     /**
-     * Previews off. The pinned camera opens once; the open card stands first (above its
-     * camera, or below near the top of the frame) and keeps its room; the other cameras
-     * get icons through placeCards. Returns what the ledger counts: the icons and the card.
+     * The open card stands first (above its camera, or below near the top of the frame) and
+     * keeps its room.
      */
-    const placeOff = (
+    const placeOpen = (
       cams: NearCamera[],
       camCands: { id: string; x: number; y: number }[],
-      centre: { x: number; y: number },
       frame: Frame,
       taken: Box[],
-    ): number => {
-      if (pinned && !s.pinnedOpened && cams.some((c) => c.id === pinned)) {
-        s.pinnedOpened = true;
-        s.open = pinned;
-      }
+    ) => {
       if (s.open) {
         const id = s.open;
         const cand = camCands.find((c) => c.id === id);
@@ -1006,8 +1030,16 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
           taken.push(side === "below" ? cardBoxBelow(cand.x, cand.y, size) : cardBox(cand.x, cand.y, size));
         }
       }
+    };
 
-      const rest = camCands.filter((c) => c.id !== s.open);
+    /** Icons for `rest`, through placeCards. Returns how many stand. */
+    const placeIcons = (
+      cams: NearCamera[],
+      rest: { id: string; x: number; y: number }[],
+      centre: { x: number; y: number },
+      frame: Frame,
+      taken: Box[],
+    ): number => {
       const placedIcons = placeCards(placementOrder(rest, centre, new Set(s.icons.keys()), null), iconSize, frame, iconSize.max, taken);
       const keepIcons = new Set(placedIcons.map((p) => p.id));
       for (const [id, entry] of s.icons) {
@@ -1022,7 +1054,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const marker = new maplibregl.Marker({ element: icon.el, anchor: "bottom" }).setLngLat([cam.lon, cam.lat]).addTo(map);
         s.icons.set(p.id, { icon, marker });
       }
-      return placedIcons.length + (s.open ? 1 : 0);
+      return placedIcons.length;
     };
 
     const place = () => {
@@ -1046,18 +1078,25 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         const p = map.project([c.lon, c.lat]);
         return { id: c.id, x: p.x, y: p.y };
       });
-      // Previews off: icons, and the one open card, take their room first. The cards below
-      // are then given no candidates, and the open card is kept.
+      // The one open card takes its room first. Previews off, the link's own camera opens
+      // once and the cards below are given no candidates; a film or a recording has no icons.
       const on = previewsRef.current;
-      const offShown = on ? 0 : placeOff(cams, camCands, centre, frame, taken);
+      const cardsOnly = on && (record || clock.film);
+      if (!on && pinned && !s.pinnedOpened && cams.some((c) => c.id === pinned)) {
+        s.pinnedOpened = true;
+        s.open = pinned;
+      }
+      if (!cardsOnly) placeOpen(cams, camCands, frame, taken);
+      const free = camCands.filter((c) => c.id !== s.open);
       const placed = placeCards(
-        placementOrder(on ? camCands : [], centre, new Set(s.cards.keys()), pinned),
+        placementOrder(on ? free : [], centre, new Set(s.cards.keys()), pinned),
         size,
         frame,
         size.max,
         taken,
       );
       const keepCards = new Set(placed.map((p) => p.id));
+      const iconsShown = placeIcons(cams, cardsOnly ? [] : free.filter((c) => !keepCards.has(c.id)), centre, frame, taken);
       if (s.open) keepCards.add(s.open);
       for (const [id, entry] of s.cards) {
         if (keepCards.has(id)) continue;
@@ -1130,7 +1169,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       const keepTags = new Set(tagPlaced.map((t) => t.id));
       const tagged = (kind: Item["kind"]) => tagPlaced.filter((t) => byId.get(t.id)?.kind === kind);
       labelled = {
-        cams: placed.length + offShown,
+        cams: placed.length + iconsShown + (s.open ? 1 : 0),
         // The ships projected for the tags above, those whose spot is inside the frame.
         shipsInView: ships.filter((v) => {
           const at = byId.get(v.id);
@@ -1218,7 +1257,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     };
     /** An icon was tapped: its card opens on its spot, and any other open card closes. */
     const openCam = (id: string) => {
-      if (disposed || previewsRef.current || s.open === id) return;
+      if (disposed || s.open === id) return;
       dropOpen();
       const icon = s.icons.get(id);
       if (icon) {
@@ -1259,12 +1298,17 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // Ships switched back on in the Sources tray: the view may have moved while they were
     // off (no feed is asked for then), so ask again if it left the box held.
     let shipsWereHidden = hiddenRef.current.has("ships");
+    let camsWereHidden = allCamsHidden(hiddenRef.current);
     const placeNow = () => {
       lastPlace = performance.now();
       place();
       const shipsHidden = hiddenRef.current.has("ships");
       if (shipsWereHidden && !shipsHidden) reloadShipsIfMoved();
       shipsWereHidden = shipsHidden;
+      // The same for the cameras: both rows off, nothing is asked for.
+      const camsHidden = allCamsHidden(hiddenRef.current);
+      if (camsWereHidden && !camsHidden) reloadCamsIfMoved();
+      camsWereHidden = camsHidden;
     };
     if (placeRef) placeRef.current = placeNow;
     placeNowRef.current = placeNow;
@@ -1277,6 +1321,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
         // After placement, so the tags already shown keep their places; the answer
         // lands through landed() like every other feed.
         reloadShipsIfMoved();
+        reloadCamsIfMoved();
       }, 300);
     };
     const onMove = () => {
@@ -1524,7 +1569,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
     // What the road operators say about each camera's road. Asked once the cameras are
     // known, then with the other feeds; a failed ask keeps the last answer.
     const loadRoads = () => {
-      const cams = s.cams ?? [];
+      const cams = roadAskOrder(s.cams ?? [], new Set(s.cards.keys()));
       if (cams.length === 0) return;
       const qs = cams.slice(0, CAMERA_ROAD_MAX).map((c) => `c=${encodeURIComponent(cameraRoadParam(c))}`).join("&");
       void getJson(`/api/camera-road?${qs}`).then((d: { roads?: Record<string, CameraRoad> } | null) => {
@@ -1538,12 +1583,45 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       });
     };
 
-    void getJson(`/api/near?lat=${lat}&lon=${lon}&n=25`).then((d: { cameras?: NearCamera[] } | null) => {
-      if (disposed) return;
-      s.cams = nearCameras(d?.cameras ?? []);
-      landed();
-      loadRoads();
-    });
+    // The cameras around where the view opened, asked again when the view settles far
+    // from where it last asked (lib/eye/cameras.ts, camerasMoved).
+    let camsAt: { lat: number; lon: number } | null = null;
+    let camSeq = 0;
+    let camLoadAt = -Infinity;
+    let camTrail: ReturnType<typeof setTimeout> | null = null;
+    const loadCams = (at: { lat: number; lon: number }) => {
+      const seq = ++camSeq;
+      camLoadAt = performance.now();
+      void getJson(`/api/near?lat=${at.lat}&lon=${at.lon}&n=${NEAR_MAX}&km=${NEAR_KM}`).then((d: { cameras?: NearCamera[] } | null) => {
+        // An older answer never replaces a newer one, and none lands after the view is gone.
+        if (disposed || seq !== camSeq) return;
+        if (d?.cameras) camsAt = at;
+        // Not answering: what is drawn stays, and the next settled move asks again.
+        if (d?.cameras || s.cams == null) s.cams = nearCameras(d?.cameras ?? []);
+        landed();
+        loadRoads();
+      });
+    };
+    /** The view settled: ask again if it moved far enough, at most once every MOVE_RELOAD_GAP_MS. */
+    const reloadCamsIfMoved = () => {
+      // A film keeps what it opened with, and a hidden kind's feed is not asked for.
+      if (disposed || clock.film || allCamsHidden(hiddenRef.current)) return;
+      const centreNow = () => {
+        const c = map.getCenter();
+        return { lat: c.lat, lon: c.lng };
+      };
+      if (!camerasMoved(camsAt, centreNow())) return;
+      const wait = MOVE_RELOAD_GAP_MS - (performance.now() - camLoadAt);
+      if (wait <= 0) {
+        loadCams(centreNow());
+      } else if (!camTrail) {
+        camTrail = setTimeout(() => {
+          camTrail = null;
+          if (!disposed && !allCamsHidden(hiddenRef.current) && camerasMoved(camsAt, centreNow())) loadCams(centreNow());
+        }, wait);
+      }
+    };
+    loadCams({ lat, lon });
 
     // The vessels around what is on screen, asked again when the view settles outside
     // the box held (lib/eye/vessels.ts). The planes and streets keep the opening region.
@@ -1705,6 +1783,7 @@ export default function EyeOverlay({ map, styleEpoch, target, portrait, record, 
       }
       if (settle) clearTimeout(settle);
       if (shipTrail) clearTimeout(shipTrail);
+      if (camTrail) clearTimeout(camTrail);
       if (ticker) clearInterval(ticker);
       leaveFilm?.();
       for (const t of timers) clearInterval(t);

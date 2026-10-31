@@ -81,7 +81,15 @@ obligations and are not satisfied by the licence.
   style preferences. A still is never called live: `mediaLabel` says "Live" only while a
   stream plays, and a still or a clip says its operator's own age. And there is no road
   speed in it, because no open feed for London publishes one: the ledger says so, and
-  nothing draws an invented flow (`lib/eye/streets.ts`). Its vessels come from
+  nothing draws an invented flow (`lib/eye/streets.ts`). Its cameras come from `/api/near`
+  with `km=4`: all of them within 4 km of where it asked (up to `NEAR_MAX`, the densest
+  circle measured 545), asked again when the view settles 2 km away (`camerasMoved`). The
+  frame stands at most 5 cards (3 on a phone), every other camera in it is an icon that opens
+  its card (16, 10 on a phone), and past that a ring; a film or a recording has cards only. The
+  tray's Live cams row holds every camera with moving pictures, a stream or a recording such
+  as TfL's clips, and Static cams only the stills (`cameraRow`, Sam's call on 2026-10-31).
+  That row only sorts: the card still says "Clip". The console's own Live cams row still
+  means a stream that played. Its vessels come from
   `/api/eye/vessels?bbox=`, not from the console's Ships layer: the whole world, Class A
   and B, the 500 nearest the middle of the view, asked every minute and again once the
   view settles outside the box it holds (`lib/eye/vessels.ts`, `lib/eye/vesselFeed.ts`);

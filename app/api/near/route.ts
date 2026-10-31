@@ -2,6 +2,7 @@ import { getRegistry, nearestTo } from "@/lib/sources/registry";
 import { isLiveCamera, liveGate } from "@/lib/liveness/playcheck";
 import { ensurePlayCheck } from "@/lib/liveness/playcheck.server";
 import { clipUrl } from "@/lib/proxy/clip";
+import { NEAR_MAX } from "@/lib/eye/cameras";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +22,13 @@ export async function GET(req: Request) {
   ) {
     return Response.json({ error: "valid lat and lon query params are required" }, { status: 400 });
   }
-  const n = Math.min(Math.max(Number(url.searchParams.get("n")) || 8, 1), 25);
+  const n = Math.min(Math.max(Number(url.searchParams.get("n")) || 8, 1), NEAR_MAX);
+  // Optional: stop at this distance, so a place with no camera nearby gets none, not `n` far ones.
+  const reach = Number(url.searchParams.get("km"));
 
   try {
-    const near = await nearestTo(lat, lon, n);
+    const nearest = await nearestTo(lat, lon, n);
+    const near = reach > 0 ? nearest.filter(({ km }) => km <= reach) : nearest;
     ensurePlayCheck(getRegistry);
     const live = liveGate();
     const cameras = near.map(({ camera, km }) => ({
