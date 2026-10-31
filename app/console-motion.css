@@ -395,3 +395,110 @@
 .tn-terminal ::-webkit-scrollbar-thumb {
   transition: background-color var(--tn-mo-base) var(--tn-mo-ease-io);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   7 · THE SOURCES PANE SLIDES — in from the left edge, out over the map
+   ═══════════════════════════════════════════════════════════════════════════
+   Leon, 2026-10-30: "Sources pane should have a slide out and slide in
+   animation". The pane used to be swapped for its tab in a single frame.
+
+   What the motion says: the pane comes FROM the edge its tab lives on and goes
+   BACK to it, so the tab and the pane read as one thing opening and closing.
+   Opening is the slower, arriving move (the console's "slow", 300 ms, its
+   ease-out); closing is the quicker, leaving one (its "base", 200 ms,
+   ease-in-out).
+
+   THE MAP IS NOT ANIMATED, AND THAT IS THE POINT. Only the pane's `transform`
+   moves, which never changes any box, so MapLibre's ResizeObserver fires ONCE
+   per open or close: at the click, when the shell's padding changes (see the
+   `:has(> .tn-rail:not([data-leaving]))` selectors in globals.css, which treat
+   a leaving pane as closed). Sliding the map's width instead would resize the
+   WebGL canvas on every frame of the slide.
+
+   One multiplier, no second rule set. `--tn-mo-travel` is 1 normally, so the pane
+   travels a full width and stays opaque; under prefers-reduced-motion it is 0, so
+   nothing travels and the pane fades from transparent instead, at --tn-mo 0.55
+   (about 165 ms in and 110 ms out). A transition, not a keyframe, so a pane
+   reopened half way through its leave turns round from where it is.
+
+   `@starting-style` gives the entry (Chrome 117+, Safari 17.5+, Firefox 129+). A
+   browser without it opens the pane without the slide; closing still slides.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.tn-terminal .tn-cw-shell > .tn-rail {
+  --tn-pane-from: translateX(calc(-100% * var(--tn-mo-travel)));
+  transition:
+    transform var(--tn-mo-slow) var(--tn-mo-ease),
+    opacity var(--tn-mo-slow) var(--tn-mo-ease);
+}
+@starting-style {
+  .tn-terminal .tn-cw-shell > .tn-rail {
+    transform: var(--tn-pane-from);
+    opacity: var(--tn-mo-travel);
+  }
+}
+.tn-terminal .tn-cw-shell > .tn-rail[data-leaving] {
+  transform: var(--tn-pane-from);
+  opacity: var(--tn-mo-travel);
+  transition-duration: var(--tn-mo-base);
+  transition-timing-function: var(--tn-mo-ease-io);
+  pointer-events: none;
+}
+
+/* A phone: the pane is a bottom sheet, so it travels up and down. The slide up keeps
+   the 260 ms and the curve it has today (the old shell's `tn-sheet-up` keyframes, which
+   this turns off so the two do not fight over `transform`). */
+@media (max-width: 900px) {
+  .tn-terminal .tn-cw-shell > .tn-rail {
+    --tn-pane-from: translateY(calc(100% * var(--tn-mo-travel)));
+    animation: none;
+    transition-duration: calc(260ms * var(--tn-mo));
+    transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  .tn-terminal .tn-cw-shell > .tn-rail[data-leaving] {
+    transition-duration: var(--tn-mo-base);
+    transition-timing-function: var(--tn-mo-ease-io);
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   8 · THE COLLAPSE ARROW SHOWS WHAT IT DOES — one nudge toward the edge, and back
+   ═══════════════════════════════════════════════════════════════════════════
+   Leon, 2026-10-30: the close tile at the top of the Sources pane's tool strip is an
+   arrow, and "shows an arrow moving left and back when hovered to demo that's what
+   it'll do". So on hover or keyboard focus the arrow travels a few pixels the way the
+   pane will go (left on a desktop, down on a phone, where the sheet slides down) and
+   comes back.
+
+   ONCE PER HOVER, NOT A LOOP. This file bans endless animation, and a mark that never
+   stops moving stops reading as a demonstration. A CSS animation starts when the
+   selector starts matching and runs its one iteration; it plays again only after the
+   pointer has left and come back.
+
+   NOTHING AROUND IT MOVES. Only the SVG's `translate` changes, which is paint-only: the
+   tile, the tabs and the tools keep their boxes. The 4px of travel stays inside the 42px
+   tile (54px on a phone).
+
+   One multiplier, as everywhere here: `--tn-mo-travel` is 0 under reduced motion, so
+   the arrow does not travel at all there.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes tn-mo-nudge {
+  0%, 100% { translate: 0 0; }
+  40% {
+    translate: calc(var(--tn-nudge-x) * var(--tn-mo-travel)) calc(var(--tn-nudge-y) * var(--tn-mo-travel));
+  }
+}
+.tn-terminal .tn-rail-close-cell .tn-rail-collapse:is(:hover, :focus-visible) svg {
+  --tn-nudge-x: -4px;
+  --tn-nudge-y: 0px;
+  animation: tn-mo-nudge calc(450ms * var(--tn-mo)) var(--tn-mo-ease-io) 1;
+}
+@media (max-width: 900px) {
+  .tn-terminal .tn-rail-close-cell .tn-rail-collapse:is(:hover, :focus-visible) svg {
+    --tn-nudge-x: 0px;
+    --tn-nudge-y: 4px;
+  }
+}

@@ -65,8 +65,19 @@ test("desktop: the strip, its breakdown and the operator list", async ({ page })
     timeout: 120_000,
   });
   await expect(strip).toHaveAttribute("aria-expanded", "false");
-  for (const label of ["Video", "Stills", "Countries", "Operators", "Counted", "Webcams"]) {
+  for (const label of ["Countries", "Operators", "Counted", "Webcams"]) {
     await expect(strip.locator(".cs-desk .cs-lab", { hasText: label })).toBeVisible();
+  }
+  // VIDEO and STILLS are a mark and a number on one line (2026-10-30): the word is out of
+  // the bar, and still in the tip and in the strip's spoken name, both checked below.
+  for (const k of ["video", "stills"]) {
+    const seg = strip.locator(`[data-k="${k}"]`);
+    const glyph = seg.locator(`[data-glyph="${k}"]`);
+    await expect(glyph).toBeVisible();
+    await expect(seg.locator(".cs-word")).toBeHidden();
+    const g = (await glyph.boundingBox())!;
+    const n = (await seg.locator(".cs-num").boundingBox())!;
+    expect(Math.abs(g.y + g.height / 2 - (n.y + n.height / 2))).toBeLessThanOrEqual(1);
   }
   expect((await strip.textContent()) ?? "").not.toMatch(LIVE);
   expect((await strip.getAttribute("aria-label")) ?? "").not.toMatch(LIVE);

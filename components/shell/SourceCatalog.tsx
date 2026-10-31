@@ -77,6 +77,7 @@ import { WIDGET_LIMIT_MESSAGE } from "@/lib/console/types";
 import { buildSourceSections, type SourceRowModel } from "@/lib/console/sources/sections";
 import { RAIL_SOURCES } from "@/lib/console/sources/railSources";
 import { shouldHintRail, sourcesRailStore, useSourcesRail } from "@/lib/console/sourcesRail";
+import { RAIL_LEAVE_FALLBACK_MS, railPhase } from "@/lib/console/railPresence";
 import { formatChord, isMac, useKeymap } from "@/lib/shell/keymap";
 import SourceSection from "@/components/shell/sources/SourceSection";
 import SourceRow from "@/components/shell/sources/SourceRow";
@@ -132,32 +133,39 @@ function CameraFilters() {
 }
 
 /**
- * The rail's close mark.
+ * The rail's close mark: an arrow that points where the pane goes.
  *
- * INLINE SVG, and drawn here rather than imported. components/console/RailGlyph.tsx
- * is this repo's precedent for chrome-only art as real JSX, and its reasoning
- * applies unchanged: lib/icons/svg.ts is the registry for marks that name a feature
- * ON THE MAP and is rasterised into a MapLibre sprite, which an ✕ on a panel header
- * has no business being in.
+ * Leon, 2026-10-30, replacing the ✕: "a left pointing arrow (collapsable symbol) that
+ * shows an arrow moving left and back when hovered to demo that's what it'll do". On a
+ * desktop the pane slides out to the LEFT, so the arrow points left. On a phone the
+ * pane is a bottom sheet that slides DOWN, so there the same arrow, drawn turned, points
+ * down. Both are in the markup and CSS shows one (`.tn-collapse-left`,
+ * `.tn-collapse-down`, switched at the sheet's 900px breakpoint in globals.css), so the
+ * mark cannot disagree with the motion it announces.
  *
- * A "✕" text character was the obvious cheaper option and is the thing being
- * replaced. It renders at whatever weight the first font in the stack happens to
- * carry it at — the rail's mono stack does not — so it arrived thin, small and
- * vertically off-centre next to a 16px uppercase title. Two strokes at the same 1.9
- * weight the stage-rail glyphs use cannot drift.
+ * INLINE SVG, REDRAWN, NEVER EMBEDDED, and drawn here rather than imported. It is the
+ * strip's own rule (components/shell/inspector/ToolIcons.tsx): currentColor, round caps
+ * and joins, a stroke of 1.8 like the tools beside it, and the sizing left to CSS (the
+ * tile's tool-glyph token) so it is the same size as Search and Settings by
+ * construction. The drawn extent (x 4 to 20.5) is centred on x = 12 by one group
+ * translate, as ToolIcons does for its lopsided marks. The hover nudge is
+ * app/console-motion.css, section 8.
  */
-function CloseGlyph() {
+function CollapseGlyph() {
+  const arrow = <path d="M20.5 12H4M10.5 5.5L4 12l6.5 6.5" />;
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.9}
+      strokeWidth={1.8}
       strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden
       focusable="false"
     >
-      <path d="M6 6l12 12M18 6L6 18" />
+      <g className="tn-collapse-left" transform="translate(-0.25 0)">{arrow}</g>
+      <g className="tn-collapse-down" transform="rotate(-90 12 12) translate(-0.25 0)">{arrow}</g>
     </svg>
   );
 }
@@ -183,6 +191,30 @@ export default function SourceCatalog() {
   const keymap = useKeymap();
   const railOpen = rail.open;
   const setRailOpen = (v: boolean) => sourcesRailStore.setOpen(v);
+  // ── THE PANE STAYS IN THE PAGE WHILE IT SLIDES OUT ─────────────────────────
+  // `railOpen` is the store's answer and `mounted` is whether the aside is still in the
+  // DOM. They differ for the length of the slide out (200 ms): the store says closed at
+  // the click, so the Sources tab and the map's room are already in force, and the pane
+  // leaves over the map as `data-leaving`, `inert`. See lib/console/railPresence.ts.
+  //
+  // DERIVED DURING RENDER, not in an effect. An effect would paint one frame with the
+  // aside gone and then put it back, and the pane would play its entry slide again.
+  const [mounted, setMounted] = useState(railOpen);
+  if (railOpen && !mounted) setMounted(true);
+  const phase = railPhase(railOpen, mounted);
+  // A leave ends on the pane's own transitionend. This is the net for a tab that never
+  // paints (so no transition runs) or a browser that does not know the CSS.
+  useEffect(() => {
+    if (phase !== "leaving") return;
+    const id = window.setTimeout(() => setMounted(false), RAIL_LEAVE_FALLBACK_MS);
+    return () => window.clearTimeout(id);
+  }, [phase]);
+  const onPaneTransitionEnd = (e: React.TransitionEvent<HTMLElement>) => {
+    if (e.target !== e.currentTarget) return;
+    // Travel changes `transform`; reduced motion changes only `opacity`. Either ends it.
+    if (e.propertyName !== "transform" && e.propertyName !== "opacity") return;
+    if (!sourcesRailStore.get().open) setMounted(false);
+  };
   const { tab } = useRailTab();
   // No hydrate effect: the hint is scoped to one launch and nothing about it is
   // persisted, so the server render and the first client pass already agree.
@@ -311,27 +343,27 @@ export default function SourceCatalog() {
     track({ name: "layer_toggled", layer: id });
   };
 
-  if (!railOpen) {
-    return (
-      <button
-        type="button"
-        className="tn-rail-fab"
-        onClick={() => setRailOpen(true)}
-        title={`Show sources${keymap.sources[0] ? ` (${formatChord(keymap.sources[0], isMac())})` : ""}`}
-        // THE HINT. On every fresh launch this tab jumps a few times and then stops,
-        // because in review nobody found it — it is a thin tab on an edge that is
-        // otherwise a widget column. It is an attribute rather than a class so the
-        // CSS reads as a state and one grep finds both halves, and it ends for the
-        // rest of the visit the first time the rail is opened by ANY route.
-        // `shouldHintRail` is the whole rule and is unit-tested; see
-        // lib/console/sourcesRail.ts for why the scope is a launch and not a browser.
-        data-hint={shouldHintRail(rail) ? "" : undefined}
-      >
-        <span className="tn-rail-fab-bars" aria-hidden>≡</span>
-        Sources
-      </button>
-    );
-  }
+  // THE LAUNCHER TAB. Rendered whenever the pane is not fully open, FIRST in the fragment
+  // below, so a pane that is leaving paints over it (same stacking, later in the DOM).
+  const launcher = (
+    <button
+      type="button"
+      className="tn-rail-fab"
+      onClick={() => setRailOpen(true)}
+      title={`Show sources${keymap.sources[0] ? ` (${formatChord(keymap.sources[0], isMac())})` : ""}`}
+      // THE HINT. On every fresh launch this tab jumps a few times and then stops,
+      // because in review nobody found it — it is a thin tab on an edge that is
+      // otherwise a widget column. It is an attribute rather than a class so the
+      // CSS reads as a state and one grep finds both halves, and it ends for the
+      // rest of the visit the first time the rail is opened by ANY route.
+      // `shouldHintRail` is the whole rule and is unit-tested; see
+      // lib/console/sourcesRail.ts for why the scope is a launch and not a browser.
+      data-hint={shouldHintRail(rail) ? "" : undefined}
+    >
+      <span className="tn-rail-fab-bars" aria-hidden>≡</span>
+      Sources
+    </button>
+  );
 
   const q = query.trim().toLowerCase();
   const visible =
@@ -348,8 +380,22 @@ export default function SourceCatalog() {
     // and the `:has(> .tn-rail)` padding rule at the same time — the rail would lose
     // its width and the console would lose the gap it sits in. See SourcesSplitter
     // for why the handle cannot simply live inside the rail.
+    //
+    // ONE FRAGMENT FOR EVERY PHASE, so the aside is the same element from the click that
+    // opens it to the end of the slide that closes it (a conditional `false` keeps each
+    // child's slot, so React never remounts it). The tab comes first, so a pane that is
+    // leaving paints over it. While it leaves, the pane is `inert` and the closed layout
+    // is already in force: see the `:not([data-leaving])` selectors in app/globals.css.
     <>
-    <aside className="tn-rail" aria-label="Sources">
+    {phase !== "open" && launcher}
+    {phase !== "closed" && (
+    <aside
+      className="tn-rail"
+      aria-label="Sources"
+      data-leaving={phase === "leaving" ? "" : undefined}
+      inert={phase === "leaving"}
+      onTransitionEnd={onPaneTransitionEnd}
+    >
       <div className="tn-rail-header">
         <div className="tn-rail-tabs" role="tablist" aria-label="Sources rail views">
           <button
@@ -376,20 +422,33 @@ export default function SourceCatalog() {
           </button>
         </div>
         {/* THE WIDGET COUNTER IS GONE (2026-09-16), on Sam's ask: "0 ▦". It counted
-            the widgets on the workspace and sat between the tab strip and the close
-            mark, where it was the only thing in the header that was neither a control
-            nor a label for one — a number with a glyph that needed its own title
-            attribute to be understood, and one that read "0" for anyone who had not
-            placed a widget. `consoleLayout` is still subscribed below: the source rows
-            use it to say which sources already have a widget open. */}
+            the widgets on the workspace and sat after the tab strip, where it was the
+            only thing in the header that was neither a control nor a label for one — a
+            number with a glyph that needed its own title attribute to be understood, and
+            one that read "0" for anyone who had not placed a widget. `consoleLayout` is
+            still subscribed below: the source rows use it to say which sources already
+            have a widget open. */}
+      </div>
+
+      {/* THE CLOSE TILE IS THE TOP OF THE TOOL STRIP (Leon, 2026-10-30: "X button doesn't
+          look like it's part of the UI - add it to the sidebar and shade the underneath to
+          differentiate it"). It used to be a loose 30px square in the header, outside the
+          strip, and a ✕; it is now an arrow that points where the pane goes (CollapseGlyph).
+          It sits in the strip's first cell, level with the tabs, and wears the
+          tool tiles' own classes on purpose: the tile size, the hover wash, the focus ring
+          and the phone's word under the mark come from the same rules as Search, Settings,
+          Draw and Alerts and cannot drift from them. DOM order stays tabs, close, panes,
+          tools. `.tn-rail-collapse` stays on it because tests click it by that class. */}
+      <div className="tn-rail-close-cell">
         <button
           type="button"
-          className="tn-rail-collapse"
+          className="tn-rail-collapse tn-insp-rail-btn"
           onClick={() => setRailOpen(false)}
           aria-label="Close sources"
           title="Close sources"
         >
-          <CloseGlyph />
+          <CollapseGlyph />
+          <span className="tn-insp-rail-name" aria-hidden="true">Close</span>
         </button>
       </div>
 
@@ -498,7 +557,7 @@ export default function SourceCatalog() {
           )}
         </div>
 
-        {/* ON BOTH TABS, OUTSIDE THE SCROLLPORT. It is a sibling of the panes rather
+        {/* ON BOTH TABS, OUTSIDE THE SCROLLPORT, UNDER THE CLOSE TILE. It is a sibling of the panes rather
             than a child of either one, and that is the fix for the wonky band Sam
             reported while resizing: inside the scrollport a sticky column is only
             ever as tall as its content (measured: 164px at a 300px panel, 127px at
@@ -508,7 +567,10 @@ export default function SourceCatalog() {
         <InspectorRail />
       </div>
     </aside>
-    <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
+    )}
+    {phase === "open" && (
+      <SourcesSplitter width={railWidth} active={dragging} onPointerDown={onSplitterDown} />
+    )}
     </>
   );
 }
