@@ -3,11 +3,10 @@
 
    EVERY RULE IS UNDER `.lp-root`. The (site) layout wraps this page, /privacy and
    nothing else in `.pv-root`, and app/provenance.css still styles /privacy and
-   the Discord note from there. This sheet must not reach either, so each
-   selector starts at `.lp-root` and each class carries the `lp-` prefix. Two
-   rules leave the root, both at the bottom and both behind `:has(.lp-root)`, so
-   they only match while this page is mounted: the document ground, and the
-   corner the Discord note sits in.
+   nothing else here. This sheet must not reach either, so each selector starts
+   at `.lp-root` and each class carries the `lp-` prefix. One rule leaves the
+   root, at the bottom and behind `:has(.lp-root)`, so it only matches while this
+   page is mounted: the document ground.
 
    ONE NIGHT SYSTEM. Space is the ground, amber is the only action colour, and
    three fields (cobalt, amber, frost) each fill one whole section. The four
@@ -52,7 +51,7 @@
      another palette for /privacy, and none of that may show through. */
   position: relative;
   /* Its own stacking context: the z-indexes below (canvas 1, pinned copy 2, footer 3,
-     nav 20) are local, and the Discord note outside this root always sits above it. */
+     nav 20) are local, and the Discord pop-up, in <body>, always sits above it. */
   isolation: isolate;
   background: var(--space);
   color: var(--frost);
@@ -520,15 +519,3 @@
    that hold this page: on /privacy and /app it matches nothing. Literal hexes, because the
    tokens above live on `.lp-root` and are not in scope on `html`. */
 html:has(.lp-root) { background: #05070d; scrollbar-color: #2a3552 #05070d; }
-
-/* ------------------------------------------------------------------ the Discord note, on this page only
-
-   app/provenance.css parks the note bottom LEFT. On this page that corner holds the hero
-   buttons and the copy of every photograph, so at its 40-second mark the note landed on
-   the primary button. Bottom right is this page's emptiest corner (the Earth, a
-   photograph, the flat map). Wide screens only: on a phone the note spans the width either
-   way. `:has()` again, so /privacy keeps the left corner. This is the second and last rule
-   that leaves `.lp-root`. */
-@media (min-width: 721px) {
-  .pv-root:has(.lp-root) .tn-note { left: auto; right: 16px; }
-}

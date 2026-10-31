@@ -351,8 +351,8 @@ export default function TerminalHeader({ onOpenPalette }: { onOpenPalette: () =>
               things after it are all controls. */}
           <LivePresence />
           {/* THE PERMANENT DOOR TO THE DISCORD, and the reason CommunityNote's
-              dismissal is allowed to be permanent. That card asks once and then
-              never again; without a standing link, "No thanks" would close the
+              dismissal is allowed to be permanent. That pop-up asks once and then
+              never again; without a standing link, "Not now" would close the
               only route rather than just the prompt. It joins this cluster because
               it is the same kind of control as the two beside it — a way OUT of the
               console — and it uses `.tnx-hdr-btn-label` (as SHORTCUTS and SETTINGS

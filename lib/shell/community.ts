@@ -1,4 +1,4 @@
-// The Discord invitation's gate. PURE: no React, no DOM, no "use client" — the
+// The Discord pop-up's gate. PURE: no React, no DOM, no "use client" — the
 // same reason lib/shell/feedback.ts is pure, and the same payoff: the interesting
 // behaviour (who is asked, when, and what makes it stop forever) is testable in the
 // node vitest environment with no window.
@@ -11,33 +11,41 @@
 //       is not a survey — sampling it would simply throw away two thirds of the
 //       reach for nothing in return.
 //
-//   (b) A MUCH SHORTER QUALIFYING TIME: 40 seconds of visible time, against
+//   (b) A MUCH SHORTER QUALIFYING TIME: 15 seconds of visible time, against
 //       feedback's fifteen minutes. Feedback has to be earned — you cannot usefully
 //       rate a thing you have not used. An invitation does not: the cost of asking
-//       early is one dismissed card, and the cost of asking late is that the person
-//       has already gone. Forty seconds is still long enough that a bounce (open,
+//       early is one dismissed pop-up, and the cost of asking late is that the person
+//       has already gone. Fifteen seconds is still long enough that a bounce (open,
 //       glance, close) never sees it.
 //
 // WHAT IS THE SAME, AND IS LOAD-BEARING: resolving is PERMANENT. Nobody who has
-// joined or said no is asked twice. The console header carries a DISCORD button, so
+// joined or said no to THIS pop-up is asked twice. The console header carries a DISCORD button, so
 // a permanent "no" here closes the prompt and not the door — which is what makes a
 // permanent no defensible rather than a one-way loss.
 
 import { loadPersisted, savePersisted } from "@/lib/shell/persist";
 
 export const COMMUNITY_KEY = "tn.community.v1";
-export const COMMUNITY_VERSION = 1;
+/**
+ * 2 since 2026-10-30, and the bump IS the feature. Version 1 recorded answers to the old
+ * corner card, and the invite behind that card was dead from 7 October. Everyone who pressed
+ * "Join" in those weeks reached a dead page and is stored as `joined`, so they are exactly the
+ * people this pop-up is for, and a permanent stop would hide it from them. loadPersisted reads
+ * an older envelope as a miss, so each browser sees the pop-up once more, whatever it answered
+ * before. The same key is kept so that the next save overwrites the old value and strands nothing.
+ */
+export const COMMUNITY_VERSION = 2;
 
 /**
- * 40 seconds of VISIBLE time before the invitation appears.
+ * 15 seconds of VISIBLE time before the pop-up appears.
  *
  * Visible rather than wall clock, for the reason feedback.ts gives: this is a live
  * map, so a tab left open in the background is the normal case and means nobody
  * looked at it. A background tab must not burn through the qualifying time and
- * surface a card the person never sees, because the card would then be spent —
+ * surface a pop-up the person never sees, because the pop-up would then be spent —
  * `resolved` is permanent, and an unseen impression is the worst way to spend it.
  */
-export const QUALIFY_ACTIVE_MS = 40_000;
+export const QUALIFY_ACTIVE_MS = 15_000;
 
 export type CommunityResolution = "joined" | "dismissed";
 
@@ -98,14 +106,27 @@ export interface CommunityGateContext {
    *  immersive thing the console does; interrupting it with an ad for a chat
    *  server is the single worst moment available. */
   diveActive: boolean;
+  /** Any other `[role="dialog"]` is on screen: the feedback prompt, the palette, an object's
+   *  inspector, settings. Two modals would fight over focus, and a person reading a panel
+   *  is busy. It simply waits for the panel to close. */
+  otherDialog: boolean;
+  /** Focus is in a text field. A pop-up that takes the focus mid-word loses the word. */
+  typing: boolean;
+  /** `navigator.webdriver`: Playwright, a crawler, the reel filmer. The old corner card let
+   *  clicks through. This one has a veil, so a journey running past 15 seconds would break on
+   *  it, and a film would carry it. `?discord=1` still opens it, which is how a test asks. */
+  automated: boolean;
 }
 
-/** Why the card is being withheld, or null if nothing is withholding it. Returned
+/** Why the pop-up is being withheld, or null if nothing is withholding it. Returned
  *  as a reason rather than a boolean so a test names the arm it is exercising. */
 export function blockedBy(state: CommunityState, ctx: CommunityGateContext): string | null {
   if (state.resolved) return state.resolved;
   if (ctx.bootPlaying) return "boot";
   if (ctx.diveActive) return "dive";
+  if (ctx.otherDialog) return "dialog";
+  if (ctx.typing) return "typing";
+  if (ctx.automated) return "automated";
   return null;
 }
 
@@ -114,42 +135,82 @@ export function shouldInvite(state: CommunityState, ctx: CommunityGateContext): 
   return qualifies(state);
 }
 
+/**
+ * The one decision the component makes. A review opens it whatever was answered before, so a
+ * reload keeps showing it, but it still will not land on a dive or on top of another dialog.
+ */
+export function shouldOpenInvite(state: CommunityState, ctx: CommunityGateContext, forced: boolean): boolean {
+  return forced ? !ctx.diveActive && !ctx.otherDialog : shouldInvite(state, ctx);
+}
+
+/** A field that is taking typed words. Takes the two properties it reads, so a node test can call it. */
+export function isTypingTarget(el: Pick<HTMLElement, "tagName" | "isContentEditable"> | null): boolean {
+  if (!el) return false;
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable === true;
+}
+
 /* ── Surfaces ───────────────────────────────────────────────────────────── */
 
 /**
- * The note is mounted in two places: the console, and (since 2026-09-14) the landing
- * page, where most visitors arrive and many never open /app. Both read and write the
- * SAME `tn.community.v1` state, so an answer on one surface is final on the other.
+ * The pop-up is mounted in two places: the console, and (since 2026-09-14) the landing page,
+ * where most visitors arrive and many never open /app. Both read and write the SAME
+ * `tn.community.v1` state, so an answer on one is final on the other. God's eye view does not
+ * carry it, by request: the pop-up belongs on the dashboard, and that view stays the scene.
  */
 export type CommunitySurface = "console" | "landing";
 
-/** The landing page has no cold-start plate, so its first evaluation waits only long
- *  enough for the page to settle. That is far under the 40-second bar, so only a
- *  `?discord=1` review can show the card this early. */
+/** Only the console has a cold-start plate, so on the landing page the first evaluation waits only long
+ *  enough for the page to settle. That is under the 15-second bar, so only a `?discord=1`
+ *  review can show the pop-up this early. */
 export const LANDING_HOLD_MS = 1_500;
 
 /** How long the component waits before its first evaluation. The console passes its
  *  own boot-derived hold, and gets it back unchanged. */
 export function initialHoldMs(surface: CommunitySurface, consoleHoldMs: number): number {
-  return surface === "landing" ? LANDING_HOLD_MS : consoleHoldMs;
+  return surface === "console" ? consoleHoldMs : LANDING_HOLD_MS;
 }
 
-/** The gate context for a surface. The landing page has no boot plate and no cinematic
- *  dive, so neither can hold the card back there. The console's context is unchanged. */
+/** The gate context for a surface. Only the console has a boot plate and a cinematic dive,
+ *  so neither can hold the pop-up back on the landing page. The other arms apply on both. */
 export function gateContext(surface: CommunitySurface, live: CommunityGateContext): CommunityGateContext {
-  return surface === "landing" ? { bootPlaying: false, diveActive: false } : live;
+  return surface === "console" ? live : { ...live, bootPlaying: false, diveActive: false };
 }
 
 /**
- * `?discord=1` forces the invitation open for review — the same override precedent
- * `?feedback=1` and `?boot=1` set. It bypasses the qualifying time; it does NOT
- * bypass a recorded resolution, so a review pass cannot silently re-ask someone who
- * has already said no.
+ * `?discord=1` forces the pop-up open for review, the same override precedent `?feedback=1`
+ * and `?boot=1` set. It bypasses the qualifying time AND a recorded answer: nobody reaches it
+ * by accident, so it cannot re-ask a visitor who said no, and a review by reloading must
+ * show the pop-up every time.
  */
 export function forcedFromSearch(search: string): boolean {
   try {
     return new URLSearchParams(search).get("discord") === "1";
   } catch {
     return false;
+  }
+}
+
+export const COMMUNITY_REVIEW_KEY = "tn.community.review";
+
+type SessionLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+/**
+ * The review flag, kept for the life of the tab. The console rewrites its address and drops
+ * `discord=1`, so without this a plain reload there would show nothing. Reviews
+ * are done by reloading. `?discord=0` ends one.
+ */
+export function reviewRequested(search: string, session?: SessionLike | null): boolean {
+  try {
+    if (forcedFromSearch(search)) {
+      session?.setItem(COMMUNITY_REVIEW_KEY, "1");
+      return true;
+    }
+    if (new URLSearchParams(search).get("discord") === "0") {
+      session?.removeItem(COMMUNITY_REVIEW_KEY);
+      return false;
+    }
+    return session?.getItem(COMMUNITY_REVIEW_KEY) === "1";
+  } catch {
+    return forcedFromSearch(search);
   }
 }

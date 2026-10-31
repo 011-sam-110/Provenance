@@ -15,7 +15,7 @@
 // HOW IT DIFFERS FROM THE COMMUNITY INVITATION, AND WHY. Both are one-time cards over
 // a persisted envelope, so the shape is deliberately the same. Two rules are not:
 //
-//   (a) NO QUALIFYING TIME. CommunityNote waits 40 seconds of visible time, because an
+//   (a) NO QUALIFYING TIME. CommunityNote waits 15 seconds of visible time, because an
 //       invitation shown to a bounce is wasted. A warning is the opposite: shown late,
 //       it arrives after the person already hit the bug it was warning about, which is
 //       worse than not showing it. So it appears the moment the boot plate is gone.
@@ -26,10 +26,9 @@
 //       code. Once a code is issued there is no other channel to them, and a warning
 //       that cannot be updated is a warning that rots.
 //
-// AND IT IS A MODAL, where CommunityNote is a corner card. The invitation asks for
-// nothing and may be ignored at no cost. This one carries the only statement anybody
-// gets that the data is unverified and the software is unwarranted, so it takes the
-// veil and the focus trap that FeedbackPrompt uses. Escape still closes it, because a
+// AND IT IS A MODAL. It carries the only statement anybody gets that the data is
+// unverified and the software is unwarranted, so it takes the veil and the focus trap
+// that FeedbackPrompt uses. Escape still closes it, because a
 // dialog nobody can leave is an accessibility defect and this is a notice, not a
 // contract.
 

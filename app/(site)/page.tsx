@@ -24,7 +24,7 @@ const HOME_TITLE = `${BRAND.name} · ${BRAND.tagline}`;
  * THE DOORS. Since 2026-10-27 the map people open from here is God's eye view (/eye),
  * and the console is one tap further: "All sources" opens it with its Sources rail
  * open (`sources=open`, lib/console/sourcesLink.ts). Plain links, so this page still
- * loads no MapLibre and makes no /api call. The words name no count: this page never
+ * loads no MapLibre and makes no /api call on load (the Discord pop-up's one call comes later). The words name no count: this page never
  * types one. tests/unit/landing-doors.test.ts holds the doors.
  *
  * `data-rotor` marks the links components/marketing/CtaRotor.tsx rewrites after mount, so
@@ -659,7 +659,7 @@ export default function Landing() {
               Gryzbon, SevenStorm JUHASZIMRUS, Balázs Gábor, K, Guillermo, Griffin Wooldridge,
               Jeffry Surianto and Pixabay.
             </p>
-            {/* Archivo sets this page. Inter sets the Discord note, which is console chrome
+            {/* Archivo sets this page. Inter sets the Discord pop-up, which is console chrome
                 and mounts below. Permanent Marker is still loaded by the (site) layout for
                 nothing on this page, so it is not credited here. */}
             <p>
@@ -677,10 +677,10 @@ export default function Landing() {
         </footer>
       </div>
 
-      {/* The Discord invitation. It gates itself (lib/shell/community.ts): an empty live
-          region until 40 seconds of visible time, and never again once answered here or
-          in the console. Most visitors land here and many never open /app. It sits OUTSIDE
-          `.lp-root` so the landing sheet cannot restyle it. */}
+      {/* The Discord pop-up. It gates itself (lib/shell/community.ts): nothing until 15 seconds
+          of visible time, and never again once answered here or in the console. Most
+          visitors land here and many never open /app. It renders in <body>
+          so the landing sheet cannot restyle it. */}
       <CommunityNote surface="landing" />
     </>
   );

@@ -15,6 +15,17 @@ const ISSUES_URL = `${REPO_URL}/issues`;
  * rule for writing it: verify first, then write, and if you cannot verify it either
  * leave it out or say plainly that you do not know.
  *
+ * WHAT CHANGED ON 2026-10-30:
+ *   - The Discord pop-up: app/api/community asks Discord (discord.com, the public invite
+ *     endpoint) whether the invite is alive and how many members it reports, and keeps the
+ *     answer in memory for five minutes. The handler takes no parameter, so it reads nothing
+ *     from the visitor's request, and the request to Discord carries the invite code and this
+ *     project's name. No browser talks to Discord unless its owner presses the link, so the
+ *     third-party cards do not change. It takes no input, so the table of routes that receive
+ *     something does not change either. The route count is 57 (56, plus this one). The front
+ *     page now makes this one call, once per browser; no sentence here said otherwise, and it
+ *     loads nothing from Discord.
+ *
  * WHAT CHANGED ON 2026-10-29:
  *   - Vessels in the God's eye view: the view no longer reads /api/signals/ais. It asks
  *     /api/eye/vessels?bbox=west,south,east,north (app/api/eye/vessels/route.ts,
@@ -671,7 +682,7 @@ export default function PrivacyPage() {
           <div>
             <p className="pv-eyebrow">
               <span>The server</span>
-              <span>56 API routes</span>
+              <span>57 API routes</span>
             </p>
             <h2 className="pv-h2">What reaches our server, and where it goes.</h2>
           </div>
@@ -1066,7 +1077,7 @@ export default function PrivacyPage() {
           </div>
           <div className="pv-prose">
             <p>
-              Five log statements exist across the 56 API route files. Each records that a data
+              Five log statements exist across the 57 API route files. Each records that a data
               feed or a handler failed, with the error. None of them is given anything you typed:
               their inputs are our own feed names, a camera&rsquo;s stream address, camera
               coordinates and webcam ids. So the application&rsquo;s own code writes nothing you type
